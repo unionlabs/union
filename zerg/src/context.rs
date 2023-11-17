@@ -27,7 +27,6 @@ use ethers::{
 use futures::StreamExt;
 use tendermint_rpc::Client;
 use tokio::sync::Mutex;
-use tracing::{event, Level};
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
 use ucs01_relay_api::types::Ucs01TransferPacket;
 use unionlabs::{
@@ -63,15 +62,15 @@ impl Context {
             .append(true)
             .open(output)
             .unwrap();
-        event!(Level::DEBUG, "Created writer");
+        tracing::debug!("Created writer.");
         let union = chain_utils::union::Union::new(zerg_config.clone().union)
             .await
             .unwrap();
-        event!(Level::DEBUG, "Created Union instance");
+        tracing::debug!("Created Union instance.");
         let evm = chain_utils::evm::Evm::new(zerg_config.clone().evm)
             .await
             .unwrap();
-        event!(Level::DEBUG, "Created Evm instance");
+        tracing::debug!("Created Evm instance.");
 
         let mut evm_accounts = HashMap::new();
 
@@ -80,13 +79,13 @@ impl Context {
             zerg_config.evm_contract.clone(),
             evm.provider.clone().into(),
         );
-        event!(Level::DEBUG, "Created usc01 relay");
+        tracing::debug!("Created usc01 relay.");
         let denom = format!(
             "wasm.{}/{}/{}",
             zerg_config.union_contract, zerg_config.channel, zerg_config.union.fee_denom
         );
         let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
-        event!(Level::DEBUG, "Fetched denom address");
+        tracing::debug!("Fetched denom address.");
 
         for signer in zerg_config.clone().evm.signers.into_iter() {
             let signing_key: ecdsa::SigningKey = signer.value();
@@ -108,7 +107,7 @@ impl Context {
                     .await
                 {
                     res.await.unwrap().unwrap();
-                    event!(Level::DEBUG, "Approved balance");
+                    tracing::debug!("Approved balance.");
                 };
             });
         }
@@ -128,7 +127,7 @@ impl Context {
     }
 
     pub async fn tx_handler(&self) {
-        event!(Level::INFO, "Rush: Starting to rush Union txs...");
+        tracing::info!("Rush: Starting to rush Union txs...");
 
         let mut previous_height = 0;
         for _ in 0..self.zerg_config.rush_blocks {
@@ -144,7 +143,7 @@ impl Context {
                         };
                     }
                     Err(e) => {
-                        tracing::error!(error = %e, "Error getting height from Union.");
+                        tracing::error!(error = %e, "Rush: Error getting height from Union.");
                     }
                 }
                 tokio::time::sleep(Duration::from_secs(1)).await;
@@ -166,7 +165,7 @@ impl Context {
                 self.union
                     .signers.clone()
                     .with(|signer| async move {
-                        event!(Level::INFO, "Sending union Tx for {}", signer.to_string());
+                        tracing::info!("Union: Sending Tx for {}.", signer.to_string());
                         let msg = Any(MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: self.zerg_config.union_contract.clone(),
@@ -215,11 +214,12 @@ impl Context {
                                     }
                                 }).expect("Tx totally exists, QED");
                                 let mut union_txs = self.union_txs.lock().await;
+                                tracing::info!("Union: Transaction sent with packet sequence: {}", event.packet_sequence);
                                 union_txs.insert(event.packet_sequence, uuid);
                                 self.append_record(Event::create_send_event(self.union.chain_id.clone(), uuid, signer.to_string(), Some(timestamp))).await;
                             }
                             Err(e) => {
-                                event!(Level::ERROR, error = %e, "Union: Failed to submit tx!");
+                                tracing::error!(error = %e, "Union: Failed to submit tx!");
                             }
                         };
                     })
@@ -230,13 +230,9 @@ impl Context {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        event!(Level::INFO, "Rush: Done rushing Union txs!");
+        tracing::info!("Rush: Done rushing Union txs!");
         loop {
-            event!(
-                Level::INFO,
-                "Rush: Union transaction rush finished at {}.",
-                finished_at
-            );
+            tracing::info!("Rush: Union transaction rush finished at {}.", finished_at);
             tokio::time::sleep(Duration::from_secs(60)).await;
         }
     }
@@ -249,7 +245,7 @@ impl Context {
             if let Some(wallet) = self.evm_accounts.get(&format!("{:?}", transfer.receiver())) {
                 wallet
             } else {
-                event!(Level::DEBUG, "Evm: Recv Packet not from zerg");
+                tracing::debug!("Evm: Recv Packet not from zerg.");
                 return;
             };
 
@@ -314,8 +310,7 @@ impl Context {
                         Some(timestamp),
                     ))
                     .await;
-                    event!(
-                        Level::INFO,
+                    tracing::info!(
                         "Eth: Transaction {}/{} was submitted!",
                         e.packet_sequence,
                         send.sequence
@@ -323,8 +318,7 @@ impl Context {
                     break;
                 }
             } else {
-                event!(
-                    Level::ERROR,
+                tracing::error!(
                     "Eth: Transaction {} failed, trying again next block...",
                     e.packet_sequence
                 );
@@ -336,21 +330,20 @@ impl Context {
         let mut events = Box::pin(self.union.clone().events(()));
 
         loop {
-            event!(Level::INFO, "Union: Listening for IBC events...");
+            tracing::info!("Union: Listening for IBC events...");
 
-            if let Some(Ok(event)) = events.next().await {
-                match event.event {
+            match events.next().await {
+                Some(Ok(event)) => match event.event {
                     IbcEvent::SendPacket(_) => {
-                        event!(Level::INFO, "Union: SendPacket observed!");
+                        tracing::info!("Union: SendPacket observed!");
                     }
                     IbcEvent::RecvPacket(e) => {
-                        event!(Level::INFO, "Union: RecvPacket observed!");
+                        tracing::info!("Union: RecvPacket observed!");
                         let evm_txs = self.evm_txs.lock().await;
                         let uuid = match evm_txs.get(&e.packet_sequence) {
                             Some(uuid) => uuid.to_owned(),
                             None => {
-                                event!(
-                                    Level::WARN,
+                                tracing::warn!(
                                     "Union: no matching uuid for packet sequence: {}",
                                     e.packet_sequence
                                 );
@@ -361,11 +354,15 @@ impl Context {
                             .await;
                     }
                     _ => {
-                        event!(Level::DEBUG, "Union: Untracked event observed.")
+                        tracing::debug!("Union: Untracked event observed: {:?}", event.event);
                     }
+                },
+                Some(Err(e)) => {
+                    tracing::error!("Union: Skipping events due to error: {:?}", e);
                 }
-            } else {
-                event!(Level::ERROR, "Union: Skipping events due to error.");
+                None => {
+                    tracing::debug!("Union: No events...");
+                }
             }
         }
     }
@@ -374,49 +371,58 @@ impl Context {
         let mut events = Box::pin(self.evm.clone().events(()));
 
         loop {
-            event!(Level::INFO, "Evm: Listening for IBC events...");
+            tracing::info!("Evm: Listening for IBC events...");
 
-            if let Some(Ok(event)) = events.next().await {
-                let block = self
-                    .evm
-                    .provider
-                    .get_block(ethers::types::H256(event.block_hash.into()))
-                    .await
-                    .unwrap()
-                    .unwrap();
-                let timestamp = block.timestamp.as_u64();
+            match events.next().await {
+                Some(Ok(event)) => {
+                    let block = self
+                        .evm
+                        .provider
+                        .get_block(ethers::types::H256(event.block_hash.into()))
+                        .await
+                        .unwrap()
+                        .unwrap();
+                    let timestamp = block.timestamp.as_u64();
 
-                match event.event {
-                    IbcEvent::SendPacket(_e) => {
-                        event!(Level::INFO, "Evm: SendPacket observed!");
-                    }
-                    IbcEvent::RecvPacket(e) => {
-                        event!(Level::INFO, "Evm: RecvPacket observed!");
-                        let union_txs = self.union_txs.lock().await;
-                        let uuid = match union_txs.get(&e.packet_sequence) {
-                            Some(uuid) => uuid.to_owned(),
-                            None => {
-                                event!(Level::WARN, "Union: no matching uuid for packet sequence.");
-                                uuid::Uuid::new_v4()
+                    match event.event {
+                        IbcEvent::SendPacket(_e) => {
+                            tracing::info!("Evm: SendPacket observed!");
+                        }
+                        IbcEvent::RecvPacket(e) => {
+                            tracing::info!("Evm: RecvPacket observed!");
+                            let union_txs = self.union_txs.lock().await;
+                            let uuid = match union_txs.get(&e.packet_sequence) {
+                                Some(uuid) => uuid.to_owned(),
+                                None => {
+                                    tracing::warn!(
+                                        "Evm: no matching uuid for packet sequence: {}.",
+                                        e.packet_sequence
+                                    );
+                                    uuid::Uuid::new_v4()
+                                }
+                            };
+                            self.append_record(Event::create_recv_event(
+                                event.chain_id.to_string(),
+                                uuid,
+                                e.clone(),
+                                Some(timestamp),
+                            ))
+                            .await;
+                            if self.is_rush {
+                                tokio::spawn(self.clone().send_from_eth(e));
                             }
-                        };
-                        self.append_record(Event::create_recv_event(
-                            event.chain_id.to_string(),
-                            uuid,
-                            e.clone(),
-                            Some(timestamp),
-                        ))
-                        .await;
-                        if self.is_rush {
-                            tokio::spawn(self.clone().send_from_eth(e));
+                        }
+                        _ => {
+                            tracing::debug!("Evm: Untracked event observed.")
                         }
                     }
-                    _ => {
-                        event!(Level::DEBUG, "Evm: Untracked event observed.")
-                    }
                 }
-            } else {
-                event!(Level::ERROR, "Evm: Skipping events due to error.");
+                Some(Err(e)) => {
+                    tracing::error!(error = %e, "Evm: Skipping events due to error.");
+                }
+                None => {
+                    tracing::debug!("Evm: No events...");
+                }
             }
         }
     }
@@ -425,7 +431,7 @@ impl Context {
     ///
     /// Line Format:
     /// `<uuid>,<address>,<execution_timestamp>,<finalization_timestamp>,<event_type>,<chain_id>`
-    /// Where `EVENT_TYPE` is either `"SentFrom"` or `"ReceivedOn"`.
+    /// Where `event_type` is either `"SentFrom"` or `"ReceivedOn"`.
     pub async fn append_record(&self, event: Event) {
         let mut writer = self.writer.lock().await;
         match event.stamped_event {
