@@ -5,7 +5,7 @@ use uint::FromDecStrErr;
 
 use crate::{
     errors::{InvalidLength, MissingField},
-    hash::H256,
+    hash::{H160, H256},
     ibc::{
         core::client::height::Height,
         lightclients::{ethereum::fork_parameters::ForkParameters, tendermint::fraction::Fraction},
@@ -30,6 +30,8 @@ pub struct ClientState {
     // even though it would be better to have option, ethabicodec don't handle it as zero struct...
     pub frozen_height: Height,
     pub counterparty_commitment_slot: U256,
+    /// the ibc contract on the counterparty chain that contains the ICS23 commitments
+    pub ibc_contract_address: H160,
 }
 
 impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::ClientState {
@@ -56,6 +58,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
             latest_slot: value.latest_slot,
             frozen_height: Some(value.frozen_height.into()),
             counterparty_commitment_slot: value.counterparty_commitment_slot.to_big_endian().into(),
+            ibc_contract_address: value.ibc_contract_address.into(),
         }
     }
 }
@@ -67,6 +70,7 @@ pub enum TryFromClientStateError {
     ForkParameters(TryFromProtoErrorOf<ForkParameters>),
     GenesisValidatorsRoot(InvalidLength),
     CounterpartyCommitmentSlot(InvalidLength),
+    IbcContractAddress(InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for ClientState {
@@ -112,6 +116,10 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
                 &value.counterparty_commitment_slot,
             )
             .map_err(TryFromClientStateError::CounterpartyCommitmentSlot)?,
+            ibc_contract_address: value
+                .ibc_contract_address
+                .try_into()
+                .map_err(TryFromClientStateError::IbcContractAddress)?,
         })
     }
 }
