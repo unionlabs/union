@@ -63,29 +63,30 @@ let
 
       '';
 
-      cargoBuildInstallPhase = let
-        outputFilePath = "$out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm";
-      in
-      ''
-        ${
-          builtins.concatStringsSep
-            "\n\n"
-            (map
-              (check: check "target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm")
-              allChecks
-            )
-        }
+      cargoBuildInstallPhase =
+        let
+          outputFilePath = "$out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm";
+        in
+        ''
+          ${
+            builtins.concatStringsSep
+              "\n\n"
+              (map
+                (check: check "target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm")
+                allChecks
+              )
+          }
 
-        mkdir -p $out/lib
-        mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm ${outputFilePath}
+          mkdir -p $out/lib
+          mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm ${outputFilePath}
 
-        ${pkgs.binaryen}/bin/wasm-opt -O3 ${outputFilePath} -o ${outputFilePath}
+          ${pkgs.binaryen}/bin/wasm-opt -O3 ${outputFilePath} -o ${outputFilePath}
 
-        # gzip the binary to ensure it's not too large to upload
-        gzip -fk ${outputFilePath}
+          # gzip the binary to ensure it's not too large to upload
+          gzip -fk ${outputFilePath}
 
-        # TODO: check that the size isn't over the max size allowed to be uploaded?
-      '';
+          # TODO: check that the size isn't over the max size allowed to be uploaded?
+        '';
     };
 in
 {
