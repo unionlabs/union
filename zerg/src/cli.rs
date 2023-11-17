@@ -29,7 +29,7 @@ pub enum Command {
         output: String,
     },
     /// Process the output produced by `rush` or `observe` to get formatted details about whole transactions.
-    /// Each line of processed data includes: `<uuid>,<is_completed>,<execution_time?>,<execution_duration?><finalization_time?>,<finalization_duration?>`
+    /// Each line of processed data includes: `<uuid>,<execution_time?>,<execution_duration?><finalization_time?>,<finalization_duration?>`
     Process {
         input_file: String,
         #[arg(long, short = 'o', env, default_value = "zerg-process.csv")]

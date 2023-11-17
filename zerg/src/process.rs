@@ -22,7 +22,6 @@ enum TransactionState {
 pub struct TransactionReport {
     pub uuid: String,
     pub src: String,
-    pub completed: bool,
     pub executed_at: Option<u64>,
     pub execution_duration: Option<u64>,
     pub finalized_at: Option<u64>,
@@ -62,7 +61,6 @@ pub fn process(input_file_path: String) -> Vec<TransactionReport> {
             Some(received_on) => TransactionReport {
                 uuid: sent_from.uuid,
                 src: sent_from.chain_id,
-                completed: true,
                 executed_at: Some(received_on.execution_timestamp),
                 execution_duration: Some(
                     received_on.execution_timestamp - sent_from.execution_timestamp,
@@ -75,7 +73,6 @@ pub fn process(input_file_path: String) -> Vec<TransactionReport> {
             None => TransactionReport {
                 uuid: sent_from.uuid,
                 src: sent_from.chain_id,
-                completed: false,
                 executed_at: None,
                 execution_duration: None,
                 finalized_at: None,

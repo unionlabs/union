@@ -37,7 +37,7 @@ SentFrom | ReceivedOn
 After `zerg rush` or `zerg observe` outputs its transaction indexing, you can use `zerg process` to structure the data into a report CSV that will contain lines of the following form:
 
 ```csv
-<uuid>,<src>,<completed>,<executed_at?>,<execution_duration?>,<finalized_at?>,<finalization_duration?>
+<uuid>,<src>,<executed_at?>,<execution_duration?>,<finalized_at?>,<finalization_duration?>
 ```
 
 ### Analyze

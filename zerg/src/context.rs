@@ -216,7 +216,7 @@ impl Context {
                                 let mut union_txs = self.union_txs.lock().await;
                                 tracing::info!("Union: Transaction sent with packet sequence: {}", event.packet_sequence);
                                 union_txs.insert(event.packet_sequence, uuid);
-                                self.append_record(Event::create_send_event(self.union.chain_id.clone(), uuid, signer.to_string(), Some(timestamp))).await;
+                                self.append_record(Event::create_send_event(self.union.chain_id.clone(), uuid, signer.to_string(), Some(timestamp), None)).await;
                             }
                             Err(e) => {
                                 tracing::error!(error = %e, "Union: Failed to submit tx!");
@@ -308,6 +308,7 @@ impl Context {
                         uuid,
                         wallet.address().to_string(),
                         Some(timestamp),
+                        None,
                     ))
                     .await;
                     tracing::info!(
@@ -350,8 +351,14 @@ impl Context {
                                 uuid::Uuid::new_v4()
                             }
                         };
-                        self.append_record(Event::create_recv_event(event.chain_id, uuid, e, None))
-                            .await;
+                        self.append_record(Event::create_recv_event(
+                            event.chain_id,
+                            uuid,
+                            e,
+                            None,
+                            None,
+                        ))
+                        .await;
                     }
                     _ => {
                         tracing::debug!("Union: Untracked event observed: {:?}", event.event);
@@ -406,6 +413,7 @@ impl Context {
                                 uuid,
                                 e.clone(),
                                 Some(timestamp),
+                                None,
                             ))
                             .await;
                             if self.is_rush {
@@ -413,7 +421,7 @@ impl Context {
                             }
                         }
                         _ => {
-                            tracing::debug!("Evm: Untracked event observed.")
+                            tracing::debug!("Evm: Untracked event observed: {:?}", event.event)
                         }
                     }
                 }

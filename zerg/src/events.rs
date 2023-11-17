@@ -12,15 +12,17 @@ pub struct TimedEvent {
 }
 
 impl TimedEvent {
-    pub fn new(chain_id: String, execution_timestamp: Option<u64>) -> Self {
-        let finalization_timestamp = SystemTime::now()
+    pub fn new(
+        chain_id: String,
+        execution_timestamp: Option<u64>,
+        finalization_timestamp: Option<u64>,
+    ) -> Self {
+        let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        let execution_timestamp = match execution_timestamp {
-            Some(timestamp) => timestamp,
-            None => finalization_timestamp,
-        };
+        let finalization_timestamp = finalization_timestamp.unwrap_or(now);
+        let execution_timestamp = execution_timestamp.unwrap_or(now);
         Self {
             chain_id,
             execution_timestamp,
@@ -49,8 +51,9 @@ impl Event {
         uuid: Uuid,
         sender: String,
         execution_timestamp: Option<u64>,
+        finalization_timestamp: Option<u64>,
     ) -> Event {
-        let timed_event = TimedEvent::new(chain_id, execution_timestamp);
+        let timed_event = TimedEvent::new(chain_id, execution_timestamp, finalization_timestamp);
 
         Event {
             sender,
@@ -65,11 +68,12 @@ impl Event {
         uuid: Uuid,
         e: RecvPacket,
         execution_timestamp: Option<u64>,
+        finalization_timestamp: Option<u64>,
     ) -> Event {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
 
-        let timed_event = TimedEvent::new(chain_id, execution_timestamp);
+        let timed_event = TimedEvent::new(chain_id, execution_timestamp, finalization_timestamp);
 
         Event {
             uuid,

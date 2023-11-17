@@ -18,32 +18,33 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
     iter.for_each(|report_maybe| {
         if let Ok(report) = report_maybe {
             let id = report.src;
-            if report.completed {
-                let execution_duration = report
-                    .execution_duration
-                    .expect("Completed transactions should have durations");
-                let finalization_duration = report
-                    .finalization_duration
-                    .expect("Completed transactions should have durations");
+            match (report.execution_duration, report.finalization_duration) {
+                (Some(execution_duration), Some(finalization_duration)) => {
+                    if let Some(times) = durations.get_mut(&id) {
+                        times.push(execution_duration, finalization_duration);
+                    } else {
+                        durations.insert(
+                            id.clone(),
+                            Durations::new(execution_duration, finalization_duration),
+                        );
+                    }
 
-                if let Some(times) = durations.get_mut(&id) {
-                    times.push(execution_duration, finalization_duration);
-                } else {
-                    durations.insert(
-                        id.clone(),
-                        Durations::new(execution_duration, finalization_duration),
-                    );
+                    if let Some(channel_complete_transfers) = complete_transfers.get_mut(&id) {
+                        *channel_complete_transfers += 1;
+                    } else {
+                        complete_transfers.insert(id, 1);
+                    }
                 }
-
-                if let Some(channel_complete_transfers) = complete_transfers.get_mut(&id) {
-                    *channel_complete_transfers += 1;
-                } else {
-                    complete_transfers.insert(id, 1);
+                (None, None) => {
+                    if let Some(channel_incomplete_transfers) = incomplete_transfers.get_mut(&id) {
+                        *channel_incomplete_transfers += 1;
+                    } else {
+                        incomplete_transfers.insert(id, 1);
+                    }
                 }
-            } else if let Some(channel_incomplete_transfers) = incomplete_transfers.get_mut(&id) {
-                *channel_incomplete_transfers += 1;
-            } else {
-                incomplete_transfers.insert(id, 1);
+                _ => {
+                    tracing::error!("Analyze: Malformed data for transaction {}", report.uuid)
+                }
             }
         }
     });
