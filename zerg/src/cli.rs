@@ -7,12 +7,7 @@ use clap::{Parser, Subcommand};
 #[command(arg_required_else_help = true)]
 pub struct AppArgs {
     /// The path to the configuration file used by Zerg.
-    #[arg(
-        long,
-        short = 'c',
-        global = true,
-        default_value = "~/.config/zerg/config.json"
-    )]
+    #[arg(long, short = 'c', global = true, default_value = "zerg-config.json")]
     pub config: OsString,
     /// The subcommand that Zerg will execute.
     #[command(subcommand)]
