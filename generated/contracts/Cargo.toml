@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 ethers = { workspace = true, default-features = false }
 [features]
-providers = []
+providers = ["ethers/providers"]

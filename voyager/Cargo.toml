@@ -8,7 +8,7 @@ edition = "2021"
 base64 = "0.21.0"
 bech32 = "0.9.1"
 bip32 = { version = "0.5.0", features = ["secp256k1"] }
-ethers = { workspace = true, features = ["rustls", "ws"], default-features = true }
+ethers = { workspace = true, features = ["rustls", "ws"] }
 futures = "0.3.28"
 hex-literal = "0.4.1"
 num-bigint = "0.4"
