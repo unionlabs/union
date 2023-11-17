@@ -85,9 +85,8 @@ impl<L: LightClient> Wait<L> {
                     .query_latest_height_as_destination()
                     .await
                     .unwrap();
-                let trusted_client_state = l
-                    .query_client_state(client_id.clone().into(), latest_height)
-                    .await;
+                let trusted_client_state =
+                    l.query_client_state(client_id.clone(), latest_height).await;
 
                 if trusted_client_state.height().revision_height() >= height.revision_height() {
                     tracing::debug!(
