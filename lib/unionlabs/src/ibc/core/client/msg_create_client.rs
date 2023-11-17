@@ -27,16 +27,3 @@ where
 impl TypeUrl for protos::ibc::core::client::v1::MsgCreateClient {
     const TYPE_URL: &'static str = "/ibc.core.client.v1.MsgCreateClient";
 }
-
-// #[cfg(feature = "ethabi")]
-// impl<ClientState, ConsensusState> From<MsgCreateClient<ClientState, ConsensusState>>
-//     for contracts::ibc_handler::MsgCreateClient
-// {
-//     fn from(msg: MsgCreateClient<ClientState, ConsensusState>) -> Self {
-//         Self {
-//             client_type: msg.client_type,
-//             client_state_bytes: msg.client_state_bytes,
-//             consensus_state_bytes: msg.consensus_state_bytes,
-//         }
-//     }
-// }

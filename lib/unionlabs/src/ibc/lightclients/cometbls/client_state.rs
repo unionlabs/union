@@ -1,31 +1,39 @@
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ethabi")]
+use crate::InlineFields;
 use crate::{
     errors::{required, MissingField},
-    google::protobuf::duration::Duration,
     ibc::core::client::height::Height,
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: String,
-    pub trusting_period: Duration,
-    pub unbonding_period: Duration,
-    pub max_clock_drift: Duration,
+    pub trusting_period: u64,
+    pub unbonding_period: u64,
+    pub max_clock_drift: u64,
     pub frozen_height: Height,
+    pub latest_height: Height,
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::ClientState {
     fn from(value: ClientState) -> Self {
         Self {
             chain_id: value.chain_id,
-            trusting_period: Some(value.trusting_period.into()),
-            unbonding_period: Some(value.unbonding_period.into()),
-            max_clock_drift: Some(value.max_clock_drift.into()),
+            trusting_period: value.trusting_period,
+            unbonding_period: value.unbonding_period,
+            max_clock_drift: value.max_clock_drift,
             frozen_height: Some(value.frozen_height.into()),
+            latest_height: Some(value.latest_height.into()),
         }
     }
+}
+
+#[cfg(feature = "ethabi")]
+impl crate::EthAbi for ClientState {
+    type EthAbi = InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>;
 }
 
 impl TypeUrl for protos::union::ibc::lightclients::cometbls::v1::ClientState {
@@ -39,9 +47,6 @@ impl Proto for ClientState {
 #[derive(Debug)]
 pub enum TryFromClientStateError {
     MissingField(MissingField),
-    TrustingPeriod(TryFromProtoErrorOf<Duration>),
-    UnbondingPeriod(TryFromProtoErrorOf<Duration>),
-    MaxClockDrift(TryFromProtoErrorOf<Duration>),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ClientState> for ClientState {
@@ -52,16 +57,11 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ClientState> for Cl
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             chain_id: value.chain_id,
-            trusting_period: required!(value.trusting_period)?
-                .try_into()
-                .map_err(TryFromClientStateError::TrustingPeriod)?,
-            unbonding_period: required!(value.unbonding_period)?
-                .try_into()
-                .map_err(TryFromClientStateError::TrustingPeriod)?,
-            max_clock_drift: required!(value.max_clock_drift)?
-                .try_into()
-                .map_err(TryFromClientStateError::TrustingPeriod)?,
+            trusting_period: value.trusting_period,
+            unbonding_period: value.unbonding_period,
+            max_clock_drift: value.max_clock_drift,
             frozen_height: required!(value.frozen_height)?.into(),
+            latest_height: required!(value.latest_height)?.into(),
         })
     }
 }
@@ -71,11 +71,21 @@ impl From<ClientState> for contracts::glue::UnionIbcLightclientsCometblsV1Client
     fn from(value: ClientState) -> Self {
         Self {
             chain_id: value.chain_id,
-            trusting_period: value.trusting_period.into(),
-            unbonding_period: value.unbonding_period.into(),
-            max_clock_drift: value.max_clock_drift.into(),
+            trusting_period: value.trusting_period,
+            unbonding_period: value.unbonding_period,
+            max_clock_drift: value.max_clock_drift,
             frozen_height: value.frozen_height.into(),
+            latest_height: value.latest_height.into(),
         }
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl From<ClientState>
+    for InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>
+{
+    fn from(value: ClientState) -> Self {
+        Self(value.into())
     }
 }
 
@@ -88,19 +98,24 @@ impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData> for
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             chain_id: value.chain_id,
-            trusting_period: value
-                .trusting_period
-                .try_into()
-                .map_err(TryFromClientStateError::TrustingPeriod)?,
-            unbonding_period: value
-                .unbonding_period
-                .try_into()
-                .map_err(TryFromClientStateError::TrustingPeriod)?,
-            max_clock_drift: value
-                .max_clock_drift
-                .try_into()
-                .map_err(TryFromClientStateError::TrustingPeriod)?,
+            trusting_period: value.trusting_period,
+            unbonding_period: value.unbonding_period,
+            max_clock_drift: value.max_clock_drift,
             frozen_height: value.frozen_height.into(),
+            latest_height: value.latest_height.into(),
         })
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl TryFrom<InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>>
+    for ClientState
+{
+    type Error = TryFromClientStateError;
+
+    fn try_from(
+        value: InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>,
+    ) -> Result<Self, Self::Error> {
+        value.0.try_into()
     }
 }

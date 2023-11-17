@@ -16,9 +16,9 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 
 struct OptimizedConsensusState {
+    uint64 timestamp;
     bytes32 root;
     bytes32 nextValidatorsHash;
-    uint64 timestamp;
 }
 
 struct ProcessedMoment {
@@ -147,18 +147,18 @@ library CometblsHelp {
 
     function isExpired(
         GoogleProtobufTimestamp.Data memory headerTime,
-        GoogleProtobufDuration.Data memory trustingPeriod,
-        GoogleProtobufDuration.Data memory currentTime
+        uint64 trustingPeriod,
+        uint64 currentTime
     ) internal pure returns (bool) {
         GoogleProtobufTimestamp.Data
             memory expirationTime = GoogleProtobufTimestamp.Data({
-                secs: headerTime.secs + int64(trustingPeriod.Seconds),
+                secs: headerTime.secs + int64(trustingPeriod),
                 nanos: headerTime.nanos
             });
         return
             gt(
                 GoogleProtobufTimestamp.Data({
-                    secs: int64(currentTime.Seconds),
+                    secs: int64(currentTime),
                     nanos: 0
                 }),
                 expirationTime
@@ -208,13 +208,12 @@ library CometblsHelp {
             );
     }
 
-    function toOptimizedConsensusState(
-        UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState,
-        uint64 timestamp
+    function optimize(
+        UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState
     ) internal pure returns (OptimizedConsensusState memory) {
         return
             OptimizedConsensusState({
-                timestamp: timestamp,
+                timestamp: consensusState.timestamp,
                 root: consensusState.root.hash.toBytes32(0),
                 nextValidatorsHash: consensusState
                     .next_validators_hash
@@ -222,7 +221,7 @@ library CometblsHelp {
             });
     }
 
-    function toCanonicalVote(
+    function canonicalize(
         TendermintTypesCommit.Data memory commit,
         string memory chainId,
         bytes32 expectedBlockHash
@@ -250,16 +249,6 @@ library CometblsHelp {
         UnionIbcLightclientsCometblsV1Header.Data memory header
     ) internal pure returns (bytes memory) {
         return abi.encode(header);
-    }
-
-    function unmarshalHeaderEthABI(
-        bytes memory bz
-    )
-        internal
-        pure
-        returns (UnionIbcLightclientsCometblsV1Header.Data memory header)
-    {
-        return abi.decode(bz, (UnionIbcLightclientsCometblsV1Header.Data));
     }
 
     function unmarshalClientStateFromProto(
@@ -328,6 +317,7 @@ library CometblsHelp {
                     timestamp: consensusState.timestamp,
                     data: UnionIbcLightclientsCometblsV1ConsensusState.encode(
                         UnionIbcLightclientsCometblsV1ConsensusState.Data({
+                            timestamp: consensusState.timestamp,
                             root: IbcCoreCommitmentV1MerkleRoot.Data({
                                 hash: abi.encodePacked(consensusState.root)
                             }),
@@ -384,5 +374,61 @@ library CometblsHelp {
         bytes memory codeId
     ) internal pure returns (bytes32) {
         return keccak256(marshalToProto(clientState, latestHeight, codeId));
+    }
+
+    function marshalEthABI(
+        UnionIbcLightclientsCometblsV1Header.Data memory header
+    ) internal pure returns (bytes memory) {
+        return abi.encode(header);
+    }
+
+    function unmarshalHeaderEthABI(
+        bytes memory bz
+    )
+        internal
+        pure
+        returns (UnionIbcLightclientsCometblsV1Header.Data memory header)
+    {
+        return abi.decode(bz, (UnionIbcLightclientsCometblsV1Header.Data));
+    }
+
+    function marshalEthABI(
+        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState
+    ) internal pure returns (bytes memory) {
+        return abi.encode(clientState);
+    }
+
+    function unmarshalClientStateEthABI(
+        bytes memory bz
+    )
+        internal
+        pure
+        returns (UnionIbcLightclientsCometblsV1ClientState.Data memory)
+    {
+        return abi.decode(bz, (UnionIbcLightclientsCometblsV1ClientState.Data));
+    }
+
+    function marshalEthABI(
+        OptimizedConsensusState memory consensusState
+    ) internal pure returns (bytes memory) {
+        return abi.encode(consensusState);
+    }
+
+    function unmarshalConsensusStateEthABI(
+        bytes memory bz
+    ) internal pure returns (OptimizedConsensusState memory consensusState) {
+        return abi.decode(bz, (OptimizedConsensusState));
+    }
+
+    function marshalToCommitmentEthABI(
+        OptimizedConsensusState memory consensusState
+    ) internal pure returns (bytes32) {
+        return keccak256(marshalEthABI(consensusState));
+    }
+
+    function marshalToCommitmentEthABI(
+        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState
+    ) internal pure returns (bytes32) {
+        return keccak256(marshalEthABI(clientState));
     }
 }

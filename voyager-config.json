@@ -60,16 +60,19 @@
       ],
       "fee_denom": "stake",
       "ws_url": "ws://localhost:26657/websocket",
-      "prover_endpoint": "http://localhost:9999",
+      "prover_endpoint": "https://prover.cryptware.io",
       "grpc_url": "http://localhost:9090"
     }
   },
   "voyager": {
-    "hasura": null,
-    "num_workers": 10,
+    "num_workers": 20,
     "queue": {
       "type": "pg-queue",
-      "database_url": "postgres://postgres:postgrespassword@localhost:5432/default"
+      "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
+      "max_connections": 20,
+      "min_connections": 20,
+      "idle_timeout": null,
+      "max_lifetime": null
     }
   }
 }

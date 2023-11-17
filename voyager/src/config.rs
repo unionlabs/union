@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use chain_utils::private_key::PrivateKey;
 use ethers::prelude::k256::ecdsa;
-use hubble::hasura::HasuraConfig;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
 use unionlabs::hash::H160;
@@ -23,14 +22,13 @@ pub struct Config<Q: Queue> {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct VoyagerConfig<Q: Queue> {
     pub num_workers: u16,
-    pub hasura: Option<HasuraConfig>,
     pub queue: Q::Config,
 }
 
 impl<Q: Queue> Config<Q> {
     pub async fn get_chain(&self, name: &str) -> Result<AnyChain, GetChainError> {
         match self.chain.get(name) {
-            Some(config) => Ok(AnyChain::try_from_config(&self.voyager, config.clone()).await?),
+            Some(config) => Ok(AnyChain::try_from_config::<Q>(config.clone()).await?),
             None => Err(GetChainError::ChainNotFound {
                 name: name.to_string(),
             }),

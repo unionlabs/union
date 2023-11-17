@@ -105,10 +105,12 @@ accs
 acked
 acknowledgemets
 acks
+adce
 aeryz
 aitlahcen
 alloc
 amcl
+ankr
 anypb
 anys
 appchain
@@ -243,6 +245,7 @@ endraw
 errorsmod
 esac
 ethabi
+ethabicodec
 ethash
 ethcall
 etherbase
@@ -299,6 +302,7 @@ hasher
 hasura
 healthcheck
 healthz
+heredocs
 herumi
 hexlify
 hlist

@@ -46,18 +46,16 @@ library Cometbls {
             .Data({
                 chain_id: chainId,
                 // TODO: all this could be fuzzed
-                trusting_period: Duration.Data({
-                    Seconds: int64(TRUSTING_PERIOD),
-                    nanos: 0
-                }),
-                unbonding_period: Duration.Data({Seconds: 300, nanos: 0}),
-                max_clock_drift: Duration.Data({
-                    Seconds: int64(MAX_CLOCK_DRIFT),
-                    nanos: 0
-                }),
+                trusting_period: TRUSTING_PERIOD,
+                unbonding_period: 300,
+                max_clock_drift: MAX_CLOCK_DRIFT,
                 frozen_height: ClientHeight.Data({
                     revision_number: 0,
                     revision_height: 0
+                }),
+                latest_height: ClientHeight.Data({
+                    revision_number: 0,
+                    revision_height: revisionHeight
                 })
             })
             .marshalToProto(

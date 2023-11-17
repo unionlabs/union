@@ -8,13 +8,13 @@ edition = "2021"
 [dependencies]
 unionlabs = { workspace = true, default-features = true }
 beacon-api = { workspace = true, default-features = false }
-contracts.workspace = true
+contracts = { workspace = true, features = ["providers"] }
 serde-utils.workspace = true
 protos = { workspace = true, default-features = true, features = [ "client" ] }
 
 futures = "0.3.28"
 ethers = { workspace = true, features = ["rustls", "ws"] }
-tendermint-rpc = {  workspace = true, features = ["http-client", "websocket-client"] }
+tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client", "default"] }
 serde = { version = "1.0.173", features = ["derive"] }
 hex = { version = "0.4.3", features = [ "serde" ] }
 bip32 = { version = "0.5.0", features = ["secp256k1"] }
@@ -24,7 +24,6 @@ typenum = { version = "1.16.0", default-features = false, features = ["const-gen
 prost = "0.11.0"
 sha2 = "0.10.6"
 chrono = { version = "0.4.26", default-features = false, features = ["alloc"] }
-hubble.workspace = true
 reqwest = "0.11.20"
 serde_json = "1.0.107"
 thiserror = "1.0.49"

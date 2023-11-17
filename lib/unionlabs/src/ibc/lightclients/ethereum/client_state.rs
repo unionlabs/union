@@ -27,7 +27,8 @@ pub struct ClientState {
     pub trust_level: Fraction,
     pub trusting_period: u64,
     pub latest_slot: u64,
-    pub frozen_height: Option<Height>,
+    // even though it would be better to have option, ethabicodec don't handle it as zero struct...
+    pub frozen_height: Height,
     pub counterparty_commitment_slot: U256,
 }
 
@@ -53,7 +54,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
             trust_level: Some(value.trust_level.into()),
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
-            frozen_height: value.frozen_height.map(Into::into),
+            frozen_height: Some(value.frozen_height.into()),
             counterparty_commitment_slot: value.counterparty_commitment_slot.to_big_endian().into(),
         }
     }
@@ -101,7 +102,12 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
                 .into(),
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
-            frozen_height: value.frozen_height.map(Into::into),
+            frozen_height: value
+                .frozen_height
+                .ok_or(TryFromClientStateError::MissingField(MissingField(
+                    "frozen_height",
+                )))?
+                .into(),
             counterparty_commitment_slot: U256::try_from_big_endian(
                 &value.counterparty_commitment_slot,
             )

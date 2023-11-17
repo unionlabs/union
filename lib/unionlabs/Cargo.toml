@@ -40,7 +40,7 @@ ethers-contract-derive = { workspace = true, optional = true }
 serde_json = { version = "1.0.96", optional = true }
 bitvec = "1.0.1"
 
-parse-display = "0.8.2"
+derive_more = { workspace = true, features = ["display"] }
 
 wasmparser = { version = "0.113" }
 

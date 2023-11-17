@@ -21,10 +21,6 @@ use ethers::{
     utils::{keccak256, secret_key_to_address},
 };
 use futures::{stream, Future, FutureExt, Stream, StreamExt};
-use hubble::datastore::{
-    hasura::{HasuraConfig, HasuraDataStore},
-    insert_demo_tx, Datastore, InsertDemoTx,
-};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
@@ -53,7 +49,7 @@ use unionlabs::{
     traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
     uint::U256,
     validated::ValidateT,
-    EmptyString, TryFromEthAbiErrorOf, TryFromProto, TryFromProtoErrorOf,
+    EmptyString, TryFromEthAbi, TryFromEthAbiErrorOf,
 };
 
 use crate::{private_key::PrivateKey, ChainEvent, EventSource, Pool};
@@ -72,8 +68,6 @@ pub struct Evm<C: ChainSpec> {
     pub ibc_handlers: Pool<IBCHandler<CometblsMiddleware>>,
     pub provider: Provider<Ws>,
     pub beacon_api_client: BeaconApiClient<C>,
-
-    pub hasura_client: Option<HasuraDataStore>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -88,12 +82,9 @@ pub struct Config {
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
-
-    pub hasura_config: Option<HasuraConfig>,
 }
 
 impl<C: ChainSpec> Chain for Evm<C> {
-    // TODO: Unwrap these out of wasm, and re-wrap them in union
     type SelfClientState =
         Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>;
     type SelfConsensusState =
@@ -211,7 +202,10 @@ impl<C: ChainSpec> Chain for Evm<C> {
                         numerator: 1,
                         denominator: 3,
                     },
-                    frozen_height: None,
+                    frozen_height: Height {
+                        revision_number: 0,
+                        revision_height: 0,
+                    },
                     counterparty_commitment_slot: U256::from(0),
                 },
                 code_id: H256::default(),
@@ -356,14 +350,6 @@ impl<C: ChainSpec> Evm<C> {
             ),
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
-            // wallet,
-            hasura_client: config.hasura_config.map(|hasura_config| {
-                HasuraDataStore::new(
-                    reqwest::Client::new(),
-                    hasura_config.url,
-                    hasura_config.secret,
-                )
-            }),
         })
     }
 
@@ -463,14 +449,6 @@ impl<C: ChainSpec> EventSource for Evm<C> {
 
     fn events(self, _seed: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>> {
         async move {
-            let genesis_time = self
-                .beacon_api_client
-                .genesis()
-                .await
-                .unwrap()
-                .data
-                .genesis_time;
-
             let latest_height = self.query_latest_height().await;
 
             stream::unfold(
@@ -808,14 +786,13 @@ impl<C: ChainSpec> EventSource for Evm<C> {
 
                                 assert!(success);
 
-                                let client_state = <Any<
-                                    wasm::client_state::ClientState<
-                                        cometbls::client_state::ClientState,
-                                    >,
-                                >>::try_from_proto_bytes(
-                                    &client_state
-                                )
-                                .unwrap();
+                                dbg!(hex::encode(&client_state));
+
+                                let client_state =
+                                    cometbls::client_state::ClientState::try_from_eth_abi_bytes(
+                                        &client_state,
+                                    )
+                                    .unwrap();
 
                                 Some(IbcEvent::CreateClient(CreateClient {
                                     client_id: event
@@ -823,7 +800,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .parse()
                                         .map_err(EvmEventSourceError::ClientIdParse)?,
                                     client_type,
-                                    consensus_height: client_state.0.latest_height,
+                                    consensus_height: client_state.latest_height,
                                 }))
                             }
                             IBCHandlerEvents::RecvPacketFilter(event) => {
@@ -908,31 +885,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                             }
                         }))
                     })
-                    .filter_map(|x| async { x.transpose() })
-                    .then(
-                        |event: Result<ChainEvent<Evm<C>>, EvmEventSourceError>| async {
-                            if let Ok(ref event) = event {
-                                let current_slot = event.height.revision_height;
-
-                                let next_epoch_ts =
-                                    next_epoch_timestamp::<C>(current_slot, genesis_time);
-
-                                if let Some(hc) = &this.hasura_client {
-                                    hc.do_post::<InsertDemoTx>(insert_demo_tx::Variables {
-                                        data: serde_json::json! {{
-                                            "latest_execution_block_hash": event.block_hash,
-                                            "timestamp": next_epoch_ts,
-                                        }},
-                                    })
-                                    .await
-                                    .unwrap();
-                                }
-                            }
-
-                            // pass it back through
-                            event
-                        },
-                    );
+                    .filter_map(|x| async { x.transpose() });
 
                     let iter = futures::stream::iter(packets.collect::<Vec<_>>().await);
 
@@ -1131,8 +1084,8 @@ where
 impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
     for ClientStatePath<<Evm<C> as Chain>::ClientId>
 where
-    ClientStateOf<Counterparty>: TryFromProto,
-    TryFromProtoErrorOf<ClientStateOf<Counterparty>>: Debug,
+    ClientStateOf<Counterparty>: TryFromEthAbi,
+    TryFromEthAbiErrorOf<ClientStateOf<Counterparty>>: Debug,
 {
     type Encoded = Vec<u8>;
 
@@ -1145,15 +1098,15 @@ where
     }
 
     fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        TryFromProto::try_from_proto_bytes(&encoded).unwrap()
+        Self::Output::try_from_eth_abi_bytes(&encoded).unwrap()
     }
 }
 
 impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
     for ClientConsensusStatePath<<Evm<C> as Chain>::ClientId, <Counterparty as Chain>::Height>
 where
-    ConsensusStateOf<Counterparty>: TryFromProto,
-    TryFromProtoErrorOf<ConsensusStateOf<Counterparty>>: Debug,
+    ConsensusStateOf<Counterparty>: TryFromEthAbi,
+    TryFromEthAbiErrorOf<ConsensusStateOf<Counterparty>>: Debug,
 {
     type Encoded = Vec<u8>;
 
@@ -1167,7 +1120,8 @@ where
     }
 
     fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        TryFromProto::try_from_proto_bytes(&encoded).unwrap()
+        dbg!(hex::encode(&encoded));
+        Self::Output::try_from_eth_abi_bytes(&encoded).unwrap()
     }
 }
 

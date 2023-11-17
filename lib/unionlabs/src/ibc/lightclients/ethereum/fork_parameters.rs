@@ -8,6 +8,13 @@ use crate::{
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
+#[cfg_attr(
+    feature = "ethabi",
+    derive(
+        ethers_contract_derive::EthAbiType,
+        ethers_contract_derive::EthAbiCodec
+    )
+)]
 #[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
 pub struct ForkParameters {
     pub genesis_fork_version: Version,

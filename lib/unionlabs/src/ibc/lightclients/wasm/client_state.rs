@@ -6,15 +6,7 @@ use crate::{
     errors::InvalidLength, hash::H256, ibc::core::client::height::Height, IntoProto, Proto,
     TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl,
 };
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "ethabi",
-    derive(
-        ethers_contract_derive::EthAbiType,
-        ethers_contract_derive::EthAbiCodec
-    )
-)]
 pub struct ClientState<Data> {
     pub data: Data,
     pub code_id: H256,

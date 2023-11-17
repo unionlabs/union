@@ -54,7 +54,7 @@ let
       pnameSuffix = featuresString;
 
       cargoBuildExtraArgs = "--no-default-features --lib ${if features != null then lib.concatStringsSep " " ([ "--features" ] ++ features) else ""}";
-      rustflags = "-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp";
+      rustflags = "-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp -C opt-level=z -C passes=adce,loop-deletion";
 
       cargoBuildCheckPhase = ''
         ls target/wasm32-unknown-unknown/release
@@ -63,26 +63,30 @@ let
 
       '';
 
-      cargoBuildInstallPhase = ''
-        ${
-          builtins.concatStringsSep
-            "\n\n"
-            (map
-              (check: check "target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm")
-              allChecks
-            )
-        }
+      cargoBuildInstallPhase =
+        let
+          outputFilePath = "$out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm";
+        in
+        ''
+          ${
+            builtins.concatStringsSep
+              "\n\n"
+              (map
+                (check: check "target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm")
+                allChecks
+              )
+          }
 
-        mkdir -p $out/lib
-        mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm $out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm
-        # TODO: Re-enable this?
-        # Optimize the binary size a little bit more
-        # ${pkgs.binaryen}/bin/wasm-opt -Os target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm -o $out/lib/${contractFileNameWithoutExt}.wasm
+          mkdir -p $out/lib
+          mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm ${outputFilePath}
 
-        # gzip the binary to ensure it's not too large to upload
-        gzip -fk $out/lib/${contractFileNameWithoutExt}${dashesToUnderscores featuresString}.wasm
-        # TODO: check that the size isn't over the max size allowed to be uploaded?
-      '';
+          ${pkgs.binaryen}/bin/wasm-opt -O3 ${outputFilePath} -o ${outputFilePath}
+
+          # gzip the binary to ensure it's not too large to upload
+          gzip -fk ${outputFilePath}
+
+          # TODO: check that the size isn't over the max size allowed to be uploaded?
+        '';
     };
 in
 {

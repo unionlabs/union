@@ -2,6 +2,8 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ethabi")]
+use crate::InlineFields;
 use crate::{
     errors::{InvalidLength, MissingField},
     ibc::core::client::height::Height,
@@ -30,24 +32,6 @@ impl Debug for Header {
     }
 }
 
-// #[derive(Debug)]
-// pub enum TryFromHeaderError {}
-
-// impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header {
-//     type Error = TryFromHeaderError;
-
-//     fn try_from(
-//         value: protos::union::ibc::lightclients::cometbls::v1::Header,
-//     ) -> Result<Self, Self::Error> {
-//         Ok(Self {
-//             signed_header: required!(value.signed_header)?.into(),
-//             untrusted_validator_set_root: todo!(),
-//             trusted_height: todo!(),
-//             zero_knowledge_proof: todo!(),
-//         })
-//     }
-// }
-
 impl From<Header> for protos::union::ibc::lightclients::cometbls::v1::Header {
     fn from(value: Header) -> Self {
         Self {
@@ -70,8 +54,15 @@ impl From<Header> for contracts::glue::UnionIbcLightclientsCometblsV1HeaderData 
 }
 
 #[cfg(feature = "ethabi")]
+impl From<Header> for InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData> {
+    fn from(value: Header) -> Self {
+        Self(value.into())
+    }
+}
+
+#[cfg(feature = "ethabi")]
 impl crate::EthAbi for Header {
-    type EthAbi = contracts::glue::UnionIbcLightclientsCometblsV1HeaderData;
+    type EthAbi = InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>;
 }
 
 #[derive(Debug)]

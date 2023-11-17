@@ -11,7 +11,9 @@ pub use ibc_handler::*;
 )]
 pub mod ibc_handler {
     pub use super::super::shared_types::*;
+    #[cfg(feature = "providers")]
     #[allow(deprecated)]
+    #[cfg(feature = "providers")]
     fn __abi() -> ::ethers::core::abi::Abi {
         ::ethers::core::abi::ethabi::Contract {
             constructor: ::core::option::Option::None,
@@ -982,6 +984,34 @@ pub mod ibc_handler {
                     ],
                 ),
                 (
+                    ::std::borrow::ToOwned::to_owned("getClient"),
+                    ::std::vec![
+                        ::ethers::core::abi::ethabi::Function {
+                            name: ::std::borrow::ToOwned::to_owned("getClient"),
+                            inputs: ::std::vec![
+                                ::ethers::core::abi::ethabi::Param {
+                                    name: ::std::borrow::ToOwned::to_owned("clientId"),
+                                    kind: ::ethers::core::abi::ethabi::ParamType::String,
+                                    internal_type: ::core::option::Option::Some(
+                                        ::std::borrow::ToOwned::to_owned("string"),
+                                    ),
+                                },
+                            ],
+                            outputs: ::std::vec![
+                                ::ethers::core::abi::ethabi::Param {
+                                    name: ::std::string::String::new(),
+                                    kind: ::ethers::core::abi::ethabi::ParamType::Address,
+                                    internal_type: ::core::option::Option::Some(
+                                        ::std::borrow::ToOwned::to_owned("contract ILightClient"),
+                                    ),
+                                },
+                            ],
+                            constant: ::core::option::Option::None,
+                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
+                        },
+                    ],
+                ),
+                (
                     ::std::borrow::ToOwned::to_owned("getClientState"),
                     ::std::vec![
                         ::ethers::core::abi::ethabi::Function {
@@ -1334,6 +1364,70 @@ pub mod ibc_handler {
                                     kind: ::ethers::core::abi::ethabi::ParamType::Bool,
                                     internal_type: ::core::option::Option::Some(
                                         ::std::borrow::ToOwned::to_owned("bool"),
+                                    ),
+                                },
+                            ],
+                            constant: ::core::option::Option::None,
+                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
+                        },
+                    ],
+                ),
+                (
+                    ::std::borrow::ToOwned::to_owned("nextChannelSequence"),
+                    ::std::vec![
+                        ::ethers::core::abi::ethabi::Function {
+                            name: ::std::borrow::ToOwned::to_owned(
+                                "nextChannelSequence",
+                            ),
+                            inputs: ::std::vec![],
+                            outputs: ::std::vec![
+                                ::ethers::core::abi::ethabi::Param {
+                                    name: ::std::string::String::new(),
+                                    kind: ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                    internal_type: ::core::option::Option::Some(
+                                        ::std::borrow::ToOwned::to_owned("uint64"),
+                                    ),
+                                },
+                            ],
+                            constant: ::core::option::Option::None,
+                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
+                        },
+                    ],
+                ),
+                (
+                    ::std::borrow::ToOwned::to_owned("nextClientSequence"),
+                    ::std::vec![
+                        ::ethers::core::abi::ethabi::Function {
+                            name: ::std::borrow::ToOwned::to_owned("nextClientSequence"),
+                            inputs: ::std::vec![],
+                            outputs: ::std::vec![
+                                ::ethers::core::abi::ethabi::Param {
+                                    name: ::std::string::String::new(),
+                                    kind: ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                    internal_type: ::core::option::Option::Some(
+                                        ::std::borrow::ToOwned::to_owned("uint64"),
+                                    ),
+                                },
+                            ],
+                            constant: ::core::option::Option::None,
+                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
+                        },
+                    ],
+                ),
+                (
+                    ::std::borrow::ToOwned::to_owned("nextConnectionSequence"),
+                    ::std::vec![
+                        ::ethers::core::abi::ethabi::Function {
+                            name: ::std::borrow::ToOwned::to_owned(
+                                "nextConnectionSequence",
+                            ),
+                            inputs: ::std::vec![],
+                            outputs: ::std::vec![
+                                ::ethers::core::abi::ethabi::Param {
+                                    name: ::std::string::String::new(),
+                                    kind: ::ethers::core::abi::ethabi::ParamType::Uint(64usize),
+                                    internal_type: ::core::option::Option::Some(
+                                        ::std::borrow::ToOwned::to_owned("uint64"),
                                     ),
                                 },
                             ],
@@ -2226,25 +2320,31 @@ pub mod ibc_handler {
         }
     }
     ///The parsed JSON ABI of the contract.
+    #[cfg(feature = "providers")]
     pub static IBCHANDLER_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
         ::ethers::contract::Lazy::new(__abi);
+    #[cfg(feature = "providers")]
     pub struct IBCHandler<M>(::ethers::contract::Contract<M>);
+    #[cfg(feature = "providers")]
     impl<M> ::core::clone::Clone for IBCHandler<M> {
         fn clone(&self) -> Self {
             Self(::core::clone::Clone::clone(&self.0))
         }
     }
+    #[cfg(feature = "providers")]
     impl<M> ::core::ops::Deref for IBCHandler<M> {
         type Target = ::ethers::contract::Contract<M>;
         fn deref(&self) -> &Self::Target {
             &self.0
         }
     }
+    #[cfg(feature = "providers")]
     impl<M> ::core::ops::DerefMut for IBCHandler<M> {
         fn deref_mut(&mut self) -> &mut Self::Target {
             &mut self.0
         }
     }
+    #[cfg(feature = "providers")]
     impl<M> ::core::fmt::Debug for IBCHandler<M> {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
             f.debug_tuple(::core::stringify!(IBCHandler))
@@ -2252,6 +2352,7 @@ pub mod ibc_handler {
                 .finish()
         }
     }
+    #[cfg(feature = "providers")]
     impl<M: ::ethers::providers::Middleware> IBCHandler<M> {
         /// Creates a new contract instance with the specified `ethers` client at
         /// `address`. The contract derefs to a `ethers::Contract` object.
@@ -2493,6 +2594,15 @@ pub mod ibc_handler {
                 .method_hash([48, 0, 33, 122], (port_id, channel_id))
                 .expect("method not found (this should never happen)")
         }
+        ///Calls the contract's `getClient` (0x7eb78932) function
+        pub fn get_client(
+            &self,
+            client_id: ::std::string::String,
+        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Address> {
+            self.0
+                .method_hash([126, 183, 137, 50], client_id)
+                .expect("method not found (this should never happen)")
+        }
         ///Calls the contract's `getClientState` (0x76c81c42) function
         pub fn get_client_state(
             &self,
@@ -2575,6 +2685,26 @@ pub mod ibc_handler {
         ) -> ::ethers::contract::builders::ContractCall<M, bool> {
             self.0
                 .method_hash([90, 154, 250, 195], (port_id, channel_id, sequence))
+                .expect("method not found (this should never happen)")
+        }
+        ///Calls the contract's `nextChannelSequence` (0x7926b8a9) function
+        pub fn next_channel_sequence(&self) -> ::ethers::contract::builders::ContractCall<M, u64> {
+            self.0
+                .method_hash([121, 38, 184, 169], ())
+                .expect("method not found (this should never happen)")
+        }
+        ///Calls the contract's `nextClientSequence` (0xe1b17b43) function
+        pub fn next_client_sequence(&self) -> ::ethers::contract::builders::ContractCall<M, u64> {
+            self.0
+                .method_hash([225, 177, 123, 67], ())
+                .expect("method not found (this should never happen)")
+        }
+        ///Calls the contract's `nextConnectionSequence` (0xa049e677) function
+        pub fn next_connection_sequence(
+            &self,
+        ) -> ::ethers::contract::builders::ContractCall<M, u64> {
+            self.0
+                .method_hash([160, 73, 230, 119], ())
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `nextSequenceAcks` (0x1390d28d) function
@@ -2836,6 +2966,7 @@ pub mod ibc_handler {
                 .event_with_filter(::core::default::Default::default())
         }
     }
+    #[cfg(feature = "providers")]
     impl<M: ::ethers::providers::Middleware> From<::ethers::contract::Contract<M>> for IBCHandler<M> {
         fn from(contract: ::ethers::contract::Contract<M>) -> Self {
             Self::new(contract.address(), contract.client())
@@ -3657,6 +3788,21 @@ pub mod ibc_handler {
         pub port_id: ::std::string::String,
         pub channel_id: ::std::string::String,
     }
+    ///Container type for all input parameters for the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthCall,
+        ::ethers::contract::EthDisplay,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    #[ethcall(name = "getClient", abi = "getClient(string)")]
+    pub struct GetClientCall {
+        pub client_id: ::std::string::String,
+    }
     ///Container type for all input parameters for the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
     #[derive(
         Clone,
@@ -3798,6 +3944,45 @@ pub mod ibc_handler {
         pub channel_id: ::std::string::String,
         pub sequence: u64,
     }
+    ///Container type for all input parameters for the `nextChannelSequence` function with signature `nextChannelSequence()` and selector `0x7926b8a9`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthCall,
+        ::ethers::contract::EthDisplay,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    #[ethcall(name = "nextChannelSequence", abi = "nextChannelSequence()")]
+    pub struct NextChannelSequenceCall;
+    ///Container type for all input parameters for the `nextClientSequence` function with signature `nextClientSequence()` and selector `0xe1b17b43`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthCall,
+        ::ethers::contract::EthDisplay,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    #[ethcall(name = "nextClientSequence", abi = "nextClientSequence()")]
+    pub struct NextClientSequenceCall;
+    ///Container type for all input parameters for the `nextConnectionSequence` function with signature `nextConnectionSequence()` and selector `0xa049e677`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthCall,
+        ::ethers::contract::EthDisplay,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    #[ethcall(name = "nextConnectionSequence", abi = "nextConnectionSequence()")]
+    pub struct NextConnectionSequenceCall;
     ///Container type for all input parameters for the `nextSequenceAcks` function with signature `nextSequenceAcks(string,string)` and selector `0x1390d28d`
     #[derive(
         Clone,
@@ -4023,6 +4208,7 @@ pub mod ibc_handler {
         CreateClient(CreateClientCall),
         ExpectedTimePerBlock(ExpectedTimePerBlockCall),
         GetChannel(GetChannelCall),
+        GetClient(GetClientCall),
         GetClientState(GetClientStateCall),
         GetConnection(GetConnectionCall),
         GetConsensusState(GetConsensusStateCall),
@@ -4031,6 +4217,9 @@ pub mod ibc_handler {
         GetHashedPacketCommitment(GetHashedPacketCommitmentCall),
         GetNextSequenceSend(GetNextSequenceSendCall),
         HasPacketReceipt(HasPacketReceiptCall),
+        NextChannelSequence(NextChannelSequenceCall),
+        NextClientSequence(NextClientSequenceCall),
+        NextConnectionSequence(NextConnectionSequenceCall),
         NextSequenceAcks(NextSequenceAcksCall),
         NextSequenceRecvs(NextSequenceRecvsCall),
         NextSequenceSends(NextSequenceSendsCall),
@@ -4148,6 +4337,9 @@ pub mod ibc_handler {
             if let Ok(decoded) = <GetChannelCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::GetChannel(decoded));
             }
+            if let Ok(decoded) = <GetClientCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+                return Ok(Self::GetClient(decoded));
+            }
             if let Ok(decoded) =
                 <GetClientStateCall as ::ethers::core::abi::AbiDecode>::decode(data)
             {
@@ -4186,6 +4378,21 @@ pub mod ibc_handler {
                 <HasPacketReceiptCall as ::ethers::core::abi::AbiDecode>::decode(data)
             {
                 return Ok(Self::HasPacketReceipt(decoded));
+            }
+            if let Ok(decoded) =
+                <NextChannelSequenceCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
+                return Ok(Self::NextChannelSequence(decoded));
+            }
+            if let Ok(decoded) =
+                <NextClientSequenceCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
+                return Ok(Self::NextClientSequence(decoded));
+            }
+            if let Ok(decoded) =
+                <NextConnectionSequenceCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
+                return Ok(Self::NextConnectionSequence(decoded));
             }
             if let Ok(decoded) =
                 <NextSequenceAcksCall as ::ethers::core::abi::AbiDecode>::decode(data)
@@ -4282,6 +4489,7 @@ pub mod ibc_handler {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
                 Self::GetChannel(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::GetClient(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::GetClientState(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::GetConnection(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::GetConsensusState(element) => ::ethers::core::abi::AbiEncode::encode(element),
@@ -4298,6 +4506,15 @@ pub mod ibc_handler {
                     ::ethers::core::abi::AbiEncode::encode(element)
                 }
                 Self::HasPacketReceipt(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::NextChannelSequence(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::NextClientSequence(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
+                Self::NextConnectionSequence(element) => {
+                    ::ethers::core::abi::AbiEncode::encode(element)
+                }
                 Self::NextSequenceAcks(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::NextSequenceRecvs(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::NextSequenceSends(element) => ::ethers::core::abi::AbiEncode::encode(element),
@@ -4345,6 +4562,7 @@ pub mod ibc_handler {
                 Self::CreateClient(element) => ::core::fmt::Display::fmt(element, f),
                 Self::ExpectedTimePerBlock(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetChannel(element) => ::core::fmt::Display::fmt(element, f),
+                Self::GetClient(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetClientState(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetConnection(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetConsensusState(element) => ::core::fmt::Display::fmt(element, f),
@@ -4355,6 +4573,9 @@ pub mod ibc_handler {
                 Self::GetHashedPacketCommitment(element) => ::core::fmt::Display::fmt(element, f),
                 Self::GetNextSequenceSend(element) => ::core::fmt::Display::fmt(element, f),
                 Self::HasPacketReceipt(element) => ::core::fmt::Display::fmt(element, f),
+                Self::NextChannelSequence(element) => ::core::fmt::Display::fmt(element, f),
+                Self::NextClientSequence(element) => ::core::fmt::Display::fmt(element, f),
+                Self::NextConnectionSequence(element) => ::core::fmt::Display::fmt(element, f),
                 Self::NextSequenceAcks(element) => ::core::fmt::Display::fmt(element, f),
                 Self::NextSequenceRecvs(element) => ::core::fmt::Display::fmt(element, f),
                 Self::NextSequenceSends(element) => ::core::fmt::Display::fmt(element, f),
@@ -4485,6 +4706,11 @@ pub mod ibc_handler {
             Self::GetChannel(value)
         }
     }
+    impl ::core::convert::From<GetClientCall> for IBCHandlerCalls {
+        fn from(value: GetClientCall) -> Self {
+            Self::GetClient(value)
+        }
+    }
     impl ::core::convert::From<GetClientStateCall> for IBCHandlerCalls {
         fn from(value: GetClientStateCall) -> Self {
             Self::GetClientState(value)
@@ -4523,6 +4749,21 @@ pub mod ibc_handler {
     impl ::core::convert::From<HasPacketReceiptCall> for IBCHandlerCalls {
         fn from(value: HasPacketReceiptCall) -> Self {
             Self::HasPacketReceipt(value)
+        }
+    }
+    impl ::core::convert::From<NextChannelSequenceCall> for IBCHandlerCalls {
+        fn from(value: NextChannelSequenceCall) -> Self {
+            Self::NextChannelSequence(value)
+        }
+    }
+    impl ::core::convert::From<NextClientSequenceCall> for IBCHandlerCalls {
+        fn from(value: NextClientSequenceCall) -> Self {
+            Self::NextClientSequence(value)
+        }
+    }
+    impl ::core::convert::From<NextConnectionSequenceCall> for IBCHandlerCalls {
+        fn from(value: NextConnectionSequenceCall) -> Self {
+            Self::NextConnectionSequence(value)
         }
     }
     impl ::core::convert::From<NextSequenceAcksCall> for IBCHandlerCalls {
@@ -4785,6 +5026,18 @@ pub mod ibc_handler {
         Hash,
     )]
     pub struct GetChannelReturn(pub IbcCoreChannelV1ChannelData, pub bool);
+    ///Container type for all return fields from the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        ::ethers::contract::EthAbiCodec,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    pub struct GetClientReturn(pub ::ethers::core::types::Address);
     ///Container type for all return fields from the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
     #[derive(
         Clone,
@@ -4884,6 +5137,42 @@ pub mod ibc_handler {
         Hash,
     )]
     pub struct HasPacketReceiptReturn(pub bool);
+    ///Container type for all return fields from the `nextChannelSequence` function with signature `nextChannelSequence()` and selector `0x7926b8a9`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        ::ethers::contract::EthAbiCodec,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    pub struct NextChannelSequenceReturn(pub u64);
+    ///Container type for all return fields from the `nextClientSequence` function with signature `nextClientSequence()` and selector `0xe1b17b43`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        ::ethers::contract::EthAbiCodec,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    pub struct NextClientSequenceReturn(pub u64);
+    ///Container type for all return fields from the `nextConnectionSequence` function with signature `nextConnectionSequence()` and selector `0xa049e677`
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        ::ethers::contract::EthAbiCodec,
+        Default,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+    )]
+    pub struct NextConnectionSequenceReturn(pub u64);
     ///Container type for all return fields from the `nextSequenceAcks` function with signature `nextSequenceAcks(string,string)` and selector `0x1390d28d`
     #[derive(
         Clone,

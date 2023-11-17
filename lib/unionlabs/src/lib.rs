@@ -106,13 +106,13 @@ pub mod errors {
         pub found: usize,
     }
 
-    #[derive(Debug, PartialEq, Eq, parse_display::Display)]
+    #[derive(Debug, PartialEq, Eq, derive_more::Display)]
     pub enum ExpectedLength {
-        #[display("exactly {0}")]
+        #[display(fmt = "exactly {_0}")]
         Exact(usize),
-        #[display("less than {0}")]
+        #[display(fmt = "less than {_0}")]
         LessThan(usize),
-        #[display("between ({0}, {1})")]
+        #[display(fmt = "between ({_0}, {_1})")]
         Between(usize, usize),
     }
 
@@ -315,6 +315,49 @@ impl<T> IntoEthAbi for T where T: EthAbi + Into<T::EthAbi> {}
 impl<T> FromEthAbi for T where T: EthAbi + From<T::EthAbi> {}
 #[cfg(feature = "ethabi")]
 impl<T> TryFromEthAbi for T where T: EthAbi + TryFrom<T::EthAbi> {}
+
+#[cfg(feature = "ethabi")]
+pub struct InlineFields<T>(pub T);
+
+#[cfg(feature = "ethabi")]
+impl<T> From<T> for InlineFields<T> {
+    fn from(value: T) -> Self {
+        Self(value)
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl<T> ethers_core::abi::AbiEncode for InlineFields<T>
+where
+    T: ethers_core::abi::AbiEncode,
+{
+    fn encode(self) -> Vec<u8> {
+        // Prefixed by the offset at which the 'dynamic' tuple is starting
+        ethers_core::types::U256::from(32)
+            .encode()
+            .into_iter()
+            .chain(self.0.encode())
+            .collect::<Vec<_>>()
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl<T> ethers_core::abi::AbiDecode for InlineFields<T>
+where
+    T: ethers_core::abi::AbiDecode,
+{
+    fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ethers_core::abi::AbiError> {
+        // Wipe the prefix
+        Ok(Self(T::decode(
+            bytes
+                .as_ref()
+                .iter()
+                .copied()
+                .skip(core::mem::size_of::<ethers_core::types::U256>())
+                .collect::<Vec<_>>(),
+        )?))
+    }
+}
 
 /// A simple wrapper around a cosmos account, easily representable as a bech32 string.
 #[derive(Debug, Clone)]
@@ -567,36 +610,46 @@ pub mod traits {
         fn chain_id(&self) -> Self::ChainId;
     }
 
-    impl ClientState for wasm::client_state::ClientState<ethereum::client_state::ClientState> {
+    impl ClientState for ethereum::client_state::ClientState {
         type ChainId = U256;
         type Height = Height;
 
-        fn height(&self) -> Height {
+        fn height(&self) -> Self::Height {
             Height {
                 // TODO: Make EVM_REVISION_NUMBER a constant in this crate
                 revision_number: 0,
-                revision_height: self.data.latest_slot,
+                revision_height: self.latest_slot,
             }
         }
 
         fn chain_id(&self) -> Self::ChainId {
-            self.data.chain_id
+            self.chain_id
         }
     }
 
-    impl ClientState for wasm::client_state::ClientState<cometbls::client_state::ClientState> {
+    impl<Data: ClientState> ClientState for wasm::client_state::ClientState<Data> {
+        type ChainId = Data::ChainId;
+        type Height = Data::Height;
+
+        fn height(&self) -> Data::Height {
+            self.data.height()
+        }
+
+        fn chain_id(&self) -> Self::ChainId {
+            self.data.chain_id()
+        }
+    }
+
+    impl ClientState for cometbls::client_state::ClientState {
         type ChainId = String;
         type Height = Height;
 
         fn height(&self) -> Height {
-            // NOTE: cometbls::ClientState doesn't store a height, as it's always wrapped in
-            // wasm::ClientState (for our use cases)
-            // TODO: Add it back
             self.latest_height
         }
 
         fn chain_id(&self) -> Self::ChainId {
-            self.data.chain_id.clone()
+            self.chain_id.clone()
         }
     }
 

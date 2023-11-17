@@ -45,7 +45,7 @@ use unionlabs::{
         Chain, ChainOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf,
         LightClientBase,
     },
-    EthAbi, IntoEthAbi, IntoProto, MaybeRecoverableError, Proto,
+    EthAbi, IntoEthAbi, MaybeRecoverableError,
 };
 
 use crate::{
@@ -68,14 +68,6 @@ use crate::{
 };
 
 pub const EVM_REVISION_NUMBER: u64 = 0;
-
-fn encode_dynamic_singleton_tuple(t: impl AbiEncode) -> Vec<u8> {
-    U256::from(32)
-        .encode()
-        .into_iter()
-        .chain(t.encode())
-        .collect::<Vec<_>>()
-}
 
 impl LightClient for CometblsMainnet {
     type BaseCounterparty = Self::Counterparty;
@@ -347,43 +339,43 @@ try_from_relayer_msg! {
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub enum CometblsFetchMsg<L: LightClient<HostChain = Evm<C>>, C: ChainSpec> {
-    #[display("FetchFinalityUpdate")]
+    #[display(fmt = "FetchFinalityUpdate")]
     FetchFinalityUpdate(PhantomData<C>),
-    #[display("FetchLightClientUpdates")]
+    #[display(fmt = "FetchLightClientUpdates")]
     FetchLightClientUpdates(FetchLightClientUpdates<C>),
-    #[display("FetchLightClientUpdate")]
+    #[display(fmt = "FetchLightClientUpdate")]
     FetchLightClientUpdate(FetchLightClientUpdate<C>),
-    #[display("FetchBootstrap")]
+    #[display(fmt = "FetchBootstrap")]
     FetchBootstrap(FetchBootstrap<C>),
-    #[display("FetchAccountUpdate")]
+    #[display(fmt = "FetchAccountUpdate")]
     FetchAccountUpdate(FetchAccountUpdate<C>),
-    #[display("FetchBeaconGenesis")]
+    #[display(fmt = "FetchBeaconGenesis")]
     FetchBeaconGenesis(FetchBeaconGenesis<C>),
-    #[display("FetchGetProof::{0.path}")]
+    #[display(fmt = "FetchGetProof::{}", "_0.path")]
     FetchGetProof(GetProof<C, L>),
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum CometblsDataMsg<C: ChainSpec> {
-    #[display("FinalityUpdate")]
+    #[display(fmt = "FinalityUpdate")]
     FinalityUpdate(FinalityUpdate<C>),
-    #[display("LightClientUpdates")]
+    #[display(fmt = "LightClientUpdates")]
     LightClientUpdates(LightClientUpdates<C>),
-    #[display("LightClientUpdate")]
+    #[display(fmt = "LightClientUpdate")]
     LightClientUpdate(LightClientUpdate<C>),
-    #[display("Bootstrap")]
+    #[display(fmt = "Bootstrap")]
     Bootstrap(BootstrapData<C>),
-    #[display("AccountUpdate")]
+    #[display(fmt = "AccountUpdate")]
     AccountUpdate(AccountUpdateData<C>),
-    #[display("BeaconGenesis")]
+    #[display(fmt = "BeaconGenesis")]
     BeaconGenesis(BeaconGenesisData<C>),
 }
 
@@ -560,16 +552,16 @@ where
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, parse_display::Display,
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[allow(clippy::large_enum_variant)]
 pub enum CometblsAggregateMsg<L: LightClient<HostChain = Evm<C>>, C: ChainSpec> {
-    #[display("CreateUpdate")]
+    #[display(fmt = "CreateUpdate")]
     CreateUpdate(CreateUpdateData<L, C>),
-    #[display("MakeCreateUpdates")]
+    #[display(fmt = "MakeCreateUpdates")]
     MakeCreateUpdates(MakeCreateUpdatesData<L, C>),
-    #[display("MakeCreateUpdatesFromLightClientUpdates")]
+    #[display(fmt = "MakeCreateUpdatesFromLightClientUpdates")]
     MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<L, C>),
 }
 
@@ -650,9 +642,11 @@ where
 {
     // When we fetch the update at this height, the `next_sync_committee` will
     // be the current sync committee of the period that we want to update to.
-    let previous_period = light_client_update.attested_header.beacon.slot
-        / (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64)
-        - 1;
+    let previous_period = u64::max(
+        1,
+        light_client_update.attested_header.beacon.slot
+            / (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64),
+    ) - 1;
     RelayerMsg::Aggregate {
         queue: [
             fetch::<L>(
@@ -704,13 +698,13 @@ async fn do_msg<C, L>(evm: &Evm<C>, msg: Msg<L>) -> Result<(), TxSubmitError>
 where
     C: ChainSpec,
     L: LightClient<HostChain = Evm<C>, Config = CometblsConfig>,
-    ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>: Proto + IntoProto,
-    ConsensusStateOf<<L::Counterparty as LightClientBase>::HostChain>: Proto + IntoProto,
-    HeaderOf<<L::Counterparty as LightClientBase>::HostChain>: EthAbi + IntoEthAbi,
+    ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>: IntoEthAbi,
+    ConsensusStateOf<<L::Counterparty as LightClientBase>::HostChain>: IntoEthAbi,
+    HeaderOf<<L::Counterparty as LightClientBase>::HostChain>: IntoEthAbi,
     // not sure why these bounds are required
-    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfClientState: Proto,
-    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfConsensusState: Proto,
     <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::Header: EthAbi,
+    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfClientState: EthAbi,
+    <<L::BaseCounterparty as LightClientBase>::HostChain as Chain>::SelfConsensusState: EthAbi,
 {
     evm.ibc_handlers
         .with(|ibc_handler| async move {
@@ -795,11 +789,15 @@ where
                         CreateClientCall {
                             msg: contracts::shared_types::MsgCreateClient {
                                 client_type: data.config.client_type,
-                                client_state_bytes: data.msg.client_state.into_proto_bytes().into(),
+                                client_state_bytes: data
+                                    .msg
+                                    .client_state
+                                    .into_eth_abi_bytes()
+                                    .into(),
                                 consensus_state_bytes: data
                                     .msg
                                     .consensus_state
-                                    .into_proto_bytes()
+                                    .into_eth_abi_bytes()
                                     .into(),
                             },
                         },
@@ -810,10 +808,12 @@ where
                     UpdateClientCall {
                         msg: ibc_handler::MsgUpdateClient {
                             client_id: data.msg.client_id.to_string(),
-                            client_message: encode_dynamic_singleton_tuple(
-                                data.msg.client_message.clone().into_eth_abi(),
-                            )
-                            .into(),
+                            client_message: data
+                                .msg
+                                .client_message
+                                .clone()
+                                .into_eth_abi_bytes()
+                                .into(),
                         },
                     },
                 ),

@@ -89,6 +89,9 @@ pub enum Error {
 
     #[error("the slot number that is saved previously to the consensus state cannot be changed")]
     SlotCannotBeModified,
+
+    #[error("the proof path {0} is not unknown")]
+    UnknownIbcPath(String),
 }
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {

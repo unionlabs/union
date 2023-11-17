@@ -12,16 +12,22 @@ use ics008_wasm_client::{
 };
 use sha3::Digest;
 use unionlabs::{
+    google::protobuf::any::Any,
     hash::H256,
     ibc::{
         core::client::height::Height,
-        lightclients::ethereum::{
-            client_state::ClientState, consensus_state::ConsensusState, header::Header,
-            proof::Proof, storage_proof::StorageProof,
+        lightclients::{
+            cometbls,
+            ethereum::{
+                client_state::ClientState, consensus_state::ConsensusState, header::Header,
+                proof::Proof, storage_proof::StorageProof,
+            },
+            wasm,
         },
     },
+    proof::Path,
     uint::U256,
-    TryFromProto,
+    IntoEthAbi, TryFromProto,
 };
 
 use crate::{
@@ -236,10 +242,10 @@ impl IbcClient for EthereumLightClient {
         _client_message: ics008_wasm_client::ClientMessage,
     ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-        client_state.data.frozen_height = Some(Height {
+        client_state.data.frozen_height = Height {
             revision_number: client_state.latest_height.revision_number,
             revision_height: env.block.height,
-        });
+        };
         save_client_state(deps, client_state);
 
         Ok(ContractResult::valid(None))
@@ -314,7 +320,7 @@ impl IbcClient for EthereumLightClient {
     fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<QueryResponse, Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        if client_state.data.frozen_height.is_some() {
+        if client_state.data.frozen_height != Height::default() {
             return Ok(Status::Frozen.into());
         }
 
@@ -351,16 +357,46 @@ fn do_verify_membership(
     storage_root: H256,
     counterparty_commitment_slot: U256,
     storage_proof: Proof,
-    value: Vec<u8>,
+    raw_value: Vec<u8>,
 ) -> Result<(), Error> {
     check_commitment_key(
-        path,
+        &path,
         counterparty_commitment_slot,
         H256(storage_proof.key.to_big_endian()),
     )?;
 
+    let path = path
+        .parse::<Path<String, Height>>()
+        .map_err(|_| Error::UnknownIbcPath(path))?;
+
+    let canonical_value = match path {
+        Path::ClientStatePath(_) => Any::<
+            wasm::client_state::ClientState<cometbls::client_state::ClientState>,
+        >::try_from_proto_bytes(raw_value.as_ref())
+        .map_err(|e| Error::DecodeFromProto {
+            reason: format!("{e:?}"),
+        })?
+        .0
+        .data
+        .into_eth_abi_bytes(),
+        Path::ClientConsensusStatePath(_) => Any::<
+            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
+        >::try_from_proto_bytes(raw_value.as_ref())
+        .map_err(|e| Error::DecodeFromProto {
+            reason: format!("{e:?}"),
+        })?
+        .0
+        .data
+        .into_eth_abi_bytes(),
+        _ => raw_value,
+    };
+
     // We store the hash of the data, not the data itself to the commitments map.
-    let expected_value_hash = H256::from(sha3::Keccak256::new().chain_update(value).finalize());
+    let expected_value_hash = H256::from(
+        sha3::Keccak256::new()
+            .chain_update(canonical_value)
+            .finalize(),
+    );
 
     let proof_value = H256::from(storage_proof.value.to_big_endian());
 
@@ -388,7 +424,7 @@ fn do_verify_non_membership(
     storage_proof: Proof,
 ) -> Result<(), Error> {
     check_commitment_key(
-        path,
+        &path,
         counterparty_commitment_slot,
         H256(storage_proof.key.to_big_endian()),
     )?;
@@ -405,7 +441,7 @@ fn do_verify_non_membership(
 }
 
 fn check_commitment_key(
-    path: String,
+    path: &str,
     counterparty_commitment_slot: U256,
     key: H256,
 ) -> Result<(), Error> {

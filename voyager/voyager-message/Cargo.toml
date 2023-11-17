@@ -23,13 +23,13 @@ tendermint-rpc = { workspace = true, features = ["http-client", "websocket-clien
 tonic = { version = "0.9", features = ["transport","tls","tls-roots","tls-webpki-roots"] }
 tracing = "0.1.40"
 beacon-api = { workspace = true, default-features = false }
-contracts = { workspace = true }
+contracts = { workspace = true, features = ["providers"] }
 typenum = "1.16.0"
 ethers = { workspace = true, features = ["rustls", "ws"] }
 thiserror = "1.0.50"
 serde_json = "1.0.108"
 tokio = { version = "1.33.0", default-features = false, features = ["time"] }
-parse-display = { workspace = true }
+derive_more = { workspace = true, features = ["display"] }
 
 [dev-dependencies]
 hex-literal = "0.4.1"

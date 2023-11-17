@@ -21,7 +21,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     foundry = {
-      url = "github:shazow/foundry.nix/monthly";
+      url = "github:shazow/foundry.nix/main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     rust-overlay = {

@@ -20,14 +20,15 @@ resolver = "2"
 # TODO: Review if crane uses this and if so, how we should set these values
 [profile.release]
 opt-level = 3
-debug = false
-rpath = false
-lto = true
-debug-assertions = false
-codegen-units = 1
-panic = "abort"
-incremental = false
-overflow-checks = true
+debug = true
+# rpath = false
+lto = "fat"
+# debug-assertions = false
+# codegen-units = 1
+# panic = "abort"
+# incremental = false
+# overflow-checks = true
+# strip = true
 
 [workspace.dependencies]
 
@@ -54,7 +55,7 @@ token-factory-api = { path = "cosmwasm/token-factory-api", default-features = fa
 ucs01-relay-api = { path = "cosmwasm/ucs01-relay-api", default-features = false }
 voyager-message = { path = "voyager/voyager-message", default-features = false }
 lightclient = { path = "lib/lightclient", default-features = false }
-parse-display = { version = "0.8.2", default-features = false }
+derive_more = { version = "0.99.17", default-features = false }
 
 # external dependencies
 
@@ -65,6 +66,12 @@ tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = 
 ethers = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-core = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
+ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
+
+# ethers = { path = "/home/ben/projects/union/ethers-rs/ethers", default-features = false }
+# ethers-contract-derive = { path = "/home/ben/projects/union/ethers-rs/ethers-contract/ethers-contract-derive", default-features = false }
+# ethers-core = { path = "/home/ben/projects/union/ethers-rs/ethers-core", default-features = false }
+# ethers-contract-abigen = { path = "/home/ben/projects/union/ethers-rs/ethers-core" }
 
 [patch.crates-io]
 typenum = { git = "https://github.com/unionlabs/typenum", branch = "ben/192-const-generic-32-bit" }

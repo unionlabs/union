@@ -267,7 +267,7 @@
               cargoExtraArgs = "${packageFilterArg} ${cargoBuildExtraArgs}" + (pkgs.lib.optionalString
                 (buildStdTarget != null)
                 # the leading space is important here!
-                " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}");
+                " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget} -j1");
               RUSTFLAGS = rustflags;
             } // (pkgs.lib.optionalAttrs (cargoBuildInstallPhase != null) ({
               installPhaseCommand = cargoBuildInstallPhase;

@@ -107,21 +107,28 @@ pub(crate) mod tests {
     #[test]
     fn hlist_try_from_iter() {
         enum_variants_conversions! {
-            #[derive(Debug, PartialEq, parse_display::Display)]
+            #[derive(Debug, PartialEq, derive_more::Display)]
+            #[display(fmt = "{}")]
             pub enum A {
+                #[display(fmt = "{_0}")]
                 B(B),
+                #[display(fmt = "{_0}")]
                 C(C),
+                #[display(fmt = "{_0}")]
                 D(D),
             }
         }
 
-        #[derive(Debug, PartialEq, parse_display::Display)]
+        #[derive(Debug, PartialEq, derive_more::Display)]
+        #[display(fmt = "B")]
         pub struct B;
 
-        #[derive(Debug, PartialEq, parse_display::Display)]
+        #[derive(Debug, PartialEq, derive_more::Display)]
+        #[display(fmt = "C")]
         pub struct C;
 
-        #[derive(Debug, PartialEq, parse_display::Display)]
+        #[derive(Debug, PartialEq, derive_more::Display)]
+        #[display(fmt = "D")]
         pub struct D;
 
         // correct items, correct order

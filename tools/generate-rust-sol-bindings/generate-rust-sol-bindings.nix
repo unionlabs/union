@@ -44,6 +44,10 @@
 
           sed -i 's/version = "2"/workspace = true/g' $out/Cargo.toml
 
+          # heredocs confuse me
+          echo "[features]" >> $out/Cargo.toml
+          echo "providers = []" >> $out/Cargo.toml
+
           taplo format $out/Cargo.toml
         '';
       };
