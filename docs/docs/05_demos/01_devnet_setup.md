@@ -24,8 +24,8 @@ nix run ".#devnet"
 The above command will run both of the chains in a single session. So if you want to have separate logs for Ethereum and Union, you can run both of the devnets separately:
 
 ```bash
-# For evm
-nix run ".#devnet-evm"
+# For ethereum
+nix run ".#devnet-eth"
 
 # For union
 nix run ".#devnet-union"

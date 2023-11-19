@@ -1,4 +1,4 @@
-nix run .#evm-devnet-deploy
+nix run .#eth-devnet-deploy
 
 nix run .#uniond -- tx wasm instantiate2 1 '{"default_timeout": 10000, "gov_contract": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"}' "01" --label "relay" --gas=auto --gas-adjustment=1.4 -y --no-admin --from testkey --chain-id union-devnet-1 --keyring-backend test --home result
 

@@ -37,11 +37,11 @@
       sepolia-services = {
         geth = import ./services/geth.nix {
           inherit pkgs;
-          config = self'.packages.devnet-evm-config;
+          config = self'.packages.devnet-eth-config;
         };
         lodestar = import ./services/lodestar.nix {
           inherit pkgs;
-          config = self'.packages.devnet-evm-config;
+          config = self'.packages.devnet-eth-config;
           validatorCount = devnetConfig.ethereum.beacon.validatorCount;
         };
       };
@@ -83,9 +83,9 @@
         modules = [ (union // { networks.union-devnet = { }; }) ];
       };
 
-      spec-evm = {
+      spec-eth = {
         modules = [{
-          project.name = "union-devnet-evm";
+          project.name = "union-devnet-eth";
           networks.union-devnet = { };
           services = sepolia-services;
         }];
@@ -93,7 +93,7 @@
 
       build = arion.build spec;
 
-      build-evm = arion.build spec-evm;
+      build-eth = arion.build spec-eth;
 
       build-union = arion.build spec-union;
 
@@ -114,12 +114,12 @@
           '';
         };
 
-      packages.devnet-evm =
+      packages.devnet-eth =
         pkgs.writeShellApplication {
-          name = "union-devnet-evm";
+          name = "union-devnet-eth";
           runtimeInputs = [ arion ];
           text = ''
-            arion --prebuilt-file ${build-evm} up --build --force-recreate -V --always-recreate-deps --remove-orphans
+            arion --prebuilt-file ${build-eth} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
         };
 
