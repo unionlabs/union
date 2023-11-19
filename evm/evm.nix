@@ -214,8 +214,8 @@
         wrapped-forge = wrappedForge;
 
         # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
-        generate-evm-proto = pkgs.writeShellApplication {
-          name = "generate-evm-proto";
+        generate-sol-proto = pkgs.writeShellApplication {
+          name = "generate-sol-proto";
           runtimeInputs = [ pkgs.protobuf ];
           text =
             let
