@@ -28,7 +28,7 @@ The above command will run both of the chains in a single session. So if you wan
 nix run ".#devnet-evm"
 
 # For union
-nix run ".#devnet-cosmos"
+nix run ".#devnet-union"
 ```
 
 Now that we are ready, we can run the setup:

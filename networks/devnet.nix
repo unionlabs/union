@@ -79,7 +79,7 @@
         modules = [ (devnet // { networks.union-devnet = { }; }) ];
       };
 
-      spec-cosmos = {
+      spec-union = {
         modules = [ (union // { networks.union-devnet = { }; }) ];
       };
 
@@ -95,7 +95,7 @@
 
       build-evm = arion.build spec-evm;
 
-      build-cosmos = arion.build spec-cosmos;
+      build-union = arion.build spec-union;
 
       build-voyager-queue = arion.build {
         modules = [{
@@ -123,12 +123,12 @@
           '';
         };
 
-      packages.devnet-cosmos =
+      packages.devnet-union =
         pkgs.writeShellApplication {
-          name = "union-devnet-cosmos";
+          name = "union-devnet-union";
           runtimeInputs = [ arion ];
           text = ''
-            arion --prebuilt-file ${build-cosmos} up --build --force-recreate -V --always-recreate-deps --remove-orphans
+            arion --prebuilt-file ${build-union} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
         };
 
