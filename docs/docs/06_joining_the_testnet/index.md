@@ -32,7 +32,7 @@ If the network has undergone a binary upgrade or has produced many blocks since 
 
 ## Public Endpoints
 
-We also maintain a list of our [Public Endpoints](./public_endpoints).
+We also maintain a list of [Public Endpoints](./public_endpoints).
 
 ## Feedback
 

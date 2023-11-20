@@ -10,8 +10,8 @@ We started our testnet with the goal of onboarding 64 validators. The sign-up fo
 
 ### Do you have any public REST/RPC/GRPC endpoints?
 
-Yes, you can find them listed with our [Public Endpoints](./public_endpoints)
+Yes, you can find them listed on the [Public Endpoints](./public_endpoints) page.
 
 ### Why can't I submit transactions to `localhost` when using `docker run`?
 
-Ensure you have exposed your host machines network via the `--network` flag in docker. See our [`docker run uniond` alias](./obtaining_uniond#issuing-sub-commands-to-uniond) for more information.
+Ensure you have exposed your host machine's network via the `--network` flag in docker. See our [`docker run uniond` alias](./obtaining_uniond#issuing-sub-commands-to-uniond) for more information.
