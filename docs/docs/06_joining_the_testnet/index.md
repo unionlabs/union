@@ -26,6 +26,14 @@ After we see your validator is created, we'll delegate more to your node to ensu
 
 Once we see that you've produced blocks for 24 hours, you will have completed the onboarding process. You will receive a notification from us confirming the completion of your onboarding.
 
+## State Sync
+
+If the network has undergone a binary upgrade or has produced many blocks since genesis, you may find joining with [State Sync](./state_sync) to be easiest.
+
+## Public Endpoints
+
+We also maintain a list of [Public Endpoints](./public_endpoints).
+
 ## Feedback
 
 If you have any questions or concerns about becoming a testnet validator, please check out our [FAQ](./faq)

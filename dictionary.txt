@@ -472,6 +472,7 @@ pkgs
 plpgsql
 pname
 poisonphang
+polkachu
 polkadot
 postgrespassword
 posthandler
