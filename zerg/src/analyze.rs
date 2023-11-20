@@ -107,7 +107,13 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
 }
 
 fn median(values: &Vec<u64>) -> u64 {
-    values[values.len() / 2]
+    if values.len() % 2 == 0 {
+        let mid = values.len() / 2;
+        (values[mid - 1] + values[mid]) / 2
+    } else {
+        values[values.len() / 2]
+    }
+}
 }
 
 fn mean(values: &Vec<u64>) -> u64 {
