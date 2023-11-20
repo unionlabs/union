@@ -42,7 +42,7 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
                 }
             }
             _ => {
-                tracing::error!("Analyze: Malformed data for transaction {}", report.uuid)
+                tracing::error!("Analyze: Malformed data for transaction {}. Expected to have both execution and finalization duration or neither.", report.uuid)
             }
         }
     }
