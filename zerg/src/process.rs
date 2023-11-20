@@ -48,7 +48,9 @@ pub fn process(input_file_path: String) -> Vec<TransactionReport> {
                     transactions.insert(rec.uuid.clone(), (sent_from.clone(), Some(rec)));
                 }
                 None => {
-                    println!("WARNING: Processed `ReceivedOn` packet without matching `SentFrom` packet.");
+                    tracing::warn!(
+                        "Processed `ReceivedOn` packet without matching `SentFrom` packet."
+                    );
                     continue;
                 }
             },
