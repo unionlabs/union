@@ -23,7 +23,7 @@
 
         generate-testnet-accounts = writeShellApplicationWithArgs {
           name = "generate-testnet-accounts";
-          runtimeInputs = [ ];
+          runtimeInputs = [ pkgs.jq uniond ];
           arguments = [
             {
               arg = "n_accounts";
