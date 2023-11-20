@@ -60,7 +60,7 @@ impl Context {
             .create(true)
             .write(true)
             .append(true)
-            .open(output)
+            .open(output.clone())
             .unwrap();
         tracing::debug!("Created writer.");
         let union = chain_utils::union::Union::new(zerg_config.clone().union)
@@ -113,7 +113,7 @@ impl Context {
         }
 
         Context {
-            output_file: "output.csv".to_string(),
+            output_file: output,
             zerg_config,
             is_rush,
             writer: Arc::new(Mutex::new(writer)),
