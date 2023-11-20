@@ -12,6 +12,6 @@ We started our testnet with the goal of onboarding 64 validators. The sign-up fo
 
 Yes, you can find them listed with our [Public Endpoints](./public_endpoints)
 
-### Why can't submit transactions to `localhost` when using `docker run`?
+### Why can't I submit transactions to `localhost` when using `docker run`?
 
 Ensure you have exposed your host machines network via the `--network` flag in docker. See our [`docker run uniond` alias](./obtaining_uniond#issuing-sub-commands-to-uniond) for more information.
