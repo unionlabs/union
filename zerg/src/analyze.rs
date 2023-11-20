@@ -56,20 +56,20 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
         execution_durations.sort();
         finalization_durations.sort();
 
-        let median_execution_duration = execution_durations[execution_durations.len() / 2];
-        let mean_execution_duration: u64 =
-            execution_durations.iter().sum::<u64>() / (execution_durations.len() as u64);
+        let median_execution_duration = median(&execution_durations);
+        let mean_execution_duration: u64 = mean(&execution_durations);
         let max_execution_duration = *execution_durations.last().expect("durations is not empty");
         let min_execution_duration = *execution_durations.first().expect("durations is not empty");
 
-        let median_finalization_duration = finalization_durations[finalization_durations.len() / 2];
-        let mean_finalization_duration: u64 =
-            finalization_durations.iter().sum::<u64>() / (finalization_durations.len() as u64);
+        let median_finalization_duration = median(&finalization_durations);
+        let mean_finalization_duration: u64 = mean(&finalization_durations);
         let max_finalization_duration = *finalization_durations
-            .last()
+            .iter()
+            .max()
             .expect("durations is not empty");
         let min_finalization_duration = *finalization_durations
-            .first()
+            .iter()
+            .min()
             .expect("durations is not empty");
 
         let incomplete_transfers = *incomplete_transfers.get(channel_port_id).unwrap_or(&0);
@@ -104,6 +104,14 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
     });
 
     benchmarks
+}
+
+fn median(values: &Vec<u64>) -> u64 {
+    values[values.len() / 2]
+}
+
+fn mean(values: &Vec<u64>) -> u64 {
+    values.iter().sum::<u64>() / (values.len() as u64)
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Clone)]
