@@ -2,16 +2,16 @@
 
 These endpoints may be helpful while joining the network and ensuring the correctness of your node.
 
-## GRPC
+## Community Hosted
 
-- https://grpc.testnet.bonlulu.uno/
+### GRPC
 
-## RPC
+- union-testnet-grpc.polkachu.com:24690
 
-- https://rpc.cryptware.io/
-- https://rpc.testnet.bonlulu.uno/
+### RPC
 
-## REST API
+- https://union-testnet-rpc.polkachu.com
 
-- https://api.cryptware.io/
-- https://api.testnet.bonlulu.uno/
+### REST API
+
+- https://union-testnet-api.polkachu.com
