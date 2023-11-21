@@ -9,6 +9,8 @@ import {
   ethereumAddress,
 } from "$lib/stores/wallets";
 
+import { fromBech32 } from "@cosmjs/encoding";
+
 import { ethers } from "ethers";
 import { get } from "svelte/store";
 import {
@@ -76,7 +78,7 @@ export const sendUnoToUnion = async () => {
   const tx = await ibcContract.send(
     UCS01_SEPOLIA_PORT_ID,
     UCS01_SEPOLIA_SOURCE_CHANNEL,
-    uAccount.pubkey,
+    fromBech32(uAccount.address).data,
     [[MUNO_ERC20_ADDRESS, AMOUNT_TO_SEND_TO_UNION]],
     4,
     800000000
