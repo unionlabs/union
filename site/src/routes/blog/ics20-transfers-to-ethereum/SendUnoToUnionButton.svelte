@@ -12,7 +12,6 @@
 	import { toFixedUno } from "$lib/format";
 
 	const clickHandler = async () => {
-		sendingUnoToUnion.set('sending');
 		let result: ExecuteResult | undefined = undefined;
 		try {
 			await sendUnoToUnion();

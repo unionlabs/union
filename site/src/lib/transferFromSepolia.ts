@@ -22,6 +22,7 @@ import {
   UCS01_SEPOLIA_PORT_ID,
   AMOUNT_TO_SEND_TO_UNION,
 } from "./constants";
+import { sendingUnoToUnion } from "../routes/blog/ics20-transfers-to-ethereum/demoStore";
 
 export const approveUnoTransferToUnion = async () => {
   const eProvider = get(ethersProvider);
@@ -83,6 +84,8 @@ export const sendUnoToUnion = async () => {
     4,
     800000000
   );
+
+  sendingUnoToUnion.set("sending");
 
   await tx.wait();
 };
