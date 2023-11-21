@@ -15,7 +15,7 @@ import {
   MUNO_ERC20_ADDRESS,
   ERC20_CONTRACT_ABI,
   UCS01_EVM_ADDRESS,
-  IBC_CONTRACT_ABI,
+  UCS01_RELAY_EVM_ABI,
   UCS01_SEPOLIA_SOURCE_CHANNEL,
   UCS01_SEPOLIA_PORT_ID,
   AMOUNT_TO_SEND_TO_UNION,
@@ -63,7 +63,7 @@ export const sendUnoToUnion = async () => {
 
   const ibcContract = new ethers.Contract(
     UCS01_EVM_ADDRESS,
-    IBC_CONTRACT_ABI,
+    UCS01_RELAY_EVM_ABI,
     eSigner
   );
 
@@ -76,9 +76,9 @@ export const sendUnoToUnion = async () => {
   const tx = await ibcContract.send(
     UCS01_SEPOLIA_PORT_ID,
     UCS01_SEPOLIA_SOURCE_CHANNEL,
-    uAccount.address,
+    uAccount.pubkey,
     [[MUNO_ERC20_ADDRESS, AMOUNT_TO_SEND_TO_UNION]],
-    3,
+    4,
     800000000
   );
 

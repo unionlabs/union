@@ -172,11 +172,15 @@ export const sendUnoToEthereum = async () => {
   const cwClient = get(cosmwasmClient);
   const uAccount = get(unionAccount);
   const eAddress = get(ethereumAddress);
+  console.log("after execute");
 
   if (cwClient === null || uAccount === null || eAddress === null) {
     console.error("please init dependencies for uno transfers");
     return;
   }
+
+  console.log("before execute");
+  console.log("eAddress", eAddress);
 
   return cwClient.execute(
     uAccount.address,
@@ -184,7 +188,7 @@ export const sendUnoToEthereum = async () => {
     {
       transfer: {
         channel: UCS01_UNION_SOURCE_CHANNEL,
-        receiver: eAddress,
+        receiver: eAddress.substr(2),
         timeout: null,
         memo: "random more than four characters I'm transferring.",
       },
