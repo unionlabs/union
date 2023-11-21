@@ -6,26 +6,23 @@
 <main class="flex flex-col flex-1 gap-[100px] md:gap-[200px] my-[50px] md:my-[100px]">
 	<div class="flex flex-col items-center">
 		<div class="main-text">Infrastructure for the</div> 
-		<div class="next-century-text">next century</div>
+		<div class="next-century-text animate-character">next century</div>
 		<div class="tagline">
-			Union is a hyper-efficient, zero-knowledge<br>
-			interoperability layer that connects<br> 
-			appchains, layer 1, and layer 2 networks.
+			Union is a hyper-efficient, zero-knowledge interoperability layer<br> 
+			that connects Appchains, Layer 1, and Layer 2 networks.
 		</div> 
 		<div>
 			<a class="skew-button" href="https://docs.union.build"><span>EXPLORE THE DOCS -&gt;</span></a>
 		</div>
 	</div>
 
-
-
 	<section>
 		<img class="w-[300px] md:w-[500px] absolute left-[50%] -ml-[150px] md:-ml-[250px] z-10 -mt-[50px] md:-mt-[100px] eth-logo" src="/images/ethereum.svg" alt="Ethereum"/>
 		<div class="flex flex-col items-center z-20 relative">
 			<h2 class="text-4xl md:text-6xl font-bold text-center">ETH &lt;-&gt; IBC</h2>
-			<h3 class="text-[16px] md:text-[27px] font-bold text-center text-gray-300">Union's flagship product</h3>
+			<h3 class="text-[16px] md:text-[27px] font-bold text-center text-gray-200">Union's flagship product</h3>
 			<p class="md:text-2xl mt-4 text-center mt-10">Built using Zero-Knowledge Cryptography and BLS Signatures, a</p>
-			<div class="text-center text-2xl md:text-5xl text-accent font-black italic">Trustless Ethereum IBC Connection</div>
+			<div class="text-center trustless-connection text-2xl md:text-5xl text-accent font-black italic animate-character animate-character-delay">Trustless Ethereum IBC Connection</div>
 			<p class="text-center md:text-2xl">Live between Union's Testnet and Ethereum's Testnet.</p>
 			<div class="mt-4">
 				<a class="skew-button" href="/blog/ics20-transfers-to-ethereum/"><span>TRY IT OUT -&gt;</span></a>
@@ -84,25 +81,26 @@
 	}
 
 	.next-century-text {
-		margin-top: -1rem; 
+
+		padding: 2px 8px;
+	
 		font-style: italic; 
 		font-size: 40px;
 		font-weight: 900; 
 		text-align: center; 
 		color: theme(colors.accent);
 		/* text-shadow: 2px 2px #c63f73; */
+		margin: -24px -8px;
 
 		@media (min-width: 340px) {
 			font-size: 42px;
 		}
 
 		@media (min-width: 380px) {
-			margin-top: -20px;
 			font-size: 44px;
 		}
 
 		@media (min-width: 600px) { 
-		  margin-top: -20px; 
 		  font-size: 60px;
 		}
 
@@ -111,34 +109,38 @@
 		}
 
 		@media (min-width: 1024px) { 
-		  margin-top: 4px; 
 		  font-size: 110px;
 		  line-height: 1; 
+			padding: 8px 16px;
+			margin: -8px 0;
 		}
 	}
 
 	.tagline {
-		font-family: theme(fontFamily.mono);
-		font-size: 9.5px;
+		text-align: center;
+		font-size: 10px;
 		margin-top: 8px;
 
-		@media (min-width: 355px) {
-			font-size: 11px;
-		}
-		@media (min-width: 380px) {
+		@media (min-width: 360px) {
 			font-size: 12px;
+		}
+		@media (min-width: 425px) {
+			font-size: 14px;
 		}
 
 		@media (min-width: 600px) { 
 			font-size: 16px;
-			margin-top: 12px;
 		}
 
-		@media (min-width: 1024px) { 
+		@media (min-width: 768px) {
 			font-size: 24px;
-			margin-top: 16px;
 		}
-		
+	}
+
+	@keyframes textclip {
+	  to {
+	    background-position: 200% center;
+	  }
 	}
 
 	.skew-button {
@@ -151,7 +153,7 @@
 
 	  @media(min-width: 1024px) {
 		margin-top: 24px;
-;		font-size: 18px;
+		font-size: 18px;
 		
 	  }
 	  --skew: 16deg;
@@ -176,5 +178,34 @@
 	.eth-logo {
 		opacity: 0.2;
 
+	}
+
+	.trustless-connection {
+		padding: 0 16px;
+		margin: 0 -16px;
+	}
+
+	.animate-character {
+	  -webkit-background-clip: text;
+	  -webkit-text-fill-color: transparent;
+	  animation: textclip 2s linear infinite;
+		animation-direction: reverse;
+
+	  background-image: linear-gradient(
+	    100deg,
+	    theme(colors.accent) 0%,
+	    theme(colors.accent) 40%,
+	    theme(colors.accentBright) 50%,
+	    theme(colors.accent) 60%,
+	    theme(colors.accent) 100%
+	  );
+	  background-size: 100% 100%;
+	  background-size: 200% 100%;
+		background-clip: text;
+	}
+
+
+	.animate-character-delay {
+		animation-delay: -0.2s;
 	}
 </style>

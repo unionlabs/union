@@ -20,6 +20,7 @@ export default {
         bgDark: "#242526",
         sub: "#252525",
         accent: "#FF87C3",
+        accentBright: "#ffc4e1",
         primary: "#fff",
       },
     },
