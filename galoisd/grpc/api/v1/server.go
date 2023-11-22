@@ -520,6 +520,8 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 		return cs, pk, vk, err
 	}
 
+	cs = *r1csInstance.(*cs_bn254.R1CS)
+
 	log.Println("Setup PK/VK")
 	err = backend_bn254.Setup(&cs, &pk, &vk)
 	if err != nil {
