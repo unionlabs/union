@@ -715,18 +715,10 @@
     "absolutePath": "/nix/store/4pc15p8932g4cgpiq7zdwpnj2kinnbql-libraries/@openzeppelin/contracts/token/ERC20/ERC20.sol",
     "id": 700,
     "exportedSymbols": {
-      "Context": [
-        1471
-      ],
-      "ERC20": [
-        699
-      ],
-      "IERC20": [
-        777
-      ],
-      "IERC20Metadata": [
-        802
-      ]
+      "Context": [1471],
+      "ERC20": [699],
+      "IERC20": [777],
+      "IERC20Metadata": [802]
     },
     "nodeType": "SourceUnit",
     "src": "105:12907:1",
@@ -736,12 +728,7 @@
         "nodeType": "PragmaDirective",
         "src": "105:23:1",
         "nodes": [],
-        "literals": [
-          "solidity",
-          "^",
-          "0.8",
-          ".0"
-        ]
+        "literals": ["solidity", "^", "0.8", ".0"]
       },
       {
         "id": 115,
@@ -1209,9 +1196,7 @@
                 }
               ]
             },
-            "baseFunctions": [
-              789
-            ],
+            "baseFunctions": [789],
             "documentation": {
               "id": 158,
               "nodeType": "StructuredDocumentation",
@@ -1306,9 +1291,7 @@
                 }
               ]
             },
-            "baseFunctions": [
-              795
-            ],
+            "baseFunctions": [795],
             "documentation": {
               "id": 168,
               "nodeType": "StructuredDocumentation",
@@ -1407,9 +1390,7 @@
                 }
               ]
             },
-            "baseFunctions": [
-              801
-            ],
+            "baseFunctions": [801],
             "documentation": {
               "id": 178,
               "nodeType": "StructuredDocumentation",
@@ -1504,9 +1485,7 @@
                 }
               ]
             },
-            "baseFunctions": [
-              726
-            ],
+            "baseFunctions": [726],
             "documentation": {
               "id": 188,
               "nodeType": "StructuredDocumentation",
@@ -1626,9 +1605,7 @@
                 }
               ]
             },
-            "baseFunctions": [
-              734
-            ],
+            "baseFunctions": [734],
             "documentation": {
               "id": 198,
               "nodeType": "StructuredDocumentation",
@@ -1733,9 +1710,7 @@
               "nodes": [],
               "statements": [
                 {
-                  "assignments": [
-                    223
-                  ],
+                  "assignments": [223],
                   "declarations": [
                     {
                       "constant": false,
@@ -1911,9 +1886,7 @@
                 }
               ]
             },
-            "baseFunctions": [
-              744
-            ],
+            "baseFunctions": [744],
             "documentation": {
               "id": 212,
               "nodeType": "StructuredDocumentation",
@@ -2114,9 +2087,7 @@
                 }
               ]
             },
-            "baseFunctions": [
-              754
-            ],
+            "baseFunctions": [754],
             "documentation": {
               "id": 237,
               "nodeType": "StructuredDocumentation",
@@ -2249,9 +2220,7 @@
               "nodes": [],
               "statements": [
                 {
-                  "assignments": [
-                    266
-                  ],
+                  "assignments": [266],
                   "declarations": [
                     {
                       "constant": false,
@@ -2427,9 +2396,7 @@
                 }
               ]
             },
-            "baseFunctions": [
-              764
-            ],
+            "baseFunctions": [764],
             "documentation": {
               "id": 255,
               "nodeType": "StructuredDocumentation",
@@ -2561,9 +2528,7 @@
               "nodes": [],
               "statements": [
                 {
-                  "assignments": [
-                    293
-                  ],
+                  "assignments": [293],
                   "declarations": [
                     {
                       "constant": false,
@@ -2825,9 +2790,7 @@
                 }
               ]
             },
-            "baseFunctions": [
-              776
-            ],
+            "baseFunctions": [776],
             "documentation": {
               "id": 280,
               "nodeType": "StructuredDocumentation",
@@ -2987,9 +2950,7 @@
               "nodes": [],
               "statements": [
                 {
-                  "assignments": [
-                    323
-                  ],
+                  "assignments": [323],
                   "declarations": [
                     {
                       "constant": false,
@@ -3373,9 +3334,7 @@
               "nodes": [],
               "statements": [
                 {
-                  "assignments": [
-                    352
-                  ],
+                  "assignments": [352],
                   "declarations": [
                     {
                       "constant": false,
@@ -3442,9 +3401,7 @@
                   "src": "6701:28:1"
                 },
                 {
-                  "assignments": [
-                    357
-                  ],
+                  "assignments": [357],
                   "declarations": [
                     {
                       "constant": false,
@@ -3619,10 +3576,7 @@
                       "id": 363,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "6801:7:1",
                       "typeDescriptions": {
@@ -4046,10 +4000,7 @@
                       "id": 392,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "7591:7:1",
                       "typeDescriptions": {
@@ -4202,10 +4153,7 @@
                       "id": 402,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "7669:7:1",
                       "typeDescriptions": {
@@ -4320,9 +4268,7 @@
                   "src": "7744:38:1"
                 },
                 {
-                  "assignments": [
-                    419
-                  ],
+                  "assignments": [419],
                   "declarations": [
                     {
                       "constant": false,
@@ -4469,10 +4415,7 @@
                       "id": 424,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "7840:7:1",
                       "typeDescriptions": {
@@ -5095,10 +5038,7 @@
                       "id": 467,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "8642:7:1",
                       "typeDescriptions": {
@@ -5871,10 +5811,7 @@
                       "id": 524,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "9497:7:1",
                       "typeDescriptions": {
@@ -6038,9 +5975,7 @@
                   "src": "9575:49:1"
                 },
                 {
-                  "assignments": [
-                    544
-                  ],
+                  "assignments": [544],
                   "declarations": [
                     {
                       "constant": false,
@@ -6187,10 +6122,7 @@
                       "id": 549,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "9688:7:1",
                       "typeDescriptions": {
@@ -6858,10 +6790,7 @@
                       "id": 598,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "10627:7:1",
                       "typeDescriptions": {
@@ -7014,10 +6943,7 @@
                       "id": 608,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        -18,
-                        -18
-                      ],
+                      "overloadedDeclarations": [-18, -18],
                       "referencedDeclaration": -18,
                       "src": "10705:7:1",
                       "typeDescriptions": {
@@ -7350,9 +7276,7 @@
               "nodes": [],
               "statements": [
                 {
-                  "assignments": [
-                    644
-                  ],
+                  "assignments": [644],
                   "declarations": [
                     {
                       "constant": false,
@@ -7638,10 +7562,7 @@
                             "id": 657,
                             "name": "require",
                             "nodeType": "Identifier",
-                            "overloadedDeclarations": [
-                              -18,
-                              -18
-                            ],
+                            "overloadedDeclarations": [-18, -18],
                             "referencedDeclaration": -18,
                             "src": "11404:7:1",
                             "typeDescriptions": {
@@ -8164,9 +8085,7 @@
             "baseName": {
               "id": 119,
               "name": "Context",
-              "nameLocations": [
-                "1419:7:1"
-              ],
+              "nameLocations": ["1419:7:1"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 1471,
               "src": "1419:7:1"
@@ -8179,9 +8098,7 @@
             "baseName": {
               "id": 121,
               "name": "IERC20",
-              "nameLocations": [
-                "1428:6:1"
-              ],
+              "nameLocations": ["1428:6:1"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 777,
               "src": "1428:6:1"
@@ -8194,9 +8111,7 @@
             "baseName": {
               "id": 123,
               "name": "IERC20Metadata",
-              "nameLocations": [
-                "1436:14:1"
-              ],
+              "nameLocations": ["1436:14:1"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 802,
               "src": "1436:14:1"
@@ -8216,20 +8131,12 @@
           "text": " @dev Implementation of the {IERC20} interface.\n This implementation is agnostic to the way tokens are created. This means\n that a supply mechanism has to be added in a derived contract using {_mint}.\n For a generic mechanism see {ERC20PresetMinterPauser}.\n TIP: For a detailed writeup see our guide\n https://forum.openzeppelin.com/t/how-to-implement-erc20-supply-mechanisms/226[How\n to implement supply mechanisms].\n We have followed general OpenZeppelin Contracts guidelines: functions revert\n instead returning `false` on failure. This behavior is nonetheless\n conventional and does not conflict with the expectations of ERC20\n applications.\n Additionally, an {Approval} event is emitted on calls to {transferFrom}.\n This allows applications to reconstruct the allowance for all accounts just\n by listening to said events. Other implementations of the EIP may not emit\n these events, as it isn't required by the specification.\n Finally, the non-standard {decreaseAllowance} and {increaseAllowance}\n functions have been added to mitigate the well-known issues around setting\n allowances. See {IERC20-approve}."
         },
         "fullyImplemented": true,
-        "linearizedBaseContracts": [
-          699,
-          802,
-          777,
-          1471
-        ],
+        "linearizedBaseContracts": [699, 802, 777, 1471],
         "name": "ERC20",
         "nameLocation": "1410:5:1",
         "scope": 700,
         "usedErrors": [],
-        "usedEvents": [
-          711,
-          720
-        ]
+        "usedEvents": [711, 720]
       }
     ],
     "license": "MIT"

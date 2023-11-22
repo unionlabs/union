@@ -386,17 +386,15 @@ fn do_verify_membership(
         .0
         .data
         .into_eth_abi_bytes(),
-        Path::ClientConsensusStatePath(_) => {
-            let mut decoded = Any::<
-                wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-            >::try_from_proto_bytes(raw_value.as_ref())
-            .map_err(|e| Error::DecodeFromProto {
-                reason: format!("{e:?}"),
-            })?
-            .0;
-            decoded.data.timestamp = decoded.timestamp;
-            decoded.data.into_eth_abi_bytes()
-        }
+        Path::ClientConsensusStatePath(_) => Any::<
+            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
+        >::try_from_proto_bytes(raw_value.as_ref())
+        .map_err(|e| Error::DecodeFromProto {
+            reason: format!("{e:?}"),
+        })?
+        .0
+        .data
+        .into_eth_abi_bytes(),
         _ => raw_value,
     };
 
