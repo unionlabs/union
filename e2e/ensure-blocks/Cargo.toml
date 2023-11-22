@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.3.12", features = ["derive"] }
-ethers = { workspace = true, features = ["ws"] }
+ethers = { workspace = true, features = ["ws", "providers"] }
 reqwest = "0.11.18"
 tendermint-rpc = {  workspace = true, features = ["http-client", "websocket-client"] }
 tokio = { version = "1.29.1", features = ["full"] }
