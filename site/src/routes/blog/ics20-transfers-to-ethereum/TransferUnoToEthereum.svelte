@@ -15,9 +15,10 @@
 		let result: ExecuteResult | undefined = undefined;
 		try {
 			result = await sendUnoToEthereum();
-		} catch {
+		} catch (err) {
 			sendingUnoToEthereum.set('start');
 			console.error('failed uno transfer');
+			console.error(err);
 		}
 		if (result === undefined) {
 			return;

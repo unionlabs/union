@@ -9,7 +9,7 @@ import {
   sepUNOAdded,
 } from "./stores/wallets";
 import { get } from "svelte/store";
-import { MUNO_ERC20_ADDRESS } from "$lib/constants";
+import { MUNO_ERC20_ADDRESS, UNION_CHAIN_ID } from "$lib/constants";
 
 const SEPOLIA_CHAIN_ID = "0xaa36a7";
 
@@ -87,8 +87,6 @@ export const connectLeapSnap = async () => {
   }
   await updateSnapInstalled();
 };
-
-const UNION_CHAIN_ID = "union-testnet-3";
 
 export const connectToUnion = async () => {
   const { suggestChain, getKey } = await import(

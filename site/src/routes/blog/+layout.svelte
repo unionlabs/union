@@ -26,7 +26,7 @@
 	}
 
 	:global(.blog-post-container a) {
-		@apply text-accent;
+		@apply text-accent font-semibold;
 	}
 
 	:global(.blog-post-container code) {

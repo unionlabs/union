@@ -17,6 +17,7 @@ published: true
     import SepoliaFaucetButton from './SepoliaFaucetButton.svelte';
     import SendUnoToUnionButton from './SendUnoToUnionButton.svelte';
     import SendUnoToUnionStatus from './SendUnoToUnionStatus.svelte';
+    import WarningBox from '$lib/WarningBox.svelte';
 </script>
 
 In our inaugural post, we showcased the first IBC connection to Ethereum by showing two contracts playing [ping-pong](../the-journey-so-far) through general message passing. Today we have something even more exciting: a first look at Union Chain Standard 1 (UCS-1), the adjusted version of ICS-20 for asset transfers between EVM and Cosmos-SDK-based chains. Our improvements are related to batch transfers to more efficiently transfer funds.
@@ -33,7 +34,7 @@ Claim UNO from the Union faucet for bridging usage. If you opt-in to share your 
 
 <FaucetButton/>
 
-IBC transfers from `union-testnet-3` to `sepolia` are just contract interactions, which need to be sent to either Sepolia or Union, depending on the transfer direction. We start by sending UNO to Sepolia (Ethereum Testnet), and then back again. This showcase uses a single-threaded relayer with simple nonce management.
+IBC transfers from `union-testnet-4` to `sepolia` are just contract interactions, which need to be sent to either Sepolia or Union, depending on the transfer direction. We start by sending UNO to Sepolia (Ethereum Testnet), and then back again. This showcase uses a single-threaded relayer with simple nonce management.
 
 IBC is as fast as the underlying chains. When you do Tendermint to Tendermint transactions, IBC is quite fast because the finality time is 6 seconds. However, when connecting to Sepolia, which has a similar configuration to Ethereum Mainnet, it takes a while for blocks to finalize. We need to await finalization to avoid double-spending.
 

@@ -12,14 +12,13 @@
 	import { toFixedUno } from "$lib/format";
 
 	const clickHandler = async () => {
-		sendingUnoToUnion.set('sending');
 		let result: ExecuteResult | undefined = undefined;
 		try {
 			await sendUnoToUnion();
-		} catch {
+		} catch (err) {
 			sendingUnoToUnion.set('start');
 			console.error('failed uno transfer');
-
+			console.error(err);
 		}
 		const currentUnionUnoBalance = get(unionUnoBalance);
 		if (currentUnionUnoBalance === null) {
