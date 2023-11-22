@@ -35,5 +35,4 @@ If aligned with our mission:
 - Speak with us at **[Devconnect 2023](https://devconnect.org/)**.
 - Join our **[Discord](https://discord.com/invite/union-build)**.
 
-
 _The Block has also **[written about our seed round](https://www.theblock.co/post/263310/union-labs-raises-4-million-to-develop-cross-chain-bridge-enabled-by-zk-proofs)**_.

@@ -299,10 +299,10 @@
               nodePackages.svelte-language-server
               nodePackages.typescript-language-server
               nodePackages.vscode-css-languageserver-bin
-            ] ++ (if pkgs.stdenv.isLinux then [ 
+            ] ++ (if pkgs.stdenv.isLinux then [
               self'.packages.hasura-cli
               self'.packages.sqlx-cli
-            ] else []));
+            ] else [ ]));
             nativeBuildInputs = [ config.treefmt.build.wrapper ]
               ++ lib.attrsets.attrValues config.treefmt.build.programs;
             GOPRIVATE = "github.com/unionlabs/*";
@@ -340,7 +340,7 @@
               settings.global.excludes = [ "**/vendor/**" ];
               programs.prettier.enable = true;
               settings.formatter.prettier = {
-                options = if pkgs.stdenv.isLinux then [ "--write" "--plugin-search-dir=${prettier-solidity}/lib" ] else [];
+                options = if pkgs.stdenv.isLinux then [ "--write" "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ];
                 includes = [
                   "*.css"
                   "*.html"
