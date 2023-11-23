@@ -55,6 +55,7 @@ jobs:
               # Do not run on both systems
               [.attr] | inside(
                 [
+                  "uniond-release",
                   "devnet",
                   "devnet-cosmos",
                   "devnet-evm",

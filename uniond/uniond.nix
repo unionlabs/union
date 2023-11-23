@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, ... }:
+  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, ... }:
     let
       CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O -D__BLST_PORTABLE__";
       CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${self'.packages.libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
@@ -56,6 +56,8 @@
             nativeBuildInputs = [ pkgs.musl ];
             ldflags = [
               "-linkmode external"
+              "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
+              "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
             ];
           } else if pkgs.stdenv.isDarwin then {
             # Dynamically link if we're on darwin by wrapping the program
@@ -65,9 +67,24 @@
               wrapProgram $out/bin/uniond \
               --set DYLD_LIBRARY_PATH ${(pkgs.lib.makeLibraryPath [ self'.packages.libwasmvm ])};
             '';
+            ldflags = [
+              "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
+              "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
+            ];
           } else
             { }
         ));
+
+        uniond-release = self'.packages.uniond.overrideAttrs (old: {
+          ldflags = old.ldflags ++ [
+            "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
+            "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
+            "-X github.com/cosmos/cosmos-sdk/version.BuildTags=${system}"
+            "-X github.com/cosmos/cosmos-sdk/version.Commit=${gitRev}"
+            # No way to get the actual ref...
+            "-X github.com/cosmos/cosmos-sdk/version.Version=${gitRev}"
+          ];
+        });
 
         uniond-image = pkgs.dockerTools.buildImage {
           name = "uniond";

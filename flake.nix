@@ -158,6 +158,11 @@
             args = {
               inherit nixpkgs dbg get-flake;
 
+              gitRev =
+                if (builtins.hasAttr "rev" self)
+                then self.rev
+                else "dirty";
+
               writeShellApplicationWithArgs = import ./tools/writeShellApplicationWithArgs.nix { inherit pkgs; };
 
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays
