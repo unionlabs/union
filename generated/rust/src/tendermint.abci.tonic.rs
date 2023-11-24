@@ -1,15 +1,15 @@
 // @generated
 /// Generated client implementations.
 #[cfg(feature = "client")]
-pub mod abci_application_client {
+pub mod abci_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::{http::Uri, *};
-    ///
+    use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
-    pub struct AbciApplicationClient<T> {
+    pub struct AbciClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl AbciApplicationClient<tonic::transport::Channel> {
+    impl AbciClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -20,7 +20,7 @@ pub mod abci_application_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> AbciApplicationClient<T>
+    impl<T> AbciClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -35,10 +35,7 @@ pub mod abci_application_client {
             let inner = tonic::client::Grpc::with_origin(inner, origin);
             Self { inner }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> AbciApplicationClient<InterceptedService<T, F>>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> AbciClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -51,7 +48,7 @@ pub mod abci_application_client {
             <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
                 Into<StdError> + Send + Sync,
         {
-            AbciApplicationClient::new(InterceptedService::new(inner, interceptor))
+            AbciClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -84,7 +81,6 @@ pub mod abci_application_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        ///
         pub async fn echo(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestEcho>,
@@ -96,14 +92,12 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/Echo");
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/Echo");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("tendermint.abci.ABCIApplication", "Echo"));
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "Echo"));
             self.inner.unary(req, path, codec).await
         }
-        ///
         pub async fn flush(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestFlush>,
@@ -115,14 +109,12 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/Flush");
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/Flush");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("tendermint.abci.ABCIApplication", "Flush"));
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "Flush"));
             self.inner.unary(req, path, codec).await
         }
-        ///
         pub async fn info(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestInfo>,
@@ -134,35 +126,12 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/Info");
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/Info");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("tendermint.abci.ABCIApplication", "Info"));
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "Info"));
             self.inner.unary(req, path, codec).await
         }
-        ///
-        pub async fn deliver_tx(
-            &mut self,
-            request: impl tonic::IntoRequest<super::RequestDeliverTx>,
-        ) -> std::result::Result<tonic::Response<super::ResponseDeliverTx>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/DeliverTx");
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
-                "DeliverTx",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        ///
         pub async fn check_tx(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestCheckTx>,
@@ -174,16 +143,12 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/CheckTx");
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/CheckTx");
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
-                "CheckTx",
-            ));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "CheckTx"));
             self.inner.unary(req, path, codec).await
         }
-        ///
         pub async fn query(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestQuery>,
@@ -195,14 +160,12 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/Query");
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/Query");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("tendermint.abci.ABCIApplication", "Query"));
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "Query"));
             self.inner.unary(req, path, codec).await
         }
-        ///
         pub async fn commit(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestCommit>,
@@ -214,14 +177,12 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/Commit");
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/Commit");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("tendermint.abci.ABCIApplication", "Commit"));
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "Commit"));
             self.inner.unary(req, path, codec).await
         }
-        ///
         pub async fn init_chain(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestInitChain>,
@@ -233,59 +194,12 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/InitChain");
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/InitChain");
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
-                "InitChain",
-            ));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "InitChain"));
             self.inner.unary(req, path, codec).await
         }
-        ///
-        pub async fn begin_block(
-            &mut self,
-            request: impl tonic::IntoRequest<super::RequestBeginBlock>,
-        ) -> std::result::Result<tonic::Response<super::ResponseBeginBlock>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/BeginBlock");
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
-                "BeginBlock",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        ///
-        pub async fn end_block(
-            &mut self,
-            request: impl tonic::IntoRequest<super::RequestEndBlock>,
-        ) -> std::result::Result<tonic::Response<super::ResponseEndBlock>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCIApplication/EndBlock");
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
-                "EndBlock",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        ///
         pub async fn list_snapshots(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestListSnapshots>,
@@ -298,17 +212,12 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/ListSnapshots",
-            );
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/ListSnapshots");
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
-                "ListSnapshots",
-            ));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "ListSnapshots"));
             self.inner.unary(req, path, codec).await
         }
-        ///
         pub async fn offer_snapshot(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestOfferSnapshot>,
@@ -321,17 +230,12 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/OfferSnapshot",
-            );
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/OfferSnapshot");
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
-                "OfferSnapshot",
-            ));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "OfferSnapshot"));
             self.inner.unary(req, path, codec).await
         }
-        ///
         pub async fn load_snapshot_chunk(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestLoadSnapshotChunk>,
@@ -344,17 +248,13 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/LoadSnapshotChunk",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/LoadSnapshotChunk");
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
-                "LoadSnapshotChunk",
-            ));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "LoadSnapshotChunk"));
             self.inner.unary(req, path, codec).await
         }
-        ///
         pub async fn apply_snapshot_chunk(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestApplySnapshotChunk>,
@@ -367,17 +267,15 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/ApplySnapshotChunk",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/ApplySnapshotChunk");
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
+                "tendermint.abci.ABCI",
                 "ApplySnapshotChunk",
             ));
             self.inner.unary(req, path, codec).await
         }
-        ///
         pub async fn prepare_proposal(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestPrepareProposal>,
@@ -390,17 +288,13 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/PrepareProposal",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/PrepareProposal");
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
-                "PrepareProposal",
-            ));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "PrepareProposal"));
             self.inner.unary(req, path, codec).await
         }
-        ///
         pub async fn process_proposal(
             &mut self,
             request: impl tonic::IntoRequest<super::RequestProcessProposal>,
@@ -413,14 +307,68 @@ pub mod abci_application_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tendermint.abci.ABCIApplication/ProcessProposal",
-            );
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/ProcessProposal");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "ProcessProposal"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn extend_vote(
+            &mut self,
+            request: impl tonic::IntoRequest<super::RequestExtendVote>,
+        ) -> std::result::Result<tonic::Response<super::ResponseExtendVote>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/ExtendVote");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "ExtendVote"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn verify_vote_extension(
+            &mut self,
+            request: impl tonic::IntoRequest<super::RequestVerifyVoteExtension>,
+        ) -> std::result::Result<tonic::Response<super::ResponseVerifyVoteExtension>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/VerifyVoteExtension");
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "tendermint.abci.ABCIApplication",
-                "ProcessProposal",
+                "tendermint.abci.ABCI",
+                "VerifyVoteExtension",
             ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn finalize_block(
+            &mut self,
+            request: impl tonic::IntoRequest<super::RequestFinalizeBlock>,
+        ) -> std::result::Result<tonic::Response<super::ResponseFinalizeBlock>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/tendermint.abci.ABCI/FinalizeBlock");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("tendermint.abci.ABCI", "FinalizeBlock"));
             self.inner.unary(req, path, codec).await
         }
     }

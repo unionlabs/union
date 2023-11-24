@@ -3,10 +3,10 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ModuleOptions {
-    /// tx describes the tx command for the module.
+    /// tx describes the tx commands for the module.
     #[prost(message, optional, tag = "1")]
     pub tx: ::core::option::Option<ServiceCommandDescriptor>,
-    /// query describes the tx command for the module.
+    /// query describes the queries commands for the module.
     #[prost(message, optional, tag = "2")]
     pub query: ::core::option::Option<ServiceCommandDescriptor>,
 }
@@ -103,9 +103,6 @@ pub struct FlagOptions {
     /// default_value is the default value as text.
     #[prost(string, tag = "4")]
     pub default_value: ::prost::alloc::string::String,
-    /// default value is the default value as text if the flag is used without any value.
-    #[prost(string, tag = "5")]
-    pub no_opt_default_value: ::prost::alloc::string::String,
     /// deprecated is the usage text to show if this flag is deprecated.
     #[prost(string, tag = "6")]
     pub deprecated: ::prost::alloc::string::String,

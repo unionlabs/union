@@ -87,5 +87,24 @@ pub struct MsgSendTxResponse {
     #[prost(uint64, tag = "1")]
     pub sequence: u64,
 }
+/// MsgUpdateParams defines the payload for Msg/UpdateParams
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParams {
+    /// signer address
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
+    /// params defines the 27-interchain-accounts/controller parameters to update.
+    ///
+    /// NOTE: All parameters must be supplied.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+}
+/// MsgUpdateParamsResponse defines the response for Msg/UpdateParams
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParamsResponse {}
 include!("ibc.applications.interchain_accounts.controller.v1.tonic.rs");
 // @@protoc_insertion_point(module)

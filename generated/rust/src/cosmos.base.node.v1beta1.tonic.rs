@@ -3,7 +3,8 @@
 #[cfg(feature = "client")]
 pub mod service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::{http::Uri, *};
+    use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct ServiceClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -100,6 +101,26 @@ pub mod service_client {
             req.extensions_mut().insert(GrpcMethod::new(
                 "cosmos.base.node.v1beta1.Service",
                 "Config",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn status(
+            &mut self,
+            request: impl tonic::IntoRequest<super::StatusRequest>,
+        ) -> std::result::Result<tonic::Response<super::StatusResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.base.node.v1beta1.Service/Status");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.base.node.v1beta1.Service",
+                "Status",
             ));
             self.inner.unary(req, path, codec).await
         }

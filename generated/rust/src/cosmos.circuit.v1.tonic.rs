@@ -84,11 +84,10 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn proposal(
+        pub async fn account(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryProposalRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryProposalResponse>, tonic::Status>
-        {
+            request: impl tonic::IntoRequest<super::QueryAccountRequest>,
+        ) -> std::result::Result<tonic::Response<super::AccountResponse>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -96,17 +95,16 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Query/Proposal");
+            let path = http::uri::PathAndQuery::from_static("/cosmos.circuit.v1.Query/Account");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Query", "Proposal"));
+                .insert(GrpcMethod::new("cosmos.circuit.v1.Query", "Account"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn proposals(
+        pub async fn accounts(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryProposalsRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryProposalsResponse>, tonic::Status>
-        {
+            request: impl tonic::IntoRequest<super::QueryAccountsRequest>,
+        ) -> std::result::Result<tonic::Response<super::AccountsResponse>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -114,105 +112,16 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Query/Proposals");
+            let path = http::uri::PathAndQuery::from_static("/cosmos.circuit.v1.Query/Accounts");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Query", "Proposals"));
+                .insert(GrpcMethod::new("cosmos.circuit.v1.Query", "Accounts"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn vote(
+        pub async fn disabled_list(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryVoteRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryVoteResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Query/Vote");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Query", "Vote"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn votes(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryVotesRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryVotesResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Query/Votes");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Query", "Votes"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn params(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryParamsRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryParamsResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Query/Params");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Query", "Params"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn deposit(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryDepositRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryDepositResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Query/Deposit");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Query", "Deposit"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn deposits(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryDepositsRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryDepositsResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Query/Deposits");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Query", "Deposits"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn tally_result(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryTallyResultRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryTallyResultResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::QueryDisabledListRequest>,
+        ) -> std::result::Result<tonic::Response<super::DisabledListResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -222,10 +131,10 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Query/TallyResult");
+                http::uri::PathAndQuery::from_static("/cosmos.circuit.v1.Query/DisabledList");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Query", "TallyResult"));
+                .insert(GrpcMethod::new("cosmos.circuit.v1.Query", "DisabledList"));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -312,10 +221,34 @@ pub mod msg_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn submit_proposal(
+        pub async fn authorize_circuit_breaker(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgSubmitProposal>,
-        ) -> std::result::Result<tonic::Response<super::MsgSubmitProposalResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::MsgAuthorizeCircuitBreaker>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgAuthorizeCircuitBreakerResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.circuit.v1.Msg/AuthorizeCircuitBreaker",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.circuit.v1.Msg",
+                "AuthorizeCircuitBreaker",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn trip_circuit_breaker(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgTripCircuitBreaker>,
+        ) -> std::result::Result<tonic::Response<super::MsgTripCircuitBreakerResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -325,16 +258,21 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Msg/SubmitProposal");
+                http::uri::PathAndQuery::from_static("/cosmos.circuit.v1.Msg/TripCircuitBreaker");
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Msg", "SubmitProposal"));
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.circuit.v1.Msg",
+                "TripCircuitBreaker",
+            ));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn vote(
+        pub async fn reset_circuit_breaker(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgVote>,
-        ) -> std::result::Result<tonic::Response<super::MsgVoteResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::MsgResetCircuitBreaker>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgResetCircuitBreakerResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -342,46 +280,13 @@ pub mod msg_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Msg/Vote");
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.circuit.v1.Msg/ResetCircuitBreaker");
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Msg", "Vote"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn vote_weighted(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgVoteWeighted>,
-        ) -> std::result::Result<tonic::Response<super::MsgVoteWeightedResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Msg/VoteWeighted");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Msg", "VoteWeighted"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn deposit(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgDeposit>,
-        ) -> std::result::Result<tonic::Response<super::MsgDepositResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1beta1.Msg/Deposit");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.gov.v1beta1.Msg", "Deposit"));
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.circuit.v1.Msg",
+                "ResetCircuitBreaker",
+            ));
             self.inner.unary(req, path, codec).await
         }
     }

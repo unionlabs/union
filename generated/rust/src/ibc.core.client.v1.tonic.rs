@@ -3,7 +3,8 @@
 #[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::{http::Uri, *};
+    use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -279,7 +280,8 @@ pub mod query_client {
 #[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::{http::Uri, *};
+    use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -429,6 +431,67 @@ pub mod msg_client {
             req.extensions_mut().insert(GrpcMethod::new(
                 "ibc.core.client.v1.Msg",
                 "SubmitMisbehaviour",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn recover_client(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgRecoverClient>,
+        ) -> std::result::Result<tonic::Response<super::MsgRecoverClientResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/RecoverClient");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("ibc.core.client.v1.Msg", "RecoverClient"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn ibc_software_upgrade(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgIbcSoftwareUpgrade>,
+        ) -> std::result::Result<tonic::Response<super::MsgIbcSoftwareUpgradeResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/IBCSoftwareUpgrade");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.core.client.v1.Msg",
+                "IBCSoftwareUpgrade",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn update_client_params(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgUpdateParams>,
+        ) -> std::result::Result<tonic::Response<super::MsgUpdateParamsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Msg/UpdateClientParams");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.core.client.v1.Msg",
+                "UpdateClientParams",
             ));
             self.inner.unary(req, path, codec).await
         }

@@ -6,23 +6,24 @@
 pub struct ValidatorSigningInfo {
     #[prost(string, tag = "1")]
     pub address: ::prost::alloc::string::String,
-    /// Height at which validator was first a candidate OR was unjailed
+    /// Height at which validator was first a candidate OR was un-jailed
     #[prost(int64, tag = "2")]
     pub start_height: i64,
-    /// Index which is incremented each time the validator was a bonded
-    /// in a block and may have signed a precommit or not. This in conjunction with the
-    /// `SignedBlocksWindow` param determines the index in the `MissedBlocksBitArray`.
+    /// Index which is incremented every time a validator is bonded in a block and
+    /// _may_ have signed a pre-commit or not. This in conjunction with the
+    /// signed_blocks_window param determines the index in the missed block bitmap.
     #[prost(int64, tag = "3")]
     pub index_offset: i64,
     /// Timestamp until which the validator is jailed due to liveness downtime.
     #[prost(message, optional, tag = "4")]
     pub jailed_until: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
-    /// Whether or not a validator has been tombstoned (killed out of validator set). It is set
-    /// once the validator commits an equivocation or for any other configured misbehiavor.
+    /// Whether or not a validator has been tombstoned (killed out of validator
+    /// set). It is set once the validator commits an equivocation or for any other
+    /// configured misbehavior.
     #[prost(bool, tag = "5")]
     pub tombstoned: bool,
-    /// A counter kept to avoid unnecessary array reads.
-    /// Note that `Sum(MissedBlocksBitArray)` always equals `MissedBlocksCounter`.
+    /// A counter of missed (unsigned) blocks. It is used to avoid unnecessary
+    /// reads in the missed block bitmap.
     #[prost(int64, tag = "6")]
     pub missed_blocks_counter: i64,
 }
@@ -41,56 +42,6 @@ pub struct Params {
     pub slash_fraction_double_sign: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "5")]
     pub slash_fraction_downtime: ::prost::alloc::vec::Vec<u8>,
-}
-/// GenesisState defines the slashing module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// params defines all the parameters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-    /// signing_infos represents a map between validator addresses and their
-    /// signing infos.
-    #[prost(message, repeated, tag = "2")]
-    pub signing_infos: ::prost::alloc::vec::Vec<SigningInfo>,
-    /// missed_blocks represents a map between validator addresses and their
-    /// missed blocks.
-    #[prost(message, repeated, tag = "3")]
-    pub missed_blocks: ::prost::alloc::vec::Vec<ValidatorMissedBlocks>,
-}
-/// SigningInfo stores validator signing info of corresponding address.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SigningInfo {
-    /// address is the validator address.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    /// validator_signing_info represents the signing info of this validator.
-    #[prost(message, optional, tag = "2")]
-    pub validator_signing_info: ::core::option::Option<ValidatorSigningInfo>,
-}
-/// ValidatorMissedBlocks contains array of missed blocks of corresponding
-/// address.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValidatorMissedBlocks {
-    /// address is the validator address.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    /// missed_blocks is an array of missed blocks by the validator.
-    #[prost(message, repeated, tag = "2")]
-    pub missed_blocks: ::prost::alloc::vec::Vec<MissedBlock>,
-}
-/// MissedBlock contains height and missed status as boolean.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MissedBlock {
-    /// index is the height at which the block was missed.
-    #[prost(int64, tag = "1")]
-    pub index: i64,
-    /// missed is the missed status.
-    #[prost(bool, tag = "2")]
-    pub missed: bool,
 }
 /// QueryParamsRequest is the request type for the Query/Params RPC method
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -173,5 +124,55 @@ pub struct MsgUpdateParams {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParamsResponse {}
+/// GenesisState defines the slashing module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// params defines all the parameters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+    /// signing_infos represents a map between validator addresses and their
+    /// signing infos.
+    #[prost(message, repeated, tag = "2")]
+    pub signing_infos: ::prost::alloc::vec::Vec<SigningInfo>,
+    /// missed_blocks represents a map between validator addresses and their
+    /// missed blocks.
+    #[prost(message, repeated, tag = "3")]
+    pub missed_blocks: ::prost::alloc::vec::Vec<ValidatorMissedBlocks>,
+}
+/// SigningInfo stores validator signing info of corresponding address.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SigningInfo {
+    /// address is the validator address.
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    /// validator_signing_info represents the signing info of this validator.
+    #[prost(message, optional, tag = "2")]
+    pub validator_signing_info: ::core::option::Option<ValidatorSigningInfo>,
+}
+/// ValidatorMissedBlocks contains array of missed blocks of corresponding
+/// address.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorMissedBlocks {
+    /// address is the validator address.
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    /// missed_blocks is an array of missed blocks by the validator.
+    #[prost(message, repeated, tag = "2")]
+    pub missed_blocks: ::prost::alloc::vec::Vec<MissedBlock>,
+}
+/// MissedBlock contains height and missed status as boolean.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MissedBlock {
+    /// index is the height at which the block was missed.
+    #[prost(int64, tag = "1")]
+    pub index: i64,
+    /// missed is the missed status.
+    #[prost(bool, tag = "2")]
+    pub missed: bool,
+}
 include!("cosmos.slashing.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

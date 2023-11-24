@@ -3,7 +3,8 @@
 #[cfg(feature = "client")]
 pub mod union_prover_api_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::{http::Uri, *};
+    use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     ///
     #[derive(Debug, Clone)]
     pub struct UnionProverApiClient<T> {

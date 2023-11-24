@@ -31,6 +31,9 @@ pub struct MsgUpdateParams {
     pub evidence: ::core::option::Option<super::super::super::tendermint::types::EvidenceParams>,
     #[prost(message, optional, tag = "4")]
     pub validator: ::core::option::Option<super::super::super::tendermint::types::ValidatorParams>,
+    /// Since: cosmos-sdk 0.50
+    #[prost(message, optional, tag = "5")]
+    pub abci: ::core::option::Option<super::super::super::tendermint::types::AbciParams>,
 }
 /// MsgUpdateParamsResponse defines the response structure for executing a
 /// MsgUpdateParams message.

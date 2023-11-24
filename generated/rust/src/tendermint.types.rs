@@ -29,6 +29,43 @@ pub struct SimpleValidator {
     #[prost(int64, tag = "2")]
     pub voting_power: i64,
 }
+/// BlockIdFlag indicates which BlockID the signature is for
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum BlockIdFlag {
+    /// indicates an error condition
+    Unknown = 0,
+    /// the vote was not received
+    Absent = 1,
+    /// voted for the block that received the majority
+    Commit = 2,
+    /// voted for nil
+    Nil = 3,
+}
+impl BlockIdFlag {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            BlockIdFlag::Unknown => "BLOCK_ID_FLAG_UNKNOWN",
+            BlockIdFlag::Absent => "BLOCK_ID_FLAG_ABSENT",
+            BlockIdFlag::Commit => "BLOCK_ID_FLAG_COMMIT",
+            BlockIdFlag::Nil => "BLOCK_ID_FLAG_NIL",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "BLOCK_ID_FLAG_UNKNOWN" => Some(Self::Unknown),
+            "BLOCK_ID_FLAG_ABSENT" => Some(Self::Absent),
+            "BLOCK_ID_FLAG_COMMIT" => Some(Self::Commit),
+            "BLOCK_ID_FLAG_NIL" => Some(Self::Nil),
+            _ => None,
+        }
+    }
+}
 /// PartsetHeader
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -117,7 +154,7 @@ pub struct Data {
     #[prost(bytes = "vec", repeated, tag = "1")]
     pub txs: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
-/// Vote represents a prevote, precommit, or commit vote from validators for
+/// Vote represents a prevote or precommit vote from validators for
 /// consensus.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -137,8 +174,19 @@ pub struct Vote {
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(int32, tag = "7")]
     pub validator_index: i32,
+    /// Vote signature by the validator if they participated in consensus for the
+    /// associated block.
     #[prost(bytes = "vec", tag = "8")]
     pub signature: ::prost::alloc::vec::Vec<u8>,
+    /// Vote extension provided by the application. Only valid for precommit
+    /// messages.
+    #[prost(bytes = "vec", tag = "9")]
+    pub extension: ::prost::alloc::vec::Vec<u8>,
+    /// Vote extension signature by the validator if they participated in
+    /// consensus for the associated block.
+    /// Only valid for precommit messages.
+    #[prost(bytes = "vec", tag = "10")]
+    pub extension_signature: ::prost::alloc::vec::Vec<u8>,
 }
 /// Commit contains the evidence that a block was committed by a set of validators.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -165,6 +213,39 @@ pub struct CommitSig {
     pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "4")]
     pub signature: ::prost::alloc::vec::Vec<u8>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ExtendedCommit {
+    #[prost(int64, tag = "1")]
+    pub height: i64,
+    #[prost(int32, tag = "2")]
+    pub round: i32,
+    #[prost(message, optional, tag = "3")]
+    pub block_id: ::core::option::Option<BlockId>,
+    #[prost(message, repeated, tag = "4")]
+    pub extended_signatures: ::prost::alloc::vec::Vec<ExtendedCommitSig>,
+}
+/// ExtendedCommitSig retains all the same fields as CommitSig but adds vote
+/// extension-related fields. We use two signatures to ensure backwards compatibility.
+/// That is the digest of the original signature is still the same in prior versions
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ExtendedCommitSig {
+    #[prost(enumeration = "BlockIdFlag", tag = "1")]
+    pub block_id_flag: i32,
+    #[prost(bytes = "vec", tag = "2")]
+    pub validator_address: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    #[prost(bytes = "vec", tag = "4")]
+    pub signature: ::prost::alloc::vec::Vec<u8>,
+    /// Vote extension data
+    #[prost(bytes = "vec", tag = "5")]
+    pub extension: ::prost::alloc::vec::Vec<u8>,
+    /// Vote extension signature
+    #[prost(bytes = "vec", tag = "6")]
+    pub extension_signature: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -223,39 +304,6 @@ pub struct TxProof {
     #[prost(message, optional, tag = "3")]
     pub proof: ::core::option::Option<super::crypto::Proof>,
 }
-/// BlockIdFlag indicates which BlcokID the signature is for
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum BlockIdFlag {
-    Unknown = 0,
-    Absent = 1,
-    Commit = 2,
-    Nil = 3,
-}
-impl BlockIdFlag {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            BlockIdFlag::Unknown => "BLOCK_ID_FLAG_UNKNOWN",
-            BlockIdFlag::Absent => "BLOCK_ID_FLAG_ABSENT",
-            BlockIdFlag::Commit => "BLOCK_ID_FLAG_COMMIT",
-            BlockIdFlag::Nil => "BLOCK_ID_FLAG_NIL",
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "BLOCK_ID_FLAG_UNKNOWN" => Some(Self::Unknown),
-            "BLOCK_ID_FLAG_ABSENT" => Some(Self::Absent),
-            "BLOCK_ID_FLAG_COMMIT" => Some(Self::Commit),
-            "BLOCK_ID_FLAG_NIL" => Some(Self::Nil),
-            _ => None,
-        }
-    }
-}
 /// SignedMsgType is a type of signed message in the consensus.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -304,6 +352,8 @@ pub struct ConsensusParams {
     pub validator: ::core::option::Option<ValidatorParams>,
     #[prost(message, optional, tag = "4")]
     pub version: ::core::option::Option<VersionParams>,
+    #[prost(message, optional, tag = "5")]
+    pub abci: ::core::option::Option<AbciParams>,
 }
 /// BlockParams contains limits on the block size.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -366,6 +416,100 @@ pub struct HashedParams {
     pub block_max_bytes: i64,
     #[prost(int64, tag = "2")]
     pub block_max_gas: i64,
+}
+/// ABCIParams configure functionality specific to the Application Blockchain Interface.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AbciParams {
+    /// vote_extensions_enable_height configures the first height during which
+    /// vote extensions will be enabled. During this specified height, and for all
+    /// subsequent heights, precommit messages that do not contain valid extension data
+    /// will be considered invalid. Prior to this height, vote extensions will not
+    /// be used or accepted by validators on the network.
+    ///
+    /// Once enabled, vote extensions will be created by the application in ExtendVote,
+    /// passed to the application for validation in VerifyVoteExtension and given
+    /// to the application to use when proposing a block during PrepareProposal.
+    #[prost(int64, tag = "1")]
+    pub vote_extensions_enable_height: i64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalBlockId {
+    #[prost(bytes = "vec", tag = "1")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalPartSetHeader {
+    #[prost(uint32, tag = "1")]
+    pub total: u32,
+    #[prost(bytes = "vec", tag = "2")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalProposal {
+    /// type alias for byte
+    #[prost(enumeration = "SignedMsgType", tag = "1")]
+    pub r#type: i32,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag = "2")]
+    pub height: i64,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag = "3")]
+    pub round: i64,
+    #[prost(int64, tag = "4")]
+    pub pol_round: i64,
+    #[prost(message, optional, tag = "5")]
+    pub block_id: ::core::option::Option<CanonicalBlockId>,
+    #[prost(message, optional, tag = "6")]
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
+    #[prost(string, tag = "7")]
+    pub chain_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalVote {
+    /// type alias for byte
+    #[prost(enumeration = "SignedMsgType", tag = "1")]
+    pub r#type: i32,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag = "2")]
+    pub height: i64,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag = "3")]
+    pub round: i64,
+    #[prost(message, optional, tag = "4")]
+    pub block_id: ::core::option::Option<CanonicalBlockId>,
+    #[prost(string, tag = "6")]
+    pub chain_id: ::prost::alloc::string::String,
+}
+/// CanonicalVoteExtension provides us a way to serialize a vote extension from
+/// a particular validator such that we can sign over those serialized bytes.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanonicalVoteExtension {
+    #[prost(bytes = "vec", tag = "1")]
+    pub extension: ::prost::alloc::vec::Vec<u8>,
+    #[prost(sfixed64, tag = "2")]
+    pub height: i64,
+    #[prost(sfixed64, tag = "3")]
+    pub round: i64,
+    #[prost(string, tag = "4")]
+    pub chain_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDataRoundState {
+    #[prost(int64, tag = "1")]
+    pub height: i64,
+    #[prost(int32, tag = "2")]
+    pub round: i32,
+    #[prost(string, tag = "3")]
+    pub step: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -431,69 +575,5 @@ pub struct Block {
     pub evidence: ::core::option::Option<EvidenceList>,
     #[prost(message, optional, tag = "4")]
     pub last_commit: ::core::option::Option<Commit>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventDataRoundState {
-    #[prost(int64, tag = "1")]
-    pub height: i64,
-    #[prost(int32, tag = "2")]
-    pub round: i32,
-    #[prost(string, tag = "3")]
-    pub step: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalBlockId {
-    #[prost(bytes = "vec", tag = "1")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "2")]
-    pub part_set_header: ::core::option::Option<CanonicalPartSetHeader>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalPartSetHeader {
-    #[prost(uint32, tag = "1")]
-    pub total: u32,
-    #[prost(bytes = "vec", tag = "2")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalProposal {
-    /// type alias for byte
-    #[prost(enumeration = "SignedMsgType", tag = "1")]
-    pub r#type: i32,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "2")]
-    pub height: i64,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "3")]
-    pub round: i64,
-    #[prost(int64, tag = "4")]
-    pub pol_round: i64,
-    #[prost(message, optional, tag = "5")]
-    pub block_id: ::core::option::Option<CanonicalBlockId>,
-    #[prost(message, optional, tag = "6")]
-    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
-    #[prost(string, tag = "7")]
-    pub chain_id: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CanonicalVote {
-    /// type alias for byte
-    #[prost(enumeration = "SignedMsgType", tag = "1")]
-    pub r#type: i32,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "2")]
-    pub height: i64,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "3")]
-    pub round: i64,
-    #[prost(message, optional, tag = "4")]
-    pub block_id: ::core::option::Option<CanonicalBlockId>,
-    #[prost(string, tag = "6")]
-    pub chain_id: ::prost::alloc::string::String,
 }
 // @@protoc_insertion_point(module)

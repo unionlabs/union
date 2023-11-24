@@ -9,7 +9,7 @@ pub struct CommitInfo {
     #[prost(message, repeated, tag = "2")]
     pub store_infos: ::prost::alloc::vec::Vec<StoreInfo>,
     #[prost(message, optional, tag = "3")]
-    pub timestamp: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// StoreInfo defines store-specific commit information. It contains a reference
 /// between a store name and the commit ID.
@@ -55,38 +55,15 @@ pub struct StoreKvPair {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockMetadata {
-    #[prost(message, optional, tag = "1")]
-    pub request_begin_block:
-        ::core::option::Option<super::super::super::super::tendermint::abci::RequestBeginBlock>,
-    #[prost(message, optional, tag = "2")]
-    pub response_begin_block:
-        ::core::option::Option<super::super::super::super::tendermint::abci::ResponseBeginBlock>,
-    #[prost(message, repeated, tag = "3")]
-    pub deliver_txs: ::prost::alloc::vec::Vec<block_metadata::DeliverTx>,
-    #[prost(message, optional, tag = "4")]
-    pub request_end_block:
-        ::core::option::Option<super::super::super::super::tendermint::abci::RequestEndBlock>,
-    #[prost(message, optional, tag = "5")]
-    pub response_end_block:
-        ::core::option::Option<super::super::super::super::tendermint::abci::ResponseEndBlock>,
     #[prost(message, optional, tag = "6")]
     pub response_commit:
-        ::core::option::Option<super::super::super::super::tendermint::abci::ResponseCommit>,
-}
-/// Nested message and enum types in `BlockMetadata`.
-pub mod block_metadata {
-    /// DeliverTx encapulate deliver tx request and response.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct DeliverTx {
-        #[prost(message, optional, tag = "1")]
-        pub request: ::core::option::Option<
-            super::super::super::super::super::tendermint::abci::RequestDeliverTx,
-        >,
-        #[prost(message, optional, tag = "2")]
-        pub response: ::core::option::Option<
-            super::super::super::super::super::tendermint::abci::ResponseDeliverTx,
-        >,
-    }
+        ::core::option::Option<super::super::super::tendermint::abci::ResponseCommit>,
+    #[prost(message, optional, tag = "7")]
+    pub request_finalize_block:
+        ::core::option::Option<super::super::super::tendermint::abci::RequestFinalizeBlock>,
+    /// TODO: should we renumber this?
+    #[prost(message, optional, tag = "8")]
+    pub response_finalize_block:
+        ::core::option::Option<super::super::super::tendermint::abci::ResponseFinalizeBlock>,
 }
 // @@protoc_insertion_point(module)

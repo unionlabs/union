@@ -3,7 +3,8 @@
 #[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::{http::Uri, *};
+    use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -83,28 +84,6 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn denom_trace(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryDenomTraceRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryDenomTraceResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.applications.transfer.v1.Query/DenomTrace",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.applications.transfer.v1.Query",
-                "DenomTrace",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
         pub async fn denom_traces(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDenomTracesRequest>,
@@ -124,6 +103,28 @@ pub mod query_client {
             req.extensions_mut().insert(GrpcMethod::new(
                 "ibc.applications.transfer.v1.Query",
                 "DenomTraces",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn denom_trace(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryDenomTraceRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryDenomTraceResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.transfer.v1.Query/DenomTrace",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.transfer.v1.Query",
+                "DenomTrace",
             ));
             self.inner.unary(req, path, codec).await
         }
@@ -192,13 +193,38 @@ pub mod query_client {
             ));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn total_escrow_for_denom(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryTotalEscrowForDenomRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::QueryTotalEscrowForDenomResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.transfer.v1.Query/TotalEscrowForDenom",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.transfer.v1.Query",
+                "TotalEscrowForDenom",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated client implementations.
 #[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::{http::Uri, *};
+    use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -293,6 +319,28 @@ pub mod msg_client {
             req.extensions_mut().insert(GrpcMethod::new(
                 "ibc.applications.transfer.v1.Msg",
                 "Transfer",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn update_params(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgUpdateParams>,
+        ) -> std::result::Result<tonic::Response<super::MsgUpdateParamsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.transfer.v1.Msg/UpdateParams",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.applications.transfer.v1.Msg",
+                "UpdateParams",
             ));
             self.inner.unary(req, path, codec).await
         }
