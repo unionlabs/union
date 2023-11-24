@@ -142,7 +142,7 @@
           in
           pkgs.writeShellApplication {
             name = "go-vendor";
-            runtimeInputs = [ pkgs.go vend ];
+            runtimeInputs = [ goPkgs.go vend ];
             text = ''
               ${ensureAtRepositoryRoot}
 
@@ -160,7 +160,7 @@
       checks = {
         go-test = pkgs.go.stdenv.mkDerivation {
           name = "go-test";
-          buildInputs = [ pkgs.go ];
+          buildInputs = [ goPkgs.go ];
           src = ./.;
           doCheck = true;
           inherit CGO_CFLAGS;
