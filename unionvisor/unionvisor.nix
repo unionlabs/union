@@ -1,5 +1,5 @@
 { self, inputs, ... }: {
-  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, get-flake, ... }:
+  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, get-flake, uniondBundleVersions, ... }:
     let
       swapDotsWithUnderscores = pkgs.lib.replaceStrings [ "." ] [ "_" ];
 
@@ -47,7 +47,7 @@
             path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond;
           })
           versions
-        ++ # add `nextVersion` to the bundle if supplied 
+        ++ # add `nextVersion` to the bundle if supplied
         pkgs.lib.lists.optional (nextVersion != "") ({
           name = "${meta.versions_directory}/${nextVersion}/${meta.binary_name}";
           path = pkgs.lib.getExe self'.packages.uniond;
@@ -60,23 +60,23 @@
         bundle-testnet-4 =
           mkBundle {
             name = "testnet-4";
-            versions = [ "v0.14.0" "v0.15.0" ];
+            versions = uniondBundleVersions.complete;
             genesis = ../networks/genesis/union-testnet-4/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
-              fallback_version = "v0.14.0";
+              fallback_version = uniondBundleVersions.first;
             };
           };
         bundle-testnet-next =
           mkBundle {
             name = "testnet-4";
-            versions = [ "v0.14.0" "v0.15.0" ];
+            versions = uniondBundleVersions.complete;
             genesis = ../networks/genesis/union-testnet-4/genesis.json;
             meta = {
               binary_name = "uniond";
               versions_directory = "versions";
-              fallback_version = "v0.14.0";
+              fallback_version = uniondBundleVersions.first;
             };
           };
       };

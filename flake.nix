@@ -152,11 +152,17 @@
           mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
           dbg = value:
             builtins.trace (pkgs.lib.generators.toPretty { } value) value;
+
+          uniondBundleVersions = rec {
+            complete = [ "v0.14.0" "v0.15.0" ];
+            first = pkgs.lib.lists.head complete;
+            last = pkgs.lib.lists.last complete;
+          };
         in
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake;
+              inherit nixpkgs dbg get-flake uniondBundleVersions;
 
               gitRev =
                 if (builtins.hasAttr "rev" self)

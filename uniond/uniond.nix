@@ -1,8 +1,23 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, ... }:
+  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, uniondBundleVersions, ... }:
     let
       CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O -D__BLST_PORTABLE__";
       CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${self'.packages.libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
+
+      mkUniondImage = uniond: pkgs.dockerTools.buildImage {
+          name = "uniond";
+
+          copyToRoot = pkgs.buildEnv {
+            name = "image-root";
+            paths = [ pkgs.coreutils pkgs.cacert uniond ];
+            pathsToLink = [ "/bin" ];
+          };
+          config = {
+            Entrypoint = [ "uniond" ];
+            Cmd = [ "start" ];
+            Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+          };
+        };
     in
     {
       packages = {
@@ -81,25 +96,13 @@
             "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
             "-X github.com/cosmos/cosmos-sdk/version.BuildTags=${system}"
             "-X github.com/cosmos/cosmos-sdk/version.Commit=${gitRev}"
-            # No way to get the actual ref...
-            "-X github.com/cosmos/cosmos-sdk/version.Version=${gitRev}"
+            "-X github.com/cosmos/cosmos-sdk/version.Version=${uniondBundleVersions.last}"
           ];
         });
 
-        uniond-image = pkgs.dockerTools.buildImage {
-          name = "uniond";
+        uniond-image = mkUniondImage self'.packages.uniond;
 
-          copyToRoot = pkgs.buildEnv {
-            name = "image-root";
-            paths = [ pkgs.coreutils pkgs.cacert self'.packages.uniond ];
-            pathsToLink = [ "/bin" ];
-          };
-          config = {
-            Entrypoint = [ "uniond" ];
-            Cmd = [ "start" ];
-            Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
-          };
-        };
+        uniond-release-image = mkUniondImage self'.packages.uniond-release;
 
         go-vendor =
           let
