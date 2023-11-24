@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 import "./core/02-client/ILightClient.sol";
 import "./core/02-client/IBCHeight.sol";
 import "./proto/ibc/core/client/v1/client.sol";
+import "./proto/ibc/core/commitment/v1/commitment.sol";
 import "./proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 import "./proto/cosmos/ics23/v1/proofs.sol";
 import "./proto/tendermint/types/types.sol";
@@ -24,6 +25,7 @@ contract Glue {
         TendermintTypesCanonicalVote.Data memory,
         IbcLightclientsTendermintV1ClientState.Data memory,
         IbcLightclientsTendermintV1ConsensusState.Data memory,
-        IbcLightclientsTendermintV1Header.Data memory
+        IbcLightclientsTendermintV1Header.Data memory,
+        IbcCoreCommitmentV1MerkleProof.Data memory
     ) public pure {}
 }
