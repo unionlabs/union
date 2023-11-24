@@ -198,11 +198,11 @@
            '.app_state.ibc.channel_genesis.send_sequences += [{
               "port_id": $cw20_port,
               "channel_id": "channel-0",
-              "sequence": 1
+              "sequence": "1"
             }, {
               "port_id": $ping_pong_port,
               "channel_id": "channel-1",
-              "sequence": 1
+              "sequence": "1"
             }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
@@ -212,11 +212,11 @@
            '.app_state.ibc.channel_genesis.recv_sequences += [{
               "port_id": $cw20_port,
               "channel_id": "channel-0",
-              "sequence": 1
+              "sequence": "1"
             }, {
               "port_id": $ping_pong_port,
               "channel_id": "channel-1",
-              "sequence": 1
+              "sequence": "1"
             }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
@@ -226,11 +226,11 @@
            '.app_state.ibc.channel_genesis.ack_sequences += [{
               "port_id": $cw20_port,
               "channel_id": "channel-0",
-              "sequence": 1
+              "sequence": "1"
             }, {
               "port_id": $ping_pong_port,
               "channel_id": "channel-1",
-              "sequence": 1
+              "sequence": "1"
             }]' \
             $out/config/genesis.json | sponge $out/config/genesis.json
 
@@ -309,19 +309,17 @@
 
             base64 -w0 $wasm > encoded
             CHECKSUM=$(sha256sum $wasm | cut -f1 -d " ")
-            CODE_ID=$(echo -ne "codeId/$CHECKSUM" | base64 -w0)
+            # CODE_ID=$(echo -ne "codeId/$CHECKSUM" | base64 -w0)
 
-            echo "code id is '$CODE_ID'"
+            # echo "code id is '$CODE_ID'"
 
             mkdir -p $out/code-ids
             echo "$CHECKSUM" > "$out/code-ids/$(basename $wasm .wasm)"
 
              jq \
-              --arg code_id $CODE_ID \
               --rawfile encoded_file encoded \
               '.app_state."08-wasm".contracts += [{
-                "code_id_key": $code_id,
-                "contract_code": $encoded_file
+                "code_bytes": $encoded_file
               }]' \
               $out/config/genesis.json | sponge $out/config/genesis.json
           done
@@ -358,7 +356,7 @@
                   --arg creator $ALICE_ADDRESS \
                   --rawfile encoded <(base64 -w0 $wasm) \
                   '.app_state.wasm.codes += [{
-                    "code_id": ${toString idx},
+                    "code_id": "${toString idx}",
                     "code_info": {
                       "code_hash": $code_hash,
                       "creator": $creator,
@@ -390,7 +388,7 @@
                 --arg last_code_id_key $(echo -ne "\x04lastCodeId" | base64) \
                 '.app_state.wasm.sequences += [{
                   "id_key": $last_code_id_key,
-                  "value": ${toString ((builtins.length contracts) + 1)},
+                  "value": "${toString ((builtins.length contracts) + 1)}",
                 }]' \
                 $out/config/genesis.json | sponge $out/config/genesis.json
           '';
@@ -466,7 +464,7 @@
                 }.json | jq ."pub_key"."value"`
                 PUBKEY="{\"@type\":\"/cosmos.crypto.bn254.PubKey\",\"key\":$PUBKEY}"
                 mkdir -p $out
-                ${uniond} gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${chainId} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
+                ${uniond} genesis gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${chainId} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
                   toString i
                 }.json
               '')
@@ -523,8 +521,8 @@
           }.json
         '') validatorGentxs)}
 
-        ${uniond} collect-gentxs --home . 2> /dev/null
-        ${uniond} validate-genesis --home .
+        ${uniond} genesis collect-gentxs --home . 2> /dev/null
+        ${uniond} genesis validate --home .
       '';
 
       packages.devnet-validator-keys = pkgs.symlinkJoin {

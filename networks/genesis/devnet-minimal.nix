@@ -109,7 +109,7 @@
                 }.json | jq ."pub_key"."value"`
                 PUBKEY="{\"@type\":\"/cosmos.crypto.bn254.PubKey\",\"key\":$PUBKEY}"
                 mkdir -p $out
-                ${uniond} gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${CHAIN_ID} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
+                ${uniond} genesis gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${CHAIN_ID} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
                   toString i
                 }.json
               '')
@@ -135,8 +135,8 @@
           cp ${valGentx}/valgentx-${toString i}.json ./config/gentx/
         '') validatorGentxs)}
 
-        ${uniond} collect-gentxs --home $HOME 2> /dev/null
-        ${uniond} validate-genesis --home $HOME
+        ${uniond} genesis collect-gentxs --home $HOME 2> /dev/null
+        ${uniond} genesis validate --home $HOME
       '';
 
       packages.minimal-validator-keys = pkgs.symlinkJoin {
