@@ -361,7 +361,10 @@
             {
               projectRootFile = "flake.nix";
               programs.nixpkgs-fmt.enable = true;
-              programs.gofmt.enable = true;
+              programs.gofmt = {
+                enable = true;
+                package = goPkgs.go;
+              };
               programs.rustfmt = {
                 enable = true;
                 package = rust.toolchains.dev;
