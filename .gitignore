@@ -39,6 +39,4 @@ dump
 
 fuzzing-code-coverage
 
-commands
-
 *.wasm
