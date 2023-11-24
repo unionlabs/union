@@ -6,6 +6,9 @@
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # We need the latest nixpkgs for buildGo121Module, remove this once we upgrade nixpkgs
+    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-unstable";
+
     # Track a separate nixpkgs for Vercel as it needs to be the latest version for every deploy
     nixpkgs-vercel.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
@@ -78,6 +81,7 @@
     inputs@{ self
     , nixpkgs
     , nixpkgs-solc
+    , nixpkgs-go
     , flake-parts
     , nix-filter
     , crane
@@ -152,11 +156,12 @@
           mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
           dbg = value:
             builtins.trace (pkgs.lib.generators.toPretty { } value) value;
+          goPkgs = import inputs.nixpkgs-go { inherit system; };
         in
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake;
+              inherit nixpkgs dbg get-flake goPkgs;
 
               writeShellApplicationWithArgs = import ./tools/writeShellApplicationWithArgs.nix { inherit pkgs; };
 
@@ -186,9 +191,9 @@
                   app_state = {
                     staking.params = {
                       epoch_length = "8";
-                      jailed_validator_threshold = 10;
+                      jailed_validator_threshold = "10";
                     };
-                    slashing.params = { signed_blocks_window = 10; };
+                    slashing.params = { signed_blocks_window = "10"; };
                   };
                 };
                 validatorCount = 4;
@@ -282,12 +287,8 @@
               bacon
               cargo-nextest
               foundry-bin
-              go_1_20
-              go-ethereum
-              gopls
-              go-tools
-              gotools
               jq
+              go-ethereum
               marksman
               nil
               nixfmt
@@ -304,7 +305,12 @@
               nodePackages.svelte-language-server
               nodePackages.typescript-language-server
               nodePackages.vscode-css-languageserver-bin
-            ] ++ (if pkgs.stdenv.isLinux then [
+            ] ++ (with goPkgs; [
+              go
+              gopls
+              go-tools
+              gotools
+            ]) ++ (if pkgs.stdenv.isLinux then [
               self'.packages.hasura-cli
               self'.packages.sqlx-cli
             ] else [ ]));
