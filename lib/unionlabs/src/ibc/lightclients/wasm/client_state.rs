@@ -9,7 +9,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState<Data> {
     pub data: Data,
-    pub code_id: H256,
+    pub checksum: H256,
     pub latest_height: Height,
 }
 
@@ -24,7 +24,7 @@ where
     fn from(val: ClientState<Data>) -> Self {
         Self {
             data: val.data.into_proto_bytes(),
-            code_id: val.code_id.into_bytes(),
+            checksum: val.checksum.into_bytes(),
             latest_height: Some(val.latest_height.into()),
         }
     }
@@ -55,8 +55,8 @@ where
         Ok(Self {
             data: Data::try_from_proto_bytes(&value.data)
                 .map_err(TryFromWasmClientStateError::TryFromProto)?,
-            code_id: value
-                .code_id
+            checksum: value
+                .checksum
                 .try_into()
                 .map_err(TryFromWasmClientStateError::CodeId)?,
             latest_height: value.latest_height.unwrap().into(),

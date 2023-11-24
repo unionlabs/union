@@ -673,7 +673,7 @@ pub mod traits {
         fn timestamp(&self) -> u64;
     }
 
-    impl<C: ChainSpec> Header for wasm::header::Header<ethereum::header::Header<C>> {
+    impl<C: ChainSpec> Header for wasm::client_message::ClientMessage<ethereum::header::Header<C>> {
         fn timestamp(&self) -> u64 {
             self.data
                 .consensus_update
