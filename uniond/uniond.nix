@@ -5,19 +5,19 @@
       CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${self'.packages.libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
 
       mkUniondImage = uniond: pkgs.dockerTools.buildImage {
-          name = "uniond";
+        name = "uniond";
 
-          copyToRoot = pkgs.buildEnv {
-            name = "image-root";
-            paths = [ pkgs.coreutils pkgs.cacert uniond ];
-            pathsToLink = [ "/bin" ];
-          };
-          config = {
-            Entrypoint = [ "uniond" ];
-            Cmd = [ "start" ];
-            Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
-          };
+        copyToRoot = pkgs.buildEnv {
+          name = "image-root";
+          paths = [ pkgs.coreutils pkgs.cacert uniond ];
+          pathsToLink = [ "/bin" ];
         };
+        config = {
+          Entrypoint = [ "uniond" ];
+          Cmd = [ "start" ];
+          Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+        };
+      };
     in
     {
       packages = {
