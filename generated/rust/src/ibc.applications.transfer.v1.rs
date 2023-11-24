@@ -1,33 +1,4 @@
 // @generated
-/// Allocation defines the spend limit for a particular port and channel
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Allocation {
-    /// the port on which the packet will be sent
-    #[prost(string, tag = "1")]
-    pub source_port: ::prost::alloc::string::String,
-    /// the channel by which the packet will be sent
-    #[prost(string, tag = "2")]
-    pub source_channel: ::prost::alloc::string::String,
-    /// spend limitation on the channel
-    #[prost(message, repeated, tag = "3")]
-    pub spend_limit:
-        ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
-    /// allow list of receivers, an empty allow list permits any receiver address
-    #[prost(string, repeated, tag = "4")]
-    pub allow_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
-/// TransferAuthorization allows the grantee to spend up to spend_limit coins from
-/// the granter's account for ibc transfer on a specific channel
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransferAuthorization {
-    /// port and channel amounts
-    #[prost(message, repeated, tag = "1")]
-    pub allocations: ::prost::alloc::vec::Vec<Allocation>,
-}
 /// DenomTrace contains the base denomination for ICS20 fungible tokens and the
 /// source tracing information path.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -58,18 +29,6 @@ pub struct Params {
     /// chain.
     #[prost(bool, tag = "2")]
     pub receive_enabled: bool,
-}
-/// GenesisState defines the ibc-transfer genesis state
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "2")]
-    pub denom_traces: ::prost::alloc::vec::Vec<DenomTrace>,
-    #[prost(message, optional, tag = "3")]
-    pub params: ::core::option::Option<Params>,
 }
 /// QueryDenomTraceRequest is the request type for the Query/DenomTrace RPC
 /// method
@@ -173,6 +132,22 @@ pub struct QueryEscrowAddressResponse {
     #[prost(string, tag = "1")]
     pub escrow_address: ::prost::alloc::string::String,
 }
+/// QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryTotalEscrowForDenomRequest {
+    #[prost(string, tag = "1")]
+    pub denom: ::prost::alloc::string::String,
+}
+/// QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryTotalEscrowForDenomResponse {
+    #[prost(message, optional, tag = "1")]
+    pub amount: ::core::option::Option<super::super::super::super::cosmos::base::v1beta1::Coin>,
+}
 /// MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
 /// ICS20 enabled chains. See ICS Spec here:
 /// <https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures>
@@ -215,6 +190,72 @@ pub struct MsgTransferResponse {
     /// sequence number of the transfer packet sent
     #[prost(uint64, tag = "1")]
     pub sequence: u64,
+}
+/// MsgUpdateParams is the Msg/UpdateParams request type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParams {
+    /// signer address
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
+    /// params defines the transfer parameters to update.
+    ///
+    /// NOTE: All parameters must be supplied.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+}
+/// MsgUpdateParamsResponse defines the response structure for executing a
+/// MsgUpdateParams message.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParamsResponse {}
+/// Allocation defines the spend limit for a particular port and channel
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Allocation {
+    /// the port on which the packet will be sent
+    #[prost(string, tag = "1")]
+    pub source_port: ::prost::alloc::string::String,
+    /// the channel by which the packet will be sent
+    #[prost(string, tag = "2")]
+    pub source_channel: ::prost::alloc::string::String,
+    /// spend limitation on the channel
+    #[prost(message, repeated, tag = "3")]
+    pub spend_limit:
+        ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
+    /// allow list of receivers, an empty allow list permits any receiver address
+    #[prost(string, repeated, tag = "4")]
+    pub allow_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+/// TransferAuthorization allows the grantee to spend up to spend_limit coins from
+/// the granter's account for ibc transfer on a specific channel
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransferAuthorization {
+    /// port and channel amounts
+    #[prost(message, repeated, tag = "1")]
+    pub allocations: ::prost::alloc::vec::Vec<Allocation>,
+}
+/// GenesisState defines the ibc-transfer genesis state
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub denom_traces: ::prost::alloc::vec::Vec<DenomTrace>,
+    #[prost(message, optional, tag = "3")]
+    pub params: ::core::option::Option<Params>,
+    /// total_escrowed contains the total amount of tokens escrowed
+    /// by the transfer module
+    #[prost(message, repeated, tag = "4")]
+    pub total_escrowed:
+        ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
 }
 include!("ibc.applications.transfer.v1.tonic.rs");
 // @@protoc_insertion_point(module)

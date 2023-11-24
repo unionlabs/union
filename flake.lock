@@ -277,17 +277,17 @@
     "ibc-go": {
       "flake": false,
       "locked": {
-        "lastModified": 1681504072,
-        "narHash": "sha256-e9z9+VxoQkrvWeYzdxHax6L10eQebRjW7GrD5wnaLv8=",
-        "owner": "strangelove-ventures",
+        "lastModified": 1700058834,
+        "narHash": "sha256-vGtOGyoW3qZwMYHmTWzugx/DAxsiUn8upc49hjL0uJg=",
+        "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "f8081a1828e47e11791b036659dd6d0e7be5473b",
+        "rev": "c98311964dc550b9fe9a5bff8b6dd8e35bf13642",
         "type": "github"
       },
       "original": {
-        "owner": "strangelove-ventures",
+        "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "f8081a1828e47e11791b036659dd6d0e7be5473b",
+        "rev": "c98311964dc550b9fe9a5bff8b6dd8e35bf13642",
         "type": "github"
       }
     },

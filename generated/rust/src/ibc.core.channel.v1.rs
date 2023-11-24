@@ -170,6 +170,20 @@ pub mod acknowledgement {
         Error(::prost::alloc::string::String),
     }
 }
+/// Timeout defines an execution deadline structure for 04-channel handlers.
+/// This includes packet lifecycle handlers as well as the upgrade handshake handlers.
+/// A valid Timeout contains either one or both of a timestamp and block height (sequence).
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Timeout {
+    /// block height after which the packet or upgrade times out
+    #[prost(message, optional, tag = "1")]
+    pub height: ::core::option::Option<super::super::client::v1::Height>,
+    /// block timestamp (in nanoseconds) after which the packet or upgrade times out
+    #[prost(uint64, tag = "2")]
+    pub timestamp: u64,
+}
 /// State defines if a channel is in one of the following states:
 /// CLOSED, INIT, TRYOPEN, OPEN or UNINITIALIZED.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -249,42 +263,6 @@ impl Order {
             _ => None,
         }
     }
-}
-/// GenesisState defines the ibc channel submodule's genesis state.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(message, repeated, tag = "1")]
-    pub channels: ::prost::alloc::vec::Vec<IdentifiedChannel>,
-    #[prost(message, repeated, tag = "2")]
-    pub acknowledgements: ::prost::alloc::vec::Vec<PacketState>,
-    #[prost(message, repeated, tag = "3")]
-    pub commitments: ::prost::alloc::vec::Vec<PacketState>,
-    #[prost(message, repeated, tag = "4")]
-    pub receipts: ::prost::alloc::vec::Vec<PacketState>,
-    #[prost(message, repeated, tag = "5")]
-    pub send_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
-    #[prost(message, repeated, tag = "6")]
-    pub recv_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
-    #[prost(message, repeated, tag = "7")]
-    pub ack_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
-    /// the sequence for the next generated channel identifier
-    #[prost(uint64, tag = "8")]
-    pub next_channel_sequence: u64,
-}
-/// PacketSequence defines the genesis type necessary to retrieve and store
-/// next send and receive sequences.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PacketSequence {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    #[prost(uint64, tag = "3")]
-    pub sequence: u64,
 }
 /// QueryChannelRequest is the request type for the Query/Channel RPC method
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -1009,6 +987,42 @@ impl ResponseResultType {
             _ => None,
         }
     }
+}
+/// GenesisState defines the ibc channel submodule's genesis state.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(message, repeated, tag = "1")]
+    pub channels: ::prost::alloc::vec::Vec<IdentifiedChannel>,
+    #[prost(message, repeated, tag = "2")]
+    pub acknowledgements: ::prost::alloc::vec::Vec<PacketState>,
+    #[prost(message, repeated, tag = "3")]
+    pub commitments: ::prost::alloc::vec::Vec<PacketState>,
+    #[prost(message, repeated, tag = "4")]
+    pub receipts: ::prost::alloc::vec::Vec<PacketState>,
+    #[prost(message, repeated, tag = "5")]
+    pub send_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
+    #[prost(message, repeated, tag = "6")]
+    pub recv_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
+    #[prost(message, repeated, tag = "7")]
+    pub ack_sequences: ::prost::alloc::vec::Vec<PacketSequence>,
+    /// the sequence for the next generated channel identifier
+    #[prost(uint64, tag = "8")]
+    pub next_channel_sequence: u64,
+}
+/// PacketSequence defines the genesis type necessary to retrieve and store
+/// next send and receive sequences.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PacketSequence {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "3")]
+    pub sequence: u64,
 }
 include!("ibc.core.channel.v1.tonic.rs");
 // @@protoc_insertion_point(module)

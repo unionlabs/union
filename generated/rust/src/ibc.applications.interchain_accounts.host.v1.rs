@@ -23,5 +23,22 @@ pub struct QueryParamsResponse {
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
 }
+/// MsgUpdateParams defines the payload for Msg/UpdateParams
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParams {
+    /// signer address
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
+    /// params defines the 27-interchain-accounts/host parameters to update.
+    ///
+    /// NOTE: All parameters must be supplied.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+}
+/// MsgUpdateParamsResponse defines the response for Msg/UpdateParams
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParamsResponse {}
 include!("ibc.applications.interchain_accounts.host.v1.tonic.rs");
 // @@protoc_insertion_point(module)

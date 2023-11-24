@@ -19,6 +19,8 @@ pub struct NoBlockResponse {
 pub struct BlockResponse {
     #[prost(message, optional, tag = "1")]
     pub block: ::core::option::Option<super::types::Block>,
+    #[prost(message, optional, tag = "2")]
+    pub ext_commit: ::core::option::Option<super::types::ExtendedCommit>,
 }
 /// StatusRequest requests the status of a peer.
 #[allow(clippy::derive_partial_eq_without_eq)]

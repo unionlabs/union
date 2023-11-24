@@ -3,7 +3,8 @@
 #[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::{http::Uri, *};
+    use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -82,6 +83,24 @@ pub mod query_client {
         pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
+        }
+        pub async fn constitution(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryConstitutionRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryConstitutionResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1.Query/Constitution");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.gov.v1.Query", "Constitution"));
+            self.inner.unary(req, path, codec).await
         }
         pub async fn proposal(
             &mut self,
@@ -232,7 +251,8 @@ pub mod query_client {
 #[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::{http::Uri, *};
+    use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -414,6 +434,24 @@ pub mod msg_client {
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("cosmos.gov.v1.Msg", "UpdateParams"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn cancel_proposal(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgCancelProposal>,
+        ) -> std::result::Result<tonic::Response<super::MsgCancelProposalResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1.Msg/CancelProposal");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.gov.v1.Msg", "CancelProposal"));
             self.inner.unary(req, path, codec).await
         }
     }

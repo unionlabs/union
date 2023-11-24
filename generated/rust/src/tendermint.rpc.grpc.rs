@@ -17,7 +17,7 @@ pub struct ResponseBroadcastTx {
     #[prost(message, optional, tag = "1")]
     pub check_tx: ::core::option::Option<super::super::abci::ResponseCheckTx>,
     #[prost(message, optional, tag = "2")]
-    pub deliver_tx: ::core::option::Option<super::super::abci::ResponseDeliverTx>,
+    pub tx_result: ::core::option::Option<super::super::abci::ExecTxResult>,
 }
 include!("tendermint.rpc.grpc.tonic.rs");
 // @@protoc_insertion_point(module)

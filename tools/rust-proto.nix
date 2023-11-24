@@ -99,7 +99,7 @@
           ];
           # {msg,query}.proto have to be excluded since they only contain extensions, causing the generator to not create a file
           # SEE: https://github.com/neoeinstein/protoc-gen-prost/issues/61
-          additional-filter = "-not -path '*cosmos/msg/v1/msg.proto' -not -path '*cosmos/query/v1/query.proto' -and -not -path '*/proto/tendermint/*'";
+          additional-filter = "-not -path '*cosmos/msg/textual/v1/textual.proto' -not -path '*cosmos/msg/v1/msg.proto' -not -path '*cosmos/query/v1/query.proto' -and -not -path '*/proto/tendermint/*'";
           fixup-script = ''
             sed -i 's/pub struct Validators/pub struct ValidatorsVec/' "./src/cosmos.staking.v1beta1.rs"
             sed -i 's/AllowList(Validators)/AllowList(ValidatorsVec)/' "./src/cosmos.staking.v1beta1.rs"

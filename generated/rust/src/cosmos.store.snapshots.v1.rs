@@ -29,7 +29,7 @@ pub struct Metadata {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotItem {
     /// item is the specific type of snapshot item.
-    #[prost(oneof = "snapshot_item::Item", tags = "1, 2, 3, 4, 5, 6")]
+    #[prost(oneof = "snapshot_item::Item", tags = "1, 2, 3, 4")]
     pub item: ::core::option::Option<snapshot_item::Item>,
 }
 /// Nested message and enum types in `SnapshotItem`.
@@ -46,10 +46,6 @@ pub mod snapshot_item {
         Extension(super::SnapshotExtensionMeta),
         #[prost(message, tag = "4")]
         ExtensionPayload(super::SnapshotExtensionPayload),
-        #[prost(message, tag = "5")]
-        Kv(super::SnapshotKvItem),
-        #[prost(message, tag = "6")]
-        Schema(super::SnapshotSchema),
     }
 }
 /// SnapshotStoreItem contains metadata about a snapshotted store.
@@ -97,27 +93,5 @@ pub struct SnapshotExtensionMeta {
 pub struct SnapshotExtensionPayload {
     #[prost(bytes = "vec", tag = "1")]
     pub payload: ::prost::alloc::vec::Vec<u8>,
-}
-/// SnapshotKVItem is an exported Key/Value Pair
-///
-/// Since: cosmos-sdk 0.46
-/// Deprecated: This message was part of store/v2alpha1 which has been deleted from v0.47.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SnapshotKvItem {
-    #[prost(bytes = "vec", tag = "1")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "2")]
-    pub value: ::prost::alloc::vec::Vec<u8>,
-}
-/// SnapshotSchema is an exported schema of smt store
-///
-/// Since: cosmos-sdk 0.46
-/// Deprecated: This message was part of store/v2alpha1 which has been deleted from v0.47.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SnapshotSchema {
-    #[prost(bytes = "vec", repeated, tag = "1")]
-    pub keys: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 // @@protoc_insertion_point(module)

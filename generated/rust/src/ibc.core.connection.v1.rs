@@ -466,5 +466,24 @@ pub struct MsgConnectionOpenConfirm {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenConfirmResponse {}
+/// MsgUpdateParams defines the sdk.Msg type to update the connection parameters.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParams {
+    /// signer address
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
+    /// params defines the connection parameters to update.
+    ///
+    /// NOTE: All parameters must be supplied.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+}
+/// MsgUpdateParamsResponse defines the MsgUpdateParams response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParamsResponse {}
 include!("ibc.core.connection.v1.tonic.rs");
 // @@protoc_insertion_point(module)

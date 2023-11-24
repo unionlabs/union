@@ -41,7 +41,7 @@
     };
     ibc-go = {
       url =
-        "github:strangelove-ventures/ibc-go?rev=f8081a1828e47e11791b036659dd6d0e7be5473b";
+        "github:cosmos/ibc-go?rev=c98311964dc550b9fe9a5bff8b6dd8e35bf13642";
       flake = false;
     };
     ics23 = {
@@ -214,12 +214,13 @@
                 cometbls = builtins.fetchGit {
                   name = "cometbls";
                   url = "git@github.com:unionlabs/cometbls";
-                  rev = "20834775a066a30a2115c914213229d3f5033e5e";
+                  rev = "0005bda13742d508487f066ba6fa3cb91495fc99";
+                  allRefs = true;
                 };
                 cosmossdk = builtins.fetchGit {
                   name = "cosmos-sdk";
                   url = "git@github.com:unionlabs/cosmos-sdk";
-                  rev = "89f7ea352a8bed79ade8c633345cd94ffb7a82db";
+                  rev = "189a9ed768babcbb4de3d27ca9b210a100e766ff";
                   allRefs = true;
                 };
                 ibcgo = mkUnpack {

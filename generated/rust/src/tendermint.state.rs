@@ -1,16 +1,35 @@
 // @generated
-/// ABCIResponses retains the responses
-/// of the various ABCI calls during block processing.
-/// It is persisted to disk for each height before calling Commit.
+/// LegacyABCIResponses retains the responses
+/// of the legacy ABCI calls during block processing.
+/// Note ReponseDeliverTx is renamed to ExecTxResult but they are semantically the same
+/// Kept for backwards compatibility for versions prior to v0.38
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AbciResponses {
+pub struct LegacyAbciResponses {
     #[prost(message, repeated, tag = "1")]
-    pub deliver_txs: ::prost::alloc::vec::Vec<super::abci::ResponseDeliverTx>,
+    pub deliver_txs: ::prost::alloc::vec::Vec<super::abci::ExecTxResult>,
     #[prost(message, optional, tag = "2")]
-    pub end_block: ::core::option::Option<super::abci::ResponseEndBlock>,
+    pub end_block: ::core::option::Option<ResponseEndBlock>,
     #[prost(message, optional, tag = "3")]
-    pub begin_block: ::core::option::Option<super::abci::ResponseBeginBlock>,
+    pub begin_block: ::core::option::Option<ResponseBeginBlock>,
+}
+/// ResponseBeginBlock is kept for backwards compatibility for versions prior to v0.38
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResponseBeginBlock {
+    #[prost(message, repeated, tag = "1")]
+    pub events: ::prost::alloc::vec::Vec<super::abci::Event>,
+}
+/// ResponseEndBlock is kept for backwards compatibility for versions prior to v0.38
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResponseEndBlock {
+    #[prost(message, repeated, tag = "1")]
+    pub validator_updates: ::prost::alloc::vec::Vec<super::abci::ValidatorUpdate>,
+    #[prost(message, optional, tag = "2")]
+    pub consensus_param_updates: ::core::option::Option<super::types::ConsensusParams>,
+    #[prost(message, repeated, tag = "3")]
+    pub events: ::prost::alloc::vec::Vec<super::abci::Event>,
 }
 /// ValidatorsInfo represents the latest validator set, or the last height it changed
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -34,9 +53,11 @@ pub struct ConsensusParamsInfo {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AbciResponsesInfo {
     #[prost(message, optional, tag = "1")]
-    pub abci_responses: ::core::option::Option<AbciResponses>,
+    pub legacy_abci_responses: ::core::option::Option<LegacyAbciResponses>,
     #[prost(int64, tag = "2")]
     pub height: i64,
+    #[prost(message, optional, tag = "3")]
+    pub response_finalize_block: ::core::option::Option<super::abci::ResponseFinalizeBlock>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
