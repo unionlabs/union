@@ -1,8 +1,6 @@
 package errors
 
-import (
-	"github.com/cosmos/cosmos-sdk/types/errors"
-)
+import "cosmossdk.io/errors"
 
 // groupCodespace is the codespace for all errors defined in group package
 const groupCodespace = "group"

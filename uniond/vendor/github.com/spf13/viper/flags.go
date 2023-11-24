@@ -30,7 +30,7 @@ func (p pflagValueSet) VisitAll(fn func(flag FlagValue)) {
 	})
 }
 
-// pflagValue is a wrapper aroung *pflag.flag
+// pflagValue is a wrapper around *pflag.flag
 // that implements FlagValue
 type pflagValue struct {
 	flag *pflag.Flag

@@ -13,7 +13,7 @@
 
 The `hid` package is a cross platform library for accessing and communicating with USB Human Interface
 Devices (HID). It is an alternative package to [`gousb`](https://github.com/karalabe/gousb) for use
-cases where devices support this ligher mode of operation (e.g. input devices, hardware crypto wallets).
+cases where devices support this lighter mode of operation (e.g. input devices, hardware crypto wallets).
 
 The package wraps [`hidapi`](https://github.com/signal11/hidapi) for accessing OS specific USB HID APIs
 directly instead of using low level USB constructs, which might have permission issues on some platforms.

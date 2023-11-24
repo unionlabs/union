@@ -11,7 +11,7 @@ type ChainAccessConfigs struct {
 }
 
 // NewChainAccessConfigs constructor
-func NewChainAccessConfigs(upload AccessConfig, instantiate AccessConfig) ChainAccessConfigs {
+func NewChainAccessConfigs(upload, instantiate AccessConfig) ChainAccessConfigs {
 	return ChainAccessConfigs{Upload: upload, Instantiate: instantiate}
 }
 

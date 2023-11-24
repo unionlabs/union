@@ -8,7 +8,7 @@ import (
 // GenesisBalance defines a genesis balance interface that allows for account
 // address and balance retrieval.
 type GenesisBalance interface {
-	GetAddress() sdk.AccAddress
+	GetAddress() string
 	GetCoins() sdk.Coins
 }
 
@@ -21,5 +21,6 @@ type (
 	// NOTE: This is used solely for migration of x/params managed parameters.
 	Subspace interface {
 		GetParamSet(ctx sdk.Context, ps ParamSet)
+		Get(ctx sdk.Context, key []byte, ptr any)
 	}
 )

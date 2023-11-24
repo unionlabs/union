@@ -83,6 +83,32 @@ When querying a transaction given its signature, use the `--type=signature` flag
 simd query tx --type=signature Ofjvgrqi8twZfqVDmYIhqwRLQjZZ40XbxEamk/veH3gQpRF0hL2PH4ejRaDzAX+2WChnaWNQJQ41ekToIi5Wqw==
 ```
 
+When querying a transaction given its events, use the `--type=events` flag:
+
+```shell
+simd query txs --events 'message.sender=cosmos...' --page 1 --limit 30
+```
+
+The `x/auth/block` module provides a CLI command to query any block, given its hash, height, or events.
+
+When querying a block by its hash, use the `--type=hash` flag:
+
+```shell
+simd query block --type=hash DFE87B78A630C0EFDF76C80CD24C997E252792E0317502AE1A02B9809F0D8685
+```
+
+When querying a block by its height, use the `--type=height` flag:
+
+```shell
+simd query block --type=height 1357
+```
+
+When querying a block by its events, use the `--query` flag:
+
+```shell
+simd query blocks --query 'message.sender=cosmos...' --page 1 --limit 30
+```
+
 #### Transactions
 
 The `x/auth/tx` module provides a convinient CLI command for decoding and encoding transactions.

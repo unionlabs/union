@@ -1,7 +1,9 @@
 package baseapp
 
 import (
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+
+	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -14,15 +16,16 @@ func (app *BaseApp) SimCheck(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo, *
 	// this helper is only used in tests/simulation, it's fine.
 	bz, err := txEncoder(tx)
 	if err != nil {
-		return sdk.GasInfo{}, nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
+		return sdk.GasInfo{}, nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
 	}
-	gasInfo, result, _, _, err := app.runTx(runTxModeCheck, bz)
+
+	gasInfo, result, _, err := app.runTx(execModeCheck, bz)
 	return gasInfo, result, err
 }
 
 // Simulate executes a tx in simulate mode to get result and gas info.
 func (app *BaseApp) Simulate(txBytes []byte) (sdk.GasInfo, *sdk.Result, error) {
-	gasInfo, result, _, _, err := app.runTx(runTxModeSimulate, txBytes)
+	gasInfo, result, _, err := app.runTx(execModeSimulate, txBytes)
 	return gasInfo, result, err
 }
 
@@ -30,26 +33,46 @@ func (app *BaseApp) SimDeliver(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo,
 	// See comment for Check().
 	bz, err := txEncoder(tx)
 	if err != nil {
-		return sdk.GasInfo{}, nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
+		return sdk.GasInfo{}, nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
 	}
-	gasInfo, result, _, _, err := app.runTx(runTxModeDeliver, bz)
+	gasInfo, result, _, err := app.runTx(execModeFinalize, bz)
 	return gasInfo, result, err
 }
 
-// Context with current {check, deliver}State of the app used by tests.
-func (app *BaseApp) NewContext(isCheckTx bool, header tmproto.Header) sdk.Context {
+func (app *BaseApp) SimTxFinalizeBlock(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo, *sdk.Result, error) {
+	// See comment for Check().
+	bz, err := txEncoder(tx)
+	if err != nil {
+		return sdk.GasInfo{}, nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
+	}
+
+	gasInfo, result, _, err := app.runTx(execModeFinalize, bz)
+	return gasInfo, result, err
+}
+
+// NewContextLegacy returns a new sdk.Context with the provided header
+func (app *BaseApp) NewContextLegacy(isCheckTx bool, header cmtproto.Header) sdk.Context {
 	if isCheckTx {
 		return sdk.NewContext(app.checkState.ms, header, true, app.logger).
 			WithMinGasPrices(app.minGasPrices)
 	}
 
-	return sdk.NewContext(app.deliverState.ms, header, false, app.logger)
+	return sdk.NewContext(app.finalizeBlockState.ms, header, false, app.logger)
 }
 
-func (app *BaseApp) NewUncachedContext(isCheckTx bool, header tmproto.Header) sdk.Context {
+// NewContext returns a new sdk.Context with a empty header
+func (app *BaseApp) NewContext(isCheckTx bool) sdk.Context {
+	return app.NewContextLegacy(isCheckTx, cmtproto.Header{})
+}
+
+func (app *BaseApp) NewUncachedContext(isCheckTx bool, header cmtproto.Header) sdk.Context {
 	return sdk.NewContext(app.cms, header, isCheckTx, app.logger)
 }
 
-func (app *BaseApp) GetContextForDeliverTx(txBytes []byte) sdk.Context {
-	return app.getContextForTx(runTxModeDeliver, txBytes)
+func (app *BaseApp) GetContextForFinalizeBlock(txBytes []byte) sdk.Context {
+	return app.getContextForTx(execModeFinalize, txBytes)
+}
+
+func (app *BaseApp) GetContextForCheckTx(txBytes []byte) sdk.Context {
+	return app.getContextForTx(execModeCheck, txBytes)
 }

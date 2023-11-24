@@ -7,27 +7,27 @@ import (
 )
 
 // flattenAndMergeMap recursively flattens the given map into a new map
-// Code is based on the function with the same name in tha main package.
+// Code is based on the function with the same name in the main package.
 // TODO: move it to a common place
-func flattenAndMergeMap(shadow map[string]interface{}, m map[string]interface{}, prefix string, delimiter string) map[string]interface{} {
+func flattenAndMergeMap(shadow map[string]any, m map[string]any, prefix string, delimiter string) map[string]any {
 	if shadow != nil && prefix != "" && shadow[prefix] != nil {
 		// prefix is shadowed => nothing more to flatten
 		return shadow
 	}
 	if shadow == nil {
-		shadow = make(map[string]interface{})
+		shadow = make(map[string]any)
 	}
 
-	var m2 map[string]interface{}
+	var m2 map[string]any
 	if prefix != "" {
 		prefix += delimiter
 	}
 	for k, val := range m {
 		fullKey := prefix + k
-		switch val.(type) {
-		case map[string]interface{}:
-			m2 = val.(map[string]interface{})
-		case map[interface{}]interface{}:
+		switch val := val.(type) {
+		case map[string]any:
+			m2 = val
+		case map[any]any:
 			m2 = cast.ToStringMap(val)
 		default:
 			// immediate value

@@ -27,67 +27,6 @@ import (
 	"google.golang.org/grpc/resolver"
 )
 
-// The parent ClientConn should re-resolve when grpclb loses connection to the
-// remote balancer. When the ClientConn inside grpclb gets a TransientFailure,
-// it calls lbManualResolver.ResolveNow(), which calls parent ClientConn's
-// ResolveNow, and eventually results in re-resolve happening in parent
-// ClientConn's resolver (DNS for example).
-//
-//                          parent
-//                          ClientConn
-//  +-----------------------------------------------------------------+
-//  |             parent          +---------------------------------+ |
-//  | DNS         ClientConn      |  grpclb                         | |
-//  | resolver    balancerWrapper |                                 | |
-//  | +              +            |    grpclb          grpclb       | |
-//  | |              |            |    ManualResolver  ClientConn   | |
-//  | |              |            |     +              +            | |
-//  | |              |            |     |              | Transient  | |
-//  | |              |            |     |              | Failure    | |
-//  | |              |            |     |  <---------  |            | |
-//  | |              | <--------------- |  ResolveNow  |            | |
-//  | |  <---------  | ResolveNow |     |              |            | |
-//  | |  ResolveNow  |            |     |              |            | |
-//  | |              |            |     |              |            | |
-//  | +              +            |     +              +            | |
-//  |                             +---------------------------------+ |
-//  +-----------------------------------------------------------------+
-
-// lbManualResolver is used by the ClientConn inside grpclb. It's a manual
-// resolver with a special ResolveNow() function.
-//
-// When ResolveNow() is called, it calls ResolveNow() on the parent ClientConn,
-// so when grpclb client lose contact with remote balancers, the parent
-// ClientConn's resolver will re-resolve.
-type lbManualResolver struct {
-	scheme string
-	ccr    resolver.ClientConn
-
-	ccb balancer.ClientConn
-}
-
-func (r *lbManualResolver) Build(_ resolver.Target, cc resolver.ClientConn, _ resolver.BuildOptions) (resolver.Resolver, error) {
-	r.ccr = cc
-	return r, nil
-}
-
-func (r *lbManualResolver) Scheme() string {
-	return r.scheme
-}
-
-// ResolveNow calls resolveNow on the parent ClientConn.
-func (r *lbManualResolver) ResolveNow(o resolver.ResolveNowOptions) {
-	r.ccb.ResolveNow(o)
-}
-
-// Close is a noop for Resolver.
-func (*lbManualResolver) Close() {}
-
-// UpdateState calls cc.UpdateState.
-func (r *lbManualResolver) UpdateState(s resolver.State) {
-	r.ccr.UpdateState(s)
-}
-
 const subConnCacheTime = time.Second * 10
 
 // lbCacheClientConn is a wrapper balancer.ClientConn with a SubConn cache.

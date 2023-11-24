@@ -12,7 +12,7 @@ var _ Mempool = (*NoOpMempool)(nil)
 // ignored when BaseApp interacts with the mempool.
 //
 // Note: When this mempool is used, it assumed that an application will rely
-// on Tendermint's transaction ordering defined in `RequestPrepareProposal`, which
+// on CometBFT's transaction ordering defined in `RequestPrepareProposal`, which
 // is FIFO-ordered by default.
 type NoOpMempool struct{}
 

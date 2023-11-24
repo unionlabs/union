@@ -6,13 +6,12 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
-	"sigs.k8s.io/yaml"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // NewParams returns Params instance with the given values.
-func NewParams(mintDenom string, inflationRateChange, inflationMax, inflationMin, goalBonded sdk.Dec, blocksPerYear uint64) Params {
+func NewParams(mintDenom string, inflationRateChange, inflationMax, inflationMin, goalBonded math.LegacyDec, blocksPerYear uint64) Params {
 	return Params{
 		MintDenom:           mintDenom,
 		InflationRateChange: inflationRateChange,
@@ -27,10 +26,10 @@ func NewParams(mintDenom string, inflationRateChange, inflationMax, inflationMin
 func DefaultParams() Params {
 	return Params{
 		MintDenom:           sdk.DefaultBondDenom,
-		InflationRateChange: sdk.NewDecWithPrec(13, 2),
-		InflationMax:        sdk.NewDecWithPrec(20, 2),
-		InflationMin:        sdk.NewDecWithPrec(7, 2),
-		GoalBonded:          sdk.NewDecWithPrec(67, 2),
+		InflationRateChange: math.LegacyNewDecWithPrec(13, 2),
+		InflationMax:        math.LegacyNewDecWithPrec(20, 2),
+		InflationMin:        math.LegacyNewDecWithPrec(7, 2),
+		GoalBonded:          math.LegacyNewDecWithPrec(67, 2),
 		BlocksPerYear:       uint64(60 * 60 * 8766 / 5), // assuming 5 second block times
 	}
 }
@@ -65,12 +64,6 @@ func (p Params) Validate() error {
 	return nil
 }
 
-// String implements the Stringer interface.
-func (p Params) String() string {
-	out, _ := yaml.Marshal(p)
-	return string(out)
-}
-
 func validateMintDenom(i interface{}) error {
 	v, ok := i.(string)
 	if !ok {
@@ -88,7 +81,7 @@ func validateMintDenom(i interface{}) error {
 }
 
 func validateInflationRateChange(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
@@ -107,7 +100,7 @@ func validateInflationRateChange(i interface{}) error {
 }
 
 func validateInflationMax(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
@@ -126,7 +119,7 @@ func validateInflationMax(i interface{}) error {
 }
 
 func validateInflationMin(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
@@ -145,7 +138,7 @@ func validateInflationMin(i interface{}) error {
 }
 
 func validateGoalBonded(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}

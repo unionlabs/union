@@ -1,8 +1,9 @@
 package v2
 
 import (
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
+
 	"github.com/cosmos/cosmos-sdk/types/address"
 	v1auth "github.com/cosmos/cosmos-sdk/x/auth/migrations/v1"
 )
@@ -11,7 +12,7 @@ import (
 // prefix_bytes | address_bytes
 // into format:
 // prefix_bytes | address_len (1 byte) | address_bytes
-func MigratePrefixAddress(store sdk.KVStore, prefixBz []byte) {
+func MigratePrefixAddress(store storetypes.KVStore, prefixBz []byte) {
 	oldStore := prefix.NewStore(store, prefixBz)
 
 	oldStoreIter := oldStore.Iterator(nil, nil)
@@ -32,7 +33,7 @@ func MigratePrefixAddress(store sdk.KVStore, prefixBz []byte) {
 // prefix_bytes | address_bytes | arbitrary_bytes
 // into format:
 // prefix_bytes | address_len (1 byte) | address_bytes | arbitrary_bytes
-func MigratePrefixAddressBytes(store sdk.KVStore, prefixBz []byte) {
+func MigratePrefixAddressBytes(store storetypes.KVStore, prefixBz []byte) {
 	oldStore := prefix.NewStore(store, prefixBz)
 
 	oldStoreIter := oldStore.Iterator(nil, nil)
@@ -53,7 +54,7 @@ func MigratePrefixAddressBytes(store sdk.KVStore, prefixBz []byte) {
 // prefix_bytes | address_1_bytes | address_2_bytes
 // into format:
 // prefix_bytes | address_1_len (1 byte) | address_1_bytes | address_2_len (1 byte) | address_2_bytes
-func MigratePrefixAddressAddress(store sdk.KVStore, prefixBz []byte) {
+func MigratePrefixAddressAddress(store storetypes.KVStore, prefixBz []byte) {
 	oldStore := prefix.NewStore(store, prefixBz)
 
 	oldStoreIter := oldStore.Iterator(nil, nil)

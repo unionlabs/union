@@ -209,12 +209,12 @@ return errors.Wrap(foo(), "foo")
   - how to access the detail: `Error()`, regular Go formatting, Sentry Report.
 
 - `WithDetail(error, string) error`, `WithDetailf(error, string, ...interface{}) error`, user-facing detail with contextual information.
-  - **when to use: need to embark a message string to output when the error is presented to a human.**
+  - **when to use: need to embark a message string to output when the error is presented to a developer.**
   - what it does: captures detail strings.
   - how to access the detail: `errors.GetAllDetails()`, `errors.FlattenDetails()` (all details are preserved), format with `%+v`. Not included in Sentry reports.
 
 - `WithHint(error, string) error`, `WithHintf(error, string, ...interface{}) error`: user-facing detail with suggestion for action to take.
-  - **when to use: need to embark a message string to output when the error is presented to a human.**
+  - **when to use: need to embark a message string to output when the error is presented to an end user.**
   - what it does: captures hint strings.
   - how to access the detail: `errors.GetAllHints()`, `errors.FlattenHints()` (hints are de-duplicated), format with `%+v`. Not included in Sentry reports.
 
@@ -536,7 +536,8 @@ Example use:
 | `WrapWithDepthf`                   | `WithMessagef` + `WithStackDepth`                                                 |
 | `AssertionFailedWithDepthf`        | `NewWithDepthf` + `WithAssertionFailure`                                          |
 | `NewAssertionErrorWithWrappedErrf` | `HandledWithMessagef` (barrier) + `WrapWithDepthf` +  `WithAssertionFailure`      |
-
+| `Join`                             | `JoinWithDepth` (see below)                                                       |
+| `JoinWithDepth`                    | multi-cause wrapper + `WithStackDepth`                                            |
 ## API (not constructing error objects)
 
 The following is a summary of the non-constructor API functions, grouped by category.
@@ -573,10 +574,16 @@ func RegisterLeafDecoder(typeName TypeKey, decoder LeafDecoder)
 func RegisterLeafEncoder(typeName TypeKey, encoder LeafEncoder)
 func RegisterWrapperDecoder(typeName TypeKey, decoder WrapperDecoder)
 func RegisterWrapperEncoder(typeName TypeKey, encoder WrapperEncoder)
+func RegisterWrapperEncoderWithMessageOverride (typeName TypeKey, encoder WrapperEncoderWithMessageOverride)
+func RegisterMultiCauseEncoder(theType TypeKey, encoder MultiCauseEncoder)
+func RegisterMultiCauseDecoder(theType TypeKey, decoder MultiCauseDecoder)
 type LeafEncoder = func(ctx context.Context, err error) (msg string, safeDetails []string, payload proto.Message)
 type LeafDecoder = func(ctx context.Context, msg string, safeDetails []string, payload proto.Message) error
 type WrapperEncoder = func(ctx context.Context, err error) (msgPrefix string, safeDetails []string, payload proto.Message)
+type WrapperEncoderWithMessageOverride = func(ctx context.Context, err error) (msgPrefix string, safeDetails []string, payload proto.Message, overrideError bool)
 type WrapperDecoder = func(ctx context.Context, cause error, msgPrefix string, safeDetails []string, payload proto.Message) error
+type MultiCauseEncoder = func(ctx context.Context, err error) (msg string, safeDetails []string, payload proto.Message)
+type MultiCauseDecoder = func(ctx context.Context, causes []error, msgPrefix string, safeDetails []string, payload proto.Message) error
 
 // Registering package renames for custom error types.
 func RegisterTypeMigration(previousPkgPath, previousTypeName string, newType error)

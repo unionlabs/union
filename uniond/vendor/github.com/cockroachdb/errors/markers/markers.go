@@ -59,6 +59,13 @@ func Is(err, reference error) bool {
 		if tryDelegateToIsMethod(c, reference) {
 			return true
 		}
+
+		// Recursively try multi-error causes, if applicable.
+		for _, me := range errbase.UnwrapMulti(c) {
+			if Is(me, reference) {
+				return true
+			}
+		}
 	}
 
 	if err == nil {
@@ -68,8 +75,8 @@ func Is(err, reference error) bool {
 		return false
 	}
 
-	// Not directly equal. Try harder, using error marks. We don't this
-	// during the loop above as it may be more expensive.
+	// Not directly equal. Try harder, using error marks. We don't do
+	// this during the loop above as it may be more expensive.
 	//
 	// Note: there is a more effective recursive algorithm that ensures
 	// that any pair of string only gets compared once. Should the

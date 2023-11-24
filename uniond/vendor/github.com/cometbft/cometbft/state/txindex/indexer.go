@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/cometbft/cometbft/libs/log"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 )
@@ -26,6 +28,9 @@ type TxIndexer interface {
 
 	// Search allows you to query for transactions.
 	Search(ctx context.Context, q *query.Query) ([]*abci.TxResult, error)
+
+	//Set Logger
+	SetLogger(l log.Logger)
 }
 
 // Batch groups together multiple Index operations to be performed at the same time.

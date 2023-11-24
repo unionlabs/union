@@ -5,7 +5,7 @@ import (
 	"union/app/upgrades"
 	"union/app/upgrades/v0_15_0"
 
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 )
 
 var Upgrades = []upgrades.Upgrade{v0_15_0.Upgrade}

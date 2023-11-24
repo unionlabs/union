@@ -58,7 +58,16 @@ func As(err error, target interface{}) bool {
 		if x, ok := c.(interface{ As(interface{}) bool }); ok && x.As(target) {
 			return true
 		}
+
+		// If at any point in the single cause chain including the top,
+		// we encounter a multi-cause chain, recursively explore it.
+		for _, cause := range errbase.UnwrapMulti(c) {
+			if As(cause, target) {
+				return true
+			}
+		}
 	}
+
 	return false
 }
 

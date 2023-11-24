@@ -1,8 +1,5 @@
 package types
 
-// Handler defines the core of the state transition function of an application.
-type Handler func(ctx Context, msg Msg) (*Result, error)
-
 // AnteHandler authenticates transactions, before their internal messages are handled.
 // If newCtx.IsZero(), ctx is used instead.
 type AnteHandler func(ctx Context, tx Tx, simulate bool) (newCtx Context, err error)
@@ -40,14 +37,19 @@ func ChainAnteDecorators(chain ...AnteDecorator) AnteHandler {
 		return nil
 	}
 
-	// handle non-terminated decorators chain
-	if (chain[len(chain)-1] != Terminator{}) {
-		chain = append(chain, Terminator{})
+	handlerChain := make([]AnteHandler, len(chain)+1)
+	// set the terminal AnteHandler decorator
+	handlerChain[len(chain)] = func(ctx Context, tx Tx, simulate bool) (Context, error) {
+		return ctx, nil
+	}
+	for i := 0; i < len(chain); i++ {
+		ii := i
+		handlerChain[ii] = func(ctx Context, tx Tx, simulate bool) (Context, error) {
+			return chain[ii].AnteHandle(ctx, tx, simulate, handlerChain[ii+1])
+		}
 	}
 
-	return func(ctx Context, tx Tx, simulate bool) (Context, error) {
-		return chain[0].AnteHandle(ctx, tx, simulate, ChainAnteDecorators(chain[1:]...))
-	}
+	return handlerChain[0]
 }
 
 // ChainPostDecorators chains PostDecorators together with each PostDecorator
@@ -63,14 +65,18 @@ func ChainPostDecorators(chain ...PostDecorator) PostHandler {
 		return nil
 	}
 
-	// handle non-terminated decorators chain
-	if (chain[len(chain)-1] != Terminator{}) {
-		chain = append(chain, Terminator{})
+	handlerChain := make([]PostHandler, len(chain)+1)
+	// set the terminal PostHandler decorator
+	handlerChain[len(chain)] = func(ctx Context, tx Tx, simulate, success bool) (Context, error) {
+		return ctx, nil
 	}
-
-	return func(ctx Context, tx Tx, simulate, success bool) (Context, error) {
-		return chain[0].PostHandle(ctx, tx, simulate, success, ChainPostDecorators(chain[1:]...))
+	for i := 0; i < len(chain); i++ {
+		ii := i
+		handlerChain[ii] = func(ctx Context, tx Tx, simulate, success bool) (Context, error) {
+			return chain[ii].PostHandle(ctx, tx, simulate, success, handlerChain[ii+1])
+		}
 	}
+	return handlerChain[0]
 }
 
 // Terminator AnteDecorator will get added to the chain to simplify decorator code
@@ -91,6 +97,8 @@ func ChainPostDecorators(chain ...PostDecorator) PostHandler {
 //	      \ '\ /     \  |     |  _/       /
 //	       \  \       \ |     | /        /
 //	 snd    \  \      \        /
+//
+// Deprecated: Terminator is retired (ref https://github.com/cosmos/cosmos-sdk/pull/16076).
 type Terminator struct{}
 
 // AnteHandle returns the provided Context and nil error

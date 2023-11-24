@@ -3,9 +3,10 @@ package orm
 import (
 	"encoding/binary"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
+
 	"github.com/cosmos/cosmos-sdk/x/group/errors"
 )
 
@@ -24,7 +25,7 @@ func NewSequence(prefix byte) Sequence {
 }
 
 // NextVal increments and persists the counter by one and returns the value.
-func (s Sequence) NextVal(store sdk.KVStore) uint64 {
+func (s Sequence) NextVal(store storetypes.KVStore) uint64 {
 	pStore := prefix.NewStore(store, []byte{s.prefix})
 	v := pStore.Get(sequenceStorageKey)
 	seq := DecodeSequence(v)
@@ -34,14 +35,14 @@ func (s Sequence) NextVal(store sdk.KVStore) uint64 {
 }
 
 // CurVal returns the last value used. 0 if none.
-func (s Sequence) CurVal(store sdk.KVStore) uint64 {
+func (s Sequence) CurVal(store storetypes.KVStore) uint64 {
 	pStore := prefix.NewStore(store, []byte{s.prefix})
 	v := pStore.Get(sequenceStorageKey)
 	return DecodeSequence(v)
 }
 
 // PeekNextVal returns the CurVal + increment step. Not persistent.
-func (s Sequence) PeekNextVal(store sdk.KVStore) uint64 {
+func (s Sequence) PeekNextVal(store storetypes.KVStore) uint64 {
 	pStore := prefix.NewStore(store, []byte{s.prefix})
 	v := pStore.Get(sequenceStorageKey)
 	return DecodeSequence(v) + 1
@@ -53,10 +54,10 @@ func (s Sequence) PeekNextVal(store sdk.KVStore) uint64 {
 //
 // It is recommended to call this method only for a sequence start value other than `1` as the
 // method consumes unnecessary gas otherwise. A scenario would be an import from genesis.
-func (s Sequence) InitVal(store sdk.KVStore, seq uint64) error {
+func (s Sequence) InitVal(store storetypes.KVStore, seq uint64) error {
 	pStore := prefix.NewStore(store, []byte{s.prefix})
 	if pStore.Has(sequenceStorageKey) {
-		return sdkerrors.Wrap(errors.ErrORMUniqueConstraint, "already initialized")
+		return errorsmod.Wrap(errors.ErrORMUniqueConstraint, "already initialized")
 	}
 	pStore.Set(sequenceStorageKey, EncodeSequence(seq))
 	return nil

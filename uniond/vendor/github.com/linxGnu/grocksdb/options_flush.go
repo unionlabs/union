@@ -26,10 +26,10 @@ func (opts *FlushOptions) SetWait(value bool) {
 	C.rocksdb_flushoptions_set_wait(opts.c, boolToChar(value))
 }
 
-// // IsWait returns if the flush will wait until the flush is done.
-// func (opts *FlushOptions) IsWait() bool {
-// 	return charToBool(C.rocksdb_flushoptions_get_wait(opts.c))
-// }
+// IsWait returns if the flush will wait until the flush is done.
+func (opts *FlushOptions) IsWait() bool {
+	return charToBool(C.rocksdb_flushoptions_get_wait(opts.c))
+}
 
 // Destroy deallocates the FlushOptions object.
 func (opts *FlushOptions) Destroy() {

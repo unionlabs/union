@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"unicode"
+
+	"github.com/distribution/reference"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/docker/distribution/reference"
 )
 
 // MaxSaltSize is the longest salt that can be used when instantiating a contract
@@ -43,6 +45,15 @@ func ValidateLabel(label string) error {
 	}
 	if label != strings.TrimSpace(label) {
 		return ErrInvalid.Wrap("label must not start/end with whitespaces")
+	}
+	labelWithPrintableCharsOnly := strings.Map(func(r rune) rune {
+		if unicode.IsPrint(r) {
+			return r
+		}
+		return -1
+	}, label)
+	if label != labelWithPrintableCharsOnly {
+		return ErrInvalid.Wrap("label must have printable characters only")
 	}
 	return nil
 }

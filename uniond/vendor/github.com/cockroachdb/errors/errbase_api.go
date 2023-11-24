@@ -86,6 +86,20 @@ func GetTypeKey(err error) TypeKey { return errbase.GetTypeKey(err) }
 // A nil return indicates that decoding was not successful.
 type LeafDecoder = errbase.LeafDecoder
 
+// MultiCauseDecoder is to be provided (via RegisterMultiCauseDecoder
+// above) by additional multi-cause wrapper types not yet known by the
+// library. A nil return indicates that decoding was not successful.
+type MultiCauseDecoder = errbase.MultiCauseDecoder
+
+// RegisterMultiCauseDecoder can be used to register new multi-cause
+// wrapper types to the library. Registered wrappers will be decoded
+// using their own Go type when an error is decoded. Multi-cause
+// wrappers that have not been registered will be decoded using the
+// opaqueWrapper type.
+func RegisterMultiCauseDecoder(theType TypeKey, decoder MultiCauseDecoder) {
+	errbase.RegisterMultiCauseDecoder(theType, decoder)
+}
+
 // RegisterWrapperDecoder can be used to register new wrapper types to
 // the library. Registered wrappers will be decoded using their own
 // Go type when an error is decoded. Wrappers that have not been
@@ -134,6 +148,41 @@ func RegisterWrapperEncoder(typeName TypeKey, encoder WrapperEncoder) {
 // WrapperEncoder is to be provided (via RegisterWrapperEncoder above)
 // by additional wrapper types not yet known to this library.
 type WrapperEncoder = errbase.WrapperEncoder
+
+// RegisterWrapperEncoderWithMessageType can be used to register new wrapper
+// types to the library. These wrappers can optionally override the child error
+// messages with their own error string instead of relying on iterative
+// concatenation. Registered wrappers will be encoded using their own Go type
+// when an error is encoded. Wrappers that have not been registered will be
+// encoded using the opaqueWrapper type.
+//
+// Note: if the error type has been migrated from a previous location
+// or a different type, ensure that RegisterTypeMigration() was called
+// prior to RegisterWrapperEncoder().
+func RegisterWrapperEncoderWithMessageType(typeName TypeKey, encoder WrapperEncoderWithMessageType) {
+	errbase.RegisterWrapperEncoderWithMessageType(typeName, encoder)
+}
+
+// WrapperEncoderWithMessageType is to be provided (via
+// RegisterWrapperEncoderWithMessageType) by additional wrapper
+// types not yet known to this library.
+type WrapperEncoderWithMessageType = errbase.WrapperEncoderWithMessageType
+
+// RegisterMultiCauseEncoder can be used to register new multi-cause
+// error types to the library. Registered types will be encoded using
+// their own Go type when an error is encoded. Multi-cause wrappers
+// that have not been registered will be encoded using the
+// opaqueWrapper type.
+func RegisterMultiCauseEncoder(typeName TypeKey, encoder MultiCauseEncoder) {
+	errbase.RegisterMultiCauseEncoder(typeName, encoder)
+}
+
+// MultiCauseEncoder is to be provided (via RegisterMultiCauseEncoder
+// above) by additional multi-cause wrapper types not yet known to this
+// library. The encoder will automatically extract and encode the
+// causes of this error by calling `Unwrap()` and expecting a slice of
+// errors.
+type MultiCauseEncoder = errbase.MultiCauseEncoder
 
 // SetWarningFn enables configuration of the warning function.
 func SetWarningFn(fn func(context.Context, string, ...interface{})) { errbase.SetWarningFn(fn) }
@@ -185,7 +234,8 @@ func Formattable(err error) fmt.Formatter { return errbase.Formattable(err) }
 // The value of previousTypeName must be the result of calling
 // reflect.TypeOf(err).String() on the original error object.
 // This is usually composed as follows:
-//     [*]<shortpackage>.<errortype>
+//
+//	[*]<shortpackage>.<errortype>
 //
 // For example, Go's standard error type has name "*errors.errorString".
 // The asterisk indicates that `errorString` implements the `error`

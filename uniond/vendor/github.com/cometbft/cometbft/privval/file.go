@@ -84,6 +84,14 @@ type FilePVLastSignState struct {
 	filePath string
 }
 
+func (lss *FilePVLastSignState) reset() {
+	lss.Height = 0
+	lss.Round = 0
+	lss.Step = 0
+	lss.Signature = nil
+	lss.SignBytes = nil
+}
+
 // CheckHRS checks the given height, round, step (HRS) against that of the
 // FilePVLastSignState. It returns an error if the arguments constitute a regression,
 // or if they match but the SignBytes are empty.
@@ -307,12 +315,7 @@ func (pv *FilePV) Save() {
 // Reset resets all fields in the FilePV.
 // NOTE: Unsafe!
 func (pv *FilePV) Reset() {
-	var sig []byte
-	pv.LastSignState.Height = 0
-	pv.LastSignState.Round = 0
-	pv.LastSignState.Step = 0
-	pv.LastSignState.Signature = sig
-	pv.LastSignState.SignBytes = nil
+	pv.LastSignState.reset()
 	pv.Save()
 }
 
@@ -332,6 +335,7 @@ func (pv *FilePV) String() string {
 // signVote checks if the vote is good to sign and sets the vote signature.
 // It may need to set the timestamp as well if the vote is otherwise the same as
 // a previously signed vote (ie. we crashed after signing but before the vote hit the WAL).
+// Extension signatures are always signed for non-nil precommits (even if the data is empty).
 func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 	height, round, step := vote.Height, vote.Round, voteToStep(vote)
 
@@ -344,6 +348,22 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 
 	signBytes := types.VoteSignBytes(chainID, vote)
 
+	// Vote extensions are non-deterministic, so it is possible that an
+	// application may have created a different extension. We therefore always
+	// re-sign the vote extensions of precommits. For prevotes and nil
+	// precommits, the extension signature will always be empty.
+	// Even if the signed over data is empty, we still add the signature
+	var extSig []byte
+	if vote.Type == cmtproto.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
+		extSignBytes := types.VoteExtensionSignBytes(chainID, vote)
+		extSig, err = pv.Key.PrivKey.Sign(extSignBytes)
+		if err != nil {
+			return err
+		}
+	} else if len(vote.Extension) > 0 {
+		return errors.New("unexpected vote extension - extensions are only allowed in non-nil precommits")
+	}
+
 	// We might crash before writing to the wal,
 	// causing us to try to re-sign for the same HRS.
 	// If signbytes are the same, use the last signature.
@@ -355,6 +375,9 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 		} else {
 			err = fmt.Errorf("conflicting data")
 		}
+
+		vote.ExtensionSignature = extSig
+
 		return err
 	}
 
@@ -365,6 +388,8 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 	}
 	pv.saveSigned(height, round, step, signBytes, sig)
 	vote.Signature = sig
+	vote.ExtensionSignature = extSig
+
 	return nil
 }
 

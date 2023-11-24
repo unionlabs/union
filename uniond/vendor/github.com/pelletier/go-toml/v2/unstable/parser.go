@@ -1013,6 +1013,7 @@ func (p *Parser) parseIntOrFloatOrDateTime(b []byte) (reference, []byte, error) 
 		return p.builder.Push(Node{
 			Kind: Float,
 			Data: b[:3],
+			Raw:  p.Range(b[:3]),
 		}), b[3:], nil
 	case 'n':
 		if !scanFollowsNan(b) {
@@ -1022,6 +1023,7 @@ func (p *Parser) parseIntOrFloatOrDateTime(b []byte) (reference, []byte, error) 
 		return p.builder.Push(Node{
 			Kind: Float,
 			Data: b[:3],
+			Raw:  p.Range(b[:3]),
 		}), b[3:], nil
 	case '+', '-':
 		return p.scanIntOrFloat(b)
@@ -1146,6 +1148,7 @@ func (p *Parser) scanIntOrFloat(b []byte) (reference, []byte, error) {
 		return p.builder.Push(Node{
 			Kind: Integer,
 			Data: b[:i],
+			Raw:  p.Range(b[:i]),
 		}), b[i:], nil
 	}
 
@@ -1169,6 +1172,7 @@ func (p *Parser) scanIntOrFloat(b []byte) (reference, []byte, error) {
 				return p.builder.Push(Node{
 					Kind: Float,
 					Data: b[:i+3],
+					Raw:  p.Range(b[:i+3]),
 				}), b[i+3:], nil
 			}
 
@@ -1180,6 +1184,7 @@ func (p *Parser) scanIntOrFloat(b []byte) (reference, []byte, error) {
 				return p.builder.Push(Node{
 					Kind: Float,
 					Data: b[:i+3],
+					Raw:  p.Range(b[:i+3]),
 				}), b[i+3:], nil
 			}
 
@@ -1202,6 +1207,7 @@ func (p *Parser) scanIntOrFloat(b []byte) (reference, []byte, error) {
 	return p.builder.Push(Node{
 		Kind: kind,
 		Data: b[:i],
+		Raw:  p.Range(b[:i]),
 	}), b[i:], nil
 }
 

@@ -45,16 +45,15 @@ to check for typos. [See example in the documentation][strict].
 
 ### Contextualized errors
 
-When most decoding errors occur, go-toml returns [`DecodeError`][decode-err]),
+When most decoding errors occur, go-toml returns [`DecodeError`][decode-err],
 which contains a human readable contextualized version of the error. For
 example:
 
 ```
-2| key1 = "value1"
-3| key2 = "missing2"
- | ~~~~ missing field
-4| key3 = "missing3"
-5| key4 = "value4"
+1| [server]
+2| path = 100
+ |        ~~~ cannot decode TOML integer into struct field toml_test.Server.Path of type string
+3| port = 50
 ```
 
 [decode-err]: https://pkg.go.dev/github.com/pelletier/go-toml/v2#DecodeError
@@ -72,6 +71,26 @@ representation.
 [tld]: https://pkg.go.dev/github.com/pelletier/go-toml/v2#LocalDate
 [tlt]: https://pkg.go.dev/github.com/pelletier/go-toml/v2#LocalTime
 [tldt]: https://pkg.go.dev/github.com/pelletier/go-toml/v2#LocalDateTime
+
+### Commented config
+
+Since TOML is often used for configuration files, go-toml can emit documents
+annotated with [comments and commented-out values][comments-example]. For
+example, it can generate the following file:
+
+```toml
+# Host IP to connect to.
+host = '127.0.0.1'
+# Port of the remote server.
+port = 4242
+
+# Encryption parameters (optional)
+# [TLS]
+# cipher = 'AEAD-AES128-GCM-SHA256'
+# version = 'TLS 1.3'
+```
+
+[comments-example]: https://pkg.go.dev/github.com/pelletier/go-toml/v2#example-Marshal-Commented
 
 ## Getting started
 
@@ -497,26 +516,19 @@ is not necessary anymore.
 
 V1 used to provide multiple struct tags: `comment`, `commented`, `multiline`,
 `toml`, and `omitempty`. To behave more like the standard library, v2 has merged
-`toml`, `multiline`, and `omitempty`. For example:
+`toml`, `multiline`, `commented`, and `omitempty`. For example:
 
 ```go
 type doc struct {
 	// v1
-	F string `toml:"field" multiline:"true" omitempty:"true"`
+	F string `toml:"field" multiline:"true" omitempty:"true" commented:"true"`
 	// v2
-	F string `toml:"field,multiline,omitempty"`
+	F string `toml:"field,multiline,omitempty,commented"`
 }
 ```
 
 Has a result, the `Encoder.SetTag*` methods have been removed, as there is just
 one tag now.
-
-
-#### `commented` tag has been removed
-
-There is no replacement for the `commented` tag. This feature would be better
-suited in a proper document model for go-toml v2, which has been [cut from
-scope][nodoc] at the moment.
 
 #### `Encoder.ArraysWithOneElementPerLine` has been renamed
 

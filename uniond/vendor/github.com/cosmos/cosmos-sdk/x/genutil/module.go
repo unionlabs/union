@@ -6,11 +6,10 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/spf13/cobra"
 
 	modulev1 "cosmossdk.io/api/cosmos/genutil/module/v1"
 	"cosmossdk.io/core/appmodule"
-
+	"cosmossdk.io/core/genesis"
 	"cosmossdk.io/depinject"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -22,8 +21,10 @@ import (
 )
 
 var (
-	_ module.AppModuleGenesis = AppModule{}
-	_ module.AppModuleBasic   = AppModuleBasic{}
+	_ module.AppModuleBasic = AppModule{}
+	_ module.HasABCIGenesis = AppModule{}
+
+	_ appmodule.AppModule = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the genutil module.
@@ -46,7 +47,7 @@ func (AppModuleBasic) Name() string {
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
 
 // RegisterInterfaces registers the module's interface types
-func (b AppModuleBasic) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
+func (b AppModuleBasic) RegisterInterfaces(cdctypes.InterfaceRegistry) {}
 
 // DefaultGenesis returns default genesis state as raw bytes for the genutil
 // module.
@@ -68,25 +69,19 @@ func (b AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, txEncodingConfig cl
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *gwruntime.ServeMux) {
 }
 
-// GetTxCmd returns no root tx command for the genutil module.
-func (AppModuleBasic) GetTxCmd() *cobra.Command { return nil }
-
-// GetQueryCmd returns no root query command for the genutil module.
-func (AppModuleBasic) GetQueryCmd() *cobra.Command { return nil }
-
 // AppModule implements an application module for the genutil module.
 type AppModule struct {
 	AppModuleBasic
 
 	accountKeeper    types.AccountKeeper
 	stakingKeeper    types.StakingKeeper
-	deliverTx        deliverTxfn
+	deliverTx        genesis.TxHandler
 	txEncodingConfig client.TxEncodingConfig
 }
 
 // NewAppModule creates a new AppModule object
 func NewAppModule(accountKeeper types.AccountKeeper,
-	stakingKeeper types.StakingKeeper, deliverTx deliverTxfn,
+	stakingKeeper types.StakingKeeper, deliverTx genesis.TxHandler,
 	txEncodingConfig client.TxEncodingConfig,
 ) module.GenesisOnlyAppModule {
 	return module.NewGenesisOnlyAppModule(AppModule{
@@ -97,8 +92,6 @@ func NewAppModule(accountKeeper types.AccountKeeper,
 		txEncodingConfig: txEncodingConfig,
 	})
 }
-
-var _ appmodule.AppModule = AppModule{}
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
 func (AppModule) IsOnePerModuleType() {}
@@ -132,16 +125,17 @@ func init() {
 	)
 }
 
-type GenutilInputs struct {
+// ModuleInputs defines the inputs needed for the genutil module.
+type ModuleInputs struct {
 	depinject.In
 
 	AccountKeeper types.AccountKeeper
 	StakingKeeper types.StakingKeeper
-	DeliverTx     func(abci.RequestDeliverTx) abci.ResponseDeliverTx
+	DeliverTx     genesis.TxHandler
 	Config        client.TxConfig
 }
 
-func ProvideModule(in GenutilInputs) appmodule.AppModule {
+func ProvideModule(in ModuleInputs) appmodule.AppModule {
 	m := NewAppModule(in.AccountKeeper, in.StakingKeeper, in.DeliverTx, in.Config)
 	return m
 }

@@ -148,6 +148,9 @@ func (enc *Encoder) SetIndentTables(indent bool) *Encoder {
 //
 // The "omitempty" option prevents empty values or groups from being emitted.
 //
+// The "commented" option prefixes the value and all its children with a comment
+// symbol.
+//
 // In addition to the "toml" tag struct tag, a "comment" tag can be used to emit
 // a TOML comment before the value being annotated. Comments are ignored inside
 // inline tables. For array tables, the comment is only present before the first
@@ -180,6 +183,7 @@ func (enc *Encoder) Encode(v interface{}) error {
 type valueOptions struct {
 	multiline bool
 	omitempty bool
+	commented bool
 	comment   string
 }
 
@@ -204,6 +208,9 @@ type encoderCtx struct {
 
 	// Indentation level
 	indent int
+
+	// Prefix the current value with a comment.
+	commented bool
 
 	// Options coming from struct tags
 	options valueOptions
@@ -273,7 +280,7 @@ func (enc *Encoder) encode(b []byte, ctx encoderCtx, v reflect.Value) ([]byte, e
 		return enc.encodeMap(b, ctx, v)
 	case reflect.Struct:
 		return enc.encodeStruct(b, ctx, v)
-	case reflect.Slice:
+	case reflect.Slice, reflect.Array:
 		return enc.encodeSlice(b, ctx, v)
 	case reflect.Interface:
 		if v.IsNil() {
@@ -357,6 +364,7 @@ func (enc *Encoder) encodeKv(b []byte, ctx encoderCtx, options valueOptions, v r
 
 	if !ctx.inline {
 		b = enc.encodeComment(ctx.indent, options.comment, b)
+		b = enc.commented(ctx.commented, b)
 		b = enc.indent(ctx.indent, b)
 	}
 
@@ -376,6 +384,13 @@ func (enc *Encoder) encodeKv(b []byte, ctx encoderCtx, options valueOptions, v r
 	}
 
 	return b, nil
+}
+
+func (enc *Encoder) commented(commented bool, b []byte) []byte {
+	if commented {
+		return append(b, "# "...)
+	}
+	return b
 }
 
 func isEmptyValue(v reflect.Value) bool {
@@ -525,6 +540,8 @@ func (enc *Encoder) encodeTableHeader(ctx encoderCtx, b []byte) ([]byte, error) 
 	}
 
 	b = enc.encodeComment(ctx.indent, ctx.options.comment, b)
+
+	b = enc.commented(ctx.commented, b)
 
 	b = enc.indent(ctx.indent, b)
 
@@ -704,6 +721,7 @@ func walkStruct(ctx encoderCtx, t *table, v reflect.Value) {
 		options := valueOptions{
 			multiline: opts.multiline,
 			omitempty: opts.omitempty,
+			commented: opts.commented,
 			comment:   fieldType.Tag.Get("comment"),
 		}
 
@@ -763,6 +781,7 @@ type tagOptions struct {
 	multiline bool
 	inline    bool
 	omitempty bool
+	commented bool
 }
 
 func parseTag(tag string) (string, tagOptions) {
@@ -790,6 +809,8 @@ func parseTag(tag string) (string, tagOptions) {
 			opts.inline = true
 		case "omitempty":
 			opts.omitempty = true
+		case "commented":
+			opts.commented = true
 		}
 	}
 
@@ -825,8 +846,10 @@ func (enc *Encoder) encodeTable(b []byte, ctx encoderCtx, t table) ([]byte, erro
 		hasNonEmptyKV = true
 
 		ctx.setKey(kv.Key)
+		ctx2 := ctx
+		ctx2.commented = kv.Options.commented || ctx2.commented
 
-		b, err = enc.encodeKv(b, ctx, kv.Options, kv.Value)
+		b, err = enc.encodeKv(b, ctx2, kv.Options, kv.Value)
 		if err != nil {
 			return nil, err
 		}
@@ -851,8 +874,10 @@ func (enc *Encoder) encodeTable(b []byte, ctx encoderCtx, t table) ([]byte, erro
 		ctx.setKey(table.Key)
 
 		ctx.options = table.Options
+		ctx2 := ctx
+		ctx2.commented = ctx2.commented || ctx.options.commented
 
-		b, err = enc.encode(b, ctx, table.Value)
+		b, err = enc.encode(b, ctx2, table.Value)
 		if err != nil {
 			return nil, err
 		}
@@ -930,7 +955,7 @@ func willConvertToTableOrArrayTable(ctx encoderCtx, v reflect.Value) bool {
 		return willConvertToTableOrArrayTable(ctx, v.Elem())
 	}
 
-	if t.Kind() == reflect.Slice {
+	if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
 		if v.Len() == 0 {
 			// An empty slice should be a kv = [].
 			return false
@@ -970,6 +995,9 @@ func (enc *Encoder) encodeSliceAsArrayTable(b []byte, ctx encoderCtx, v reflect.
 	ctx.shiftKey()
 
 	scratch := make([]byte, 0, 64)
+
+	scratch = enc.commented(ctx.commented, scratch)
+
 	scratch = append(scratch, "[["...)
 
 	for i, k := range ctx.parentKey {
@@ -984,6 +1012,10 @@ func (enc *Encoder) encodeSliceAsArrayTable(b []byte, ctx encoderCtx, v reflect.
 	ctx.skipTableHeader = true
 
 	b = enc.encodeComment(ctx.indent, ctx.options.comment, b)
+
+	if enc.indentTables {
+		ctx.indent++
+	}
 
 	for i := 0; i < v.Len(); i++ {
 		if i != 0 {

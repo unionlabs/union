@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"cosmossdk.io/math"
+	"github.com/cosmos/go-bip39"
 	"github.com/spf13/pflag"
 
-	"github.com/cosmos/go-bip39"
+	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 )
 
@@ -38,7 +37,6 @@ type Factory struct {
 	generateOnly       bool
 	memo               string
 	fees               sdk.Coins
-	tip                *tx.Tip
 	feeGranter         sdk.AccAddress
 	feePayer           sdk.AccAddress
 	gasPrices          sdk.DecCoins
@@ -50,16 +48,16 @@ type Factory struct {
 
 // NewFactoryCLI creates a new Factory.
 func NewFactoryCLI(clientCtx client.Context, flagSet *pflag.FlagSet) (Factory, error) {
-	signModeStr := clientCtx.SignModeStr
-
 	signMode := signing.SignMode_SIGN_MODE_UNSPECIFIED
-	switch signModeStr {
+	switch clientCtx.SignModeStr {
 	case flags.SignModeDirect:
 		signMode = signing.SignMode_SIGN_MODE_DIRECT
 	case flags.SignModeLegacyAminoJSON:
 		signMode = signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON
 	case flags.SignModeDirectAux:
 		signMode = signing.SignMode_SIGN_MODE_DIRECT_AUX
+	case flags.SignModeTextual:
+		signMode = signing.SignMode_SIGN_MODE_TEXTUAL
 	case flags.SignModeEIP191:
 		signMode = signing.SignMode_SIGN_MODE_EIP_191
 	}
@@ -102,11 +100,6 @@ func NewFactoryCLI(clientCtx client.Context, flagSet *pflag.FlagSet) (Factory, e
 
 	feesStr, _ := flagSet.GetString(flags.FlagFees)
 	f = f.WithFees(feesStr)
-
-	tipsStr, _ := flagSet.GetString(flags.FlagTip)
-	// Add tips to factory. The tipper is necessarily the Msg signer, i.e.
-	// the from address.
-	f = f.WithTips(tipsStr, clientCtx.FromAddress.String())
 
 	gasPricesStr, _ := flagSet.GetString(flags.FlagGasPrices)
 	f = f.WithGasPrices(gasPricesStr)
@@ -164,20 +157,6 @@ func (f Factory) WithFees(fees string) Factory {
 	}
 
 	f.fees = parsedFees
-	return f
-}
-
-// WithTips returns a copy of the Factory with an updated tip.
-func (f Factory) WithTips(tip string, tipper string) Factory {
-	parsedTips, err := sdk.ParseCoinsNormalized(tip)
-	if err != nil {
-		panic(err)
-	}
-
-	f.tip = &tx.Tip{
-		Tipper: tipper,
-		Amount: parsedTips,
-	}
 	return f
 }
 
@@ -285,7 +264,7 @@ func (f Factory) PreprocessTx(keyname string, builder client.TxBuilder) error {
 // Example to add dynamic fee extension options:
 //
 //	extOpt := ethermint.ExtensionOptionDynamicFeeTx{
-//		MaxPriorityPrice: sdk.NewInt(1000000),
+//		MaxPriorityPrice: math.NewInt(1000000),
 //	}
 //
 //	extBytes, _ := extOpt.Marshal()
@@ -308,10 +287,10 @@ func (f Factory) WithExtensionOptions(extOpts ...*codectypes.Any) Factory {
 func (f Factory) BuildUnsignedTx(msgs ...sdk.Msg) (client.TxBuilder, error) {
 	if f.offline && f.generateOnly {
 		if f.chainID != "" {
-			return nil, fmt.Errorf("chain ID cannot be used when offline and generate-only flags are set")
+			return nil, errors.New("chain ID cannot be used when offline and generate-only flags are set")
 		}
 	} else if f.chainID == "" {
-		return nil, fmt.Errorf("chain ID required but not specified")
+		return nil, errors.New("chain ID required but not specified")
 	}
 
 	fees := f.fees
@@ -389,7 +368,12 @@ func (f Factory) PrintUnsignedTx(clientCtx client.Context, msgs ...sdk.Msg) erro
 		return err
 	}
 
-	json, err := clientCtx.TxConfig.TxJSONEncoder()(unsignedTx.GetTx())
+	encoder := f.txConfig.TxJSONEncoder()
+	if encoder == nil {
+		return errors.New("cannot print unsigned tx: tx json encoder is nil")
+	}
+
+	json, err := encoder(unsignedTx.GetTx())
 	if err != nil {
 		return err
 	}
@@ -424,7 +408,12 @@ func (f Factory) BuildSimTx(msgs ...sdk.Msg) ([]byte, error) {
 		return nil, err
 	}
 
-	return f.txConfig.TxEncoder()(txb.GetTx())
+	encoder := f.txConfig.TxEncoder()
+	if encoder == nil {
+		return nil, fmt.Errorf("cannot simulate tx: tx encoder is nil")
+	}
+
+	return encoder(txb.GetTx())
 }
 
 // getSimPK gets the public key to use for building a simulation tx.

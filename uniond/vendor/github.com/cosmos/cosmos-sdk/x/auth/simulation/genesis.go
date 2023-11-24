@@ -35,7 +35,7 @@ func RandomGenesisAccounts(simState *module.SimulationState) types.GenesisAccoun
 			continue
 		}
 
-		initialVesting := sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, simState.Rand.Int63n(simState.InitialStake.Int64())))
+		initialVesting := sdk.NewCoins(sdk.NewInt64Coin(simState.BondDenom, simState.Rand.Int63n(simState.InitialStake.Int64())))
 		var endTime int64
 
 		startTime := simState.GenTimestamp.Unix()
@@ -47,7 +47,10 @@ func RandomGenesisAccounts(simState *module.SimulationState) types.GenesisAccoun
 			endTime = int64(simulation.RandIntBetween(simState.Rand, int(startTime)+1, int(startTime+(60*60*12))))
 		}
 
-		bva := vestingtypes.NewBaseVestingAccount(bacc, initialVesting, endTime)
+		bva, err := vestingtypes.NewBaseVestingAccount(bacc, initialVesting, endTime)
+		if err != nil {
+			panic(err)
+		}
 
 		if simState.Rand.Intn(100) < 50 {
 			genesisAccs[i] = vestingtypes.NewContinuousVestingAccountRaw(bva, startTime)
@@ -90,34 +93,19 @@ func GenSigVerifyCostSECP256K1(r *rand.Rand) uint64 {
 // RandomizedGenState generates a random GenesisState for auth
 func RandomizedGenState(simState *module.SimulationState, randGenAccountsFn types.RandomGenesisAccountsFn) {
 	var maxMemoChars uint64
-	simState.AppParams.GetOrGenerate(
-		simState.Cdc, MaxMemoChars, &maxMemoChars, simState.Rand,
-		func(r *rand.Rand) { maxMemoChars = GenMaxMemoChars(r) },
-	)
+	simState.AppParams.GetOrGenerate(MaxMemoChars, &maxMemoChars, simState.Rand, func(r *rand.Rand) { maxMemoChars = GenMaxMemoChars(r) })
 
 	var txSigLimit uint64
-	simState.AppParams.GetOrGenerate(
-		simState.Cdc, TxSigLimit, &txSigLimit, simState.Rand,
-		func(r *rand.Rand) { txSigLimit = GenTxSigLimit(r) },
-	)
+	simState.AppParams.GetOrGenerate(TxSigLimit, &txSigLimit, simState.Rand, func(r *rand.Rand) { txSigLimit = GenTxSigLimit(r) })
 
 	var txSizeCostPerByte uint64
-	simState.AppParams.GetOrGenerate(
-		simState.Cdc, TxSizeCostPerByte, &txSizeCostPerByte, simState.Rand,
-		func(r *rand.Rand) { txSizeCostPerByte = GenTxSizeCostPerByte(r) },
-	)
+	simState.AppParams.GetOrGenerate(TxSizeCostPerByte, &txSizeCostPerByte, simState.Rand, func(r *rand.Rand) { txSizeCostPerByte = GenTxSizeCostPerByte(r) })
 
 	var sigVerifyCostED25519 uint64
-	simState.AppParams.GetOrGenerate(
-		simState.Cdc, SigVerifyCostED25519, &sigVerifyCostED25519, simState.Rand,
-		func(r *rand.Rand) { sigVerifyCostED25519 = GenSigVerifyCostED25519(r) },
-	)
+	simState.AppParams.GetOrGenerate(SigVerifyCostED25519, &sigVerifyCostED25519, simState.Rand, func(r *rand.Rand) { sigVerifyCostED25519 = GenSigVerifyCostED25519(r) })
 
 	var sigVerifyCostSECP256K1 uint64
-	simState.AppParams.GetOrGenerate(
-		simState.Cdc, SigVerifyCostSECP256K1, &sigVerifyCostSECP256K1, simState.Rand,
-		func(r *rand.Rand) { sigVerifyCostSECP256K1 = GenSigVerifyCostSECP256K1(r) },
-	)
+	simState.AppParams.GetOrGenerate(SigVerifyCostSECP256K1, &sigVerifyCostSECP256K1, simState.Rand, func(r *rand.Rand) { sigVerifyCostSECP256K1 = GenSigVerifyCostSECP256K1(r) })
 
 	params := types.NewParams(maxMemoChars, txSigLimit, txSizeCostPerByte,
 		sigVerifyCostED25519, sigVerifyCostSECP256K1)

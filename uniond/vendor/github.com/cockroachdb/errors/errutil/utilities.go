@@ -15,6 +15,7 @@
 package errutil
 
 import (
+	"github.com/cockroachdb/errors/join"
 	"github.com/cockroachdb/errors/secondary"
 	"github.com/cockroachdb/errors/withstack"
 	"github.com/cockroachdb/redact"
@@ -157,4 +158,11 @@ func WrapWithDepthf(depth int, err error, format string, args ...interface{}) er
 	}
 	err = withstack.WithStackDepth(err, depth+1)
 	return err
+}
+
+// JoinWithDepth constructs a Join error with the provided list of
+// errors as arguments, and wraps it in a `WithStackDepth` to capture a
+// stacktrace alongside.
+func JoinWithDepth(depth int, errs ...error) error {
+	return withstack.WithStackDepth(join.Join(errs...), depth+1)
 }

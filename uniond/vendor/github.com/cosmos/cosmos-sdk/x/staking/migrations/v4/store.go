@@ -3,17 +3,17 @@ package v4
 import (
 	"sort"
 
+	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/exported"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // MigrateStore performs in-place store migrations from v3 to v4.
-func MigrateStore(ctx sdk.Context, storeKey storetypes.StoreKey, cdc codec.BinaryCodec, legacySubspace exported.Subspace) error {
-	store := ctx.KVStore(storeKey)
-
+func MigrateStore(ctx sdk.Context, store storetypes.KVStore, cdc codec.BinaryCodec, legacySubspace exported.Subspace) error {
 	// migrate params
 	if err := migrateParams(ctx, store, cdc, legacySubspace); err != nil {
 		return err
@@ -44,7 +44,7 @@ func migrateParams(ctx sdk.Context, store storetypes.KVStore, cdc codec.BinaryCo
 // migrateUBDEntries will remove the ubdEntries with same creation_height
 // and create a new ubdEntry with updated balance and initial_balance
 func migrateUBDEntries(ctx sdk.Context, store storetypes.KVStore, cdc codec.BinaryCodec, legacySubspace exported.Subspace) error {
-	iterator := sdk.KVStorePrefixIterator(store, types.UnbondingDelegationKey)
+	iterator := storetypes.KVStorePrefixIterator(store, types.UnbondingDelegationKey)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -66,8 +66,8 @@ func migrateUBDEntries(ctx sdk.Context, store storetypes.KVStore, cdc codec.Bina
 
 		for _, h := range creationHeights {
 			ubdEntry := types.UnbondingDelegationEntry{
-				Balance:        sdk.ZeroInt(),
-				InitialBalance: sdk.ZeroInt(),
+				Balance:        sdkmath.ZeroInt(),
+				InitialBalance: sdkmath.ZeroInt(),
 			}
 			for _, entry := range entriesAtSameCreationHeight[h] {
 				ubdEntry.Balance = ubdEntry.Balance.Add(entry.Balance)

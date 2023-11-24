@@ -13,14 +13,6 @@ type bitWriter struct {
 	out          []byte
 }
 
-// bitMask16 is bitmasks. Has extra to avoid bounds check.
-var bitMask16 = [32]uint16{
-	0, 1, 3, 7, 0xF, 0x1F,
-	0x3F, 0x7F, 0xFF, 0x1FF, 0x3FF, 0x7FF,
-	0xFFF, 0x1FFF, 0x3FFF, 0x7FFF, 0xFFFF, 0xFFFF,
-	0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
-	0xFFFF, 0xFFFF} /* up to 16 bits */
-
 // addBits16Clean will add up to 16 bits. value may not contain more set bits than indicated.
 // It will not check if there is space for them, so the caller must ensure that it has flushed recently.
 func (b *bitWriter) addBits16Clean(value uint16, bits uint8) {
@@ -102,10 +94,9 @@ func (b *bitWriter) flushAlign() {
 
 // close will write the alignment bit and write the final byte(s)
 // to the output.
-func (b *bitWriter) close() error {
+func (b *bitWriter) close() {
 	// End mark
 	b.addBits16Clean(1, 1)
 	// flush until next byte.
 	b.flushAlign()
-	return nil
 }

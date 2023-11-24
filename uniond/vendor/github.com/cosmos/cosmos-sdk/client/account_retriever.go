@@ -20,7 +20,7 @@ type AccountRetriever interface {
 	GetAccount(clientCtx Context, addr sdk.AccAddress) (Account, error)
 	GetAccountWithHeight(clientCtx Context, addr sdk.AccAddress) (Account, int64, error)
 	EnsureExists(clientCtx Context, addr sdk.AccAddress) error
-	GetAccountNumberSequence(clientCtx Context, addr sdk.AccAddress) (accNum uint64, accSeq uint64, err error)
+	GetAccountNumberSequence(clientCtx Context, addr sdk.AccAddress) (accNum, accSeq uint64, err error)
 }
 
 var _ AccountRetriever = (*MockAccountRetriever)(nil)

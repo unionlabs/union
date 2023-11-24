@@ -24,16 +24,6 @@ const (
 	WasmModuleEventType = types.WasmModuleEventType
 	// Deprecated: Do not use.
 	AttributeKeyContractAddr = types.AttributeKeyContractAddr
-	// Deprecated: Do not use.
-	ProposalTypeStoreCode = types.ProposalTypeStoreCode
-	// Deprecated: Do not use.
-	ProposalTypeInstantiateContract = types.ProposalTypeInstantiateContract
-	// Deprecated: Do not use.
-	ProposalTypeMigrateContract = types.ProposalTypeMigrateContract
-	// Deprecated: Do not use.
-	ProposalTypeUpdateAdmin = types.ProposalTypeUpdateAdmin
-	// Deprecated: Do not use.
-	ProposalTypeClearAdmin = types.ProposalTypeClearAdmin
 )
 
 var (
@@ -44,8 +34,6 @@ var (
 	RegisterInterfaces = types.RegisterInterfaces
 	// Deprecated: Do not use.
 	ValidateGenesis = types.ValidateGenesis
-	// Deprecated: Do not use.
-	ConvertToProposals = types.ConvertToProposals
 	// Deprecated: Do not use.
 	GetCodeKey = types.GetCodeKey
 	// Deprecated: Do not use.
@@ -99,8 +87,6 @@ var (
 	// Deprecated: Do not use.
 	TestHandler = keeper.TestHandler
 	// Deprecated: Do not use.
-	NewWasmProposalHandler = keeper.NewWasmProposalHandler //nolint:staticcheck
-	// Deprecated: Do not use.
 	NewQuerier = keeper.Querier
 	// Deprecated: Do not use.
 	ContractFromPortID = keeper.ContractFromPortID
@@ -110,8 +96,6 @@ var (
 	NewCountTXDecorator = keeper.NewCountTXDecorator
 
 	// variable aliases
-	// Deprecated: Do not use.
-	ModuleCdc = types.ModuleCdc
 	// Deprecated: Do not use.
 	DefaultCodespace = types.DefaultCodespace
 	// Deprecated: Do not use.
@@ -133,24 +117,18 @@ var (
 	// Deprecated: Do not use.
 	ErrInvalidMsg = types.ErrInvalidMsg
 	// Deprecated: Do not use.
-	KeyLastCodeID = types.KeyLastCodeID
+	KeyLastCodeID = types.KeySequenceCodeID
 	// Deprecated: Do not use.
-	KeyLastInstanceID = types.KeyLastInstanceID
+	KeyLastInstanceID = types.KeySequenceInstanceID
 	// Deprecated: Do not use.
 	CodeKeyPrefix = types.CodeKeyPrefix
 	// Deprecated: Do not use.
 	ContractKeyPrefix = types.ContractKeyPrefix
 	// Deprecated: Do not use.
 	ContractStorePrefix = types.ContractStorePrefix
-	// Deprecated: Do not use.
-	EnableAllProposals = types.EnableAllProposals
-	// Deprecated: Do not use.
-	DisableAllProposals = types.DisableAllProposals
 )
 
 type (
-	// Deprecated: Do not use.
-	ProposalType = types.ProposalType
 	// Deprecated: Do not use.
 	GenesisState = types.GenesisState
 	// Deprecated: Do not use.

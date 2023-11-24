@@ -4,7 +4,12 @@ import (
 	_ "embed"
 
 	typwasmvmtypes "github.com/CosmWasm/wasmvm/types"
+
 	"github.com/cosmos/cosmos-sdk/types"
+)
+
+const (
+	ChecksumHackatom = "3f4cd47c39c57fe1733fb41ed176eebd9d5c67baf5df8a1eeda1455e758f8514"
 )
 
 var (

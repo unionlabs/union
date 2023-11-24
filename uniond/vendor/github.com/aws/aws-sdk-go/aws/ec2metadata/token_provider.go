@@ -1,6 +1,7 @@
 package ec2metadata
 
 import (
+	"fmt"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -33,11 +34,15 @@ func newTokenProvider(c *EC2Metadata, duration time.Duration) *tokenProvider {
 	return &tokenProvider{client: c, configuredTTL: duration}
 }
 
+// check if fallback is enabled
+func (t *tokenProvider) fallbackEnabled() bool {
+	return t.client.Config.EC2MetadataEnableFallback == nil || *t.client.Config.EC2MetadataEnableFallback
+}
+
 // fetchTokenHandler fetches token for EC2Metadata service client by default.
 func (t *tokenProvider) fetchTokenHandler(r *request.Request) {
-
 	// short-circuits to insecure data flow if tokenProvider is disabled.
-	if v := atomic.LoadUint32(&t.disabled); v == 1 {
+	if v := atomic.LoadUint32(&t.disabled); v == 1 && t.fallbackEnabled() {
 		return
 	}
 
@@ -49,22 +54,20 @@ func (t *tokenProvider) fetchTokenHandler(r *request.Request) {
 	output, err := t.client.getToken(r.Context(), t.configuredTTL)
 
 	if err != nil {
+		// only attempt fallback to insecure data flow if IMDSv1 is enabled
+		if !t.fallbackEnabled() {
+			r.Error = awserr.New("EC2MetadataError", "failed to get IMDSv2 token and fallback to IMDSv1 is disabled", err)
+			return
+		}
 
-		// change the disabled flag on token provider to true,
-		// when error is request timeout error.
+		// change the disabled flag on token provider to true and fallback
 		if requestFailureError, ok := err.(awserr.RequestFailure); ok {
 			switch requestFailureError.StatusCode() {
 			case http.StatusForbidden, http.StatusNotFound, http.StatusMethodNotAllowed:
 				atomic.StoreUint32(&t.disabled, 1)
+				t.client.Config.Logger.Log(fmt.Sprintf("WARN: failed to get session token, falling back to IMDSv1: %v", requestFailureError))
 			case http.StatusBadRequest:
 				r.Error = requestFailureError
-			}
-
-			// Check if request timed out while waiting for response
-			if e, ok := requestFailureError.OrigErr().(awserr.Error); ok {
-				if e.Code() == request.ErrCodeRequestError {
-					atomic.StoreUint32(&t.disabled, 1)
-				}
 			}
 		}
 		return

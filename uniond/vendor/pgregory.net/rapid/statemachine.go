@@ -7,137 +7,103 @@
 package rapid
 
 import (
-	"math"
 	"reflect"
 	"sort"
 	"testing"
 )
 
 const (
-	actionLabel      = "action"
-	validActionTries = 100 // hack, but probably good enough for now
-
-	initMethodName    = "Init"
+	actionLabel       = "action"
+	validActionTries  = 100 // hack, but probably good enough for now
 	checkMethodName   = "Check"
-	cleanupMethodName = "Cleanup"
-
-	noValidActionsMsg = "can't find a valid action"
+	noValidActionsMsg = "can't find a valid (non-skipped) action"
 )
+
+// Repeat executes a random sequence of actions (often called a "state machine" test).
+// actions[""], if set, is executed before/after every other action invocation
+// and should only contain invariant checking code.
+//
+// For complex state machines, it can be more convenient to specify actions as
+// methods of a special state machine type. In this case, [StateMachineActions]
+// can be used to create an actions map from state machine methods using reflection.
+func (t *T) Repeat(actions map[string]func(*T)) {
+	t.Helper()
+
+	check := func(*T) {}
+	actionKeys := make([]string, 0, len(actions))
+	for key, action := range actions {
+		if key != "" {
+			actionKeys = append(actionKeys, key)
+		} else {
+			check = action
+		}
+	}
+	if len(actionKeys) == 0 {
+		return
+	}
+	sort.Strings(actionKeys)
+
+	steps := flags.steps
+	if testing.Short() {
+		steps /= 2
+	}
+
+	repeat := newRepeat(-1, -1, float64(steps), "Repeat")
+	sm := stateMachine{
+		check:      check,
+		actionKeys: SampledFrom(actionKeys),
+		actions:    actions,
+	}
+
+	sm.check(t)
+	t.failOnError()
+	for repeat.more(t.s) {
+		ok := sm.executeAction(t)
+		if ok {
+			sm.check(t)
+			t.failOnError()
+		} else {
+			repeat.reject()
+		}
+	}
+}
 
 type StateMachine interface {
 	// Check is ran after every action and should contain invariant checks.
 	//
-	// Other public methods are treated as follows:
-	// - Init(t *rapid.T), if present, is ran at the beginning of each test case
-	//   to initialize the state machine instance;
-	// - Cleanup(), if present, is called at the end of each test case;
-	// - All other public methods should have a form ActionName(t *rapid.T)
-	//   and are used as possible actions. At least one action has to be specified.
-	//
+	// All other public methods should have a form ActionName(t *rapid.T)
+	// and are used as possible actions. At least one action has to be specified.
 	Check(*T)
 }
 
-// Run is a convenience function for defining "state machine" tests,
-// to be run by [Check] or [MakeCheck].
-//
-// State machine test is a pattern for testing stateful systems that looks
-// like this:
-//
-//	m := new(StateMachineType)
-//	m.Init(t)          // optional
-//	defer m.Cleanup()  // optional
-//	m.Check(t)
-//	for {
-//	    m.RandomAction(t)
-//	    m.Check(t)
-//	}
-//
-// Run synthesizes such test from the M type, which must be a pointer,
-// using reflection.
-func Run[M StateMachine]() func(*T) {
-	var m M
-	typ := reflect.TypeOf(m)
+// StateMachineActions creates an actions map for [*T.Repeat]
+// from methods of a [StateMachine] type instance using reflection.
+func StateMachineActions(sm StateMachine) map[string]func(*T) {
+	var (
+		v = reflect.ValueOf(sm)
+		t = v.Type()
+		n = t.NumMethod()
+	)
 
-	steps := flags.steps
-	if testing.Short() {
-		steps /= 5
-	}
-
-	return func(t *T) {
-		t.Helper()
-
-		repeat := newRepeat(0, steps, math.MaxInt, typ.String())
-
-		sm := newStateMachine(typ)
-		if sm.init != nil {
-			sm.init(t)
-			t.failOnError()
-		}
-		if sm.cleanup != nil {
-			defer sm.cleanup()
-		}
-
-		sm.check(t)
-		t.failOnError()
-		for repeat.more(t.s) {
-			ok := sm.executeAction(t)
-			if ok {
-				sm.check(t)
-				t.failOnError()
-			} else {
-				repeat.reject()
-			}
+	actions := make(map[string]func(*T), n)
+	for i := 0; i < n; i++ {
+		name := t.Method(i).Name
+		m, ok := v.Method(i).Interface().(func(*T))
+		if ok && name != checkMethodName {
+			actions[name] = m
 		}
 	}
+
+	assertf(len(actions) > 0, "state machine of type %v has no actions specified", t)
+	actions[""] = sm.Check
+
+	return actions
 }
 
 type stateMachine struct {
-	init       func(*T)
-	cleanup    func()
 	check      func(*T)
 	actionKeys *Generator[string]
 	actions    map[string]func(*T)
-}
-
-func newStateMachine(typ reflect.Type) *stateMachine {
-	assertf(typ.Kind() == reflect.Ptr, "state machine type should be a pointer, not %v", typ.Kind())
-
-	var (
-		v          = reflect.New(typ.Elem())
-		n          = typ.NumMethod()
-		init       func(*T)
-		cleanup    func()
-		actionKeys []string
-		actions    = map[string]func(*T){}
-	)
-
-	for i := 0; i < n; i++ {
-		name := typ.Method(i).Name
-		m, ok := v.Method(i).Interface().(func(*T))
-		if ok {
-			if name == initMethodName {
-				init = m
-			} else if name != checkMethodName {
-				actionKeys = append(actionKeys, name)
-				actions[name] = m
-			}
-		} else if name == cleanupMethodName {
-			m, ok := v.Method(i).Interface().(func())
-			assertf(ok, "method %v should have type func(), not %v", cleanupMethodName, v.Method(i).Type())
-			cleanup = m
-		}
-	}
-
-	assertf(len(actions) > 0, "state machine of type %v has no actions specified", typ)
-	sort.Strings(actionKeys)
-
-	return &stateMachine{
-		init:       init,
-		cleanup:    cleanup,
-		check:      v.Interface().(StateMachine).Check,
-		actionKeys: SampledFrom(actionKeys),
-		actions:    actions,
-	}
 }
 
 func (sm *stateMachine) executeAction(t *T) bool {

@@ -1,3 +1,0 @@
-cleanup() {
-    ( cd "$GOBIN" && rm -vf -- copytree )
-}

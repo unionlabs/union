@@ -58,6 +58,16 @@ func (opts *IngestExternalFileOptions) SetIngestionBehind(flag bool) {
 	C.rocksdb_ingestexternalfileoptions_set_ingest_behind(opts.c, boolToChar(flag))
 }
 
+// SetFailIfNotBottommostLevel sets to TRUE if user wants file to be ingested to the bottommost level. An
+// error of Status::TryAgain() will be returned if a file cannot fit in the bottommost level when calling
+// DB::IngestExternalFile()/DB::IngestExternalFiles().
+//
+// The user should clear the bottommost level in the overlapping range before re-attempt.
+// Ingest_behind takes precedence over fail_if_not_bottommost_level.
+func (opts *IngestExternalFileOptions) SetFailIfNotBottommostLevel(flag bool) {
+	C.rocksdb_ingestexternalfileoptions_set_fail_if_not_bottommost_level(opts.c, boolToChar(flag))
+}
+
 // Destroy deallocates the IngestExternalFileOptions object.
 func (opts *IngestExternalFileOptions) Destroy() {
 	C.rocksdb_ingestexternalfileoptions_destroy(opts.c)

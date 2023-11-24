@@ -1,12 +1,12 @@
 # gorilla/mux
 
-[![GoDoc](https://godoc.org/github.com/gorilla/mux?status.svg)](https://godoc.org/github.com/gorilla/mux)
-[![CircleCI](https://circleci.com/gh/gorilla/mux.svg?style=svg)](https://circleci.com/gh/gorilla/mux)
-[![Sourcegraph](https://sourcegraph.com/github.com/gorilla/mux/-/badge.svg)](https://sourcegraph.com/github.com/gorilla/mux?badge)
+![testing](https://github.com/gorilla/mux/actions/workflows/test.yml/badge.svg)
+[![codecov](https://codecov.io/github/gorilla/mux/branch/main/graph/badge.svg)](https://codecov.io/github/gorilla/mux)
+[![godoc](https://godoc.org/github.com/gorilla/mux?status.svg)](https://godoc.org/github.com/gorilla/mux)
+[![sourcegraph](https://sourcegraph.com/github.com/gorilla/mux/-/badge.svg)](https://sourcegraph.com/github.com/gorilla/mux?badge)
 
-![Gorilla Logo](https://cloud-cdn.questionable.services/gorilla-icon-64.png)
 
-https://www.gorillatoolkit.org/pkg/mux
+![Gorilla Logo](https://github.com/gorilla/.github/assets/53367916/d92caabf-98e0-473e-bfbf-ab554ba435e5)
 
 Package `gorilla/mux` implements a request router and dispatcher for matching incoming requests to
 their respective handler.
@@ -247,32 +247,25 @@ type spaHandler struct {
 // file located at the index path on the SPA handler will be served. This
 // is suitable behavior for serving an SPA (single page application).
 func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    // get the absolute path to prevent directory traversal
-	path, err := filepath.Abs(r.URL.Path)
-	if err != nil {
-        // if we failed to get the absolute path respond with a 400 bad request
-        // and stop
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// Join internally call path.Clean to prevent directory traversal
+	path := filepath.Join(h.staticPath, r.URL.Path)
 
-    // prepend the path with the path to the static directory
-	path = filepath.Join(h.staticPath, path)
-
-    // check whether a file exists at the given path
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
-		// file does not exist, serve index.html
+	// check whether a file exists or is a directory at the given path
+	fi, err := os.Stat(path)
+	if os.IsNotExist(err) || fi.IsDir() {
+		// file does not exist or path is a directory, serve index.html
 		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
 		return
-	} else if err != nil {
-        // if we got an error (that wasn't that the file doesn't exist) stating the
-        // file, return a 500 internal server error and stop
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 
-    // otherwise, use http.FileServer to serve the static dir
+	if err != nil {
+		// if we got an error (that wasn't that the file doesn't exist) stating the
+		// file, return a 500 internal server error and stop
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+	}
+
+	// otherwise, use http.FileServer to serve the static file
 	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
 }
 
@@ -375,6 +368,19 @@ url, err := r.Get("article").URL("subdomain", "news",
                                  "id", "42")
 ```
 
+To find all the required variables for a given route when calling `URL()`, the method `GetVarNames()` is available:
+```go
+r := mux.NewRouter()
+r.Host("{domain}").
+    Path("/{group}/{item_id}").
+    Queries("some_data1", "{some_data1}").
+    Queries("some_data2", "{some_data2}").
+    Name("article")
+
+// Will print [domain group item_id some_data1 some_data2] <nil>
+fmt.Println(r.Get("article").GetVarNames())
+
+```
 ### Walking Routes
 
 The `Walk` function on `mux.Router` can be used to visit all of the routes that are registered on a router. For example,
@@ -572,7 +578,7 @@ func (amw *authenticationMiddleware) Middleware(next http.Handler) http.Handler 
 r := mux.NewRouter()
 r.HandleFunc("/", handler)
 
-amw := authenticationMiddleware{}
+amw := authenticationMiddleware{tokenUsers: make(map[string]string)}
 amw.Populate()
 
 r.Use(amw.Middleware)
@@ -758,7 +764,8 @@ func TestMetricsHandler(t *testing.T) {
 
         rr := httptest.NewRecorder()
 	
-	// Need to create a router that we can pass the request through so that the vars will be added to the context
+	// To add the vars to the context, 
+	// we need to create a router through which we can pass the request.
 	router := mux.NewRouter()
         router.HandleFunc("/metrics/{type}", MetricsHandler)
         router.ServeHTTP(rr, req)

@@ -129,7 +129,7 @@ func WithEncoderPadding(n int) EOption {
 		}
 		// No need to waste our time.
 		if n == 1 {
-			o.pad = 0
+			n = 0
 		}
 		if n > 1<<30 {
 			return fmt.Errorf("padding must less than 1GB (1<<30 bytes) ")

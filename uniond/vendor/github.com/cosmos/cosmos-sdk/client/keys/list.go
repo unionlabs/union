@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 )
 
 const flagListNames = "list-names"
@@ -33,7 +34,7 @@ func runListCmd(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if len(records) == 0 && clientCtx.OutputFormat == OutputFormatJSON {
+	if len(records) == 0 && clientCtx.OutputFormat == flags.OutputFormatText {
 		cmd.Println("No records were found in keyring")
 		return nil
 	}

@@ -25,7 +25,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 				fmt.Errorf("error reading request body: %w", err),
 			)
 			if wErr := WriteRPCResponseHTTPError(w, http.StatusBadRequest, res); wErr != nil {
-				logger.Error("failed to write response", "res", res, "err", wErr)
+				logger.Error("failed to write response", "err", wErr)
 			}
 			return
 		}
@@ -48,7 +48,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			if err := json.Unmarshal(b, &request); err != nil {
 				res := types.RPCParseError(fmt.Errorf("error unmarshaling request: %w", err))
 				if wErr := WriteRPCResponseHTTPError(w, http.StatusInternalServerError, res); wErr != nil {
-					logger.Error("failed to write response", "res", res, "err", wErr)
+					logger.Error("failed to write response", "err", wErr)
 				}
 				return
 			}
@@ -122,7 +122,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 				wErr = WriteRPCResponseHTTP(w, responses...)
 			}
 			if wErr != nil {
-				logger.Error("failed to write responses", "res", responses, "err", wErr)
+				logger.Error("failed to write responses", "err", wErr)
 			}
 		}
 	}

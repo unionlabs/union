@@ -139,6 +139,8 @@ var _ HTTPClient = (*Client)(nil)
 var _ Caller = (*Client)(nil)
 var _ Caller = (*RequestBatch)(nil)
 
+var _ fmt.Stringer = (*Client)(nil)
+
 // New returns a Client pointed at the given address.
 // An error is returned on invalid remote. The function panics when remote is nil.
 func New(remote string) (*Client, error) {
@@ -230,6 +232,10 @@ func (c *Client) Call(
 
 func getHTTPRespErrPrefix(resp *http.Response) string {
 	return fmt.Sprintf("error in json rpc client, with http response metadata: (Status: %s, Protocol %s)", resp.Status, resp.Proto)
+}
+
+func (c *Client) String() string {
+	return fmt.Sprintf("&Client{user=%v, addr=%v, client=%v, nextReqID=%v}", c.username, c.address, c.client, c.nextReqID)
 }
 
 // NewRequestBatch starts a batch of requests for this client.

@@ -2,6 +2,7 @@ package sentry
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"runtime"
 	"runtime/debug"
@@ -178,6 +179,40 @@ func getIgnoreErrorsSuspects(event *Event) []string {
 }
 
 // ================================
+// Ignore Transactions Integration
+// ================================
+
+type ignoreTransactionsIntegration struct {
+	ignoreTransactions []*regexp.Regexp
+}
+
+func (iei *ignoreTransactionsIntegration) Name() string {
+	return "IgnoreTransactions"
+}
+
+func (iei *ignoreTransactionsIntegration) SetupOnce(client *Client) {
+	iei.ignoreTransactions = transformStringsIntoRegexps(client.options.IgnoreTransactions)
+	client.AddEventProcessor(iei.processor)
+}
+
+func (iei *ignoreTransactionsIntegration) processor(event *Event, hint *EventHint) *Event {
+	suspect := event.Transaction
+	if suspect == "" {
+		return event
+	}
+
+	for _, pattern := range iei.ignoreTransactions {
+		if pattern.Match([]byte(suspect)) {
+			Logger.Printf("Transaction dropped due to being matched by `IgnoreTransactions` option."+
+				"| Value matched: %s | Filter used: %s", suspect, pattern)
+			return nil
+		}
+	}
+
+	return event
+}
+
+// ================================
 // Contextify Frames Integration
 // ================================
 
@@ -290,4 +325,67 @@ func (cfi *contextifyFramesIntegration) addContextLinesToFrame(frame Frame, line
 		}
 	}
 	return frame
+}
+
+// ================================
+// Global Tags Integration
+// ================================
+
+const envTagsPrefix = "SENTRY_TAGS_"
+
+type globalTagsIntegration struct {
+	tags    map[string]string
+	envTags map[string]string
+}
+
+func (ti *globalTagsIntegration) Name() string {
+	return "GlobalTags"
+}
+
+func (ti *globalTagsIntegration) SetupOnce(client *Client) {
+	ti.tags = make(map[string]string, len(client.options.Tags))
+	for k, v := range client.options.Tags {
+		ti.tags[k] = v
+	}
+
+	ti.envTags = loadEnvTags()
+
+	client.AddEventProcessor(ti.processor)
+}
+
+func (ti *globalTagsIntegration) processor(event *Event, hint *EventHint) *Event {
+	if len(ti.tags) == 0 && len(ti.envTags) == 0 {
+		return event
+	}
+
+	if event.Tags == nil {
+		event.Tags = make(map[string]string, len(ti.tags)+len(ti.envTags))
+	}
+
+	for k, v := range ti.tags {
+		if _, ok := event.Tags[k]; !ok {
+			event.Tags[k] = v
+		}
+	}
+
+	for k, v := range ti.envTags {
+		if _, ok := event.Tags[k]; !ok {
+			event.Tags[k] = v
+		}
+	}
+
+	return event
+}
+
+func loadEnvTags() map[string]string {
+	tags := map[string]string{}
+	for _, pair := range os.Environ() {
+		parts := strings.Split(pair, "=")
+		if !strings.HasPrefix(parts[0], envTagsPrefix) {
+			continue
+		}
+		tag := strings.TrimPrefix(parts[0], envTagsPrefix)
+		tags[tag] = parts[1]
+	}
+	return tags
 }

@@ -3,27 +3,28 @@ package types
 import (
 	"sort"
 
-	"cosmossdk.io/math"
-
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/gogoproto/proto"
+
+	"cosmossdk.io/core/address"
+	"cosmossdk.io/errors"
+	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // NewHistoricalInfo will create a historical information struct from header and valset
 // it will first sort valset before inclusion into historical info
-func NewHistoricalInfo(header tmproto.Header, valSet Validators, powerReduction math.Int) HistoricalInfo {
-	// Must sort in the same way that tendermint does
-	sort.SliceStable(valSet, func(i, j int) bool {
-		return ValidatorsByVotingPower(valSet).Less(i, j, powerReduction)
+func NewHistoricalInfo(header cmtproto.Header, valSet Validators, powerReduction math.Int) HistoricalInfo {
+	// Must sort in the same way that CometBFT does
+	sort.SliceStable(valSet.Validators, func(i, j int) bool {
+		return ValidatorsByVotingPower(valSet.Validators).Less(i, j, powerReduction)
 	})
 
 	return HistoricalInfo{
 		Header: header,
-		Valset: valSet,
+		Valset: valSet.Validators,
 	}
 }
 
@@ -44,13 +45,13 @@ func UnmarshalHistoricalInfo(cdc codec.BinaryCodec, value []byte) (hi Historical
 }
 
 // ValidateBasic will ensure HistoricalInfo is not nil and sorted
-func ValidateBasic(hi HistoricalInfo) error {
+func ValidateBasic(hi HistoricalInfo, valAc address.Codec) error {
 	if len(hi.Valset) == 0 {
-		return sdkerrors.Wrap(ErrInvalidHistoricalInfo, "validator set is empty")
+		return errors.Wrap(ErrInvalidHistoricalInfo, "validator set is empty")
 	}
 
-	if !sort.IsSorted(Validators(hi.Valset)) {
-		return sdkerrors.Wrap(ErrInvalidHistoricalInfo, "validator set is not sorted by address")
+	if !sort.IsSorted(Validators{Validators: hi.Valset, ValidatorCodec: valAc}) {
+		return errors.Wrap(ErrInvalidHistoricalInfo, "validator set is not sorted by address")
 	}
 
 	return nil

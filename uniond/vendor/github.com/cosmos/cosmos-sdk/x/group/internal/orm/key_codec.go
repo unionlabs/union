@@ -3,7 +3,8 @@ package orm
 import (
 	"fmt"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/x/group/errors"
 )
 
@@ -59,7 +60,7 @@ func keyPartBytes(part interface{}, last bool) ([]byte, error) {
 func AddLengthPrefix(bytes []byte) []byte {
 	byteLen := len(bytes)
 	if byteLen > MaxBytesLen {
-		panic(sdkerrors.Wrap(errors.ErrORMKeyMaxLength, "Cannot create key part with an []byte of length greater than 255 bytes. Try again with a smaller []byte."))
+		panic(errorsmod.Wrap(errors.ErrORMKeyMaxLength, "Cannot create key part with an []byte of length greater than 255 bytes. Try again with a smaller []byte."))
 	}
 
 	prefixedBytes := make([]byte, 1+len(bytes))

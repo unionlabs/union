@@ -1,3 +1,1 @@
-v1.3.0
-burner.wasm: v1.2.0
-ibc-reflect.wasm: custom build, see: https://github.com/CosmWasm/cosmwasm/pull/1690
+v1.4.0

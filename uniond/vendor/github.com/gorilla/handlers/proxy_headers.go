@@ -18,7 +18,7 @@ var (
 var (
 	// RFC7239 defines a new "Forwarded: " header designed to replace the
 	// existing use of X-Forwarded-* headers.
-	// e.g. Forwarded: for=192.0.2.60;proto=https;by=203.0.113.43
+	// e.g. Forwarded: for=192.0.2.60;proto=https;by=203.0.113.43.
 	forwarded = http.CanonicalHeaderKey("Forwarded")
 	// Allows for a sub-match of the first value after 'for=' to the next
 	// comma, semi-colon or space. The match is case-insensitive.
@@ -67,7 +67,9 @@ func ProxyHeaders(h http.Handler) http.Handler {
 func getIP(r *http.Request) string {
 	var addr string
 
-	if fwd := r.Header.Get(xForwardedFor); fwd != "" {
+	switch {
+	case r.Header.Get(xForwardedFor) != "":
+		fwd := r.Header.Get(xForwardedFor)
 		// Only grab the first (client) address. Note that '192.168.0.1,
 		// 10.1.1.1' is a valid key for X-Forwarded-For where addresses after
 		// the first may represent forwarding proxies earlier in the chain.
@@ -76,17 +78,15 @@ func getIP(r *http.Request) string {
 			s = len(fwd)
 		}
 		addr = fwd[:s]
-	} else if fwd := r.Header.Get(xRealIP); fwd != "" {
-		// X-Real-IP should only contain one IP address (the client making the
-		// request).
-		addr = fwd
-	} else if fwd := r.Header.Get(forwarded); fwd != "" {
+	case r.Header.Get(xRealIP) != "":
+		addr = r.Header.Get(xRealIP)
+	case r.Header.Get(forwarded) != "":
 		// match should contain at least two elements if the protocol was
 		// specified in the Forwarded header. The first element will always be
 		// the 'for=' capture, which we ignore. In the case of multiple IP
 		// addresses (for=8.8.8.8, 8.8.4.4,172.16.1.20 is valid) we only
 		// extract the first, which should be the client IP.
-		if match := forRegex.FindStringSubmatch(fwd); len(match) > 1 {
+		if match := forRegex.FindStringSubmatch(r.Header.Get(forwarded)); len(match) > 1 {
 			// IPv6 addresses in Forwarded headers are quoted-strings. We strip
 			// these quotes.
 			addr = strings.Trim(match[1], `"`)

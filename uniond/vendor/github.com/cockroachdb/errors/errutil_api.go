@@ -192,3 +192,19 @@ func HandleAsAssertionFailureDepth(depth int, origErr error) error {
 // - it also supports recursing through causes with Cause().
 // - if it detects an API use error, its panic object is a valid error.
 func As(err error, target interface{}) bool { return errutil.As(err, target) }
+
+// Join returns an error that wraps the given errors.
+// Any nil error values are discarded.
+// Join returns nil if errs contains no non-nil values.
+// The error formats as the concatenation of the strings obtained
+// by calling the Error method of each element of errs, with a newline
+// between each string. A stack trace is also retained.
+func Join(errs ...error) error {
+	return errutil.JoinWithDepth(1, errs...)
+}
+
+// JoinWithDepth is like Join but the depth at which the call stack is
+// captured can be specified.
+func JoinWithDepth(depth int, errs ...error) error {
+	return errutil.JoinWithDepth(depth+1, errs...)
+}

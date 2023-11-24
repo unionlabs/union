@@ -29,12 +29,12 @@ const (
 var Secp256k1 = secp256k1Algo{}
 
 type (
-	DeriveFn   func(mnemonic string, bip39Passphrase, hdPath string) ([]byte, error)
+	DeriveFn   func(mnemonic, bip39Passphrase, hdPath string) ([]byte, error)
 	GenerateFn func(bz []byte) types.PrivKey
 )
 
 type WalletGenerator interface {
-	Derive(mnemonic string, bip39Passphrase, hdPath string) ([]byte, error)
+	Derive(mnemonic, bip39Passphrase, hdPath string) ([]byte, error)
 	Generate(bz []byte) types.PrivKey
 }
 
@@ -46,7 +46,7 @@ func (s secp256k1Algo) Name() PubKeyType {
 
 // Derive derives and returns the secp256k1 private key for the given seed and HD path.
 func (s secp256k1Algo) Derive() DeriveFn {
-	return func(mnemonic string, bip39Passphrase, hdPath string) ([]byte, error) {
+	return func(mnemonic, bip39Passphrase, hdPath string) ([]byte, error) {
 		seed, err := bip39.NewSeedWithErrorChecking(mnemonic, bip39Passphrase)
 		if err != nil {
 			return nil, err

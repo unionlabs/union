@@ -7,8 +7,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/cosmos-sdk/x/group"
 	"github.com/cosmos/cosmos-sdk/x/group/errors"
@@ -23,7 +24,7 @@ func (k Keeper) GroupInfo(goCtx context.Context, request *group.QueryGroupInfoRe
 	groupID := request.GroupId
 	groupInfo, err := k.getGroupInfo(ctx, groupID)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "group")
+		return nil, errorsmod.Wrap(err, "group")
 	}
 
 	return &group.QueryGroupInfoResponse{Info: &groupInfo}, nil
@@ -38,10 +39,15 @@ func (k Keeper) getGroupInfo(ctx sdk.Context, id uint64) (group.GroupInfo, error
 
 // GroupPolicyInfo queries info about a group policy.
 func (k Keeper) GroupPolicyInfo(goCtx context.Context, request *group.QueryGroupPolicyInfoRequest) (*group.QueryGroupPolicyInfoResponse, error) {
+	_, err := k.accKeeper.AddressCodec().StringToBytes(request.Address)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	groupPolicyInfo, err := k.getGroupPolicyInfo(ctx, request.Address)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "group policy")
+		return nil, errorsmod.Wrap(err, "group policy")
 	}
 
 	return &group.QueryGroupPolicyInfoResponse{Info: &groupPolicyInfo}, nil
@@ -82,7 +88,7 @@ func (k Keeper) getGroupMembers(ctx sdk.Context, id uint64, pageRequest *query.P
 // GroupsByAdmin queries all groups where a given address is admin.
 func (k Keeper) GroupsByAdmin(goCtx context.Context, request *group.QueryGroupsByAdminRequest) (*group.QueryGroupsByAdminResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	addr, err := sdk.AccAddressFromBech32(request.Admin)
+	addr, err := k.accKeeper.AddressCodec().StringToBytes(request.Admin)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +144,7 @@ func (k Keeper) getGroupPoliciesByGroup(ctx sdk.Context, id uint64, pageRequest 
 // admin.
 func (k Keeper) GroupPoliciesByAdmin(goCtx context.Context, request *group.QueryGroupPoliciesByAdminRequest) (*group.QueryGroupPoliciesByAdminResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	addr, err := sdk.AccAddressFromBech32(request.Admin)
+	addr, err := k.accKeeper.AddressCodec().StringToBytes(request.Admin)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +185,7 @@ func (k Keeper) Proposal(goCtx context.Context, request *group.QueryProposalRequ
 // ProposalsByGroupPolicy queries all proposals of a group policy.
 func (k Keeper) ProposalsByGroupPolicy(goCtx context.Context, request *group.QueryProposalsByGroupPolicyRequest) (*group.QueryProposalsByGroupPolicyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	addr, err := sdk.AccAddressFromBech32(request.Address)
+	addr, err := k.accKeeper.AddressCodec().StringToBytes(request.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +215,7 @@ func (k Keeper) getProposalsByGroupPolicy(ctx sdk.Context, account sdk.AccAddres
 func (k Keeper) getProposal(ctx sdk.Context, proposalID uint64) (group.Proposal, error) {
 	var p group.Proposal
 	if _, err := k.proposalTable.GetOne(ctx.KVStore(k.key), proposalID, &p); err != nil {
-		return group.Proposal{}, sdkerrors.Wrap(err, "load proposal")
+		return group.Proposal{}, errorsmod.Wrap(err, "load proposal")
 	}
 	return p, nil
 }
@@ -217,7 +223,7 @@ func (k Keeper) getProposal(ctx sdk.Context, proposalID uint64) (group.Proposal,
 // VoteByProposalVoter queries a vote given a voter and a proposal ID.
 func (k Keeper) VoteByProposalVoter(goCtx context.Context, request *group.QueryVoteByProposalVoterRequest) (*group.QueryVoteByProposalVoterResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	addr, err := sdk.AccAddressFromBech32(request.Voter)
+	addr, err := k.accKeeper.AddressCodec().StringToBytes(request.Voter)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +261,7 @@ func (k Keeper) VotesByProposal(goCtx context.Context, request *group.QueryVotes
 // VotesByVoter queries all votes of a voter.
 func (k Keeper) VotesByVoter(goCtx context.Context, request *group.QueryVotesByVoterRequest) (*group.QueryVotesByVoterResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	addr, err := sdk.AccAddressFromBech32(request.Voter)
+	addr, err := k.accKeeper.AddressCodec().StringToBytes(request.Voter)
 	if err != nil {
 		return nil, err
 	}
@@ -283,12 +289,12 @@ func (k Keeper) GroupsByMember(goCtx context.Context, request *group.QueryGroups
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	member, err := sdk.AccAddressFromBech32(request.Address)
+	member, err := k.accKeeper.AddressCodec().StringToBytes(request.Address)
 	if err != nil {
 		return nil, err
 	}
 
-	iter, err := k.groupMemberByMemberIndex.GetPaginated(ctx.KVStore(k.key), member.Bytes(), request.Pagination)
+	iter, err := k.groupMemberByMemberIndex.GetPaginated(ctx.KVStore(k.key), member, request.Pagination)
 	if err != nil {
 		return nil, err
 	}
@@ -341,12 +347,12 @@ func (k Keeper) TallyResult(goCtx context.Context, request *group.QueryTallyResu
 	}
 
 	if proposal.Status == group.PROPOSAL_STATUS_WITHDRAWN || proposal.Status == group.PROPOSAL_STATUS_ABORTED {
-		return nil, sdkerrors.Wrapf(errors.ErrInvalid, "can't get the tally of a proposal with status %s", proposal.Status)
+		return nil, errorsmod.Wrapf(errors.ErrInvalid, "can't get the tally of a proposal with status %s", proposal.Status)
 	}
 
 	var policyInfo group.GroupPolicyInfo
 	if policyInfo, err = k.getGroupPolicyInfo(ctx, proposal.GroupPolicyAddress); err != nil {
-		return nil, sdkerrors.Wrap(err, "load group policy")
+		return nil, errorsmod.Wrap(err, "load group policy")
 	}
 
 	tallyResult, err := k.Tally(ctx, proposal, policyInfo.GroupId)

@@ -17,12 +17,6 @@ func (s *SignDocDirectAux) ValidateBasic() error {
 		return sdkerrors.ErrInvalidPubKey.Wrap("public key cannot be empty")
 	}
 
-	if s.Tip != nil {
-		if s.Tip.Tipper == "" {
-			return sdkerrors.ErrInvalidRequest.Wrap("tipper cannot be empty")
-		}
-	}
-
 	return nil
 }
 

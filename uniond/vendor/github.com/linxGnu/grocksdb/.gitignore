@@ -18,3 +18,4 @@ libs/bzip2/libbz2.a
 build/*
 .vscode/c_cpp_properties.json
 dist
+.vscode/settings.json

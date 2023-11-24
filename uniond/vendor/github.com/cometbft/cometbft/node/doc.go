@@ -31,7 +31,7 @@ To replace the built-in p2p.Reactor, use the CustomReactors option:
 			dbProvider,
 			metricsProvider,
 			logger,
-			CustomReactors(map[string]p2p.Reactor{"BLOCKCHAIN": customBlockchainReactor}),
+			CustomReactors(map[string]p2p.Reactor{"BLOCKSYNC": customBlocksyncReactor}),
 	)
 
 The list of existing reactors can be found in CustomReactors documentation.

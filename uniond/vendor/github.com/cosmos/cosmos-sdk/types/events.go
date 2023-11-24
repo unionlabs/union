@@ -6,19 +6,29 @@ import (
 	"reflect"
 	"strings"
 
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/gogoproto/jsonpb"
 	proto "github.com/cosmos/gogoproto/proto"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 )
 
+type EventManagerI interface {
+	Events() Events
+	ABCIEvents() []abci.Event
+	EmitTypedEvent(tev proto.Message) error
+	EmitTypedEvents(tevs ...proto.Message) error
+	EmitEvent(event Event)
+	EmitEvents(events Events)
+}
+
 // ----------------------------------------------------------------------------
 // Event Manager
 // ----------------------------------------------------------------------------
+
+var _ EventManagerI = (*EventManager)(nil)
 
 // EventManager implements a simple wrapper around a slice of Event objects that
 // can be emitted from.
@@ -183,7 +193,7 @@ func (a Attribute) String() string {
 	return fmt.Sprintf("%s: %s", a.Key, a.Value)
 }
 
-// ToKVPair converts an Attribute object into a Tendermint key/value pair.
+// ToKVPair converts an Attribute object into a CometBFT key/value pair.
 func (a Attribute) ToKVPair() abci.EventAttribute {
 	return abci.EventAttribute{Key: a.Key, Value: a.Value}
 }

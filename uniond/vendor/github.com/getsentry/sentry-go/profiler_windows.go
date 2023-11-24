@@ -17,8 +17,8 @@ func setTimeTickerResolution() {
 	}
 }
 
-var runOnce sync.Once
+var setupTickerResolutionOnce sync.Once
 
 func onProfilerStart() {
-	runOnce.Do(setTimeTickerResolution)
+	setupTickerResolutionOnce.Do(setTimeTickerResolution)
 }

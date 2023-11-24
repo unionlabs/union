@@ -90,6 +90,18 @@ func insertEvents(dbtx *sql.Tx, blockID, txID uint32, evts []abci.Event) error {
 		txIDArg = txID
 	}
 
+	const (
+		insertEventQuery = `
+			INSERT INTO ` + tableEvents + ` (block_id, tx_id, type)
+			VALUES ($1, $2, $3)
+			RETURNING rowid;
+		`
+		insertAttributeQuery = `
+			INSERT INTO ` + tableAttributes + ` (event_id, key, composite_key, value)
+			VALUES ($1, $2, $3, $4);
+		`
+	)
+
 	// Add each event to the events table, and retrieve its row ID to use when
 	// adding any attributes the event provides.
 	for _, evt := range evts {
@@ -98,10 +110,7 @@ func insertEvents(dbtx *sql.Tx, blockID, txID uint32, evts []abci.Event) error {
 			continue
 		}
 
-		eid, err := queryWithID(dbtx, `
-INSERT INTO `+tableEvents+` (block_id, tx_id, type) VALUES ($1, $2, $3)
-  RETURNING rowid;
-`, blockID, txIDArg, evt.Type)
+		eid, err := queryWithID(dbtx, insertEventQuery, blockID, txIDArg, evt.Type)
 		if err != nil {
 			return err
 		}
@@ -112,10 +121,7 @@ INSERT INTO `+tableEvents+` (block_id, tx_id, type) VALUES ($1, $2, $3)
 				continue
 			}
 			compositeKey := evt.Type + "." + attr.Key
-			if _, err := dbtx.Exec(`
-INSERT INTO `+tableAttributes+` (event_id, key, composite_key, value)
-  VALUES ($1, $2, $3, $4);
-`, eid, attr.Key, compositeKey, attr.Value); err != nil {
+			if _, err := dbtx.Exec(insertAttributeQuery, eid, attr.Key, compositeKey, attr.Value); err != nil {
 				return err
 			}
 		}
@@ -139,7 +145,7 @@ func makeIndexedEvent(compositeKey, value string) abci.Event {
 
 // IndexBlockEvents indexes the specified block header, part of the
 // indexer.EventSink interface.
-func (es *EventSink) IndexBlockEvents(h types.EventDataNewBlockHeader) error {
+func (es *EventSink) IndexBlockEvents(h types.EventDataNewBlockEvents) error {
 	ts := time.Now().UTC()
 
 	return runInTransaction(es.store, func(dbtx *sql.Tx) error {
@@ -150,7 +156,7 @@ INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
   VALUES ($1, $2, $3)
   ON CONFLICT DO NOTHING
   RETURNING rowid;
-`, h.Header.Height, es.chainID, ts)
+`, h.Height, es.chainID, ts)
 		if err == sql.ErrNoRows {
 			return nil // we already saw this block; quietly succeed
 		} else if err != nil {
@@ -159,16 +165,13 @@ INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
 
 		// Insert the special block meta-event for height.
 		if err := insertEvents(dbtx, blockID, 0, []abci.Event{
-			makeIndexedEvent(types.BlockHeightKey, fmt.Sprint(h.Header.Height)),
+			makeIndexedEvent(types.BlockHeightKey, fmt.Sprint(h.Height)),
 		}); err != nil {
 			return fmt.Errorf("block meta-events: %w", err)
 		}
 		// Insert all the block events. Order is important here,
-		if err := insertEvents(dbtx, blockID, 0, h.ResultBeginBlock.Events); err != nil {
-			return fmt.Errorf("begin-block events: %w", err)
-		}
-		if err := insertEvents(dbtx, blockID, 0, h.ResultEndBlock.Events); err != nil {
-			return fmt.Errorf("end-block events: %w", err)
+		if err := insertEvents(dbtx, blockID, 0, h.Events); err != nil {
+			return fmt.Errorf("finalizeblock events: %w", err)
 		}
 		return nil
 	})
@@ -222,7 +225,6 @@ INSERT INTO `+tableTxResults+` (block_id, index, created_at, tx_hash, tx_result)
 				return fmt.Errorf("indexing transaction events: %w", err)
 			}
 			return nil
-
 		}); err != nil {
 			return err
 		}
@@ -231,22 +233,22 @@ INSERT INTO `+tableTxResults+` (block_id, index, created_at, tx_hash, tx_result)
 }
 
 // SearchBlockEvents is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) SearchBlockEvents(ctx context.Context, q *query.Query) ([]int64, error) {
+func (es *EventSink) SearchBlockEvents(_ context.Context, _ *query.Query) ([]int64, error) {
 	return nil, errors.New("block search is not supported via the postgres event sink")
 }
 
 // SearchTxEvents is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) SearchTxEvents(ctx context.Context, q *query.Query) ([]*abci.TxResult, error) {
+func (es *EventSink) SearchTxEvents(_ context.Context, _ *query.Query) ([]*abci.TxResult, error) {
 	return nil, errors.New("tx search is not supported via the postgres event sink")
 }
 
 // GetTxByHash is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) GetTxByHash(hash []byte) (*abci.TxResult, error) {
+func (es *EventSink) GetTxByHash(_ []byte) (*abci.TxResult, error) {
 	return nil, errors.New("getTxByHash is not supported via the postgres event sink")
 }
 
 // HasBlock is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) HasBlock(h int64) (bool, error) {
+func (es *EventSink) HasBlock(_ int64) (bool, error) {
 	return false, errors.New("hasBlock is not supported via the postgres event sink")
 }
 

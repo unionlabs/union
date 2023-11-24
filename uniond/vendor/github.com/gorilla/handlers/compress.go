@@ -44,13 +44,13 @@ type flusher interface {
 	Flush() error
 }
 
-func (w *compressResponseWriter) Flush() {
+func (cw *compressResponseWriter) Flush() {
 	// Flush compressed data if compressor supports it.
-	if f, ok := w.compressor.(flusher); ok {
-		f.Flush()
+	if f, ok := cw.compressor.(flusher); ok {
+		_ = f.Flush()
 	}
 	// Flush HTTP response.
-	if f, ok := w.w.(http.Flusher); ok {
+	if f, ok := cw.w.(http.Flusher); ok {
 		f.Flush()
 	}
 }

@@ -199,40 +199,37 @@ func getProposalSuggestions() []string {
 
 // PromptMetadata prompts for proposal metadata or only title and summary if skip is true
 func PromptMetadata(skip bool) (types.ProposalMetadata, error) {
-	var (
-		metadata types.ProposalMetadata
-		err      error
-	)
-
 	if !skip {
-		metadata, err = Prompt(types.ProposalMetadata{}, "proposal")
+		metadata, err := Prompt(types.ProposalMetadata{}, "proposal")
 		if err != nil {
 			return metadata, fmt.Errorf("failed to set proposal metadata: %w", err)
 		}
-	} else {
-		// prompt for title and summary
-		titlePrompt := promptui.Prompt{
-			Label:    "Enter proposal title",
-			Validate: client.ValidatePromptNotEmpty,
-		}
 
-		metadata.Title, err = titlePrompt.Run()
-		if err != nil {
-			return metadata, fmt.Errorf("failed to set proposal title: %w", err)
-		}
-
-		summaryPrompt := promptui.Prompt{
-			Label:    "Enter proposal summary",
-			Validate: client.ValidatePromptNotEmpty,
-		}
-
-		metadata.Summary, err = summaryPrompt.Run()
-		if err != nil {
-			return metadata, fmt.Errorf("failed to set proposal summary: %w", err)
-		}
+		return metadata, nil
 	}
 
-	return metadata, nil
+	// prompt for title and summary
+	titlePrompt := promptui.Prompt{
+		Label:    "Enter proposal title",
+		Validate: client.ValidatePromptNotEmpty,
+	}
+
+	title, err := titlePrompt.Run()
+	if err != nil {
+		return types.ProposalMetadata{}, fmt.Errorf("failed to set proposal title: %w", err)
+	}
+
+	summaryPrompt := promptui.Prompt{
+		Label:    "Enter proposal summary",
+		Validate: client.ValidatePromptNotEmpty,
+	}
+
+	summary, err := summaryPrompt.Run()
+	if err != nil {
+		return types.ProposalMetadata{}, fmt.Errorf("failed to set proposal summary: %w", err)
+	}
+
+	return types.ProposalMetadata{Title: title, Summary: summary}, nil
 }
 
 // NewCmdDraftProposal let a user generate a draft proposal.

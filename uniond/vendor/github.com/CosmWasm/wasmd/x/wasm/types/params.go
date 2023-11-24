@@ -2,13 +2,14 @@ package types
 
 import (
 	"encoding/json"
-	"fmt"
 
-	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/jsonpb"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
+
+	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var AllAccessTypes = []AccessType{
@@ -102,25 +103,13 @@ func (p Params) ValidateBasic() error {
 	if err := validateAccessType(p.InstantiateDefaultPermission); err != nil {
 		return errors.Wrap(err, "instantiate default permission")
 	}
-	if err := validateAccessConfig(p.CodeUploadAccess); err != nil {
+	if err := p.CodeUploadAccess.ValidateBasic(); err != nil {
 		return errors.Wrap(err, "upload access")
 	}
 	return nil
 }
 
-func validateAccessConfig(i interface{}) error {
-	v, ok := i.(AccessConfig)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	return v.ValidateBasic()
-}
-
-func validateAccessType(i interface{}) error {
-	a, ok := i.(AccessType)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
+func validateAccessType(a AccessType) error {
 	if a == AccessTypeUnspecified {
 		return errorsmod.Wrap(ErrEmpty, "type")
 	}

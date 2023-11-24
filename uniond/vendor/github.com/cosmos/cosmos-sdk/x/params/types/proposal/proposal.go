@@ -1,11 +1,6 @@
 package proposal
 
 import (
-	"fmt"
-	"strings"
-
-	"sigs.k8s.io/yaml"
-
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
 
@@ -47,35 +42,8 @@ func (pcp *ParameterChangeProposal) ValidateBasic() error {
 	return ValidateChanges(pcp.Changes)
 }
 
-// String implements the Stringer interface.
-func (pcp ParameterChangeProposal) String() string {
-	var b strings.Builder
-
-	fmt.Fprintf(&b, `Parameter Change Proposal:
-  Title:       %s
-  Description: %s
-  Changes:
-`, pcp.Title, pcp.Description)
-
-	for _, pc := range pcp.Changes {
-		fmt.Fprintf(&b, `    Param Change:
-      Subspace: %s
-      Key:      %s
-      Value:    %X
-`, pc.Subspace, pc.Key, pc.Value)
-	}
-
-	return b.String()
-}
-
 func NewParamChange(subspace, key, value string) ParamChange {
 	return ParamChange{subspace, key, value}
-}
-
-// String implements the Stringer interface.
-func (pc ParamChange) String() string {
-	out, _ := yaml.Marshal(pc)
-	return string(out)
 }
 
 // ValidateChanges performs basic validation checks over a set of ParamChange. It

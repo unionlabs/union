@@ -304,7 +304,7 @@ import "github.com/klauspost/compress/zstd"
 
 // Create a reader that caches decompressors.
 // For this operation type we supply a nil Reader.
-var decoder, _ = zstd.NewReader(nil, WithDecoderConcurrency(0))
+var decoder, _ = zstd.NewReader(nil, zstd.WithDecoderConcurrency(0))
 
 // Decompress a buffer. We don't supply a destination buffer,
 // so it will be allocated by the decoder.

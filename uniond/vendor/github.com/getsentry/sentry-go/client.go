@@ -17,6 +17,9 @@ import (
 	"github.com/getsentry/sentry-go/internal/debug"
 )
 
+// The identifier of the SDK.
+const sdkIdentifier = "sentry.go"
+
 // maxErrorDepth is the maximum number of errors reported in a chain of errors.
 // This protects the SDK from an arbitrarily long chain of wrapped errors.
 //
@@ -137,6 +140,9 @@ type ClientOptions struct {
 	// and if applicable, caught errors type and value.
 	// If the match is found, then a whole event will be dropped.
 	IgnoreErrors []string
+	// List of regexp strings that will be used to match against a transaction's
+	// name.  If a match is found, then the transaction  will be dropped.
+	IgnoreTransactions []string
 	// If this flag is enabled, certain personally identifiable information (PII) is added by active integrations.
 	// By default, no such data is sent.
 	SendDefaultPII bool
@@ -218,15 +224,20 @@ type ClientOptions struct {
 	// is not optimized for long chains either. The top-level error together with a
 	// stack trace is often the most useful information.
 	MaxErrorDepth int
+	// Default event tags. These are overridden by tags set on a scope.
+	Tags map[string]string
 }
 
 // Client is the underlying processor that is used by the main API and Hub
 // instances. It must be created with NewClient.
 type Client struct {
+	mu              sync.RWMutex
 	options         ClientOptions
 	dsn             *Dsn
 	eventProcessors []EventProcessor
 	integrations    []Integration
+	sdkIdentifier   string
+	sdkVersion      string
 	// Transport is read-only. Replacing the transport of an existing client is
 	// not supported, create a new client instead.
 	Transport Transport
@@ -323,8 +334,10 @@ func NewClient(options ClientOptions) (*Client, error) {
 	}
 
 	client := Client{
-		options: options,
-		dsn:     dsn,
+		options:       options,
+		dsn:           dsn,
+		sdkIdentifier: sdkIdentifier,
+		sdkVersion:    SDKVersion,
 	}
 
 	client.setupTransport()
@@ -363,6 +376,8 @@ func (client *Client) setupIntegrations() {
 		new(environmentIntegration),
 		new(modulesIntegration),
 		new(ignoreErrorsIntegration),
+		new(ignoreTransactionsIntegration),
+		new(globalTagsIntegration),
 	}
 
 	if client.options.Integrations != nil {
@@ -396,7 +411,7 @@ func (client *Client) AddEventProcessor(processor EventProcessor) {
 }
 
 // Options return ClientOptions for the current Client.
-func (client Client) Options() ClientOptions {
+func (client *Client) Options() ClientOptions {
 	// Note: internally, consider using `client.options` instead of `client.Options()` to avoid copying the object each time.
 	return client.options
 }
@@ -561,6 +576,20 @@ func (client *Client) EventFromCheckIn(checkIn *CheckIn, monitorConfig *MonitorC
 	return event
 }
 
+func (client *Client) SetSDKIdentifier(identifier string) {
+	client.mu.Lock()
+	defer client.mu.Unlock()
+
+	client.sdkIdentifier = identifier
+}
+
+func (client *Client) GetSDKIdentifier() string {
+	client.mu.RLock()
+	defer client.mu.RUnlock()
+
+	return client.sdkIdentifier
+}
+
 // reverse reverses the slice a in place.
 func reverse(a []Exception) {
 	for i := len(a)/2 - 1; i >= 0; i-- {
@@ -646,7 +675,7 @@ func (client *Client) prepareEvent(event *Event, hint *EventHint, scope EventMod
 
 	event.Platform = "go"
 	event.Sdk = SdkInfo{
-		Name:         SDKIdentifier,
+		Name:         client.GetSDKIdentifier(),
 		Version:      SDKVersion,
 		Integrations: client.listIntegrations(),
 		Packages: []SdkPackage{{
@@ -687,7 +716,7 @@ func (client *Client) prepareEvent(event *Event, hint *EventHint, scope EventMod
 	return event
 }
 
-func (client Client) listIntegrations() []string {
+func (client *Client) listIntegrations() []string {
 	integrations := make([]string, len(client.integrations))
 	for i, integration := range client.integrations {
 		integrations[i] = integration.Name()
@@ -695,7 +724,7 @@ func (client Client) listIntegrations() []string {
 	return integrations
 }
 
-func (client Client) integrationAlreadyInstalled(name string) bool {
+func (client *Client) integrationAlreadyInstalled(name string) bool {
 	for _, integration := range client.integrations {
 		if integration.Name() == name {
 			return true

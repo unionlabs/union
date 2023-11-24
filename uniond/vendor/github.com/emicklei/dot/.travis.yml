@@ -1,0 +1,14 @@
+language: go
+
+matrix:
+  include:
+    - go: "1.11.x"
+
+script:
+  - go test -race -coverprofile=coverage.txt -covermode=atomic
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
+env:
+  - GO111MODULE=on

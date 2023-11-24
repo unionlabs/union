@@ -164,14 +164,28 @@ func DuplicateVoteEvidenceFromProto(pb *cmtproto.DuplicateVoteEvidence) (*Duplic
 		return nil, errors.New("nil duplicate vote evidence")
 	}
 
-	vA, err := VoteFromProto(pb.VoteA)
-	if err != nil {
-		return nil, err
+	var vA *Vote
+	if pb.VoteA != nil {
+		var err error
+		vA, err = VoteFromProto(pb.VoteA)
+		if err != nil {
+			return nil, err
+		}
+		if err = vA.ValidateBasic(); err != nil {
+			return nil, err
+		}
 	}
 
-	vB, err := VoteFromProto(pb.VoteB)
-	if err != nil {
-		return nil, err
+	var vB *Vote
+	if pb.VoteB != nil {
+		var err error
+		vB, err = VoteFromProto(pb.VoteB)
+		if err != nil {
+			return nil, err
+		}
+		if err = vB.ValidateBasic(); err != nil {
+			return nil, err
+		}
 	}
 
 	dve := &DuplicateVoteEvidence{
@@ -242,7 +256,7 @@ func (l *LightClientAttackEvidence) GetByzantineValidators(commonVals *Validator
 	// validators who are in the commonVals and voted for the lunatic header
 	if l.ConflictingHeaderIsInvalid(trusted.Header) {
 		for _, commitSig := range l.ConflictingBlock.Commit.Signatures {
-			if !commitSig.ForBlock() {
+			if commitSig.BlockIDFlag != BlockIDFlagCommit {
 				continue
 			}
 
@@ -262,12 +276,12 @@ func (l *LightClientAttackEvidence) GetByzantineValidators(commonVals *Validator
 		// only need a single loop to find the validators that voted twice.
 		for i := 0; i < len(l.ConflictingBlock.Commit.Signatures); i++ {
 			sigA := l.ConflictingBlock.Commit.Signatures[i]
-			if sigA.Absent() {
+			if sigA.BlockIDFlag != BlockIDFlagCommit {
 				continue
 			}
 
 			sigB := trusted.Commit.Signatures[i]
-			if sigB.Absent() {
+			if sigB.BlockIDFlag != BlockIDFlagCommit {
 				continue
 			}
 

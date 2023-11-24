@@ -13,8 +13,8 @@ import (
 var _ exported.GenesisBalance = (*Balance)(nil)
 
 // GetAddress returns the account address of the Balance object.
-func (b Balance) GetAddress() sdk.AccAddress {
-	return sdk.MustAccAddressFromBech32(b.Address)
+func (b Balance) GetAddress() string {
+	return b.Address
 }
 
 // GetCoins returns the account coins of the Balance object.

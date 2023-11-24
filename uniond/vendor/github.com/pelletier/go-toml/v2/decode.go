@@ -318,7 +318,7 @@ func parseFloat(b []byte) (float64, error) {
 	if cleaned[0] == '+' || cleaned[0] == '-' {
 		start = 1
 	}
-	if cleaned[start] == '0' && isDigit(cleaned[start+1]) {
+	if cleaned[start] == '0' && len(cleaned) > start+1 && isDigit(cleaned[start+1]) {
 		return 0, unstable.NewParserError(b, "float integer part cannot have leading zeroes")
 	}
 

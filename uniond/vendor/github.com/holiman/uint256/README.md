@@ -15,139 +15,100 @@ Current benchmarks, with tests ending with `big` being the standard `big.Int` li
 
 - As of 2020-03-18, `uint256` wins over `math/big` in every single case, often with orders of magnitude.
 - And as of release `0.1.0`, the `uint256` library is alloc-free. 
-- With the `1.0.0` release, it also has `100%` test coverage. 
- 
-### Conversion from/to `big.Int` and other formats
+- With the `1.0.0` release, it also has `100%` test coverage.
 
-```
-BenchmarkSetFromBig/1word-6                     253798280                4.84 ns/op            0 B/op          0 allocs/op
-BenchmarkSetFromBig/2words-6                    242738034                5.00 ns/op            0 B/op          0 allocs/op
-BenchmarkSetFromBig/3words-6                    233704105                5.22 ns/op            0 B/op          0 allocs/op
-BenchmarkSetFromBig/4words-6                    192542544                5.70 ns/op            0 B/op          0 allocs/op
-BenchmarkSetFromBig/overflow-6                  212680123                6.05 ns/op            0 B/op          0 allocs/op
-BenchmarkToBig/1word-6                          14953528                81.6 ns/op            64 B/op          2 allocs/op
-BenchmarkToBig/2words-6                         15932970                85.1 ns/op            64 B/op          2 allocs/op
-BenchmarkToBig/3words-6                         15629001                77.0 ns/op            64 B/op          2 allocs/op
-BenchmarkToBig/4words-6                         14525355                78.0 ns/op            64 B/op          2 allocs/op
-BenchmarkSetBytes/generic-6                      5386718               230 ns/op               0 B/op          0 allocs/op
-BenchmarkSetBytes/specific-6                     9418405               130 ns/op               0 B/op          0 allocs/op
-BenchmarkRLPEncoding-6                             82531             13085 ns/op           11911 B/op        255 allocs/op
+### Bitwise
 
-```
-### Math operations
+| benchmark |  `u256` time/op | `big` time/op | time diff |  `u256` B/op|  `big` B/op | B diff| `u256` allocs/op | `big` allocs/op | allocs diff |
+|--|--|--|--|--|--|--|--|--|--|
+| And/single | 2.03ns | 8.46ns | `-76.04%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| Or/single | 2.03ns | 10.98ns | `-81.51%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| Xor/single | 2.03ns | 12.19ns | `-83.34%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| Rsh/n_eq_0 | 5.00ns | 48.11ns | `-89.61%` | 0 | 64 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Rsh/n_gt_0 | 10.42ns | 48.41ns | `-78.48%` | 0 | 64 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Rsh/n_gt_64 | 6.94ns | 52.39ns | `-86.76%` | 0 | 64 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Rsh/n_gt_128 | 5.49ns | 44.21ns | `-87.59%` | 0 | 48 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Rsh/n_gt_192 | 3.43ns | 28.71ns | `-88.04%` | 0 | 8 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Lsh/n_eq_0 | 4.89ns | 40.49ns | `-87.92%` | 0 | 64 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Lsh/n_gt_0 | 10.14ns | 53.25ns | `-80.96%` | 0 | 80 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Lsh/n_gt_64 | 7.50ns | 53.92ns | `-86.08%` | 0 | 80 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Lsh/n_gt_128 | 5.39ns | 56.86ns | `-90.52%` | 0 | 96 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Lsh/n_gt_192 | 3.90ns | 57.61ns | `-93.23%` | 0 | 96 | `-100.00%` | 0 | 1 | `-100.00%`|
 
-`uint256`:
-```
-Benchmark_Add/single/uint256-6                  575308741                2.19 ns/op            0 B/op          0 allocs/op
-Benchmark_Sub/single/uint256-6                  551694393                2.71 ns/op            0 B/op          0 allocs/op
-Benchmark_Sub/single/uint256_of-6               405466652                2.52 ns/op            0 B/op          0 allocs/op
-BenchmarkMul/single/uint256-6                   147034321                8.19 ns/op            0 B/op          0 allocs/op
-BenchmarkMulOverflow/single/uint256-6           45344761                25.4 ns/op             0 B/op          0 allocs/op
-BenchmarkSquare/single/uint256-6                196272379                6.14 ns/op            0 B/op          0 allocs/op
-Benchmark_Exp/large/uint256-6                     374550              3199 ns/op               0 B/op          0 allocs/op
-Benchmark_Exp/small/uint256-6                    4426760               270 ns/op               0 B/op          0 allocs/op
-BenchmarkDiv/small/uint256-6                    94629267                12.5 ns/op             0 B/op          0 allocs/op
-BenchmarkDiv/mod64/uint256-6                    17367373                67.6 ns/op             0 B/op          0 allocs/op
-BenchmarkDiv/mod128/uint256-6                   10192484               130 ns/op               0 B/op          0 allocs/op
-BenchmarkDiv/mod192/uint256-6                   10936984               107 ns/op               0 B/op          0 allocs/op
-BenchmarkDiv/mod256/uint256-6                   13436908                93.5 ns/op             0 B/op          0 allocs/op
-BenchmarkMod/small/uint256-6                    80138805                15.2 ns/op             0 B/op          0 allocs/op
-BenchmarkMod/mod64/uint256-6                    17065768                72.1 ns/op             0 B/op          0 allocs/op
-BenchmarkMod/mod128/uint256-6                    9469146               123 ns/op               0 B/op          0 allocs/op
-BenchmarkMod/mod192/uint256-6                   11193145               115 ns/op               0 B/op          0 allocs/op
-BenchmarkMod/mod256/uint256-6                   12896706                93.1 ns/op             0 B/op          0 allocs/op
-BenchmarkAddMod/small/uint256-6                 62187169                21.0 ns/op             0 B/op          0 allocs/op
-BenchmarkAddMod/mod64/uint256-6                 15169026                82.5 ns/op             0 B/op          0 allocs/op
-BenchmarkAddMod/mod128/uint256-6                 8460835               144 ns/op               0 B/op          0 allocs/op
-BenchmarkAddMod/mod192/uint256-6                 9273334               141 ns/op               0 B/op          0 allocs/op
-BenchmarkAddMod/mod256/uint256-6                10145329               113 ns/op               0 B/op          0 allocs/op
-BenchmarkMulMod/small/uint256-6                 26673195                42.3 ns/op             0 B/op          0 allocs/op
-BenchmarkMulMod/mod64/uint256-6                 10133446               125 ns/op               0 B/op          0 allocs/op
-BenchmarkMulMod/mod128/uint256-6                 4955551               229 ns/op               0 B/op          0 allocs/op
-BenchmarkMulMod/mod192/uint256-6                 5210977               220 ns/op               0 B/op          0 allocs/op
-BenchmarkMulMod/mod256/uint256-6                 5527972               220 ns/op               0 B/op          0 allocs/op
-Benchmark_SDiv/large/uint256-6                   9823093               124 ns/op               0 B/op          0 allocs/op
-```
-vs `big.Int`
-```
-Benchmark_Add/single/big-6                      45798462                25.0 ns/op             0 B/op          0 allocs/op
-Benchmark_Sub/single/big-6                      51314886                23.7 ns/op             0 B/op          0 allocs/op
-BenchmarkMul/single/big-6                       14101502                75.9 ns/op             0 B/op          0 allocs/op
-BenchmarkMulOverflow/single/big-6               15774238                81.5 ns/op             0 B/op          0 allocs/op
-BenchmarkSquare/single/big-6                    16739438                71.5 ns/op             0 B/op          0 allocs/op
-Benchmark_Exp/large/big-6                          41250             42132 ns/op           18144 B/op        189 allocs/op
-Benchmark_Exp/small/big-6                         130993             10813 ns/op            7392 B/op         77 allocs/op
-BenchmarkDiv/small/big-6                        18169453                70.8 ns/op             8 B/op          1 allocs/op
-BenchmarkDiv/mod64/big-6                         7500694               147 ns/op               8 B/op          1 allocs/op
-BenchmarkDiv/mod128/big-6                        3075676               370 ns/op              80 B/op          1 allocs/op
-BenchmarkDiv/mod192/big-6                        3908166               307 ns/op              80 B/op          1 allocs/op
-BenchmarkDiv/mod256/big-6                        4416366               252 ns/op              80 B/op          1 allocs/op
-BenchmarkMod/small/big-6                        19958649                70.8 ns/op             8 B/op          1 allocs/op
-BenchmarkMod/mod64/big-6                         6718828               167 ns/op              64 B/op          1 allocs/op
-BenchmarkMod/mod128/big-6                        3347608               349 ns/op              64 B/op          1 allocs/op
-BenchmarkMod/mod192/big-6                        4072453               293 ns/op              48 B/op          1 allocs/op
-BenchmarkMod/mod256/big-6                        4545860               254 ns/op               8 B/op          1 allocs/op
-BenchmarkAddMod/small/big-6                     13976365                79.6 ns/op             8 B/op          1 allocs/op
-BenchmarkAddMod/mod64/big-6                      5799034               208 ns/op              77 B/op          1 allocs/op
-BenchmarkAddMod/mod128/big-6                     2998821               409 ns/op              64 B/op          1 allocs/op
-BenchmarkAddMod/mod192/big-6                     3420640               351 ns/op              61 B/op          1 allocs/op
-BenchmarkAddMod/mod256/big-6                     4124067               298 ns/op              40 B/op          1 allocs/op
-BenchmarkMulMod/small/big-6                     14748193                85.8 ns/op             8 B/op          1 allocs/op
-BenchmarkMulMod/mod64/big-6                      3524833               420 ns/op              96 B/op          1 allocs/op
-BenchmarkMulMod/mod128/big-6                     1851936               637 ns/op              96 B/op          1 allocs/op
-BenchmarkMulMod/mod192/big-6                     2028134               584 ns/op              80 B/op          1 allocs/op
-BenchmarkMulMod/mod256/big-6                     2125716               576 ns/op              80 B/op          1 allocs/op
-Benchmark_SDiv/large/big-6                       1658139               848 ns/op             312 B/op          6 allocs/op
-```
+### Conversions
 
-### Boolean logic
-`uint256`
-```
-Benchmark_And/single/uint256-6                  571318570                2.13 ns/op            0 B/op          0 allocs/op
-Benchmark_Or/single/uint256-6                   500672864                2.09 ns/op            0 B/op          0 allocs/op
-Benchmark_Xor/single/uint256-6                  575198724                2.24 ns/op            0 B/op          0 allocs/op
-Benchmark_Cmp/single/uint256-6                  400446943                3.09 ns/op            0 B/op          0 allocs/op
-BenchmarkLt/large/uint256-6                     322143085                3.50 ns/op            0 B/op          0 allocs/op
-BenchmarkLt/small/uint256-6                     351231680                3.33 ns/op            0 B/op          0 allocs/op
-```
-vs `big.Int`
-```
-Benchmark_And/single/big-6                      78524395                16.2 ns/op             0 B/op          0 allocs/op
-Benchmark_Or/single/big-6                       65390958                20.5 ns/op             0 B/op          0 allocs/op
-Benchmark_Xor/single/big-6                      58333172                20.6 ns/op             0 B/op          0 allocs/op
-Benchmark_Cmp/single/big-6                      144781878                8.37 ns/op            0 B/op          0 allocs/op
-BenchmarkLt/large/big-6                         95643212                13.8 ns/op             0 B/op          0 allocs/op
-BenchmarkLt/small/big-6                         84561792                14.6 ns/op             0 B/op          0 allocs/op
-```
+| benchmark |  `u256` time/op | `big` time/op | time diff |  `u256` B/op|  `big` B/op | B diff| `u256` allocs/op | `big` allocs/op | allocs diff |
+|--|--|--|--|--|--|--|--|--|--|
+| FromHexString | 116.70ns | 861.30ns | `-86.45%` | 32 | 88 | `-63.64%` | 1 | 3 | `-66.67%`|
+| FromDecimalString | 7973.00ns | 32850.00ns | `-75.73%` | 0 | 2464 | `-100.00%` | 0 | 77 | `-100.00%`|
+| Float64/Float64 | 2366.00ns | 28483.00ns | `-91.69%` | 0 | 23424 | `-100.00%` | 0 | 510 | `-100.00%`|
+| EncodeHex/large | 95.26ns | 184.30ns | `-48.31%` | 80 | 140 | `-42.86%` | 1 | 2 | `-50.00%`|
+| Decimal/ToDecimal | 67384.00ns | 83431.00ns | `-19.23%` | 11344 | 31920 | `-64.46%` | 248 | 594 | `-58.25%`|
+| Decimal/ToPrettyDecimal | 84208.00ns | 123953.00ns | `-32.06%` | 14720 | 61376 | `-76.02%` | 251 | 1100 | `-77.18%`|
 
-### Bitwise shifts
+### Math
 
-`uint256`:
-```
-Benchmark_Lsh/n_eq_0/uint256-6                  291558974                3.96 ns/op            0 B/op          0 allocs/op
-Benchmark_Lsh/n_gt_192/uint256-6                208429646                5.80 ns/op            0 B/op          0 allocs/op
-Benchmark_Lsh/n_gt_128/uint256-6                151857447                6.90 ns/op            0 B/op          0 allocs/op
-Benchmark_Lsh/n_gt_64/uint256-6                 124543732                9.55 ns/op            0 B/op          0 allocs/op
-Benchmark_Lsh/n_gt_0/uint256-6                  100000000               11.2 ns/op             0 B/op          0 allocs/op
-Benchmark_Rsh/n_eq_0/uint256-6                  296913555                4.08 ns/op            0 B/op          0 allocs/op
-Benchmark_Rsh/n_gt_192/uint256-6                212698939                5.52 ns/op            0 B/op          0 allocs/op
-Benchmark_Rsh/n_gt_128/uint256-6                157391629                7.59 ns/op            0 B/op          0 allocs/op
-Benchmark_Rsh/n_gt_64/uint256-6                 124916373                9.46 ns/op            0 B/op          0 allocs/op
-Benchmark_Rsh/n_gt_0/uint256-6                  100000000               11.5 ns/op 
-```
-vs `big.Int`:
-```
-Benchmark_Lsh/n_eq_0/big-6                      21387698                78.6 ns/op            64 B/op          1 allocs/op
-Benchmark_Lsh/n_gt_192/big-6                    15645853                73.9 ns/op            96 B/op          1 allocs/op
-Benchmark_Lsh/n_gt_128/big-6                    15954750                75.0 ns/op            96 B/op          1 allocs/op
-Benchmark_Lsh/n_gt_64/big-6                     16771413                81.3 ns/op            80 B/op          1 allocs/op
-Benchmark_Lsh/n_gt_0/big-6                      17118044                70.7 ns/op            80 B/op          1 allocs/op
-Benchmark_Rsh/n_eq_0/big-6                      21585044                65.5 ns/op            64 B/op          1 allocs/op
-Benchmark_Rsh/n_gt_192/big-6                    28313300                42.3 ns/op             8 B/op          1 allocs/op
-Benchmark_Rsh/n_gt_128/big-6                    21191526                58.1 ns/op            48 B/op          1 allocs/op
-Benchmark_Rsh/n_gt_64/big-6                     15906076                69.0 ns/op            64 B/op          1 allocs/op
-Benchmark_Rsh/n_gt_0/big-6                      19234408                93.0 ns/op            64 B/op          1 allocs/op
-```
+| benchmark |  `u256` time/op | `big` time/op | time diff |  `u256` B/op|  `big` B/op | B diff| `u256` allocs/op | `big` allocs/op | allocs diff |
+|--|--|--|--|--|--|--|--|--|--|
+| Add/single | 1.99ns | 18.11ns | `-89.02%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| Sub/single | 2.00ns | 17.19ns | `-88.35%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| Mul/single | 12.10ns | 57.69ns | `-79.03%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| SDiv/large | 94.64ns | 642.10ns | `-85.26%` | 0 | 312 | `-100.00%` | 0 | 6 | `-100.00%`|
+| Sqrt/single | 594.90ns | 1844.00ns | `-67.74%` | 0 | 528 | `-100.00%` | 0 | 7 | `-100.00%`|
+| Square/single | 12.49ns | 56.10ns | `-77.74%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| Cmp/single | 4.78ns | 12.79ns | `-62.61%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| Div/small | 12.91ns | 48.31ns | `-73.28%` | 0 | 8 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Div/mod64 | 65.77ns | 111.20ns | `-40.85%` | 0 | 8 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Div/mod128 | 93.67ns | 301.40ns | `-68.92%` | 0 | 80 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Div/mod192 | 86.52ns | 263.80ns | `-67.20%` | 0 | 80 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Div/mod256 | 77.17ns | 252.80ns | `-69.47%` | 0 | 80 | `-100.00%` | 0 | 1 | `-100.00%`|
+| AddMod/small | 13.84ns | 48.16ns | `-71.26%` | 0 | 4 | `-100.00%` | 0 | 0 | `~`|
+| AddMod/mod64 | 22.83ns | 57.58ns | `-60.35%` | 0 | 11 | `-100.00%` | 0 | 0 | `~`|
+| AddMod/mod128 | 48.31ns | 145.00ns | `-66.68%` | 0 | 12 | `-100.00%` | 0 | 0 | `~`|
+| AddMod/mod192 | 47.26ns | 160.00ns | `-70.46%` | 0 | 12 | `-100.00%` | 0 | 0 | `~`|
+| AddMod/mod256 | 14.44ns | 143.20ns | `-89.92%` | 0 | 12 | `-100.00%` | 0 | 0 | `~`|
+| MulMod/small | 40.81ns | 63.14ns | `-35.37%` | 0 | 8 | `-100.00%` | 0 | 1 | `-100.00%`|
+| MulMod/mod64 | 91.66ns | 112.60ns | `-18.60%` | 0 | 48 | `-100.00%` | 0 | 1 | `-100.00%`|
+| MulMod/mod128 | 136.00ns | 362.70ns | `-62.50%` | 0 | 128 | `-100.00%` | 0 | 2 | `-100.00%`|
+| MulMod/mod192 | 151.70ns | 421.20ns | `-63.98%` | 0 | 144 | `-100.00%` | 0 | 2 | `-100.00%`|
+| MulMod/mod256 | 188.80ns | 489.20ns | `-61.41%` | 0 | 176 | `-100.00%` | 0 | 2 | `-100.00%`|
+| Exp/small | 433.70ns | 7490.00ns | `-94.21%` | 0 | 7392 | `-100.00%` | 0 | 77 | `-100.00%`|
+| Exp/large | 5145.00ns | 23043.00ns | `-77.67%` | 0 | 18144 | `-100.00%` | 0 | 189 | `-100.00%`|
+| Mod/mod64 | 70.94ns | 118.90ns | `-40.34%` | 0 | 64 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Mod/small | 14.82ns | 46.27ns | `-67.97%` | 0 | 8 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Mod/mod128 | 99.58ns | 286.90ns | `-65.29%` | 0 | 64 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Mod/mod192 | 95.31ns | 269.30ns | `-64.61%` | 0 | 48 | `-100.00%` | 0 | 1 | `-100.00%`|
+| Mod/mod256 | 84.13ns | 222.90ns | `-62.26%` | 0 | 8 | `-100.00%` | 0 | 1 | `-100.00%`|
+| MulOverflow/single | 27.68ns | 57.52ns | `-51.88%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| MulDivOverflow/small | 2.83ns | 22.97ns | `-87.69%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| MulDivOverflow/div64 | 2.85ns | 23.13ns | `-87.66%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| MulDivOverflow/div128 | 3.14ns | 31.29ns | `-89.96%` | 0 | 2 | `-100.00%` | 0 | 0 | `~`|
+| MulDivOverflow/div192 | 3.17ns | 30.28ns | `-89.54%` | 0 | 2 | `-100.00%` | 0 | 0 | `~`|
+| MulDivOverflow/div256 | 3.54ns | 35.56ns | `-90.06%` | 0 | 5 | `-100.00%` | 0 | 0 | `~`|
+| Lt/small | 3.12ns | 10.43ns | `-70.06%` | 0 | 0 | `~` | 0 | 0 | `~`|
+| Lt/large | 3.49ns | 10.32ns | `-66.18%` | 0 | 0 | `~` | 0 | 0 | `~`|
+
+### Other
+
+| benchmark |  `u256` time/op | `u256` B/op| `u256` allocs/op |
+|--|--|--|--|
+| SetBytes/generic | 104.30ns | 0 | 0 ||
+| Sub/single/uint256_of | 1.99ns | 0 | 0 ||
+| SetFromBig/overflow | 3.57ns | 0 | 0 ||
+| ToBig/2words | 73.84ns | 64 | 2 ||
+| SetBytes/specific | 45.81ns | 0 | 0 ||
+| ScanScientific | 674.10ns | 0 | 0 ||
+| SetFromBig/4words | 3.82ns | 0 | 0 ||
+| ToBig/4words | 68.82ns | 64 | 2 ||
+| RLPEncoding | 11917.00ns | 11911 | 255 ||
+| SetFromBig/1word | 2.99ns | 0 | 0 ||
+| SetFromBig/3words | 4.12ns | 0 | 0 ||
+| ToBig/3words | 70.12ns | 64 | 2 ||
+| ToBig/1word | 75.38ns | 64 | 2 ||
+| MulMod/mod256/uint256r | 77.11ns | 0 | 0 ||
+| HashTreeRoot | 11.27ns | 0 | 0 ||
+| SetFromBig/2words | 3.90ns | 0 | 0 ||
+
 ## Helping out
 
 If you're interested in low-level algorithms and/or doing optimizations for shaving off nanoseconds, then this is certainly for you!

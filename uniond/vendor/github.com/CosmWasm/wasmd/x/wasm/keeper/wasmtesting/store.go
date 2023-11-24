@@ -1,13 +1,12 @@
 package wasmtesting
 
 import (
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	storetypes "cosmossdk.io/store/types"
 )
 
 // MockCommitMultiStore mock with a CacheMultiStore to capture commits
 type MockCommitMultiStore struct {
-	sdk.CommitMultiStore
+	storetypes.CommitMultiStore
 	Committed []bool
 }
 
@@ -17,7 +16,7 @@ func (m *MockCommitMultiStore) CacheMultiStore() storetypes.CacheMultiStore {
 }
 
 type mockCMS struct {
-	sdk.CommitMultiStore
+	storetypes.CommitMultiStore
 	committed *bool
 }
 

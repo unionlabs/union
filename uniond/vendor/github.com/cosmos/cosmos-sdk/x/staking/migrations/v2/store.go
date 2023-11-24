@@ -1,8 +1,9 @@
 package v2
 
 import (
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	v1auth "github.com/cosmos/cosmos-sdk/x/auth/migrations/v1"
@@ -15,7 +16,7 @@ import (
 // prefix_bytes | address_1_bytes | address_2_bytes | address_3_bytes
 // into format:
 // prefix_bytes | address_1_len (1 byte) | address_1_bytes | address_2_len (1 byte) | address_2_bytes | address_3_len (1 byte) | address_3_bytes
-func migratePrefixAddressAddressAddress(store sdk.KVStore, prefixBz []byte) {
+func migratePrefixAddressAddressAddress(store storetypes.KVStore, prefixBz []byte) {
 	oldStore := prefix.NewStore(store, prefixBz)
 
 	oldStoreIter := oldStore.Iterator(nil, nil)
@@ -38,7 +39,7 @@ func migratePrefixAddressAddressAddress(store sdk.KVStore, prefixBz []byte) {
 
 const powerBytesLen = 8
 
-func migrateValidatorsByPowerIndexKey(store sdk.KVStore) {
+func migrateValidatorsByPowerIndexKey(store storetypes.KVStore) {
 	oldStore := prefix.NewStore(store, v1.ValidatorsByPowerIndexKey)
 
 	oldStoreIter := oldStore.Iterator(nil, nil)
@@ -59,11 +60,8 @@ func migrateValidatorsByPowerIndexKey(store sdk.KVStore) {
 // migration includes:
 //
 // - Setting the Power Reduction param in the paramstore
-func MigrateStore(ctx sdk.Context, storeKey storetypes.StoreKey) error {
-	store := ctx.KVStore(storeKey)
-
+func MigrateStore(ctx sdk.Context, store storetypes.KVStore) error {
 	v2distribution.MigratePrefixAddress(store, v1.LastValidatorPowerKey)
-
 	v2distribution.MigratePrefixAddress(store, v1.ValidatorsKey)
 	v2distribution.MigratePrefixAddress(store, v1.ValidatorsByConsAddrKey)
 	migrateValidatorsByPowerIndexKey(store)

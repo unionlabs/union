@@ -196,10 +196,15 @@ func (dsn Dsn) GetAPIURL() *url.URL {
 	return parsedURL
 }
 
-// RequestHeaders returns all the necessary headers that have to be used in the transport.
+// RequestHeaders returns all the necessary headers that have to be used in the transport when seinding events
+// to the /store endpoint.
+//
+// Deprecated: This method shall only be used if you want to implement your own transport that sends events to
+// the /store endpoint. If you're using the transport provided by the SDK, all necessary headers to authenticate
+// against the /envelope endpoint are added automatically.
 func (dsn Dsn) RequestHeaders() map[string]string {
 	auth := fmt.Sprintf("Sentry sentry_version=%s, sentry_timestamp=%d, "+
-		"sentry_client=sentry.go/%s, sentry_key=%s", apiVersion, time.Now().Unix(), Version, dsn.publicKey)
+		"sentry_client=sentry.go/%s, sentry_key=%s", apiVersion, time.Now().Unix(), SDKVersion, dsn.publicKey)
 
 	if dsn.secretKey != "" {
 		auth = fmt.Sprintf("%s, sentry_secret=%s", auth, dsn.secretKey)

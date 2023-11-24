@@ -1,9 +1,10 @@
 package indexer
 
 import (
+	"math/big"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -44,7 +45,17 @@ func (qr QueryRange) LowerBoundValue() interface{} {
 	switch t := qr.LowerBound.(type) {
 	case int64:
 		return t + 1
+	case *big.Int:
+		tmp := new(big.Int)
+		return tmp.Add(t, big.NewInt(1))
 
+	case *big.Float:
+		// For floats we cannot simply add one as the float to float
+		// comparison is more finegrained.
+		// When comparing to integers, adding one is also incorrect:
+		// example: x >100.2 ; x = 101 float increased to 101.2 and condition
+		// is not satisfied
+		return t
 	case time.Time:
 		return t.Unix() + 1
 
@@ -67,7 +78,11 @@ func (qr QueryRange) UpperBoundValue() interface{} {
 	switch t := qr.UpperBound.(type) {
 	case int64:
 		return t - 1
-
+	case *big.Int:
+		tmp := new(big.Int)
+		return tmp.Sub(t, big.NewInt(1))
+	case *big.Float:
+		return t
 	case time.Time:
 		return t.Unix() - 1
 
@@ -78,51 +93,50 @@ func (qr QueryRange) UpperBoundValue() interface{} {
 
 // LookForRangesWithHeight returns a mapping of QueryRanges and the matching indexes in
 // the provided query conditions.
-func LookForRangesWithHeight(conditions []query.Condition) (queryRange QueryRanges, indexes []int, heightRange QueryRange) {
+func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRanges, indexes []int, heightRange QueryRange) {
 	queryRange = make(QueryRanges)
 	for i, c := range conditions {
-		heightKey := false
 		if IsRangeOperation(c.Op) {
-			r, ok := queryRange[c.CompositeKey]
+			heightKey := c.Tag == types.BlockHeightKey || c.Tag == types.TxHeightKey
+			r, ok := queryRange[c.Tag]
 			if !ok {
-				r = QueryRange{Key: c.CompositeKey}
-				if c.CompositeKey == types.BlockHeightKey || c.CompositeKey == types.TxHeightKey {
-					heightRange = QueryRange{Key: c.CompositeKey}
-					heightKey = true
+				r = QueryRange{Key: c.Tag}
+				if c.Tag == types.BlockHeightKey || c.Tag == types.TxHeightKey {
+					heightRange = QueryRange{Key: c.Tag}
 				}
 			}
 
 			switch c.Op {
-			case query.OpGreater:
+			case syntax.TGt:
 				if heightKey {
-					heightRange.LowerBound = c.Operand
+					heightRange.LowerBound = conditionArg(c)
 				}
-				r.LowerBound = c.Operand
+				r.LowerBound = conditionArg(c)
 
-			case query.OpGreaterEqual:
+			case syntax.TGeq:
 				r.IncludeLowerBound = true
-				r.LowerBound = c.Operand
+				r.LowerBound = conditionArg(c)
 				if heightKey {
 					heightRange.IncludeLowerBound = true
-					heightRange.LowerBound = c.Operand
+					heightRange.LowerBound = conditionArg(c)
 				}
 
-			case query.OpLess:
-				r.UpperBound = c.Operand
+			case syntax.TLt:
+				r.UpperBound = conditionArg(c)
 				if heightKey {
-					heightRange.UpperBound = c.Operand
+					heightRange.UpperBound = conditionArg(c)
 				}
 
-			case query.OpLessEqual:
+			case syntax.TLeq:
 				r.IncludeUpperBound = true
-				r.UpperBound = c.Operand
+				r.UpperBound = conditionArg(c)
 				if heightKey {
 					heightRange.IncludeUpperBound = true
-					heightRange.UpperBound = c.Operand
+					heightRange.UpperBound = conditionArg(c)
 				}
 			}
 
-			queryRange[c.CompositeKey] = r
+			queryRange[c.Tag] = r
 			indexes = append(indexes, i)
 		}
 	}
@@ -131,32 +145,32 @@ func LookForRangesWithHeight(conditions []query.Condition) (queryRange QueryRang
 }
 
 // Deprecated: This function is not used anymore and will be replaced with LookForRangesWithHeight
-func LookForRanges(conditions []query.Condition) (ranges QueryRanges, indexes []int) {
+func LookForRanges(conditions []syntax.Condition) (ranges QueryRanges, indexes []int) {
 	ranges = make(QueryRanges)
 	for i, c := range conditions {
 		if IsRangeOperation(c.Op) {
-			r, ok := ranges[c.CompositeKey]
+			r, ok := ranges[c.Tag]
 			if !ok {
-				r = QueryRange{Key: c.CompositeKey}
+				r = QueryRange{Key: c.Tag}
 			}
 
 			switch c.Op {
-			case query.OpGreater:
-				r.LowerBound = c.Operand
+			case syntax.TGt:
+				r.LowerBound = conditionArg(c)
 
-			case query.OpGreaterEqual:
+			case syntax.TGeq:
 				r.IncludeLowerBound = true
-				r.LowerBound = c.Operand
+				r.LowerBound = conditionArg(c)
 
-			case query.OpLess:
-				r.UpperBound = c.Operand
+			case syntax.TLt:
+				r.UpperBound = conditionArg(c)
 
-			case query.OpLessEqual:
+			case syntax.TLeq:
 				r.IncludeUpperBound = true
-				r.UpperBound = c.Operand
+				r.UpperBound = conditionArg(c)
 			}
 
-			ranges[c.CompositeKey] = r
+			ranges[c.Tag] = r
 			indexes = append(indexes, i)
 		}
 	}
@@ -166,12 +180,26 @@ func LookForRanges(conditions []query.Condition) (ranges QueryRanges, indexes []
 
 // IsRangeOperation returns a boolean signifying if a query Operator is a range
 // operation or not.
-func IsRangeOperation(op query.Operator) bool {
+func IsRangeOperation(op syntax.Token) bool {
 	switch op {
-	case query.OpGreater, query.OpGreaterEqual, query.OpLess, query.OpLessEqual:
+	case syntax.TGt, syntax.TGeq, syntax.TLt, syntax.TLeq:
 		return true
 
 	default:
 		return false
+	}
+}
+
+func conditionArg(c syntax.Condition) interface{} {
+	if c.Arg == nil {
+		return nil
+	}
+	switch c.Arg.Type {
+	case syntax.TNumber:
+		return c.Arg.Number()
+	case syntax.TTime, syntax.TDate:
+		return c.Arg.Time()
+	default:
+		return c.Arg.Value() // string
 	}
 }

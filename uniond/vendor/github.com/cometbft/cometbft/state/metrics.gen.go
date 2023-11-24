@@ -18,7 +18,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "block_processing_time",
-			Help:      "Time between BeginBlock and EndBlock in ms.",
+			Help:      "Time spent processing FinalizeBlock",
 
 			Buckets: stdprometheus.LinearBuckets(1, 10, 10),
 		}, labels).With(labelsAndValues...),
@@ -26,13 +26,13 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "consensus_param_updates",
-			Help:      "ConsensusParamUpdates is the total number of times the application has udated the consensus params since process start.",
+			Help:      "Number of consensus parameter updates returned by the application since process start.",
 		}, labels).With(labelsAndValues...),
 		ValidatorSetUpdates: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "validator_set_updates",
-			Help:      "ValidatorSetUpdates is the total number of times the application has udated the validator set since process start.",
+			Help:      "Number of validator set updates returned by the application since process start.",
 		}, labels).With(labelsAndValues...),
 	}
 }

@@ -15,9 +15,11 @@ const (
 	secretLen = 32
 )
 
+var ErrCiphertextDecrypt = errors.New("ciphertext decryption failed")
+
 // secret must be 32 bytes long. Use something like Sha256(Bcrypt(passphrase))
 // The ciphertext is (secretbox.Overhead + 24) bytes longer than the plaintext.
-func EncryptSymmetric(plaintext []byte, secret []byte) (ciphertext []byte) {
+func EncryptSymmetric(plaintext, secret []byte) (ciphertext []byte) {
 	if len(secret) != secretLen {
 		panic(fmt.Sprintf("Secret must be 32 bytes long, got len %v", len(secret)))
 	}
@@ -34,7 +36,7 @@ func EncryptSymmetric(plaintext []byte, secret []byte) (ciphertext []byte) {
 
 // secret must be 32 bytes long. Use something like Sha256(Bcrypt(passphrase))
 // The ciphertext is (secretbox.Overhead + 24) bytes longer than the plaintext.
-func DecryptSymmetric(ciphertext []byte, secret []byte) (plaintext []byte, err error) {
+func DecryptSymmetric(ciphertext, secret []byte) (plaintext []byte, err error) {
 	if len(secret) != secretLen {
 		panic(fmt.Sprintf("Secret must be 32 bytes long, got len %v", len(secret)))
 	}
@@ -49,7 +51,7 @@ func DecryptSymmetric(ciphertext []byte, secret []byte) (plaintext []byte, err e
 	plaintext = make([]byte, len(ciphertext)-nonceLen-secretbox.Overhead)
 	_, ok := secretbox.Open(plaintext[:0], ciphertext[nonceLen:], &nonceArr, &secretArr)
 	if !ok {
-		return nil, errors.New("ciphertext decryption failed")
+		return nil, ErrCiphertextDecrypt
 	}
 	return plaintext, nil
 }

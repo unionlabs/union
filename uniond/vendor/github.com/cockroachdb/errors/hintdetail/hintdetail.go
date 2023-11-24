@@ -23,6 +23,7 @@ import (
 
 // WithHint decorates an error with a textual hint.
 // The hint may contain PII and thus will not reportable.
+// The suggested use case for hint is to relay information to end users.
 //
 // Hint is shown:
 // - when formatting with `%+v`.
@@ -97,10 +98,12 @@ type ErrorHinter interface {
 
 // WithDetail decorates an error with a textual detail.
 // The detail may contain PII and thus will not reportable.
+// The suggested use case for detail is to augment errors with information
+// useful for debugging.
 //
 // Detail is shown:
 // - when formatting with `%+v`.
-// - with `GetAllHints()` / `FlattenHints()` below.
+// - with `GetAllDetails()` / `FlattenDetails()` below.
 //
 // Note: the detail does not appear in the main error message returned
 // with Error(). Use GetAllDetails() or FlattenDetails() to retrieve

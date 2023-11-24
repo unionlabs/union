@@ -7,10 +7,10 @@ import (
 // Codec implements the encoding.Encoder and encoding.Decoder interfaces for TOML encoding.
 type Codec struct{}
 
-func (Codec) Encode(v map[string]interface{}) ([]byte, error) {
+func (Codec) Encode(v map[string]any) ([]byte, error) {
 	return toml.Marshal(v)
 }
 
-func (Codec) Decode(b []byte, v map[string]interface{}) error {
+func (Codec) Decode(b []byte, v map[string]any) error {
 	return toml.Unmarshal(b, &v)
 }
