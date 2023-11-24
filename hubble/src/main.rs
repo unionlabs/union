@@ -11,6 +11,7 @@ use tracing::{error, info, warn};
 
 mod cli;
 
+mod eth;
 mod healthz;
 mod metrics;
 mod tm;
@@ -22,14 +23,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
     tracing_subscriber::fmt().with_ansi(false).init();
     metrics::register_custom_metrics();
 
-    let url = args.url.clone();
-    let client = Client::new();
-    let db = if let Some(secret) = args.hasura_admin_secret {
-        Either::A(HasuraDataStore::new(client, url.unwrap(), secret))
-    } else {
-        let pool = PgPool::connect_lazy(&args.database_url.unwrap())?;
-        Either::B(PostgresDatastore::new(pool))
-    };
+    let db = PgPool::connect_lazy(&args.database_url.unwrap())?;
     let mut set = JoinSet::new();
 
     if let Some(addr) = args.metrics_addr {
