@@ -19,11 +19,6 @@ type StdSignMsg struct {
 	Memo          string    `json:"memo" yaml:"memo"`
 }
 
-// get message bytes
-func (msg StdSignMsg) Bytes() []byte {
-	return StdSignBytes(msg.ChainID, msg.AccountNumber, msg.Sequence, msg.TimeoutHeight, msg.Fee, msg.Msgs, msg.Memo, nil)
-}
-
 func (msg StdSignMsg) UnpackInterfaces(unpacker types.AnyUnpacker) error {
 	for _, m := range msg.Msgs {
 		err := types.UnpackInterfaces(m, unpacker)

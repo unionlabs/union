@@ -17,7 +17,7 @@ prepare:
 
 .PHONY: libs
 libs:
-	sh build.sh $(DEST)
+	./build.sh $(DEST)
 
 .PHONY: test
 test:

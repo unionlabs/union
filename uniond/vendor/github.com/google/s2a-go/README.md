@@ -10,8 +10,5 @@ Session Agent during the TLS handshake, and to encrypt traffic to the peer
 after the TLS handshake is complete.
 
 This repository contains the source code for the Secure Session Agent's Go
-client libraries, which allow gRPC-Go applications to use the Secure Session
-Agent. This repository supports the Bazel and Golang build systems.
-
-All code in this repository is experimental and subject to change. We do not
-guarantee API stability at this time.
+client libraries, which allow gRPC and HTTP Go applications to use the Secure Session
+Agent.

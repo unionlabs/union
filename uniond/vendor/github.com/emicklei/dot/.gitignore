@@ -1,0 +1,7 @@
+/*.dot
+/dotx/*.dot
+/dotx/*.svg
+/dotx/*.png
+/*.png
+.idea
+coverage.out

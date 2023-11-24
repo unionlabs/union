@@ -197,12 +197,13 @@ encodeLoop:
 
 		// Set m to a match at offset if it looks like that will improve compression.
 		improve := func(m *match, offset int32, s int32, first uint32, rep int32) {
-			if s-offset >= e.maxMatchOff || load3232(src, offset) != first {
+			delta := s - offset
+			if delta >= e.maxMatchOff || delta <= 0 || load3232(src, offset) != first {
 				return
 			}
 			if debugAsserts {
-				if offset <= 0 {
-					panic(offset)
+				if offset >= s {
+					panic(fmt.Sprintf("offset: %d - s:%d - rep: %d - cur :%d - max: %d", offset, s, rep, e.cur, e.maxMatchOff))
 				}
 				if !bytes.Equal(src[s:s+4], src[offset:offset+4]) {
 					panic(fmt.Sprintf("first match mismatch: %v != %v, first: %08x", src[s:s+4], src[offset:offset+4], first))
@@ -343,8 +344,8 @@ encodeLoop:
 		if best.rep > 0 {
 			var seq seq
 			seq.matchLen = uint32(best.length - zstdMinMatch)
-			if debugAsserts && s <= nextEmit {
-				panic("s <= nextEmit")
+			if debugAsserts && s < nextEmit {
+				panic("s < nextEmit")
 			}
 			addLiterals(&seq, best.s)
 

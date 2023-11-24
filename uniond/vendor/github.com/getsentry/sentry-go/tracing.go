@@ -58,8 +58,8 @@ type Span struct { //nolint: maligned // prefer readability over optimal memory 
 	recorder *spanRecorder
 	// span context, can only be set on transactions
 	contexts map[string]Context
-	// profiler instance if attached, nil otherwise.
-	profiler transactionProfiler
+	// collectProfile is a function that collects a profile of the current transaction. May be nil.
+	collectProfile transactionProfiler
 	// a Once instance to make sure that Finish() is only called once.
 	finishOnce sync.Once
 }
@@ -333,12 +333,6 @@ func (s *Span) SetDynamicSamplingContext(dsc DynamicSamplingContext) {
 
 // doFinish runs the actual Span.Finish() logic.
 func (s *Span) doFinish() {
-	// For the timing to be correct, the profiler must be stopped before s.EndTime.
-	var profile *profileInfo
-	if s.profiler != nil {
-		profile = s.profiler.Finish(s)
-	}
-
 	if s.EndTime.IsZero() {
 		s.EndTime = monotonicTimeSince(s.StartTime)
 	}
@@ -351,7 +345,9 @@ func (s *Span) doFinish() {
 		return
 	}
 
-	event.sdkMetaData.transactionProfile = profile
+	if s.collectProfile != nil {
+		event.sdkMetaData.transactionProfile = s.collectProfile(s)
+	}
 
 	// TODO(tracing): add breadcrumbs
 	// (see https://github.com/getsentry/sentry-python/blob/f6f3525f8812f609/sentry_sdk/tracing.py#L372)
@@ -839,7 +835,7 @@ type SpanOption func(s *Span)
 // starting a span affects the span tree as a whole, potentially overwriting a
 // name set previously.
 //
-// Deprecated: Use WithTransactionName() instead.
+// Deprecated: To be removed in 0.26.0. Use WithTransactionName() instead.
 func TransactionName(name string) SpanOption {
 	return WithTransactionName(name)
 }
@@ -857,7 +853,7 @@ func WithTransactionName(name string) SpanOption {
 
 // OpName sets the operation name for a given span.
 //
-// Deprecated: Use WithOpName() instead.
+// Deprecated: To be removed in 0.26.0. Use WithOpName() instead.
 func OpName(name string) SpanOption {
 	return WithOpName(name)
 }
@@ -871,7 +867,7 @@ func WithOpName(name string) SpanOption {
 
 // TransctionSource sets the source of the transaction name.
 //
-// Deprecated: Use WithTransactionSource() instead.
+// Deprecated: To be removed in 0.26.0. Use WithTransactionSource() instead.
 func TransctionSource(source TransactionSource) SpanOption {
 	return WithTransactionSource(source)
 }
@@ -889,7 +885,7 @@ func WithTransactionSource(source TransactionSource) SpanOption {
 
 // SpanSampled updates the sampling flag for a given span.
 //
-// Deprecated: Use WithSpanSampled() instead.
+// Deprecated: To be removed in 0.26.0. Use WithSpanSampled() instead.
 func SpanSampled(sampled Sampled) SpanOption {
 	return WithSpanSampled(sampled)
 }

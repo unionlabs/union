@@ -42,25 +42,6 @@ func quickSortByFreq(data []literalNode, a, b, maxDepth int) {
 	}
 }
 
-// siftDownByFreq implements the heap property on data[lo, hi).
-// first is an offset into the array where the root of the heap lies.
-func siftDownByFreq(data []literalNode, lo, hi, first int) {
-	root := lo
-	for {
-		child := 2*root + 1
-		if child >= hi {
-			break
-		}
-		if child+1 < hi && (data[first+child].freq == data[first+child+1].freq && data[first+child].literal < data[first+child+1].literal || data[first+child].freq < data[first+child+1].freq) {
-			child++
-		}
-		if data[first+root].freq == data[first+child].freq && data[first+root].literal > data[first+child].literal || data[first+root].freq > data[first+child].freq {
-			return
-		}
-		data[first+root], data[first+child] = data[first+child], data[first+root]
-		root = child
-	}
-}
 func doPivotByFreq(data []literalNode, lo, hi int) (midlo, midhi int) {
 	m := int(uint(lo+hi) >> 1) // Written like this to avoid integer overflow.
 	if hi-lo > 40 {

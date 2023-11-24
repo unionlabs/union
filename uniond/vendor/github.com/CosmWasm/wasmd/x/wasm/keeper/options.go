@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/prometheus/client_golang/prometheus"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )
@@ -25,14 +26,14 @@ func (f postOptsFn) apply(keeper *Keeper) {
 
 // WithWasmEngine is an optional constructor parameter to replace the default wasmVM engine with the
 // given one.
-func WithWasmEngine(x types.WasmerEngine) Option {
+func WithWasmEngine(x types.WasmEngine) Option {
 	return optsFn(func(k *Keeper) {
 		k.wasmVM = x
 	})
 }
 
 // WithWasmEngineDecorator is an optional constructor parameter to decorate the default wasmVM engine.
-func WithWasmEngineDecorator(d func(old types.WasmerEngine) types.WasmerEngine) Option {
+func WithWasmEngineDecorator(d func(old types.WasmEngine) types.WasmEngine) Option {
 	return postOptsFn(func(k *Keeper) {
 		k.wasmVM = d(k.wasmVM)
 	})
@@ -125,7 +126,7 @@ func WithAccountPruner(x AccountPruner) Option {
 }
 
 func WithVMCacheMetrics(r prometheus.Registerer) Option {
-	return optsFn(func(k *Keeper) {
+	return postOptsFn(func(k *Keeper) {
 		NewWasmVMMetricsCollector(k.wasmVM).Register(r)
 	})
 }
@@ -133,7 +134,7 @@ func WithVMCacheMetrics(r prometheus.Registerer) Option {
 // WithGasRegister set a new gas register to implement custom gas costs.
 // When the "gas multiplier" for wasmvm gas conversion is modified inside the new register,
 // make sure to also use `WithApiCosts` option for non default values
-func WithGasRegister(x GasRegister) Option {
+func WithGasRegister(x types.GasRegister) Option {
 	if x == nil {
 		panic("must not be nil")
 	}
@@ -161,7 +162,7 @@ func WithMaxQueryStackSize(m uint32) Option {
 // when they exist for an address on contract instantiation.
 //
 // Values should be references and contain the `*authtypes.BaseAccount` as default bank account type.
-func WithAcceptedAccountTypesOnContractInstantiation(accts ...authtypes.AccountI) Option {
+func WithAcceptedAccountTypesOnContractInstantiation(accts ...sdk.AccountI) Option {
 	m := asTypeMap(accts)
 	return optsFn(func(k *Keeper) {
 		k.acceptedAccountTypes = m
@@ -182,7 +183,7 @@ func WitGovSubMsgAuthZPropagated(entries ...types.AuthorizationPolicyAction) Opt
 	})
 }
 
-func asTypeMap(accts []authtypes.AccountI) map[reflect.Type]struct{} {
+func asTypeMap(accts []sdk.AccountI) map[reflect.Type]struct{} {
 	m := make(map[reflect.Type]struct{}, len(accts))
 	for _, a := range accts {
 		if a == nil {

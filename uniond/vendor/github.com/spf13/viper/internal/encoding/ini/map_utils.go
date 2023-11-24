@@ -15,22 +15,22 @@ import (
 // In case intermediate keys do not exist, or map to a non-map value,
 // a new map is created and inserted, and the search continues from there:
 // the initial map "m" may be modified!
-func deepSearch(m map[string]interface{}, path []string) map[string]interface{} {
+func deepSearch(m map[string]any, path []string) map[string]any {
 	for _, k := range path {
 		m2, ok := m[k]
 		if !ok {
 			// intermediate key does not exist
 			// => create it and continue from there
-			m3 := make(map[string]interface{})
+			m3 := make(map[string]any)
 			m[k] = m3
 			m = m3
 			continue
 		}
-		m3, ok := m2.(map[string]interface{})
+		m3, ok := m2.(map[string]any)
 		if !ok {
 			// intermediate key is a value
 			// => replace with a new map
-			m3 = make(map[string]interface{})
+			m3 = make(map[string]any)
 			m[k] = m3
 		}
 		// continue search from here
@@ -40,27 +40,27 @@ func deepSearch(m map[string]interface{}, path []string) map[string]interface{} 
 }
 
 // flattenAndMergeMap recursively flattens the given map into a new map
-// Code is based on the function with the same name in tha main package.
+// Code is based on the function with the same name in the main package.
 // TODO: move it to a common place
-func flattenAndMergeMap(shadow map[string]interface{}, m map[string]interface{}, prefix string, delimiter string) map[string]interface{} {
+func flattenAndMergeMap(shadow map[string]any, m map[string]any, prefix string, delimiter string) map[string]any {
 	if shadow != nil && prefix != "" && shadow[prefix] != nil {
 		// prefix is shadowed => nothing more to flatten
 		return shadow
 	}
 	if shadow == nil {
-		shadow = make(map[string]interface{})
+		shadow = make(map[string]any)
 	}
 
-	var m2 map[string]interface{}
+	var m2 map[string]any
 	if prefix != "" {
 		prefix += delimiter
 	}
 	for k, val := range m {
 		fullKey := prefix + k
-		switch val.(type) {
-		case map[string]interface{}:
-			m2 = val.(map[string]interface{})
-		case map[interface{}]interface{}:
+		switch val := val.(type) {
+		case map[string]any:
+			m2 = val
+		case map[any]any:
 			m2 = cast.ToStringMap(val)
 		default:
 			// immediate value

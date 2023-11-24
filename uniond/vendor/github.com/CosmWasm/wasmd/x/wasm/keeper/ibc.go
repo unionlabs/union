@@ -3,10 +3,12 @@ package keeper
 import (
 	"strings"
 
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+
 	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )

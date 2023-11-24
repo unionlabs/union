@@ -25,10 +25,12 @@ type Mempool interface {
 	Remove(sdk.Tx) error
 }
 
-// Iterator defines an app-side mempool iterator interface that is as minimal as possible.  The order of iteration
-// is determined by the app-side mempool implementation.
+// Iterator defines an app-side mempool iterator interface that is as minimal as
+// possible. The order of iteration is determined by the app-side mempool
+// implementation.
 type Iterator interface {
-	// Next returns the next transaction from the mempool. If there are no more transactions, it returns nil.
+	// Next returns the next transaction from the mempool. If there are no more
+	// transactions, it returns nil.
 	Next() Iterator
 
 	// Tx returns the transaction at the current position of the iterator.

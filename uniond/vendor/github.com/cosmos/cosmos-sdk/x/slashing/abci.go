@@ -1,9 +1,10 @@
 package slashing
 
 import (
+	"context"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	"cosmossdk.io/core/comet"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,13 +14,18 @@ import (
 
 // BeginBlocker check for infraction evidence or downtime of validators
 // on every begin block
-func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper) {
+func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
 	// Iterate over all the validators which *should* have signed this block
 	// store whether or not they have actually signed it and slash/unbond any
 	// which have missed too many blocks in a row (downtime slashing)
-	for _, voteInfo := range req.LastCommitInfo.GetVotes() {
-		k.HandleValidatorSignature(ctx, voteInfo.Validator.Address, voteInfo.Validator.Power, voteInfo.SignedLastBlock)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	for _, voteInfo := range sdkCtx.VoteInfos() {
+		err := k.HandleValidatorSignature(ctx, voteInfo.Validator.Address, voteInfo.Validator.Power, comet.BlockIDFlag(voteInfo.BlockIdFlag))
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }

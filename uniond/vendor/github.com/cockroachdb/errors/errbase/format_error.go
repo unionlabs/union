@@ -102,7 +102,13 @@ func formatErrorInternal(err error, s fmt.State, verb rune, redactableOutput boo
 		// to enable stack trace de-duplication. This requires a
 		// post-order traversal. Since we have a linked list, the best we
 		// can do is a recursion.
-		p.formatRecursive(err, true /* isOutermost */, true /* withDetail */)
+		p.formatRecursive(
+			err,
+			true,  /* isOutermost */
+			true,  /* withDetail */
+			false, /* withDepth */
+			0,     /* depth */
+		)
 
 		// We now have all the data, we can render the result.
 		p.formatEntries(err)
@@ -146,7 +152,13 @@ func formatErrorInternal(err error, s fmt.State, verb rune, redactableOutput boo
 		// by calling FormatError(), in which case we'd get an infinite
 		// recursion. So we have no choice but to peel the data
 		// and then assemble the pieces ourselves.
-		p.formatRecursive(err, true /* isOutermost */, false /* withDetail */)
+		p.formatRecursive(
+			err,
+			true,  /* isOutermost */
+			false, /* withDetail */
+			false, /* withDepth */
+			0,     /* depth */
+		)
 		p.formatSingleLineOutput()
 		p.finishDisplay(verb)
 
@@ -195,7 +207,19 @@ func (s *state) formatEntries(err error) {
 	// Wraps: (N) <details>
 	//
 	for i, j := len(s.entries)-2, 2; i >= 0; i, j = i-1, j+1 {
-		fmt.Fprintf(&s.finalBuf, "\nWraps: (%d)", j)
+		s.finalBuf.WriteByte('\n')
+		// Extra indentation starts at depth==2 because the direct
+		// children of the root error area already printed on separate
+		// newlines.
+		for m := 0; m < s.entries[i].depth-1; m += 1 {
+			if m == s.entries[i].depth-2 {
+				s.finalBuf.WriteString("└─ ")
+			} else {
+				s.finalBuf.WriteByte(' ')
+				s.finalBuf.WriteByte(' ')
+			}
+		}
+		fmt.Fprintf(&s.finalBuf, "Wraps: (%d)", j)
 		entry := s.entries[i]
 		s.printEntry(entry)
 	}
@@ -278,8 +302,9 @@ func (s *state) printEntry(entry formatEntry) {
 //
 // This function is used both when FormatError() is called indirectly
 // from .Error(), e.g. in:
-//      (e *myType) Error() { return fmt.Sprintf("%v", e) }
-//      (e *myType) Format(s fmt.State, verb rune) { errors.FormatError(s, verb, e) }
+//
+//	(e *myType) Error() { return fmt.Sprintf("%v", e) }
+//	(e *myType) Format(s fmt.State, verb rune) { errors.FormatError(s, verb, e) }
 //
 // and also to print the first line in the output of a %+v format.
 //
@@ -329,12 +354,34 @@ func (s *state) formatSingleLineOutput() {
 // s.finalBuf is untouched. The conversion of s.entries
 // to s.finalBuf is done by formatSingleLineOutput() and/or
 // formatEntries().
-func (s *state) formatRecursive(err error, isOutermost, withDetail bool) {
+//
+// `withDepth` and `depth` are used to tag subtrees of multi-cause
+// errors for added indentation during printing. Once a multi-cause
+// error is encountered, all subsequent calls with set `withDepth` to
+// true, and increment `depth` during recursion. This information is
+// persisted into the generated entries and used later to display the
+// error with increased indentation based in the depth.
+func (s *state) formatRecursive(err error, isOutermost, withDetail, withDepth bool, depth int) int {
 	cause := UnwrapOnce(err)
+	numChildren := 0
 	if cause != nil {
-		// Recurse first.
-		s.formatRecursive(cause, false /*isOutermost*/, withDetail)
+		// Recurse first, which populates entries list starting from innermost
+		// entry. If we've previously seen a multi-cause wrapper, `withDepth`
+		// will be true, and we'll record the depth below ensuring that extra
+		// indentation is applied to this inner cause during printing.
+		// Otherwise, we maintain "straight" vertical formatting by keeping the
+		// parent callers `withDepth` value of `false` by default.
+		numChildren += s.formatRecursive(cause, false, withDetail, withDepth, depth+1)
 	}
+
+	causes := UnwrapMulti(err)
+	for _, c := range causes {
+		// Override `withDepth` to true for all child entries ensuring they have
+		// indentation applied during formatting to distinguish them from
+		// parents.
+		numChildren += s.formatRecursive(c, false, withDetail, true, depth+1)
+	}
+	// inserted := len(s.entries) - 1 - startChildren
 
 	// Reinitialize the state for this stage of wrapping.
 	s.wantDetail = withDetail
@@ -354,11 +401,11 @@ func (s *state) formatRecursive(err error, isOutermost, withDetail bool) {
 		bufIsRedactable = true
 		desiredShortening := v.SafeFormatError((*safePrinter)(s))
 		if desiredShortening == nil {
-			// The error wants to elide the short messages from inner
-			// causes. Do it.
-			for i := range s.entries {
-				s.entries[i].elideShort = true
-			}
+			// The error wants to elide the short messages from inner causes.
+			// Read backwards through list of entries up to the number of new
+			// entries created "under" this one amount and mark `elideShort`
+			// true.
+			s.elideShortChildren(numChildren)
 		}
 
 	case Formatter:
@@ -366,9 +413,7 @@ func (s *state) formatRecursive(err error, isOutermost, withDetail bool) {
 		if desiredShortening == nil {
 			// The error wants to elide the short messages from inner
 			// causes. Do it.
-			for i := range s.entries {
-				s.entries[i].elideShort = true
-			}
+			s.elideShortChildren(numChildren)
 		}
 
 	case fmt.Formatter:
@@ -389,7 +434,11 @@ func (s *state) formatRecursive(err error, isOutermost, withDetail bool) {
 				s.lastStack = st.StackTrace()
 			}
 		} else {
-			s.formatSimple(err, cause)
+			if elideCauseMsg := s.formatSimple(err, cause); elideCauseMsg {
+				// The error wants to elide the short messages from inner
+				// causes. Do it.
+				s.elideShortChildren(numChildren)
+			}
 		}
 
 	default:
@@ -411,9 +460,7 @@ func (s *state) formatRecursive(err error, isOutermost, withDetail bool) {
 				if desiredShortening == nil {
 					// The error wants to elide the short messages from inner
 					// causes. Do it.
-					for i := range s.entries {
-						s.entries[i].elideShort = true
-					}
+					s.elideShortChildren(numChildren)
 				}
 				break
 			}
@@ -422,12 +469,21 @@ func (s *state) formatRecursive(err error, isOutermost, withDetail bool) {
 			// If the error did not implement errors.Formatter nor
 			// fmt.Formatter, but it is a wrapper, still attempt best effort:
 			// print what we can at this level.
-			s.formatSimple(err, cause)
+			elideChildren := s.formatSimple(err, cause)
+			// always elideChildren when dealing with multi-cause errors.
+			if len(causes) > 0 {
+				elideChildren = true
+			}
+			if elideChildren {
+				// The error wants to elide the short messages from inner
+				// causes. Do it.
+				s.elideShortChildren(numChildren)
+			}
 		}
 	}
 
 	// Collect the result.
-	entry := s.collectEntry(err, bufIsRedactable)
+	entry := s.collectEntry(err, bufIsRedactable, withDepth, depth)
 
 	// If there's an embedded stack trace, also collect it.
 	// This will get either a stack from pkg/errors, or ours.
@@ -441,9 +497,22 @@ func (s *state) formatRecursive(err error, isOutermost, withDetail bool) {
 	// Remember the entry for later rendering.
 	s.entries = append(s.entries, entry)
 	s.buf = bytes.Buffer{}
+
+	return numChildren + 1
 }
 
-func (s *state) collectEntry(err error, bufIsRedactable bool) formatEntry {
+// elideShortChildren takes a number of entries to set `elideShort` to
+// false. The reason a number of entries is needed is that we may be
+// eliding a subtree of causes in the case of a multi-cause error. In
+// the multi-cause case, we need to know how many of the prior errors
+// in the list of entries is a child of this subtree.
+func (s *state) elideShortChildren(newEntries int) {
+	for i := 0; i < newEntries; i++ {
+		s.entries[len(s.entries)-1-i].elideShort = true
+	}
+}
+
+func (s *state) collectEntry(err error, bufIsRedactable bool, withDepth bool, depth int) formatEntry {
 	entry := formatEntry{err: err}
 	if s.wantDetail {
 		// The buffer has been populated as a result of formatting with
@@ -480,6 +549,10 @@ func (s *state) collectEntry(err error, bufIsRedactable bool) formatEntry {
 		}
 	}
 
+	if withDepth {
+		entry.depth = depth
+	}
+
 	return entry
 }
 
@@ -500,16 +573,23 @@ func RegisterSpecialCasePrinter(fn safeErrorPrinterFn) {
 // formatSimple performs a best effort at extracting the details at a
 // given level of wrapping when the error object does not implement
 // the Formatter interface.
-func (s *state) formatSimple(err, cause error) {
+// Returns true if we want to elide errors from causal chain.
+func (s *state) formatSimple(err, cause error) bool {
 	var pref string
+	elideCauses := false
 	if cause != nil {
-		pref = extractPrefix(err, cause)
+		var messageType MessageType
+		pref, messageType = extractPrefix(err, cause)
+		if messageType == FullMessage {
+			elideCauses = true
+		}
 	} else {
 		pref = err.Error()
 	}
 	if len(pref) > 0 {
 		s.Write([]byte(pref))
 	}
+	return elideCauses
 }
 
 // finishDisplay renders s.finalBuf into s.State.
@@ -568,7 +648,7 @@ type state struct {
 
 	// entries collect the result of formatRecursive(). They are
 	// consumed by formatSingleLineOutput() and formatEntries() to
-	// procude the contents of finalBuf.
+	// produce the contents of finalBuf.
 	entries []formatEntry
 
 	// buf collects the details of the current error object at a given
@@ -690,6 +770,11 @@ type formatEntry struct {
 	// truncated to avoid duplication of entries. This is used to
 	// display a truncation indicator during verbose rendering.
 	elidedStackTrace bool
+
+	// depth, if positive, represents a nesting depth of this error as
+	// a causer of others. This is used with verbose printing to
+	// illustrate the nesting depth for multi-cause error wrappers.
+	depth int
 }
 
 // String is used for debugging only.
@@ -711,6 +796,12 @@ func (s *state) Write(b []byte) (n int, err error) {
 
 	for i, c := range b {
 		if c == '\n' {
+			//if s.needNewline > 0 {
+			//	for i := 0; i < s.needNewline-1; i++ {
+			//		s.buf.Write(detailSep[:len(sep)-1])
+			//	}
+			//	s.needNewline = 0
+			//}
 			// Flush all the bytes seen so far.
 			s.buf.Write(b[k:i])
 			// Don't print the newline itself; instead, prepare the state so
@@ -740,6 +831,11 @@ func (s *state) Write(b []byte) (n int, err error) {
 			s.notEmpty = true
 		}
 	}
+	//if s.needNewline > 0 {
+	//	for i := 0; i < s.needNewline-1; i++ {
+	//		s.buf.Write(detailSep[:len(sep)-1])
+	//	}
+	//}
 	s.buf.Write(b[k:])
 	return len(b), nil
 }
@@ -766,6 +862,9 @@ func (p *state) switchOver() {
 	p.buf = bytes.Buffer{}
 	p.notEmpty = false
 	p.hasDetail = true
+
+	// One of the newlines is accounted for in the switch over.
+	// p.needNewline -= 1
 }
 
 func (s *printer) Detail() bool {
@@ -829,7 +928,7 @@ func (s *safePrinter) enhanceArgs(args []interface{}) {
 			args[i] = redact.Safe(thisStack)
 			lastSeen = st
 		}
-		// In contrast with (*printer).enhanceArgs(), we dont use a
+		// In contrast with (*printer).enhanceArgs(), we don't use a
 		// special case for `error` here, because the redact package
 		// already helps us recursing into a safe print for
 		// error objects.

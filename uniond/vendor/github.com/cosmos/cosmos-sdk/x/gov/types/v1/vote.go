@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -18,8 +19,6 @@ const (
 )
 
 // NewVote creates a new Vote instance
-//
-//nolint:interfacer
 func NewVote(proposalID uint64, voter sdk.AccAddress, options WeightedVoteOptions, metadata string) Vote {
 	return Vote{ProposalId: proposalID, Voter: voter.String(), Options: options, Metadata: metadata}
 }
@@ -59,13 +58,13 @@ func (v Votes) String() string {
 	return out
 }
 
-func NewWeightedVoteOption(option VoteOption, weight sdk.Dec) *WeightedVoteOption {
+func NewWeightedVoteOption(option VoteOption, weight math.LegacyDec) *WeightedVoteOption {
 	return &WeightedVoteOption{Option: option, Weight: weight.String()}
 }
 
 // IsValid returns true if the sub vote is valid and false otherwise.
 func (w *WeightedVoteOption) IsValid() bool {
-	weight, err := sdk.NewDecFromStr(w.Weight)
+	weight, err := math.LegacyNewDecFromStr(w.Weight)
 	if err != nil {
 		return false
 	}
@@ -84,7 +83,7 @@ func NewNonSplitVoteOption(option VoteOption) WeightedVoteOptions {
 
 // ValidWeightedVoteOption returns true if the sub vote is valid and false otherwise.
 func ValidWeightedVoteOption(option WeightedVoteOption) bool {
-	weight, err := sdk.NewDecFromStr(option.Weight)
+	weight, err := math.LegacyNewDecFromStr(option.Weight)
 	if err != nil || !weight.IsPositive() || weight.GT(math.LegacyNewDec(1)) {
 		return false
 	}
@@ -94,12 +93,9 @@ func ValidWeightedVoteOption(option WeightedVoteOption) bool {
 // WeightedVoteOptions describes array of WeightedVoteOptions
 type WeightedVoteOptions []*WeightedVoteOption
 
-func (v WeightedVoteOptions) String() (out string) {
-	for _, opt := range v {
-		out += opt.String() + "\n"
-	}
-
-	return strings.TrimSpace(out)
+func (v WeightedVoteOptions) String() string {
+	out, _ := json.Marshal(v)
+	return string(out)
 }
 
 // VoteOptionFromString returns a VoteOption from a string. It returns an error
@@ -125,7 +121,7 @@ func WeightedVoteOptionsFromString(str string) (WeightedVoteOptions, error) {
 		if len(fields) < 2 {
 			return options, fmt.Errorf("weight field does not exist for %s option", fields[0])
 		}
-		weight, err := sdk.NewDecFromStr(fields[1])
+		weight, err := math.LegacyNewDecFromStr(fields[1])
 		if err != nil {
 			return options, err
 		}

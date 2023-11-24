@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -37,7 +39,7 @@ func genGrant(r *rand.Rand, accounts []simtypes.Account, genT time.Time) []authz
 
 func generateRandomGrant(r *rand.Rand) *codectypes.Any {
 	authorizations := make([]*codectypes.Any, 2)
-	sendAuthz := banktypes.NewSendAuthorization(sdk.NewCoins(sdk.NewCoin("stake", sdk.NewInt(1000))), nil)
+	sendAuthz := banktypes.NewSendAuthorization(sdk.NewCoins(sdk.NewCoin("stake", sdkmath.NewInt(1000))), nil)
 	authorizations[0] = newAnyAuthorization(sendAuthz)
 	authorizations[1] = newAnyAuthorization(authz.NewGenericAuthorization(sdk.MsgTypeURL(&v1.MsgSubmitProposal{})))
 
@@ -56,12 +58,9 @@ func newAnyAuthorization(a authz.Authorization) *codectypes.Any {
 // RandomizedGenState generates a random GenesisState for authz.
 func RandomizedGenState(simState *module.SimulationState) {
 	var grants []authz.GrantAuthorization
-	simState.AppParams.GetOrGenerate(
-		simState.Cdc, "authz", &grants, simState.Rand,
-		func(r *rand.Rand) {
-			grants = genGrant(r, simState.Accounts, simState.GenTimestamp)
-		},
-	)
+	simState.AppParams.GetOrGenerate("authz", &grants, simState.Rand, func(r *rand.Rand) {
+		grants = genGrant(r, simState.Accounts, simState.GenTimestamp)
+	})
 
 	authzGrantsGenesis := authz.NewGenesisState(grants)
 

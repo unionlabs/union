@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/log"
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/group"
 	"github.com/cosmos/cosmos-sdk/x/group/errors"
 	"github.com/cosmos/cosmos-sdk/x/group/internal/orm"
@@ -75,17 +75,20 @@ type Keeper struct {
 	voteByProposalIndex orm.Index
 	voteByVoterIndex    orm.Index
 
-	router *baseapp.MsgServiceRouter
+	router baseapp.MessageRouter
 
 	config group.Config
+
+	cdc codec.Codec
 }
 
 // NewKeeper creates a new group keeper.
-func NewKeeper(storeKey storetypes.StoreKey, cdc codec.Codec, router *baseapp.MsgServiceRouter, accKeeper group.AccountKeeper, config group.Config) Keeper {
+func NewKeeper(storeKey storetypes.StoreKey, cdc codec.Codec, router baseapp.MessageRouter, accKeeper group.AccountKeeper, config group.Config) Keeper {
 	k := Keeper{
 		key:       storeKey,
 		router:    router,
 		accKeeper: accKeeper,
+		cdc:       cdc,
 	}
 
 	groupTable, err := orm.NewAutoUInt64Table([2]byte{GroupTablePrefix}, GroupTableSeqPrefix, &group.GroupInfo{}, cdc)
@@ -93,11 +96,11 @@ func NewKeeper(storeKey storetypes.StoreKey, cdc codec.Codec, router *baseapp.Ms
 		panic(err.Error())
 	}
 	k.groupByAdminIndex, err = orm.NewIndex(groupTable, GroupByAdminIndexPrefix, func(val interface{}) ([]interface{}, error) {
-		addr, err := sdk.AccAddressFromBech32(val.(*group.GroupInfo).Admin)
+		addr, err := accKeeper.AddressCodec().StringToBytes(val.(*group.GroupInfo).Admin)
 		if err != nil {
 			return nil, err
 		}
-		return []interface{}{addr.Bytes()}, nil
+		return []interface{}{addr}, nil
 	}, []byte{})
 	if err != nil {
 		panic(err.Error())
@@ -118,11 +121,11 @@ func NewKeeper(storeKey storetypes.StoreKey, cdc codec.Codec, router *baseapp.Ms
 	}
 	k.groupMemberByMemberIndex, err = orm.NewIndex(groupMemberTable, GroupMemberByMemberIndexPrefix, func(val interface{}) ([]interface{}, error) {
 		memberAddr := val.(*group.GroupMember).Member.Address
-		addr, err := sdk.AccAddressFromBech32(memberAddr)
+		addr, err := accKeeper.AddressCodec().StringToBytes(memberAddr)
 		if err != nil {
 			return nil, err
 		}
-		return []interface{}{addr.Bytes()}, nil
+		return []interface{}{addr}, nil
 	}, []byte{})
 	if err != nil {
 		panic(err.Error())
@@ -143,11 +146,11 @@ func NewKeeper(storeKey storetypes.StoreKey, cdc codec.Codec, router *baseapp.Ms
 	}
 	k.groupPolicyByAdminIndex, err = orm.NewIndex(groupPolicyTable, GroupPolicyByAdminIndexPrefix, func(value interface{}) ([]interface{}, error) {
 		admin := value.(*group.GroupPolicyInfo).Admin
-		addr, err := sdk.AccAddressFromBech32(admin)
+		addr, err := accKeeper.AddressCodec().StringToBytes(admin)
 		if err != nil {
 			return nil, err
 		}
-		return []interface{}{addr.Bytes()}, nil
+		return []interface{}{addr}, nil
 	}, []byte{})
 	if err != nil {
 		panic(err.Error())
@@ -161,11 +164,11 @@ func NewKeeper(storeKey storetypes.StoreKey, cdc codec.Codec, router *baseapp.Ms
 	}
 	k.proposalByGroupPolicyIndex, err = orm.NewIndex(proposalTable, ProposalByGroupPolicyIndexPrefix, func(value interface{}) ([]interface{}, error) {
 		account := value.(*group.Proposal).GroupPolicyAddress
-		addr, err := sdk.AccAddressFromBech32(account)
+		addr, err := accKeeper.AddressCodec().StringToBytes(account)
 		if err != nil {
 			return nil, err
 		}
-		return []interface{}{addr.Bytes()}, nil
+		return []interface{}{addr}, nil
 	}, []byte{})
 	if err != nil {
 		panic(err.Error())
@@ -191,11 +194,11 @@ func NewKeeper(storeKey storetypes.StoreKey, cdc codec.Codec, router *baseapp.Ms
 		panic(err.Error())
 	}
 	k.voteByVoterIndex, err = orm.NewIndex(voteTable, VoteByVoterIndexPrefix, func(value interface{}) ([]interface{}, error) {
-		addr, err := sdk.AccAddressFromBech32(value.(*group.Vote).Voter)
+		addr, err := accKeeper.AddressCodec().StringToBytes(value.(*group.Vote).Voter)
 		if err != nil {
 			return nil, err
 		}
-		return []interface{}{addr.Bytes()}, nil
+		return []interface{}{addr}, nil
 	}, []byte{})
 	if err != nil {
 		panic(err.Error())
@@ -400,12 +403,12 @@ func (k Keeper) TallyProposalsAtVPEnd(ctx sdk.Context) error {
 	for _, proposal := range proposals {
 		policyInfo, err := k.getGroupPolicyInfo(ctx, proposal.GroupPolicyAddress)
 		if err != nil {
-			return sdkerrors.Wrap(err, "group policy")
+			return errorsmod.Wrap(err, "group policy")
 		}
 
 		electorate, err := k.getGroupInfo(ctx, policyInfo.GroupId)
 		if err != nil {
-			return sdkerrors.Wrap(err, "group")
+			return errorsmod.Wrap(err, "group")
 		}
 
 		proposalID := proposal.Id
@@ -426,11 +429,11 @@ func (k Keeper) TallyProposalsAtVPEnd(ctx sdk.Context) error {
 			}
 		} else if proposal.Status == group.PROPOSAL_STATUS_SUBMITTED {
 			if err := k.doTallyAndUpdate(ctx, &proposal, electorate, policyInfo); err != nil {
-				return sdkerrors.Wrap(err, "doTallyAndUpdate")
+				return errorsmod.Wrap(err, "doTallyAndUpdate")
 			}
 
 			if err := k.proposalTable.Update(ctx.KVStore(k.key), proposal.Id, &proposal); err != nil {
-				return sdkerrors.Wrap(err, "proposal update")
+				return errorsmod.Wrap(err, "proposal update")
 			}
 		}
 		// Note: We do nothing if the proposal has been marked as ACCEPTED or

@@ -481,17 +481,6 @@ simd tx broadcast tx.signed.json
 
 More information about the `broadcast` command can be found running `simd tx broadcast --help`.
 
-#### `aux-to-fee`
-
-The `aux-to-fee` comamnds includes the aux signer data in the tx, broadcast the tx, and sends the tip amount to the broadcaster.
-[Learn more about tip transaction](https://docs.cosmos.network/main/core/tips).
-
-```bash
-# simd tx bank send <from> <to> <amount> --aux (optional: --tip <tipAmt> --tipper <tipper>)
-simd tx aux-to-fee tx.aux.signed.json
-```
-
-More information about the `aux-to-fee` command can be found running `simd tx aux-to-fee --help`.
 
 ### gRPC
 

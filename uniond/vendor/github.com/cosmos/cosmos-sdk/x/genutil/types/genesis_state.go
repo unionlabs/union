@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	tmtypes "github.com/cometbft/cometbft/types"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -62,12 +60,12 @@ func SetGenesisStateInAppState(
 	return appState
 }
 
-// GenesisStateFromGenDoc creates the core parameters for genesis initialization
+// GenesisStateFromAppGenesis creates the core parameters for genesis initialization
 // for the application.
 //
 // NOTE: The pubkey input is this machines pubkey.
-func GenesisStateFromGenDoc(genDoc tmtypes.GenesisDoc) (genesisState map[string]json.RawMessage, err error) {
-	if err = json.Unmarshal(genDoc.AppState, &genesisState); err != nil {
+func GenesisStateFromAppGenesis(genesis *AppGenesis) (genesisState map[string]json.RawMessage, err error) {
+	if err = json.Unmarshal(genesis.AppState, &genesisState); err != nil {
 		return genesisState, err
 	}
 	return genesisState, nil
@@ -77,19 +75,18 @@ func GenesisStateFromGenDoc(genDoc tmtypes.GenesisDoc) (genesisState map[string]
 // for the application.
 //
 // NOTE: The pubkey input is this machines pubkey.
-func GenesisStateFromGenFile(genFile string) (genesisState map[string]json.RawMessage, genDoc *tmtypes.GenesisDoc, err error) {
+func GenesisStateFromGenFile(genFile string) (genesisState map[string]json.RawMessage, genesis *AppGenesis, err error) {
 	if _, err := os.Stat(genFile); os.IsNotExist(err) {
-		return genesisState, genDoc,
-			fmt.Errorf("%s does not exist, run `init` first", genFile)
+		return genesisState, genesis, fmt.Errorf("%s does not exist, run `init` first", genFile)
 	}
 
-	genDoc, err = tmtypes.GenesisDocFromFile(genFile)
+	genesis, err = AppGenesisFromFile(genFile)
 	if err != nil {
-		return genesisState, genDoc, err
+		return genesisState, genesis, err
 	}
 
-	genesisState, err = GenesisStateFromGenDoc(*genDoc)
-	return genesisState, genDoc, err
+	genesisState, err = GenesisStateFromAppGenesis(genesis)
+	return genesisState, genesis, err
 }
 
 // ValidateGenesis validates GenTx transactions
@@ -112,8 +109,11 @@ func DefaultMessageValidator(msgs []sdk.Msg) error {
 	if _, ok := msgs[0].(*stakingtypes.MsgCreateValidator); !ok {
 		return fmt.Errorf("unexpected GenTx message type; expected: MsgCreateValidator, got: %T", msgs[0])
 	}
-	if err := msgs[0].ValidateBasic(); err != nil {
-		return fmt.Errorf("invalid GenTx '%s': %w", msgs[0], err)
+
+	if m, ok := msgs[0].(sdk.HasValidateBasic); ok {
+		if err := m.ValidateBasic(); err != nil {
+			return fmt.Errorf("invalid GenTx '%s': %w", msgs[0], err)
+		}
 	}
 
 	return nil

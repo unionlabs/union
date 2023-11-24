@@ -19,11 +19,11 @@ type Codec struct {
 	LoadOptions  LoadOptions
 }
 
-func (c Codec) Encode(v map[string]interface{}) ([]byte, error) {
+func (c Codec) Encode(v map[string]any) ([]byte, error) {
 	cfg := ini.Empty()
 	ini.PrettyFormat = false
 
-	flattened := map[string]interface{}{}
+	flattened := map[string]any{}
 
 	flattened = flattenAndMergeMap(flattened, v, "", c.keyDelimiter())
 
@@ -62,7 +62,7 @@ func (c Codec) Encode(v map[string]interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (c Codec) Decode(b []byte, v map[string]interface{}) error {
+func (c Codec) Decode(b []byte, v map[string]any) error {
 	cfg := ini.Empty(c.LoadOptions)
 
 	err := cfg.Append(b)

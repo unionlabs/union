@@ -4,39 +4,25 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
-	"sigs.k8s.io/yaml"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // DefaultParams returns default distribution parameters
 func DefaultParams() Params {
 	return Params{
-		CommunityTax:        sdk.NewDecWithPrec(2, 2), // 2%
-		BaseProposerReward:  sdk.ZeroDec(),            // deprecated
-		BonusProposerReward: sdk.ZeroDec(),            // deprecated
+		CommunityTax:        math.LegacyNewDecWithPrec(2, 2), // 2%
+		BaseProposerReward:  math.LegacyZeroDec(),            // deprecated
+		BonusProposerReward: math.LegacyZeroDec(),            // deprecated
 		WithdrawAddrEnabled: true,
 	}
 }
 
-func (p Params) String() string {
-	out, _ := yaml.Marshal(p)
-	return string(out)
-}
-
 // ValidateBasic performs basic validation on distribution parameters.
 func (p Params) ValidateBasic() error {
-	if p.CommunityTax.IsNegative() || p.CommunityTax.GT(math.LegacyOneDec()) {
-		return fmt.Errorf(
-			"community tax should be non-negative and less than one: %s", p.CommunityTax,
-		)
-	}
-
-	return nil
+	return validateCommunityTax(p.CommunityTax)
 }
 
 func validateCommunityTax(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}

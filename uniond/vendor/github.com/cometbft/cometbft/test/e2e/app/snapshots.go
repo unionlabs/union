@@ -14,6 +14,9 @@ import (
 
 const (
 	snapshotChunkSize = 1e6
+
+	// Keep only the most recent 10 snapshots. Older snapshots are pruned
+	maxSnapshotCount = 10
 )
 
 // SnapshotStore stores state sync snapshots. Snapshots are stored simply as
@@ -81,17 +84,17 @@ func (s *SnapshotStore) saveMetadata() error {
 func (s *SnapshotStore) Create(state *State) (abci.Snapshot, error) {
 	s.Lock()
 	defer s.Unlock()
-	bz, err := state.Export()
+	bz, height, stateHash, err := state.Export()
 	if err != nil {
 		return abci.Snapshot{}, err
 	}
 	snapshot := abci.Snapshot{
-		Height: state.Height,
+		Height: height,
 		Format: 1,
-		Hash:   hashItems(state.Values),
+		Hash:   stateHash,
 		Chunks: byteChunks(bz),
 	}
-	err = os.WriteFile(filepath.Join(s.dir, fmt.Sprintf("%v.json", state.Height)), bz, 0o644) //nolint:gosec
+	err = os.WriteFile(filepath.Join(s.dir, fmt.Sprintf("%v.json", height)), bz, 0o644) //nolint:gosec
 	if err != nil {
 		return abci.Snapshot{}, err
 	}
@@ -101,6 +104,27 @@ func (s *SnapshotStore) Create(state *State) (abci.Snapshot, error) {
 		return abci.Snapshot{}, err
 	}
 	return snapshot, nil
+}
+
+// Prune removes old snapshots ensuring only the most recent n snapshots remain
+func (s *SnapshotStore) Prune(n int) error {
+	s.Lock()
+	defer s.Unlock()
+	// snapshots are appended to the metadata struct, hence pruning removes from
+	// the front of the array
+	i := 0
+	for ; i < len(s.metadata)-n; i++ {
+		h := s.metadata[i].Height
+		if err := os.Remove(filepath.Join(s.dir, fmt.Sprintf("%v.json", h))); err != nil {
+			return err
+		}
+	}
+
+	// update metadata by removing the deleted snapshots
+	pruned := make([]abci.Snapshot, len(s.metadata[i:]))
+	copy(pruned, s.metadata[i:])
+	s.metadata = pruned
+	return nil
 }
 
 // List lists available snapshots.

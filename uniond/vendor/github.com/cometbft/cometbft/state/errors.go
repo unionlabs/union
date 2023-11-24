@@ -103,4 +103,4 @@ func (e ErrNoABCIResponsesForHeight) Error() string {
 	return fmt.Sprintf("could not find results for height #%d", e.Height)
 }
 
-var ErrABCIResponsesNotPersisted = errors.New("node is not persisting abci responses")
+var ErrFinalizeBlockResponsesNotPersisted = errors.New("node is not persisting finalize block responses")

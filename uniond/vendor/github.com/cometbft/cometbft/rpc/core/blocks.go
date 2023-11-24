@@ -15,10 +15,19 @@ import (
 )
 
 // BlockchainInfo gets block headers for minHeight <= height <= maxHeight.
-// Block headers are returned in descending order (highest first).
-// More: https://docs.cometbft.com/v0.37/rpc/#/Info/blockchain
-func BlockchainInfo(ctx *rpctypes.Context, minHeight, maxHeight int64) (*ctypes.ResultBlockchainInfo, error) {
-	// maximum 20 block metas
+//
+// If maxHeight does not yet exist, blocks up to the current height will be
+// returned. If minHeight does not exist (due to pruning), earliest existing
+// height will be used.
+//
+// At most 20 items will be returned. Block headers are returned in descending
+// order (highest first).
+//
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/blockchain
+func (env *Environment) BlockchainInfo(
+	_ *rpctypes.Context,
+	minHeight, maxHeight int64,
+) (*ctypes.ResultBlockchainInfo, error) {
 	const limit int64 = 20
 	var err error
 	minHeight, maxHeight, err = filterMinMax(
@@ -79,9 +88,9 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 
 // Header gets block header at a given height.
 // If no height is provided, it will fetch the latest header.
-// More: https://docs.cometbft.com/v0.37/rpc/#/Info/header
-func Header(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultHeader, error) {
-	height, err := getHeight(env.BlockStore.Height(), heightPtr)
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/header
+func (env *Environment) Header(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultHeader, error) {
+	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +104,8 @@ func Header(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultHeader, erro
 }
 
 // HeaderByHash gets header by hash.
-// More: https://docs.cometbft.com/v0.37/rpc/#/Info/header_by_hash
-func HeaderByHash(ctx *rpctypes.Context, hash bytes.HexBytes) (*ctypes.ResultHeader, error) {
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/header_by_hash
+func (env *Environment) HeaderByHash(_ *rpctypes.Context, hash bytes.HexBytes) (*ctypes.ResultHeader, error) {
 	// N.B. The hash parameter is HexBytes so that the reflective parameter
 	// decoding logic in the HTTP service will correctly translate from JSON.
 	// See https://github.com/tendermint/tendermint/issues/6802 for context.
@@ -111,9 +120,9 @@ func HeaderByHash(ctx *rpctypes.Context, hash bytes.HexBytes) (*ctypes.ResultHea
 
 // Block gets block at a given height.
 // If no height is provided, it will fetch the latest block.
-// More: https://docs.cometbft.com/v0.37/rpc/#/Info/block
-func Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error) {
-	height, err := getHeight(env.BlockStore.Height(), heightPtr)
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block
+func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error) {
+	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +136,8 @@ func Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error)
 }
 
 // BlockByHash gets block by hash.
-// More: https://docs.cometbft.com/v0.37/rpc/#/Info/block_by_hash
-func BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block_by_hash
+func (env *Environment) BlockByHash(_ *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
 	block := env.BlockStore.LoadBlockByHash(hash)
 	if block == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: nil}, nil
@@ -140,9 +149,9 @@ func BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error
 
 // Commit gets block commit at a given height.
 // If no height is provided, it will fetch the commit for the latest block.
-// More: https://docs.cometbft.com/main/rpc/#/Info/commit
-func Commit(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, error) {
-	height, err := getHeight(env.BlockStore.Height(), heightPtr)
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/commit
+func (env *Environment) Commit(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, error) {
+	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
 		return nil, err
 	}
@@ -171,31 +180,30 @@ func Commit(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, erro
 // Results are for the height of the block containing the txs.
 // Thus response.results.deliver_tx[5] is the results of executing
 // getBlock(h).Txs[5]
-// More: https://docs.cometbft.com/v0.37/rpc/#/Info/block_results
-func BlockResults(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlockResults, error) {
-	height, err := getHeight(env.BlockStore.Height(), heightPtr)
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block_results
+func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlockResults, error) {
+	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
 		return nil, err
 	}
 
-	results, err := env.StateStore.LoadABCIResponses(height)
+	results, err := env.StateStore.LoadFinalizeBlockResponse(height)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ctypes.ResultBlockResults{
 		Height:                height,
-		TxsResults:            results.DeliverTxs,
-		BeginBlockEvents:      results.BeginBlock.Events,
-		EndBlockEvents:        results.EndBlock.Events,
-		ValidatorUpdates:      results.EndBlock.ValidatorUpdates,
-		ConsensusParamUpdates: results.EndBlock.ConsensusParamUpdates,
+		TxsResults:            results.TxResults,
+		FinalizeBlockEvents:   results.Events,
+		ValidatorUpdates:      results.ValidatorUpdates,
+		ConsensusParamUpdates: results.ConsensusParamUpdates,
 	}, nil
 }
 
-// BlockSearch searches for a paginated set of blocks matching BeginBlock and
-// EndBlock event search criteria.
-func BlockSearch(
+// BlockSearch searches for a paginated set of blocks matching
+// FinalizeBlock event search criteria.
+func (env *Environment) BlockSearch(
 	ctx *rpctypes.Context,
 	query string,
 	pagePtr, perPagePtr *int,
@@ -230,7 +238,7 @@ func BlockSearch(
 
 	// paginate results
 	totalCount := len(results)
-	perPage := validatePerPage(perPagePtr)
+	perPage := env.validatePerPage(perPagePtr)
 
 	page, err := validatePage(pagePtr, perPage, totalCount)
 	if err != nil {

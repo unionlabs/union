@@ -1,9 +1,9 @@
 package testdata
 
 import (
-	"encoding/json"
+	"testing"
 
-	"github.com/stretchr/testify/require"
+	"gotest.tools/v3/assert"
 	"pgregory.net/rapid"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -44,9 +44,9 @@ func KeyTestPubAddr() (cryptotypes.PrivKey, cryptotypes.PubKey, sdk.AccAddress) 
 }
 
 // KeyTestPubAddr generates a new secp256r1 keypair.
-func KeyTestPubAddrSecp256R1(require *require.Assertions) (cryptotypes.PrivKey, cryptotypes.PubKey, sdk.AccAddress) {
+func KeyTestPubAddrSecp256R1(t *testing.T) (cryptotypes.PrivKey, cryptotypes.PubKey, sdk.AccAddress) {
 	key, err := secp256r1.GenPrivKey()
-	require.NoError(err)
+	assert.NilError(t, err)
 	pub := key.PubKey()
 	addr := sdk.AccAddress(pub.Address())
 	return key, pub, addr
@@ -76,16 +76,6 @@ func NewTestMsg(addrs ...sdk.AccAddress) *TestMsg {
 }
 
 var _ sdk.Msg = (*TestMsg)(nil)
-
-func (msg *TestMsg) Route() string { return "TestMsg" }
-func (msg *TestMsg) Type() string  { return "Test message" }
-func (msg *TestMsg) GetSignBytes() []byte {
-	bz, err := json.Marshal(msg.Signers)
-	if err != nil {
-		panic(err)
-	}
-	return sdk.MustSortJSON(bz)
-}
 
 func (msg *TestMsg) GetSigners() []sdk.AccAddress {
 	signers := make([]sdk.AccAddress, 0, len(msg.Signers))

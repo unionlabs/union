@@ -2,6 +2,7 @@ package v1
 
 import (
 	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -16,7 +17,7 @@ type ValidatorGovInfo struct {
 
 // NewValidatorGovInfo creates a ValidatorGovInfo instance
 func NewValidatorGovInfo(address sdk.ValAddress, bondedTokens math.Int, delegatorShares,
-	delegatorDeductions sdk.Dec, options WeightedVoteOptions,
+	delegatorDeductions math.LegacyDec, options WeightedVoteOptions,
 ) ValidatorGovInfo {
 	return ValidatorGovInfo{
 		Address:             address,
@@ -38,7 +39,7 @@ func NewTallyResult(yes, abstain, no, noWithVeto math.Int) TallyResult {
 }
 
 // NewTallyResultFromMap creates a new TallyResult instance from a Option -> Dec map
-func NewTallyResultFromMap(results map[VoteOption]sdk.Dec) TallyResult {
+func NewTallyResultFromMap(results map[VoteOption]math.LegacyDec) TallyResult {
 	return NewTallyResult(
 		results[OptionYes].TruncateInt(),
 		results[OptionAbstain].TruncateInt(),

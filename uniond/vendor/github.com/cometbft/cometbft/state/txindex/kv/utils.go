@@ -2,8 +2,10 @@ package kv
 
 import (
 	"fmt"
+	"math/big"
 
-	"github.com/cometbft/cometbft/libs/pubsub/query"
+	idxutil "github.com/cometbft/cometbft/internal/indexer"
+	cmtsyntax "github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
 	"github.com/google/orderedcode"
@@ -45,22 +47,26 @@ func ParseEventSeqFromEventKey(key []byte) (int64, error) {
 
 	return eventSeq, nil
 }
-func dedupHeight(conditions []query.Condition) (dedupConditions []query.Condition, heightInfo HeightInfo) {
+
+func dedupHeight(conditions []cmtsyntax.Condition) (dedupConditions []cmtsyntax.Condition, heightInfo HeightInfo) {
 	heightInfo.heightEqIdx = -1
 	heightRangeExists := false
 	found := false
-	var heightCondition []query.Condition
+	var heightCondition []cmtsyntax.Condition
 	heightInfo.onlyHeightEq = true
 	heightInfo.onlyHeightRange = true
 	for _, c := range conditions {
-		if c.CompositeKey == types.TxHeightKey {
-			if c.Op == query.OpEqual {
+		if c.Tag == types.TxHeightKey {
+			if c.Op == cmtsyntax.TEq {
 				if heightRangeExists || found {
 					continue
-				} else {
+				}
+				hFloat := c.Arg.Number()
+				if hFloat != nil {
+					h, _ := hFloat.Int64()
+					heightInfo.height = h
 					found = true
 					heightCondition = append(heightCondition, c)
-					heightInfo.height = c.Operand.(int64)
 				}
 			} else {
 				heightInfo.onlyHeightEq = false
@@ -87,15 +93,16 @@ func dedupHeight(conditions []query.Condition) (dedupConditions []query.Conditio
 	return dedupConditions, heightInfo
 }
 
-func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) bool {
+func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error) {
 	if heightInfo.heightRange.Key != "" {
-		if !checkBounds(heightInfo.heightRange, keyHeight) {
-			return false
+		withinBounds, err := idxutil.CheckBounds(heightInfo.heightRange, big.NewInt(keyHeight))
+		if err != nil || !withinBounds {
+			return false, err
 		}
 	} else {
 		if heightInfo.height != 0 && keyHeight != heightInfo.height {
-			return false
+			return false, nil
 		}
 	}
-	return true
+	return true, nil
 }

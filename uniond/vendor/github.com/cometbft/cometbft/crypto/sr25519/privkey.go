@@ -1,76 +1,126 @@
 package sr25519
 
 import (
-	"crypto/subtle"
+	"encoding/json"
 	"fmt"
 	"io"
 
-	"github.com/cometbft/cometbft/crypto"
+	"github.com/oasisprotocol/curve25519-voi/primitives/sr25519"
 
-	schnorrkel "github.com/ChainSafe/go-schnorrkel"
+	"github.com/cometbft/cometbft/crypto"
 )
 
-// PrivKeySize is the number of bytes in an Sr25519 private key.
-const PrivKeySize = 32
+var (
+	_ crypto.PrivKey = PrivKey{}
 
-// PrivKeySr25519 implements crypto.PrivKey.
-type PrivKey []byte
+	signingCtx = sr25519.NewSigningContext([]byte{})
+)
+
+const (
+	// PrivKeySize is the number of bytes in an Sr25519 private key.
+	PrivKeySize = 32
+
+	KeyType = "sr25519"
+)
+
+// PrivKey implements crypto.PrivKey.
+type PrivKey struct {
+	msk sr25519.MiniSecretKey
+	kp  *sr25519.KeyPair
+}
 
 // Bytes returns the byte representation of the PrivKey.
 func (privKey PrivKey) Bytes() []byte {
-	return []byte(privKey)
+	if privKey.kp == nil {
+		return nil
+	}
+	return privKey.msk[:]
 }
 
 // Sign produces a signature on the provided message.
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	var p [PrivKeySize]byte
-	copy(p[:], privKey)
-	miniSecretKey, err := schnorrkel.NewMiniSecretKeyFromRaw(p)
-	if err != nil {
-		return []byte{}, err
-	}
-	secretKey := miniSecretKey.ExpandEd25519()
-
-	signingContext := schnorrkel.NewSigningContext([]byte{}, msg)
-
-	sig, err := secretKey.Sign(signingContext)
-	if err != nil {
-		return []byte{}, err
+	if privKey.kp == nil {
+		return nil, fmt.Errorf("sr25519: uninitialized private key")
 	}
 
-	sigBytes := sig.Encode()
-	return sigBytes[:], nil
+	st := signingCtx.NewTranscriptBytes(msg)
+
+	sig, err := privKey.kp.Sign(crypto.CReader(), st)
+	if err != nil {
+		return nil, fmt.Errorf("sr25519: failed to sign message: %w", err)
+	}
+
+	sigBytes, err := sig.MarshalBinary()
+	if err != nil {
+		return nil, fmt.Errorf("sr25519: failed to serialize signature: %w", err)
+	}
+
+	return sigBytes, nil
 }
 
 // PubKey gets the corresponding public key from the private key.
 func (privKey PrivKey) PubKey() crypto.PubKey {
-	var p [PrivKeySize]byte
-	copy(p[:], privKey)
-	miniSecretKey, err := schnorrkel.NewMiniSecretKeyFromRaw(p)
-	if err != nil {
-		panic(fmt.Sprintf("Invalid private key: %v", err))
+	if privKey.kp == nil {
+		panic("sr25519: uninitialized private key")
 	}
-	secretKey := miniSecretKey.ExpandEd25519()
 
-	pubkey, err := secretKey.Public()
+	b, err := privKey.kp.PublicKey().MarshalBinary()
 	if err != nil {
-		panic(fmt.Sprintf("Could not generate public key: %v", err))
+		panic("sr25519: failed to serialize public key: " + err.Error())
 	}
-	key := pubkey.Encode()
-	return PubKey(key[:])
+
+	return PubKey(b)
 }
 
 // Equals - you probably don't need to use this.
 // Runs in constant time based on length of the keys.
 func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	if otherEd, ok := other.(PrivKey); ok {
-		return subtle.ConstantTimeCompare(privKey[:], otherEd[:]) == 1
+	if otherSr, ok := other.(PrivKey); ok {
+		return privKey.msk.Equal(&otherSr.msk)
 	}
 	return false
 }
 
 func (privKey PrivKey) Type() string {
-	return keyType
+	return KeyType
+}
+
+func (privKey PrivKey) MarshalJSON() ([]byte, error) {
+	var b []byte
+
+	// Handle uninitialized private keys gracefully.
+	if privKey.kp != nil {
+		b = privKey.Bytes()
+	}
+
+	return json.Marshal(b)
+}
+
+func (privKey *PrivKey) UnmarshalJSON(data []byte) error {
+	for i := range privKey.msk {
+		privKey.msk[i] = 0
+	}
+	privKey.kp = nil
+
+	var b []byte
+	if err := json.Unmarshal(data, &b); err != nil {
+		return fmt.Errorf("sr25519: failed to deserialize JSON: %w", err)
+	}
+	if len(b) == 0 {
+		return nil
+	}
+
+	msk, err := sr25519.NewMiniSecretKeyFromBytes(b)
+	if err != nil {
+		return err
+	}
+
+	sk := msk.ExpandEd25519()
+
+	privKey.msk = *msk
+	privKey.kp = sk.KeyPair()
+
+	return nil
 }
 
 // GenPrivKey generates a new sr25519 private key.
@@ -81,19 +131,18 @@ func GenPrivKey() PrivKey {
 }
 
 // genPrivKey generates a new sr25519 private key using the provided reader.
-func genPrivKey(rand io.Reader) PrivKey {
-	var seed [64]byte
-
-	out := make([]byte, 64)
-	_, err := io.ReadFull(rand, out)
+func genPrivKey(rng io.Reader) PrivKey {
+	msk, err := sr25519.GenerateMiniSecretKey(rng)
 	if err != nil {
-		panic(err)
+		panic("sr25519: failed to generate MiniSecretKey: " + err.Error())
 	}
 
-	copy(seed[:], out)
+	sk := msk.ExpandEd25519()
 
-	key := schnorrkel.NewMiniSecretKey(seed).ExpandEd25519().Encode()
-	return key[:]
+	return PrivKey{
+		msk: *msk,
+		kp:  sk.KeyPair(),
+	}
 }
 
 // GenPrivKeyFromSecret hashes the secret with SHA2, and uses
@@ -102,9 +151,14 @@ func genPrivKey(rand io.Reader) PrivKey {
 // if it's derived from user input.
 func GenPrivKeyFromSecret(secret []byte) PrivKey {
 	seed := crypto.Sha256(secret) // Not Ripemd160 because we want 32 bytes.
-	var bz [PrivKeySize]byte
-	copy(bz[:], seed)
-	privKey, _ := schnorrkel.NewMiniSecretKeyFromRaw(bz)
-	key := privKey.ExpandEd25519().Encode()
-	return key[:]
+
+	var privKey PrivKey
+	if err := privKey.msk.UnmarshalBinary(seed); err != nil {
+		panic("sr25519: failed to deserialize MiniSecretKey: " + err.Error())
+	}
+
+	sk := privKey.msk.ExpandEd25519()
+	privKey.kp = sk.KeyPair()
+
+	return privKey
 }

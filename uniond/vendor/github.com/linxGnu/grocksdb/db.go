@@ -1223,6 +1223,24 @@ func (db *DB) GetProperty(propName string) (value string) {
 	return
 }
 
+// GetIntProperty similar to `GetProperty`, but only works for a subset of properties whose
+// return value is an integer. Return the value by integer.
+func (db *DB) GetIntProperty(propName string) (value uint64, success bool) {
+	cProp := C.CString(propName)
+	success = C.rocksdb_property_int(db.c, cProp, (*C.uint64_t)(&value)) == 0
+	C.free(unsafe.Pointer(cProp))
+	return
+}
+
+// GetIntPropertyCF similar to `GetProperty`, but only works for a subset of properties whose
+// return value is an integer. Return the value by integer.
+func (db *DB) GetIntPropertyCF(propName string, cf *ColumnFamilyHandle) (value uint64, success bool) {
+	cProp := C.CString(propName)
+	success = C.rocksdb_property_int_cf(db.c, cf.c, cProp, (*C.uint64_t)(&value)) == 0
+	C.free(unsafe.Pointer(cProp))
+	return
+}
+
 // GetPropertyCF returns the value of a database property.
 func (db *DB) GetPropertyCF(propName string, cf *ColumnFamilyHandle) (value string) {
 	cProp := C.CString(propName)
@@ -1248,6 +1266,39 @@ func (db *DB) CreateColumnFamily(opts *Options, name string) (handle *ColumnFami
 	}
 
 	C.free(unsafe.Pointer(cName))
+	return
+}
+
+// CreateColumnFamilies creates new column families.
+func (db *DB) CreateColumnFamilies(opts *Options, names []string) (handles []*ColumnFamilyHandle, err error) {
+	if len(names) == 0 {
+		return nil, nil
+	}
+
+	var cErr *C.char
+
+	n := len(names)
+	cNames := make([]*C.char, 0, n)
+	cSizes := make([]C.size_t, 0, n)
+	for i := range names {
+		cNames = append(cNames, C.CString(names[i]))
+		cSizes = append(cSizes, C.size_t(len(names[i])))
+	}
+
+	cHandles := C.rocksdb_create_column_families(db.c, opts.c, C.int(n), &cNames[0], &cSizes[0], &cErr)
+	if err = fromCError(cErr); err == nil {
+		tmp := unsafe.Slice(cHandles, n)
+
+		handles = make([]*ColumnFamilyHandle, 0, n)
+		for i := range tmp {
+			handles = append(handles, newNativeColumnFamilyHandle(tmp[i]))
+		}
+	}
+
+	for i := range cNames {
+		C.free(unsafe.Pointer(cNames[i]))
+	}
+
 	return
 }
 
@@ -1559,6 +1610,21 @@ func (db *DB) FlushCF(cf *ColumnFamilyHandle, opts *FlushOptions) (err error) {
 	C.rocksdb_flush_cf(db.c, opts.c, cf.c, &cErr)
 	err = fromCError(cErr)
 
+	return
+}
+
+// FlushCFs triggers a manual flush for the database on specific column families.
+func (db *DB) FlushCFs(cfs []*ColumnFamilyHandle, opts *FlushOptions) (err error) {
+	if n := len(cfs); n > 0 {
+		_cfs := make([]*C.rocksdb_column_family_handle_t, n)
+		for i := range _cfs {
+			_cfs[i] = cfs[i].c
+		}
+
+		var cErr *C.char
+		C.rocksdb_flush_cfs(db.c, opts.c, &_cfs[0], C.int(n), &cErr)
+		err = fromCError(cErr)
+	}
 	return
 }
 

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 
@@ -11,19 +12,19 @@ import (
 )
 
 // AddressGenerator abstract address generator to be used for a single contract address
-type AddressGenerator func(ctx sdk.Context, codeID uint64, checksum []byte) sdk.AccAddress
+type AddressGenerator func(ctx context.Context, codeID uint64, checksum []byte) sdk.AccAddress
 
 // ClassicAddressGenerator generates a contract address using codeID and instanceID sequence
 func (k Keeper) ClassicAddressGenerator() AddressGenerator {
-	return func(ctx sdk.Context, codeID uint64, _ []byte) sdk.AccAddress {
-		instanceID := k.autoIncrementID(ctx, types.KeyLastInstanceID)
+	return func(ctx context.Context, codeID uint64, _ []byte) sdk.AccAddress {
+		instanceID := k.mustAutoIncrementID(ctx, types.KeySequenceInstanceID)
 		return BuildContractAddressClassic(codeID, instanceID)
 	}
 }
 
 // PredicableAddressGenerator generates a predictable contract address
-func PredicableAddressGenerator(creator sdk.AccAddress, salt []byte, msg []byte, fixMsg bool) AddressGenerator {
-	return func(ctx sdk.Context, _ uint64, checksum []byte) sdk.AccAddress {
+func PredicableAddressGenerator(creator sdk.AccAddress, salt, msg []byte, fixMsg bool) AddressGenerator {
+	return func(_ context.Context, _ uint64, checksum []byte) sdk.AccAddress {
 		if !fixMsg { // clear msg to not be included in the address generation
 			msg = []byte{}
 		}
@@ -31,7 +32,7 @@ func PredicableAddressGenerator(creator sdk.AccAddress, salt []byte, msg []byte,
 	}
 }
 
-// BuildContractAddressClassic builds an sdk account address for a contract.
+// BuildContractAddressClassic builds an address for a contract.
 func BuildContractAddressClassic(codeID, instanceID uint64) sdk.AccAddress {
 	contractID := make([]byte, 16)
 	binary.BigEndian.PutUint64(contractID[:8], codeID)

@@ -41,7 +41,7 @@ func (opts TrustOptions) ValidateBasic() error {
 		return errors.New("negative or zero period")
 	}
 	if opts.Height <= 0 {
-		return errors.New("negative or zero height")
+		return errors.New("zero or negative height")
 	}
 	if len(opts.Hash) != tmhash.Size {
 		return fmt.Errorf("expected hash size to be %d bytes, got %d bytes",

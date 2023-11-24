@@ -4,6 +4,7 @@ package tendermint.blocksync;
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/blocksync";
 
 import "tendermint/types/block.proto";
+import "tendermint/types/types.proto";
 
 // BlockRequest requests a block for a specific height
 message BlockRequest {
@@ -17,7 +18,8 @@ message NoBlockResponse {
 
 // BlockResponse returns block to the requested
 message BlockResponse {
-  tendermint.types.Block block = 1;
+  tendermint.types.Block          block      = 1;
+  tendermint.types.ExtendedCommit ext_commit = 2;
 }
 
 // StatusRequest requests the status of a peer.

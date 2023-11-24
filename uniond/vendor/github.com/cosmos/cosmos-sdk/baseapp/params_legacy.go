@@ -1,7 +1,7 @@
 /*
 Deprecated.
 
-Legacy types are defined below to aid in the migration of Tendermint consensus
+Legacy types are defined below to aid in the migration of CometBFT consensus
 parameters from use of the now deprecated x/params modules to a new dedicated
 x/consensus module.
 
@@ -29,7 +29,7 @@ Example:
 Developers can also bypass the use of the legacy Params subspace and set the
 values to app.ConsensusParamsKeeper.Set() explicitly.
 
-Note, for new chains this is not necessary as Tendermint's consensus parameters
+Note, for new chains this is not necessary as CometBFT's consensus parameters
 will automatically be set for you in InitChain.
 */
 package baseapp
@@ -38,7 +38,7 @@ import (
 	"errors"
 	"fmt"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -57,7 +57,7 @@ type LegacyParamStore interface {
 }
 
 func ValidateBlockParams(i interface{}) error {
-	v, ok := i.(tmproto.BlockParams)
+	v, ok := i.(cmtproto.BlockParams)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
@@ -74,7 +74,7 @@ func ValidateBlockParams(i interface{}) error {
 }
 
 func ValidateEvidenceParams(i interface{}) error {
-	v, ok := i.(tmproto.EvidenceParams)
+	v, ok := i.(cmtproto.EvidenceParams)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
@@ -95,7 +95,7 @@ func ValidateEvidenceParams(i interface{}) error {
 }
 
 func ValidateValidatorParams(i interface{}) error {
-	v, ok := i.(tmproto.ValidatorParams)
+	v, ok := i.(cmtproto.ValidatorParams)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
@@ -107,29 +107,29 @@ func ValidateValidatorParams(i interface{}) error {
 	return nil
 }
 
-func GetConsensusParams(ctx sdk.Context, paramStore LegacyParamStore) *tmproto.ConsensusParams {
+func GetConsensusParams(ctx sdk.Context, paramStore LegacyParamStore) *cmtproto.ConsensusParams {
 	if paramStore == nil {
 		return nil
 	}
 
-	cp := new(tmproto.ConsensusParams)
+	cp := new(cmtproto.ConsensusParams)
 
 	if paramStore.Has(ctx, ParamStoreKeyBlockParams) {
-		var bp tmproto.BlockParams
+		var bp cmtproto.BlockParams
 
 		paramStore.Get(ctx, ParamStoreKeyBlockParams, &bp)
 		cp.Block = &bp
 	}
 
 	if paramStore.Has(ctx, ParamStoreKeyEvidenceParams) {
-		var ep tmproto.EvidenceParams
+		var ep cmtproto.EvidenceParams
 
 		paramStore.Get(ctx, ParamStoreKeyEvidenceParams, &ep)
 		cp.Evidence = &ep
 	}
 
 	if paramStore.Has(ctx, ParamStoreKeyValidatorParams) {
-		var vp tmproto.ValidatorParams
+		var vp cmtproto.ValidatorParams
 
 		paramStore.Get(ctx, ParamStoreKeyValidatorParams, &vp)
 		cp.Validator = &vp
@@ -138,10 +138,13 @@ func GetConsensusParams(ctx sdk.Context, paramStore LegacyParamStore) *tmproto.C
 	return cp
 }
 
-func MigrateParams(ctx sdk.Context, lps LegacyParamStore, ps ParamStore) {
+func MigrateParams(ctx sdk.Context, lps LegacyParamStore, ps ParamStore) error {
 	if cp := GetConsensusParams(ctx, lps); cp != nil {
-		ps.Set(ctx, cp)
+		if err := ps.Set(ctx, *cp); err != nil {
+			return err
+		}
 	} else {
 		ctx.Logger().Info("warning: consensus parameters are undefined; skipping migration")
 	}
+	return nil
 }

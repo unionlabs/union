@@ -8,8 +8,9 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 
+	"cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/internal/conv"
-	"github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // Len is the length of base addresses
@@ -87,6 +88,6 @@ func Module(moduleName string, derivationKeys ...[]byte) []byte {
 // Derive derives a new address from the main `address` and a derivation `key`.
 // This function is used to create a sub accounts. To create a module accounts use the
 // `Module` function.
-func Derive(address []byte, key []byte) []byte {
+func Derive(address, key []byte) []byte {
 	return Hash(conv.UnsafeBytesToStr(address), key)
 }

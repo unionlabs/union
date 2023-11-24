@@ -9,6 +9,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
@@ -148,10 +149,10 @@ type GenesisAccountIterator struct{}
 // appGenesis and invokes a callback on each genesis account. If any call
 // returns true, iteration stops.
 func (GenesisAccountIterator) IterateGenesisAccounts(
-	cdc codec.Codec, appGenesis map[string]json.RawMessage, cb func(AccountI) (stop bool),
+	cdc codec.Codec, appGenesis map[string]json.RawMessage, cb func(sdk.AccountI) (stop bool),
 ) {
 	for _, genAcc := range GetGenesisStateFromAppState(cdc, appGenesis).Accounts {
-		acc, ok := genAcc.GetCachedValue().(AccountI)
+		acc, ok := genAcc.GetCachedValue().(sdk.AccountI)
 		if !ok {
 			panic("expected account")
 		}

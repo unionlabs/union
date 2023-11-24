@@ -6,28 +6,36 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/store/prefix"
+
+	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/cosmos-sdk/x/slashing/types"
 )
 
-var _ types.QueryServer = Keeper{}
+var _ types.QueryServer = Querier{}
+
+type Querier struct {
+	Keeper
+}
+
+func NewQuerier(keeper Keeper) Querier {
+	return Querier{Keeper: keeper}
+}
 
 // Params returns parameters of x/slashing module
-func (k Keeper) Params(c context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+func (k Keeper) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
 
-	return &types.QueryParamsResponse{Params: params}, nil
+	return &types.QueryParamsResponse{Params: params}, err
 }
 
 // SigningInfo returns signing-info of a specific validator.
-func (k Keeper) SigningInfo(c context.Context, req *types.QuerySigningInfoRequest) (*types.QuerySigningInfoResponse, error) {
+func (k Keeper) SigningInfo(ctx context.Context, req *types.QuerySigningInfoRequest) (*types.QuerySigningInfoResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -36,14 +44,13 @@ func (k Keeper) SigningInfo(c context.Context, req *types.QuerySigningInfoReques
 		return nil, status.Errorf(codes.InvalidArgument, "invalid request")
 	}
 
-	consAddr, err := sdk.ConsAddressFromBech32(req.ConsAddress)
+	consAddr, err := k.sk.ConsensusAddressCodec().StringToBytes(req.ConsAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
-	signingInfo, found := k.GetValidatorSigningInfo(ctx, consAddr)
-	if !found {
+	signingInfo, err := k.GetValidatorSigningInfo(ctx, consAddr)
+	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "SigningInfo not found for validator %s", req.ConsAddress)
 	}
 
@@ -51,17 +58,16 @@ func (k Keeper) SigningInfo(c context.Context, req *types.QuerySigningInfoReques
 }
 
 // SigningInfos returns signing-infos of all validators.
-func (k Keeper) SigningInfos(c context.Context, req *types.QuerySigningInfosRequest) (*types.QuerySigningInfosResponse, error) {
+func (k Keeper) SigningInfos(ctx context.Context, req *types.QuerySigningInfosRequest) (*types.QuerySigningInfosResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
-	store := ctx.KVStore(k.storeKey)
+	store := k.storeService.OpenKVStore(ctx)
 	var signInfos []types.ValidatorSigningInfo
 
-	sigInfoStore := prefix.NewStore(store, types.ValidatorSigningInfoKeyPrefix)
-	pageRes, err := query.Paginate(sigInfoStore, req.Pagination, func(key []byte, value []byte) error {
+	sigInfoStore := prefix.NewStore(runtime.KVStoreAdapter(store), types.ValidatorSigningInfoKeyPrefix)
+	pageRes, err := query.Paginate(sigInfoStore, req.Pagination, func(key, value []byte) error {
 		var info types.ValidatorSigningInfo
 		err := k.cdc.Unmarshal(value, &info)
 		if err != nil {

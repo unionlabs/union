@@ -3,8 +3,10 @@ package keeper
 import (
 	"context"
 
+	"cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/crisis/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
@@ -14,13 +16,21 @@ var _ types.MsgServer = &Keeper{}
 // VerifyInvariant implements MsgServer.VerifyInvariant method.
 // It defines a method to verify a particular invariant.
 func (k *Keeper) VerifyInvariant(goCtx context.Context, msg *types.MsgVerifyInvariant) (*types.MsgVerifyInvariantResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	constantFee := sdk.NewCoins(k.GetConstantFee(ctx))
+	if msg.Sender == "" {
+		return nil, sdkerrors.ErrInvalidAddress.Wrap("empty address string is not allowed")
+	}
+	sender, err := k.addressCodec.StringToBytes(msg.Sender)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid sender address: %s", err)
+	}
 
-	sender, err := sdk.AccAddressFromBech32(msg.Sender)
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	params, err := k.ConstantFee.Get(goCtx)
 	if err != nil {
 		return nil, err
 	}
+	constantFee := sdk.NewCoins(params)
+
 	if err := k.SendCoinsFromAccountToFeeCollector(ctx, sender, constantFee); err != nil {
 		return nil, err
 	}
@@ -66,13 +76,20 @@ func (k *Keeper) VerifyInvariant(goCtx context.Context, msg *types.MsgVerifyInva
 
 // UpdateParams implements MsgServer.UpdateParams method.
 // It defines a method to update the x/crisis module parameters.
-func (k *Keeper) UpdateParams(goCtx context.Context, req *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
-	if k.authority != req.Authority {
-		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, req.Authority)
+func (k *Keeper) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	if k.authority != msg.Authority {
+		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	if err := k.SetConstantFee(ctx, req.ConstantFee); err != nil {
+	if !msg.ConstantFee.IsValid() {
+		return nil, errors.Wrap(sdkerrors.ErrInvalidCoins, "invalid constant fee")
+	}
+
+	if msg.ConstantFee.IsNegative() {
+		return nil, errors.Wrap(sdkerrors.ErrInvalidCoins, "negative constant fee")
+	}
+
+	if err := k.ConstantFee.Set(ctx, msg.ConstantFee); err != nil {
 		return nil, err
 	}
 

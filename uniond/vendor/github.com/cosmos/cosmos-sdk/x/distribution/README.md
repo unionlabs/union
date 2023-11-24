@@ -100,7 +100,7 @@ In Proof of Stake (PoS) blockchains, rewards gained from transaction fees are pa
 
 Rewards are calculated per period. The period is updated each time a validator's delegation changes, for example, when the validator receives a new delegation.
 The rewards for a single validator can then be calculated by taking the total rewards for the period before the delegation started, minus the current total rewards.
-To learn more, see the [F1 Fee Distribution paper](/docs/spec/fee_distribution/f1_fee_distr.pdf).
+To learn more, see the [F1 Fee Distribution paper](https://github.com/cosmos/cosmos-sdk/tree/main/docs/spec/fee_distribution/f1_fee_distr.pdf).
 
 The commission to the validator is paid when the validator is removed or when the validator requests a withdrawal.
 The commission is calculated and incremented at every `BeginBlock` operation to update accumulated fee amounts.
@@ -145,7 +145,7 @@ When coins are distributed from the pool they are truncated back to
 type DecCoins []DecCoin
 
 type DecCoin struct {
-    Amount sdk.Dec
+    Amount math.LegacyDec
     Denom  string
 }
 ```
@@ -167,7 +167,7 @@ Validator distribution information for the relevant validator is updated each ti
 ```go
 type ValidatorDistInfo struct {
     OperatorAddress     sdk.AccAddress
-    SelfBondRewards     sdk.DecCoins
+    SelfBondRewards     sdkmath.DecCoins
     ValidatorCommission types.ValidatorAccumulatedCommission
 }
 ```
@@ -286,7 +286,7 @@ https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/proto/cosmos/distribution/
 ```
 
 ```go
-func (k Keeper) SetWithdrawAddr(ctx sdk.Context, delegatorAddr sdk.AccAddress, withdrawAddr sdk.AccAddress) error
+func (k Keeper) SetWithdrawAddr(ctx context.Context, delegatorAddr sdk.AccAddress, withdrawAddr sdk.AccAddress) error
 	if k.blockedAddrs[withdrawAddr.String()] {
 		fail with "`{withdrawAddr}` is not allowed to receive external funds"
 	}
@@ -351,16 +351,23 @@ This message sends coins directly from the sender to the community pool.
 The transaction fails if the amount cannot be transferred from the sender to the distribution module account.
 
 ```go
-func (k Keeper) FundCommunityPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error {
-    if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, sender, types.ModuleName, amount); err != nil {
-        return err
-    }
+func (k Keeper) FundCommunityPool(ctx context.Context, amount sdk.Coins, sender sdk.AccAddress) error {
+  if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, sender, types.ModuleName, amount); err != nil {
+    return err
+  }
 
-	feePool := k.GetFeePool(ctx)
-	feePool.CommunityPool = feePool.CommunityPool.Add(sdk.NewDecCoinsFromCoins(amount...)...)
-	k.SetFeePool(ctx, feePool)
+  feePool, err := k.FeePool.Get(ctx)
+  if err != nil {
+    return err
+  }
 
-	return nil
+  feePool.CommunityPool = feePool.CommunityPool.Add(sdk.NewDecCoinsFromCoins(amount...)...)
+	
+  if err := k.FeePool.Set(ctx, feePool); err != nil {
+    return err
+  }
+
+  return nil
 }
 ```
 
@@ -375,7 +382,7 @@ Initializing a delegation increments the validator period and keeps track of the
 
 ```go
 // initialize starting info for a new delegation
-func (k Keeper) initializeDelegation(ctx sdk.Context, val sdk.ValAddress, del sdk.AccAddress) {
+func (k Keeper) initializeDelegation(ctx context.Context, val sdk.ValAddress, del sdk.AccAddress) {
     // period has already been incremented - we want to store the period ended by this delegation action
     previousPeriod := k.GetValidatorCurrentRewards(ctx, val).Period - 1
 
@@ -516,6 +523,11 @@ The distribution module contains the following parameters:
 
 * [0] `communitytax` must be positive and cannot exceed 1.00.
 * `baseproposerreward` and `bonusproposerreward` were parameters that are deprecated in v0.47 and are not used.
+
+:::note
+The reserve pool is the pool of collected funds for use by governance taken via the `CommunityTax`.
+Currently with the Cosmos SDK, tokens collected by the CommunityTax are accounted for but unspendable.
+:::
 
 ## Client
 

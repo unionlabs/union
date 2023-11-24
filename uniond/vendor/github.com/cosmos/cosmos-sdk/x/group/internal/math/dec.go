@@ -6,7 +6,8 @@ import (
 
 	"github.com/cockroachdb/apd/v2"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/x/group/errors"
 )
 
@@ -76,7 +77,7 @@ func NewDecFromInt64(x int64) Dec {
 func (x Dec) Add(y Dec) (Dec, error) {
 	var z Dec
 	_, err := apd.BaseContext.Add(&z.dec, &x.dec, &y.dec)
-	return z, sdkerrors.Wrap(err, "decimal addition error")
+	return z, errorsmod.Wrap(err, "decimal addition error")
 }
 
 // Sub returns a new Dec with value `x-y` without mutating any argument and error if
@@ -84,7 +85,7 @@ func (x Dec) Add(y Dec) (Dec, error) {
 func (x Dec) Sub(y Dec) (Dec, error) {
 	var z Dec
 	_, err := apd.BaseContext.Sub(&z.dec, &x.dec, &y.dec)
-	return z, sdkerrors.Wrap(err, "decimal subtraction error")
+	return z, errorsmod.Wrap(err, "decimal subtraction error")
 }
 
 func (x Dec) Int64() (int64, error) {
@@ -95,7 +96,7 @@ func (x Dec) Cmp(y Dec) int {
 	return x.dec.Cmp(&y.dec)
 }
 
-func (x Dec) IsEqual(y Dec) bool {
+func (x Dec) Equal(y Dec) bool {
 	return x.dec.Cmp(&y.dec) == 0
 }
 
@@ -104,7 +105,7 @@ func (x Dec) IsNegative() bool {
 }
 
 // Add adds x and y
-func Add(x Dec, y Dec) (Dec, error) {
+func Add(x, y Dec) (Dec, error) {
 	return x.Add(y)
 }
 
@@ -120,7 +121,7 @@ var dec128Context = apd.Context{
 func (x Dec) Quo(y Dec) (Dec, error) {
 	var z Dec
 	_, err := dec128Context.Quo(&z.dec, &x.dec, &y.dec)
-	return z, sdkerrors.Wrap(err, "decimal quotient error")
+	return z, errorsmod.Wrap(err, "decimal quotient error")
 }
 
 func (x Dec) IsZero() bool {
@@ -129,7 +130,7 @@ func (x Dec) IsZero() bool {
 
 // SubNonNegative subtracts the value of y from x and returns the result with
 // arbitrary precision. Returns an error if the result is negative.
-func SubNonNegative(x Dec, y Dec) (Dec, error) {
+func SubNonNegative(x, y Dec) (Dec, error) {
 	z, err := x.Sub(y)
 	if err != nil {
 		return Dec{}, err

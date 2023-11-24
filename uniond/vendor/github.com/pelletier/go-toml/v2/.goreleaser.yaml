@@ -18,6 +18,7 @@ builds:
       - linux_amd64
       - linux_arm64
       - linux_arm
+      - linux_riscv64
       - windows_amd64
       - windows_arm64
       - windows_arm
@@ -37,6 +38,7 @@ builds:
       - linux_amd64
       - linux_arm64
       - linux_arm
+      - linux_riscv64
       - windows_amd64
       - windows_arm64
       - windows_arm
@@ -55,6 +57,7 @@ builds:
     targets:
       - linux_amd64
       - linux_arm64
+      - linux_riscv64
       - linux_arm
       - windows_amd64
       - windows_arm64

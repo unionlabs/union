@@ -22,7 +22,7 @@
   - questions:
     - how to deal with misalignment?
     - how to determine the group to randomize?
-      - e.g. right now for floats it is not an explicit group but rather a bunch of nearby blocks 
+      - e.g. right now for floats it is not an explicit group but rather a bunch of nearby blocks
 - use fewer bits for genFloat01 to make shrinking a bit faster
 - shrink duplicates together
   - generalize to arbitrary "offsets" for pairs

@@ -1,12 +1,13 @@
 package v1
 
 import (
+	"github.com/golang/protobuf/proto"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/kv"
 	v1auth "github.com/cosmos/cosmos-sdk/x/auth/migrations/v1"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/golang/protobuf/proto"
 )
 
 const (

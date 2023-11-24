@@ -1,13 +1,13 @@
 package types
 
 import (
-	"bytes"
 	_ "embed"
-	"encoding/hex"
-	"encoding/json"
 	"math/rand"
 
 	wasmvm "github.com/CosmWasm/wasmvm"
+
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -173,7 +173,7 @@ func MsgInstantiateContractFixture(mutators ...func(*MsgInstantiateContract)) *M
 		Msg:    []byte(`{"foo":"bar"}`),
 		Funds: sdk.Coins{{
 			Denom:  "stake",
-			Amount: sdk.NewInt(1),
+			Amount: sdkmath.NewInt(1),
 		}},
 	}
 	for _, m := range mutators {
@@ -193,258 +193,11 @@ func MsgExecuteContractFixture(mutators ...func(*MsgExecuteContract)) *MsgExecut
 		Msg:      []byte(`{"do":"something"}`),
 		Funds: sdk.Coins{{
 			Denom:  "stake",
-			Amount: sdk.NewInt(1),
+			Amount: sdkmath.NewInt(1),
 		}},
 	}
 	for _, m := range mutators {
 		m(r)
 	}
 	return r
-}
-
-func StoreCodeProposalFixture(mutators ...func(*StoreCodeProposal)) *StoreCodeProposal {
-	const anyAddress = "cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs2m6sx4"
-	wasm := []byte{0x0}
-	// got the value from shell sha256sum
-	codeHash, err := hex.DecodeString("6E340B9CFFB37A989CA544E6BB780A2C78901D3FB33738768511A30617AFA01D")
-	if err != nil {
-		panic(err)
-	}
-
-	p := &StoreCodeProposal{
-		Title:        "Foo",
-		Description:  "Bar",
-		RunAs:        anyAddress,
-		WASMByteCode: wasm,
-		Source:       "https://example.com/",
-		Builder:      "cosmwasm/workspace-optimizer:v0.12.8",
-		CodeHash:     codeHash,
-	}
-	for _, m := range mutators {
-		m(p)
-	}
-	return p
-}
-
-func InstantiateContractProposalFixture(mutators ...func(p *InstantiateContractProposal)) *InstantiateContractProposal {
-	var (
-		anyValidAddress sdk.AccAddress = bytes.Repeat([]byte{0x1}, ContractAddrLen)
-
-		initMsg = struct {
-			Verifier    sdk.AccAddress `json:"verifier"`
-			Beneficiary sdk.AccAddress `json:"beneficiary"`
-		}{
-			Verifier:    anyValidAddress,
-			Beneficiary: anyValidAddress,
-		}
-	)
-	const anyAddress = "cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs2m6sx4"
-
-	initMsgBz, err := json.Marshal(initMsg)
-	if err != nil {
-		panic(err)
-	}
-	p := &InstantiateContractProposal{
-		Title:       "Foo",
-		Description: "Bar",
-		RunAs:       anyAddress,
-		Admin:       anyAddress,
-		CodeID:      1,
-		Label:       "testing",
-		Msg:         initMsgBz,
-		Funds:       nil,
-	}
-
-	for _, m := range mutators {
-		m(p)
-	}
-	return p
-}
-
-func InstantiateContract2ProposalFixture(mutators ...func(p *InstantiateContract2Proposal)) *InstantiateContract2Proposal {
-	var (
-		anyValidAddress sdk.AccAddress = bytes.Repeat([]byte{0x1}, ContractAddrLen)
-
-		initMsg = struct {
-			Verifier    sdk.AccAddress `json:"verifier"`
-			Beneficiary sdk.AccAddress `json:"beneficiary"`
-		}{
-			Verifier:    anyValidAddress,
-			Beneficiary: anyValidAddress,
-		}
-	)
-	const (
-		anyAddress = "cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs2m6sx4"
-		mySalt     = "myDefaultSalt"
-	)
-
-	initMsgBz, err := json.Marshal(initMsg)
-	if err != nil {
-		panic(err)
-	}
-	p := &InstantiateContract2Proposal{
-		Title:       "Foo",
-		Description: "Bar",
-		RunAs:       anyAddress,
-		Admin:       anyAddress,
-		CodeID:      1,
-		Label:       "testing",
-		Msg:         initMsgBz,
-		Funds:       nil,
-		Salt:        []byte(mySalt),
-		FixMsg:      false,
-	}
-
-	for _, m := range mutators {
-		m(p)
-	}
-	return p
-}
-
-func StoreAndInstantiateContractProposalFixture(mutators ...func(p *StoreAndInstantiateContractProposal)) *StoreAndInstantiateContractProposal {
-	var (
-		anyValidAddress sdk.AccAddress = bytes.Repeat([]byte{0x1}, ContractAddrLen)
-
-		initMsg = struct {
-			Verifier    sdk.AccAddress `json:"verifier"`
-			Beneficiary sdk.AccAddress `json:"beneficiary"`
-		}{
-			Verifier:    anyValidAddress,
-			Beneficiary: anyValidAddress,
-		}
-	)
-	const anyAddress = "cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs2m6sx4"
-	wasm := []byte{0x0}
-	// got the value from shell sha256sum
-	codeHash, err := hex.DecodeString("6E340B9CFFB37A989CA544E6BB780A2C78901D3FB33738768511A30617AFA01D")
-	if err != nil {
-		panic(err)
-	}
-
-	initMsgBz, err := json.Marshal(initMsg)
-	if err != nil {
-		panic(err)
-	}
-	p := &StoreAndInstantiateContractProposal{
-		Title:        "Foo",
-		Description:  "Bar",
-		RunAs:        anyAddress,
-		WASMByteCode: wasm,
-		Source:       "https://example.com/",
-		Builder:      "cosmwasm/workspace-optimizer:v0.12.9",
-		CodeHash:     codeHash,
-		Admin:        anyAddress,
-		Label:        "testing",
-		Msg:          initMsgBz,
-		Funds:        nil,
-	}
-
-	for _, m := range mutators {
-		m(p)
-	}
-	return p
-}
-
-func MigrateContractProposalFixture(mutators ...func(p *MigrateContractProposal)) *MigrateContractProposal {
-	var (
-		anyValidAddress sdk.AccAddress = bytes.Repeat([]byte{0x1}, ContractAddrLen)
-
-		migMsg = struct {
-			Verifier sdk.AccAddress `json:"verifier"`
-		}{Verifier: anyValidAddress}
-	)
-
-	migMsgBz, err := json.Marshal(migMsg)
-	if err != nil {
-		panic(err)
-	}
-	const (
-		contractAddr = "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr"
-		anyAddress   = "cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs2m6sx4"
-	)
-	p := &MigrateContractProposal{
-		Title:       "Foo",
-		Description: "Bar",
-		Contract:    contractAddr,
-		CodeID:      1,
-		Msg:         migMsgBz,
-	}
-
-	for _, m := range mutators {
-		m(p)
-	}
-	return p
-}
-
-func SudoContractProposalFixture(mutators ...func(p *SudoContractProposal)) *SudoContractProposal {
-	const (
-		contractAddr = "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr"
-	)
-
-	p := &SudoContractProposal{
-		Title:       "Foo",
-		Description: "Bar",
-		Contract:    contractAddr,
-		Msg:         []byte(`{"do":"something"}`),
-	}
-
-	for _, m := range mutators {
-		m(p)
-	}
-	return p
-}
-
-func ExecuteContractProposalFixture(mutators ...func(p *ExecuteContractProposal)) *ExecuteContractProposal {
-	const (
-		contractAddr = "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr"
-		anyAddress   = "cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs2m6sx4"
-	)
-
-	p := &ExecuteContractProposal{
-		Title:       "Foo",
-		Description: "Bar",
-		Contract:    contractAddr,
-		RunAs:       anyAddress,
-		Msg:         []byte(`{"do":"something"}`),
-		Funds: sdk.Coins{{
-			Denom:  "stake",
-			Amount: sdk.NewInt(1),
-		}},
-	}
-
-	for _, m := range mutators {
-		m(p)
-	}
-	return p
-}
-
-func UpdateAdminProposalFixture(mutators ...func(p *UpdateAdminProposal)) *UpdateAdminProposal {
-	const (
-		contractAddr = "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr"
-		anyAddress   = "cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs2m6sx4"
-	)
-
-	p := &UpdateAdminProposal{
-		Title:       "Foo",
-		Description: "Bar",
-		NewAdmin:    anyAddress,
-		Contract:    contractAddr,
-	}
-	for _, m := range mutators {
-		m(p)
-	}
-	return p
-}
-
-func ClearAdminProposalFixture(mutators ...func(p *ClearAdminProposal)) *ClearAdminProposal {
-	const contractAddr = "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr"
-	p := &ClearAdminProposal{
-		Title:       "Foo",
-		Description: "Bar",
-		Contract:    contractAddr,
-	}
-	for _, m := range mutators {
-		m(p)
-	}
-	return p
 }

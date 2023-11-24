@@ -13,6 +13,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/privval"
@@ -27,10 +28,8 @@ import (
 // persistent kvstore application and special consensus wal instance
 // (byteBufferWAL) and waits until numBlocks are created.
 // If the node fails to produce given numBlocks, it returns an error.
-func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int) (err error) {
-	config := getConfig(t)
-
-	app := kvstore.NewPersistentKVStoreApplication(filepath.Join(config.DBDir(), "wal_generator"))
+func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.Config) (err error) {
+	app := kvstore.NewPersistentApplication(filepath.Join(config.DBDir(), "wal_generator"))
 
 	logger := log.TestingLogger().With("wal_generator", "wal_generator")
 	logger.Info("generating WAL (last height msg excluded)", "numBlocks", numBlocks)
@@ -54,7 +53,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to make genesis state: %w", err)
 	}
-	state.Version.Consensus.App = kvstore.ProtocolVersion
+	state.Version.Consensus.App = kvstore.AppVersion
 	if err = stateStore.Save(state); err != nil {
 		t.Error(err)
 	}
@@ -84,7 +83,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int) (err error) {
 	})
 	mempool := emptyMempool{}
 	evpool := sm.EmptyEvidencePool{}
-	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(), mempool, evpool)
+	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(), mempool, evpool, blockStore)
 	consensusState := NewState(config.Consensus, state.Copy(), blockExec, blockStore, mempool, evpool)
 	consensusState.SetLogger(logger)
 	consensusState.SetEventBus(eventBus)
@@ -122,11 +121,11 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int) (err error) {
 }
 
 // WALWithNBlocks returns a WAL content with numBlocks.
-func WALWithNBlocks(t *testing.T, numBlocks int) (data []byte, err error) {
+func WALWithNBlocks(t *testing.T, numBlocks int, config *cfg.Config) (data []byte, err error) {
 	var b bytes.Buffer
 	wr := bufio.NewWriter(&b)
 
-	if err := WALGenerateNBlocks(t, wr, numBlocks); err != nil {
+	if err := WALGenerateNBlocks(t, wr, numBlocks, config); err != nil {
 		return []byte{}, err
 	}
 
@@ -149,7 +148,7 @@ func makeAddrs() (string, string, string) {
 
 // getConfig returns a config for test cases
 func getConfig(t *testing.T) *cfg.Config {
-	c := cfg.ResetTestRoot(t.Name())
+	c := test.ResetTestRoot(t.Name())
 
 	// and we use random ports to run in parallel
 	cmt, rpc, grpc := makeAddrs()
@@ -218,8 +217,8 @@ func (w *byteBufferWAL) WriteSync(m WALMessage) error {
 func (w *byteBufferWAL) FlushAndSync() error { return nil }
 
 func (w *byteBufferWAL) SearchForEndHeight(
-	height int64,
-	options *WALSearchOptions,
+	int64,
+	*WALSearchOptions,
 ) (rd io.ReadCloser, found bool, err error) {
 	return nil, false, nil
 }

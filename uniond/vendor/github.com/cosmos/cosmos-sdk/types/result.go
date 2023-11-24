@@ -3,18 +3,16 @@ package types
 import (
 	"encoding/hex"
 	"encoding/json"
-	"math"
 	"strings"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 )
-
-var cdc = codec.NewLegacyAmino()
 
 func (gi GasInfo) String() string {
 	bz, _ := codec.MarshalYAML(codec.NewProtoCodec(nil), &gi)
@@ -49,6 +47,7 @@ func NewABCIMessageLog(i uint32, log string, events Events) ABCIMessageLog {
 // String implements the fmt.Stringer interface for the ABCIMessageLogs type.
 func (logs ABCIMessageLogs) String() (str string) {
 	if logs != nil {
+		cdc := codec.NewLegacyAmino()
 		raw, err := cdc.MarshalJSON(logs)
 		if err == nil {
 			str = string(raw)
@@ -83,6 +82,25 @@ func NewResponseResultTx(res *coretypes.ResultTx, anyTx *codectypes.Any, timesta
 	}
 }
 
+// NewResponseResultBlock returns a BlockResponse given a ResultBlock from CometBFT
+func NewResponseResultBlock(res *coretypes.ResultBlock, timestamp string) *cmtproto.Block {
+	if res == nil {
+		return nil
+	}
+
+	blk, err := res.Block.ToProto()
+	if err != nil {
+		return nil
+	}
+
+	return &cmtproto.Block{
+		Header:     blk.Header,
+		Data:       blk.Data,
+		Evidence:   blk.Evidence,
+		LastCommit: blk.LastCommit,
+	}
+}
+
 // NewResponseFormatBroadcastTx returns a TxResponse given a ResultBroadcastTx from tendermint
 func NewResponseFormatBroadcastTx(res *coretypes.ResultBroadcastTx) *TxResponse {
 	if res == nil {
@@ -112,13 +130,28 @@ func (r TxResponse) Empty() bool {
 }
 
 func NewSearchTxsResult(totalCount, count, page, limit uint64, txs []*TxResponse) *SearchTxsResult {
+	totalPages := calcTotalPages(int64(totalCount), int64(limit))
+
 	return &SearchTxsResult{
 		TotalCount: totalCount,
 		Count:      count,
 		PageNumber: page,
-		PageTotal:  uint64(math.Ceil(float64(totalCount) / float64(limit))),
+		PageTotal:  uint64(totalPages),
 		Limit:      limit,
 		Txs:        txs,
+	}
+}
+
+func NewSearchBlocksResult(totalCount, count, page, limit int64, blocks []*cmtproto.Block) *SearchBlocksResult {
+	totalPages := calcTotalPages(totalCount, limit)
+
+	return &SearchBlocksResult{
+		TotalCount: totalCount,
+		Count:      count,
+		PageNumber: page,
+		PageTotal:  totalPages,
+		Limit:      limit,
+		Blocks:     blocks,
 	}
 }
 
@@ -148,15 +181,15 @@ func (s SearchTxsResult) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
 func (r TxResponse) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	if r.Tx != nil {
-		var tx Tx
+		var tx HasMsgs
 		return unpacker.UnpackAny(r.Tx, &tx)
 	}
 	return nil
 }
 
 // GetTx unpacks the Tx from within a TxResponse and returns it
-func (r TxResponse) GetTx() Tx {
-	if tx, ok := r.Tx.GetCachedValue().(Tx); ok {
+func (r TxResponse) GetTx() HasMsgs {
+	if tx, ok := r.Tx.GetCachedValue().(HasMsgs); ok {
 		return tx
 	}
 	return nil
@@ -193,4 +226,17 @@ func WrapServiceResult(ctx Context, res proto.Message, err error) (*Result, erro
 		Events:       events,
 		MsgResponses: []*codectypes.Any{any},
 	}, nil
+}
+
+// calculate total pages in an overflow safe manner
+func calcTotalPages(totalCount, limit int64) int64 {
+	totalPages := int64(0)
+	if totalCount != 0 && limit != 0 {
+		if totalCount%limit > 0 {
+			totalPages = totalCount/limit + 1
+		} else {
+			totalPages = totalCount / limit
+		}
+	}
+	return totalPages
 }

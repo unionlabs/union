@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/tx/v1beta1/tx.proto";
+import "cosmos_proto/cosmos.proto";
+import "google/protobuf/any.proto";
+
+// TextualData represents all the information needed to generate
+// the textual SignDoc (which is []Screen encoded to CBOR). It is meant to be
+// used as an internal type in Textual's implementations.
+message TextualData {
+  // body_bytes is a protobuf serialization of a TxBody that matches the
+  // representation in SignDoc.
+  bytes body_bytes = 1;
+
+  // auth_info_bytes is a protobuf serialization of an AuthInfo that matches the
+  // representation in SignDoc.
+  bytes auth_info_bytes = 2;
+
+  // signer_data represents all data in Textual's SignDoc that are not
+  // inside the Tx body and auth_info.
+  SignerData signer_data = 3;
+}
+
+// SignerData is the specific information needed to sign a transaction that generally
+// isn't included in the transaction body itself.
+//
+// It is the same struct as signing.SignerData, but only used internally
+// in Textual because we need it as a proto.Message. If that struct is updated,
+// then this proto SignerData also needs to be modified.
+message SignerData {
+  // address is the address of the signer.
+  //
+  // In case of multisigs, this should be the multisig's address.
+  string address = 1 [(cosmos_proto.scalar) = "AddressString"];
+
+  // chain_id is the chain that this transaction is targeting.
+  string chain_id = 2;
+
+  // account_number is the account number of the signer.
+  //
+  // In case of multisigs, this should be the multisig account number.
+  uint64 account_number = 3;
+
+  // sequence is the account sequence number of the signer that is used
+  // for replay protection. This field is only useful for Legacy Amino signing,
+  // since in SIGN_MODE_DIRECT the account sequence is already in the signer
+  // info.
+  //
+  // In case of multisigs, this should be the multisig sequence.
+  uint64 sequence = 4;
+
+  // pub_key is the public key of the signer.
+  //
+  // In case of multisigs, this should be the pubkey of the member of the
+  // multisig that is signing the current sign doc.
+  google.protobuf.Any pub_key = 5;
+}
+
+// Envelope is an internal data structure used to generate the tx envelope
+// screens. It is derived from the TextualData struct (also internal) which
+// contains the three following fields:
+// - body_bytes (from the original tx),
+// - auth_info_bytes (from the original tx),
+// - signer_data (passed in by the sign mode handler)
+//
+// If any of the three structs above is modified, then this Envelope message
+// also needs to be updated.
+message Envelope {
+  string              chain_id                                = 1;
+  uint64              account_number                          = 2;
+  uint64              sequence                                = 3;
+  string              address                                 = 4;
+  google.protobuf.Any public_key                              = 5;
+  repeated google.protobuf.Any message                        = 6;
+  string                       memo                           = 7;
+  repeated cosmos.base.v1beta1.Coin fees                      = 8;
+  string                            fee_payer                 = 9;
+  string                            fee_granter               = 10;
+  uint64                            gas_limit                 = 13;
+  uint64                            timeout_height            = 14;
+  repeated cosmos.tx.v1beta1.SignerInfo other_signer          = 15;
+  repeated google.protobuf.Any extension_options              = 16;
+  repeated google.protobuf.Any non_critical_extension_options = 17;
+  string                       hash_of_raw_bytes              = 18;
+}

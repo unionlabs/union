@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,7 +26,7 @@ type PreprocessTxFn func(chainID string, key keyring.KeyType, tx TxBuilder) erro
 // handling and queries.
 type Context struct {
 	FromAddress       sdk.AccAddress
-	Client            TendermintRPC
+	Client            CometRPC
 	GRPCClient        *grpc.ClientConn
 	ChainID           string
 	Codec             codec.Codec
@@ -61,6 +62,16 @@ type Context struct {
 
 	// TODO: Deprecated (remove).
 	LegacyAmino *codec.LegacyAmino
+
+	// CmdContext is the context.Context from the Cobra command.
+	CmdContext context.Context
+}
+
+// WithCmdContext returns a copy of the context with an updated context.Context,
+// usually set to the cobra cmd context.
+func (ctx Context) WithCmdContext(c context.Context) Context {
+	ctx.CmdContext = c
+	return ctx
 }
 
 // WithKeyring returns a copy of the context with an updated keyring.
@@ -129,7 +140,7 @@ func (ctx Context) WithHeight(height int64) Context {
 
 // WithClient returns a copy of the context with an updated RPC client
 // instance.
-func (ctx Context) WithClient(client TendermintRPC) Context {
+func (ctx Context) WithClient(client CometRPC) Context {
 	ctx.Client = client
 	return ctx
 }

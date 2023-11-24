@@ -32,7 +32,6 @@ The following specification uses *ATOM* as the native staking token. The module
 can be adapted to any Proof-Of-Stake blockchain by replacing *ATOM* with the native
 staking token of the chain.
 
-
 * [Concepts](#concepts)
     * [Proposal submission](#proposal-submission)
     * [Deposit](#deposit)
@@ -143,9 +142,7 @@ Note that when *participants* have bonded and unbonded Atoms, their voting power
 
 Once a proposal reaches `MinDeposit`, it immediately enters `Voting period`. We
 define `Voting period` as the interval between the moment the vote opens and
-the moment the vote closes. `Voting period` should always be shorter than
-`Unbonding period` to prevent double voting. The initial value of
-`Voting period` is 2 weeks.
+the moment the vote closes. The initial value of `Voting period` is 2 weeks.
 
 #### Option set
 
@@ -188,6 +185,10 @@ For a weighted vote to be valid, the `options` field must not contain duplicate 
 Quorum is defined as the minimum percentage of voting power that needs to be
 cast on a proposal for the result to be valid.
 
+### Expedited Proposals
+
+A proposal can be expedited, making the proposal use shorter voting duration and a higher tally threshold by its default. If an expedited proposal fails to meet the threshold within the scope of shorter voting duration, the expedited proposal is then converted to a regular proposal and restarts voting under regular voting conditions.
+
 #### Threshold
 
 Threshold is defined as the minimum proportion of `Yes` votes (excluding
@@ -206,6 +207,8 @@ This means that proposals are accepted iff:
   `Abstain` votes.
 * The proportion of `Yes` votes, excluding `Abstain` votes, at the end of
   the voting period is superior to 1/2.
+
+For expedited proposals, by default, the threshold is higher than with a *normal proposal*, namely, 66.7%.
 
 #### Inheritance
 
@@ -237,6 +240,39 @@ There are three parameters that define if the deposit of a proposal should be bu
 > Note: These parameters are modifiable via governance. 
 
 ## State
+
+### Constitution
+
+`Constitution` is found in the genesis state.  It is a string field intended to be used to descibe the purpose of a particular blockchain, and its expected norms.  A few examples of how the constitution field can be used:
+
+* define the purpose of the chain, laying a foundation for its future development
+* set expectations for delegators
+* set expectations for validators
+* define the chain's relationship to "meatspace" entities, like a foundation or corporation
+
+Since this is more of a social feature than a technical feature, we'll now get into some items that may have been useful to have in a genesis constitution:
+
+* What limitations on governance exist, if any?
+    * is it okay for the community to slash the wallet of a whale that they no longer feel that they want around? (viz: Juno Proposal 4 and 16)
+    * can governance "socially slash" a validator who is using unapproved MEV? (viz: commonwealth.im/osmosis)
+    * In the event of an economic emergency, what should validators do?
+        * Terra crash of May, 2022, saw validators choose to run a new binary with code that had not been approved by governance, because the governance token had been inflated to nothing.
+* What is the purpose of the chain, specifically?
+    * best example of this is the Cosmos hub, where different founding groups, have different interpertations of the purpose of the network.
+
+This genesis entry, "constitution" hasn't been designed for existing chains, who should likely just ratify a constitution using their governance system.  Instead, this is for new chains.  It will allow for validators to have a much clearer idea of purpose and the expecations placed on them while operating thier nodes.  Likewise, for community members, the constitution will give them some idea of what to expect from both the "chain team" and the validators, respectively.
+
+This constitution is designed to be immutable, and placed only in genesis, though that could change over time by a pull request to the cosmos-sdk that allows for the constitution to be changed by governance.  Communities whishing to make amendments to their original constitution should use the governance mechanism and a "signaling proposal" to do exactly that.
+
+**Ideal use scenario for a cosmos chain constitution**
+
+As a chain developer, you decide that you'd like to provide clarity to your key user groups:
+
+* validators
+* token holders
+* developers (yourself)
+
+You use the constitution to immutably store some Markdown in genesis, so that when difficult questions come up, the constutituon can provide guidance to the community.
 
 ### Proposals
 
@@ -373,7 +409,7 @@ We will use one KVStore `Governance` to store four mappings:
 * A mapping from `proposalID|'addresses'|address` to `Vote`. This mapping allows
   us to query all addresses that voted on the proposal along with their vote by
   doing a range query on `proposalID:addresses`.
-* A mapping from `ParamsKey|'Params'` to `Params`. This map allows to query all 
+* A mapping from `ParamsKey|'Params'` to `Params`. This map allows to query all
   x/gov params.
 * A mapping from `VotingPeriodProposalKeyPrefix|proposalID` to a single byte. This allows
   us to know if a proposal is in the voting period or not with very low gas cost.
@@ -458,11 +494,13 @@ And the pseudocode for the `ProposalProcessingQueue`:
 
 ### Legacy Proposal
 
+:::warning
+Legacy proposals are deprecated. Use the new proposal flow by granting the governance module the right to execute the message.
+:::
+
 A legacy proposal is the old implementation of governance proposal.
 Contrary to proposal that can contain any messages, a legacy proposal allows to submit a set of pre-defined proposals.
-These proposal are defined by their types.
-
-While proposals should use the new implementation of the governance proposal, we need still to use legacy proposal in order to submit a `software-upgrade` and a `cancel-software-upgrade` proposal.
+These proposals are defined by their types and handled by handlers that are registered in the gov v1beta1 router.
 
 More information on how to submit proposals in the [client section](#client).
 
@@ -480,6 +518,7 @@ All `sdk.Msgs` passed into the `messages` field of a `MsgSubmitProposal` message
 must be registered in the app's `MsgServiceRouter`. Each of these messages must
 have one signer, namely the gov module account. And finally, the metadata length
 must not be larger than the `maxMetadataLen` config passed into the gov keeper.
+The `initialDeposit` must be strictly positive and conform to the accepted denom of the `MinDeposit` param.
 
 **State modifications:**
 
@@ -491,57 +530,16 @@ must not be larger than the `maxMetadataLen` config passed into the gov keeper.
     * Push `proposalID` in `ProposalProcessingQueue`
 * Transfer `InitialDeposit` from the `Proposer` to the governance `ModuleAccount`
 
-A `MsgSubmitProposal` transaction can be handled according to the following
-pseudocode.
-
-```go
-// PSEUDOCODE //
-// Check if MsgSubmitProposal is valid. If it is, create proposal //
-
-upon receiving txGovSubmitProposal from sender do
-
-  if !correctlyFormatted(txGovSubmitProposal)
-    // check if proposal is correctly formatted and the messages have routes to other modules. Includes fee payment.
-    // check if all messages' unique Signer is the gov acct.
-    // check if the metadata is not too long.
-    throw
-
-  initialDeposit = txGovSubmitProposal.InitialDeposit
-  if (initialDeposit.Atoms <= 0) OR (sender.AtomBalance < initialDeposit.Atoms)
-    // InitialDeposit is negative or null OR sender has insufficient funds
-    throw
-
-  if (txGovSubmitProposal.Type != ProposalTypePlainText) OR (txGovSubmitProposal.Type != ProposalTypeSoftwareUpgrade)
-
-  sender.AtomBalance -= initialDeposit.Atoms
-
-  depositParam = load(GlobalParams, 'DepositParam')
-
-  proposalID = generate new proposalID
-  proposal = NewProposal()
-
-  proposal.Messages = txGovSubmitProposal.Messages
-  proposal.Metadata = txGovSubmitProposal.Metadata
-  proposal.TotalDeposit = initialDeposit
-  proposal.SubmitTime = <CurrentTime>
-  proposal.DepositEndTime = <CurrentTime>.Add(depositParam.MaxDepositPeriod)
-  proposal.Deposits.append({initialDeposit, sender})
-  proposal.Submitter = sender
-  proposal.YesVotes = 0
-  proposal.NoVotes = 0
-  proposal.NoWithVetoVotes = 0
-  proposal.AbstainVotes = 0
-  proposal.CurrentStatus = ProposalStatusOpen
-
-  store(Proposals, <proposalID|'proposal'>, proposal) // Store proposal in Proposals mapping
-  return proposalID
-```
-
 ### Deposit
 
-Once a proposal is submitted, if
-`Proposal.TotalDeposit < ActiveParam.MinDeposit`, Atom holders can send
+Once a proposal is submitted, if `Proposal.TotalDeposit < ActiveParam.MinDeposit`, Atom holders can send
 `MsgDeposit` transactions to increase the proposal's deposit.
+
+A deposit is accepted iff:
+
+* The proposal exists
+* The proposal is not in the voting period
+* The deposited coins are conform to the accepted denom from the `MinDeposit` param
 
 ```protobuf reference
 https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/proto/cosmos/gov/v1/tx.proto#L134-L147
@@ -555,55 +553,6 @@ https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/proto/cosmos/gov/v1/tx.pro
 * If `MinDeposit` is reached:
     * Push `proposalID` in `ProposalProcessingQueueEnd`
 * Transfer `Deposit` from the `proposer` to the governance `ModuleAccount`
-
-A `MsgDeposit` transaction has to go through a number of checks to be valid.
-These checks are outlined in the following pseudocode.
-
-```go
-// PSEUDOCODE //
-// Check if MsgDeposit is valid. If it is, increase deposit and check if MinDeposit is reached
-
-upon receiving txGovDeposit from sender do
-  // check if proposal is correctly formatted. Includes fee payment.
-
-  if !correctlyFormatted(txGovDeposit)
-    throw
-
-  proposal = load(Proposals, <txGovDeposit.ProposalID|'proposal'>) // proposal is a const key, proposalID is variable
-
-  if (proposal == nil)
-    // There is no proposal for this proposalID
-    throw
-
-  if (txGovDeposit.Deposit.Atoms <= 0) OR (sender.AtomBalance < txGovDeposit.Deposit.Atoms) OR (proposal.CurrentStatus != ProposalStatusOpen)
-
-    // deposit is negative or null
-    // OR sender has insufficient funds
-    // OR proposal is not open for deposit anymore
-
-    throw
-
-  depositParam = load(GlobalParams, 'DepositParam')
-
-  if (CurrentBlock >= proposal.SubmitBlock + depositParam.MaxDepositPeriod)
-    proposal.CurrentStatus = ProposalStatusClosed
-
-  else
-    // sender can deposit
-    sender.AtomBalance -= txGovDeposit.Deposit.Atoms
-
-    proposal.Deposits.append({txGovVote.Deposit, sender})
-    proposal.TotalDeposit.Plus(txGovDeposit.Deposit)
-
-    if (proposal.TotalDeposit >= depositParam.MinDeposit)
-      // MinDeposit is reached, vote opens
-
-      proposal.VotingStartBlock = CurrentBlock
-      proposal.CurrentStatus = ProposalStatusActive
-      ProposalProcessingQueue.push(txGovDeposit.ProposalID)
-
-  store(Proposals, <txGovVote.ProposalID|'proposal'>, proposal)
-```
 
 ### Vote
 
@@ -622,35 +571,6 @@ https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/proto/cosmos/gov/v1/tx.pro
 :::note
 Gas cost for this message has to take into account the future tallying of the vote in EndBlocker.
 :::
-
-Next is a pseudocode outline of the way `MsgVote` transactions are handled:
-
-```go
-  // PSEUDOCODE //
-  // Check if MsgVote is valid. If it is, count vote//
-
-  upon receiving txGovVote from sender do
-    // check if proposal is correctly formatted. Includes fee payment.
-
-    if !correctlyFormatted(txGovDeposit)
-      throw
-
-    proposal = load(Proposals, <txGovDeposit.ProposalID|'proposal'>)
-
-    if (proposal == nil)
-      // There is no proposal for this proposalID
-      throw
-
-
-    if  (proposal.CurrentStatus == ProposalStatusActive)
-
-
-        // Sender can vote if
-        // Proposal is active
-        // Sender has some bonds
-
-        store(Governance, <txGovVote.ProposalID|'addresses'|sender>, txGovVote.Vote)   // Voters can vote multiple times. Re-voting overrides previous vote. This is ok because tallying is done once at the end.
-```
 
 ## Events
 
@@ -693,13 +613,13 @@ The governance module emits the following events:
 
 #### MsgVoteWeighted
 
-| Type          | Attribute Key | Attribute Value          |
-| ------------- | ------------- | ------------------------ |
-| proposal_vote | option        | {weightedVoteOptions}    |
-| proposal_vote | proposal_id   | {proposalID}             |
-| message       | module        | governance               |
-| message       | action        | vote                     |
-| message       | sender        | {senderAddress}          |
+| Type          | Attribute Key | Attribute Value       |
+|---------------|---------------|-----------------------|
+| proposal_vote | option        | {weightedVoteOptions} |
+| proposal_vote | proposal_id   | {proposalID}          |
+| message       | module        | governance            |
+| message       | action        | vote                  |
+| message       | sender        | {senderAddress}       |
 
 #### MsgDeposit
 
@@ -726,9 +646,14 @@ The governance module contains the following parameters:
 | quorum                        | string (dec)     | "0.334000000000000000"                  |
 | threshold                     | string (dec)     | "0.500000000000000000"                  |
 | veto                          | string (dec)     | "0.334000000000000000"                  |
-| burn_proposal_deposit_prevote | bool             | false                                   |
+| expedited_threshold           | string (time ns) | "0.667000000000000000"                  |
+| expedited_voting_period       | string (time ns) | "86400000000000" (8600s)                |
+| expedited_min_deposit         | array (coins)    | [{"denom":"uatom","amount":"50000000"}] |
+| burn_proposal_deposit_prevote | bool             | false                                    |
 | burn_vote_quorum              | bool             | false                                   |
 | burn_vote_veto                | bool             | true                                    |
+| min_initial_deposit_ratio                | string             | "0.1"                                    |
+
 
 **NOTE**: The governance module contains parameters that are objects unlike other
 modules. If only a subset of parameters are desired to be changed, only they need
@@ -838,16 +763,32 @@ Example Output:
 
 ```bash
 deposit_params:
-  max_deposit_period: "172800000000000"
+  max_deposit_period: 172800s
   min_deposit:
   - amount: "10000000"
     denom: stake
+params:
+  expedited_min_deposit:
+  - amount: "50000000"
+    denom: stake
+  expedited_threshold: "0.670000000000000000"
+  expedited_voting_period: 86400s
+  max_deposit_period: 172800s
+  min_deposit:
+  - amount: "10000000"
+    denom: stake
+  min_initial_deposit_ratio: "0.000000000000000000"
+  proposal_cancel_burn_rate: "0.500000000000000000"
+  quorum: "0.334000000000000000"
+  threshold: "0.500000000000000000"
+  veto_threshold: "0.334000000000000000"
+  voting_period: 172800s
 tally_params:
   quorum: "0.334000000000000000"
   threshold: "0.500000000000000000"
   veto_threshold: "0.334000000000000000"
 voting_params:
-  voting_period: "172800000000000"
+  voting_period: 172800s
 ```
 
 ##### proposal
@@ -1126,6 +1067,10 @@ where `proposal.json` contains:
 By default the metadata, summary and title are both limited by 255 characters, this can be overridden by the application developer.
 :::
 
+:::tip
+When metadata is not specified, the title is limited to 255 characters and the summary 40x the title length.
+:::
+
 ##### submit-legacy-proposal
 
 The `submit-legacy-proposal` command allows users to submit a governance legacy proposal along with an initial deposit.
@@ -1138,12 +1083,6 @@ Example:
 
 ```bash
 simd tx gov submit-legacy-proposal --title="Test Proposal" --description="testing" --type="Text" --deposit="100000000stake" --from cosmos1..
-```
-
-Example (`cancel-software-upgrade`):
-
-```bash
-simd tx gov submit-legacy-proposal cancel-software-upgrade --title="Test Proposal" --description="testing" --deposit="100000000stake" --from cosmos1..
 ```
 
 Example (`param-change`):
@@ -1167,10 +1106,18 @@ simd tx gov submit-legacy-proposal param-change proposal.json --from cosmos1..
 }
 ```
 
-Example (`software-upgrade`):
+#### cancel-proposal
+
+Once proposal is canceled, from the deposits of proposal `deposits * proposal_cancel_ratio` will be burned or sent to `ProposalCancelDest` address , if `ProposalCancelDest` is empty then deposits will be burned. The `remaining deposits` will be sent to depositers.
 
 ```bash
-simd tx gov submit-legacy-proposal software-upgrade v2 --title="Test Proposal" --description="testing, testing, 1, 2, 3" --upgrade-height 1000000 --from cosmos1..
+simd tx gov cancel-proposal [proposal-id] [flags]
+```
+
+Example:
+
+```bash
+simd tx gov cancel-proposal 1 --from cosmos1...
 ```
 
 ##### vote
@@ -1301,7 +1248,6 @@ Example Output:
   }
 }
 ```
-
 
 #### Proposals
 
@@ -2538,7 +2484,6 @@ Example Output:
   }
 }
 ```
-
 
 ## Metadata
 

@@ -16,6 +16,28 @@ This package provides various compression algorithms.
 
 # changelog
 
+* Sept 19th, 2023 - [v1.17.0](https://github.com/klauspost/compress/releases/tag/v1.17.0)
+	* Add experimental dictionary builder  https://github.com/klauspost/compress/pull/853
+	* Add xerial snappy read/writer https://github.com/klauspost/compress/pull/838
+	* flate: Add limited window compression https://github.com/klauspost/compress/pull/843
+	* s2: Do 2 overlapping match checks https://github.com/klauspost/compress/pull/839
+	* flate: Add amd64 assembly matchlen https://github.com/klauspost/compress/pull/837
+	* gzip: Copy bufio.Reader on Reset by @thatguystone in https://github.com/klauspost/compress/pull/860
+   
+* July 1st, 2023 - [v1.16.7](https://github.com/klauspost/compress/releases/tag/v1.16.7)
+	* zstd: Fix default level first dictionary encode https://github.com/klauspost/compress/pull/829
+	* s2: add GetBufferCapacity() method by @GiedriusS in https://github.com/klauspost/compress/pull/832
+
+* June 13, 2023 - [v1.16.6](https://github.com/klauspost/compress/releases/tag/v1.16.6)
+	* zstd: correctly ignore WithEncoderPadding(1) by @ianlancetaylor in https://github.com/klauspost/compress/pull/806
+	* zstd: Add amd64 match length assembly https://github.com/klauspost/compress/pull/824
+	* gzhttp: Handle informational headers by @rtribotte in https://github.com/klauspost/compress/pull/815
+	* s2: Improve Better compression slightly https://github.com/klauspost/compress/pull/663
+
+* Apr 16, 2023 - [v1.16.5](https://github.com/klauspost/compress/releases/tag/v1.16.5)
+	* zstd: readByte needs to use io.ReadFull by @jnoxon in https://github.com/klauspost/compress/pull/802
+	* gzip: Fix WriterTo after initial read https://github.com/klauspost/compress/pull/804
+
 * Apr 5, 2023 - [v1.16.4](https://github.com/klauspost/compress/releases/tag/v1.16.4)
 	* zstd: Improve zstd best efficiency by @greatroar and @klauspost in https://github.com/klauspost/compress/pull/784
 	* zstd: Respect WithAllLitEntropyCompression https://github.com/klauspost/compress/pull/792
@@ -40,6 +62,9 @@ This package provides various compression algorithms.
 	* s2: Support io.ReaderAt in ReadSeeker. https://github.com/klauspost/compress/pull/747
 	* s2c/s2sx: Use concurrent decoding. https://github.com/klauspost/compress/pull/746
 
+<details>
+	<summary>See changes to v1.15.x</summary>
+	
 * Jan 21st, 2023 (v1.15.15)
 	* deflate: Improve level 7-9 by @klauspost in https://github.com/klauspost/compress/pull/739
 	* zstd: Add delta encoding support by @greatroar in https://github.com/klauspost/compress/pull/728
@@ -165,6 +190,8 @@ Both compression and decompression now supports "synchronous" stream operations.
 Stream decompression is now faster on asynchronous, since the goroutine allocation much more effectively splits the workload. On typical streams this will typically use 2 cores fully for decompression. When a stream has finished decoding no goroutines will be left over, so decoders can now safely be pooled and still be garbage collected.
 
 While the release has been extensively tested, it is recommended to testing when upgrading.
+
+</details>
 
 <details>
 	<summary>See changes to v1.14.x</summary>
@@ -626,6 +653,8 @@ Here are other packages of good quality and pure Go (no cgo wrappers or autoconv
 * [github.com/dsnet/compress](https://github.com/dsnet/compress) - brotli decompression, bzip2 writer.
 * [github.com/ronanh/intcomp](https://github.com/ronanh/intcomp) - Integer compression.
 * [github.com/spenczar/fpc](https://github.com/spenczar/fpc) - Float compression.
+* [github.com/minio/zipindex](https://github.com/minio/zipindex) - External ZIP directory index.
+* [github.com/ybirader/pzip](https://github.com/ybirader/pzip) - Fast concurrent zip archiver and extractor.
 
 # license
 

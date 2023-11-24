@@ -294,15 +294,156 @@ func (x *_Module_7_list) IsValid() bool {
 	return x.list != nil
 }
 
+var _ protoreflect.List = (*_Module_8_list)(nil)
+
+type _Module_8_list struct {
+	list *[]string
+}
+
+func (x *_Module_8_list) Len() int {
+	if x.list == nil {
+		return 0
+	}
+	return len(*x.list)
+}
+
+func (x *_Module_8_list) Get(i int) protoreflect.Value {
+	return protoreflect.ValueOfString((*x.list)[i])
+}
+
+func (x *_Module_8_list) Set(i int, value protoreflect.Value) {
+	valueUnwrapped := value.String()
+	concreteValue := valueUnwrapped
+	(*x.list)[i] = concreteValue
+}
+
+func (x *_Module_8_list) Append(value protoreflect.Value) {
+	valueUnwrapped := value.String()
+	concreteValue := valueUnwrapped
+	*x.list = append(*x.list, concreteValue)
+}
+
+func (x *_Module_8_list) AppendMutable() protoreflect.Value {
+	panic(fmt.Errorf("AppendMutable can not be called on message Module at list field Precommiters as it is not of Message kind"))
+}
+
+func (x *_Module_8_list) Truncate(n int) {
+	*x.list = (*x.list)[:n]
+}
+
+func (x *_Module_8_list) NewElement() protoreflect.Value {
+	v := ""
+	return protoreflect.ValueOfString(v)
+}
+
+func (x *_Module_8_list) IsValid() bool {
+	return x.list != nil
+}
+
+var _ protoreflect.List = (*_Module_9_list)(nil)
+
+type _Module_9_list struct {
+	list *[]string
+}
+
+func (x *_Module_9_list) Len() int {
+	if x.list == nil {
+		return 0
+	}
+	return len(*x.list)
+}
+
+func (x *_Module_9_list) Get(i int) protoreflect.Value {
+	return protoreflect.ValueOfString((*x.list)[i])
+}
+
+func (x *_Module_9_list) Set(i int, value protoreflect.Value) {
+	valueUnwrapped := value.String()
+	concreteValue := valueUnwrapped
+	(*x.list)[i] = concreteValue
+}
+
+func (x *_Module_9_list) Append(value protoreflect.Value) {
+	valueUnwrapped := value.String()
+	concreteValue := valueUnwrapped
+	*x.list = append(*x.list, concreteValue)
+}
+
+func (x *_Module_9_list) AppendMutable() protoreflect.Value {
+	panic(fmt.Errorf("AppendMutable can not be called on message Module at list field PrepareCheckStaters as it is not of Message kind"))
+}
+
+func (x *_Module_9_list) Truncate(n int) {
+	*x.list = (*x.list)[:n]
+}
+
+func (x *_Module_9_list) NewElement() protoreflect.Value {
+	v := ""
+	return protoreflect.ValueOfString(v)
+}
+
+func (x *_Module_9_list) IsValid() bool {
+	return x.list != nil
+}
+
+var _ protoreflect.List = (*_Module_10_list)(nil)
+
+type _Module_10_list struct {
+	list *[]string
+}
+
+func (x *_Module_10_list) Len() int {
+	if x.list == nil {
+		return 0
+	}
+	return len(*x.list)
+}
+
+func (x *_Module_10_list) Get(i int) protoreflect.Value {
+	return protoreflect.ValueOfString((*x.list)[i])
+}
+
+func (x *_Module_10_list) Set(i int, value protoreflect.Value) {
+	valueUnwrapped := value.String()
+	concreteValue := valueUnwrapped
+	(*x.list)[i] = concreteValue
+}
+
+func (x *_Module_10_list) Append(value protoreflect.Value) {
+	valueUnwrapped := value.String()
+	concreteValue := valueUnwrapped
+	*x.list = append(*x.list, concreteValue)
+}
+
+func (x *_Module_10_list) AppendMutable() protoreflect.Value {
+	panic(fmt.Errorf("AppendMutable can not be called on message Module at list field PreBlockers as it is not of Message kind"))
+}
+
+func (x *_Module_10_list) Truncate(n int) {
+	*x.list = (*x.list)[:n]
+}
+
+func (x *_Module_10_list) NewElement() protoreflect.Value {
+	v := ""
+	return protoreflect.ValueOfString(v)
+}
+
+func (x *_Module_10_list) IsValid() bool {
+	return x.list != nil
+}
+
 var (
-	md_Module                     protoreflect.MessageDescriptor
-	fd_Module_app_name            protoreflect.FieldDescriptor
-	fd_Module_begin_blockers      protoreflect.FieldDescriptor
-	fd_Module_end_blockers        protoreflect.FieldDescriptor
-	fd_Module_init_genesis        protoreflect.FieldDescriptor
-	fd_Module_export_genesis      protoreflect.FieldDescriptor
-	fd_Module_override_store_keys protoreflect.FieldDescriptor
-	fd_Module_order_migrations    protoreflect.FieldDescriptor
+	md_Module                       protoreflect.MessageDescriptor
+	fd_Module_app_name              protoreflect.FieldDescriptor
+	fd_Module_begin_blockers        protoreflect.FieldDescriptor
+	fd_Module_end_blockers          protoreflect.FieldDescriptor
+	fd_Module_init_genesis          protoreflect.FieldDescriptor
+	fd_Module_export_genesis        protoreflect.FieldDescriptor
+	fd_Module_override_store_keys   protoreflect.FieldDescriptor
+	fd_Module_order_migrations      protoreflect.FieldDescriptor
+	fd_Module_precommiters          protoreflect.FieldDescriptor
+	fd_Module_prepare_check_staters protoreflect.FieldDescriptor
+	fd_Module_pre_blockers          protoreflect.FieldDescriptor
 )
 
 func init() {
@@ -315,6 +456,9 @@ func init() {
 	fd_Module_export_genesis = md_Module.Fields().ByName("export_genesis")
 	fd_Module_override_store_keys = md_Module.Fields().ByName("override_store_keys")
 	fd_Module_order_migrations = md_Module.Fields().ByName("order_migrations")
+	fd_Module_precommiters = md_Module.Fields().ByName("precommiters")
+	fd_Module_prepare_check_staters = md_Module.Fields().ByName("prepare_check_staters")
+	fd_Module_pre_blockers = md_Module.Fields().ByName("pre_blockers")
 }
 
 var _ protoreflect.Message = (*fastReflection_Module)(nil)
@@ -424,6 +568,24 @@ func (x *fastReflection_Module) Range(f func(protoreflect.FieldDescriptor, proto
 			return
 		}
 	}
+	if len(x.Precommiters) != 0 {
+		value := protoreflect.ValueOfList(&_Module_8_list{list: &x.Precommiters})
+		if !f(fd_Module_precommiters, value) {
+			return
+		}
+	}
+	if len(x.PrepareCheckStaters) != 0 {
+		value := protoreflect.ValueOfList(&_Module_9_list{list: &x.PrepareCheckStaters})
+		if !f(fd_Module_prepare_check_staters, value) {
+			return
+		}
+	}
+	if len(x.PreBlockers) != 0 {
+		value := protoreflect.ValueOfList(&_Module_10_list{list: &x.PreBlockers})
+		if !f(fd_Module_pre_blockers, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -453,6 +615,12 @@ func (x *fastReflection_Module) Has(fd protoreflect.FieldDescriptor) bool {
 		return len(x.OverrideStoreKeys) != 0
 	case "cosmos.app.runtime.v1alpha1.Module.order_migrations":
 		return len(x.OrderMigrations) != 0
+	case "cosmos.app.runtime.v1alpha1.Module.precommiters":
+		return len(x.Precommiters) != 0
+	case "cosmos.app.runtime.v1alpha1.Module.prepare_check_staters":
+		return len(x.PrepareCheckStaters) != 0
+	case "cosmos.app.runtime.v1alpha1.Module.pre_blockers":
+		return len(x.PreBlockers) != 0
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.app.runtime.v1alpha1.Module"))
@@ -483,6 +651,12 @@ func (x *fastReflection_Module) Clear(fd protoreflect.FieldDescriptor) {
 		x.OverrideStoreKeys = nil
 	case "cosmos.app.runtime.v1alpha1.Module.order_migrations":
 		x.OrderMigrations = nil
+	case "cosmos.app.runtime.v1alpha1.Module.precommiters":
+		x.Precommiters = nil
+	case "cosmos.app.runtime.v1alpha1.Module.prepare_check_staters":
+		x.PrepareCheckStaters = nil
+	case "cosmos.app.runtime.v1alpha1.Module.pre_blockers":
+		x.PreBlockers = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.app.runtime.v1alpha1.Module"))
@@ -538,6 +712,24 @@ func (x *fastReflection_Module) Get(descriptor protoreflect.FieldDescriptor) pro
 		}
 		listValue := &_Module_7_list{list: &x.OrderMigrations}
 		return protoreflect.ValueOfList(listValue)
+	case "cosmos.app.runtime.v1alpha1.Module.precommiters":
+		if len(x.Precommiters) == 0 {
+			return protoreflect.ValueOfList(&_Module_8_list{})
+		}
+		listValue := &_Module_8_list{list: &x.Precommiters}
+		return protoreflect.ValueOfList(listValue)
+	case "cosmos.app.runtime.v1alpha1.Module.prepare_check_staters":
+		if len(x.PrepareCheckStaters) == 0 {
+			return protoreflect.ValueOfList(&_Module_9_list{})
+		}
+		listValue := &_Module_9_list{list: &x.PrepareCheckStaters}
+		return protoreflect.ValueOfList(listValue)
+	case "cosmos.app.runtime.v1alpha1.Module.pre_blockers":
+		if len(x.PreBlockers) == 0 {
+			return protoreflect.ValueOfList(&_Module_10_list{})
+		}
+		listValue := &_Module_10_list{list: &x.PreBlockers}
+		return protoreflect.ValueOfList(listValue)
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.app.runtime.v1alpha1.Module"))
@@ -584,6 +776,18 @@ func (x *fastReflection_Module) Set(fd protoreflect.FieldDescriptor, value proto
 		lv := value.List()
 		clv := lv.(*_Module_7_list)
 		x.OrderMigrations = *clv.list
+	case "cosmos.app.runtime.v1alpha1.Module.precommiters":
+		lv := value.List()
+		clv := lv.(*_Module_8_list)
+		x.Precommiters = *clv.list
+	case "cosmos.app.runtime.v1alpha1.Module.prepare_check_staters":
+		lv := value.List()
+		clv := lv.(*_Module_9_list)
+		x.PrepareCheckStaters = *clv.list
+	case "cosmos.app.runtime.v1alpha1.Module.pre_blockers":
+		lv := value.List()
+		clv := lv.(*_Module_10_list)
+		x.PreBlockers = *clv.list
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.app.runtime.v1alpha1.Module"))
@@ -640,6 +844,24 @@ func (x *fastReflection_Module) Mutable(fd protoreflect.FieldDescriptor) protore
 		}
 		value := &_Module_7_list{list: &x.OrderMigrations}
 		return protoreflect.ValueOfList(value)
+	case "cosmos.app.runtime.v1alpha1.Module.precommiters":
+		if x.Precommiters == nil {
+			x.Precommiters = []string{}
+		}
+		value := &_Module_8_list{list: &x.Precommiters}
+		return protoreflect.ValueOfList(value)
+	case "cosmos.app.runtime.v1alpha1.Module.prepare_check_staters":
+		if x.PrepareCheckStaters == nil {
+			x.PrepareCheckStaters = []string{}
+		}
+		value := &_Module_9_list{list: &x.PrepareCheckStaters}
+		return protoreflect.ValueOfList(value)
+	case "cosmos.app.runtime.v1alpha1.Module.pre_blockers":
+		if x.PreBlockers == nil {
+			x.PreBlockers = []string{}
+		}
+		value := &_Module_10_list{list: &x.PreBlockers}
+		return protoreflect.ValueOfList(value)
 	case "cosmos.app.runtime.v1alpha1.Module.app_name":
 		panic(fmt.Errorf("field app_name of message cosmos.app.runtime.v1alpha1.Module is not mutable"))
 	default:
@@ -675,6 +897,15 @@ func (x *fastReflection_Module) NewField(fd protoreflect.FieldDescriptor) protor
 	case "cosmos.app.runtime.v1alpha1.Module.order_migrations":
 		list := []string{}
 		return protoreflect.ValueOfList(&_Module_7_list{list: &list})
+	case "cosmos.app.runtime.v1alpha1.Module.precommiters":
+		list := []string{}
+		return protoreflect.ValueOfList(&_Module_8_list{list: &list})
+	case "cosmos.app.runtime.v1alpha1.Module.prepare_check_staters":
+		list := []string{}
+		return protoreflect.ValueOfList(&_Module_9_list{list: &list})
+	case "cosmos.app.runtime.v1alpha1.Module.pre_blockers":
+		list := []string{}
+		return protoreflect.ValueOfList(&_Module_10_list{list: &list})
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.app.runtime.v1alpha1.Module"))
@@ -784,6 +1015,24 @@ func (x *fastReflection_Module) ProtoMethods() *protoiface.Methods {
 				n += 1 + l + runtime.Sov(uint64(l))
 			}
 		}
+		if len(x.Precommiters) > 0 {
+			for _, s := range x.Precommiters {
+				l = len(s)
+				n += 1 + l + runtime.Sov(uint64(l))
+			}
+		}
+		if len(x.PrepareCheckStaters) > 0 {
+			for _, s := range x.PrepareCheckStaters {
+				l = len(s)
+				n += 1 + l + runtime.Sov(uint64(l))
+			}
+		}
+		if len(x.PreBlockers) > 0 {
+			for _, s := range x.PreBlockers {
+				l = len(s)
+				n += 1 + l + runtime.Sov(uint64(l))
+			}
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -812,6 +1061,33 @@ func (x *fastReflection_Module) ProtoMethods() *protoiface.Methods {
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.PreBlockers) > 0 {
+			for iNdEx := len(x.PreBlockers) - 1; iNdEx >= 0; iNdEx-- {
+				i -= len(x.PreBlockers[iNdEx])
+				copy(dAtA[i:], x.PreBlockers[iNdEx])
+				i = runtime.EncodeVarint(dAtA, i, uint64(len(x.PreBlockers[iNdEx])))
+				i--
+				dAtA[i] = 0x52
+			}
+		}
+		if len(x.PrepareCheckStaters) > 0 {
+			for iNdEx := len(x.PrepareCheckStaters) - 1; iNdEx >= 0; iNdEx-- {
+				i -= len(x.PrepareCheckStaters[iNdEx])
+				copy(dAtA[i:], x.PrepareCheckStaters[iNdEx])
+				i = runtime.EncodeVarint(dAtA, i, uint64(len(x.PrepareCheckStaters[iNdEx])))
+				i--
+				dAtA[i] = 0x4a
+			}
+		}
+		if len(x.Precommiters) > 0 {
+			for iNdEx := len(x.Precommiters) - 1; iNdEx >= 0; iNdEx-- {
+				i -= len(x.Precommiters[iNdEx])
+				copy(dAtA[i:], x.Precommiters[iNdEx])
+				i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Precommiters[iNdEx])))
+				i--
+				dAtA[i] = 0x42
+			}
 		}
 		if len(x.OrderMigrations) > 0 {
 			for iNdEx := len(x.OrderMigrations) - 1; iNdEx >= 0; iNdEx-- {
@@ -1155,6 +1431,102 @@ func (x *fastReflection_Module) ProtoMethods() *protoiface.Methods {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
 				x.OrderMigrations = append(x.OrderMigrations, string(dAtA[iNdEx:postIndex]))
+				iNdEx = postIndex
+			case 8:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Precommiters", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.Precommiters = append(x.Precommiters, string(dAtA[iNdEx:postIndex]))
+				iNdEx = postIndex
+			case 9:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field PrepareCheckStaters", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.PrepareCheckStaters = append(x.PrepareCheckStaters, string(dAtA[iNdEx:postIndex]))
+				iNdEx = postIndex
+			case 10:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field PreBlockers", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.PreBlockers = append(x.PreBlockers, string(dAtA[iNdEx:postIndex]))
 				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
@@ -1719,6 +2091,18 @@ type Module struct {
 	// If this is left empty, it uses the default migration order.
 	// https://pkg.go.dev/github.com/cosmos/cosmos-sdk@v0.47.0-alpha2/types/module#DefaultMigrationsOrder
 	OrderMigrations []string `protobuf:"bytes,7,rep,name=order_migrations,json=orderMigrations,proto3" json:"order_migrations,omitempty"`
+	// precommiters specifies the module names of the precommiters
+	// to call in the order in which they should be called. If this is left empty
+	// no precommit function will be registered.
+	Precommiters []string `protobuf:"bytes,8,rep,name=precommiters,proto3" json:"precommiters,omitempty"`
+	// prepare_check_staters specifies the module names of the prepare_check_staters
+	// to call in the order in which they should be called. If this is left empty
+	// no preparecheckstate function will be registered.
+	PrepareCheckStaters []string `protobuf:"bytes,9,rep,name=prepare_check_staters,json=prepareCheckStaters,proto3" json:"prepare_check_staters,omitempty"`
+	// pre_blockers specifies the module names of pre blockers
+	// to call in the order in which they should be called. If this is left empty
+	// no pre blocker will be registered.
+	PreBlockers []string `protobuf:"bytes,10,rep,name=pre_blockers,json=preBlockers,proto3" json:"pre_blockers,omitempty"`
 }
 
 func (x *Module) Reset() {
@@ -1790,6 +2174,27 @@ func (x *Module) GetOrderMigrations() []string {
 	return nil
 }
 
+func (x *Module) GetPrecommiters() []string {
+	if x != nil {
+		return x.Precommiters
+	}
+	return nil
+}
+
+func (x *Module) GetPrepareCheckStaters() []string {
+	if x != nil {
+		return x.PrepareCheckStaters
+	}
+	return nil
+}
+
+func (x *Module) GetPreBlockers() []string {
+	if x != nil {
+		return x.PreBlockers
+	}
+	return nil
+}
+
 // StoreKeyConfig may be supplied to override the default module store key, which
 // is the module name.
 type StoreKeyConfig struct {
@@ -1846,7 +2251,7 @@ var file_cosmos_app_runtime_v1alpha1_module_proto_rawDesc = []byte{
 	0x6f, 0x73, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76,
 	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x1a, 0x20, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f,
 	0x61, 0x70, 0x70, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x6d, 0x6f, 0x64,
-	0x75, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x84, 0x03, 0x0a, 0x06, 0x4d, 0x6f,
+	0x75, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xff, 0x03, 0x0a, 0x06, 0x4d, 0x6f,
 	0x64, 0x75, 0x6c, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x61, 0x70, 0x70, 0x5f, 0x6e, 0x61, 0x6d, 0x65,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61, 0x70, 0x70, 0x4e, 0x61, 0x6d, 0x65, 0x12,
 	0x25, 0x0a, 0x0e, 0x62, 0x65, 0x67, 0x69, 0x6e, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x65, 0x72,
@@ -1866,33 +2271,41 @@ var file_cosmos_app_runtime_v1alpha1_module_proto_rawDesc = []byte{
 	0x76, 0x65, 0x72, 0x72, 0x69, 0x64, 0x65, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x4b, 0x65, 0x79, 0x73,
 	0x12, 0x29, 0x0a, 0x10, 0x6f, 0x72, 0x64, 0x65, 0x72, 0x5f, 0x6d, 0x69, 0x67, 0x72, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0f, 0x6f, 0x72, 0x64, 0x65,
-	0x72, 0x4d, 0x69, 0x67, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x3a, 0x43, 0xba, 0xc0, 0x96,
-	0xda, 0x01, 0x3d, 0x0a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
-	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2d, 0x73, 0x64,
-	0x6b, 0x2f, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x12, 0x15, 0x0a, 0x13, 0x63, 0x6f, 0x73,
-	0x6d, 0x6f, 0x73, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
-	0x22, 0x53, 0x0a, 0x0e, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x4b, 0x65, 0x79, 0x43, 0x6f, 0x6e, 0x66,
-	0x69, 0x67, 0x12, 0x1f, 0x0a, 0x0b, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x5f, 0x6e, 0x61, 0x6d,
-	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x4e,
-	0x61, 0x6d, 0x65, 0x12, 0x20, 0x0a, 0x0c, 0x6b, 0x76, 0x5f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f,
-	0x6b, 0x65, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x6b, 0x76, 0x53, 0x74, 0x6f,
-	0x72, 0x65, 0x4b, 0x65, 0x79, 0x42, 0xfb, 0x01, 0x0a, 0x1f, 0x63, 0x6f, 0x6d, 0x2e, 0x63, 0x6f,
-	0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x61, 0x70, 0x70, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65,
-	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42, 0x0b, 0x4d, 0x6f, 0x64, 0x75, 0x6c,
-	0x65, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3c, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
-	0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
-	0x73, 0x2f, 0x61, 0x70, 0x70, 0x2f, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2f, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x3b, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xa2, 0x02, 0x03, 0x43, 0x41, 0x52, 0xaa, 0x02, 0x1b, 0x43,
-	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x70, 0x70, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d,
-	0x65, 0x2e, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xca, 0x02, 0x1b, 0x43, 0x6f, 0x73,
-	0x6d, 0x6f, 0x73, 0x5c, 0x41, 0x70, 0x70, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5c,
-	0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xe2, 0x02, 0x27, 0x43, 0x6f, 0x73, 0x6d, 0x6f,
-	0x73, 0x5c, 0x41, 0x70, 0x70, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5c, 0x56, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
-	0x74, 0x61, 0xea, 0x02, 0x1e, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x3a, 0x3a, 0x41, 0x70, 0x70,
-	0x3a, 0x3a, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70,
-	0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x72, 0x4d, 0x69, 0x67, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x22, 0x0a, 0x0c, 0x70,
+	0x72, 0x65, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x65, 0x72, 0x73, 0x18, 0x08, 0x20, 0x03, 0x28,
+	0x09, 0x52, 0x0c, 0x70, 0x72, 0x65, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x65, 0x72, 0x73, 0x12,
+	0x32, 0x0a, 0x15, 0x70, 0x72, 0x65, 0x70, 0x61, 0x72, 0x65, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b,
+	0x5f, 0x73, 0x74, 0x61, 0x74, 0x65, 0x72, 0x73, 0x18, 0x09, 0x20, 0x03, 0x28, 0x09, 0x52, 0x13,
+	0x70, 0x72, 0x65, 0x70, 0x61, 0x72, 0x65, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x53, 0x74, 0x61, 0x74,
+	0x65, 0x72, 0x73, 0x12, 0x21, 0x0a, 0x0c, 0x70, 0x72, 0x65, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b,
+	0x65, 0x72, 0x73, 0x18, 0x0a, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0b, 0x70, 0x72, 0x65, 0x42, 0x6c,
+	0x6f, 0x63, 0x6b, 0x65, 0x72, 0x73, 0x3a, 0x43, 0xba, 0xc0, 0x96, 0xda, 0x01, 0x3d, 0x0a, 0x24,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2d, 0x73, 0x64, 0x6b, 0x2f, 0x72, 0x75, 0x6e,
+	0x74, 0x69, 0x6d, 0x65, 0x12, 0x15, 0x0a, 0x13, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x61,
+	0x70, 0x70, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x22, 0x53, 0x0a, 0x0e, 0x53,
+	0x74, 0x6f, 0x72, 0x65, 0x4b, 0x65, 0x79, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x1f, 0x0a,
+	0x0b, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x0a, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x20,
+	0x0a, 0x0c, 0x6b, 0x76, 0x5f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x6b, 0x65, 0x79, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x6b, 0x76, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x4b, 0x65, 0x79,
+	0x42, 0xfb, 0x01, 0x0a, 0x1f, 0x63, 0x6f, 0x6d, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
+	0x61, 0x70, 0x70, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c,
+	0x70, 0x68, 0x61, 0x31, 0x42, 0x0b, 0x4d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x50, 0x72, 0x6f, 0x74,
+	0x6f, 0x50, 0x01, 0x5a, 0x3c, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69,
+	0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x61, 0x70, 0x70,
+	0x2f, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
+	0x31, 0x3b, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
+	0x31, 0xa2, 0x02, 0x03, 0x43, 0x41, 0x52, 0xaa, 0x02, 0x1b, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
+	0x2e, 0x41, 0x70, 0x70, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x56, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x31, 0xca, 0x02, 0x1b, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x5c, 0x41,
+	0x70, 0x70, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70,
+	0x68, 0x61, 0x31, 0xe2, 0x02, 0x27, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x5c, 0x41, 0x70, 0x70,
+	0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
+	0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x1e,
+	0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x3a, 0x3a, 0x41, 0x70, 0x70, 0x3a, 0x3a, 0x52, 0x75, 0x6e,
+	0x74, 0x69, 0x6d, 0x65, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (

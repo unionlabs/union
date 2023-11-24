@@ -159,6 +159,9 @@ func EncodeVarint(w io.Writer, i int64) error {
 
 // EncodeVarintSize returns the byte size of the given integer as a varint.
 func EncodeVarintSize(i int64) int {
-	var buf [binary.MaxVarintLen64]byte
-	return binary.PutVarint(buf[:], i)
+	ux := uint64(i) << 1
+	if i < 0 {
+		ux = ^ux
+	}
+	return EncodeUvarintSize(ux)
 }

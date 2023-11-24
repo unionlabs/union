@@ -1,7 +1,6 @@
 package blocksync
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -22,13 +21,13 @@ const (
 // ValidateMsg validates a message.
 func ValidateMsg(pb proto.Message) error {
 	if pb == nil {
-		return errors.New("message cannot be nil")
+		return ErrNilMessage
 	}
 
 	switch msg := pb.(type) {
 	case *bcproto.BlockRequest:
 		if msg.Height < 0 {
-			return errors.New("negative Height")
+			return ErrInvalidHeight{Height: msg.Height, Reason: "negative height"}
 		}
 	case *bcproto.BlockResponse:
 		_, err := types.BlockFromProto(msg.Block)
@@ -37,22 +36,22 @@ func ValidateMsg(pb proto.Message) error {
 		}
 	case *bcproto.NoBlockResponse:
 		if msg.Height < 0 {
-			return errors.New("negative Height")
+			return ErrInvalidHeight{Height: msg.Height, Reason: "negative height"}
 		}
 	case *bcproto.StatusResponse:
 		if msg.Base < 0 {
-			return errors.New("negative Base")
+			return ErrInvalidBase{Base: msg.Base, Reason: "negative base"}
 		}
 		if msg.Height < 0 {
-			return errors.New("negative Height")
+			return ErrInvalidHeight{Height: msg.Height, Reason: "negative height"}
 		}
 		if msg.Base > msg.Height {
-			return fmt.Errorf("base %v cannot be greater than height %v", msg.Base, msg.Height)
+			return ErrInvalidHeight{Height: msg.Height, Reason: fmt.Sprintf("base %v cannot be greater than height", msg.Base)}
 		}
 	case *bcproto.StatusRequest:
 		return nil
 	default:
-		return fmt.Errorf("unknown message type %T", msg)
+		return ErrUnknownMessageType{Msg: msg}
 	}
 	return nil
 }

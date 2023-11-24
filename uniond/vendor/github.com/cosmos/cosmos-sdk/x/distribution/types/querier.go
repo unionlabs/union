@@ -49,7 +49,7 @@ type QueryValidatorSlashesParams struct {
 }
 
 // creates a new instance of QueryValidatorSlashesParams
-func NewQueryValidatorSlashesParams(validatorAddr sdk.ValAddress, startingHeight uint64, endingHeight uint64) QueryValidatorSlashesParams {
+func NewQueryValidatorSlashesParams(validatorAddr sdk.ValAddress, startingHeight, endingHeight uint64) QueryValidatorSlashesParams {
 	return QueryValidatorSlashesParams{
 		ValidatorAddress: validatorAddr,
 		StartingHeight:   startingHeight,

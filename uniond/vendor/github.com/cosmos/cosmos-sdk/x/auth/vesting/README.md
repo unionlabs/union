@@ -30,41 +30,18 @@ sidebar_position: 1
 
 ## Intro and Requirements
 
-This specification defines the vesting account implementation that is used by
-the Cosmos Hub. The requirements for this vesting account is that it should be
-initialized during genesis with a starting balance `X` and a vesting end
-time `ET`. A vesting account may be initialized with a vesting start time `ST`
-and a number of vesting periods `P`. If a vesting start time is included, the
-vesting period does not begin until start time is reached. If vesting periods
-are included, the vesting occurs over the specified number of periods.
+This specification defines the vesting account implementation that is used by the Cosmos Hub. The requirements for this vesting account is that it should be initialized during genesis with a starting balance `X` and a vesting end time `ET`. A vesting account may be initialized with a vesting start time `ST` and a number of vesting periods `P`. If a vesting start time is included, the vesting period does not begin until start time is reached. If vesting periods are included, the vesting occurs over the specified number of periods.
 
-For all vesting accounts, the owner of the vesting account is able to delegate
-and undelegate from validators, however they cannot transfer coins to another
-account until those coins are vested. This specification allows for four
-different kinds of vesting:
+For all vesting accounts, the owner of the vesting account is able to delegate and undelegate from validators, however they cannot transfer coins to another account until those coins are vested. This specification allows for four different kinds of vesting:
 
 * Delayed vesting, where all coins are vested once `ET` is reached.
-* Continous vesting, where coins begin to vest at `ST` and vest linearly with
-respect to time until `ET` is reached
-* Periodic vesting, where coins begin to vest at `ST` and vest periodically
-according to number of periods and the vesting amount per period.
-The number of periods, length per period, and amount per period are
-configurable. A periodic vesting account is distinguished from a continuous
-vesting account in that coins can be released in staggered tranches. For
-example, a periodic vesting account could be used for vesting arrangements
-where coins are relased quarterly, yearly, or over any other function of
-tokens over time.
-* Permanent locked vesting, where coins are locked forever. Coins in this account can
-still be used for delegating and for governance votes even while locked.
+* Continous vesting, where coins begin to vest at `ST` and vest linearly with respect to time until `ET` is reached
+* Periodic vesting, where coins begin to vest at `ST` and vest periodically according to number of periods and the vesting amount per period. The number of periods, length per period, and amount per period are configurable. A periodic vesting account is distinguished from a continuous vesting account in that coins can be released in staggered tranches. For example, a periodic vesting account could be used for vesting arrangements where coins are relased quarterly, yearly, or over any other function of tokens over time.
+* Permanent locked vesting, where coins are locked forever. Coins in this account can still be used for delegating and for governance votes even while locked.
 
 ## Note
 
-Vesting accounts can be initialized with some vesting and non-vesting coins.
-The non-vesting coins would be immediately transferable. DelayedVesting and
-ContinuousVesting accounts can be created with normal messages after genesis.
-Other types of vesting accounts must be created at genesis, or as
-part of a manual network upgrade. The current specification only allows
-for _unconditional_ vesting (ie. there is no possibility of reaching `ET` and
+Vesting accounts can be initialized with some vesting and non-vesting coins. The non-vesting coins would be immediately transferable. DelayedVesting ContinuousVesting, PeriodicVesting and PermenantVesting accounts can be created with normal messages after genesis. Other types of vesting accounts must be created at genesis, or as part of a manual network upgrade. The current specification only allows for _unconditional_ vesting (ie. there is no possibility of reaching `ET` and
 having coins fail to vest).
 
 ## Vesting Account Types
@@ -129,9 +106,7 @@ type Periods []Period
 https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/proto/cosmos/vesting/v1beta1/vesting.proto#L71-L81
 ```
 
-In order to facilitate less ad-hoc type checking and assertions and to support
-flexibility in account balance usage, the existing `x/bank` `ViewKeeper` interface
-is updated to contain the following:
+In order to facilitate less ad-hoc type checking and assertions and to support flexibility in account balance usage, the existing `x/bank` `ViewKeeper` interface is updated to contain the following:
 
 ```go
 type ViewKeeper interface {
@@ -157,22 +132,16 @@ Given a vesting account, we define the following in the proceeding operations:
 
 * `OV`: The original vesting coin amount. It is a constant value.
 * `V`: The number of `OV` coins that are still _vesting_. It is derived by
-`OV`, `StartTime` and `EndTime`. This value is computed on demand and not on a
-per-block basis.
-* `V'`: The number of `OV` coins that are _vested_ (unlocked). This value is
-computed on demand and not a per-block basis.
-* `DV`: The number of delegated _vesting_ coins. It is a variable value. It is
-stored and modified directly in the vesting account.
-* `DF`: The number of delegated _vested_ (unlocked) coins. It is a variable
-value. It is stored and modified directly in the vesting account.
+`OV`, `StartTime` and `EndTime`. This value is computed on demand and not on a per-block basis.
+* `V'`: The number of `OV` coins that are _vested_ (unlocked). This value is computed on demand and not a per-block basis.
+* `DV`: The number of delegated _vesting_ coins. It is a variable value. It is stored and modified directly in the vesting account.
+* `DF`: The number of delegated _vested_ (unlocked) coins. It is a variable value. It is stored and modified directly in the vesting account.
 * `BC`: The number of `OV` coins less any coins that are transferred
-(which can be negative or delegated). It is considered to be balance of the
-embedded base account. It is stored and modified directly in the vesting account.
+(which can be negative or delegated). It is considered to be balance of the embedded base account. It is stored and modified directly in the vesting account.
 
 ### Determining Vesting & Vested Amounts
 
-It is important to note that these values are computed on demand and not on a
-mandatory per-block basis (e.g. `BeginBlocker` or `EndBlocker`).
+It is important to note that these values are computed on demand and not on a mandatory per-block basis (e.g. `BeginBlocker` or `EndBlocker`).
 
 #### Continuously Vesting Accounts
 
@@ -211,10 +180,7 @@ func (cva ContinuousVestingAccount) GetVestingCoins(t Time) Coins {
 
 ### Periodic Vesting Accounts
 
-Periodic vesting accounts require calculating the coins released during each
-period for a given block time `T`. Note that multiple periods could have passed
-when calling `GetVestedCoins`, so we must iterate over each period until the
-end of that period is after `T`.
+Periodic vesting accounts require calculating the coins released during each period for a given block time `T`. Note that multiple periods could have passed when calling `GetVestedCoins`, so we must iterate over each period until the end of that period is after `T`.
 
 1. Set `CT := StartTime`
 2. Set `V' := 0`
@@ -253,9 +219,7 @@ func (pva PeriodicVestingAccount) GetVestingCoins(t Time) Coins {
 
 #### Delayed/Discrete Vesting Accounts
 
-Delayed vesting accounts are easier to reason about as they only have the full
-amount vesting up until a certain time, then all the coins become vested (unlocked).
-This does not include any unlocked coins the account may have initially.
+Delayed vesting accounts are easier to reason about as they only have the full amount vesting up until a certain time, then all the coins become vested (unlocked). This does not include any unlocked coins the account may have initially.
 
 ```go
 func (dva DelayedVestingAccount) GetVestedCoins(t Time) Coins {
@@ -275,14 +239,9 @@ func (dva DelayedVestingAccount) GetVestingCoins(t Time) Coins {
 
 At any given time, a vesting account may transfer: `min((BC + DV) - V, BC)`.
 
-In other words, a vesting account may transfer the minimum of the base account
-balance and the base account balance plus the number of currently delegated
-vesting coins less the number of coins vested so far.
+In other words, a vesting account may transfer the minimum of the base account balance and the base account balance plus the number of currently delegated vesting coins less the number of coins vested so far.
 
-However, given that account balances are tracked via the `x/bank` module and that
-we want to avoid loading the entire account balance, we can instead determine
-the locked balance, which can be defined as `max(V - DV, 0)`, and infer the
-spendable balance from that.
+However, given that account balances are tracked via the `x/bank` module and that we want to avoid loading the entire account balance, we can instead determine the locked balance, which can be defined as `max(V - DV, 0)`, and infer the spendable balance from that.
 
 ```go
 func (va VestingAccount) LockedCoins(t Time) Coins {
@@ -290,8 +249,7 @@ func (va VestingAccount) LockedCoins(t Time) Coins {
 }
 ```
 
-The `x/bank` `ViewKeeper` can then provide APIs to determine locked and spendable
-coins for any account:
+The `x/bank` `ViewKeeper` can then provide APIs to determine locked and spendable coins for any account:
 
 ```go
 func (k Keeper) LockedCoins(ctx Context, addr AccAddress) Coins {
@@ -309,8 +267,7 @@ func (k Keeper) LockedCoins(ctx Context, addr AccAddress) Coins {
 
 #### Keepers/Handlers
 
-The corresponding `x/bank` keeper should appropriately handle sending coins
-based on if the account is a vesting account or not.
+The corresponding `x/bank` keeper should appropriately handle sending coins based on if the account is a vesting account or not.
 
 ```go
 func (k Keeper) SendCoins(ctx Context, from Account, to Account, amount Coins) {
@@ -349,8 +306,7 @@ func (va VestingAccount) TrackDelegation(t Time, balance Coins, amount Coins) {
 }
 ```
 
-**Note** `TrackDelegation` only modifies the `DelegatedVesting` and `DelegatedFree`
-fields, so upstream callers MUST modify the `Coins` field by subtracting `amount`.
+**Note** `TrackDelegation` only modifies the `DelegatedVesting` and `DelegatedFree` fields, so upstream callers MUST modify the `Coins` field by subtracting `amount`.
 
 #### Keepers/Handlers
 
@@ -369,8 +325,8 @@ func DelegateCoins(t Time, from Account, amount Coins) {
 ### Undelegating
 
 For a vesting account attempting to undelegate `D` coins, the following is performed:
-NOTE: `DV < D` and `(DV + DF) < D` may be possible due to quirks in the rounding of
-delegation/undelegation logic.
+
+> NOTE: `DV < D` and `(DV + DF) < D` may be possible due to quirks in the rounding of delegation/undelegation logic.
 
 1. Verify `D > 0`
 2. Compute `X := min(DF, D)` (portion of `D` that should become free, prioritizing free coins)
@@ -388,17 +344,11 @@ func (cva ContinuousVestingAccount) TrackUndelegation(amount Coins) {
 }
 ```
 
-**Note** `TrackUnDelegation` only modifies the `DelegatedVesting` and `DelegatedFree`
-fields, so upstream callers MUST modify the `Coins` field by adding `amount`.
+**Note** `TrackUnDelegation` only modifies the `DelegatedVesting` and `DelegatedFree` fields, so upstream callers MUST modify the `Coins` field by adding `amount`.
 
-**Note**: If a delegation is slashed, the continuous vesting account ends up
-with an excess `DV` amount, even after all its coins have vested. This is because
-undelegating free coins are prioritized.
+**Note**: If a delegation is slashed, the continuous vesting account ends up with an excess `DV` amount, even after all its coins have vested. This is because undelegating free coins are prioritized.
 
-**Note**: The undelegation (bond refund) amount may exceed the delegated
-vesting (bond) amount due to the way undelegation truncates the bond refund,
-which can increase the validator's exchange rate (tokens/shares) slightly if the
-undelegated tokens are non-integral.
+**Note**: The undelegation (bond refund) amount may exceed the delegated vesting (bond) amount due to the way undelegation truncates the bond refund, which can increase the validator's exchange rate (tokens/shares) slightly if the undelegated tokens are non-integral.
 
 #### Keepers/Handlers
 
@@ -418,25 +368,15 @@ func UndelegateCoins(to Account, amount Coins) {
 
 ## Keepers & Handlers
 
-The `VestingAccount` implementations reside in `x/auth`. However, any keeper in
-a module (e.g. staking in `x/staking`) wishing to potentially utilize any vesting
-coins, must call explicit methods on the `x/bank` keeper (e.g. `DelegateCoins`)
-opposed to `SendCoins` and `SubtractCoins`.
+The `VestingAccount` implementations reside in `x/auth`. However, any keeper in a module (e.g. staking in `x/staking`) wishing to potentially utilize any vesting coins, must call explicit methods on the `x/bank` keeper (e.g. `DelegateCoins`) opposed to `SendCoins` and `SubtractCoins`.
 
-In addition, the vesting account should also be able to spend any coins it
-receives from other users. Thus, the bank module's `MsgSend` handler should
-error if a vesting account is trying to send an amount that exceeds their
-unlocked coin amount.
+In addition, the vesting account should also be able to spend any coins it receives from other users. Thus, the bank module's `MsgSend` handler should error if a vesting account is trying to send an amount that exceeds their unlocked coin amount.
 
 See the above specification for full implementation details.
 
 ## Genesis Initialization
 
-To initialize both vesting and non-vesting accounts, the `GenesisAccount` struct
-includes new fields: `Vesting`, `StartTime`, and `EndTime`. Accounts meant to be
-of type `BaseAccount` or any non-vesting type have `Vesting = false`. The
-genesis initialization logic (e.g. `initFromGenesisState`) must parse
-and return the correct accounts accordingly based off of these fields.
+To initialize both vesting and non-vesting accounts, the `GenesisAccount` struct includes new fields: `Vesting`, `StartTime`, and `EndTime`. Accounts meant to be of type `BaseAccount` or any non-vesting type have `Vesting = false`. The genesis initialization logic (e.g. `initFromGenesisState`) must parse and return the correct accounts accordingly based off of these fields.
 
 ```go
 type GenesisAccount struct {

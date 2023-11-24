@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	dbm "github.com/cometbft/cometbft-db"
+	"cosmossdk.io/log"
+	dbm "github.com/cosmos/cosmos-db"
 )
 
 // ImmutableTree contains the immutable tree at a given version. It is typically created by calling
@@ -14,6 +15,8 @@ import (
 // Returned key/value byte slices must not be modified, since they may point to data located inside
 // IAVL which would also be modified.
 type ImmutableTree struct {
+	logger log.Logger
+
 	root                   *Node
 	ndb                    *nodeDB
 	version                int64
@@ -21,23 +24,21 @@ type ImmutableTree struct {
 }
 
 // NewImmutableTree creates both in-memory and persistent instances
-func NewImmutableTree(db dbm.DB, cacheSize int, skipFastStorageUpgrade bool) *ImmutableTree {
+func NewImmutableTree(db dbm.DB, cacheSize int, skipFastStorageUpgrade bool, lg log.Logger, options ...Option) *ImmutableTree {
+	opts := DefaultOptions()
+	for _, opt := range options {
+		opt(&opts)
+	}
+
 	if db == nil {
 		// In-memory Tree.
 		return &ImmutableTree{}
 	}
-	return &ImmutableTree{
-		// NodeDB-backed Tree.
-		ndb:                    newNodeDB(db, cacheSize, nil),
-		skipFastStorageUpgrade: skipFastStorageUpgrade,
-	}
-}
 
-// NewImmutableTreeWithOpts creates an ImmutableTree with the given options.
-func NewImmutableTreeWithOpts(db dbm.DB, cacheSize int, opts *Options, skipFastStorageUpgrade bool) *ImmutableTree {
 	return &ImmutableTree{
+		logger: lg,
 		// NodeDB-backed Tree.
-		ndb:                    newNodeDB(db, cacheSize, opts),
+		ndb:                    newNodeDB(db, cacheSize, opts, lg),
 		skipFastStorageUpgrade: skipFastStorageUpgrade,
 	}
 }
@@ -67,7 +68,7 @@ func (t *ImmutableTree) RenderShape(indent string, encoder NodeEncoder) ([]strin
 type NodeEncoder func(id []byte, depth int, isLeaf bool) string
 
 // defaultNodeEncoder can encode any node unless the client overrides it
-func defaultNodeEncoder(id []byte, depth int, isLeaf bool) string {
+func defaultNodeEncoder(id []byte, _ int, isLeaf bool) string {
 	prefix := "- "
 	if isLeaf {
 		prefix = "* "
@@ -148,9 +149,8 @@ func (t *ImmutableTree) Has(key []byte) (bool, error) {
 }
 
 // Hash returns the root hash.
-func (t *ImmutableTree) Hash() ([]byte, error) {
-	hash, _, err := t.root.hashWithCount()
-	return hash, err
+func (t *ImmutableTree) Hash() []byte {
+	return t.root.hashWithCount(t.version + 1)
 }
 
 // Export returns an iterator that exports tree nodes as ExportNodes. These nodes can be
@@ -283,7 +283,7 @@ func (t *ImmutableTree) IterateRangeInclusive(start, end []byte, ascending bool,
 	}
 	return t.root.traverseInRange(t, start, end, ascending, true, false, func(node *Node) bool {
 		if node.subtreeHeight == 0 {
-			return fn(node.key, node.value, node.version)
+			return fn(node.key, node.value, node.nodeKey.version)
 		}
 		return false
 	})
@@ -321,13 +321,13 @@ func (t *ImmutableTree) clone() *ImmutableTree {
 }
 
 // nodeSize is like Size, but includes inner nodes too.
-//
-
+// used only for testing.
 func (t *ImmutableTree) nodeSize() int {
-	size := 0
-	t.root.traverse(t, true, func(n *Node) bool {
-		size++
-		return false
-	})
-	return size
+	return int(t.root.size*2 - 1)
+}
+
+// TraverseStateChanges iterate the range of versions, compare each version to it's predecessor to extract the state changes of it.
+// endVersion is exclusive.
+func (t *ImmutableTree) TraverseStateChanges(startVersion, endVersion int64, fn func(version int64, changeSet *ChangeSet) error) error {
+	return t.ndb.traverseStateChanges(startVersion, endVersion, fn)
 }

@@ -245,7 +245,7 @@ func (s *sequenceDecs) decodeSync(hist []byte) error {
 			return io.ErrUnexpectedEOF
 		}
 		var ll, mo, ml int
-		if br.off > 4+((maxOffsetBits+16+16)>>3) {
+		if len(br.in) > 4+((maxOffsetBits+16+16)>>3) {
 			// inlined function:
 			// ll, mo, ml = s.nextFast(br, llState, mlState, ofState)
 
@@ -452,18 +452,13 @@ func (s *sequenceDecs) next(br *bitReader, llState, mlState, ofState decSymbol) 
 
 	// extra bits are stored in reverse order.
 	br.fill()
-	if s.maxBits <= 32 {
-		mo += br.getBits(moB)
-		ml += br.getBits(mlB)
-		ll += br.getBits(llB)
-	} else {
-		mo += br.getBits(moB)
+	mo += br.getBits(moB)
+	if s.maxBits > 32 {
 		br.fill()
-		// matchlength+literal length, max 32 bits
-		ml += br.getBits(mlB)
-		ll += br.getBits(llB)
-
 	}
+	// matchlength+literal length, max 32 bits
+	ml += br.getBits(mlB)
+	ll += br.getBits(llB)
 	mo = s.adjustOffset(mo, ll, moB)
 	return
 }

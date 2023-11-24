@@ -39,7 +39,7 @@ func NormalizeS(sigS *big.Int) *big.Int {
 // signatureRaw will serialize signature to R || S.
 // R, S are padded to 32 bytes respectively.
 // code roughly copied from secp256k1_nocgo.go
-func signatureRaw(r *big.Int, s *big.Int) []byte {
+func signatureRaw(r, s *big.Int) []byte {
 	rBytes := r.Bytes()
 	sBytes := s.Bytes()
 	sigBytes := make([]byte, 64)

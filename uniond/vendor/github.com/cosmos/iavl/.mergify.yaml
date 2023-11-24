@@ -7,7 +7,7 @@ pull_request_rules:
   - name: automerge to main with label automerge and branch protection passing
     conditions:
       - "#approved-reviews-by>1"
-      - base=main
+      - base=master
       - label=A:automerge
     actions:
       queue:
@@ -19,8 +19,24 @@ pull_request_rules:
   - name: backport patches to v0.19.x branch
     conditions:
       - base=master
-      - label=backport/0.19.x
+      - label=backport/v0.19.x
     actions:
       backport:
         branches:
           - release/v0.19.x
+  - name: backport patches to v0.20.x branch
+    conditions:
+      - base=master
+      - label=backport/v0.20.x
+    actions:
+      backport:
+        branches:
+          - release/v0.20.x
+  - name: backport patches to v1.x branch
+    conditions:
+      - base=master
+      - label=backport/v1.x
+    actions:
+      backport:
+        branches:
+          - release/v1.x.x

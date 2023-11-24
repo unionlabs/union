@@ -1,6 +1,8 @@
 package signing
 
 import (
+	"context"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -19,6 +21,20 @@ type SignModeHandler interface {
 	// GetSignBytes returns the sign bytes for the provided SignMode, SignerData and Tx,
 	// or an error
 	GetSignBytes(mode signing.SignMode, data SignerData, tx sdk.Tx) ([]byte, error)
+}
+
+// SignModeHandlerWithContext is like SignModeHandler, with a new GetSignBytes
+// method which takes an additional context.Context argument, to be used to
+// access state. Consumers should preferably type-cast to this interface and
+// pass in the context.Context arg, and default to SignModeHandler otherwise.
+// This interface is created for backwards compatibility, and will be
+// deleted once SDK versions <v0.47 are not supported anymore.
+type SignModeHandlerWithContext interface {
+	SignModeHandler
+
+	// GetSignBytes returns the sign bytes for the provided SignMode, SignerData and Tx,
+	// or an error
+	GetSignBytesWithContext(ctx context.Context, mode signing.SignMode, data SignerData, tx sdk.Tx) ([]byte, error)
 }
 
 // SignerData is the specific information needed to sign a transaction that generally

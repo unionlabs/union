@@ -250,7 +250,7 @@ func New(w io.Writer) Logger {
 	}
 	lw, ok := w.(LevelWriter)
 	if !ok {
-		lw = levelWriterAdapter{w}
+		lw = LevelWriterAdapter{w}
 	}
 	return Logger{w: lw, level: TraceLevel}
 }

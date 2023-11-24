@@ -1,8 +1,7 @@
 package types
 
 import (
-	"fmt"
-	"strings"
+	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -29,20 +28,9 @@ func InitialValidatorAccumulatedCommission() ValidatorAccumulatedCommission {
 }
 
 // create a new ValidatorSlashEvent
-func NewValidatorSlashEvent(validatorPeriod uint64, fraction sdk.Dec) ValidatorSlashEvent {
+func NewValidatorSlashEvent(validatorPeriod uint64, fraction sdkmath.LegacyDec) ValidatorSlashEvent {
 	return ValidatorSlashEvent{
 		ValidatorPeriod: validatorPeriod,
 		Fraction:        fraction,
 	}
-}
-
-func (vs ValidatorSlashEvents) String() string {
-	out := "Validator Slash Events:\n"
-	for i, sl := range vs.ValidatorSlashEvents {
-		out += fmt.Sprintf(`  Slash %d:
-    Period:   %d
-    Fraction: %s
-`, i, sl.ValidatorPeriod, sl.Fraction)
-	}
-	return strings.TrimSpace(out)
 }

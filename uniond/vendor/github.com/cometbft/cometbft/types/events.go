@@ -18,6 +18,7 @@ const (
 	// All of this data can be fetched through the rpc.
 	EventNewBlock            = "NewBlock"
 	EventNewBlockHeader      = "NewBlockHeader"
+	EventNewBlockEvents      = "NewBlockEvents"
 	EventNewEvidence         = "NewEvidence"
 	EventTx                  = "Tx"
 	EventValidatorSetUpdates = "ValidatorSetUpdates"
@@ -48,6 +49,7 @@ type TMEventData interface {
 func init() {
 	cmtjson.RegisterType(EventDataNewBlock{}, "tendermint/event/NewBlock")
 	cmtjson.RegisterType(EventDataNewBlockHeader{}, "tendermint/event/NewBlockHeader")
+	cmtjson.RegisterType(EventDataNewBlockEvents{}, "tendermint/event/NewBlockEvents")
 	cmtjson.RegisterType(EventDataNewEvidence{}, "tendermint/event/NewEvidence")
 	cmtjson.RegisterType(EventDataTx{}, "tendermint/event/Tx")
 	cmtjson.RegisterType(EventDataRoundState{}, "tendermint/event/RoundState")
@@ -62,24 +64,24 @@ func init() {
 // but some (an input to a call tx or a receive) are more exotic
 
 type EventDataNewBlock struct {
-	Block *Block `json:"block"`
-
-	ResultBeginBlock abci.ResponseBeginBlock `json:"result_begin_block"`
-	ResultEndBlock   abci.ResponseEndBlock   `json:"result_end_block"`
+	Block               *Block                     `json:"block"`
+	BlockID             BlockID                    `json:"block_id"`
+	ResultFinalizeBlock abci.ResponseFinalizeBlock `json:"result_finalize_block"`
 }
 
 type EventDataNewBlockHeader struct {
 	Header Header `json:"header"`
+}
 
-	NumTxs           int64                   `json:"num_txs"` // Number of txs in a block
-	ResultBeginBlock abci.ResponseBeginBlock `json:"result_begin_block"`
-	ResultEndBlock   abci.ResponseEndBlock   `json:"result_end_block"`
+type EventDataNewBlockEvents struct {
+	Height int64        `json:"height"`
+	Events []abci.Event `json:"events"`
+	NumTxs int64        `json:"num_txs,string"` // Number of txs in a block
 }
 
 type EventDataNewEvidence struct {
+	Height   int64    `json:"height"`
 	Evidence Evidence `json:"evidence"`
-
-	Height int64 `json:"height"`
 }
 
 // All txs fire EventDataTx
@@ -130,15 +132,16 @@ type EventDataValidatorSetUpdates struct {
 const (
 	// EventTypeKey is a reserved composite key for event name.
 	EventTypeKey = "tm.event"
+
 	// TxHashKey is a reserved key, used to specify transaction's hash.
 	// see EventBus#PublishEventTx
 	TxHashKey = "tx.hash"
+
 	// TxHeightKey is a reserved key, used to specify transaction block's height.
 	// see EventBus#PublishEventTx
 	TxHeightKey = "tx.height"
 
-	// BlockHeightKey is a reserved key used for indexing BeginBlock and Endblock
-	// events.
+	// BlockHeightKey is a reserved key used for indexing FinalizeBlock events.
 	BlockHeightKey = "block.height"
 )
 
@@ -147,6 +150,7 @@ var (
 	EventQueryLock                = QueryForEvent(EventLock)
 	EventQueryNewBlock            = QueryForEvent(EventNewBlock)
 	EventQueryNewBlockHeader      = QueryForEvent(EventNewBlockHeader)
+	EventQueryNewBlockEvents      = QueryForEvent(EventNewBlockEvents)
 	EventQueryNewEvidence         = QueryForEvent(EventNewEvidence)
 	EventQueryNewRound            = QueryForEvent(EventNewRound)
 	EventQueryNewRoundStep        = QueryForEvent(EventNewRoundStep)
@@ -162,17 +166,18 @@ var (
 )
 
 func EventQueryTxFor(tx Tx) cmtpubsub.Query {
-	return cmtquery.MustParse(fmt.Sprintf("%s='%s' AND %s='%X'", EventTypeKey, EventTx, TxHashKey, tx.Hash()))
+	return cmtquery.MustCompile(fmt.Sprintf("%s='%s' AND %s='%X'", EventTypeKey, EventTx, TxHashKey, tx.Hash()))
 }
 
 func QueryForEvent(eventType string) cmtpubsub.Query {
-	return cmtquery.MustParse(fmt.Sprintf("%s='%s'", EventTypeKey, eventType))
+	return cmtquery.MustCompile(fmt.Sprintf("%s='%s'", EventTypeKey, eventType))
 }
 
 // BlockEventPublisher publishes all block related events
 type BlockEventPublisher interface {
 	PublishEventNewBlock(block EventDataNewBlock) error
 	PublishEventNewBlockHeader(header EventDataNewBlockHeader) error
+	PublishEventNewBlockEvents(events EventDataNewBlockEvents) error
 	PublishEventNewEvidence(evidence EventDataNewEvidence) error
 	PublishEventTx(EventDataTx) error
 	PublishEventValidatorSetUpdates(EventDataValidatorSetUpdates) error

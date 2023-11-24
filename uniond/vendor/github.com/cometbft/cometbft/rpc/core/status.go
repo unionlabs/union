@@ -12,8 +12,8 @@ import (
 
 // Status returns CometBFT status including node info, pubkey, latest block
 // hash, app hash, block height and time.
-// More: https://docs.cometbft.com/v0.37/rpc/#/Info/status
-func Status(ctx *rpctypes.Context) (*ctypes.ResultStatus, error) {
+// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/status
+func (env *Environment) Status(*rpctypes.Context) (*ctypes.ResultStatus, error) {
 	var (
 		earliestBlockHeight   int64
 		earliestBlockHash     cmtbytes.HexBytes
@@ -47,7 +47,7 @@ func Status(ctx *rpctypes.Context) (*ctypes.ResultStatus, error) {
 	// Return the very last voting power, not the voting power of this validator
 	// during the last block.
 	var votingPower int64
-	if val := validatorAtHeight(latestUncommittedHeight()); val != nil {
+	if val := env.validatorAtHeight(env.latestUncommittedHeight()); val != nil {
 		votingPower = val.VotingPower
 	}
 
@@ -74,12 +74,12 @@ func Status(ctx *rpctypes.Context) (*ctypes.ResultStatus, error) {
 	return result, nil
 }
 
-func validatorAtHeight(h int64) *types.Validator {
-	vals, err := env.StateStore.LoadValidators(h)
+func (env *Environment) validatorAtHeight(h int64) *types.Validator {
+	valsWithH, err := env.StateStore.LoadValidators(h)
 	if err != nil {
 		return nil
 	}
 	privValAddress := env.PubKey.Address()
-	_, val := vals.GetByAddress(privValAddress)
+	_, val := valsWithH.GetByAddress(privValAddress)
 	return val
 }

@@ -34,47 +34,69 @@ func (g *makeGen[V]) value(t *T) V {
 }
 
 func newMakeGen(typ reflect.Type) *Generator[any] {
+	gen, mayNeedCast := newMakeKindGen(typ)
+	if !mayNeedCast || typ.String() == typ.Kind().String() {
+		return gen // fast path with less reflect
+	}
+	return newGenerator[any](&castGen{gen, typ})
+}
+
+type castGen struct {
+	gen *Generator[any]
+	typ reflect.Type
+}
+
+func (g *castGen) String() string {
+	return fmt.Sprintf("cast(%v, %v)", g.gen, g.typ.Name())
+}
+
+func (g *castGen) value(t *T) any {
+	v := g.gen.value(t)
+	return reflect.ValueOf(v).Convert(g.typ).Interface()
+}
+
+func newMakeKindGen(typ reflect.Type) (gen *Generator[any], mayNeedCast bool) {
 	switch typ.Kind() {
 	case reflect.Bool:
-		return Bool().AsAny()
+		return Bool().AsAny(), true
 	case reflect.Int:
-		return Int().AsAny()
+		return Int().AsAny(), true
 	case reflect.Int8:
-		return Int8().AsAny()
+		return Int8().AsAny(), true
 	case reflect.Int16:
-		return Int16().AsAny()
+		return Int16().AsAny(), true
 	case reflect.Int32:
-		return Int32().AsAny()
+		return Int32().AsAny(), true
 	case reflect.Int64:
-		return Int64().AsAny()
+		return Int64().AsAny(), true
 	case reflect.Uint:
-		return Uint().AsAny()
+		return Uint().AsAny(), true
 	case reflect.Uint8:
-		return Uint8().AsAny()
+		return Uint8().AsAny(), true
 	case reflect.Uint16:
-		return Uint16().AsAny()
+		return Uint16().AsAny(), true
 	case reflect.Uint32:
-		return Uint32().AsAny()
+		return Uint32().AsAny(), true
 	case reflect.Uint64:
-		return Uint64().AsAny()
+		return Uint64().AsAny(), true
 	case reflect.Uintptr:
-		return Uintptr().AsAny()
+		return Uintptr().AsAny(), true
 	case reflect.Float32:
-		return Float32().AsAny()
+		return Float32().AsAny(), true
 	case reflect.Float64:
-		return Float64().AsAny()
+		return Float64().AsAny(), true
 	case reflect.Array:
-		return genAnyArray(typ)
+		return genAnyArray(typ), false
 	case reflect.Map:
-		return genAnyMap(typ)
+		return genAnyMap(typ), false
 	case reflect.Pointer:
-		return Deferred(func() *Generator[any] { return genAnyPointer(typ) })
+		return Deferred(func() *Generator[any] { return genAnyPointer(typ) }), false
 	case reflect.Slice:
-		return genAnySlice(typ)
+		return genAnySlice(typ), false
 	case reflect.String:
-		return String().AsAny()
+		return String().AsAny(), true
 	case reflect.Struct:
-		return genAnyStruct(typ)
+		return genAnyStruct(typ), false
 	default:
 		panic(fmt.Sprintf("unsupported type kind for Make: %v", typ.Kind()))
 	}

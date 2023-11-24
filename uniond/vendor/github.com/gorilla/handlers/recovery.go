@@ -36,12 +36,12 @@ func parseRecoveryOptions(h http.Handler, opts ...RecoveryOption) http.Handler {
 //
 // Example:
 //
-//  r := mux.NewRouter()
-//  r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-//  	panic("Unexpected error!")
-//  })
+//	r := mux.NewRouter()
+//	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+//		panic("Unexpected error!")
+//	})
 //
-//  http.ListenAndServe(":1123", handlers.RecoveryHandler()(r))
+//	http.ListenAndServe(":1123", handlers.RecoveryHandler()(r))
 func RecoveryHandler(opts ...RecoveryOption) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		r := &recoveryHandler{handler: h}
@@ -50,20 +50,22 @@ func RecoveryHandler(opts ...RecoveryOption) func(h http.Handler) http.Handler {
 }
 
 // RecoveryLogger is a functional option to override
-// the default logger
+// the default logger.
 func RecoveryLogger(logger RecoveryHandlerLogger) RecoveryOption {
 	return func(h http.Handler) {
-		r := h.(*recoveryHandler)
+		r := h.(*recoveryHandler) //nolint:errcheck //TODO:
+		// @bharat-rajani should return type-assertion error but would break the API?
 		r.logger = logger
 	}
 }
 
 // PrintRecoveryStack is a functional option to enable
 // or disable printing stack traces on panic.
-func PrintRecoveryStack(print bool) RecoveryOption {
+func PrintRecoveryStack(shouldPrint bool) RecoveryOption {
 	return func(h http.Handler) {
-		r := h.(*recoveryHandler)
-		r.printStack = print
+		r := h.(*recoveryHandler) //nolint:errcheck //TODO:
+		// @bharat-rajani should return type-assertion error but would break the API?
+		r.printStack = shouldPrint
 	}
 }
 

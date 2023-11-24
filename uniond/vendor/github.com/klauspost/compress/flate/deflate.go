@@ -7,6 +7,7 @@ package flate
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -90,9 +91,8 @@ type advancedState struct {
 	ii uint16 // position of last match, intended to overflow to reset.
 
 	// input window: unprocessed data is window[index:windowEnd]
-	index          int
-	estBitsPerByte int
-	hashMatch      [maxMatchLength + minMatchLength]uint32
+	index     int
+	hashMatch [maxMatchLength + minMatchLength]uint32
 
 	// Input hash chains
 	// hashHead[hashValue] contains the largest inputIndex with the specified hash value
@@ -834,6 +834,12 @@ func (d *compressor) init(w io.Writer, level int) (err error) {
 		d.initDeflate()
 		d.fill = (*compressor).fillDeflate
 		d.step = (*compressor).deflateLazy
+	case -level >= MinCustomWindowSize && -level <= MaxCustomWindowSize:
+		d.w.logNewTablePenalty = 7
+		d.fast = &fastEncL5Window{maxOffset: int32(-level), cur: maxStoreBlockSize}
+		d.window = make([]byte, maxStoreBlockSize)
+		d.fill = (*compressor).fillBlock
+		d.step = (*compressor).storeFast
 	default:
 		return fmt.Errorf("flate: invalid compression level %d: want value in range [-2, 9]", level)
 	}
@@ -928,6 +934,28 @@ func NewWriterDict(w io.Writer, level int, dict []byte) (*Writer, error) {
 	zw.d.fillWindow(dict)
 	zw.dict = append(zw.dict, dict...) // duplicate dictionary for Reset method.
 	return zw, err
+}
+
+// MinCustomWindowSize is the minimum window size that can be sent to NewWriterWindow.
+const MinCustomWindowSize = 32
+
+// MaxCustomWindowSize is the maximum custom window that can be sent to NewWriterWindow.
+const MaxCustomWindowSize = windowSize
+
+// NewWriterWindow returns a new Writer compressing data with a custom window size.
+// windowSize must be from MinCustomWindowSize to MaxCustomWindowSize.
+func NewWriterWindow(w io.Writer, windowSize int) (*Writer, error) {
+	if windowSize < MinCustomWindowSize {
+		return nil, errors.New("flate: requested window size less than MinWindowSize")
+	}
+	if windowSize > MaxCustomWindowSize {
+		return nil, errors.New("flate: requested window size bigger than MaxCustomWindowSize")
+	}
+	var dw Writer
+	if err := dw.d.init(w, -windowSize); err != nil {
+		return nil, err
+	}
+	return &dw, nil
 }
 
 // A Writer takes data written to it and writes the compressed

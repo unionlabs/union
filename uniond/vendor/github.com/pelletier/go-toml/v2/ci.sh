@@ -79,6 +79,7 @@ cover() {
     go test -covermode=atomic  -coverpkg=./... -coverprofile=coverage.out.tmp ./...
     cat coverage.out.tmp | grep -v fuzz | grep -v testsuite | grep -v tomltestgen | grep -v gotoml-test-decoder > coverage.out
     go tool cover -func=coverage.out
+    echo "Coverage profile for ${branch}: ${dir}/coverage.out" >&2
     popd
 
     if [ "${branch}" != "HEAD" ]; then

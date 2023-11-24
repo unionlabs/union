@@ -4,17 +4,17 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/server"
+	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	"github.com/spf13/cobra"
 
-	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
+	"github.com/cosmos/cosmos-sdk/server"
 )
 
 // ExtendUnsafeResetAllCmd - also clear wasm dir
 func ExtendUnsafeResetAllCmd(rootCmd *cobra.Command) {
 	unsafeResetCmd := tmcmd.ResetAllCmd.Use
 	for _, branchCmd := range rootCmd.Commands() {
-		if branchCmd.Use != "tendermint" {
+		if branchCmd.Use != "comet" {
 			continue
 		}
 		for _, cmd := range branchCmd.Commands() {

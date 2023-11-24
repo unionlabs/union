@@ -3,6 +3,8 @@ package simulation
 import (
 	"math/rand"
 
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
@@ -14,7 +16,7 @@ import (
 const (
 	DefaultWeightMsgUpdateParams int = 50
 
-	OpWeightMsgUpdateParams = "op_weight_msg_update_params" //nolint:gosec
+	OpWeightMsgUpdateParams = "op_weight_msg_update_params"
 )
 
 // ProposalMsgs defines the module weighted proposals' contents
@@ -34,7 +36,7 @@ func SimulateMsgUpdateParams(r *rand.Rand, _ sdk.Context, _ []simtypes.Account) 
 	var authority sdk.AccAddress = address.Module("gov")
 
 	params := types.DefaultParams()
-	params.CommunityTax = simtypes.RandomDecAmount(r, sdk.NewDec(1))
+	params.CommunityTax = simtypes.RandomDecAmount(r, sdkmath.LegacyNewDec(1))
 	params.WithdrawAddrEnabled = r.Intn(2) == 0
 
 	return &types.MsgUpdateParams{

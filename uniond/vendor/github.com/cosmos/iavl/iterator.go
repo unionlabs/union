@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"errors"
 
-	dbm "github.com/cometbft/cometbft-db"
+	dbm "github.com/cosmos/cosmos-db"
 )
 
 type traversal struct {
@@ -258,4 +258,78 @@ func (iter *Iterator) Error() error {
 // IsFast returnts true if iterator uses fast strategy
 func (iter *Iterator) IsFast() bool {
 	return false
+}
+
+// NodeIterator is an iterator for nodeDB to traverse a tree in depth-first, preorder manner.
+type NodeIterator struct {
+	nodesToVisit []*Node
+	ndb          *nodeDB
+	err          error
+}
+
+// NewNodeIterator returns a new NodeIterator to traverse the tree of the root node.
+func NewNodeIterator(rootKey []byte, ndb *nodeDB) (*NodeIterator, error) {
+	if len(rootKey) == 0 {
+		return &NodeIterator{
+			nodesToVisit: []*Node{},
+			ndb:          ndb,
+		}, nil
+	}
+
+	node, err := ndb.GetNode(rootKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return &NodeIterator{
+		nodesToVisit: []*Node{node},
+		ndb:          ndb,
+	}, nil
+}
+
+// GetNode returns the current visiting node.
+func (iter *NodeIterator) GetNode() *Node {
+	return iter.nodesToVisit[len(iter.nodesToVisit)-1]
+}
+
+// Valid checks if the validator is valid.
+func (iter *NodeIterator) Valid() bool {
+	return iter.err == nil && len(iter.nodesToVisit) > 0
+}
+
+// Error returns an error if any errors.
+func (iter *NodeIterator) Error() error {
+	return iter.err
+}
+
+// Next moves forward the traversal.
+// if isSkipped is true, the subtree under the current node is skipped.
+func (iter *NodeIterator) Next(isSkipped bool) {
+	if !iter.Valid() {
+		return
+	}
+	node := iter.GetNode()
+	iter.nodesToVisit = iter.nodesToVisit[:len(iter.nodesToVisit)-1]
+
+	if isSkipped {
+		return
+	}
+
+	if node.isLeaf() {
+		return
+	}
+
+	rightNode, err := iter.ndb.GetNode(node.rightNodeKey)
+	if err != nil {
+		iter.err = err
+		return
+	}
+	iter.nodesToVisit = append(iter.nodesToVisit, rightNode)
+
+	leftNode, err := iter.ndb.GetNode(node.leftNodeKey)
+	if err != nil {
+		iter.err = err
+		return
+	}
+	iter.nodesToVisit = append(iter.nodesToVisit, leftNode)
 }

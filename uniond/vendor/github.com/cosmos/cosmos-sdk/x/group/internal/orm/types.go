@@ -7,9 +7,13 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/cosmos/gogoproto/proto"
+
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/cosmos-sdk/x/group/errors"
@@ -34,15 +38,15 @@ type Validateable interface {
 // variable length and scanned iteratively.
 type Index interface {
 	// Has checks if a key exists. Panics on nil key.
-	Has(store sdk.KVStore, key interface{}) (bool, error)
+	Has(store storetypes.KVStore, key interface{}) (bool, error)
 
 	// Get returns a result iterator for the searchKey.
 	// searchKey must not be nil.
-	Get(store sdk.KVStore, searchKey interface{}) (Iterator, error)
+	Get(store storetypes.KVStore, searchKey interface{}) (Iterator, error)
 
 	// GetPaginated returns a result iterator for the searchKey and optional pageRequest.
 	// searchKey must not be nil.
-	GetPaginated(store sdk.KVStore, searchKey interface{}, pageRequest *query.PageRequest) (Iterator, error)
+	GetPaginated(store storetypes.KVStore, searchKey interface{}, pageRequest *query.PageRequest) (Iterator, error)
 
 	// PrefixScan returns an Iterator over a domain of keys in ascending order. End is exclusive.
 	// Start is an MultiKeyIndex key or prefix. It must be less than end, or the Iterator is invalid and error is returned.
@@ -60,7 +64,7 @@ type Index interface {
 	//			it = LimitIterator(it, defaultLimit)
 	//
 	// CONTRACT: No writes may happen within a domain while an iterator exists over it.
-	PrefixScan(store sdk.KVStore, startI interface{}, endI interface{}) (Iterator, error)
+	PrefixScan(store storetypes.KVStore, startI, endI interface{}) (Iterator, error)
 
 	// ReversePrefixScan returns an Iterator over a domain of keys in descending order. End is exclusive.
 	// Start is an MultiKeyIndex key or prefix. It must be less than end, or the Iterator is invalid  and error is returned.
@@ -71,7 +75,7 @@ type Index interface {
 	// this as an endpoint to the public without further limits. See `LimitIterator`
 	//
 	// CONTRACT: No writes may happen within a domain while an iterator exists over it.
-	ReversePrefixScan(store sdk.KVStore, startI interface{}, endI interface{}) (Iterator, error)
+	ReversePrefixScan(store storetypes.KVStore, startI, endI interface{}) (Iterator, error)
 }
 
 // Iterator allows iteration through a sequence of key value pairs
@@ -79,7 +83,7 @@ type Iterator interface {
 	// LoadNext loads the next value in the sequence into the pointer passed as dest and returns the key. If there
 	// are no more items the ErrORMIteratorDone error is returned
 	// The key is the rowID.
-	LoadNext(dest codec.ProtoMarshaler) (RowID, error)
+	LoadNext(dest proto.Message) (RowID, error)
 	// Close releases the iterator and should be called at the end of iteration
 	io.Closer
 }
@@ -93,20 +97,20 @@ type Indexable interface {
 }
 
 // AfterSetInterceptor defines a callback function to be called on Create + Update.
-type AfterSetInterceptor func(store sdk.KVStore, rowID RowID, newValue, oldValue codec.ProtoMarshaler) error
+type AfterSetInterceptor func(store storetypes.KVStore, rowID RowID, newValue, oldValue proto.Message) error
 
 // AfterDeleteInterceptor defines a callback function to be called on Delete operations.
-type AfterDeleteInterceptor func(store sdk.KVStore, rowID RowID, value codec.ProtoMarshaler) error
+type AfterDeleteInterceptor func(store storetypes.KVStore, rowID RowID, value proto.Message) error
 
 // RowGetter loads a persistent object by row ID into the destination object. The dest parameter must therefore be a pointer.
 // Any implementation must return `sdkerrors.ErrNotFound` when no object for the rowID exists
-type RowGetter func(store sdk.KVStore, rowID RowID, dest codec.ProtoMarshaler) error
+type RowGetter func(store storetypes.KVStore, rowID RowID, dest proto.Message) error
 
 // NewTypeSafeRowGetter returns a `RowGetter` with type check on the dest parameter.
 func NewTypeSafeRowGetter(prefixKey [2]byte, model reflect.Type, cdc codec.Codec) RowGetter {
-	return func(store sdk.KVStore, rowID RowID, dest codec.ProtoMarshaler) error {
+	return func(store storetypes.KVStore, rowID RowID, dest proto.Message) error {
 		if len(rowID) == 0 {
-			return sdkerrors.Wrap(errors.ErrORMEmptyKey, "key must not be nil")
+			return errorsmod.Wrap(errors.ErrORMEmptyKey, "key must not be nil")
 		}
 		if err := assertCorrectType(model, dest); err != nil {
 			return err
@@ -122,13 +126,13 @@ func NewTypeSafeRowGetter(prefixKey [2]byte, model reflect.Type, cdc codec.Codec
 	}
 }
 
-func assertCorrectType(model reflect.Type, obj codec.ProtoMarshaler) error {
+func assertCorrectType(model reflect.Type, obj proto.Message) error {
 	tp := reflect.TypeOf(obj)
 	if tp.Kind() != reflect.Ptr {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidType, "model destination must be a pointer")
+		return errorsmod.Wrap(sdkerrors.ErrInvalidType, "model destination must be a pointer")
 	}
 	if model != tp.Elem() {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "can not use %T with this bucket", obj)
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidType, "can not use %T with this bucket", obj)
 	}
 	return nil
 }

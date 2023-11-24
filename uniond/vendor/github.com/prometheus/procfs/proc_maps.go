@@ -63,17 +63,17 @@ type ProcMap struct {
 // parseDevice parses the device token of a line and converts it to a dev_t
 // (mkdev) like structure.
 func parseDevice(s string) (uint64, error) {
-	toks := strings.Split(s, ":")
-	if len(toks) < 2 {
-		return 0, fmt.Errorf("%w: unexpected number of fields, expected: 2, got: %q", ErrFileParse, len(toks))
+	i := strings.Index(s, ":")
+	if i == -1 {
+		return 0, fmt.Errorf("%w: expected separator `:` in %s", ErrFileParse, s)
 	}
 
-	major, err := strconv.ParseUint(toks[0], 16, 0)
+	major, err := strconv.ParseUint(s[0:i], 16, 0)
 	if err != nil {
 		return 0, err
 	}
 
-	minor, err := strconv.ParseUint(toks[1], 16, 0)
+	minor, err := strconv.ParseUint(s[i+1:], 16, 0)
 	if err != nil {
 		return 0, err
 	}
@@ -93,17 +93,17 @@ func parseAddress(s string) (uintptr, error) {
 
 // parseAddresses parses the start-end address.
 func parseAddresses(s string) (uintptr, uintptr, error) {
-	toks := strings.Split(s, "-")
-	if len(toks) < 2 {
-		return 0, 0, fmt.Errorf("%w: invalid address", ErrFileParse)
+	idx := strings.Index(s, "-")
+	if idx == -1 {
+		return 0, 0, fmt.Errorf("%w: expected separator `-` in %s", ErrFileParse, s)
 	}
 
-	saddr, err := parseAddress(toks[0])
+	saddr, err := parseAddress(s[0:idx])
 	if err != nil {
 		return 0, 0, err
 	}
 
-	eaddr, err := parseAddress(toks[1])
+	eaddr, err := parseAddress(s[idx+1:])
 	if err != nil {
 		return 0, 0, err
 	}

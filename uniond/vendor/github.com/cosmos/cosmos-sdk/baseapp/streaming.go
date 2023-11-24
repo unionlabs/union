@@ -1,37 +1,112 @@
 package baseapp
 
 import (
-	"context"
-	"io"
-	"sync"
+	"fmt"
+	"sort"
+	"strings"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/spf13/cast"
 
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	"cosmossdk.io/store/streaming"
+	storetypes "cosmossdk.io/store/types"
+
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 )
 
-// ABCIListener interface used to hook into the ABCI message processing of the BaseApp.
-// the error results are propagated to consensus state machine,
-// if you don't want to affect consensus, handle the errors internally and always return `nil` in these APIs.
-type ABCIListener interface {
-	// ListenBeginBlock updates the streaming service with the latest BeginBlock messages
-	ListenBeginBlock(ctx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error
-	// ListenEndBlock updates the steaming service with the latest EndBlock messages
-	ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error
-	// ListenDeliverTx updates the steaming service with the latest DeliverTx messages
-	ListenDeliverTx(ctx context.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error
-	// ListenCommit updates the steaming service with the latest Commit event
-	ListenCommit(ctx context.Context, res abci.ResponseCommit) error
+const (
+	StreamingTomlKey                  = "streaming"
+	StreamingABCITomlKey              = "abci"
+	StreamingABCIPluginTomlKey        = "plugin"
+	StreamingABCIKeysTomlKey          = "keys"
+	StreamingABCIStopNodeOnErrTomlKey = "stop-node-on-err"
+)
+
+// RegisterStreamingServices registers streaming services with the BaseApp.
+func (app *BaseApp) RegisterStreamingServices(appOpts servertypes.AppOptions, keys map[string]*storetypes.KVStoreKey) error {
+	// register streaming services
+	streamingCfg := cast.ToStringMap(appOpts.Get(StreamingTomlKey))
+	for service := range streamingCfg {
+		pluginKey := fmt.Sprintf("%s.%s.%s", StreamingTomlKey, service, StreamingABCIPluginTomlKey)
+		pluginName := strings.TrimSpace(cast.ToString(appOpts.Get(pluginKey)))
+		if len(pluginName) > 0 {
+			logLevel := cast.ToString(appOpts.Get(flags.FlagLogLevel))
+			plugin, err := streaming.NewStreamingPlugin(pluginName, logLevel)
+			if err != nil {
+				return fmt.Errorf("failed to load streaming plugin: %w", err)
+			}
+			if err := app.registerStreamingPlugin(appOpts, keys, plugin); err != nil {
+				return fmt.Errorf("failed to register streaming plugin %w", err)
+			}
+		}
+	}
+
+	return nil
 }
 
-// StreamingService interface for registering WriteListeners with the BaseApp and updating the service with the ABCI messages using the hooks
-type StreamingService interface {
-	// Stream is the streaming service loop, awaits kv pairs and writes them to some destination stream or file
-	Stream(wg *sync.WaitGroup) error
-	// Listeners returns the streaming service's listeners for the BaseApp to register
-	Listeners() map[store.StoreKey][]store.WriteListener
-	// ABCIListener interface for hooking into the ABCI messages from inside the BaseApp
-	ABCIListener
-	// Closer interface
-	io.Closer
+// registerStreamingPlugin registers streaming plugins with the BaseApp.
+func (app *BaseApp) registerStreamingPlugin(
+	appOpts servertypes.AppOptions,
+	keys map[string]*storetypes.KVStoreKey,
+	streamingPlugin interface{},
+) error {
+	v, ok := streamingPlugin.(storetypes.ABCIListener)
+	if !ok {
+		return fmt.Errorf("unexpected plugin type %T", v)
+	}
+
+	app.registerABCIListenerPlugin(appOpts, keys, v)
+	return nil
+}
+
+// registerABCIListenerPlugin registers plugins that implement the ABCIListener interface.
+func (app *BaseApp) registerABCIListenerPlugin(
+	appOpts servertypes.AppOptions,
+	keys map[string]*storetypes.KVStoreKey,
+	abciListener storetypes.ABCIListener,
+) {
+	stopNodeOnErrKey := fmt.Sprintf("%s.%s.%s", StreamingTomlKey, StreamingABCITomlKey, StreamingABCIStopNodeOnErrTomlKey)
+	stopNodeOnErr := cast.ToBool(appOpts.Get(stopNodeOnErrKey))
+	keysKey := fmt.Sprintf("%s.%s.%s", StreamingTomlKey, StreamingABCITomlKey, StreamingABCIKeysTomlKey)
+	exposeKeysStr := cast.ToStringSlice(appOpts.Get(keysKey))
+	exposedKeys := exposeStoreKeysSorted(exposeKeysStr, keys)
+	app.cms.AddListeners(exposedKeys)
+	app.SetStreamingManager(
+		storetypes.StreamingManager{
+			ABCIListeners: []storetypes.ABCIListener{abciListener},
+			StopNodeOnErr: stopNodeOnErr,
+		},
+	)
+}
+
+func exposeAll(list []string) bool {
+	for _, ele := range list {
+		if ele == "*" {
+			return true
+		}
+	}
+	return false
+}
+
+func exposeStoreKeysSorted(keysStr []string, keys map[string]*storetypes.KVStoreKey) []storetypes.StoreKey {
+	var exposeStoreKeys []storetypes.StoreKey
+	if exposeAll(keysStr) {
+		exposeStoreKeys = make([]storetypes.StoreKey, 0, len(keys))
+		for key := range keys {
+			exposeStoreKeys = append(exposeStoreKeys, keys[key])
+		}
+	} else {
+		exposeStoreKeys = make([]storetypes.StoreKey, 0, len(keysStr))
+		for _, keyStr := range keysStr {
+			if storeKey, ok := keys[keyStr]; ok {
+				exposeStoreKeys = append(exposeStoreKeys, storeKey)
+			}
+		}
+	}
+	// sort storeKeys for deterministic output
+	sort.SliceStable(exposeStoreKeys, func(i, j int) bool {
+		return exposeStoreKeys[i].Name() < exposeStoreKeys[j].Name()
+	})
+
+	return exposeStoreKeys
 }

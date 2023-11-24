@@ -6,11 +6,17 @@ import (
 	"fmt"
 	"strconv"
 
+	"cosmossdk.io/x/tx/signing"
+
 	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	ctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/proto"
+	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	"github.com/spf13/cobra"
 )
 
@@ -69,7 +75,22 @@ func GenStateProof() *cobra.Command {
 
 			fmt.Println(merkleProof)
 
-			cdc := codec.NewProtoCodec(ctypes.NewInterfaceRegistry())
+			interfaceRegistry, err := ctypes.NewInterfaceRegistryWithOptions(ctypes.InterfaceRegistryOptions{
+				ProtoFiles: proto.HybridResolver,
+				SigningOptions: signing.Options{
+					AddressCodec: address.Bech32Codec{
+						Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
+					},
+					ValidatorAddressCodec: address.Bech32Codec{
+						Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
+					},
+				},
+			})
+			if err != nil {
+				return err
+			}
+
+			cdc := codec.NewProtoCodec(interfaceRegistry)
 			proofBz, err := cdc.Marshal(&merkleProof)
 			if err != nil {
 				return err

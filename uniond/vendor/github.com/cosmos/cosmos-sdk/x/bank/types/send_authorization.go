@@ -1,6 +1,8 @@
 package types
 
 import (
+	context "context"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/authz"
@@ -27,7 +29,7 @@ func (a SendAuthorization) MsgTypeURL() string {
 }
 
 // Accept implements Authorization.Accept.
-func (a SendAuthorization) Accept(ctx sdk.Context, msg sdk.Msg) (authz.AcceptResponse, error) {
+func (a SendAuthorization) Accept(ctx context.Context, msg sdk.Msg) (authz.AcceptResponse, error) {
 	mSend, ok := msg.(*MsgSend)
 	if !ok {
 		return authz.AcceptResponse{}, sdkerrors.ErrInvalidType.Wrap("type mismatch")
@@ -41,8 +43,9 @@ func (a SendAuthorization) Accept(ctx sdk.Context, msg sdk.Msg) (authz.AcceptRes
 	isAddrExists := false
 	toAddr := mSend.ToAddress
 	allowedList := a.GetAllowList()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	for _, addr := range allowedList {
-		ctx.GasMeter().ConsumeGas(gasCostPerIteration, "send authorization")
+		sdkCtx.GasMeter().ConsumeGas(gasCostPerIteration, "send authorization")
 		if addr == toAddr {
 			isAddrExists = true
 			break

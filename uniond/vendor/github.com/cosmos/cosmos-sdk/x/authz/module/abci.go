@@ -6,9 +6,7 @@ import (
 )
 
 // BeginBlocker is called at the beginning of every block
-func BeginBlocker(ctx sdk.Context, keeper keeper.Keeper) {
+func BeginBlocker(ctx sdk.Context, keeper keeper.Keeper) error {
 	// delete all the mature grants
-	if err := keeper.DequeueAndDeleteExpiredGrants(ctx); err != nil {
-		panic(err)
-	}
+	return keeper.DequeueAndDeleteExpiredGrants(ctx)
 }

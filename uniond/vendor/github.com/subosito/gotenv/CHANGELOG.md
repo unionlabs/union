@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.5.0] - 2023-08-15
+
+### Fixed
+
+- Use io.Reader instead of custom Reader
+
+## [1.5.0] - 2023-08-15
+
+### Added
+
+- Support for reading UTF16 files
+
+### Fixed
+
+- Scanner error handling
+- Reader error handling
+
+## [1.4.2] - 2023-01-11
+
+### Fixed
+
+- Env var initialization
+
+### Changed
+
+- More consitent line splitting
+
+## [1.4.1] - 2022-08-23
+
+### Fixed
+
+- Missing file close
+
+### Changed
+
+- Updated dependencies
+
 ## [1.4.0] - 2022-06-02
 
 ### Added

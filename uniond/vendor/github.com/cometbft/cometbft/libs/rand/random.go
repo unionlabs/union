@@ -48,7 +48,8 @@ func (r *Rand) init() {
 }
 
 func (r *Rand) reset(seed int64) {
-	//nolint:gosec,nolintlint
+	// G404: Use of weak random number generator (math/rand instead of crypto/rand)
+	//nolint:gosec
 	r.rand = mrand.New(mrand.NewSource(seed))
 }
 
@@ -163,13 +164,12 @@ MAIN_LOOP:
 			if v >= 62 {         // only 62 characters in strChars
 				val >>= 6
 				continue
-			} else {
-				chars = append(chars, strChars[v])
-				if len(chars) == length {
-					break MAIN_LOOP
-				}
-				val >>= 6
 			}
+			chars = append(chars, strChars[v])
+			if len(chars) == length {
+				break MAIN_LOOP
+			}
+			val >>= 6
 		}
 	}
 

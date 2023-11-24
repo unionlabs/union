@@ -35,7 +35,7 @@ func (h MethodHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 		sort.Strings(allow)
 		w.Header().Set("Allow", strings.Join(allow, ", "))
-		if req.Method == "OPTIONS" {
+		if req.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -44,7 +44,7 @@ func (h MethodHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 // responseLogger is wrapper of http.ResponseWriter that keeps track of its HTTP
-// status code and body size
+// status code and body size.
 type responseLogger struct {
 	w      http.ResponseWriter
 	status int
@@ -97,7 +97,7 @@ func isContentType(h http.Header, contentType string) bool {
 // Only PUT, POST, and PATCH requests are considered.
 func ContentTypeHandler(h http.Handler, contentTypes ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !(r.Method == "PUT" || r.Method == "POST" || r.Method == "PATCH") {
+		if !(r.Method == http.MethodPut || r.Method == http.MethodPost || r.Method == http.MethodPatch) {
 			h.ServeHTTP(w, r)
 			return
 		}
@@ -108,7 +108,10 @@ func ContentTypeHandler(h http.Handler, contentTypes ...string) http.Handler {
 				return
 			}
 		}
-		http.Error(w, fmt.Sprintf("Unsupported content type %q; expected one of %q", r.Header.Get("Content-Type"), contentTypes), http.StatusUnsupportedMediaType)
+		http.Error(w, fmt.Sprintf("Unsupported content type %q; expected one of %q",
+			r.Header.Get("Content-Type"),
+			contentTypes),
+			http.StatusUnsupportedMediaType)
 	})
 }
 
@@ -133,12 +136,12 @@ const (
 // Form method takes precedence over header method.
 func HTTPMethodOverrideHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
+		if r.Method == http.MethodPost {
 			om := r.FormValue(HTTPMethodOverrideFormKey)
 			if om == "" {
 				om = r.Header.Get(HTTPMethodOverrideHeader)
 			}
-			if om == "PUT" || om == "PATCH" || om == "DELETE" {
+			if om == http.MethodPut || om == http.MethodPatch || om == http.MethodDelete {
 				r.Method = om
 			}
 		}

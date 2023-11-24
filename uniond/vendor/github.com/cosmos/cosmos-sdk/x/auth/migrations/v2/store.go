@@ -30,7 +30,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -46,7 +45,7 @@ const (
 
 // We use the baseapp.QueryRouter here to do inter-module state querying.
 // PLEASE DO NOT REPLICATE THIS PATTERN IN YOUR OWN APP.
-func migrateVestingAccounts(ctx sdk.Context, account types.AccountI, queryServer grpc.Server) (types.AccountI, error) {
+func migrateVestingAccounts(ctx sdk.Context, account sdk.AccountI, queryServer grpc.Server) (sdk.AccountI, error) {
 	bondDenom, err := getBondDenom(ctx, queryServer)
 	if err != nil {
 		return nil, err
@@ -100,7 +99,7 @@ func migrateVestingAccounts(ctx sdk.Context, account types.AccountI, queryServer
 
 	asVesting.TrackDelegation(ctx.BlockTime(), balance, delegations)
 
-	return asVesting.(types.AccountI), nil
+	return asVesting.(sdk.AccountI), nil
 }
 
 func resetVestingDelegatedBalances(evacct exported.VestingAccount) (exported.VestingAccount, bool) {
@@ -148,7 +147,7 @@ func getDelegatorDelegationsSum(ctx sdk.Context, address string, queryServer grp
 		Data: b,
 		Path: delegatorDelegationPath,
 	}
-	resp, err := queryFn(ctx, req)
+	resp, err := queryFn(ctx, &req)
 	if err != nil {
 		e, ok := status.FromError(err)
 		if ok && e.Code() == codes.NotFound {
@@ -192,7 +191,7 @@ func getDelegatorUnbondingDelegationsSum(ctx sdk.Context, address, bondDenom str
 		Data: b,
 		Path: delegatorUnbondingDelegationsPath,
 	}
-	resp, err := queryFn(ctx, req)
+	resp, err := queryFn(ctx, &req)
 	if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
 		e, ok := status.FromError(err)
 		if ok && e.Code() == codes.NotFound {
@@ -239,7 +238,7 @@ func getBalance(ctx sdk.Context, address string, queryServer grpc.Server) (sdk.C
 		Data: b,
 		Path: balancesPath,
 	}
-	resp, err := queryFn(ctx, req)
+	resp, err := queryFn(ctx, &req)
 	if err != nil {
 		return nil, fmt.Errorf("bank query error, %w", err)
 	}
@@ -271,7 +270,7 @@ func getBondDenom(ctx sdk.Context, queryServer grpc.Server) (string, error) {
 		Path: stakingParamsPath,
 	}
 
-	resp, err := queryFn(ctx, req)
+	resp, err := queryFn(ctx, &req)
 	if err != nil {
 		return "", fmt.Errorf("staking query error, %w", err)
 	}
@@ -290,6 +289,6 @@ func getBondDenom(ctx sdk.Context, queryServer grpc.Server) (string, error) {
 //
 // We use the baseapp.QueryRouter here to do inter-module state querying.
 // PLEASE DO NOT REPLICATE THIS PATTERN IN YOUR OWN APP.
-func MigrateAccount(ctx sdk.Context, account types.AccountI, queryServer grpc.Server) (types.AccountI, error) {
+func MigrateAccount(ctx sdk.Context, account sdk.AccountI, queryServer grpc.Server) (sdk.AccountI, error) {
 	return migrateVestingAccounts(ctx, account, queryServer)
 }

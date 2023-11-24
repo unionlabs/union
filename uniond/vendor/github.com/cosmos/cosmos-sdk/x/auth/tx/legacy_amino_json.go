@@ -3,6 +3,8 @@ package tx
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -18,14 +20,24 @@ var _ signing.SignModeHandler = signModeLegacyAminoJSONHandler{}
 // SignModeHandler.
 type signModeLegacyAminoJSONHandler struct{}
 
+// NewSignModeLegacyAminoJSONHandler returns a new signModeLegacyAminoJSONHandler.
+// Note: The public constructor is only used for testing.
+// Deprecated: Please use x/tx/signing/aminojson instead.
+func NewSignModeLegacyAminoJSONHandler() signing.SignModeHandler {
+	return signModeLegacyAminoJSONHandler{}
+}
+
+// Deprecated: Please use x/tx/signing/aminojson instead.
 func (s signModeLegacyAminoJSONHandler) DefaultMode() signingtypes.SignMode {
 	return signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON
 }
 
+// Deprecated: Please use x/tx/signing/aminojson instead.
 func (s signModeLegacyAminoJSONHandler) Modes() []signingtypes.SignMode {
 	return []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON}
 }
 
+// Deprecated: Please use x/tx/signing/aminojson instead.
 func (s signModeLegacyAminoJSONHandler) GetSignBytes(mode signingtypes.SignMode, data signing.SignerData, tx sdk.Tx) ([]byte, error) {
 	if mode != signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON {
 		return nil, fmt.Errorf("expected %s, got %s", signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON, mode)
@@ -37,32 +49,18 @@ func (s signModeLegacyAminoJSONHandler) GetSignBytes(mode signingtypes.SignMode,
 	}
 
 	if protoTx.txBodyHasUnknownNonCriticals {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, aminoNonCriticalFieldsError)
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, aminoNonCriticalFieldsError)
 	}
 
 	body := protoTx.tx.Body
 
 	if len(body.ExtensionOptions) != 0 || len(body.NonCriticalExtensionOptions) != 0 {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "%s does not support protobuf extension options", signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
+		return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "%s does not support protobuf extension options", signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 	}
 
 	addr := data.Address
 	if addr == "" {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "got empty address in %s handler", signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
-	}
-
-	tip := protoTx.GetTip()
-	isTipper := tip != nil && tip.Tipper == addr
-
-	// We set a convention that if the tipper signs with LEGACY_AMINO_JSON, then
-	// they sign over empty fees and 0 gas.
-	if isTipper {
-		return legacytx.StdSignBytes(
-			data.ChainID, data.AccountNumber, data.Sequence, protoTx.GetTimeoutHeight(),
-			// The tipper signs over 0 fee and 0 gas, no feepayer, no feegranter by convention.
-			legacytx.StdFee{},
-			tx.GetMsgs(), protoTx.GetMemo(), tip,
-		), nil
+		return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "got empty address in %s handler", signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 	}
 
 	return legacytx.StdSignBytes(
@@ -73,6 +71,6 @@ func (s signModeLegacyAminoJSONHandler) GetSignBytes(mode signingtypes.SignMode,
 			Payer:   protoTx.tx.AuthInfo.Fee.Payer,
 			Granter: protoTx.tx.AuthInfo.Fee.Granter,
 		},
-		tx.GetMsgs(), protoTx.GetMemo(), tip,
+		tx.GetMsgs(), protoTx.GetMemo(),
 	), nil
 }

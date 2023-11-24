@@ -23,7 +23,7 @@ var (
 // Key format is
 //
 // - 0x02<grant_expiration_Bytes>: GrantQueueItem
-func GrantQueueKey(expiration time.Time, granter sdk.AccAddress, grantee sdk.AccAddress) []byte {
+func GrantQueueKey(expiration time.Time, granter, grantee sdk.AccAddress) []byte {
 	exp := sdk.FormatTimeBytes(expiration)
 	granter = address.MustLengthPrefix(granter)
 	grantee = address.MustLengthPrefix(grantee)
@@ -41,7 +41,7 @@ func GrantQueueKey(expiration time.Time, granter sdk.AccAddress, grantee sdk.Acc
 // Items are stored with the following key: values
 //
 // - 0x01<granterAddressLen (1 Byte)><granterAddress_Bytes><granteeAddressLen (1 Byte)><granteeAddress_Bytes><msgType_Bytes>: Grant
-func GrantStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress, msgType string) []byte {
+func GrantStoreKey(grantee, granter sdk.AccAddress, msgType string) []byte {
 	m := conv.UnsafeStrToBytes(msgType)
 	granter = address.MustLengthPrefix(granter)
 	grantee = address.MustLengthPrefix(grantee)

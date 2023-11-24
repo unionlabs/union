@@ -31,7 +31,7 @@ const (
 	labelSortGroups          = "sort_groups"
 )
 
-func shrink(tb tb, rec recordedBits, err *testError, prop func(*T)) ([]uint64, *testError) {
+func shrink(tb tb, deadline time.Time, rec recordedBits, err *testError, prop func(*T)) ([]uint64, *testError) {
 	rec.prune()
 
 	s := &shrinker{
@@ -44,7 +44,7 @@ func shrink(tb tb, rec recordedBits, err *testError, prop func(*T)) ([]uint64, *
 		cache:   map[string]struct{}{},
 	}
 
-	buf, err := s.shrink()
+	buf, err := s.shrink(deadline)
 
 	if flags.debugvis {
 		name := fmt.Sprintf("vis-%v.html", strings.Replace(tb.Name(), "/", "_", -1))
@@ -82,7 +82,7 @@ func (s *shrinker) debugf(verbose_ bool, format string, args ...any) {
 	}
 }
 
-func (s *shrinker) shrink() (buf []uint64, err *testError) {
+func (s *shrinker) shrink(deadline time.Time) (buf []uint64, err *testError) {
 	defer func() {
 		if r := recover(); r != nil {
 			buf, err = s.rec.data, r.(*testError)
@@ -90,7 +90,6 @@ func (s *shrinker) shrink() (buf []uint64, err *testError) {
 	}()
 
 	i := 0
-	deadline := time.Now().Add(flags.shrinkTime)
 	for shrinks := -1; s.shrinks > shrinks && time.Now().Before(deadline); i++ {
 		shrinks = s.shrinks
 

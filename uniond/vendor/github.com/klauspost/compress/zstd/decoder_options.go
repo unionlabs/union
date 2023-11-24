@@ -107,7 +107,7 @@ func WithDecoderDicts(dicts ...[]byte) DOption {
 	}
 }
 
-// WithEncoderDictRaw registers a dictionary that may be used by the decoder.
+// WithDecoderDictRaw registers a dictionary that may be used by the decoder.
 // The slice content can be arbitrary data.
 func WithDecoderDictRaw(id uint32, content []byte) DOption {
 	return func(o *decoderOptions) error {

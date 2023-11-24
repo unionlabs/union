@@ -35,16 +35,24 @@ func CaptureMetrics(hnd http.Handler, w http.ResponseWriter, r *http.Request) Me
 // sugar on top of this func), but is a more usable interface if your
 // application doesn't use the Go http.Handler interface.
 func CaptureMetricsFn(w http.ResponseWriter, fn func(http.ResponseWriter)) Metrics {
+	m := Metrics{Code: http.StatusOK}
+	m.CaptureMetrics(w, fn)
+	return m
+}
+
+// CaptureMetrics wraps w and calls fn with the wrapped w and updates
+// Metrics m with the resulting metrics. This is similar to CaptureMetricsFn,
+// but allows one to customize starting Metrics object.
+func (m *Metrics) CaptureMetrics(w http.ResponseWriter, fn func(http.ResponseWriter)) {
 	var (
 		start         = time.Now()
-		m             = Metrics{Code: http.StatusOK}
 		headerWritten bool
 		hooks         = Hooks{
 			WriteHeader: func(next WriteHeaderFunc) WriteHeaderFunc {
 				return func(code int) {
 					next(code)
 
-					if !headerWritten {
+					if !(code >= 100 && code <= 199) && !headerWritten {
 						m.Code = code
 						headerWritten = true
 					}
@@ -74,6 +82,5 @@ func CaptureMetricsFn(w http.ResponseWriter, fn func(http.ResponseWriter)) Metri
 	)
 
 	fn(Wrap(w, hooks))
-	m.Duration = time.Since(start)
-	return m
+	m.Duration += time.Since(start)
 }

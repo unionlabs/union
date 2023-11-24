@@ -3,14 +3,15 @@ package types
 import (
 	wasmvm "github.com/CosmWasm/wasmvm"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	storetypes "cosmossdk.io/store/types"
 )
 
 // DefaultMaxQueryStackSize maximum size of the stack of contract instances doing queries
 const DefaultMaxQueryStackSize uint32 = 10
 
-// WasmerEngine defines the WASM contract runtime engine.
-type WasmerEngine interface {
+// WasmEngine defines the WASM contract runtime engine.
+type WasmEngine interface {
 	// Create will compile the wasm code, and store the resulting pre-compile
 	// as well as the original code. Both can be referenced later via CodeID
 	// This must be done one time for given code, after which it can be
@@ -261,11 +262,11 @@ var _ wasmvm.KVStore = &StoreAdapter{}
 
 // StoreAdapter adapter to bridge SDK store impl to wasmvm
 type StoreAdapter struct {
-	parent sdk.KVStore
+	parent storetypes.KVStore
 }
 
 // NewStoreAdapter constructor
-func NewStoreAdapter(s sdk.KVStore) *StoreAdapter {
+func NewStoreAdapter(s storetypes.KVStore) *StoreAdapter {
 	if s == nil {
 		panic("store must not be nil")
 	}

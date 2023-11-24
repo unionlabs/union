@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"reflect"
 
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -31,7 +32,7 @@ type Subspace struct {
 }
 
 // NewSubspace constructs a store with namestore
-func NewSubspace(cdc codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key storetypes.StoreKey, tkey storetypes.StoreKey, name string) Subspace {
+func NewSubspace(cdc codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, tkey storetypes.StoreKey, name string) Subspace {
 	return Subspace{
 		cdc:         cdc,
 		legacyAmino: legacyAmino,
@@ -70,14 +71,14 @@ func (s Subspace) WithKeyTable(table KeyTable) Subspace {
 }
 
 // Returns a KVStore identical with ctx.KVStore(s.key).Prefix()
-func (s Subspace) kvStore(ctx sdk.Context) sdk.KVStore {
+func (s Subspace) kvStore(ctx sdk.Context) storetypes.KVStore {
 	// append here is safe, appends within a function won't cause
 	// weird side effects when its singlethreaded
 	return prefix.NewStore(ctx.KVStore(s.key), append(s.name, '/'))
 }
 
 // Returns a transient store for modification
-func (s Subspace) transientStore(ctx sdk.Context) sdk.KVStore {
+func (s Subspace) transientStore(ctx sdk.Context) storetypes.KVStore {
 	// append here is safe, appends within a function won't cause
 	// weird side effects when its singlethreaded
 	return prefix.NewStore(ctx.TransientStore(s.tkey), append(s.name, '/'))
@@ -134,7 +135,7 @@ func (s Subspace) GetIfExists(ctx sdk.Context, key []byte, ptr interface{}) {
 func (s Subspace) IterateKeys(ctx sdk.Context, cb func(key []byte) bool) {
 	store := s.kvStore(ctx)
 
-	iter := sdk.KVStorePrefixIterator(store, nil)
+	iter := storetypes.KVStorePrefixIterator(store, nil)
 	defer iter.Close()
 
 	for ; iter.Valid(); iter.Next() {

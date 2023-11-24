@@ -8,6 +8,7 @@
 package bcrypt
 
 // The code is a port of Provos and Mazières's C implementation.
+
 import (
 	"crypto/subtle"
 	"errors"
@@ -18,9 +19,9 @@ import (
 )
 
 const (
-	MinCost     int = 4  // the minimum allowable cost as passed in to GenerateFromPassword
-	MaxCost     int = 31 // the maximum allowable cost as passed in to GenerateFromPassword
-	DefaultCost int = 10 // the cost that will actually be set if a cost below MinCost is passed into GenerateFromPassword
+	MinCost     uint32 = 4  // the minimum allowable cost as passed in to GenerateFromPassword
+	MaxCost     uint32 = 31 // the maximum allowable cost as passed in to GenerateFromPassword
+	DefaultCost uint32 = 10 // the cost that will actually be set if a cost below MinCost is passed into GenerateFromPassword
 )
 
 // ErrMismatchedHashAndPassword is returned from CompareHashAndPassword when a password and hash do
@@ -76,7 +77,7 @@ var magicCipherData = []byte{
 type hashed struct {
 	hash  []byte
 	salt  []byte
-	cost  int // allowed range is MinCost to MaxCost
+	cost  uint32 // allowed range is MinCost to MaxCost
 	major byte
 	minor byte
 }
@@ -85,7 +86,7 @@ type hashed struct {
 // cost. If the cost given is less than MinCost, the cost will be set to
 // DefaultCost, instead. Use CompareHashAndPassword, as defined in this package,
 // to compare the returned hashed password with its cleartext version.
-func GenerateFromPassword(salt []byte, password []byte, cost int) ([]byte, error) {
+func GenerateFromPassword(salt, password []byte, cost uint32) ([]byte, error) {
 	if len(salt) != maxSaltSize {
 		return nil, fmt.Errorf("salt len must be %v", maxSaltSize)
 	}
@@ -121,7 +122,7 @@ func CompareHashAndPassword(hashedPassword, password []byte) error {
 // password. When, in the future, the hashing cost of a password system needs
 // to be increased in order to adjust for greater computational power, this
 // function allows one to establish which passwords need to be updated.
-func Cost(hashedPassword []byte) (int, error) {
+func Cost(hashedPassword []byte) (uint32, error) {
 	p, err := newFromHash(hashedPassword)
 	if err != nil {
 		return 0, err
@@ -129,7 +130,7 @@ func Cost(hashedPassword []byte) (int, error) {
 	return p.cost, nil
 }
 
-func newFromPassword(salt []byte, password []byte, cost int) (*hashed, error) {
+func newFromPassword(salt, password []byte, cost uint32) (*hashed, error) {
 	if cost < MinCost {
 		cost = DefaultCost
 	}
@@ -180,11 +181,11 @@ func newFromHash(hashedSecret []byte) (*hashed, error) {
 	return p, nil
 }
 
-func bcrypt(password []byte, cost int, salt []byte) ([]byte, error) {
+func bcrypt(password []byte, cost uint32, salt []byte) ([]byte, error) {
 	cipherData := make([]byte, len(magicCipherData))
 	copy(cipherData, magicCipherData)
 
-	c, err := expensiveBlowfishSetup(password, uint32(cost), salt)
+	c, err := expensiveBlowfishSetup(password, cost, salt)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +211,7 @@ func expensiveBlowfishSetup(key []byte, cost uint32, salt []byte) (*blowfish.Cip
 	// Bug compatibility with C bcrypt implementations. They use the trailing
 	// NULL in the key string during expansion.
 	// We copy the key to prevent changing the underlying array.
-	ckey := append(key[:len(key):len(key)], 0) //nolint:gocritic // used in original https://cs.opensource.google/go/x/crypto/+/master:bcrypt/bcrypt.go
+	ckey := append(key[:len(key):len(key)], 0)
 
 	c, err := blowfish.NewSaltedCipher(ckey, csalt)
 	if err != nil {
@@ -271,11 +272,11 @@ func (p *hashed) decodeCost(sbytes []byte) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	err = checkCost(cost)
+	err = checkCost(uint32(cost))
 	if err != nil {
 		return -1, err
 	}
-	p.cost = cost
+	p.cost = uint32(cost)
 	return 3, nil
 }
 
@@ -283,7 +284,7 @@ func (p *hashed) String() string {
 	return fmt.Sprintf("&{hash: %#v, salt: %#v, cost: %d, major: %c, minor: %c}", string(p.hash), p.salt, p.cost, p.major, p.minor)
 }
 
-func checkCost(cost int) error {
+func checkCost(cost uint32) error {
 	if cost < MinCost || cost > MaxCost {
 		return InvalidCostError(cost)
 	}

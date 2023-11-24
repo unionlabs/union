@@ -3,20 +3,20 @@ package wasmtesting
 import (
 	"bytes"
 
-	errorsmod "cosmossdk.io/errors"
-
 	wasmvm "github.com/CosmWasm/wasmvm"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/cometbft/cometbft/libs/rand"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
-var _ types.WasmerEngine = &MockWasmer{}
+var _ types.WasmEngine = &MockWasmEngine{}
 
-// MockWasmer implements types.WasmerEngine for testing purpose. One or multiple messages can be stubbed.
+// MockWasmEngine implements types.WasmEngine for testing purpose. One or multiple messages can be stubbed.
 // Without a stub function a panic is thrown.
-type MockWasmer struct {
+type MockWasmEngine struct {
 	StoreCodeFn          func(codeID wasmvm.WasmCode) (wasmvm.Checksum, error)
 	StoreCodeUncheckedFn func(codeID wasmvm.WasmCode) (wasmvm.Checksum, error)
 	AnalyzeCodeFn        func(codeID wasmvm.Checksum) (*wasmvmtypes.AnalysisReport, error)
@@ -39,42 +39,42 @@ type MockWasmer struct {
 	GetMetricsFn         func() (*wasmvmtypes.Metrics, error)
 }
 
-func (m *MockWasmer) IBCChannelOpen(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCChannelOpenMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBC3ChannelOpenResponse, uint64, error) {
+func (m *MockWasmEngine) IBCChannelOpen(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCChannelOpenMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBC3ChannelOpenResponse, uint64, error) {
 	if m.IBCChannelOpenFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.IBCChannelOpenFn(codeID, env, msg, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) IBCChannelConnect(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCChannelConnectMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBCBasicResponse, uint64, error) {
+func (m *MockWasmEngine) IBCChannelConnect(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCChannelConnectMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBCBasicResponse, uint64, error) {
 	if m.IBCChannelConnectFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.IBCChannelConnectFn(codeID, env, msg, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) IBCChannelClose(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCChannelCloseMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBCBasicResponse, uint64, error) {
+func (m *MockWasmEngine) IBCChannelClose(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCChannelCloseMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBCBasicResponse, uint64, error) {
 	if m.IBCChannelCloseFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.IBCChannelCloseFn(codeID, env, msg, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) IBCPacketReceive(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCPacketReceiveMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBCReceiveResult, uint64, error) {
+func (m *MockWasmEngine) IBCPacketReceive(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCPacketReceiveMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBCReceiveResult, uint64, error) {
 	if m.IBCPacketReceiveFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.IBCPacketReceiveFn(codeID, env, msg, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) IBCPacketAck(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCPacketAckMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBCBasicResponse, uint64, error) {
+func (m *MockWasmEngine) IBCPacketAck(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCPacketAckMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBCBasicResponse, uint64, error) {
 	if m.IBCPacketAckFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.IBCPacketAckFn(codeID, env, msg, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) IBCPacketTimeout(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCPacketTimeoutMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBCBasicResponse, uint64, error) {
+func (m *MockWasmEngine) IBCPacketTimeout(codeID wasmvm.Checksum, env wasmvmtypes.Env, msg wasmvmtypes.IBCPacketTimeoutMsg, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.IBCBasicResponse, uint64, error) {
 	if m.IBCPacketTimeoutFn == nil {
 		panic("not supposed to be called!")
 	}
@@ -82,113 +82,113 @@ func (m *MockWasmer) IBCPacketTimeout(codeID wasmvm.Checksum, env wasmvmtypes.En
 }
 
 // Deprecated: use StoreCode instead.
-func (m *MockWasmer) Create(codeID wasmvm.WasmCode) (wasmvm.Checksum, error) {
+func (m *MockWasmEngine) Create(codeID wasmvm.WasmCode) (wasmvm.Checksum, error) {
 	panic("Deprecated: use StoreCode instead")
 }
 
-func (m *MockWasmer) StoreCode(codeID wasmvm.WasmCode) (wasmvm.Checksum, error) {
+func (m *MockWasmEngine) StoreCode(codeID wasmvm.WasmCode) (wasmvm.Checksum, error) {
 	if m.StoreCodeFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.StoreCodeFn(codeID)
 }
 
-func (m *MockWasmer) StoreCodeUnchecked(codeID wasmvm.WasmCode) (wasmvm.Checksum, error) {
+func (m *MockWasmEngine) StoreCodeUnchecked(codeID wasmvm.WasmCode) (wasmvm.Checksum, error) {
 	if m.StoreCodeUncheckedFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.StoreCodeUncheckedFn(codeID)
 }
 
-func (m *MockWasmer) AnalyzeCode(codeID wasmvm.Checksum) (*wasmvmtypes.AnalysisReport, error) {
+func (m *MockWasmEngine) AnalyzeCode(codeID wasmvm.Checksum) (*wasmvmtypes.AnalysisReport, error) {
 	if m.AnalyzeCodeFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.AnalyzeCodeFn(codeID)
 }
 
-func (m *MockWasmer) Instantiate(codeID wasmvm.Checksum, env wasmvmtypes.Env, info wasmvmtypes.MessageInfo, initMsg []byte, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
+func (m *MockWasmEngine) Instantiate(codeID wasmvm.Checksum, env wasmvmtypes.Env, info wasmvmtypes.MessageInfo, initMsg []byte, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 	if m.InstantiateFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.InstantiateFn(codeID, env, info, initMsg, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) Execute(codeID wasmvm.Checksum, env wasmvmtypes.Env, info wasmvmtypes.MessageInfo, executeMsg []byte, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
+func (m *MockWasmEngine) Execute(codeID wasmvm.Checksum, env wasmvmtypes.Env, info wasmvmtypes.MessageInfo, executeMsg []byte, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 	if m.ExecuteFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.ExecuteFn(codeID, env, info, executeMsg, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) Query(codeID wasmvm.Checksum, env wasmvmtypes.Env, queryMsg []byte, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) ([]byte, uint64, error) {
+func (m *MockWasmEngine) Query(codeID wasmvm.Checksum, env wasmvmtypes.Env, queryMsg []byte, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) ([]byte, uint64, error) {
 	if m.QueryFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.QueryFn(codeID, env, queryMsg, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) Migrate(codeID wasmvm.Checksum, env wasmvmtypes.Env, migrateMsg []byte, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
+func (m *MockWasmEngine) Migrate(codeID wasmvm.Checksum, env wasmvmtypes.Env, migrateMsg []byte, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 	if m.MigrateFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.MigrateFn(codeID, env, migrateMsg, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) Sudo(codeID wasmvm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
+func (m *MockWasmEngine) Sudo(codeID wasmvm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 	if m.SudoFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.SudoFn(codeID, env, sudoMsg, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) Reply(codeID wasmvm.Checksum, env wasmvmtypes.Env, reply wasmvmtypes.Reply, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
+func (m *MockWasmEngine) Reply(codeID wasmvm.Checksum, env wasmvmtypes.Env, reply wasmvmtypes.Reply, store wasmvm.KVStore, goapi wasmvm.GoAPI, querier wasmvm.Querier, gasMeter wasmvm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 	if m.ReplyFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.ReplyFn(codeID, env, reply, store, goapi, querier, gasMeter, gasLimit, deserCost)
 }
 
-func (m *MockWasmer) GetCode(codeID wasmvm.Checksum) (wasmvm.WasmCode, error) {
+func (m *MockWasmEngine) GetCode(codeID wasmvm.Checksum) (wasmvm.WasmCode, error) {
 	if m.GetCodeFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.GetCodeFn(codeID)
 }
 
-func (m *MockWasmer) Cleanup() {
+func (m *MockWasmEngine) Cleanup() {
 	if m.CleanupFn == nil {
 		panic("not supposed to be called!")
 	}
 	m.CleanupFn()
 }
 
-func (m *MockWasmer) Pin(checksum wasmvm.Checksum) error {
+func (m *MockWasmEngine) Pin(checksum wasmvm.Checksum) error {
 	if m.PinFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.PinFn(checksum)
 }
 
-func (m *MockWasmer) Unpin(checksum wasmvm.Checksum) error {
+func (m *MockWasmEngine) Unpin(checksum wasmvm.Checksum) error {
 	if m.UnpinFn == nil {
 		panic("not supposed to be called!")
 	}
 	return m.UnpinFn(checksum)
 }
 
-func (m *MockWasmer) GetMetrics() (*wasmvmtypes.Metrics, error) {
+func (m *MockWasmEngine) GetMetrics() (*wasmvmtypes.Metrics, error) {
 	if m.GetMetricsFn == nil {
 		panic("not expected to be called")
 	}
 	return m.GetMetricsFn()
 }
 
-var AlwaysPanicMockWasmer = &MockWasmer{}
+var AlwaysPanicMockWasmEngine = &MockWasmEngine{}
 
-// SelfCallingInstMockWasmer prepares a Wasmer mock that calls itself on instantiation.
-func SelfCallingInstMockWasmer(executeCalled *bool) *MockWasmer {
-	return &MockWasmer{
+// SelfCallingInstMockWasmEngine prepares a WasmEngine mock that calls itself on instantiation.
+func SelfCallingInstMockWasmEngine(executeCalled *bool) *MockWasmEngine {
+	return &MockWasmEngine{
 		StoreCodeFn: func(code wasmvm.WasmCode) (wasmvm.Checksum, error) {
 			anyCodeID := bytes.Repeat([]byte{0x1}, 32)
 			return anyCodeID, nil
@@ -211,7 +211,7 @@ func SelfCallingInstMockWasmer(executeCalled *bool) *MockWasmer {
 }
 
 // IBCContractCallbacks defines the methods from wasmvm to interact with the wasm contract.
-// A mock contract would implement the interface to fully simulate a wasm contract's behaviour.
+// A mock contract would implement the interface to fully simulate a wasm contract's behavior.
 type IBCContractCallbacks interface {
 	IBCChannelOpen(
 		codeID wasmvm.Checksum,
@@ -302,24 +302,24 @@ type contractExecutable interface {
 }
 
 // MakeInstantiable adds some noop functions to not fail when contract is used for instantiation
-func MakeInstantiable(m *MockWasmer) {
+func MakeInstantiable(m *MockWasmEngine) {
 	m.StoreCodeFn = HashOnlyStoreCodeFn
 	m.InstantiateFn = NoOpInstantiateFn
 	m.AnalyzeCodeFn = WithoutIBCAnalyzeFn
 }
 
 // MakeIBCInstantiable adds some noop functions to not fail when contract is used for instantiation
-func MakeIBCInstantiable(m *MockWasmer) {
+func MakeIBCInstantiable(m *MockWasmEngine) {
 	MakeInstantiable(m)
 	m.AnalyzeCodeFn = HasIBCAnalyzeFn
 }
 
-// NewIBCContractMockWasmer prepares a mocked wasm_engine for testing with an IBC contract test type.
+// NewIBCContractMockWasmEngine prepares a mocked wasm_engine for testing with an IBC contract test type.
 // It is safe to use the mock with store code and instantiate functions in keeper as is also prepared
 // with stubs. Execute is optional. When implemented by the Go test contract then it can be used with
 // the mock.
-func NewIBCContractMockWasmer(c IBCContractCallbacks) *MockWasmer {
-	m := &MockWasmer{
+func NewIBCContractMockWasmEngine(c IBCContractCallbacks) *MockWasmEngine {
+	m := &MockWasmEngine{
 		IBCChannelOpenFn:    c.IBCChannelOpen,
 		IBCChannelConnectFn: c.IBCChannelConnect,
 		IBCChannelCloseFn:   c.IBCChannelClose,

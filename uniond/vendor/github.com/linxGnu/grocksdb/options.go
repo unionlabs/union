@@ -1580,6 +1580,12 @@ func (opts *Options) AddCompactOnDeletionCollectorFactory(windowSize, numDelsTri
 	C.rocksdb_options_add_compact_on_deletion_collector_factory(opts.c, C.size_t(windowSize), C.size_t(numDelsTrigger))
 }
 
+// AddCompactOnDeletionCollectorFactoryWithRatio similar to AddCompactOnDeletionCollectorFactory
+// with specific deletion ratio.
+func (opts *Options) AddCompactOnDeletionCollectorFactoryWithRatio(windowSize, numDelsTrigger uint, deletionRatio float64) {
+	C.rocksdb_options_add_compact_on_deletion_collector_factory_del_ratio(opts.c, C.size_t(windowSize), C.size_t(numDelsTrigger), C.double(deletionRatio))
+}
+
 // SetManualWALFlush if true WAL is not flushed automatically after each write. Instead it
 // relies on manual invocation of db.FlushWAL to write the WAL buffer to its
 // file.
@@ -1791,27 +1797,43 @@ func (opts *Options) SetHashLinkListRep(bucketCount uint) {
 // hash bucket found, a binary search is executed for hash conflicts. Finally,
 // a linear search is used.
 //
-// keyLen: 			plain table has optimization for fix-sized keys,
+// keyLen: plain table has optimization for fix-sized keys, which can be specified via keyLen.
 //
-//	which can be specified via keyLen.
+// bloomBitsPerKey: the number of bits used for bloom filer per prefix. You may disable it by passing a zero.
 //
-// bloomBitsPerKey: the number of bits used for bloom filer per prefix. You
-//
-//	may disable it by passing a zero.
-//
-// hashTableRatio:  the desired utilization of the hash table used for prefix
-//
-//	hashing. hashTableRatio = number of prefixes / #buckets
-//	in the hash table
+// hashTableRatio: the desired utilization of the hash table used for prefix hashing.
+// hashTableRatio = number of prefixes / #buckets in the hash table
 //
 // indexSparseness: inside each prefix, need to build one index record for how
+// many keys for binary search inside each hash bucket.
 //
-//	many keys for binary search inside each hash bucket.
+// hugePageTlbSize: if <=0, allocate hash indexes and blooms from malloc.
+// Otherwise from huge page TLB. The user needs to reserve huge pages for it to be allocated, like: sysctl -w vm.nr_hugepages=20
+// See linux doc Documentation/vm/hugetlbpage.txt
+//
+// encodeType: how to encode the keys. See enum EncodingType above for
+// the choices. The value will determine how to encode keys
+// when writing to a new SST file. This value will be stored
+// inside the SST file which will be used when reading from
+// the file, which makes it possible for users to choose
+// different encoding type when reopening a DB. Files with
+// different encoding types can co-exist in the same DB and
+// can be read.
+//
+// fullScanMode: mode for reading the whole file one record by one without
+// using the index.
+//
+// storeIndexInFile: compute plain table index and bloom filter during
+// file building and store it in file. When reading file, index will be mapped instead of recomputation.
 func (opts *Options) SetPlainTableFactory(
 	keyLen uint32,
 	bloomBitsPerKey int,
 	hashTableRatio float64,
 	indexSparseness uint,
+	hugePageTlbSize int,
+	encodeType EncodingType,
+	fullScanMode bool,
+	storeIndexInFile bool,
 ) {
 	C.rocksdb_options_set_plain_table_factory(
 		opts.c,
@@ -1819,6 +1841,10 @@ func (opts *Options) SetPlainTableFactory(
 		C.int(bloomBitsPerKey),
 		C.double(hashTableRatio),
 		C.size_t(indexSparseness),
+		C.size_t(hugePageTlbSize),
+		C.char(encodeType),
+		boolToChar(fullScanMode),
+		boolToChar(storeIndexInFile),
 	)
 }
 
@@ -2568,3 +2594,23 @@ func (l *LatestOptions) Destroy() {
 	C.rocksdb_load_latest_options_destroy(l.opts.c, l.cfNames_, l.cfOptions_, C.size_t(len(l.cfNames)))
 	l.opts.c = nil
 }
+
+type EncodingType byte
+
+const (
+	// EncodingTypePlain always write full keys without any special encoding.
+	EncodingTypePlain EncodingType = iota
+
+	// EncodingTypePrefix find opportunity to write the same prefix once for multiple rows.
+	// In some cases, when a key follows a previous key with the same prefix,
+	// instead of writing out the full key, it just writes out the size of the
+	// shared prefix, as well as other bytes, to save some bytes.
+	//
+	// When using this option, the user is required to use the same prefix
+	// extractor to make sure the same prefix will be extracted from the same key.
+	// The Name() value of the prefix extractor will be stored in the file. When
+	// reopening the file, the name of the options.prefix_extractor given will be
+	// bitwise compared to the prefix extractors stored in the file. An error
+	// will be returned if the two don't match.
+	EncodingTypePrefix
+)

@@ -122,7 +122,7 @@ func (rec *recordedBits) beginGroup(label string, standalone bool) int {
 }
 
 func (rec *recordedBits) endGroup(i int, discard bool) {
-	assertf((!rec.persist && rec.dataLen > i) || (rec.persist && len(rec.data) > rec.groups[i].begin),
+	assertf(discard || (!rec.persist && rec.dataLen > i) || (rec.persist && len(rec.data) > rec.groups[i].begin),
 		"group did not use any data from bitstream; this is likely a result of Custom generator not calling any of the built-in generators")
 
 	if !rec.persist {

@@ -3,8 +3,9 @@ package types
 import (
 	"fmt"
 
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
 const (
@@ -23,12 +24,13 @@ const (
 	EventTypeReply                  = "reply"
 	EventTypeGovContractResult      = "gov_contract_result"
 	EventTypeUpdateContractAdmin    = "update_contract_admin"
+	EventTypeUpdateContractLabel    = "update_contract_label"
 	EventTypeUpdateCodeAccessConfig = "update_code_access_config"
 	EventTypePacketRecv             = "ibc_packet_received"
 	// add new types to IsAcceptedEventOnRecvPacketErrorAck
 )
 
-// EmitAcknowledgementEvent emits an event signalling a successful or failed acknowledgement and including the error
+// EmitAcknowledgementEvent emits an event signaling a successful or failed acknowledgement and including the error
 // details if any.
 func EmitAcknowledgementEvent(ctx sdk.Context, contractAddr sdk.AccAddress, ack exported.Acknowledgement, err error) {
 	success := err == nil && (ack == nil || ack.Success())
@@ -60,6 +62,7 @@ const (
 	AttributeKeyResultDataHex       = "result"
 	AttributeKeyRequiredCapability  = "required_capability"
 	AttributeKeyNewAdmin            = "new_admin_address"
+	AttributeKeyNewLabel            = "new_label"
 	AttributeKeyCodePermission      = "code_permission"
 	AttributeKeyAuthorizedAddresses = "authorized_addresses"
 	AttributeKeyAckSuccess          = "success"

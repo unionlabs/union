@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	tmcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -35,13 +34,15 @@ const (
 	SignModeLegacyAminoJSON = "amino-json"
 	// SignModeDirectAux is the value of the --sign-mode flag for SIGN_MODE_DIRECT_AUX
 	SignModeDirectAux = "direct-aux"
+	// SignModeTextual is the value of the --sign-mode flag for SIGN_MODE_TEXTUAL.
+	SignModeTextual = "textual"
 	// SignModeEIP191 is the value of the --sign-mode flag for SIGN_MODE_EIP_191
 	SignModeEIP191 = "eip-191"
 )
 
 // List of CLI flags
 const (
-	FlagHome             = tmcli.HomeFlag
+	FlagHome             = "home"
 	FlagKeyringDir       = "keyring-dir"
 	FlagUseLedger        = "ledger"
 	FlagChainID          = "chain-id"
@@ -73,6 +74,7 @@ const (
 	FlagOffset           = "offset"
 	FlagCountTotal       = "count-total"
 	FlagTimeoutHeight    = "timeout-height"
+	FlagKeyAlgorithm     = "algo"
 	FlagKeyType          = "key-type"
 	FlagFeePayer         = "fee-payer"
 	FlagFeeGranter       = "fee-granter"
@@ -82,11 +84,16 @@ const (
 	FlagInitHeight       = "initial-height"
 	// FlagOutput is the flag to set the output format.
 	// This differs from FlagOutputDocument that is used to set the output file.
-	FlagOutput = tmcli.OutputFlag
-
-	// Tendermint logging flags
+	FlagOutput = "output"
+	// Logging flags
 	FlagLogLevel  = "log_level"
 	FlagLogFormat = "log_format"
+)
+
+// List of supported output formats
+const (
+	OutputFormatJSON = "json"
+	OutputFormatText = "text"
 )
 
 // LineBreak can be included in a command list to provide a blank line
@@ -95,9 +102,9 @@ var LineBreak = &cobra.Command{Run: func(*cobra.Command, []string) {}}
 
 // AddQueryFlagsToCmd adds common flags to a module query command.
 func AddQueryFlagsToCmd(cmd *cobra.Command) {
-	cmd.Flags().String(FlagNode, "tcp://localhost:26657", "<host>:<port> to Tendermint RPC interface for this chain")
+	cmd.Flags().String(FlagNode, "tcp://localhost:26657", "<host>:<port> to CometBFT RPC interface for this chain")
 	cmd.Flags().String(FlagGRPC, "", "the gRPC endpoint to use for this chain")
-	cmd.Flags().Bool(FlagGRPCInsecure, false, "allow gRPC over insecure channels, if not TLS the server must use TLS")
+	cmd.Flags().Bool(FlagGRPCInsecure, false, "allow gRPC over insecure channels, if not the server must use TLS")
 	cmd.Flags().Int64(FlagHeight, 0, "Use a specific height to query state at (this can error if the node is pruning state)")
 	cmd.Flags().StringP(FlagOutput, "o", "text", "Output format (text|json)")
 
@@ -109,14 +116,16 @@ func AddQueryFlagsToCmd(cmd *cobra.Command) {
 // AddTxFlagsToCmd adds common flags to a module tx command.
 func AddTxFlagsToCmd(cmd *cobra.Command) {
 	f := cmd.Flags()
-	f.StringP(FlagOutput, "o", "json", "Output format (text|json)")
-	f.String(FlagFrom, "", "Name or address of private key with which to sign")
+	f.StringP(FlagOutput, "o", OutputFormatJSON, "Output format (text|json)")
+	if cmd.Flag(FlagFrom) == nil { // avoid flag redefinition when it's already been added by AutoCLI
+		f.String(FlagFrom, "", "Name or address of private key with which to sign")
+	}
 	f.Uint64P(FlagAccountNumber, "a", 0, "The account number of the signing account (offline mode only)")
 	f.Uint64P(FlagSequence, "s", 0, "The sequence number of the signing account (offline mode only)")
 	f.String(FlagNote, "", "Note to add a description to the transaction (previously --memo)")
 	f.String(FlagFees, "", "Fees to pay along with transaction; eg: 10uatom")
 	f.String(FlagGasPrices, "", "Gas prices in decimal format to determine the transaction fee (e.g. 0.1uatom)")
-	f.String(FlagNode, "tcp://localhost:26657", "<host>:<port> to tendermint rpc interface for this chain")
+	f.String(FlagNode, "tcp://localhost:26657", "<host>:<port> to CometBFT rpc interface for this chain")
 	f.Bool(FlagUseLedger, false, "Use a connected Ledger device")
 	f.Float64(FlagGasAdjustment, DefaultGasAdjustment, "adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored ")
 	f.StringP(FlagBroadcastMode, "b", BroadcastSync, "Transaction broadcasting mode (sync|async)")
@@ -124,7 +133,7 @@ func AddTxFlagsToCmd(cmd *cobra.Command) {
 	f.Bool(FlagGenerateOnly, false, "Build an unsigned transaction and write it to STDOUT (when enabled, the local Keybase only accessed when providing a key name)")
 	f.Bool(FlagOffline, false, "Offline mode (does not allow any online functionality)")
 	f.BoolP(FlagSkipConfirmation, "y", false, "Skip tx broadcasting prompt confirmation")
-	f.String(FlagSignMode, "", "Choose sign mode (direct|amino-json|direct-aux), this is an advanced feature")
+	f.String(FlagSignMode, "", "Choose sign mode (direct|amino-json|direct-aux|textual), this is an advanced feature")
 	f.Uint64(FlagTimeoutHeight, 0, "Set a block timeout height to prevent the tx from being committed past a certain height")
 	f.String(FlagFeePayer, "", "Fee payer pays fees for the transaction instead of deducting from the signer")
 	f.String(FlagFeeGranter, "", "Fee granter grants fees for the transaction")

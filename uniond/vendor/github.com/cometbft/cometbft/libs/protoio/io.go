@@ -67,9 +67,8 @@ func getSize(v interface{}) (int, bool) {
 		ProtoSize() (n int)
 	}); ok {
 		return sz.ProtoSize(), true
-	} else {
-		return 0, false
 	}
+	return 0, false
 }
 
 // byteReader wraps an io.Reader and implements io.ByteReader, required by

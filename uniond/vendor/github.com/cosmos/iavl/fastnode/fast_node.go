@@ -31,15 +31,15 @@ func NewNode(key []byte, value []byte, version int64) *Node {
 
 // DeserializeNode constructs an *FastNode from an encoded byte slice.
 func DeserializeNode(key []byte, buf []byte) (*Node, error) {
-	ver, n, cause := encoding.DecodeVarint(buf)
-	if cause != nil {
-		return nil, fmt.Errorf("decoding fastnode.version, %w", cause)
+	ver, n, err := encoding.DecodeVarint(buf)
+	if err != nil {
+		return nil, fmt.Errorf("decoding fastnode.version, %w", err)
 	}
 	buf = buf[n:]
 
-	val, _, cause := encoding.DecodeBytes(buf)
-	if cause != nil {
-		return nil, fmt.Errorf("decoding fastnode.value, %w", cause)
+	val, _, err := encoding.DecodeBytes(buf)
+	if err != nil {
+		return nil, fmt.Errorf("decoding fastnode.value, %w", err)
 	}
 
 	fastNode := &Node{
@@ -73,13 +73,13 @@ func (fn *Node) WriteBytes(w io.Writer) error {
 	if fn == nil {
 		return errors.New("cannot write nil node")
 	}
-	cause := encoding.EncodeVarint(w, fn.versionLastUpdatedAt)
-	if cause != nil {
-		return fmt.Errorf("writing version last updated at, %w", cause)
+	err := encoding.EncodeVarint(w, fn.versionLastUpdatedAt)
+	if err != nil {
+		return fmt.Errorf("writing version last updated at, %w", err)
 	}
-	cause = encoding.EncodeBytes(w, fn.value)
-	if cause != nil {
-		return fmt.Errorf("writing value, %w", cause)
+	err = encoding.EncodeBytes(w, fn.value)
+	if err != nil {
+		return fmt.Errorf("writing value, %w", err)
 	}
 	return nil
 }

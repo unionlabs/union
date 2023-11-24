@@ -1,12 +1,12 @@
 package simulation
 
-// DONTCOVER
-
 import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"time"
+
+	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -43,30 +43,21 @@ func RandomizedGenState(simState *module.SimulationState) {
 		unbondTime        time.Duration
 		maxVals           uint32
 		histEntries       uint32
-		minCommissionRate sdk.Dec
+		minCommissionRate sdkmath.LegacyDec
 		jailedThreshold   uint32 = types.DefaultJailedValidorThreshold
 		epochLength       int64  = types.DefaultParams().EpochLength
 	)
 
-	simState.AppParams.GetOrGenerate(
-		simState.Cdc, unbondingTime, &unbondTime, simState.Rand,
-		func(r *rand.Rand) { unbondTime = genUnbondingTime(r) },
-	)
+	simState.AppParams.GetOrGenerate(unbondingTime, &unbondTime, simState.Rand, func(r *rand.Rand) { unbondTime = genUnbondingTime(r) })
 
-	simState.AppParams.GetOrGenerate(
-		simState.Cdc, maxValidators, &maxVals, simState.Rand,
-		func(r *rand.Rand) { maxVals = genMaxValidators(r) },
-	)
+	simState.AppParams.GetOrGenerate(maxValidators, &maxVals, simState.Rand, func(r *rand.Rand) { maxVals = genMaxValidators(r) })
 
-	simState.AppParams.GetOrGenerate(
-		simState.Cdc, historicalEntries, &histEntries, simState.Rand,
-		func(r *rand.Rand) { histEntries = getHistEntries(r) },
-	)
+	simState.AppParams.GetOrGenerate(historicalEntries, &histEntries, simState.Rand, func(r *rand.Rand) { histEntries = getHistEntries(r) })
 
 	// NOTE: the slashing module need to be defined after the staking module on the
 	// NewSimulationManager constructor for this to work
 	simState.UnbondTime = unbondTime
-	params := types.NewParams(simState.UnbondTime, maxVals, 7, histEntries, sdk.DefaultBondDenom, minCommissionRate, jailedThreshold, epochLength)
+	params := types.NewParams(simState.UnbondTime, maxVals, 7, histEntries, simState.BondDenom, minCommissionRate, jailedThreshold, epochLength)
 
 	// validators & delegations
 	var (
@@ -80,22 +71,22 @@ func RandomizedGenState(simState *module.SimulationState) {
 		valAddr := sdk.ValAddress(simState.Accounts[i].Address)
 		valAddrs[i] = valAddr
 
-		maxCommission := sdk.NewDecWithPrec(int64(simulation.RandIntBetween(simState.Rand, 1, 100)), 2)
+		maxCommission := sdkmath.LegacyNewDecWithPrec(int64(simulation.RandIntBetween(simState.Rand, 1, 100)), 2)
 		commission := types.NewCommission(
 			simulation.RandomDecAmount(simState.Rand, maxCommission),
 			maxCommission,
 			simulation.RandomDecAmount(simState.Rand, maxCommission),
 		)
 
-		validator, err := types.NewValidator(valAddr, simState.Accounts[i].ConsKey.PubKey(), types.Description{})
+		validator, err := types.NewValidator(valAddr.String(), simState.Accounts[i].ConsKey.PubKey(), types.Description{})
 		if err != nil {
 			panic(err)
 		}
 		validator.Tokens = simState.InitialStake
-		validator.DelegatorShares = sdk.NewDecFromInt(simState.InitialStake)
+		validator.DelegatorShares = sdkmath.LegacyNewDecFromInt(simState.InitialStake)
 		validator.Commission = commission
 
-		delegation := types.NewDelegation(simState.Accounts[i].Address, valAddr, sdk.NewDecFromInt(simState.InitialStake))
+		delegation := types.NewDelegation(simState.Accounts[i].Address.String(), valAddr.String(), sdkmath.LegacyNewDecFromInt(simState.InitialStake))
 
 		validators = append(validators, validator)
 		delegations = append(delegations, delegation)
