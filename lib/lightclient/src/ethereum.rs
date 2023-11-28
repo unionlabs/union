@@ -25,7 +25,7 @@ pub struct EthereumMainnet {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EthereumConfig {
-    pub code_id: H256,
+    pub checksum: H256,
 }
 
 impl LightClientBase for EthereumMinimal {
