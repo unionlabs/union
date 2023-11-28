@@ -6,6 +6,7 @@ toolchain go1.21.3
 
 require (
 	cosmossdk.io/api v0.7.2
+	cosmossdk.io/client/v2 v2.0.0-beta.1
 	cosmossdk.io/core v0.11.0
 	cosmossdk.io/errors v1.0.0
 	cosmossdk.io/log v1.2.1

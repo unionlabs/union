@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	tmrand "github.com/cometbft/cometbft/libs/rand"
@@ -51,25 +52,30 @@ func New(t *testing.T, configs ...Config) *Network {
 // genesis and single validator. All other parameters are inherited from cosmos-sdk/testutil/network.DefaultConfig
 func DefaultConfig() network.Config {
 	var (
-		encoding = app.MakeEncodingConfig()
-		chainID  = "chain-" + tmrand.NewRand().Str(6)
+		chainID = "chain-" + tmrand.NewRand().Str(6)
 	)
+
+	unionApp := app.NewUnionApp(
+		log.NewNopLogger(),
+		dbm.NewMemDB(),
+		nil,
+		true,
+		simtestutil.EmptyAppOptions{},
+		[]wasmkeeper.Option{},
+	)
+
 	return network.Config{
-		Codec:             encoding.Marshaler,
-		TxConfig:          encoding.TxConfig,
-		LegacyAmino:       encoding.Amino,
-		InterfaceRegistry: encoding.InterfaceRegistry,
+		Codec:             unionApp.AppCodec(),
+		TxConfig:          unionApp.TxConfig(),
+		LegacyAmino:       unionApp.LegacyAmino(),
+		InterfaceRegistry: unionApp.InterfaceRegistry(),
 		AccountRetriever:  authtypes.AccountRetriever{},
 		AppConstructor: func(val network.ValidatorI) servertypes.Application {
-			return app.New(
+			return app.NewUnionApp(
 				val.GetCtx().Logger,
 				dbm.NewMemDB(),
 				nil,
 				true,
-				map[int64]bool{},
-				val.GetCtx().Config.RootDir,
-				0,
-				encoding,
 				simtestutil.EmptyAppOptions{},
 				[]wasmkeeper.Option{},
 				baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.GetAppConfig().Pruning)),
@@ -77,7 +83,7 @@ func DefaultConfig() network.Config {
 				baseapp.SetChainID(chainID),
 			)
 		},
-		GenesisState:    app.ModuleBasics.DefaultGenesis(encoding.Marshaler),
+		GenesisState:    unionApp.DefaultGenesis(),
 		TimeoutCommit:   2 * time.Second,
 		ChainID:         chainID,
 		NumValidators:   1,
