@@ -9,15 +9,13 @@ use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::Height;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct MerklePath {
-    pub key_path: Vec<String>,
+pub struct ClientMessage {
+    pub data: Binary,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum ClientMessage<Header, Misbehaviour> {
-    Header(Header),
-    Misbehaviour(Misbehaviour),
+pub struct MerklePath {
+    pub key_path: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -45,12 +43,12 @@ pub struct UpdateStateResult {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ExportMetadataResult {
-    genesis_metadata: GenesisMetadata,
+    pub genesis_metadata: Vec<GenesisMetadata>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum SudoMsg<Header, Misbehaviour> {
+pub enum SudoMsg {
     VerifyMembership {
         height: Height,
         delay_time_period: u64,
@@ -68,11 +66,11 @@ pub enum SudoMsg<Header, Misbehaviour> {
         path: MerklePath,
     },
     UpdateState {
-        client_message: ClientMessage<Header, Misbehaviour>,
+        client_message: ClientMessage,
     },
 
     UpdateStateOnMisbehaviour {
-        client_message: ClientMessage<Header, Misbehaviour>,
+        client_message: ClientMessage,
     },
 
     VerifyUpgradeAndUpdateState {
@@ -87,18 +85,12 @@ pub enum SudoMsg<Header, Misbehaviour> {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum QueryMsg<Header, Misbehaviour> {
-    VerifyClientMessage {
-        client_message: ClientMessage<Header, Misbehaviour>,
-    },
+pub enum QueryMsg {
+    VerifyClientMessage { client_message: ClientMessage },
 
-    CheckForMisbehaviour {
-        client_message: ClientMessage<Header, Misbehaviour>,
-    },
+    CheckForMisbehaviour { client_message: ClientMessage },
 
-    TimestampAtHeight {
-        height: Height,
-    },
+    TimestampAtHeight { height: Height },
 
     Status {},
 
@@ -118,6 +110,14 @@ impl Display for Status {
             Status::Active => write!(f, "Active"),
             Status::Frozen => write!(f, "Frozen"),
             Status::Expired => write!(f, "Expired"),
+        }
+    }
+}
+
+impl From<Status> for StatusResult {
+    fn from(value: Status) -> Self {
+        StatusResult {
+            status: value.to_string(),
         }
     }
 }
