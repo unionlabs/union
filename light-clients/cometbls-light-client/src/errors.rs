@@ -1,7 +1,8 @@
 use cosmwasm_std::StdError;
 use thiserror::Error as ThisError;
 use unionlabs::{
-    ibc::lightclients::cometbls::header::Header, TryFromProtoBytesError, TryFromProtoErrorOf,
+    ibc::{core::client::height::Height, lightclients::cometbls::header::Header},
+    TryFromProtoBytesError, TryFromProtoErrorOf,
 };
 
 #[derive(ThisError, Debug, PartialEq)]
@@ -48,9 +49,8 @@ pub enum Error {
     #[error("No next sync committee")]
     NoNextSyncCommittee,
 
-    #[error("Consensus state not found for {0}-{1}")]
-    // REVIEW: Why not just use `Height` directly?
-    ConsensusStateNotFound(u64, u64),
+    #[error("Consensus state not found for {0}")]
+    ConsensusStateNotFound(Height),
 
     #[error("Overflow happened during summing durations.")]
     DurationAdditionOverflow,

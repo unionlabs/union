@@ -3,9 +3,10 @@ use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
     },
-    ContractResult, IbcClient, MerklePath, Status, StorageState,
+    IbcClient, MerklePath, Status, StorageState,
 };
 use prost::Message;
+use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
     google::protobuf::timestamp::Timestamp,
     ibc::{
@@ -47,23 +48,19 @@ impl IbcClient for CometblsLightClient {
         _proof: Binary,
         _path: MerklePath,
         _value: StorageState,
-    ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::valid(None))
+    ) -> Result<(), Self::Error> {
+        Ok(())
     }
 
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
         env: Env,
         header: Self::Header,
-    ) -> Result<ContractResult, Self::Error> {
+    ) -> Result<(), Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
         let consensus_state: WasmConsensusState =
-            read_consensus_state(deps, &header.trusted_height)?.ok_or(
-                Error::ConsensusStateNotFound(
-                    header.trusted_height.revision_number,
-                    header.trusted_height.revision_height,
-                ),
-            )?;
+            read_consensus_state(deps, &header.trusted_height)?
+                .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
 
         let untrusted_height_number = header.signed_header.commit.height.inner() as u64;
         let trusted_height_number = header.trusted_height.revision_number;
@@ -74,7 +71,7 @@ impl IbcClient for CometblsLightClient {
             ));
         }
 
-        let trusted_timestamp = consensus_state.timestamp;
+        let trusted_timestamp = consensus_state.data.timestamp;
         let untrusted_timestamp = header.signed_header.header.time.seconds.inner() as u64;
 
         if untrusted_timestamp <= trusted_timestamp {
@@ -142,29 +139,25 @@ impl IbcClient for CometblsLightClient {
             return Err(Error::InvalidZKP);
         }
 
-        Ok(ContractResult::valid(None))
+        Ok(())
     }
 
     fn verify_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::valid(None))
+    ) -> Result<(), Self::Error> {
+        panic!("Not implemented")
     }
 
     fn update_state(
         mut deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         header: Self::Header,
-    ) -> Result<ContractResult, Self::Error> {
+    ) -> Result<ics008_wasm_client::UpdateStateResult, Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         let mut consensus_state: WasmConsensusState =
-            read_consensus_state(deps.as_ref(), &header.trusted_height)?.ok_or(
-                Error::ConsensusStateNotFound(
-                    header.trusted_height.revision_number,
-                    header.trusted_height.revision_height,
-                ),
-            )?;
+            read_consensus_state(deps.as_ref(), &header.trusted_height)?
+                .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
 
         let untrusted_height = Height::new(
             header.trusted_height.revision_number,
@@ -189,35 +182,38 @@ impl IbcClient for CometblsLightClient {
         };
 
         consensus_state.data.next_validators_hash = untrusted_validators_hash;
-        consensus_state.timestamp = header.signed_header.header.time.seconds.inner() as u64;
 
         save_client_state(deps.branch(), client_state);
         save_consensus_state(deps, consensus_state, &untrusted_height);
 
-        Ok(ContractResult::valid(None))
+        Ok(ics008_wasm_client::UpdateStateResult {
+            heights: vec![untrusted_height],
+        })
     }
 
     fn update_state_on_misbehaviour(
         _deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         _client_message: ics008_wasm_client::ClientMessage,
-    ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::invalid("Not implemented".to_string()))
+    ) -> Result<(), Self::Error> {
+        panic!("not implemented")
     }
 
     fn check_for_misbehaviour_on_header(
         _deps: Deps<Self::CustomQuery>,
         _header: Self::Header,
-    ) -> Result<ContractResult, Self::Error> {
+    ) -> Result<ics008_wasm_client::CheckForMisbehaviourResult, Self::Error> {
         // TODO(aeryz): Leaving this as success for us to be able to update the client. See: #588.
-        Ok(ContractResult::valid(None))
+        Ok(ics008_wasm_client::CheckForMisbehaviourResult {
+            found_misbehaviour: false,
+        })
     }
 
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::invalid("Not implemented".to_string()))
+    ) -> Result<ics008_wasm_client::CheckForMisbehaviourResult, Self::Error> {
+        unimplemented!()
     }
 
     fn verify_upgrade_and_update_state(
@@ -226,20 +222,18 @@ impl IbcClient for CometblsLightClient {
         _upgrade_consensus_state: WasmConsensusState,
         _proof_upgrade_client: Binary,
         _proof_upgrade_consensus_state: Binary,
-    ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::invalid("Not implemented".to_string()))
+    ) -> Result<(), Self::Error> {
+        unimplemented!()
     }
 
-    fn check_substitute_and_update_state(
-        _deps: Deps<Self::CustomQuery>,
-    ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::invalid("Not implemented".to_string()))
+    fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
+        unimplemented!()
     }
 
     fn status(
         deps: Deps<Self::CustomQuery>,
         env: &cosmwasm_std::Env,
-    ) -> Result<ics008_wasm_client::QueryResponse, Self::Error> {
+    ) -> Result<Status, Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
         if client_state.data.frozen_height != Default::default() {
@@ -255,24 +249,33 @@ impl IbcClient for CometblsLightClient {
         };
 
         if is_client_expired(
-            consensus_state.timestamp,
+            consensus_state.data.timestamp,
             client_state.data.trusting_period,
             env.block.time.seconds(),
         ) {
             return Ok(Status::Expired.into());
         }
 
-        Ok(Status::Active.into())
+        Ok(Status::Active)
     }
 
     fn export_metadata(
         _deps: Deps<Self::CustomQuery>,
         _env: &cosmwasm_std::Env,
-    ) -> Result<ics008_wasm_client::QueryResponse, Self::Error> {
-        Ok(ics008_wasm_client::QueryResponse {
-            status: String::new(),
-            genesis_metadata: vec![],
-        })
+    ) -> Result<Vec<GenesisMetadata>, Self::Error> {
+        Ok(Vec::new())
+    }
+
+    fn timestamp_at_height(
+        deps: Deps<Self::CustomQuery>,
+        height: Height,
+    ) -> Result<u64, Self::Error> {
+        Ok(
+            read_consensus_state::<Self::CustomQuery, ConsensusState>(deps, &height)?
+                .ok_or(Error::ConsensusStateNotFound(height))?
+                .data
+                .timestamp,
+        )
     }
 }
 
