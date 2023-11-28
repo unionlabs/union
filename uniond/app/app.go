@@ -129,6 +129,7 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	wasmvm "github.com/CosmWasm/wasmvm"
 
 	unioncustomquery "union/app/custom_query"
 	unionmodule "union/x/union"
@@ -196,6 +197,10 @@ var (
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
+
+// contractMemoryLimit is the memory limit of each contract execution (in MiB)
+// constant value so all nodes run with the same limit.
+const contractMemoryLimit = 32
 
 var (
 	_ servertypes.Application = (*UnionApp)(nil)
@@ -482,15 +487,6 @@ func NewUnionApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	app.WasmClientKeeper = ibcwasmkeeper.NewKeeperWithConfig(
-		appCodec,
-		runtime.NewKVStoreService(keys[ibcwasmtypes.StoreKey]),
-		ibcKeeper.ClientKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		ibcwasmtypes.DefaultWasmConfig(homePath),
-		&unioncustomquery.UnionCustomQueryHandler{},
-	)
-
 	/*
 	 We create an intermediate client keeper called cometbls client because
 	 the connection handshake does a `ValidateSelfClient` which downcast the
@@ -607,6 +603,17 @@ func NewUnionApp(
 	}
 
 	availableCapabilities := strings.Join(AllCapabilities(), ",")
+	wasmer, err := wasmvm.NewVM(
+		wasmDir,
+		availableCapabilities,
+		contractMemoryLimit,
+		wasmConfig.ContractDebugMode,
+		wasmConfig.MemoryCacheSize,
+	)
+	if err != nil {
+		panic(err)
+	}
+	wasmOpts = append(wasmOpts, wasmkeeper.WithWasmEngine(wasmer))
 
 	app.WasmKeeper = wasmkeeper.NewKeeper(
 		appCodec,
@@ -627,6 +634,15 @@ func NewUnionApp(
 		availableCapabilities,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		wasmOpts...,
+	)
+
+	app.WasmClientKeeper = ibcwasmkeeper.NewKeeperWithVM(
+		appCodec,
+		runtime.NewKVStoreService(keys[ibcwasmtypes.StoreKey]),
+		ibcKeeper.ClientKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		wasmer,
+		&unioncustomquery.UnionCustomQueryHandler{},
 	)
 
 	govConfig := govtypes.DefaultConfig()
