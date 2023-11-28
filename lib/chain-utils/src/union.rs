@@ -352,12 +352,12 @@ impl Union {
         .await
         .unwrap()
         .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
-            code_id: code_id.to_string_unprefixed(),
+            checksum: code_id.to_string_unprefixed(),
         })
         .await
         .unwrap()
         .into_inner()
-        .code;
+        .data;
 
         let ty = parse_wasm_client_type(bz).unwrap().unwrap();
 
@@ -558,7 +558,7 @@ impl Union {
 
         protos::ibc::lightclients::wasm::v1::ClientState::decode(&*client_state.value)
             .unwrap()
-            .code_id
+            .checksum
             .try_into()
             .unwrap()
     }
