@@ -61,9 +61,9 @@ ucs01-relay = { path = "cosmwasm/ucs01-relay", default-features = false }
 
 # external dependencies
 
-tendermint = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254", default-features = false }
-tendermint-proto = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254", default-features = false }
-tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "bn254", default-features = false }
+tendermint = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.34.0-bn254", default-features = false }
+tendermint-proto = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.34.0-bn254", default-features = false }
+tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.34.0-bn254", default-features = false }
 
 ethers = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }

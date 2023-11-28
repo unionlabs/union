@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 graphql_client = { version = "0.13.0",  features = ["reqwest-rustls", "reqwest", "reqwest-blocking"] }
-tendermint-rpc = { workspace = true, features = ["http", "http-client", "hyper-rustls", "tokio"] }
+tendermint-rpc = { workspace = true, features = ["http-client", "tokio"] }
 tendermint = { workspace = true, features = ["std"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
