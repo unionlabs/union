@@ -2,6 +2,7 @@
 let
   getNodeID = nodeFile:
     pkgs.runCommand "get-node-id" { } ''
+      export HOME=$(pwd)
       ${uniond}/bin/uniond init testnet bn254 --home .
       cp ${devnet-validator-node-ids}/${nodeFile} ./config/node_key.json
       NODE_ID=$(${uniond}/bin/uniond tendermint show-node-id --home .)
@@ -42,6 +43,8 @@ in
         cp ${devnet-validator-keys}/valkey-${toString id}.json ./config/priv_validator_key.json
         cp ${devnet-validator-node-ids}/valnode-${toString id}.json ./config/node_key.json
         echo ${params}
+        mkdir ./tmp
+        export TMPDIR=./tmp
         ${uniond}/bin/uniond start --home . ${params} --rpc.laddr tcp://0.0.0.0:26657 --api.enable true --rpc.unsafe --api.address tcp://0.0.0.0:1317 --grpc.address 0.0.0.0:9090
       ''
     ];

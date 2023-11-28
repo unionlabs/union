@@ -1,13 +1,13 @@
 #cspell:ignore abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz
 { inputs, ... }: {
-  perSystem = { pkgs, inputs', system, get-flake, ... }:
+  perSystem = { pkgs, inputs', self', system, get-flake, ... }:
     let
       VALIDATOR_COUNT = 4;
       CHAIN_ID = "union-minimal-1";
       MNEMONIC = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
       GENESIS_ACCOUNT_NAME = "testkey";
 
-      uniond = pkgs.lib.getExe (get-flake inputs.v0_14_0).packages.${system}.uniond;
+      uniond = pkgs.lib.getExe (get-flake inputs.v0_15_0).packages.${system}.uniond;
 
       mkNodeId = name:
         pkgs.runCommand "node-id" { } ''
@@ -104,12 +104,14 @@
                 buildInputs = [ pkgs.jq ];
               }
               ''
+                export HOME=$(pwd)
+
                 PUBKEY=`cat ${valKey}/valkey-${
                   toString i
                 }.json | jq ."pub_key"."value"`
                 PUBKEY="{\"@type\":\"/cosmos.crypto.bn254.PubKey\",\"key\":$PUBKEY}"
                 mkdir -p $out
-                ${uniond} genesis gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${CHAIN_ID} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
+                ${uniond} gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${CHAIN_ID} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
                   toString i
                 }.json
               '')
@@ -135,8 +137,8 @@
           cp ${valGentx}/valgentx-${toString i}.json ./config/gentx/
         '') validatorGentxs)}
 
-        ${uniond} genesis collect-gentxs --home $HOME 2> /dev/null
-        ${uniond} genesis validate --home $HOME
+        ${uniond} collect-gentxs --home $HOME 2> /dev/null
+        ${uniond} validate-genesis --home $HOME
       '';
 
       packages.minimal-validator-keys = pkgs.symlinkJoin {

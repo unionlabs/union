@@ -33,7 +33,7 @@ func (app *UnionApp) setupUpgradeHandlers() {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			upgrade.UpgradeName,
 			upgrade.CreateUpgradeHandler(
-				app.mm,
+				app.ModuleManager,
 				app.configurator,
 				&upgrades.AppKeepers{
 					StakingKeeper: app.StakingKeeper,

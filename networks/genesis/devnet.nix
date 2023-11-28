@@ -19,6 +19,8 @@
       chainId = "union-devnet-1";
       mkNodeID = name:
         pkgs.runCommand "node-id" { } ''
+          export HOME=$(pwd)
+
           ${uniond} init testnet bn254 --chain-id ${chainId} --home .
           mkdir -p $out
           mv ./config/node_key.json $out/${name}
@@ -459,6 +461,8 @@
                 buildInputs = [ pkgs.jq ];
               }
               ''
+                export HOME=$(pwd)
+
                 PUBKEY=`cat ${valKey}/valkey-${
                   toString i
                 }.json | jq ."pub_key"."value"`
