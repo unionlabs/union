@@ -1,6 +1,7 @@
 use core::fmt::{Debug, Display};
 
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, StdError};
+use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
     ibc::{
         core::client::height::Height,
@@ -11,8 +12,8 @@ use unionlabs::{
 
 use crate::{
     msg::{ClientMessage, MerklePath, QueryMsg},
-    CheckForMisbehaviourResult, EmptyResult, Error, ExportMetadataResult, StatusResult, SudoMsg,
-    TimestampAtHeightResult, UpdateStateResult,
+    CheckForMisbehaviourResult, EmptyResult, Error, ExportMetadataResult, Status, StatusResult,
+    SudoMsg, TimestampAtHeightResult, UpdateStateResult,
 };
 
 pub enum StorageState {
@@ -33,11 +34,7 @@ pub trait IbcClient {
     type ClientState: TryFromProto;
     type ConsensusState: TryFromProto;
 
-    fn sudo(
-        deps: DepsMut<Self::CustomQuery>,
-        env: Env,
-        msg: SudoMsg<Self::Header, Self::Misbehaviour>,
-    ) -> Result<Binary, Self::Error>
+    fn sudo(deps: DepsMut<Self::CustomQuery>, env: Env, msg: SudoMsg) -> Result<Binary, Self::Error>
     where
         // NOTE(aeryz): unfortunately bounding to `Debug` in associated type creates a
         // recursion in the compiler, see this issue: https://github.com/rust-lang/rust/issues/87755
@@ -78,13 +75,17 @@ pub trait IbcClient {
                 path,
                 StorageState::Empty,
             )?),
-            SudoMsg::UpdateState { client_message } => to_binary(&match client_message {
-                ClientMessage::Header(header) => Self::update_state(deps, env, header),
-                ClientMessage::Misbehaviour(_) => Err(Error::UnexpectedCallDataFromHostModule(
-                    "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
-                )
-                .into()),
-            }?),
+            SudoMsg::UpdateState { client_message } => {
+                if let Ok(header) =
+                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.data)
+                {
+                    to_binary(&Self::update_state(deps, env, header)?)
+                } else {
+                    Err(Error::UnexpectedCallDataFromHostModule(
+                        "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
+                    ))?
+                }
+            }
             SudoMsg::UpdateStateOnMisbehaviour { client_message } => {
                 Self::update_state_on_misbehaviour(deps, env, client_message)?;
                 to_binary(&EmptyResult {})
@@ -118,28 +119,40 @@ pub trait IbcClient {
     fn query(
         deps: Deps<Self::CustomQuery>,
         env: Env,
-        msg: QueryMsg<Self::Header, Self::Misbehaviour>,
+        msg: QueryMsg,
     ) -> Result<Binary, Self::Error> {
         match msg {
-            QueryMsg::Status {} => to_binary(&Self::status(deps, &env)?),
-            QueryMsg::ExportMetadata {} => to_binary(&Self::export_metadata(deps, &env)?),
-            QueryMsg::VerifyClientMessage { client_message } => to_binary(&match client_message {
-                ClientMessage::Header(header) => Self::verify_header(deps, env, header),
-                ClientMessage::Misbehaviour(_misbehaviour) => {
-                    panic!("Not implemented")
-                }
-            }?),
-            QueryMsg::CheckForMisbehaviour { client_message } => to_binary(&match client_message {
-                ClientMessage::Header(header) => {
-                    Self::check_for_misbehaviour_on_header(deps, header)
-                }
-                ClientMessage::Misbehaviour(_) => {
-                    panic!("Not implemented")
-                }
-            }?),
-            QueryMsg::TimestampAtHeight { height } => {
-                to_binary(&Self::timestamp_at_height(deps, height)?)
+            QueryMsg::Status {} => {
+                to_binary(&Into::<StatusResult>::into(Self::status(deps, &env)?))
             }
+            QueryMsg::ExportMetadata {} => to_binary(&ExportMetadataResult {
+                genesis_metadata: Self::export_metadata(deps, &env)?,
+            }),
+            QueryMsg::VerifyClientMessage { client_message } => {
+                if let Ok(header) =
+                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.data)
+                {
+                    to_binary(&Self::verify_header(deps, env, header)?)
+                } else {
+                    Err(Error::UnexpectedCallDataFromHostModule(
+                        "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
+                    ))?
+                }
+            }
+            QueryMsg::CheckForMisbehaviour { client_message } => {
+                if let Ok(header) =
+                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.data)
+                {
+                    to_binary(&Self::verify_header(deps, env, header)?)
+                } else {
+                    Err(Error::UnexpectedCallDataFromHostModule(
+                        "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
+                    ))?
+                }
+            }
+            QueryMsg::TimestampAtHeight { height } => to_binary(&TimestampAtHeightResult {
+                timestamp: Self::timestamp_at_height(deps, height)?,
+            }),
         }
         .map_err(Into::into)
     }
@@ -176,7 +189,7 @@ pub trait IbcClient {
     fn update_state_on_misbehaviour(
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
-        client_message: ClientMessage<Self::Header, Self::Misbehaviour>,
+        client_message: ClientMessage,
     ) -> Result<(), Self::Error>;
 
     fn check_for_misbehaviour_on_header(
@@ -199,15 +212,15 @@ pub trait IbcClient {
 
     fn migrate_client_store(deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error>;
 
-    fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<StatusResult, Self::Error>;
+    fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, Self::Error>;
 
     fn export_metadata(
         deps: Deps<Self::CustomQuery>,
         env: &Env,
-    ) -> Result<ExportMetadataResult, Self::Error>;
+    ) -> Result<Vec<GenesisMetadata>, Self::Error>;
 
     fn timestamp_at_height(
         deps: Deps<Self::CustomQuery>,
         height: Height,
-    ) -> Result<TimestampAtHeightResult, Self::Error>;
+    ) -> Result<u64, Self::Error>;
 }
