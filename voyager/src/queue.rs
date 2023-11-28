@@ -686,12 +686,10 @@ where
             client_id,
             client_type,
             consensus_heights,
-            header,
         }) => IbcEvent::UpdateClient(UpdateClient {
             client_id,
             client_type,
             consensus_heights,
-            header,
         }),
         IbcEvent::ClientMisbehaviour(ClientMisbehaviour {
             client_id,
