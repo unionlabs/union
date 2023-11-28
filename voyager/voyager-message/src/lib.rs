@@ -1065,7 +1065,7 @@ mod tests {
                         union_chain_id.clone(),
                         AggregateCreateClient {
                             config: EthereumConfig {
-                                code_id: H256(hex!(
+                                checksum: H256(hex!(
                                     "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
                                 )),
                             },

@@ -1158,11 +1158,7 @@ where
         assert_eq!(chain_id, account_update_chain_id);
         assert_eq!(chain_id, beacon_api_chain_id);
 
-        let header = wasm::header::Header {
-            height: Height {
-                revision_number: EVM_REVISION_NUMBER,
-                revision_height: account_update_data_beacon_slot,
-            },
+        let header = wasm::client_message::ClientMessage {
             data: ethereum::header::Header {
                 consensus_update: light_client_update,
                 trusted_sync_committee: TrustedSyncCommittee {

@@ -824,7 +824,7 @@ where
                     client_state: Any(wasm::client_state::ClientState {
                         latest_height: data.msg.client_state.latest_height,
                         data: data.msg.client_state,
-                        code_id: H256::default(),
+                        checksum: H256::default(),
                     }),
                     counterparty: data.msg.counterparty,
                     delay_period: data.msg.delay_period,
@@ -840,7 +840,7 @@ where
                     client_state: Any(wasm::client_state::ClientState {
                         latest_height: data.msg.client_state.latest_height,
                         data: data.msg.client_state,
-                        code_id: H256::default(),
+                        checksum: H256::default(),
                     }),
                     proof_height: data.msg.proof_height,
                     proof_try: data.msg.proof_try,
@@ -861,7 +861,7 @@ where
                 Msg::AckPacket(data) => Any(data.msg).into_proto_with_signer(&signer),
                 Msg::CreateClient(mut data) => {
                     // i hate this lol
-                    data.msg.client_state.0.code_id = data.config.code_id;
+                    data.msg.client_state.0.checksum = data.config.checksum;
 
                     Any(data.msg).into_proto_with_signer(&signer)
                 }
