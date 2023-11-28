@@ -81,6 +81,15 @@ cosmossdk.io/api/tendermint/crypto
 cosmossdk.io/api/tendermint/p2p
 cosmossdk.io/api/tendermint/types
 cosmossdk.io/api/tendermint/version
+# cosmossdk.io/client/v2 v2.0.0-beta.1
+## explicit; go 1.21
+cosmossdk.io/client/v2/autocli
+cosmossdk.io/client/v2/autocli/flag
+cosmossdk.io/client/v2/autocli/flag/maps
+cosmossdk.io/client/v2/autocli/keyring
+cosmossdk.io/client/v2/internal/flags
+cosmossdk.io/client/v2/internal/strcase
+cosmossdk.io/client/v2/internal/util
 # cosmossdk.io/collections v0.4.0
 ## explicit; go 1.20
 cosmossdk.io/collections
@@ -522,6 +531,7 @@ github.com/cosmos/cosmos-sdk/client/grpc/node
 github.com/cosmos/cosmos-sdk/client/grpc/reflection
 github.com/cosmos/cosmos-sdk/client/input
 github.com/cosmos/cosmos-sdk/client/keys
+github.com/cosmos/cosmos-sdk/client/pruning
 github.com/cosmos/cosmos-sdk/client/rpc
 github.com/cosmos/cosmos-sdk/client/snapshot
 github.com/cosmos/cosmos-sdk/client/tx
