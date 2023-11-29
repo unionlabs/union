@@ -69,20 +69,25 @@
             { }
         ));
 
-        uniond-image = pkgs.dockerTools.buildImage {
-          name = "uniond";
+        # uniond-image = pkgs.dockerTools.buildImage {
+        #   name = "uniond";
 
-          copyToRoot = pkgs.buildEnv {
-            name = "image-root";
-            paths = [ pkgs.coreutils pkgs.cacert self'.packages.uniond ];
-            pathsToLink = [ "/bin" ];
-          };
-          config = {
-            Entrypoint = [ "uniond" ];
-            Cmd = [ "start" ];
-            Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
-          };
-        };
+        #   copyToRoot = pkgs.buildEnv {
+        #     name = "image-root";
+        #     paths = [ pkgs.coreutils pkgs.cacert self'.packages.uniond ];
+        #     pathsToLink = [ "/bin" ];
+        #   };
+        #   config = {
+        #     Entrypoint = [ "uniond" ];
+        #     Cmd = [ "start" ];
+        #     Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+        #   };
+        #   runAsRoot = ''
+        #     #!${pkgs.runtimeShell}
+        #     mkdir -p /tmp
+        #     chmod 1777 /tmp
+        #   '';
+        # };
 
         go-vendor =
           let

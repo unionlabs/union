@@ -224,7 +224,7 @@ replace (
 	github.com/consensys/gnark => github.com/consensys/gnark v0.9.1-0.20231013131835-4ebcccd9c0a8
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
-	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20231123105733-189a9ed768ba
+	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20231129143745-f24b2ba59f6e
 	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231123072120-909c3a4dee71
 
 	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20231123072120-909c3a4dee71
