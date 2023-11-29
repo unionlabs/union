@@ -566,6 +566,7 @@ splitn
 sqlx
 srcs
 sslmode
+stakeflow
 stakingkeeper
 stakingtypes
 stargate
