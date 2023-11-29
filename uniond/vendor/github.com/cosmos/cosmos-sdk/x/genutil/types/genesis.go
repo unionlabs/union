@@ -80,7 +80,7 @@ func (ag *AppGenesis) ValidateAndComplete() error {
 
 // SaveAs is a utility method for saving AppGenesis as a JSON file.
 func (ag *AppGenesis) SaveAs(file string) error {
-	appGenesisBytes, err := cmtjson.MarshalIndent(ag, "", "  ")
+	appGenesisBytes, err := json.MarshalIndent(ag, "", "  ")
 	if err != nil {
 		return err
 	}
