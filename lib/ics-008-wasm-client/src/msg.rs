@@ -3,10 +3,18 @@ use std::fmt::Display;
 use cosmwasm_std::Binary;
 use protos::ibc::{
     core::client::v1::GenesisMetadata,
-    lightclients::wasm::v1::{ClientState, ConsensusState},
+    lightclients::wasm::v1::{
+        ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
+    },
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::Height;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct InstantiateMsg {
+    pub client_state: ProtoClientState,
+    pub consensus_state: ProtoConsensusState,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientMessage {
@@ -74,8 +82,8 @@ pub enum SudoMsg {
     },
 
     VerifyUpgradeAndUpdateState {
-        upgrade_client_state: ClientState,
-        upgrade_consensus_state: ConsensusState,
+        upgrade_client_state: ProtoClientState,
+        upgrade_consensus_state: ProtoConsensusState,
         proof_upgrade_client: Binary,
         proof_upgrade_consensus_state: Binary,
     },

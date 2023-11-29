@@ -1,6 +1,13 @@
 use core::fmt::Debug;
 
 use cosmwasm_std::{CustomQuery, Deps, DepsMut};
+use prost::Message;
+use protos::{
+    google::protobuf::Any as ProtoAny,
+    ibc::lightclients::wasm::v1::{
+        ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
+    },
+};
 use unionlabs::{
     google::protobuf::any::Any,
     ibc::{core::client::height::Height, lightclients::wasm},
@@ -81,6 +88,21 @@ pub fn save_client_state<C: CustomQuery, CS: IntoProto>(
     );
 }
 
+pub fn save_proto_client_state<C: CustomQuery>(
+    deps: DepsMut<C>,
+    proto_wasm_state: ProtoClientState,
+) {
+    let any_state = ProtoAny {
+        type_url: <ProtoClientState as unionlabs::TypeUrl>::TYPE_URL.to_string(),
+        value: proto_wasm_state.encode_to_vec(),
+    };
+
+    deps.storage.set(
+        HOST_CLIENT_STATE_KEY.as_bytes(),
+        any_state.encode_to_vec().as_slice(),
+    );
+}
+
 /// Update the client state on the host store.
 pub fn update_client_state<C: CustomQuery, CS: IntoProto>(
     deps: DepsMut<C>,
@@ -103,5 +125,21 @@ pub fn save_consensus_state<C: CustomQuery, CS: IntoProto>(
     deps.storage.set(
         consensus_db_key(height).as_bytes(),
         &Any(wasm_consensus_state).into_proto_bytes(),
+    );
+}
+
+pub fn save_proto_consensus_state<C: CustomQuery>(
+    deps: DepsMut<C>,
+    proto_wasm_state: ProtoConsensusState,
+    height: &Height,
+) {
+    let any_state = ProtoAny {
+        type_url: <ProtoConsensusState as unionlabs::TypeUrl>::TYPE_URL.to_string(),
+        value: proto_wasm_state.encode_to_vec(),
+    };
+
+    deps.storage.set(
+        consensus_db_key(height).as_bytes(),
+        any_state.encode_to_vec().as_slice(),
     );
 }
