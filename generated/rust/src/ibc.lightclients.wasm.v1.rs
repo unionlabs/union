@@ -113,6 +113,7 @@ pub struct ClientState {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub data: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub checksum: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
     pub latest_height: ::core::option::Option<super::super::super::core::client::v1::Height>,

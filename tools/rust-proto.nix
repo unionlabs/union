@@ -197,7 +197,7 @@
             ".ibc.core.commitment.v1.MerkleRoot.hash" = [ jsonschema_str serde_base64 ];
             ".ibc.core.commitment.v1.MerklePrefix.key_prefix" = [ jsonschema_str serde_base64 ];
             ".ibc.lightclients.wasm.v1.ClientState.data" = [ serde_base64 ];
-            ".ibc.lightclients.wasm.v1.ClientState.code_id" = [ serde_base64 ];
+            ".ibc.lightclients.wasm.v1.ClientState.checksum" = [ serde_base64 ];
             ".ibc.lightclients.wasm.v1.ConsensusState.data" = [ serde_base64 ];
             ".ibc.lightclients.wasm.v1.Header.data" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.SyncCommittee.aggregate_pubkey" = [ serde_base64 ];
