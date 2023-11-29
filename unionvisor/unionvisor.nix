@@ -54,15 +54,15 @@
         }));
 
       mkUnionvisorImage = unionvisorBundle: pkgs.dockerTools.buildImage {
-        name = "uniond";
+        name = "unionvisor";
         copyToRoot = pkgs.buildEnv {
           name = "image-root";
           paths = [ pkgs.coreutils pkgs.cacert unionvisorBundle ];
-          pathsToLink = [ "/bin" ];
+          pathsToLink = [ "/bin" "/versions" "/" ];
         };
         config = {
-          Entrypoint = [ "unionvisor" ];
-          Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+          Entrypoint = [ "/unionvisor" ];
+          Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" "UNIONVISOR_ROOT=/.unionvisor" "UNIONVISOR_BUNDLE=/" ];
         };
       };
     in
