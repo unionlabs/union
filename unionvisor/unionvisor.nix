@@ -52,11 +52,27 @@
           name = "${meta.versions_directory}/${nextVersion}/${meta.binary_name}";
           path = pkgs.lib.getExe self'.packages.uniond;
         }));
+
+      mkUnionvisorImage = unionvisorBundle: pkgs.dockerTools.buildImage {
+        name = "uniond";
+        copyToRoot = pkgs.buildEnv {
+          name = "image-root";
+          paths = [ pkgs.coreutils pkgs.cacert unionvisorBundle ];
+          pathsToLink = [ "/bin" ];
+        };
+        config = {
+          Entrypoint = [ "unionvisor" ];
+          Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+        };
+      };
     in
     {
       inherit (unionvisorAll) checks;
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
+
+        bundle-testnet-4-image = mkUnionvisorImage self'.packages.bundle-testnet-4;
+
         bundle-testnet-4 =
           mkBundle {
             name = "testnet-4";
@@ -68,6 +84,7 @@
               fallback_version = uniondBundleVersions.first;
             };
           };
+
         bundle-testnet-next =
           mkBundle {
             name = "testnet-4";
