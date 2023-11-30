@@ -129,5 +129,5 @@ curl https://rpc.cryptware.io/genesis | jq '.result.genesis' > ~/.union/config/g
 To run your node in detached mode, run:
 
 ```sh
-docker compose -f path/to/compose.yaml up  -d
+docker compose -f path/to/compose.yaml up -d
 ```

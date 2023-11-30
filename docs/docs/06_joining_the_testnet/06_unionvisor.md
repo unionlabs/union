@@ -123,5 +123,5 @@ For some configuration recommendations see our [Node Configuration](../04_infras
 To run your node in detached mode, run:
 
 ```sh
-docker compose -f path/to/compose.yaml up  -d
+docker compose -f path/to/compose.yaml up -d
 ```
