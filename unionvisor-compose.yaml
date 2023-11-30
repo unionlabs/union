@@ -1,0 +1,9 @@
+services:
+  node:
+    image: ghcr.io/unionlabs/bundle-testnet-4:${UNIOND_VERSION}
+    volumes:
+      - ~/.unionvisor:/.unionvisor
+      - /tmp:/tmp
+    network_mode: "host"
+    restart: unless-stopped
+    command: run --poll-interval 1000
