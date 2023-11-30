@@ -35,7 +35,7 @@ Now, using the `unionvisor` image and the folder we just created, we can initial
 To do this, we'll be using Docker volumes.
 
 ```sh
-docker run -v ~/.unionvisor:/.unionvisor -it 268347bed4b8 init --moniker $MONIKER --network union-testnet-4 --seeds "a069a341154484298156a56ace42b6e6a71e7b9d@blazingbit.io:27656,8a07752a234bb16471dbb577180de7805ba6b5d9@union.testnet.4.seed.poisonphang.com:26656"
+docker run -v ~/.unionvisor:/.unionvisor -it ghcr.io/unionlabs/bundle-testnet-4:$UNIOND_VERSION init --moniker $MONIKER --network union-testnet-4 --seeds "a069a341154484298156a56ace42b6e6a71e7b9d@blazingbit.io:27656,8a07752a234bb16471dbb577180de7805ba6b5d9@union.testnet.4.seed.poisonphang.com:26656"
 ```
 
 _Where `MONIKER` is the preferred moniker you'd like to use on this node._
