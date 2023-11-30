@@ -8,7 +8,7 @@ To conduct the onboarding process, follow the steps below:
 
 ### 0) Initialize and configure your node
 
-Follow the instructions from our [Obtaining the uniond Binary](./01_obtaining_uniond.md) page to initialize your node and begin interacting with `uniond`.
+To initialize and start your node, you can either manually run/extract [`uniond`](./01_obtaining_uniond.md) from the `uniond` docker image, or you can run [Unionvisor](./06_unionvisor.md), our node supervisor.
 
 ### 1) Fill out our intake form
 

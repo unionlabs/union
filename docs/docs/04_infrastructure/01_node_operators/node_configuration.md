@@ -6,7 +6,7 @@ After successfully running your node with `uniond`, you can refer to this guide 
 
 This is not a complete guide to all node configuration options, this is intended to help ensure that your node is fully operational.
 
-This guide will assume that you're starting at the root of your Union node configuration (located at `~/.union/` by default).
+This guide will assume that you're starting at the root of your Union node configuration (located at `~/.union/` by default or `~/.unionvisor/home` if you're using Unionvisor).
 
 ## Client Configuration
 
