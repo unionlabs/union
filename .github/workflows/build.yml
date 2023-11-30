@@ -57,14 +57,14 @@ jobs:
                 [
                   "uniond-release",
                   "devnet",
-                  "devnet-cosmos",
-                  "devnet-evm",
+                  "devnet-union",
+                  "devnet-eth",
                   "docgen",
                   "download-circuit",
                   "evm",
                   "evm-contracts",
                   "fuzz",
-                  "generate-evm-proto",
+                  "generate-sol-proto",
                   "generate-prover-proto",
                   "generate-rust-proto",
                   "gen-proto",
@@ -86,7 +86,7 @@ jobs:
                 ]
               )
             ) or 
-            (.attr | test("evm-.*-deploy")) | 
+            (.attr | test("eth-.*-deploy")) | 
             not
           ) or 
           ( 
@@ -96,8 +96,8 @@ jobs:
               [.attr] | inside(
                 [
                   "devnet",
-                  "devnet-cosmos",
-                  "devnet-evm",
+                  "devnet-union",
+                  "devnet-eth",
                   "evm",
                   "evm-contracts"
                 ]
