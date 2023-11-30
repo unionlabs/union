@@ -542,11 +542,11 @@
         paths = validatorNodeIDs { inherit (devnetConfig) validatorCount; };
       };
 
-      packages.devnet-evm-config = pkgs.linkFarm "devnet-evm-config" [
-        { name = "genesis.json"; path = "${./devnet-evm/genesis.json}"; }
-        { name = "dev-key0.prv"; path = "${./devnet-evm/dev-key0.prv}"; }
-        { name = "dev-key1.prv"; path = "${./devnet-evm/dev-key1.prv}"; }
-        { name = "dev-jwt.prv"; path = "${./devnet-evm/dev-jwt.prv}"; }
+      packages.devnet-eth-config = pkgs.linkFarm "devnet-eth-config" [
+        { name = "genesis.json"; path = "${./devnet-eth/genesis.json}"; }
+        { name = "dev-key0.prv"; path = "${./devnet-eth/dev-key0.prv}"; }
+        { name = "dev-key1.prv"; path = "${./devnet-eth/dev-key1.prv}"; }
+        { name = "dev-jwt.prv"; path = "${./devnet-eth/dev-jwt.prv}"; }
       ];
 
       checks = { };

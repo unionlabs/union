@@ -109,7 +109,7 @@
         {
           network = "devnet";
           rpc-url = "http://localhost:8545";
-          private-key = builtins.readFile ./../networks/genesis/devnet-evm/dev-key0.prv;
+          private-key = builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv;
         }
         {
           network = "testnet";
@@ -139,7 +139,7 @@
 
       deploy-ibc-contracts = { network, rpc-url, private-key }:
         pkgs.writeShellApplication {
-          name = "evm-${network}-deploy";
+          name = "eth-${network}-deploy";
           runtimeInputs = [ pkgs.jq wrappedForge ];
           # Sadly, forge is trying to write back the cache file even if no change is needed :).
           # For this reason we copy the artifacts in a temp folder and work from there.
@@ -214,8 +214,8 @@
         wrapped-forge = wrappedForge;
 
         # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
-        generate-evm-proto = pkgs.writeShellApplication {
-          name = "generate-evm-proto";
+        generate-sol-proto = pkgs.writeShellApplication {
+          name = "generate-sol-proto";
           runtimeInputs = [ pkgs.protobuf ];
           text =
             let
@@ -331,17 +331,17 @@
       } //
       builtins.listToAttrs (
         builtins.map
-          (args: { name = "evm-${args.network}-deploy"; value = deploy-ibc-contracts args; })
+          (args: { name = "eth-${args.network}-deploy"; value = deploy-ibc-contracts args; })
           networks
       ) //
       builtins.listToAttrs (
         builtins.map
-          (args: { name = "evm-${args.network}-ping-pong-deploy"; value = deploy-ping-pong args; })
+          (args: { name = "eth-${args.network}-ping-pong-deploy"; value = deploy-ping-pong args; })
           networks
       ) //
       builtins.listToAttrs (
         builtins.map
-          (args: { name = "evm-${args.network}-ucs01-deploy"; value = deploy-ucs01 args; })
+          (args: { name = "eth-${args.network}-ucs01-deploy"; value = deploy-ucs01 args; })
           networks
       );
     };
