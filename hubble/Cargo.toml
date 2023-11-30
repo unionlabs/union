@@ -10,11 +10,7 @@ version      = "0.1.0"
 workspace = true
 
 [package.metadata.crane]
-include = ["hubble/src/graphql/", ".sqlx"]
-
-[lib]
-name = "hubble"
-path = "src/lib.rs"
+include = [".sqlx"]
 
 [[bin]]
 name = "hubble"
@@ -22,9 +18,11 @@ path = "src/main.rs"
 
 [dependencies]
 axum               = { workspace = true, features = ["macros", "tokio"] }
+base64             = "0.21.5"
 clap               = { workspace = true, features = ["derive", "env"] }
 color-eyre         = { workspace = true, features = ["default"] }
-futures            = { workspace = true }
+ethers             = { workspace = true, features = ["default", "std"] }
+futures            = { workspace = true, features = ["async-await"] }
 graphql_client     = { version = "0.13.0", features = ["reqwest-rustls", "reqwest", "reqwest-blocking"] }
 lazy_static        = { workspace = true }
 prometheus         = { version = "0.13.3", features = ["process"] }
@@ -37,5 +35,9 @@ tendermint-rpc     = { workspace = true, features = ["http-client", "tokio"] }
 time               = { version = "0.3.30", features = ["serde"] }
 tokio              = { workspace = true, features = ["full"] }
 tracing            = { workspace = true }
-tracing-subscriber = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 url                = { version = "2.4.1", features = ["serde"] }
+valuable           = { version = "0.1.0", features = ["derive"] }
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = "0.5"

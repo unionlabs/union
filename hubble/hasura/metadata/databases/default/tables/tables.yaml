@@ -1,6 +1,0 @@
-- "!include demo_faucet_claims.yaml"
-- "!include demo_queue.yaml"
-- "!include demo_txes.yaml"
-- "!include public_blocks.yaml"
-- "!include public_chains.yaml"
-- "!include public_events.yaml"

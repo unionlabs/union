@@ -545,6 +545,7 @@ monitonically
 monniker
 moreutils
 msgservice
+msvc
 muldefs
 multisigs
 multistep
@@ -676,6 +677,7 @@ reflectionv
 regclass
 regen
 rehype
+reindex
 rekt
 relpath
 repellendus

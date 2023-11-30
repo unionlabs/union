@@ -66,7 +66,9 @@
           type = types.listOf (
             types.submodule {
               options.url = mkOption { type = types.str; example = "https://rpc.example.com"; };
-              options.type = mkOption { type = types.enum [ "tendermint" ]; };
+              options.type = mkOption { type = types.enum [ "tendermint" "ethereum" ]; };
+              options.start = mkOption { type = types.int; example = 1; default = 0; };
+              options.until = mkOption { type = types.int; example = 1; default = 1000000000000; };
             }
           );
         };
@@ -90,7 +92,6 @@
                   datastore = if cfg.datastore-method == "hasura" then ''--hasura-admin-secret "$(head -n 1 ${cfg.api-key-file})" --url ${cfg.url}'' else ''--database-url "$(head -n 1 ${cfg.api-key-file})"'';
                 in
                 ''
-                  RUST_LOG=${cfg.log-level} \
                   ${pkgs.lib.getExe cfg.package}  \
                     ${datastore} \
                     --metrics-addr ${cfg.metrics-addr} \
@@ -106,8 +107,10 @@
               ExecStart = pkgs.lib.getExe hubble-systemd-script;
               Restart = mkForce "always";
             };
+            environment = {
+              RUST_LOG = "${cfg.log-level}";
+            };
           };
       };
     };
-
 }

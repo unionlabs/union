@@ -1,7 +1,12 @@
 use color_eyre::eyre::{bail, Report};
-use futures::future::join_all;
-use hubble::datastore::*;
-use tendermint::{block::Height, genesis::Genesis, Time};
+use futures::{
+    future::{ready, TryFutureExt},
+    stream,
+    stream::TryStreamExt,
+    try_join,
+};
+use sqlx::{Acquire, Postgres};
+use tendermint::{block::Height, genesis::Genesis};
 use tendermint_rpc::{
     endpoint::block_results::Response as BlockResponse,
     error::ErrorDetail,
@@ -14,44 +19,37 @@ use tokio::time::{sleep, Duration};
 use tracing::{debug, info};
 use url::Url;
 
-use crate::{metrics, tm::insert_blocks_many::V0EventsInsertInput};
-
-pub const STAGE_BEGIN_BLOCK: i32 = 1;
-pub const STAGE_END_BLOCK: i32 = 2;
-pub const STAGE_FINALIZE_BLOCK: i32 = 3;
-pub const STAGE_VALIDATOR_UPDATES: i32 = 4;
-pub const STAGE_CONSENSUS_PARAM_UPDATES: i32 = 5;
-pub const STAGE_TX: i32 = 6;
+use crate::postgres::{self, ChainId};
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub url: Url,
-    pub chain_id: Option<String>,
+    pub start: Option<u64>,
+    pub until: Option<u64>,
 }
 
 impl Config {
     /// The batch size for the fast sync protocol. This corresponds to the maximum number of headers returned over a node's RPC.
     pub const BATCH_SIZE: u32 = 20;
 
-    pub async fn index<D: Datastore>(&self, db: D) -> Result<(), Report> {
+    pub async fn index<DB>(self, pool: DB) -> Result<(), Report>
+    where
+        for<'a> &'a DB:
+            sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
+    {
         let client = HttpClient::new(self.url.as_str()).unwrap();
 
         // If there is no chain_id override, we query it from the node. This
         // is the expected default.
-        let chain_id = match &self.chain_id {
-            Some(chain_id) => chain_id.to_owned(),
-            None => {
-                info!("fetching chain-id from node");
-                let genesis: Genesis<serde_json::Value> = client.genesis().await?;
-                let chain_id = genesis.chain_id.to_string();
-                info!("chain-id is {}", &chain_id);
-                chain_id
-            }
-        };
+        info!("fetching chain-id from node");
+        let genesis: Genesis<serde_json::Value> = client.genesis().await?;
+        let chain_id = genesis.chain_id.to_string();
+        info!("chain-id is {}", &chain_id);
 
-        let (height, chain_db_id) = get_current_data(&db, &chain_id).await?;
-        let mut height: Height = (height + 1).into();
-
+        let chain_id = postgres::fetch_or_insert_chain_id(&pool, chain_id)
+            .await?
+            .get_inner_logged();
+        let mut height = Height::from(sqlx::query!("SELECT height FROM \"v0\".blocks WHERE chain_id = $1 ORDER BY time DESC NULLS LAST LIMIT 1", chain_id.db).fetch_optional(&pool).await?.map(|block| block.height + 1).unwrap_or_default() as u32);
         // Fast sync protocol. We sync up to latest.height - batch-size + 1
         while let Some(up_to) = should_fast_sync_up_to(&client, Self::BATCH_SIZE, height).await? {
             info!("starting fast sync protocol up to: {}", up_to);
@@ -64,15 +62,9 @@ impl Config {
                 }
 
                 info!("fast syncing for batch: {}..{}", height, batch_end);
-                height = batch_sync(
-                    &client,
-                    &db,
-                    &chain_id,
-                    chain_db_id,
-                    Self::BATCH_SIZE,
-                    height,
-                )
-                .await?;
+                let mut tx = pool.begin().await?;
+                height = batch_sync(&client, &mut tx, chain_id, Self::BATCH_SIZE, height).await?;
+                tx.commit().await?;
             }
         }
 
@@ -83,10 +75,12 @@ impl Config {
             debug!("starting regular sync protocol");
             // Regular sync protocol. This fetches blocks one-by-one.
             retry_count += 1;
-            match sync_next(&client, &db, &chain_id, chain_db_id, height).await? {
+            let mut tx = pool.begin().await?;
+            match sync_next(&client, &mut tx, chain_id, height).await? {
                 Some(h) => {
                     height = h;
-                    retry_count = 0
+                    retry_count = 0;
+                    tx.commit().await?;
                 }
                 None => {
                     if retry_count > 30 {
@@ -95,6 +89,7 @@ impl Config {
                     retry_count += 1;
                     debug!("caught up indexing, sleeping for 1 second");
                     sleep(Duration::from_millis(1000)).await;
+                    tx.rollback().await?;
                     continue;
                 }
             }
@@ -117,54 +112,13 @@ pub fn is_height_exceeded_error(err: &Error) -> bool {
     false
 }
 
-/// Obtains the current height and chain_db_id for the chain_id. If the chain_id is not stored yet, an entry is created.
-async fn get_current_data<D: Datastore>(
-    db: &D,
-    chain_id: &str,
-) -> Result<(u32, i64), color_eyre::eyre::Report> {
-    // We query for the last indexed block to not waste resources re-indexing.
-    debug!("fetching latest stored block");
-    let latest_stored = db
-        .do_post::<GetLatestBlock>(get_latest_block::Variables {
-            chain_id: chain_id.to_string(),
-        })
-        .await?;
-
-    let data = latest_stored
-        .data
-        .expect("db should be prepared for indexing");
-
-    let height: u32 = if data.v0_blocks.is_empty() {
-        0
-    } else {
-        data.v0_blocks[0]
-            .height
-            .try_into()
-            .expect("invalid bigint stored in DB")
-    };
-    debug!("latest stored block height is: {}", &height);
-
-    let chain_db_id = if let Some(chains) = data.v0_chains.first() {
-        chains.id
-    } else {
-        let created = db
-            .do_post::<InsertChain>(insert_chain::Variables {
-                chain_id: chain_id.to_string(),
-            })
-            .await?;
-        created.data.unwrap().insert_v0_chains_one.unwrap().id
-    };
-
-    Ok((height, chain_db_id))
-}
-
 /// Queries the node and current indexed height and determines if fast sync should be applied.
 ///
 /// # Returns
 /// The block up to which to fast sync.
 ///
 /// # Errors
-/// On IO errors when communicating with the datastore or the node.
+/// On IO errors when communicating with the node.
 async fn should_fast_sync_up_to(
     client: &HttpClient,
     batch_size: u32,
@@ -179,11 +133,10 @@ async fn should_fast_sync_up_to(
 }
 
 /// Uses batch processing to fast sync up to the provided height.
-async fn batch_sync<D: Datastore>(
+async fn batch_sync(
     client: &HttpClient,
-    db: &D,
-    chain_id: &str,
-    chain_db_id: i64,
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    chain_id: ChainId,
     batch_size: u32,
     from: Height,
 ) -> Result<Height, Report> {
@@ -193,73 +146,110 @@ async fn batch_sync<D: Datastore>(
 
     let headers = client.blockchain(min, max).await?;
 
-    let objects: Vec<_> = join_all(headers.block_metas.iter().rev().map(|header| async {
-        debug!("fetching block results for height {}", header.header.height);
-        let block = client.block_results(header.header.height).await?;
-        let len = block
-            .txs_results
-            .as_ref()
-            .map(|tx_results| tx_results.len());
+    let submit_blocks = postgres::insert_batch_blocks(
+        tx,
+        stream::iter(headers.block_metas.clone().into_iter().map(|meta| {
+            postgres::Block {
+                chain_id,
+                hash: meta.header.hash().to_string(),
+                height: meta.header.height.value() as i32,
+                time: meta.header.time.into(),
+                data: serde_json::to_value(&meta.header)
+                    .unwrap()
+                    .replace_escape_chars(),
+            }
+        })),
+    );
 
-        let txs = fetch_transactions_for_block(client, header.header.height, len).await?;
-        let events: Vec<_> = block.events(&header.header.time).collect();
-        Ok(insert_blocks_many::V0BlocksInsertInput {
-            chain_id: Some(chain_db_id),
-            chain: None,
-            events: Some(insert_blocks_many::V0EventsArrRelInsertInput {
-                data: events,
-                on_conflict: None,
-            }),
-            hash: Some(header.header.hash().to_string()),
-            height: Some(header.header.height.value() as i64),
-            id: None,
-            created_at: None,
-            updated_at: None,
-            is_finalized: Some(true),
-            data: Some(serde_json::to_value(header.clone())?.replace_escape_chars()),
-            time: Some(header.header.time.into()),
-            transactions: Some(transactions_into_many_blocks_input(
-                txs,
-                header.header.time.into(),
-            )),
-        })
-    }))
-    .await
-    .into_iter()
-    .collect::<Result<Vec<_>, Report>>()?;
+    let block_results = stream::iter(
+        headers
+            .block_metas
+            .clone()
+            .into_iter()
+            .rev()
+            .map(Ok::<_, Report>),
+    )
+    .and_then(|meta| async {
+        debug!("fetching block results for height {}", meta.header.height);
+        let block = client.block_results(meta.header.height).await?;
+        let txs = fetch_transactions_for_block(client, meta.header.height, None).await?;
+        Ok((meta, block, txs))
+    })
+    .try_collect();
 
-    objects.iter().for_each(|block| {
-        let num_events = block
-            .events
-            .as_ref()
-            .map(|input| input.data.len())
-            .unwrap_or_default();
-        metrics::EVENT_COLLECTOR
-            .with_label_values(&[chain_id, block.hash.as_ref().unwrap()])
-            .inc_by(num_events as u64);
-    });
-    metrics::BLOCK_COLLECTOR
-        .with_label_values(&[chain_id])
-        .inc_by(objects.len() as u64);
-    let variables = insert_blocks_many::Variables { objects };
-    debug!("inserting batch of blocks");
-    db.do_post::<InsertBlocksMany>(variables).await?;
-    metrics::POST_COLLECTOR.with_label_values(&[chain_id]).inc();
+    // let (submit_blocks, block_results) = join!(submit_blocks, block_results);
+    submit_blocks.await?;
+    let block_results: Vec<_> = block_results.await?;
+
+    // Initial capacity is a bit of an estimate, but shouldn't need to resize too often.
+    let mut events = Vec::with_capacity(block_results.len() * 4 * 10);
+
+    let transactions =
+        block_results.into_iter().flat_map(|(meta, block, txs)| {
+            let block_height: i32 = block.height.value().try_into().unwrap();
+            let block_hash = meta.header.hash().to_string();
+            let time: OffsetDateTime = meta.header.time.into();
+            let mut block_index = 0;
+            let finalize_block_events = block.events(chain_id, block_hash.clone(), time);
+
+            let txs =
+                txs.into_iter()
+                    .map(|tx| {
+                        let transaction_hash = tx.hash.to_string();
+                        let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
+                        events.extend(tx.tx_result.events.into_iter().enumerate().map(
+                            |(i, event)| {
+                                let event = postgres::Event {
+                                    chain_id,
+                                    block_hash: block_hash.clone(),
+                                    block_height,
+                                    time,
+                                    data: serde_json::to_value(event)
+                                        .unwrap()
+                                        .replace_escape_chars(),
+                                    transaction_hash: Some(transaction_hash.clone()),
+                                    transaction_index: Some(i.try_into().unwrap()),
+                                    block_index,
+                                };
+                                block_index += 1;
+                                event
+                            },
+                        ));
+                        postgres::Transaction {
+                            chain_id,
+                            block_hash: block_hash.clone(),
+                            block_height,
+                            time,
+                            data,
+                            hash: transaction_hash,
+                            index: tx.index.try_into().unwrap(),
+                        }
+                    })
+                    .collect::<Vec<_>>();
+            events.extend(finalize_block_events.into_iter().enumerate().map(|(i, e)| {
+                postgres::Event {
+                    block_index: i as i32 + block_index,
+                    ..e
+                }
+            }));
+            txs
+        });
+    postgres::insert_batch_transactions(tx, stream::iter(transactions)).await?;
+    postgres::insert_batch_events(tx, stream::iter(events)).await?;
     Ok((from.value() as u32 + headers.block_metas.len() as u32).into())
 }
 
-async fn sync_next<D: Datastore>(
+async fn sync_next(
     client: &HttpClient,
-    db: &D,
-    chain_id: &str,
-    chain_db_id: i64,
-    height: Height,
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    chain_id: ChainId,
+    block_height: Height,
 ) -> Result<Option<Height>, Report> {
-    info!("indexing block {}", &height);
-    // if we're caught up indexing to the latest height, this will error. In that case,
+    info!("indexing block {}", &block_height);
+    // If we're caught up indexing to the latest height, this will error. In that case,
     // we retry until we obtain the next header.
-    debug!("fetching block header for height: {}", &height);
-    let header = match client.block(height).await {
+    debug!("fetching block header for height: {}", &block_height);
+    let header = match client.block(block_height).await {
         Err(err) => {
             if is_height_exceeded_error(&err) {
                 return Ok(None);
@@ -269,8 +259,9 @@ async fn sync_next<D: Datastore>(
         }
         Ok(val) => val.block.header,
     };
-    debug!("fetching block results for height: {}", &height);
-    let block = match client.block_results(height).await {
+    debug!("fetching block results for height: {}", &block_height);
+
+    let (block, finalize_events) = match client.block_results(block_height).await {
         Err(err) => {
             if is_height_exceeded_error(&err) {
                 return Ok(None);
@@ -278,47 +269,78 @@ async fn sync_next<D: Datastore>(
                 return Err(err.into());
             }
         }
-        Ok(block) => block,
+        Ok(block) => (
+            postgres::Block {
+                chain_id,
+                hash: header.hash().to_string(),
+                height: block_height.value().try_into().unwrap(),
+                time: header.time.into(),
+                data: serde_json::to_value(&header)
+                    .unwrap()
+                    .replace_escape_chars(),
+            },
+            block.events(chain_id, header.hash().to_string(), header.time.into()),
+        ),
     };
 
-    let height = block.height;
-    let len = block.txs_results.as_ref().map(|e| e.len());
-    let events: Vec<_> = block.events(&header.time).collect();
-    let txs = fetch_transactions_for_block(client, height, len).await?;
-    info!("found {} events for block {}", &events.len(), &height);
+    let txs = fetch_transactions_for_block(client, block_height, None);
+    let (_, txs) = try_join!(
+        postgres::insert_batch_blocks(tx, stream::once(ready(block))).map_err(Report::from),
+        txs
+    )?;
 
-    debug!("storing events for block {}", &height);
+    let mut events = vec![];
+    let mut block_index = 0;
 
-    metrics::EVENT_COLLECTOR
-        .with_label_values(&[chain_id, &header.hash().to_string()])
-        .inc_by(events.len() as u64);
+    let txs: Vec<_> = txs
+        .iter()
+        .map(|tx| {
+            tx.tx_result
+                .events
+                .iter()
+                .enumerate()
+                .for_each(|(i, event)| {
+                    events.push(postgres::Event {
+                        chain_id,
+                        block_hash: header.hash().to_string(),
+                        block_height: block_height.value().try_into().unwrap(),
+                        time: header.time.into(),
+                        data: serde_json::to_value(event).unwrap().replace_escape_chars(),
+                        transaction_hash: Some(tx.hash.to_string()),
+                        transaction_index: Some(i as i32),
+                        block_index,
+                    });
+                    block_index += 1;
+                });
+            postgres::Transaction {
+                chain_id,
+                block_hash: header.hash().to_string(),
+                block_height: block_height.value().try_into().unwrap(),
+                time: header.time.into(),
+                data: serde_json::to_value(tx).unwrap().replace_escape_chars(),
+                hash: tx.hash.to_string(),
+                index: tx.index as i32,
+            }
+        })
+        .collect();
 
-    metrics::BLOCK_COLLECTOR
-        .with_label_values(&[chain_id])
-        .inc();
-    let v = insert_blocks_many::Variables {
-        objects: vec![insert_blocks_many::V0BlocksInsertInput {
-            chain: None,
-            chain_id: Some(chain_db_id),
-            created_at: None,
-            events: Some(insert_blocks_many::V0EventsArrRelInsertInput {
-                data: events,
-                on_conflict: None,
-            }),
-            hash: Some(header.hash().to_string()),
-            data: Some(serde_json::to_value(header.clone())?.replace_escape_chars()),
-            height: Some(header.height.value() as i64),
-            id: None,
-            is_finalized: Some(true),
-            updated_at: None,
-            time: Some(header.time.into()),
-            transactions: Some(transactions_into_many_blocks_input(txs, header.time.into())),
-        }],
-    };
+    let events_len = events.len();
 
-    db.do_post::<InsertBlocksMany>(v).await?;
-    metrics::POST_COLLECTOR.with_label_values(&[chain_id]).inc();
-    Ok(Some(height.increment()))
+    let events = events
+        .into_iter()
+        .chain(finalize_events)
+        .enumerate()
+        .map(|(i, e)| postgres::Event {
+            block_index: i as i32,
+            ..e
+        });
+
+    postgres::insert_batch_transactions(tx, stream::iter(txs)).await?;
+    postgres::insert_batch_events(tx, stream::iter(events)).await?;
+
+    info!("found {} events for block {}", events_len, &block_height);
+    debug!("storing events for block {}", &block_height);
+    Ok(Some(block_height.increment()))
 }
 
 async fn fetch_transactions_for_block(
@@ -368,148 +390,87 @@ async fn fetch_transactions_for_block(
     Ok(txs)
 }
 
-fn transactions_into_many_blocks_input(
-    txs: Vec<tendermint_rpc::endpoint::tx::Response>,
-    time: OffsetDateTime,
-) -> crate::tm::insert_blocks_many::V0TransactionsArrRelInsertInput {
-    let mut index = 0;
-    crate::tm::insert_blocks_many::V0TransactionsArrRelInsertInput {
-        data: txs
-            .into_iter()
-            .map(|tx| insert_blocks_many::V0TransactionsInsertInput {
-                block: None,
-                block_id: None,
-                created_at: None,
-                updated_at: None,
-                data: Some(serde_json::to_value(&tx).unwrap().replace_escape_chars()),
-                hash: Some(tx.hash.to_string()),
-                id: None,
-                index: Some(tx.index.into()),
-                events: Some(insert_blocks_many::V0EventsArrRelInsertInput {
-                    data: tx
-                        .tx_result
-                        .events
-                        .into_iter()
-                        .map(|r| {
-                            let input = insert_blocks_many::V0EventsInsertInput {
-                                block: None,
-                                block_id: None,
-                                created_at: None,
-                                data: Some(serde_json::to_value(r).unwrap().replace_escape_chars()),
-                                index: Some(index),
-                                time: Some(time),
-                                updated_at: None,
-                                transaction: None,
-                                transaction_id: None,
-                                stage: Some(STAGE_TX),
-                            };
-                            index += 1;
-                            input
-                        })
-                        .collect(),
-                    on_conflict: None,
-                }),
-            })
-            .collect(),
-        on_conflict: None,
-    }
-}
-
 pub trait BlockExt {
     /// Returns the non-tx related events from a block formatted for insertion.
-    fn events(self, timestamp: &Time) -> impl Iterator<Item = V0EventsInsertInput> + '_;
+    fn events(
+        self,
+        chain_id: ChainId,
+        block_hash: String,
+        time: OffsetDateTime,
+    ) -> Vec<postgres::Event>;
 }
 
 impl BlockExt for BlockResponse {
-    fn events(self, timestamp: &Time) -> impl Iterator<Item = V0EventsInsertInput> + '_ {
+    fn events(
+        self,
+        chain_id: ChainId,
+        block_hash: String,
+        time: OffsetDateTime,
+    ) -> Vec<postgres::Event> {
+        let block_height: i32 = self.height.value().try_into().unwrap();
         let begin_block_events = self
             .begin_block_events
             .unwrap_or_default()
             .into_iter()
-            .enumerate()
-            .map(|(i, e)| V0EventsInsertInput {
-                block: None,
-                block_id: None,
-                created_at: None,
-                updated_at: None,
-                index: Some(i as i64),
-                data: Some(serde_json::to_value(e).unwrap().replace_escape_chars()),
-                time: Some((*timestamp).into()),
-                stage: Some(STAGE_BEGIN_BLOCK),
-                transaction_id: None,
-                transaction: None,
+            .map(|e| postgres::Event {
+                chain_id,
+                block_hash: block_hash.clone(),
+                block_height,
+                time,
+                data: serde_json::to_value(e).unwrap().replace_escape_chars(),
+                transaction_hash: None,
+                transaction_index: None,
+                block_index: 0,
             });
-        let end_block_events =
-            self.end_block_events
-                .into_iter()
-                .enumerate()
-                .map(|(i, e)| V0EventsInsertInput {
-                    block: None,
-                    block_id: None,
-                    created_at: None,
-                    updated_at: None,
-                    index: Some(i as i64),
-                    data: Some(serde_json::to_value(e).unwrap().replace_escape_chars()),
-                    time: Some((*timestamp).into()),
-                    stage: Some(STAGE_END_BLOCK),
-                    transaction_id: None,
-                    transaction: None,
-                });
+        let end_block_events = self.end_block_events.into_iter().map(|e| postgres::Event {
+            chain_id,
+            block_hash: block_hash.clone(),
+            block_height,
+            time,
+            data: serde_json::to_value(e).unwrap().replace_escape_chars(),
+            transaction_hash: None,
+            transaction_index: None,
+            block_index: 0,
+        });
         let finalize_block_events =
             self.finalize_block_events
                 .into_iter()
-                .enumerate()
-                .map(|(i, e)| V0EventsInsertInput {
-                    block: None,
-                    block_id: None,
-                    created_at: None,
-                    updated_at: None,
-                    index: Some(i as i64),
-                    data: Some(serde_json::to_value(e).unwrap().replace_escape_chars()),
-                    time: Some((*timestamp).into()),
-                    stage: Some(STAGE_FINALIZE_BLOCK),
-                    transaction_id: None,
-                    transaction: None,
+                .map(|e| postgres::Event {
+                    chain_id,
+                    block_hash: block_hash.clone(),
+                    block_height,
+                    time,
+                    data: serde_json::to_value(e).unwrap().replace_escape_chars(),
+                    transaction_hash: None,
+                    transaction_index: None,
+                    block_index: 0,
                 });
-        let validator_updates = self
-            .validator_updates
-            .into_iter()
-            .enumerate()
-            .map(|(i, e)| V0EventsInsertInput {
-                block: None,
-                block_id: None,
-                created_at: None,
-                updated_at: None,
-                index: Some(i as i64),
-                data: Some(
-                    serde_json::to_value(WithType::validator_update(e))
-                        .unwrap()
-                        .replace_escape_chars(),
-                ),
-                time: Some((*timestamp).into()),
-                stage: Some(STAGE_VALIDATOR_UPDATES),
-                transaction_id: None,
-                transaction: None,
-            });
+        let validator_updates = self.validator_updates.into_iter().map(|e| postgres::Event {
+            chain_id,
+            block_hash: block_hash.clone(),
+            block_height,
+            time,
+            data: serde_json::to_value(WithType::validator_update(e))
+                .unwrap()
+                .replace_escape_chars(),
+            transaction_hash: None,
+            transaction_index: None,
+            block_index: 0,
+        });
         let consensus_param_updates =
             self.consensus_param_updates
                 .into_iter()
-                .enumerate()
-                .map(|(i, e)| V0EventsInsertInput {
-                    block: None,
-                    block_id: None,
-                    created_at: None,
-                    updated_at: None,
-                    index: Some(i as i64),
-                    data: Some(
-                        serde_json::to_value(WithType::consensus_param_update(e))
-                            .unwrap()
-                            .replace_escape_chars(),
-                    ),
-                    time: Some((*timestamp).into()),
-                    stage: Some(STAGE_CONSENSUS_PARAM_UPDATES),
-                    transaction_id: None,
-                    transaction: None,
+                .map(|e| postgres::Event {
+                    chain_id,
+                    block_hash: block_hash.clone(),
+                    block_height,
+                    time,
+                    data: serde_json::to_value(WithType::consensus_param_update(e))
+                        .unwrap()
+                        .replace_escape_chars(),
+                    transaction_hash: None,
+                    transaction_index: None,
+                    block_index: 0,
                 });
 
         begin_block_events
@@ -517,6 +478,12 @@ impl BlockExt for BlockResponse {
             .chain(finalize_block_events)
             .chain(validator_updates)
             .chain(consensus_param_updates)
+            .enumerate()
+            .map(|(i, mut event)| {
+                event.block_index = i as i32;
+                event
+            })
+            .collect()
     }
 }
 
@@ -557,20 +524,24 @@ impl SerdeValueExt for serde_json::Value {
 }
 
 fn replace_escape_chars(val: &mut serde_json::Value) {
+    use base64::{engine::general_purpose, Engine as _};
+
     match val {
         serde_json::Value::Null => (),
         serde_json::Value::Bool(_) => (),
         serde_json::Value::Number(_) => (),
-        serde_json::Value::String(str) => {
-            let result = str::replace(str, "\\u0000", "\\\\u0000");
-            let _ = std::mem::replace(str, result);
+        serde_json::Value::String(ref mut data) => {
+            if data.contains('\u{0000}') {
+                let encoded = general_purpose::STANDARD.encode(&data);
+                *data = encoded;
+            }
         }
-        serde_json::Value::Array(arr) => {
-            for item in arr {
+        serde_json::Value::Array(ref mut arr) => {
+            for item in arr.iter_mut() {
                 replace_escape_chars(item)
             }
         }
-        serde_json::Value::Object(obj) => {
+        serde_json::Value::Object(ref mut obj) => {
             for item in obj.values_mut() {
                 replace_escape_chars(item)
             }

@@ -3063,6 +3063,7 @@ dependencies = [
  "axum",
  "clap 4.5.3",
  "color-eyre",
+ "ethers",
  "futures",
  "graphql_client",
  "lazy_static",
@@ -3073,11 +3074,13 @@ dependencies = [
  "sqlx",
  "tendermint",
  "tendermint-rpc",
+ "tikv-jemallocator",
  "time",
  "tokio",
  "tracing",
  "tracing-subscriber",
  "url",
+ "valuable",
 ]
 
 [[package]]
@@ -7161,6 +7164,20 @@ name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
+dependencies = [
+ "valuable-derive",
+]
+
+[[package]]
+name = "valuable-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d44690c645190cfce32f91a1582281654b2338c6073fa250b0949fd25c55b32"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
 
 [[package]]
 name = "vcpkg"

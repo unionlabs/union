@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT height \n            FROM \"v0\".\"logs\" \n            WHERE chain_id = $1 \n            ORDER BY height DESC \n            NULLS LAST \n            LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "height",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5bb8cc7883163790bbbd234b5f4393065ea4d48c45767e9efbf17b09b8cf1493"
+}

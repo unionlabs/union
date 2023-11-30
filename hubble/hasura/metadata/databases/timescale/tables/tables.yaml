@@ -1,6 +1,0 @@
-- "!include v0_blocks.yaml"
-- "!include v0_chains.yaml"
-- "!include v0_coin_receiveds.yaml"
-- "!include v0_coin_receiveds_30m.yaml"
-- "!include v0_coin_receiveds_totals.yaml"
-- "!include v0_events.yaml"

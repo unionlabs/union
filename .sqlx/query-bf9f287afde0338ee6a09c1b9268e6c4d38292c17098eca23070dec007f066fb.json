@@ -1,23 +1,22 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO \"v0\".chains (chain_id, name) VALUES ($1, $2) RETURNING id",
+  "query": "SELECT height FROM \"v0\".blocks WHERE chain_id = $1 ORDER BY time DESC NULLS LAST LIMIT 1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id",
+        "name": "height",
         "type_info": "Int4"
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Text"
+        "Int4"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "ac9cb21ed79a7dcc22dec34988f128daf78252727663e854c2b2200d6edbb307"
+  "hash": "bf9f287afde0338ee6a09c1b9268e6c4d38292c17098eca23070dec007f066fb"
 }
