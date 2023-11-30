@@ -11,7 +11,7 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
         .unwrap();
     let iter = reader.deserialize::<TransactionReport>();
 
-    let mut durations: HashMap<String, Durations> = HashMap::new();
+    let mut durations: HashMap<String, Vec<(u64, u64)>> = HashMap::new();
     let mut incomplete_transfers: HashMap<String, u64> = HashMap::new();
     let mut complete_transfers: HashMap<String, u64> = HashMap::new();
 
@@ -20,11 +20,11 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
         match (report.execution_duration, report.finalization_duration) {
             (Some(execution_duration), Some(finalization_duration)) => {
                 if let Some(times) = durations.get_mut(&id) {
-                    times.push(execution_duration, finalization_duration);
+                    times.push((execution_duration, finalization_duration));
                 } else {
                     durations.insert(
                         id.clone(),
-                        Durations::new(execution_duration, finalization_duration),
+                        vec![(execution_duration, finalization_duration)],
                     );
                 }
 
@@ -51,8 +51,8 @@ pub fn analyze(input: String, output: String) -> HashMap<String, ChannelBenchmar
 
     durations.keys().for_each(|channel_port_id| {
         let channel_durations = durations[channel_port_id].clone();
-        let mut execution_durations = channel_durations.execution_durations.clone();
-        let mut finalization_durations = channel_durations.finalization_durations.clone();
+        let (mut execution_durations, mut finalization_durations): (Vec<u64>, Vec<u64>) =
+            channel_durations.into_iter().unzip();
         execution_durations.sort();
         finalization_durations.sort();
 
@@ -117,26 +117,6 @@ fn median(values: &Vec<u64>) -> u64 {
 
 fn mean(values: &Vec<u64>) -> u64 {
     values.iter().sum::<u64>() / (values.len() as u64)
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Clone)]
-pub struct Durations {
-    pub execution_durations: Vec<u64>,
-    pub finalization_durations: Vec<u64>,
-}
-
-impl Durations {
-    fn new(execution_duration: u64, finalization_duration: u64) -> Self {
-        Self {
-            execution_durations: vec![execution_duration],
-            finalization_durations: vec![finalization_duration],
-        }
-    }
-
-    fn push(&mut self, execution_duration: u64, finalization_duration: u64) {
-        self.execution_durations.push(execution_duration);
-        self.finalization_durations.push(finalization_duration);
-    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Clone)]
