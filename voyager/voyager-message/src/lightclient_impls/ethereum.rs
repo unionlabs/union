@@ -887,7 +887,10 @@ where
                 }
             };
 
-            union.broadcast_tx_commit(signer, [msg_any]).await
+            union
+                .broadcast_tx_commit(signer, [msg_any])
+                .await
+                .map(|_| ())
         })
         .await
 }

@@ -414,7 +414,8 @@
         "rust-overlay": "rust-overlay_2",
         "treefmt-nix": "treefmt-nix",
         "v0_14_0": "v0_14_0",
-        "v0_15_0": "v0_15_0"
+        "v0_15_0": "v0_15_0",
+        "wasmd": "wasmd"
       }
     },
     "rust-overlay": {
@@ -567,17 +568,34 @@
     "v0_15_0": {
       "flake": false,
       "locked": {
-        "lastModified": 1700664740,
-        "narHash": "sha256-kOOVzzxtaq0WlKMkLFiX8zdBT+EETBrP9yngKlKvHF4=",
+        "lastModified": 1700671107,
+        "narHash": "sha256-VuIMbNKI0erJPOH7CG/MhTicac423mCd5mey/oO53tM=",
         "owner": "unionlabs",
         "repo": "union",
-        "rev": "b2f17588a3eeb1c651d9093460023fada4974963",
+        "rev": "d67e54996294aee4e5f8c82a139809699c9f43ac",
         "type": "github"
       },
       "original": {
         "owner": "unionlabs",
         "ref": "release-v0.15.0",
         "repo": "union",
+        "type": "github"
+      }
+    },
+    "wasmd": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1695205573,
+        "narHash": "sha256-BQiMpme5+/s8U8LoG5RxgJnuR5idA5ijaAAmCmpizvQ=",
+        "owner": "CosmWasm",
+        "repo": "wasmd",
+        "rev": "03f3c72a6ce447fafc2da023a1322899327433f8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "repo": "wasmd",
+        "rev": "03f3c72a6ce447fafc2da023a1322899327433f8",
         "type": "github"
       }
     }

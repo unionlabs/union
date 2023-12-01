@@ -32,7 +32,7 @@ impl<L: LightClient> Wait<L> {
     {
         match self {
             Wait::Block(WaitForBlock(height)) => {
-                let chain_height = l.chain().query_latest_height().await;
+                let chain_height = l.chain().query_latest_height().await.unwrap();
 
                 assert_eq!(
                     chain_height.revision_number(),
@@ -55,7 +55,7 @@ impl<L: LightClient> Wait<L> {
                 timestamp,
                 __marker,
             }) => {
-                let chain_ts = l.chain().query_latest_timestamp().await;
+                let chain_ts = l.chain().query_latest_timestamp().await.unwrap();
 
                 if chain_ts >= timestamp {
                     [].into()
@@ -80,7 +80,11 @@ impl<L: LightClient> Wait<L> {
                 counterparty_client_id,
                 counterparty_chain_id,
             }) => {
-                let latest_height = l.chain().query_latest_height_as_destination().await;
+                let latest_height = l
+                    .chain()
+                    .query_latest_height_as_destination()
+                    .await
+                    .unwrap();
                 let trusted_client_state =
                     l.query_client_state(client_id.clone(), latest_height).await;
 

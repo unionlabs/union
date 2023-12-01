@@ -30,6 +30,8 @@ pub const DELAY_PERIOD: u64 = 0;
 /// Wrapper types around protos defined in <https://github.com/cosmos/gogoproto/tree/main/protobuf/google/protobuf>, matching the proto module structure.
 pub mod google;
 
+pub mod cosmwasm;
+
 /// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).
 pub mod ibc;
 
@@ -566,13 +568,19 @@ pub mod traits {
         /// Available client types for this chain.
         type ClientType: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
+        type Error: Debug;
+
         fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId;
 
-        fn query_latest_height(&self) -> impl Future<Output = Self::Height> + '_;
+        fn query_latest_height(
+            &self,
+        ) -> impl Future<Output = Result<Self::Height, Self::Error>> + '_;
 
-        fn query_latest_height_as_destination(&self) -> impl Future<Output = Self::Height> + '_;
+        fn query_latest_height_as_destination(
+            &self,
+        ) -> impl Future<Output = Result<Self::Height, Self::Error>> + '_;
 
-        fn query_latest_timestamp(&self) -> impl Future<Output = i64> + '_;
+        fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_;
 
         /// The client state on this chain at the specified `Height`.
         fn self_client_state(

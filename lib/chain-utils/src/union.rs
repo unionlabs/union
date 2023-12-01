@@ -66,45 +66,38 @@ impl Chain for Union {
 
     type ClientType = String;
 
+    type Error = tendermint_rpc::Error;
+
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id.clone()
     }
 
-    fn query_latest_height(&self) -> impl Future<Output = Height> + '_ {
+    fn query_latest_height(&self) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
         async move {
-            let height = self
-                .tm_client
+            self.tm_client
                 .latest_block()
                 .await
-                .unwrap()
-                .block
-                .header
-                .height
-                .value()
-                // HACK: for some reason, abci_query on latest block return null
-                // value sometimes, probably a racy condition if we use the
-                // actually latest block being built?
-                .saturating_sub(1);
-
-            self.make_height(height)
+                .map(|height| self.make_height(height.block.header.height.value()))
         }
     }
 
-    fn query_latest_height_as_destination(&self) -> impl Future<Output = Height> + '_ {
+    fn query_latest_height_as_destination(
+        &self,
+    ) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
         self.query_latest_height()
     }
 
-    fn query_latest_timestamp(&self) -> impl Future<Output = i64> + '_ {
+    fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_ {
         async move {
-            let height = self.query_latest_height().await;
-            self.tm_client
+            let height = self.query_latest_height().await?;
+            Ok(self
+                .tm_client
                 .block(u32::try_from(height.revision_height).unwrap())
-                .await
-                .unwrap()
+                .await?
                 .block
                 .header
                 .time
-                .unix_timestamp()
+                .unix_timestamp())
         }
     }
 
@@ -382,7 +375,7 @@ impl Union {
         &self,
         signer: CosmosAccountId,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
-    ) -> Result<(), BroadcastTxCommitError> {
+    ) -> Result<H256, BroadcastTxCommitError> {
         use protos::cosmos::tx;
 
         let account = self.account_info_of_signer(&signer).await;
@@ -452,7 +445,7 @@ impl Union {
             .is_ok()
         {
             tracing::info!(%tx_hash, "tx already included");
-            return Ok(());
+            return Ok(tx_hash.parse().unwrap());
         }
 
         let response_result = self.tm_client.broadcast_tx_sync(tx_raw_bytes.clone()).await;
@@ -477,14 +470,14 @@ impl Union {
 
             tracing::error!("cosmos tx failed: {}", value);
 
-            return Ok(());
+            return Ok(tx_hash.parse().unwrap());
         };
 
-        let mut target_height = self.query_latest_height().await.increment();
+        let mut target_height = self.query_latest_height().await?.increment();
         let mut i = 0;
         loop {
             let reached_height = 'l: loop {
-                let current_height = self.query_latest_height().await;
+                let current_height = self.query_latest_height().await?;
                 if current_height >= target_height {
                     break 'l current_height;
                 }
@@ -496,7 +489,7 @@ impl Union {
             tracing::debug!(?tx_inclusion);
 
             match tx_inclusion {
-                Ok(_) => break Ok(()),
+                Ok(_) => break Ok(tx_hash.parse().unwrap()),
                 Err(err) if i > 5 => {
                     tracing::warn!("tx inclusion couldn't be retrieved after {} try", i);
                     break Err(BroadcastTxCommitError::Inclusion(err));
@@ -627,7 +620,7 @@ impl EventSource for Union {
         async move {
             let chain_revision = self.chain_revision;
 
-            let latest_height = self.query_latest_height().await;
+            let latest_height = self.query_latest_height().await.unwrap();
 
             stream::unfold(
                 (self, latest_height),
@@ -637,7 +630,13 @@ impl EventSource for Union {
                     let current_height = loop {
                         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
-                        let current_height = this.query_latest_height().await;
+                        let current_height = match this.query_latest_height().await {
+                            Ok(current_height) => current_height,
+                            Err(e) => {
+                                tracing::error!(error = %e, "Error getting height from Union. Trying again in 1 second.");
+                                continue;
+                            }
+                        };
 
                         tracing::debug!(%current_height, %previous_height);
 
@@ -656,11 +655,15 @@ impl EventSource for Union {
                     for h in
                         (previous_height.revision_height + 1)..=(current_height.revision_height)
                     {
-                        let response = this
+                        let response = if let Ok(res) = this
                             .tm_client
                             .tx_search(Query::eq("tx.height", h), false, 1, 255, Order::Descending)
                             .await
-                            .unwrap();
+                        {
+                            res
+                        } else {
+                            return None;
+                        };
 
                         let new_events = stream::iter(response.txs.into_iter().flat_map(|tx| {
                             tx.tx_result
@@ -686,25 +689,24 @@ impl EventSource for Union {
                         }))
                         .then(|res| async {
                             match res {
-                                Ok((height, event)) => Ok(ChainEvent {
-                                    chain_id: this.chain_id(),
-                                    block_hash: this
-                                        .tm_client
-                                        .block(height)
-                                        .await
-                                        .unwrap()
-                                        .block_id
-                                        .hash
-                                        .as_bytes()
-                                        .try_into()
-                                        .unwrap(),
-                                    height: Height {
-                                        revision_number: chain_revision,
-                                        revision_height: height.try_into().unwrap(),
-                                    },
-                                    event,
-                                }),
-                                Err(err) => Err(err),
+                                Ok((height, event)) =>
+                                    match this.tm_client.block(height).await {
+                                    Ok(block) => Ok(ChainEvent {
+                                            chain_id: this.chain_id(),
+                                            block_hash: block
+                                                .block_id
+                                                .hash
+                                                .as_bytes()
+                                                .try_into()
+                                                .unwrap(),
+                                            height: Height {
+                                                revision_number: chain_revision,
+                                                revision_height: height.try_into().unwrap(),
+                                            },
+                                            event,
+                                        }),
+                                        Err(e) => Err(UnionEventSourceError::Subscription(e)), },
+                                Err(err) => Err(err)
                             }
                         })
                         .collect::<Vec<_>>()
