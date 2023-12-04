@@ -463,6 +463,8 @@ impl Union {
 
         tracing::info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
 
+        let tx_hash_normalized = H256(hex::decode(&tx_hash).unwrap().try_into().unwrap());
+
         if response.code.is_err() {
             let value = tm_types::CosmosSdkError::from_code_and_codespace(
                 &response.codespace,
@@ -471,7 +473,7 @@ impl Union {
 
             tracing::error!("cosmos tx failed: {}", value);
 
-            return Ok(tx_hash.parse().unwrap());
+            return Ok(tx_hash_normalized);
         };
 
         let mut target_height = self.query_latest_height().await?.increment();
@@ -490,7 +492,7 @@ impl Union {
             tracing::debug!(?tx_inclusion);
 
             match tx_inclusion {
-                Ok(_) => break Ok(tx_hash.parse().unwrap()),
+                Ok(_) => break Ok(tx_hash_normalized),
                 Err(err) if i > 5 => {
                     tracing::warn!("tx inclusion couldn't be retrieved after {} try", i);
                     break Err(BroadcastTxCommitError::Inclusion(err));
