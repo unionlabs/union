@@ -33,10 +33,7 @@ contract CometblsClient is ILightClient {
     address internal ibcHandler;
     IMembershipVerifier internal membershipVerifier;
 
-    constructor(
-        address ibcHandler_,
-        IMembershipVerifier membershipVerifier_
-    ) {
+    constructor(address ibcHandler_, IMembershipVerifier membershipVerifier_) {
         ibcHandler = ibcHandler_;
         membershipVerifier = membershipVerifier_;
     }
