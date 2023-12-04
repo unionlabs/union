@@ -53,7 +53,7 @@ use unionlabs::{
         prove_response,
         validator_set_commit::ValidatorSetCommit,
     },
-    IntoProto, MsgIntoProto,
+    IntoEthAbi, IntoProto, MsgIntoProto,
 };
 
 use crate::{
@@ -413,19 +413,22 @@ where
                 .unwrap()
                 .into_inner();
 
-            let proof = protos::ibc::core::commitment::v1::MerkleProof {
-                proofs: query_result
-                    .proof_ops
-                    .unwrap()
-                    .ops
-                    .into_iter()
-                    .map(|op| {
-                        protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
-                            .unwrap()
-                    })
-                    .collect::<Vec<_>>(),
-            }
-            .encode_to_vec();
+            let proof = unionlabs::ics23::MerkleProof::try_from(
+                protos::ibc::core::commitment::v1::MerkleProof {
+                    proofs: query_result
+                        .proof_ops
+                        .unwrap()
+                        .ops
+                        .into_iter()
+                        .map(|op| {
+                            protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
+                                .unwrap()
+                        })
+                        .collect::<Vec<_>>(),
+                },
+            )
+            .unwrap()
+            .into_eth_abi_bytes();
 
             [match path {
                 unionlabs::proof::Path::ClientStatePath(_) => {

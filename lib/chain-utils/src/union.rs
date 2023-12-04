@@ -23,7 +23,8 @@ use unionlabs::{
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
     traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
     validated::ValidateT,
-    CosmosAccountId, MaybeRecoverableError, TryFromProto, TryFromProtoErrorOf, WasmClientType,
+    CosmosAccountId, IntoEthAbi, MaybeRecoverableError, TryFromProto, TryFromProtoErrorOf,
+    WasmClientType,
 };
 
 use crate::{
@@ -1147,19 +1148,22 @@ where
                 .unwrap()
                 .into_inner();
 
-            protos::ibc::core::commitment::v1::MerkleProof {
-                proofs: query_result
-                    .proof_ops
-                    .unwrap()
-                    .ops
-                    .into_iter()
-                    .map(|op| {
-                        protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
-                            .unwrap()
-                    })
-                    .collect::<Vec<_>>(),
-            }
-            .encode_to_vec()
+            unionlabs::ics23::MerkleProof::try_from(
+                protos::ibc::core::commitment::v1::MerkleProof {
+                    proofs: query_result
+                        .proof_ops
+                        .unwrap()
+                        .ops
+                        .into_iter()
+                        .map(|op| {
+                            protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
+                                .unwrap()
+                        })
+                        .collect::<Vec<_>>(),
+                },
+            )
+            .unwrap()
+            .into_eth_abi_bytes()
         }
     }
 
