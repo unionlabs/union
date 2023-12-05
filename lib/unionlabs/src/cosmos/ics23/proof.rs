@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    errors::{required, MissingField},
-    InlineFields,
-};
+use crate::errors::{required, MissingField};
+#[cfg(feature = "ethabi")]
+use crate::InlineFields;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InnerOp {

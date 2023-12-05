@@ -413,7 +413,7 @@ where
                 .unwrap()
                 .into_inner();
 
-            let proof = unionlabs::ics23::MerkleProof::try_from(
+            let proof = unionlabs::cosmos::ics23::proof::MerkleProof::try_from(
                 protos::ibc::core::commitment::v1::MerkleProof {
                     proofs: query_result
                         .proof_ops

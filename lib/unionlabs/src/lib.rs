@@ -64,8 +64,6 @@ pub mod hash;
 // TODO: Replace with something like <https://github.com/recmo/uint>
 pub mod uint;
 
-pub mod ics23;
-
 pub(crate) mod macros;
 
 pub mod errors {
