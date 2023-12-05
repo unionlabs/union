@@ -23,7 +23,8 @@ use unionlabs::{
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
     traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
     validated::ValidateT,
-    CosmosAccountId, MaybeRecoverableError, TryFromProto, TryFromProtoErrorOf, WasmClientType,
+    CosmosAccountId, IntoEthAbi, MaybeRecoverableError, TryFromProto, TryFromProtoErrorOf,
+    WasmClientType,
 };
 
 use crate::{
@@ -462,6 +463,8 @@ impl Union {
 
         tracing::info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
 
+        let tx_hash_normalized = H256(hex::decode(&tx_hash).unwrap().try_into().unwrap());
+
         if response.code.is_err() {
             let value = tm_types::CosmosSdkError::from_code_and_codespace(
                 &response.codespace,
@@ -470,7 +473,7 @@ impl Union {
 
             tracing::error!("cosmos tx failed: {}", value);
 
-            return Ok(tx_hash.parse().unwrap());
+            return Ok(tx_hash_normalized);
         };
 
         let mut target_height = self.query_latest_height().await?.increment();
@@ -489,7 +492,7 @@ impl Union {
             tracing::debug!(?tx_inclusion);
 
             match tx_inclusion {
-                Ok(_) => break Ok(tx_hash.parse().unwrap()),
+                Ok(_) => break Ok(tx_hash_normalized),
                 Err(err) if i > 5 => {
                     tracing::warn!("tx inclusion couldn't be retrieved after {} try", i);
                     break Err(BroadcastTxCommitError::Inclusion(err));
@@ -1147,19 +1150,22 @@ where
                 .unwrap()
                 .into_inner();
 
-            protos::ibc::core::commitment::v1::MerkleProof {
-                proofs: query_result
-                    .proof_ops
-                    .unwrap()
-                    .ops
-                    .into_iter()
-                    .map(|op| {
-                        protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
-                            .unwrap()
-                    })
-                    .collect::<Vec<_>>(),
-            }
-            .encode_to_vec()
+            unionlabs::cosmos::ics23::proof::MerkleProof::try_from(
+                protos::ibc::core::commitment::v1::MerkleProof {
+                    proofs: query_result
+                        .proof_ops
+                        .unwrap()
+                        .ops
+                        .into_iter()
+                        .map(|op| {
+                            protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
+                                .unwrap()
+                        })
+                        .collect::<Vec<_>>(),
+                },
+            )
+            .unwrap()
+            .into_eth_abi_bytes()
         }
     }
 

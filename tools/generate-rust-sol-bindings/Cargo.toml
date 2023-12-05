@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.3.0", features = ["derive"] }
-ethers-contract-abigen = { workspace = true, default-features = true }
+ethers-contract-abigen = { workspace = true, default-features = true, features = [ "fs" ] }

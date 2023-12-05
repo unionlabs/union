@@ -9,8 +9,8 @@ import "../proto/tendermint/types/validator.sol";
 import "../proto/tendermint/types/canonical.sol";
 import "./Encoder.sol";
 import "./MerkleTree.sol";
+import "./Verifier.sol";
 import "../core/IZKVerifier.sol";
-import "../core/IZKVerifierV2.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
@@ -117,8 +117,7 @@ library CometblsHelp {
         return verifier.verifyProof(a, b, c, inputs);
     }
 
-    function verifyZKP(
-        IZKVerifierV2 verifier,
+    function verifyZKPV2(
         bytes32 trustedValidatorsHash,
         bytes32 untrustedValidatorsHash,
         bytes memory message,
@@ -142,7 +141,7 @@ library CometblsHelp {
             commitmentHash
         ];
 
-        return verifier.verifyProof(proof, proofCommitment, inputs);
+        return Verifier.verifyProof(proof, proofCommitment, inputs);
     }
 
     function isExpired(

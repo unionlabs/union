@@ -18,7 +18,7 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         fullPath[1] = path;
         return
             Ics23.verifyChainedMembership(
-                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                abi.decode(proof, (IbcCoreCommitmentV1MerkleProof.Data)),
                 root,
                 fullPath,
                 value
@@ -36,7 +36,7 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         fullPath[1] = path;
         return
             Ics23.verifyChainedNonMembership(
-                IbcCoreCommitmentV1MerkleProof.decode(proof),
+                abi.decode(proof, (IbcCoreCommitmentV1MerkleProof.Data)),
                 root,
                 fullPath
             ) == Ics23.VerifyChainedNonMembershipError.None;

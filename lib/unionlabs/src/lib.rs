@@ -318,6 +318,8 @@ impl<T> FromEthAbi for T where T: EthAbi + From<T::EthAbi> {}
 #[cfg(feature = "ethabi")]
 impl<T> TryFromEthAbi for T where T: EthAbi + TryFrom<T::EthAbi> {}
 
+/// Due to the broken eth abi rust library, some structures with dynamically
+/// sized types are incorrectly encoded (missing a dynamic tuple wrapper)
 #[cfg(feature = "ethabi")]
 pub struct InlineFields<T>(pub T);
 

@@ -7,7 +7,7 @@ import "../core/IZKVerifierV2.sol";
 /// @author Remco Bloemen
 /// @notice Supports verifying Groth16 proofs. Proofs can be in uncompressed
 /// (256 bytes) and compressed (128 bytes) format.
-contract Verifier is IZKVerifierV2 {
+library Verifier {
     // Addresses of precompiles
     uint256 constant PRECOMPILE_MODEXP = 0x05;
     uint256 constant PRECOMPILE_ADD = 0x06;
@@ -116,8 +116,8 @@ contract Verifier is IZKVerifierV2 {
     /// @return x The X coordinate of the resulting G1 point.
     /// @return y The Y coordinate of the resulting G1 point.
     function publicInputMSM(
-        uint256[2] calldata proofCommitment,
-        uint256[5] calldata input
+        uint256[2] memory proofCommitment,
+        uint256[5] memory input
     ) internal view returns (bool success, uint256 x, uint256 y) {
         // Note: The ECMUL precompile does not reject unreduced values, so we check this.
         // Note: Unrolling this loop does not cost much extra in code-size, the bulk of the
@@ -222,10 +222,10 @@ contract Verifier is IZKVerifierV2 {
     /// @param input the public input field elements in the scalar field Fr.
     /// Elements must be reduced.
     function verifyProof(
-        uint256[8] calldata proof,
-        uint256[2] calldata proofCommitment,
-        uint256[5] calldata input
-    ) public view returns (bool) {
+        uint256[8] memory proof,
+        uint256[2] memory proofCommitment,
+        uint256[5] memory input
+    ) internal view returns (bool) {
         (bool success, uint256 x, uint256 y) = publicInputMSM(
             proofCommitment,
             input
