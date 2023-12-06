@@ -34,6 +34,7 @@ func Cmd() *cobra.Command {
 		RunE:  client.ValidateCmd,
 	}
 
+	cmd.AddCommand(CodecCmd())
 	cmd.AddCommand(PubkeyCmd())
 	cmd.AddCommand(PubkeyRawCmd())
 	cmd.AddCommand(AddrCmd())
@@ -41,6 +42,55 @@ func Cmd() *cobra.Command {
 	cmd.AddCommand(PrefixesCmd())
 
 	return cmd
+}
+
+// CodecCmd creates and returns a new codec debug cmd.
+func CodecCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "codec",
+		Short: "Tool for helping with debugging your application codec",
+		RunE:  client.ValidateCmd,
+	}
+
+	cmd.AddCommand(getCodecInterfaces())
+	cmd.AddCommand(getCodecInterfaceImpls())
+
+	return cmd
+}
+
+// getCodecInterfaces creates and returns a new cmd used for listing all registered interfaces on the application codec.
+func getCodecInterfaces() *cobra.Command {
+	return &cobra.Command{
+		Use:   "list-interfaces",
+		Short: "List all registered interface type URLs",
+		Long:  "List all registered interface type URLs using the application codec",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			iFaces := clientCtx.Codec.InterfaceRegistry().ListAllInterfaces()
+			for _, iFace := range iFaces {
+				cmd.Println(iFace)
+			}
+			return nil
+		},
+	}
+}
+
+// getCodecInterfaceImpls creates and returns a new cmd used for listing all registered implemenations of a given interface on the application codec.
+func getCodecInterfaceImpls() *cobra.Command {
+	return &cobra.Command{
+		Use:   "list-implementations [interface]",
+		Short: "List the registered type URLs for the provided interface",
+		Long:  "List the registered type URLs that can be used for the provided interface name using the application codec",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx := client.GetClientContextFromCmd(cmd)
+			impls := clientCtx.Codec.InterfaceRegistry().ListImplementations(args[0])
+			for _, imp := range impls {
+				cmd.Println(imp)
+			}
+			return nil
+		},
+	}
 }
 
 // getPubKeyFromString decodes SDK PubKey using JSON marshaler.

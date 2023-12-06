@@ -8,7 +8,7 @@ mkdir -p $BUILD_PATH
 
 CMAKE_REQUIRED_PARAMS="-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}"
 
-snappy_version="1.1.9"
+snappy_version="1.1.10"
 cd $BUILD_PATH && wget https://github.com/google/snappy/archive/${snappy_version}.tar.gz && tar xzf ${snappy_version}.tar.gz && cd snappy-${snappy_version} && \
     mkdir -p build_place && cd build_place && \
     cmake $CMAKE_REQUIRED_PARAMS -DSNAPPY_BUILD_TESTS=OFF -DSNAPPY_BUILD_BENCHMARKS=OFF .. && \
@@ -18,7 +18,7 @@ cd $BUILD_PATH && wget https://github.com/google/snappy/archive/${snappy_version
 export CFLAGS='-fPIC -O3 -pipe' 
 export CXXFLAGS='-fPIC -O3 -pipe -Wno-uninitialized'
 
-zlib_version="1.2.13"
+zlib_version="1.3"
 cd $BUILD_PATH && wget https://github.com/madler/zlib/archive/v${zlib_version}.tar.gz && tar xzf v${zlib_version}.tar.gz && cd zlib-${zlib_version} && \
     ./configure --prefix=$INSTALL_PREFIX --static && make -j16 install && \
     cd $BUILD_PATH && rm -rf *

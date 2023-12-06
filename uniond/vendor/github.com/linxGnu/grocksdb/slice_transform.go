@@ -64,7 +64,7 @@ func registerSliceTransform(st SliceTransform) int {
 
 //export gorocksdb_slicetransform_transform
 func gorocksdb_slicetransform_transform(idx int, cKey *C.char, cKeyLen C.size_t, cDstLen *C.size_t) *C.char {
-	key := charToByte(cKey, cKeyLen)
+	key := refCBytes(cKey, cKeyLen)
 	dst := sliceTransforms.Get(idx).(sliceTransformWrapper).sliceTransform.Transform(key)
 	*cDstLen = C.size_t(len(dst))
 	return cByteSlice(dst)
@@ -72,14 +72,14 @@ func gorocksdb_slicetransform_transform(idx int, cKey *C.char, cKeyLen C.size_t,
 
 //export gorocksdb_slicetransform_in_domain
 func gorocksdb_slicetransform_in_domain(idx int, cKey *C.char, cKeyLen C.size_t) C.uchar {
-	key := charToByte(cKey, cKeyLen)
+	key := refCBytes(cKey, cKeyLen)
 	inDomain := sliceTransforms.Get(idx).(sliceTransformWrapper).sliceTransform.InDomain(key)
 	return boolToChar(inDomain)
 }
 
 //export gorocksdb_slicetransform_in_range
 func gorocksdb_slicetransform_in_range(idx int, cKey *C.char, cKeyLen C.size_t) C.uchar {
-	key := charToByte(cKey, cKeyLen)
+	key := refCBytes(cKey, cKeyLen)
 	inRange := sliceTransforms.Get(idx).(sliceTransformWrapper).sliceTransform.InRange(key)
 	return boolToChar(inRange)
 }

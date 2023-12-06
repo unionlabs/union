@@ -16,6 +16,14 @@ This package provides various compression algorithms.
 
 # changelog
 
+* Oct 22nd, 2023 - [v1.17.2](https://github.com/klauspost/compress/releases/tag/v1.17.2)
+	* zstd: Fix rare *CORRUPTION* output in "best" mode. See https://github.com/klauspost/compress/pull/876
+
+* Oct 14th, 2023 - [v1.17.1](https://github.com/klauspost/compress/releases/tag/v1.17.1)
+	* s2: Fix S2 "best" dictionary wrong encoding by @klauspost in https://github.com/klauspost/compress/pull/871
+	* flate: Reduce allocations in decompressor and minor code improvements by @fakefloordiv in https://github.com/klauspost/compress/pull/869
+	* s2: Fix EstimateBlockSize on 6&7 length input by @klauspost in https://github.com/klauspost/compress/pull/867
+
 * Sept 19th, 2023 - [v1.17.0](https://github.com/klauspost/compress/releases/tag/v1.17.0)
 	* Add experimental dictionary builder  https://github.com/klauspost/compress/pull/853
 	* Add xerial snappy read/writer https://github.com/klauspost/compress/pull/838

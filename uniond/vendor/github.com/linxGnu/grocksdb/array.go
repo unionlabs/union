@@ -3,14 +3,17 @@ package grocksdb
 // #include "stdlib.h"
 // #include "rocksdb/c.h"
 import "C"
+
 import (
 	"reflect"
 	"unsafe"
 )
 
-type charsSlice []*C.char
-type sizeTSlice []C.size_t
-type columnFamilySlice []*C.rocksdb_column_family_handle_t
+type (
+	charsSlice        []*C.char
+	sizeTSlice        []C.size_t
+	columnFamilySlice []*C.rocksdb_column_family_handle_t
+)
 
 func (s charsSlice) c() **C.char {
 	sH := (*reflect.SliceHeader)(unsafe.Pointer(&s))

@@ -350,6 +350,7 @@ func (s *Scratch) compress4Xp(src []byte) ([]byte, error) {
 // Does not update s.clearCount.
 func (s *Scratch) countSimple(in []byte) (max int, reuse bool) {
 	reuse = true
+	_ = s.count // Assert that s != nil to speed up the following loop.
 	for _, v := range in {
 		s.count[v]++
 	}
@@ -415,7 +416,7 @@ func (s *Scratch) validateTable(c cTable) bool {
 
 // minTableLog provides the minimum logSize to safely represent a distribution.
 func (s *Scratch) minTableLog() uint8 {
-	minBitsSrc := highBit32(uint32(s.br.remain())) + 1
+	minBitsSrc := highBit32(uint32(s.srcLen)) + 1
 	minBitsSymbols := highBit32(uint32(s.symbolLen-1)) + 2
 	if minBitsSrc < minBitsSymbols {
 		return uint8(minBitsSrc)
@@ -427,7 +428,7 @@ func (s *Scratch) minTableLog() uint8 {
 func (s *Scratch) optimalTableLog() {
 	tableLog := s.TableLog
 	minBits := s.minTableLog()
-	maxBitsSrc := uint8(highBit32(uint32(s.br.remain()-1))) - 1
+	maxBitsSrc := uint8(highBit32(uint32(s.srcLen-1))) - 1
 	if maxBitsSrc < tableLog {
 		// Accuracy can be reduced
 		tableLog = maxBitsSrc

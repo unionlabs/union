@@ -22,7 +22,7 @@ func newNativeTransaction(c *C.rocksdb_transaction_t) *Transaction {
 func (transaction *Transaction) SetName(name string) (err error) {
 	var (
 		cErr  *C.char
-		name_ = byteToChar([]byte(name))
+		name_ = refGoBytes([]byte(name))
 	)
 
 	C.rocksdb_transaction_set_name(transaction.c, name_, C.size_t(len(name)), &cErr)
@@ -67,7 +67,7 @@ func (transaction *Transaction) Get(opts *ReadOptions, key []byte) (slice *Slice
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_transaction_get(
@@ -84,7 +84,7 @@ func (transaction *Transaction) Get(opts *ReadOptions, key []byte) (slice *Slice
 func (transaction *Transaction) GetPinned(opts *ReadOptions, key []byte) (handle *PinnableSliceHandle, err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	cHandle := C.rocksdb_transaction_get_pinned(transaction.c, opts.c, cKey, C.size_t(len(key)), &cErr)
@@ -100,7 +100,7 @@ func (transaction *Transaction) GetWithCF(opts *ReadOptions, cf *ColumnFamilyHan
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_transaction_get_cf(
@@ -117,7 +117,7 @@ func (transaction *Transaction) GetWithCF(opts *ReadOptions, cf *ColumnFamilyHan
 func (transaction *Transaction) GetPinnedWithCF(opts *ReadOptions, cf *ColumnFamilyHandle, key []byte) (handle *PinnableSliceHandle, err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	cHandle := C.rocksdb_transaction_get_pinned_cf(transaction.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cErr)
@@ -134,7 +134,7 @@ func (transaction *Transaction) GetForUpdate(opts *ReadOptions, key []byte) (sli
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_transaction_get_for_update(
@@ -152,7 +152,7 @@ func (transaction *Transaction) GetForUpdate(opts *ReadOptions, key []byte) (sli
 func (transaction *Transaction) GetPinnedForUpdate(opts *ReadOptions, key []byte) (handle *PinnableSliceHandle, err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	cHandle := C.rocksdb_transaction_get_pinned_for_update(
@@ -172,7 +172,7 @@ func (transaction *Transaction) GetForUpdateWithCF(opts *ReadOptions, cf *Column
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_transaction_get_for_update_cf(
@@ -190,7 +190,7 @@ func (transaction *Transaction) GetForUpdateWithCF(opts *ReadOptions, cf *Column
 func (transaction *Transaction) GetPinnedForUpdateWithCF(opts *ReadOptions, cf *ColumnFamilyHandle, key []byte) (handle *PinnableSliceHandle, err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	cHandle := C.rocksdb_transaction_get_pinned_for_update_cf(
@@ -293,8 +293,8 @@ func (transaction *Transaction) MultiGetWithCF(opts *ReadOptions, cf *ColumnFami
 func (transaction *Transaction) Put(key, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_transaction_put(
@@ -309,8 +309,8 @@ func (transaction *Transaction) Put(key, value []byte) (err error) {
 func (transaction *Transaction) PutCF(cf *ColumnFamilyHandle, key, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_transaction_put_cf(
@@ -325,8 +325,8 @@ func (transaction *Transaction) PutCF(cf *ColumnFamilyHandle, key, value []byte)
 func (transaction *Transaction) Merge(key, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_transaction_merge(
@@ -341,8 +341,8 @@ func (transaction *Transaction) Merge(key, value []byte) (err error) {
 func (transaction *Transaction) MergeCF(cf *ColumnFamilyHandle, key, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_transaction_merge_cf(
@@ -357,7 +357,7 @@ func (transaction *Transaction) MergeCF(cf *ColumnFamilyHandle, key, value []byt
 func (transaction *Transaction) Delete(key []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	C.rocksdb_transaction_delete(transaction.c, cKey, C.size_t(len(key)), &cErr)
@@ -370,7 +370,7 @@ func (transaction *Transaction) Delete(key []byte) (err error) {
 func (transaction *Transaction) DeleteCF(cf *ColumnFamilyHandle, key []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	C.rocksdb_transaction_delete_cf(transaction.c, cf.c, cKey, C.size_t(len(key)), &cErr)

@@ -259,7 +259,7 @@ nyc-taxi-data-10M.csv   gzkp    1   3325605752  922273214   13929   227.68
 
 ## Decompressor
 
-Staus: STABLE - there may still be subtle bugs, but a wide variety of content has been tested.
+Status: STABLE - there may still be subtle bugs, but a wide variety of content has been tested.
 
 This library is being continuously [fuzz-tested](https://github.com/klauspost/compress-fuzz),
 kindly supplied by [fuzzit.dev](https://fuzzit.dev/). 

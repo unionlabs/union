@@ -114,13 +114,13 @@ func registerMergeOperator(merger MergeOperator) int {
 
 //export gorocksdb_mergeoperator_full_merge
 func gorocksdb_mergeoperator_full_merge(idx int, cKey *C.char, cKeyLen C.size_t, cExistingValue *C.char, cExistingValueLen C.size_t, cOperands **C.char, cOperandsLen *C.size_t, cNumOperands C.int, cSuccess *C.uchar, cNewValueLen *C.size_t) *C.char {
-	key := charToByte(cKey, cKeyLen)
+	key := refCBytes(cKey, cKeyLen)
 	rawOperands := charSlice(cOperands, cNumOperands)
 	operandsLen := sizeSlice(cOperandsLen, cNumOperands)
-	existingValue := charToByte(cExistingValue, cExistingValueLen)
+	existingValue := refCBytes(cExistingValue, cExistingValueLen)
 	operands := make([][]byte, int(cNumOperands))
 	for i, len := range operandsLen {
-		operands[i] = charToByte(rawOperands[i], len)
+		operands[i] = refCBytes(rawOperands[i], len)
 	}
 
 	newValue, success := mergeOperators.Get(idx).(mergeOperatorWrapper).mergeOperator.FullMerge(key, existingValue, operands)
@@ -134,12 +134,12 @@ func gorocksdb_mergeoperator_full_merge(idx int, cKey *C.char, cKeyLen C.size_t,
 
 //export gorocksdb_mergeoperator_partial_merge_multi
 func gorocksdb_mergeoperator_partial_merge_multi(idx int, cKey *C.char, cKeyLen C.size_t, cOperands **C.char, cOperandsLen *C.size_t, cNumOperands C.int, cSuccess *C.uchar, cNewValueLen *C.size_t) *C.char {
-	key := charToByte(cKey, cKeyLen)
+	key := refCBytes(cKey, cKeyLen)
 	rawOperands := charSlice(cOperands, cNumOperands)
 	operandsLen := sizeSlice(cOperandsLen, cNumOperands)
 	operands := make([][]byte, int(cNumOperands))
 	for i, len := range operandsLen {
-		operands[i] = charToByte(rawOperands[i], len)
+		operands[i] = refCBytes(rawOperands[i], len)
 	}
 
 	var newValue []byte

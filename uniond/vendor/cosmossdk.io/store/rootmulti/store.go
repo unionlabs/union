@@ -1,6 +1,7 @@
 package rootmulti
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -438,8 +439,19 @@ func (rs *Store) LatestVersion() int64 {
 // LastCommitID implements Committer/CommitStore.
 func (rs *Store) LastCommitID() types.CommitID {
 	if rs.lastCommitInfo == nil {
+		emptyHash := sha256.Sum256([]byte{})
+		appHash := emptyHash[:]
 		return types.CommitID{
 			Version: GetLatestVersion(rs.db),
+			Hash:    appHash, // set empty apphash to sha256([]byte{}) if info is nil
+		}
+	}
+	if len(rs.lastCommitInfo.CommitID().Hash) == 0 {
+		emptyHash := sha256.Sum256([]byte{})
+		appHash := emptyHash[:]
+		return types.CommitID{
+			Version: rs.lastCommitInfo.Version,
+			Hash:    appHash, // set empty apphash to sha256([]byte{}) if hash is nil
 		}
 	}
 

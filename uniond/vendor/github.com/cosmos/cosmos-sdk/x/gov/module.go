@@ -107,12 +107,6 @@ func (ab AppModuleBasic) GetTxCmd() *cobra.Command {
 	return cli.NewTxCmd(legacyProposalCLIHandlers)
 }
 
-// GetQueryCmd returns the custom query commands for the gov modules.
-// This command will be enhanced by AutoCLI as defined in the AutoCLIOptions() method.
-func (ab AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return cli.GetCustomQueryCmd(ab.ac)
-}
-
 func getProposalCLIHandlers(handlers []govclient.ProposalHandler) []*cobra.Command {
 	proposalCLIHandlers := make([]*cobra.Command, 0, len(handlers))
 	for _, proposalHandler := range handlers {

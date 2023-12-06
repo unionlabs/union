@@ -18,7 +18,7 @@ recommend depending on this library for new projects.
 
 ### Minimum Go Version
 
-Go 1.19+
+Go 1.21+
 
 ## Supported Database Backends
 
@@ -46,11 +46,11 @@ Go 1.19+
   which have good performance for read-heavy workloads and range scans. Supports
   serializable ACID transactions.
 
-- **[RocksDB](https://github.com/tecbot/gorocksdb) [experimental]:** A [Go
-  wrapper](https://github.com/tecbot/gorocksdb) around
+- **[RocksDB](https://github.com/linxGnu/grocksdb) [experimental]:** A [Go
+  wrapper](https://github.com/linxGnu/grocksdb) around
   [RocksDB](https://rocksdb.org). Similarly to LevelDB (above) it uses LSM-trees
   for on-disk storage, but is optimized for fast storage media such as SSDs and
-      memory. Supports atomic transactions, but not full ACID transactions.
+  memory. Supports atomic transactions, but not full ACID transactions.
 
 - **[BadgerDB](https://github.com/dgraph-io/badger) [experimental]:** A
   key-value database written as a pure-Go alternative to e.g. LevelDB and

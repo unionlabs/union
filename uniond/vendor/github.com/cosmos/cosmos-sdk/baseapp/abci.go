@@ -2,7 +2,6 @@ package baseapp
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"sort"
 	"strings"
@@ -126,28 +125,16 @@ func (app *BaseApp) InitChain(req *abci.RequestInitChain) (*abci.ResponseInitCha
 		}
 	}
 
-	// In the case of a new chain, AppHash will be the hash of an empty string.
-	// During an upgrade, it'll be the hash of the last committed block.
-	var appHash []byte
-	if !app.LastCommitID().IsZero() {
-		appHash = app.LastCommitID().Hash
-	} else {
-		// $ echo -n '' | sha256sum
-		// e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-		emptyHash := sha256.Sum256([]byte{})
-		appHash = emptyHash[:]
-	}
-
 	// NOTE: We don't commit, but FinalizeBlock for block InitialHeight starts from
 	// this FinalizeBlockState.
 	return &abci.ResponseInitChain{
 		ConsensusParams: res.ConsensusParams,
 		Validators:      res.Validators,
-		AppHash:         appHash,
+		AppHash:         app.LastCommitID().Hash,
 	}, nil
 }
 
-func (app *BaseApp) Info(req *abci.RequestInfo) (*abci.ResponseInfo, error) {
+func (app *BaseApp) Info(_ *abci.RequestInfo) (*abci.ResponseInfo, error) {
 	lastCommitID := app.cms.LastCommitID()
 
 	return &abci.ResponseInfo{
@@ -872,6 +859,14 @@ func (app *BaseApp) FinalizeBlock(req *abci.RequestFinalizeBlock) (*abci.Respons
 	if res != nil {
 		res.AppHash = app.workingHash()
 	}
+
+	// call the streaming service hooks with the FinalizeBlock messages
+	for _, streamingListener := range app.streamingManager.ABCIListeners {
+		if err := streamingListener.ListenFinalizeBlock(app.finalizeBlockState.ctx, *req, *res); err != nil {
+			app.logger.Error("ListenFinalizeBlock listening hook failed", "height", req.Height, "err", err)
+		}
+	}
+
 	return res, err
 }
 

@@ -36,7 +36,7 @@ func (s *Slice) Exists() bool {
 // nil slice.
 func (s *Slice) Data() []byte {
 	if s.Exists() {
-		return charToByte(s.data, s.size)
+		return refCBytes(s.data, s.size)
 	}
 
 	return nil
@@ -76,7 +76,7 @@ func (h *PinnableSliceHandle) Data() []byte {
 	if h.Exists() {
 		var cValLen C.size_t
 		cValue := C.rocksdb_pinnableslice_value(h.c, &cValLen)
-		return charToByte(cValue, cValLen)
+		return refCBytes(cValue, cValLen)
 	}
 
 	return nil
