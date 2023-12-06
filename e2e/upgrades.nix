@@ -34,7 +34,7 @@ let
     union.succeed('docker cp ${mkUpgradeProposal version height}/proposal-${version}.json devnet-minimal-uniond-0-1:/proposal-${version}.json')
     union.succeed('docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} --root . call --bundle /bundle -- tx gov submit-proposal proposal-${version}.json --from val-0 --keyring-backend test --home ./home -y')
 
-    union.shell_interact()
+    time.sleep(6)
 
     ${forEachNode (id: "union.succeed('docker exec devnet-minimal-uniond-${id}-1 ${unionvisorBin} --root . call --bundle /bundle -- tx gov vote 1 yes --keyring-backend test --from val-${id} --home ./home -y')")}
 
@@ -46,12 +46,37 @@ in
     name = "upgrade-from-genesis";
 
     testScript = ''
+      import time
       union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
       ${forEachNode (id: "union.succeed('docker cp ${bundle} devnet-minimal-uniond-${id}-1:/bundle')")}
 
       # Ensure the union network commits more than one block
       union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+
+      ${upgradeTo "v0.15.0" 10}
+      ${upgradeTo "v0.16.0" 20}
+    '';
+
+    nodes = {
+      union = e2e.unionTestnetGenesisNode.node;
+    };
+  };
+  upgrade-with-tokenfactory-state = e2e.mkTest {
+    name = "upgrade-with-tokenfactory-state";
+
+    testScript = ''
+      import time
+      union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
+
+      ${forEachNode (id: "union.succeed('docker cp ${bundle} devnet-minimal-uniond-${id}-1:/bundle')")}
+
+      # Ensure the union network commits more than one block
+      union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+
+      union.succeed('docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} --root . call --bundle /bundle -- tx tokenfactory create-denom bazinga --from val-0 --keyring-backend test --home ./home -y')
+
+      # union.succeed('docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} --root . call --bundle /bundle -- tx tokenfactory 10000000bazinga --from val-0 --keyring-backend test --home ./home -y')
 
       ${upgradeTo "v0.15.0" 10}
       ${upgradeTo "v0.16.0" 20}

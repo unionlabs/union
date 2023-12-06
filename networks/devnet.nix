@@ -29,7 +29,7 @@
             devnet-validator-keys = self'.packages.minimal-validator-keys;
             devnet-validator-node-ids = self'.packages.minimal-validator-node-ids;
             network = "union-minimal-1";
-            bundle = self'.packages.bundle-testnet-4;
+            bundle = self'.packages.bundle-testnet-next;
           };
         })
         4));

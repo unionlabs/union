@@ -44,6 +44,7 @@ in
       ''
         HOME=.
         mkdir home
+        mkdir /tmp
         cp -R ${devnet-genesis}/* ./home
         cp ${devnet-validator-keys}/valkey-${toString id}.json ./home/config/priv_validator_key.json
         cp ${devnet-validator-node-ids}/valnode-${toString id}.json ./home/config/node_key.json
