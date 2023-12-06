@@ -30,3 +30,22 @@ issues:
 linters-settings:
   errcheck:
     check-blank: true
+  depguard:
+    rules:
+      main:
+        files:
+          - $all
+          - "!$test"
+        allow:
+          - $gostd
+          - github.com/cometbft
+          - github.com/syndtr/goleveldb/leveldb
+          - github.com/google/btree
+      test:
+        files:
+          - $test
+        allow:
+          - $gostd
+          - github.com/cometbft
+          - github.com/syndtr/goleveldb/leveldb
+          - github.com/stretchr/testify

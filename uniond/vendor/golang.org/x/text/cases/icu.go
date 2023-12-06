@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 //go:build icu
-// +build icu
 
 package cases
 

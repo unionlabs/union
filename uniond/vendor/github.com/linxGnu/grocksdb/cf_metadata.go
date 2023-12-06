@@ -2,6 +2,7 @@ package grocksdb
 
 // #include "rocksdb/c.h"
 import "C"
+import "unsafe"
 
 // ColumnFamilyMetadata contains metadata info of column family.
 type ColumnFamilyMetadata struct {
@@ -98,10 +99,12 @@ func sstMetas(c *C.rocksdb_level_metadata_t) []SstMetadata {
 
 		var ln C.size_t
 		sk := C.rocksdb_sst_file_metadata_get_smallestkey(sm, &ln)
-		metas[i].smallestKey = charToByte(sk, ln)
+		metas[i].smallestKey = C.GoBytes(unsafe.Pointer(sk), C.int(ln))
+		C.rocksdb_free(unsafe.Pointer(sk))
 
 		sk = C.rocksdb_sst_file_metadata_get_largestkey(sm, &ln)
-		metas[i].largestKey = charToByte(sk, ln)
+		metas[i].largestKey = C.GoBytes(unsafe.Pointer(sk), C.int(ln))
+		C.rocksdb_free(unsafe.Pointer(sk))
 
 		C.rocksdb_sst_file_metadata_destroy(sm)
 	}

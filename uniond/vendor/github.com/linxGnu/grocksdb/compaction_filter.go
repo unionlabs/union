@@ -76,14 +76,14 @@ func registerCompactionFilter(filter CompactionFilter) int {
 
 //export gorocksdb_compactionfilter_filter
 func gorocksdb_compactionfilter_filter(idx int, cLevel C.int, cKey *C.char, cKeyLen C.size_t, cVal *C.char, cValLen C.size_t, cNewVal **C.char, cNewValLen *C.size_t, cValChanged *C.uchar) C.int {
-	key := charToByte(cKey, cKeyLen)
-	val := charToByte(cVal, cValLen)
+	key := refCBytes(cKey, cKeyLen)
+	val := refCBytes(cVal, cValLen)
 
 	remove, newVal := compactionFilters.Get(idx).(compactionFilterWrapper).filter.Filter(int(cLevel), key, val)
 	if remove {
 		return C.int(1)
 	} else if newVal != nil {
-		*cNewVal = byteToChar(newVal)
+		*cNewVal = refGoBytes(newVal)
 		*cNewValLen = C.size_t(len(newVal))
 		*cValChanged = C.uchar(1)
 	}

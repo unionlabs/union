@@ -403,7 +403,7 @@ func OpenDbAndTrimHistory(opts *Options,
 
 	cHandles := make([]*C.rocksdb_column_family_handle_t, numColumnFamilies)
 
-	cTs := byteToChar(trimTimestamp)
+	cTs := refGoBytes(trimTimestamp)
 
 	var cErr *C.char
 	_db := C.rocksdb_open_and_trim_history(
@@ -476,9 +476,9 @@ func (db *DB) KeyMayExists(opts *ReadOptions, key []byte, timestamp string) (sli
 	var (
 		cValue     *C.char
 		cValLen    C.size_t
-		cKey               = byteToChar(key)
+		cKey               = refGoBytes(key)
 		cFound     C.uchar = 0
-		cTimestamp         = byteToChar(t)
+		cTimestamp         = refGoBytes(t)
 	)
 
 	C.rocksdb_key_may_exist(db.c, opts.c,
@@ -502,9 +502,9 @@ func (db *DB) KeyMayExistsCF(opts *ReadOptions, cf *ColumnFamilyHandle, key []by
 	var (
 		cValue     *C.char
 		cValLen    C.size_t
-		cKey               = byteToChar(key)
+		cKey               = refGoBytes(key)
 		cFound     C.uchar = 0
-		cTimestamp         = byteToChar(t)
+		cTimestamp         = refGoBytes(t)
 	)
 
 	C.rocksdb_key_may_exist_cf(db.c, opts.c,
@@ -526,7 +526,7 @@ func (db *DB) Get(opts *ReadOptions, key []byte) (slice *Slice, err error) {
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_get(db.c, opts.c, cKey, C.size_t(len(key)), &cValLen, &cErr)
@@ -544,7 +544,7 @@ func (db *DB) GetWithTS(opts *ReadOptions, key []byte) (value, timestamp *Slice,
 		cTs     *C.char
 		cValLen C.size_t
 		cTsLen  C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_get_with_ts(db.c, opts.c, cKey, C.size_t(len(key)), &cValLen, &cTs, &cTsLen, &cErr)
@@ -561,7 +561,7 @@ func (db *DB) GetBytes(opts *ReadOptions, key []byte) (data []byte, err error) {
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_get(db.c, opts.c, cKey, C.size_t(len(key)), &cValLen, &cErr)
@@ -584,7 +584,7 @@ func (db *DB) GetBytesWithTS(opts *ReadOptions, key []byte) (data, timestamp []b
 		cTs     *C.char
 		cValLen C.size_t
 		cTsLen  C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_get_with_ts(db.c, opts.c, cKey, C.size_t(len(key)), &cValLen, &cTs, &cTsLen, &cErr)
@@ -607,7 +607,7 @@ func (db *DB) GetCF(opts *ReadOptions, cf *ColumnFamilyHandle, key []byte) (slic
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_get_cf(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cValLen, &cErr)
@@ -625,7 +625,7 @@ func (db *DB) GetCFWithTS(opts *ReadOptions, cf *ColumnFamilyHandle, key []byte)
 		cTs     *C.char
 		cValLen C.size_t
 		cTsLen  C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_get_cf_with_ts(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cValLen, &cTs, &cTsLen, &cErr)
@@ -641,7 +641,7 @@ func (db *DB) GetCFWithTS(opts *ReadOptions, cf *ColumnFamilyHandle, key []byte)
 func (db *DB) GetPinned(opts *ReadOptions, key []byte) (handle *PinnableSliceHandle, err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	cHandle := C.rocksdb_get_pinned(db.c, opts.c, cKey, C.size_t(len(key)), &cErr)
@@ -656,7 +656,7 @@ func (db *DB) GetPinned(opts *ReadOptions, key []byte) (handle *PinnableSliceHan
 func (db *DB) GetPinnedCF(opts *ReadOptions, cf *ColumnFamilyHandle, key []byte) (handle *PinnableSliceHandle, err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	cHandle := C.rocksdb_get_pinned_cf(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cErr)
@@ -880,8 +880,8 @@ func (db *DB) MultiGetMultiCFWithTS(opts *ReadOptions, cfs ColumnFamilyHandles, 
 func (db *DB) Put(opts *WriteOptions, key, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_put(db.c, opts.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)), &cErr)
@@ -894,9 +894,9 @@ func (db *DB) Put(opts *WriteOptions, key, value []byte) (err error) {
 func (db *DB) PutWithTS(opts *WriteOptions, key, ts, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
-		cTs    = byteToChar(ts)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
+		cTs    = refGoBytes(ts)
 	)
 
 	C.rocksdb_put_with_ts(db.c, opts.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)), cValue, C.size_t(len(value)), &cErr)
@@ -909,8 +909,8 @@ func (db *DB) PutWithTS(opts *WriteOptions, key, ts, value []byte) (err error) {
 func (db *DB) PutCF(opts *WriteOptions, cf *ColumnFamilyHandle, key, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_put_cf(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)), &cErr)
@@ -923,9 +923,9 @@ func (db *DB) PutCF(opts *WriteOptions, cf *ColumnFamilyHandle, key, value []byt
 func (db *DB) PutCFWithTS(opts *WriteOptions, cf *ColumnFamilyHandle, key, ts, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
-		cTs    = byteToChar(ts)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
+		cTs    = refGoBytes(ts)
 	)
 
 	C.rocksdb_put_cf_with_ts(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)), cValue, C.size_t(len(value)), &cErr)
@@ -938,7 +938,7 @@ func (db *DB) PutCFWithTS(opts *WriteOptions, cf *ColumnFamilyHandle, key, ts, v
 func (db *DB) Delete(opts *WriteOptions, key []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	C.rocksdb_delete(db.c, opts.c, cKey, C.size_t(len(key)), &cErr)
@@ -951,7 +951,7 @@ func (db *DB) Delete(opts *WriteOptions, key []byte) (err error) {
 func (db *DB) DeleteCF(opts *WriteOptions, cf *ColumnFamilyHandle, key []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	C.rocksdb_delete_cf(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cErr)
@@ -964,8 +964,8 @@ func (db *DB) DeleteCF(opts *WriteOptions, cf *ColumnFamilyHandle, key []byte) (
 func (db *DB) DeleteWithTS(opts *WriteOptions, key, ts []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
-		cTs  = byteToChar(ts)
+		cKey = refGoBytes(key)
+		cTs  = refGoBytes(ts)
 	)
 
 	C.rocksdb_delete_with_ts(db.c, opts.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)), &cErr)
@@ -978,8 +978,8 @@ func (db *DB) DeleteWithTS(opts *WriteOptions, key, ts []byte) (err error) {
 func (db *DB) DeleteCFWithTS(opts *WriteOptions, cf *ColumnFamilyHandle, key, ts []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
-		cTs  = byteToChar(ts)
+		cKey = refGoBytes(key)
+		cTs  = refGoBytes(ts)
 	)
 
 	C.rocksdb_delete_cf_with_ts(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)), &cErr)
@@ -992,8 +992,8 @@ func (db *DB) DeleteCFWithTS(opts *WriteOptions, cf *ColumnFamilyHandle, key, ts
 func (db *DB) SingleDeleteWithTS(opts *WriteOptions, key, ts []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
-		cTs  = byteToChar(ts)
+		cKey = refGoBytes(key)
+		cTs  = refGoBytes(ts)
 	)
 
 	C.rocksdb_singledelete_with_ts(db.c, opts.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)), &cErr)
@@ -1006,8 +1006,8 @@ func (db *DB) SingleDeleteWithTS(opts *WriteOptions, key, ts []byte) (err error)
 func (db *DB) SingleDeleteCFWithTS(opts *WriteOptions, cf *ColumnFamilyHandle, key, ts []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
-		cTs  = byteToChar(ts)
+		cKey = refGoBytes(key)
+		cTs  = refGoBytes(ts)
 	)
 
 	C.rocksdb_singledelete_cf_with_ts(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)), &cErr)
@@ -1020,8 +1020,8 @@ func (db *DB) SingleDeleteCFWithTS(opts *WriteOptions, cf *ColumnFamilyHandle, k
 func (db *DB) DeleteRangeCF(opts *WriteOptions, cf *ColumnFamilyHandle, startKey []byte, endKey []byte) (err error) {
 	var (
 		cErr      *C.char
-		cStartKey = byteToChar(startKey)
-		cEndKey   = byteToChar(endKey)
+		cStartKey = refGoBytes(startKey)
+		cEndKey   = refGoBytes(endKey)
 	)
 
 	C.rocksdb_delete_range_cf(db.c, opts.c, cf.c, cStartKey, C.size_t(len(startKey)), cEndKey, C.size_t(len(endKey)), &cErr)
@@ -1049,7 +1049,7 @@ func (db *DB) DeleteRangeCF(opts *WriteOptions, cf *ColumnFamilyHandle, startKey
 func (db *DB) SingleDelete(opts *WriteOptions, key []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	C.rocksdb_singledelete(db.c, opts.c, cKey, C.size_t(len(key)), &cErr)
@@ -1077,7 +1077,7 @@ func (db *DB) SingleDelete(opts *WriteOptions, key []byte) (err error) {
 func (db *DB) SingleDeleteCF(opts *WriteOptions, cf *ColumnFamilyHandle, key []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	C.rocksdb_singledelete_cf(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cErr)
@@ -1090,8 +1090,8 @@ func (db *DB) SingleDeleteCF(opts *WriteOptions, cf *ColumnFamilyHandle, key []b
 func (db *DB) Merge(opts *WriteOptions, key []byte, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_merge(db.c, opts.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)), &cErr)
@@ -1105,8 +1105,8 @@ func (db *DB) Merge(opts *WriteOptions, key []byte, value []byte) (err error) {
 func (db *DB) MergeCF(opts *WriteOptions, cf *ColumnFamilyHandle, key []byte, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_merge_cf(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)), &cErr)
@@ -1540,39 +1540,39 @@ func (db *DB) GetLiveFilesMetaData() []LiveFileMetadata {
 // CompactRange runs a manual compaction on the Range of keys given. This is
 // not likely to be needed for typical usage.
 func (db *DB) CompactRange(r Range) {
-	cStart := byteToChar(r.Start)
-	cLimit := byteToChar(r.Limit)
+	cStart := refGoBytes(r.Start)
+	cLimit := refGoBytes(r.Limit)
 	C.rocksdb_compact_range(db.c, cStart, C.size_t(len(r.Start)), cLimit, C.size_t(len(r.Limit)))
 }
 
 // CompactRangeCF runs a manual compaction on the Range of keys given on the
 // given column family. This is not likely to be needed for typical usage.
 func (db *DB) CompactRangeCF(cf *ColumnFamilyHandle, r Range) {
-	cStart := byteToChar(r.Start)
-	cLimit := byteToChar(r.Limit)
+	cStart := refGoBytes(r.Start)
+	cLimit := refGoBytes(r.Limit)
 	C.rocksdb_compact_range_cf(db.c, cf.c, cStart, C.size_t(len(r.Start)), cLimit, C.size_t(len(r.Limit)))
 }
 
 // CompactRangeOpt runs a manual compaction on the Range of keys given with provided options. This is
 // not likely to be needed for typical usage.
 func (db *DB) CompactRangeOpt(r Range, opt *CompactRangeOptions) {
-	cStart := byteToChar(r.Start)
-	cLimit := byteToChar(r.Limit)
+	cStart := refGoBytes(r.Start)
+	cLimit := refGoBytes(r.Limit)
 	C.rocksdb_compact_range_opt(db.c, opt.c, cStart, C.size_t(len(r.Start)), cLimit, C.size_t(len(r.Limit)))
 }
 
 // CompactRangeCFOpt runs a manual compaction on the Range of keys given on the
 // given column family with provided options. This is not likely to be needed for typical usage.
 func (db *DB) CompactRangeCFOpt(cf *ColumnFamilyHandle, r Range, opt *CompactRangeOptions) {
-	cStart := byteToChar(r.Start)
-	cLimit := byteToChar(r.Limit)
+	cStart := refGoBytes(r.Start)
+	cLimit := refGoBytes(r.Limit)
 	C.rocksdb_compact_range_cf_opt(db.c, cf.c, opt.c, cStart, C.size_t(len(r.Start)), cLimit, C.size_t(len(r.Limit)))
 }
 
 // SuggestCompactRange only for leveled compaction.
 func (db *DB) SuggestCompactRange(r Range) (err error) {
-	cStart := byteToChar(r.Start)
-	cLimit := byteToChar(r.Limit)
+	cStart := refGoBytes(r.Start)
+	cLimit := refGoBytes(r.Limit)
 
 	var cErr *C.char
 	C.rocksdb_suggest_compact_range(db.c, cStart, C.size_t(len(r.Start)), cLimit, C.size_t(len(r.Limit)), &cErr)
@@ -1583,8 +1583,8 @@ func (db *DB) SuggestCompactRange(r Range) (err error) {
 
 // SuggestCompactRangeCF only for leveled compaction.
 func (db *DB) SuggestCompactRangeCF(cf *ColumnFamilyHandle, r Range) (err error) {
-	cStart := byteToChar(r.Start)
-	cLimit := byteToChar(r.Limit)
+	cStart := refGoBytes(r.Start)
+	cLimit := refGoBytes(r.Limit)
 
 	var cErr *C.char
 	C.rocksdb_suggest_compact_range_cf(db.c, cf.c, cStart, C.size_t(len(r.Start)), cLimit, C.size_t(len(r.Limit)), &cErr)
@@ -1672,8 +1672,8 @@ func (db *DB) DeleteFile(name string) {
 
 // DeleteFileInRange deletes SST files that contain keys between the Range, [r.Start, r.Limit]
 func (db *DB) DeleteFileInRange(r Range) (err error) {
-	cStartKey := byteToChar(r.Start)
-	cLimitKey := byteToChar(r.Limit)
+	cStartKey := refGoBytes(r.Start)
+	cLimitKey := refGoBytes(r.Limit)
 
 	var cErr *C.char
 
@@ -1691,8 +1691,8 @@ func (db *DB) DeleteFileInRange(r Range) (err error) {
 // DeleteFileInRangeCF deletes SST files that contain keys between the Range, [r.Start, r.Limit], and
 // belong to a given column family
 func (db *DB) DeleteFileInRangeCF(cf *ColumnFamilyHandle, r Range) (err error) {
-	cStartKey := byteToChar(r.Start)
-	cLimitKey := byteToChar(r.Limit)
+	cStartKey := refGoBytes(r.Start)
+	cLimitKey := refGoBytes(r.Limit)
 
 	var cErr *C.char
 
@@ -1715,7 +1715,7 @@ func (db *DB) DeleteFileInRangeCF(cf *ColumnFamilyHandle, r Range) (err error) {
 func (db *DB) IncreaseFullHistoryTsLow(handle *ColumnFamilyHandle, ts []byte) (err error) {
 	var cErr *C.char
 
-	cTs := byteToChar(ts)
+	cTs := refGoBytes(ts)
 	C.rocksdb_increase_full_history_ts_low(db.c, handle.c, cTs, C.size_t(len(ts)), &cErr)
 
 	err = fromCError(cErr)

@@ -3,6 +3,7 @@ package grocksdb
 // #include <stdlib.h>
 // #include "rocksdb/c.h"
 import "C"
+
 import (
 	"errors"
 	"unsafe"
@@ -21,13 +22,13 @@ func charToBool(c C.uchar) bool {
 	return c != 0
 }
 
-// charToByte converts a *C.char to a byte slice.
-func charToByte(data *C.char, len C.size_t) []byte {
+// refCBytes referencing *C.char.
+func refCBytes(data *C.char, len C.size_t) []byte {
 	return unsafe.Slice((*byte)(unsafe.Pointer(data)), int(len))
 }
 
-// byteToChar returns *C.char from byte slice.
-func byteToChar(b []byte) *C.char {
+// refGoBytes returns *C.char from byte slice.
+func refGoBytes(b []byte) *C.char {
 	var c *C.char
 	if len(b) > 0 {
 		c = (*C.char)(unsafe.Pointer(&b[0]))

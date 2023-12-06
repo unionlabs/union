@@ -26,42 +26,42 @@ func newNativeWriteBatchWI(c *C.rocksdb_writebatch_wi_t) *WriteBatchWI {
 
 // Put queues a key-value pair.
 func (wb *WriteBatchWI) Put(key, value []byte) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	C.rocksdb_writebatch_wi_put(wb.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)))
 }
 
 // PutCF queues a key-value pair in a column family.
 func (wb *WriteBatchWI) PutCF(cf *ColumnFamilyHandle, key, value []byte) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	C.rocksdb_writebatch_wi_put_cf(wb.c, cf.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)))
 }
 
 // PutLogData appends a blob of arbitrary size to the records in this batch.
 func (wb *WriteBatchWI) PutLogData(blob []byte) {
-	cBlob := byteToChar(blob)
+	cBlob := refGoBytes(blob)
 	C.rocksdb_writebatch_wi_put_log_data(wb.c, cBlob, C.size_t(len(blob)))
 }
 
 // Merge queues a merge of "value" with the existing value of "key".
 func (wb *WriteBatchWI) Merge(key, value []byte) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	C.rocksdb_writebatch_wi_merge(wb.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)))
 }
 
 // MergeCF queues a merge of "value" with the existing value of "key" in a
 // column family.
 func (wb *WriteBatchWI) MergeCF(cf *ColumnFamilyHandle, key, value []byte) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	C.rocksdb_writebatch_wi_merge_cf(wb.c, cf.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)))
 }
 
 // Delete queues a deletion of the data at key.
 func (wb *WriteBatchWI) Delete(key []byte) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	C.rocksdb_writebatch_wi_delete(wb.c, cKey, C.size_t(len(key)))
 }
 
@@ -82,34 +82,34 @@ func (wb *WriteBatchWI) Delete(key []byte) {
 //
 // Note: consider setting options.sync = true.
 func (wb *WriteBatchWI) SingleDelete(key []byte) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	C.rocksdb_writebatch_wi_singledelete(wb.c, cKey, C.size_t(len(key)))
 }
 
 // DeleteCF queues a deletion of the data at key in a column family.
 func (wb *WriteBatchWI) DeleteCF(cf *ColumnFamilyHandle, key []byte) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	C.rocksdb_writebatch_wi_delete_cf(wb.c, cf.c, cKey, C.size_t(len(key)))
 }
 
 // SingleDeleteCF same as SingleDelete but specific column family
 func (wb *WriteBatchWI) SingleDeleteCF(cf *ColumnFamilyHandle, key []byte) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	C.rocksdb_writebatch_wi_singledelete_cf(wb.c, cf.c, cKey, C.size_t(len(key)))
 }
 
 // DeleteRange deletes keys that are between [startKey, endKey)
 func (wb *WriteBatchWI) DeleteRange(startKey []byte, endKey []byte) {
-	cStartKey := byteToChar(startKey)
-	cEndKey := byteToChar(endKey)
+	cStartKey := refGoBytes(startKey)
+	cEndKey := refGoBytes(endKey)
 	C.rocksdb_writebatch_wi_delete_range(wb.c, cStartKey, C.size_t(len(startKey)), cEndKey, C.size_t(len(endKey)))
 }
 
 // DeleteRangeCF deletes keys that are between [startKey, endKey) and
 // belong to a given column family
 func (wb *WriteBatchWI) DeleteRangeCF(cf *ColumnFamilyHandle, startKey []byte, endKey []byte) {
-	cStartKey := byteToChar(startKey)
-	cEndKey := byteToChar(endKey)
+	cStartKey := refGoBytes(startKey)
+	cEndKey := refGoBytes(endKey)
 	C.rocksdb_writebatch_wi_delete_range_cf(wb.c, cf.c, cStartKey, C.size_t(len(startKey)), cEndKey, C.size_t(len(endKey)))
 }
 
@@ -117,7 +117,7 @@ func (wb *WriteBatchWI) DeleteRangeCF(cf *ColumnFamilyHandle, startKey []byte, e
 func (wb *WriteBatchWI) Data() []byte {
 	var cSize C.size_t
 	cValue := C.rocksdb_writebatch_wi_data(wb.c, &cSize)
-	return charToByte(cValue, cSize)
+	return refCBytes(cValue, cSize)
 }
 
 // Count returns the number of updates in the batch.
@@ -154,7 +154,7 @@ func (wb *WriteBatchWI) Get(opts *Options, key []byte) (slice *Slice, err error)
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_writebatch_wi_get_from_batch(wb.c, opts.c, cKey, C.size_t(len(key)), &cValLen, &cErr)
@@ -171,7 +171,7 @@ func (wb *WriteBatchWI) GetWithCF(opts *Options, cf *ColumnFamilyHandle, key []b
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_writebatch_wi_get_from_batch_cf(wb.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cValLen, &cErr)
@@ -187,7 +187,7 @@ func (wb *WriteBatchWI) GetFromDB(db *DB, opts *ReadOptions, key []byte) (slice 
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_writebatch_wi_get_from_batch_and_db(wb.c, db.c, opts.c, cKey, C.size_t(len(key)), &cValLen, &cErr)
@@ -204,7 +204,7 @@ func (wb *WriteBatchWI) GetFromDBWithCF(db *DB, opts *ReadOptions, cf *ColumnFam
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_writebatch_wi_get_from_batch_and_db_cf(wb.c, db.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cValLen, &cErr)

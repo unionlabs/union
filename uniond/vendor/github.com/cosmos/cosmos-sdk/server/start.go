@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"runtime/pprof"
+	"time"
 
 	"github.com/cometbft/cometbft/abci/server"
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
@@ -65,6 +66,7 @@ const (
 	FlagMinRetainBlocks     = "min-retain-blocks"
 	FlagIAVLCacheSize       = "iavl-cache-size"
 	FlagDisableIAVLFastNode = "iavl-disable-fastnode"
+	FlagShutdownGrace       = "shutdown-grace"
 
 	// state sync-related flags
 	FlagStateSyncSnapshotInterval   = "state-sync.snapshot-interval"
@@ -169,9 +171,19 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 				serverCtx.Logger.Info("starting ABCI without CometBFT")
 			}
 
-			return wrapCPUProfile(serverCtx, func() error {
+			err = wrapCPUProfile(serverCtx, func() error {
 				return start(serverCtx, clientCtx, appCreator, withCMT, opts)
 			})
+
+			serverCtx.Logger.Debug("received quit signal")
+			graceDuration, _ := cmd.Flags().GetDuration(FlagShutdownGrace)
+			if graceDuration > 0 {
+				serverCtx.Logger.Info("graceful shutdown start", FlagShutdownGrace, graceDuration)
+				<-time.After(graceDuration)
+				serverCtx.Logger.Info("graceful shutdown complete")
+			}
+
+			return err
 		},
 	}
 
@@ -209,6 +221,7 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 	cmd.Flags().Uint32(FlagStateSyncSnapshotKeepRecent, 2, "State sync snapshot to keep")
 	cmd.Flags().Bool(FlagDisableIAVLFastNode, false, "Disable fast node for IAVL tree")
 	cmd.Flags().Int(FlagMempoolMaxTxs, mempool.DefaultMaxTx, "Sets MaxTx value for the app-side mempool")
+	cmd.Flags().Duration(FlagShutdownGrace, 0*time.Second, "On Shutdown, duration to wait for resource clean up")
 
 	// support old flags name for backwards compatibility
 	cmd.Flags().SetNormalizeFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {

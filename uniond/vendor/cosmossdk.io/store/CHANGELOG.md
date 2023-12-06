@@ -23,15 +23,21 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
+## v1.0.1 (November 28, 2023)
+
+### Bug Fixes
+
+* [#18563](https://github.com/cosmos/cosmos-sdk/pull/18563) `LastCommitID().Hash` will always return `sha256([]byte{})` if the store is empty.
+
 ## v1.0.0 (October 31, 2023)
 
 ### Features
 
 * [#17294](https://github.com/cosmos/cosmos-sdk/pull/17294) Add snapshot manager Close method.
 * [#15568](https://github.com/cosmos/cosmos-sdk/pull/15568) Migrate the `iavl` to the new key format.
-  * Remove `DeleteVersion`, `DeleteVersions`, `LazyLoadVersionForOverwriting` from `iavl` tree API.
-  * Add `DeleteVersionsTo` and `SaveChangeSet`, since it will keep versions sequentially like `fromVersion` to `toVersion`.
-  * Refactor the pruning manager to use `DeleteVersionsTo`.
+    * Remove `DeleteVersion`, `DeleteVersions`, `LazyLoadVersionForOverwriting` from `iavl` tree API.
+    * Add `DeleteVersionsTo` and `SaveChangeSet`, since it will keep versions sequentially like `fromVersion` to `toVersion`.
+    * Refactor the pruning manager to use `DeleteVersionsTo`.
 * [#15712](https://github.com/cosmos/cosmos-sdk/pull/15712) Add `WorkingHash` function to the store interface  to get the current app hash before commit.
 * [#14645](https://github.com/cosmos/cosmos-sdk/pull/14645) Add limit to the length of key and value.
 * [#15683](https://github.com/cosmos/cosmos-sdk/pull/15683) `rootmulti.Store.CacheMultiStoreWithVersion` now can handle loading archival states that don't persist any of the module stores the current state has.

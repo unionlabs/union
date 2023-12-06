@@ -89,22 +89,22 @@ func registerComperator(cmp *Comparator) int {
 
 //export gorocksdb_comparator_compare
 func gorocksdb_comparator_compare(idx int, cKeyA *C.char, cKeyALen C.size_t, cKeyB *C.char, cKeyBLen C.size_t) C.int {
-	keyA := charToByte(cKeyA, cKeyALen)
-	keyB := charToByte(cKeyB, cKeyBLen)
+	keyA := refCBytes(cKeyA, cKeyALen)
+	keyB := refCBytes(cKeyB, cKeyBLen)
 	return C.int(comperators.Get(idx).(comperatorWrapper).comparator.Compare(keyA, keyB))
 }
 
 //export gorocksdb_comparator_compare_ts
 func gorocksdb_comparator_compare_ts(idx int, cTsA *C.char, cTsALen C.size_t, cTsB *C.char, cTsBLen C.size_t) C.int {
-	tsA := charToByte(cTsA, cTsALen)
-	tsB := charToByte(cTsB, cTsBLen)
+	tsA := refCBytes(cTsA, cTsALen)
+	tsB := refCBytes(cTsB, cTsBLen)
 	return C.int(comperators.Get(idx).(comperatorWrapper).comparator.CompareTimestamp(tsA, tsB))
 }
 
 //export gorocksdb_comparator_compare_without_ts
 func gorocksdb_comparator_compare_without_ts(idx int, cKeyA *C.char, cKeyALen C.size_t, cAHasTs C.uchar, cKeyB *C.char, cKeyBLen C.size_t, cBHasTs C.uchar) C.int {
-	keyA := charToByte(cKeyA, cKeyALen)
-	keyB := charToByte(cKeyB, cKeyBLen)
+	keyA := refCBytes(cKeyA, cKeyALen)
+	keyB := refCBytes(cKeyB, cKeyBLen)
 	keyAHasTs := charToBool(cAHasTs)
 	keyBHasTs := charToBool(cBHasTs)
 	return C.int(comperators.Get(idx).(comperatorWrapper).comparator.CompareWithoutTimestamp(keyA, keyAHasTs, keyB, keyBHasTs))

@@ -28,6 +28,7 @@ func Execute(rootCmd *cobra.Command, envPrefix, defaultHome string) error {
 	rootCmd.PersistentFlags().String(flags.FlagLogLevel, zerolog.InfoLevel.String(), "The logging level (trace|debug|info|warn|error|fatal|panic|disabled or '*:<level>,<key>:<level>')")
 	// NOTE: The default logger is only checking for the "json" value, any other value will default to plain text.
 	rootCmd.PersistentFlags().String(flags.FlagLogFormat, "plain", "The logging format (json|plain)")
+	rootCmd.PersistentFlags().Bool(flags.FlagLogNoColor, false, "Disable colored logs")
 
 	executor := cmtcli.PrepareBaseCmd(rootCmd, envPrefix, defaultHome)
 	return executor.ExecuteContext(ctx)

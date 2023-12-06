@@ -104,14 +104,14 @@ func (iter *Iterator) SeekToLast() {
 
 // Seek moves the iterator to the position greater than or equal to the key.
 func (iter *Iterator) Seek(key []byte) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	C.rocksdb_iter_seek(iter.c, cKey, C.size_t(len(key)))
 }
 
 // SeekForPrev moves the iterator to the last key that less than or equal
 // to the target key, in contrast with Seek.
 func (iter *Iterator) SeekForPrev(key []byte) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	C.rocksdb_iter_seek_for_prev(iter.c, cKey, C.size_t(len(key)))
 }
 

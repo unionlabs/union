@@ -3,6 +3,7 @@ package keys
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/input"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
@@ -23,15 +25,16 @@ import (
 )
 
 const (
-	flagInteractive = "interactive"
-	flagRecover     = "recover"
-	flagNoBackup    = "no-backup"
-	flagCoinType    = "coin-type"
-	flagAccount     = "account"
-	flagIndex       = "index"
-	flagMultisig    = "multisig"
-	flagNoSort      = "nosort"
-	flagHDPath      = "hd-path"
+	flagInteractive  = "interactive"
+	flagRecover      = "recover"
+	flagNoBackup     = "no-backup"
+	flagCoinType     = "coin-type"
+	flagAccount      = "account"
+	flagIndex        = "index"
+	flagMultisig     = "multisig"
+	flagNoSort       = "nosort"
+	flagHDPath       = "hd-path"
+	flagPubKeyBase64 = "pubkey-base64"
 
 	// DefaultKeyPass contains the default key password for genesis transactions
 	DefaultKeyPass = "12345678"
@@ -69,6 +72,7 @@ Example:
 	f.Int(flagMultiSigThreshold, 1, "K out of N required signatures. For use in conjunction with --multisig")
 	f.Bool(flagNoSort, false, "Keys passed to --multisig are taken in the order they're supplied")
 	f.String(FlagPublicKey, "", "Parse a public key in JSON format and saves key info to <name> file.")
+	f.String(flagPubKeyBase64, "", "Parse a public key in base64 format and saves key info.")
 	f.BoolP(flagInteractive, "i", false, "Interactively prompt user for BIP39 passphrase and mnemonic")
 	f.Bool(flags.FlagUseLedger, false, "Store a local reference to a private key on a Ledger device")
 	f.Bool(flagRecover, false, "Provide seed phrase to recover existing key instead of creating")
@@ -189,6 +193,10 @@ func runAddCmd(ctx client.Context, cmd *cobra.Command, args []string, inBuf *buf
 	}
 
 	pubKey, _ := cmd.Flags().GetString(FlagPublicKey)
+	pubKeyBase64, _ := cmd.Flags().GetString(flagPubKeyBase64)
+	if pubKey != "" && pubKeyBase64 != "" {
+		return fmt.Errorf(`flags %s and %s cannot be used simultaneously`, FlagPublicKey, flagPubKeyBase64)
+	}
 	if pubKey != "" {
 		var pk cryptotypes.PubKey
 		if err = ctx.Codec.UnmarshalInterfaceJSON([]byte(pubKey), &pk); err != nil {
@@ -198,6 +206,38 @@ func runAddCmd(ctx client.Context, cmd *cobra.Command, args []string, inBuf *buf
 		k, err := kb.SaveOfflineKey(name, pk)
 		if err != nil {
 			return err
+		}
+
+		return printCreate(cmd, k, false, "", outputFormat)
+	}
+	if pubKeyBase64 != "" {
+		b64, err := base64.StdEncoding.DecodeString(pubKeyBase64)
+		if err != nil {
+			return err
+		}
+
+		var pk cryptotypes.PubKey
+		// create an empty pubkey in order to get the algo TypeUrl.
+		tempAny, err := codectypes.NewAnyWithValue(algo.Generate()([]byte{}).PubKey())
+		if err != nil {
+			return err
+		}
+
+		jsonPub, err := json.Marshal(struct {
+			Type string `json:"@type,omitempty"`
+			Key  string `json:"key,omitempty"`
+		}{tempAny.TypeUrl, string(b64)})
+		if err != nil {
+			return fmt.Errorf("failed to JSON marshal typeURL and base64 key: %w", err)
+		}
+
+		if err = ctx.Codec.UnmarshalInterfaceJSON(jsonPub, &pk); err != nil {
+			return err
+		}
+
+		k, err := kb.SaveOfflineKey(name, pk)
+		if err != nil {
+			return fmt.Errorf("failed to save offline key: %w", err)
 		}
 
 		return printCreate(cmd, k, false, "", outputFormat)

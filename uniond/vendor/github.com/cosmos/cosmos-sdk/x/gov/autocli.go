@@ -33,6 +33,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				{
 					RpcMethod: "Proposal",
 					Use:       "proposal [proposal-id]",
+					Alias:     []string{"proposer"},
 					Short:     "Query details of a single proposal",
 					Example:   fmt.Sprintf("%s query gov proposal 1", version.AppName),
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{

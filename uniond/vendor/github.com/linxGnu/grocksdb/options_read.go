@@ -90,7 +90,7 @@ func (opts *ReadOptions) SetSnapshot(snap *Snapshot) {
 // Default: nullptr
 func (opts *ReadOptions) SetIterateUpperBound(key []byte) {
 	opts.iterUpperBound = key
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	cKeyLen := C.size_t(len(key))
 	C.rocksdb_readoptions_set_iterate_upper_bound(opts.c, cKey, cKeyLen)
 }
@@ -105,7 +105,7 @@ func (opts *ReadOptions) SetIterateUpperBound(key []byte) {
 // Default: nullptr
 func (opts *ReadOptions) SetIterateLowerBound(key []byte) {
 	opts.iterLowerBound = key
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	cKeyLen := C.size_t(len(key))
 	C.rocksdb_readoptions_set_iterate_lower_bound(opts.c, cKey, cKeyLen)
 }
@@ -329,7 +329,7 @@ func (opts *ReadOptions) Destroy() {
 // Default: nullptr
 func (opts *ReadOptions) SetTimestamp(ts []byte) {
 	opts.timestamp = ts
-	cTS := byteToChar(ts)
+	cTS := refGoBytes(ts)
 	cTSLen := C.size_t(len(ts))
 	C.rocksdb_readoptions_set_timestamp(opts.c, cTS, cTSLen)
 }
@@ -341,7 +341,7 @@ func (opts *ReadOptions) SetTimestamp(ts []byte) {
 // Default: nullptr
 func (opts *ReadOptions) SetIterStartTimestamp(ts []byte) {
 	opts.timestampStart = ts
-	cTS := byteToChar(ts)
+	cTS := refGoBytes(ts)
 	cTSLen := C.size_t(len(ts))
 	C.rocksdb_readoptions_set_iter_start_ts(opts.c, cTS, cTSLen)
 }
