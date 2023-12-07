@@ -74,12 +74,15 @@ in
       # Ensure the union network commits more than one block
       union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
 
-      union.succeed('docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} --root . call --bundle /bundle -- tx tokenfactory create-denom bazinga --from val-0 --keyring-backend test --home ./home -y')
-
-      # union.succeed('docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} --root . call --bundle /bundle -- tx tokenfactory 10000000bazinga --from val-0 --keyring-backend test --home ./home -y')
+      union.succeed("docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} --root . call --bundle /bundle -- tx tokenfactory create-denom bazinga --from val-0 --keyring-backend test --home ./home -y --gas 3000000000")
+      time.sleep(6)
+      union.succeed("[[ $(docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- query tokenfactory denom-authority-metadata factory/union14fldwd959h7glh2e3k45veuqfszvgm69q07jhw/bazinga --home ./home --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.authority_metadata.admin == \"union14fldwd959h7glh2e3k45veuqfszvgm69q07jhw\"') == true ]]")
 
       ${upgradeTo "v0.15.0" 10}
+      union.succeed("[[ $(docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- query tokenfactory denom-authority-metadata factory/union14fldwd959h7glh2e3k45veuqfszvgm69q07jhw/bazinga --home ./home --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.authority_metadata.admin == \"union14fldwd959h7glh2e3k45veuqfszvgm69q07jhw\"') == true ]]")
+
       ${upgradeTo "v0.16.0" 20}
+      union.succeed("[[ $(docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- query tokenfactory denom-authority-metadata factory/union14fldwd959h7glh2e3k45veuqfszvgm69q07jhw/bazinga --home ./home --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.authority_metadata.admin == \"union14fldwd959h7glh2e3k45veuqfszvgm69q07jhw\"') == true ]]")
     '';
 
     nodes = {
