@@ -196,7 +196,6 @@ func initRootCmd(
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(newApp, app.DefaultNodeHome),
 		snapshot.Cmd(newApp),
-		// this line is used by starport scaffolding # root/commands
 	)
 
 	// add server commands
@@ -280,7 +279,6 @@ func txCommand() *cobra.Command {
 
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
-	// this line is used by starport scaffolding # root/arguments
 }
 
 func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
