@@ -391,6 +391,7 @@ impl Union {
                 non_critical_extension_options: vec![],
             }
             .encode_to_vec(),
+            #[allow(deprecated)]
             auth_info_bytes: tx::v1beta1::AuthInfo {
                 signer_infos: [tx::v1beta1::SignerInfo {
                     public_key: Some(protos::google::protobuf::Any {
