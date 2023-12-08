@@ -202,7 +202,7 @@ github.com/99designs/go-keychain
 # github.com/99designs/keyring v1.2.2
 ## explicit; go 1.19
 github.com/99designs/keyring
-# github.com/CosmWasm/wasmd v0.0.0-20231122101919-b02a47236186
+# github.com/CosmWasm/wasmd v0.50.0
 ## explicit; go 1.21
 github.com/CosmWasm/wasmd/app/params
 github.com/CosmWasm/wasmd/x/wasm
