@@ -37,11 +37,6 @@ func (k Keeper) GetClientConsensusState(ctx sdk.Context, clientID string, height
 }
 
 func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height) (exported.ConsensusState, error) {
-	// TODO(aeryz): figure out the client type
-	// if clientType != exported.Wasm {
-	// 	return k.clientKeeper.GetSelfConsensusState(ctx, height)
-	// }
-
 	selfHeight, ok := height.(clienttypes.Height)
 	if !ok {
 		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "expected %T, got %T", clienttypes.Height{}, height)
@@ -65,6 +60,7 @@ func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height) (
 		NextValidatorsHash: histInfo.Header.NextValidatorsHash,
 	}
 
+	// FIXME(aeryz): we should not wrap this state in wasm since our own consensus state is just cometbls.ConsensusState
 	wasmData, err := k.cdc.Marshal(cometblsConsensusState)
 	if err != nil {
 		return nil, errorsmod.Wrapf(err, "cannot marshal cometbls consensus state")
