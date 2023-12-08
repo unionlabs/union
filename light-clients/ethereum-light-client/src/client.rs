@@ -326,13 +326,13 @@ impl IbcClient for EthereumLightClient {
         let client_state: WasmClientState = read_client_state(deps)?;
 
         if client_state.data.frozen_height != Height::default() {
-            return Ok(Status::Frozen.into());
+            return Ok(Status::Frozen);
         }
 
         let Some(consensus_state) =
             read_consensus_state::<CustomQuery, ConsensusState>(deps, &client_state.latest_height)?
         else {
-            return Ok(Status::Expired.into());
+            return Ok(Status::Expired);
         };
 
         if is_client_expired(
@@ -340,7 +340,7 @@ impl IbcClient for EthereumLightClient {
             client_state.data.trusting_period,
             env.block.time.seconds(),
         ) {
-            return Ok(Status::Expired.into());
+            return Ok(Status::Expired);
         }
 
         Ok(Status::Active)
