@@ -143,7 +143,7 @@ import (
 	tfkeeper "union/x/tokenfactory/keeper"
 	tftypes "union/x/tokenfactory/types"
 
-	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //lint:ignore SA1019 not using gov types
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	"union/docs"
 )
@@ -1126,7 +1126,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(minttypes.ModuleName)
 	paramsKeeper.Subspace(distrtypes.ModuleName)
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
-	paramsKeeper.Subspace(govtypes.ModuleName) //lint:ignore SA1019 part of template
+	paramsKeeper.Subspace(govtypes.ModuleName)
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(unionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasmtypes.ModuleName)

@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/errors"
 	wasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //lint:ignore SA1019 not using gov types
 	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"

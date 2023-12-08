@@ -197,7 +197,7 @@
 
         go-vet = pkgs.go.stdenv.mkDerivation {
           name = "go-vet";
-          buildInputs = [ pkgs.go ];
+          buildInputs = [ goPkgs.go ];
           src = ./.;
           doCheck = true;
           inherit CGO_CFLAGS;
@@ -214,7 +214,7 @@
 
         go-staticcheck = pkgs.go.stdenv.mkDerivation {
           name = "go-staticcheck";
-          buildInputs = [ pkgs.go pkgs.go-tools ];
+          buildInputs = [ goPkgs.go goPkgs.go-tools ];
           src = ./.;
           doCheck = true;
           inherit CGO_CFLAGS;
