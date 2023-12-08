@@ -2,8 +2,6 @@ module union
 
 go 1.21
 
-toolchain go1.21.3
-
 require (
 	cosmossdk.io/api v0.7.2
 	cosmossdk.io/client/v2 v2.0.0-beta.1
