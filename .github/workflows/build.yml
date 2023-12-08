@@ -134,6 +134,7 @@ jobs:
                   "treefmt-check",
                   "union-runs",
                   "upgrade-from-genesis",
+                  "upgrade-with-tokenfactory-state",
                   "virtualisation-works",
                   "voyager-queue"
                 ]
