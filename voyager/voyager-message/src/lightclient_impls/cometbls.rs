@@ -1139,10 +1139,9 @@ where
             Identified {
                 chain_id: account_update_chain_id,
                 data: AccountUpdateData {
-                    slot: account_update_data_beacon_slot,
                     ibc_handler_address,
                     update: account_update,
-                    __marker,
+                    ..
                 }
             },
             Identified {
