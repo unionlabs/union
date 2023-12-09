@@ -178,7 +178,14 @@ var createdByPrefix = []byte("created by ")
 
 func (f *Frame) Func() []byte {
 	if bytes.HasPrefix(f.line1, createdByPrefix) {
-		return f.line1[len(createdByPrefix):]
+		// Since go1.21, the line ends with " in goroutine X", saying which goroutine created this one.
+		// We currently don't have use for that so just remove it.
+		var line = f.line1[len(createdByPrefix):]
+		var spaceAt = bytes.IndexByte(line, ' ')
+		if spaceAt < 0 {
+			return line
+		}
+		return line[:spaceAt]
 	}
 
 	var end = bytes.LastIndexByte(f.line1, '(')

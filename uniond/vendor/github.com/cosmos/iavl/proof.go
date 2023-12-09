@@ -166,16 +166,16 @@ func (pln ProofLeafNode) Hash() ([]byte, error) {
 // If the key does not exist, returns the path to the next leaf left of key (w/
 // path), except when key is less than the least item, in which case it returns
 // a path to the least item.
-func (node *Node) PathToLeaf(t *ImmutableTree, key []byte) (PathToLeaf, *Node, error) {
+func (node *Node) PathToLeaf(t *ImmutableTree, key []byte, version int64) (PathToLeaf, *Node, error) {
 	path := new(PathToLeaf)
-	val, err := node.pathToLeaf(t, key, path)
+	val, err := node.pathToLeaf(t, key, version, path)
 	return *path, val, err
 }
 
 // pathToLeaf is a helper which recursively constructs the PathToLeaf.
 // As an optimization the already constructed path is passed in as an argument
 // and is shared among recursive calls.
-func (node *Node) pathToLeaf(t *ImmutableTree, key []byte, path *PathToLeaf) (*Node, error) {
+func (node *Node) pathToLeaf(t *ImmutableTree, key []byte, version int64, path *PathToLeaf) (*Node, error) {
 	if node.subtreeHeight == 0 {
 		if bytes.Equal(node.key, key) {
 			return node, nil
@@ -183,6 +183,10 @@ func (node *Node) pathToLeaf(t *ImmutableTree, key []byte, path *PathToLeaf) (*N
 		return node, errors.New("key does not exist")
 	}
 
+	nodeVersion := version
+	if node.nodeKey != nil {
+		nodeVersion = node.nodeKey.version
+	}
 	// Note that we do not store the left child in the ProofInnerNode when we're going to add the
 	// left node as part of the path, similarly we don't store the right child info when going down
 	// the right child node. This is done as an optimization since the child info is going to be
@@ -197,7 +201,7 @@ func (node *Node) pathToLeaf(t *ImmutableTree, key []byte, path *PathToLeaf) (*N
 		pin := ProofInnerNode{
 			Height:  node.subtreeHeight,
 			Size:    node.size,
-			Version: node.version,
+			Version: nodeVersion,
 			Left:    nil,
 			Right:   rightNode.hash,
 		}
@@ -207,7 +211,7 @@ func (node *Node) pathToLeaf(t *ImmutableTree, key []byte, path *PathToLeaf) (*N
 		if err != nil {
 			return nil, err
 		}
-		n, err := leftNode.pathToLeaf(t, key, path)
+		n, err := leftNode.pathToLeaf(t, key, version, path)
 		return n, err
 	}
 	// right side
@@ -219,7 +223,7 @@ func (node *Node) pathToLeaf(t *ImmutableTree, key []byte, path *PathToLeaf) (*N
 	pin := ProofInnerNode{
 		Height:  node.subtreeHeight,
 		Size:    node.size,
-		Version: node.version,
+		Version: nodeVersion,
 		Left:    leftNode.hash,
 		Right:   nil,
 	}
@@ -230,6 +234,6 @@ func (node *Node) pathToLeaf(t *ImmutableTree, key []byte, path *PathToLeaf) (*N
 		return nil, err
 	}
 
-	n, err := rightNode.pathToLeaf(t, key, path)
+	n, err := rightNode.pathToLeaf(t, key, version, path)
 	return n, err
 }

@@ -1,13 +1,11 @@
 package version
 
 const (
-
-	// The default version of TMCoreSemVer is the value used as the
-	// fallback version of CometBFT when not using git describe.
-	// It is formatted with semantic versioning.
-	TMCoreSemVer = "0.37.1"
+	// TMVersionDefault is the used as the fallback version of CometBFT
+	// when not using git describe. It is formatted with semantic versioning.
+	TMCoreSemVer = "0.38.1"
 	// ABCISemVer is the semantic version of the ABCI protocol
-	ABCISemVer  = "1.0.0"
+	ABCISemVer  = "2.0.0"
 	ABCIVersion = ABCISemVer
 	// P2PProtocol versions all p2p behavior and msgs.
 	// This includes proposer selection.

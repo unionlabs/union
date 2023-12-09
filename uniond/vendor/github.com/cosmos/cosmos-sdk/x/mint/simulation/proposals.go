@@ -3,6 +3,8 @@ package simulation
 import (
 	"math/rand"
 
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
@@ -14,7 +16,7 @@ import (
 const (
 	DefaultWeightMsgUpdateParams int = 100
 
-	OpWeightMsgUpdateParams = "op_weight_msg_update_params" //nolint:gosec
+	OpWeightMsgUpdateParams = "op_weight_msg_update_params"
 )
 
 // ProposalMsgs defines the module weighted proposals' contents
@@ -35,10 +37,10 @@ func SimulateMsgUpdateParams(r *rand.Rand, _ sdk.Context, _ []simtypes.Account) 
 
 	params := types.DefaultParams()
 	params.BlocksPerYear = uint64(simtypes.RandIntBetween(r, 1, 1000000))
-	params.GoalBonded = sdk.NewDecWithPrec(int64(simtypes.RandIntBetween(r, 1, 100)), 2)
-	params.InflationMin = sdk.NewDecWithPrec(int64(simtypes.RandIntBetween(r, 1, 50)), 2)
-	params.InflationMax = sdk.NewDecWithPrec(int64(simtypes.RandIntBetween(r, 50, 100)), 2)
-	params.InflationRateChange = sdk.NewDecWithPrec(int64(simtypes.RandIntBetween(r, 1, 100)), 2)
+	params.GoalBonded = sdkmath.LegacyNewDecWithPrec(int64(simtypes.RandIntBetween(r, 1, 100)), 2)
+	params.InflationMin = sdkmath.LegacyNewDecWithPrec(int64(simtypes.RandIntBetween(r, 1, 50)), 2)
+	params.InflationMax = sdkmath.LegacyNewDecWithPrec(int64(simtypes.RandIntBetween(r, 50, 100)), 2)
+	params.InflationRateChange = sdkmath.LegacyNewDecWithPrec(int64(simtypes.RandIntBetween(r, 1, 100)), 2)
 	params.MintDenom = simtypes.RandStringOfLength(r, 10)
 
 	return &types.MsgUpdateParams{

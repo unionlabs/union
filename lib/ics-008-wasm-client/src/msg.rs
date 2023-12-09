@@ -1,12 +1,25 @@
 use std::fmt::Display;
 
-use cosmwasm_std::{to_binary, Binary, StdResult};
+use cosmwasm_std::Binary;
 use protos::ibc::{
     core::client::v1::GenesisMetadata,
-    lightclients::wasm::v1::{ClientState, ConsensusState, Header, Misbehaviour},
+    lightclients::wasm::v1::{
+        ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
+    },
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::Height;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct InstantiateMsg {
+    pub client_state: ProtoClientState,
+    pub consensus_state: ProtoConsensusState,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct ClientMessage {
+    pub data: Binary,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MerklePath {
@@ -14,57 +27,36 @@ pub struct MerklePath {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum ClientMessage {
-    Header(Header),
-    Misbehaviour(Misbehaviour),
+pub struct EmptyResult {}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct StatusResult {
+    pub status: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ContractResult {
-    pub is_valid: bool,
-    pub error_msg: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<Vec<u8>>,
+pub struct TimestampAtHeightResult {
+    pub timestamp: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct CheckForMisbehaviourResult {
     pub found_misbehaviour: bool,
 }
 
-impl ContractResult {
-    pub fn valid(data: Option<Vec<u8>>) -> Self {
-        Self {
-            is_valid: true,
-            error_msg: Default::default(),
-            data,
-            found_misbehaviour: false,
-        }
-    }
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct UpdateStateResult {
+    pub heights: Vec<Height>,
+}
 
-    pub fn invalid(error_msg: String) -> Self {
-        Self {
-            is_valid: false,
-            error_msg,
-            data: None,
-            found_misbehaviour: false,
-        }
-    }
-
-    pub fn found_misbehaviour(error_msg: String) -> Self {
-        Self {
-            is_valid: false,
-            error_msg,
-            data: None,
-            found_misbehaviour: true,
-        }
-    }
-
-    pub fn encode(self) -> StdResult<Binary> {
-        to_binary(&self)
-    }
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct ExportMetadataResult {
+    pub genesis_metadata: Vec<GenesisMetadata>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum ExecuteMsg {
+pub enum SudoMsg {
     VerifyMembership {
         height: Height,
         delay_time_period: u64,
@@ -81,11 +73,6 @@ pub enum ExecuteMsg {
         proof: Binary,
         path: MerklePath,
     },
-
-    VerifyClientMessage {
-        client_message: ClientMessage,
-    },
-
     UpdateState {
         client_message: ClientMessage,
     },
@@ -94,31 +81,28 @@ pub enum ExecuteMsg {
         client_message: ClientMessage,
     },
 
-    CheckForMisbehaviour {
-        client_message: ClientMessage,
-    },
-
     VerifyUpgradeAndUpdateState {
-        upgrade_client_state: ClientState,
-        upgrade_consensus_state: ConsensusState,
+        upgrade_client_state: ProtoClientState,
+        upgrade_consensus_state: ProtoConsensusState,
         proof_upgrade_client: Binary,
         proof_upgrade_consensus_state: Binary,
     },
 
-    CheckSubstituteAndUpdateState {},
+    MigrateClientStore {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
-    Status {},
-    ExportMetadata {},
-}
+    VerifyClientMessage { client_message: ClientMessage },
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct QueryResponse {
-    pub status: String,
-    pub genesis_metadata: Vec<GenesisMetadata>,
+    CheckForMisbehaviour { client_message: ClientMessage },
+
+    TimestampAtHeight { height: Height },
+
+    Status {},
+
+    ExportMetadata {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -138,40 +122,24 @@ impl Display for Status {
     }
 }
 
-impl From<Status> for QueryResponse {
+impl From<Status> for StatusResult {
     fn from(value: Status) -> Self {
-        QueryResponse {
+        StatusResult {
             status: value.to_string(),
-            genesis_metadata: Vec::new(),
         }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use protos::ibc::lightclients::wasm::v1::Header;
+// #[cfg(test)]
+// mod tests {
+//     use crate::{ClientMessage, ExecuteMsg};
 
-    use crate::{ClientMessage, ExecuteMsg};
-
-    #[test]
-    fn execute_msg_snake_case_encoded() {
-        let msg = ExecuteMsg::CheckSubstituteAndUpdateState {};
-        assert_eq!(
-            serde_json::to_string(&msg).unwrap(),
-            r#"{"check_substitute_and_update_state":{}}"#
-        )
-    }
-
-    #[test]
-    fn client_msg_snake_case_encoded() {
-        let msg = ClientMessage::Header(Header {
-            data: vec![],
-            height: None,
-        });
-
-        assert_eq!(
-            serde_json::to_string(&msg).unwrap(),
-            r#"{"header":{"data":"","height":null}}"#
-        )
-    }
-}
+//     #[test]
+//     fn execute_msg_snake_case_encoded() {
+//         let msg = ExecuteMsg::CheckSubstituteAndUpdateState {};
+//         assert_eq!(
+//             serde_json::to_string(&msg).unwrap(),
+//             r#"{"check_substitute_and_update_state":{}}"#
+//         )
+//     }
+// }

@@ -59,6 +59,8 @@ pub struct Proposal {
     #[prost(message, optional, tag = "9")]
     pub voting_end_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// metadata is any arbitrary metadata attached to the proposal.
+    /// the recommended format of the metadata is to be found here:
+    /// <https://docs.cosmos.network/v0.47/modules/gov#proposal-3>
     #[prost(string, tag = "10")]
     pub metadata: ::prost::alloc::string::String,
     /// title is the title of the proposal
@@ -71,11 +73,21 @@ pub struct Proposal {
     /// Since: cosmos-sdk 0.47
     #[prost(string, tag = "12")]
     pub summary: ::prost::alloc::string::String,
-    /// Proposer is the address of the proposal sumbitter
+    /// proposer is the address of the proposal sumbitter
     ///
     /// Since: cosmos-sdk 0.47
     #[prost(string, tag = "13")]
     pub proposer: ::prost::alloc::string::String,
+    /// expedited defines if the proposal is expedited
+    ///
+    /// Since: cosmos-sdk 0.50
+    #[prost(bool, tag = "14")]
+    pub expedited: bool,
+    /// failed_reason defines the reason why the proposal failed
+    ///
+    /// Since: cosmos-sdk 0.50
+    #[prost(string, tag = "15")]
+    pub failed_reason: ::prost::alloc::string::String,
 }
 /// TallyResult defines a standard tally for a governance proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -108,7 +120,8 @@ pub struct Vote {
     /// options is the weighted vote options.
     #[prost(message, repeated, tag = "4")]
     pub options: ::prost::alloc::vec::Vec<WeightedVoteOption>,
-    /// metadata is any  arbitrary metadata to attached to the vote.
+    /// metadata is any arbitrary metadata attached to the vote.
+    /// the recommended format of the metadata is to be found here: <https://docs.cosmos.network/v0.47/modules/gov#vote-5>
     #[prost(string, tag = "5")]
     pub metadata: ::prost::alloc::string::String,
 }
@@ -178,6 +191,31 @@ pub struct Params {
     ///   The ratio representing the proportion of the deposit value that must be paid at proposal submission.
     #[prost(string, tag = "7")]
     pub min_initial_deposit_ratio: ::prost::alloc::string::String,
+    /// The cancel ratio which will not be returned back to the depositors when a proposal is cancelled.
+    ///
+    /// Since: cosmos-sdk 0.50
+    #[prost(string, tag = "8")]
+    pub proposal_cancel_ratio: ::prost::alloc::string::String,
+    /// The address which will receive (proposal_cancel_ratio * deposit) proposal deposits.
+    /// If empty, the (proposal_cancel_ratio * deposit) proposal deposits will be burned.
+    ///
+    /// Since: cosmos-sdk 0.50
+    #[prost(string, tag = "9")]
+    pub proposal_cancel_dest: ::prost::alloc::string::String,
+    /// Duration of the voting period of an expedited proposal.
+    ///
+    /// Since: cosmos-sdk 0.50
+    #[prost(message, optional, tag = "10")]
+    pub expedited_voting_period:
+        ::core::option::Option<super::super::super::google::protobuf::Duration>,
+    /// Minimum proportion of Yes votes for proposal to pass. Default value: 0.67.
+    ///
+    /// Since: cosmos-sdk 0.50
+    #[prost(string, tag = "11")]
+    pub expedited_threshold: ::prost::alloc::string::String,
+    ///   Minimum expedited deposit for a proposal to enter voting period.
+    #[prost(message, repeated, tag = "12")]
+    pub expedited_min_deposit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
     /// burn deposits if a proposal does not meet quorum
     #[prost(bool, tag = "13")]
     pub burn_vote_quorum: bool,
@@ -187,6 +225,13 @@ pub struct Params {
     /// burn deposits if quorum with vote type no_veto is met
     #[prost(bool, tag = "15")]
     pub burn_vote_veto: bool,
+    /// The ratio representing the proportion of the deposit value minimum that must be met when making a deposit.
+    /// Default value: 0.01. Meaning that for a chain with a min_deposit of 100stake, a deposit of 1stake would be
+    /// required.
+    ///
+    /// Since: cosmos-sdk 0.50
+    #[prost(string, tag = "16")]
+    pub min_deposit_ratio: ::prost::alloc::string::String,
 }
 /// VoteOption enumerates the valid vote options for a given governance proposal.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -279,42 +324,16 @@ impl ProposalStatus {
         }
     }
 }
-/// GenesisState defines the gov module's genesis state.
+/// QueryConstitutionRequest is the request type for the Query/Constitution RPC method
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// starting_proposal_id is the ID of the starting proposal.
-    #[prost(uint64, tag = "1")]
-    pub starting_proposal_id: u64,
-    /// deposits defines all the deposits present at genesis.
-    #[prost(message, repeated, tag = "2")]
-    pub deposits: ::prost::alloc::vec::Vec<Deposit>,
-    /// votes defines all the votes present at genesis.
-    #[prost(message, repeated, tag = "3")]
-    pub votes: ::prost::alloc::vec::Vec<Vote>,
-    /// proposals defines all the proposals present at genesis.
-    #[prost(message, repeated, tag = "4")]
-    pub proposals: ::prost::alloc::vec::Vec<Proposal>,
-    /// Deprecated: Prefer to use `params` instead.
-    /// deposit_params defines all the paramaters of related to deposit.
-    #[deprecated]
-    #[prost(message, optional, tag = "5")]
-    pub deposit_params: ::core::option::Option<DepositParams>,
-    /// Deprecated: Prefer to use `params` instead.
-    /// voting_params defines all the paramaters of related to voting.
-    #[deprecated]
-    #[prost(message, optional, tag = "6")]
-    pub voting_params: ::core::option::Option<VotingParams>,
-    /// Deprecated: Prefer to use `params` instead.
-    /// tally_params defines all the paramaters of related to tally.
-    #[deprecated]
-    #[prost(message, optional, tag = "7")]
-    pub tally_params: ::core::option::Option<TallyParams>,
-    /// params defines all the paramaters of x/gov module.
-    ///
-    /// Since: cosmos-sdk 0.47
-    #[prost(message, optional, tag = "8")]
-    pub params: ::core::option::Option<Params>,
+pub struct QueryConstitutionRequest {}
+/// QueryConstitutionResponse is the response type for the Query/Constitution RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryConstitutionResponse {
+    #[prost(string, tag = "1")]
+    pub constitution: ::prost::alloc::string::String,
 }
 /// QueryProposalRequest is the request type for the Query/Proposal RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -520,6 +539,11 @@ pub struct MsgSubmitProposal {
     /// Since: cosmos-sdk 0.47
     #[prost(string, tag = "6")]
     pub summary: ::prost::alloc::string::String,
+    /// expedited defines if the proposal is expedited or not
+    ///
+    /// Since: cosmos-sdk 0.50
+    #[prost(bool, tag = "7")]
+    pub expedited: bool,
 }
 /// MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -627,5 +651,80 @@ pub struct MsgUpdateParams {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParamsResponse {}
+/// MsgCancelProposal is the Msg/CancelProposal request type.
+///
+/// Since: cosmos-sdk 0.50
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCancelProposal {
+    /// proposal_id defines the unique id of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// proposer is the account address of the proposer.
+    #[prost(string, tag = "2")]
+    pub proposer: ::prost::alloc::string::String,
+}
+/// MsgCancelProposalResponse defines the response structure for executing a
+/// MsgCancelProposal message.
+///
+/// Since: cosmos-sdk 0.50
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCancelProposalResponse {
+    /// proposal_id defines the unique id of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// canceled_time is the time when proposal is canceled.
+    #[prost(message, optional, tag = "2")]
+    pub canceled_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+    /// canceled_height defines the block height at which the proposal is canceled.
+    #[prost(uint64, tag = "3")]
+    pub canceled_height: u64,
+}
+/// GenesisState defines the gov module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// starting_proposal_id is the ID of the starting proposal.
+    #[prost(uint64, tag = "1")]
+    pub starting_proposal_id: u64,
+    /// deposits defines all the deposits present at genesis.
+    #[prost(message, repeated, tag = "2")]
+    pub deposits: ::prost::alloc::vec::Vec<Deposit>,
+    /// votes defines all the votes present at genesis.
+    #[prost(message, repeated, tag = "3")]
+    pub votes: ::prost::alloc::vec::Vec<Vote>,
+    /// proposals defines all the proposals present at genesis.
+    #[prost(message, repeated, tag = "4")]
+    pub proposals: ::prost::alloc::vec::Vec<Proposal>,
+    /// Deprecated: Prefer to use `params` instead.
+    /// deposit_params defines all the paramaters of related to deposit.
+    #[deprecated]
+    #[prost(message, optional, tag = "5")]
+    pub deposit_params: ::core::option::Option<DepositParams>,
+    /// Deprecated: Prefer to use `params` instead.
+    /// voting_params defines all the paramaters of related to voting.
+    #[deprecated]
+    #[prost(message, optional, tag = "6")]
+    pub voting_params: ::core::option::Option<VotingParams>,
+    /// Deprecated: Prefer to use `params` instead.
+    /// tally_params defines all the paramaters of related to tally.
+    #[deprecated]
+    #[prost(message, optional, tag = "7")]
+    pub tally_params: ::core::option::Option<TallyParams>,
+    /// params defines all the paramaters of x/gov module.
+    ///
+    /// Since: cosmos-sdk 0.47
+    #[prost(message, optional, tag = "8")]
+    pub params: ::core::option::Option<Params>,
+    /// The constitution allows builders to lay a foundation and define purpose.
+    /// This is an immutable string set in genesis.
+    /// There are no amendments, to go outside of scope, just fork.
+    /// constitution is an immutable string in genesis for a chain builder to lay out their vision, ideas and ideals.
+    ///
+    /// Since: cosmos-sdk 0.50
+    #[prost(string, tag = "9")]
+    pub constitution: ::prost::alloc::string::String,
+}
 include!("cosmos.gov.v1.tonic.rs");
 // @@protoc_insertion_point(module)

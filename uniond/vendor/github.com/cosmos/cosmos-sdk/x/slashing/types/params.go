@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Default parameter namespace
@@ -16,15 +14,15 @@ const (
 )
 
 var (
-	DefaultMinSignedPerWindow      = sdk.NewDecWithPrec(5, 1)
+	DefaultMinSignedPerWindow      = math.LegacyNewDecWithPrec(5, 1)
 	DefaultSlashFractionDoubleSign = math.LegacyNewDec(1).Quo(math.LegacyNewDec(20))
 	DefaultSlashFractionDowntime   = math.LegacyNewDec(1).Quo(math.LegacyNewDec(100))
 )
 
 // NewParams creates a new Params object
 func NewParams(
-	signedBlocksWindow int64, minSignedPerWindow sdk.Dec, downtimeJailDuration time.Duration,
-	slashFractionDoubleSign, slashFractionDowntime sdk.Dec,
+	signedBlocksWindow int64, minSignedPerWindow math.LegacyDec, downtimeJailDuration time.Duration,
+	slashFractionDoubleSign, slashFractionDowntime math.LegacyDec,
 ) Params {
 	return Params{
 		SignedBlocksWindow:      signedBlocksWindow,
@@ -80,7 +78,7 @@ func validateSignedBlocksWindow(i interface{}) error {
 }
 
 func validateMinSignedPerWindow(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
@@ -112,7 +110,7 @@ func validateDowntimeJailDuration(i interface{}) error {
 }
 
 func validateSlashFractionDoubleSign(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
@@ -131,7 +129,7 @@ func validateSlashFractionDoubleSign(i interface{}) error {
 }
 
 func validateSlashFractionDowntime(i interface{}) error {
-	v, ok := i.(sdk.Dec)
+	v, ok := i.(math.LegacyDec)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}

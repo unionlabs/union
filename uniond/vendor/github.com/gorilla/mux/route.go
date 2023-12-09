@@ -64,8 +64,18 @@ func (r *Route) Match(req *http.Request, match *RouteMatch) bool {
 				match.MatchErr = nil
 			}
 
-			matchErr = nil
+			matchErr = nil // nolint:ineffassign
 			return false
+		} else {
+			// Multiple routes may share the same path but use different HTTP methods. For instance:
+			// Route 1: POST "/users/{id}".
+			// Route 2: GET "/users/{id}", parameters: "id": "[0-9]+".
+			//
+			// The router must handle these cases correctly. For a GET request to "/users/abc" with "id" as "-2",
+			// The router should return a "Not Found" error as no route fully matches this request.
+			if match.MatchErr == ErrMethodMismatch {
+				match.MatchErr = nil
+			}
 		}
 	}
 
@@ -230,9 +240,9 @@ func (m headerMatcher) Match(r *http.Request, match *RouteMatch) bool {
 // Headers adds a matcher for request header values.
 // It accepts a sequence of key/value pairs to be matched. For example:
 //
-//     r := mux.NewRouter()
-//     r.Headers("Content-Type", "application/json",
-//               "X-Requested-With", "XMLHttpRequest")
+//	r := mux.NewRouter().NewRoute()
+//	r.Headers("Content-Type", "application/json",
+//	          "X-Requested-With", "XMLHttpRequest")
 //
 // The above route will only match if both request header values match.
 // If the value is an empty string, it will match any value if the key is set.
@@ -255,9 +265,9 @@ func (m headerRegexMatcher) Match(r *http.Request, match *RouteMatch) bool {
 // HeadersRegexp accepts a sequence of key/value pairs, where the value has regex
 // support. For example:
 //
-//     r := mux.NewRouter()
-//     r.HeadersRegexp("Content-Type", "application/(text|json)",
-//               "X-Requested-With", "XMLHttpRequest")
+//	r := mux.NewRouter().NewRoute()
+//	r.HeadersRegexp("Content-Type", "application/(text|json)",
+//	          "X-Requested-With", "XMLHttpRequest")
 //
 // The above route will only match if both the request header matches both regular expressions.
 // If the value is an empty string, it will match any value if the key is set.
@@ -283,10 +293,10 @@ func (r *Route) HeadersRegexp(pairs ...string) *Route {
 //
 // For example:
 //
-//     r := mux.NewRouter()
-//     r.Host("www.example.com")
-//     r.Host("{subdomain}.domain.com")
-//     r.Host("{subdomain:[a-z]+}.domain.com")
+//	r := mux.NewRouter().NewRoute()
+//	r.Host("www.example.com")
+//	r.Host("{subdomain}.domain.com")
+//	r.Host("{subdomain:[a-z]+}.domain.com")
 //
 // Variable names must be unique in a given route. They can be retrieved
 // calling mux.Vars(request).
@@ -342,11 +352,11 @@ func (r *Route) Methods(methods ...string) *Route {
 //
 // For example:
 //
-//     r := mux.NewRouter()
-//     r.Path("/products/").Handler(ProductsHandler)
-//     r.Path("/products/{key}").Handler(ProductsHandler)
-//     r.Path("/articles/{category}/{id:[0-9]+}").
-//       Handler(ArticleHandler)
+//	r := mux.NewRouter().NewRoute()
+//	r.Path("/products/").Handler(ProductsHandler)
+//	r.Path("/products/{key}").Handler(ProductsHandler)
+//	r.Path("/articles/{category}/{id:[0-9]+}").
+//	  Handler(ArticleHandler)
 //
 // Variable names must be unique in a given route. They can be retrieved
 // calling mux.Vars(request).
@@ -377,8 +387,8 @@ func (r *Route) PathPrefix(tpl string) *Route {
 // It accepts a sequence of key/value pairs. Values may define variables.
 // For example:
 //
-//     r := mux.NewRouter()
-//     r.Queries("foo", "bar", "id", "{id:[0-9]+}")
+//	r := mux.NewRouter().NewRoute()
+//	r.Queries("foo", "bar", "id", "{id:[0-9]+}")
 //
 // The above route will only match if the URL contains the defined queries
 // values, e.g.: ?foo=bar&id=42.
@@ -473,11 +483,11 @@ func (r *Route) BuildVarsFunc(f BuildVarsFunc) *Route {
 //
 // It will test the inner routes only if the parent route matched. For example:
 //
-//     r := mux.NewRouter()
-//     s := r.Host("www.example.com").Subrouter()
-//     s.HandleFunc("/products/", ProductsHandler)
-//     s.HandleFunc("/products/{key}", ProductHandler)
-//     s.HandleFunc("/articles/{category}/{id:[0-9]+}"), ArticleHandler)
+//	r := mux.NewRouter().NewRoute()
+//	s := r.Host("www.example.com").Subrouter()
+//	s.HandleFunc("/products/", ProductsHandler)
+//	s.HandleFunc("/products/{key}", ProductHandler)
+//	s.HandleFunc("/articles/{category}/{id:[0-9]+}"), ArticleHandler)
 //
 // Here, the routes registered in the subrouter won't be tested if the host
 // doesn't match.
@@ -497,36 +507,36 @@ func (r *Route) Subrouter() *Router {
 // It accepts a sequence of key/value pairs for the route variables. For
 // example, given this route:
 //
-//     r := mux.NewRouter()
-//     r.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler).
-//       Name("article")
+//	r := mux.NewRouter()
+//	r.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler).
+//	  Name("article")
 //
 // ...a URL for it can be built using:
 //
-//     url, err := r.Get("article").URL("category", "technology", "id", "42")
+//	url, err := r.Get("article").URL("category", "technology", "id", "42")
 //
 // ...which will return an url.URL with the following path:
 //
-//     "/articles/technology/42"
+//	"/articles/technology/42"
 //
 // This also works for host variables:
 //
-//     r := mux.NewRouter()
-//     r.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler).
-//       Host("{subdomain}.domain.com").
-//       Name("article")
+//	r := mux.NewRouter()
+//	r.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler).
+//	  Host("{subdomain}.domain.com").
+//	  Name("article")
 //
-//     // url.String() will be "http://news.domain.com/articles/technology/42"
-//     url, err := r.Get("article").URL("subdomain", "news",
-//                                      "category", "technology",
-//                                      "id", "42")
+//	// url.String() will be "http://news.domain.com/articles/technology/42"
+//	url, err := r.Get("article").URL("subdomain", "news",
+//	                                 "category", "technology",
+//	                                 "id", "42")
 //
 // The scheme of the resulting url will be the first argument that was passed to Schemes:
 //
-//     // url.String() will be "https://example.com"
-//     r := mux.NewRouter()
-//     url, err := r.Host("example.com")
-//                  .Schemes("https", "http").URL()
+//	// url.String() will be "https://example.com"
+//	r := mux.NewRouter().NewRoute()
+//	url, err := r.Host("example.com")
+//	             .Schemes("https", "http").URL()
 //
 // All variables defined in the route are required, and their values must
 // conform to the corresponding patterns.
@@ -716,6 +726,25 @@ func (r *Route) GetHostTemplate() (string, error) {
 		return "", errors.New("mux: route doesn't have a host")
 	}
 	return r.regexp.host.template, nil
+}
+
+// GetVarNames returns the names of all variables added by regexp matchers
+// These can be used to know which route variables should be passed into r.URL()
+func (r *Route) GetVarNames() ([]string, error) {
+	if r.err != nil {
+		return nil, r.err
+	}
+	var varNames []string
+	if r.regexp.host != nil {
+		varNames = append(varNames, r.regexp.host.varsN...)
+	}
+	if r.regexp.path != nil {
+		varNames = append(varNames, r.regexp.path.varsN...)
+	}
+	for _, regx := range r.regexp.queries {
+		varNames = append(varNames, regx.varsN...)
+	}
+	return varNames, nil
 }
 
 // prepareVars converts the route variable pairs into a map. If the route has a

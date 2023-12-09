@@ -67,7 +67,7 @@ var (
 // The caller is responsible for ensuring that msg cannot be chosen
 // directly by an attacker. It is usually preferable to use a cryptographic
 // hash function on any input before handing it to this function.
-func Sign(msg []byte, seckey []byte) ([]byte, error) {
+func Sign(msg, seckey []byte) ([]byte, error) {
 	if len(msg) != 32 {
 		return nil, ErrInvalidMsgLen
 	}
@@ -102,7 +102,7 @@ func Sign(msg []byte, seckey []byte) ([]byte, error) {
 // msg must be the 32-byte hash of the message to be signed.
 // sig must be a 65-byte compact ECDSA signature containing the
 // recovery id as the last element.
-func RecoverPubkey(msg []byte, sig []byte) ([]byte, error) {
+func RecoverPubkey(msg, sig []byte) ([]byte, error) {
 	if len(msg) != 32 {
 		return nil, ErrInvalidMsgLen
 	}

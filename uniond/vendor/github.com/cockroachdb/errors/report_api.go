@@ -32,7 +32,7 @@ import (
 // Title: (1) some prefix in bold (2) one line for a stack trace
 // (3) a single-line subtitle
 //
-// (4) the tags, as a tag soup (concatenated in a single paragrah,
+// (4) the tags, as a tag soup (concatenated in a single paragraph,
 // unsorted)
 //
 // (5) a "message"
@@ -57,7 +57,7 @@ import (
 // (3) the Value field of the 1st Exception object, if any, unwrapped as a single line
 // (4) the Tags field
 // (5) the Message field
-// (7) the Type field (same as (1) for 1st execption)
+// (7) the Type field (same as (1) for 1st exception)
 // (8) the Value field (same as (3) for 1st exception)
 // (9) the Stacktrace field (input to (2) on 1st exception)
 // (10) the other fields on the Event object

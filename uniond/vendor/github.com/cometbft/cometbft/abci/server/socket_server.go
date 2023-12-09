@@ -2,6 +2,8 @@ package server
 
 import (
 	"bufio"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -15,8 +17,11 @@ import (
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
-// var maxNumberConnections = 2
-
+// SocketServer is the server-side implementation of the TSP (Tendermint Socket Protocol)
+// for out-of-process go applications. Note, in the case of an application written in golang,
+// the developer may also run both Tendermint and the application within the same process.
+//
+// The socket server deliver
 type SocketServer struct {
 	service.BaseService
 	isLoggerSet bool
@@ -33,6 +38,9 @@ type SocketServer struct {
 	app    types.Application
 }
 
+const responseBufferSize = 1000
+
+// NewSocketServer creates a server from a golang-based out-of-process application.
 func NewSocketServer(protoAddr string, app types.Application) service.Service {
 	proto, addr := cmtnet.ProtocolAndAddress(protoAddr)
 	s := &SocketServer{
@@ -120,8 +128,8 @@ func (s *SocketServer) acceptConnectionsRoutine() {
 
 		connID := s.addConn(conn)
 
-		closeConn := make(chan error, 2)              // Push to signal connection closed
-		responses := make(chan *types.Response, 1000) // A channel to buffer responses
+		closeConn := make(chan error, 2)                            // Push to signal connection closed
+		responses := make(chan *types.Response, responseBufferSize) // A channel to buffer responses
 
 		// Read requests from conn and deal with them
 		go s.handleRequests(closeConn, conn, responses)
@@ -157,7 +165,9 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 	var bufReader = bufio.NewReader(conn)
 
 	defer func() {
-		// make sure to recover from any app-related panics to allow proper socket cleanup
+		// make sure to recover from any app-related panics to allow proper socket cleanup.
+		// In the case of a panic, we do not notify the client by passing an exception so
+		// presume that the client is still running and retying to connect
 		r := recover()
 		if r != nil {
 			const size = 64 << 10
@@ -186,61 +196,112 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 		}
 		s.appMtx.Lock()
 		count++
-		s.handleRequest(req, responses)
+		resp, err := s.handleRequest(context.TODO(), req)
+		if err != nil {
+			// any error either from the application or because of an unknown request
+			// throws an exception back to the client. This will stop the server and
+			// should also halt the client.
+			responses <- types.ToResponseException(err.Error())
+		} else {
+			responses <- resp
+		}
 		s.appMtx.Unlock()
 	}
 }
 
-func (s *SocketServer) handleRequest(req *types.Request, responses chan<- *types.Response) {
+// handleRequests takes a request and calls the application passing the returned
+func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*types.Response, error) {
 	switch r := req.Value.(type) {
 	case *types.Request_Echo:
-		responses <- types.ToResponseEcho(r.Echo.Message)
+		return types.ToResponseEcho(r.Echo.Message), nil
 	case *types.Request_Flush:
-		responses <- types.ToResponseFlush()
+		return types.ToResponseFlush(), nil
 	case *types.Request_Info:
-		res := s.app.Info(*r.Info)
-		responses <- types.ToResponseInfo(res)
-	case *types.Request_DeliverTx:
-		res := s.app.DeliverTx(*r.DeliverTx)
-		responses <- types.ToResponseDeliverTx(res)
+		res, err := s.app.Info(ctx, r.Info)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseInfo(res), nil
 	case *types.Request_CheckTx:
-		res := s.app.CheckTx(*r.CheckTx)
-		responses <- types.ToResponseCheckTx(res)
+		res, err := s.app.CheckTx(ctx, r.CheckTx)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseCheckTx(res), nil
 	case *types.Request_Commit:
-		res := s.app.Commit()
-		responses <- types.ToResponseCommit(res)
+		res, err := s.app.Commit(ctx, r.Commit)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseCommit(res), nil
 	case *types.Request_Query:
-		res := s.app.Query(*r.Query)
-		responses <- types.ToResponseQuery(res)
+		res, err := s.app.Query(ctx, r.Query)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseQuery(res), nil
 	case *types.Request_InitChain:
-		res := s.app.InitChain(*r.InitChain)
-		responses <- types.ToResponseInitChain(res)
-	case *types.Request_BeginBlock:
-		res := s.app.BeginBlock(*r.BeginBlock)
-		responses <- types.ToResponseBeginBlock(res)
-	case *types.Request_EndBlock:
-		res := s.app.EndBlock(*r.EndBlock)
-		responses <- types.ToResponseEndBlock(res)
+		res, err := s.app.InitChain(ctx, r.InitChain)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseInitChain(res), nil
+	case *types.Request_FinalizeBlock:
+		res, err := s.app.FinalizeBlock(ctx, r.FinalizeBlock)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseFinalizeBlock(res), nil
 	case *types.Request_ListSnapshots:
-		res := s.app.ListSnapshots(*r.ListSnapshots)
-		responses <- types.ToResponseListSnapshots(res)
+		res, err := s.app.ListSnapshots(ctx, r.ListSnapshots)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseListSnapshots(res), nil
 	case *types.Request_OfferSnapshot:
-		res := s.app.OfferSnapshot(*r.OfferSnapshot)
-		responses <- types.ToResponseOfferSnapshot(res)
+		res, err := s.app.OfferSnapshot(ctx, r.OfferSnapshot)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseOfferSnapshot(res), nil
 	case *types.Request_PrepareProposal:
-		res := s.app.PrepareProposal(*r.PrepareProposal)
-		responses <- types.ToResponsePrepareProposal(res)
+		res, err := s.app.PrepareProposal(ctx, r.PrepareProposal)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponsePrepareProposal(res), nil
 	case *types.Request_ProcessProposal:
-		res := s.app.ProcessProposal(*r.ProcessProposal)
-		responses <- types.ToResponseProcessProposal(res)
+		res, err := s.app.ProcessProposal(ctx, r.ProcessProposal)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseProcessProposal(res), nil
 	case *types.Request_LoadSnapshotChunk:
-		res := s.app.LoadSnapshotChunk(*r.LoadSnapshotChunk)
-		responses <- types.ToResponseLoadSnapshotChunk(res)
+		res, err := s.app.LoadSnapshotChunk(ctx, r.LoadSnapshotChunk)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseLoadSnapshotChunk(res), nil
 	case *types.Request_ApplySnapshotChunk:
-		res := s.app.ApplySnapshotChunk(*r.ApplySnapshotChunk)
-		responses <- types.ToResponseApplySnapshotChunk(res)
+		res, err := s.app.ApplySnapshotChunk(ctx, r.ApplySnapshotChunk)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseApplySnapshotChunk(res), nil
+	case *types.Request_ExtendVote:
+		res, err := s.app.ExtendVote(ctx, r.ExtendVote)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseExtendVote(res), nil
+	case *types.Request_VerifyVoteExtension:
+		res, err := s.app.VerifyVoteExtension(ctx, r.VerifyVoteExtension)
+		if err != nil {
+			return nil, err
+		}
+		return types.ToResponseVerifyVoteExtension(res), nil
 	default:
-		responses <- types.ToResponseException("Unknown request")
+		return nil, fmt.Errorf("unknown request from client: %T", req)
 	}
 }
 
@@ -261,6 +322,13 @@ func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, res
 				closeConn <- fmt.Errorf("error flushing write buffer: %w", err)
 				return
 			}
+		}
+
+		// If the application has responded with an exception, the server returns the error
+		// back to the client and closes the connection. The receiving Tendermint client should
+		// log the error and gracefully terminate
+		if e, ok := res.Value.(*types.Response_Exception); ok {
+			closeConn <- errors.New(e.Exception.Error)
 		}
 		count++
 	}

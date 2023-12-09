@@ -1,0 +1,34 @@
+project_name: confix
+
+release:
+  disable: false
+  name_template: "{{.Tag}}"
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./cmd/confix
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+
+archives:
+  - name_template: '{{ replace .Version "confix/" "confix-" }}-{{ .Os }}-{{ .Arch }}'
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'SHA256SUMS-{{ replace .Version "confix/" "confix-" }}.txt'
+  algorithm: sha256
+
+changelog:
+  skip: false

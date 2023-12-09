@@ -2,15 +2,16 @@ package keeper
 
 import (
 	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/errors"
-	clientkeeper "github.com/cosmos/ibc-go/v7/modules/core/02-client/keeper"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	connectiontypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	wasmtypes "github.com/cosmos/ibc-go/v7/modules/light-clients/08-wasm/types"
+	wasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
+	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //lint:ignore SA1019 not using gov types
+	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 type Keeper struct {
@@ -35,11 +36,7 @@ func (k Keeper) GetClientConsensusState(ctx sdk.Context, clientID string, height
 	return k.clientKeeper.GetClientConsensusState(ctx, clientID, height)
 }
 
-func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height, clientType string) (exported.ConsensusState, error) {
-	if clientType != exported.Wasm {
-		return k.clientKeeper.GetSelfConsensusState(ctx, height, clientType)
-	}
-
+func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height) (exported.ConsensusState, error) {
 	selfHeight, ok := height.(clienttypes.Height)
 	if !ok {
 		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "expected %T, got %T", clienttypes.Height{}, height)
@@ -50,8 +47,8 @@ func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height, c
 		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "chainID revision number does not match height revision number: expected %d, got %d", revision, height.GetRevisionNumber())
 	}
 
-	histInfo, found := k.stakingKeeper.GetHistoricalInfo(ctx, int64(selfHeight.RevisionHeight))
-	if !found {
+	histInfo, err := k.stakingKeeper.GetHistoricalInfo(ctx, int64(selfHeight.RevisionHeight))
+	if err != nil {
 		return nil, errorsmod.Wrapf(errors.ErrNotFound, "no historical info found at height %d", selfHeight.RevisionHeight)
 	}
 
@@ -63,14 +60,14 @@ func (k Keeper) GetSelfConsensusState(ctx sdk.Context, height exported.Height, c
 		NextValidatorsHash: histInfo.Header.NextValidatorsHash,
 	}
 
+	// FIXME(aeryz): we should not wrap this state in wasm since our own consensus state is just cometbls.ConsensusState
 	wasmData, err := k.cdc.Marshal(cometblsConsensusState)
 	if err != nil {
 		return nil, errorsmod.Wrapf(err, "cannot marshal cometbls consensus state")
 	}
 
 	consensusState := &wasmtypes.ConsensusState{
-		Data:      wasmData,
-		Timestamp: timestamp,
+		Data: wasmData,
 	}
 
 	return consensusState, nil
@@ -86,7 +83,7 @@ func (k Keeper) IterateClientStates(ctx sdk.Context, prefix []byte, cb func(clie
 	k.clientKeeper.IterateClientStates(ctx, prefix, cb)
 }
 
-func (k Keeper) ClientStore(ctx sdk.Context, clientID string) sdk.KVStore {
+func (k Keeper) ClientStore(ctx sdk.Context, clientID string) storetypes.KVStore {
 	return k.clientKeeper.ClientStore(ctx, clientID)
 }
 

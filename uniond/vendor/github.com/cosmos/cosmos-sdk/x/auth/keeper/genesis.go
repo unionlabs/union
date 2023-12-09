@@ -10,7 +10,7 @@ import (
 // CONTRACT: old coins from the FeeCollectionKeeper need to be transferred through
 // a genesis port script to the new fee collector account
 func (ak AccountKeeper) InitGenesis(ctx sdk.Context, data types.GenesisState) {
-	if err := ak.SetParams(ctx, data.Params); err != nil {
+	if err := ak.Params.Set(ctx, data.Params); err != nil {
 		panic(err)
 	}
 
@@ -39,7 +39,7 @@ func (ak AccountKeeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	params := ak.GetParams(ctx)
 
 	var genAccounts types.GenesisAccounts
-	ak.IterateAccounts(ctx, func(account types.AccountI) bool {
+	ak.IterateAccounts(ctx, func(account sdk.AccountI) bool {
 		genAccount := account.(types.GenesisAccount)
 		genAccounts = append(genAccounts, genAccount)
 		return false

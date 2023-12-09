@@ -112,6 +112,40 @@ func (db *TransactionDB) ReleaseSnapshot(snapshot *Snapshot) {
 	snapshot.c = nil
 }
 
+// GetProperty returns the value of a database property.
+func (db *TransactionDB) GetProperty(propName string) (value string) {
+	cprop := C.CString(propName)
+	cValue := C.rocksdb_transactiondb_property_value(db.c, cprop)
+
+	value = C.GoString(cValue)
+
+	C.rocksdb_free(unsafe.Pointer(cValue))
+	C.free(unsafe.Pointer(cprop))
+	return
+}
+
+// GetIntProperty similar to `GetProperty`, but only works for a subset of properties whose
+// return value is an integer. Return the value by integer.
+func (db *TransactionDB) GetIntProperty(propName string) (value uint64, success bool) {
+	cProp := C.CString(propName)
+	success = C.rocksdb_transactiondb_property_int(db.c, cProp, (*C.uint64_t)(&value)) == 0
+	C.free(unsafe.Pointer(cProp))
+	return
+}
+
+// GetBaseDB gets base db.
+func (db *TransactionDB) GetBaseDB() *DB {
+	base := C.rocksdb_transactiondb_get_base_db(db.c)
+	return &DB{c: base}
+}
+
+// CloseBaseDBOfTransactionDB closes base db of TransactionDB.
+func CloseBaseDBOfTransactionDB(db *DB) {
+	if db != nil && db.c != nil {
+		C.rocksdb_transactiondb_close_base_db(db.c)
+	}
+}
+
 // TransactionBegin begins a new transaction
 // with the WriteOptions and TransactionOptions given.
 func (db *TransactionDB) TransactionBegin(
@@ -138,7 +172,7 @@ func (db *TransactionDB) Get(opts *ReadOptions, key []byte) (slice *Slice, err e
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_transactiondb_get(
@@ -155,7 +189,7 @@ func (db *TransactionDB) Get(opts *ReadOptions, key []byte) (slice *Slice, err e
 func (db *TransactionDB) GetPinned(opts *ReadOptions, key []byte) (handle *PinnableSliceHandle, err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	cHandle := C.rocksdb_transactiondb_get_pinned(db.c, opts.c, cKey, C.size_t(len(key)), &cErr)
@@ -171,7 +205,7 @@ func (db *TransactionDB) GetCF(opts *ReadOptions, cf *ColumnFamilyHandle, key []
 	var (
 		cErr    *C.char
 		cValLen C.size_t
-		cKey    = byteToChar(key)
+		cKey    = refGoBytes(key)
 	)
 
 	cValue := C.rocksdb_transactiondb_get_cf(
@@ -188,7 +222,7 @@ func (db *TransactionDB) GetCF(opts *ReadOptions, cf *ColumnFamilyHandle, key []
 func (db *TransactionDB) GetPinnedWithCF(opts *ReadOptions, cf *ColumnFamilyHandle, key []byte) (handle *PinnableSliceHandle, err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	cHandle := C.rocksdb_transactiondb_get_pinned_cf(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cErr)
@@ -288,8 +322,8 @@ func (db *TransactionDB) MultiGetWithCF(opts *ReadOptions, cf *ColumnFamilyHandl
 func (db *TransactionDB) Put(opts *WriteOptions, key, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_transactiondb_put(
@@ -304,8 +338,8 @@ func (db *TransactionDB) Put(opts *WriteOptions, key, value []byte) (err error) 
 func (db *TransactionDB) PutCF(opts *WriteOptions, cf *ColumnFamilyHandle, key, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_transactiondb_put_cf(
@@ -320,8 +354,8 @@ func (db *TransactionDB) PutCF(opts *WriteOptions, cf *ColumnFamilyHandle, key, 
 func (db *TransactionDB) Merge(opts *WriteOptions, key, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_transactiondb_merge(
@@ -336,8 +370,8 @@ func (db *TransactionDB) Merge(opts *WriteOptions, key, value []byte) (err error
 func (db *TransactionDB) MergeCF(opts *WriteOptions, cf *ColumnFamilyHandle, key, value []byte) (err error) {
 	var (
 		cErr   *C.char
-		cKey   = byteToChar(key)
-		cValue = byteToChar(value)
+		cKey   = refGoBytes(key)
+		cValue = refGoBytes(value)
 	)
 
 	C.rocksdb_transactiondb_merge_cf(
@@ -352,7 +386,7 @@ func (db *TransactionDB) MergeCF(opts *WriteOptions, cf *ColumnFamilyHandle, key
 func (db *TransactionDB) Delete(opts *WriteOptions, key []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	C.rocksdb_transactiondb_delete(db.c, opts.c, cKey, C.size_t(len(key)), &cErr)
@@ -365,7 +399,7 @@ func (db *TransactionDB) Delete(opts *WriteOptions, key []byte) (err error) {
 func (db *TransactionDB) DeleteCF(opts *WriteOptions, cf *ColumnFamilyHandle, key []byte) (err error) {
 	var (
 		cErr *C.char
-		cKey = byteToChar(key)
+		cKey = refGoBytes(key)
 	)
 
 	C.rocksdb_transactiondb_delete_cf(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cErr)
@@ -431,6 +465,21 @@ func (db *TransactionDB) FlushCF(cf *ColumnFamilyHandle, opts *FlushOptions) (er
 	C.rocksdb_transactiondb_flush_cf(db.c, opts.c, cf.c, &cErr)
 	err = fromCError(cErr)
 
+	return
+}
+
+// FlushCFs triggers a manual flush for the database on specific column families.
+func (db *TransactionDB) FlushCFs(cfs []*ColumnFamilyHandle, opts *FlushOptions) (err error) {
+	if n := len(cfs); n > 0 {
+		_cfs := make([]*C.rocksdb_column_family_handle_t, n)
+		for i := range _cfs {
+			_cfs[i] = cfs[i].c
+		}
+
+		var cErr *C.char
+		C.rocksdb_transactiondb_flush_cfs(db.c, opts.c, &_cfs[0], C.int(n), &cErr)
+		err = fromCError(cErr)
+	}
 	return
 }
 

@@ -74,7 +74,7 @@ type SignClient interface {
 	Tx(ctx context.Context, hash []byte, prove bool) (*ctypes.ResultTx, error)
 
 	// TxSearch defines a method to search for a paginated set of transactions by
-	// DeliverTx event search criteria.
+	// transaction event search criteria.
 	TxSearch(
 		ctx context.Context,
 		query string,
@@ -83,8 +83,8 @@ type SignClient interface {
 		orderBy string,
 	) (*ctypes.ResultTxSearch, error)
 
-	// BlockSearch defines a method to search for a paginated set of blocks by
-	// BeginBlock and EndBlock event search criteria.
+	// BlockSearch defines a method to search for a paginated set of blocks based
+	// from FinalizeBlock event search criteria.
 	BlockSearch(
 		ctx context.Context,
 		query string,

@@ -6,6 +6,9 @@
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # We need the latest nixpkgs for buildGo121Module, remove this once we upgrade nixpkgs
+    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-unstable";
+
     # Track a separate nixpkgs for Vercel as it needs to be the latest version for every deploy
     nixpkgs-vercel.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
@@ -38,7 +41,7 @@
     };
     ibc-go = {
       url =
-        "github:strangelove-ventures/ibc-go?rev=f8081a1828e47e11791b036659dd6d0e7be5473b";
+        "github:cosmos/ibc-go?rev=c98311964dc550b9fe9a5bff8b6dd8e35bf13642";
       flake = false;
     };
     ics23 = {
@@ -82,6 +85,7 @@
     inputs@{ self
     , nixpkgs
     , nixpkgs-solc
+    , nixpkgs-go
     , flake-parts
     , nix-filter
     , crane
@@ -164,11 +168,13 @@
             first = pkgs.lib.lists.head complete;
             last = pkgs.lib.lists.last complete;
           };
+
+          goPkgs = import inputs.nixpkgs-go { inherit system; };
         in
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake uniondBundleVersions;
+              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs;
 
               gitRev =
                 if (builtins.hasAttr "rev" self)
@@ -203,9 +209,9 @@
                   app_state = {
                     staking.params = {
                       epoch_length = "8";
-                      jailed_validator_threshold = 10;
+                      jailed_validator_threshold = "10";
                     };
-                    slashing.params = { signed_blocks_window = 10; };
+                    slashing.params = { signed_blocks_window = "10"; };
                   };
                 };
                 validatorCount = 4;
@@ -230,12 +236,13 @@
                 cometbls = builtins.fetchGit {
                   name = "cometbls";
                   url = "git@github.com:unionlabs/cometbls";
-                  rev = "20834775a066a30a2115c914213229d3f5033e5e";
+                  rev = "0005bda13742d508487f066ba6fa3cb91495fc99";
+                  allRefs = true;
                 };
                 cosmossdk = builtins.fetchGit {
                   name = "cosmos-sdk";
                   url = "git@github.com:unionlabs/cosmos-sdk";
-                  rev = "89f7ea352a8bed79ade8c633345cd94ffb7a82db";
+                  rev = "f24b2ba59f6ec8fb4624e1b2774ad7f2d90936a2";
                   allRefs = true;
                 };
                 ibcgo = mkUnpack {
@@ -303,12 +310,8 @@
               bacon
               cargo-nextest
               foundry-bin
-              go_1_20
-              go-ethereum
-              gopls
-              go-tools
-              gotools
               jq
+              go-ethereum
               marksman
               nil
               nixfmt
@@ -325,7 +328,12 @@
               nodePackages.svelte-language-server
               nodePackages.typescript-language-server
               nodePackages.vscode-css-languageserver-bin
-            ] ++ (if pkgs.stdenv.isLinux then [
+            ] ++ (with goPkgs; [
+              go
+              gopls
+              go-tools
+              gotools
+            ]) ++ (if pkgs.stdenv.isLinux then [
               self'.packages.hasura-cli
               self'.packages.sqlx-cli
             ] else [ ]));
@@ -354,7 +362,10 @@
             {
               projectRootFile = "flake.nix";
               programs.nixpkgs-fmt.enable = true;
-              programs.gofmt.enable = true;
+              programs.gofmt = {
+                enable = true;
+                package = goPkgs.go;
+              };
               programs.rustfmt = {
                 enable = true;
                 package = rust.toolchains.dev;

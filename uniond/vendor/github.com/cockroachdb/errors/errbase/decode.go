@@ -57,6 +57,15 @@ func decodeLeaf(ctx context.Context, enc *errorspb.EncodedErrorLeaf) error {
 			return genErr
 		}
 		// Decoding failed, we'll drop through to opaqueLeaf{} below.
+	} else if decoder, ok := multiCauseDecoders[typeKey]; ok {
+		causes := make([]error, len(enc.MultierrorCauses))
+		for i, e := range enc.MultierrorCauses {
+			causes[i] = DecodeError(ctx, *e)
+		}
+		genErr := decoder(ctx, causes, enc.Message, enc.Details.ReportablePayload, payload)
+		if genErr != nil {
+			return genErr
+		}
 	} else {
 		// Shortcut for non-registered proto-encodable error types:
 		// if it already implements `error`, it's good to go.
@@ -64,6 +73,19 @@ func decodeLeaf(ctx context.Context, enc *errorspb.EncodedErrorLeaf) error {
 			// yes: we're done!
 			return e
 		}
+	}
+
+	if len(enc.MultierrorCauses) > 0 {
+		causes := make([]error, len(enc.MultierrorCauses))
+		for i, e := range enc.MultierrorCauses {
+			causes[i] = DecodeError(ctx, *e)
+		}
+		leaf := &opaqueLeafCauses{
+			causes: causes,
+		}
+		leaf.msg = enc.Message
+		leaf.details = enc.Details
+		return leaf
 	}
 
 	// No decoder and no error type: we'll keep what we received and
@@ -97,7 +119,7 @@ func decodeWrapper(ctx context.Context, enc *errorspb.EncodedWrapper) error {
 	typeKey := TypeKey(enc.Details.ErrorTypeMark.FamilyName)
 	if decoder, ok := decoders[typeKey]; ok {
 		// Yes, use it.
-		genErr := decoder(ctx, cause, enc.MessagePrefix, enc.Details.ReportablePayload, payload)
+		genErr := decoder(ctx, cause, enc.Message, enc.Details.ReportablePayload, payload)
 		if genErr != nil {
 			// Decoding succeeded. Use this.
 			return genErr
@@ -107,9 +129,10 @@ func decodeWrapper(ctx context.Context, enc *errorspb.EncodedWrapper) error {
 
 	// Otherwise, preserve all details about the original object.
 	return &opaqueWrapper{
-		cause:   cause,
-		prefix:  enc.MessagePrefix,
-		details: enc.Details,
+		cause:       cause,
+		prefix:      enc.Message,
+		details:     enc.Details,
+		messageType: MessageType(enc.MessageType),
 	}
 }
 
@@ -160,3 +183,24 @@ type WrapperDecoder = func(ctx context.Context, cause error, msgPrefix string, s
 
 // registry for RegisterWrapperType.
 var decoders = map[TypeKey]WrapperDecoder{}
+
+// MultiCauseDecoder is to be provided (via RegisterMultiCauseDecoder
+// above) by additional multi-cause wrapper types not yet known by the
+// library. A nil return indicates that decoding was not successful.
+type MultiCauseDecoder = func(ctx context.Context, causes []error, msgPrefix string, safeDetails []string, payload proto.Message) error
+
+// registry for RegisterMultiCauseDecoder.
+var multiCauseDecoders = map[TypeKey]MultiCauseDecoder{}
+
+// RegisterMultiCauseDecoder can be used to register new multi-cause
+// wrapper types to the library. Registered wrappers will be decoded
+// using their own Go type when an error is decoded. Multi-cause
+// wrappers that have not been registered will be decoded using the
+// opaqueWrapper type.
+func RegisterMultiCauseDecoder(theType TypeKey, decoder MultiCauseDecoder) {
+	if decoder == nil {
+		delete(multiCauseDecoders, theType)
+	} else {
+		multiCauseDecoders[theType] = decoder
+	}
+}

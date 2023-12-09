@@ -1,32 +1,38 @@
-//go:build go1.16 && finder
-// +build go1.16,finder
+//go:build finder
 
 package viper
 
 import (
 	"fmt"
 
-	"github.com/spf13/afero"
+	"github.com/sagikazarmark/locafero"
 )
 
 // Search all configPaths for any config file.
 // Returns the first path that exists (and is a config file).
 func (v *Viper) findConfigFile() (string, error) {
-	finder := finder{
-		paths:            v.configPaths,
-		fileNames:        []string{v.configName},
-		extensions:       SupportedExts,
-		withoutExtension: v.configType != "",
+	var names []string
+
+	if v.configType != "" {
+		names = locafero.NameWithOptionalExtensions(v.configName, SupportedExts...)
+	} else {
+		names = locafero.NameWithExtensions(v.configName, SupportedExts...)
 	}
 
-	file, err := finder.Find(afero.NewIOFS(v.fs))
+	finder := locafero.Finder{
+		Paths: v.configPaths,
+		Names: names,
+		Type:  locafero.FileTypeFile,
+	}
+
+	results, err := finder.Find(v.fs)
 	if err != nil {
 		return "", err
 	}
 
-	if file == "" {
+	if len(results) == 0 {
 		return "", ConfigFileNotFoundError{v.configName, fmt.Sprintf("%s", v.configPaths)}
 	}
 
-	return file, nil
+	return results[0], nil
 }

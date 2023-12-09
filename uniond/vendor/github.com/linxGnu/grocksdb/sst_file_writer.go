@@ -50,8 +50,8 @@ func (w *SSTFileWriter) Open(path string) (err error) {
 // Add adds key, value to currently opened file.
 // REQUIRES: key is after any previously added key according to comparator.
 func (w *SSTFileWriter) Add(key, value []byte) (err error) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	var cErr *C.char
 	C.rocksdb_sstfilewriter_add(w.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)), &cErr)
 	err = fromCError(cErr)
@@ -60,8 +60,8 @@ func (w *SSTFileWriter) Add(key, value []byte) (err error) {
 
 // Put key, value to currently opened file.
 func (w *SSTFileWriter) Put(key, value []byte) (err error) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	var cErr *C.char
 	C.rocksdb_sstfilewriter_put(w.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)), &cErr)
 	err = fromCError(cErr)
@@ -70,9 +70,9 @@ func (w *SSTFileWriter) Put(key, value []byte) (err error) {
 
 // Put key with timestamp, value to the currently opened file
 func (w *SSTFileWriter) PutWithTS(key, ts, value []byte) (err error) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
-	cTs := byteToChar(ts)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
+	cTs := refGoBytes(ts)
 	var cErr *C.char
 	C.rocksdb_sstfilewriter_put_with_ts(w.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)), cValue, C.size_t(len(value)), &cErr)
 	err = fromCError(cErr)
@@ -81,8 +81,8 @@ func (w *SSTFileWriter) PutWithTS(key, ts, value []byte) (err error) {
 
 // Merge key, value to currently opened file.
 func (w *SSTFileWriter) Merge(key, value []byte) (err error) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	var cErr *C.char
 	C.rocksdb_sstfilewriter_merge(w.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)), &cErr)
 	err = fromCError(cErr)
@@ -91,7 +91,7 @@ func (w *SSTFileWriter) Merge(key, value []byte) (err error) {
 
 // Delete key from currently opened file.
 func (w *SSTFileWriter) Delete(key []byte) (err error) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	var cErr *C.char
 	C.rocksdb_sstfilewriter_delete(w.c, cKey, C.size_t(len(key)), &cErr)
 	err = fromCError(cErr)
@@ -100,8 +100,8 @@ func (w *SSTFileWriter) Delete(key []byte) (err error) {
 
 // DeleteWithTS deletes key with timestamp to the currently opened file
 func (w *SSTFileWriter) DeleteWithTS(key, ts []byte) (err error) {
-	cKey := byteToChar(key)
-	cTs := byteToChar(ts)
+	cKey := refGoBytes(key)
+	cTs := refGoBytes(ts)
 	var cErr *C.char
 	C.rocksdb_sstfilewriter_delete_with_ts(w.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)), &cErr)
 	err = fromCError(cErr)
@@ -110,8 +110,8 @@ func (w *SSTFileWriter) DeleteWithTS(key, ts []byte) (err error) {
 
 // DeleteRange deletes keys that are between [startKey, endKey)
 func (w *SSTFileWriter) DeleteRange(startKey, endKey []byte) (err error) {
-	cStartKey := byteToChar(startKey)
-	cEndKey := byteToChar(endKey)
+	cStartKey := refGoBytes(startKey)
+	cEndKey := refGoBytes(endKey)
 	var cErr *C.char
 	C.rocksdb_sstfilewriter_delete_range(w.c, cStartKey, C.size_t(len(startKey)), cEndKey, C.size_t(len(endKey)), &cErr)
 	err = fromCError(cErr)

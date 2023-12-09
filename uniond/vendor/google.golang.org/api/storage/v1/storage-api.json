@@ -26,7 +26,7 @@
   "description": "Stores and retrieves potentially large, immutable data objects.",
   "discoveryVersion": "v1",
   "documentationLink": "https://developers.google.com/storage/docs/json_api/",
-  "etag": "\"34333739363230323936363635393736363430\"",
+  "etag": "\"3132363038323634353839373135393539313634\"",
   "icons": {
     "x16": "https://www.google.com/images/icons/product/cloud_storage-16.png",
     "x32": "https://www.google.com/images/icons/product/cloud_storage-32.png"
@@ -446,6 +446,12 @@
             "project"
           ],
           "parameters": {
+            "enableObjectRetention": {
+              "default": "false",
+              "description": "When set to true, object retention is enabled for this bucket.",
+              "location": "query",
+              "type": "boolean"
+            },
             "predefinedAcl": {
               "description": "Apply a predefined set of access controls to this bucket.",
               "enum": [
@@ -1311,7 +1317,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1357,7 +1363,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1399,7 +1405,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1444,7 +1450,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1493,7 +1499,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1545,7 +1551,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1572,6 +1578,34 @@
     },
     "objects": {
       "methods": {
+        "bulkRestore": {
+          "description": "Initiates a long-running bulk restore operation on the specified bucket.",
+          "httpMethod": "POST",
+          "id": "storage.objects.bulkRestore",
+          "parameterOrder": [
+            "bucket"
+          ],
+          "parameters": {
+            "bucket": {
+              "description": "Name of the bucket in which the object resides.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "b/{bucket}/o/bulkRestore",
+          "request": {
+            "$ref": "BulkRestoreObjectsRequest"
+          },
+          "response": {
+            "$ref": "GoogleLongrunningOperation"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/devstorage.full_control",
+            "https://www.googleapis.com/auth/devstorage.read_write"
+          ]
+        },
         "compose": {
           "description": "Concatenates a list of existing objects into a new object in the same bucket.",
           "httpMethod": "POST",
@@ -1588,7 +1622,7 @@
               "type": "string"
             },
             "destinationObject": {
-              "description": "Name of the new object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the new object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1662,7 +1696,7 @@
           ],
           "parameters": {
             "destinationBucket": {
-              "description": "Name of the bucket in which to store the new object. Overrides the provided object metadata's bucket value, if any.For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the bucket in which to store the new object. Overrides the provided object metadata's bucket value, if any.For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1773,7 +1807,7 @@
               "type": "string"
             },
             "sourceObject": {
-              "description": "Name of the source object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the source object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1843,7 +1877,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1907,7 +1941,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -1924,6 +1958,11 @@
               ],
               "location": "query",
               "type": "string"
+            },
+            "softDeleted": {
+              "description": "If true, only soft-deleted object versions will be listed. The default is false. For more information, see Soft Delete.",
+              "location": "query",
+              "type": "boolean"
             },
             "userProject": {
               "description": "The project to be billed for this request. Required for Requester Pays buckets.",
@@ -1967,7 +2006,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -2054,7 +2093,7 @@
               "type": "string"
             },
             "name": {
-              "description": "Name of the object. Required when the object metadata is not otherwise provided. Overrides the object metadata's name value, if any. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. Required when the object metadata is not otherwise provided. Overrides the object metadata's name value, if any. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "query",
               "type": "string"
             },
@@ -2177,6 +2216,11 @@
               "location": "query",
               "type": "string"
             },
+            "softDeleted": {
+              "description": "If true, only soft-deleted object versions will be listed. The default is false. For more information, see Soft Delete.",
+              "location": "query",
+              "type": "boolean"
+            },
             "startOffset": {
               "description": "Filter results to objects whose names are lexicographically equal to or after startOffset. If endOffset is also set, the objects listed will have names between startOffset (inclusive) and endOffset (exclusive).",
               "location": "query",
@@ -2252,10 +2296,15 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
+            },
+            "overrideUnlockedRetention": {
+              "description": "Must be true to remove the retention configuration, reduce its unlocked retention period, or change its mode from unlocked to locked.",
+              "location": "query",
+              "type": "boolean"
             },
             "predefinedAcl": {
               "description": "Apply a predefined set of access controls to this object.",
@@ -2309,6 +2358,89 @@
             "https://www.googleapis.com/auth/devstorage.full_control"
           ]
         },
+        "restore": {
+          "description": "Restores a soft-deleted object.",
+          "httpMethod": "POST",
+          "id": "storage.objects.restore",
+          "parameterOrder": [
+            "bucket",
+            "object"
+          ],
+          "parameters": {
+            "bucket": {
+              "description": "Name of the bucket in which the object resides.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "generation": {
+              "description": "Selects a specific revision of this object.",
+              "format": "int64",
+              "location": "query",
+              "required": true,
+              "type": "string"
+            },
+            "ifGenerationMatch": {
+              "description": "Makes the operation conditional on whether the object's one live generation matches the given value. Setting to 0 makes the operation succeed only if there are no live versions of the object.",
+              "format": "int64",
+              "location": "query",
+              "type": "string"
+            },
+            "ifGenerationNotMatch": {
+              "description": "Makes the operation conditional on whether none of the object's live generations match the given value. If no live object exists, the precondition fails. Setting to 0 makes the operation succeed only if there is a live version of the object.",
+              "format": "int64",
+              "location": "query",
+              "type": "string"
+            },
+            "ifMetagenerationMatch": {
+              "description": "Makes the operation conditional on whether the object's one live metageneration matches the given value.",
+              "format": "int64",
+              "location": "query",
+              "type": "string"
+            },
+            "ifMetagenerationNotMatch": {
+              "description": "Makes the operation conditional on whether none of the object's live metagenerations match the given value.",
+              "format": "int64",
+              "location": "query",
+              "type": "string"
+            },
+            "object": {
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "projection": {
+              "description": "Set of properties to return. Defaults to full.",
+              "enum": [
+                "full",
+                "noAcl"
+              ],
+              "enumDescriptions": [
+                "Include all properties.",
+                "Omit the owner, acl property."
+              ],
+              "location": "query",
+              "type": "string"
+            },
+            "userProject": {
+              "description": "The project to be billed for this request. Required for Requester Pays buckets.",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "b/{bucket}/o/{object}/restore",
+          "request": {
+            "$ref": "Object"
+          },
+          "response": {
+            "$ref": "Object"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/devstorage.full_control"
+          ]
+        },
         "rewrite": {
           "description": "Rewrites a source object to a destination object. Optionally overrides metadata.",
           "httpMethod": "POST",
@@ -2332,7 +2464,7 @@
               "type": "string"
             },
             "destinationObject": {
-              "description": "Name of the new object. Required when the object metadata is not otherwise provided. Overrides the object metadata's name value, if any. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the new object. Required when the object metadata is not otherwise provided. Overrides the object metadata's name value, if any. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -2443,7 +2575,7 @@
               "type": "string"
             },
             "sourceObject": {
-              "description": "Name of the source object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the source object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -2489,7 +2621,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -2536,7 +2668,7 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
@@ -2612,10 +2744,15 @@
               "type": "string"
             },
             "object": {
-              "description": "Name of the object. For information about how to URL encode object names to be path safe, see Encoding URI Path Parts.",
+              "description": "Name of the object. For information about how to URL encode object names to be path safe, see [Encoding URI Path Parts](https://cloud.google.com/storage/docs/request-endpoints#encoding).",
               "location": "path",
               "required": true,
               "type": "string"
+            },
+            "overrideUnlockedRetention": {
+              "description": "Must be true to remove the retention configuration, reduce its unlocked retention period, or change its mode from unlocked to locked.",
+              "location": "query",
+              "type": "boolean"
             },
             "predefinedAcl": {
               "description": "Apply a predefined set of access controls to this object.",
@@ -2761,6 +2898,117 @@
             "https://www.googleapis.com/auth/devstorage.read_write"
           ],
           "supportsSubscription": true
+        }
+      }
+    },
+    "operations": {
+      "methods": {
+        "cancel": {
+          "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed.",
+          "httpMethod": "POST",
+          "id": "storage.buckets.operations.cancel",
+          "parameterOrder": [
+            "bucket",
+            "operationId"
+          ],
+          "parameters": {
+            "bucket": {
+              "description": "The parent bucket of the operation resource.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "operationId": {
+              "description": "The ID of the operation resource.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "b/{bucket}/operations/{operationId}/cancel",
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/devstorage.full_control",
+            "https://www.googleapis.com/auth/devstorage.read_write"
+          ]
+        },
+        "get": {
+          "description": "Gets the latest state of a long-running operation.",
+          "httpMethod": "GET",
+          "id": "storage.buckets.operations.get",
+          "parameterOrder": [
+            "bucket",
+            "operationId"
+          ],
+          "parameters": {
+            "bucket": {
+              "description": "The parent bucket of the operation resource.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "operationId": {
+              "description": "The ID of the operation resource.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "b/{bucket}/operations/{operationId}",
+          "response": {
+            "$ref": "GoogleLongrunningOperation"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/cloud-platform.read-only",
+            "https://www.googleapis.com/auth/devstorage.full_control",
+            "https://www.googleapis.com/auth/devstorage.read_only",
+            "https://www.googleapis.com/auth/devstorage.read_write"
+          ]
+        },
+        "list": {
+          "description": "Lists operations that match the specified filter in the request.",
+          "httpMethod": "GET",
+          "id": "storage.buckets.operations.list",
+          "parameterOrder": [
+            "bucket"
+          ],
+          "parameters": {
+            "bucket": {
+              "description": "Name of the bucket in which to look for operations.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "filter": {
+              "description": "A filter to narrow down results to a preferred subset. The filtering language is documented in more detail in [AIP-160](https://google.aip.dev/160).",
+              "location": "query",
+              "type": "string"
+            },
+            "pageSize": {
+              "description": "Maximum number of items to return in a single page of responses. Fewer total results may be returned than requested. The service uses this parameter or 100 items, whichever is smaller.",
+              "format": "int32",
+              "location": "query",
+              "minimum": "0",
+              "type": "integer"
+            },
+            "pageToken": {
+              "description": "A previously-returned page token representing part of the larger set of results to view.",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "b/{bucket}/operations",
+          "response": {
+            "$ref": "GoogleLongrunningListOperationsResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/cloud-platform.read-only",
+            "https://www.googleapis.com/auth/devstorage.full_control",
+            "https://www.googleapis.com/auth/devstorage.read_only",
+            "https://www.googleapis.com/auth/devstorage.read_write"
+          ]
         }
       }
     },
@@ -3010,7 +3258,7 @@
       }
     }
   },
-  "revision": "20230301",
+  "revision": "20230914",
   "rootUrl": "https://storage.googleapis.com/",
   "schemas": {
     "Bucket": {
@@ -3035,6 +3283,15 @@
             "enabled": {
               "description": "Whether or not Autoclass is enabled on this bucket",
               "type": "boolean"
+            },
+            "terminalStorageClass": {
+              "description": "The storage class that objects in the bucket eventually transition to if they are not read for a certain length of time. Valid values are NEARLINE and ARCHIVE.",
+              "type": "string"
+            },
+            "terminalStorageClassUpdateTime": {
+              "description": "A date and time in RFC 3339 format representing the time of the most recent update to \"terminalStorageClass\".",
+              "format": "date-time",
+              "type": "string"
             },
             "toggleTime": {
               "description": "A date and time in RFC 3339 format representing the instant at which \"enabled\" was last toggled.",
@@ -3319,6 +3576,16 @@
           "description": "The name of the bucket.",
           "type": "string"
         },
+        "objectRetention": {
+          "description": "The bucket's object retention config.",
+          "properties": {
+            "mode": {
+              "description": "The bucket's object retention mode. Can be Enabled.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
         "owner": {
           "description": "The owner of the bucket. This is always the project team's owner group.",
           "properties": {
@@ -3369,6 +3636,22 @@
         "selfLink": {
           "description": "The URI of this bucket.",
           "type": "string"
+        },
+        "softDeletePolicy": {
+          "description": "The bucket's soft delete policy, which defines the period of time that soft-deleted objects will be retained, and cannot be permanently deleted.",
+          "properties": {
+            "effectiveTime": {
+              "description": "Server-determined value that indicates the time from which the policy, or one with a greater retention, was effective. This value is in RFC 3339 format.",
+              "format": "date-time",
+              "type": "string"
+            },
+            "retentionDurationSeconds": {
+              "description": "The period of time in seconds, that soft-deleted objects in the bucket will be retained and cannot be permanently deleted.",
+              "format": "int64",
+              "type": "string"
+            }
+          },
+          "type": "object"
         },
         "storageClass": {
           "description": "The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.",
@@ -3525,6 +3808,38 @@
       },
       "type": "object"
     },
+    "BulkRestoreObjectsRequest": {
+      "description": "A bulk restore objects request.",
+      "id": "BulkRestoreObjectsRequest",
+      "properties": {
+        "allowOverwrite": {
+          "description": "If false (default), the restore will not overwrite live objects with the same name at the destination. This means some deleted objects may be skipped. If true, live objects will be overwritten resulting in a noncurrent object (if versioning is enabled). If versioning is not enabled, overwriting the object will result in a soft-deleted object. In either case, if a noncurrent object already exists with the same name, a live version can be written without issue.",
+          "type": "boolean"
+        },
+        "copySourceAcl": {
+          "description": "If true, copies the source object's ACL; otherwise, uses the bucket's default object ACL. The default is false.",
+          "type": "boolean"
+        },
+        "matchGlobs": {
+          "description": "Restores only the objects matching any of the specified glob(s). If this parameter is not specified, all objects will be restored within the specified time range.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "softDeletedAfterTime": {
+          "description": "Restores only the objects that were soft-deleted after this time.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "softDeletedBeforeTime": {
+          "description": "Restores only the objects that were soft-deleted before this time.",
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "Channel": {
       "description": "An notification channel used to watch for resource changes.",
       "id": "Channel",
@@ -3651,6 +3966,86 @@
         },
         "title": {
           "description": "An optional title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleLongrunningListOperationsResponse": {
+      "description": "The response message for storage.buckets.operations.list.",
+      "id": "GoogleLongrunningListOperationsResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "The continuation token, used to page through large result sets. Provide this value in a subsequent request to return the next page of results.",
+          "type": "string"
+        },
+        "operations": {
+          "description": "A list of operations that matches the specified filter in the request.",
+          "items": {
+            "$ref": "GoogleLongrunningOperation"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleLongrunningOperation": {
+      "description": "This resource represents a long-running operation that is the result of a network API call.",
+      "id": "GoogleLongrunningOperation",
+      "properties": {
+        "done": {
+          "description": "If the value is \"false\", it means the operation is still in progress. If \"true\", the operation is completed, and either \"error\" or \"response\" is available.",
+          "type": "boolean"
+        },
+        "error": {
+          "$ref": "GoogleRpcStatus",
+          "description": "The error result of the operation in case of failure or cancellation."
+        },
+        "metadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Service-specific metadata associated with the operation. It typically contains progress information and common metadata such as create time. Some services might not provide such metadata. Any method that returns a long-running operation should document the metadata type, if any.",
+          "type": "object"
+        },
+        "name": {
+          "description": "The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the \"name\" should be a resource name ending with \"operations/{operationId}\".",
+          "type": "string"
+        },
+        "response": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "The normal response of the operation in case of success. If the original method returns no data on success, such as \"Delete\", the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type \"XxxResponse\", where \"Xxx\" is the original method name. For example, if the original method name is \"TakeSnapshot()\", the inferred response type is \"TakeSnapshotResponse\".",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleRpcStatus": {
+      "description": "The \"Status\" type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each \"Status\" message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+      "id": "GoogleRpcStatus",
+      "properties": {
+        "code": {
+          "description": "The status code, which should be an enum value of google.rpc.Code.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "details": {
+          "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+          "items": {
+            "additionalProperties": {
+              "description": "Properties of the object. Contains field @type with type URL.",
+              "type": "any"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "message": {
+          "description": "A developer-facing error message, which should be in English.",
           "type": "string"
         }
       },
@@ -3957,6 +4352,21 @@
             },
             "entityId": {
               "description": "The ID for the entity.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "retention": {
+          "description": "A collection of object level retention parameters.",
+          "properties": {
+            "mode": {
+              "description": "The bucket's object retention mode, can only be Unlocked or Locked.",
+              "type": "string"
+            },
+            "retainUntilTime": {
+              "description": "A time in RFC 3339 format until which object retention protects this object.",
+              "format": "date-time",
               "type": "string"
             }
           },

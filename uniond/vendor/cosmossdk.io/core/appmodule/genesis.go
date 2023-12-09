@@ -7,6 +7,7 @@ import (
 
 // HasGenesis is the extension interface that modules should implement to handle
 // genesis data and state initialization.
+// WARNING: This interface is experimental and may change at any time.
 type HasGenesis interface {
 	AppModule
 

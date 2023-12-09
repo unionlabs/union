@@ -34,11 +34,6 @@ const (
 	// Should preferably be a multiple of 6, since
 	// we accumulate 6 bytes between writes to the buffer.
 	bufferFlushSize = 246
-
-	// bufferSize is the actual output byte buffer size.
-	// It must have additional headroom for a flush
-	// which can contain up to 8 bytes.
-	bufferSize = bufferFlushSize + 8
 )
 
 // Minimum length code that emits bits.

@@ -75,14 +75,14 @@ Store entries prefixed with "Last" must remain unchanged until EndBlock.
 
 ### ValidatorUpdates
 
-ValidatorUpdates contains the validator updates returned to ABCI at the end of every block. 
-The values are overwritten in every block. 
+ValidatorUpdates contains the validator updates returned to ABCI at the end of every block.
+The values are overwritten in every block.
 
 * ValidatorUpdates `0x61 -> []abci.ValidatorUpdate`
 
 ### UnbondingID
 
-UnbondingID stores the ID of the latest unbonding operation. It enables to create unique IDs for unbonding operation, i.e., UnbondingID is incremented every time a new unbonding operation (validator unbonding, unbonding delegation, redelegation) is initiated.
+UnbondingID stores the ID of the latest unbonding operation. It enables creating unique IDs for unbonding operations, i.e., UnbondingID is incremented every time a new unbonding operation (validator unbonding, unbonding delegation, redelegation) is initiated.
 
 * UnbondingID: `0x37 -> uint64`
 
@@ -114,6 +114,10 @@ Validators can have one of three statuses
   tombstoning, an unbonding of all their delegations begins. All delegations must then wait the UnbondingTime
   before their tokens are moved to their accounts from the `BondedPool`.
 
+:::warning
+Tombstoning is permanent, once tombstoned a validator's consensus key can not be reused within the chain where the tombstoning happened.
+:::
+
 Validators objects should be primarily stored and accessed by the
 `OperatorAddr`, an SDK validator address for the operator of the validator. Two
 additional indices are maintained per validator object in order to fulfill
@@ -133,7 +137,7 @@ associated validator, where the public key of that validator can change in the
 future. Delegators can refer to the immutable operator of the validator, without
 concern for the changing public key.
 
-`ValidatorsByUnbondingID` is an additional index that enables lookups for 
+`ValidatorsByUnbondingID` is an additional index that enables lookups for
  validators by the unbonding IDs corresponding to their current unbonding.
 
 `ValidatorByConsAddr` is an additional index that enables lookups for slashing.
@@ -178,7 +182,7 @@ https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/proto/cosmos/staking/v1bet
 
 #### Delegator Shares
 
-When one Delegates tokens to a Validator they are issued a number of delegator shares based on a
+When one delegates tokens to a Validator, they are issued a number of delegator shares based on a
 dynamic exchange rate, calculated as follows from the total number of tokens delegated to the
 validator and the number of shares issued so far:
 
@@ -192,7 +196,7 @@ hold and the inverse exchange rate:
 
 These `Shares` are simply an accounting mechanism. They are not a fungible asset. The reason for
 this mechanism is to simplify the accounting around slashing. Rather than iteratively slashing the
-tokens of every delegation entry, instead the Validators total bonded tokens can be slashed,
+tokens of every delegation entry, instead the Validator's total bonded tokens can be slashed,
 effectively reducing the value of each issued delegator share.
 
 ### UnbondingDelegation
@@ -213,8 +217,8 @@ detected.
  unbonding delegations associated with a given validator that need to be
  slashed.
 
- `UnbondingDelegationByUnbondingId` is an additional index that enables 
- lookups for unbonding delegations by the unbonding IDs of the containing 
+ `UnbondingDelegationByUnbondingId` is an additional index that enables
+ lookups for unbonding delegations by the unbonding IDs of the containing
  unbonding delegation entries.
 
 
@@ -250,8 +254,8 @@ The first map here is used for queries, to lookup all redelegations for a given
 delegator. The second map is used for slashing based on the `ValidatorSrcAddr`,
 while the third map is for slashing based on the `ValidatorDstAddr`.
 
-`RedelegationByUnbondingId` is an additional index that enables 
- lookups for redelegations by the unbonding IDs of the containing 
+`RedelegationByUnbondingId` is an additional index that enables
+ lookups for redelegations by the unbonding IDs of the containing
  redelegation entries.
 
 A redelegation object is created every time a redelegation occurs. To prevent
@@ -268,13 +272,13 @@ https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/proto/cosmos/staking/v1bet
 
 ### Queues
 
-All queues objects are sorted by timestamp. The time used within any queue is
-first rounded to the nearest nanosecond then sorted. The sortable time format
+All queue objects are sorted by timestamp. The time used within any queue is
+firstly converted to UTC, rounded to the nearest nanosecond then sorted. The sortable time format
 used is a slight modification of the RFC3339Nano and uses the format string
 `"2006-01-02T15:04:05.000000000"`. Notably this format:
 
 * right pads all zeros
-* drops the time zone info (uses UTC)
+* drops the time zone info (we already use UTC)
 
 In all cases, the stored timestamp represents the maturation time of the queue
 element.
@@ -308,7 +312,7 @@ queue is kept.
 
 * ValidatorQueueTime: `0x43 | format(time) -> []sdk.ValAddress`
 
-The stored object as each key is an array of validator operator addresses from
+The stored object by each key is an array of validator operator addresses from
 which the validator object can be accessed. Typically it is expected that only
 a single validator record will be associated with a given timestamp however it is possible
 that multiple validators exist in the queue at the same location.
@@ -411,16 +415,16 @@ Delegation may be called.
   shares from the `BondedPool` to the `NotBondedPool` `ModuleAccount`
 * remove the validator if it is unbonded and there are no more delegation shares.
 * remove the validator if it is unbonded and there are no more delegation shares
-* get a unique `unbondingId` and map it to the `UnbondingDelegationEntry` in `UnbondingDelegationByUnbondingId` 
+* get a unique `unbondingId` and map it to the `UnbondingDelegationEntry` in `UnbondingDelegationByUnbondingId`
 * call the `AfterUnbondingInitiated(unbondingId)` hook
 * add the unbonding delegation to `UnbondingDelegationQueue` with the completion time set to `UnbondingTime`
 
-#### Cancel an `UnbondingDelegation` Entry 
+#### Cancel an `UnbondingDelegation` Entry
 
 When a `cancel unbond delegation` occurs both the `validator`, the `delegation` and an `UnbondingDelegationQueue` state will be updated.
 
 * if cancel unbonding delegation amount equals to the `UnbondingDelegation` entry `balance`, then the `UnbondingDelegation` entry deleted from `UnbondingDelegationQueue`.
-* if the `cancel unbonding delegation amount is less than the `UnbondingDelegation` entry balance, then the `UnbondingDelegation` entry will be updated with new balance in the `UnbondingDelegationQueue`. 
+* if the `cancel unbonding delegation amount is less than the `UnbondingDelegation` entry balance, then the `UnbondingDelegation` entry will be updated with new balance in the `UnbondingDelegationQueue`.
 * cancel `amount` is [Delegated](#delegations) back to  the original `validator`.
 
 #### Complete Unbonding
@@ -657,7 +661,7 @@ This message is expected to fail if:
 
 When this message is processed the following actions occur:
 
-* if the `unbondingDelegation` Entry balance is zero 
+* if the `unbondingDelegation` Entry balance is zero
     * in this condition `unbondingDelegation` entry will be removed from `unbondingDelegationQueue`.
     * otherwise `unbondingDelegationQueue` will be updated with new `unbondingDelegation` entry balance and initial balance
 * the validator's `DelegatorShares` and the delegation's `Shares` are both increased by the message `Amount`.
@@ -787,11 +791,11 @@ validators that still have remaining delegations, the `validator.Status` is
 switched from `types.Unbonding` to
 `types.Unbonded`.
 
-Unbonding operations can be put on hold by external modules via the `PutUnbondingOnHold(unbondingId)` method. 
- As a result, an unbonding operation (e.g., an unbonding delegation) that is on hold, cannot complete 
- even if it reaches maturity. For an unbonding operation with `unbondingId` to eventually complete 
- (after it reaches maturity), every call to `PutUnbondingOnHold(unbondingId)` must be matched 
- by a call to `UnbondingCanComplete(unbondingId)`. 
+Unbonding operations can be put on hold by external modules via the `PutUnbondingOnHold(unbondingId)` method.
+ As a result, an unbonding operation (e.g., an unbonding delegation) that is on hold, cannot complete
+ even if it reaches maturity. For an unbonding operation with `unbondingId` to eventually complete
+ (after it reaches maturity), every call to `PutUnbondingOnHold(unbondingId)` must be matched
+ by a call to `UnbondingCanComplete(unbondingId)`.
 
 #### Unbonding Delegations
 
@@ -1565,28 +1569,38 @@ The command `create-validator` allows users to create new validator initialized 
 Usage:
 
 ```bash
-simd tx staking create-validator [flags]
+simd tx staking create-validator [path/to/validator.json] [flags]
 ```
 
 Example:
 
 ```bash
-simd tx staking create-validator \
-  --amount=1000000stake \
-  --pubkey=$(simd tendermint show-validator) \
-  --moniker="my-moniker" \
-  --website="https://myweb.site" \
-  --details="description of your validator" \
+simd tx staking create-validator /path/to/validator.json \
   --chain-id="name_of_chain_id" \
-  --commission-rate="0.10" \
-  --commission-max-rate="0.20" \
-  --commission-max-change-rate="0.01" \
-  --min-self-delegation="1" \
   --gas="auto" \
   --gas-adjustment="1.2" \
   --gas-prices="0.025stake" \
   --from=mykey
 ```
+
+where `validator.json` contains:
+
+```json
+{
+  "pubkey": {"@type":"/cosmos.crypto.ed25519.PubKey","key":"BnbwFpeONLqvWqJb3qaUbL5aoIcW3fSuAp9nT3z5f20="},
+  "amount": "1000000stake",
+  "moniker": "my-moniker",
+  "website": "https://myweb.site",
+  "security": "security-contact@gmail.com",
+  "details": "description of your validator",
+  "commission-rate": "0.10",
+  "commission-max-rate": "0.20",
+  "commission-max-change-rate": "0.01",
+  "min-self-delegation": "1"
+}
+```
+
+and pubkey can be obtained by using `simd tendermint show-validator` command.
 
 ##### delegate
 
@@ -1652,7 +1666,7 @@ Example:
 simd tx staking unbond cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj 100stake --from mykey
 ```
 
-##### cancel unbond 
+##### cancel unbond
 
 The command `cancel-unbond` allow users to cancel the unbonding delegation entry and delegate back to the original validator.
 

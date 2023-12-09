@@ -7,7 +7,7 @@ import (
 	gogoproto "github.com/cosmos/gogoproto/proto"
 
 	_ "github.com/cosmos/cosmos-proto" // look above
-	"github.com/golang/protobuf/proto" //nolint:staticcheck
+	"github.com/golang/protobuf/proto" //nolint:staticcheck // migrate in a future pr
 )
 
 func getFileDescriptor(filePath string) []byte {
@@ -18,7 +18,7 @@ func getFileDescriptor(filePath string) []byte {
 		return fd
 	}
 
-	return proto.FileDescriptor(filePath) //nolint:staticcheck
+	return proto.FileDescriptor(filePath) //nolint:staticcheck // keep for backward compatibility
 }
 
 func getMessageType(name string) reflect.Type {
@@ -27,7 +27,7 @@ func getMessageType(name string) reflect.Type {
 		return typ
 	}
 
-	return proto.MessageType(name) //nolint:staticcheck
+	return proto.MessageType(name) //nolint:staticcheck // keep for backward compatibility
 }
 
 func getExtension(extID int32, m proto.Message) *gogoproto.ExtensionDesc {
@@ -39,16 +39,15 @@ func getExtension(extID int32, m proto.Message) *gogoproto.ExtensionDesc {
 	}
 
 	// check into proto registry
-	//nolint:staticcheck
-	for id, desc := range proto.RegisteredExtensions(m) {
+	for id, desc := range proto.RegisteredExtensions(m) { //nolint:staticcheck // keep for backward compatibility
 		if id == extID {
 			return &gogoproto.ExtensionDesc{
-				ExtendedType:  desc.ExtendedType,
-				ExtensionType: desc.ExtensionType,
-				Field:         desc.Field,
-				Name:          desc.Name,
-				Tag:           desc.Tag,
-				Filename:      desc.Filename,
+				ExtendedType:  desc.ExtendedType,  //nolint:staticcheck // keep for backward compatibility
+				ExtensionType: desc.ExtensionType, //nolint:staticcheck // keep for backward compatibility
+				Field:         desc.Field,         //nolint:staticcheck // keep for backward compatibility
+				Name:          desc.Name,          //nolint:staticcheck // keep for backward compatibility
+				Tag:           desc.Tag,           //nolint:staticcheck // keep for backward compatibility
+				Filename:      desc.Filename,      //nolint:staticcheck // keep for backward compatibility
 			}
 		}
 	}
@@ -67,7 +66,7 @@ func getExtensionsNumbers(m proto.Message) []int32 {
 		return out
 	}
 
-	protoExts := proto.RegisteredExtensions(m) //nolint:staticcheck
+	protoExts := proto.RegisteredExtensions(m) //nolint:staticcheck // kept for backwards compatibility
 	out = make([]int32, 0, len(protoExts))
 	for id := range protoExts {
 		out = append(out, id)

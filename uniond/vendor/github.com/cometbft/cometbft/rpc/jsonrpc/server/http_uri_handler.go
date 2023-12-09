@@ -27,7 +27,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 		return func(w http.ResponseWriter, r *http.Request) {
 			res := types.RPCMethodNotFoundError(dummyID)
 			if wErr := WriteRPCResponseHTTPError(w, http.StatusNotFound, res); wErr != nil {
-				logger.Error("failed to write response", "res", res, "err", wErr)
+				logger.Error("failed to write response", "err", wErr)
 			}
 		}
 	}
@@ -45,7 +45,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 				fmt.Errorf("error converting http params to arguments: %w", err),
 			)
 			if wErr := WriteRPCResponseHTTPError(w, http.StatusInternalServerError, res); wErr != nil {
-				logger.Error("failed to write response", "res", res, "err", wErr)
+				logger.Error("failed to write response", "err", wErr)
 			}
 			return
 		}
@@ -58,7 +58,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 		if err != nil {
 			if err := WriteRPCResponseHTTPError(w, http.StatusInternalServerError,
 				types.RPCInternalError(dummyID, err)); err != nil {
-				logger.Error("failed to write response", "res", result, "err", err)
+				logger.Error("failed to write response", "err", err)
 				return
 			}
 			return
@@ -71,7 +71,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 			err = WriteRPCResponseHTTP(w, resp)
 		}
 		if err != nil {
-			logger.Error("failed to write response", "res", result, "err", err)
+			logger.Error("failed to write response", "err", err)
 			return
 		}
 	}

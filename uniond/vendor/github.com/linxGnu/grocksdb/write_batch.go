@@ -4,6 +4,7 @@ package grocksdb
 import "C"
 
 import (
+	"encoding/binary"
 	"errors"
 	"io"
 )
@@ -27,56 +28,56 @@ func newNativeWriteBatch(c *C.rocksdb_writebatch_t) *WriteBatch {
 
 // WriteBatchFrom creates a write batch from a serialized WriteBatch.
 func WriteBatchFrom(data []byte) *WriteBatch {
-	cWB := C.rocksdb_writebatch_create_from(byteToChar(data), C.size_t(len(data)))
+	cWB := C.rocksdb_writebatch_create_from(refGoBytes(data), C.size_t(len(data)))
 	return newNativeWriteBatch(cWB)
 }
 
 // Put queues a key-value pair.
 func (wb *WriteBatch) Put(key, value []byte) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	C.rocksdb_writebatch_put(wb.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)))
 }
 
 // PutCF queues a key-value pair in a column family.
 func (wb *WriteBatch) PutCF(cf *ColumnFamilyHandle, key, value []byte) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	C.rocksdb_writebatch_put_cf(wb.c, cf.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)))
 }
 
 // PutCFWithTS queues a key-value pair with given timestamp in a column family.
 func (wb *WriteBatch) PutCFWithTS(cf *ColumnFamilyHandle, key, ts, value []byte) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
-	cTs := byteToChar(ts)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
+	cTs := refGoBytes(ts)
 	C.rocksdb_writebatch_put_cf_with_ts(wb.c, cf.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)), cValue, C.size_t(len(value)))
 }
 
 // PutLogData appends a blob of arbitrary size to the records in this batch.
 func (wb *WriteBatch) PutLogData(blob []byte) {
-	cBlob := byteToChar(blob)
+	cBlob := refGoBytes(blob)
 	C.rocksdb_writebatch_put_log_data(wb.c, cBlob, C.size_t(len(blob)))
 }
 
 // Merge queues a merge of "value" with the existing value of "key".
 func (wb *WriteBatch) Merge(key, value []byte) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	C.rocksdb_writebatch_merge(wb.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)))
 }
 
 // MergeCF queues a merge of "value" with the existing value of "key" in a
 // column family.
 func (wb *WriteBatch) MergeCF(cf *ColumnFamilyHandle, key, value []byte) {
-	cKey := byteToChar(key)
-	cValue := byteToChar(value)
+	cKey := refGoBytes(key)
+	cValue := refGoBytes(value)
 	C.rocksdb_writebatch_merge_cf(wb.c, cf.c, cKey, C.size_t(len(key)), cValue, C.size_t(len(value)))
 }
 
 // Delete queues a deletion of the data at key.
 func (wb *WriteBatch) Delete(key []byte) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	C.rocksdb_writebatch_delete(wb.c, cKey, C.size_t(len(key)))
 }
 
@@ -97,48 +98,48 @@ func (wb *WriteBatch) Delete(key []byte) {
 //
 // Note: consider setting options.sync = true.
 func (wb *WriteBatch) SingleDelete(key []byte) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	C.rocksdb_writebatch_singledelete(wb.c, cKey, C.size_t(len(key)))
 }
 
 // DeleteCF queues a deletion of the data at key in a column family.
 func (wb *WriteBatch) DeleteCF(cf *ColumnFamilyHandle, key []byte) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	C.rocksdb_writebatch_delete_cf(wb.c, cf.c, cKey, C.size_t(len(key)))
 }
 
 // DeleteCF queues a deletion of the data at key with given timestamp in a column family.
 func (wb *WriteBatch) DeleteCFWithTS(cf *ColumnFamilyHandle, key, ts []byte) {
-	cKey := byteToChar(key)
-	cTs := byteToChar(ts)
+	cKey := refGoBytes(key)
+	cTs := refGoBytes(ts)
 	C.rocksdb_writebatch_delete_cf_with_ts(wb.c, cf.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)))
 }
 
 // SingleDeleteCF same as SingleDelete but specific column family
 func (wb *WriteBatch) SingleDeleteCF(cf *ColumnFamilyHandle, key []byte) {
-	cKey := byteToChar(key)
+	cKey := refGoBytes(key)
 	C.rocksdb_writebatch_singledelete_cf(wb.c, cf.c, cKey, C.size_t(len(key)))
 }
 
 // SingleDeleteCFWithTS same as SingleDelete but with timestamp for specific column family
 func (wb *WriteBatch) SingleDeleteCFWithTS(cf *ColumnFamilyHandle, key, ts []byte) {
-	cKey := byteToChar(key)
-	cTs := byteToChar(ts)
+	cKey := refGoBytes(key)
+	cTs := refGoBytes(ts)
 	C.rocksdb_writebatch_singledelete_cf_with_ts(wb.c, cf.c, cKey, C.size_t(len(key)), cTs, C.size_t(len(ts)))
 }
 
 // DeleteRange deletes keys that are between [startKey, endKey)
 func (wb *WriteBatch) DeleteRange(startKey []byte, endKey []byte) {
-	cStartKey := byteToChar(startKey)
-	cEndKey := byteToChar(endKey)
+	cStartKey := refGoBytes(startKey)
+	cEndKey := refGoBytes(endKey)
 	C.rocksdb_writebatch_delete_range(wb.c, cStartKey, C.size_t(len(startKey)), cEndKey, C.size_t(len(endKey)))
 }
 
 // DeleteRangeCF deletes keys that are between [startKey, endKey) and
 // belong to a given column family
 func (wb *WriteBatch) DeleteRangeCF(cf *ColumnFamilyHandle, startKey []byte, endKey []byte) {
-	cStartKey := byteToChar(startKey)
-	cEndKey := byteToChar(endKey)
+	cStartKey := refGoBytes(startKey)
+	cEndKey := refGoBytes(endKey)
 	C.rocksdb_writebatch_delete_range_cf(wb.c, cf.c, cStartKey, C.size_t(len(startKey)), cEndKey, C.size_t(len(endKey)))
 }
 
@@ -146,7 +147,7 @@ func (wb *WriteBatch) DeleteRangeCF(cf *ColumnFamilyHandle, startKey []byte, end
 func (wb *WriteBatch) Data() []byte {
 	var cSize C.size_t
 	cValue := C.rocksdb_writebatch_data(wb.c, &cSize)
-	return charToByte(cValue, cSize)
+	return refCBytes(cValue, cSize)
 }
 
 // Count returns the number of updates in the batch.
@@ -342,21 +343,13 @@ func (iter *WriteBatchIterator) decodeRecType() WriteBatchRecordType {
 }
 
 func (iter *WriteBatchIterator) decodeVarint() uint64 {
-	var n int
-	var x uint64
-	for shift := uint(0); shift < 64 && n < len(iter.data); shift += 7 {
-		b := uint64(iter.data[n])
-		n++
-		x |= (b & 0x7F) << shift
-		if (b & 0x80) == 0 {
-			iter.data = iter.data[n:]
-			return x
-		}
-	}
-	if n == len(iter.data) {
+	v, n := binary.Uvarint(iter.data)
+	if n > 0 {
+		iter.data = iter.data[n:]
+	} else if n == 0 {
 		iter.err = io.ErrShortBuffer
 	} else {
 		iter.err = errors.New("malformed varint")
 	}
-	return 0
+	return v
 }

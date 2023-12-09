@@ -105,7 +105,7 @@ func (opts *CompactRangeOptions) TargetLevel() int32 {
 // low bound maybe GCed by compaction.
 // Default: nullptr
 func (opts *CompactRangeOptions) SetFullHistoryTsLow(ts []byte) {
-	cTs := byteToChar(ts)
+	cTs := refGoBytes(ts)
 	C.rocksdb_compactoptions_set_full_history_ts_low(opts.c, cTs, C.size_t(len(ts)))
 }
 
@@ -139,6 +139,16 @@ func (opts *FIFOCompactionOptions) SetMaxTableFilesSize(value uint64) {
 // table file
 func (opts *FIFOCompactionOptions) GetMaxTableFilesSize() uint64 {
 	return uint64(C.rocksdb_fifo_compaction_options_get_max_table_files_size(opts.c))
+}
+
+// SetAllowCompaction allows compaction or not.
+func (opts *FIFOCompactionOptions) SetAllowCompaction(allow bool) {
+	C.rocksdb_fifo_compaction_options_set_allow_compaction(opts.c, boolToChar(allow))
+}
+
+// AllowCompaction checks if compaction is allowed.
+func (opts *FIFOCompactionOptions) AllowCompaction() bool {
+	return charToBool(C.rocksdb_fifo_compaction_options_get_allow_compaction(opts.c))
 }
 
 // Destroy deallocates the FIFOCompactionOptions object.

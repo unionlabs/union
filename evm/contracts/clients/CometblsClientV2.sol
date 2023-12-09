@@ -24,6 +24,7 @@ contract CometblsClient is ILightClient {
     using CometblsHelp for UnionIbcLightclientsCometblsV1ClientState.Data;
     using CometblsHelp for OptimizedConsensusState;
     using CometblsHelp for bytes;
+    using CometblsHelp for IZKVerifierV2;
 
     mapping(string => UnionIbcLightclientsCometblsV1ClientState.Data)
         public clientStates;
@@ -31,10 +32,16 @@ contract CometblsClient is ILightClient {
     mapping(bytes32 => ProcessedMoment) public processedMoments;
 
     address internal ibcHandler;
+    IZKVerifierV2 internal zkVerifier;
     IMembershipVerifier internal membershipVerifier;
 
-    constructor(address ibcHandler_, IMembershipVerifier membershipVerifier_) {
+    constructor(
+        address ibcHandler_,
+        IZKVerifierV2 zkVerifier_,
+        IMembershipVerifier membershipVerifier_
+    ) {
         ibcHandler = ibcHandler_;
+        zkVerifier = zkVerifier_;
         membershipVerifier = membershipVerifier_;
     }
 
@@ -203,7 +210,7 @@ contract CometblsClient is ILightClient {
             TendermintTypesCanonicalVote.encode(vote)
         );
 
-        bool ok = CometblsHelp.verifyZKPV2(
+        bool ok = zkVerifier.verifyZKP(
             trustedValidatorsHash,
             untrustedValidatorsHash,
             signedVote,

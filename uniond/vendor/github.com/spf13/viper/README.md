@@ -11,7 +11,7 @@
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/spf13/viper/ci.yaml?branch=master&style=flat-square)](https://github.com/spf13/viper/actions?query=workflow%3ACI)
 [![Join the chat at https://gitter.im/spf13/viper](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/spf13/viper?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Go Report Card](https://goreportcard.com/badge/github.com/spf13/viper?style=flat-square)](https://goreportcard.com/report/github.com/spf13/viper)
-![Go Version](https://img.shields.io/badge/go%20version-%3E=1.16-61CFDD.svg?style=flat-square)
+![Go Version](https://img.shields.io/badge/go%20version-%3E=1.19-61CFDD.svg?style=flat-square)
 [![PkgGoDev](https://pkg.go.dev/badge/mod/github.com/spf13/viper)](https://pkg.go.dev/mod/github.com/spf13/viper)
 
 **Go configuration with fangs!**
@@ -30,6 +30,7 @@ Many Go projects are built using Viper including:
 * [Meshery](https://github.com/meshery/meshery)
 * [Bearer](https://github.com/bearer/bearer)
 * [Coder](https://github.com/coder/coder)
+* [Vitess](https://vitess.io/)
 
 
 ## Install
@@ -140,7 +141,7 @@ if err := viper.ReadInConfig(); err != nil {
 // Config file found and successfully parsed
 ```
 
-*NOTE [since 1.6]:* You can also have a file without an extension and specify the format programmaticaly. For those configuration files that lie in the home of the user without any extension like `.bashrc`
+*NOTE [since 1.6]:* You can also have a file without an extension and specify the format programmatically. For those configuration files that lie in the home of the user without any extension like `.bashrc`
 
 ### Writing Config Files
 
@@ -221,6 +222,7 @@ These could be from a command line flag, or from your own application logic.
 ```go
 viper.Set("Verbose", true)
 viper.Set("LogFile", LogFile)
+viper.Set("host.port", 5899)   // set subset
 ```
 
 ### Registering and Using Aliases
@@ -487,6 +489,15 @@ err := viper.ReadRemoteConfig()
 
 Of course, you're allowed to use `SecureRemoteProvider` also
 
+
+#### NATS
+
+```go
+viper.AddRemoteProvider("nats", "nats://127.0.0.1:4222", "myapp.config")
+viper.SetConfigType("json")
+err := viper.ReadRemoteConfig()
+```
+
 ### Remote Key/Value Store Example - Encrypted
 
 ```go
@@ -534,19 +545,19 @@ go func(){
 In Viper, there are a few ways to get a value depending on the value’s type.
 The following functions and methods exist:
 
- * `Get(key string) : interface{}`
+ * `Get(key string) : any`
  * `GetBool(key string) : bool`
  * `GetFloat64(key string) : float64`
  * `GetInt(key string) : int`
  * `GetIntSlice(key string) : []int`
  * `GetString(key string) : string`
- * `GetStringMap(key string) : map[string]interface{}`
+ * `GetStringMap(key string) : map[string]any`
  * `GetStringMapString(key string) : map[string]string`
  * `GetStringSlice(key string) : []string`
  * `GetTime(key string) : time.Time`
  * `GetDuration(key string) : time.Duration`
  * `IsSet(key string) : bool`
- * `AllSettings() : map[string]interface{}`
+ * `AllSettings() : map[string]any`
 
 One important thing to recognize is that each Get function will return a zero
 value if it’s not found. To check if a given key exists, the `IsSet()` method
@@ -709,8 +720,8 @@ etc.
 
 There are two methods to do this:
 
- * `Unmarshal(rawVal interface{}) : error`
- * `UnmarshalKey(key string, rawVal interface{}) : error`
+ * `Unmarshal(rawVal any) : error`
+ * `UnmarshalKey(key string, rawVal any) : error`
 
 Example:
 
@@ -735,9 +746,9 @@ you have to change the delimiter:
 ```go
 v := viper.NewWithOptions(viper.KeyDelimiter("::"))
 
-v.SetDefault("chart::values", map[string]interface{}{
-	"ingress": map[string]interface{}{
-		"annotations": map[string]interface{}{
+v.SetDefault("chart::values", map[string]any{
+	"ingress": map[string]any{
+		"annotations": map[string]any{
 			"traefik.frontend.rule.type":                 "PathPrefix",
 			"traefik.ingress.kubernetes.io/ssl-redirect": "true",
 		},
@@ -746,7 +757,7 @@ v.SetDefault("chart::values", map[string]interface{}{
 
 type config struct {
 	Chart struct{
-		Values map[string]interface{}
+		Values map[string]any
 	}
 }
 
@@ -882,3 +893,31 @@ No, you will need to synchronize access to the viper yourself (for example by us
 ## Troubleshooting
 
 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
+## Development
+
+**For an optimal developer experience, it is recommended to install [Nix](https://nixos.org/download.html) and [direnv](https://direnv.net/docs/installation.html).**
+
+_Alternatively, install [Go](https://go.dev/dl/) on your computer then run `make deps` to install the rest of the dependencies._
+
+Run the test suite:
+
+```shell
+make test
+```
+
+Run linters:
+
+```shell
+make lint # pass -j option to run them in parallel
+```
+
+Some linter violations can automatically be fixed:
+
+```shell
+make fmt
+```
+
+## License
+
+The project is licensed under the [MIT License](LICENSE).

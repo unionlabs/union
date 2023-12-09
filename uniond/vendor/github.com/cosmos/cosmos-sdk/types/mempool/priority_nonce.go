@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sync"
 
 	"github.com/huandu/skiplist"
 
@@ -12,137 +13,170 @@ import (
 )
 
 var (
-	_ Mempool  = (*PriorityNonceMempool)(nil)
-	_ Iterator = (*PriorityNonceIterator)(nil)
+	_ Mempool  = (*PriorityNonceMempool[int64])(nil)
+	_ Iterator = (*PriorityNonceIterator[int64])(nil)
 )
 
-// PriorityNonceMempool is a mempool implementation that stores txs
-// in a partially ordered set by 2 dimensions: priority, and sender-nonce
-// (sequence number). Internally it uses one priority ordered skip list and one
-// skip list per sender ordered by sender-nonce (sequence number). When there
-// are multiple txs from the same sender, they are not always comparable by
-// priority to other sender txs and must be partially ordered by both sender-nonce
-// and priority.
-type PriorityNonceMempool struct {
-	priorityIndex  *skiplist.SkipList
-	priorityCounts map[int64]int
-	senderIndices  map[string]*skiplist.SkipList
-	scores         map[txMeta]txMeta
-	onRead         func(tx sdk.Tx)
-	txReplacement  func(op, np int64, oTx, nTx sdk.Tx) bool
-	maxTx          int
+type (
+	// PriorityNonceMempoolConfig defines the configuration used to configure the
+	// PriorityNonceMempool.
+	PriorityNonceMempoolConfig[C comparable] struct {
+		// TxPriority defines the transaction priority and comparator.
+		TxPriority TxPriority[C]
+
+		// OnRead is a callback to be called when a tx is read from the mempool.
+		OnRead func(tx sdk.Tx)
+
+		// TxReplacement is a callback to be called when duplicated transaction nonce
+		// detected during mempool insert. An application can define a transaction
+		// replacement rule based on tx priority or certain transaction fields.
+		TxReplacement func(op, np C, oTx, nTx sdk.Tx) bool
+
+		// MaxTx sets the maximum number of transactions allowed in the mempool with
+		// the semantics:
+		// - if MaxTx == 0, there is no cap on the number of transactions in the mempool
+		// - if MaxTx > 0, the mempool will cap the number of transactions it stores,
+		//   and will prioritize transactions by their priority and sender-nonce
+		//   (sequence number) when evicting transactions.
+		// - if MaxTx < 0, `Insert` is a no-op.
+		MaxTx int
+	}
+
+	// PriorityNonceMempool is a mempool implementation that stores txs
+	// in a partially ordered set by 2 dimensions: priority, and sender-nonce
+	// (sequence number). Internally it uses one priority ordered skip list and one
+	// skip list per sender ordered by sender-nonce (sequence number). When there
+	// are multiple txs from the same sender, they are not always comparable by
+	// priority to other sender txs and must be partially ordered by both sender-nonce
+	// and priority.
+	PriorityNonceMempool[C comparable] struct {
+		mtx            sync.Mutex
+		priorityIndex  *skiplist.SkipList
+		priorityCounts map[C]int
+		senderIndices  map[string]*skiplist.SkipList
+		scores         map[txMeta[C]]txMeta[C]
+		cfg            PriorityNonceMempoolConfig[C]
+	}
+
+	// PriorityNonceIterator defines an iterator that is used for mempool iteration
+	// on Select().
+	PriorityNonceIterator[C comparable] struct {
+		mempool       *PriorityNonceMempool[C]
+		priorityNode  *skiplist.Element
+		senderCursors map[string]*skiplist.Element
+		sender        string
+		nextPriority  C
+	}
+
+	// TxPriority defines a type that is used to retrieve and compare transaction
+	// priorities. Priorities must be comparable.
+	TxPriority[C comparable] struct {
+		// GetTxPriority returns the priority of the transaction. A priority must be
+		// comparable via Compare.
+		GetTxPriority func(ctx context.Context, tx sdk.Tx) C
+
+		// Compare compares two transaction priorities. The result must be 0 if
+		// a == b, -1 if a < b, and +1 if a > b.
+		Compare func(a, b C) int
+
+		// MinValue defines the minimum priority value, e.g. MinInt64. This value is
+		// used when instantiating a new iterator and comparing weights.
+		MinValue C
+	}
+
+	// txMeta stores transaction metadata used in indices
+	txMeta[C comparable] struct {
+		// nonce is the sender's sequence number
+		nonce uint64
+		// priority is the transaction's priority
+		priority C
+		// sender is the transaction's sender
+		sender string
+		// weight is the transaction's weight, used as a tiebreaker for transactions
+		// with the same priority
+		weight C
+		// senderElement is a pointer to the transaction's element in the sender index
+		senderElement *skiplist.Element
+	}
+)
+
+// NewDefaultTxPriority returns a TxPriority comparator using ctx.Priority as
+// the defining transaction priority.
+func NewDefaultTxPriority() TxPriority[int64] {
+	return TxPriority[int64]{
+		GetTxPriority: func(goCtx context.Context, _ sdk.Tx) int64 {
+			return sdk.UnwrapSDKContext(goCtx).Priority()
+		},
+		Compare: func(a, b int64) int {
+			return skiplist.Int64.Compare(a, b)
+		},
+		MinValue: math.MinInt64,
+	}
 }
 
-type PriorityNonceIterator struct {
-	senderCursors map[string]*skiplist.Element
-	nextPriority  int64
-	sender        string
-	priorityNode  *skiplist.Element
-	mempool       *PriorityNonceMempool
+func DefaultPriorityNonceMempoolConfig() PriorityNonceMempoolConfig[int64] {
+	return PriorityNonceMempoolConfig[int64]{
+		TxPriority: NewDefaultTxPriority(),
+	}
 }
 
-// txMeta stores transaction metadata used in indices
-type txMeta struct {
-	// nonce is the sender's sequence number
-	nonce uint64
-	// priority is the transaction's priority
-	priority int64
-	// sender is the transaction's sender
-	sender string
-	// weight is the transaction's weight, used as a tiebreaker for transactions with the same priority
-	weight int64
-	// senderElement is a pointer to the transaction's element in the sender index
-	senderElement *skiplist.Element
-}
-
-// txMetaLess is a comparator for txKeys that first compares priority, then weight,
-// then sender, then nonce, uniquely identifying a transaction.
+// skiplistComparable is a comparator for txKeys that first compares priority,
+// then weight, then sender, then nonce, uniquely identifying a transaction.
 //
-// Note, txMetaLess is used as the comparator in the priority index.
-func txMetaLess(a, b any) int {
-	keyA := a.(txMeta)
-	keyB := b.(txMeta)
-	res := skiplist.Int64.Compare(keyA.priority, keyB.priority)
-	if res != 0 {
-		return res
-	}
+// Note, skiplistComparable is used as the comparator in the priority index.
+func skiplistComparable[C comparable](txPriority TxPriority[C]) skiplist.Comparable {
+	return skiplist.LessThanFunc(func(a, b any) int {
+		keyA := a.(txMeta[C])
+		keyB := b.(txMeta[C])
 
-	// Weight is used as a tiebreaker for transactions with the same priority.
-	// Weight is calculated in a single pass in .Select(...) and so will be 0
-	// on .Insert(...).
-	res = skiplist.Int64.Compare(keyA.weight, keyB.weight)
-	if res != 0 {
-		return res
-	}
+		res := txPriority.Compare(keyA.priority, keyB.priority)
+		if res != 0 {
+			return res
+		}
 
-	// Because weight will be 0 on .Insert(...), we must also compare sender and
-	// nonce to resolve priority collisions. If we didn't then transactions with
-	// the same priority would overwrite each other in the priority index.
-	res = skiplist.String.Compare(keyA.sender, keyB.sender)
-	if res != 0 {
-		return res
-	}
+		// Weight is used as a tiebreaker for transactions with the same priority.
+		// Weight is calculated in a single pass in .Select(...) and so will be 0
+		// on .Insert(...).
+		res = txPriority.Compare(keyA.weight, keyB.weight)
+		if res != 0 {
+			return res
+		}
 
-	return skiplist.Uint64.Compare(keyA.nonce, keyB.nonce)
-}
+		// Because weight will be 0 on .Insert(...), we must also compare sender and
+		// nonce to resolve priority collisions. If we didn't then transactions with
+		// the same priority would overwrite each other in the priority index.
+		res = skiplist.String.Compare(keyA.sender, keyB.sender)
+		if res != 0 {
+			return res
+		}
 
-type PriorityNonceMempoolOption func(*PriorityNonceMempool)
-
-// PriorityNonceWithOnRead sets a callback to be called when a tx is read from
-// the mempool.
-func PriorityNonceWithOnRead(onRead func(tx sdk.Tx)) PriorityNonceMempoolOption {
-	return func(mp *PriorityNonceMempool) {
-		mp.onRead = onRead
-	}
-}
-
-// PriorityNonceWithTxReplacement sets a callback to be called when duplicated
-// transaction nonce detected during mempool insert. An application can define a
-// transaction replacement rule based on tx priority or certain transaction fields.
-func PriorityNonceWithTxReplacement(txReplacementRule func(op, np int64, oTx, nTx sdk.Tx) bool) PriorityNonceMempoolOption {
-	return func(mp *PriorityNonceMempool) {
-		mp.txReplacement = txReplacementRule
-	}
-}
-
-// PriorityNonceWithMaxTx sets the maximum number of transactions allowed in the
-// mempool with the semantics:
-//
-// <0: disabled, `Insert` is a no-op
-// 0: unlimited
-// >0: maximum number of transactions allowed
-func PriorityNonceWithMaxTx(maxTx int) PriorityNonceMempoolOption {
-	return func(mp *PriorityNonceMempool) {
-		mp.maxTx = maxTx
-	}
-}
-
-// DefaultPriorityMempool returns a priorityNonceMempool with no options.
-func DefaultPriorityMempool() Mempool {
-	return NewPriorityMempool()
+		return skiplist.Uint64.Compare(keyA.nonce, keyB.nonce)
+	})
 }
 
 // NewPriorityMempool returns the SDK's default mempool implementation which
 // returns txs in a partial order by 2 dimensions; priority, and sender-nonce.
-func NewPriorityMempool(opts ...PriorityNonceMempoolOption) *PriorityNonceMempool {
-	mp := &PriorityNonceMempool{
-		priorityIndex:  skiplist.New(skiplist.LessThanFunc(txMetaLess)),
-		priorityCounts: make(map[int64]int),
+func NewPriorityMempool[C comparable](cfg PriorityNonceMempoolConfig[C]) *PriorityNonceMempool[C] {
+	mp := &PriorityNonceMempool[C]{
+		priorityIndex:  skiplist.New(skiplistComparable(cfg.TxPriority)),
+		priorityCounts: make(map[C]int),
 		senderIndices:  make(map[string]*skiplist.SkipList),
-		scores:         make(map[txMeta]txMeta),
-	}
-
-	for _, opt := range opts {
-		opt(mp)
+		scores:         make(map[txMeta[C]]txMeta[C]),
+		cfg:            cfg,
 	}
 
 	return mp
 }
 
+// DefaultPriorityMempool returns a priorityNonceMempool with no options.
+func DefaultPriorityMempool() *PriorityNonceMempool[int64] {
+	return NewPriorityMempool(DefaultPriorityNonceMempoolConfig())
+}
+
 // NextSenderTx returns the next transaction for a given sender by nonce order,
 // i.e. the next valid transaction for the sender. If no such transaction exists,
 // nil will be returned.
-func (mp *PriorityNonceMempool) NextSenderTx(sender string) sdk.Tx {
+func (mp *PriorityNonceMempool[C]) NextSenderTx(sender string) sdk.Tx {
 	senderIndex, ok := mp.senderIndices[sender]
 	if !ok {
 		return nil
@@ -161,10 +195,12 @@ func (mp *PriorityNonceMempool) NextSenderTx(sender string) sdk.Tx {
 //
 // Inserting a duplicate tx with a different priority overwrites the existing tx,
 // changing the total order of the mempool.
-func (mp *PriorityNonceMempool) Insert(ctx context.Context, tx sdk.Tx) error {
-	if mp.maxTx > 0 && mp.CountTx() >= mp.maxTx {
+func (mp *PriorityNonceMempool[C]) Insert(ctx context.Context, tx sdk.Tx) error {
+	mp.mtx.Lock()
+	defer mp.mtx.Unlock()
+	if mp.cfg.MaxTx > 0 && mp.priorityIndex.Len() >= mp.cfg.MaxTx {
 		return ErrMempoolTxMaxCapacity
-	} else if mp.maxTx < 0 {
+	} else if mp.cfg.MaxTx < 0 {
 		return nil
 	}
 
@@ -176,17 +212,16 @@ func (mp *PriorityNonceMempool) Insert(ctx context.Context, tx sdk.Tx) error {
 		return fmt.Errorf("tx must have at least one signer")
 	}
 
-	sdkContext := sdk.UnwrapSDKContext(ctx)
-	priority := sdkContext.Priority()
 	sig := sigs[0]
 	sender := sdk.AccAddress(sig.PubKey.Address()).String()
+	priority := mp.cfg.TxPriority.GetTxPriority(ctx, tx)
 	nonce := sig.Sequence
-	key := txMeta{nonce: nonce, priority: priority, sender: sender}
+	key := txMeta[C]{nonce: nonce, priority: priority, sender: sender}
 
 	senderIndex, ok := mp.senderIndices[sender]
 	if !ok {
 		senderIndex = skiplist.New(skiplist.LessThanFunc(func(a, b any) int {
-			return skiplist.Uint64.Compare(b.(txMeta).nonce, a.(txMeta).nonce)
+			return skiplist.Uint64.Compare(b.(txMeta[C]).nonce, a.(txMeta[C]).nonce)
 		}))
 
 		// initialize sender index if not found
@@ -200,9 +235,9 @@ func (mp *PriorityNonceMempool) Insert(ctx context.Context, tx sdk.Tx) error {
 	//
 	// This O(log n) remove operation is rare and only happens when a tx's priority
 	// changes.
-	sk := txMeta{nonce: nonce, sender: sender}
+	sk := txMeta[C]{nonce: nonce, sender: sender}
 	if oldScore, txExists := mp.scores[sk]; txExists {
-		if mp.txReplacement != nil && !mp.txReplacement(oldScore.priority, priority, senderIndex.Get(key).Value.(sdk.Tx), tx) {
+		if mp.cfg.TxReplacement != nil && !mp.cfg.TxReplacement(oldScore.priority, priority, senderIndex.Get(key).Value.(sdk.Tx), tx) {
 			return fmt.Errorf(
 				"tx doesn't fit the replacement rule, oldPriority: %v, newPriority: %v, oldTx: %v, newTx: %v",
 				oldScore.priority,
@@ -212,7 +247,7 @@ func (mp *PriorityNonceMempool) Insert(ctx context.Context, tx sdk.Tx) error {
 			)
 		}
 
-		mp.priorityIndex.Remove(txMeta{
+		mp.priorityIndex.Remove(txMeta[C]{
 			nonce:    nonce,
 			sender:   sender,
 			priority: oldScore.priority,
@@ -227,13 +262,13 @@ func (mp *PriorityNonceMempool) Insert(ctx context.Context, tx sdk.Tx) error {
 	// existing key.
 	key.senderElement = senderIndex.Set(key, tx)
 
-	mp.scores[sk] = txMeta{priority: priority}
+	mp.scores[sk] = txMeta[C]{priority: priority}
 	mp.priorityIndex.Set(key, tx)
 
 	return nil
 }
 
-func (i *PriorityNonceIterator) iteratePriority() Iterator {
+func (i *PriorityNonceIterator[C]) iteratePriority() Iterator {
 	// beginning of priority iteration
 	if i.priorityNode == nil {
 		i.priorityNode = i.mempool.priorityIndex.Front()
@@ -246,19 +281,19 @@ func (i *PriorityNonceIterator) iteratePriority() Iterator {
 		return nil
 	}
 
-	i.sender = i.priorityNode.Key().(txMeta).sender
+	i.sender = i.priorityNode.Key().(txMeta[C]).sender
 
 	nextPriorityNode := i.priorityNode.Next()
 	if nextPriorityNode != nil {
-		i.nextPriority = nextPriorityNode.Key().(txMeta).priority
+		i.nextPriority = nextPriorityNode.Key().(txMeta[C]).priority
 	} else {
-		i.nextPriority = math.MinInt64
+		i.nextPriority = i.mempool.cfg.TxPriority.MinValue
 	}
 
 	return i.Next()
 }
 
-func (i *PriorityNonceIterator) Next() Iterator {
+func (i *PriorityNonceIterator[C]) Next() Iterator {
 	if i.priorityNode == nil {
 		return nil
 	}
@@ -277,17 +312,17 @@ func (i *PriorityNonceIterator) Next() Iterator {
 		return i.iteratePriority()
 	}
 
-	key := cursor.Key().(txMeta)
+	key := cursor.Key().(txMeta[C])
 
 	// We've reached a transaction with a priority lower than the next highest
 	// priority in the pool.
-	if key.priority < i.nextPriority {
+	if i.mempool.cfg.TxPriority.Compare(key.priority, i.nextPriority) < 0 {
 		return i.iteratePriority()
-	} else if key.priority == i.nextPriority {
+	} else if i.priorityNode.Next() != nil && i.mempool.cfg.TxPriority.Compare(key.priority, i.nextPriority) == 0 {
 		// Weight is incorporated into the priority index key only (not sender index)
 		// so we must fetch it here from the scores map.
-		weight := i.mempool.scores[txMeta{nonce: key.nonce, sender: key.sender}].weight
-		if weight < i.priorityNode.Next().Key().(txMeta).weight {
+		weight := i.mempool.scores[txMeta[C]{nonce: key.nonce, sender: key.sender}].weight
+		if i.mempool.cfg.TxPriority.Compare(weight, i.priorityNode.Next().Key().(txMeta[C]).weight) < 0 {
 			return i.iteratePriority()
 		}
 	}
@@ -296,7 +331,7 @@ func (i *PriorityNonceIterator) Next() Iterator {
 	return i
 }
 
-func (i *PriorityNonceIterator) Tx() sdk.Tx {
+func (i *PriorityNonceIterator[C]) Tx() sdk.Tx {
 	return i.senderCursors[i.sender].Value.(sdk.Tx)
 }
 
@@ -309,14 +344,16 @@ func (i *PriorityNonceIterator) Tx() sdk.Tx {
 //
 // NOTE: It is not safe to use this iterator while removing transactions from
 // the underlying mempool.
-func (mp *PriorityNonceMempool) Select(_ context.Context, _ [][]byte) Iterator {
+func (mp *PriorityNonceMempool[C]) Select(_ context.Context, _ [][]byte) Iterator {
+	mp.mtx.Lock()
+	defer mp.mtx.Unlock()
 	if mp.priorityIndex.Len() == 0 {
 		return nil
 	}
 
 	mp.reorderPriorityTies()
 
-	iterator := &PriorityNonceIterator{
+	iterator := &PriorityNonceIterator[C]{
 		mempool:       mp,
 		senderCursors: make(map[string]*skiplist.Element),
 	}
@@ -324,22 +361,22 @@ func (mp *PriorityNonceMempool) Select(_ context.Context, _ [][]byte) Iterator {
 	return iterator.iteratePriority()
 }
 
-type reorderKey struct {
-	deleteKey txMeta
-	insertKey txMeta
+type reorderKey[C comparable] struct {
+	deleteKey txMeta[C]
+	insertKey txMeta[C]
 	tx        sdk.Tx
 }
 
-func (mp *PriorityNonceMempool) reorderPriorityTies() {
+func (mp *PriorityNonceMempool[C]) reorderPriorityTies() {
 	node := mp.priorityIndex.Front()
 
-	var reordering []reorderKey
+	var reordering []reorderKey[C]
 	for node != nil {
-		key := node.Key().(txMeta)
+		key := node.Key().(txMeta[C])
 		if mp.priorityCounts[key.priority] > 1 {
 			newKey := key
-			newKey.weight = senderWeight(key.senderElement)
-			reordering = append(reordering, reorderKey{deleteKey: key, insertKey: newKey, tx: node.Value.(sdk.Tx)})
+			newKey.weight = senderWeight(mp.cfg.TxPriority, key.senderElement)
+			reordering = append(reordering, reorderKey[C]{deleteKey: key, insertKey: newKey, tx: node.Value.(sdk.Tx)})
 		}
 
 		node = node.Next()
@@ -347,9 +384,9 @@ func (mp *PriorityNonceMempool) reorderPriorityTies() {
 
 	for _, k := range reordering {
 		mp.priorityIndex.Remove(k.deleteKey)
-		delete(mp.scores, txMeta{nonce: k.deleteKey.nonce, sender: k.deleteKey.sender})
+		delete(mp.scores, txMeta[C]{nonce: k.deleteKey.nonce, sender: k.deleteKey.sender})
 		mp.priorityIndex.Set(k.insertKey, k.tx)
-		mp.scores[txMeta{nonce: k.insertKey.nonce, sender: k.insertKey.sender}] = k.insertKey
+		mp.scores[txMeta[C]{nonce: k.insertKey.nonce, sender: k.insertKey.sender}] = k.insertKey
 	}
 }
 
@@ -357,16 +394,16 @@ func (mp *PriorityNonceMempool) reorderPriorityTies() {
 // defined as the first (nonce-wise) same sender tx with a priority not equal to
 // t. It is used to resolve priority collisions, that is when 2 or more txs from
 // different senders have the same priority.
-func senderWeight(senderCursor *skiplist.Element) int64 {
+func senderWeight[C comparable](txPriority TxPriority[C], senderCursor *skiplist.Element) C {
 	if senderCursor == nil {
-		return 0
+		return txPriority.MinValue
 	}
 
-	weight := senderCursor.Key().(txMeta).priority
+	weight := senderCursor.Key().(txMeta[C]).priority
 	senderCursor = senderCursor.Next()
 	for senderCursor != nil {
-		p := senderCursor.Key().(txMeta).priority
-		if p != weight {
+		p := senderCursor.Key().(txMeta[C]).priority
+		if txPriority.Compare(p, weight) != 0 {
 			weight = p
 		}
 
@@ -377,13 +414,17 @@ func senderWeight(senderCursor *skiplist.Element) int64 {
 }
 
 // CountTx returns the number of transactions in the mempool.
-func (mp *PriorityNonceMempool) CountTx() int {
+func (mp *PriorityNonceMempool[C]) CountTx() int {
+	mp.mtx.Lock()
+	defer mp.mtx.Unlock()
 	return mp.priorityIndex.Len()
 }
 
 // Remove removes a transaction from the mempool in O(log n) time, returning an
 // error if unsuccessful.
-func (mp *PriorityNonceMempool) Remove(tx sdk.Tx) error {
+func (mp *PriorityNonceMempool[C]) Remove(tx sdk.Tx) error {
+	mp.mtx.Lock()
+	defer mp.mtx.Unlock()
 	sigs, err := tx.(signing.SigVerifiableTx).GetSignaturesV2()
 	if err != nil {
 		return err
@@ -396,12 +437,12 @@ func (mp *PriorityNonceMempool) Remove(tx sdk.Tx) error {
 	sender := sdk.AccAddress(sig.PubKey.Address()).String()
 	nonce := sig.Sequence
 
-	scoreKey := txMeta{nonce: nonce, sender: sender}
+	scoreKey := txMeta[C]{nonce: nonce, sender: sender}
 	score, ok := mp.scores[scoreKey]
 	if !ok {
 		return ErrTxNotFound
 	}
-	tk := txMeta{nonce: nonce, priority: score.priority, sender: sender, weight: score.weight}
+	tk := txMeta[C]{nonce: nonce, priority: score.priority, sender: sender, weight: score.weight}
 
 	senderTxs, ok := mp.senderIndices[sender]
 	if !ok {
@@ -416,13 +457,13 @@ func (mp *PriorityNonceMempool) Remove(tx sdk.Tx) error {
 	return nil
 }
 
-func IsEmpty(mempool Mempool) error {
-	mp := mempool.(*PriorityNonceMempool)
+func IsEmpty[C comparable](mempool Mempool) error {
+	mp := mempool.(*PriorityNonceMempool[C])
 	if mp.priorityIndex.Len() != 0 {
 		return fmt.Errorf("priorityIndex not empty")
 	}
 
-	var countKeys []int64
+	countKeys := make([]C, 0, len(mp.priorityCounts))
 	for k := range mp.priorityCounts {
 		countKeys = append(countKeys, k)
 	}
@@ -433,7 +474,7 @@ func IsEmpty(mempool Mempool) error {
 		}
 	}
 
-	var senderKeys []string
+	senderKeys := make([]string, 0, len(mp.senderIndices))
 	for k := range mp.senderIndices {
 		senderKeys = append(senderKeys, k)
 	}

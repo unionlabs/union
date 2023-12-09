@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+
 	errorsmod "cosmossdk.io/errors"
 
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm/types"
@@ -54,10 +55,6 @@ func contractSDKEventAttributes(customAttributes []wasmvmtypes.EventAttribute, c
 			return nil, errorsmod.Wrap(types.ErrInvalidEvent, fmt.Sprintf("Empty attribute key. Value: %s", l.Value))
 		}
 		value := strings.TrimSpace(l.Value)
-		// TODO: check if this is legal in the SDK - if it is, we can remove this check
-		if len(value) == 0 {
-			return nil, errorsmod.Wrap(types.ErrInvalidEvent, fmt.Sprintf("Empty attribute value. Key: %s", key))
-		}
 		// and reserve all _* keys for our use (not contract)
 		if strings.HasPrefix(key, types.AttributeReservedPrefix) {
 			return nil, errorsmod.Wrap(types.ErrInvalidEvent, fmt.Sprintf("Attribute key starts with reserved prefix %s: '%s'", types.AttributeReservedPrefix, key))

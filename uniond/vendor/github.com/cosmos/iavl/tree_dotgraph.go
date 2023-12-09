@@ -1,12 +1,14 @@
 package iavl
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"text/template"
 
-	ibytes "github.com/cosmos/iavl/internal/bytes"
+	"github.com/emicklei/dot"
 )
 
 type graphEdge struct {
@@ -47,7 +49,7 @@ func WriteDOTGraph(w io.Writer, tree *ImmutableTree, paths []PathToLeaf) {
 	ctx := &graphContext{}
 
 	// TODO: handle error
-	tree.root.hashWithCount() //nolint:errcheck
+	tree.root.hashWithCount(tree.version + 1)
 	tree.root.traverse(tree, true, func(node *Node) bool {
 		graphNode := &graphNode{
 			Attrs: map[string]string{},
@@ -58,12 +60,12 @@ func WriteDOTGraph(w io.Writer, tree *ImmutableTree, paths []PathToLeaf) {
 		}
 		shortHash := graphNode.Hash[:7]
 
-		graphNode.Label = mkLabel(ibytes.UnsafeBytesToStr(node.key), 16, "sans-serif")
+		graphNode.Label = mkLabel(string(node.key), 16, "sans-serif")
 		graphNode.Label += mkLabel(shortHash, 10, "monospace")
-		graphNode.Label += mkLabel(fmt.Sprintf("version=%d", node.version), 10, "monospace")
+		graphNode.Label += mkLabel(fmt.Sprintf("nodeKey=%v", node.nodeKey), 10, "monospace")
 
 		if node.value != nil {
-			graphNode.Label += mkLabel(ibytes.UnsafeBytesToStr(node.value), 10, "sans-serif")
+			graphNode.Label += mkLabel(string(node.value), 10, "sans-serif")
 		}
 
 		if node.subtreeHeight == 0 {
@@ -105,4 +107,71 @@ func WriteDOTGraph(w io.Writer, tree *ImmutableTree, paths []PathToLeaf) {
 
 func mkLabel(label string, pt int, face string) string {
 	return fmt.Sprintf("<font face='%s' point-size='%d'>%s</font><br />", face, pt, label)
+}
+
+// WriteDOTGraphToFile writes the DOT graph to the given filename. Read like:
+// $ dot /tmp/tree_one.dot -Tpng | display
+func WriteDOTGraphToFile(filename string, tree *ImmutableTree) {
+	f1, _ := os.Create(filename)
+	defer f1.Close()
+	writer := bufio.NewWriter(f1)
+	WriteDotGraphv2(writer, tree)
+	err := writer.Flush()
+	if err != nil {
+		panic(err)
+	}
+}
+
+// WriteDotGraphv2 writes a DOT graph to the given writer. WriteDOTGraph failed to produce valid DOT
+// graphs for large trees. This function is a rewrite of WriteDOTGraph that produces valid DOT graphs
+func WriteDotGraphv2(w io.Writer, tree *ImmutableTree) {
+	graph := dot.NewGraph(dot.Directed)
+
+	var traverse func(node *Node, parent *dot.Node, direction string)
+	traverse = func(node *Node, parent *dot.Node, direction string) {
+		var label string
+		if node.isLeaf() {
+			label = fmt.Sprintf("%v:%v\nv%v", node.key, node.value, node.nodeKey.version)
+		} else {
+			label = fmt.Sprintf("%v:%v\nv%v", node.subtreeHeight, node.key, node.nodeKey.version)
+		}
+
+		n := graph.Node(label)
+		if parent != nil {
+			parent.Edge(n, direction)
+		}
+
+		var leftNode, rightNode *Node
+
+		if node.leftNode != nil {
+			leftNode = node.leftNode
+		} else if node.leftNodeKey != nil {
+			in, err := node.getLeftNode(tree)
+			if err == nil {
+				leftNode = in
+			}
+		}
+
+		if node.rightNode != nil {
+			rightNode = node.rightNode
+		} else if node.rightNodeKey != nil {
+			in, err := node.getRightNode(tree)
+			if err == nil {
+				rightNode = in
+			}
+		}
+
+		if leftNode != nil {
+			traverse(leftNode, &n, "l")
+		}
+		if rightNode != nil {
+			traverse(rightNode, &n, "r")
+		}
+	}
+
+	traverse(tree.root, nil, "")
+	_, err := w.Write([]byte(graph.String()))
+	if err != nil {
+		panic(err)
+	}
 }

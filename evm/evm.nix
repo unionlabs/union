@@ -156,8 +156,9 @@
               { path = "core/DevnetIBCHandlerInit.sol"; name = "DevnetIBCHandlerInit"; }
               { path = "core/DevnetOwnableIBCHandler.sol"; name = "DevnetOwnableIBCHandler"; args = ''--constructor-args "$IBCCLIENT" "$IBCCONNECTION" "$IBCCHANNELHANDSHAKE" "$IBCPACKET" "$DEVNETIBCHANDLERINIT"''; }
 
+              { path = "clients/Verifier.sol"; name = "Verifier"; }
               { path = "clients/ICS23MembershipVerifier.sol"; name = "ICS23MembershipVerifier"; }
-              { path = "clients/CometblsClientV2.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "$ICS23MEMBERSHIPVERIFIER"''; }
+              { path = "clients/CometblsClientV2.sol"; name = "CometblsClient"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "$VERIFIER" "$ICS23MEMBERSHIPVERIFIER"''; }
 
               { path = "apps/ucs/01-relay/Relay.sol"; name = "UCS01Relay"; args = ''--constructor-args "$DEVNETOWNABLEIBCHANDLER" "1"'';}
             ]}

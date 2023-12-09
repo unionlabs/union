@@ -49,7 +49,7 @@ test-coverage: $(COVERAGE_REPORT_DIR) clean-report-dir  ## Test with coverage en
 	  DIR_ABS=$$(python -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' $${dir}) ; \
 	  REPORT_NAME=$$(basename $${DIR_ABS}); \
 	  (cd "$${dir}" && \
-	    $(GO) test -count=1 -coverpkg=./... -covermode=$(COVERAGE_MODE) -coverprofile="$(COVERAGE_PROFILE)" ./... && \
+	    $(GO) test -count=1 -timeout $(TIMEOUT)s -coverpkg=./... -covermode=$(COVERAGE_MODE) -coverprofile="$(COVERAGE_PROFILE)" ./... && \
 		cp $(COVERAGE_PROFILE) "$(COVERAGE_REPORT_DIR_ABS)/$${REPORT_NAME}_$(COVERAGE_PROFILE)" && \
 	    $(GO) tool cover -html=$(COVERAGE_PROFILE) -o coverage.html); \
 	done;

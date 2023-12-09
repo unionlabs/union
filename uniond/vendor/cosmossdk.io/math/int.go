@@ -71,7 +71,7 @@ func unmarshalText(i *big.Int, text string) error {
 
 var _ customProtobufType = (*Int)(nil)
 
-// Int wraps big.Int with a 257 bit range bound
+// Int wraps big.Int with a 256 bit range bound
 // Checks overflow, underflow and division by zero
 // Exists in range from -(2^256 - 1) to 2^256 - 1
 type Int struct {
@@ -84,6 +84,14 @@ func (i Int) BigInt() *big.Int {
 		return nil
 	}
 	return new(big.Int).Set(i.i)
+}
+
+// BigInt converts Int to big.Int, mutative the input
+func (i Int) BigIntMut() *big.Int {
+	if i.IsNil() {
+		return nil
+	}
+	return i.i
 }
 
 // IsNil returns true if Int is uninitialized
@@ -116,6 +124,21 @@ func NewIntFromBigInt(i *big.Int) Int {
 	}
 
 	return Int{new(big.Int).Set(i)}
+}
+
+// NewIntFromBigIntMut constructs Int from big.Int. If the provided big.Int is nil,
+// it returns an empty instance. This function panics if the bit length is > 256.
+// Note, this function mutate the argument.
+func NewIntFromBigIntMut(i *big.Int) Int {
+	if i == nil {
+		return Int{}
+	}
+
+	if i.BitLen() > MaxBitLen {
+		panic("NewIntFromBigInt() out of bound")
+	}
+
+	return Int{i}
 }
 
 // NewIntFromString constructs Int from string

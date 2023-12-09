@@ -3,6 +3,7 @@ package v2
 import (
 	"encoding/binary"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
@@ -19,7 +20,7 @@ func MigrateGenState(oldState *authtypes.GenesisState) *authtypes.GenesisState {
 
 	groupPolicyAccountCounter := uint64(0)
 	for i, acc := range accounts {
-		modAcc, ok := acc.(authtypes.ModuleAccountI)
+		modAcc, ok := acc.(sdk.ModuleAccountI)
 		if !ok {
 			continue
 		}

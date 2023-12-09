@@ -45,11 +45,11 @@ func NewNetAddress(id ID, addr net.Addr) *NetAddress {
 	if !ok {
 		if flag.Lookup("test.v") == nil { // normal run
 			panic(fmt.Sprintf("Only TCPAddrs are supported. Got: %v", addr))
-		} else { // in testing
-			netAddr := NewNetAddressIPPort(net.IP("127.0.0.1"), 0)
-			netAddr.ID = id
-			return netAddr
 		}
+		// in testing
+		netAddr := NewNetAddressIPPort(net.IP("127.0.0.1"), 0)
+		netAddr.ID = id
+		return netAddr
 	}
 
 	if err := validateID(id); err != nil {

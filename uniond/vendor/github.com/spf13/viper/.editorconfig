@@ -13,3 +13,6 @@ indent_style = tab
 
 [{Makefile,*.mk}]
 indent_style = tab
+
+[*.nix]
+indent_size = 2

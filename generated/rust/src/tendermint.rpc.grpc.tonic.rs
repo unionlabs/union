@@ -4,7 +4,10 @@
 pub mod broadcast_api_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::{http::Uri, *};
+    /// BroadcastAPI
     ///
+    /// Deprecated: This API will be superseded by a more comprehensive gRPC-based
+    /// broadcast API, and is scheduled for removal after v0.38.
     #[derive(Debug, Clone)]
     pub struct BroadcastApiClient<T> {
         inner: tonic::client::Grpc<T>,

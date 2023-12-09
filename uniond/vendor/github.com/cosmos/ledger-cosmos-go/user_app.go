@@ -18,9 +18,10 @@ package ledger_cosmos_go
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
-	"github.com/zondax/ledger-go"
+	ledger_go "github.com/zondax/ledger-go"
 )
 
 const (
@@ -66,7 +67,7 @@ func FindLedgerCosmosUserApp() (_ *LedgerCosmos, rerr error) {
 		return nil, err
 	}
 
-	return app, err
+	return app, nil
 }
 
 // Close closes a connection with the Cosmos user app
@@ -81,13 +82,13 @@ func (ledger *LedgerCosmos) CheckVersion(ver VersionInfo) error {
 		return err
 	}
 
-	switch version.Major {
+	switch major := version.Major; major {
 	case 1:
 		return CheckVersion(ver, VersionInfo{0, 1, 5, 1})
 	case 2:
 		return CheckVersion(ver, VersionInfo{0, 2, 1, 0})
 	default:
-		return errors.New("App version is not supported")
+		return fmt.Errorf("App version %d is not supported", major)
 	}
 }
 
@@ -114,16 +115,17 @@ func (ledger *LedgerCosmos) GetVersion() (*VersionInfo, error) {
 	return &ledger.version, nil
 }
 
-// SignSECP256K1 signs a transaction using Cosmos user app
+// SignSECP256K1 signs a transaction using Cosmos user app. It can either use
+// SIGN_MODE_LEGACY_AMINO_JSON (P2=0) or SIGN_MODE_TEXTUAL (P2=1).
 // this command requires user confirmation in the device
-func (ledger *LedgerCosmos) SignSECP256K1(bip32Path []uint32, transaction []byte) ([]byte, error) {
-	switch ledger.version.Major {
+func (ledger *LedgerCosmos) SignSECP256K1(bip32Path []uint32, transaction []byte, p2 byte) ([]byte, error) {
+	switch major := ledger.version.Major; major {
 	case 1:
 		return ledger.signv1(bip32Path, transaction)
 	case 2:
-		return ledger.signv2(bip32Path, transaction)
+		return ledger.signv2(bip32Path, transaction, p2)
 	default:
-		return nil, errors.New("App version is not supported")
+		return nil, fmt.Errorf("App version %d is not supported", major)
 	}
 }
 
@@ -149,7 +151,7 @@ func (ledger *LedgerCosmos) GetBip32bytes(bip32Path []uint32, hardenCount int) (
 	var pathBytes []byte
 	var err error
 
-	switch ledger.version.Major {
+	switch major := ledger.version.Major; major {
 	case 1:
 		pathBytes, err = GetBip32bytesv1(bip32Path, 3)
 		if err != nil {
@@ -161,7 +163,7 @@ func (ledger *LedgerCosmos) GetBip32bytes(bip32Path []uint32, hardenCount int) (
 			return nil, err
 		}
 	default:
-		return nil, errors.New("App version is not supported")
+		return nil, fmt.Errorf("App version %d is not supported", major)
 	}
 
 	return pathBytes, nil
@@ -220,13 +222,17 @@ func (ledger *LedgerCosmos) signv1(bip32Path []uint32, transaction []byte) ([]by
 	return finalResponse, nil
 }
 
-func (ledger *LedgerCosmos) signv2(bip32Path []uint32, transaction []byte) ([]byte, error) {
+func (ledger *LedgerCosmos) signv2(bip32Path []uint32, transaction []byte, p2 byte) ([]byte, error) {
 	var packetIndex byte = 1
 	var packetCount = 1 + byte(math.Ceil(float64(len(transaction))/float64(userMessageChunkSize)))
 
 	var finalResponse []byte
 
 	var message []byte
+
+	if p2 > 1 {
+		return nil, errors.New("only values of SIGN_MODE_LEGACY_AMINO (P2=0) and SIGN_MODE_TEXTUAL (P2=1) are allowed")
+	}
 
 	for packetIndex <= packetCount {
 		chunk := userMessageChunkSize
@@ -235,7 +241,7 @@ func (ledger *LedgerCosmos) signv2(bip32Path []uint32, transaction []byte) ([]by
 			if err != nil {
 				return nil, err
 			}
-			header := []byte{userCLA, userINSSignSECP256K1, 0, 0, byte(len(pathBytes))}
+			header := []byte{userCLA, userINSSignSECP256K1, 0, p2, byte(len(pathBytes))}
 			message = append(header, pathBytes...)
 		} else {
 			if len(transaction) < userMessageChunkSize {
@@ -247,7 +253,7 @@ func (ledger *LedgerCosmos) signv2(bip32Path []uint32, transaction []byte) ([]by
 				payloadDesc = byte(2)
 			}
 
-			header := []byte{userCLA, userINSSignSECP256K1, payloadDesc, 0, byte(chunk)}
+			header := []byte{userCLA, userINSSignSECP256K1, payloadDesc, p2, byte(chunk)}
 			message = append(header, transaction[:chunk]...)
 		}
 

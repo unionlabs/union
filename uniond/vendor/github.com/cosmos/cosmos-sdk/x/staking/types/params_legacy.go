@@ -13,14 +13,13 @@ var (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
-// ParamTable for staking module
 // Deprecated: now params can be accessed on key `0x51` on the staking store.
+// ParamTable for staking module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 
-// Implements params.ParamSet
-// Deprecated.
+// Deprecated: Implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyUnbondingTime, &p.UnbondingTime, validateUnbondingTime),

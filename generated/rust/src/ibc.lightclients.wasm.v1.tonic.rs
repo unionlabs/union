@@ -83,10 +83,10 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn code_ids(
+        pub async fn checksums(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryCodeIdsRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryCodeIdsResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::QueryChecksumsRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryChecksumsResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -96,10 +96,12 @@ pub mod query_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/ibc.lightclients.wasm.v1.Query/CodeIds");
+                http::uri::PathAndQuery::from_static("/ibc.lightclients.wasm.v1.Query/Checksums");
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("ibc.lightclients.wasm.v1.Query", "CodeIds"));
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.lightclients.wasm.v1.Query",
+                "Checksums",
+            ));
             self.inner.unary(req, path, codec).await
         }
         pub async fn code(
@@ -219,6 +221,50 @@ pub mod msg_client {
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("ibc.lightclients.wasm.v1.Msg", "StoreCode"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn remove_checksum(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgRemoveChecksum>,
+        ) -> std::result::Result<tonic::Response<super::MsgRemoveChecksumResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.lightclients.wasm.v1.Msg/RemoveChecksum",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.lightclients.wasm.v1.Msg",
+                "RemoveChecksum",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn migrate_contract(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgMigrateContract>,
+        ) -> std::result::Result<tonic::Response<super::MsgMigrateContractResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.lightclients.wasm.v1.Msg/MigrateContract",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "ibc.lightclients.wasm.v1.Msg",
+                "MigrateContract",
+            ));
             self.inner.unary(req, path, codec).await
         }
     }

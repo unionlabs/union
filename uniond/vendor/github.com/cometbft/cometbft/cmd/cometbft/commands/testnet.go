@@ -37,7 +37,7 @@ var (
 )
 
 const (
-	nodeDirPerm = 0755
+	nodeDirPerm = 0o755
 )
 
 func init() {
@@ -94,7 +94,7 @@ Example:
 	RunE: testnetFiles,
 }
 
-func testnetFiles(cmd *cobra.Command, args []string) error {
+func testnetFiles(*cobra.Command, []string) error {
 	if len(hostnames) > 0 && len(hostnames) != (nValidators+nNonValidators) {
 		return fmt.Errorf(
 			"testnet needs precisely %d hostnames (number of validators plus non-validators) if --hostname parameter is used",

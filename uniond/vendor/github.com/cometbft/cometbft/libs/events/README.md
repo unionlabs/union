@@ -4,37 +4,30 @@
 
 `import "github.com/cometbft/cometbft/libs/events"`
 
-* [Overview](#pkg-overview)
-* [Index](#pkg-index)
-
 ## Overview
 
 Pub-Sub in go with event caching
 
 ## Index
 
-* [type EventCache](#EventCache)
-    * [func NewEventCache(evsw Fireable) *EventCache](#NewEventCache)
-    * [func (evc *EventCache) FireEvent(event string, data EventData)](#EventCache.FireEvent)
-    * [func (evc *EventCache) Flush()](#EventCache.Flush)
-* [type EventCallback](#EventCallback)
-* [type EventData](#EventData)
-* [type EventSwitch](#EventSwitch)
-    * [func NewEventSwitch() EventSwitch](#NewEventSwitch)
-* [type Eventable](#Eventable)
-* [type Fireable](#Fireable)
+* [type EventCache](#type-eventcache)
+    * [func NewEventCache(evsw Fireable) *EventCache](#func-neweventcache)
+    * [func (evc *EventCache) FireEvent(event string, data EventData)](#func-eventcache-fireevent)
+    * [func (evc *EventCache) Flush()](#func-eventcache-flush)
+* [type EventCallback](#type-eventcallback)
+* [type EventData](#type-eventdata)
+* [type EventSwitch](#type-eventswitch)
+    * [func NewEventSwitch() EventSwitch](#func-neweventswitch)
+* [type Eventable](#type-eventable)
+* [type Fireable](#type-fireable)
 
 
 ### Package files
 
-[event_cache.go](/src/github.com/cometbft/cometbft/libs/events/event_cache.go) [events.go](/src/github.com/cometbft/cometbft/libs/events/events.go) 
+[event_cache.go](./event_cache.go) [events.go](./events.go)
 
 
-
-
-
-
-## Type [EventCache](/src/target/event_cache.go?s=116:179#L5)
+## Type [EventCache](./event_cache.go?s=116:179#L5)
 
 ``` go
 type EventCache struct {
@@ -51,7 +44,7 @@ All events are cached. Filtering happens on Flush
 
 
 
-### func [NewEventCache](/src/target/event_cache.go?s=239:284#L11)
+### func [NewEventCache](./event_cache.go?s=239:284#L11)
 
 ``` go
 func NewEventCache(evsw Fireable) *EventCache
@@ -63,7 +56,7 @@ Create a new EventCache with an EventSwitch as backend
 
 
 
-### func (\*EventCache) [FireEvent](/src/target/event_cache.go?s=449:511#L24)
+### func (\*EventCache) [FireEvent](./event_cache.go?s=449:511#L24)
 
 ``` go
 func (evc *EventCache) FireEvent(event string, data EventData)
@@ -74,7 +67,7 @@ Cache an event to be fired upon finality.
 
 
 
-### func (\*EventCache) [Flush](/src/target/event_cache.go?s=735:765#L31)
+### func (\*EventCache) [Flush](./event_cache.go?s=735:765#L31)
 
 ``` go
 func (evc *EventCache) Flush()
@@ -86,7 +79,7 @@ Clears cached events
 
 
 
-## Type [EventCallback](/src/target/events.go?s=4201:4240#L185)
+## Type [EventCallback](./events.go?s=4201:4240#L185)
 
 ``` go
 type EventCallback func(data EventData)
@@ -100,13 +93,15 @@ type EventCallback func(data EventData)
 
 
 
-## Type [EventData](/src/target/events.go?s=243:294#L14)
+## Type [EventData](./events.go?s=243:294#L14)
 
 ``` go
 type EventData interface {
 }
 ```
 
+Generic event data can be typed and registered with [tendermint/go-amino](https://github.com/tendermint/go-amino)
+via concrete implementation of this interface
 
 
 
@@ -116,7 +111,8 @@ type EventData interface {
 
 
 
-## Type [EventSwitch](/src/target/events.go?s=560:771#L29)
+
+## Type [EventSwitch](./events.go?s=560:771#L29)
 
 ``` go
 type EventSwitch interface {
@@ -134,7 +130,7 @@ type EventSwitch interface {
 
 
 
-### func [NewEventSwitch](/src/target/events.go?s=917:950#L46)
+### func [NewEventSwitch](./events.go?s=917:950#L46)
 
 ``` go
 func NewEventSwitch() EventSwitch
@@ -143,7 +139,7 @@ func NewEventSwitch() EventSwitch
 
 
 
-## Type [Eventable](/src/target/events.go?s=378:440#L20)
+## Type [Eventable](./events.go?s=378:440#L20)
 
 ``` go
 type Eventable interface {
@@ -163,7 +159,7 @@ this interface to become eventable
 
 
 
-## Type [Fireable](/src/target/events.go?s=490:558#L25)
+## Type [Fireable](./events.go?s=490:558#L25)
 
 ``` go
 type Fireable interface {

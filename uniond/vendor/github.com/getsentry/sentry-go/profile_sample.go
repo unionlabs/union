@@ -28,7 +28,6 @@ type (
 
 	profileSample struct {
 		ElapsedSinceStartNS uint64 `json:"elapsed_since_start_ns"`
-		QueueAddress        string `json:"queue_address,omitempty"`
 		StackID             int    `json:"stack_id"`
 		ThreadID            uint64 `json:"thread_id"`
 	}
@@ -41,10 +40,10 @@ type (
 	profileStack []int
 
 	profileTrace struct {
-		Frames         []*Frame                         `json:"frames"`
-		Samples        []*profileSample                 `json:"samples"`
-		Stacks         []profileStack                   `json:"stacks"`
-		ThreadMetadata map[string]profileThreadMetadata `json:"thread_metadata"`
+		Frames         []*Frame                          `json:"frames"`
+		Samples        []profileSample                   `json:"samples"`
+		Stacks         []profileStack                    `json:"stacks"`
+		ThreadMetadata map[uint64]*profileThreadMetadata `json:"thread_metadata"`
 	}
 
 	profileInfo struct {

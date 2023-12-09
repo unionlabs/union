@@ -74,7 +74,7 @@ func (t TestAccountRetriever) EnsureExists(_ Context, addr sdk.AccAddress) error
 }
 
 // GetAccountNumberSequence implements AccountRetriever.GetAccountNumberSequence
-func (t TestAccountRetriever) GetAccountNumberSequence(_ Context, addr sdk.AccAddress) (accNum uint64, accSeq uint64, err error) {
+func (t TestAccountRetriever) GetAccountNumberSequence(_ Context, addr sdk.AccAddress) (accNum, accSeq uint64, err error) {
 	acc, ok := t.Accounts[addr.String()]
 	if !ok {
 		return 0, 0, fmt.Errorf("account %s not found", addr)

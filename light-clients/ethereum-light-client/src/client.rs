@@ -1,6 +1,6 @@
 use cosmwasm_std::{Binary, Deps, DepsMut, Env};
 use ethereum_verifier::{
-    compute_sync_committee_period_at_slot, compute_timestamp_at_slot, validate_light_client_update,
+    compute_sync_committee_period_at_slot, validate_light_client_update,
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
 use ics008_wasm_client::{
@@ -8,8 +8,9 @@ use ics008_wasm_client::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
         update_client_state,
     },
-    ContractResult, IbcClient, QueryResponse, Status, StorageState,
+    IbcClient, Status, StorageState,
 };
+use protos::ibc::core::client::v1::GenesisMetadata;
 use sha3::Digest;
 use unionlabs::{
     google::protobuf::any::Any,
@@ -67,7 +68,7 @@ impl IbcClient for EthereumLightClient {
         proof: Binary,
         mut path: ics008_wasm_client::MerklePath,
         value: ics008_wasm_client::StorageState,
-    ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
+    ) -> Result<(), Self::Error> {
         let consensus_state: WasmConsensusState =
             read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
         let client_state: WasmClientState = read_client_state(deps)?;
@@ -105,14 +106,14 @@ impl IbcClient for EthereumLightClient {
             )?,
         }
 
-        Ok(ContractResult::valid(None))
+        Ok(())
     }
 
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
         env: Env,
         header: Self::Header,
-    ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
+    ) -> Result<(), Self::Error> {
         let trusted_sync_committee = header.trusted_sync_committee;
         let wasm_consensus_state =
             read_consensus_state(deps, &trusted_sync_committee.trusted_height)?.ok_or(
@@ -158,21 +159,21 @@ impl IbcClient for EthereumLightClient {
             &proof_data.storage_root,
         )?;
 
-        Ok(ContractResult::valid(None))
+        Ok(())
     }
 
     fn verify_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
-        Ok(ContractResult::invalid("Not implemented".to_string()))
+    ) -> Result<(), Self::Error> {
+        panic!("Not implemented")
     }
 
     fn update_state(
         mut deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         header: Self::Header,
-    ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
+    ) -> Result<ics008_wasm_client::UpdateStateResult, Self::Error> {
         let trusted_sync_committee = header.trusted_sync_committee;
         let trusted_height = trusted_sync_committee.trusted_height;
 
@@ -221,33 +222,29 @@ impl IbcClient for EthereumLightClient {
 
             consensus_state.data.storage_root = account_update.account_proof.storage_root;
 
-            consensus_state.timestamp = compute_timestamp_at_slot::<Config>(
-                client_state.data.genesis_time,
-                consensus_update.attested_header.beacon.slot,
-            );
             if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
                 client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
                 update_client_state(deps.branch(), client_state, updated_height);
             }
         }
 
-        save_consensus_state(
-            deps,
-            consensus_state,
-            &Height {
-                revision_number: trusted_height.revision_number,
-                revision_height: updated_height,
-            },
-        );
+        let updated_height = Height {
+            revision_number: trusted_height.revision_number,
+            revision_height: updated_height,
+        };
 
-        Ok(ContractResult::valid(None))
+        save_consensus_state(deps, consensus_state, &updated_height);
+
+        Ok(ics008_wasm_client::UpdateStateResult {
+            heights: vec![updated_height],
+        })
     }
 
     fn update_state_on_misbehaviour(
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
         _client_message: ics008_wasm_client::ClientMessage,
-    ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
+    ) -> Result<(), Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         client_state.data.frozen_height = Height {
             revision_number: client_state.latest_height.revision_number,
@@ -255,13 +252,13 @@ impl IbcClient for EthereumLightClient {
         };
         save_client_state(deps, client_state);
 
-        Ok(ContractResult::valid(None))
+        Ok(())
     }
 
     fn check_for_misbehaviour_on_header(
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
-    ) -> Result<ContractResult, Self::Error> {
+    ) -> Result<ics008_wasm_client::CheckForMisbehaviourResult, Self::Error> {
         let height = Height::new(0, header.consensus_update.attested_header.beacon.slot);
 
         if let Some(consensus_state) =
@@ -298,14 +295,17 @@ impl IbcClient for EthereumLightClient {
         // TODO(#605): Do we need to check whether this header's timestamp is between
         // the next and the previous consensus state in terms of height?
 
-        Ok(ContractResult::valid(None))
+        // TODO(aeryz): Why not return Result<(), Error> and interpret it in the wasm lib?
+        Ok(ics008_wasm_client::CheckForMisbehaviourResult {
+            found_misbehaviour: false,
+        })
     }
 
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::invalid("Not implemented".to_string()))
+    ) -> Result<ics008_wasm_client::CheckForMisbehaviourResult, Self::Error> {
+        unimplemented!()
     }
 
     fn verify_upgrade_and_update_state(
@@ -314,48 +314,55 @@ impl IbcClient for EthereumLightClient {
         _upgrade_consensus_state: WasmConsensusState,
         _proof_upgrade_client: Binary,
         _proof_upgrade_consensus_state: Binary,
-    ) -> Result<ContractResult, Self::Error> {
-        Ok(ContractResult::invalid("Not implemented".to_string()))
+    ) -> Result<(), Self::Error> {
+        unimplemented!()
     }
 
-    fn check_substitute_and_update_state(
-        _deps: Deps<Self::CustomQuery>,
-    ) -> Result<ics008_wasm_client::ContractResult, Self::Error> {
-        Ok(ContractResult::invalid("Not implemented".to_string()))
+    fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
+        unimplemented!()
     }
 
-    fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<QueryResponse, Self::Error> {
+    fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
         if client_state.data.frozen_height != Height::default() {
-            return Ok(Status::Frozen.into());
+            return Ok(Status::Frozen);
         }
 
         let Some(consensus_state) =
             read_consensus_state::<CustomQuery, ConsensusState>(deps, &client_state.latest_height)?
         else {
-            return Ok(Status::Expired.into());
+            return Ok(Status::Expired);
         };
 
         if is_client_expired(
-            consensus_state.timestamp,
+            consensus_state.data.timestamp,
             client_state.data.trusting_period,
             env.block.time.seconds(),
         ) {
-            return Ok(Status::Expired.into());
+            return Ok(Status::Expired);
         }
 
-        Ok(Status::Active.into())
+        Ok(Status::Active)
     }
 
     fn export_metadata(
         _deps: Deps<Self::CustomQuery>,
         _env: &Env,
-    ) -> Result<QueryResponse, Self::Error> {
-        Ok(QueryResponse {
-            status: String::new(),
-            genesis_metadata: vec![],
-        })
+    ) -> Result<Vec<GenesisMetadata>, Self::Error> {
+        Ok(Vec::new())
+    }
+
+    fn timestamp_at_height(
+        deps: Deps<Self::CustomQuery>,
+        height: Height,
+    ) -> Result<u64, Self::Error> {
+        Ok(
+            read_consensus_state::<CustomQuery, ConsensusState>(deps, &height)?
+                .ok_or(Error::ConsensusStateNotFound(height))?
+                .data
+                .timestamp,
+        )
     }
 }
 

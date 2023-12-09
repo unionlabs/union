@@ -124,6 +124,8 @@ macro_rules! event {
                                     ))
                                 },
                             )+
+                            // TODO(aeryz): this is newly added to cosmos-sdk, until we understand what to do with this, ignore
+                            "msg_index" => {}
                             key => {
                                 if !DEPRECATED.contains(&key) {
                                     return Err(TryFromTendermintEventError::UnknownField(attr.key))
@@ -187,9 +189,6 @@ event! {
             client_type: ClientType,
             #[parse(|s: &str| s.split(',').map(Height::from_str).collect::<Result<_, _>>())]
             consensus_heights: Vec<Height>,
-            #[parse(hex::decode)]
-            #[serde(with = "::serde_utils::hex_string")]
-            header: Vec<u8>,
         },
 
         #[event(tag = "client_misbehaviour")]

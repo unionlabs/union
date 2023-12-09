@@ -1,4 +1,32 @@
 // @generated
+/// EventGrant is emitted on Msg/Grant
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventGrant {
+    /// Msg type URL for which an autorization is granted
+    #[prost(string, tag = "2")]
+    pub msg_type_url: ::prost::alloc::string::String,
+    /// Granter account address
+    #[prost(string, tag = "3")]
+    pub granter: ::prost::alloc::string::String,
+    /// Grantee account address
+    #[prost(string, tag = "4")]
+    pub grantee: ::prost::alloc::string::String,
+}
+/// EventRevoke is emitted on Msg/Revoke
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventRevoke {
+    /// Msg type URL for which an autorization is revoked
+    #[prost(string, tag = "2")]
+    pub msg_type_url: ::prost::alloc::string::String,
+    /// Granter account address
+    #[prost(string, tag = "3")]
+    pub granter: ::prost::alloc::string::String,
+    /// Grantee account address
+    #[prost(string, tag = "4")]
+    pub grantee: ::prost::alloc::string::String,
+}
 /// GenericAuthorization gives the grantee unrestricted permissions to execute
 /// the provided method on behalf of the granter's account.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -42,41 +70,6 @@ pub struct GrantQueueItem {
     /// msg_type_urls contains the list of TypeURL of a sdk.Msg.
     #[prost(string, repeated, tag = "1")]
     pub msg_type_urls: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
-/// EventGrant is emitted on Msg/Grant
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventGrant {
-    /// Msg type URL for which an autorization is granted
-    #[prost(string, tag = "2")]
-    pub msg_type_url: ::prost::alloc::string::String,
-    /// Granter account address
-    #[prost(string, tag = "3")]
-    pub granter: ::prost::alloc::string::String,
-    /// Grantee account address
-    #[prost(string, tag = "4")]
-    pub grantee: ::prost::alloc::string::String,
-}
-/// EventRevoke is emitted on Msg/Revoke
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventRevoke {
-    /// Msg type URL for which an autorization is revoked
-    #[prost(string, tag = "2")]
-    pub msg_type_url: ::prost::alloc::string::String,
-    /// Granter account address
-    #[prost(string, tag = "3")]
-    pub granter: ::prost::alloc::string::String,
-    /// Grantee account address
-    #[prost(string, tag = "4")]
-    pub grantee: ::prost::alloc::string::String,
-}
-/// GenesisState defines the authz module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(message, repeated, tag = "1")]
-    pub authorization: ::prost::alloc::vec::Vec<GrantAuthorization>,
 }
 /// QueryGrantsRequest is the request type for the Query/Grants RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -125,7 +118,7 @@ pub struct QueryGranterGrantsResponse {
     #[prost(message, optional, tag = "2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
-/// QueryGranteeGrantsRequest is the request type for the Query/IssuedGrants RPC method.
+/// QueryGranteeGrantsRequest is the request type for the Query/GranteeGrants RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryGranteeGrantsRequest {
@@ -158,13 +151,10 @@ pub struct MsgGrant {
     #[prost(message, optional, tag = "3")]
     pub grant: ::core::option::Option<Grant>,
 }
-/// MsgExecResponse defines the Msg/MsgExecResponse response type.
+/// MsgGrantResponse defines the Msg/MsgGrant response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgExecResponse {
-    #[prost(bytes = "vec", repeated, tag = "1")]
-    pub results: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
-}
+pub struct MsgGrantResponse {}
 /// MsgExec attempts to execute the provided messages using
 /// authorizations granted to the grantee. Each message should have only
 /// one signer corresponding to the granter of the authorization.
@@ -179,10 +169,13 @@ pub struct MsgExec {
     #[prost(message, repeated, tag = "2")]
     pub msgs: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
-/// MsgGrantResponse defines the Msg/MsgGrant response type.
+/// MsgExecResponse defines the Msg/MsgExecResponse response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgGrantResponse {}
+pub struct MsgExecResponse {
+    #[prost(bytes = "vec", repeated, tag = "1")]
+    pub results: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+}
 /// MsgRevoke revokes any authorization with the provided sdk.Msg type on the
 /// granter's account with that has been granted to the grantee.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -199,5 +192,12 @@ pub struct MsgRevoke {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgRevokeResponse {}
+/// GenesisState defines the authz module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(message, repeated, tag = "1")]
+    pub authorization: ::prost::alloc::vec::Vec<GrantAuthorization>,
+}
 include!("cosmos.authz.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

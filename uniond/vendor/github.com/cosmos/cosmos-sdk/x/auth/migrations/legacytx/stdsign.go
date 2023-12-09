@@ -6,33 +6,25 @@ import (
 
 	"sigs.k8s.io/yaml"
 
+	"cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 )
 
-// LegacyMsg defines the old interface a message must fulfill, containing
-// Amino signing method and legacy router info.
+// LegacyMsg defines the old interface a message must fulfill,
+// containing Amino signing method.
 // Deprecated: Please use `Msg` instead.
 type LegacyMsg interface {
 	sdk.Msg
 
 	// Get the canonical byte representation of the Msg.
 	GetSignBytes() []byte
-
-	// Return the message type.
-	// Must be alphanumeric or empty.
-	Route() string
-
-	// Returns a human-readable string for the message, intended for utilization
-	// within tags
-	Type() string
 }
 
 // StdSignDoc is replay-prevention structure.
@@ -48,28 +40,34 @@ type StdSignDoc struct {
 	Memo          string            `json:"memo" yaml:"memo"`
 	Fee           json.RawMessage   `json:"fee" yaml:"fee"`
 	Msgs          []json.RawMessage `json:"msgs" yaml:"msgs"`
-	Tip           *StdTip           `json:"tip,omitempty" yaml:"tip"`
+}
+
+var RegressionTestingAminoCodec *codec.LegacyAmino
+
+// Deprecated: please delete this code eventually.
+func mustSortJSON(bz []byte) []byte {
+	var c any
+	err := json.Unmarshal(bz, &c)
+	if err != nil {
+		panic(err)
+	}
+	js, err := json.Marshal(c)
+	if err != nil {
+		panic(err)
+	}
+	return js
 }
 
 // StdSignBytes returns the bytes to sign for a transaction.
-func StdSignBytes(chainID string, accnum, sequence, timeout uint64, fee StdFee, msgs []sdk.Msg, memo string, tip *tx.Tip) []byte {
+// Deprecated: Please use x/tx/signing/aminojson instead.
+func StdSignBytes(chainID string, accnum, sequence, timeout uint64, fee StdFee, msgs []sdk.Msg, memo string) []byte {
+	if RegressionTestingAminoCodec == nil {
+		panic(fmt.Errorf("must set RegressionTestingAminoCodec before calling StdSignBytes"))
+	}
 	msgsBytes := make([]json.RawMessage, 0, len(msgs))
 	for _, msg := range msgs {
-		legacyMsg, ok := msg.(LegacyMsg)
-		if !ok {
-			panic(fmt.Errorf("expected %T when using amino JSON", (*LegacyMsg)(nil)))
-		}
-
-		msgsBytes = append(msgsBytes, json.RawMessage(legacyMsg.GetSignBytes()))
-	}
-
-	var stdTip *StdTip
-	if tip != nil {
-		if tip.Tipper == "" {
-			panic(fmt.Errorf("tipper cannot be empty"))
-		}
-
-		stdTip = &StdTip{Amount: tip.Amount, Tipper: tip.Tipper}
+		bz := RegressionTestingAminoCodec.MustMarshalJSON(msg)
+		msgsBytes = append(msgsBytes, mustSortJSON(bz))
 	}
 
 	bz, err := legacy.Cdc.MarshalJSON(StdSignDoc{
@@ -80,13 +78,12 @@ func StdSignBytes(chainID string, accnum, sequence, timeout uint64, fee StdFee, 
 		Msgs:          msgsBytes,
 		Sequence:      sequence,
 		TimeoutHeight: timeout,
-		Tip:           stdTip,
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	return sdk.MustSortJSON(bz)
+	return mustSortJSON(bz)
 }
 
 // Deprecated: StdSignature represents a sig
@@ -175,7 +172,7 @@ func pubKeySigToSigData(cdc *codec.LegacyAmino, key cryptotypes.PubKey, sig []by
 		if bitArray.GetIndex(i) {
 			data, err := pubKeySigToSigData(cdc, pubKeys[i], multiSig.Sigs[sigIdx])
 			if err != nil {
-				return nil, sdkerrors.Wrapf(err, "Unable to convert Signature to SigData %d", sigIdx)
+				return nil, errors.Wrapf(err, "Unable to convert Signature to SigData %d", sigIdx)
 			}
 
 			sigDatas[sigIdx] = data

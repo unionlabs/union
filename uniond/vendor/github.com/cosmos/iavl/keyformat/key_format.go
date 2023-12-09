@@ -3,6 +3,7 @@ package keyformat
 import (
 	"encoding/binary"
 	"fmt"
+	"math/big"
 )
 
 // Provides a fixed-width lexicographically sortable []byte key format
@@ -29,7 +30,9 @@ type KeyFormat struct {
 //		return keyFormat.Key(version, hasher.Sum(nil))
 //	}
 //
-// if the last term of the layout ends in 0
+// If the last term of the layout is 0 it is unbounded, and will accept any length.
+//
+// NewKeyFormat panics if any other term than the last is 0.
 func NewKeyFormat(prefix byte, layout ...int) *KeyFormat {
 	// For prefix byte
 	length := 1
@@ -119,9 +122,8 @@ func (kf *KeyFormat) ScanBytes(key []byte) [][]byte {
 		if l == 0 {
 			segments[i] = key[n:]
 			break
-		} else {
-			segments[i] = key[n-l : n]
 		}
+		segments[i] = key[n-l : n]
 	}
 	return segments
 }
@@ -139,6 +141,11 @@ func (kf *KeyFormat) Scan(key []byte, args ...interface{}) {
 	}
 }
 
+// Length of the key format.
+func (kf *KeyFormat) Length() int {
+	return kf.length
+}
+
 // Return the prefix as a string.
 func (kf *KeyFormat) Prefix() string {
 	return string([]byte{kf.prefix})
@@ -151,8 +158,14 @@ func scan(a interface{}, value []byte) {
 		*v = int64(binary.BigEndian.Uint64(value))
 	case *uint64:
 		*v = binary.BigEndian.Uint64(value)
+	case *uint32:
+		*v = binary.BigEndian.Uint32(value)
+	case *int32:
+		*v = int32(binary.BigEndian.Uint32(value))
 	case *[]byte:
 		*v = value
+	case *big.Int:
+		*v = *big.NewInt(0).SetBytes(value)
 	default:
 		panic(fmt.Errorf("keyFormat scan() does not support scanning value of type %T: %v", a, a))
 	}
@@ -169,6 +182,10 @@ func format(a interface{}) []byte {
 		return formatUint64(uint64(v))
 	case int:
 		return formatUint64(uint64(v))
+	case uint32:
+		return formatUint32(v)
+	case int32:
+		return formatUint32(uint32(v))
 	case []byte:
 		return v
 	default:
@@ -179,5 +196,11 @@ func format(a interface{}) []byte {
 func formatUint64(v uint64) []byte {
 	bs := make([]byte, 8)
 	binary.BigEndian.PutUint64(bs, v)
+	return bs
+}
+
+func formatUint32(v uint32) []byte {
+	bs := make([]byte, 4)
+	binary.BigEndian.PutUint32(bs, v)
 	return bs
 }

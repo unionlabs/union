@@ -69,7 +69,7 @@ func (gs GenesisState) Validate() error {
 			return err
 		}
 
-		if !gs.Supply.IsEqual(totalSupply) {
+		if !gs.Supply.Equal(totalSupply) {
 			return fmt.Errorf("genesis supply is incorrect, expected %v, got %v", gs.Supply, totalSupply)
 		}
 	}
@@ -114,27 +114,27 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 // If the main SendEnabled slice already has entries, the Params.SendEnabled
 // entries are added. In case of the same demon in both, preference is given to
 // the existing (main GenesisState field) entry.
-func (g *GenesisState) MigrateSendEnabled() {
-	g.SendEnabled = g.GetAllSendEnabled()
-	g.Params.SendEnabled = nil
+func (gs *GenesisState) MigrateSendEnabled() {
+	gs.SendEnabled = gs.GetAllSendEnabled()
+	gs.Params.SendEnabled = nil
 }
 
 // GetAllSendEnabled returns all the SendEnabled entries from both the SendEnabled
 // field and the Params. If a denom has an entry in both, the entry in the
 // SendEnabled field takes precedence over one in Params.
-func (g GenesisState) GetAllSendEnabled() []SendEnabled {
-	if len(g.Params.SendEnabled) == 0 {
-		return g.SendEnabled
+func (gs GenesisState) GetAllSendEnabled() []SendEnabled {
+	if len(gs.Params.SendEnabled) == 0 {
+		return gs.SendEnabled
 	}
 
-	rv := make([]SendEnabled, len(g.SendEnabled))
+	rv := make([]SendEnabled, len(gs.SendEnabled))
 	knownSendEnabled := map[string]bool{}
-	for i, se := range g.SendEnabled {
+	for i, se := range gs.SendEnabled {
 		rv[i] = se
 		knownSendEnabled[se.Denom] = true
 	}
 
-	for _, se := range g.Params.SendEnabled {
+	for _, se := range gs.Params.SendEnabled {
 		if _, known := knownSendEnabled[se.Denom]; !known {
 			rv = append(rv, *se)
 		}

@@ -12,7 +12,9 @@ typedef GoError (*write_db_fn)(db_t *ptr, gas_meter_t *gas_meter, uint64_t *used
 typedef GoError (*remove_db_fn)(db_t *ptr, gas_meter_t *gas_meter, uint64_t *used_gas, U8SliceView key, UnmanagedVector *errOut);
 typedef GoError (*scan_db_fn)(db_t *ptr, gas_meter_t *gas_meter, uint64_t *used_gas, U8SliceView start, U8SliceView end, int32_t order, GoIter *out, UnmanagedVector *errOut);
 // iterator
-typedef GoError (*next_db_fn)(iterator_t idx, gas_meter_t *gas_meter, uint64_t *used_gas, UnmanagedVector *key, UnmanagedVector *val, UnmanagedVector *errOut);
+typedef GoError (*db_next)(iterator_t idx, gas_meter_t *gas_meter, uint64_t *used_gas, UnmanagedVector *key, UnmanagedVector *val, UnmanagedVector *errOut);
+typedef GoError (*db_next_key)(iterator_t idx, gas_meter_t *gas_meter, uint64_t *used_gas, UnmanagedVector *key, UnmanagedVector *errOut);
+typedef GoError (*db_next_value)(iterator_t idx, gas_meter_t *gas_meter, uint64_t *used_gas, UnmanagedVector *val, UnmanagedVector *errOut);
 // and api
 typedef GoError (*humanize_address_fn)(api_t *ptr, U8SliceView src, UnmanagedVector *dest, UnmanagedVector *errOut, uint64_t *used_gas);
 typedef GoError (*canonicalize_address_fn)(api_t *ptr, U8SliceView src, UnmanagedVector *dest, UnmanagedVector *errOut, uint64_t *used_gas);
@@ -25,6 +27,8 @@ GoError cDelete_cgo(db_t *ptr, gas_meter_t *gas_meter, uint64_t *used_gas, U8Sli
 GoError cScan_cgo(db_t *ptr, gas_meter_t *gas_meter, uint64_t *used_gas, U8SliceView start, U8SliceView end, int32_t order, GoIter *out, UnmanagedVector *errOut);
 // iterator
 GoError cNext_cgo(iterator_t *ptr, gas_meter_t *gas_meter, uint64_t *used_gas, UnmanagedVector *key, UnmanagedVector *val, UnmanagedVector *errOut);
+GoError cNextKey_cgo(iterator_t *ptr, gas_meter_t *gas_meter, uint64_t *used_gas, UnmanagedVector *key, UnmanagedVector *errOut);
+GoError cNextValue_cgo(iterator_t *ptr, gas_meter_t *gas_meter, uint64_t *used_gas, UnmanagedVector *val, UnmanagedVector *errOut);
 // api
 GoError cHumanAddress_cgo(api_t *ptr, U8SliceView src, UnmanagedVector *dest, UnmanagedVector *errOut, uint64_t *used_gas);
 GoError cCanonicalAddress_cgo(api_t *ptr, U8SliceView src, UnmanagedVector *dest, UnmanagedVector *errOut, uint64_t *used_gas);
@@ -128,7 +132,9 @@ func buildDB(state *DBState, gm *types.GasMeter) C.Db {
 }
 
 var iterator_vtable = C.Iterator_vtable{
-	next_db: (C.next_db_fn)(C.cNext_cgo),
+	next:       (C.db_next)(C.cNext_cgo),
+	next_key:   (C.db_next_key)(C.cNextKey_cgo),
+	next_value: (C.db_next_value)(C.cNextValue_cgo),
 }
 
 // An iterator including referenced objects is 117 bytes large (calculated using https://github.com/DmitriyVTitov/size).
@@ -307,6 +313,55 @@ func cNext(ref C.iterator_t, gasMeter *C.gas_meter_t, usedGas *cu64, key *C.Unma
 
 	*key = newUnmanagedVector(k)
 	*val = newUnmanagedVector(v)
+	return C.GoError_None
+}
+
+//export cNextKey
+func cNextKey(ref C.iterator_t, gasMeter *C.gas_meter_t, usedGas *cu64, key *C.UnmanagedVector, errOut *C.UnmanagedVector) (ret C.GoError) {
+	return nextPart(ref, gasMeter, usedGas, key, errOut, func(iter types.Iterator) []byte { return iter.Key() })
+}
+
+//export cNextValue
+func cNextValue(ref C.iterator_t, gasMeter *C.gas_meter_t, usedGas *cu64, value *C.UnmanagedVector, errOut *C.UnmanagedVector) (ret C.GoError) {
+	return nextPart(ref, gasMeter, usedGas, value, errOut, func(iter types.Iterator) []byte { return iter.Value() })
+}
+
+// nextPart is a helper function that contains the shared code for key- and value-only iteration.
+func nextPart(ref C.iterator_t, gasMeter *C.gas_meter_t, usedGas *cu64, output *C.UnmanagedVector, errOut *C.UnmanagedVector, valFn func(types.Iterator) []byte) (ret C.GoError) {
+	// typical usage of iterator
+	// 	for ; itr.Valid(); itr.Next() {
+	// 		k, v := itr.Key(); itr.Value()
+	// 		...
+	// 	}
+
+	defer recoverPanic(&ret)
+	if ref.call_id == 0 || gasMeter == nil || usedGas == nil || output == nil || errOut == nil {
+		// we received an invalid pointer
+		return C.GoError_BadArgument
+	}
+	if !(*output).is_none || !(*errOut).is_none {
+		panic("Got a non-none UnmanagedVector we're about to override. This is a bug because someone has to drop the old one.")
+	}
+
+	gm := *(*types.GasMeter)(unsafe.Pointer(gasMeter))
+	iter := retrieveIterator(uint64(ref.call_id), uint64(ref.iterator_index))
+	if iter == nil {
+		panic("Unable to retrieve iterator.")
+	}
+	if !iter.Valid() {
+		// end of iterator, return as no-op, nil `output` is considered end
+		return C.GoError_None
+	}
+
+	gasBefore := gm.GasConsumed()
+	// call Next at the end, upon creation we have first data loaded
+	out := valFn(iter)
+	// check iter.Error() ????
+	iter.Next()
+	gasAfter := gm.GasConsumed()
+	*usedGas = (cu64)(gasAfter - gasBefore)
+
+	*output = newUnmanagedVector(out)
 	return C.GoError_None
 }
 

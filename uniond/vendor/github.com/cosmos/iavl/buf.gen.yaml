@@ -1,0 +1,9 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/cosmos/iavl/proto
+plugins:
+  - plugin: buf.build/protocolbuffers/go
+    out: proto
+    opt: paths=source_relative

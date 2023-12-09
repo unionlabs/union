@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"sigs.k8s.io/yaml"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -36,16 +34,6 @@ func (p Params) Validate() error {
 	return validateIsBool(p.DefaultSendEnabled)
 }
 
-// String implements the Stringer interface.
-func (p Params) String() string {
-	sendEnabled, _ := yaml.Marshal(p.SendEnabled)
-	d := " "
-	if len(sendEnabled) > 0 && sendEnabled[0] == '-' {
-		d = "\n"
-	}
-	return fmt.Sprintf("default_send_enabled: %t\nsend_enabled:%s%s", p.DefaultSendEnabled, d, sendEnabled)
-}
-
 // Validate gets any errors with this SendEnabled entry.
 func (se SendEnabled) Validate() error {
 	return sdk.ValidateDenom(se.Denom)
@@ -58,11 +46,6 @@ func NewSendEnabled(denom string, sendEnabled bool) *SendEnabled {
 		Denom:   denom,
 		Enabled: sendEnabled,
 	}
-}
-
-// String implements stringer interface
-func (se SendEnabled) String() string {
-	return fmt.Sprintf("denom: %s\nenabled: %t\n", se.Denom, se.Enabled)
 }
 
 // validateIsBool is used by the x/params module to validate that a thing is a bool.

@@ -535,5 +535,29 @@ pub mod msg_client {
             ));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn deposit_validator_rewards_pool(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgDepositValidatorRewardsPool>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgDepositValidatorRewardsPoolResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.distribution.v1beta1.Msg/DepositValidatorRewardsPool",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.distribution.v1beta1.Msg",
+                "DepositValidatorRewardsPool",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }

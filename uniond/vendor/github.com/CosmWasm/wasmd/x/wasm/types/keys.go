@@ -34,8 +34,8 @@ var (
 	ContractsByCreatorPrefix                       = []byte{0x09}
 	ParamsKey                                      = []byte{0x10}
 
-	KeyLastCodeID     = append(SequenceKeyPrefix, []byte("lastCodeId")...)
-	KeyLastInstanceID = append(SequenceKeyPrefix, []byte("lastContractId")...)
+	KeySequenceCodeID     = append(SequenceKeyPrefix, []byte("lastCodeId")...)
+	KeySequenceInstanceID = append(SequenceKeyPrefix, []byte("lastContractId")...)
 )
 
 // GetCodeKey constructs the key for retreiving the ID for the WASM code
@@ -84,7 +84,7 @@ func GetContractByCodeIDSecondaryIndexPrefix(codeID uint64) []byte {
 }
 
 // GetContractByCreatorSecondaryIndexKey returns the key for the second index: `<prefix><creatorAddress length><created time><creatorAddress><contractAddr>`
-func GetContractByCreatorSecondaryIndexKey(bz []byte, position []byte, contractAddr sdk.AccAddress) []byte {
+func GetContractByCreatorSecondaryIndexKey(bz, position []byte, contractAddr sdk.AccAddress) []byte {
 	prefixBytes := GetContractsByCreatorPrefix(bz)
 	lenPrefixBytes := len(prefixBytes)
 	r := make([]byte, lenPrefixBytes+AbsoluteTxPositionLen+len(contractAddr))

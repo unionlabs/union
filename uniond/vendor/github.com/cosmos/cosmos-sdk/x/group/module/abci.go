@@ -7,12 +7,10 @@ import (
 
 // EndBlocker called at every block, updates proposal's `FinalTallyResult` and
 // prunes expired proposals.
-func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
+func EndBlocker(ctx sdk.Context, k keeper.Keeper) error {
 	if err := k.TallyProposalsAtVPEnd(ctx); err != nil {
-		panic(err)
+		return err
 	}
 
-	if err := k.PruneProposals(ctx); err != nil {
-		panic(err)
-	}
+	return k.PruneProposals(ctx)
 }

@@ -16,7 +16,7 @@ import (
 )
 
 // Migrate migrates exported state from v0.46 to a v0.47 genesis state.
-func Migrate(appState types.AppMap, clientCtx client.Context) types.AppMap {
+func Migrate(appState types.AppMap, clientCtx client.Context) (types.AppMap, error) {
 	// Migrate x/bank.
 	bankState := appState[banktypes.ModuleName]
 	if len(bankState) > 0 {
@@ -37,7 +37,7 @@ func Migrate(appState types.AppMap, clientCtx client.Context) types.AppMap {
 		// set the x/gov genesis state with new state.
 		new, err := v4gov.MigrateJSON(&old)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		appState[v4gov.ModuleName] = clientCtx.Codec.MustMarshalJSON(new)
 	}
@@ -58,5 +58,5 @@ func Migrate(appState types.AppMap, clientCtx client.Context) types.AppMap {
 		appState[v1distr.ModuleName] = clientCtx.Codec.MustMarshalJSON(newDistState)
 	}
 
-	return appState
+	return appState, nil
 }

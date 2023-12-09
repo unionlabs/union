@@ -83,6 +83,24 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
+        pub async fn constitution(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryConstitutionRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryConstitutionResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1.Query/Constitution");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.gov.v1.Query", "Constitution"));
+            self.inner.unary(req, path, codec).await
+        }
         pub async fn proposal(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryProposalRequest>,
@@ -414,6 +432,24 @@ pub mod msg_client {
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("cosmos.gov.v1.Msg", "UpdateParams"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn cancel_proposal(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgCancelProposal>,
+        ) -> std::result::Result<tonic::Response<super::MsgCancelProposalResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/cosmos.gov.v1.Msg/CancelProposal");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("cosmos.gov.v1.Msg", "CancelProposal"));
             self.inner.unary(req, path, codec).await
         }
     }

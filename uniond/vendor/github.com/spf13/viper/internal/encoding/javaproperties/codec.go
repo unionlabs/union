@@ -20,12 +20,12 @@ type Codec struct {
 	Properties *properties.Properties
 }
 
-func (c *Codec) Encode(v map[string]interface{}) ([]byte, error) {
+func (c *Codec) Encode(v map[string]any) ([]byte, error) {
 	if c.Properties == nil {
 		c.Properties = properties.NewProperties()
 	}
 
-	flattened := map[string]interface{}{}
+	flattened := map[string]any{}
 
 	flattened = flattenAndMergeMap(flattened, v, "", c.keyDelimiter())
 
@@ -54,7 +54,7 @@ func (c *Codec) Encode(v map[string]interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (c *Codec) Decode(b []byte, v map[string]interface{}) error {
+func (c *Codec) Decode(b []byte, v map[string]any) error {
 	var err error
 	c.Properties, err = properties.Load(b, properties.UTF8)
 	if err != nil {

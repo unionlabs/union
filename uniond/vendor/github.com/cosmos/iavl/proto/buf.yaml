@@ -1,0 +1,10 @@
+version: v1
+name: buf.build/cosmos/iavl
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
+    - COMMENTS
+    - FILE_LOWER_SNAKE_CASE

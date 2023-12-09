@@ -112,6 +112,7 @@ acked
 acknowledgemets
 acks
 adce
+addresscodec
 aeryz
 aitlahcen
 alloc
@@ -121,11 +122,13 @@ anypb
 anys
 appchain
 appchains
+appmodule
 appparams
 arion
 arkworks
 attrsets
 authcmd
+authcodec
 authkeeper
 authrpc
 authsims
@@ -177,8 +180,11 @@ clientkeeper
 clienttypes
 clippy
 clsx
+cmds
 cmov
+cmtcfg
 cmtjson
+cmtservice
 cnldcgqc
 codectypes
 codegen
@@ -193,13 +199,17 @@ commitizen
 commitmenttypes
 concat
 configurator
+confix
+confixcmd
 connectiontypes
+consensuskeeper
 consensusparamkeeper
 consensusparamtypes
 consensys
 consts
 conv
 converstion
+corestoretypes
 coreutils
 corsdomain
 cosm
@@ -228,6 +238,7 @@ delegators
 dels
 denoms
 denum
+depinject
 deque
 devnet
 devnets
@@ -258,6 +269,7 @@ etherbase
 evidencekeeper
 evidencetypes
 extldflags
+fastnode
 feegrant
 feegrantkeeper
 feegrantmodule
@@ -327,6 +339,7 @@ ibcclientclient
 ibcclienttypes
 ibccometblsclient
 ibcconnectionkeeper
+ibcconnectiontypes
 ibcexported
 ibcfee
 ibcfeekeeper
@@ -399,6 +412,7 @@ logformat
 logline
 logtostderr
 lzrndrpkvsjqgk
+mapstructure
 maxdome
 maxpeers
 mdsvex
@@ -580,6 +594,7 @@ statesync
 staticcheck
 staticlib
 stdenv
+storemetrics
 storetypes
 strangelove
 stretchr
@@ -642,6 +657,7 @@ tryopen
 tsdb
 tsdbadmin
 txes
+txmodule
 txpool
 typecheck
 typemap
@@ -688,6 +704,7 @@ utilised
 utilising
 uunionx
 uuno
+valbz
 valcons
 valconspub
 valgentx
@@ -710,6 +727,7 @@ wakey
 warningbox
 wasi
 wasmd
+wasmer
 wasmkeeper
 wasmparser
 wasmtypes

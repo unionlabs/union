@@ -29,6 +29,9 @@ type WasmVMMetricsCollector struct {
 
 // NewWasmVMMetricsCollector constructor
 func NewWasmVMMetricsCollector(s metricSource) *WasmVMMetricsCollector {
+	if s == nil {
+		panic("wasmvm instance must not be nil")
+	}
 	return &WasmVMMetricsCollector{
 		source:             s,
 		CacheHitsDescr:     prometheus.NewDesc("wasmvm_cache_hits_total", "Total number of cache hits", []string{"type"}, nil),

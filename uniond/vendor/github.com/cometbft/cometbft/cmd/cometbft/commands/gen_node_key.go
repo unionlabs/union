@@ -18,7 +18,7 @@ var GenNodeKeyCmd = &cobra.Command{
 	RunE:    genNodeKey,
 }
 
-func genNodeKey(cmd *cobra.Command, args []string) error {
+func genNodeKey(*cobra.Command, []string) error {
 	nodeKeyFile := config.NodeKeyFile()
 	if cmtos.FileExists(nodeKeyFile) {
 		return fmt.Errorf("node key at %s already exists", nodeKeyFile)

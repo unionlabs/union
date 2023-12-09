@@ -21,7 +21,7 @@ var InitFilesCmd = &cobra.Command{
 	RunE:  initFiles,
 }
 
-func initFiles(cmd *cobra.Command, args []string) error {
+func initFiles(*cobra.Command, []string) error {
 	return initFilesWithConfig(config)
 }
 

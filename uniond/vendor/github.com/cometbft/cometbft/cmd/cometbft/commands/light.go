@@ -100,7 +100,7 @@ func init() {
 	)
 }
 
-func runProxy(cmd *cobra.Command, args []string) error {
+func runProxy(_ *cobra.Command, args []string) error {
 	// Initialize logger.
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	var option log.Option

@@ -244,6 +244,30 @@ pub mod query_client {
             ));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn denom_metadata_by_query_string(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryDenomMetadataByQueryStringRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::QueryDenomMetadataByQueryStringResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.bank.v1beta1.Query/DenomMetadataByQueryString",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.bank.v1beta1.Query",
+                "DenomMetadataByQueryString",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
         pub async fn denoms_metadata(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryDenomsMetadataRequest>,

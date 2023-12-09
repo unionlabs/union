@@ -14,6 +14,8 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 )
 
+// NewServer is a utility function for out of process applications to set up either a socket or
+// grpc server that can listen to requests from the equivalent Tendermint client
 func NewServer(protoAddr, transport string, app types.Application) (service.Service, error) {
 	var s service.Service
 	var err error
@@ -21,7 +23,7 @@ func NewServer(protoAddr, transport string, app types.Application) (service.Serv
 	case "socket":
 		s = NewSocketServer(protoAddr, app)
 	case "grpc":
-		s = NewGRPCServer(protoAddr, types.NewGRPCApplication(app))
+		s = NewGRPCServer(protoAddr, app)
 	default:
 		err = fmt.Errorf("unknown server type %s", transport)
 	}

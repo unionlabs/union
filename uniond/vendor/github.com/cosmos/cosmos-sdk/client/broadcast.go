@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/mempool"
-	tmtypes "github.com/cometbft/cometbft/types"
+	cmttypes "github.com/cometbft/cometbft/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -35,15 +35,20 @@ func (ctx Context) BroadcastTx(txBytes []byte) (res *sdk.TxResponse, err error) 
 	return res, err
 }
 
-// CheckTendermintError checks if the error returned from BroadcastTx is a
-// Tendermint error that is returned before the tx is submitted due to
-// precondition checks that failed. If an Tendermint error is detected, this
+// Deprecated: Use CheckCometError instead.
+func CheckTendermintError(err error, tx cmttypes.Tx) *sdk.TxResponse {
+	return CheckCometError(err, tx)
+}
+
+// CheckCometError checks if the error returned from BroadcastTx is a
+// CometBFT error that is returned before the tx is submitted due to
+// precondition checks that failed. If an CometBFT error is detected, this
 // function returns the correct code back in TxResponse.
 //
 // TODO: Avoid brittle string matching in favor of error matching. This requires
-// a change to Tendermint's RPCError type to allow retrieval or matching against
+// a change to CometBFT's RPCError type to allow retrieval or matching against
 // a concrete error type.
-func CheckTendermintError(err error, tx tmtypes.Tx) *sdk.TxResponse {
+func CheckCometError(err error, tx cmttypes.Tx) *sdk.TxResponse {
 	if err == nil {
 		return nil
 	}
@@ -78,7 +83,7 @@ func CheckTendermintError(err error, tx tmtypes.Tx) *sdk.TxResponse {
 	}
 }
 
-// BroadcastTxSync broadcasts transaction bytes to a Tendermint node
+// BroadcastTxSync broadcasts transaction bytes to a CometBFT node
 // synchronously (i.e. returns after CheckTx execution).
 func (ctx Context) BroadcastTxSync(txBytes []byte) (*sdk.TxResponse, error) {
 	node, err := ctx.GetNode()
@@ -87,14 +92,14 @@ func (ctx Context) BroadcastTxSync(txBytes []byte) (*sdk.TxResponse, error) {
 	}
 
 	res, err := node.BroadcastTxSync(context.Background(), txBytes)
-	if errRes := CheckTendermintError(err, txBytes); errRes != nil {
+	if errRes := CheckCometError(err, txBytes); errRes != nil {
 		return errRes, nil
 	}
 
 	return sdk.NewResponseFormatBroadcastTx(res), err
 }
 
-// BroadcastTxAsync broadcasts transaction bytes to a Tendermint node
+// BroadcastTxAsync broadcasts transaction bytes to a CometBFT node
 // asynchronously (i.e. returns immediately).
 func (ctx Context) BroadcastTxAsync(txBytes []byte) (*sdk.TxResponse, error) {
 	node, err := ctx.GetNode()
@@ -103,7 +108,7 @@ func (ctx Context) BroadcastTxAsync(txBytes []byte) (*sdk.TxResponse, error) {
 	}
 
 	res, err := node.BroadcastTxAsync(context.Background(), txBytes)
-	if errRes := CheckTendermintError(err, txBytes); errRes != nil {
+	if errRes := CheckCometError(err, txBytes); errRes != nil {
 		return errRes, nil
 	}
 
@@ -112,7 +117,7 @@ func (ctx Context) BroadcastTxAsync(txBytes []byte) (*sdk.TxResponse, error) {
 
 // TxServiceBroadcast is a helper function to broadcast a Tx with the correct gRPC types
 // from the tx service. Calls `clientCtx.BroadcastTx` under the hood.
-func TxServiceBroadcast(grpcCtx context.Context, clientCtx Context, req *tx.BroadcastTxRequest) (*tx.BroadcastTxResponse, error) {
+func TxServiceBroadcast(_ context.Context, clientCtx Context, req *tx.BroadcastTxRequest) (*tx.BroadcastTxResponse, error) {
 	if req == nil || req.TxBytes == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid empty tx")
 	}

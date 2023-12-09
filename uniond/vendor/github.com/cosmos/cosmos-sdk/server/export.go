@@ -1,18 +1,18 @@
 package server
 
-// DONTCOVER
-
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
-	tmjson "github.com/cometbft/cometbft/libs/json"
-	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/version"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 )
 
 const (
@@ -20,7 +20,6 @@ const (
 	FlagForZeroHeight    = "for-zero-height"
 	FlagJailAllowedAddrs = "jail-allowed-addrs"
 	FlagModulesToExport  = "modules-to-export"
-	FlagOutputDocument   = "output-document"
 )
 
 // ExportCmd dumps app state to JSON.
@@ -28,7 +27,8 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 	cmd := &cobra.Command{
 		Use:   "export",
 		Short: "Export state to JSON",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			serverCtx := GetServerContextFromCmd(cmd)
 			config := serverCtx.Config
 
@@ -45,16 +45,24 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 			}
 
 			if appExporter == nil {
-				if _, err := fmt.Fprintln(os.Stderr, "WARNING: App exporter not defined. Returning genesis file."); err != nil {
+				if _, err := fmt.Fprintln(cmd.ErrOrStderr(), "WARNING: App exporter not defined. Returning genesis file."); err != nil {
 					return err
 				}
 
-				genesis, err := os.ReadFile(config.GenesisFile())
+				// Open file in read-only mode so we can copy it to stdout.
+				// It is possible that the genesis file is large,
+				// so we don't need to read it all into memory
+				// before we stream it out.
+				f, err := os.OpenFile(config.GenesisFile(), os.O_RDONLY, 0)
 				if err != nil {
 					return err
 				}
+				defer f.Close()
 
-				fmt.Println(string(genesis))
+				if _, err := io.Copy(cmd.OutOrStdout(), f); err != nil {
+					return err
+				}
+
 				return nil
 			}
 
@@ -68,58 +76,38 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 			forZeroHeight, _ := cmd.Flags().GetBool(FlagForZeroHeight)
 			jailAllowedAddrs, _ := cmd.Flags().GetStringSlice(FlagJailAllowedAddrs)
 			modulesToExport, _ := cmd.Flags().GetStringSlice(FlagModulesToExport)
-			outputDocument, _ := cmd.Flags().GetString(FlagOutputDocument)
+			outputDocument, _ := cmd.Flags().GetString(flags.FlagOutputDocument)
 
 			exported, err := appExporter(serverCtx.Logger, db, traceWriter, height, forZeroHeight, jailAllowedAddrs, serverCtx.Viper, modulesToExport)
 			if err != nil {
-				return fmt.Errorf("error exporting state: %v", err)
+				return fmt.Errorf("error exporting state: %w", err)
 			}
 
-			doc, err := tmtypes.GenesisDocFromFile(serverCtx.Config.GenesisFile())
+			appGenesis, err := genutiltypes.AppGenesisFromFile(serverCtx.Config.GenesisFile())
 			if err != nil {
 				return err
 			}
 
-			doc.AppState = exported.AppState
-			doc.Validators = exported.Validators
-			doc.InitialHeight = exported.Height
-			doc.ConsensusParams = &tmtypes.ConsensusParams{
-				Block: tmtypes.BlockParams{
-					MaxBytes: exported.ConsensusParams.Block.MaxBytes,
-					MaxGas:   exported.ConsensusParams.Block.MaxGas,
-				},
-				Evidence: tmtypes.EvidenceParams{
-					MaxAgeNumBlocks: exported.ConsensusParams.Evidence.MaxAgeNumBlocks,
-					MaxAgeDuration:  exported.ConsensusParams.Evidence.MaxAgeDuration,
-					MaxBytes:        exported.ConsensusParams.Evidence.MaxBytes,
-				},
-				Validator: tmtypes.ValidatorParams{
-					PubKeyTypes: exported.ConsensusParams.Validator.PubKeyTypes,
-				},
-			}
+			// set current binary version
+			appGenesis.AppName = version.AppName
+			appGenesis.AppVersion = version.Version
 
-			// NOTE: Tendermint uses a custom JSON decoder for GenesisDoc
-			// (except for stuff inside AppState). Inside AppState, we're free
-			// to encode as protobuf or amino.
-			encoded, err := tmjson.Marshal(doc)
+			appGenesis.AppState = exported.AppState
+			appGenesis.InitialHeight = exported.Height
+			appGenesis.Consensus = genutiltypes.NewConsensusGenesis(exported.ConsensusParams, exported.Validators)
+
+			out, err := json.Marshal(appGenesis)
 			if err != nil {
 				return err
 			}
-
-			cmd.SetOut(cmd.OutOrStdout())
-			cmd.SetErr(cmd.OutOrStderr())
-			out := sdk.MustSortJSON(encoded)
 
 			if outputDocument == "" {
-				cmd.Println(string(out))
-				return nil
-			}
-
-			var exportedGenDoc tmtypes.GenesisDoc
-			if err = tmjson.Unmarshal(out, &exportedGenDoc); err != nil {
+				// Copy the entire genesis file to stdout.
+				_, err := io.Copy(cmd.OutOrStdout(), bytes.NewReader(out))
 				return err
 			}
-			if err = exportedGenDoc.SaveAs(outputDocument); err != nil {
+
+			if err = appGenesis.SaveAs(outputDocument); err != nil {
 				return err
 			}
 
@@ -132,7 +120,7 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 	cmd.Flags().Bool(FlagForZeroHeight, false, "Export state to start at height zero (perform preproccessing)")
 	cmd.Flags().StringSlice(FlagJailAllowedAddrs, []string{}, "Comma-separated list of operator addresses of jailed validators to unjail")
 	cmd.Flags().StringSlice(FlagModulesToExport, []string{}, "Comma-separated list of modules to export. If empty, will export all modules")
-	cmd.Flags().String(FlagOutputDocument, "", "Exported state is written to the given file instead of STDOUT")
+	cmd.Flags().String(flags.FlagOutputDocument, "", "Exported state is written to the given file instead of STDOUT")
 
 	return cmd
 }

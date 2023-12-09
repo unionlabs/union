@@ -13,8 +13,8 @@
 // permissions and limitations under the License. See the AUTHORS file
 // for names of contributors.
 
-//go:build (go1.4 && !go1.5 && !amd64 && !amd64p32 && !arm && !386) || (go1.5 && !amd64 && !amd64p32 && !arm && !arm64)
-// +build go1.4,!go1.5,!amd64,!amd64p32,!arm,!386 go1.5,!amd64,!amd64p32,!arm,!arm64
+//go:build (go1.4 && !go1.5 && !amd64 && !amd64p32 && !arm && !386) || (go1.5 && !386 && !amd64 && !amd64p32 && !arm && !arm64)
+// +build go1.4,!go1.5,!amd64,!amd64p32,!arm,!386 go1.5,!386,!amd64,!amd64p32,!arm,!arm64
 
 package goid
 

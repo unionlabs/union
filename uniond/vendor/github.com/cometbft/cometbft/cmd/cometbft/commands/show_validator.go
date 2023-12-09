@@ -18,7 +18,7 @@ var ShowValidatorCmd = &cobra.Command{
 	RunE:    showValidator,
 }
 
-func showValidator(cmd *cobra.Command, args []string) error {
+func showValidator(*cobra.Command, []string) error {
 	keyFilePath := config.PrivValidatorKeyFile()
 	if !cmtos.FileExists(keyFilePath) {
 		return fmt.Errorf("private validator file %s does not exist", keyFilePath)

@@ -18,6 +18,9 @@ type Metrics struct {
 	// Number of uncommitted transactions in the mempool.
 	Size metrics.Gauge
 
+	// Total size of the mempool in bytes.
+	SizeBytes metrics.Gauge
+
 	// Histogram of transaction sizes in bytes.
 	TxSizeBytes metrics.Histogram `metrics_buckettype:"exp" metrics_bucketsizes:"1,3,7"`
 
@@ -40,4 +43,8 @@ type Metrics struct {
 
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
+
+	// Number of connections being actively used for gossiping transactions
+	// (experimental feature).
+	ActiveOutboundConnections metrics.Gauge
 }

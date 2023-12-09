@@ -9,9 +9,10 @@ import (
 	"os"
 	"path/filepath"
 
-	tmtypes "github.com/cometbft/cometbft/types"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	address "cosmossdk.io/core/address"
+	"cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -28,7 +29,7 @@ import (
 )
 
 // GenTxCmd builds the application's gentx command.
-func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalIterator types.GenesisBalancesIterator, defaultNodeHome string) *cobra.Command {
+func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalIterator types.GenesisBalancesIterator, defaultNodeHome string, valAdddressCodec address.Codec) *cobra.Command {
 	ipDefault, _ := server.ExternalIP()
 	fsCreateValidator, defaultsDesc := cli.CreateValidatorMsgFlagSet(ipDefault)
 
@@ -37,7 +38,7 @@ func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalI
 		Short: "Generate a genesis tx carrying a self delegation",
 		Args:  cobra.ExactArgs(3),
 		Long: fmt.Sprintf(`Generate a genesis transaction that creates a validator with a self-delegation,
-that is signed by the key in the Keyring referenced by a given name. A node ID and Bech32 consensus
+that is signed by the key in the Keyring referenced by a given name. A node ID and consensus
 pubkey may optionally be provided. If they are omitted, they will be retrieved from the priv_validator.json
 file. The following default parameters are included:
     %s
@@ -83,13 +84,13 @@ $ %s gentx my-key-name 1000000stake secp256k1 --home=/path/to/home/dir --keyring
 				}
 			}
 
-			genDoc, err := tmtypes.GenesisDocFromFile(config.GenesisFile())
+			appGenesis, err := types.AppGenesisFromFile(config.GenesisFile())
 			if err != nil {
 				return errors.Wrapf(err, "failed to read genesis doc file %s", config.GenesisFile())
 			}
 
 			var genesisState map[string]json.RawMessage
-			if err = json.Unmarshal(genDoc.AppState, &genesisState); err != nil {
+			if err = json.Unmarshal(appGenesis.AppState, &genesisState); err != nil {
 				return errors.Wrap(err, "failed to unmarshal genesis state")
 			}
 
@@ -111,7 +112,7 @@ $ %s gentx my-key-name 1000000stake secp256k1 --home=/path/to/home/dir --keyring
 			}
 
 			// set flags for creating a gentx
-			createValCfg, err := cli.PrepareConfigForTxCreateValidator(cmd.Flags(), moniker, nodeID, genDoc.ChainID, valPubKey)
+			createValCfg, err := cli.PrepareConfigForTxCreateValidator(cmd.Flags(), moniker, nodeID, appGenesis.ChainID, valPubKey)
 			if err != nil {
 				return errors.Wrap(err, "error creating configuration to create validator msg")
 			}
@@ -155,7 +156,7 @@ $ %s gentx my-key-name 1000000stake secp256k1 --home=/path/to/home/dir --keyring
 			createValCfg.Amount = amount
 
 			// create a 'create-validator' message
-			txBldr, msg, err := cli.BuildCreateValidatorMsg(clientCtx, createValCfg, txFactory, true)
+			txBldr, msg, err := cli.BuildCreateValidatorMsg(clientCtx, createValCfg, txFactory, true, valAdddressCodec)
 			if err != nil {
 				return errors.Wrap(err, "failed to build create-validator message")
 			}
@@ -169,8 +170,10 @@ $ %s gentx my-key-name 1000000stake secp256k1 --home=/path/to/home/dir --keyring
 			w := bytes.NewBuffer([]byte{})
 			clientCtx = clientCtx.WithOutput(w)
 
-			if err = msg.ValidateBasic(); err != nil {
-				return err
+			if m, ok := msg.(sdk.HasValidateBasic); ok {
+				if err := m.ValidateBasic(); err != nil {
+					return err
+				}
 			}
 
 			if err = txBldr.PrintUnsignedTx(clientCtx, msg); err != nil {

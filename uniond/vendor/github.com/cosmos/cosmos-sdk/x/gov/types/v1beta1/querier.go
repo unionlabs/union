@@ -4,8 +4,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// DONTCOVER
-
 // query endpoints supported by the governance Querier
 const (
 	QueryParams    = "params"

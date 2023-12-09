@@ -23,6 +23,9 @@ import (
 	"runtime/debug"
 )
 
+// ContextKey is used to store the ExtraInfo in the context.
+type ContextKey struct{}
+
 var (
 	// application's name
 	Name = ""
@@ -44,12 +47,19 @@ func getSDKVersion() string {
 	var sdkVersion string
 	for _, dep := range deps.Deps {
 		if dep.Path == "github.com/cosmos/cosmos-sdk" {
-			sdkVersion = dep.Version
+			if dep.Replace != nil && dep.Replace.Version != "(devel)" {
+				sdkVersion = dep.Replace.Version
+			} else {
+				sdkVersion = dep.Version
+			}
 		}
 	}
 
 	return sdkVersion
 }
+
+// ExtraInfo contains a set of extra information provided by apps
+type ExtraInfo map[string]string
 
 // Info defines the application version information.
 type Info struct {
@@ -61,6 +71,7 @@ type Info struct {
 	GoVersion        string     `json:"go" yaml:"go"`
 	BuildDeps        []buildDep `json:"build_deps" yaml:"build_deps"`
 	CosmosSdkVersion string     `json:"cosmos_sdk_version" yaml:"cosmos_sdk_version"`
+	ExtraInfo        ExtraInfo  `json:"extra_info,omitempty" yaml:"extra_info,omitempty"`
 }
 
 func NewInfo() Info {

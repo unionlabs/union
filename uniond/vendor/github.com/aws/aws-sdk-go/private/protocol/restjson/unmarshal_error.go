@@ -45,7 +45,7 @@ func (u *UnmarshalTypedError) UnmarshalError(
 	msg := resp.Header.Get(errorMessageHeader)
 
 	body := resp.Body
-	if len(code) == 0 {
+	if len(code) == 0 || len(msg) == 0 {
 		// If unable to get code from HTTP headers have to parse JSON message
 		// to determine what kind of exception this will be.
 		var buf bytes.Buffer
@@ -57,7 +57,9 @@ func (u *UnmarshalTypedError) UnmarshalError(
 		}
 
 		body = ioutil.NopCloser(&buf)
-		code = jsonErr.Code
+		if len(code) == 0 {
+			code = jsonErr.Code
+		}
 		msg = jsonErr.Message
 	}
 

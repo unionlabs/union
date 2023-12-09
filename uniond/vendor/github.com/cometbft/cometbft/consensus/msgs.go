@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	"github.com/cometbft/cometbft/libs/bits"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
@@ -11,7 +13,6 @@ import (
 	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 // MsgToProto takes a consensus message type and returns the proto defined consensus message.
@@ -181,6 +182,8 @@ func MsgFromProto(p proto.Message) (Message, error) {
 			Part:   parts,
 		}
 	case *cmtcons.Vote:
+		// Vote validation will be handled in the vote message ValidateBasic
+		// call below.
 		vote, err := types.VoteFromProto(msg.Vote)
 		if err != nil {
 			return nil, fmt.Errorf("vote msg to proto error: %w", err)

@@ -3,11 +3,13 @@ package cli
 import (
 	"strconv"
 
+	"github.com/spf13/cobra"
+
 	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/spf13/cobra"
 
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )
@@ -28,9 +30,6 @@ func MigrateContractCmd() *cobra.Command {
 			msg, err := parseMigrateContractArgs(args, clientCtx.GetFromAddress().String())
 			if err != nil {
 				return err
-			}
-			if err := msg.ValidateBasic(); err != nil {
-				return nil
 			}
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
 		},
@@ -55,7 +54,7 @@ func parseMigrateContractArgs(args []string, sender string) (types.MsgMigrateCon
 		CodeID:   codeID,
 		Msg:      []byte(migrateMsg),
 	}
-	return msg, nil
+	return msg, msg.ValidateBasic()
 }
 
 // UpdateContractAdminCmd sets an new admin for a contract
@@ -71,8 +70,8 @@ func UpdateContractAdminCmd() *cobra.Command {
 				return err
 			}
 
-			msg := parseUpdateContractAdminArgs(args, clientCtx.GetFromAddress().String())
-			if err := msg.ValidateBasic(); err != nil {
+			msg, err := parseUpdateContractAdminArgs(args, clientCtx.GetFromAddress().String())
+			if err != nil {
 				return err
 			}
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
@@ -83,13 +82,13 @@ func UpdateContractAdminCmd() *cobra.Command {
 	return cmd
 }
 
-func parseUpdateContractAdminArgs(args []string, sender string) types.MsgUpdateAdmin {
+func parseUpdateContractAdminArgs(args []string, sender string) (types.MsgUpdateAdmin, error) {
 	msg := types.MsgUpdateAdmin{
 		Sender:   sender,
 		Contract: args[0],
 		NewAdmin: args[1],
 	}
-	return msg
+	return msg, msg.ValidateBasic()
 }
 
 // ClearContractAdminCmd clears an admin for a contract
@@ -155,6 +154,34 @@ func UpdateInstantiateConfigCmd() *cobra.Command {
 	}
 
 	addInstantiatePermissionFlags(cmd)
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+// UpdateContractLabelCmd sets an new label for a contract
+func UpdateContractLabelCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "set-contract-label [contract_addr_bech32] [new_label]",
+		Short: "Set new label for a contract",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			msg := types.MsgUpdateContractLabel{
+				Sender:   clientCtx.GetFromAddress().String(),
+				Contract: args[0],
+				NewLabel: args[1],
+			}
+			if err = msg.ValidateBasic(); err != nil {
+				return err
+			}
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
+		},
+		SilenceUsage: true,
+	}
 	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }

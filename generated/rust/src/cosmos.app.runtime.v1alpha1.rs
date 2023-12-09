@@ -30,6 +30,21 @@ pub struct Module {
     /// to be used in keeper construction.
     #[prost(message, repeated, tag = "6")]
     pub override_store_keys: ::prost::alloc::vec::Vec<StoreKeyConfig>,
+    /// order_migrations defines the order in which module migrations are performed.
+    /// If this is left empty, it uses the default migration order.
+    /// <https://pkg.go.dev/github.com/cosmos/cosmos-sdk@v0.47.0-alpha2/types/module#DefaultMigrationsOrder>
+    #[prost(string, repeated, tag = "7")]
+    pub order_migrations: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    /// precommiters specifies the module names of the precommiters
+    /// to call in the order in which they should be called. If this is left empty
+    /// no precommit function will be registered.
+    #[prost(string, repeated, tag = "8")]
+    pub precommiters: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    /// prepare_check_staters specifies the module names of the prepare_check_staters
+    /// to call in the order in which they should be called. If this is left empty
+    /// no preparecheckstate function will be registered.
+    #[prost(string, repeated, tag = "9")]
+    pub prepare_check_staters: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// StoreKeyConfig may be supplied to override the default module store key, which
 /// is the module name.

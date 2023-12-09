@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"fmt"
 
-	gogotypes "github.com/cosmos/gogoproto/types"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/kv"
 	"github.com/cosmos/cosmos-sdk/x/slashing/types"
 )
@@ -23,12 +22,11 @@ func NewDecodeStore(cdc codec.BinaryCodec) func(kvA, kvB kv.Pair) string {
 			cdc.MustUnmarshal(kvB.Value, &infoB)
 			return fmt.Sprintf("%v\n%v", infoA, infoB)
 
-		case bytes.Equal(kvA.Key[:1], types.ValidatorMissedBlockBitArrayKeyPrefix):
-			var missedA, missedB gogotypes.BoolValue
-			cdc.MustUnmarshal(kvA.Value, &missedA)
-			cdc.MustUnmarshal(kvB.Value, &missedB)
-			return fmt.Sprintf("missedA: %v\nmissedB: %v", missedA.Value, missedB.Value)
-
+		case bytes.Equal(kvA.Key[:1], types.ValidatorMissedBlockBitmapKeyPrefix):
+			addrBzLen := int(kvA.Key[1])
+			addrBz := kvA.Key[2 : 2+addrBzLen]
+			addr := sdk.ConsAddress(addrBz)
+			return fmt.Sprintf("missedA: %v\nmissedB: %v\nfor %s\n", kvA.Value, kvB.Value, addr)
 		case bytes.Equal(kvA.Key[:1], types.AddrPubkeyRelationKeyPrefix):
 			var pubKeyA, pubKeyB cryptotypes.PubKey
 			if err := cdc.UnmarshalInterface(kvA.Value, &pubKeyA); err != nil {

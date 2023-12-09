@@ -3,8 +3,9 @@ package appmodule
 import (
 	"context"
 
-	"cosmossdk.io/depinject"
 	"google.golang.org/grpc"
+
+	"cosmossdk.io/depinject"
 )
 
 // AppModule is a tag interface for app module implementations to use as a basis
@@ -38,6 +39,35 @@ type HasServices interface {
 	RegisterServices(grpc.ServiceRegistrar) error
 }
 
+// HasPrepareCheckState is an extension interface that contains information about the AppModule
+// and PrepareCheckState.
+type HasPrepareCheckState interface {
+	AppModule
+	PrepareCheckState(context.Context) error
+}
+
+// HasPrecommit is an extension interface that contains information about the AppModule and Precommit.
+type HasPrecommit interface {
+	AppModule
+	Precommit(context.Context) error
+}
+
+// ResponsePreBlock represents the response from the PreBlock method.
+// It can modify consensus parameters in storage and signal the caller through the return value.
+// When it returns ConsensusParamsChanged=true, the caller must refresh the consensus parameter in the finalize context.
+// The new context (ctx) must be passed to all the other lifecycle methods.
+type ResponsePreBlock interface {
+	IsConsensusParamsChanged() bool
+}
+
+// HasPreBlocker is the extension interface that modules should implement to run
+// custom logic before BeginBlock.
+type HasPreBlocker interface {
+	AppModule
+	// PreBlock is method that will be run before BeginBlock.
+	PreBlock(context.Context) (ResponsePreBlock, error)
+}
+
 // HasBeginBlocker is the extension interface that modules should implement to run
 // custom logic before transaction processing in a block.
 type HasBeginBlocker interface {
@@ -56,4 +86,11 @@ type HasEndBlocker interface {
 	// EndBlock is a method that will be run after transactions are processed in
 	// a block.
 	EndBlock(context.Context) error
+}
+
+// UpgradeModule is the extension interface that upgrade module should implement to differentiate
+// it from other modules, migration handler need ensure the upgrade module's migration is executed
+// before the rest of the modules.
+type UpgradeModule interface {
+	IsUpgradeModule()
 }

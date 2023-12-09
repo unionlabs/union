@@ -1,10 +1,71 @@
 # Changelog
 
+## 0.25.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.25.0.
+
+### Deprecations
+
+As previously announced, this release removes two global constants from the SDK.
+
+- `sentry.Version` was removed. Use `sentry.SDKVersion` instead ([#727](https://github.com/getsentry/sentry-go/pull/727))
+- `sentry.SDKIdentifier` was removed. Use `Client.GetSDKIdentifier()` instead ([#727](https://github.com/getsentry/sentry-go/pull/727))
+
+### Features
+
+- Add `ClientOptions.IgnoreTransactions`, which allows you to ignore specific transactions based on their name ([#717](https://github.com/getsentry/sentry-go/pull/717))
+- Add `ClientOptions.Tags`, which allows you to set global tags that are applied to all events. You can also define tags by setting `SENTRY_TAGS_` environment variables ([#718](https://github.com/getsentry/sentry-go/pull/718))
+
+### Bug fixes
+
+- Fix an issue in the profiler that would cause an infinite loop if the duration of a transaction is longer than 30 seconds ([#724](https://github.com/getsentry/sentry-go/issues/724))
+
+### Misc
+
+- `dsn.RequestHeaders()` is not to be removed, though it is still considered deprecated and should only be used when using a custom transport that sends events to the `/store` endpoint ([#720](https://github.com/getsentry/sentry-go/pull/720))
+
+## 0.24.1
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.24.1.
+
+### Bug fixes
+
+- Prevent a panic in `sentryotel.flushSpanProcessor()` ([(#711)](https://github.com/getsentry/sentry-go/pull/711))
+- Prevent a panic when setting the SDK identifier ([#715](https://github.com/getsentry/sentry-go/pull/715))
+
+## 0.24.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.24.0.
+
+### Deprecations
+
+- `sentry.Version` to be removed in 0.25.0. Use `sentry.SDKVersion` instead.
+- `sentry.SDKIdentifier` to be removed in 0.25.0. Use `Client.GetSDKIdentifier()` instead.
+- `dsn.RequestHeaders()` to be removed after 0.25.0, but no earlier than December 1, 2023. Requests to the `/envelope` endpoint are authenticated using the DSN in the envelope header.
+
+### Features
+
+- Run a single instance of the profiler instead of multiple ones for each Go routine ([#655](https://github.com/getsentry/sentry-go/pull/655))
+- Use the route path as the transaction names when using the Gin integration ([#675](https://github.com/getsentry/sentry-go/pull/675))
+- Set the SDK name accordingly when a framework integration is used ([#694](https://github.com/getsentry/sentry-go/pull/694))
+- Read release information (VCS revision) from `debug.ReadBuildInfo` ([#704](https://github.com/getsentry/sentry-go/pull/704))
+
+### Bug fixes
+
+- [otel] Fix incorrect usage of `attributes.Value.AsString` ([#684](https://github.com/getsentry/sentry-go/pull/684))
+- Fix trace function name parsing in profiler on go1.21+ ([#695](https://github.com/getsentry/sentry-go/pull/695))
+
+### Misc
+
+- Test against Go 1.21 ([#695](https://github.com/getsentry/sentry-go/pull/695))
+- Make tests more robust ([#698](https://github.com/getsentry/sentry-go/pull/698), [#699](https://github.com/getsentry/sentry-go/pull/699), [#700](https://github.com/getsentry/sentry-go/pull/700), [#702](https://github.com/getsentry/sentry-go/pull/702))
+
 ## 0.23.0
 
 The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.23.0.
 
 ### Features
+
 - Initial support for [Cron Monitoring](https://docs.sentry.io/product/crons/) ([#661](https://github.com/getsentry/sentry-go/pull/661))
 
   This is how the basic usage of the feature looks like:
@@ -56,6 +117,7 @@ The Sentry SDK team is happy to announce the immediate availability of Sentry Go
 - Expose SpanFromContext function ([#672](https://github.com/getsentry/sentry-go/pull/672))
 
 ### Bug fixes
+
 - Make `Span.Finish` a no-op when the span is already finished ([#660](https://github.com/getsentry/sentry-go/pull/660))
 
 ## 0.22.0

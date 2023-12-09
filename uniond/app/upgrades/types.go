@@ -3,15 +3,17 @@ package upgrades
 import (
 	tfkeeper "union/x/tokenfactory/keeper"
 
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	store "cosmossdk.io/store/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	consensuskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
 type AppKeepers struct {
-	StakingKeeper *stakingkeeper.Keeper
-	TfKeeper      *tfkeeper.Keeper
+	ConsensusKeeper *consensuskeeper.Keeper
+	StakingKeeper   *stakingkeeper.Keeper
+	TfKeeper        *tfkeeper.Keeper
 }
 
 // source: https://github.com/osmosis-labs/osmosis/blob/c783ef52af8617d3ec613d9ce9035386ba8d4a49/app/upgrades/types.go#L24

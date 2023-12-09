@@ -223,7 +223,7 @@ type CList struct {
 	waitCh chan struct{}
 	head   *CElement // first element
 	tail   *CElement // last element
-	len    int       // list length
+	curLen int       // list length
 	maxLen int       // max list length
 }
 
@@ -234,7 +234,7 @@ func (l *CList) Init() *CList {
 	l.waitCh = make(chan struct{})
 	l.head = nil
 	l.tail = nil
-	l.len = 0
+	l.curLen = 0
 	l.mtx.Unlock()
 	return l
 }
@@ -252,9 +252,9 @@ func newWithMax(maxLength int) *CList {
 
 func (l *CList) Len() int {
 	l.mtx.RLock()
-	len := l.len
+	curLen := l.curLen
 	l.mtx.RUnlock()
-	return len
+	return curLen
 }
 
 func (l *CList) Front() *CElement {
@@ -329,14 +329,14 @@ func (l *CList) PushBack(v interface{}) *CElement {
 	}
 
 	// Release waiters on FrontWait/BackWait maybe
-	if l.len == 0 {
+	if l.curLen == 0 {
 		l.wg.Done()
 		close(l.waitCh)
 	}
-	if l.len >= l.maxLen {
+	if l.curLen >= l.maxLen {
 		panic(fmt.Sprintf("clist: maximum length list reached %d", l.maxLen))
 	}
-	l.len++
+	l.curLen++
 
 	// Modify the tail
 	if l.tail == nil {
@@ -373,13 +373,13 @@ func (l *CList) Remove(e *CElement) interface{} {
 	}
 
 	// If we're removing the only item, make CList FrontWait/BackWait wait.
-	if l.len == 1 {
+	if l.curLen == 1 {
 		l.wg = waitGroup1() // WaitGroups are difficult to re-use.
 		l.waitCh = make(chan struct{})
 	}
 
 	// Update l.len
-	l.len--
+	l.curLen--
 
 	// Connect next/prev and set head/tail
 	if prev == nil {

@@ -31,7 +31,6 @@ func AddNodeFlags(cmd *cobra.Command) {
 		"socket address to listen on for connections from external priv_validator process")
 
 	// node flags
-	cmd.Flags().Bool("block_sync", config.BlockSyncMode, "sync the block chain using the blocksync algorithm")
 	cmd.Flags().BytesHexVar(
 		&genesisHash,
 		"genesis_hash",
@@ -68,7 +67,6 @@ func AddNodeFlags(cmd *cobra.Command) {
 	cmd.Flags().String("p2p.persistent_peers", config.P2P.PersistentPeers, "comma-delimited ID@host:port persistent peers")
 	cmd.Flags().String("p2p.unconditional_peer_ids",
 		config.P2P.UnconditionalPeerIDs, "comma-delimited IDs of unconditional peers")
-	cmd.Flags().Bool("p2p.upnp", config.P2P.UPNP, "enable/disable UPNP port forwarding")
 	cmd.Flags().Bool("p2p.pex", config.P2P.PexReactor, "enable/disable Peer-Exchange")
 	cmd.Flags().Bool("p2p.seed_mode", config.P2P.SeedMode, "enable/disable seed mode")
 	cmd.Flags().String("p2p.private_peer_ids", config.P2P.PrivatePeerIDs, "comma-delimited private peer IDs")

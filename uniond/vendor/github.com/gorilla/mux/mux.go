@@ -31,24 +31,26 @@ func NewRouter() *Router {
 // It implements the http.Handler interface, so it can be registered to serve
 // requests:
 //
-//     var router = mux.NewRouter()
+//	var router = mux.NewRouter()
 //
-//     func main() {
-//         http.Handle("/", router)
-//     }
+//	func main() {
+//	    http.Handle("/", router)
+//	}
 //
 // Or, for Google App Engine, register it in a init() function:
 //
-//     func init() {
-//         http.Handle("/", router)
-//     }
+//	func init() {
+//	    http.Handle("/", router)
+//	}
 //
 // This will send all incoming requests to the router.
 type Router struct {
 	// Configurable Handler to be used when no route matches.
+	// This can be used to render your own 404 Not Found errors.
 	NotFoundHandler http.Handler
 
 	// Configurable Handler to be used when the request method does not match the route.
+	// This can be used to render your own 405 Method Not Allowed errors.
 	MethodNotAllowedHandler http.Handler
 
 	// Routes to be matched, in order.

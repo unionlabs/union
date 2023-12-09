@@ -39,9 +39,10 @@ We let each peer provide us with up to 2 unexpected "catchup" rounds.
 One for their LastCommit round, and another for the official commit round.
 */
 type HeightVoteSet struct {
-	chainID string
-	height  int64
-	valSet  *types.ValidatorSet
+	chainID           string
+	height            int64
+	valSet            *types.ValidatorSet
+	extensionsEnabled bool
 
 	mtx               sync.Mutex
 	round             int32                  // max tracked round
@@ -51,7 +52,17 @@ type HeightVoteSet struct {
 
 func NewHeightVoteSet(chainID string, height int64, valSet *types.ValidatorSet) *HeightVoteSet {
 	hvs := &HeightVoteSet{
-		chainID: chainID,
+		chainID:           chainID,
+		extensionsEnabled: false,
+	}
+	hvs.Reset(height, valSet)
+	return hvs
+}
+
+func NewExtendedHeightVoteSet(chainID string, height int64, valSet *types.ValidatorSet) *HeightVoteSet {
+	hvs := &HeightVoteSet{
+		chainID:           chainID,
+		extensionsEnabled: true,
 	}
 	hvs.Reset(height, valSet)
 	return hvs
@@ -105,7 +116,12 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 	}
 	// log.Debug("addRound(round)", "round", round)
 	prevotes := types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrevoteType, hvs.valSet)
-	precommits := types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
+	var precommits *types.VoteSet
+	if hvs.extensionsEnabled {
+		precommits = types.NewExtendedVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
+	} else {
+		precommits = types.NewVoteSet(hvs.chainID, hvs.height, round, cmtproto.PrecommitType, hvs.valSet)
+	}
 	hvs.roundVoteSets[round] = RoundVoteSet{
 		Prevotes:   prevotes,
 		Precommits: precommits,
@@ -114,9 +130,12 @@ func (hvs *HeightVoteSet) addRound(round int32) {
 
 // Duplicate votes return added=false, err=nil.
 // By convention, peerID is "" if origin is self.
-func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) {
+func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bool) (added bool, err error) {
 	hvs.mtx.Lock()
 	defer hvs.mtx.Unlock()
+	if hvs.extensionsEnabled != extEnabled {
+		panic(fmt.Errorf("extensions enabled general param does not match the one in HeightVoteSet %t!=%t", hvs.extensionsEnabled, extEnabled))
+	}
 	if !types.IsVoteTypeValid(vote.Type) {
 		return
 	}

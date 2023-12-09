@@ -8,7 +8,6 @@ use crate::{IntoProto, Proto, TryFromProto, TryFromProtoBytesError, TryFromProto
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState<Data> {
     pub data: Data,
-    pub timestamp: u64,
 }
 
 impl<Data: IntoProto> From<ConsensusState<Data>>
@@ -17,7 +16,6 @@ impl<Data: IntoProto> From<ConsensusState<Data>>
     fn from(value: ConsensusState<Data>) -> Self {
         protos::ibc::lightclients::wasm::v1::ConsensusState {
             data: value.data.into_proto().encode_to_vec(),
-            timestamp: value.timestamp,
         }
     }
 }
@@ -50,7 +48,6 @@ where
         Ok(Self {
             data: Data::try_from_proto_bytes(&value.data)
                 .map_err(TryFromWasmConsensusStateError::TryFromProto)?,
-            timestamp: value.timestamp,
         })
     }
 }

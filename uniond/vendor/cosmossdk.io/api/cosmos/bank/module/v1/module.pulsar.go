@@ -576,8 +576,8 @@ type Module struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// blocked_module_accounts configures exceptional module accounts which should be blocked from receiving funds.
-	// If left empty it defaults to the list of account names supplied in the auth module configuration as
+	// blocked_module_accounts_override configures exceptional module accounts which should be blocked from receiving
+	// funds. If left empty it defaults to the list of account names supplied in the auth module configuration as
 	// module_account_permissions
 	BlockedModuleAccountsOverride []string `protobuf:"bytes,1,rep,name=blocked_module_accounts_override,json=blockedModuleAccountsOverride,proto3" json:"blocked_module_accounts_override,omitempty"`
 	// authority defines the custom module authority. If not set, defaults to the governance module.

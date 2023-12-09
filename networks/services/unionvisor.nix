@@ -2,6 +2,7 @@
 let
   getNodeID = nodeFile:
     pkgs.runCommand "get-node-id" { } ''
+      export HOME=$(pwd)
       ${uniond}/bin/uniond init testnet bn254 --home .
       cp ${devnet-validator-node-ids}/${nodeFile} ./config/node_key.json
       NODE_ID=$(${uniond}/bin/uniond tendermint show-node-id --home .)
@@ -43,6 +44,7 @@ in
       ''
         HOME=.
         mkdir home
+        mkdir /tmp
         cp -R ${devnet-genesis}/* ./home
         cp ${devnet-validator-keys}/valkey-${toString id}.json ./home/config/priv_validator_key.json
         cp ${devnet-validator-node-ids}/valnode-${toString id}.json ./home/config/node_key.json

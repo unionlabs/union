@@ -3,7 +3,10 @@ package keeper
 import (
 	"encoding/binary"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	corestoretypes "cosmossdk.io/core/store"
+	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm/types"
@@ -11,12 +14,12 @@ import (
 
 // CountTXDecorator ante handler to count the tx position in a block.
 type CountTXDecorator struct {
-	storeKey storetypes.StoreKey
+	storeService corestoretypes.KVStoreService
 }
 
 // NewCountTXDecorator constructor
-func NewCountTXDecorator(storeKey storetypes.StoreKey) *CountTXDecorator {
-	return &CountTXDecorator{storeKey: storeKey}
+func NewCountTXDecorator(s corestoretypes.KVStoreService) *CountTXDecorator {
+	return &CountTXDecorator{storeService: s}
 }
 
 // AnteHandle handler stores a tx counter with current height encoded in the store to let the app handle
@@ -27,12 +30,16 @@ func (a CountTXDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, 
 	if simulate {
 		return next(ctx, tx, simulate)
 	}
-	store := ctx.KVStore(a.storeKey)
+	store := a.storeService.OpenKVStore(ctx)
 	currentHeight := ctx.BlockHeight()
 
 	var txCounter uint32 // start with 0
 	// load counter when exists
-	if bz := store.Get(types.TXCounterPrefix); bz != nil {
+	bz, err := store.Get(types.TXCounterPrefix)
+	if err != nil {
+		return ctx, errorsmod.Wrap(err, "read tx counter")
+	}
+	if bz != nil {
 		lastHeight, val := decodeHeightCounter(bz)
 		if currentHeight == lastHeight {
 			// then use stored counter
@@ -40,8 +47,10 @@ func (a CountTXDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, 
 		} // else use `0` from above to start with
 	}
 	// store next counter value for current height
-	store.Set(types.TXCounterPrefix, encodeHeightCounter(currentHeight, txCounter+1))
-
+	err = store.Set(types.TXCounterPrefix, encodeHeightCounter(currentHeight, txCounter+1))
+	if err != nil {
+		return ctx, errorsmod.Wrap(err, "store tx counter")
+	}
 	return next(types.WithTXCounter(ctx, txCounter), tx, simulate)
 }
 
@@ -57,11 +66,11 @@ func decodeHeightCounter(bz []byte) (int64, uint32) {
 
 // LimitSimulationGasDecorator ante decorator to limit gas in simulation calls
 type LimitSimulationGasDecorator struct {
-	gasLimit *sdk.Gas
+	gasLimit *storetypes.Gas
 }
 
 // NewLimitSimulationGasDecorator constructor accepts nil value to fallback to block gas limit.
-func NewLimitSimulationGasDecorator(gasLimit *sdk.Gas) *LimitSimulationGasDecorator {
+func NewLimitSimulationGasDecorator(gasLimit *storetypes.Gas) *LimitSimulationGasDecorator {
 	if gasLimit != nil && *gasLimit == 0 {
 		panic("gas limit must not be zero")
 	}
@@ -86,12 +95,28 @@ func (d LimitSimulationGasDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 
 	// apply custom node gas limit
 	if d.gasLimit != nil {
-		return next(ctx.WithGasMeter(sdk.NewGasMeter(*d.gasLimit)), tx, simulate)
+		return next(ctx.WithGasMeter(storetypes.NewGasMeter(*d.gasLimit)), tx, simulate)
 	}
 
 	// default to max block gas when set, to be on the safe side
-	if maxGas := ctx.ConsensusParams().GetBlock().MaxGas; maxGas > 0 {
-		return next(ctx.WithGasMeter(sdk.NewGasMeter(sdk.Gas(maxGas))), tx, simulate)
+	params := ctx.ConsensusParams()
+	if maxGas := params.GetBlock().MaxGas; maxGas > 0 {
+		return next(ctx.WithGasMeter(storetypes.NewGasMeter(storetypes.Gas(maxGas))), tx, simulate)
 	}
 	return next(ctx, tx, simulate)
+}
+
+// GasRegisterDecorator ante decorator to store gas register in the context
+type GasRegisterDecorator struct {
+	gasRegister types.GasRegister
+}
+
+// NewGasRegisterDecorator constructor.
+func NewGasRegisterDecorator(gr types.GasRegister) *GasRegisterDecorator {
+	return &GasRegisterDecorator{gasRegister: gr}
+}
+
+// AnteHandle adds the gas register to the context.
+func (g GasRegisterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
+	return next(types.WithGasRegister(ctx, g.gasRegister), tx, simulate)
 }

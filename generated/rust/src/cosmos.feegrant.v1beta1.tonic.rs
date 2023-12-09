@@ -275,5 +275,27 @@ pub mod msg_client {
             ));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn prune_allowances(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgPruneAllowances>,
+        ) -> std::result::Result<tonic::Response<super::MsgPruneAllowancesResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.feegrant.v1beta1.Msg/PruneAllowances",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.feegrant.v1beta1.Msg",
+                "PruneAllowances",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }

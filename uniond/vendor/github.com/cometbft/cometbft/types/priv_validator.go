@@ -82,6 +82,19 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 		return err
 	}
 	vote.Signature = sig
+
+	var extSig []byte
+	// We only sign vote extensions for non-nil precommits
+	if vote.Type == cmtproto.PrecommitType && !ProtoBlockIDIsNil(&vote.BlockID) {
+		extSignBytes := VoteExtensionSignBytes(useChainID, vote)
+		extSig, err = pv.PrivKey.Sign(extSignBytes)
+		if err != nil {
+			return err
+		}
+	} else if len(vote.Extension) > 0 {
+		return errors.New("unexpected vote extension - vote extensions are only allowed in non-nil precommits")
+	}
+	vote.ExtensionSignature = extSig
 	return nil
 }
 
@@ -129,12 +142,12 @@ type ErroringMockPV struct {
 var ErroringMockPVErr = errors.New("erroringMockPV always returns an error")
 
 // Implements PrivValidator.
-func (pv *ErroringMockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
+func (pv *ErroringMockPV) SignVote(string, *cmtproto.Vote) error {
 	return ErroringMockPVErr
 }
 
 // Implements PrivValidator.
-func (pv *ErroringMockPV) SignProposal(chainID string, proposal *cmtproto.Proposal) error {
+func (pv *ErroringMockPV) SignProposal(string, *cmtproto.Proposal) error {
 	return ErroringMockPVErr
 }
 

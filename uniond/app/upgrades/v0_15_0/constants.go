@@ -1,7 +1,7 @@
 package v0_15_0
 
 import (
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	store "cosmossdk.io/store/types"
 	"union/app/upgrades"
 )
 

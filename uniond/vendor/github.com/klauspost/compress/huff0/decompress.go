@@ -253,7 +253,7 @@ func (d *Decoder) decompress1X8Bit(dst, src []byte) ([]byte, error) {
 
 	switch d.actualTableLog {
 	case 8:
-		const shift = 8 - 8
+		const shift = 0
 		for br.off >= 4 {
 			br.fillFast()
 			v := dt[uint8(br.value>>(56+shift))]

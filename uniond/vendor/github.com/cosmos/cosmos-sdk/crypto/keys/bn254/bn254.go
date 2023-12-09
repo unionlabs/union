@@ -8,6 +8,8 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/bn254"
 
+	errorsmod "cosmossdk.io/errors"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/types/errors"
@@ -42,6 +44,10 @@ func (privKey *PrivKey) Bytes() []byte {
 // incorrect signature.
 func (privKey *PrivKey) Sign(msg []byte) ([]byte, error) {
 	return privKey.Key.Sign(msg)
+}
+
+func GenPrivKey() *PrivKey {
+	return &PrivKey{Key: bn254.GenPrivKey()}
 }
 
 // PubKey gets the corresponding public key from the private key.
@@ -147,7 +153,7 @@ func (pubKey PubKey) MarshalAmino() ([]byte, error) {
 // UnmarshalAmino overrides Amino binary marshalling.
 func (pubKey *PubKey) UnmarshalAmino(bz []byte) error {
 	if len(bz) != PubKeySize {
-		return errors.Wrap(errors.ErrInvalidPubKey, "invalid pubkey size")
+		return errorsmod.Wrap(errors.ErrInvalidPubKey, "invalid pubkey size")
 	}
 	pubKey.Key = bz
 

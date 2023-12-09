@@ -277,17 +277,17 @@
     "ibc-go": {
       "flake": false,
       "locked": {
-        "lastModified": 1681504072,
-        "narHash": "sha256-e9z9+VxoQkrvWeYzdxHax6L10eQebRjW7GrD5wnaLv8=",
-        "owner": "strangelove-ventures",
+        "lastModified": 1700058834,
+        "narHash": "sha256-vGtOGyoW3qZwMYHmTWzugx/DAxsiUn8upc49hjL0uJg=",
+        "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "f8081a1828e47e11791b036659dd6d0e7be5473b",
+        "rev": "c98311964dc550b9fe9a5bff8b6dd8e35bf13642",
         "type": "github"
       },
       "original": {
-        "owner": "strangelove-ventures",
+        "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "f8081a1828e47e11791b036659dd6d0e7be5473b",
+        "rev": "c98311964dc550b9fe9a5bff8b6dd8e35bf13642",
         "type": "github"
       }
     },
@@ -362,6 +362,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-go": {
+      "locked": {
+        "lastModified": 1700612854,
+        "narHash": "sha256-yrQ8osMD+vDLGFX7pcwsY/Qr5PUd6OmDMYJZzZi0+zc=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "19cbff58383a4ae384dea4d1d0c823d72b49d614",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-solc": {
       "locked": {
         "lastModified": 1699781429,
@@ -409,6 +425,7 @@
         "iohk-nix": "iohk-nix",
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-go": "nixpkgs-go",
         "nixpkgs-solc": "nixpkgs-solc",
         "nixpkgs-vercel": "nixpkgs-vercel",
         "rust-overlay": "rust-overlay_2",

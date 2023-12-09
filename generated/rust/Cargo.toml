@@ -39,17 +39,14 @@ proto_full = [
   "cosmos+bank+module+v1",
   "cosmos+bank+v1beta1",
   "cosmos+base+abci+v1beta1",
-  "cosmos+base+kv+v1beta1",
   "cosmos+base+node+v1beta1",
   "cosmos+base+query+v1beta1",
   "cosmos+base+reflection+v1beta1",
   "cosmos+base+reflection+v2alpha1",
-  "cosmos+base+snapshots+v1beta1",
-  "cosmos+base+store+v1beta1",
   "cosmos+base+tendermint+v1beta1",
   "cosmos+base+v1beta1",
-  "cosmos+capability+module+v1",
-  "cosmos+capability+v1beta1",
+  "cosmos+circuit+module+v1",
+  "cosmos+circuit+v1",
   "cosmos+consensus+module+v1",
   "cosmos+consensus+v1",
   "cosmos+crisis+module+v1",
@@ -91,6 +88,10 @@ proto_full = [
   "cosmos+slashing+v1beta1",
   "cosmos+staking+module+v1",
   "cosmos+staking+v1beta1",
+  "cosmos+store+internal+kv+v1beta1",
+  "cosmos+store+snapshots+v1",
+  "cosmos+store+streaming+abci",
+  "cosmos+store+v1beta1",
   "cosmos+tx+config+v1",
   "cosmos+tx+signing+v1beta1",
   "cosmos+tx+v1beta1",
@@ -148,14 +149,15 @@ proto_full = [
 "cosmos+autocli+v1" = []
 "cosmos+bank+module+v1" = []
 "cosmos+bank+v1beta1" = ["cosmos+base+query+v1beta1", "cosmos+base+v1beta1"]
-"cosmos+base+abci+v1beta1" = ["google+protobuf", "tendermint+abci"]
-"cosmos+base+kv+v1beta1" = []
-"cosmos+base+node+v1beta1" = []
+"cosmos+base+abci+v1beta1" = [
+  "google+protobuf",
+  "tendermint+abci",
+  "tendermint+types",
+]
+"cosmos+base+node+v1beta1" = ["google+protobuf"]
 "cosmos+base+query+v1beta1" = []
 "cosmos+base+reflection+v1beta1" = []
 "cosmos+base+reflection+v2alpha1" = []
-"cosmos+base+snapshots+v1beta1" = []
-"cosmos+base+store+v1beta1" = ["google+protobuf", "tendermint+abci"]
 "cosmos+base+tendermint+v1beta1" = [
   "cosmos+base+query+v1beta1",
   "google+protobuf",
@@ -164,8 +166,8 @@ proto_full = [
   "tendermint+version",
 ]
 "cosmos+base+v1beta1" = []
-"cosmos+capability+module+v1" = []
-"cosmos+capability+v1beta1" = []
+"cosmos+circuit+module+v1" = []
+"cosmos+circuit+v1" = ["cosmos+base+query+v1beta1"]
 "cosmos+consensus+module+v1" = []
 "cosmos+consensus+v1" = ["tendermint+types"]
 "cosmos+crisis+module+v1" = []
@@ -228,6 +230,10 @@ proto_full = [
   "tendermint+abci",
   "tendermint+types",
 ]
+"cosmos+store+internal+kv+v1beta1" = []
+"cosmos+store+snapshots+v1" = []
+"cosmos+store+streaming+abci" = ["cosmos+store+v1beta1", "tendermint+abci"]
+"cosmos+store+v1beta1" = ["google+protobuf", "tendermint+abci"]
 "cosmos+tx+config+v1" = []
 "cosmos+tx+signing+v1beta1" = ["google+protobuf"]
 "cosmos+tx+v1beta1" = [

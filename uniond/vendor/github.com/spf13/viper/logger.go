@@ -1,77 +1,68 @@
 package viper
 
 import (
-	"fmt"
+	"context"
 
-	jww "github.com/spf13/jwalterweatherman"
+	slog "github.com/sagikazarmark/slog-shim"
 )
 
 // Logger is a unified interface for various logging use cases and practices, including:
 //   - leveled logging
 //   - structured logging
+//
+// Deprecated: use `log/slog` instead.
 type Logger interface {
 	// Trace logs a Trace event.
 	//
 	// Even more fine-grained information than Debug events.
 	// Loggers not supporting this level should fall back to Debug.
-	Trace(msg string, keyvals ...interface{})
+	Trace(msg string, keyvals ...any)
 
 	// Debug logs a Debug event.
 	//
 	// A verbose series of information events.
 	// They are useful when debugging the system.
-	Debug(msg string, keyvals ...interface{})
+	Debug(msg string, keyvals ...any)
 
 	// Info logs an Info event.
 	//
 	// General information about what's happening inside the system.
-	Info(msg string, keyvals ...interface{})
+	Info(msg string, keyvals ...any)
 
 	// Warn logs a Warn(ing) event.
 	//
 	// Non-critical events that should be looked at.
-	Warn(msg string, keyvals ...interface{})
+	Warn(msg string, keyvals ...any)
 
 	// Error logs an Error event.
 	//
 	// Critical events that require immediate attention.
 	// Loggers commonly provide Fatal and Panic levels above Error level,
-	// but exiting and panicing is out of scope for a logging library.
-	Error(msg string, keyvals ...interface{})
+	// but exiting and panicking is out of scope for a logging library.
+	Error(msg string, keyvals ...any)
 }
 
-type jwwLogger struct{}
-
-func (jwwLogger) Trace(msg string, keyvals ...interface{}) {
-	jww.TRACE.Printf(jwwLogMessage(msg, keyvals...))
+// WithLogger sets a custom logger.
+func WithLogger(l *slog.Logger) Option {
+	return optionFunc(func(v *Viper) {
+		v.logger = l
+	})
 }
 
-func (jwwLogger) Debug(msg string, keyvals ...interface{}) {
-	jww.DEBUG.Printf(jwwLogMessage(msg, keyvals...))
+type discardHandler struct{}
+
+func (n *discardHandler) Enabled(_ context.Context, _ slog.Level) bool {
+	return false
 }
 
-func (jwwLogger) Info(msg string, keyvals ...interface{}) {
-	jww.INFO.Printf(jwwLogMessage(msg, keyvals...))
+func (n *discardHandler) Handle(_ context.Context, _ slog.Record) error {
+	return nil
 }
 
-func (jwwLogger) Warn(msg string, keyvals ...interface{}) {
-	jww.WARN.Printf(jwwLogMessage(msg, keyvals...))
+func (n *discardHandler) WithAttrs(_ []slog.Attr) slog.Handler {
+	return n
 }
 
-func (jwwLogger) Error(msg string, keyvals ...interface{}) {
-	jww.ERROR.Printf(jwwLogMessage(msg, keyvals...))
-}
-
-func jwwLogMessage(msg string, keyvals ...interface{}) string {
-	out := msg
-
-	if len(keyvals) > 0 && len(keyvals)%2 == 1 {
-		keyvals = append(keyvals, nil)
-	}
-
-	for i := 0; i <= len(keyvals)-2; i += 2 {
-		out = fmt.Sprintf("%s %v=%v", out, keyvals[i], keyvals[i+1])
-	}
-
-	return out
+func (n *discardHandler) WithGroup(_ string) slog.Handler {
+	return n
 }

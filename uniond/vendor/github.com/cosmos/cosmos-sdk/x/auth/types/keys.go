@@ -1,7 +1,7 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/collections"
 )
 
 const (
@@ -17,24 +17,15 @@ const (
 
 var (
 	// ParamsKey is the prefix for params key
-	ParamsKey = []byte{0x00}
+	ParamsKey = collections.NewPrefix(0)
 
 	// AddressStoreKeyPrefix prefix for account-by-address store
-	AddressStoreKeyPrefix = []byte{0x01}
+	AddressStoreKeyPrefix = collections.NewPrefix(1)
 
-	// param key for global account number
-	GlobalAccountNumberKey = []byte("globalAccountNumber")
+	// GlobalAccountNumberKey identifies the prefix where the monotonically increasing
+	// account number is stored.
+	GlobalAccountNumberKey = collections.NewPrefix(2)
 
 	// AccountNumberStoreKeyPrefix prefix for account-by-id store
-	AccountNumberStoreKeyPrefix = []byte("accountNumber")
+	AccountNumberStoreKeyPrefix = collections.NewPrefix("accountNumber")
 )
-
-// AddressStoreKey turn an address to key used to get it from the account store
-func AddressStoreKey(addr sdk.AccAddress) []byte {
-	return append(AddressStoreKeyPrefix, addr.Bytes()...)
-}
-
-// AccountNumberStoreKey turn an account number to key used to get the account address from account store
-func AccountNumberStoreKey(accountNumber uint64) []byte {
-	return append(AccountNumberStoreKeyPrefix, sdk.Uint64ToBigEndian(accountNumber)...)
-}

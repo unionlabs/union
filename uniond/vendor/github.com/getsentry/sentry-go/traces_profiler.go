@@ -1,31 +1,41 @@
 package sentry
 
+import (
+	"sync"
+	"time"
+)
+
 // Checks whether the transaction should be profiled (according to ProfilesSampleRate)
 // and starts a profiler if so.
 func (span *Span) sampleTransactionProfile() {
 	var sampleRate = span.clientOptions().ProfilesSampleRate
 	switch {
 	case sampleRate < 0.0 || sampleRate > 1.0:
-		Logger.Printf("Skipping transaction profiling: ProfilesSampleRate out of range [0.0, 1.0]: %f", sampleRate)
+		Logger.Printf("Skipping transaction profiling: ProfilesSampleRate out of range [0.0, 1.0]: %f\n", sampleRate)
 	case sampleRate == 0.0 || rng.Float64() >= sampleRate:
-		Logger.Printf("Skipping transaction profiling: ProfilesSampleRate is: %f", sampleRate)
+		Logger.Printf("Skipping transaction profiling: ProfilesSampleRate is: %f\n", sampleRate)
 	default:
-		span.profiler = &_transactionProfiler{
-			stopFunc: startProfiling(span.StartTime),
+		startProfilerOnce.Do(startGlobalProfiler)
+		if globalProfiler == nil {
+			Logger.Println("Skipping transaction profiling: the profiler couldn't be started")
+		} else {
+			span.collectProfile = collectTransactionProfile
 		}
 	}
 }
 
-type transactionProfiler interface {
-	Finish(span *Span) *profileInfo
+// transactionProfiler collects a profile for a given span.
+type transactionProfiler func(span *Span) *profileInfo
+
+var startProfilerOnce sync.Once
+var globalProfiler profiler
+
+func startGlobalProfiler() {
+	globalProfiler = startProfiling(time.Now())
 }
 
-type _transactionProfiler struct {
-	stopFunc func() *profilerResult
-}
-
-func (tp *_transactionProfiler) Finish(span *Span) *profileInfo {
-	result := tp.stopFunc()
+func collectTransactionProfile(span *Span) *profileInfo {
+	result := globalProfiler.GetSlice(span.StartTime, span.EndTime)
 	if result == nil || result.trace == nil {
 		return nil
 	}

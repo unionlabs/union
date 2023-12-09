@@ -8,6 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"cosmossdk.io/core/address"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -33,7 +35,7 @@ const (
 )
 
 // GetTxCmd returns the transaction commands for this module
-func GetTxCmd() *cobra.Command {
+func GetTxCmd(ac address.Codec) *cobra.Command {
 	AuthorizationTxCmd := &cobra.Command{
 		Use:                        authz.ModuleName,
 		Short:                      "Authorization transactions subcommands",
@@ -44,8 +46,8 @@ func GetTxCmd() *cobra.Command {
 	}
 
 	AuthorizationTxCmd.AddCommand(
-		NewCmdGrantAuthorization(),
-		NewCmdRevokeAuthorization(),
+		NewCmdGrantAuthorization(ac),
+		NewCmdRevokeAuthorization(ac),
 		NewCmdExecAuthorization(),
 	)
 
@@ -53,7 +55,7 @@ func GetTxCmd() *cobra.Command {
 }
 
 // NewCmdGrantAuthorization returns a CLI command handler for creating a MsgGrant transaction.
-func NewCmdGrantAuthorization() *cobra.Command {
+func NewCmdGrantAuthorization(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "grant <grantee> <authorization_type=\"send\"|\"generic\"|\"delegate\"|\"unbond\"|\"redelegate\"> --from <granter>",
 		Short: "Grant authorization to an address",
@@ -72,7 +74,11 @@ Examples:
 				return err
 			}
 
-			grantee, err := sdk.AccAddressFromBech32(args[0])
+			if strings.EqualFold(args[0], clientCtx.GetFromAddress().String()) {
+				return errors.New("grantee and granter should be different")
+			}
+
+			grantee, err := ac.StringToBytes(args[0])
 			if err != nil {
 				return err
 			}
@@ -99,7 +105,16 @@ Examples:
 					return err
 				}
 
-				allowed, err := bech32toAccAddresses(allowList)
+				// check for duplicates
+				for i := 0; i < len(allowList); i++ {
+					for j := i + 1; j < len(allowList); j++ {
+						if allowList[i] == allowList[j] {
+							return fmt.Errorf("duplicate address %s in allow-list", allowList[i])
+						}
+					}
+				}
+
+				allowed, err := bech32toAccAddresses(allowList, ac)
 				if err != nil {
 					return err
 				}
@@ -214,7 +229,7 @@ func getExpireTime(cmd *cobra.Command) (*time.Time, error) {
 }
 
 // NewCmdRevokeAuthorization returns a CLI command handler for creating a MsgRevoke transaction.
-func NewCmdRevokeAuthorization() *cobra.Command {
+func NewCmdRevokeAuthorization(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "revoke [grantee] [msg-type-url] --from=[granter]",
 		Short: "revoke authorization",
@@ -231,7 +246,7 @@ Example:
 				return err
 			}
 
-			grantee, err := sdk.AccAddressFromBech32(args[0])
+			grantee, err := ac.StringToBytes(args[0])
 			if err != nil {
 				return err
 			}
@@ -300,10 +315,10 @@ func bech32toValAddresses(validators []string) ([]sdk.ValAddress, error) {
 }
 
 // bech32toAccAddresses returns []AccAddress from a list of Bech32 string addresses.
-func bech32toAccAddresses(accAddrs []string) ([]sdk.AccAddress, error) {
+func bech32toAccAddresses(accAddrs []string, ac address.Codec) ([]sdk.AccAddress, error) {
 	addrs := make([]sdk.AccAddress, len(accAddrs))
 	for i, addr := range accAddrs {
-		accAddr, err := sdk.AccAddressFromBech32(addr)
+		accAddr, err := ac.StringToBytes(addr)
 		if err != nil {
 			return nil, err
 		}

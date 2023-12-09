@@ -1,15 +1,19 @@
 package store
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
-	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cosmos/gogoproto/proto"
 
+	dbm "github.com/cometbft/cometbft-db"
+
+	"github.com/cometbft/cometbft/evidence"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -52,6 +56,12 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 		height: bs.Height,
 		db:     db,
 	}
+}
+
+func (bs *BlockStore) IsEmpty() bool {
+	bs.mtx.RLock()
+	defer bs.mtx.RUnlock()
+	return bs.base == bs.height && bs.base == 0
 }
 
 // Base returns the first known contiguous block height, or 0 for empty block stores.
@@ -232,9 +242,32 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	}
 	commit, err := types.CommitFromProto(pbc)
 	if err != nil {
-		panic(fmt.Sprintf("Error reading block commit: %v", err))
+		panic(fmt.Errorf("converting commit to proto: %w", err))
 	}
 	return commit
+}
+
+// LoadExtendedCommit returns the ExtendedCommit for the given height.
+// The extended commit is not guaranteed to contain the same +2/3 precommits data
+// as the commit in the block.
+func (bs *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommit {
+	pbec := new(cmtproto.ExtendedCommit)
+	bz, err := bs.db.Get(calcExtCommitKey(height))
+	if err != nil {
+		panic(fmt.Errorf("fetching extended commit: %w", err))
+	}
+	if len(bz) == 0 {
+		return nil
+	}
+	err = proto.Unmarshal(bz, pbec)
+	if err != nil {
+		panic(fmt.Errorf("decoding extended commit: %w", err))
+	}
+	extCommit, err := types.ExtendedCommitFromProto(pbec)
+	if err != nil {
+		panic(fmt.Errorf("converting extended commit: %w", err))
+	}
+	return extCommit
 }
 
 // LoadSeenCommit returns the locally seen Commit for the given height.
@@ -256,25 +289,25 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 
 	commit, err := types.CommitFromProto(pbc)
 	if err != nil {
-		panic(fmt.Errorf("error from proto commit: %w", err))
+		panic(fmt.Errorf("converting seen commit: %w", err))
 	}
 	return commit
 }
 
-// PruneBlocks removes block up to (but not including) a height. It returns number of blocks pruned.
-func (bs *BlockStore) PruneBlocks(height int64) (uint64, error) {
+// PruneBlocks removes block up to (but not including) a height. It returns number of blocks pruned and the evidence retain height - the height at which data needed to prove evidence must not be removed.
+func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, error) {
 	if height <= 0 {
-		return 0, fmt.Errorf("height must be greater than 0")
+		return 0, -1, fmt.Errorf("height must be greater than 0")
 	}
 	bs.mtx.RLock()
 	if height > bs.height {
 		bs.mtx.RUnlock()
-		return 0, fmt.Errorf("cannot prune beyond the latest height %v", bs.height)
+		return 0, -1, fmt.Errorf("cannot prune beyond the latest height %v", bs.height)
 	}
 	base := bs.base
 	bs.mtx.RUnlock()
 	if height < base {
-		return 0, fmt.Errorf("cannot prune to height %v, it is lower than base height %v",
+		return 0, -1, fmt.Errorf("cannot prune to height %v, it is lower than base height %v",
 			height, base)
 	}
 
@@ -297,26 +330,42 @@ func (bs *BlockStore) PruneBlocks(height int64) (uint64, error) {
 		return nil
 	}
 
+	evidencePoint := height
 	for h := base; h < height; h++ {
+
 		meta := bs.LoadBlockMeta(h)
 		if meta == nil { // assume already deleted
 			continue
 		}
-		if err := batch.Delete(calcBlockMetaKey(h)); err != nil {
-			return 0, err
+
+		// This logic is in place to protect data that proves malicious behavior.
+		// If the height is within the evidence age, we continue to persist the header and commit data.
+
+		if evidencePoint == height && !evidence.IsEvidenceExpired(state.LastBlockHeight, state.LastBlockTime, h, meta.Header.Time, state.ConsensusParams.Evidence) {
+			evidencePoint = h
+		}
+
+		// if height is beyond the evidence point we dont delete the header
+		if h < evidencePoint {
+			if err := batch.Delete(calcBlockMetaKey(h)); err != nil {
+				return 0, -1, err
+			}
 		}
 		if err := batch.Delete(calcBlockHashKey(meta.BlockID.Hash)); err != nil {
-			return 0, err
+			return 0, -1, err
 		}
-		if err := batch.Delete(calcBlockCommitKey(h)); err != nil {
-			return 0, err
+		// if height is beyond the evidence point we dont delete the commit data
+		if h < evidencePoint {
+			if err := batch.Delete(calcBlockCommitKey(h)); err != nil {
+				return 0, -1, err
+			}
 		}
 		if err := batch.Delete(calcSeenCommitKey(h)); err != nil {
-			return 0, err
+			return 0, -1, err
 		}
 		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
 			if err := batch.Delete(calcBlockPartKey(h, p)); err != nil {
-				return 0, err
+				return 0, -1, err
 			}
 		}
 		pruned++
@@ -325,7 +374,7 @@ func (bs *BlockStore) PruneBlocks(height int64) (uint64, error) {
 		if pruned%1000 == 0 && pruned > 0 {
 			err := flush(batch, h)
 			if err != nil {
-				return 0, err
+				return 0, -1, err
 			}
 			batch = bs.db.NewBatch()
 			defer batch.Close()
@@ -334,9 +383,9 @@ func (bs *BlockStore) PruneBlocks(height int64) (uint64, error) {
 
 	err := flush(batch, height)
 	if err != nil {
-		return 0, err
+		return 0, -1, err
 	}
-	return pruned, nil
+	return pruned, evidencePoint, nil
 }
 
 // SaveBlock persists the given block, blockParts, and seenCommit to the underlying db.
@@ -350,15 +399,57 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
+	if err := bs.saveBlockToBatch(block, blockParts, seenCommit); err != nil {
+		panic(err)
+	}
+
+	// Save new BlockStoreState descriptor. This also flushes the database.
+	bs.saveState()
+}
+
+// SaveBlockWithExtendedCommit persists the given block, blockParts, and
+// seenExtendedCommit to the underlying db. seenExtendedCommit is stored under
+// two keys in the database: as the seenCommit and as the ExtendedCommit data for the
+// height. This allows the vote extension data to be persisted for all blocks
+// that are saved.
+func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts *types.PartSet, seenExtendedCommit *types.ExtendedCommit) {
+	if block == nil {
+		panic("BlockStore can only save a non-nil block")
+	}
+	if err := seenExtendedCommit.EnsureExtensions(true); err != nil {
+		panic(fmt.Errorf("problems saving block with extensions: %w", err))
+	}
+	if err := bs.saveBlockToBatch(block, blockParts, seenExtendedCommit.ToCommit()); err != nil {
+		panic(err)
+	}
+	height := block.Height
+
+	pbec := seenExtendedCommit.ToProto()
+	extCommitBytes := mustEncode(pbec)
+	if err := bs.db.Set(calcExtCommitKey(height), extCommitBytes); err != nil {
+		panic(err)
+	}
+
+	// Save new BlockStoreState descriptor. This also flushes the database.
+	bs.saveState()
+}
+
+func (bs *BlockStore) saveBlockToBatch(block *types.Block, blockParts *types.PartSet, seenCommit *types.Commit) error {
+	if block == nil {
+		panic("BlockStore can only save a non-nil block")
+	}
 
 	height := block.Height
 	hash := block.Hash()
 
 	if g, w := height, bs.Height()+1; bs.Base() > 0 && g != w {
-		panic(fmt.Sprintf("BlockStore can only save contiguous blocks. Wanted %v, got %v", w, g))
+		return fmt.Errorf("BlockStore can only save contiguous blocks. Wanted %v, got %v", w, g)
 	}
 	if !blockParts.IsComplete() {
-		panic("BlockStore can only save complete block part sets")
+		return errors.New("BlockStore can only save complete block part sets")
+	}
+	if height != seenCommit.Height {
+		return fmt.Errorf("BlockStore cannot save seen commit of a different height (block: %d, commit: %d)", height, seenCommit.Height)
 	}
 
 	// Save block parts. This must be done before the block meta, since callers
@@ -374,21 +465,21 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 	blockMeta := types.NewBlockMeta(block, blockParts)
 	pbm := blockMeta.ToProto()
 	if pbm == nil {
-		panic("nil blockmeta")
+		return errors.New("nil blockmeta")
 	}
 	metaBytes := mustEncode(pbm)
 	if err := bs.db.Set(calcBlockMetaKey(height), metaBytes); err != nil {
-		panic(err)
+		return err
 	}
 	if err := bs.db.Set(calcBlockHashKey(hash), []byte(fmt.Sprintf("%d", height))); err != nil {
-		panic(err)
+		return err
 	}
 
 	// Save block commit (duplicate and separate from the Block)
 	pbc := block.LastCommit.ToProto()
 	blockCommitBytes := mustEncode(pbc)
 	if err := bs.db.Set(calcBlockCommitKey(height-1), blockCommitBytes); err != nil {
-		panic(err)
+		return err
 	}
 
 	// Save seen commit (seen +2/3 precommits for block)
@@ -396,7 +487,7 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 	pbsc := seenCommit.ToProto()
 	seenCommitBytes := mustEncode(pbsc)
 	if err := bs.db.Set(calcSeenCommitKey(height), seenCommitBytes); err != nil {
-		panic(err)
+		return err
 	}
 
 	// Done!
@@ -407,8 +498,7 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 	}
 	bs.mtx.Unlock()
 
-	// Save new BlockStoreState descriptor. This also flushes the database.
-	bs.saveState()
+	return nil
 }
 
 func (bs *BlockStore) saveBlockPart(height int64, index int, part *types.Part) {
@@ -462,6 +552,10 @@ func calcBlockCommitKey(height int64) []byte {
 
 func calcSeenCommitKey(height int64) []byte {
 	return []byte(fmt.Sprintf("SC:%v", height))
+}
+
+func calcExtCommitKey(height int64) []byte {
+	return []byte(fmt.Sprintf("EC:%v", height))
 }
 
 func calcBlockHashKey(hash []byte) []byte {

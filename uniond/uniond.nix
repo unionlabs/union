@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, uniondBundleVersions, ... }:
+  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, uniondBundleVersions, goPkgs, ... }:
     let
       CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O -D__BLST_PORTABLE__";
       CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${self'.packages.libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
@@ -47,9 +47,9 @@
 
         # Statically link on Linux using `pkgsStatic`, dynamically link on Darwin using normal `pkgs`.
         uniond = (if pkgs.stdenv.isLinux then
-          pkgs.pkgsStatic.buildGoModule
+          goPkgs.pkgsStatic.buildGo121Module
         else
-          pkgs.buildGoModule) ({
+          goPkgs.buildGo121Module) ({
           name = "uniond";
           src = nix-filter
             {
@@ -162,7 +162,7 @@
           in
           pkgs.writeShellApplication {
             name = "go-vendor";
-            runtimeInputs = [ pkgs.go vend ];
+            runtimeInputs = [ goPkgs.go vend ];
             text = ''
               ${ensureAtRepositoryRoot}
 
@@ -180,7 +180,7 @@
       checks = {
         go-test = pkgs.go.stdenv.mkDerivation {
           name = "go-test";
-          buildInputs = [ pkgs.go ];
+          buildInputs = [ goPkgs.go ];
           src = ./.;
           doCheck = true;
           inherit CGO_CFLAGS;
@@ -197,7 +197,7 @@
 
         go-vet = pkgs.go.stdenv.mkDerivation {
           name = "go-vet";
-          buildInputs = [ pkgs.go ];
+          buildInputs = [ goPkgs.go ];
           src = ./.;
           doCheck = true;
           inherit CGO_CFLAGS;
@@ -214,7 +214,7 @@
 
         go-staticcheck = pkgs.go.stdenv.mkDerivation {
           name = "go-staticcheck";
-          buildInputs = [ pkgs.go pkgs.go-tools ];
+          buildInputs = [ goPkgs.go goPkgs.go-tools ];
           src = ./.;
           doCheck = true;
           inherit CGO_CFLAGS;
