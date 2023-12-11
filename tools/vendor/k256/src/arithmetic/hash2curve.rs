@@ -1,3 +1,4 @@
+use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U48};
 use elliptic_curve::generic_array::GenericArray;
 use elliptic_curve::group::cofactor::CofactorGroup;
@@ -7,7 +8,7 @@ use elliptic_curve::hash2curve::{
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 use elliptic_curve::Field;
 
-use crate::{AffinePoint, ProjectivePoint, Secp256k1};
+use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 
 use super::FieldElement;
 
@@ -50,7 +51,7 @@ impl OsswuMap for FieldElement {
     const PARAMS: OsswuMapParams<Self> = OsswuMapParams {
         // See section 8.7 in
         // <https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/>
-        c1: [
+        c1: &[
             0xffff_ffff_bfff_ff0b,
             0xffff_ffff_ffff_ffff,
             0xffff_ffff_ffff_ffff,
@@ -87,7 +88,7 @@ impl OsswuMap for FieldElement {
         let tv3 = Self::PARAMS.z * tv1; // Z * u^2
         let mut tv2 = tv3.square(); // tv3^2
         let mut xd = tv2 + tv3; // tv3^2 + tv3
-        let x1n = Self::PARAMS.map_b * (xd + Self::one()); // B * (xd + 1)
+        let x1n = Self::PARAMS.map_b * (xd + Self::ONE); // B * (xd + 1)
         xd = (xd * Self::PARAMS.map_a.negate(1)).normalize(); // -A * xd
 
         let tv = Self::PARAMS.z * Self::PARAMS.map_a;
@@ -105,7 +106,7 @@ impl OsswuMap for FieldElement {
         tv2 = gx1 * gxd; // gx1 * gxd
         tv4 *= tv2;
 
-        let y1 = tv4.pow_vartime(&Self::PARAMS.c1) * tv2; // tv4^C1 * tv2
+        let y1 = tv4.pow_vartime(Self::PARAMS.c1) * tv2; // tv4^C1 * tv2
         let x2n = tv3 * x1n; // tv3 * x1n
 
         let y2 = y1 * Self::PARAMS.c2 * tv1 * self; // y1 * c2 * tv1 * u
@@ -140,6 +141,26 @@ impl MapToCurve for FieldElement {
             infinity: 0,
         }
         .into()
+    }
+}
+
+impl FromOkm for Scalar {
+    type Length = U48;
+
+    fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
+        const F_2_192: Scalar = Scalar(U256::from_be_hex(
+            "0000000000000001000000000000000000000000000000000000000000000000",
+        ));
+
+        let mut d0 = GenericArray::default();
+        d0[8..].copy_from_slice(&data[0..24]);
+        let d0 = Scalar(U256::from_be_byte_array(d0));
+
+        let mut d1 = GenericArray::default();
+        d1[8..].copy_from_slice(&data[24..]);
+        let d1 = Scalar(U256::from_be_byte_array(d1));
+
+        d0 * F_2_192 + d1
     }
 }
 
@@ -251,116 +272,161 @@ impl CofactorGroup for ProjectivePoint {
     }
 }
 
-#[test]
-fn hash_to_curve() {
-    use elliptic_curve::hash2curve::{self, ExpandMsgXmd};
+#[cfg(test)]
+mod tests {
+    use crate::{FieldElement, Scalar, Secp256k1, U256};
+    use elliptic_curve::{
+        bigint::{ArrayEncoding, NonZero, U384},
+        consts::U48,
+        generic_array::GenericArray,
+        group::cofactor::CofactorGroup,
+        hash2curve::{FromOkm, GroupDigest, MapToCurve},
+        Curve,
+    };
     use hex_literal::hex;
-    use sha2::Sha256;
+    use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
 
-    struct TestVector {
-        msg: &'static [u8],
-        p_x: [u8; 32],
-        p_y: [u8; 32],
-        u_0: [u8; 32],
-        u_1: [u8; 32],
-        q0_x: [u8; 32],
-        q0_y: [u8; 32],
-        q1_x: [u8; 32],
-        q1_y: [u8; 32],
+    #[test]
+    fn hash_to_curve() {
+        use elliptic_curve::hash2curve::{self, ExpandMsgXmd};
+        use hex_literal::hex;
+        use sha2::Sha256;
+
+        struct TestVector {
+            msg: &'static [u8],
+            p_x: [u8; 32],
+            p_y: [u8; 32],
+            u_0: [u8; 32],
+            u_1: [u8; 32],
+            q0_x: [u8; 32],
+            q0_y: [u8; 32],
+            q1_x: [u8; 32],
+            q1_y: [u8; 32],
+        }
+
+        const DST: &[u8] = b"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_";
+
+        const TEST_VECTORS: [TestVector; 5] = [
+            TestVector {
+                msg: b"",
+                p_x: hex!("c1cae290e291aee617ebaef1be6d73861479c48b841eaba9b7b5852ddfeb1346"),
+                p_y: hex!("64fa678e07ae116126f08b022a94af6de15985c996c3a91b64c406a960e51067"),
+                u_0: hex!("6b0f9910dd2ba71c78f2ee9f04d73b5f4c5f7fc773a701abea1e573cab002fb3"),
+                u_1: hex!("1ae6c212e08fe1a5937f6202f929a2cc8ef4ee5b9782db68b0d5799fd8f09e16"),
+                q0_x: hex!("74519ef88b32b425a095e4ebcc84d81b64e9e2c2675340a720bb1a1857b99f1e"),
+                q0_y: hex!("c174fa322ab7c192e11748beed45b508e9fdb1ce046dee9c2cd3a2a86b410936"),
+                q1_x: hex!("44548adb1b399263ded3510554d28b4bead34b8cf9a37b4bd0bd2ba4db87ae63"),
+                q1_y: hex!("96eb8e2faf05e368efe5957c6167001760233e6dd2487516b46ae725c4cce0c6"),
+            },
+            TestVector {
+                msg: b"abc",
+                p_x: hex!("3377e01eab42db296b512293120c6cee72b6ecf9f9205760bd9ff11fb3cb2c4b"),
+                p_y: hex!("7f95890f33efebd1044d382a01b1bee0900fb6116f94688d487c6c7b9c8371f6"),
+                u_0: hex!("128aab5d3679a1f7601e3bdf94ced1f43e491f544767e18a4873f397b08a2b61"),
+                u_1: hex!("5897b65da3b595a813d0fdcc75c895dc531be76a03518b044daaa0f2e4689e00"),
+                q0_x: hex!("07dd9432d426845fb19857d1b3a91722436604ccbbbadad8523b8fc38a5322d7"),
+                q0_y: hex!("604588ef5138cffe3277bbd590b8550bcbe0e523bbaf1bed4014a467122eb33f"),
+                q1_x: hex!("e9ef9794d15d4e77dde751e06c182782046b8dac05f8491eb88764fc65321f78"),
+                q1_y: hex!("cb07ce53670d5314bf236ee2c871455c562dd76314aa41f012919fe8e7f717b3"),
+            },
+            TestVector {
+                msg: b"abcdef0123456789",
+                p_x: hex!("bac54083f293f1fe08e4a70137260aa90783a5cb84d3f35848b324d0674b0e3a"),
+                p_y: hex!("4436476085d4c3c4508b60fcf4389c40176adce756b398bdee27bca19758d828"),
+                u_0: hex!("ea67a7c02f2cd5d8b87715c169d055a22520f74daeb080e6180958380e2f98b9"),
+                u_1: hex!("7434d0d1a500d38380d1f9615c021857ac8d546925f5f2355319d823a478da18"),
+                q0_x: hex!("576d43ab0260275adf11af990d130a5752704f79478628761720808862544b5d"),
+                q0_y: hex!("643c4a7fb68ae6cff55edd66b809087434bbaff0c07f3f9ec4d49bb3c16623c3"),
+                q1_x: hex!("f89d6d261a5e00fe5cf45e827b507643e67c2a947a20fd9ad71039f8b0e29ff8"),
+                q1_y: hex!("b33855e0cc34a9176ead91c6c3acb1aacb1ce936d563bc1cee1dcffc806caf57"),
+            },
+            TestVector {
+                msg: b"q128_qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+                p_x: hex!("e2167bc785333a37aa562f021f1e881defb853839babf52a7f72b102e41890e9"),
+                p_y: hex!("f2401dd95cc35867ffed4f367cd564763719fbc6a53e969fb8496a1e6685d873"),
+                u_0: hex!("eda89a5024fac0a8207a87e8cc4e85aa3bce10745d501a30deb87341b05bcdf5"),
+                u_1: hex!("dfe78cd116818fc2c16f3837fedbe2639fab012c407eac9dfe9245bf650ac51d"),
+                q0_x: hex!("9c91513ccfe9520c9c645588dff5f9b4e92eaf6ad4ab6f1cd720d192eb58247a"),
+                q0_y: hex!("c7371dcd0134412f221e386f8d68f49e7fa36f9037676e163d4a063fbf8a1fb8"),
+                q1_x: hex!("10fee3284d7be6bd5912503b972fc52bf4761f47141a0015f1c6ae36848d869b"),
+                q1_y: hex!("0b163d9b4bf21887364332be3eff3c870fa053cf508732900fc69a6eb0e1b672"),
+            },
+            TestVector {
+                msg: b"a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                p_x: hex!("e3c8d35aaaf0b9b647e88a0a0a7ee5d5bed5ad38238152e4e6fd8c1f8cb7c998"),
+                p_y: hex!("8446eeb6181bf12f56a9d24e262221cc2f0c4725c7e3803024b5888ee5823aa6"),
+                u_0: hex!("8d862e7e7e23d7843fe16d811d46d7e6480127a6b78838c277bca17df6900e9f"),
+                u_1: hex!("68071d2530f040f081ba818d3c7188a94c900586761e9115efa47ae9bd847938"),
+                q0_x: hex!("b32b0ab55977b936f1e93fdc68cec775e13245e161dbfe556bbb1f72799b4181"),
+                q0_y: hex!("2f5317098360b722f132d7156a94822641b615c91f8663be69169870a12af9e8"),
+                q1_x: hex!("148f98780f19388b9fa93e7dc567b5a673e5fca7079cd9cdafd71982ec4c5e12"),
+                q1_y: hex!("3989645d83a433bc0c001f3dac29af861f33a6fd1e04f4b36873f5bff497298a"),
+            },
+        ];
+
+        for test_vector in TEST_VECTORS {
+            // in parts
+            let mut u = [FieldElement::default(), FieldElement::default()];
+            hash2curve::hash_to_field::<ExpandMsgXmd<Sha256>, FieldElement>(
+                &[test_vector.msg],
+                &[DST],
+                &mut u,
+            )
+            .unwrap();
+            assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
+            assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
+
+            let q0 = u[0].map_to_curve();
+            let aq0 = q0.to_affine();
+            assert_eq!(aq0.x.to_bytes().as_slice(), test_vector.q0_x);
+            assert_eq!(aq0.y.to_bytes().as_slice(), test_vector.q0_y);
+
+            let q1 = u[1].map_to_curve();
+            let aq1 = q1.to_affine();
+            assert_eq!(aq1.x.to_bytes().as_slice(), test_vector.q1_x);
+            assert_eq!(aq1.y.to_bytes().as_slice(), test_vector.q1_y);
+
+            let p = q0.clear_cofactor() + q1.clear_cofactor();
+            let ap = p.to_affine();
+            assert_eq!(ap.x.to_bytes().as_slice(), test_vector.p_x);
+            assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);
+
+            // complete run
+            let pt = Secp256k1::hash_from_bytes::<ExpandMsgXmd<Sha256>>(&[test_vector.msg], &[DST])
+                .unwrap();
+            let apt = pt.to_affine();
+            assert_eq!(apt.x.to_bytes().as_slice(), test_vector.p_x);
+            assert_eq!(apt.y.to_bytes().as_slice(), test_vector.p_y);
+        }
     }
 
-    const DST: &[u8] = b"QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_";
+    #[test]
+    fn from_okm_fuzz() {
+        let mut wide_order = GenericArray::default();
+        wide_order[16..].copy_from_slice(&Secp256k1::ORDER.to_be_byte_array());
+        let wide_order = NonZero::new(U384::from_be_byte_array(wide_order)).unwrap();
 
-    const TEST_VECTORS: [TestVector; 5] = [
-        TestVector {
-            msg: b"",
-            p_x: hex!("c1cae290e291aee617ebaef1be6d73861479c48b841eaba9b7b5852ddfeb1346"),
-            p_y: hex!("64fa678e07ae116126f08b022a94af6de15985c996c3a91b64c406a960e51067"),
-            u_0: hex!("6b0f9910dd2ba71c78f2ee9f04d73b5f4c5f7fc773a701abea1e573cab002fb3"),
-            u_1: hex!("1ae6c212e08fe1a5937f6202f929a2cc8ef4ee5b9782db68b0d5799fd8f09e16"),
-            q0_x: hex!("74519ef88b32b425a095e4ebcc84d81b64e9e2c2675340a720bb1a1857b99f1e"),
-            q0_y: hex!("c174fa322ab7c192e11748beed45b508e9fdb1ce046dee9c2cd3a2a86b410936"),
-            q1_x: hex!("44548adb1b399263ded3510554d28b4bead34b8cf9a37b4bd0bd2ba4db87ae63"),
-            q1_y: hex!("96eb8e2faf05e368efe5957c6167001760233e6dd2487516b46ae725c4cce0c6"),
-        },
-        TestVector {
-            msg: b"abc",
-            p_x: hex!("3377e01eab42db296b512293120c6cee72b6ecf9f9205760bd9ff11fb3cb2c4b"),
-            p_y: hex!("7f95890f33efebd1044d382a01b1bee0900fb6116f94688d487c6c7b9c8371f6"),
-            u_0: hex!("128aab5d3679a1f7601e3bdf94ced1f43e491f544767e18a4873f397b08a2b61"),
-            u_1: hex!("5897b65da3b595a813d0fdcc75c895dc531be76a03518b044daaa0f2e4689e00"),
-            q0_x: hex!("07dd9432d426845fb19857d1b3a91722436604ccbbbadad8523b8fc38a5322d7"),
-            q0_y: hex!("604588ef5138cffe3277bbd590b8550bcbe0e523bbaf1bed4014a467122eb33f"),
-            q1_x: hex!("e9ef9794d15d4e77dde751e06c182782046b8dac05f8491eb88764fc65321f78"),
-            q1_y: hex!("cb07ce53670d5314bf236ee2c871455c562dd76314aa41f012919fe8e7f717b3"),
-        },
-        TestVector {
-            msg: b"abcdef0123456789",
-            p_x: hex!("bac54083f293f1fe08e4a70137260aa90783a5cb84d3f35848b324d0674b0e3a"),
-            p_y: hex!("4436476085d4c3c4508b60fcf4389c40176adce756b398bdee27bca19758d828"),
-            u_0: hex!("ea67a7c02f2cd5d8b87715c169d055a22520f74daeb080e6180958380e2f98b9"),
-            u_1: hex!("7434d0d1a500d38380d1f9615c021857ac8d546925f5f2355319d823a478da18"),
-            q0_x: hex!("576d43ab0260275adf11af990d130a5752704f79478628761720808862544b5d"),
-            q0_y: hex!("643c4a7fb68ae6cff55edd66b809087434bbaff0c07f3f9ec4d49bb3c16623c3"),
-            q1_x: hex!("f89d6d261a5e00fe5cf45e827b507643e67c2a947a20fd9ad71039f8b0e29ff8"),
-            q1_y: hex!("b33855e0cc34a9176ead91c6c3acb1aacb1ce936d563bc1cee1dcffc806caf57"),
-        },
-        TestVector {
-            msg: b"q128_qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
-            p_x: hex!("e2167bc785333a37aa562f021f1e881defb853839babf52a7f72b102e41890e9"),
-            p_y: hex!("f2401dd95cc35867ffed4f367cd564763719fbc6a53e969fb8496a1e6685d873"),
-            u_0: hex!("eda89a5024fac0a8207a87e8cc4e85aa3bce10745d501a30deb87341b05bcdf5"),
-            u_1: hex!("dfe78cd116818fc2c16f3837fedbe2639fab012c407eac9dfe9245bf650ac51d"),
-            q0_x: hex!("9c91513ccfe9520c9c645588dff5f9b4e92eaf6ad4ab6f1cd720d192eb58247a"),
-            q0_y: hex!("c7371dcd0134412f221e386f8d68f49e7fa36f9037676e163d4a063fbf8a1fb8"),
-            q1_x: hex!("10fee3284d7be6bd5912503b972fc52bf4761f47141a0015f1c6ae36848d869b"),
-            q1_y: hex!("0b163d9b4bf21887364332be3eff3c870fa053cf508732900fc69a6eb0e1b672"),
-        },
-        TestVector {
-            msg: b"a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            p_x: hex!("e3c8d35aaaf0b9b647e88a0a0a7ee5d5bed5ad38238152e4e6fd8c1f8cb7c998"),
-            p_y: hex!("8446eeb6181bf12f56a9d24e262221cc2f0c4725c7e3803024b5888ee5823aa6"),
-            u_0: hex!("8d862e7e7e23d7843fe16d811d46d7e6480127a6b78838c277bca17df6900e9f"),
-            u_1: hex!("68071d2530f040f081ba818d3c7188a94c900586761e9115efa47ae9bd847938"),
-            q0_x: hex!("b32b0ab55977b936f1e93fdc68cec775e13245e161dbfe556bbb1f72799b4181"),
-            q0_y: hex!("2f5317098360b722f132d7156a94822641b615c91f8663be69169870a12af9e8"),
-            q1_x: hex!("148f98780f19388b9fa93e7dc567b5a673e5fca7079cd9cdafd71982ec4c5e12"),
-            q1_y: hex!("3989645d83a433bc0c001f3dac29af861f33a6fd1e04f4b36873f5bff497298a"),
-        },
-    ];
+        let simple_from_okm = move |data: GenericArray<u8, U48>| -> Scalar {
+            let data = U384::from_be_slice(&data);
 
-    for test_vector in TEST_VECTORS {
-        // in parts
-        let mut u = [FieldElement::default(), FieldElement::default()];
-        hash2curve::hash_to_field::<ExpandMsgXmd<Sha256>, FieldElement>(
-            &[test_vector.msg],
-            DST,
-            &mut u,
-        )
-        .unwrap();
-        assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
-        assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
+            let scalar = data % wide_order;
+            let reduced_scalar = U256::from_be_slice(&scalar.to_be_byte_array()[16..]);
 
-        let q0 = u[0].map_to_curve();
-        let aq0 = q0.to_affine();
-        assert_eq!(aq0.x.to_bytes().as_slice(), test_vector.q0_x);
-        assert_eq!(aq0.y.to_bytes().as_slice(), test_vector.q0_y);
+            Scalar(reduced_scalar)
+        };
 
-        let q1 = u[1].map_to_curve();
-        let aq1 = q1.to_affine();
-        assert_eq!(aq1.x.to_bytes().as_slice(), test_vector.q1_x);
-        assert_eq!(aq1.y.to_bytes().as_slice(), test_vector.q1_y);
+        proptest!(ProptestConfig::with_cases(1000), |(b0 in ANY, b1 in ANY, b2 in ANY, b3 in ANY, b4 in ANY, b5 in ANY)| {
+            let mut data = GenericArray::default();
+            data[..8].copy_from_slice(&b0.to_be_bytes());
+            data[8..16].copy_from_slice(&b1.to_be_bytes());
+            data[16..24].copy_from_slice(&b2.to_be_bytes());
+            data[24..32].copy_from_slice(&b3.to_be_bytes());
+            data[32..40].copy_from_slice(&b4.to_be_bytes());
+            data[40..].copy_from_slice(&b5.to_be_bytes());
 
-        let p = q0.clear_cofactor() + q1.clear_cofactor();
-        let ap = p.to_affine();
-        assert_eq!(ap.x.to_bytes().as_slice(), test_vector.p_x);
-        assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);
-
-        // complete run
-        let pt =
-            Secp256k1::hash_from_bytes::<ExpandMsgXmd<Sha256>>(&[test_vector.msg], DST).unwrap();
-        let apt = pt.to_affine();
-        assert_eq!(apt.x.to_bytes().as_slice(), test_vector.p_x);
-        assert_eq!(apt.y.to_bytes().as_slice(), test_vector.p_y);
+            let from_okm = Scalar::from_okm(&data);
+            let simple_from_okm = simple_from_okm(data);
+            assert_eq!(from_okm, simple_from_okm);
+        });
     }
 }

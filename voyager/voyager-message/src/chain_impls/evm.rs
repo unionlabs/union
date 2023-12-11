@@ -11,13 +11,11 @@ use ethers::{
     abi::AbiEncode,
     contract::{ContractError, EthCall},
     providers::{Middleware, ProviderError},
-    types::{EIP1186ProofResponse, U256},
+    types::EIP1186ProofResponse,
     utils::keccak256,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
-use prost::Message;
-use protos::union::ibc::lightclients::ethereum::v1 as ethereum_v1;
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
@@ -42,6 +40,7 @@ use unionlabs::{
     },
     proof::{ClientStatePath, Path},
     traits::{Chain, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
+    uint::U256,
     IntoEthAbi, MaybeRecoverableError,
 };
 
@@ -102,6 +101,7 @@ where
 
     ClientStateOf<Evm<C>>: Encode<Tr::IbcStateEncoding>,
     Tr::StoredClientState<Evm<C>>: Encode<Tr::IbcStateEncoding>,
+    Tr::StateProof: Encode<EthAbi>,
 {
     async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
         let f = |ibc_handler| async move {
@@ -134,9 +134,9 @@ where
                                 .into_iter()
                                 .map(Into::into)
                                 .collect(),
-                            proof_init: data.msg.proof_init.into(),
-                            proof_client: data.msg.proof_client.into(),
-                            proof_consensus: data.msg.proof_consensus.into(),
+                            proof_init: data.msg.proof_init.encode().into(),
+                            proof_client: data.msg.proof_client.encode().into(),
+                            proof_consensus: data.msg.proof_consensus.encode().into(),
                             proof_height: data.msg.proof_height.into_height().into(),
                             consensus_height: data.msg.consensus_height.into(),
                         },
@@ -158,9 +158,9 @@ where
                             )
                             .into(),
                             proof_height: data.msg.proof_height.into(),
-                            proof_try: data.msg.proof_try.into(),
-                            proof_client: data.msg.proof_client.into(),
-                            proof_consensus: data.msg.proof_consensus.into(),
+                            proof_try: data.msg.proof_try.encode().into(),
+                            proof_client: data.msg.proof_client.encode().into(),
+                            proof_consensus: data.msg.proof_consensus.encode().into(),
                             consensus_height: data.msg.consensus_height.into(),
                         },
                     },
@@ -170,7 +170,7 @@ where
                     ConnectionOpenConfirmCall {
                         msg: contracts::ibc_handler::MsgConnectionOpenConfirm {
                             connection_id: data.msg.connection_id.to_string(),
-                            proof_ack: data.msg.proof_ack.into(),
+                            proof_ack: data.msg.proof_ack.encode().into(),
                             proof_height: data.msg.proof_height.into_height().into(),
                         },
                     },
@@ -191,7 +191,7 @@ where
                             port_id: data.msg.port_id.to_string(),
                             channel: data.msg.channel.into(),
                             counterparty_version: data.msg.counterparty_version,
-                            proof_init: data.msg.proof_init.into(),
+                            proof_init: data.msg.proof_init.encode().into(),
                             proof_height: data.msg.proof_height.into(),
                         },
                     },
@@ -204,7 +204,7 @@ where
                             channel_id: data.msg.channel_id.to_string(),
                             counterparty_version: data.msg.counterparty_version,
                             counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
-                            proof_try: data.msg.proof_try.into(),
+                            proof_try: data.msg.proof_try.encode().into(),
                             proof_height: data.msg.proof_height.into(),
                         },
                     },
@@ -215,7 +215,7 @@ where
                         msg: contracts::ibc_handler::MsgChannelOpenConfirm {
                             port_id: data.msg.port_id.to_string(),
                             channel_id: data.msg.channel_id.to_string(),
-                            proof_ack: data.msg.proof_ack.into(),
+                            proof_ack: data.msg.proof_ack.encode().into(),
                             proof_height: data.msg.proof_height.into(),
                         },
                     },
@@ -225,7 +225,7 @@ where
                     RecvPacketCall {
                         msg: contracts::ibc_handler::MsgPacketRecv {
                             packet: data.msg.packet.into(),
-                            proof: data.msg.proof_commitment.into(),
+                            proof: data.msg.proof_commitment.encode().into(),
                             proof_height: data.msg.proof_height.into(),
                         },
                     },
@@ -236,7 +236,7 @@ where
                         msg: contracts::ibc_handler::MsgPacketAcknowledgement {
                             packet: data.msg.packet.into(),
                             acknowledgement: data.msg.acknowledgement.into(),
-                            proof: data.msg.proof_acked.into(),
+                            proof: data.msg.proof_acked.encode().into(),
                             proof_height: data.msg.proof_height.into(),
                         },
                     },
@@ -535,7 +535,7 @@ where
                 let location = keccak256(
                     keccak256(path.as_bytes())
                         .into_iter()
-                        .chain(U256::from(0).encode())
+                        .chain(ethers::types::U256::from(0).encode())
                         .collect::<Vec<_>>(),
                 );
 
@@ -558,11 +558,10 @@ where
                     }
                 };
 
-                let proof = ethereum_v1::StorageProof {
-                    proofs: [ethereum_v1::Proof {
-                        key: proof.key.to_fixed_bytes().to_vec(),
-                        // REVIEW(benluelo): Make sure this encoding works
-                        value: proof.value.encode(),
+                let proof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
+                    proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
+                        key: U256::from_big_endian(proof.key.to_fixed_bytes()),
+                        value: proof.value.into(),
                         proof: proof
                             .proof
                             .into_iter()
@@ -570,8 +569,7 @@ where
                             .collect(),
                     }]
                     .to_vec(),
-                }
-                .encode_to_vec();
+                };
 
                 return [match get_proof.path {
                     Path::ClientStatePath(path) => data::<Evm<C>, Tr>(

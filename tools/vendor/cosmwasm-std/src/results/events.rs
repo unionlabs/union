@@ -9,7 +9,7 @@ use crate::forward_ref_partial_eq;
 /// which then get magically converted to bytes for Tendermint somewhere between
 /// the Rust-Go interface, JSON deserialization and the `NewEvent` call in Cosmos SDK.
 ///
-/// [*Cosmos SDK* event]: https://docs.cosmos.network/main/core/events.html
+/// [*Cosmos SDK* event]: https://docs.cosmos.network/main/learn/advanced/events
 /// [*Cosmos SDK* StringEvent]: https://github.com/cosmos/cosmos-sdk/blob/v0.42.5/proto/cosmos/base/abci/v1beta1/abci.proto#L56-L70
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[non_exhaustive]
@@ -21,7 +21,7 @@ pub struct Event {
     ///
     /// You can learn more about these from [*Cosmos SDK* docs].
     ///
-    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/main/core/events.html
+    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/main/learn/advanced/events
     pub attributes: Vec<Attribute>,
 }
 
@@ -75,8 +75,7 @@ impl Attribute {
         #[cfg(debug_assertions)]
         if key.starts_with('_') {
             panic!(
-                "attribute key `{}` is invalid - keys starting with an underscore are reserved",
-                key
+                "attribute key `{key}` is invalid - keys starting with an underscore are reserved"
             );
         }
 

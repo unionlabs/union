@@ -125,8 +125,17 @@ where
     }
 
     /// Returns the last element that was inserted in the map.
-    pub fn last(&self) -> Option<&V> {
-        self.elems.last()
+    pub fn last(&self) -> Option<(K, &V)> {
+        let len = self.elems.len();
+        let last = self.elems.last()?;
+        Some((K::new(len - 1), last))
+    }
+
+    /// Returns the last element that was inserted in the map.
+    pub fn last_mut(&mut self) -> Option<(K, &mut V)> {
+        let len = self.elems.len();
+        let last = self.elems.last_mut()?;
+        Some((K::new(len - 1), last))
     }
 
     /// Reserves capacity for at least `additional` more elements to be inserted.

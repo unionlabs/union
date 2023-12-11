@@ -1,10 +1,10 @@
-//! [`UInt`] square root operations.
+//! [`Uint`] square root operations.
 
-use super::UInt;
+use super::Uint;
 use crate::{Limb, Word};
 use subtle::{ConstantTimeEq, CtOption};
 
-impl<const LIMBS: usize> UInt<LIMBS> {
+impl<const LIMBS: usize> Uint<LIMBS> {
     /// Computes √(`self`)
     /// Uses Brent & Zimmermann, Modern Computer Arithmetic, v0.5.9, Algorithm 1.13
     ///
@@ -21,13 +21,12 @@ impl<const LIMBS: usize> UInt<LIMBS> {
 
         // If guess increased, the initial guess was low.
         // Repeat until reverse course.
-        while guess.ct_cmp(&xn) == -1 {
+        while Uint::ct_lt(&guess, &xn).is_true_vartime() {
             // Sometimes an increase is too far, especially with large
             // powers, and then takes a long time to walk back.  The upper
             // bound is based on bit size, so saturate on that.
-            let res = Limb::ct_cmp(Limb(xn.bits_vartime() as Word), Limb(max_bits as Word)) - 1;
-            let le = Limb::is_nonzero(Limb(res as Word));
-            guess = Self::ct_select(cap, xn, le);
+            let le = Limb::ct_le(Limb(xn.bits_vartime() as Word), Limb(max_bits as Word));
+            guess = Self::ct_select(&cap, &xn, le);
             xn = {
                 let q = self.wrapping_div(&guess);
                 let t = guess.wrapping_add(&q);
@@ -36,7 +35,7 @@ impl<const LIMBS: usize> UInt<LIMBS> {
         }
 
         // Repeat while guess decreases.
-        while guess.ct_cmp(&xn) == 1 && xn.ct_is_nonzero() == Word::MAX {
+        while Uint::ct_gt(&guess, &xn).is_true_vartime() && xn.ct_is_nonzero().is_true_vartime() {
             guess = xn;
             xn = {
                 let q = self.wrapping_div(&guess);
@@ -45,7 +44,7 @@ impl<const LIMBS: usize> UInt<LIMBS> {
             };
         }
 
-        Self::ct_select(Self::ZERO, guess, self.ct_is_nonzero())
+        Self::ct_select(&Self::ZERO, &guess, self.ct_is_nonzero())
     }
 
     /// Wrapped sqrt is just normal √(`self`)
@@ -60,7 +59,7 @@ impl<const LIMBS: usize> UInt<LIMBS> {
     pub fn checked_sqrt(&self) -> CtOption<Self> {
         let r = self.sqrt();
         let s = r.wrapping_mul(&r);
-        CtOption::new(r, self.ct_eq(&s))
+        CtOption::new(r, ConstantTimeEq::ct_eq(self, &s))
     }
 }
 

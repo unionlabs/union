@@ -20,29 +20,27 @@ macro_rules! radix {
                 crate::nightly::ok!(Self::from_str_radix(s, radix))
             }
 
-            crate::nightly::const_fns! {
-                /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
-                ///
-                /// For examples, see the
-                #[doc = concat!("[`from_radix_be`](crate::", stringify!($BUint), "::from_radix_be) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
-                #[inline]
-                pub const fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
-                    match $BUint::from_radix_be(buf, radix) { // TODO: use Option::map when stable
-                        Some(uint) => Some(Self::from_bits(uint)),
-                        None => None,
-                    }
+            /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
+            ///
+            /// For examples, see the
+            #[doc = concat!("[`from_radix_be`](crate::", stringify!($BUint), "::from_radix_be) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
+            #[inline]
+            pub const fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
+                match $BUint::from_radix_be(buf, radix) { // TODO: use Option::map when stable
+                    Some(uint) => Some(Self::from_bits(uint)),
+                    None => None,
                 }
+            }
 
-                /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
-                ///
-                /// For examples, see the
-                #[doc = concat!("[`from_radix_le`](crate::", stringify!($BUint), "::from_radix_le) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
-                #[inline]
-                pub const fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
-                    match $BUint::from_radix_le(buf, radix) { // TODO: use Option::map when stable
-                        Some(uint) => Some(Self::from_bits(uint)),
-                        None => None,
-                    }
+            /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
+            ///
+            /// For examples, see the
+            #[doc = concat!("[`from_radix_le`](crate::", stringify!($BUint), "::from_radix_le) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
+            #[inline]
+            pub const fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
+                match $BUint::from_radix_le(buf, radix) { // TODO: use Option::map when stable
+                    Some(uint) => Some(Self::from_bits(uint)),
+                    None => None,
                 }
             }
 

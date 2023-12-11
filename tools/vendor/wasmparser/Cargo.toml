@@ -10,14 +10,16 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-edition = "2018"
+edition = "2021"
 name = "wasmparser"
-version = "0.83.0"
+version = "0.95.0"
 authors = ["Yury Delendik <ydelendik@mozilla.com>"]
+exclude = ["benches/*.wasm"]
 description = """
 A simple event-driven library for parsing WebAssembly binary files.
 """
 homepage = "https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wasmparser"
+readme = "README.md"
 keywords = [
     "parser",
     "WebAssembly",
@@ -30,14 +32,20 @@ repository = "https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wa
 name = "benchmark"
 harness = false
 
+[dependencies.indexmap]
+version = "1.9.1"
+
+[dependencies.url]
+version = "2.3.1"
+
 [dev-dependencies.anyhow]
-version = "1.0"
+version = "1.0.58"
 
 [dev-dependencies.criterion]
-version = "0.3"
+version = "0.3.3"
 
-[dev-dependencies.getopts]
-version = "0.2"
+[dev-dependencies.once_cell]
+version = "1.13.0"
 
 [dev-dependencies.rayon]
 version = "1.3"

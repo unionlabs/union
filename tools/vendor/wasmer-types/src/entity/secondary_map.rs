@@ -11,8 +11,6 @@ use crate::lib::std::marker::PhantomData;
 use crate::lib::std::ops::{Index, IndexMut};
 use crate::lib::std::slice;
 use crate::lib::std::vec::Vec;
-use loupe::{MemoryUsage, MemoryUsageTracker};
-#[cfg(feature = "enable-rkyv")]
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 #[cfg(feature = "enable-serde")]
 use serde::{
@@ -20,7 +18,6 @@ use serde::{
     ser::{SerializeSeq, Serializer},
     Deserialize, Serialize,
 };
-use std::mem;
 
 /// A mapping `K -> V` for densely indexed entity references.
 ///
@@ -30,11 +27,8 @@ use std::mem;
 ///
 /// The map does not track if an entry for a key has been inserted or not. Instead it behaves as if
 /// all keys have a default entry from the beginning.
-#[derive(Debug, Clone)]
-#[cfg_attr(
-    feature = "enable-rkyv",
-    derive(RkyvSerialize, RkyvDeserialize, Archive)
-)]
+#[derive(Debug, Clone, RkyvSerialize, RkyvDeserialize, Archive)]
+#[archive_attr(derive(rkyv::CheckBytes))]
 pub struct SecondaryMap<K, V>
 where
     K: EntityRef,
@@ -284,21 +278,6 @@ where
         deserializer.deserialize_seq(SecondaryMapVisitor {
             unused: PhantomData {},
         })
-    }
-}
-
-impl<K, V> MemoryUsage for SecondaryMap<K, V>
-where
-    K: EntityRef,
-    V: Clone + MemoryUsage,
-{
-    fn size_of_val(&self, tracker: &mut dyn MemoryUsageTracker) -> usize {
-        mem::size_of_val(self)
-            + self
-                .elems
-                .iter()
-                .map(|value| value.size_of_val(tracker) - mem::size_of_val(value))
-                .sum::<usize>()
     }
 }
 

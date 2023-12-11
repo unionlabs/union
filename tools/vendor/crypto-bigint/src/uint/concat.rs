@@ -5,7 +5,7 @@ macro_rules! impl_concat {
             impl $name {
                 /// Concatenate the two values, with `self` as most significant and `rhs`
                 /// as the least significant.
-                pub const fn concat(&self, rhs: &Self) -> UInt<{nlimbs!($bits) * 2}> {
+                pub const fn concat(&self, rhs: &Self) -> Uint<{nlimbs!($bits) * 2}> {
                     let mut limbs = [Limb::ZERO; nlimbs!($bits) * 2];
                     let mut i = 0;
                     let mut j = 0;
@@ -23,21 +23,21 @@ macro_rules! impl_concat {
                         j += 1;
                     }
 
-                    UInt { limbs }
+                    Uint { limbs }
                 }
             }
 
             impl Concat for $name {
-                type Output = UInt<{nlimbs!($bits) * 2}>;
+                type Output = Uint<{nlimbs!($bits) * 2}>;
 
                 fn concat(&self, rhs: &Self) -> Self::Output {
                     self.concat(rhs)
                 }
             }
 
-            impl From<($name, $name)> for UInt<{nlimbs!($bits) * 2}> {
-                fn from(nums: ($name, $name)) -> UInt<{nlimbs!($bits) * 2}> {
-                    nums.0.concat(&nums.1)
+            impl From<($name, $name)> for Uint<{nlimbs!($bits) * 2}> {
+                fn from(nums: ($name, $name)) -> Uint<{nlimbs!($bits) * 2}> {
+                    nums.1.concat(&nums.0)
                 }
             }
         )+
@@ -56,5 +56,14 @@ mod tests {
             hi.concat(&lo),
             U128::from_be_hex("00112233445566778899aabbccddeeff")
         );
+    }
+
+    #[test]
+    fn convert() {
+        let res: U128 = U64::ONE.mul_wide(&U64::ONE).into();
+        assert_eq!(res, U128::ONE);
+
+        let res: U128 = U64::ONE.square_wide().into();
+        assert_eq!(res, U128::ONE);
     }
 }

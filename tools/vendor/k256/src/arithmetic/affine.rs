@@ -7,15 +7,12 @@ use crate::{CompressedPoint, EncodedPoint, FieldBytes, PublicKey, Scalar, Secp25
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
     group::{prime::PrimeCurveAffine, GroupEncoding},
+    point::{AffineCoordinates, DecompactPoint, DecompressPoint},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineArithmetic, AffineXCoordinate, DecompactPoint, DecompressPoint, Error, Result,
+    Error, Result,
 };
-
-impl AffineArithmetic for Secp256k1 {
-    type AffinePoint = AffinePoint;
-}
 
 #[cfg(feature = "serde")]
 use serdect::serde::{de, ser, Deserialize, Serialize};
@@ -35,7 +32,6 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 ///
 /// [SEC1]: https://www.secg.org/sec1-v2.pdf
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct AffinePoint {
     /// x-coordinate
     pub(crate) x: FieldElement,
@@ -111,9 +107,15 @@ impl PrimeCurveAffine for AffinePoint {
     }
 }
 
-impl AffineXCoordinate<Secp256k1> for AffinePoint {
+impl AffineCoordinates for AffinePoint {
+    type FieldRepr = FieldBytes;
+
     fn x(&self) -> FieldBytes {
         self.x.to_bytes()
+    }
+
+    fn y_is_odd(&self) -> Choice {
+        self.y.normalize().is_odd()
     }
 }
 
@@ -338,7 +340,6 @@ impl TryFrom<&AffinePoint> for PublicKey {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl Serialize for AffinePoint {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where
@@ -349,7 +350,6 @@ impl Serialize for AffinePoint {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de> Deserialize<'de> for AffinePoint {
     fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
     where

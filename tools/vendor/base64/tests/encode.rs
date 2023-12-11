@@ -8,11 +8,7 @@ fn compare_encode(expected: &str, target: &[u8]) {
 
 #[test]
 fn encode_all_ascii() {
-    let mut ascii = Vec::<u8>::with_capacity(128);
-
-    for i in 0..128 {
-        ascii.push(i);
-    }
+    let ascii: Vec<u8> = (0..=127).collect();
 
     compare_encode(
         "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7P\
@@ -24,12 +20,7 @@ fn encode_all_ascii() {
 
 #[test]
 fn encode_all_bytes() {
-    let mut bytes = Vec::<u8>::with_capacity(256);
-
-    for i in 0..255 {
-        bytes.push(i);
-    }
-    bytes.push(255); //bug with "overflowing" ranges?
+    let bytes: Vec<u8> = (0..=255).collect();
 
     compare_encode(
         "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7P\
@@ -42,12 +33,7 @@ fn encode_all_bytes() {
 
 #[test]
 fn encode_all_bytes_url() {
-    let mut bytes = Vec::<u8>::with_capacity(256);
-
-    for i in 0..255 {
-        bytes.push(i);
-    }
-    bytes.push(255); //bug with "overflowing" ranges?
+    let bytes: Vec<u8> = (0..=255).collect();
 
     assert_eq!(
         "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0\
@@ -55,6 +41,6 @@ fn encode_all_bytes_url() {
          -AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq\
          -wsbKztLW2t7i5uru8vb6_wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t_g4eLj5OXm5-jp6uvs7e7v8PHy\
          8_T19vf4-fr7_P3-_w==",
-        &engine::GeneralPurpose::new(&URL_SAFE, PAD).encode(&bytes)
+        &engine::GeneralPurpose::new(&URL_SAFE, PAD).encode(bytes)
     );
 }

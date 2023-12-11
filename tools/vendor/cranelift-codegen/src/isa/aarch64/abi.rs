@@ -5,129 +5,38 @@ use crate::ir::types;
 use crate::ir::types::*;
 use crate::ir::MemFlags;
 use crate::ir::Opcode;
-use crate::ir::{ExternalName, LibCall};
+use crate::ir::{dynamic_to_fixed, ExternalName, LibCall, Signature};
 use crate::isa;
-use crate::isa::aarch64::{inst::EmitState, inst::*};
+use crate::isa::aarch64::{inst::EmitState, inst::*, settings as aarch64_settings};
 use crate::isa::unwind::UnwindInst;
 use crate::machinst::*;
 use crate::settings;
 use crate::{CodegenError, CodegenResult};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
-use regalloc::{RealReg, Reg, RegClass, Set, Writable};
+use regalloc2::{PRegSet, VReg};
 use smallvec::{smallvec, SmallVec};
 
 // We use a generic implementation that factors out AArch64 and x64 ABI commonalities, because
 // these ABIs are very similar.
 
 /// Support for the AArch64 ABI from the callee side (within a function body).
-pub(crate) type AArch64ABICallee = ABICalleeImpl<AArch64MachineDeps>;
+pub(crate) type AArch64Callee = Callee<AArch64MachineDeps>;
 
 /// Support for the AArch64 ABI from the caller side (at a callsite).
-pub(crate) type AArch64ABICaller = ABICallerImpl<AArch64MachineDeps>;
-
-// Spidermonkey specific ABI convention.
-
-/// This is SpiderMonkey's `WasmTableCallSigReg`.
-static BALDRDASH_SIG_REG: u8 = 10;
-
-/// This is SpiderMonkey's `WasmTlsReg`.
-static BALDRDASH_TLS_REG: u8 = 23;
-
-/// Offset in stack-arg area to callee-TLS slot in Baldrdash-2020 calling convention.
-static BALDRDASH_CALLEE_TLS_OFFSET: i64 = 0;
-/// Offset in stack-arg area to caller-TLS slot in Baldrdash-2020 calling convention.
-static BALDRDASH_CALLER_TLS_OFFSET: i64 = 8;
-
-// These two lists represent the registers the JIT may *not* use at any point in generated code.
-//
-// So these are callee-preserved from the JIT's point of view, and every register not in this list
-// has to be caller-preserved by definition.
-//
-// Keep these lists in sync with the NonAllocatableMask set in Spidermonkey's
-// Architecture-arm64.cpp.
-
-// Indexed by physical register number.
-#[rustfmt::skip]
-static BALDRDASH_JIT_CALLEE_SAVED_GPR: &[bool] = &[
-    /* 0 = */ false, false, false, false, false, false, false, false,
-    /* 8 = */ false, false, false, false, false, false, false, false,
-    /* 16 = */ true /* x16 / ip1 */, true /* x17 / ip2 */, true /* x18 / TLS */, false,
-    /* 20 = */ false, false, false, false,
-    /* 24 = */ false, false, false, false,
-    // There should be 28, the pseudo stack pointer in this list, however the wasm stubs trash it
-    // gladly right now.
-    /* 28 = */ false, false, true /* x30 = FP */, false /* x31 = SP */
-];
-
-#[rustfmt::skip]
-static BALDRDASH_JIT_CALLEE_SAVED_FPU: &[bool] = &[
-    /* 0 = */ false, false, false, false, false, false, false, false,
-    /* 8 = */ false, false, false, false, false, false, false, false,
-    /* 16 = */ false, false, false, false, false, false, false, false,
-    /* 24 = */ false, false, false, false, false, false, false, true /* v31 / d31 */
-];
+pub(crate) type AArch64Caller = Caller<AArch64MachineDeps>;
 
 /// This is the limit for the size of argument and return-value areas on the
 /// stack. We place a reasonable limit here to avoid integer overflow issues
 /// with 32-bit arithmetic: for now, 128 MB.
 static STACK_ARG_RET_SIZE_LIMIT: u64 = 128 * 1024 * 1024;
 
-/// Try to fill a Baldrdash register, returning it if it was found.
-fn try_fill_baldrdash_reg(call_conv: isa::CallConv, param: &ir::AbiParam) -> Option<ABIArg> {
-    if call_conv.extends_baldrdash() {
-        match &param.purpose {
-            &ir::ArgumentPurpose::VMContext => {
-                // This is SpiderMonkey's `WasmTlsReg`.
-                Some(ABIArg::reg(
-                    xreg(BALDRDASH_TLS_REG).to_real_reg(),
-                    ir::types::I64,
-                    param.extension,
-                    param.purpose,
-                ))
-            }
-            &ir::ArgumentPurpose::SignatureId => {
-                // This is SpiderMonkey's `WasmTableCallSigReg`.
-                Some(ABIArg::reg(
-                    xreg(BALDRDASH_SIG_REG).to_real_reg(),
-                    ir::types::I64,
-                    param.extension,
-                    param.purpose,
-                ))
-            }
-            &ir::ArgumentPurpose::CalleeTLS => {
-                // This is SpiderMonkey's callee TLS slot in the extended frame of Wasm's ABI-2020.
-                assert!(call_conv == isa::CallConv::Baldrdash2020);
-                Some(ABIArg::stack(
-                    BALDRDASH_CALLEE_TLS_OFFSET,
-                    ir::types::I64,
-                    ir::ArgumentExtension::None,
-                    param.purpose,
-                ))
-            }
-            &ir::ArgumentPurpose::CallerTLS => {
-                // This is SpiderMonkey's caller TLS slot in the extended frame of Wasm's ABI-2020.
-                assert!(call_conv == isa::CallConv::Baldrdash2020);
-                Some(ABIArg::stack(
-                    BALDRDASH_CALLER_TLS_OFFSET,
-                    ir::types::I64,
-                    ir::ArgumentExtension::None,
-                    param.purpose,
-                ))
-            }
-            _ => None,
-        }
-    } else {
-        None
-    }
-}
-
 impl Into<AMode> for StackAMode {
     fn into(self) -> AMode {
         match self {
-            StackAMode::FPOffset(off, ty) => AMode::FPOffset(off, ty),
-            StackAMode::NominalSPOffset(off, ty) => AMode::NominalSPOffset(off, ty),
-            StackAMode::SPOffset(off, ty) => AMode::SPOffset(off, ty),
+            StackAMode::FPOffset(off, ty) => AMode::FPOffset { off, ty },
+            StackAMode::NominalSPOffset(off, ty) => AMode::NominalSPOffset { off, ty },
+            StackAMode::SPOffset(off, ty) => AMode::SPOffset { off, ty },
         }
     }
 }
@@ -135,26 +44,20 @@ impl Into<AMode> for StackAMode {
 // Returns the size of stack space needed to store the
 // `int_reg` and `vec_reg`.
 fn saved_reg_stack_size(
-    call_conv: isa::CallConv,
     int_reg: &[Writable<RealReg>],
     vec_reg: &[Writable<RealReg>],
 ) -> (usize, usize) {
     // Round up to multiple of 2, to keep 16-byte stack alignment.
     let int_save_bytes = (int_reg.len() + (int_reg.len() & 1)) * 8;
-    // The Baldrdash ABIs require saving and restoring the whole 16-byte
-    // SIMD & FP registers, so the necessary stack space is always a
-    // multiple of the mandatory 16-byte stack alignment. However, the
-    // Procedure Call Standard for the Arm 64-bit Architecture (AAPCS64,
-    // including several related ABIs such as the one used by Windows)
-    // mandates saving only the bottom 8 bytes of the vector registers,
-    // so in that case we round up the number of registers to ensure proper
-    // stack alignment (similarly to the situation with `int_reg`).
-    let vec_reg_size = if call_conv.extends_baldrdash() { 16 } else { 8 };
-    let vec_save_padding = if call_conv.extends_baldrdash() {
-        0
-    } else {
-        vec_reg.len() & 1
-    };
+    // The Procedure Call Standard for the Arm 64-bit Architecture
+    // (AAPCS64, including several related ABIs such as the one used by
+    // Windows) mandates saving only the bottom 8 bytes of the vector
+    // registers, so we round up the number of registers to ensure
+    // proper stack alignment (similarly to the situation with
+    // `int_reg`).
+    let vec_reg_size = 8;
+    let vec_save_padding = vec_reg.len() & 1;
+    // FIXME: SVE: ABI is different to Neon, so do we treat all vec regs as Z-regs?
     let vec_save_bytes = (vec_reg.len() + vec_save_padding) * vec_reg_size;
 
     (int_save_bytes, vec_save_bytes)
@@ -162,10 +65,18 @@ fn saved_reg_stack_size(
 
 /// AArch64-specific ABI behavior. This struct just serves as an implementation
 /// point for the trait; it is never actually instantiated.
-pub(crate) struct AArch64MachineDeps;
+pub struct AArch64MachineDeps;
+
+impl IsaFlags for aarch64_settings::Flags {
+    fn is_forward_edge_cfi_enabled(&self) -> bool {
+        self.use_bti()
+    }
+}
 
 impl ABIMachineSpec for AArch64MachineDeps {
     type I = Inst;
+
+    type F = aarch64_settings::Flags;
 
     fn word_bits() -> u32 {
         64
@@ -176,16 +87,18 @@ impl ABIMachineSpec for AArch64MachineDeps {
         16
     }
 
-    fn compute_arg_locs(
+    fn compute_arg_locs<'a, I>(
         call_conv: isa::CallConv,
         _flags: &settings::Flags,
-        params: &[ir::AbiParam],
+        params: I,
         args_or_rets: ArgsOrRets,
         add_ret_area_ptr: bool,
-    ) -> CodegenResult<(Vec<ABIArg>, i64, Option<usize>)> {
+        mut args: ArgsAccumulator<'_>,
+    ) -> CodegenResult<(i64, Option<usize>)>
+    where
+        I: IntoIterator<Item = &'a ir::AbiParam>,
+    {
         let is_apple_cc = call_conv.extends_apple_aarch64();
-        let is_baldrdash = call_conv.extends_baldrdash();
-        let has_baldrdash_tls = call_conv == isa::CallConv::Baldrdash2020;
 
         // See AArch64 ABI (https://github.com/ARM-software/abi-aa/blob/2021Q1/aapcs64/aapcs64.rst#64parameter-passing), sections 6.4.
         //
@@ -204,13 +117,6 @@ impl ABIMachineSpec for AArch64MachineDeps {
         let mut next_xreg = 0;
         let mut next_vreg = 0;
         let mut next_stack: u64 = 0;
-        let mut ret = vec![];
-
-        if args_or_rets == ArgsOrRets::Args && has_baldrdash_tls {
-            // Baldrdash ABI-2020 always has two stack-arg slots reserved, for the callee and
-            // caller TLS-register values, respectively.
-            next_stack = 16;
-        }
 
         let (max_per_class_reg_vals, mut remaining_reg_vals) = match args_or_rets {
             ArgsOrRets::Args => (8, 16), // x0-x7 and v0-v7
@@ -221,12 +127,12 @@ impl ABIMachineSpec for AArch64MachineDeps {
             // we can return values in up to 8 integer and
             // 8 vector registers at once.
             //
-            // In Baldrdash and Wasmtime, we can only use one register for
-            // return value for all the register classes. That is, we can't
-            // return values in both one integer and one vector register; only
-            // one return value may be in a register.
+            // In Wasmtime, we can only use one register for return
+            // value for all the register classes. That is, we can't
+            // return values in both one integer and one vector
+            // register; only one return value may be in a register.
             ArgsOrRets::Rets => {
-                if is_baldrdash || call_conv.extends_wasmtime() {
+                if call_conv.extends_wasmtime() {
                     (1, 1) // x0 or v0, but not both
                 } else {
                     (8, 16) // x0-x7 and v0-v7
@@ -234,31 +140,7 @@ impl ABIMachineSpec for AArch64MachineDeps {
             }
         };
 
-        for i in 0..params.len() {
-            // Process returns backward, according to the SpiderMonkey ABI (which we
-            // adopt internally if `is_baldrdash` is set).
-            let param = match (args_or_rets, is_baldrdash) {
-                (ArgsOrRets::Args, _) => &params[i],
-                (ArgsOrRets::Rets, false) => &params[i],
-                (ArgsOrRets::Rets, true) => &params[params.len() - 1 - i],
-            };
-
-            // Validate "purpose".
-            match &param.purpose {
-                &ir::ArgumentPurpose::VMContext
-                | &ir::ArgumentPurpose::Normal
-                | &ir::ArgumentPurpose::StackLimit
-                | &ir::ArgumentPurpose::SignatureId
-                | &ir::ArgumentPurpose::CallerTLS
-                | &ir::ArgumentPurpose::CalleeTLS
-                | &ir::ArgumentPurpose::StructReturn
-                | &ir::ArgumentPurpose::StructArgument(_) => {}
-                _ => panic!(
-                    "Unsupported argument purpose {:?} in signature: {:?}",
-                    param.purpose, params
-                ),
-            }
-
+        for param in params {
             assert!(
                 legal_type_for_machine(param.value_type),
                 "Invalid type for AArch64: {:?}",
@@ -267,21 +149,35 @@ impl ABIMachineSpec for AArch64MachineDeps {
 
             let (rcs, reg_types) = Inst::rc_for_type(param.value_type)?;
 
-            if let Some(param) = try_fill_baldrdash_reg(call_conv, param) {
-                assert!(rcs[0] == RegClass::I64);
-                ret.push(param);
-                continue;
-            }
-
             if let ir::ArgumentPurpose::StructArgument(size) = param.purpose {
+                assert_eq!(args_or_rets, ArgsOrRets::Args);
                 let offset = next_stack as i64;
                 let size = size as u64;
                 assert!(size % 8 == 0, "StructArgument size is not properly aligned");
                 next_stack += size;
-                ret.push(ABIArg::StructArg {
+                args.push(ABIArg::StructArg {
+                    pointer: None,
                     offset,
                     size,
                     purpose: param.purpose,
+                });
+                continue;
+            }
+
+            if let ir::ArgumentPurpose::StructReturn = param.purpose {
+                // FIXME add assert_eq!(args_or_rets, ArgsOrRets::Args); once
+                // ensure_struct_return_ptr_is_returned is gone.
+                assert!(
+                    param.value_type == types::I64,
+                    "StructReturn must be a pointer sized integer"
+                );
+                args.push(ABIArg::Slots {
+                    slots: smallvec![ABIArgSlot::Reg {
+                        reg: xreg(8).to_real_reg().unwrap(),
+                        ty: types::I64,
+                        extension: param.extension,
+                    },],
+                    purpose: ir::ArgumentPurpose::StructReturn,
                 });
                 continue;
             }
@@ -313,7 +209,7 @@ impl ABIMachineSpec for AArch64MachineDeps {
                     "Unable to handle multi reg params with more than 2 regs"
                 );
                 assert!(
-                    rcs == &[RegClass::I64, RegClass::I64],
+                    rcs == &[RegClass::Int, RegClass::Int],
                     "Unable to handle non i64 regs"
                 );
 
@@ -332,16 +228,16 @@ impl ABIMachineSpec for AArch64MachineDeps {
                     let lower_reg = xreg(next_xreg);
                     let upper_reg = xreg(next_xreg + 1);
 
-                    ret.push(ABIArg::Slots {
-                        slots: vec![
+                    args.push(ABIArg::Slots {
+                        slots: smallvec![
                             ABIArgSlot::Reg {
-                                reg: lower_reg.to_real_reg(),
-                                ty: param.value_type,
+                                reg: lower_reg.to_real_reg().unwrap(),
+                                ty: reg_types[0],
                                 extension: param.extension,
                             },
                             ABIArgSlot::Reg {
-                                reg: upper_reg.to_real_reg(),
-                                ty: param.value_type,
+                                reg: upper_reg.to_real_reg().unwrap(),
+                                ty: reg_types[1],
                                 extension: param.extension,
                             },
                         ],
@@ -356,20 +252,24 @@ impl ABIMachineSpec for AArch64MachineDeps {
                 // Single Register parameters
                 let rc = rcs[0];
                 let next_reg = match rc {
-                    RegClass::I64 => &mut next_xreg,
-                    RegClass::V128 => &mut next_vreg,
-                    _ => panic!("Invalid register class: {:?}", rc),
+                    RegClass::Int => &mut next_xreg,
+                    RegClass::Float => &mut next_vreg,
                 };
 
                 if *next_reg < max_per_class_reg_vals && remaining_reg_vals > 0 {
                     let reg = match rc {
-                        RegClass::I64 => xreg(*next_reg),
-                        RegClass::V128 => vreg(*next_reg),
-                        _ => unreachable!(),
+                        RegClass::Int => xreg(*next_reg),
+                        RegClass::Float => vreg(*next_reg),
                     };
-                    ret.push(ABIArg::reg(
-                        reg.to_real_reg(),
-                        param.value_type,
+                    // Overlay Z-regs on V-regs for parameter passing.
+                    let ty = if param.value_type.is_dynamic_vector() {
+                        dynamic_to_fixed(param.value_type)
+                    } else {
+                        param.value_type
+                    };
+                    args.push(ABIArg::reg(
+                        reg.to_real_reg().unwrap(),
+                        ty,
                         param.extension,
                         param.purpose,
                     ));
@@ -419,7 +319,7 @@ impl ABIMachineSpec for AArch64MachineDeps {
                 })
                 .collect();
 
-            ret.push(ABIArg::Slots {
+            args.push(ABIArg::Slots {
                 slots,
                 purpose: param.purpose,
             });
@@ -427,21 +327,17 @@ impl ABIMachineSpec for AArch64MachineDeps {
             next_stack += size;
         }
 
-        if args_or_rets == ArgsOrRets::Rets && is_baldrdash {
-            ret.reverse();
-        }
-
         let extra_arg = if add_ret_area_ptr {
             debug_assert!(args_or_rets == ArgsOrRets::Args);
             if next_xreg < max_per_class_reg_vals && remaining_reg_vals > 0 {
-                ret.push(ABIArg::reg(
-                    xreg(next_xreg).to_real_reg(),
+                args.push(ABIArg::reg(
+                    xreg(next_xreg).to_real_reg().unwrap(),
                     I64,
                     ir::ArgumentExtension::None,
                     ir::ArgumentPurpose::Normal,
                 ));
             } else {
-                ret.push(ABIArg::stack(
+                args.push(ABIArg::stack(
                     next_stack as i64,
                     I64,
                     ir::ArgumentExtension::None,
@@ -449,7 +345,7 @@ impl ABIMachineSpec for AArch64MachineDeps {
                 ));
                 next_stack += 8;
             }
-            Some(ret.len() - 1)
+            Some(args.args().len() - 1)
         } else {
             None
         };
@@ -462,18 +358,11 @@ impl ABIMachineSpec for AArch64MachineDeps {
             return Err(CodegenError::ImplLimitExceeded);
         }
 
-        Ok((ret, next_stack as i64, extra_arg))
+        Ok((next_stack as i64, extra_arg))
     }
 
-    fn fp_to_arg_offset(call_conv: isa::CallConv, flags: &settings::Flags) -> i64 {
-        if call_conv.extends_baldrdash() {
-            let num_words = flags.baldrdash_prologue_words() as i64;
-            debug_assert!(num_words > 0, "baldrdash must set baldrdash_prologue_words");
-            debug_assert_eq!(num_words % 2, 0, "stack must be 16-aligned");
-            num_words * 8
-        } else {
-            16 // frame pointer + return address.
-        }
+    fn fp_to_arg_offset(_call_conv: isa::CallConv, _flags: &settings::Flags) -> i64 {
+        16 // frame pointer + return address.
     }
 
     fn gen_load_stack(mem: StackAMode, into_reg: Writable<Reg>, ty: Type) -> Inst {
@@ -505,8 +394,26 @@ impl ABIMachineSpec for AArch64MachineDeps {
         }
     }
 
-    fn gen_ret() -> Inst {
-        Inst::Ret
+    fn gen_args(_isa_flags: &aarch64_settings::Flags, args: Vec<ArgPair>) -> Inst {
+        Inst::Args { args }
+    }
+
+    fn gen_ret(setup_frame: bool, isa_flags: &aarch64_settings::Flags, rets: Vec<RetPair>) -> Inst {
+        if isa_flags.sign_return_address() && (setup_frame || isa_flags.sign_return_address_all()) {
+            let key = if isa_flags.sign_return_address_with_bkey() {
+                APIKey::B
+            } else {
+                APIKey::A
+            };
+
+            Inst::AuthenticatedRet {
+                key,
+                is_hint: !isa_flags.has_pauth(),
+                rets,
+            }
+        } else {
+            Inst::Ret { rets }
+        }
     }
 
     fn gen_add_imm(into_reg: Writable<Reg>, from_reg: Reg, imm: u32) -> SmallInstVec<Inst> {
@@ -523,7 +430,10 @@ impl ABIMachineSpec for AArch64MachineDeps {
         } else {
             let scratch2 = writable_tmp2_reg();
             assert_ne!(scratch2.to_reg(), from_reg);
-            insts.extend(Inst::load_constant(scratch2, imm.into()));
+            // `gen_add_imm` is only ever called after register allocation has take place, and as a
+            // result it's ok to reuse the scratch2 register here. If that changes, we'll need to
+            // plumb through a way to allocate temporary virtual registers
+            insts.extend(Inst::load_constant(scratch2, imm.into(), &mut |_| scratch2));
             insts.push(Inst::AluRRRExtend {
                 alu_op: ALUOp::Add,
                 size: OperandSize::Size64,
@@ -555,11 +465,8 @@ impl ABIMachineSpec for AArch64MachineDeps {
         insts
     }
 
-    fn gen_epilogue_placeholder() -> Inst {
-        Inst::EpiloguePlaceholder
-    }
-
     fn gen_get_stack_addr(mem: StackAMode, into_reg: Writable<Reg>, _ty: Type) -> Inst {
+        // FIXME: Do something different for dynamic types?
         let mem = mem.into();
         Inst::LoadAddr { rd: into_reg, mem }
     }
@@ -569,12 +476,20 @@ impl ABIMachineSpec for AArch64MachineDeps {
     }
 
     fn gen_load_base_offset(into_reg: Writable<Reg>, base: Reg, offset: i32, ty: Type) -> Inst {
-        let mem = AMode::RegOffset(base, offset as i64, ty);
+        let mem = AMode::RegOffset {
+            rn: base,
+            off: offset as i64,
+            ty,
+        };
         Inst::gen_load(into_reg, mem, ty, MemFlags::trusted())
     }
 
     fn gen_store_base_offset(base: Reg, offset: i32, from_reg: Reg, ty: Type) -> Inst {
-        let mem = AMode::RegOffset(base, offset as i64, ty);
+        let mem = AMode::RegOffset {
+            rn: base,
+            off: offset as i64,
+            ty,
+        };
         Inst::gen_store(mem, from_reg, ty, MemFlags::trusted())
     }
 
@@ -603,7 +518,9 @@ impl ABIMachineSpec for AArch64MachineDeps {
             ret.push(adj_inst);
         } else {
             let tmp = writable_spilltmp_reg();
-            let const_inst = Inst::load_constant(tmp, amount);
+            // `gen_sp_reg_adjust` is called after regalloc2, so it's acceptable to reuse `tmp` for
+            // intermediates in `load_constant`.
+            let const_inst = Inst::load_constant(tmp, amount, &mut |_| tmp);
             let adj_inst = Inst::AluRRRExtend {
                 alu_op,
                 size: OperandSize::Size64,
@@ -624,18 +541,47 @@ impl ABIMachineSpec for AArch64MachineDeps {
         }
     }
 
-    fn gen_debug_frame_info(
+    fn gen_prologue_start(
+        setup_frame: bool,
+        call_conv: isa::CallConv,
         flags: &settings::Flags,
-        _isa_flags: &Vec<settings::Value>,
+        isa_flags: &aarch64_settings::Flags,
     ) -> SmallInstVec<Inst> {
         let mut insts = SmallVec::new();
-        if flags.unwind_info() {
-            insts.push(Inst::Unwind {
-                inst: UnwindInst::Aarch64SetPointerAuth {
-                    return_addresses: false,
-                },
-            });
+
+        if isa_flags.sign_return_address() && (setup_frame || isa_flags.sign_return_address_all()) {
+            let key = if isa_flags.sign_return_address_with_bkey() {
+                APIKey::B
+            } else {
+                APIKey::A
+            };
+
+            insts.push(Inst::Pacisp { key });
+
+            if flags.unwind_info() {
+                insts.push(Inst::Unwind {
+                    inst: UnwindInst::Aarch64SetPointerAuth {
+                        return_addresses: true,
+                    },
+                });
+            }
+        } else {
+            if isa_flags.use_bti() {
+                insts.push(Inst::Bti {
+                    targets: BranchTargetType::C,
+                });
+            }
+
+            if flags.unwind_info() && call_conv.extends_apple_aarch64() {
+                // The macOS unwinder seems to require this.
+                insts.push(Inst::Unwind {
+                    inst: UnwindInst::Aarch64SetPointerAuth {
+                        return_addresses: false,
+                    },
+                });
+            }
         }
+
         insts
     }
 
@@ -646,10 +592,7 @@ impl ABIMachineSpec for AArch64MachineDeps {
         insts.push(Inst::StoreP64 {
             rt: fp_reg(),
             rt2: link_reg(),
-            mem: PairAMode::PreIndexed(
-                writable_stack_reg(),
-                SImm7Scaled::maybe_from_i64(-16, types::I64).unwrap(),
-            ),
+            mem: PairAMode::SPPreIndexed(SImm7Scaled::maybe_from_i64(-16, types::I64).unwrap()),
             flags: MemFlags::trusted(),
         });
 
@@ -687,28 +630,73 @@ impl ABIMachineSpec for AArch64MachineDeps {
         insts.push(Inst::LoadP64 {
             rt: writable_fp_reg(),
             rt2: writable_link_reg(),
-            mem: PairAMode::PostIndexed(
-                writable_stack_reg(),
-                SImm7Scaled::maybe_from_i64(16, types::I64).unwrap(),
-            ),
+            mem: PairAMode::SPPostIndexed(SImm7Scaled::maybe_from_i64(16, types::I64).unwrap()),
             flags: MemFlags::trusted(),
         });
         insts
     }
 
-    fn gen_probestack(_: u32) -> SmallInstVec<Self::I> {
+    fn gen_probestack(_insts: &mut SmallInstVec<Self::I>, _: u32) {
         // TODO: implement if we ever require stack probes on an AArch64 host
         // (unlikely unless Lucet is ported)
-        smallvec![]
+        unimplemented!("Stack probing is unimplemented on AArch64");
+    }
+
+    fn gen_inline_probestack(insts: &mut SmallInstVec<Self::I>, frame_size: u32, guard_size: u32) {
+        // The stack probe loop currently takes 6 instructions and each inline
+        // probe takes 2 (ish, these numbers sort of depend on the constants).
+        // Set this to 3 to keep the max size of the probe to 6 instructions.
+        const PROBE_MAX_UNROLL: u32 = 3;
+
+        let probe_count = align_to(frame_size, guard_size) / guard_size;
+        if probe_count <= PROBE_MAX_UNROLL {
+            // When manually unrolling stick an instruction that stores 0 at a
+            // constant offset relative to the stack pointer. This will
+            // turn into something like `movn tmp, #n ; stur xzr [sp, tmp]`.
+            //
+            // Note that this may actually store beyond the stack size for the
+            // last item but that's ok since it's unused stack space and if
+            // that faults accidentally we're so close to faulting it shouldn't
+            // make too much difference to fault there.
+            insts.reserve(probe_count as usize);
+            for i in 0..probe_count {
+                let offset = (guard_size * (i + 1)) as i64;
+                insts.push(Self::gen_store_stack(
+                    StackAMode::SPOffset(-offset, I8),
+                    zero_reg(),
+                    I32,
+                ));
+            }
+        } else {
+            // The non-unrolled version uses two temporary registers. The
+            // `start` contains the current offset from sp and counts downwards
+            // during the loop by increments of `guard_size`. The `end` is
+            // the size of the frame and where we stop.
+            //
+            // Note that this emission is all post-regalloc so it should be ok
+            // to use the temporary registers here as input/output as the loop
+            // itself is not allowed to use the registers.
+            let start = writable_spilltmp_reg();
+            let end = writable_tmp2_reg();
+            // `gen_inline_probestack` is called after regalloc2, so it's acceptable to reuse
+            // `start` and `end` as temporaries in load_constant.
+            insts.extend(Inst::load_constant(start, 0, &mut |_| start));
+            insts.extend(Inst::load_constant(end, frame_size.into(), &mut |_| end));
+            insts.push(Inst::StackProbeLoop {
+                start,
+                end: end.to_reg(),
+                step: Imm12::maybe_from_u64(guard_size.into()).unwrap(),
+            });
+        }
     }
 
     // Returns stack bytes used as well as instructions. Does not adjust
-    // nominal SP offset; abi_impl generic code will do that.
+    // nominal SP offset; abi generic code will do that.
     fn gen_clobber_save(
-        call_conv: isa::CallConv,
+        _call_conv: isa::CallConv,
         setup_frame: bool,
         flags: &settings::Flags,
-        clobbered_callee_saves: &Vec<Writable<RealReg>>,
+        clobbered_callee_saves: &[Writable<RealReg>],
         fixed_frame_storage_size: u32,
         _outgoing_args_size: u32,
     ) -> (u64, SmallVec<[Inst; 16]>) {
@@ -716,15 +704,13 @@ impl ABIMachineSpec for AArch64MachineDeps {
         let mut clobbered_vec = vec![];
 
         for &reg in clobbered_callee_saves.iter() {
-            match reg.to_reg().get_class() {
-                RegClass::I64 => clobbered_int.push(reg),
-                RegClass::V128 => clobbered_vec.push(reg),
-                class => panic!("Unexpected RegClass: {:?}", class),
+            match reg.to_reg().class() {
+                RegClass::Int => clobbered_int.push(reg),
+                RegClass::Float => clobbered_vec.push(reg),
             }
         }
 
-        let (int_save_bytes, vec_save_bytes) =
-            saved_reg_stack_size(call_conv, &clobbered_int, &clobbered_vec);
+        let (int_save_bytes, vec_save_bytes) = saved_reg_stack_size(&clobbered_int, &clobbered_vec);
         let total_save_bytes = int_save_bytes + vec_save_bytes;
         let clobber_size = total_save_bytes as i32;
         let mut insts = SmallVec::new();
@@ -758,16 +744,15 @@ impl ABIMachineSpec for AArch64MachineDeps {
         let iter = clobbered_int.chunks_exact(2);
 
         if let [rd] = iter.remainder() {
-            let rd = rd.to_reg().to_reg();
+            let rd: Reg = rd.to_reg().into();
 
-            debug_assert_eq!(rd.get_class(), RegClass::I64);
+            debug_assert_eq!(rd.class(), RegClass::Int);
             // str rd, [sp, #-16]!
             insts.push(Inst::Store64 {
                 rd,
-                mem: AMode::PreIndexed(
-                    writable_stack_reg(),
-                    SImm9::maybe_from_i64(-clobber_offset_change).unwrap(),
-                ),
+                mem: AMode::SPPreIndexed {
+                    simm9: SImm9::maybe_from_i64(-clobber_offset_change).unwrap(),
+                },
                 flags: MemFlags::trusted(),
             });
 
@@ -776,7 +761,7 @@ impl ABIMachineSpec for AArch64MachineDeps {
                 insts.push(Inst::Unwind {
                     inst: UnwindInst::SaveReg {
                         clobber_offset,
-                        reg: rd.to_real_reg(),
+                        reg: rd.to_real_reg().unwrap(),
                     },
                 });
             }
@@ -785,19 +770,18 @@ impl ABIMachineSpec for AArch64MachineDeps {
         let mut iter = iter.rev();
 
         while let Some([rt, rt2]) = iter.next() {
-            // .to_reg().to_reg(): Writable<RealReg> --> RealReg --> Reg
-            let rt = rt.to_reg().to_reg();
-            let rt2 = rt2.to_reg().to_reg();
+            // .to_reg().into(): Writable<RealReg> --> RealReg --> Reg
+            let rt: Reg = rt.to_reg().into();
+            let rt2: Reg = rt2.to_reg().into();
 
-            debug_assert!(rt.get_class() == RegClass::I64);
-            debug_assert!(rt2.get_class() == RegClass::I64);
+            debug_assert!(rt.class() == RegClass::Int);
+            debug_assert!(rt2.class() == RegClass::Int);
 
             // stp rt, rt2, [sp, #-16]!
             insts.push(Inst::StoreP64 {
                 rt,
                 rt2,
-                mem: PairAMode::PreIndexed(
-                    writable_stack_reg(),
+                mem: PairAMode::SPPreIndexed(
                     SImm7Scaled::maybe_from_i64(-clobber_offset_change, types::I64).unwrap(),
                 ),
                 flags: MemFlags::trusted(),
@@ -808,45 +792,31 @@ impl ABIMachineSpec for AArch64MachineDeps {
                 insts.push(Inst::Unwind {
                     inst: UnwindInst::SaveReg {
                         clobber_offset,
-                        reg: rt.to_real_reg(),
+                        reg: rt.to_real_reg().unwrap(),
                     },
                 });
                 insts.push(Inst::Unwind {
                     inst: UnwindInst::SaveReg {
                         clobber_offset: clobber_offset + (clobber_offset_change / 2) as u32,
-                        reg: rt2.to_real_reg(),
+                        reg: rt2.to_real_reg().unwrap(),
                     },
                 });
             }
         }
 
-        let store_vec_reg = |rd| {
-            if call_conv.extends_baldrdash() {
-                Inst::FpuStore128 {
-                    rd,
-                    mem: AMode::PreIndexed(
-                        writable_stack_reg(),
-                        SImm9::maybe_from_i64(-clobber_offset_change).unwrap(),
-                    ),
-                    flags: MemFlags::trusted(),
-                }
-            } else {
-                Inst::FpuStore64 {
-                    rd,
-                    mem: AMode::PreIndexed(
-                        writable_stack_reg(),
-                        SImm9::maybe_from_i64(-clobber_offset_change).unwrap(),
-                    ),
-                    flags: MemFlags::trusted(),
-                }
-            }
+        let store_vec_reg = |rd| Inst::FpuStore64 {
+            rd,
+            mem: AMode::SPPreIndexed {
+                simm9: SImm9::maybe_from_i64(-clobber_offset_change).unwrap(),
+            },
+            flags: MemFlags::trusted(),
         };
         let iter = clobbered_vec.chunks_exact(2);
 
         if let [rd] = iter.remainder() {
-            let rd = rd.to_reg().to_reg();
+            let rd: Reg = rd.to_reg().into();
 
-            debug_assert_eq!(rd.get_class(), RegClass::V128);
+            debug_assert_eq!(rd.class(), RegClass::Float);
             insts.push(store_vec_reg(rd));
 
             if flags.unwind_info() {
@@ -854,53 +824,35 @@ impl ABIMachineSpec for AArch64MachineDeps {
                 insts.push(Inst::Unwind {
                     inst: UnwindInst::SaveReg {
                         clobber_offset,
-                        reg: rd.to_real_reg(),
+                        reg: rd.to_real_reg().unwrap(),
                     },
                 });
             }
         }
 
         let store_vec_reg_pair = |rt, rt2| {
-            if call_conv.extends_baldrdash() {
-                let clobber_offset_change = 32;
+            let clobber_offset_change = 16;
 
-                (
-                    Inst::FpuStoreP128 {
-                        rt,
-                        rt2,
-                        mem: PairAMode::PreIndexed(
-                            writable_stack_reg(),
-                            SImm7Scaled::maybe_from_i64(-clobber_offset_change, I8X16).unwrap(),
-                        ),
-                        flags: MemFlags::trusted(),
-                    },
-                    clobber_offset_change as u32,
-                )
-            } else {
-                let clobber_offset_change = 16;
-
-                (
-                    Inst::FpuStoreP64 {
-                        rt,
-                        rt2,
-                        mem: PairAMode::PreIndexed(
-                            writable_stack_reg(),
-                            SImm7Scaled::maybe_from_i64(-clobber_offset_change, F64).unwrap(),
-                        ),
-                        flags: MemFlags::trusted(),
-                    },
-                    clobber_offset_change as u32,
-                )
-            }
+            (
+                Inst::FpuStoreP64 {
+                    rt,
+                    rt2,
+                    mem: PairAMode::SPPreIndexed(
+                        SImm7Scaled::maybe_from_i64(-clobber_offset_change, F64).unwrap(),
+                    ),
+                    flags: MemFlags::trusted(),
+                },
+                clobber_offset_change as u32,
+            )
         };
         let mut iter = iter.rev();
 
         while let Some([rt, rt2]) = iter.next() {
-            let rt = rt.to_reg().to_reg();
-            let rt2 = rt2.to_reg().to_reg();
+            let rt: Reg = rt.to_reg().into();
+            let rt2: Reg = rt2.to_reg().into();
 
-            debug_assert_eq!(rt.get_class(), RegClass::V128);
-            debug_assert_eq!(rt2.get_class(), RegClass::V128);
+            debug_assert_eq!(rt.class(), RegClass::Float);
+            debug_assert_eq!(rt2.class(), RegClass::Float);
 
             let (inst, clobber_offset_change) = store_vec_reg_pair(rt, rt2);
 
@@ -911,13 +863,13 @@ impl ABIMachineSpec for AArch64MachineDeps {
                 insts.push(Inst::Unwind {
                     inst: UnwindInst::SaveReg {
                         clobber_offset,
-                        reg: rt.to_real_reg(),
+                        reg: rt.to_real_reg().unwrap(),
                     },
                 });
                 insts.push(Inst::Unwind {
                     inst: UnwindInst::SaveReg {
                         clobber_offset: clobber_offset + clobber_offset_change / 2,
-                        reg: rt2.to_real_reg(),
+                        reg: rt2.to_real_reg().unwrap(),
                     },
                 });
             }
@@ -932,101 +884,68 @@ impl ABIMachineSpec for AArch64MachineDeps {
     }
 
     fn gen_clobber_restore(
-        call_conv: isa::CallConv,
+        _call_conv: isa::CallConv,
+        sig: &Signature,
         flags: &settings::Flags,
-        clobbers: &Set<Writable<RealReg>>,
+        clobbers: &[Writable<RealReg>],
         fixed_frame_storage_size: u32,
         _outgoing_args_size: u32,
     ) -> SmallVec<[Inst; 16]> {
         let mut insts = SmallVec::new();
-        let (clobbered_int, clobbered_vec) = get_regs_restored_in_epilogue(call_conv, clobbers);
+        let (clobbered_int, clobbered_vec) = get_regs_restored_in_epilogue(flags, sig, clobbers);
 
         // Free the fixed frame if necessary.
         if fixed_frame_storage_size > 0 {
             insts.extend(Self::gen_sp_reg_adjust(fixed_frame_storage_size as i32));
         }
 
-        let load_vec_reg = |rd| {
-            if call_conv.extends_baldrdash() {
-                Inst::FpuLoad128 {
-                    rd,
-                    mem: AMode::PostIndexed(
-                        writable_stack_reg(),
-                        SImm9::maybe_from_i64(16).unwrap(),
-                    ),
-                    flags: MemFlags::trusted(),
-                }
-            } else {
-                Inst::FpuLoad64 {
-                    rd,
-                    mem: AMode::PostIndexed(
-                        writable_stack_reg(),
-                        SImm9::maybe_from_i64(16).unwrap(),
-                    ),
-                    flags: MemFlags::trusted(),
-                }
-            }
+        let load_vec_reg = |rd| Inst::FpuLoad64 {
+            rd,
+            mem: AMode::SPPostIndexed {
+                simm9: SImm9::maybe_from_i64(16).unwrap(),
+            },
+            flags: MemFlags::trusted(),
         };
-        let load_vec_reg_pair = |rt, rt2| {
-            if call_conv.extends_baldrdash() {
-                Inst::FpuLoadP128 {
-                    rt,
-                    rt2,
-                    mem: PairAMode::PostIndexed(
-                        writable_stack_reg(),
-                        SImm7Scaled::maybe_from_i64(32, I8X16).unwrap(),
-                    ),
-                    flags: MemFlags::trusted(),
-                }
-            } else {
-                Inst::FpuLoadP64 {
-                    rt,
-                    rt2,
-                    mem: PairAMode::PostIndexed(
-                        writable_stack_reg(),
-                        SImm7Scaled::maybe_from_i64(16, F64).unwrap(),
-                    ),
-                    flags: MemFlags::trusted(),
-                }
-            }
+        let load_vec_reg_pair = |rt, rt2| Inst::FpuLoadP64 {
+            rt,
+            rt2,
+            mem: PairAMode::SPPostIndexed(SImm7Scaled::maybe_from_i64(16, F64).unwrap()),
+            flags: MemFlags::trusted(),
         };
 
         let mut iter = clobbered_vec.chunks_exact(2);
 
         while let Some([rt, rt2]) = iter.next() {
-            let rt = rt.map(|r| r.to_reg());
-            let rt2 = rt2.map(|r| r.to_reg());
+            let rt: Writable<Reg> = rt.map(|r| r.into());
+            let rt2: Writable<Reg> = rt2.map(|r| r.into());
 
-            debug_assert_eq!(rt.to_reg().get_class(), RegClass::V128);
-            debug_assert_eq!(rt2.to_reg().get_class(), RegClass::V128);
+            debug_assert_eq!(rt.to_reg().class(), RegClass::Float);
+            debug_assert_eq!(rt2.to_reg().class(), RegClass::Float);
             insts.push(load_vec_reg_pair(rt, rt2));
         }
 
         debug_assert!(iter.remainder().len() <= 1);
 
         if let [rd] = iter.remainder() {
-            let rd = rd.map(|r| r.to_reg());
+            let rd: Writable<Reg> = rd.map(|r| r.into());
 
-            debug_assert_eq!(rd.to_reg().get_class(), RegClass::V128);
+            debug_assert_eq!(rd.to_reg().class(), RegClass::Float);
             insts.push(load_vec_reg(rd));
         }
 
         let mut iter = clobbered_int.chunks_exact(2);
 
         while let Some([rt, rt2]) = iter.next() {
-            let rt = rt.map(|r| r.to_reg());
-            let rt2 = rt2.map(|r| r.to_reg());
+            let rt: Writable<Reg> = rt.map(|r| r.into());
+            let rt2: Writable<Reg> = rt2.map(|r| r.into());
 
-            debug_assert_eq!(rt.to_reg().get_class(), RegClass::I64);
-            debug_assert_eq!(rt2.to_reg().get_class(), RegClass::I64);
+            debug_assert_eq!(rt.to_reg().class(), RegClass::Int);
+            debug_assert_eq!(rt2.to_reg().class(), RegClass::Int);
             // ldp rt, rt2, [sp], #16
             insts.push(Inst::LoadP64 {
                 rt,
                 rt2,
-                mem: PairAMode::PostIndexed(
-                    writable_stack_reg(),
-                    SImm7Scaled::maybe_from_i64(16, I64).unwrap(),
-                ),
+                mem: PairAMode::SPPostIndexed(SImm7Scaled::maybe_from_i64(16, I64).unwrap()),
                 flags: MemFlags::trusted(),
             });
         }
@@ -1034,28 +953,17 @@ impl ABIMachineSpec for AArch64MachineDeps {
         debug_assert!(iter.remainder().len() <= 1);
 
         if let [rd] = iter.remainder() {
-            let rd = rd.map(|r| r.to_reg());
+            let rd: Writable<Reg> = rd.map(|r| r.into());
 
-            debug_assert_eq!(rd.to_reg().get_class(), RegClass::I64);
+            debug_assert_eq!(rd.to_reg().class(), RegClass::Int);
             // ldr rd, [sp], #16
             insts.push(Inst::ULoad64 {
                 rd,
-                mem: AMode::PostIndexed(writable_stack_reg(), SImm9::maybe_from_i64(16).unwrap()),
+                mem: AMode::SPPostIndexed {
+                    simm9: SImm9::maybe_from_i64(16).unwrap(),
+                },
                 flags: MemFlags::trusted(),
             });
-        }
-
-        // If this is Baldrdash-2020, restore the callee (i.e., our) TLS
-        // register. We may have allocated it for something else and clobbered
-        // it, but the ABI expects us to leave the TLS register unchanged.
-        if call_conv == isa::CallConv::Baldrdash2020 {
-            let off = BALDRDASH_CALLEE_TLS_OFFSET + Self::fp_to_arg_offset(call_conv, flags);
-            insts.push(Inst::gen_load(
-                writable_xreg(BALDRDASH_TLS_REG),
-                AMode::UnsignedOffset(fp_reg(), UImm12Scaled::maybe_from_i64(off, I64).unwrap()),
-                I64,
-                MemFlags::trusted(),
-            ));
         }
 
         insts
@@ -1063,89 +971,93 @@ impl ABIMachineSpec for AArch64MachineDeps {
 
     fn gen_call(
         dest: &CallDest,
-        uses: Vec<Reg>,
-        defs: Vec<Writable<Reg>>,
+        uses: CallArgList,
+        defs: CallRetList,
+        clobbers: PRegSet,
         opcode: ir::Opcode,
         tmp: Writable<Reg>,
         callee_conv: isa::CallConv,
         caller_conv: isa::CallConv,
-    ) -> SmallVec<[(InstIsSafepoint, Inst); 2]> {
+    ) -> SmallVec<[Inst; 2]> {
         let mut insts = SmallVec::new();
         match &dest {
-            &CallDest::ExtName(ref name, RelocDistance::Near) => insts.push((
-                InstIsSafepoint::Yes,
-                Inst::Call {
-                    info: Box::new(CallInfo {
-                        dest: name.clone(),
-                        uses,
-                        defs,
-                        opcode,
-                        caller_callconv: caller_conv,
-                        callee_callconv: callee_conv,
-                    }),
-                },
-            )),
+            &CallDest::ExtName(ref name, RelocDistance::Near) => insts.push(Inst::Call {
+                info: Box::new(CallInfo {
+                    dest: name.clone(),
+                    uses,
+                    defs,
+                    clobbers,
+                    opcode,
+                    caller_callconv: caller_conv,
+                    callee_callconv: callee_conv,
+                }),
+            }),
             &CallDest::ExtName(ref name, RelocDistance::Far) => {
-                insts.push((
-                    InstIsSafepoint::No,
-                    Inst::LoadExtName {
-                        rd: tmp,
-                        name: Box::new(name.clone()),
-                        offset: 0,
-                    },
-                ));
-                insts.push((
-                    InstIsSafepoint::Yes,
-                    Inst::CallInd {
-                        info: Box::new(CallIndInfo {
-                            rn: tmp.to_reg(),
-                            uses,
-                            defs,
-                            opcode,
-                            caller_callconv: caller_conv,
-                            callee_callconv: callee_conv,
-                        }),
-                    },
-                ));
-            }
-            &CallDest::Reg(reg) => insts.push((
-                InstIsSafepoint::Yes,
-                Inst::CallInd {
+                insts.push(Inst::LoadExtName {
+                    rd: tmp,
+                    name: Box::new(name.clone()),
+                    offset: 0,
+                });
+                insts.push(Inst::CallInd {
                     info: Box::new(CallIndInfo {
-                        rn: *reg,
+                        rn: tmp.to_reg(),
                         uses,
                         defs,
+                        clobbers,
                         opcode,
                         caller_callconv: caller_conv,
                         callee_callconv: callee_conv,
                     }),
-                },
-            )),
+                });
+            }
+            &CallDest::Reg(reg) => insts.push(Inst::CallInd {
+                info: Box::new(CallIndInfo {
+                    rn: *reg,
+                    uses,
+                    defs,
+                    clobbers,
+                    opcode,
+                    caller_callconv: caller_conv,
+                    callee_callconv: callee_conv,
+                }),
+            }),
         }
 
         insts
     }
 
-    fn gen_memcpy(
+    fn gen_memcpy<F: FnMut(Type) -> Writable<Reg>>(
         call_conv: isa::CallConv,
         dst: Reg,
         src: Reg,
         size: usize,
+        mut alloc_tmp: F,
     ) -> SmallVec<[Self::I; 8]> {
-        // Baldrdash should not use struct args.
-        assert!(!call_conv.extends_baldrdash());
         let mut insts = SmallVec::new();
         let arg0 = writable_xreg(0);
         let arg1 = writable_xreg(1);
         let arg2 = writable_xreg(2);
-        insts.push(Inst::gen_move(arg0, dst, I64));
-        insts.push(Inst::gen_move(arg1, src, I64));
-        insts.extend(Inst::load_constant(arg2, size as u64).into_iter());
+        let tmp = alloc_tmp(Self::word_type());
+        insts.extend(Inst::load_constant(tmp, size as u64, &mut alloc_tmp));
         insts.push(Inst::Call {
             info: Box::new(CallInfo {
                 dest: ExternalName::LibCall(LibCall::Memcpy),
-                uses: vec![arg0.to_reg(), arg1.to_reg(), arg2.to_reg()],
-                defs: Self::get_regs_clobbered_by_call(call_conv),
+                uses: smallvec![
+                    CallArgPair {
+                        vreg: dst,
+                        preg: arg0.to_reg()
+                    },
+                    CallArgPair {
+                        vreg: src,
+                        preg: arg1.to_reg()
+                    },
+                    CallArgPair {
+                        vreg: tmp.to_reg(),
+                        preg: arg2.to_reg()
+                    }
+                ],
+                defs: smallvec![],
+                clobbers: Self::get_regs_clobbered_by_call(call_conv),
                 opcode: Opcode::Call,
                 caller_callconv: call_conv,
                 callee_callconv: call_conv,
@@ -1154,12 +1066,12 @@ impl ABIMachineSpec for AArch64MachineDeps {
         insts
     }
 
-    fn get_number_of_spillslots_for_value(rc: RegClass) -> u32 {
+    fn get_number_of_spillslots_for_value(rc: RegClass, vector_size: u32) -> u32 {
+        assert_eq!(vector_size % 8, 0);
         // We allocate in terms of 8-byte slots.
         match rc {
-            RegClass::I64 => 1,
-            RegClass::V128 => 2,
-            _ => panic!("Unexpected register class!"),
+            RegClass::Int => 1,
+            RegClass::Float => vector_size / 8,
         }
     }
 
@@ -1173,49 +1085,32 @@ impl ABIMachineSpec for AArch64MachineDeps {
         s.nominal_sp_to_fp
     }
 
-    fn get_regs_clobbered_by_call(call_conv_of_callee: isa::CallConv) -> Vec<Writable<Reg>> {
-        let mut caller_saved = Vec::new();
-        for i in 0..29 {
-            let x = writable_xreg(i);
-            if is_reg_clobbered_by_call(call_conv_of_callee, x.to_reg().to_real_reg()) {
-                caller_saved.push(x);
-            }
-        }
-        for i in 0..32 {
-            let v = writable_vreg(i);
-            if is_reg_clobbered_by_call(call_conv_of_callee, v.to_reg().to_real_reg()) {
-                caller_saved.push(v);
-            }
-        }
-        caller_saved
+    fn get_regs_clobbered_by_call(_call_conv_of_callee: isa::CallConv) -> PRegSet {
+        DEFAULT_AAPCS_CLOBBERS
     }
 
     fn get_ext_mode(
-        call_conv: isa::CallConv,
-        specified: ir::ArgumentExtension,
+        _call_conv: isa::CallConv,
+        _specified: ir::ArgumentExtension,
     ) -> ir::ArgumentExtension {
-        if call_conv.extends_baldrdash() {
-            // Baldrdash (SpiderMonkey) always extends args and return values to the full register.
-            specified
-        } else {
-            // No other supported ABI on AArch64 does so.
-            ir::ArgumentExtension::None
-        }
+        ir::ArgumentExtension::None
     }
 
     fn get_clobbered_callee_saves(
-        call_conv: isa::CallConv,
-        regs: &Set<Writable<RealReg>>,
+        _call_conv: isa::CallConv,
+        flags: &settings::Flags,
+        sig: &Signature,
+        regs: &[Writable<RealReg>],
     ) -> Vec<Writable<RealReg>> {
         let mut regs: Vec<Writable<RealReg>> = regs
             .iter()
             .cloned()
-            .filter(|r| is_reg_saved_in_prologue(call_conv, r.to_reg()))
+            .filter(|r| is_reg_saved_in_prologue(flags.enable_pinned_reg(), sig, r.to_reg()))
             .collect();
 
         // Sort registers for deterministic code output. We can do an unstable
         // sort because the registers will be unique (there are no dups).
-        regs.sort_unstable_by_key(|r| r.to_reg().get_index());
+        regs.sort_unstable_by_key(|r| VReg::from(r.to_reg()).vreg());
         regs
     }
 
@@ -1245,31 +1140,40 @@ fn legal_type_for_machine(ty: Type) -> bool {
 
 /// Is the given register saved in the prologue if clobbered, i.e., is it a
 /// callee-save?
-fn is_reg_saved_in_prologue(call_conv: isa::CallConv, r: RealReg) -> bool {
-    if call_conv.extends_baldrdash() {
-        match r.get_class() {
-            RegClass::I64 => {
-                let enc = r.get_hw_encoding();
-                return BALDRDASH_JIT_CALLEE_SAVED_GPR[enc];
-            }
-            RegClass::V128 => {
-                let enc = r.get_hw_encoding();
-                return BALDRDASH_JIT_CALLEE_SAVED_FPU[enc];
-            }
-            _ => unimplemented!("baldrdash callee saved on non-i64 reg classes"),
-        };
-    }
+fn is_reg_saved_in_prologue(enable_pinned_reg: bool, sig: &Signature, r: RealReg) -> bool {
+    // FIXME: We need to inspect whether a function is returning Z or P regs too.
+    let save_z_regs = sig
+        .params
+        .iter()
+        .filter(|p| p.value_type.is_dynamic_vector())
+        .count()
+        != 0;
 
-    match r.get_class() {
-        RegClass::I64 => {
+    match r.class() {
+        RegClass::Int => {
             // x19 - x28 inclusive are callee-saves.
-            r.get_hw_encoding() >= 19 && r.get_hw_encoding() <= 28
+            // However, x21 is the pinned reg if `enable_pinned_reg`
+            // is set, and is implicitly globally-allocated, hence not
+            // callee-saved in prologues.
+            if enable_pinned_reg && r.hw_enc() == PINNED_REG {
+                false
+            } else {
+                r.hw_enc() >= 19 && r.hw_enc() <= 28
+            }
         }
-        RegClass::V128 => {
-            // v8 - v15 inclusive are callee-saves.
-            r.get_hw_encoding() >= 8 && r.get_hw_encoding() <= 15
+        RegClass::Float => {
+            // If a subroutine takes at least one argument in scalable vector registers
+            // or scalable predicate registers, or if it is a function that returns
+            // results in such registers, it must ensure that the entire contents of
+            // z8-z23 are preserved across the call. In other cases it need only
+            // preserve the low 64 bits of z8-z15.
+            if save_z_regs {
+                r.hw_enc() >= 8 && r.hw_enc() <= 23
+            } else {
+                // v8 - v15 inclusive are callee-saves.
+                r.hw_enc() >= 8 && r.hw_enc() <= 15
+            }
         }
-        _ => panic!("Unexpected RegClass"),
     }
 }
 
@@ -1277,70 +1181,95 @@ fn is_reg_saved_in_prologue(call_conv: isa::CallConv, r: RealReg) -> bool {
 /// prologue and restored in the epilogue, given the set of all registers
 /// written by the function's body.
 fn get_regs_restored_in_epilogue(
-    call_conv: isa::CallConv,
-    regs: &Set<Writable<RealReg>>,
+    flags: &settings::Flags,
+    sig: &Signature,
+    regs: &[Writable<RealReg>],
 ) -> (Vec<Writable<RealReg>>, Vec<Writable<RealReg>>) {
     let mut int_saves = vec![];
     let mut vec_saves = vec![];
-    for &reg in regs.iter() {
-        if is_reg_saved_in_prologue(call_conv, reg.to_reg()) {
-            match reg.to_reg().get_class() {
-                RegClass::I64 => int_saves.push(reg),
-                RegClass::V128 => vec_saves.push(reg),
-                _ => panic!("Unexpected RegClass"),
+    for &reg in regs {
+        if is_reg_saved_in_prologue(flags.enable_pinned_reg(), sig, reg.to_reg()) {
+            match reg.to_reg().class() {
+                RegClass::Int => int_saves.push(reg),
+                RegClass::Float => vec_saves.push(reg),
             }
         }
     }
     // Sort registers for deterministic code output. We can do an unstable sort because the
     // registers will be unique (there are no dups).
-    int_saves.sort_unstable_by_key(|r| r.to_reg().get_index());
-    vec_saves.sort_unstable_by_key(|r| r.to_reg().get_index());
+    int_saves.sort_unstable_by_key(|r| VReg::from(r.to_reg()).vreg());
+    vec_saves.sort_unstable_by_key(|r| VReg::from(r.to_reg()).vreg());
     (int_saves, vec_saves)
 }
 
-fn is_reg_clobbered_by_call(call_conv_of_callee: isa::CallConv, r: RealReg) -> bool {
-    if call_conv_of_callee.extends_baldrdash() {
-        match r.get_class() {
-            RegClass::I64 => {
-                let enc = r.get_hw_encoding();
-                if !BALDRDASH_JIT_CALLEE_SAVED_GPR[enc] {
-                    return true;
-                }
-                // Otherwise, fall through to preserve native's ABI caller-saved.
-            }
-            RegClass::V128 => {
-                let enc = r.get_hw_encoding();
-                if !BALDRDASH_JIT_CALLEE_SAVED_FPU[enc] {
-                    return true;
-                }
-                // Otherwise, fall through to preserve native's ABI caller-saved.
-            }
-            _ => unimplemented!("baldrdash callee saved on non-i64 reg classes"),
-        };
-    }
-
-    match r.get_class() {
-        RegClass::I64 => {
-            // x0 - x17 inclusive are caller-saves.
-            r.get_hw_encoding() <= 17
-        }
-        RegClass::V128 => {
-            // v0 - v7 inclusive and v16 - v31 inclusive are caller-saves. The
-            // upper 64 bits of v8 - v15 inclusive are also caller-saves.
-            // However, because we cannot currently represent partial registers
-            // to regalloc.rs, we indicate here that every vector register is
-            // caller-save. Because this function is used at *callsites*,
-            // approximating in this direction (save more than necessary) is
-            // conservative and thus safe.
-            //
-            // Note that we set the 'not included in clobber set' flag in the
-            // regalloc.rs API when a call instruction's callee has the same ABI
-            // as the caller (the current function body); this is safe (anything
-            // clobbered by callee can be clobbered by caller as well) and
-            // avoids unnecessary saves of v8-v15 in the prologue even though we
-            // include them as defs here.
-            true
-        }
-        _ => panic!("Unexpected RegClass"),
-    }
+const fn default_aapcs_clobbers() -> PRegSet {
+    PRegSet::empty()
+        // x0 - x17 inclusive are caller-saves.
+        .with(xreg_preg(0))
+        .with(xreg_preg(1))
+        .with(xreg_preg(2))
+        .with(xreg_preg(3))
+        .with(xreg_preg(4))
+        .with(xreg_preg(5))
+        .with(xreg_preg(6))
+        .with(xreg_preg(7))
+        .with(xreg_preg(8))
+        .with(xreg_preg(9))
+        .with(xreg_preg(10))
+        .with(xreg_preg(11))
+        .with(xreg_preg(12))
+        .with(xreg_preg(13))
+        .with(xreg_preg(14))
+        .with(xreg_preg(15))
+        .with(xreg_preg(16))
+        .with(xreg_preg(17))
+        // v0 - v7 inclusive and v16 - v31 inclusive are
+        // caller-saves. The upper 64 bits of v8 - v15 inclusive are
+        // also caller-saves.  However, because we cannot currently
+        // represent partial registers to regalloc2, we indicate here
+        // that every vector register is caller-save. Because this
+        // function is used at *callsites*, approximating in this
+        // direction (save more than necessary) is conservative and
+        // thus safe.
+        //
+        // Note that we exclude clobbers from a call instruction when
+        // a call instruction's callee has the same ABI as the caller
+        // (the current function body); this is safe (anything
+        // clobbered by callee can be clobbered by caller as well) and
+        // avoids unnecessary saves of v8-v15 in the prologue even
+        // though we include them as defs here.
+        .with(vreg_preg(0))
+        .with(vreg_preg(1))
+        .with(vreg_preg(2))
+        .with(vreg_preg(3))
+        .with(vreg_preg(4))
+        .with(vreg_preg(5))
+        .with(vreg_preg(6))
+        .with(vreg_preg(7))
+        .with(vreg_preg(8))
+        .with(vreg_preg(9))
+        .with(vreg_preg(10))
+        .with(vreg_preg(11))
+        .with(vreg_preg(12))
+        .with(vreg_preg(13))
+        .with(vreg_preg(14))
+        .with(vreg_preg(15))
+        .with(vreg_preg(16))
+        .with(vreg_preg(17))
+        .with(vreg_preg(18))
+        .with(vreg_preg(19))
+        .with(vreg_preg(20))
+        .with(vreg_preg(21))
+        .with(vreg_preg(22))
+        .with(vreg_preg(23))
+        .with(vreg_preg(24))
+        .with(vreg_preg(25))
+        .with(vreg_preg(26))
+        .with(vreg_preg(27))
+        .with(vreg_preg(28))
+        .with(vreg_preg(29))
+        .with(vreg_preg(30))
+        .with(vreg_preg(31))
 }
+
+const DEFAULT_AAPCS_CLOBBERS: PRegSet = default_aapcs_clobbers();

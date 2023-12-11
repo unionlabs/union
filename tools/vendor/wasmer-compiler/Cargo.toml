@@ -10,30 +10,79 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-edition = "2018"
+edition = "2021"
+rust-version = "1.70"
 name = "wasmer-compiler"
-version = "2.3.0"
+version = "4.2.2"
 authors = ["Wasmer Engineering Team <engineering@wasmer.io>"]
 description = "Base compiler abstraction for Wasmer WebAssembly runtime"
+homepage = "https://wasmer.io/"
 readme = "README.md"
-keywords = ["wasm", "webassembly", "compiler"]
-categories = ["wasm", "no-std"]
-license = "MIT OR Apache-2.0 WITH LLVM-exception"
+keywords = [
+    "wasm",
+    "webassembly",
+    "compiler",
+]
+categories = [
+    "wasm",
+    "no-std",
+]
+license = "MIT"
 repository = "https://github.com/wasmerio/wasmer"
-resolver = "2"
-[dependencies.enumset]
+
+[package.metadata.docs.rs]
+features = [
+    "static-artifact-create",
+    "static-artifact-load",
+    "wasmer-artifact-create",
+    "wasmer-artifact-load",
+]
+rustc-args = [
+    "--cfg",
+    "docsrs",
+]
+
+[dependencies.backtrace]
+version = "0.3"
+
+[dependencies.bytes]
 version = "1.0"
+
+[dependencies.cfg-if]
+version = "1.0"
+
+[dependencies.enum-iterator]
+version = "0.7.0"
+
+[dependencies.enumset]
+version = "1.0.2"
 
 [dependencies.hashbrown]
 version = "0.11"
 optional = true
 
-[dependencies.loupe]
-version = "0.1"
+[dependencies.lazy_static]
+version = "1.4"
+
+[dependencies.leb128]
+version = "0.2"
+
+[dependencies.memmap2]
+version = "0.5"
+
+[dependencies.more-asserts]
+version = "0.2"
 
 [dependencies.rkyv]
-version = "0.7.20"
-optional = true
+version = "0.7.40"
+features = [
+    "indexmap",
+    "validation",
+    "strict",
+]
+
+[dependencies.self_cell]
+version = "1.0"
 
 [dependencies.serde]
 version = "1.0"
@@ -44,31 +93,59 @@ optional = true
 version = "0.11"
 optional = true
 
+[dependencies.shared-buffer]
+version = "0.1"
+
 [dependencies.smallvec]
 version = "1.6"
-
-[dependencies.target-lexicon]
-version = "0.12.2"
-default-features = false
 
 [dependencies.thiserror]
 version = "1.0"
 
+[dependencies.wasmer-object]
+version = "=4.2.2"
+optional = true
+
 [dependencies.wasmer-types]
-version = "=2.3.0"
+version = "=4.2.2"
 default-features = false
 
 [dependencies.wasmparser]
-version = "0.83"
+version = "0.95"
 optional = true
 default-features = false
 
 [features]
-core = ["hashbrown", "wasmer-types/core"]
-default = ["std", "enable-serde", "enable-rkyv"]
-enable-rkyv = ["rkyv", "wasmer-types/enable-rkyv"]
-enable-serde = ["serde", "serde_bytes", "wasmer-types/enable-serde"]
+compiler = ["translator"]
+core = [
+    "hashbrown",
+    "wasmer-types/core",
+]
+default = ["std"]
+enable-serde = [
+    "serde",
+    "serde_bytes",
+    "wasmer-types/enable-serde",
+]
+static-artifact-create = ["wasmer-object"]
+static-artifact-load = []
 std = ["wasmer-types/std"]
 translator = ["wasmparser"]
+wasmer-artifact-create = []
+wasmer-artifact-load = []
+
+[target."cfg(not(target_arch = \"wasm32\"))".dependencies.region]
+version = "3.0"
+
+[target."cfg(not(target_arch = \"wasm32\"))".dependencies.wasmer-vm]
+version = "=4.2.2"
+
+[target."cfg(target_os = \"windows\")".dependencies.winapi]
+version = "0.3"
+features = [
+    "winnt",
+    "impl-default",
+]
+
 [badges.maintenance]
 status = "experimental"

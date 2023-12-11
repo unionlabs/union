@@ -12,12 +12,10 @@ use crate::translator::{compiled_function_unwind_info, signature_to_cranelift_ir
 use cranelift_codegen::ir;
 use cranelift_codegen::ir::InstBuilder;
 use cranelift_codegen::isa::TargetIsa;
-use cranelift_codegen::print_errors::pretty_error;
 use cranelift_codegen::Context;
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use std::mem;
-use wasmer_compiler::{CompileError, FunctionBody};
-use wasmer_types::FunctionType;
+use wasmer_types::{CompileError, FunctionBody, FunctionType};
 
 /// Create a trampoline for invoking a WebAssembly function.
 pub fn make_trampoline_function_call(
@@ -43,7 +41,7 @@ pub fn make_trampoline_function_call(
     wrapper_sig.params.push(ir::AbiParam::new(pointer_type));
 
     let mut context = Context::new();
-    context.func = ir::Function::with_name_signature(ir::ExternalName::user(0, 0), wrapper_sig);
+    context.func = ir::Function::with_name_signature(ir::UserFuncName::user(0, 0), wrapper_sig);
 
     let value_size = mem::size_of::<u128>();
     {
@@ -106,7 +104,7 @@ pub fn make_trampoline_function_call(
 
     context
         .compile_and_emit(isa, &mut code_buf)
-        .map_err(|error| CompileError::Codegen(pretty_error(&context.func, error)))?;
+        .map_err(|error| CompileError::Codegen(error.inner.to_string()))?;
 
     let unwind_info = compiled_function_unwind_info(isa, &context)?.maybe_into_to_windows_unwind();
 

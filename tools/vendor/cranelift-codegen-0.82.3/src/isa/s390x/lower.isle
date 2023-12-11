@@ -1,0 +1,2210 @@
+;; s390x instruction selection and CLIF-to-MachInst lowering.
+
+;; The main lowering constructor term: takes a clif `Inst` and returns the
+;; register(s) within which the lowered instruction's result values live.
+(decl lower (Inst) InstOutput)
+
+;; A variant of the main lowering constructor term, used for branches.
+;; The only difference is that it gets an extra argument holding a vector
+;; of branch targets to be used.
+(decl lower_branch (Inst VecMachLabel) InstOutput)
+
+
+;;;; Rules for `iconst` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (has_type ty (iconst (u64_from_imm64 n))))
+      (imm ty n))
+
+
+;;;; Rules for `bconst` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (has_type ty (bconst $false)))
+      (imm ty 0))
+(rule (lower (has_type ty (bconst $true)))
+      (imm ty 1))
+
+
+;;;; Rules for `f32const` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (f32const (u64_from_ieee32 x)))
+      (imm $F32 x))
+
+
+;;;; Rules for `f64const` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (f64const (u64_from_ieee64 x)))
+      (imm $F64 x))
+
+
+;;;; Rules for `null` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (has_type ty (null)))
+      (imm ty 0))
+
+
+;;;; Rules for `nop` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (nop))
+      (invalid_reg))
+
+
+;;;; Rules for `copy` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (copy x))
+      x)
+
+
+;;;; Rules for `iadd` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Add two registers.
+(rule (lower (has_type (fits_in_64 ty) (iadd x y)))
+      (add_reg ty x y))
+
+;; Add a register and a sign-extended register.
+(rule (lower (has_type (fits_in_64 ty) (iadd x (sext32_value y))))
+      (add_reg_sext32 ty x y))
+(rule (lower (has_type (fits_in_64 ty) (iadd (sext32_value x) y)))
+      (add_reg_sext32 ty y x))
+
+;; Add a register and an immediate.
+(rule (lower (has_type (fits_in_64 ty) (iadd x (i16_from_value y))))
+      (add_simm16 ty x y))
+(rule (lower (has_type (fits_in_64 ty) (iadd (i16_from_value x) y)))
+      (add_simm16 ty y x))
+(rule (lower (has_type (fits_in_64 ty) (iadd x (i32_from_value y))))
+      (add_simm32 ty x y))
+(rule (lower (has_type (fits_in_64 ty) (iadd (i32_from_value x) y)))
+      (add_simm32 ty y x))
+
+;; Add a register and memory (32/64-bit types).
+(rule (lower (has_type (fits_in_64 ty) (iadd x (sinkable_load_32_64 y))))
+      (add_mem ty x (sink_load y)))
+(rule (lower (has_type (fits_in_64 ty) (iadd (sinkable_load_32_64 x) y)))
+      (add_mem ty y (sink_load x)))
+
+;; Add a register and memory (16-bit types).
+(rule (lower (has_type (fits_in_64 ty) (iadd x (sinkable_load_16 y))))
+      (add_mem_sext16 ty x (sink_load y)))
+(rule (lower (has_type (fits_in_64 ty) (iadd (sinkable_load_16 x) y)))
+      (add_mem_sext16 ty y (sink_load x)))
+
+;; Add a register and sign-extended memory.
+(rule (lower (has_type (fits_in_64 ty) (iadd x (sinkable_sload16 y))))
+      (add_mem_sext16 ty x (sink_sload16 y)))
+(rule (lower (has_type (fits_in_64 ty) (iadd (sinkable_sload16 x) y)))
+      (add_mem_sext16 ty y (sink_sload16 x)))
+(rule (lower (has_type (fits_in_64 ty) (iadd x (sinkable_sload32 y))))
+      (add_mem_sext32 ty x (sink_sload32 y)))
+(rule (lower (has_type (fits_in_64 ty) (iadd (sinkable_sload32 x) y)))
+      (add_mem_sext32 ty y (sink_sload32 x)))
+
+
+;;;; Rules for `isub` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Sub two registers.
+(rule (lower (has_type (fits_in_64 ty) (isub x y)))
+      (sub_reg ty x y))
+
+;; Sub a register and a sign-extended register.
+(rule (lower (has_type (fits_in_64 ty) (isub x (sext32_value y))))
+      (sub_reg_sext32 ty x y))
+
+;; Sub a register and an immediate (using add of the negated value).
+(rule (lower (has_type (fits_in_64 ty) (isub x (i16_from_negated_value y))))
+      (add_simm16 ty x y))
+(rule (lower (has_type (fits_in_64 ty) (isub x (i32_from_negated_value y))))
+      (add_simm32 ty x y))
+
+;; Sub a register and memory (32/64-bit types).
+(rule (lower (has_type (fits_in_64 ty) (isub x (sinkable_load_32_64 y))))
+      (sub_mem ty x (sink_load y)))
+
+;; Sub a register and memory (16-bit types).
+(rule (lower (has_type (fits_in_64 ty) (isub x (sinkable_load_16 y))))
+      (sub_mem_sext16 ty x (sink_load y)))
+
+;; Sub a register and sign-extended memory.
+(rule (lower (has_type (fits_in_64 ty) (isub x (sinkable_sload16 y))))
+      (sub_mem_sext16 ty x (sink_sload16 y)))
+(rule (lower (has_type (fits_in_64 ty) (isub x (sinkable_sload32 y))))
+      (sub_mem_sext32 ty x (sink_sload32 y)))
+
+
+;;;; Rules for `iabs` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Absolute value of a register.
+;; For types smaller than 32-bit, the input value must be sign-extended.
+(rule (lower (has_type (fits_in_64 ty) (iabs x)))
+      (abs_reg (ty_ext32 ty) (put_in_reg_sext32 x)))
+
+;; Absolute value of a sign-extended register.
+(rule (lower (has_type (fits_in_64 ty) (iabs (sext32_value x))))
+      (abs_reg_sext32 ty x))
+
+
+;;;; Rules for `iadd_ifcout` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; N.B.: the second output of `iadd_ifcout` is meant to be the `iflags` value
+;; containing the carry result, but we do not support the `iflags` mechanism.
+;; However, the only actual use case is where `iadd_ifcout` feeds into `trapif`,
+;; which is implemented by explicitly matching on the flags producer.  So we can
+;; get away with just using an invalid second output, and the reg-renaming code
+;; does the right thing, for now.
+(decl output_ifcout (Reg) InstOutput)
+(rule (output_ifcout reg)
+      (output_pair reg (value_regs_invalid)))
+
+;; Add two registers.
+(rule (lower (has_type (fits_in_64 ty) (iadd_ifcout x y)))
+      (output_ifcout (add_logical_reg ty x y)))
+
+;; Add a register and a zero-extended register.
+(rule (lower (has_type (fits_in_64 ty) (iadd_ifcout x (zext32_value y))))
+      (output_ifcout (add_logical_reg_zext32 ty x y)))
+(rule (lower (has_type (fits_in_64 ty) (iadd_ifcout (zext32_value x) y)))
+      (output_ifcout (add_logical_reg_zext32 ty y x)))
+
+;; Add a register and an immediate.
+(rule (lower (has_type (fits_in_64 ty) (iadd_ifcout x (u32_from_value y))))
+      (output_ifcout (add_logical_zimm32 ty x y)))
+(rule (lower (has_type (fits_in_64 ty) (iadd_ifcout (u32_from_value x) y)))
+      (output_ifcout (add_logical_zimm32 ty y x)))
+
+;; Add a register and memory (32/64-bit types).
+(rule (lower (has_type (fits_in_64 ty) (iadd_ifcout x (sinkable_load_32_64 y))))
+      (output_ifcout (add_logical_mem ty x (sink_load y))))
+(rule (lower (has_type (fits_in_64 ty) (iadd_ifcout (sinkable_load_32_64 x) y)))
+      (output_ifcout (add_logical_mem ty y (sink_load x))))
+
+;; Add a register and zero-extended memory.
+(rule (lower (has_type (fits_in_64 ty) (iadd_ifcout x (sinkable_uload32 y))))
+      (output_ifcout (add_logical_mem_zext32 ty x (sink_uload32 y))))
+(rule (lower (has_type (fits_in_64 ty) (iadd_ifcout (sinkable_uload32 x) y)))
+      (output_ifcout (add_logical_mem_zext32 ty y (sink_uload32 x))))
+
+
+;;;; Rules for `ineg` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Negate a register.
+(rule (lower (has_type (fits_in_64 ty) (ineg x)))
+      (neg_reg ty x))
+
+;; Negate a sign-extended register.
+(rule (lower (has_type (fits_in_64 ty) (ineg (sext32_value x))))
+      (neg_reg_sext32 ty x))
+
+
+;;;; Rules for `imul` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Multiply two registers.
+(rule (lower (has_type (fits_in_64 ty) (imul x y)))
+      (mul_reg ty x y))
+
+;; Multiply a register and a sign-extended register.
+(rule (lower (has_type (fits_in_64 ty) (imul x (sext32_value y))))
+      (mul_reg_sext32 ty x y))
+(rule (lower (has_type (fits_in_64 ty) (imul (sext32_value x) y)))
+      (mul_reg_sext32 ty y x))
+
+;; Multiply a register and an immediate.
+(rule (lower (has_type (fits_in_64 ty) (imul x (i16_from_value y))))
+      (mul_simm16 ty x y))
+(rule (lower (has_type (fits_in_64 ty) (imul (i16_from_value x) y)))
+      (mul_simm16 ty y x))
+(rule (lower (has_type (fits_in_64 ty) (imul x (i32_from_value y))))
+      (mul_simm32 ty x y))
+(rule (lower (has_type (fits_in_64 ty) (imul (i32_from_value x) y)))
+      (mul_simm32 ty y x))
+
+;; Multiply a register and memory (32/64-bit types).
+(rule (lower (has_type (fits_in_64 ty) (imul x (sinkable_load_32_64 y))))
+      (mul_mem ty x (sink_load y)))
+(rule (lower (has_type (fits_in_64 ty) (imul (sinkable_load_32_64 x) y)))
+      (mul_mem ty y (sink_load x)))
+
+;; Multiply a register and memory (16-bit types).
+(rule (lower (has_type (fits_in_64 ty) (imul x (sinkable_load_16 y))))
+      (mul_mem_sext16 ty x (sink_load y)))
+(rule (lower (has_type (fits_in_64 ty) (imul (sinkable_load_16 x) y)))
+      (mul_mem_sext16 ty y (sink_load x)))
+
+;; Multiply a register and sign-extended memory.
+(rule (lower (has_type (fits_in_64 ty) (imul x (sinkable_sload16 y))))
+      (mul_mem_sext16 ty x (sink_sload16 y)))
+(rule (lower (has_type (fits_in_64 ty) (imul (sinkable_sload16 x) y)))
+      (mul_mem_sext16 ty y (sink_sload16 x)))
+(rule (lower (has_type (fits_in_64 ty) (imul x (sinkable_sload32 y))))
+      (mul_mem_sext32 ty x (sink_sload32 y)))
+(rule (lower (has_type (fits_in_64 ty) (imul (sinkable_sload32 x) y)))
+      (mul_mem_sext32 ty y (sink_sload32 x)))
+
+
+;;;; Rules for `umulhi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Multiply high part unsigned, 8-bit or 16-bit types.  (Uses 32-bit multiply.)
+(rule (lower (has_type (ty_8_or_16 ty) (umulhi x y)))
+      (let ((ext_reg_x Reg (put_in_reg_zext32 x))
+            (ext_reg_y Reg (put_in_reg_zext32 y))
+            (ext_mul Reg (mul_reg $I32 ext_reg_x ext_reg_y)))
+        (lshr_imm $I32 ext_mul (ty_bits ty))))
+
+;; Multiply high part unsigned, 32-bit types.  (Uses 64-bit multiply.)
+(rule (lower (has_type $I32 (umulhi x y)))
+      (let ((ext_reg_x Reg (put_in_reg_zext64 x))
+            (ext_reg_y Reg (put_in_reg_zext64 y))
+            (ext_mul Reg (mul_reg $I64 ext_reg_x ext_reg_y)))
+        (lshr_imm $I64 ext_mul 32)))
+
+;; Multiply high part unsigned, 64-bit types.  (Uses umul_wide.)
+(rule (lower (has_type $I64 (umulhi x y)))
+      (let ((pair RegPair (umul_wide x y)))
+        (copy_reg $I64 (regpair_hi pair))))
+
+
+;;;; Rules for `smulhi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Multiply high part signed, 8-bit or 16-bit types.  (Uses 32-bit multiply.)
+(rule (lower (has_type (ty_8_or_16 ty) (smulhi x y)))
+      (let ((ext_reg_x Reg (put_in_reg_sext32 x))
+            (ext_reg_y Reg (put_in_reg_sext32 y))
+            (ext_mul Reg (mul_reg $I32 ext_reg_x ext_reg_y)))
+        (ashr_imm $I32 ext_mul (ty_bits ty))))
+
+;; Multiply high part signed, 32-bit types.  (Uses 64-bit multiply.)
+(rule (lower (has_type $I32 (smulhi x y)))
+      (let ((ext_reg_x Reg (put_in_reg_sext64 x))
+            (ext_reg_y Reg (put_in_reg_sext64 y))
+            (ext_mul Reg (mul_reg $I64 ext_reg_x ext_reg_y)))
+        (ashr_imm $I64 ext_mul 32)))
+
+;; Multiply high part signed, 64-bit types.  (Uses smul_wide.)
+(rule (lower (has_type $I64 (smulhi x y)))
+      (let ((pair RegPair (smul_wide x y)))
+        (copy_reg $I64 (regpair_hi pair))))
+
+
+;;;; Rules for `udiv` and `urem` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Divide two registers.  The architecture provides combined udiv / urem
+;; instructions with the following combination of data types:
+;;
+;;  - 64-bit dividend (split across a 2x32-bit register pair),
+;;    32-bit divisor (in a single input register)
+;;    32-bit quotient & remainder (in a 2x32-bit register pair)
+;;
+;;  - 128-bit dividend (split across a 2x64-bit register pair),
+;;    64-bit divisor (in a single input register)
+;;    64-bit quotient & remainder (in a 2x64-bit register pair)
+;;
+;; We use the first variant for 32-bit and smaller input types,
+;; and the second variant for 64-bit input types.
+
+;; Implement `udiv`.
+(rule (lower (has_type (fits_in_64 ty) (udiv x y)))
+      (let (;; Look at the divisor to determine whether we need to generate
+            ;; an explicit division-by zero check.
+            (DZcheck bool (zero_divisor_check_needed y))
+            ;; Load up the dividend, by loading the input (possibly zero-
+            ;; extended) input into the low half of the register pair,
+            ;; and setting the high half to zero.
+            (ext_x RegPair (put_in_regpair_lo_zext32 x
+                             (imm_regpair_hi (ty_ext32 ty) 0 (uninitialized_regpair))))
+            ;; Load up the divisor, zero-extended if necessary.
+            (ext_y Reg (put_in_reg_zext32 y))
+            (ext_ty Type (ty_ext32 ty))
+            ;; Now actually perform the division-by zero check if necessary.
+            ;; This cannot be done earlier than here, because the check
+            ;; requires an already extended divisor value.
+            (_ Reg (maybe_trap_if_zero_divisor DZcheck ext_ty ext_y))
+            ;; Emit the actual divide instruction.
+            (pair RegPair (udivmod ext_ty ext_x ext_y)))
+        ;; The quotient can be found in the low half of the result.
+        (copy_reg ty (regpair_lo pair))))
+
+;; Implement `urem`.  Same as `udiv`, but finds the remainder in
+;; the high half of the result register pair instead.
+(rule (lower (has_type (fits_in_64 ty) (urem x y)))
+      (let ((DZcheck bool (zero_divisor_check_needed y))
+            (ext_x RegPair (put_in_regpair_lo_zext32 x
+                             (imm_regpair_hi ty 0 (uninitialized_regpair))))
+            (ext_y Reg (put_in_reg_zext32 y))
+            (ext_ty Type (ty_ext32 ty))
+            (_ Reg (maybe_trap_if_zero_divisor DZcheck ext_ty ext_y))
+            (pair RegPair (udivmod ext_ty ext_x ext_y)))
+        (copy_reg ty (regpair_hi pair))))
+
+;; Determine whether we need to perform a divide-by-zero-check.
+;;
+;; If the `avoid_div_traps` flag is false, we never need to perform
+;; that check; we can rely on the divide instruction itself to trap.
+;;
+;; If the `avoid_div_traps` flag is true, we perform the check explicitly.
+;; This still can be omittted if the divisor is a non-zero immediate.
+(decl zero_divisor_check_needed (Value) bool)
+(rule (zero_divisor_check_needed (i64_from_value (i64_nonzero _))) $false)
+(rule (zero_divisor_check_needed (value_type (allow_div_traps))) $false)
+(rule (zero_divisor_check_needed _) $true)
+
+;; Perform the divide-by-zero check if required.
+;; This is simply a compare-and-trap of the (extended) divisor against 0.
+(decl maybe_trap_if_zero_divisor (bool Type Reg) Reg)
+(rule (maybe_trap_if_zero_divisor $false _ _) (invalid_reg))
+(rule (maybe_trap_if_zero_divisor $true ext_ty reg)
+      (icmps_simm16_and_trap ext_ty reg 0
+                             (intcc_as_cond (IntCC.Equal))
+                             (trap_code_division_by_zero)))
+
+
+;;;; Rules for `sdiv` and `srem` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Divide two registers.  The architecture provides combined sdiv / srem
+;; instructions with the following combination of data types:
+;;
+;;  - 64-bit dividend (in the low half of a 2x64-bit register pair),
+;;    32-bit divisor (in a single input register)
+;;    64-bit quotient & remainder (in a 2x64-bit register pair)
+;;
+;;  - 64-bit dividend (in the low half of a 2x64-bit register pair),
+;;    64-bit divisor (in a single input register)
+;;    64-bit quotient & remainder (in a 2x64-bit register pair)
+;;
+;; We use the first variant for 32-bit and smaller input types,
+;; and the second variant for 64-bit input types.
+
+;; Implement `sdiv`.
+(rule (lower (has_type (fits_in_64 ty) (sdiv x y)))
+      (let (;; Look at the divisor to determine whether we need to generate
+            ;; explicit division-by-zero and/or integer-overflow checks.
+            (DZcheck bool (zero_divisor_check_needed y))
+            (OFcheck bool (div_overflow_check_needed y))
+            ;; Load up the dividend (sign-extended to 64-bit) into the low
+            ;; half of a register pair (the high half remains uninitialized).
+            (ext_x RegPair (put_in_regpair_lo_sext64 x (uninitialized_regpair)))
+            ;; Load up the divisor (sign-extended if necessary).
+            (ext_y Reg (put_in_reg_sext32 y))
+            (ext_ty Type (ty_ext32 ty))
+            ;; Perform division-by-zero check (same as for `udiv`).
+            (_1 Reg (maybe_trap_if_zero_divisor DZcheck ext_ty ext_y))
+            ;; Perform integer-overflow check if necessary.
+            (_2 Reg (maybe_trap_if_sdiv_overflow OFcheck ext_ty ty ext_x ext_y))
+            ;; Emit the actual divide instruction.
+            (pair RegPair (sdivmod ext_ty ext_x ext_y)))
+        ;; The quotient can be found in the low half of the result.
+        (copy_reg ty (regpair_lo pair))))
+
+;; Implement `srem`.  Same as `sdiv`, but finds the remainder in
+;; the high half of the result register pair instead.  Also, handle
+;; the integer overflow case differently, see below.
+(rule (lower (has_type (fits_in_64 ty) (srem x y)))
+      (let ((DZcheck bool (zero_divisor_check_needed y))
+            (OFcheck bool (div_overflow_check_needed y))
+            (ext_x RegPair (put_in_regpair_lo_sext64 x (uninitialized_regpair)))
+            (ext_y Reg (put_in_reg_sext32 y))
+            (ext_ty Type (ty_ext32 ty))
+            (_ Reg (maybe_trap_if_zero_divisor DZcheck ext_ty ext_y))
+            (checked_x RegPair (maybe_avoid_srem_overflow OFcheck ext_ty ext_x ext_y))
+            (pair RegPair (sdivmod ext_ty checked_x ext_y)))
+        (copy_reg ty (regpair_hi pair))))
+
+;; Determine whether we need to perform an integer-overflow check.
+;;
+;; We never rely on the divide instruction itself to trap; while that trap
+;; would indeed happen, we have no way of signalling two different trap
+;; conditions from the same instruction.  By explicity checking for the
+;; integer-overflow case ahead of time, any hardware trap in the divide
+;; instruction is guaranteed to indicate divison-by-zero.
+;;
+;; In addition, for types smaller than 64 bits we would have to perform
+;; the check explicitly anyway, since the instruction provides a 64-bit
+;; quotient and only traps if *that* overflows.
+;;
+;; However, the only case where integer overflow can occur is if the
+;; minimum (signed) integer value is divided by -1, so if the divisor
+;; is any immediate different from -1, the check can be omitted.
+(decl div_overflow_check_needed (Value) bool)
+(rule (div_overflow_check_needed (i64_from_value (i64_not_neg1 _))) $false)
+(rule (div_overflow_check_needed _) $true)
+
+;; Perform the integer-overflow check if necessary.   This implements:
+;;
+;;    if divisor == INT_MIN && dividend == -1 { trap }
+;;
+;; but to avoid introducing control flow, it is actually done as:
+;;
+;;    if ((divisor ^ INT_MAX) & dividend) == -1 { trap }
+;;
+;; instead, using a single conditional trap instruction.
+(decl maybe_trap_if_sdiv_overflow (bool Type Type RegPair Reg) Reg)
+(rule (maybe_trap_if_sdiv_overflow $false ext_ty _ _ _) (invalid_reg))
+(rule (maybe_trap_if_sdiv_overflow $true ext_ty ty x y)
+      (let ((int_max Reg (imm ext_ty (int_max ty)))
+            (reg Reg (and_reg ext_ty (xor_reg ext_ty int_max
+                                              (regpair_lo x)) y)))
+        (icmps_simm16_and_trap ext_ty reg -1
+                               (intcc_as_cond (IntCC.Equal))
+                               (trap_code_integer_overflow))))
+(decl int_max (Type) u64)
+(rule (int_max $I8) 0x7f)
+(rule (int_max $I16) 0x7fff)
+(rule (int_max $I32) 0x7fffffff)
+(rule (int_max $I64) 0x7fffffffffffffff)
+
+;; When performing `srem`, we do not want to trap in the
+;; integer-overflow scenario, because it is only the quotient
+;; that overflows, not the remainder.
+;;
+;; For types smaller than 64 bits, we can simply let the
+;; instruction execute, since (as above) it will never trap.
+;;
+;; For 64-bit inputs, we check whether the divisor is -1, and
+;; if so simply replace the dividend by zero, which will give
+;; the correct result, since any value modulo -1 is zero.
+;;
+;; (We could in fact avoid executing the divide instruction
+;; at all in this case, but that would require introducing
+;; control flow.)
+(decl maybe_avoid_srem_overflow (bool Type RegPair Reg) RegPair)
+(rule (maybe_avoid_srem_overflow $false _ x _) x)
+(rule (maybe_avoid_srem_overflow $true $I32 x _) x)
+(rule (maybe_avoid_srem_overflow $true $I64 x y)
+      (cmov_imm_regpair_lo $I64 (icmps_simm16 $I64 y -1)
+                           (intcc_as_cond (IntCC.Equal)) 0 x))
+
+
+;;;; Rules for `ishl` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Shift left, shift amount in register.
+(rule (lower (has_type (fits_in_64 ty) (ishl x y)))
+      (let ((masked_amt Reg (mask_amt_reg ty y)))
+        (lshl_reg ty x masked_amt)))
+
+;; Shift left, immediate shift amount.
+(rule (lower (has_type (fits_in_64 ty) (ishl x (i64_from_value y))))
+      (let ((masked_amt u8 (mask_amt_imm ty y)))
+        (lshl_imm ty x masked_amt)))
+
+
+;;;; Rules for `ushr` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Shift right logical, shift amount in register.
+;; For types smaller than 32-bit, the input value must be zero-extended.
+(rule (lower (has_type (fits_in_64 ty) (ushr x y)))
+      (let ((ext_reg Reg (put_in_reg_zext32 x))
+            (masked_amt Reg (mask_amt_reg ty y)))
+        (lshr_reg (ty_ext32 ty) ext_reg masked_amt)))
+
+;; Shift right logical, immediate shift amount.
+;; For types smaller than 32-bit, the input value must be zero-extended.
+(rule (lower (has_type (fits_in_64 ty) (ushr x (i64_from_value y))))
+      (let ((ext_reg Reg (put_in_reg_zext32 x))
+            (masked_amt u8 (mask_amt_imm ty y)))
+        (lshr_imm (ty_ext32 ty) ext_reg masked_amt)))
+
+
+;;;; Rules for `sshr` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Shift right arithmetic, shift amount in register.
+;; For types smaller than 32-bit, the input value must be sign-extended.
+(rule (lower (has_type (fits_in_64 ty) (sshr x y)))
+      (let ((ext_reg Reg (put_in_reg_sext32 x))
+            (masked_amt Reg (mask_amt_reg ty y)))
+        (ashr_reg (ty_ext32 ty) ext_reg masked_amt)))
+
+;; Shift right arithmetic, immediate shift amount.
+;; For types smaller than 32-bit, the input value must be sign-extended.
+(rule (lower (has_type (fits_in_64 ty) (sshr x (i64_from_value y))))
+      (let ((ext_reg Reg (put_in_reg_sext32 x))
+            (masked_amt u8 (mask_amt_imm ty y)))
+        (ashr_imm (ty_ext32 ty) ext_reg masked_amt)))
+
+
+;;;; Rules for `rotl` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Rotate left, shift amount in register.  32-bit or 64-bit types.
+(rule (lower (has_type (ty_32_or_64 ty) (rotl x y)))
+      (rot_reg ty x y))
+
+;; Rotate left arithmetic, immediate shift amount.  32-bit or 64-bit types.
+(rule (lower (has_type (ty_32_or_64 ty) (rotl x (i64_from_value y))))
+      (let ((masked_amt u8 (mask_amt_imm ty y)))
+        (rot_imm ty x masked_amt)))
+
+;; Rotate left, shift amount in register.  8-bit or 16-bit types.
+;; Implemented via a pair of 32-bit shifts on the zero-extended input.
+(rule (lower (has_type (ty_8_or_16 ty) (rotl x y)))
+      (let ((ext_reg Reg (put_in_reg_zext32 x))
+            (ext_ty Type (ty_ext32 ty))
+            (pos_amt Reg y)
+            (neg_amt Reg (neg_reg ty pos_amt))
+            (masked_pos_amt Reg (mask_amt_reg ty pos_amt))
+            (masked_neg_amt Reg (mask_amt_reg ty neg_amt)))
+        (or_reg ty (lshl_reg ext_ty ext_reg masked_pos_amt)
+                (lshr_reg ext_ty ext_reg masked_neg_amt))))
+
+;; Rotate left, immediate shift amount.  8-bit or 16-bit types.
+;; Implemented via a pair of 32-bit shifts on the zero-extended input.
+(rule (lower (has_type (ty_8_or_16 ty) (rotl x (and (i64_from_value pos_amt)
+                                                    (i64_from_negated_value neg_amt)))))
+      (let ((ext_reg Reg (put_in_reg_zext32 x))
+            (ext_ty Type (ty_ext32 ty))
+            (masked_pos_amt u8 (mask_amt_imm ty pos_amt))
+            (masked_neg_amt u8 (mask_amt_imm ty neg_amt)))
+        (or_reg ty (lshl_imm ext_ty ext_reg masked_pos_amt)
+                (lshr_imm ext_ty ext_reg masked_neg_amt))))
+
+
+;;;; Rules for `rotr` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Rotate right, shift amount in register.  32-bit or 64-bit types.
+;; Implemented as rotate left with negated rotate amount.
+(rule (lower (has_type (ty_32_or_64 ty) (rotr x y)))
+      (let ((negated_amt Reg (neg_reg ty y)))
+        (rot_reg ty x negated_amt)))
+
+;; Rotate right arithmetic, immediate shift amount.  32-bit or 64-bit types.
+;; Implemented as rotate left with negated rotate amount.
+(rule (lower (has_type (ty_32_or_64 ty) (rotr x (i64_from_negated_value y))))
+      (let ((negated_amt u8 (mask_amt_imm ty y)))
+        (rot_imm ty x negated_amt)))
+
+;; Rotate right, shift amount in register.  8-bit or 16-bit types.
+;; Implemented as rotate left with negated rotate amount.
+(rule (lower (has_type (ty_8_or_16 ty) (rotr x y)))
+      (let ((ext_reg Reg (put_in_reg_zext32 x))
+            (ext_ty Type (ty_ext32 ty))
+            (pos_amt Reg y)
+            (neg_amt Reg (neg_reg ty pos_amt))
+            (masked_pos_amt Reg (mask_amt_reg ty pos_amt))
+            (masked_neg_amt Reg (mask_amt_reg ty neg_amt)))
+        (or_reg ty (lshl_reg ext_ty ext_reg masked_neg_amt)
+                (lshr_reg ext_ty ext_reg masked_pos_amt))))
+
+;; Rotate right, immediate shift amount.  8-bit or 16-bit types.
+;; Implemented as rotate left with negated rotate amount.
+(rule (lower (has_type (ty_8_or_16 ty) (rotr x (and (i64_from_value pos_amt)
+                                                    (i64_from_negated_value neg_amt)))))
+      (let ((ext_reg Reg (put_in_reg_zext32 x))
+            (ext_ty Type (ty_ext32 ty))
+            (masked_pos_amt u8 (mask_amt_imm ty pos_amt))
+            (masked_neg_amt u8 (mask_amt_imm ty neg_amt)))
+        (or_reg ty (lshl_imm ext_ty ext_reg masked_neg_amt)
+                (lshr_imm ext_ty ext_reg masked_pos_amt))))
+
+;;;; Rules for `ireduce` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Always a no-op.
+(rule (lower (ireduce x))
+      x)
+
+
+;;;; Rules for `uextend` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; 16- or 32-bit target types.
+(rule (lower (has_type (gpr32_ty _ty) (uextend x)))
+      (put_in_reg_zext32 x))
+
+;; 64-bit target types.
+(rule (lower (has_type (gpr64_ty _ty) (uextend x)))
+      (put_in_reg_zext64 x))
+
+
+;;;; Rules for `sextend` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; 16- or 32-bit target types.
+(rule (lower (has_type (gpr32_ty _ty) (sextend x)))
+      (put_in_reg_sext32 x))
+
+;; 64-bit target types.
+(rule (lower (has_type (gpr64_ty _ty) (sextend x)))
+      (put_in_reg_sext64 x))
+
+
+;;;; Rules for `bnot` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; z15 version using a single instruction (NOR).
+(rule (lower (has_type (and (mie2_enabled) (fits_in_64 ty)) (bnot x)))
+      (let ((rx Reg x))
+        (or_not_reg ty rx rx)))
+
+;; z14 version using XOR with -1.
+(rule (lower (has_type (and (mie2_disabled) (fits_in_64 ty)) (bnot x)))
+      (not_reg ty x))
+
+
+;;;; Rules for `band` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; And two registers.
+(rule (lower (has_type (fits_in_64 ty) (band x y)))
+      (and_reg ty x y))
+
+;; And a register and an immediate.
+(rule (lower (has_type (fits_in_64 ty) (band x (uimm16shifted_from_inverted_value y))))
+      (and_uimm16shifted ty x y))
+(rule (lower (has_type (fits_in_64 ty) (band (uimm16shifted_from_inverted_value x) y)))
+      (and_uimm16shifted ty y x))
+(rule (lower (has_type (fits_in_64 ty) (band x (uimm32shifted_from_inverted_value y))))
+      (and_uimm32shifted ty x y))
+(rule (lower (has_type (fits_in_64 ty) (band (uimm32shifted_from_inverted_value x) y)))
+      (and_uimm32shifted ty y x))
+
+;; And a register and memory (32/64-bit types).
+(rule (lower (has_type (fits_in_64 ty) (band x (sinkable_load_32_64 y))))
+      (and_mem ty x (sink_load y)))
+(rule (lower (has_type (fits_in_64 ty) (band (sinkable_load_32_64 x) y)))
+      (and_mem ty y (sink_load x)))
+
+
+;;;; Rules for `bor` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Or two registers.
+(rule (lower (has_type (fits_in_64 ty) (bor x y)))
+      (or_reg ty x y))
+
+;; Or a register and an immediate.
+(rule (lower (has_type (fits_in_64 ty) (bor x (uimm16shifted_from_value y))))
+      (or_uimm16shifted ty x y))
+(rule (lower (has_type (fits_in_64 ty) (bor (uimm16shifted_from_value x) y)))
+      (or_uimm16shifted ty y x))
+(rule (lower (has_type (fits_in_64 ty) (bor x (uimm32shifted_from_value y))))
+      (or_uimm32shifted ty x y))
+(rule (lower (has_type (fits_in_64 ty) (bor (uimm32shifted_from_value x) y)))
+      (or_uimm32shifted ty y x))
+
+;; Or a register and memory (32/64-bit types).
+(rule (lower (has_type (fits_in_64 ty) (bor x (sinkable_load_32_64 y))))
+      (or_mem ty x (sink_load y)))
+(rule (lower (has_type (fits_in_64 ty) (bor (sinkable_load_32_64 x) y)))
+      (or_mem ty y (sink_load x)))
+
+
+;;;; Rules for `bxor` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Xor two registers.
+(rule (lower (has_type (fits_in_64 ty) (bxor x y)))
+      (xor_reg ty x y))
+
+;; Xor a register and an immediate.
+(rule (lower (has_type (fits_in_64 ty) (bxor x (uimm32shifted_from_value y))))
+      (xor_uimm32shifted ty x y))
+(rule (lower (has_type (fits_in_64 ty) (bxor (uimm32shifted_from_value x) y)))
+      (xor_uimm32shifted ty y x))
+
+;; Xor a register and memory (32/64-bit types).
+(rule (lower (has_type (fits_in_64 ty) (bxor x (sinkable_load_32_64 y))))
+      (xor_mem ty x (sink_load y)))
+(rule (lower (has_type (fits_in_64 ty) (bxor (sinkable_load_32_64 x) y)))
+      (xor_mem ty y (sink_load x)))
+
+
+;;;; Rules for `band_not` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; z15 version using a single instruction.
+(rule (lower (has_type (and (mie2_enabled) (fits_in_64 ty)) (band_not x y)))
+      (and_not_reg ty x y))
+
+;; z14 version using XOR with -1.
+(rule (lower (has_type (and (mie2_disabled) (fits_in_64 ty)) (band_not x y)))
+      (not_reg ty (and_reg ty x y)))
+
+
+;;;; Rules for `bor_not` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; z15 version using a single instruction.
+(rule (lower (has_type (and (mie2_enabled) (fits_in_64 ty)) (bor_not x y)))
+      (or_not_reg ty x y))
+
+;; z14 version using XOR with -1.
+(rule (lower (has_type (and (mie2_disabled) (fits_in_64 ty)) (bor_not x y)))
+      (not_reg ty (or_reg ty x y)))
+
+
+;;;; Rules for `bxor_not` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; z15 version using a single instruction.
+(rule (lower (has_type (and (mie2_enabled) (fits_in_64 ty)) (bxor_not x y)))
+      (xor_not_reg ty x y))
+
+;; z14 version using XOR with -1.
+(rule (lower (has_type (and (mie2_disabled) (fits_in_64 ty)) (bxor_not x y)))
+      (not_reg ty (xor_reg ty x y)))
+
+
+;;;; Rules for `bitselect` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; z15 version using a NAND instruction.
+(rule (lower (has_type (and (mie2_enabled) (fits_in_64 ty)) (bitselect x y z)))
+      (let ((rx Reg x)
+            (if_true Reg (and_reg ty y rx))
+            (if_false Reg (and_not_reg ty z rx)))
+        (or_reg ty if_false if_true)))
+
+;; z14 version using XOR with -1.
+(rule (lower (has_type (and (mie2_disabled) (fits_in_64 ty)) (bitselect x y z)))
+      (let ((rx Reg x)
+            (if_true Reg (and_reg ty y rx))
+            (if_false Reg (not_reg ty (and_reg ty z rx))))
+        (or_reg ty if_false if_true)))
+
+
+;;;; Rules for `breduce` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Always a no-op.
+(rule (lower (breduce x))
+      x)
+
+
+;;;; Rules for `bextend` and `bmask` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Use a common helper to type cast bools to either bool or integer types.
+(decl cast_bool (Type Value) Reg)
+(rule (lower (has_type ty (bextend x)))
+      (cast_bool ty x))
+(rule (lower (has_type ty (bmask x)))
+      (cast_bool ty x))
+
+;; If the target has the same or a smaller size than the source, it's a no-op.
+(rule (cast_bool $B1 x @ (value_type $B1)) x)
+(rule (cast_bool $B1 x @ (value_type $B8)) x)
+(rule (cast_bool $B8 x @ (value_type $B8)) x)
+(rule (cast_bool $I8 x @ (value_type $B8)) x)
+(rule (cast_bool (fits_in_16 _ty) x @ (value_type $B16)) x)
+(rule (cast_bool (fits_in_32 _ty) x @ (value_type $B32)) x)
+(rule (cast_bool (fits_in_64 _ty) x @ (value_type $B64)) x)
+
+;; Single-bit values are sign-extended via a pair of shifts.
+(rule (cast_bool (gpr32_ty ty) x @ (value_type $B1))
+      (ashr_imm $I32 (lshl_imm $I32 x 31) 31))
+(rule (cast_bool (gpr64_ty ty) x @ (value_type $B1))
+      (ashr_imm $I64 (lshl_imm $I64 x 63) 63))
+
+;; Other values are just sign-extended normally.
+(rule (cast_bool (gpr32_ty _ty) x @ (value_type $B8))
+      (sext32_reg $I8 x))
+(rule (cast_bool (gpr32_ty _ty) x @ (value_type $B16))
+      (sext32_reg $I16 x))
+(rule (cast_bool (gpr64_ty _ty) x @ (value_type $B8))
+      (sext64_reg $I8 x))
+(rule (cast_bool (gpr64_ty _ty) x @ (value_type $B16))
+      (sext64_reg $I16 x))
+(rule (cast_bool (gpr64_ty _ty) x @ (value_type $B32))
+      (sext64_reg $I32 x))
+
+
+;;;; Rules for `bint` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Mask with 1 to get a 0/1 result (8- or 16-bit types).
+(rule (lower (has_type (fits_in_16 ty) (bint x)))
+      (and_uimm16shifted ty x (uimm16shifted 1 0)))
+
+;; Mask with 1 to get a 0/1 result (32-bit types).
+(rule (lower (has_type (fits_in_32 ty) (bint x)))
+      (and_uimm32shifted ty x (uimm32shifted 1 0)))
+
+;; Mask with 1 to get a 0/1 result (64-bit types).
+(rule (lower (has_type (fits_in_64 ty) (bint x)))
+      (and_reg ty x (imm ty 1)))
+
+
+;;;; Rules for `clz` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The FLOGR hardware instruction always operates on the full 64-bit register.
+;; We can zero-extend smaller types, but then we have to compensate for the
+;; additional leading zero bits the instruction will actually see.
+(decl clz_offset (Type Reg) Reg)
+(rule (clz_offset $I8 x) (add_simm16 $I8 x -56))
+(rule (clz_offset $I16 x) (add_simm16 $I16 x -48))
+(rule (clz_offset $I32 x) (add_simm16 $I32 x -32))
+(rule (clz_offset $I64 x) (copy_reg $I64 x))
+
+;; Count leading zeros, via FLOGR on an input zero-extended to 64 bits,
+;; with the result compensated for the extra bits.
+(rule (lower (has_type (fits_in_64 ty) (clz x)))
+      (let ((ext_reg Reg (put_in_reg_zext64 x))
+            ;; Ask for a value of 64 in the all-zero 64-bit input case.
+            ;; After compensation this will match the expected semantics.
+            (clz RegPair (clz_reg 64 ext_reg)))
+        (clz_offset ty (regpair_hi clz))))
+
+
+;;;; Rules for `cls` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Count leading sign-bit copies.  We don't have any instruction for that,
+;; so we instead count the leading zeros after inverting the input if negative,
+;; i.e. computing
+;;        cls(x) == clz(x ^ (x >> 63))
+;; where x is the sign-extended input.
+(rule (lower (has_type (fits_in_64 ty) (cls x)))
+      (let ((ext_reg Reg (put_in_reg_sext64 x))
+            (signbit_copies Reg (ashr_imm $I64 ext_reg 63))
+            (inv_reg Reg (xor_reg $I64 ext_reg signbit_copies))
+            (clz RegPair (clz_reg 64 inv_reg)))
+        (clz_offset ty (regpair_hi clz))))
+
+
+;;;; Rules for `ctz` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; To count trailing zeros, we find the last bit set in the input via (x & -x),
+;; count the leading zeros of that value, and subtract from 63:
+;;
+;;   ctz(x) == 63 - clz(x & -x)
+;;
+;; This works for all cases except a zero input, where the above formula would
+;; return -1, but we are expected to return the type size.  The compensation
+;; for this case is handled differently for 64-bit types vs. smaller types.
+
+;; For smaller types, we simply ensure that the extended 64-bit input is
+;; never zero by setting a "guard bit" in the position corresponding to
+;; the input type size.  This way the 64-bit algorithm above will handle
+;; that case correctly automatically.
+(rule (lower (has_type (gpr32_ty ty) (ctz x)))
+      (let ((rx Reg (or_uimm16shifted $I64 x (ctz_guardbit ty)))
+            (lastbit Reg (and_reg $I64 rx (neg_reg $I64 rx)))
+            (clz RegPair (clz_reg 64 lastbit)))
+        (sub_reg ty (imm ty 63) (regpair_hi clz))))
+
+(decl ctz_guardbit (Type) UImm16Shifted)
+(rule (ctz_guardbit $I8) (uimm16shifted 256 0))
+(rule (ctz_guardbit $I16) (uimm16shifted 1 16))
+(rule (ctz_guardbit $I32) (uimm16shifted 1 32))
+
+;; For 64-bit types, the FLOGR instruction will indicate the zero input case
+;; via its condition code.  We check for that and replace the instruction
+;; result with the value -1 via a conditional move, which will then lead to
+;; the correct result after the final subtraction from 63.
+(rule (lower (has_type (gpr64_ty _ty) (ctz x)))
+      (let ((rx Reg x)
+            (lastbit Reg (and_reg $I64 rx (neg_reg $I64 rx)))
+            (clz RegPair (clz_reg -1 lastbit)))
+        (sub_reg $I64 (imm $I64 63) (regpair_hi clz))))
+
+
+;;;; Rules for `popcnt` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Population count for 8-bit types is supported by the POPCNT instruction.
+(rule (lower (has_type $I8 (popcnt x)))
+      (popcnt_byte x))
+
+;; On z15, the POPCNT instruction has a variant to compute a full 64-bit
+;; population count, which we also use for 16- and 32-bit types.
+(rule (lower (has_type (and (mie2_enabled) (fits_in_64 ty)) (popcnt x)))
+      (popcnt_reg (put_in_reg_zext64 x)))
+
+;; On z14, we use the regular POPCNT, which computes the population count
+;; of each input byte separately, so we need to accumulate those partial
+;; results via a series of log2(type size in bytes) - 1 additions.  We
+;; accumulate in the high byte, so that a final right shift will zero out
+;; any unrelated bits to give a clean result.
+
+(rule (lower (has_type (and (mie2_disabled) $I16) (popcnt x)))
+      (let ((cnt2 Reg (popcnt_byte x))
+            (cnt1 Reg (add_reg $I32 cnt2 (lshl_imm $I32 cnt2 8))))
+        (lshr_imm $I32 cnt1 8)))
+
+(rule (lower (has_type (and (mie2_disabled) $I32) (popcnt x)))
+      (let ((cnt4 Reg (popcnt_byte x))
+            (cnt2 Reg (add_reg $I32 cnt4 (lshl_imm $I32 cnt4 16)))
+            (cnt1 Reg (add_reg $I32 cnt2 (lshl_imm $I32 cnt2 8))))
+        (lshr_imm $I32 cnt1 24)))
+
+(rule (lower (has_type (and (mie2_disabled) $I64) (popcnt x)))
+      (let ((cnt8 Reg (popcnt_byte x))
+            (cnt4 Reg (add_reg $I64 cnt8 (lshl_imm $I64 cnt8 32)))
+            (cnt2 Reg (add_reg $I64 cnt4 (lshl_imm $I64 cnt4 16)))
+            (cnt1 Reg (add_reg $I64 cnt2 (lshl_imm $I64 cnt2 8))))
+        (lshr_imm $I64 cnt1 56)))
+
+
+;;;; Rules for `fadd` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Add two registers.
+(rule (lower (has_type ty (fadd x y)))
+      (fadd_reg ty x y))
+
+
+;;;; Rules for `fsub` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Subtract two registers.
+(rule (lower (has_type ty (fsub x y)))
+      (fsub_reg ty x y))
+
+
+;;;; Rules for `fmul` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Multiply two registers.
+(rule (lower (has_type ty (fmul x y)))
+      (fmul_reg ty x y))
+
+
+;;;; Rules for `fdiv` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Divide two registers.
+(rule (lower (has_type ty (fdiv x y)))
+      (fdiv_reg ty x y))
+
+
+;;;; Rules for `fmin` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Minimum of two registers.
+(rule (lower (has_type ty (fmin x y)))
+      (fmin_reg ty x y))
+
+
+;;;; Rules for `fmax` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Maximum of two registers.
+(rule (lower (has_type ty (fmax x y)))
+      (fmax_reg ty x y))
+
+
+;;;; Rules for `fcopysign` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Copysign of two registers.
+(rule (lower (has_type ty (fcopysign x y)))
+      (fpu_copysign ty x y))
+
+
+;;;; Rules for `fma` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Multiply-and-add of three registers.
+(rule (lower (has_type ty (fma x y z)))
+      (fma_reg ty x y z))
+
+
+;;;; Rules for `sqrt` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Square root of a register.
+(rule (lower (has_type ty (sqrt x)))
+      (sqrt_reg ty x))
+
+
+;;;; Rules for `fneg` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Negated value of a register.
+(rule (lower (has_type ty (fneg x)))
+      (fneg_reg ty x))
+
+
+;;;; Rules for `fabs` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Absolute value of a register.
+(rule (lower (has_type ty (fabs x)))
+      (fabs_reg ty x))
+
+
+;;;; Rules for `ceil` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Round value in a register towards positive infinity.
+(rule (lower (has_type ty (ceil x)))
+      (ceil_reg ty x))
+
+
+;;;; Rules for `floor` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Round value in a register towards negative infinity.
+(rule (lower (has_type ty (floor x)))
+      (floor_reg ty x))
+
+
+;;;; Rules for `trunc` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Round value in a register towards zero.
+(rule (lower (has_type ty (trunc x)))
+      (trunc_reg ty x))
+
+
+;;;; Rules for `nearest` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Round value in a register towards nearest.
+(rule (lower (has_type ty (nearest x)))
+      (nearest_reg ty x))
+
+
+;;;; Rules for `fpromote` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Promote a register.
+(rule (lower (has_type dst_ty (fpromote x @ (value_type src_ty))))
+      (fpromote_reg dst_ty src_ty x))
+
+
+;;;; Rules for `fdemote` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Demote a register.
+(rule (lower (has_type dst_ty (fdemote x @ (value_type src_ty))))
+      (fdemote_reg dst_ty src_ty x))
+
+
+;;;; Rules for `fcvt_from_uint` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Convert an unsigned integer value in a register to floating-point.
+(rule (lower (has_type dst_ty (fcvt_from_uint x @ (value_type src_ty))))
+      (fcvt_from_uint_reg dst_ty (ty_ext32 src_ty)
+                          (put_in_reg_zext32 x)))
+
+
+;;;; Rules for `fcvt_from_sint` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Convert a signed integer value in a register to floating-point.
+(rule (lower (has_type dst_ty (fcvt_from_sint x @ (value_type src_ty))))
+      (fcvt_from_sint_reg dst_ty (ty_ext32 src_ty)
+                          (put_in_reg_sext32 x)))
+
+
+;;;; Rules for `fcvt_to_uint` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Convert a floating-point value in a register to an unsigned integer value.
+;; Traps if the input cannot be represented in the output type.
+;; FIXME: Add support for 8-/16-bit destination types (needs overflow check).
+(rule (lower (has_type (ty_32_or_64 dst_ty) (fcvt_to_uint x @ (value_type src_ty))))
+      (let ((src Reg x)
+            ;; First, check whether the input is a NaN, and trap if so.
+            (_ Reg (trap_if (fcmp_reg src_ty src src)
+                            (floatcc_as_cond (FloatCC.Unordered))
+                            (trap_code_bad_conversion_to_integer)))
+            ;; Perform the conversion.  If this sets CC 3, we have a
+            ;; "special case".  Since we already exluded the case where
+            ;; the input was a NaN, the only other option is that the
+            ;; conversion overflowed the target type.
+            (dst Reg (trap_if (fcvt_to_uint_reg_with_flags dst_ty src_ty src)
+                              (floatcc_as_cond (FloatCC.Unordered))
+                              (trap_code_integer_overflow))))
+        dst))
+
+
+;;;; Rules for `fcvt_to_sint` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Convert a floating-point value in a register to a signed integer value.
+;; Traps if the input cannot be represented in the output type.
+;; FIXME: Add support for 8-/16-bit destination types (needs overflow check).
+(rule (lower (has_type (ty_32_or_64 dst_ty) (fcvt_to_sint x @ (value_type src_ty))))
+      (let ((src Reg x)
+            ;; First, check whether the input is a NaN, and trap if so.
+            (_ Reg (trap_if (fcmp_reg src_ty src src)
+                            (floatcc_as_cond (FloatCC.Unordered))
+                            (trap_code_bad_conversion_to_integer)))
+            ;; Perform the conversion.  If this sets CC 3, we have a
+            ;; "special case".  Since we already exluded the case where
+            ;; the input was a NaN, the only other option is that the
+            ;; conversion overflowed the target type.
+            (dst Reg (trap_if (fcvt_to_sint_reg_with_flags dst_ty src_ty src)
+                              (floatcc_as_cond (FloatCC.Unordered))
+                              (trap_code_integer_overflow))))
+        dst))
+
+
+;;;; Rules for `fcvt_to_uint_sat` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Convert a floating-point value in a register to an unsigned integer value.
+;; FIXME: Add support for 8-/16-bit destination types (needs overflow check).
+(rule (lower (has_type (ty_32_or_64 dst_ty) (fcvt_to_uint_sat x @ (value_type src_ty))))
+      (let ((src Reg x)
+            (dst Reg (fcvt_to_uint_reg dst_ty src_ty src))
+            ;; In most special cases, the Z instruction already yields the
+            ;; result expected by Cranelift semantics.  The only exception
+            ;; it the case where the input was a NaN.  We explicitly check
+            ;; for that and force the output to 0 in that case.
+            (sat Reg (with_flags_reg (fcmp_reg src_ty src src)
+                                     (cmov_imm dst_ty
+                                               (floatcc_as_cond (FloatCC.Unordered)) 0 dst))))
+        sat))
+
+
+;;;; Rules for `fcvt_to_sint_sat` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Convert a floating-point value in a register to a signed integer value.
+;; FIXME: Add support for 8-/16-bit destination types (needs overflow check).
+(rule (lower (has_type (ty_32_or_64 dst_ty) (fcvt_to_sint_sat x @ (value_type src_ty))))
+      (let ((src Reg x)
+            (dst Reg (fcvt_to_sint_reg dst_ty src_ty src))
+            ;; In most special cases, the Z instruction already yields the
+            ;; result expected by Cranelift semantics.  The only exception
+            ;; it the case where the input was a NaN.  We explicitly check
+            ;; for that and force the output to 0 in that case.
+            (sat Reg (with_flags_reg (fcmp_reg src_ty src src)
+                                     (cmov_imm dst_ty
+                                               (floatcc_as_cond (FloatCC.Unordered)) 0 dst))))
+        sat))
+
+
+;;;; Rules for `bitcast` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Reinterpret a 64-bit integer value as floating-point.
+(rule (lower (has_type $F64 (bitcast x @ (value_type $I64))))
+      (mov_to_fpr x))
+
+;; Reinterpret a 64-bit floating-point value as integer.
+(rule (lower (has_type $I64 (bitcast x @ (value_type $F64))))
+      (mov_from_fpr x))
+
+;; Reinterpret a 32-bit integer value as floating-point (via $I64).
+;; Note that a 32-bit float is located in the high bits of the GPR.
+(rule (lower (has_type $F32 (bitcast x @ (value_type $I32))))
+      (mov_to_fpr (lshl_imm $I64 x 32)))
+
+;; Reinterpret a 32-bit floating-point value as integer (via $I64).
+;; Note that a 32-bit float is located in the high bits of the GPR.
+(rule (lower (has_type $I32 (bitcast x @ (value_type $F32))))
+      (lshr_imm $I64 (mov_from_fpr x) 32))
+
+
+;;;; Rules for `stack_addr` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Load the address of a stack slot.
+(rule (lower (has_type ty (stack_addr stack_slot offset)))
+      (stack_addr_impl ty stack_slot offset))
+
+
+;;;; Rules for `func_addr` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Load the address of a function, target reachable via PC-relative instruction.
+(rule (lower (func_addr (func_ref_data _ name (reloc_distance_near))))
+      (load_addr (memarg_symbol name 0 (memflags_trusted))))
+
+;; Load the address of a function, general case.
+(rule (lower (func_addr (func_ref_data _ name _)))
+      (load_ext_name_far name 0))
+
+
+;;;; Rules for `symbol_value` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Load the address of a symbol, target reachable via PC-relative instruction.
+(rule (lower (symbol_value (symbol_value_data name (reloc_distance_near)
+                                                   (memarg_symbol_offset offset))))
+      (load_addr (memarg_symbol name offset (memflags_trusted))))
+
+;; Load the address of a symbol, general case.
+(rule (lower (symbol_value (symbol_value_data name _ offset)))
+      (load_ext_name_far name offset))
+
+
+;;;; Rules for `load` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Load 8-bit integers.
+(rule (lower (has_type $I8 (load flags addr offset)))
+      (zext32_mem $I8 (lower_address flags addr offset)))
+
+;; Load 16-bit big-endian integers.
+(rule (lower (has_type $I16 (load flags @ (bigendian) addr offset)))
+      (zext32_mem $I16 (lower_address flags addr offset)))
+
+;; Load 16-bit little-endian integers.
+(rule (lower (has_type $I16 (load flags @ (littleendian) addr offset)))
+      (loadrev16 (lower_address flags addr offset)))
+
+;; Load 32-bit big-endian integers.
+(rule (lower (has_type $I32 (load flags @ (bigendian) addr offset)))
+      (load32 (lower_address flags addr offset)))
+
+;; Load 32-bit little-endian integers.
+(rule (lower (has_type $I32 (load flags @ (littleendian) addr offset)))
+      (loadrev32 (lower_address flags addr offset)))
+
+;; Load 64-bit big-endian integers.
+(rule (lower (has_type $I64 (load flags @ (bigendian) addr offset)))
+      (load64 (lower_address flags addr offset)))
+
+;; Load 64-bit little-endian integers.
+(rule (lower (has_type $I64 (load flags @ (littleendian) addr offset)))
+      (loadrev64 (lower_address flags addr offset)))
+
+;; Load 64-bit big-endian references.
+(rule (lower (has_type $R64 (load flags @ (bigendian) addr offset)))
+      (load64 (lower_address flags addr offset)))
+
+;; Load 64-bit little-endian references.
+(rule (lower (has_type $R64 (load flags @ (littleendian) addr offset)))
+      (loadrev64 (lower_address flags addr offset)))
+
+;; Load 32-bit big-endian floating-point values.
+(rule (lower (has_type $F32 (load flags @ (bigendian) addr offset)))
+      (fpu_load32 (lower_address flags addr offset)))
+
+;; Load 32-bit little-endian floating-point values (z15 instruction).
+(rule (lower (has_type (and (vxrs_ext2_enabled) $F32)
+                       (load flags @ (littleendian) addr offset)))
+      (fpu_loadrev32 (lower_address flags addr offset)))
+
+;; Load 32-bit little-endian floating-point values (via GPR on z14).
+(rule (lower (has_type (and (vxrs_ext2_disabled) $F32)
+                       (load flags @ (littleendian) addr offset)))
+      (let ((gpr Reg (loadrev32 (lower_address flags addr offset))))
+        (mov_to_fpr (lshl_imm $I64 gpr 32))))
+
+;; Load 64-bit big-endian floating-point values.
+(rule (lower (has_type $F64 (load flags @ (bigendian) addr offset)))
+      (fpu_load64 (lower_address flags addr offset)))
+
+;; Load 64-bit little-endian floating-point values (z15 instruction).
+(rule (lower (has_type (and (vxrs_ext2_enabled) $F64)
+                            (load flags @ (littleendian) addr offset)))
+      (fpu_loadrev64 (lower_address flags addr offset)))
+
+;; Load 64-bit little-endian floating-point values (via GPR on z14).
+(rule (lower (has_type (and (vxrs_ext2_disabled) $F64)
+                            (load flags @ (littleendian) addr offset)))
+      (let ((gpr Reg (loadrev64 (lower_address flags addr offset))))
+        (mov_to_fpr gpr)))
+
+
+;;;; Rules for `uload8` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; 16- or 32-bit target types.
+(rule (lower (has_type (gpr32_ty _ty) (uload8 flags addr offset)))
+      (zext32_mem $I8 (lower_address flags addr offset)))
+
+;; 64-bit target types.
+(rule (lower (has_type (gpr64_ty _ty) (uload8 flags addr offset)))
+      (zext64_mem $I8 (lower_address flags addr offset)))
+
+
+;;;; Rules for `sload8` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; 16- or 32-bit target types.
+(rule (lower (has_type (gpr32_ty _ty) (sload8 flags addr offset)))
+      (sext32_mem $I8 (lower_address flags addr offset)))
+
+;; 64-bit target types.
+(rule (lower (has_type (gpr64_ty _ty) (sload8 flags addr offset)))
+      (sext64_mem $I8 (lower_address flags addr offset)))
+
+
+;;;; Rules for `uload16` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; 32-bit target type, big-endian source value.
+(rule (lower (has_type (gpr32_ty _ty)
+                       (uload16 flags @ (bigendian) addr offset)))
+      (zext32_mem $I16 (lower_address flags addr offset)))
+
+;; 32-bit target type, little-endian source value (via explicit extension).
+(rule (lower (has_type (gpr32_ty _ty)
+                       (uload16 flags @ (littleendian) addr offset)))
+      (let ((reg16 Reg (loadrev16 (lower_address flags addr offset))))
+        (zext32_reg $I16 reg16)))
+
+;; 64-bit target type, big-endian source value.
+(rule (lower (has_type (gpr64_ty _ty)
+                       (uload16 flags @ (bigendian) addr offset)))
+      (zext64_mem $I16 (lower_address flags addr offset)))
+
+;; 64-bit target type, little-endian source value (via explicit extension).
+(rule (lower (has_type (gpr64_ty _ty)
+                       (uload16 flags @ (littleendian) addr offset)))
+      (let ((reg16 Reg (loadrev16 (lower_address flags addr offset))))
+        (zext64_reg $I16 reg16)))
+
+
+;;;; Rules for `sload16` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; 32-bit target type, big-endian source value.
+(rule (lower (has_type (gpr32_ty _ty)
+                       (sload16 flags @ (bigendian) addr offset)))
+      (sext32_mem $I16 (lower_address flags addr offset)))
+
+;; 32-bit target type, little-endian source value (via explicit extension).
+(rule (lower (has_type (gpr32_ty _ty)
+                       (sload16 flags @ (littleendian) addr offset)))
+      (let ((reg16 Reg (loadrev16 (lower_address flags addr offset))))
+        (sext32_reg $I16 reg16)))
+
+;; 64-bit target type, big-endian source value.
+(rule (lower (has_type (gpr64_ty _ty)
+                       (sload16 flags @ (bigendian) addr offset)))
+      (sext64_mem $I16 (lower_address flags addr offset)))
+
+;; 64-bit target type, little-endian source value (via explicit extension).
+(rule (lower (has_type (gpr64_ty _ty)
+                       (sload16 flags @ (littleendian) addr offset)))
+      (let ((reg16 Reg (loadrev16 (lower_address flags addr offset))))
+        (sext64_reg $I16 reg16)))
+
+
+;;;; Rules for `uload32` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; 64-bit target type, big-endian source value.
+(rule (lower (has_type (gpr64_ty _ty)
+                       (uload32 flags @ (bigendian) addr offset)))
+      (zext64_mem $I32 (lower_address flags addr offset)))
+
+;; 64-bit target type, little-endian source value (via explicit extension).
+(rule (lower (has_type (gpr64_ty _ty)
+                       (uload32 flags @ (littleendian) addr offset)))
+      (let ((reg32 Reg (loadrev32 (lower_address flags addr offset))))
+        (zext64_reg $I32 reg32)))
+
+
+;;;; Rules for `sload32` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; 64-bit target type, big-endian source value.
+(rule (lower (has_type (gpr64_ty _ty)
+                       (sload32 flags @ (bigendian) addr offset)))
+      (sext64_mem $I32 (lower_address flags addr offset)))
+
+;; 64-bit target type, little-endian source value (via explicit extension).
+(rule (lower (has_type (gpr64_ty _ty)
+                       (sload32 flags @ (littleendian) addr offset)))
+      (let ((reg32 Reg (loadrev32 (lower_address flags addr offset))))
+        (sext64_reg $I32 reg32)))
+
+
+;;;; Rules for `store` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The actual store logic for integer types is identical for the `store`,
+;; `istoreNN`, and `atomic_store` instructions, so we share common helpers.
+
+;; Store 8-bit integer type, main lowering entry point.
+(rule (lower (store flags val @ (value_type $I8) addr offset))
+      (side_effect (istore8_impl flags val addr offset)))
+
+;; Store 16-bit integer type, main lowering entry point.
+(rule (lower (store flags val @ (value_type $I16) addr offset))
+      (side_effect (istore16_impl flags val addr offset)))
+
+;; Store 32-bit integer type, main lowering entry point.
+(rule (lower (store flags val @ (value_type $I32) addr offset))
+      (side_effect (istore32_impl flags val addr offset)))
+
+;; Store 64-bit integer type, main lowering entry point.
+(rule (lower (store flags val @ (value_type $I64) addr offset))
+      (side_effect (istore64_impl flags val addr offset)))
+
+;; Store 64-bit reference type, main lowering entry point.
+(rule (lower (store flags val @ (value_type $R64) addr offset))
+      (side_effect (istore64_impl flags val addr offset)))
+
+;; Store 32-bit big-endian floating-point type.
+(rule (lower (store flags @ (bigendian)
+                    val @ (value_type $F32) addr offset))
+      (side_effect (fpu_store32 (put_in_reg val)
+                                (lower_address flags addr offset))))
+
+;; Store 32-bit little-endian floating-point type (z15 instruction).
+(rule (lower (store flags @ (littleendian)
+                    val @ (value_type (and $F32 (vxrs_ext2_enabled))) addr offset))
+      (side_effect (fpu_storerev32 (put_in_reg val)
+                                   (lower_address flags addr offset))))
+
+;; Store 32-bit little-endian floating-point type (via GPR on z14).
+(rule (lower (store flags @ (littleendian)
+                    val @ (value_type (and $F32 (vxrs_ext2_disabled))) addr offset))
+      (let ((gpr Reg (lshr_imm $I64 (mov_from_fpr (put_in_reg val)) 32)))
+        (side_effect (storerev32 gpr (lower_address flags addr offset)))))
+
+;; Store 64-bit big-endian floating-point type.
+(rule (lower (store flags @ (bigendian)
+                    val @ (value_type $F64) addr offset))
+      (side_effect (fpu_store64 (put_in_reg val)
+                                (lower_address flags addr offset))))
+
+;; Store 64-bit little-endian floating-point type (z15 instruction).
+(rule (lower (store flags @ (littleendian)
+                    val @ (value_type (and $F64 (vxrs_ext2_enabled))) addr offset))
+      (side_effect (fpu_storerev64 (put_in_reg val)
+                                   (lower_address flags addr offset))))
+
+;; Store 64-bit little-endian floating-point type (via GPR on z14).
+(rule (lower (store flags @ (littleendian)
+                    val @ (value_type (and $F64 (vxrs_ext2_disabled))) addr offset))
+      (let ((gpr Reg (mov_from_fpr (put_in_reg val))))
+        (side_effect (storerev64 gpr (lower_address flags addr offset)))))
+
+
+;;;; Rules for 8-bit integer stores ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Main `istore8` lowering entry point, dispatching to the helper.
+(rule (lower (istore8 flags val addr offset))
+      (side_effect (istore8_impl flags val addr offset)))
+
+;; Helper to store 8-bit integer types.
+(decl istore8_impl (MemFlags Value Value Offset32) SideEffectNoResult)
+
+;; Store 8-bit integer types, register input.
+(rule (istore8_impl flags val addr offset)
+      (store8 (put_in_reg val) (lower_address flags addr offset)))
+
+;; Store 8-bit integer types, immediate input.
+(rule (istore8_impl flags (u8_from_value imm) addr offset)
+      (store8_imm imm (lower_address flags addr offset)))
+
+
+;;;; Rules for 16-bit integer stores ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Main `istore16` lowering entry point, dispatching to the helper.
+(rule (lower (istore16 flags val addr offset))
+      (side_effect (istore16_impl flags val addr offset)))
+
+;; Helper to store 16-bit integer types.
+(decl istore16_impl (MemFlags Value Value Offset32) SideEffectNoResult)
+
+;; Store 16-bit big-endian integer types, register input.
+(rule (istore16_impl flags @ (bigendian) val addr offset)
+      (store16 (put_in_reg val) (lower_address flags addr offset)))
+
+;; Store 16-bit little-endian integer types, register input.
+(rule (istore16_impl flags @ (littleendian) val addr offset)
+      (storerev16 (put_in_reg val) (lower_address flags addr offset)))
+
+;; Store 16-bit big-endian integer types, immediate input.
+(rule (istore16_impl flags @ (bigendian) (i16_from_value imm) addr offset)
+      (store16_imm imm (lower_address flags addr offset)))
+
+;; Store 16-bit little-endian integer types, immediate input.
+(rule (istore16_impl flags @ (littleendian) (i16_from_swapped_value imm) addr offset)
+      (store16_imm imm (lower_address flags addr offset)))
+
+
+;;;; Rules for 32-bit integer stores ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Main `istore32` lowering entry point, dispatching to the helper.
+(rule (lower (istore32 flags val addr offset))
+      (side_effect (istore32_impl flags val addr offset)))
+
+;; Helper to store 32-bit integer types.
+(decl istore32_impl (MemFlags Value Value Offset32) SideEffectNoResult)
+
+;; Store 32-bit big-endian integer types, register input.
+(rule (istore32_impl flags @ (bigendian) val addr offset)
+      (store32 (put_in_reg val) (lower_address flags addr offset)))
+
+;; Store 32-bit big-endian integer types, immediate input.
+(rule (istore32_impl flags @ (bigendian) (i16_from_value imm) addr offset)
+      (store32_simm16 imm (lower_address flags addr offset)))
+
+;; Store 32-bit little-endian integer types.
+(rule (istore32_impl flags @ (littleendian) val addr offset)
+      (storerev32 (put_in_reg val) (lower_address flags addr offset)))
+
+
+;;;; Rules for 64-bit integer stores ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Helper to store 64-bit integer types.
+(decl istore64_impl (MemFlags Value Value Offset32) SideEffectNoResult)
+
+;; Store 64-bit big-endian integer types, register input.
+(rule (istore64_impl flags @ (bigendian) val addr offset)
+      (store64 (put_in_reg val) (lower_address flags addr offset)))
+
+;; Store 64-bit big-endian integer types, immediate input.
+(rule (istore64_impl flags @ (bigendian) (i16_from_value imm) addr offset)
+      (store64_simm16 imm (lower_address flags addr offset)))
+
+;; Store 64-bit little-endian integer types.
+(rule (istore64_impl flags @ (littleendian) val addr offset)
+      (storerev64 (put_in_reg val) (lower_address flags addr offset)))
+
+
+;;;; Rules for `atomic_rmw` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Atomic operations that do not require a compare-and-swap loop.
+
+;; Atomic AND for 32/64-bit big-endian types, using a single instruction.
+(rule (lower (has_type (ty_32_or_64 ty)
+                (atomic_rmw flags @ (bigendian) (AtomicRmwOp.And) addr src)))
+      (atomic_rmw_and ty (put_in_reg src)
+                      (lower_address flags addr (zero_offset))))
+
+;; Atomic AND for 32/64-bit big-endian types, using byte-swapped input/output.
+(rule (lower (has_type (ty_32_or_64 ty)
+               (atomic_rmw flags @ (littleendian) (AtomicRmwOp.And) addr src)))
+      (bswap_reg ty (atomic_rmw_and ty (bswap_reg ty (put_in_reg src))
+                                    (lower_address flags addr (zero_offset)))))
+
+;; Atomic OR for 32/64-bit big-endian types, using a single instruction.
+(rule (lower (has_type (ty_32_or_64 ty)
+               (atomic_rmw flags @ (bigendian) (AtomicRmwOp.Or) addr src)))
+      (atomic_rmw_or ty (put_in_reg src)
+                     (lower_address flags addr (zero_offset))))
+
+;; Atomic OR for 32/64-bit little-endian types, using byte-swapped input/output.
+(rule (lower (has_type (ty_32_or_64 ty)
+               (atomic_rmw flags @ (littleendian) (AtomicRmwOp.Or) addr src)))
+      (bswap_reg ty (atomic_rmw_or ty (bswap_reg ty (put_in_reg src))
+                                   (lower_address flags addr (zero_offset)))))
+
+;; Atomic XOR for 32/64-bit big-endian types, using a single instruction.
+(rule (lower (has_type (ty_32_or_64 ty)
+               (atomic_rmw flags @ (bigendian) (AtomicRmwOp.Xor) addr src)))
+      (atomic_rmw_xor ty (put_in_reg src)
+                      (lower_address flags addr (zero_offset))))
+
+;; Atomic XOR for 32/64-bit little-endian types, using byte-swapped input/output.
+(rule (lower (has_type (ty_32_or_64 ty)
+               (atomic_rmw flags @ (littleendian) (AtomicRmwOp.Xor) addr src)))
+      (bswap_reg ty (atomic_rmw_xor ty (bswap_reg ty (put_in_reg src))
+                                    (lower_address flags addr (zero_offset)))))
+
+;; Atomic ADD for 32/64-bit big-endian types, using a single instruction.
+(rule (lower (has_type (ty_32_or_64 ty)
+               (atomic_rmw flags @ (bigendian) (AtomicRmwOp.Add) addr src)))
+      (atomic_rmw_add ty (put_in_reg src)
+                      (lower_address flags addr (zero_offset))))
+
+;; Atomic SUB for 32/64-bit big-endian types, using atomic ADD with negated input.
+(rule (lower (has_type (ty_32_or_64 ty)
+               (atomic_rmw flags @ (bigendian) (AtomicRmwOp.Sub) addr src)))
+      (atomic_rmw_add ty (neg_reg ty (put_in_reg src))
+                      (lower_address flags addr (zero_offset))))
+
+
+;; Atomic operations that require a compare-and-swap loop.
+
+;; Operations for 32/64-bit types can use a fullword compare-and-swap loop.
+(rule (lower (has_type (ty_32_or_64 ty) (atomic_rmw flags op addr src)))
+      (let ((src_reg Reg (put_in_reg src))
+            (addr_reg Reg (put_in_reg addr))
+            ;; Create body of compare-and-swap loop.
+            (ib VecMInstBuilder (inst_builder_new))
+            (val0 Reg (writable_reg_to_reg (casloop_val_reg)))
+            (val1 Reg (atomic_rmw_body ib ty flags op
+                        (casloop_tmp_reg) val0 src_reg)))
+        ;; Emit compare-and-swap loop and extract final result.
+        (casloop ib ty flags addr_reg val1)))
+
+;; Operations for 8/16-bit types must operate on the surrounding aligned word.
+(rule (lower (has_type (ty_8_or_16 ty) (atomic_rmw flags op addr src)))
+      (let ((src_reg Reg (put_in_reg src))
+            (addr_reg Reg (put_in_reg addr))
+            ;; Prepare access to surrounding aligned word.
+            (bitshift Reg (casloop_bitshift addr_reg))
+            (aligned_addr Reg (casloop_aligned_addr addr_reg))
+            ;; Create body of compare-and-swap loop.
+            (ib VecMInstBuilder (inst_builder_new))
+            (val0 Reg (writable_reg_to_reg (casloop_val_reg)))
+            (val1 Reg (casloop_rotate_in ib ty flags bitshift val0))
+            (val2 Reg (atomic_rmw_body ib ty flags op
+                        (casloop_tmp_reg) val1 src_reg))
+            (val3 Reg (casloop_rotate_out ib ty flags bitshift val2)))
+        ;; Emit compare-and-swap loop and extract final result.
+        (casloop_subword ib ty flags aligned_addr bitshift val3)))
+
+;; Loop bodies for atomic read-modify-write operations.
+(decl atomic_rmw_body (VecMInstBuilder Type MemFlags AtomicRmwOp
+                       WritableReg Reg Reg) Reg)
+
+;; Loop bodies for 32-/64-bit atomic XCHG operations.
+;; Simply use the source (possibly byte-swapped) as new target value.
+(rule (atomic_rmw_body ib (ty_32_or_64 ty) (bigendian)
+                       (AtomicRmwOp.Xchg) tmp val src)
+      src)
+(rule (atomic_rmw_body ib (ty_32_or_64 ty) (littleendian)
+                       (AtomicRmwOp.Xchg) tmp val src)
+      (bswap_reg ty src))
+
+;; Loop bodies for 32-/64-bit atomic NAND operations.
+;; On z15 this can use the NN(G)RK instruction.  On z14, perform an And
+;; operation and invert the result.  In the little-endian case, we can
+;; simply byte-swap the source operand.
+(rule (atomic_rmw_body ib (and (mie2_enabled) (ty_32_or_64 ty)) (bigendian)
+                       (AtomicRmwOp.Nand) tmp val src)
+      (push_alu_reg ib (aluop_and_not ty) tmp val src))
+(rule (atomic_rmw_body ib (and (mie2_enabled) (ty_32_or_64 ty)) (littleendian)
+                       (AtomicRmwOp.Nand) tmp val src)
+      (push_alu_reg ib (aluop_and_not ty) tmp val (bswap_reg ty src)))
+(rule (atomic_rmw_body ib (and (mie2_disabled) (ty_32_or_64 ty)) (bigendian)
+                       (AtomicRmwOp.Nand) tmp val src)
+      (push_not_reg ib ty tmp
+        (push_alu_reg ib (aluop_and ty) tmp val src)))
+(rule (atomic_rmw_body ib (and (mie2_disabled) (ty_32_or_64 ty)) (littleendian)
+                       (AtomicRmwOp.Nand) tmp val src)
+      (push_not_reg ib ty tmp
+        (push_alu_reg ib (aluop_and ty) tmp val (bswap_reg ty src))))
+
+;; Loop bodies for 8-/16-bit atomic bit operations.
+;; These use the "rotate-then-<op>-selected bits" family of instructions.
+;; For the Nand operation, we again perform And and invert the result.
+(rule (atomic_rmw_body ib (ty_8_or_16 ty) flags (AtomicRmwOp.Xchg) tmp val src)
+      (atomic_rmw_body_rxsbg ib ty flags (RxSBGOp.Insert) tmp val src))
+(rule (atomic_rmw_body ib (ty_8_or_16 ty) flags (AtomicRmwOp.And) tmp val src)
+      (atomic_rmw_body_rxsbg ib ty flags (RxSBGOp.And) tmp val src))
+(rule (atomic_rmw_body ib (ty_8_or_16 ty) flags (AtomicRmwOp.Or) tmp val src)
+      (atomic_rmw_body_rxsbg ib ty flags (RxSBGOp.Or) tmp val src))
+(rule (atomic_rmw_body ib (ty_8_or_16 ty) flags (AtomicRmwOp.Xor) tmp val src)
+      (atomic_rmw_body_rxsbg ib ty flags (RxSBGOp.Xor) tmp val src))
+(rule (atomic_rmw_body ib (ty_8_or_16 ty) flags (AtomicRmwOp.Nand) tmp val src)
+      (atomic_rmw_body_invert ib ty flags tmp
+        (atomic_rmw_body_rxsbg ib ty flags (RxSBGOp.And) tmp val src)))
+
+;; RxSBG subword operation.
+(decl atomic_rmw_body_rxsbg (VecMInstBuilder Type MemFlags RxSBGOp
+                             WritableReg Reg Reg) Reg)
+;; 8-bit case: use the low byte of "src" and the high byte of "val".
+(rule (atomic_rmw_body_rxsbg ib $I8 _ op tmp val src)
+      (push_rxsbg ib op tmp val src 32 40 24))
+;; 16-bit big-endian case: use the low two bytes of "src" and the
+;; high two bytes of "val".
+(rule (atomic_rmw_body_rxsbg ib $I16 (bigendian) op tmp val src)
+      (push_rxsbg ib op tmp val src 32 48 16))
+;; 16-bit little-endian case: use the low two bytes of "src", byte-swapped
+;; so they end up in the high two bytes, and the low two bytes of "val".
+(rule (atomic_rmw_body_rxsbg ib $I16 (littleendian) op tmp val src)
+      (push_rxsbg ib op tmp val (bswap_reg $I32 src) 48 64 -16))
+
+;; Invert a subword.
+(decl atomic_rmw_body_invert (VecMInstBuilder Type MemFlags WritableReg Reg) Reg)
+;; 8-bit case: invert the high byte.
+(rule (atomic_rmw_body_invert ib $I8 _ tmp val)
+      (push_xor_uimm32shifted ib $I32 tmp val (uimm32shifted 0xff000000 0)))
+;; 16-bit big-endian case: invert the two high bytes.
+(rule (atomic_rmw_body_invert ib $I16 (bigendian) tmp val)
+      (push_xor_uimm32shifted ib $I32 tmp val (uimm32shifted 0xffff0000 0)))
+;; 16-bit little-endian case: invert the two low bytes.
+(rule (atomic_rmw_body_invert ib $I16 (littleendian) tmp val)
+      (push_xor_uimm32shifted ib $I32 tmp val (uimm32shifted 0xffff 0)))
+
+;; Loop bodies for atomic ADD/SUB operations.
+(rule (atomic_rmw_body ib ty flags (AtomicRmwOp.Add) tmp val src)
+      (atomic_rmw_body_addsub ib ty flags (aluop_add (ty_ext32 ty)) tmp val src))
+(rule (atomic_rmw_body ib ty flags (AtomicRmwOp.Sub) tmp val src)
+      (atomic_rmw_body_addsub ib ty flags (aluop_sub (ty_ext32 ty)) tmp val src))
+
+;; Addition or subtraction operation.
+(decl atomic_rmw_body_addsub (VecMInstBuilder Type MemFlags ALUOp
+                              WritableReg Reg Reg) Reg)
+;; 32/64-bit big-endian case: just a regular add/sub operation.
+(rule (atomic_rmw_body_addsub ib (ty_32_or_64 ty) (bigendian) op tmp val src)
+      (push_alu_reg ib op tmp val src))
+;; 32/64-bit little-endian case: byte-swap the value loaded from memory before
+;; and after performing the operation in native endianness.
+(rule (atomic_rmw_body_addsub ib (ty_32_or_64 ty) (littleendian) op tmp val src)
+      (let ((val_swapped Reg (push_bswap_reg ib ty tmp val))
+            (res_swapped Reg (push_alu_reg ib op tmp val_swapped src)))
+        (push_bswap_reg ib ty tmp res_swapped)))
+;; 8-bit case: perform a 32-bit addition of the source value shifted by 24 bits
+;; to the memory value, which contains the target in its high byte.
+(rule (atomic_rmw_body_addsub ib $I8 _ op tmp val src)
+      (let ((src_shifted Reg (lshl_imm $I32 src 24)))
+        (push_alu_reg ib op tmp val src_shifted)))
+;; 16-bit big-endian case: similar, just shift the source by 16 bits.
+(rule (atomic_rmw_body_addsub ib $I16 (bigendian) op tmp val src)
+      (let ((src_shifted Reg (lshl_imm $I32 src 16)))
+        (push_alu_reg ib op tmp val src_shifted)))
+;; 16-bit little-endian case: the same, but in addition we need to byte-swap
+;; the memory value before and after the operation.  Since the value was placed
+;; in the low two bytes by our standard rotation, we can use a 32-bit byte-swap
+;; and the native-endian value will end up in the high bytes where we need it
+;; to perform the operation.
+(rule (atomic_rmw_body_addsub ib $I16 (littleendian) op tmp val src)
+      (let ((src_shifted Reg (lshl_imm $I32 src 16))
+            (val_swapped Reg (push_bswap_reg ib $I32 tmp val))
+            (res_swapped Reg (push_alu_reg ib op tmp val_swapped src_shifted)))
+        (push_bswap_reg ib $I32 tmp res_swapped)))
+
+;; Loop bodies for atomic MIN/MAX operations.
+(rule (atomic_rmw_body ib ty flags (AtomicRmwOp.Smin) tmp val src)
+      (atomic_rmw_body_minmax ib ty flags (cmpop_cmps (ty_ext32 ty))
+        (intcc_as_cond (IntCC.SignedLessThan)) tmp val src))
+(rule (atomic_rmw_body ib ty flags (AtomicRmwOp.Smax) tmp val src)
+      (atomic_rmw_body_minmax ib ty flags (cmpop_cmps (ty_ext32 ty))
+        (intcc_as_cond (IntCC.SignedGreaterThan)) tmp val src))
+(rule (atomic_rmw_body ib ty flags (AtomicRmwOp.Umin) tmp val src)
+      (atomic_rmw_body_minmax ib ty flags (cmpop_cmpu (ty_ext32 ty))
+        (intcc_as_cond (IntCC.UnsignedLessThan)) tmp val src))
+(rule (atomic_rmw_body ib ty flags (AtomicRmwOp.Umax) tmp val src)
+      (atomic_rmw_body_minmax ib ty flags (cmpop_cmpu (ty_ext32 ty))
+        (intcc_as_cond (IntCC.UnsignedGreaterThan)) tmp val src))
+
+;; Minimum or maximum operation.
+(decl atomic_rmw_body_minmax (VecMInstBuilder Type MemFlags CmpOp Cond
+                              WritableReg Reg Reg) Reg)
+;; 32/64-bit big-endian case: just a comparison followed by a conditional
+;; break out of the loop if the memory value does not need to change.
+;; If it does need to change, the new value is simply the source operand.
+(rule (atomic_rmw_body_minmax ib (ty_32_or_64 ty) (bigendian)
+                              op cond tmp val src)
+      (let ((_ Reg (push_break_if ib (cmp_rr op src val) (invert_cond cond))))
+        src))
+;; 32/64-bit little-endian case: similar, but we need to byte-swap the
+;; memory value before the comparison.  If we need to store the new value,
+;; it also needs to be byte-swapped.
+(rule (atomic_rmw_body_minmax ib (ty_32_or_64 ty) (littleendian)
+                              op cond tmp val src)
+      (let ((val_swapped Reg (push_bswap_reg ib ty tmp val))
+            (_ Reg (push_break_if ib (cmp_rr op src val_swapped)
+                                     (invert_cond cond))))
+        (push_bswap_reg ib ty tmp src)))
+;; 8-bit case: compare the memory value (which contains the target in the
+;; high byte) with the source operand shifted by 24 bits.  Note that in
+;; the case where the high bytes are equal, the comparison may succeed
+;; or fail depending on the unrelated low bits of the memory value, and
+;; so we either may or may not perform the update.  But it would be an
+;; update with the same value in any case, so this does not matter.
+(rule (atomic_rmw_body_minmax ib $I8 _ op cond tmp val src)
+      (let ((src_shifted Reg (lshl_imm $I32 src 24))
+            (_ Reg (push_break_if ib (cmp_rr op src_shifted val)
+                                     (invert_cond cond))))
+        (push_rxsbg ib (RxSBGOp.Insert) tmp val src_shifted 32 40 0)))
+;; 16-bit big-endian case: similar, just shift the source by 16 bits.
+(rule (atomic_rmw_body_minmax ib $I16 (bigendian) op cond tmp val src)
+      (let ((src_shifted Reg (lshl_imm $I32 src 16))
+            (_ Reg (push_break_if ib (cmp_rr op src_shifted val)
+                                     (invert_cond cond))))
+        (push_rxsbg ib (RxSBGOp.Insert) tmp val src_shifted 32 48 0)))
+;; 16-bit little-endian case: similar, but in addition byte-swap the
+;; memory value before and after the operation, like for _addsub_.
+(rule (atomic_rmw_body_minmax ib $I16 (littleendian) op cond tmp val src)
+      (let ((src_shifted Reg (lshl_imm $I32 src 16))
+            (val_swapped Reg (push_bswap_reg ib $I32 tmp val))
+            (_ Reg (push_break_if ib (cmp_rr op src_shifted val_swapped)
+                                     (invert_cond cond)))
+            (res_swapped Reg (push_rxsbg ib (RxSBGOp.Insert)
+                                tmp val_swapped src_shifted 32 48 0)))
+        (push_bswap_reg ib $I32 tmp res_swapped)))
+
+
+;;;; Rules for `atomic_cas` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; 32/64-bit big-endian atomic compare-and-swap instruction.
+(rule (lower (has_type (ty_32_or_64 ty)
+               (atomic_cas flags @ (bigendian) addr src1 src2)))
+      (atomic_cas_impl ty (put_in_reg src1) (put_in_reg src2)
+                       (lower_address flags addr (zero_offset))))
+
+;; 32/64-bit little-endian atomic compare-and-swap instruction.
+;; Implemented by byte-swapping old/new inputs and the output.
+(rule (lower (has_type (ty_32_or_64 ty)
+               (atomic_cas flags @ (littleendian) addr src1 src2)))
+      (bswap_reg ty (atomic_cas_impl ty (bswap_reg ty (put_in_reg src1))
+                                     (bswap_reg ty (put_in_reg src2))
+                                     (lower_address flags addr (zero_offset)))))
+
+;; 8/16-bit atomic compare-and-swap implemented via loop.
+(rule (lower (has_type (ty_8_or_16 ty) (atomic_cas flags addr src1 src2)))
+      (let ((src1_reg Reg (put_in_reg src1))
+            (src2_reg Reg (put_in_reg src2))
+            (addr_reg Reg (put_in_reg addr))
+            ;; Prepare access to the surrounding aligned word.
+            (bitshift Reg (casloop_bitshift addr_reg))
+            (aligned_addr Reg (casloop_aligned_addr addr_reg))
+            ;; Create body of compare-and-swap loop.
+            (ib VecMInstBuilder (inst_builder_new))
+            (val0 Reg (writable_reg_to_reg (casloop_val_reg)))
+            (val1 Reg (casloop_rotate_in ib ty flags bitshift val0))
+            (val2 Reg (atomic_cas_body ib ty flags
+                        (casloop_tmp_reg) val1 src1_reg src2_reg))
+            (val3 Reg (casloop_rotate_out ib ty flags bitshift val2)))
+        ;; Emit compare-and-swap loop and extract final result.
+        (casloop_subword ib ty flags aligned_addr bitshift val3)))
+
+;; Emit loop body instructions to perform a subword compare-and-swap.
+(decl atomic_cas_body (VecMInstBuilder Type MemFlags
+                       WritableReg Reg Reg Reg) Reg)
+
+;; 8-bit case: "val" contains the value loaded from memory in the high byte.
+;; Compare with the comparison value in the low byte of "src1".  If unequal,
+;; break out of the loop, otherwise replace the target byte in "val" with
+;; the low byte of "src2".
+(rule (atomic_cas_body ib $I8 _ tmp val src1 src2)
+      (let ((_ Reg (push_break_if ib (rxsbg_test (RxSBGOp.Xor) val src1 32 40 24)
+                                     (intcc_as_cond (IntCC.NotEqual)))))
+        (push_rxsbg ib (RxSBGOp.Insert) tmp val src2 32 40 24)))
+
+;; 16-bit big-endian case: Same as above, except with values in the high
+;; two bytes of "val" and low two bytes of "src1" and "src2".
+(rule (atomic_cas_body ib $I16 (bigendian) tmp val src1 src2)
+      (let ((_ Reg (push_break_if ib (rxsbg_test (RxSBGOp.Xor) val src1 32 48 16)
+                                     (intcc_as_cond (IntCC.NotEqual)))))
+        (push_rxsbg ib (RxSBGOp.Insert) tmp val src2 32 48 16)))
+
+;; 16-bit little-endian case: "val" here contains a little-endian value in the
+;; *low* two bytes.  "src1" and "src2" contain native (i.e. big-endian) values
+;; in their low two bytes.  Perform the operation in little-endian mode by
+;; byte-swapping "src1" and "src" ahead of the loop.  Note that this is a
+;; 32-bit operation so the little-endian 16-bit values end up in the *high*
+;; two bytes of the swapped values.
+(rule (atomic_cas_body ib $I16 (littleendian) tmp val src1 src2)
+      (let ((src1_swapped Reg (bswap_reg $I32 src1))
+            (src2_swapped Reg (bswap_reg $I32 src2))
+            (_ Reg (push_break_if ib
+                     (rxsbg_test (RxSBGOp.Xor) val src1_swapped 48 64 -16)
+                     (intcc_as_cond (IntCC.NotEqual)))))
+        (push_rxsbg ib (RxSBGOp.Insert) tmp val src2_swapped 48 64 -16)))
+
+
+;;;; Rules for `atomic_load` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Atomic loads can be implemented via regular loads on this platform.
+
+;; 8-bit atomic load.
+(rule (lower (has_type $I8 (atomic_load flags addr)))
+      (zext32_mem $I8 (lower_address flags addr (zero_offset))))
+
+;; 16-bit big-endian atomic load.
+(rule (lower (has_type $I16 (atomic_load flags @ (bigendian) addr)))
+      (zext32_mem $I16 (lower_address flags addr (zero_offset))))
+
+;; 16-bit little-endian atomic load.
+(rule (lower (has_type $I16 (atomic_load flags @ (littleendian) addr)))
+      (loadrev16 (lower_address flags addr (zero_offset))))
+
+;; 32-bit big-endian atomic load.
+(rule (lower (has_type $I32 (atomic_load flags @ (bigendian) addr)))
+      (load32 (lower_address flags addr (zero_offset))))
+
+;; 32-bit little-endian atomic load.
+(rule (lower (has_type $I32 (atomic_load flags @ (littleendian) addr)))
+      (loadrev32 (lower_address flags addr (zero_offset))))
+
+;; 64-bit big-endian atomic load.
+(rule (lower (has_type $I64 (atomic_load flags @ (bigendian) addr)))
+      (load64 (lower_address flags addr (zero_offset))))
+
+;; 64-bit little-endian atomic load.
+(rule (lower (has_type $I64 (atomic_load flags @ (littleendian) addr)))
+      (loadrev64 (lower_address flags addr (zero_offset))))
+
+
+;;;; Rules for `atomic_store` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Atomic stores can be implemented via regular stores followed by a fence.
+(decl atomic_store_impl (SideEffectNoResult) InstOutput)
+(rule (atomic_store_impl store)
+      (let ((_ InstOutput (side_effect store)))
+         (side_effect (fence_impl))))
+
+;; 8-bit atomic store.
+(rule (lower (atomic_store flags val @ (value_type $I8) addr))
+      (atomic_store_impl (istore8_impl flags val addr (zero_offset))))
+
+;; 16-bit atomic store.
+(rule (lower (atomic_store flags val @ (value_type $I16) addr))
+      (atomic_store_impl (istore16_impl flags val addr (zero_offset))))
+
+;; 32-bit atomic store.
+(rule (lower (atomic_store flags val @ (value_type $I32) addr))
+      (atomic_store_impl (istore32_impl flags val addr (zero_offset))))
+
+;; 64-bit atomic store.
+(rule (lower (atomic_store flags val @ (value_type $I64) addr))
+      (atomic_store_impl (istore64_impl flags val addr (zero_offset))))
+
+
+;;;; Rules for `fence` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Fence to ensure sequential consistency.
+(rule (lower (fence))
+      (side_effect (fence_impl)))
+
+
+;;;; Rules for `icmp` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; We want to optimize the typical use of `icmp` (generating an integer 0/1
+;; result) followed by some user, like a `select` or a conditional branch.
+;; Instead of first generating the integer result and later testing it again,
+;; we want to sink the comparison to be performed at the site of use.
+;;
+;; To enable this, we provide generic helpers that return a `ProducesBool`
+;; encapsulating the comparison in question, which can be used by all the
+;; above scenarios.
+;;
+;; N.B. There are specific considerations when sinking a memory load into a
+;; comparison.  When emitting an `icmp` directly, this can of course be done
+;; as usual.  However, when we use the `ProducesBool` elsewhere, we need to
+;; consider *three* instructions: the load, the `icmp`, and the final user
+;; (e.g. a conditional branch).  The only way to safely sink the load would
+;; be to sink it direct into the final user, which is only possible if there
+;; is no *other* user of the `icmp` result.  This is not currently being
+;; verified by the `SinkableInst` logic, so to be safe we do not perform this
+;; optimization at all.
+;;
+;; The generic `icmp_val` helper therefore has a flag indicating whether
+;; it is being invoked in a context where it is safe to sink memory loads
+;; (e.g. when directly emitting an `icmp`), or whether it is not (e.g. when
+;; sinking the `icmp` result into a conditional branch or select).
+
+;; Main `icmp` entry point.  Generate a `ProducesBool` capturing the
+;; integer comparison and immediately lower it to a 0/1 integer result.
+;; In this case, it is safe to sink memory loads.
+(rule (lower (has_type ty (icmp int_cc x y)))
+      (lower_bool ty (icmp_val $true int_cc x y)))
+
+
+;; Return a `ProducesBool` to implement any integer comparison.
+;; The first argument is a flag to indicate whether it is safe to sink
+;; memory loads as discussed above.
+(decl icmp_val (bool IntCC Value Value) ProducesBool)
+
+;; Dispatch for signed comparisons.
+(rule (icmp_val allow_mem int_cc @ (signed) x y)
+      (bool (icmps_val allow_mem x y) (intcc_as_cond int_cc)))
+;; Dispatch for unsigned comparisons.
+(rule (icmp_val allow_mem int_cc @ (unsigned) x y)
+      (bool (icmpu_val allow_mem x y) (intcc_as_cond int_cc)))
+
+
+;; Return a `ProducesBool` to implement signed integer comparisons.
+(decl icmps_val (bool Value Value) ProducesFlags)
+
+;; Compare (signed) two registers.
+(rule (icmps_val _ x @ (value_type (fits_in_64 ty)) y)
+      (icmps_reg (ty_ext32 ty) (put_in_reg_sext32 x) (put_in_reg_sext32 y)))
+
+;; Compare (signed) a register and a sign-extended register.
+(rule (icmps_val _ x @ (value_type (fits_in_64 ty)) (sext32_value y))
+      (icmps_reg_sext32 ty x y))
+
+;; Compare (signed) a register and an immediate.
+(rule (icmps_val _ x @ (value_type (fits_in_64 ty)) (i16_from_value y))
+      (icmps_simm16 (ty_ext32 ty) (put_in_reg_sext32 x) y))
+(rule (icmps_val _ x @ (value_type (fits_in_64 ty)) (i32_from_value y))
+      (icmps_simm32 (ty_ext32 ty) (put_in_reg_sext32 x) y))
+
+;; Compare (signed) a register and memory (32/64-bit types).
+(rule (icmps_val $true x @ (value_type (fits_in_64 ty)) (sinkable_load_32_64 y))
+      (icmps_mem ty x (sink_load y)))
+
+;; Compare (signed) a register and memory (16-bit types).
+(rule (icmps_val $true x @ (value_type (fits_in_64 ty)) (sinkable_load_16 y))
+      (icmps_mem_sext16 (ty_ext32 ty) (put_in_reg_sext32 x) (sink_load y)))
+
+;; Compare (signed) a register and sign-extended memory.
+(rule (icmps_val $true x @ (value_type (fits_in_64 ty)) (sinkable_sload16 y))
+      (icmps_mem_sext16 ty x (sink_sload16 y)))
+(rule (icmps_val $true x @ (value_type (fits_in_64 ty)) (sinkable_sload32 y))
+      (icmps_mem_sext32 ty x (sink_sload32 y)))
+
+
+;; Return a `ProducesBool` to implement unsigned integer comparisons.
+(decl icmpu_val (bool Value Value) ProducesFlags)
+
+;; Compare (unsigned) two registers.
+(rule (icmpu_val _ x @ (value_type (fits_in_64 ty)) y)
+      (icmpu_reg (ty_ext32 ty) (put_in_reg_zext32 x) (put_in_reg_zext32 y)))
+
+;; Compare (unsigned) a register and a sign-extended register.
+(rule (icmpu_val _ x @ (value_type (fits_in_64 ty)) (zext32_value y))
+      (icmpu_reg_zext32 ty x y))
+
+;; Compare (unsigned) a register and an immediate.
+(rule (icmpu_val _ x @ (value_type (fits_in_64 ty)) (u32_from_value y))
+      (icmpu_uimm32 (ty_ext32 ty) (put_in_reg_zext32 x) y))
+
+;; Compare (unsigned) a register and memory (32/64-bit types).
+(rule (icmpu_val $true x @ (value_type (fits_in_64 ty)) (sinkable_load_32_64 y))
+      (icmpu_mem ty x (sink_load y)))
+
+;; Compare (unsigned) a register and memory (16-bit types).
+;; Note that the ISA only provides instructions with a PC-relative memory
+;; address here, so we need to check whether the sinkable load matches this.
+(rule (icmpu_val $true x @ (value_type (fits_in_64 ty))
+                 (sinkable_load_16 (load_sym y)))
+      (icmpu_mem_zext16 (ty_ext32 ty) (put_in_reg_zext32 x) (sink_load y)))
+
+;; Compare (unsigned) a register and zero-extended memory.
+;; Note that the ISA only provides instructions with a PC-relative memory
+;; address here, so we need to check whether the sinkable load matches this.
+(rule (icmpu_val $true x @ (value_type (fits_in_64 ty))
+                 (sinkable_uload16 (uload16_sym y)))
+      (icmpu_mem_zext16 ty x (sink_uload16 y)))
+(rule (icmpu_val $true x @ (value_type (fits_in_64 ty)) (sinkable_uload32 y))
+      (icmpu_mem_zext32 ty x (sink_uload32 y)))
+
+
+;;;; Rules for `fcmp` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Main `fcmp` entry point.  Generate a `ProducesBool` capturing the
+;; integer comparison and immediately lower it to a 0/1 integer result.
+(rule (lower (has_type ty (fcmp float_cc x y)))
+      (lower_bool ty (fcmp_val float_cc x y)))
+
+;; Return a `ProducesBool` to implement any floating-point comparison.
+(decl fcmp_val (FloatCC Value Value) ProducesBool)
+(rule (fcmp_val float_cc x @ (value_type ty) y)
+      (bool (fcmp_reg ty x y)
+            (floatcc_as_cond float_cc)))
+
+
+;;;; Rules for `is_null` and `is_invalid`  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Null references are represented by the constant value 0.
+(rule (lower (has_type $B1 (is_null x @ (value_type $R64))))
+      (lower_bool $B1 (bool (icmps_simm16 $I64 x 0)
+                            (intcc_as_cond (IntCC.Equal)))))
+
+
+;; Invalid references are represented by the constant value -1.
+(rule (lower (has_type $B1 (is_invalid x @ (value_type $R64))))
+      (lower_bool $B1 (bool (icmps_simm16 $I64 x -1)
+                            (intcc_as_cond (IntCC.Equal)))))
+
+
+;;;; Rules for `select` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Return a `ProducesBool` to capture the fact that the input value is nonzero.
+;; In the common case where that input is the result of an `icmp` or `fcmp`
+;; instruction (possibly via an intermediate `bint`), directly use that compare.
+;; Note that it is not safe to sink memory loads here, see the `icmp` comment.
+(decl value_nonzero (Value) ProducesBool)
+(rule (value_nonzero (bint val)) (value_nonzero val))
+(rule (value_nonzero (icmp int_cc x y)) (icmp_val $false int_cc x y))
+(rule (value_nonzero (fcmp float_cc x y)) (fcmp_val float_cc x y))
+(rule (value_nonzero val @ (value_type (gpr32_ty ty)))
+      (bool (icmps_simm16 $I32 (put_in_reg_sext32 val) 0)
+                          (intcc_as_cond (IntCC.NotEqual))))
+(rule (value_nonzero val @ (value_type (gpr64_ty ty)))
+      (bool (icmps_simm16 $I64 (put_in_reg val) 0)
+                          (intcc_as_cond (IntCC.NotEqual))))
+
+;; Main `select` entry point.  Lower the `value_nonzero` result.
+(rule (lower (has_type ty (select val_cond val_true val_false)))
+      (select_bool_reg ty (value_nonzero val_cond)
+                       (put_in_reg val_true) (put_in_reg val_false)))
+
+
+;;;; Rules for `selectif_spectre_guard` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; We do not support the `iflags` mechanism on our platform.  However, common
+;; code will unconditionally emit certain patterns using `iflags` which we
+;; need to handle somehow.  Note that only those specific patterns are
+;; recognized by the code below, other uses will fail to lower.
+
+(rule (lower (has_type ty (selectif_spectre_guard int_cc
+                             (ifcmp x y) val_true val_false)))
+      (select_bool_reg ty (icmp_val $false int_cc x y)
+                       (put_in_reg val_true) (put_in_reg val_false)))
+
+
+;;;; Rules for `jump` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Unconditional branch.  The target is found as first (and only) element in
+;; the list of the current block's branch targets passed as `targets`.
+(rule (lower_branch (jump _ _) targets)
+      (side_effect (jump_impl (vec_element targets 0))))
+
+
+;;;; Rules for `br_table` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Jump table.  `targets` contains the default target followed by the
+;; list of branch targets per index value.
+(rule (lower_branch (br_table val_idx _ _) targets)
+      (let ((idx Reg (put_in_reg_zext64 val_idx))
+            ;; Bounds-check the index and branch to default.
+            ;; This is an internal branch that is not a terminator insn.
+            ;; Instead, the default target is listed a potential target
+            ;; in the final JTSequence, which is the block terminator.
+            (cond ProducesBool
+              (bool (icmpu_uimm32 $I64 idx (vec_length_minus1 targets))
+                    (intcc_as_cond (IntCC.UnsignedGreaterThanOrEqual))))
+            (_ InstOutput (side_effect (oneway_cond_br_bool cond
+                                         (vec_element targets 0)))))
+        ;; Scale the index by the element size, and then emit the
+        ;; compound instruction that does:
+        ;;
+        ;; larl %r1, <jt-base>
+        ;; agf %r1, 0(%r1, %rScaledIndex)
+        ;; br %r1
+        ;; [jt entries]
+        ;;
+        ;; This must be *one* instruction in the vcode because
+        ;; we cannot allow regalloc to insert any spills/fills
+        ;; in the middle of the sequence; otherwise, the LARL's
+        ;; PC-rel offset to the jumptable would be incorrect.
+        ;; (The alternative is to introduce a relocation pass
+        ;; for inlined jumptables, which is much worse, IMHO.)
+        (side_effect (jt_sequence (lshl_imm $I64 idx 2) targets))))
+
+
+;;;; Rules for `brz` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Two-way conditional branch on zero.  `targets` contains:
+;; - element 0: target if the condition is true (i.e. value is zero)
+;; - element 1: target if the condition is false (i.e. value is nonzero)
+(rule (lower_branch (brz val_cond _ _) targets)
+      (side_effect (cond_br_bool (invert_bool (value_nonzero val_cond))
+                                 (vec_element targets 0)
+                                 (vec_element targets 1))))
+
+
+;;;; Rules for `brnz` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Two-way conditional branch on nonzero.  `targets` contains:
+;; - element 0: target if the condition is true (i.e. value is nonzero)
+;; - element 1: target if the condition is false (i.e. value is zero)
+(rule (lower_branch (brnz val_cond _ _) targets)
+      (side_effect (cond_br_bool (value_nonzero val_cond)
+                                 (vec_element targets 0)
+                                 (vec_element targets 1))))
+
+
+;;;; Rules for `brif` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Similarly to `selectif_spectre_guard`, we only recognize specific patterns
+;; generated by common code here.  Others will fail to lower.
+
+(rule (lower_branch (brif int_cc (ifcmp x y) _ _) targets)
+      (side_effect (cond_br_bool (icmp_val $false int_cc x y)
+                                 (vec_element targets 0)
+                                 (vec_element targets 1))))
+
+
+;;;; Rules for `trap` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (trap trap_code))
+      (safepoint (trap_impl trap_code)))
+
+
+;;;; Rules for `resumable_trap` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (resumable_trap trap_code))
+      (safepoint (trap_impl trap_code)))
+
+
+;;;; Rules for `trapz` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (trapz val trap_code))
+      (safepoint (trap_if_bool (invert_bool (value_nonzero val)) trap_code)))
+
+
+;;;; Rules for `trapnz` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (trapnz val trap_code))
+      (safepoint (trap_if_bool (value_nonzero val) trap_code)))
+
+
+;;;; Rules for `resumable_trapnz` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (resumable_trapnz val trap_code))
+      (safepoint (trap_if_bool (value_nonzero val) trap_code)))
+
+
+;;;; Rules for `debugtrap` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (debugtrap))
+      (side_effect (debugtrap_impl)))
+
+
+;;;; Rules for `trapif` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Similarly to `selectif_spectre_guard`, we only recognize specific patterns
+;; generated by common code here.  Others will fail to lower.
+
+;; Recognize the case of `ifcmp` feeding into `trapif`.  Directly generate
+;; the desired comparison here; there is no separate `ifcmp` lowering.
+
+(rule (lower (trapif int_cc (ifcmp x y) trap_code))
+      (safepoint (trap_if_bool (icmp_val $false int_cc x y) trap_code)))
+
+;; Recognize the case of `iadd_ifcout` feeding into `trapif`.  Note that
+;; in the case, the `iadd_ifcout` is generated by a separate lowering
+;; (in order to properly handle the register output of that instruction.)
+;;
+;; The flags must not have been clobbered by any other instruction between the
+;; iadd_ifcout and this instruction, as verified by the CLIF validator; so we
+;; can simply rely on the condition code here.
+;;
+;; IaddIfcout is implemented via a ADD LOGICAL instruction, which sets the
+;; the condition code as follows:
+;;   0   Result zero; no carry
+;;   1   Result not zero; no carry
+;;   2   Result zero; carry
+;;   3   Result not zero; carry
+;; This means "carry" corresponds to condition code 2 or 3, i.e.
+;; a condition mask of 2 | 1.
+;;
+;; As this does not match any of the encodings used with a normal integer
+;; comparsion, this cannot be represented by any IntCC value.  We need to
+;; remap the IntCC::UnsignedGreaterThan value that we have here as result
+;; of the unsigned_add_overflow_condition call to the correct mask.
+
+(rule (lower (trapif (IntCC.UnsignedGreaterThan)
+                     (iadd_ifcout x y) trap_code))
+      (side_effect (trap_if_impl (mask_as_cond 3) trap_code)))
+
+

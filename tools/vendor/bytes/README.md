@@ -36,6 +36,15 @@ Serde support is optional and disabled by default. To enable use the feature `se
 bytes = { version = "1", features = ["serde"] }
 ```
 
+## Building documentation
+
+When building the `bytes` documentation the `docsrs` option should be used, otherwise
+feature gates will not be shown. This requires a nightly toolchain:
+
+```
+RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc
+```
+
 ## License
 
 This project is licensed under the [MIT license](LICENSE).

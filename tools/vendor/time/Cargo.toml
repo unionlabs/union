@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.62.0"
+rust-version = "1.67.0"
 name = "time"
-version = "0.3.19"
+version = "0.3.28"
 authors = [
     "Jacob Pratt <open-source@jhpratt.dev>",
     "Time contributors",
@@ -43,11 +43,12 @@ repository = "https://github.com/time-rs/time"
 
 [package.metadata.docs.rs]
 all-features = true
-targets = ["x86_64-unknown-linux-gnu"]
 rustdoc-args = [
     "--cfg",
     "__time_03_docs",
+    "--generate-link-to-definition",
 ]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [lib]
 bench = false
@@ -60,6 +61,10 @@ path = "../tests/main.rs"
 name = "benchmarks"
 path = "../benchmarks/main.rs"
 harness = false
+
+[dependencies.deranged]
+version = "0.3.7"
+default-features = false
 
 [dependencies.itoa]
 version = "1.0.1"
@@ -76,15 +81,15 @@ optional = true
 default-features = false
 
 [dependencies.serde]
-version = "1.0.126"
+version = "1.0.184"
 optional = true
 default-features = false
 
 [dependencies.time-core]
-version = "=0.1.0"
+version = "=0.1.1"
 
 [dependencies.time-macros]
-version = "=0.2.7"
+version = "=0.2.14"
 optional = true
 
 [dev-dependencies.quickcheck_macros]
@@ -95,7 +100,7 @@ version = "0.8.4"
 default-features = false
 
 [dev-dependencies.serde]
-version = "1.0.126"
+version = "1.0.184"
 features = ["derive"]
 default-features = false
 
@@ -106,7 +111,7 @@ version = "1.0.68"
 version = "1.0.126"
 
 [dev-dependencies.time-macros]
-version = "=0.2.7"
+version = "=0.2.14"
 
 [features]
 alloc = ["serde?/alloc"]
@@ -127,11 +132,16 @@ parsing = ["time-macros?/parsing"]
 quickcheck = [
     "dep:quickcheck",
     "alloc",
+    "deranged/quickcheck",
 ]
-rand = ["dep:rand"]
+rand = [
+    "dep:rand",
+    "deranged/rand",
+]
 serde = [
     "dep:serde",
     "time-macros?/serde",
+    "deranged/serde",
 ]
 serde-human-readable = [
     "serde",
@@ -143,7 +153,10 @@ serde-well-known = [
     "formatting",
     "parsing",
 ]
-std = ["alloc"]
+std = [
+    "alloc",
+    "deranged/std",
+]
 wasm-bindgen = ["dep:js-sys"]
 
 [target."cfg(__ui_tests)".dev-dependencies.trybuild]
@@ -154,7 +167,7 @@ version = "0.3.58"
 optional = true
 
 [target."cfg(bench)".dev-dependencies.criterion]
-version = "0.4.0"
+version = "0.5.1"
 default-features = false
 
 [target."cfg(target_family = \"unix\")".dependencies.libc]

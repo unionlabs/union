@@ -1,11 +1,11 @@
-//! [`UInt`] bitwise xor operations.
+//! [`Uint`] bitwise xor operations.
 
-use super::UInt;
+use super::Uint;
 use crate::{Limb, Wrapping};
 use core::ops::{BitXor, BitXorAssign};
 use subtle::{Choice, CtOption};
 
-impl<const LIMBS: usize> UInt<LIMBS> {
+impl<const LIMBS: usize> Uint<LIMBS> {
     /// Computes bitwise `a ^ b`.
     #[inline(always)]
     pub const fn bitxor(&self, rhs: &Self) -> Self {
@@ -35,89 +35,90 @@ impl<const LIMBS: usize> UInt<LIMBS> {
     }
 }
 
-impl<const LIMBS: usize> BitXor for UInt<LIMBS> {
+impl<const LIMBS: usize> BitXor for Uint<LIMBS> {
     type Output = Self;
 
-    fn bitxor(self, rhs: Self) -> UInt<LIMBS> {
+    fn bitxor(self, rhs: Self) -> Uint<LIMBS> {
         self.bitxor(&rhs)
     }
 }
 
-impl<const LIMBS: usize> BitXor<&UInt<LIMBS>> for UInt<LIMBS> {
-    type Output = UInt<LIMBS>;
+impl<const LIMBS: usize> BitXor<&Uint<LIMBS>> for Uint<LIMBS> {
+    type Output = Uint<LIMBS>;
 
-    fn bitxor(self, rhs: &UInt<LIMBS>) -> UInt<LIMBS> {
+    #[allow(clippy::needless_borrow)]
+    fn bitxor(self, rhs: &Uint<LIMBS>) -> Uint<LIMBS> {
         (&self).bitxor(rhs)
     }
 }
 
-impl<const LIMBS: usize> BitXor<UInt<LIMBS>> for &UInt<LIMBS> {
-    type Output = UInt<LIMBS>;
+impl<const LIMBS: usize> BitXor<Uint<LIMBS>> for &Uint<LIMBS> {
+    type Output = Uint<LIMBS>;
 
-    fn bitxor(self, rhs: UInt<LIMBS>) -> UInt<LIMBS> {
+    fn bitxor(self, rhs: Uint<LIMBS>) -> Uint<LIMBS> {
         self.bitxor(&rhs)
     }
 }
 
-impl<const LIMBS: usize> BitXor<&UInt<LIMBS>> for &UInt<LIMBS> {
-    type Output = UInt<LIMBS>;
+impl<const LIMBS: usize> BitXor<&Uint<LIMBS>> for &Uint<LIMBS> {
+    type Output = Uint<LIMBS>;
 
-    fn bitxor(self, rhs: &UInt<LIMBS>) -> UInt<LIMBS> {
+    fn bitxor(self, rhs: &Uint<LIMBS>) -> Uint<LIMBS> {
         self.bitxor(rhs)
     }
 }
 
-impl<const LIMBS: usize> BitXorAssign for UInt<LIMBS> {
+impl<const LIMBS: usize> BitXorAssign for Uint<LIMBS> {
     fn bitxor_assign(&mut self, other: Self) {
         *self = *self ^ other;
     }
 }
 
-impl<const LIMBS: usize> BitXorAssign<&UInt<LIMBS>> for UInt<LIMBS> {
+impl<const LIMBS: usize> BitXorAssign<&Uint<LIMBS>> for Uint<LIMBS> {
     fn bitxor_assign(&mut self, other: &Self) {
         *self = *self ^ other;
     }
 }
 
-impl<const LIMBS: usize> BitXor for Wrapping<UInt<LIMBS>> {
+impl<const LIMBS: usize> BitXor for Wrapping<Uint<LIMBS>> {
     type Output = Self;
 
-    fn bitxor(self, rhs: Self) -> Wrapping<UInt<LIMBS>> {
+    fn bitxor(self, rhs: Self) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.bitxor(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> BitXor<&Wrapping<UInt<LIMBS>>> for Wrapping<UInt<LIMBS>> {
-    type Output = Wrapping<UInt<LIMBS>>;
+impl<const LIMBS: usize> BitXor<&Wrapping<Uint<LIMBS>>> for Wrapping<Uint<LIMBS>> {
+    type Output = Wrapping<Uint<LIMBS>>;
 
-    fn bitxor(self, rhs: &Wrapping<UInt<LIMBS>>) -> Wrapping<UInt<LIMBS>> {
+    fn bitxor(self, rhs: &Wrapping<Uint<LIMBS>>) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.bitxor(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> BitXor<Wrapping<UInt<LIMBS>>> for &Wrapping<UInt<LIMBS>> {
-    type Output = Wrapping<UInt<LIMBS>>;
+impl<const LIMBS: usize> BitXor<Wrapping<Uint<LIMBS>>> for &Wrapping<Uint<LIMBS>> {
+    type Output = Wrapping<Uint<LIMBS>>;
 
-    fn bitxor(self, rhs: Wrapping<UInt<LIMBS>>) -> Wrapping<UInt<LIMBS>> {
+    fn bitxor(self, rhs: Wrapping<Uint<LIMBS>>) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.bitxor(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> BitXor<&Wrapping<UInt<LIMBS>>> for &Wrapping<UInt<LIMBS>> {
-    type Output = Wrapping<UInt<LIMBS>>;
+impl<const LIMBS: usize> BitXor<&Wrapping<Uint<LIMBS>>> for &Wrapping<Uint<LIMBS>> {
+    type Output = Wrapping<Uint<LIMBS>>;
 
-    fn bitxor(self, rhs: &Wrapping<UInt<LIMBS>>) -> Wrapping<UInt<LIMBS>> {
+    fn bitxor(self, rhs: &Wrapping<Uint<LIMBS>>) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.bitxor(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> BitXorAssign for Wrapping<UInt<LIMBS>> {
+impl<const LIMBS: usize> BitXorAssign for Wrapping<Uint<LIMBS>> {
     fn bitxor_assign(&mut self, other: Self) {
         *self = *self ^ other;
     }
 }
 
-impl<const LIMBS: usize> BitXorAssign<&Wrapping<UInt<LIMBS>>> for Wrapping<UInt<LIMBS>> {
+impl<const LIMBS: usize> BitXorAssign<&Wrapping<Uint<LIMBS>>> for Wrapping<Uint<LIMBS>> {
     fn bitxor_assign(&mut self, other: &Self) {
         *self = *self ^ other;
     }

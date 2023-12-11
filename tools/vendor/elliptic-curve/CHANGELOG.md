@@ -4,6 +4,136 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.5 (2023-05-19)
+### Changed
+- Faster `PublicKey::from_encoded_point` ([#1310])
+
+### Fixed
+- `alloc`+`arithmetic` features w/o `sec1` feature ([#1301])
+
+[#1301]: https://github.com/RustCrypto/traits/pull/1301
+[#1310]: https://github.com/RustCrypto/traits/pull/1310
+
+## 0.13.4 (2023-04-08)
+### Changed
+- Bump `hex-literal` to v0.4 ([#1295])
+
+### Fixed
+- `NonZeroScalar::from_slice` ([#1296])
+- `ScalarPrimitive::from_slice` ([#1296])
+
+[#1295]: https://github.com/RustCrypto/traits/pull/1295
+[#1296]: https://github.com/RustCrypto/traits/pull/1296
+
+## 0.13.3 (2023-04-04)
+### Added
+- Impl `AssociatedAlgorithmIdentifier` for `SecretKey` and `PublicKey` ([#1286])
+
+### Changed
+- Update OSSWU code ([#1157])
+- Bump `pkcs8` to v0.10.2 ([#1291])
+
+### Fixed
+- `FieldBytesEncoding` provided impl ([#1287])
+
+[#1157]: https://github.com/RustCrypto/traits/pull/1157
+[#1286]: https://github.com/RustCrypto/traits/pull/1286
+[#1287]: https://github.com/RustCrypto/traits/pull/1287
+[#1291]: https://github.com/RustCrypto/traits/pull/1291
+
+## 0.13.2 (2023-03-08)
+### Added
+- Weakly activate `pkcs8?/std` ([#1263])
+- More `PublicKey` <-> SEC1 conversions ([#1272])
+
+[#1263]: https://github.com/RustCrypto/traits/pull/1263
+[#1272]: https://github.com/RustCrypto/traits/pull/1272
+
+## 0.13.1 (2023-03-01)
+### Added
+- `SecretKey::from_slice` short input support ([#1256])
+
+[#1256]: https://github.com/RustCrypto/traits/pull/1256
+
+## 0.13.0 (2023-02-28)
+### Added
+- `PublicKey::to_sec1_bytes` ([#1102])
+- Forward `std` feature to `sec1` dependency ([#1131])
+- `NonIdentity` wrapper type ([#1176])
+- Impl `serde` traits for `NonZeroScalar` ([#1178])
+- `MulByGenerator` trait ([#1198])
+- `NonZeroScalar::invert_vartime` ([#1207])
+- `BlindedScalar` type ([#1208])
+- `point::Double` trait ([#1218])
+- `FieldBytesEncoding` trait ([#1235])
+- `Invert::invert_vartime` ([#1239])
+
+### Changed
+- Allow bigger `c1` constant in `OsswuMapParams` ([#1024])
+- Rename `Curve::UInt` => `Curve::Uint` ([#1191])
+- Use weak feature activation ([#1192], [#1194])
+- Consolidate `CurveArithmetic` trait ([#1196])
+- Rename `SecretKey::to_pem` => `::to_sec1_pem` ([#1202])
+- Rename `ScalarCore` to `ScalarPrimitive` ([#1203])
+- Use `CryptoRngCore` trait ([#1206])
+- Refactor field element decoding/encoding ([#1220])
+- Update VOPRF identifier type ([#1175])
+- Rename `SecretKey::as_scalar_core` => `::as_scalar_primitive` ([#1228])
+- Rename `Reduce::from_bytes_reduced` => `::reduce_bytes` ([#1225], [#1229])
+- Consolidate `AffineCoordinates` trait ([#1237])
+- Allow multiple `dst`s in the `hash2curve` API ([#1238])
+- Have `serde` feature activate `pkcs8` ([#1245])
+- Dependency upgrades:
+  - `base16ct` ([#1254])
+  - `crypto-bigint` v0.5 ([#1251])
+  - `ff` and `group` v0.13 ([#1166])
+  - `pem-rfc7468` v0.7 ([#1251])
+  - `pkcs8` v0.10 ([#1251])
+  - `sec1` v0.7 ([#1251])
+  - `serdect` v0.2 ([#1251])
+
+### Removed
+- `impl_field_element!` macro ([#1165])
+- Direct `der` crate dependency ([#1195])
+- `AffineArithmetic`, `ProjectiveArithmetic`, `ScalarArithmetic` traits ([#1196])
+- Toplevel re-exports except for `AffinePoint`, `ProjectivePoint`, and `Scalar`  ([#1223])
+- `Reduce` methods ([#1225])
+- Blanket impl for `Invert` ([#1242])
+
+[#1024]: https://github.com/RustCrypto/traits/pull/1024
+[#1102]: https://github.com/RustCrypto/traits/pull/1102
+[#1131]: https://github.com/RustCrypto/traits/pull/1131
+[#1165]: https://github.com/RustCrypto/traits/pull/1165
+[#1166]: https://github.com/RustCrypto/traits/pull/1166
+[#1175]: https://github.com/RustCrypto/traits/pull/1175
+[#1176]: https://github.com/RustCrypto/traits/pull/1176
+[#1178]: https://github.com/RustCrypto/traits/pull/1178
+[#1191]: https://github.com/RustCrypto/traits/pull/1191
+[#1192]: https://github.com/RustCrypto/traits/pull/1192
+[#1194]: https://github.com/RustCrypto/traits/pull/1194
+[#1195]: https://github.com/RustCrypto/traits/pull/1195
+[#1196]: https://github.com/RustCrypto/traits/pull/1196
+[#1198]: https://github.com/RustCrypto/traits/pull/1198
+[#1202]: https://github.com/RustCrypto/traits/pull/1202
+[#1203]: https://github.com/RustCrypto/traits/pull/1203
+[#1206]: https://github.com/RustCrypto/traits/pull/1206
+[#1207]: https://github.com/RustCrypto/traits/pull/1207
+[#1208]: https://github.com/RustCrypto/traits/pull/1208
+[#1218]: https://github.com/RustCrypto/traits/pull/1218
+[#1220]: https://github.com/RustCrypto/traits/pull/1220
+[#1223]: https://github.com/RustCrypto/traits/pull/1223
+[#1225]: https://github.com/RustCrypto/traits/pull/1225
+[#1228]: https://github.com/RustCrypto/traits/pull/1228
+[#1229]: https://github.com/RustCrypto/traits/pull/1229
+[#1235]: https://github.com/RustCrypto/traits/pull/1235
+[#1237]: https://github.com/RustCrypto/traits/pull/1237
+[#1238]: https://github.com/RustCrypto/traits/pull/1238
+[#1239]: https://github.com/RustCrypto/traits/pull/1239
+[#1242]: https://github.com/RustCrypto/traits/pull/1242
+[#1245]: https://github.com/RustCrypto/traits/pull/1245
+[#1251]: https://github.com/RustCrypto/traits/pull/1251
+[#1254]: https://github.com/RustCrypto/traits/pull/1254
+
 ## 0.12.3 (2022-08-01)
 ### Added
 - Aliases for SEC1 compressed/uncompressed points ([#1067])

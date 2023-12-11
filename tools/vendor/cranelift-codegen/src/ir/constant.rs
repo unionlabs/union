@@ -10,7 +10,6 @@
 
 use crate::ir::immediates::{IntoBytes, V128Imm};
 use crate::ir::Constant;
-use crate::HashMap;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use core::fmt;
@@ -27,7 +26,7 @@ use serde::{Deserialize, Serialize};
 /// WebAssembly values, which are [little-endian by design].
 ///
 /// [little-endian by design]: https://github.com/WebAssembly/design/blob/master/Portability.md
-#[derive(Clone, Hash, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Hash, Eq, PartialEq, Debug, Default, PartialOrd, Ord)]
 #[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
 pub struct ConstantData(Vec<u8>);
 
@@ -169,16 +168,20 @@ impl FromStr for ConstantData {
 
 /// Maintains the mapping between a constant handle (i.e.  [`Constant`](crate::ir::Constant)) and
 /// its constant data (i.e.  [`ConstantData`](crate::ir::ConstantData)).
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Hash)]
 #[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
 pub struct ConstantPool {
     /// This mapping maintains the insertion order as long as Constants are created with
     /// sequentially increasing integers.
+    ///
+    /// It is important that, by construction, no entry in that list gets removed. If that ever
+    /// need to happen, don't forget to update the `Constant` generation scheme.
     handles_to_values: BTreeMap<Constant, ConstantData>,
 
-    /// This mapping is unordered (no need for lexicographic ordering) but allows us to map
-    /// constant data back to handles.
-    values_to_handles: HashMap<ConstantData, Constant>,
+    /// Mapping of hashed `ConstantData` to the index into the other hashmap.
+    ///
+    /// This allows for deduplication of entries into the `handles_to_values` mapping.
+    values_to_handles: BTreeMap<ConstantData, Constant>,
 }
 
 impl ConstantPool {
@@ -186,7 +189,7 @@ impl ConstantPool {
     pub fn new() -> Self {
         Self {
             handles_to_values: BTreeMap::new(),
-            values_to_handles: HashMap::new(),
+            values_to_handles: BTreeMap::new(),
         }
     }
 
@@ -200,13 +203,13 @@ impl ConstantPool {
     /// data is inserted that is a duplicate of previous constant data, the existing handle will be
     /// returned.
     pub fn insert(&mut self, constant_value: ConstantData) -> Constant {
-        if self.values_to_handles.contains_key(&constant_value) {
-            *self.values_to_handles.get(&constant_value).unwrap()
-        } else {
-            let constant_handle = Constant::new(self.len());
-            self.set(constant_handle, constant_value);
-            constant_handle
+        if let Some(cst) = self.values_to_handles.get(&constant_value) {
+            return *cst;
         }
+
+        let constant_handle = Constant::new(self.len());
+        self.set(constant_handle, constant_value);
+        constant_handle
     }
 
     /// Retrieve the constant data given a handle.
@@ -250,7 +253,7 @@ impl ConstantPool {
 
     /// Return the combined size of all of the constant values in the pool.
     pub fn byte_size(&self) -> usize {
-        self.values_to_handles.keys().map(|c| c.len()).sum()
+        self.handles_to_values.values().map(|c| c.len()).sum()
     }
 }
 

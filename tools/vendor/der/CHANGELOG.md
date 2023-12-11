@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.8 (2023-08-07)
+### Added
+- `bytes` feature ([#1156])
+- impl `RefToOwned`/`OwnedToRef` for `&[u8]`/`Box<[u8]>` ([#1188])
+- `BmpString` ([#1164])
+
+### Changed
+- no-panic cleanup ([#1169])
+- Bump `der_derive` dependency to v0.7.2 ([#1192])
+
+[#1156]: https://github.com/RustCrypto/formats/pull/1156
+[#1164]: https://github.com/RustCrypto/formats/pull/1164
+[#1169]: https://github.com/RustCrypto/formats/pull/1169
+[#1188]: https://github.com/RustCrypto/formats/pull/1188
+[#1192]: https://github.com/RustCrypto/formats/pull/1192
+
+## 0.7.7 (2023-06-29)
+### Added
+- `TryFrom<String>` impl for strings based on `StrOwned` ([#1064])
+
+[#1064]: https://github.com/RustCrypto/formats/pull/1064
+
 ## 0.7.6 (2023-05-16)
 ### Added
 - `SetOfVec::{extend, from_iter}` methods ([#1065])

@@ -1377,7 +1377,7 @@ pub(crate) mod parsing {
             }
             let expr = Box::new(unary_expr(input, allow_struct)?);
             if raw.is_some() {
-                Ok(Expr::Verbatim(verbatim::between(begin, input)))
+                Ok(Expr::Verbatim(verbatim::between(&begin, input)))
             } else {
                 Ok(Expr::Reference(ExprReference {
                     attrs,
@@ -1423,7 +1423,7 @@ pub(crate) mod parsing {
         let mut e = trailer_helper(input, atom)?;
 
         if let Expr::Verbatim(tokens) = &mut e {
-            *tokens = verbatim::between(begin, input);
+            *tokens = verbatim::between(&begin, input);
         } else {
             let inner_attrs = e.replace_attrs(Vec::new());
             attrs.extend(inner_attrs);
@@ -1663,7 +1663,7 @@ pub(crate) mod parsing {
             }
             Ok(expr)
         } else {
-            Err(input.error("expected expression"))
+            Err(input.error("expected an expression"))
         }
     }
 
@@ -1691,6 +1691,16 @@ pub(crate) mod parsing {
         } else if input.is_empty() {
             Err(input.error("expected an expression"))
         } else {
+            if input.peek(token::Brace) {
+                let scan = input.fork();
+                let content;
+                braced!(content in scan);
+                if content.parse::<Expr>().is_ok() && content.is_empty() {
+                    let expr_block = verbatim::between(input, &scan);
+                    input.advance_to(&scan);
+                    return Ok(Expr::Verbatim(expr_block));
+                }
+            }
             Err(input.error("unsupported expression; enable syn's features=[\"full\"]"))
         }
     }
@@ -1707,7 +1717,7 @@ pub(crate) mod parsing {
         parenthesized!(args in input);
         args.parse::<TokenStream>()?;
 
-        Ok(Expr::Verbatim(verbatim::between(begin, input)))
+        Ok(Expr::Verbatim(verbatim::between(&begin, input)))
     }
 
     fn path_or_macro_or_struct(

@@ -1,12 +1,29 @@
 #![no_std]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!("../README.md")]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/8f1a9894/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/8f1a9894/logo.svg"
 )]
-#![forbid(unsafe_code, clippy::unwrap_used)]
-#![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
+#![forbid(unsafe_code)]
+#![warn(
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::checked_conversions,
+    clippy::implicit_saturating_sub,
+    clippy::integer_arithmetic,
+    clippy::mod_module_files,
+    clippy::panic,
+    clippy::panic_in_result_fn,
+    clippy::unwrap_used,
+    missing_docs,
+    rust_2018_idioms,
+    unused_lifetimes,
+    unused_qualifications
+)]
 
 //! ## Usage
 //!
@@ -20,8 +37,10 @@
 //! - [`bp256`]: brainpoolP256r1 and brainpoolP256t1
 //! - [`bp384`]: brainpoolP384r1 and brainpoolP384t1
 //! - [`k256`]: secp256k1 a.k.a. K-256
+//! - [`p224`]: NIST P-224 a.k.a. secp224r1
 //! - [`p256`]: NIST P-256 a.k.a secp256r1, prime256v1
 //! - [`p384`]: NIST P-384 a.k.a. secp384r1
+//! - [`p521`]: NIST P-521 a.k.a. secp521r1
 //!
 //! The [`ecdsa`] crate provides a generic implementation of the
 //! Elliptic Curve Digital Signature Algorithm which can be used with any of
@@ -42,7 +61,7 @@
 //!
 //! - [`JwkEcKey`]
 //! - [`PublicKey`]
-//! - [`ScalarCore`]
+//! - [`ScalarPrimitive`]
 //!
 //! Please see type-specific documentation for more information.
 //!
@@ -50,50 +69,37 @@
 //! [`bp256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/bp256
 //! [`bp384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/bp384
 //! [`k256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/k256
+//! [`p224`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p224
 //! [`p256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
 //! [`p384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p384
+//! [`p521`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p521
 //! [`ecdsa`]: https://github.com/RustCrypto/signatures/tree/master/ecdsa
 
 #[cfg(feature = "alloc")]
 #[allow(unused_imports)]
 #[macro_use]
 extern crate alloc;
-
 #[cfg(feature = "std")]
 extern crate std;
 
-#[cfg(feature = "rand_core")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
-pub use rand_core;
-
-#[macro_use]
-mod macros;
-
-pub mod ops;
+pub mod point;
+pub mod scalar;
 
 #[cfg(feature = "dev")]
-#[cfg_attr(docsrs, doc(cfg(feature = "dev")))]
 pub mod dev;
-
 #[cfg(feature = "ecdh")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdh")))]
 pub mod ecdh;
-
 #[cfg(feature = "hash2curve")]
-#[cfg_attr(docsrs, doc(cfg(feature = "hash2curve")))]
 pub mod hash2curve;
-
-#[cfg(feature = "sec1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sec1")))]
-pub mod sec1;
-
 #[cfg(feature = "arithmetic")]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
+pub mod ops;
+#[cfg(feature = "sec1")]
+pub mod sec1;
+#[cfg(feature = "arithmetic")]
 pub mod weierstrass;
 
 mod error;
-mod point;
-mod scalar;
+mod field;
 mod secret_key;
 
 #[cfg(feature = "arithmetic")]
@@ -104,12 +110,13 @@ mod public_key;
 #[cfg(feature = "jwk")]
 mod jwk;
 
+#[cfg(feature = "voprf")]
+mod voprf;
+
 pub use crate::{
     error::{Error, Result},
-    point::{
-        AffineXCoordinate, DecompactPoint, DecompressPoint, PointCompaction, PointCompression,
-    },
-    scalar::{core::ScalarCore, IsHigh},
+    field::{FieldBytes, FieldBytesEncoding, FieldBytesSize},
+    scalar::ScalarPrimitive,
     secret_key::SecretKey,
 };
 pub use crypto_bigint as bigint;
@@ -121,18 +128,14 @@ pub use zeroize;
 #[cfg(feature = "arithmetic")]
 pub use {
     crate::{
-        arithmetic::{
-            AffineArithmetic, PrimeCurveArithmetic, ProjectiveArithmetic, ScalarArithmetic,
-        },
+        arithmetic::{CurveArithmetic, PrimeCurveArithmetic},
+        point::{AffinePoint, ProjectivePoint},
         public_key::PublicKey,
-        scalar::{nonzero::NonZeroScalar, Scalar},
+        scalar::{NonZeroScalar, Scalar},
     },
     ff::{self, Field, PrimeField},
     group::{self, Group},
 };
-
-#[cfg(feature = "bits")]
-pub use crate::scalar::ScalarBits;
 
 #[cfg(feature = "jwk")]
 pub use crate::jwk::{JwkEcKey, JwkParameters};
@@ -140,15 +143,20 @@ pub use crate::jwk::{JwkEcKey, JwkParameters};
 #[cfg(feature = "pkcs8")]
 pub use pkcs8;
 
-use core::fmt::Debug;
-use generic_array::GenericArray;
+#[cfg(feature = "voprf")]
+pub use crate::voprf::VoprfParameters;
+
+use core::{
+    fmt::Debug,
+    ops::{Add, ShrAssign},
+};
+use generic_array::ArrayLength;
 
 /// Algorithm [`ObjectIdentifier`][`pkcs8::ObjectIdentifier`] for elliptic
 /// curve public key cryptography (`id-ecPublicKey`).
 ///
 /// <http://oid-info.com/get/1.2.840.10045.2.1>
 #[cfg(feature = "pkcs8")]
-#[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub const ALGORITHM_OID: pkcs8::ObjectIdentifier =
     pkcs8::ObjectIdentifier::new_unwrap("1.2.840.10045.2.1");
 
@@ -161,60 +169,29 @@ pub const ALGORITHM_OID: pkcs8::ObjectIdentifier =
 /// be impl'd by these ZSTs, facilitating types which are generic over elliptic
 /// curves (e.g. [`SecretKey`]).
 pub trait Curve: 'static + Copy + Clone + Debug + Default + Eq + Ord + Send + Sync {
+    /// Size of a serialized field element in bytes.
+    ///
+    /// This is typically the same as `Self::Uint::ByteSize` but for curves
+    /// with an unusual field modulus (e.g. P-224, P-521) it may be different.
+    type FieldBytesSize: ArrayLength<u8> + Add + Eq;
+
     /// Integer type used to represent field elements of this elliptic curve.
-    // TODO(tarcieri): replace this with an e.g. `const Curve::MODULUS: UInt`.
-    // Requires rust-lang/rust#60551, i.e. `const_evaluatable_checked`
-    type UInt: bigint::AddMod<Output = Self::UInt>
-        + bigint::ArrayEncoding
+    type Uint: bigint::ArrayEncoding
+        + bigint::AddMod<Output = Self::Uint>
         + bigint::Encoding
         + bigint::Integer
-        + bigint::NegMod<Output = Self::UInt>
+        + bigint::NegMod<Output = Self::Uint>
         + bigint::Random
         + bigint::RandomMod
-        + bigint::SubMod<Output = Self::UInt>
-        + zeroize::Zeroize;
+        + bigint::SubMod<Output = Self::Uint>
+        + zeroize::Zeroize
+        + FieldBytesEncoding<Self>
+        + ShrAssign<usize>;
 
-    /// Order constant.
-    ///
-    /// Subdivided into either 32-bit or 64-bit "limbs" (depending on the
-    /// target CPU's word size), specified from least to most significant.
-    const ORDER: Self::UInt;
+    /// Order of this elliptic curve, i.e. number of elements in the scalar
+    /// field.
+    const ORDER: Self::Uint;
 }
 
 /// Marker trait for elliptic curves with prime order.
 pub trait PrimeCurve: Curve {}
-
-/// Size of field elements of this elliptic curve.
-pub type FieldSize<C> = <<C as Curve>::UInt as bigint::ArrayEncoding>::ByteSize;
-
-/// Byte representation of a base/scalar field element of a given curve.
-pub type FieldBytes<C> = GenericArray<u8, FieldSize<C>>;
-
-/// Affine point type for a given curve with a [`ProjectiveArithmetic`]
-/// implementation.
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-#[cfg(feature = "arithmetic")]
-pub type AffinePoint<C> = <C as AffineArithmetic>::AffinePoint;
-
-/// Projective point type for a given curve with a [`ProjectiveArithmetic`]
-/// implementation.
-#[cfg(feature = "arithmetic")]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub type ProjectivePoint<C> = <C as ProjectiveArithmetic>::ProjectivePoint;
-
-/// Elliptic curve parameters used by VOPRF.
-#[cfg(feature = "voprf")]
-#[cfg_attr(docsrs, doc(cfg(feature = "voprf")))]
-pub trait VoprfParameters: Curve {
-    /// The `ID` parameter which identifies a particular elliptic curve
-    /// as defined in [section 4 of `draft-irtf-cfrg-voprf-08`][voprf].
-    ///
-    /// [voprf]: https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4
-    const ID: u16;
-
-    /// The `Hash` parameter which assigns a particular hash function to this
-    /// ciphersuite as defined in [section 4 of `draft-irtf-cfrg-voprf-08`][voprf].
-    ///
-    /// [voprf]: https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4
-    type Hash: digest::Digest;
-}

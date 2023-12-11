@@ -83,6 +83,12 @@ impl DerOrd for BytesOwned {
     }
 }
 
+impl From<BytesOwned> for Box<[u8]> {
+    fn from(bytes: BytesOwned) -> Box<[u8]> {
+        bytes.inner
+    }
+}
+
 impl From<StrRef<'_>> for BytesOwned {
     fn from(s: StrRef<'_>) -> BytesOwned {
         let bytes = s.as_bytes();

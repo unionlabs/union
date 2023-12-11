@@ -80,7 +80,7 @@ mod librustc_parse {
         rustc_span::create_session_if_not_set_then(Edition::Edition2018, |_| {
             let cm = Lrc::new(SourceMap::new(FilePathMapping::empty()));
             let emitter = Box::new(SilentEmitter);
-            let handler = Handler::with_emitter(false, None, emitter);
+            let handler = Handler::with_emitter(emitter);
             let sess = ParseSess::with_span_handler(handler, cm);
             if let Err(diagnostic) = rustc_parse::parse_crate_from_source_str(
                 FileName::Custom("bench".to_owned()),

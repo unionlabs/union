@@ -8,7 +8,6 @@ use ics008_wasm_client::{
 use prost::Message;
 use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
-    google::protobuf::timestamp::Timestamp,
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::cometbls::{
@@ -54,7 +53,7 @@ impl IbcClient for CometblsLightClient {
 
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
-        env: Env,
+        _env: Env,
         header: Self::Header,
     ) -> Result<(), Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
@@ -80,28 +79,28 @@ impl IbcClient for CometblsLightClient {
             ));
         }
 
-        let current_time: Timestamp = env
-            .block
-            .time
-            .try_into()
-            .map_err(|_| Error::InvalidHeader("timestamp conversion failed".into()))?;
+        // let current_time: Timestamp = env
+        //     .block
+        //     .time
+        //     .try_into()
+        //     .map_err(|_| Error::InvalidHeader("timestamp conversion failed".into()))?;
 
-        if current_time
-            .duration_since(&header.signed_header.header.time)
-            .ok_or(Error::DurationAdditionOverflow)?
-            .seconds()
-            .inner() as u64
-            > client_state.data.trusting_period
-        {
-            return Err(Error::InvalidHeader("header expired".into()));
-        }
+        // if current_time
+        //     .duration_since(&header.signed_header.header.time)
+        //     .ok_or(Error::DurationAdditionOverflow)?
+        //     .seconds()
+        //     .inner() as u64
+        //     > client_state.data.trusting_period
+        // {
+        //     return Err(Error::InvalidHeader("header expired".into()));
+        // }
 
-        let max_clock_drift =
-            current_time.seconds.inner() as u64 + client_state.data.max_clock_drift;
+        // let max_clock_drift =
+        //     current_time.seconds.inner() as u64 + client_state.data.max_clock_drift;
 
-        if untrusted_timestamp >= max_clock_drift {
-            return Err(Error::InvalidHeader("header back to the future".into()));
-        }
+        // if untrusted_timestamp >= max_clock_drift {
+        //     return Err(Error::InvalidHeader("header back to the future".into()));
+        // }
 
         let trusted_validators_hash = consensus_state.data.next_validators_hash;
 
@@ -121,6 +120,13 @@ impl IbcClient for CometblsLightClient {
             return Err(Error::InvalidHeader(
                 "commit.block_id.hash != header.root()".into(),
             ));
+        }
+
+        if client_state.data.chain_id != header.signed_header.header.chain_id {
+            return Err(Error::InvalidHeader(format!(
+                "chain ids dont match: {} {}",
+                client_state.data.chain_id, header.signed_header.header.chain_id
+            )));
         }
 
         let signed_vote = canonical_vote(
@@ -166,6 +172,7 @@ impl IbcClient for CometblsLightClient {
 
         if untrusted_height > client_state.latest_height {
             client_state.latest_height = untrusted_height;
+            client_state.data.latest_height = untrusted_height;
         }
 
         consensus_state.data.root = MerkleRoot {
@@ -182,6 +189,7 @@ impl IbcClient for CometblsLightClient {
         };
 
         consensus_state.data.next_validators_hash = untrusted_validators_hash;
+        consensus_state.data.timestamp = header.signed_header.header.time.seconds.inner() as u64;
 
         save_client_state(deps.branch(), client_state);
         save_consensus_state(deps, consensus_state, &untrusted_height);
@@ -194,7 +202,7 @@ impl IbcClient for CometblsLightClient {
     fn update_state_on_misbehaviour(
         _deps: DepsMut<Self::CustomQuery>,
         _env: Env,
-        _client_message: ics008_wasm_client::ClientMessage,
+        _client_message: Vec<u8>,
     ) -> Result<(), Self::Error> {
         panic!("not implemented")
     }

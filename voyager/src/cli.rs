@@ -54,6 +54,8 @@ pub enum Command {
     Query {
         #[arg(long)]
         on: String,
+        #[arg(long)]
+        tracking: String,
         #[arg(long, default_value_t = QueryHeight::<Height>::Latest)]
         at: QueryHeight<Height>,
         #[command(subcommand)]
@@ -169,8 +171,7 @@ struct StateProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
     #[serde(with = "::serde_utils::string")]
     path: P,
     state: P::Output,
-    #[serde(with = "::serde_utils::hex_string")]
-    proof: Vec<u8>,
+    proof: Hc::StateProof,
     height: HeightOf<Hc>,
 }
 

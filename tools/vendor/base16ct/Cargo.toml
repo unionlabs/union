@@ -11,21 +11,37 @@
 
 [package]
 edition = "2021"
-rust-version = "1.56"
+rust-version = "1.60"
 name = "base16ct"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["RustCrypto Developers"]
-description = "Pure Rust implementation of Base16 a.k.a hexadecimal (RFC 4648) which avoids\nany usages of data-dependent branches/LUTs and thereby provides portable\n\"best effort\" constant-time operation and embedded-friendly no_std support\n"
+description = """
+Pure Rust implementation of Base16 a.k.a hexadecimal (RFC 4648) which avoids
+any usages of data-dependent branches/LUTs and thereby provides portable
+\"best effort\" constant-time operation and embedded-friendly no_std support
+"""
 documentation = "https://docs.rs/base16ct"
 readme = "README.md"
-keywords = ["crypto", "hex", "pem", "phc"]
-categories = ["cryptography", "encoding", "no-std", "parser-implementations"]
+keywords = [
+    "crypto",
+    "hex",
+    "hexadecimal",
+]
+categories = [
+    "cryptography",
+    "encoding",
+    "no-std",
+    "parser-implementations",
+]
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/RustCrypto/formats/tree/master/base16ct"
-resolver = "2"
+
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
+rustdoc-args = [
+    "--cfg",
+    "docsrs",
+]
 
 [features]
 alloc = []

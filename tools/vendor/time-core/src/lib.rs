@@ -11,7 +11,6 @@
     clippy::obfuscated_if_else,
     clippy::std_instead_of_core,
     clippy::undocumented_unsafe_blocks,
-    const_err,
     illegal_floating_point_literal_pattern,
     late_bound_lifetime_arguments,
     path_statements,
@@ -49,4 +48,5 @@
 #![doc(html_logo_url = "https://avatars0.githubusercontent.com/u/55999857")]
 #![doc(test(attr(deny(warnings))))]
 
+pub mod convert;
 pub mod util;

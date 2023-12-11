@@ -109,6 +109,20 @@ macro_rules! entity_impl {
             pub fn as_u32(self) -> u32 {
                 self.0
             }
+
+            /// Return the raw bit encoding for this instance.
+            #[allow(dead_code)]
+            #[inline]
+            pub fn as_bits(self) -> u32 {
+                self.0
+            }
+
+            /// Create a new instance from the raw bit encoding.
+            #[allow(dead_code)]
+            #[inline]
+            pub fn from_bits(x: u32) -> Self {
+                $entity(x)
+            }
         }
     };
 

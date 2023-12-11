@@ -6390,6 +6390,7 @@ dependencies = [
  "beacon-api",
  "chain-utils",
  "contracts",
+ "dashmap",
  "derive_more",
  "enumorph",
  "ethers",

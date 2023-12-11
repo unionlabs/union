@@ -1,0 +1,880 @@
+;; riscv64 instruction selection and CLIF-to-MachInst lowering.
+
+;; The main lowering constructor term: takes a clif `Inst` and returns the
+;; register(s) within which the lowered instruction's result values live.
+(decl lower (Inst) InstOutput)
+
+;;;; Rules for `iconst` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (has_type ty (iconst (u64_from_imm64 n))))
+  (imm ty n))
+
+;;;; Rules for `null` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (has_type ty (null)))
+  (imm ty 0))
+
+
+;;;; Rules for `iadd` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule -1 (lower (has_type (fits_in_32 ty) (iadd x y)))
+  (alu_rrr (AluOPRRR.Addw) x y))
+
+;; Base case, simply adding things in registers.
+(rule -2 (lower (has_type (fits_in_64 ty) (iadd x y)))
+  (alu_add x y))
+
+;; Special cases for when one operand is an immediate that fits in 12 bits.
+(rule 1 (lower (has_type (fits_in_64 ty) (iadd x (imm12_from_value y))))
+  (alu_rr_imm12 (select_addi ty) x y))
+
+(rule 2 (lower (has_type (fits_in_64 ty) (iadd (imm12_from_value x) y)))
+  (alu_rr_imm12 (select_addi ty) y x))
+
+(rule 
+  (lower (has_type $I128 (iadd x y)))
+  (let
+    ( ;; low part.
+      (low Reg (alu_add (value_regs_get x 0) (value_regs_get y 0)))
+      ;; compute carry.
+      (carry Reg (alu_rrr (AluOPRRR.SltU) low (value_regs_get y 0)))
+      ;; 
+      (high_tmp Reg (alu_add (value_regs_get x 1) (value_regs_get y 1)))
+      ;; add carry.
+      (high Reg (alu_add high_tmp carry)))
+    (value_regs low high)))
+
+;;; Rules for `iadd_ifcout` ;;;;;;;;;;;;;
+(rule
+  (lower (has_type (fits_in_64 ty) (iadd_ifcout x y)))
+  (output_ifcout (alu_add x y)))
+
+;;; Rules for `uadd_overflow_trap` ;;;;;;;;;;;;;
+(rule
+  (lower (has_type (fits_in_64 ty) (uadd_overflow_trap x y tc)))
+  (let ((res ValueRegs (lower_uadd_overflow x y ty))
+        (_ InstOutput (gen_trapif (value_regs_get res 1) tc)))
+    (value_regs_get res 0)))
+
+
+;;;; Rules for `isub` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Base case, simply subtracting things in registers.
+
+(rule -2 (lower (has_type (fits_in_64 ty) (isub x y)))
+  (alu_rrr (AluOPRRR.Sub) x y))
+
+(rule -1 (lower (has_type (fits_in_32 ty) (isub x y)))
+  (alu_rrr (AluOPRRR.Subw) x y))
+
+(rule (lower (has_type $I128 (isub x y)))
+  (i128_sub x y))
+
+;;;; Rules for `ineg` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; `i64` and smaller.
+(rule 1 (lower (has_type (fits_in_64 ty) (ineg x)))
+  (alu_rrr (AluOPRRR.Sub) (zero_reg) x))
+
+(rule 2 (lower (has_type $I128 (ineg x)))
+  (i128_sub (value_regs_zero) x))
+
+;;;; Rules for `imul` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule -2 (lower (has_type (fits_in_64 ty) (imul x y)))
+  (alu_rrr (AluOPRRR.Mul) x y))
+(rule -1 (lower (has_type (fits_in_32 ty) (imul x y)))
+  (alu_rrr (AluOPRRR.Mulw) x y))
+
+;;;; Rules for `smulhi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type (fits_in_64 ty) (smulhi x y)))
+  (lower_smlhi ty (ext_int_if_need $true x ty) (ext_int_if_need $true y ty)))
+
+;;;; Rules for `umulhi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type (fits_in_64 ty) (umulhi x y)))
+  (lower_umlhi ty (ext_int_if_need $false x ty) (ext_int_if_need $false y ty)))
+
+;; for I128
+(rule (lower (has_type $I128 (imul x y)))
+  (let
+    ((x_regs ValueRegs x)
+      (x_lo Reg (value_regs_get x_regs 0))
+      (x_hi Reg (value_regs_get x_regs 1))
+
+      ;; Get the high/low registers for `y`.
+      (y_regs ValueRegs y)
+      (y_lo Reg (value_regs_get y_regs 0))
+      (y_hi Reg (value_regs_get y_regs 1))
+
+      ;; 128bit mul formula:
+      ;;   dst_lo = x_lo * y_lo
+      ;;   dst_hi = umulhi(x_lo, y_lo) + (x_lo * y_hi) + (x_hi * y_lo)
+      ;;
+      ;; We can convert the above formula into the following
+      ;; umulh   dst_hi, x_lo, y_lo
+      ;; madd    dst_hi, x_lo, y_hi, dst_hi
+      ;; madd    dst_hi, x_hi, y_lo, dst_hi
+      ;; madd    dst_lo, x_lo, y_lo, zero
+      (dst_hi1 Reg (umulh x_lo y_lo))
+      (dst_hi2 Reg (madd x_lo y_hi dst_hi1))
+      (dst_hi Reg (madd x_hi y_lo dst_hi2))
+      (dst_lo Reg (madd x_lo y_lo (zero_reg))))
+    (value_regs dst_lo dst_hi)))
+
+
+;;;; Rules for `div` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule -1 (lower (has_type (fits_in_32 ty) (udiv x y)))
+  (let
+    ((y2 Reg (ext_int_if_need $false y ty))
+      (_ InstOutput (gen_div_by_zero y2)))
+    (alu_rrr (AluOPRRR.Divuw) (ext_int_if_need $false x ty) y2)))
+
+(rule -1 (lower (has_type (fits_in_32 ty) (sdiv x y)))
+  (let
+    ((a Reg (ext_int_if_need $true x ty))
+      (b Reg (ext_int_if_need $true y ty))
+      (_ InstOutput (gen_div_overflow a b ty))
+      (_ InstOutput (gen_div_by_zero b)))
+    (alu_rrr (AluOPRRR.Divw) a b)))
+
+(rule (lower (has_type $I64 (sdiv x y)))
+  (let
+    ((_ InstOutput (gen_div_overflow x y $I64))
+      (_ InstOutput (gen_div_by_zero y))    )
+    (alu_rrr (AluOPRRR.Div) x y)))
+
+(rule (lower (has_type $I64 (udiv x y)))
+  (let
+    ((_ InstOutput (gen_div_by_zero y)))
+    (alu_rrr (AluOPRRR.DivU) x y)))
+
+;;;; Rules for `rem` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule -1 (lower (has_type (fits_in_16 ty) (urem x y)))
+  (let
+    ((y2 Reg (ext_int_if_need $false y ty))
+      (_ InstOutput (gen_div_by_zero y2)))
+    (alu_rrr (AluOPRRR.Remuw) (ext_int_if_need $false x ty) y2)))
+
+(rule -1 (lower (has_type (fits_in_16 ty) (srem x y)))
+  (let 
+    ((y2 Reg (ext_int_if_need $true y ty))
+      (_ InstOutput (gen_div_by_zero y2)))
+    (alu_rrr (AluOPRRR.Remw) (ext_int_if_need $true x ty) y2)))
+
+(rule (lower (has_type $I32 (srem x y)))
+  (let 
+    ((y2 Reg (ext_int_if_need $true y $I32))
+      (_ InstOutput (gen_div_by_zero y2)))
+   (alu_rrr (AluOPRRR.Remw) x y2)))
+
+(rule (lower (has_type $I32 (urem x y)))
+  (let 
+    ((y2 Reg (ext_int_if_need $false y $I32))
+        (_ InstOutput (gen_div_by_zero y2)))
+    (alu_rrr (AluOPRRR.Remuw) x y2)))
+
+(rule (lower (has_type $I64 (srem x y)))
+  (let
+    ((_ InstOutput (gen_div_by_zero y)))
+    (alu_rrr (AluOPRRR.Rem) x y)))
+
+(rule (lower (has_type $I64 (urem x y)))
+  (let
+    ((_ InstOutput (gen_div_by_zero y)))
+    (alu_rrr (AluOPRRR.RemU) x y)))
+
+;;;; Rules for `and` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule -1 (lower (has_type (fits_in_64 ty) (band x y)))
+  (alu_rrr (AluOPRRR.And) x y))
+
+;; Special cases for when one operand is an immediate that fits in 12 bits.
+(rule 2 (lower (has_type (fits_in_64 ty) (band x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Andi) x y))
+
+(rule 1 (lower (has_type (fits_in_64 ty) (band (imm12_from_value x) y)))
+  (alu_rr_imm12 (AluOPRRI.Andi) y x))
+
+(rule (lower (has_type $I128 (band x y)))
+  (lower_b128_binary (AluOPRRR.And) x y))
+
+(rule (lower (has_type $F32 (band x y)))
+  (lower_float_binary (AluOPRRR.And) x y $F32))
+(rule (lower (has_type $F64 (band x y)))
+  (lower_float_binary (AluOPRRR.And) x y $F64))
+
+
+;;;; Rules for `or` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule -1 (lower (has_type (fits_in_64 ty) (bor x y)))
+  (alu_rrr (AluOPRRR.Or) x y))
+
+;; Special cases for when one operand is an immediate that fits in 12 bits.
+(rule 2 (lower (has_type (fits_in_64 ty) (bor x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Ori) x y))
+
+(rule 1 (lower (has_type (fits_in_64 ty) (bor (imm12_from_value x) y)))
+  (alu_rr_imm12 (AluOPRRI.Ori) y x))
+(rule (lower (has_type $I128 (bor x y)))
+  (lower_b128_binary (AluOPRRR.Or) x y))
+(rule (lower (has_type $F32 (bor x y)))
+  (lower_float_binary (AluOPRRR.Or) x y $F32))
+(rule (lower (has_type $F64 (bor x y)))
+  (lower_float_binary (AluOPRRR.Or) x y $F64))
+
+
+;;;; Rules for `xor` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule -1 (lower (has_type (fits_in_64 ty) (bxor x y)))
+  (alu_rrr (AluOPRRR.Xor) x y))
+
+;; Special cases for when one operand is an immediate that fits in 12 bits.
+(rule 2 (lower (has_type (fits_in_64 ty) (bxor x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Xori) x y))
+
+(rule 1 (lower (has_type (fits_in_64 ty) (bxor (imm12_from_value x) y)))
+  (alu_rr_imm12 (AluOPRRI.Xori) y x))
+(rule (lower (has_type $I128 (bxor x y)))
+  (lower_b128_binary (AluOPRRR.Xor) x y))
+(rule (lower (has_type $F32 (bxor x y)))
+  (lower_float_binary (AluOPRRR.Xor) x y $F32))
+(rule (lower (has_type $F64 (bxor x y)))
+  (lower_float_binary (AluOPRRR.Xor) x y $F64))
+
+
+;;;; Rules for `bnot` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule -1 (lower (has_type fits_in_64 (bnot x)))
+  (alu_rr_imm12 (AluOPRRI.Xori) x (imm_from_neg_bits -1)))
+
+(rule (lower (has_type $I128 (bnot x)))
+  (bnot_128 x))
+(rule
+  (lower (has_type $F32 (bnot x)))
+  (lower_float_bnot x $F32)
+)
+(rule
+  (lower (has_type $F64 (bnot x)))
+  (lower_float_bnot x $F64)
+)
+
+;;;; Rules for `bit_reverse` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type ty (bitrev x)))
+  (lower_bit_reverse x ty))
+
+(rule 1 (lower (has_type $I128 (bitrev x)))
+  (let ((val ValueRegs x)
+    (lo_rev Reg (lower_bit_reverse (value_regs_get val 0) $I64))
+    (hi_rev Reg (lower_bit_reverse (value_regs_get val 1) $I64)))
+    (value_regs hi_rev lo_rev)))
+
+
+;;;; Rules for `ctz` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type ty (ctz x)))
+  (lower_ctz ty x))
+
+(rule 1 (lower (has_type $I128 (ctz x)))
+  (lower_ctz_128 x))
+
+;;;; Rules for `clz` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type ty (clz x)))
+  (lower_clz ty x))
+(rule 1 (lower (has_type $I128 (clz x)))
+  (lower_clz_i128 x))
+
+;;;; Rules for `uextend` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type out (uextend x @ (value_type in))))
+  (lower_extend x $false (ty_bits in) (ty_bits out)))
+
+;;;; Rules for `sextend` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type out (sextend x @ (value_type in))))
+  (lower_extend x $true (ty_bits in) (ty_bits out)))
+
+
+;;;; Rules for `band_not` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type (fits_in_64 ty) (band_not x y)))
+  (gen_andn x y))
+(rule 1 (lower (has_type $I128 (band_not x y)))
+  (let
+    ((low Reg (gen_andn (value_regs_get x 0) (value_regs_get y 0)))
+      (high Reg (gen_andn (value_regs_get x 1) (value_regs_get y 1))))
+    (value_regs low high)))
+
+;;;; Rules for `popcnt` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type (fits_in_64 ty) (popcnt x)))
+  (lower_popcnt x ty))
+(rule 1 (lower (has_type $I128 (popcnt x)))
+  (lower_popcnt_i128 x))
+
+;;;; Rules for `ishl` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule 1 (lower (has_type $I8 (ishl x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Sllw) x (alu_andi y 7))
+)
+(rule 2 (lower (has_type $I8 (ishl x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Slliw) x (imm12_and y 7)))
+
+(rule 1 (lower (has_type $I16 (ishl x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Sllw) x (alu_andi y 15))
+)
+(rule 2 (lower (has_type $I16 (ishl x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Slliw) x (imm12_and y 15)))
+
+(rule 1 (lower (has_type $I32 (ishl x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Sllw) x y))
+(rule 2 (lower (has_type $I32 (ishl x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Slliw) x y))
+
+(rule 2 (lower (has_type $I64 (ishl x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Slli) x y))
+(rule 1 (lower (has_type $I64 (ishl x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Sll) x y))
+
+(rule 0 (lower (has_type $I128 (ishl x y)))
+  (lower_i128_ishl x y))
+
+;;;; Rules for `ushr` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule 1 (lower (has_type $I8 (ushr x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Srlw) (ext_int_if_need $false x $I8) (alu_andi y 7))
+)
+(rule 2 (lower (has_type $I8 (ushr x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.SrliW) (ext_int_if_need $false x $I8) (imm12_and y 7)))
+
+(rule 1 (lower (has_type $I16 (ushr x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Srlw) (ext_int_if_need $false x $I16) (alu_andi y 15))
+)
+(rule 2 (lower (has_type $I16 (ushr x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.SrliW) (ext_int_if_need $false x $I16) (imm12_and y 15)))
+
+(rule 1 (lower (has_type $I32 (ushr x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Srlw) x y))
+(rule 2 (lower (has_type $I32 (ushr x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.SrliW) x y))
+
+(rule 2 (lower (has_type $I64 (ushr x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Srli) x y))
+(rule 1 (lower (has_type $I64 (ushr x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Srl) x y))
+
+(rule 0 (lower (has_type $I128 (ushr x y)))
+  (lower_i128_ushr x y))
+
+
+;;;; Rules for `sshr` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule 1 (lower (has_type $I8 (sshr x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Sra) (ext_int_if_need $true x $I8) (alu_andi y 7))
+)
+(rule 2 (lower (has_type $I8 (sshr x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Srai) (ext_int_if_need $true x $I8) (imm12_and y 7)))
+
+(rule 1 (lower (has_type $I16 (sshr x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Sra) (ext_int_if_need $true x $I16) (alu_andi y 15))
+)
+(rule 2 (lower (has_type $I16 (sshr x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Srai) (ext_int_if_need $true x $I16) (imm12_and y 15)))
+
+(rule 1 (lower (has_type $I32 (sshr x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Sraw) x y))
+(rule 2 (lower (has_type $I32 (sshr x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Sraiw) x y))
+(rule 1 (lower (has_type $I64 (sshr x (valueregs_2_reg y))))
+  (alu_rrr (AluOPRRR.Sra) x y))
+(rule 2 (lower (has_type $I64 (sshr x (imm12_from_value y))))
+  (alu_rr_imm12 (AluOPRRI.Srai) x y))
+(rule 0 (lower (has_type $I128 (sshr x y)))
+  (lower_i128_sshr x y))
+
+
+;;;; Rules for `rotl` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type (fits_in_64 ty) (rotl x (valueregs_2_reg y))))
+  (lower_rotl ty (ext_int_if_need $false x ty) y))
+
+(rule 1 (lower (has_type $I128 (rotl x y)))
+  (lower_i128_rotl x y))
+
+;;;; Rules for `rotr` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type (fits_in_64 ty) (rotr x (valueregs_2_reg y))))
+  (lower_rotr ty (ext_int_if_need $false x ty) y))
+
+(rule 1 (lower (has_type $I128 (rotr x y)))
+  (lower_i128_rotr x y))
+
+
+;;;; Rules for `bxor_not` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; notice x y order!!!
+(rule (lower (has_type (fits_in_64 ty) (bxor_not x y)))
+  (gen_xor_not x y))
+(rule 1 (lower (has_type $I128 (bxor_not x y)))
+  (let
+    ((low Reg (gen_xor_not (value_regs_get x 0) (value_regs_get y 0)))
+      (high Reg (gen_xor_not (value_regs_get x 1) (value_regs_get y 1))))
+    (value_regs low high)
+  )
+)
+
+;;;; Rules for `bor_not` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type (fits_in_64 ty) (bor_not x y)))
+  (gen_orn x y))
+
+(rule 1 (lower (has_type $I128 (bor_not x y)))
+  (let
+    ((low Reg (gen_orn (value_regs_get x 0) (value_regs_get y 0)))
+      (high Reg (gen_orn (value_regs_get x 1) (value_regs_get y 1))))
+    (value_regs low high))) 
+
+
+;;;; Rules for `cls` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type (fits_in_64 ty) (cls x)))
+  (lower_cls x ty))
+(rule 1 (lower (has_type $I128 (cls x)))
+  (lower_cls_i128 x))
+
+
+;;;; Rules for `fabs` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule 
+  (lower (has_type ty (fabs x)))
+  (gen_fabs x ty))
+
+;;;; Rules for `fneg` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule 
+  (lower (has_type ty (fneg x)))
+  (fpu_rrr (f_copy_neg_sign_op ty) ty x x))
+
+;;;; Rules for `fcopysign` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type ty (fcopysign x y)))
+  (fpu_rrr (f_copysign_op ty) ty x y))
+
+;;;; Rules for `fma` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type $F32 (fma x y z)))
+  (fpu_rrrr (FpuOPRRRR.FmaddS) $F64 x y z))
+(rule (lower (has_type $F64 (fma x y z)))
+  (fpu_rrrr (FpuOPRRRR.FmaddD) $F64 x y z))
+
+
+;;;; Rules for `sqrt` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule (lower (has_type $F32 (sqrt x)))
+  (fpu_rr (FpuOPRR.FsqrtS) $F64 x))
+
+(rule (lower (has_type $F64 (sqrt x)))
+  (fpu_rr (FpuOPRR.FsqrtD) $F64 x))
+
+
+;;;; Rules for `AtomicRMW` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule -1
+  ;; 
+  (lower 
+    (has_type (valid_atomic_transaction ty) (atomic_rmw flags op addr x)))
+  (gen_atomic (get_atomic_rmw_op ty op) addr x (atomic_amo)))
+
+;;; for I8 and I16
+(rule 1
+  (lower 
+    (has_type (valid_atomic_transaction (fits_in_16 ty)) (atomic_rmw flags op addr x)))
+  (gen_atomic_rmw_loop op ty addr x))
+
+;;;special for I8 and I16 max min etc.
+;;;because I need uextend or sextend the value.
+(rule 2
+  (lower 
+    (has_type (valid_atomic_transaction (fits_in_16 ty)) (atomic_rmw flags (is_atomic_rmw_max_etc op $true) addr x)))
+  (gen_atomic_rmw_loop op ty addr (ext_int_if_need $true x ty)))
+
+
+(rule 2
+  ;;
+  (lower 
+    (has_type (valid_atomic_transaction (fits_in_16 ty)) (atomic_rmw flags (is_atomic_rmw_max_etc op $false) addr x)))
+  ;;
+  (gen_atomic_rmw_loop op ty addr (ext_int_if_need $false x ty)))
+
+;;;;;  Rules for `AtomicRmwOp.Sub`
+(rule
+  (lower 
+    (has_type (valid_atomic_transaction ty) (atomic_rmw flags (AtomicRmwOp.Sub) addr x)))
+  (let
+    ((tmp WritableReg (temp_writable_reg ty))
+      (x2 Reg (alu_rrr (AluOPRRR.Sub) (zero_reg) x)))
+    (gen_atomic (get_atomic_rmw_op ty (AtomicRmwOp.Add)) addr x2 (atomic_amo))))
+
+(decl gen_atomic_rmw_loop (AtomicRmwOp Type Reg Reg) Reg)
+(rule
+  (gen_atomic_rmw_loop op ty addr x)
+  (let
+    ((dst WritableReg (temp_writable_reg $I64))
+      (t0 WritableReg (temp_writable_reg $I64))
+      (_ Unit (emit (MInst.AtomicRmwLoop (gen_atomic_offset addr ty) op dst ty (gen_atomic_p addr ty) x t0))))
+    (writable_reg_to_reg dst)))
+
+;;;;;  Rules for `AtomicRmwOp.Nand`
+(rule
+  (lower 
+    (has_type (valid_atomic_transaction ty) (atomic_rmw flags (AtomicRmwOp.Nand) addr x)))
+    (gen_atomic_rmw_loop (AtomicRmwOp.Nand) ty addr x))
+
+(decl is_atomic_rmw_max_etc (AtomicRmwOp bool) AtomicRmwOp)
+(extern extractor is_atomic_rmw_max_etc is_atomic_rmw_max_etc)
+
+;;;;;  Rules for `atomic load`;;;;;;;;;;;;;;;;;
+(rule 
+  (lower (has_type (valid_atomic_transaction ty) (atomic_load flags p)))
+  (gen_atomic_load p ty))
+
+
+;;;;;  Rules for `atomic store`;;;;;;;;;;;;;;;;;
+(rule 
+  (lower (atomic_store flags src @ (value_type (valid_atomic_transaction ty)) p))
+  (gen_atomic_store p ty src))
+
+(decl gen_atomic_offset (Reg Type) Reg)
+(rule 1 (gen_atomic_offset p (fits_in_16 ty))
+  (alu_slli (alu_andi p 3) 3))
+
+(rule (gen_atomic_offset p _)
+  (zero_reg))
+
+(decl gen_atomic_p (Reg Type) Reg)
+(rule 1 (gen_atomic_p p (fits_in_16 ty))
+  (alu_andi p -4))
+
+(rule (gen_atomic_p p _)
+  p)
+
+
+;;;;;  Rules for `atomic cas`;;;;;;;;;;;;;;;;;
+(rule
+  (lower (has_type (valid_atomic_transaction ty) (atomic_cas flags p e x)))
+  (let
+    ((t0 WritableReg (temp_writable_reg ty))
+      (dst WritableReg (temp_writable_reg ty))
+      (_ Unit (emit (MInst.AtomicCas (gen_atomic_offset p ty) t0 dst (ext_int_if_need $false e ty) (gen_atomic_p p ty) x ty))))
+    (writable_reg_to_reg dst)))
+
+;;;;;  Rules for `ireduce`;;;;;;;;;;;;;;;;;
+(rule
+  (lower (has_type ty (ireduce x)))
+  (gen_move2 (value_regs_get x 0) ty ty))
+
+;;;;;  Rules for `fpromote`;;;;;;;;;;;;;;;;;
+(rule
+  (lower (has_type ty (fpromote x)))
+  (fpu_rr (FpuOPRR.FcvtDS) ty x))
+
+(rule
+  (lower (has_type ty (fdemote x)))
+  (fpu_rr (FpuOPRR.FcvtSD) ty x))
+
+
+;;;;;  Rules for `for float arithmatic`
+(rule 
+  (lower (has_type ty (fadd x y)))
+  (fpu_rrr (f_arithmatic_op ty (Opcode.Fadd)) ty x y))
+(rule 
+  (lower (has_type ty (fsub x y)))
+  (fpu_rrr (f_arithmatic_op ty (Opcode.Fsub)) ty x y))
+(rule 
+  (lower (has_type ty (fmul x y)))
+  (fpu_rrr (f_arithmatic_op ty (Opcode.Fmul)) ty x y))
+(rule 
+  (lower (has_type ty (fdiv x y)))
+  (fpu_rrr (f_arithmatic_op ty (Opcode.Fdiv)) ty x y))
+
+(rule 
+  (lower (has_type ty (fmin x y)))
+  (gen_float_select (FloatSelectOP.Min) x y ty))
+
+(rule 
+  (lower (has_type ty (fmin_pseudo x y)))
+  (gen_float_select_pseudo (FloatSelectOP.Min) x y ty))
+
+(rule 
+  (lower (has_type ty (fmax x y)))
+  (gen_float_select (FloatSelectOP.Max) x y ty))
+
+(rule 
+  (lower (has_type ty (fmax_pseudo x y)))
+  (gen_float_select_pseudo (FloatSelectOP.Max) x y ty))
+
+;;;;;  Rules for `stack_addr`;;;;;;;;;
+(rule 
+  (lower (stack_addr ss offset))
+  (gen_stack_addr ss offset))
+
+;;;;;  Rules for `is_null`;;;;;;;;;
+(rule
+  (lower (is_null v))
+  (gen_reference_check (ReferenceCheckOP.IsNull) v))
+
+;;;;;  Rules for `is_invalid`;;;;;;;;;
+(rule
+  (lower (is_invalid v))
+  (gen_reference_check (ReferenceCheckOP.IsInvalid) v))
+
+;;;;;  Rules for `select`;;;;;;;;;
+(rule
+  (lower (has_type ty (select c @ (value_type cty) x y)))
+  (gen_select ty (normalize_cmp_value cty c) x y))
+
+(rule 1
+  (lower (has_type ty (select (icmp cc a b) x y)))
+  (gen_select_reg cc a b x y))
+
+;;;;;  Rules for `bitselect`;;;;;;;;;
+
+(rule
+  (lower (has_type ty (bitselect c x y)))
+  (gen_bitselect ty c x y))
+
+;;;;;  Rules for `isplit`;;;;;;;;;
+(rule 
+  (lower (isplit x))
+  (let
+    ((t1 Reg (gen_move2 (value_regs_get x 0) $I64 $I64))
+      (t2 Reg (gen_move2 (value_regs_get x 1) $I64 $I64)))
+    (output_pair t1 t2)))
+
+;;;;;  Rules for `iconcat`;;;;;;;;;
+(rule 
+  (lower (has_type $I128 (iconcat x y)))
+  (let
+    ((t1 Reg (gen_move2 x $I64 $I64))
+      (t2 Reg (gen_move2 y $I64 $I64)))
+    (value_regs t1 t2)))
+
+;;;;;  Rules for `smax`;;;;;;;;;
+(rule
+  (lower (has_type ty (smax x y)))
+  (gen_int_select ty (IntSelectOP.Smax) (ext_int_if_need $true x ty) (ext_int_if_need $true y ty)))
+
+;;;;;  Rules for `smin`;;;;;;;;;
+(rule
+  (lower (has_type ty (smin x y)))
+  (gen_int_select ty (IntSelectOP.Smin) (ext_int_if_need $true x ty) (ext_int_if_need $true y ty)))
+;;;;;  Rules for `umax`;;;;;;;;;
+(rule
+  (lower (has_type ty (umax x y)))
+  (gen_int_select ty (IntSelectOP.Umax) (ext_int_if_need $false x ty) (ext_int_if_need $false y ty)))
+
+;;;;;  Rules for `umin`;;;;;;;;;
+(rule
+  (lower (has_type ty (umin x y)))
+  (gen_int_select ty (IntSelectOP.Umin) (ext_int_if_need $false x ty) (ext_int_if_need $false y ty)))
+
+;;;;;  Rules for `debugtrap`;;;;;;;;;
+(rule
+  (lower (debugtrap))
+  (side_effect (SideEffectNoResult.Inst (MInst.EBreak))))
+
+;;;;;  Rules for `fence`;;;;;;;;;
+(rule
+  (lower (fence))
+  (side_effect (SideEffectNoResult.Inst (MInst.Fence 15 15))))
+
+;;;;;  Rules for `trap`;;;;;;;;;
+(rule
+  (lower (trap code))
+  (udf code))
+
+;;;;;  Rules for `resumable_trap`;;;;;;;;;
+(rule
+  (lower (resumable_trap code))
+  (udf code))
+
+;;;;;  Rules for `uload8`;;;;;;;;;
+(rule
+  (lower (uload8 flags p offset))
+  (gen_load p offset (int_load_op $false 8) flags $I64))
+;;;;;  Rules for `sload8`;;;;;;;;;
+(rule
+  (lower (sload8 flags p offset))
+  (gen_load p offset (int_load_op $true 8) flags $I64))
+;;;;;  Rules for `uload16`;;;;;;;;;
+(rule
+  (lower (uload16 flags p offset))
+  (gen_load p offset (int_load_op $false 16) flags $I64))
+
+;;;;;  Rules for `iload16`;;;;;;;;;
+(rule
+  (lower (sload16 flags p offset))
+  (gen_load p offset (int_load_op $true 16) flags $I64))
+
+;;;;;  Rules for `uload32`;;;;;;;;;
+(rule
+  (lower (uload32 flags p offset))
+  (gen_load p offset (int_load_op $false 32) flags $I64))
+
+;;;;;  Rules for `iload16`;;;;;;;;;
+(rule
+  (lower (sload32 flags p offset))
+  (gen_load p offset (int_load_op $true 32) flags $I64))
+
+(rule
+  (lower (has_type ty (load flags p offset)))
+  (gen_load p offset (load_op ty) flags ty)
+)
+;;;; for I128
+(rule 1
+  (lower (has_type $I128 (load flags p offset)))
+  (gen_load_128 p offset flags))
+
+;;;;;  Rules for `istore8`;;;;;;;;;
+(rule 
+  (lower (istore8 flags x p offset))
+  (gen_store p offset (StoreOP.Sb) flags x))
+;;;;;  Rules for `istore16`;;;;;;;;;
+(rule 
+  (lower (istore16 flags x p offset))
+  (gen_store p offset (StoreOP.Sh) flags x))
+
+;;;;;  Rules for `istore32`;;;;;;;;;
+(rule 
+  (lower (istore32 flags x p offset))
+  (gen_store p offset (StoreOP.Sw) flags x))
+
+;;;;;  Rules for `store`;;;;;;;;;
+(rule
+  (lower (store flags x @ (value_type ty) p offset))
+  (gen_store p offset (store_op ty) flags x))
+
+;;; special for I128
+(rule 1
+  (lower (store flags x @ (value_type $I128 ) p offset))
+  (gen_store_128 p offset flags x))
+
+(decl gen_icmp (IntCC ValueRegs ValueRegs Type) Reg)
+(rule
+  (gen_icmp cc x y ty)
+  (let
+    ((result WritableReg (temp_writable_reg $I64))
+      (_ Unit (emit (MInst.Icmp cc result x y ty))))
+    result))
+
+;;;;;  Rules for `icmp`;;;;;;;;;
+(rule
+  (lower (icmp cc x @ (value_type ty) y))
+  (lower_icmp cc x y ty))
+;; special for `iadd_ifcout` first out.
+(rule 2
+  (lower (icmp cc (iadd_ifcout a @ (value_type ty) b) y))
+  (lower_icmp cc (alu_add a b) y ty))
+
+(rule 1
+  (lower (icmp cc x (iadd_ifcout a @ (value_type ty) b)))
+  (lower_icmp cc x (alu_add a b) ty))
+
+(decl gen_fcmp (FloatCC Value Value Type) Reg)
+(rule
+  (gen_fcmp cc x y ty)
+  (let
+    ((result WritableReg (temp_writable_reg $I64))
+      (_ Unit (emit (MInst.Fcmp cc result x y ty))))
+    (writable_reg_to_reg result)))
+
+;;;;;  Rules for `fcmp`;;;;;;;;;
+(rule
+  (lower (fcmp cc x @ (value_type ty) y))
+  (gen_fcmp cc x y ty))
+
+;;;;;  Rules for `func_addr`;;;;;;;;;
+(rule
+  (lower (func_addr (func_ref_data _ name _)))
+  (load_ext_name name 0))
+
+;;;;;  Rules for `fcvt_to_uint`;;;;;;;;;
+(rule
+  (lower (has_type to (fcvt_to_uint v @ (value_type from))))
+  (gen_fcvt_int $false v $false from to))
+
+;;;;;  Rules for `fcvt_to_sint`;;;;;;;;;
+(rule
+  (lower (has_type to (fcvt_to_sint v @ (value_type from))))
+  (gen_fcvt_int $false v $true from to))
+
+;;;;;  Rules for `fcvt_to_sint_sat`;;;;;;;;;
+(rule
+  (lower (has_type to (fcvt_to_sint_sat v @ (value_type from))))
+  (gen_fcvt_int $true v $true from to))
+
+;;;;;  Rules for `fcvt_to_uint_sat`;;;;;;;;;
+(rule
+  (lower (has_type to (fcvt_to_uint_sat v @ (value_type from))))
+  (gen_fcvt_int $true v $false from to))
+
+;;;;;  Rules for `fcvt_from_sint`;;;;;;;;;
+(rule
+  (lower (has_type to (fcvt_from_sint v @ (value_type from))))
+  (fpu_rr (int_convert_2_float_op from $true to) to v))
+
+;;;;;  Rules for `fcvt_from_uint`;;;;;;;;;
+(rule
+  (lower (has_type to (fcvt_from_uint v @ (value_type from))))
+  (fpu_rr (int_convert_2_float_op from $false to) to v))
+
+;;;;;  Rules for `symbol_value`;;;;;;;;;
+(rule
+   (lower (symbol_value (symbol_value_data name _ offset)))
+   (load_ext_name name offset)
+)
+;;;;;  Rules for `bitcast`;;;;;;;;;
+(rule
+   (lower (has_type out (bitcast _ v @ (value_type in_ty))))
+   (gen_moves v in_ty out))
+
+;;;;;  Rules for `ceil`;;;;;;;;;
+(rule 
+  (lower (has_type ty (ceil x)))
+  (gen_float_round (FloatRoundOP.Ceil) x ty)
+)
+
+;;;;;  Rules for `floor`;;;;;;;;;
+(rule 
+  (lower (has_type ty (floor x)))
+  (gen_float_round (FloatRoundOP.Floor) x ty))
+;;;;;  Rules for `trunc`;;;;;;;;;
+(rule 
+  (lower (has_type ty (trunc x)))
+  (gen_float_round (FloatRoundOP.Trunc) x ty))
+
+;;;;;  Rules for `nearest`;;;;;;;;;
+(rule 
+  (lower (has_type ty (nearest x)))
+  (gen_float_round (FloatRoundOP.Nearest) x ty))
+
+
+;;;;;  Rules for `select_spectre_guard`;;;;;;;;;
+(rule
+  (lower (has_type r_ty (select_spectre_guard (icmp cc ca @ (value_type cty) cb) a b)))
+  (let
+    ((dst VecWritableReg (alloc_vec_writable r_ty))
+      (r Reg (lower_icmp cc ca cb cty))
+      (_ Unit (emit (MInst.SelectIf $true (vec_writable_clone dst) r a b))))
+    (vec_writable_to_regs dst)))
+
+
+;;;;;  Rules for `bmask`;;;;;;;;;
+(rule
+  (lower (has_type oty (bmask x @ (value_type ity))))
+  (lower_bmask oty ity x))
+
+;; N.B.: the Ret itself is generated by the ABI.
+(rule (lower (return args))
+      (lower_return (range 0 (value_slice_len args)) args))
+
+
+;;; Rules for `get_{frame,stack}_pointer` and `get_return_address` ;;;;;;;;;;;;;
+
+(rule (lower (get_frame_pointer))
+  (gen_move2 (x_reg 8) $I64 $I64))
+
+(rule (lower (get_stack_pointer))
+  (gen_move2 (x_reg 2) $I64 $I64))
+
+(rule (lower (get_return_address))
+  (load_ra))
+
+;;; Rules for `iabs` ;;;;;;;;;;;;;
+(rule
+  (lower (has_type (fits_in_64 ty) (iabs x)))
+  (lower_iabs x ty))
+
+;;;; Rules for calls ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (call (func_ref_data sig_ref extname dist) inputs))
+  (gen_call sig_ref extname dist inputs))
+
+(rule (lower (call_indirect sig_ref val inputs))
+  (gen_call_indirect sig_ref val inputs))

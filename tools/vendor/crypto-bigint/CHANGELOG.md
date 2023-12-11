@@ -4,6 +4,86 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.2 (2023-04-26)
+### Added
+- Expose residue params and modulus in `DynResidue` ([#197])
+- Impl `DefaultIsZeroes` for `Residue` ([#210])
+- `div_by_2()` method for integers in Montgomery form ([#211], [#212])
+
+### Changed
+- Montgomery multiplication improvements ([#203])
+
+[#197]: https://github.com/RustCrypto/crypto-bigint/pull/197
+[#203]: https://github.com/RustCrypto/crypto-bigint/pull/203
+[#210]: https://github.com/RustCrypto/crypto-bigint/pull/210
+[#211]: https://github.com/RustCrypto/crypto-bigint/pull/211
+[#212]: https://github.com/RustCrypto/crypto-bigint/pull/212
+
+## 0.5.1 (2023-03-13)
+### Changed
+- Improve `Debug` impls on `Limb` and `Uint` ([#195])
+
+### Fixed
+- `const_residue` macro accessibility bug ([#193])
+
+[#193]: https://github.com/RustCrypto/crypto-bigint/pull/193
+[#195]: https://github.com/RustCrypto/crypto-bigint/pull/195
+
+## 0.5.0 (2023-02-27)
+### Added
+- `Residue`: modular arithmetic with static compile-time moduli ([#130])
+- `DynResidue`: modular arithmetic with dynamic runtime moduli ([#134])
+- Constant-time division by a single `Limb` ([#141])
+- Windowed exponentiation for `(Dyn)Residue` ([#147])
+- `SubResidue` trait and impls for `Residue` and `DynResidue` ([#149])
+- `Pow`, `Invert` and `Square` ([#155])
+- `CtChoice` type ([#159])
+- `BITS`, `BYTES`, and `LIMBS` to `Integer` trait ([#161])
+- Impl `Random` for `Wrapping` ([#168])
+- Support to concat `U320` and `U640` ([#173])
+- Define `U224` and `U544` on 32-bit platforms ([#179], [#180])
+
+### Changed
+- Rename `UInt` -> `Uint` ([#143])
+- Rename `Uint` methods ([#144])
+  - `limbs` -> `as_limbs`
+  - `limbs_mut` -> `as_limbs_mut`
+  - `into_limbs` -> `to_limbs`
+- Faster `random_mod` ([#146])
+- Constant-time `leading_zeros()`, `trailing_zeros()`, `bits()`, and `bit()` for `Uint` ([#153])
+- Rename `BIT_SIZE` -> `BITS`, `BYTE_SIZE` -> `BYTES` ([#157])
+- More efficient squaring operation ([#133])
+- Use `CryptoRngCore` ([#164])
+- Bump `serdect` to 0.2 ([#185])
+- Bump `der` dependency to v0.7; MSRV 1.65 ([#187])
+
+### Fixed
+- Integer overflow in `div2by1()` ([#156])
+- Convert from tuple element ordering ([#183])
+
+[#130]: https://github.com/RustCrypto/crypto-bigint/pull/130
+[#134]: https://github.com/RustCrypto/crypto-bigint/pull/134
+[#141]: https://github.com/RustCrypto/crypto-bigint/pull/141
+[#143]: https://github.com/RustCrypto/crypto-bigint/pull/143
+[#144]: https://github.com/RustCrypto/crypto-bigint/pull/144
+[#146]: https://github.com/RustCrypto/crypto-bigint/pull/146
+[#147]: https://github.com/RustCrypto/crypto-bigint/pull/147
+[#149]: https://github.com/RustCrypto/crypto-bigint/pull/149
+[#153]: https://github.com/RustCrypto/crypto-bigint/pull/153
+[#155]: https://github.com/RustCrypto/crypto-bigint/pull/155
+[#156]: https://github.com/RustCrypto/crypto-bigint/pull/156
+[#157]: https://github.com/RustCrypto/crypto-bigint/pull/157
+[#159]: https://github.com/RustCrypto/crypto-bigint/pull/159
+[#161]: https://github.com/RustCrypto/crypto-bigint/pull/161
+[#164]: https://github.com/RustCrypto/crypto-bigint/pull/164
+[#168]: https://github.com/RustCrypto/crypto-bigint/pull/168
+[#173]: https://github.com/RustCrypto/crypto-bigint/pull/173
+[#179]: https://github.com/RustCrypto/crypto-bigint/pull/179
+[#180]: https://github.com/RustCrypto/crypto-bigint/pull/180
+[#183]: https://github.com/RustCrypto/crypto-bigint/pull/183
+[#185]: https://github.com/RustCrypto/crypto-bigint/pull/185
+[#187]: https://github.com/RustCrypto/crypto-bigint/pull/187
+
 ## 0.4.9 (2022-10-11)
 ### Added
 - `UInt::from_word` and `::from_wide_word` ([#105])

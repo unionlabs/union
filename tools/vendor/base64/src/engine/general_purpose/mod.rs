@@ -2,13 +2,14 @@
 use crate::{
     alphabet,
     alphabet::Alphabet,
-    engine::{Config, DecodePaddingMode},
+    engine::{Config, DecodeMetadata, DecodePaddingMode},
     DecodeError,
 };
 use core::convert::TryInto;
 
 mod decode;
 pub(crate) mod decode_suffix;
+
 pub use decode::GeneralPurposeEstimate;
 
 pub(crate) const INVALID_VALUE: u8 = 255;
@@ -170,7 +171,7 @@ impl super::Engine for GeneralPurpose {
         input: &[u8],
         output: &mut [u8],
         estimate: Self::DecodeEstimate,
-    ) -> Result<usize, DecodeError> {
+    ) -> Result<DecodeMetadata, DecodeError> {
         decode::decode_helper(
             input,
             estimate,

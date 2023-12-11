@@ -6,7 +6,7 @@ macro_rules! format_trait {
         // This trait allows us to use the default tester macro instead of creating a custom one
         pub trait Format {
             $(
-                fn $method(&self) -> String;
+                fn $method(&self, width: Option<u8>, extra: bool) -> String;
             )*
         }
     };
@@ -19,8 +19,20 @@ format_trait!(binary, lower_hex, upper_hex, octal, display, debug, lower_exp, up
 macro_rules! impl_format_method {
     { $($name: ident : $format: literal), * } => {
         $(
-            fn $name(&self) -> String {
-                format!(concat!("{:", $format, "}"), self)
+            fn $name(&self, width: Option<u8>, extra: bool) -> String {
+                if let Some(width) = width {
+                    if extra {
+                        format!(concat!("{:+#0width$", $format, "}"), self, width = width as usize)
+                    } else {
+                        format!(concat!("{:width$", $format, "}"), self, width = width as usize)
+                    }
+                } else {
+                    if extra {
+                        format!(concat!("{:+#", $format, "}"), self)
+                    } else {
+                        format!(concat!("{:", $format, "}"), self)
+                    }
+                }
             }
         )*
     };
@@ -57,7 +69,7 @@ macro_rules! test_formats {
     ($ty: ty; $($name: ident), *) => {
         $(
             test_bignum! {
-                function: <$ty as Format>::$name(a: ref &$ty)
+                function: <$ty as Format>::$name(a: ref &$ty, width: u8, extra: bool)
             }
         )*
     };

@@ -148,11 +148,6 @@ pub fn decode_engine_slice<E: Engine, T: AsRef<[u8]>>(
 /// // start of the next quad of encoded symbols
 /// assert_eq!(6, decoded_len_estimate(5));
 /// ```
-///
-/// # Panics
-///
-/// Panics if decoded length estimation overflows.
-/// This would happen for sizes within a few bytes of the maximum value of `usize`.
 pub fn decoded_len_estimate(encoded_len: usize) -> usize {
     STANDARD
         .internal_decoded_len_estimate(encoded_len)

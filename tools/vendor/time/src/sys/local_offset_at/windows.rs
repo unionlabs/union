@@ -2,6 +2,7 @@
 
 use core::mem::MaybeUninit;
 
+use crate::convert::*;
 use crate::{OffsetDateTime, UtcOffset};
 
 // ffi: WINAPI FILETIME struct
@@ -56,7 +57,7 @@ fn systemtime_to_filetime(systime: &SystemTime) -> Option<FileTime> {
 /// Convert a `FILETIME` to an `i64`, representing a number of seconds.
 fn filetime_to_secs(filetime: &FileTime) -> i64 {
     /// FILETIME represents 100-nanosecond intervals
-    const FT_TO_SECS: i64 = 10_000_000;
+    const FT_TO_SECS: i64 = Nanosecond.per(Second) as i64 / 100;
     ((filetime.dwHighDateTime as i64) << 32 | filetime.dwLowDateTime as i64) / FT_TO_SECS
 }
 

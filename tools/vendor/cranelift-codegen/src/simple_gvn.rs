@@ -24,9 +24,7 @@ fn trivially_unsafe_for_gvn(opcode: Opcode) -> bool {
 /// Test that, if the specified instruction is a load, it doesn't have the `readonly` memflag.
 fn is_load_and_not_readonly(inst_data: &InstructionData) -> bool {
     match *inst_data {
-        InstructionData::Load { flags, .. } | InstructionData::LoadComplex { flags, .. } => {
-            !flags.readonly()
-        }
+        InstructionData::Load { flags, .. } => !flags.readonly(),
         _ => inst_data.opcode().can_load(),
     }
 }
@@ -117,7 +115,7 @@ pub fn do_simple_gvn(func: &mut Function, domtree: &mut DominatorTree) {
 
             let ctrl_typevar = func.dfg.ctrl_typevar(inst);
             let key = HashKey {
-                inst: func.dfg[inst].clone(),
+                inst: func.dfg[inst],
                 ty: ctrl_typevar,
                 pos: &pos,
             };

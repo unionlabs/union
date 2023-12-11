@@ -26,9 +26,10 @@ pub trait Isogeny: Field + AddAssign + Mul<Output = Self> {
     const COEFFICIENTS: IsogenyCoefficients<Self>;
 
     /// Map from the isogeny points to the main curve
+    #[allow(clippy::integer_arithmetic)]
     fn isogeny(x: Self, y: Self) -> (Self, Self) {
         let mut xs = GenericArray::<Self, Self::Degree>::default();
-        xs[0] = Self::one();
+        xs[0] = Self::ONE;
         xs[1] = x;
         xs[2] = x.square();
         for i in 3..Self::Degree::to_usize() {
@@ -48,7 +49,7 @@ pub trait Isogeny: Field + AddAssign + Mul<Output = Self> {
 
     /// Compute the ISO transform
     fn compute_iso(xxs: &[Self], k: &[Self]) -> Self {
-        let mut xx = Self::zero();
+        let mut xx = Self::ZERO;
         for (xi, ki) in xxs.iter().zip(k.iter()) {
             xx += *xi * ki;
         }

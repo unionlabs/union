@@ -28,6 +28,10 @@
 //! * [`CLruCache::try_put_or_modify`]: fallible version of [`CLruCache::put_or_modify`].
 //! * All APIs that allow to retrieve a mutable reference to a value (e.g.: [`CLruCache::get_mut`]).
 //!
+//! The cache requires the keys to be clonable because it will store 2 instances
+//! of each key in different internal data structures. If cloning a key can be
+//! expensive, you might want to consider using an [`std::rc::Rc`] or an [`std::sync::Arc`].
+//!
 //! ## Examples
 //!
 //! ### Using the default [`ZeroWeightScale`]:
@@ -94,441 +98,24 @@
 #![deny(warnings)]
 
 mod config;
+mod list;
 mod weight;
 
 pub use crate::config::*;
+use crate::list::{FixedSizeList, FixedSizeListIter, FixedSizeListIterMut};
 pub use crate::weight::*;
 
 use std::borrow::Borrow;
-use std::cmp::Ordering;
 use std::collections::hash_map::Entry;
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::hash::{BuildHasher, Hash};
+use std::iter::FromIterator;
 use std::num::NonZeroUsize;
-use std::ptr::NonNull;
-use std::rc::Rc;
 
 #[derive(Debug)]
-struct FixedSizeListNode<T> {
-    prev: usize,
-    next: usize,
-    data: T,
-}
-
-#[derive(Debug)]
-struct FixedSizeList<T> {
-    capacity: usize,
-    nodes: Vec<Option<FixedSizeListNode<T>>>,
-    // An un-ordered set of indices that are not in use in `nodes`.
-    // All `None` entries in `nodes` _must_ be listed in `free`.
-    // A `Vec<usize>` was choosen in order to have O(1) complexity
-    // for pop and avoid having to go through `nodes` in order to
-    // to find a free place.
-    free: Vec<usize>,
-    front: usize,
-    back: usize,
-}
-
-impl<T> FixedSizeList<T> {
-    fn new(capacity: usize) -> Self {
-        Self {
-            capacity,
-            nodes: Vec::new(),
-            free: Vec::new(),
-            front: usize::MAX,
-            back: usize::MAX,
-        }
-    }
-
-    fn with_memory(capacity: usize, mut reserve: usize) -> Self {
-        if reserve > capacity {
-            reserve = capacity;
-        }
-        Self {
-            capacity,
-            nodes: Vec::with_capacity(reserve),
-            free: Vec::new(),
-            front: usize::MAX,
-            back: usize::MAX,
-        }
-    }
-
-    fn capacity(&self) -> usize {
-        self.capacity
-    }
-
-    fn len(&self) -> usize {
-        self.nodes.len() - self.free.len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    fn is_full(&self) -> bool {
-        self.len() == self.capacity()
-    }
-
-    fn clear(&mut self) {
-        self.nodes.clear();
-        self.free.clear();
-        self.front = usize::MAX;
-        self.back = usize::MAX;
-    }
-
-    fn next(&mut self) -> Option<usize> {
-        if self.is_full() {
-            None
-        } else if self.free.is_empty() {
-            let len = self.len();
-            self.nodes.push(None);
-            Some(len)
-        } else {
-            self.free.pop()
-        }
-    }
-
-    fn node_ref(&self, idx: usize) -> Option<&FixedSizeListNode<T>> {
-        self.nodes.get(idx).and_then(|node| node.as_ref())
-    }
-
-    fn node_mut(&mut self, idx: usize) -> Option<&mut FixedSizeListNode<T>> {
-        self.nodes.get_mut(idx).and_then(|node| node.as_mut())
-    }
-
-    fn front(&self) -> Option<&T> {
-        self.node_ref(self.front).map(|node| &node.data)
-    }
-
-    fn front_mut(&mut self) -> Option<&mut T> {
-        self.node_mut(self.front).map(|node| &mut node.data)
-    }
-
-    fn back(&self) -> Option<&T> {
-        self.node_ref(self.back).map(|node| &node.data)
-    }
-
-    fn back_mut(&mut self) -> Option<&mut T> {
-        self.node_mut(self.back).map(|node| &mut node.data)
-    }
-
-    fn push_front(&mut self, data: T) -> Option<(usize, &mut T)> {
-        let idx = self.next()?;
-        self.nodes[idx] = Some(FixedSizeListNode {
-            prev: usize::MAX,
-            next: self.front,
-            data,
-        });
-        if let Some(front) = self.node_mut(self.front) {
-            front.prev = idx;
-        }
-        if self.node_ref(self.back).is_none() {
-            self.back = idx;
-        }
-        self.front = idx;
-        Some((idx, &mut self.nodes[idx].as_mut().unwrap().data))
-    }
-
-    #[cfg(test)]
-    fn push_back(&mut self, data: T) -> Option<(usize, &mut T)> {
-        let idx = self.next()?;
-        self.nodes[idx] = Some(FixedSizeListNode {
-            prev: self.back,
-            next: usize::MAX,
-            data,
-        });
-        if let Some(back) = self.node_mut(self.back) {
-            back.next = idx;
-        }
-        if self.node_ref(self.front).is_none() {
-            self.front = idx;
-        }
-        self.back = idx;
-        Some((idx, &mut self.nodes[idx].as_mut().unwrap().data))
-    }
-
-    fn pop_front(&mut self) -> Option<T> {
-        self.remove(self.front)
-    }
-
-    fn pop_back(&mut self) -> Option<T> {
-        self.remove(self.back)
-    }
-
-    fn remove(&mut self, idx: usize) -> Option<T> {
-        let node = self.nodes.get_mut(idx)?.take()?;
-        if let Some(prev) = self.node_mut(node.prev) {
-            prev.next = node.next;
-        } else {
-            self.front = node.next;
-        }
-        if let Some(next) = self.node_mut(node.next) {
-            next.prev = node.prev;
-        } else {
-            self.back = node.prev;
-        }
-        self.free.push(idx);
-        Some(node.data)
-    }
-
-    fn iter(&self) -> FixedSizeListIter<'_, T> {
-        FixedSizeListIter {
-            list: self,
-            front: self.front,
-            back: self.back,
-            len: self.len(),
-        }
-    }
-
-    fn iter_mut(&mut self) -> FixedSizeListIterMut<'_, T> {
-        let front = self.front;
-        let back = self.back;
-        let len = self.len();
-        FixedSizeListIterMut::new(&mut self.nodes, front, back, len)
-    }
-
-    fn reorder(&mut self) {
-        if self.is_empty() {
-            return;
-        }
-
-        let len = self.len();
-        let mut current = 0;
-        while current < len {
-            let front = self.front;
-            let front_data = self.pop_front().unwrap();
-            if front != current {
-                debug_assert!(current < front, "{} < {}", current, front);
-                // We need to free self.nodes[current] if its occupied
-                if let Some(current_node) = self.nodes[current].take() {
-                    if let Some(node) = self.node_mut(current_node.prev) {
-                        node.next = front;
-                    } else {
-                        self.front = front;
-                    }
-                    if let Some(node) = self.node_mut(current_node.next) {
-                        node.prev = front;
-                    } else {
-                        self.back = front;
-                    }
-                    self.nodes[front] = Some(current_node);
-                }
-            }
-            // Assign new front node
-            self.nodes[current] = Some(FixedSizeListNode {
-                prev: current.wrapping_sub(1),
-                next: current + 1,
-                data: front_data,
-            });
-            current += 1;
-        }
-        self.front = 0;
-        self.nodes[len - 1].as_mut().unwrap().next = usize::MAX;
-        self.back = len - 1;
-        self.free.clear();
-        self.free.extend((len..self.nodes.len()).rev());
-    }
-
-    fn resize(&mut self, capacity: usize) {
-        let len = self.len();
-        let cap = self.capacity();
-        match capacity.cmp(&cap) {
-            Ordering::Less => {
-                self.reorder();
-                self.nodes.truncate(capacity);
-                self.free.clear();
-                self.free.extend(len..self.nodes.len());
-                self.capacity = capacity;
-            }
-            Ordering::Equal => {}
-            Ordering::Greater => {
-                self.capacity = capacity;
-            }
-        };
-        debug_assert_eq!(self.len(), len);
-        debug_assert_eq!(self.capacity(), capacity);
-    }
-}
-
-#[derive(Clone, Debug)]
-struct FixedSizeListIter<'a, T> {
-    list: &'a FixedSizeList<T>,
-    front: usize,
-    back: usize,
-    len: usize,
-}
-
-impl<'a, T> Iterator for FixedSizeListIter<'a, T> {
-    type Item = (usize, &'a T);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.len > 0 {
-            let front = self.front;
-            let node = self.list.node_ref(front).unwrap();
-            self.front = node.next;
-            self.len -= 1;
-            Some((front, &node.data))
-        } else {
-            None
-        }
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.len, Some(self.len))
-    }
-}
-
-impl<'a, T> DoubleEndedIterator for FixedSizeListIter<'a, T> {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        if self.len > 0 {
-            let back = self.back;
-            let node = self.list.node_ref(back).unwrap();
-            self.back = node.prev;
-            self.len -= 1;
-            Some((back, &node.data))
-        } else {
-            None
-        }
-    }
-}
-
-impl<'a, T> ExactSizeIterator for FixedSizeListIter<'a, T> {
-    fn len(&self) -> usize {
-        self.size_hint().0
-    }
-}
-
-struct FixedSizeListIterMut<'a, T> {
-    ptr: NonNull<Option<FixedSizeListNode<T>>>,
-    front: usize,
-    back: usize,
-    len: usize,
-    _marker: std::marker::PhantomData<&'a mut T>,
-}
-
-impl<'a, T> FixedSizeListIterMut<'a, T> {
-    #[allow(unsafe_code)]
-    fn new(
-        slice: &'a mut [Option<FixedSizeListNode<T>>],
-        front: usize,
-        back: usize,
-        len: usize,
-    ) -> Self {
-        let ptr = slice.as_mut_ptr();
-        Self {
-            ptr: unsafe { NonNull::new_unchecked(ptr) },
-            front,
-            back,
-            len,
-            _marker: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<'a, T> Iterator for FixedSizeListIterMut<'a, T> {
-    type Item = (usize, &'a mut T);
-
-    #[allow(unsafe_code)]
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.len > 0 {
-            let front = self.front;
-
-            // Safety:
-            // * `self.ptr` is a valid non null pointer since it can only be created through `FixedSizeListIterMut::new`.
-            // * `front` is guaranteed to be a valid index within the slice pointed to by `self.ptr`.
-            // Notes: implementation is inspired by the iterator over mutable slice from the standard rust library
-            // * https://doc.rust-lang.org/src/core/slice/iter.rs.html
-            // * https://doc.rust-lang.org/src/core/slice/iter/macros.rs.html
-            let node_ref = unsafe {
-                let ptr = NonNull::new_unchecked(self.ptr.as_ptr().add(front)).as_ptr();
-                &mut *ptr
-            };
-
-            let node = node_ref.as_mut().unwrap();
-            self.front = node.next;
-            self.len -= 1;
-            Some((front, &mut node.data))
-        } else {
-            None
-        }
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.len, Some(self.len))
-    }
-}
-
-impl<'a, T> DoubleEndedIterator for FixedSizeListIterMut<'a, T> {
-    #[allow(unsafe_code)]
-    fn next_back(&mut self) -> Option<Self::Item> {
-        if self.len > 0 {
-            let back = self.back;
-
-            // Safety:
-            // * `self.ptr` is a valid non null pointer since it can only be created through `FixedSizeListIterMut::new`.
-            // * `back` is guaranteed to be a valid index within the slice pointed to by `self.ptr`.
-            // Notes: implementation is inspired by the iterator over mutable slice from the standard rust library
-            // * https://doc.rust-lang.org/src/core/slice/iter.rs.html
-            // * https://doc.rust-lang.org/src/core/slice/iter/macros.rs.html
-            let node_ref = unsafe {
-                let ptr = NonNull::new_unchecked(self.ptr.as_ptr().add(back)).as_ptr();
-                &mut *ptr
-            };
-
-            let node = node_ref.as_mut().unwrap();
-            self.back = node.prev;
-            self.len -= 1;
-            Some((back, &mut node.data))
-        } else {
-            None
-        }
-    }
-}
-
-impl<'a, T> ExactSizeIterator for FixedSizeListIterMut<'a, T> {
-    fn len(&self) -> usize {
-        self.size_hint().0
-    }
-}
-
-#[derive(Debug, Eq, Hash, PartialEq)]
-struct Key<K>(Rc<K>);
-
-impl<K> Clone for Key<K> {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
-}
-
-impl<K> AsRef<K> for Key<K> {
-    fn as_ref(&self) -> &K {
-        &*self.0
-    }
-}
-
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-#[repr(transparent)]
-struct KeyRef<Q: ?Sized>(Q);
-
-impl<Q: ?Sized> From<&Q> for &KeyRef<Q> {
-    #[allow(unsafe_code)]
-    fn from(value: &Q) -> Self {
-        // Safety: this is safe because `KeyRef` is a newtype around Q
-        // and is marked as `#[repr(transparent)]`
-        unsafe { &*(value as *const Q as *const KeyRef<Q>) }
-    }
-}
-
-impl<Q: ?Sized, K: Borrow<Q>> Borrow<KeyRef<Q>> for Key<K> {
-    fn borrow(&self) -> &KeyRef<Q> {
-        (&*self.0).borrow().into()
-    }
-}
-
-#[derive(Clone, Debug)]
 struct CLruNode<K, V> {
-    key: Key<K>,
+    key: K,
     value: V,
 }
 
@@ -543,22 +130,28 @@ struct CLruNode<K, V> {
 /// [`CLruCache::len`] + [`CLruCache::weight`] <= [`CLruCache::capacity`]
 ///
 /// Using the default [`ZeroWeightScale`] scale unlocks some useful APIs
-/// that can currently only be implemented for this scale. Namely:
+/// that can currently only be implemented for this scale. The most interesting
+/// ones are probably:
 ///
 /// * [`CLruCache::put`]
 /// * [`CLruCache::put_or_modify`]
 /// * [`CLruCache::try_put_or_modify`]
 ///
-/// And also all methods that return a mutable reference to the value of an element.
-/// This is because modifying the value of an element can lead the modification
+/// But more generally, using [`ZeroWeightScale`] unlocks all methods that return
+/// a mutable reference to the value of an element.
+/// This is because modifying the value of an element can lead to a modification
 /// of its weight and therefore would put the cache into an incoherent state.
 /// For the same reason, it is a logic error for a value to change weight while
 /// being stored in the cache.
 ///
+/// The cache requires the keys to be clonable because it will store 2 instances
+/// of each key in different internal data structures. If cloning a key can be
+/// expensive, you might want to consider using an `Rc` or an `Arc`.
+///
 /// Note 1: See [`CLruCache::put_with_weight`]
 #[derive(Debug)]
 pub struct CLruCache<K, V, S = RandomState, W: WeightScale<K, V> = ZeroWeightScale> {
-    lookup: HashMap<Key<K>, usize, S>,
+    lookup: HashMap<K, usize, S>,
     storage: FixedSizeList<CLruNode<K, V>>,
     scale: W,
     weight: usize,
@@ -617,7 +210,7 @@ impl<K: Eq + Hash, V, W: WeightScale<K, V>> CLruCache<K, V, RandomState, W> {
     }
 }
 
-impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W> {
+impl<K: Clone + Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W> {
     /// Creates a new LRU cache using the provided configuration.
     pub fn with_config(config: CLruCacheConfig<K, V, S, W>) -> Self {
         let CLruCacheConfig {
@@ -640,6 +233,7 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
     }
 
     /// Returns the number of key-value pairs that are currently in the cache.
+    #[inline]
     pub fn len(&self) -> usize {
         debug_assert_eq!(self.lookup.len(), self.storage.len());
         self.storage.len()
@@ -648,22 +242,26 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
     /// Returns the capacity of the cache. It serves as a limit for
     /// * the number of elements that the cache can hold.
     /// * the total weight of the elements in the cache.
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.storage.capacity()
     }
 
     /// Returns the total weight of the elements in the cache.
+    #[inline]
     pub fn weight(&self) -> usize {
         self.weight
     }
 
     /// Returns a bool indicating whether the cache is empty or not.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         debug_assert_eq!(self.lookup.is_empty(), self.storage.is_empty());
         self.storage.is_empty()
     }
 
     /// Returns a bool indicating whether the cache is full or not.
+    #[inline]
     pub fn is_full(&self) -> bool {
         self.len() + self.weight() == self.capacity()
     }
@@ -673,7 +271,7 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
     pub fn front(&self) -> Option<(&K, &V)> {
         self.storage
             .front()
-            .map(|CLruNode { key, value }| (key.as_ref(), value))
+            .map(|CLruNode { key, value }| (key, value))
     }
 
     /// Returns the value corresponding to the least recently used item or `None` if the cache is empty.
@@ -681,7 +279,7 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
     pub fn back(&self) -> Option<(&K, &V)> {
         self.storage
             .back()
-            .map(|CLruNode { key, value }| (key.as_ref(), value))
+            .map(|CLruNode { key, value }| (key, value))
     }
 
     /// Puts a key-value pair into cache taking it's weight into account.
@@ -696,15 +294,15 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
         if weight >= self.capacity() {
             return Err((key, value));
         }
-        match self.lookup.entry(Key(Rc::new(key))) {
+        match self.lookup.entry(key) {
             Entry::Occupied(mut occ) => {
                 // TODO: store keys in the cache itself for reuse.
                 let mut keys = Vec::new();
                 let old = self.storage.remove(*occ.get()).unwrap();
-                self.weight -= self.scale.weight(old.key.as_ref(), &old.value);
+                self.weight -= self.scale.weight(&old.key, &old.value);
                 while self.storage.len() + self.weight + weight >= self.storage.capacity() {
                     let node = self.storage.pop_back().unwrap();
-                    self.weight -= self.scale.weight(node.key.as_ref(), &node.value);
+                    self.weight -= self.scale.weight(&node.key, &node.value);
                     keys.push(node.key);
                 }
                 // It's fine to unwrap here because:
@@ -728,7 +326,7 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
                 let mut keys = Vec::new();
                 while self.storage.len() + self.weight + weight >= self.storage.capacity() {
                     let node = self.storage.pop_back().unwrap();
-                    self.weight -= self.scale.weight(node.key.as_ref(), &node.value);
+                    self.weight -= self.scale.weight(&node.key, &node.value);
                     keys.push(node.key);
                 }
                 // It's fine to unwrap here because:
@@ -758,12 +356,8 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let key: &KeyRef<Q> = key.into();
         let idx = *self.lookup.get(key)?;
-        let value = self.storage.remove(idx)?;
-        self.storage
-            .push_front(value)
-            .map(|(_, CLruNode { value, .. })| &*value)
+        self.storage.move_front(idx).map(|node| &node.value)
     }
 
     /// Removes and returns the value corresponding to the key from the cache or `None` if it does not exist.
@@ -772,10 +366,9 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let key: &KeyRef<Q> = key.into();
         let idx = self.lookup.remove(key)?;
         self.storage.remove(idx).map(|CLruNode { key, value, .. }| {
-            self.weight -= self.scale.weight(key.as_ref(), &value);
+            self.weight -= self.scale.weight(&key, &value);
             value
         })
     }
@@ -784,11 +377,7 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
     pub fn pop_front(&mut self) -> Option<(K, V)> {
         if let Some(CLruNode { key, value }) = self.storage.pop_front() {
             self.lookup.remove(&key).unwrap();
-            self.weight -= self.scale.weight(key.as_ref(), &value);
-            let key = match Rc::try_unwrap(key.0) {
-                Ok(key) => key,
-                Err(_) => unreachable!(),
-            };
+            self.weight -= self.scale.weight(&key, &value);
             Some((key, value))
         } else {
             None
@@ -799,11 +388,7 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
     pub fn pop_back(&mut self) -> Option<(K, V)> {
         if let Some(CLruNode { key, value }) = self.storage.pop_back() {
             self.lookup.remove(&key).unwrap();
-            self.weight -= self.scale.weight(key.as_ref(), &value);
-            let key = match Rc::try_unwrap(key.0) {
-                Ok(key) => key,
-                Err(_) => unreachable!(),
-            };
+            self.weight -= self.scale.weight(&key, &value);
             Some((key, value))
         } else {
             None
@@ -817,9 +402,8 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let key: &KeyRef<Q> = key.into();
         let idx = *self.lookup.get(key)?;
-        self.storage.node_ref(idx).map(|node| &node.data.value)
+        self.storage.get(idx).map(|node| &node.value)
     }
 
     /// Returns a bool indicating whether the given key is in the cache.
@@ -833,9 +417,11 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
     }
 
     /// Clears the contents of the cache.
+    #[inline]
     pub fn clear(&mut self) {
         self.lookup.clear();
         self.storage.clear();
+        self.weight = 0;
     }
 
     /// Resizes the cache.
@@ -844,12 +430,12 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
         while capacity.get() < self.storage.len() + self.weight() {
             if let Some(CLruNode { key, value }) = self.storage.pop_back() {
                 self.lookup.remove(&key).unwrap();
-                self.weight -= self.scale.weight(key.as_ref(), &value);
+                self.weight -= self.scale.weight(&key, &value);
             }
         }
         self.storage.resize(capacity.get());
         for i in 0..self.len() {
-            let FixedSizeListNode { data, .. } = self.storage.node_ref(i).unwrap();
+            let data = self.storage.get(i).unwrap();
             *self.lookup.get_mut(&data.key).unwrap() = i;
         }
     }
@@ -860,20 +446,17 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> CLruCache<K, V, S, W
     where
         F: FnMut(&K, &V) -> bool,
     {
-        let mut front = self.storage.front;
-        while front != usize::MAX {
-            let node = self.storage.node_mut(front).unwrap();
-            let next = node.next;
-            let CLruNode {
-                ref key,
-                ref mut value,
-            } = node.data;
-            if !f(key.as_ref(), value) {
-                self.lookup.remove(&node.data.key).unwrap();
-                self.storage.remove(front);
-            }
-            front = next;
-        }
+        self.storage.retain(
+            #[inline]
+            |CLruNode { ref key, ref value }| {
+                if f(key, value) {
+                    true
+                } else {
+                    self.lookup.remove(key).unwrap();
+                    false
+                }
+            },
+        )
     }
 }
 
@@ -887,45 +470,35 @@ impl<K, V, S, W: WeightScale<K, V>> CLruCache<K, V, S, W> {
     }
 }
 
-impl<K: Eq + Hash, V, S: BuildHasher> CLruCache<K, V, S> {
+impl<K: Clone + Eq + Hash, V, S: BuildHasher> CLruCache<K, V, S> {
     /// Puts a key-value pair into cache.
     /// If the key already exists in the cache, then it updates the key's value and returns the old value.
     /// Otherwise, `None` is returned.
     pub fn put(&mut self, key: K, value: V) -> Option<V> {
-        match self.lookup.entry(Key(Rc::new(key))) {
-            Entry::Occupied(mut occ) => {
-                let old = self.storage.remove(*occ.get());
+        match self.lookup.entry(key) {
+            Entry::Occupied(occ) => {
                 // It's fine to unwrap here because:
-                // * the cache capacity is non zero
-                // * the cache cannot be full
-                let (idx, _) = self
-                    .storage
-                    .push_front(CLruNode {
-                        key: occ.key().clone(),
-                        value,
-                    })
-                    .unwrap();
-                occ.insert(idx);
-                old.map(|CLruNode { value, .. }| value)
+                // * the entry already exists
+                let node = self.storage.move_front(*occ.get()).unwrap();
+                Some(std::mem::replace(&mut node.value, value))
             }
             Entry::Vacant(vac) => {
-                let mut obsolete_key = None;
+                let key = vac.key().clone();
                 if self.storage.is_full() {
-                    obsolete_key = self.storage.pop_back().map(|CLruNode { key, .. }| key);
-                }
-                // It's fine to unwrap here because:
-                // * the cache capacity is non zero
-                // * the cache cannot be full
-                let (idx, _) = self
-                    .storage
-                    .push_front(CLruNode {
-                        key: vac.key().clone(),
-                        value,
-                    })
-                    .unwrap();
-                vac.insert(idx);
-                if let Some(obsolete_key) = obsolete_key {
+                    let idx = self.storage.back_idx();
+                    // It's fine to unwrap here because:
+                    // * the cache capacity is non zero
+                    // * the cache is full
+                    let node = self.storage.move_front(idx).unwrap();
+                    let obsolete_key = std::mem::replace(node, CLruNode { key, value }).key;
+                    vac.insert(idx);
                     self.lookup.remove(&obsolete_key);
+                } else {
+                    // It's fine to unwrap here because:
+                    // * the cache capacity is non zero
+                    // * the cache is not full
+                    let (idx, _) = self.storage.push_front(CLruNode { key, value }).unwrap();
+                    vac.insert(idx);
                 }
                 None
             }
@@ -947,44 +520,35 @@ impl<K: Eq + Hash, V, S: BuildHasher> CLruCache<K, V, S> {
         mut modify_op: M,
         data: T,
     ) -> &mut V {
-        match self.lookup.entry(Key(Rc::new(key))) {
-            Entry::Occupied(mut occ) => {
-                let node = self.storage.remove(*occ.get()).unwrap();
+        match self.lookup.entry(key) {
+            Entry::Occupied(occ) => {
                 // It's fine to unwrap here because:
-                // * the cache capacity is non zero
-                // * the cache cannot be full
-                let (idx, node) = self
-                    .storage
-                    .push_front(CLruNode {
-                        key: occ.key().clone(),
-                        value: node.value,
-                    })
-                    .unwrap();
-                occ.insert(idx);
-                modify_op(occ.key().as_ref(), &mut node.value, data);
+                // * the entry already exists
+                let node = self.storage.move_front(*occ.get()).unwrap();
+                modify_op(&node.key, &mut node.value, data);
                 &mut node.value
             }
             Entry::Vacant(vac) => {
-                let value = put_op(vac.key().as_ref(), data);
-                let mut obsolete_key = None;
+                let key = vac.key().clone();
+                let value = put_op(&key, data);
                 if self.storage.is_full() {
-                    obsolete_key = self.storage.pop_back().map(|CLruNode { key, .. }| key);
-                }
-                // It's fine to unwrap here because:
-                // * the cache capacity is non zero
-                // * the cache cannot be full
-                let (idx, node) = self
-                    .storage
-                    .push_front(CLruNode {
-                        key: vac.key().clone(),
-                        value,
-                    })
-                    .unwrap();
-                vac.insert(idx);
-                if let Some(obsolete_key) = obsolete_key {
+                    let index = self.storage.back_idx();
+                    // It's fine to unwrap here because:
+                    // * the cache capacity is non zero
+                    // * the cache is full
+                    let node = self.storage.move_front(index).unwrap();
+                    let obsolete_key = std::mem::replace(node, CLruNode { key, value }).key;
+                    vac.insert(index);
                     self.lookup.remove(&obsolete_key);
+                    &mut node.value
+                } else {
+                    // It's fine to unwrap here because:
+                    // * the cache capacity is non zero
+                    // * the cache cannot be full
+                    let (idx, node) = self.storage.push_front(CLruNode { key, value }).unwrap();
+                    vac.insert(idx);
+                    &mut node.value
                 }
-                &mut node.value
             }
         }
     }
@@ -1011,49 +575,40 @@ impl<K: Eq + Hash, V, S: BuildHasher> CLruCache<K, V, S> {
         mut modify_op: M,
         data: T,
     ) -> Result<&mut V, E> {
-        match self.lookup.entry(Key(Rc::new(key))) {
-            Entry::Occupied(mut occ) => {
-                let node = self.storage.remove(*occ.get()).unwrap();
+        match self.lookup.entry(key) {
+            Entry::Occupied(occ) => {
                 // It's fine to unwrap here because:
-                // * the cache capacity is non zero
-                // * the cache cannot be full
-                let (idx, node) = self
-                    .storage
-                    .push_front(CLruNode {
-                        key: occ.key().clone(),
-                        value: node.value,
-                    })
-                    .unwrap();
-                occ.insert(idx);
-                match modify_op(occ.key().as_ref(), &mut node.value, data) {
+                // * the entry already exists
+                let node = self.storage.move_front(*occ.get()).unwrap();
+                match modify_op(&node.key, &mut node.value, data) {
                     Ok(()) => Ok(&mut node.value),
                     Err(err) => Err(err),
                 }
             }
             Entry::Vacant(vac) => {
-                let value = match put_op(vac.key().as_ref(), data) {
+                let value = match put_op(vac.key(), data) {
                     Ok(value) => value,
                     Err(err) => return Err(err),
                 };
-                let mut obsolete_key = None;
+                let key = vac.key().clone();
                 if self.storage.is_full() {
-                    obsolete_key = self.storage.pop_back().map(|CLruNode { key, .. }| key);
-                }
-                // It's fine to unwrap here because:
-                // * the cache capacity is non zero
-                // * the cache cannot be full
-                let (idx, node) = self
-                    .storage
-                    .push_front(CLruNode {
-                        key: vac.key().clone(),
-                        value,
-                    })
-                    .unwrap();
-                vac.insert(idx);
-                if let Some(obsolete_key) = obsolete_key {
+                    let idx = self.storage.back_idx();
+                    // It's fine to unwrap here because:
+                    // * the cache capacity is non zero
+                    // * the cache is full
+                    let node = self.storage.move_front(idx).unwrap();
+                    let obsolete_key = std::mem::replace(node, CLruNode { key, value }).key;
+                    vac.insert(idx);
                     self.lookup.remove(&obsolete_key);
+                    Ok(&mut node.value)
+                } else {
+                    // It's fine to unwrap here because:
+                    // * the cache capacity is non zero
+                    // * the cache cannot be full
+                    let (idx, node) = self.storage.push_front(CLruNode { key, value }).unwrap();
+                    vac.insert(idx);
+                    Ok(&mut node.value)
                 }
-                Ok(&mut node.value)
             }
         }
     }
@@ -1063,7 +618,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> CLruCache<K, V, S> {
     pub fn front_mut(&mut self) -> Option<(&K, &mut V)> {
         self.storage
             .front_mut()
-            .map(|CLruNode { key, value }| (&*key.0, value))
+            .map(|CLruNode { key, value }| (&*key, value))
     }
 
     /// Returns the value corresponding to the least recently used item or `None` if the cache is empty.
@@ -1071,7 +626,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> CLruCache<K, V, S> {
     pub fn back_mut(&mut self) -> Option<(&K, &mut V)> {
         self.storage
             .back_mut()
-            .map(|CLruNode { key, value }| (&*key.0, value))
+            .map(|CLruNode { key, value }| (&*key, value))
     }
 
     /// Returns a mutable reference to the value of the key in the cache or `None` if it is not present in the cache.
@@ -1081,12 +636,8 @@ impl<K: Eq + Hash, V, S: BuildHasher> CLruCache<K, V, S> {
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let key: &KeyRef<Q> = key.into();
         let idx = *self.lookup.get(key)?;
-        let value = self.storage.remove(idx)?;
-        self.storage
-            .push_front(value)
-            .map(|(_, CLruNode { value, .. })| value)
+        self.storage.move_front(idx).map(|node| &mut node.value)
     }
 
     /// Returns a mutable reference to the value corresponding to the key in the cache or `None` if it is not present in the cache.
@@ -1096,9 +647,8 @@ impl<K: Eq + Hash, V, S: BuildHasher> CLruCache<K, V, S> {
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let key: &KeyRef<Q> = key.into();
         let idx = *self.lookup.get(key)?;
-        self.storage.node_mut(idx).map(|node| &mut node.data.value)
+        self.storage.get_mut(idx).map(|node| &mut node.value)
     }
 
     /// Retains only the elements specified by the predicate.
@@ -1107,20 +657,20 @@ impl<K: Eq + Hash, V, S: BuildHasher> CLruCache<K, V, S> {
     where
         F: FnMut(&K, &mut V) -> bool,
     {
-        let mut front = self.storage.front;
-        while front != usize::MAX {
-            let node = self.storage.node_mut(front).unwrap();
-            let next = node.next;
-            let CLruNode {
-                ref key,
-                ref mut value,
-            } = node.data;
-            if !f(key.as_ref(), value) {
-                self.lookup.remove(&node.data.key).unwrap();
-                self.storage.remove(front);
-            }
-            front = next;
-        }
+        self.storage.retain_mut(
+            #[inline]
+            |CLruNode {
+                 ref key,
+                 ref mut value,
+             }| {
+                if f(key, value) {
+                    true
+                } else {
+                    self.lookup.remove(key).unwrap();
+                    false
+                }
+            },
+        )
     }
 }
 
@@ -1152,7 +702,7 @@ impl<'a, K, V> Iterator for CLruCacheIter<'a, K, V> {
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|(_, CLruNode { key, value })| (key.0.borrow(), value))
+            .map(|(_, CLruNode { key, value })| (key.borrow(), value))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1164,7 +714,7 @@ impl<'a, K, V> DoubleEndedIterator for CLruCacheIter<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter
             .next_back()
-            .map(|(_, CLruNode { key, value })| (key.0.borrow(), value))
+            .map(|(_, CLruNode { key, value })| (key.borrow(), value))
     }
 }
 
@@ -1201,7 +751,7 @@ impl<'a, K, V> Iterator for CLruCacheIterMut<'a, K, V> {
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|(_, CLruNode { key, value })| (key.0.borrow(), value))
+            .map(|(_, CLruNode { key, value })| (&*key, value))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1213,7 +763,7 @@ impl<'a, K, V> DoubleEndedIterator for CLruCacheIterMut<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter
             .next_back()
-            .map(|(_, CLruNode { key, value })| (key.0.borrow(), value))
+            .map(|(_, CLruNode { key, value })| (&*key, value))
     }
 }
 
@@ -1243,7 +793,7 @@ pub struct CLruCacheIntoIter<K, V, S, W: WeightScale<K, V>> {
     cache: CLruCache<K, V, S, W>,
 }
 
-impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> Iterator
+impl<K: Clone + Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> Iterator
     for CLruCacheIntoIter<K, V, S, W>
 {
     type Item = (K, V);
@@ -1259,7 +809,7 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> Iterator
     }
 }
 
-impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> DoubleEndedIterator
+impl<K: Clone + Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> DoubleEndedIterator
     for CLruCacheIntoIter<K, V, S, W>
 {
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -1267,7 +817,7 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> DoubleEndedIterator
     }
 }
 
-impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> ExactSizeIterator
+impl<K: Clone + Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> ExactSizeIterator
     for CLruCacheIntoIter<K, V, S, W>
 {
     fn len(&self) -> usize {
@@ -1275,7 +825,9 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> ExactSizeIterator
     }
 }
 
-impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> IntoIterator for CLruCache<K, V, S, W> {
+impl<K: Clone + Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> IntoIterator
+    for CLruCache<K, V, S, W>
+{
     type Item = (K, V);
     type IntoIter = CLruCacheIntoIter<K, V, S, W>;
 
@@ -1286,7 +838,35 @@ impl<K: Eq + Hash, V, S: BuildHasher, W: WeightScale<K, V>> IntoIterator for CLr
     }
 }
 
+impl<K: Clone + Eq + Hash, V, S: BuildHasher + Default> FromIterator<(K, V)>
+    for CLruCache<K, V, S>
+{
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Self {
+        let cap = NonZeroUsize::new(usize::MAX).unwrap();
+        let mut cache = CLruCache::with_hasher(cap, S::default());
+
+        for (k, v) in iter {
+            cache.put(k, v);
+        }
+
+        cache.resize(
+            NonZeroUsize::new(cache.len()).unwrap_or_else(|| NonZeroUsize::new(1).unwrap()),
+        );
+
+        cache
+    }
+}
+
+impl<K: Clone + Eq + Hash, V, S: BuildHasher> Extend<(K, V)> for CLruCache<K, V, S> {
+    fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
+        for (k, v) in iter {
+            self.put(k, v);
+        }
+    }
+}
+
 #[cfg(test)]
+#[allow(clippy::bool_assert_comparison)]
 mod tests {
     use super::*;
 
@@ -1306,141 +886,6 @@ mod tests {
     const HEIGHT: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(8) };
     #[allow(unsafe_code)]
     const MANY: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(200) };
-
-    #[test]
-    fn test_fixed_size_list() {
-        let mut list = FixedSizeList::new(4);
-
-        assert!(list.is_empty());
-        assert_eq!(list.len(), 0);
-
-        assert_eq!(list.front(), None);
-        assert_eq!(list.front_mut(), None);
-
-        assert_eq!(list.back(), None);
-        assert_eq!(list.back_mut(), None);
-
-        assert_eq!(list.iter().count(), 0);
-        assert_eq!(list.iter().rev().count(), 0);
-
-        assert_eq!(list.push_front(7), Some((0, &mut 7)));
-
-        assert!(!list.is_empty());
-        assert_eq!(list.len(), 1);
-
-        assert_eq!(list.front(), Some(&7));
-        assert_eq!(list.front_mut(), Some(&mut 7));
-
-        assert_eq!(list.back(), Some(&7));
-        assert_eq!(list.back_mut(), Some(&mut 7));
-
-        assert_eq!(list.iter().collect::<Vec<_>>(), vec![(0, &7)]);
-        assert_eq!(list.iter().rev().collect::<Vec<_>>(), vec![(0, &7)]);
-
-        assert_eq!(list.push_front(5), Some((1, &mut 5)));
-
-        assert!(!list.is_empty());
-        assert_eq!(list.len(), 2);
-
-        assert_eq!(list.front(), Some(&5));
-        assert_eq!(list.front_mut(), Some(&mut 5));
-
-        assert_eq!(list.back(), Some(&7));
-        assert_eq!(list.back_mut(), Some(&mut 7));
-
-        assert_eq!(list.iter().collect::<Vec<_>>(), vec![(1, &5), (0, &7)]);
-        assert_eq!(
-            list.iter().rev().collect::<Vec<_>>(),
-            vec![(0, &7), (1, &5)]
-        );
-
-        assert_eq!(list.push_front(3), Some((2, &mut 3)));
-
-        assert!(!list.is_empty());
-        assert_eq!(list.len(), 3);
-
-        assert_eq!(list.front(), Some(&3));
-        assert_eq!(list.front_mut(), Some(&mut 3));
-
-        assert_eq!(list.back(), Some(&7));
-        assert_eq!(list.back_mut(), Some(&mut 7));
-
-        assert_eq!(
-            list.iter().collect::<Vec<_>>(),
-            vec![(2, &3), (1, &5), (0, &7)]
-        );
-        assert_eq!(
-            list.iter().rev().collect::<Vec<_>>(),
-            vec![(0, &7), (1, &5), (2, &3)]
-        );
-
-        list.remove(1);
-
-        assert!(!list.is_empty());
-        assert_eq!(list.len(), 2);
-
-        assert_eq!(list.front(), Some(&3));
-        assert_eq!(list.front_mut(), Some(&mut 3));
-
-        assert_eq!(list.back(), Some(&7));
-        assert_eq!(list.back_mut(), Some(&mut 7));
-
-        assert_eq!(list.iter().collect::<Vec<_>>(), vec![(2, &3), (0, &7)]);
-        assert_eq!(
-            list.iter().rev().collect::<Vec<_>>(),
-            vec![(0, &7), (2, &3)]
-        );
-
-        list.remove(0);
-
-        assert!(!list.is_empty());
-        assert_eq!(list.len(), 1);
-
-        assert_eq!(list.front(), Some(&3));
-        assert_eq!(list.front_mut(), Some(&mut 3));
-
-        assert_eq!(list.back(), Some(&3));
-        assert_eq!(list.back_mut(), Some(&mut 3));
-
-        assert_eq!(list.iter().collect::<Vec<_>>(), vec![(2, &3)]);
-        assert_eq!(list.iter().rev().collect::<Vec<_>>(), vec![(2, &3)]);
-
-        list.remove(2);
-
-        assert!(list.is_empty());
-        assert_eq!(list.len(), 0);
-
-        assert_eq!(list.front(), None);
-        assert_eq!(list.front_mut(), None);
-
-        assert_eq!(list.back(), None);
-        assert_eq!(list.back_mut(), None);
-
-        assert_eq!(list.iter().count(), 0);
-        assert_eq!(list.iter().rev().count(), 0);
-    }
-
-    #[test]
-    fn test_fixed_size_list_reorder() {
-        let mut list = FixedSizeList::new(4);
-
-        list.push_back('a');
-        list.push_front('b');
-        list.push_back('c');
-        list.push_front('d');
-
-        assert_eq!(
-            list.iter().collect::<Vec<_>>(),
-            vec![(3, &'d'), (1, &'b'), (0, &'a'), (2, &'c')]
-        );
-
-        list.reorder();
-
-        assert_eq!(
-            list.iter().collect::<Vec<_>>(),
-            vec![(0, &'d'), (1, &'b'), (2, &'a'), (3, &'c')]
-        );
-    }
 
     #[test]
     fn test_insert_and_get() {
@@ -2216,6 +1661,54 @@ mod tests {
         assert_eq!(iter.next(), None);
     }
 
+    #[test]
+    fn test_from_iterator() {
+        let cache: CLruCache<&'static str, usize> =
+            vec![("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5)]
+                .into_iter()
+                .collect();
+
+        assert_eq!(cache.len(), 5);
+        assert_eq!(cache.capacity(), 5);
+        assert_eq!(cache.is_full(), true);
+
+        assert_eq!(
+            cache.into_iter().collect::<Vec<_>>(),
+            vec![("e", 5), ("d", 4), ("c", 3), ("b", 2), ("a", 1)]
+        );
+
+        let cache: CLruCache<&'static str, usize> = vec![].into_iter().collect();
+
+        assert_eq!(cache.len(), 0);
+        assert_eq!(cache.capacity(), 1);
+        assert_eq!(cache.is_full(), false);
+
+        assert_eq!(cache.into_iter().collect::<Vec<_>>(), vec![]);
+    }
+
+    #[test]
+    fn test_extend() {
+        let mut cache = CLruCache::new(FIVE);
+
+        cache.put("a", 1);
+        cache.put("b", 2);
+
+        assert_eq!(cache.len(), 2);
+        assert_eq!(cache.capacity(), 5);
+        assert_eq!(cache.is_full(), false);
+
+        cache.extend(vec![("c", 3), ("d", 4), ("e", 5)].into_iter());
+
+        assert_eq!(cache.len(), 5);
+        assert_eq!(cache.capacity(), 5);
+        assert_eq!(cache.is_full(), true);
+
+        assert_eq!(
+            cache.into_iter().collect::<Vec<_>>(),
+            vec![("e", 5), ("d", 4), ("c", 3), ("b", 2), ("a", 1)]
+        );
+    }
+
     #[derive(Debug)]
     struct StrStrScale;
 
@@ -2310,6 +1803,25 @@ mod tests {
         assert_eq!(cache.get(&"pear"), Some(&"green"));
         assert_eq!(cache.get(&"apple"), Some(&"green"));
         assert_eq!(cache.get(&"tomato"), Some(&"red"));
+    }
+
+    #[test]
+    fn test_weighted_clear() {
+        let mut cache = CLruCache::with_config(
+            CLruCacheConfig::new(NonZeroUsize::new(10).unwrap()).with_scale(StrStrScale),
+        );
+
+        assert_eq!(cache.put_with_weight("apple", "red"), Ok(None));
+        assert_eq!(cache.put_with_weight("banana", "yellow"), Ok(None));
+
+        assert_eq!(cache.len(), 1);
+        assert_eq!(cache.weight(), 6);
+        assert_eq!(cache.get(&"apple"), None);
+        assert_eq!(cache.get(&"banana"), Some(&"yellow"));
+
+        cache.clear();
+        assert_eq!(cache.len(), 0);
+        assert_eq!(cache.weight(), 0);
     }
 
     #[derive(Debug)]
@@ -2541,5 +2053,107 @@ mod tests {
             cache.into_iter().collect::<Vec<_>>(),
             vec![(5, "e"), (4, "d"), (3, "c"), (2, "b"), (1, "a")]
         );
+    }
+
+    #[test]
+    fn test_is_send() {
+        fn is_send<T: Send>() {}
+
+        fn cache_is_send<K: Send, V: Send, S: Send, W: WeightScale<K, V> + Send>() {
+            is_send::<K>();
+            is_send::<V>();
+            is_send::<S>();
+            is_send::<W>();
+            is_send::<CLruCache<K, V, S, W>>();
+        }
+
+        cache_is_send::<String, String, RandomState, ZeroWeightScale>();
+
+        fn cache_in_mutex<
+            K: Clone + Default + Eq + Hash + Send + 'static,
+            V: Default + Send + 'static,
+            S: BuildHasher + Send + 'static,
+            W: WeightScale<K, V> + Send + 'static,
+        >(
+            cache: CLruCache<K, V, S, W>,
+        ) where
+            (K, V): std::fmt::Debug,
+        {
+            use std::sync::{Arc, Mutex};
+            use std::thread;
+
+            let mutex: Arc<Mutex<CLruCache<K, V, S, W>>> = Arc::new(Mutex::new(cache));
+            let mutex2 = mutex.clone();
+            let t1 = thread::spawn(move || {
+                mutex
+                    .lock()
+                    .unwrap()
+                    .put_with_weight(Default::default(), Default::default())
+                    .unwrap();
+            });
+            let t2 = thread::spawn(move || {
+                mutex2
+                    .lock()
+                    .unwrap()
+                    .put_with_weight(Default::default(), Default::default())
+                    .unwrap();
+            });
+            t1.join().unwrap();
+            t2.join().unwrap();
+        }
+
+        let cache: CLruCache<String, String> = CLruCache::new(TWO);
+        cache_in_mutex(cache);
+    }
+
+    #[test]
+    fn test_is_sync() {
+        fn is_sync<T: Sync>() {}
+
+        fn cache_is_sync<K: Sync, V: Sync, S: Sync, W: WeightScale<K, V> + Sync>() {
+            is_sync::<K>();
+            is_sync::<V>();
+            is_sync::<S>();
+            is_sync::<W>();
+            is_sync::<CLruCache<K, V, S, W>>();
+        }
+
+        cache_is_sync::<String, String, RandomState, ZeroWeightScale>();
+
+        fn cache_in_rwlock<
+            K: Clone + Default + Eq + Hash + Send + Sync + 'static,
+            V: Default + Send + Sync + 'static,
+            S: BuildHasher + Send + Sync + 'static,
+            W: WeightScale<K, V> + Send + Sync + 'static,
+        >(
+            cache: CLruCache<K, V, S, W>,
+        ) where
+            (K, V): std::fmt::Debug,
+        {
+            use std::sync::{Arc, RwLock};
+            use std::thread;
+
+            let mutex: Arc<RwLock<CLruCache<K, V, S, W>>> = Arc::new(RwLock::new(cache));
+            let mutex2 = mutex.clone();
+            let t1 = thread::spawn(move || {
+                mutex
+                    .write()
+                    .unwrap()
+                    .put_with_weight(Default::default(), Default::default())
+                    .unwrap();
+            });
+            let t2 = thread::spawn(move || {
+                mutex2
+                    .write()
+                    .unwrap()
+                    .put_with_weight(Default::default(), Default::default())
+                    .unwrap();
+            });
+            t1.join().unwrap();
+            t2.join().unwrap();
+        }
+
+        let cache: CLruCache<String, String> = CLruCache::new(TWO);
+        cache_in_rwlock(cache);
     }
 }

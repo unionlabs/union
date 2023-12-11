@@ -27,7 +27,7 @@ where
 
     fn expand_message(
         msgs: &[&[u8]],
-        dst: &'a [u8],
+        dsts: &'a [&'a [u8]],
         len_in_bytes: usize,
     ) -> Result<Self::Expander> {
         if len_in_bytes == 0 {
@@ -36,18 +36,17 @@ where
 
         let len_in_bytes = u16::try_from(len_in_bytes).map_err(|_| Error)?;
 
-        let domain = Domain::<U32>::xof::<HashT>(dst)?;
+        let domain = Domain::<U32>::xof::<HashT>(dsts)?;
         let mut reader = HashT::default();
 
         for msg in msgs {
             reader = reader.chain(msg);
         }
 
-        let reader = reader
-            .chain(len_in_bytes.to_be_bytes())
-            .chain(domain.data())
-            .chain([domain.len()])
-            .finalize_xof();
+        reader.update(&len_in_bytes.to_be_bytes());
+        domain.update_hash(&mut reader);
+        reader.update(&[domain.len()]);
+        let reader = reader.finalize_xof();
         Ok(Self { reader })
     }
 }
@@ -87,8 +86,8 @@ mod test {
             &bytes[msg_len..len_in_bytes_len]
         );
 
-        let dst = len_in_bytes_len + domain.data().len();
-        assert_eq!(domain.data(), &bytes[len_in_bytes_len..dst]);
+        let dst = len_in_bytes_len + usize::from(domain.len());
+        domain.assert(&bytes[len_in_bytes_len..dst]);
 
         let dst_len = dst + mem::size_of::<u8>();
         assert_eq!([domain.len()], &bytes[dst..dst_len]);
@@ -111,7 +110,7 @@ mod test {
             assert_message::<HashT>(self.msg, domain, L::to_u16(), self.msg_prime);
 
             let mut expander =
-                ExpandMsgXof::<HashT>::expand_message(&[self.msg], dst, L::to_usize())?;
+                ExpandMsgXof::<HashT>::expand_message(&[self.msg], &[dst], L::to_usize())?;
 
             let mut uniform_bytes = GenericArray::<u8, L>::default();
             expander.fill_bytes(&mut uniform_bytes);
@@ -127,8 +126,8 @@ mod test {
         const DST_PRIME: &[u8] =
             &hex!("515555582d5630312d435330322d776974682d657870616e6465722d5348414b4531323824");
 
-        let dst_prime = Domain::<U32>::xof::<Shake128>(DST)?;
-        dst_prime.assert(DST_PRIME);
+        let dst_prime = Domain::<U32>::xof::<Shake128>(&[DST])?;
+        dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
             TestVector {
@@ -203,8 +202,8 @@ mod test {
         const DST_PRIME: &[u8] =
             &hex!("acb9736c0867fdfbd6385519b90fc8c034b5af04a958973212950132d035792f20");
 
-        let dst_prime = Domain::<U32>::xof::<Shake128>(DST)?;
-        dst_prime.assert(DST_PRIME);
+        let dst_prime = Domain::<U32>::xof::<Shake128>(&[DST])?;
+        dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
             TestVector {
@@ -281,8 +280,8 @@ mod test {
         const DST_PRIME: &[u8] =
             &hex!("515555582d5630312d435330322d776974682d657870616e6465722d5348414b4532353624");
 
-        let dst_prime = Domain::<U32>::xof::<Shake256>(DST)?;
-        dst_prime.assert(DST_PRIME);
+        let dst_prime = Domain::<U32>::xof::<Shake256>(&[DST])?;
+        dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
             TestVector {

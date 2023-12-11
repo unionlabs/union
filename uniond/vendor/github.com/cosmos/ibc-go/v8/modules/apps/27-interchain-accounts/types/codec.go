@@ -84,7 +84,7 @@ func DeserializeCosmosTx(cdc codec.Codec, data []byte, encoding string) ([]sdk.M
 	switch encoding {
 	case EncodingProtobuf:
 		if err := cdc.Unmarshal(data, &cosmosTx); err != nil {
-			return nil, errorsmod.Wrapf(ErrUnknownDataType, "cannot unmarshal CosmosTx with protobuf: %v", err)
+			return nil, errorsmod.Wrapf(err, "cannot unmarshal CosmosTx with protobuf")
 		}
 	case EncodingProto3JSON:
 		if err := cdc.UnmarshalJSON(data, &cosmosTx); err != nil {

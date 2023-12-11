@@ -11,7 +11,7 @@ use crate::flowgraph::ControlFlowGraph;
 use crate::ir::{
     condcodes::{CondCode, IntCC},
     instructions::Opcode,
-    types::{I32, I64},
+    types::{I128, I32, I64},
     Block, DataFlowGraph, Function, Inst, InstBuilder, InstructionData, Type, Value,
 };
 use crate::isa::TargetIsa;
@@ -469,7 +469,6 @@ fn do_divrem_transformation(divrem_info: &DivRemByConstInfo, pos: &mut FuncCurso
 enum BranchOrderKind {
     BrzToBrnz(Value),
     BrnzToBrz(Value),
-    InvertIcmpCond(IntCC, Value, Value),
 }
 
 /// Reorder branches to encourage fallthroughs.
@@ -538,27 +537,6 @@ fn branch_order(pos: &mut FuncCursor, cfg: &mut ControlFlowGraph, block: Block, 
                             kind,
                         )
                     }
-                    InstructionData::BranchIcmp {
-                        opcode: Opcode::BrIcmp,
-                        cond,
-                        destination: cond_dest,
-                        args: ref prev_args,
-                    } => {
-                        let (x_arg, y_arg) = {
-                            let args = pos.func.dfg.inst_args(prev_inst);
-                            (args[0], args[1])
-                        };
-
-                        (
-                            inst,
-                            args.clone(),
-                            destination,
-                            prev_inst,
-                            prev_args.clone(),
-                            *cond_dest,
-                            BranchOrderKind::InvertIcmpCond(*cond, x_arg, y_arg),
-                        )
-                    }
                     _ => return,
                 }
             }
@@ -590,19 +568,6 @@ fn branch_order(pos: &mut FuncCursor, cfg: &mut ControlFlowGraph, block: Block, 
                 .replace(cond_inst)
                 .brnz(cond_arg, term_dest, &term_args);
         }
-        BranchOrderKind::InvertIcmpCond(cond, x_arg, y_arg) => {
-            pos.func
-                .dfg
-                .replace(term_inst)
-                .jump(cond_dest, &cond_args[2..]);
-            pos.func.dfg.replace(cond_inst).br_icmp(
-                cond.inverse(),
-                x_arg,
-                y_arg,
-                term_dest,
-                &term_args,
-            );
-        }
     }
 
     cfg.recompute_block(pos.func, block);
@@ -614,7 +579,7 @@ mod simplify {
         dfg::ValueDef,
         immediates,
         instructions::{Opcode, ValueList},
-        types::{B8, I16, I32, I8},
+        types::{I16, I32, I8},
     };
     use std::marker::PhantomData;
 
@@ -824,27 +789,27 @@ mod simplify {
                 };
 
                 // Replace operations that are no-ops.
-                match (opcode, imm.into()) {
-                    (Opcode::IaddImm, 0)
-                    | (Opcode::ImulImm, 1)
-                    | (Opcode::SdivImm, 1)
-                    | (Opcode::UdivImm, 1)
-                    | (Opcode::BorImm, 0)
-                    | (Opcode::BandImm, -1)
-                    | (Opcode::BxorImm, 0)
-                    | (Opcode::RotlImm, 0)
-                    | (Opcode::RotrImm, 0)
-                    | (Opcode::IshlImm, 0)
-                    | (Opcode::UshrImm, 0)
-                    | (Opcode::SshrImm, 0) => {
+                match (opcode, imm.into(), ty) {
+                    (Opcode::IaddImm, 0, _)
+                    | (Opcode::ImulImm, 1, _)
+                    | (Opcode::SdivImm, 1, _)
+                    | (Opcode::UdivImm, 1, _)
+                    | (Opcode::BorImm, 0, _)
+                    | (Opcode::BandImm, -1, _)
+                    | (Opcode::BxorImm, 0, _)
+                    | (Opcode::RotlImm, 0, _)
+                    | (Opcode::RotrImm, 0, _)
+                    | (Opcode::IshlImm, 0, _)
+                    | (Opcode::UshrImm, 0, _)
+                    | (Opcode::SshrImm, 0, _) => {
                         // Alias the result value with the original argument.
                         replace_single_result_with_alias(&mut pos.func.dfg, inst, arg);
                     }
-                    (Opcode::ImulImm, 0) | (Opcode::BandImm, 0) => {
+                    (Opcode::ImulImm, 0, ty) | (Opcode::BandImm, 0, ty) if ty != I128 => {
                         // Replace by zero.
                         pos.func.dfg.replace(inst).iconst(ty, 0);
                     }
-                    (Opcode::BorImm, -1) => {
+                    (Opcode::BorImm, -1, ty) if ty != I128 => {
                         // Replace by minus one.
                         pos.func.dfg.replace(inst).iconst(ty, -1);
                     }
@@ -857,92 +822,6 @@ mod simplify {
                 if let Some(imm) = resolve_imm64_value(&pos.func.dfg, args[1]) {
                     if pos.func.dfg.ctrl_typevar(inst).bytes() <= native_word_width {
                         pos.func.dfg.replace(inst).icmp_imm(cond, args[0], imm);
-                    }
-                }
-            }
-
-            InstructionData::CondTrap { .. }
-            | InstructionData::Branch { .. }
-            | InstructionData::Ternary {
-                opcode: Opcode::Select,
-                ..
-            } => {
-                // Fold away a redundant `bint`.
-                let condition_def = {
-                    let args = pos.func.dfg.inst_args(inst);
-                    pos.func.dfg.value_def(args[0])
-                };
-                if let ValueDef::Result(def_inst, _) = condition_def {
-                    if let InstructionData::Unary {
-                        opcode: Opcode::Bint,
-                        arg: bool_val,
-                    } = pos.func.dfg[def_inst]
-                    {
-                        let args = pos.func.dfg.inst_args_mut(inst);
-                        args[0] = bool_val;
-                    }
-                }
-            }
-
-            InstructionData::Ternary {
-                opcode: Opcode::Bitselect,
-                args,
-            } => {
-                let old_cond_type = pos.func.dfg.value_type(args[0]);
-                if !old_cond_type.is_vector() {
-                    return;
-                }
-
-                // Replace bitselect with vselect if each lane of controlling mask is either
-                // all ones or all zeroes; on x86 bitselect is encoded using 3 instructions,
-                // while vselect can be encoded using single BLEND instruction.
-                if let ValueDef::Result(def_inst, _) = pos.func.dfg.value_def(args[0]) {
-                    let (cond_val, cond_type) = match pos.func.dfg[def_inst] {
-                        InstructionData::Unary {
-                            opcode: Opcode::RawBitcast,
-                            arg,
-                        } => {
-                            // If controlling mask is raw-bitcasted boolean vector then
-                            // we know each lane is either all zeroes or ones,
-                            // so we can use vselect instruction instead.
-                            let arg_type = pos.func.dfg.value_type(arg);
-                            if !arg_type.is_vector() || !arg_type.lane_type().is_bool() {
-                                return;
-                            }
-                            (arg, arg_type)
-                        }
-                        InstructionData::UnaryConst {
-                            opcode: Opcode::Vconst,
-                            constant_handle,
-                        } => {
-                            // If each byte of controlling mask is 0x00 or 0xFF then
-                            // we will always bitcast our way to vselect(B8x16, I8x16, I8x16).
-                            // Bitselect operates at bit level, so the lane types don't matter.
-                            let const_data = pos.func.dfg.constants.get(constant_handle);
-                            if !const_data.iter().all(|&b| b == 0 || b == 0xFF) {
-                                return;
-                            }
-                            let new_type = B8.by(old_cond_type.bytes() as u16).unwrap();
-                            (pos.ins().raw_bitcast(new_type, args[0]), new_type)
-                        }
-                        _ => return,
-                    };
-
-                    let lane_type = Type::int(cond_type.lane_bits() as u16).unwrap();
-                    let arg_type = lane_type.by(cond_type.lane_count()).unwrap();
-                    let old_arg_type = pos.func.dfg.value_type(args[1]);
-
-                    if arg_type != old_arg_type {
-                        // Operands types must match, we need to add bitcasts.
-                        let arg1 = pos.ins().raw_bitcast(arg_type, args[1]);
-                        let arg2 = pos.ins().raw_bitcast(arg_type, args[2]);
-                        let ret = pos.ins().vselect(cond_val, arg1, arg2);
-                        pos.func.dfg.replace(inst).raw_bitcast(old_arg_type, ret);
-                    } else {
-                        pos.func
-                            .dfg
-                            .replace(inst)
-                            .vselect(cond_val, args[1], args[2]);
                     }
                 }
             }

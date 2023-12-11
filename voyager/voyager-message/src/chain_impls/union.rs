@@ -4,7 +4,10 @@ use std::{
     marker::PhantomData,
 };
 
-use chain_utils::union::{broadcast_tx_commit, BroadcastTxCommitError, CosmosSdkChain, Union};
+use chain_utils::{
+    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
+    union::Union,
+};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use num_bigint::BigUint;
@@ -18,17 +21,19 @@ use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
 use unionlabs::{
     bounded::BoundedI64,
-    cosmos::ics23::proof::MerkleProof,
-    encoding::Decode,
+    encoding::{Decode, Encode},
     google::protobuf::{
         any::{mk_any, Any},
         timestamp::Timestamp,
     },
-    hash::{H160, H256, H512},
+    hash::H256,
     ibc::{
-        core::client::{
-            height::{Height, IsHeight},
-            msg_update_client::MsgUpdateClient,
+        core::{
+            client::{
+                height::{Height, IsHeight},
+                msg_update_client::MsgUpdateClient,
+            },
+            commitment::merkle_proof::MerkleProof,
         },
         lightclients::cometbls,
     },
@@ -36,10 +41,9 @@ use unionlabs::{
     tendermint::{
         crypto::public_key::PublicKey,
         types::{
-            block_id::BlockId, block_id_flag::BlockIdFlag,
-            canonical_block_header::CanonicalPartSetHeader, canonical_block_id::CanonicalBlockId,
-            canonical_vote::CanonicalVote, commit::Commit, commit_sig::CommitSig,
-            part_set_header::PartSetHeader, signed_header::SignedHeader,
+            block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
+            canonical_block_id::CanonicalBlockId, canonical_vote::CanonicalVote, commit::Commit,
+            commit_sig::CommitSig, part_set_header::PartSetHeader, signed_header::SignedHeader,
             signed_msg_type::SignedMsgType, simple_validator::SimpleValidator,
         },
     },
@@ -51,7 +55,7 @@ use unionlabs::{
         prove_response,
         validator_set_commit::ValidatorSetCommit,
     },
-    IntoEthAbi, IntoProto, Proto, TryFromProto, TypeUrl,
+    IntoProto, Proto, TryFromProto, TypeUrl,
 };
 
 use crate::{
@@ -109,8 +113,8 @@ where
     <ClientStateOf<Hc> as Proto>::Proto: TypeUrl,
     // HeaderOf<Hc>: IntoProto,
     // <HeaderOf<Hc> as Proto>::Proto: TypeUrl,
-    Tr::StoredClientState<Hc>: IntoProto,
-    <Tr::StoredClientState<Hc> as Proto>::Proto: TypeUrl,
+    Tr::StoredClientState<Hc>: IntoProto<Proto = protos::google::protobuf::Any>,
+    Tr::StateProof: Encode<unionlabs::encoding::Proto>,
 {
     async fn msg(&self, msg: Msg<Hc, Tr>) -> Result<(), BroadcastTxCommitError> {
         self.signers
@@ -129,7 +133,7 @@ where
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                             client_id: data.msg.client_id.to_string(),
                             previous_connection_id: String::new(),
-                            client_state: Some(Any(data.msg.client_state).into_proto()),
+                            client_state: Some(data.msg.client_state.into_proto()),
                             counterparty: Some(data.msg.counterparty.into()),
                             delay_period: data.msg.delay_period,
                             counterparty_versions: data
@@ -139,20 +143,21 @@ where
                                 .map(Into::into)
                                 .collect(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
-                            proof_init: data.msg.proof_init,
-                            proof_client: data.msg.proof_client,
-                            proof_consensus: data.msg.proof_consensus,
+                            proof_init: data.msg.proof_init.encode(),
+                            proof_client: data.msg.proof_client.encode(),
+                            proof_consensus: data.msg.proof_consensus.encode(),
                             consensus_height: Some(data.msg.consensus_height.into_height().into()),
                             signer: signer.to_string(),
                             host_consensus_state_proof: vec![],
                         })
                     }
                     Msg::ConnectionOpenAck(data) => {
+                        println!("\n\nON UNION, ACK {:?}\n\n", data.msg.client_state);
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
-                            client_state: Some(Any(data.msg.client_state).into()),
+                            client_state: Some(data.msg.client_state.into()),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
-                            proof_client: data.msg.proof_client,
-                            proof_consensus: data.msg.proof_consensus,
+                            proof_client: data.msg.proof_client.encode(),
+                            proof_consensus: data.msg.proof_consensus.encode(),
                             consensus_height: Some(data.msg.consensus_height.into_height().into()),
                             signer: signer.to_string(),
                             host_consensus_state_proof: vec![],
@@ -162,13 +167,13 @@ where
                                 .counterparty_connection_id
                                 .to_string(),
                             version: Some(data.msg.version.into()),
-                            proof_try: data.msg.proof_try,
+                            proof_try: data.msg.proof_try.encode(),
                         })
                     }
                     Msg::ConnectionOpenConfirm(data) => mk_any(
                         &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
                             connection_id: data.msg.connection_id.to_string(),
-                            proof_ack: data.msg.proof_ack,
+                            proof_ack: data.msg.proof_ack.encode(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
                         },
@@ -187,7 +192,7 @@ where
                             port_id: data.msg.port_id.to_string(),
                             channel: Some(data.msg.channel.into()),
                             counterparty_version: data.msg.counterparty_version,
-                            proof_init: data.msg.proof_init,
+                            proof_init: data.msg.proof_init.encode(),
                             proof_height: Some(data.msg.proof_height.into()),
                             previous_channel_id: String::new(),
                             signer: signer.to_string(),
@@ -199,7 +204,7 @@ where
                             channel_id: data.msg.channel_id.to_string(),
                             counterparty_version: data.msg.counterparty_version,
                             counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
-                            proof_try: data.msg.proof_try,
+                            proof_try: data.msg.proof_try.encode(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
                         })
@@ -210,7 +215,7 @@ where
                             channel_id: data.msg.channel_id.to_string(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
-                            proof_ack: data.msg.proof_ack,
+                            proof_ack: data.msg.proof_ack.encode(),
                         })
                     }
                     Msg::RecvPacket(data) => {
@@ -218,14 +223,14 @@ where
                             packet: Some(data.msg.packet.into()),
                             proof_height: Some(data.msg.proof_height.into()),
                             signer: signer.to_string(),
-                            proof_commitment: data.msg.proof_commitment,
+                            proof_commitment: data.msg.proof_commitment.encode(),
                         })
                     }
                     Msg::AckPacket(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
                             packet: Some(data.msg.packet.into()),
                             acknowledgement: data.msg.acknowledgement,
-                            proof_acked: data.msg.proof_acked,
+                            proof_acked: data.msg.proof_acked.encode(),
                             proof_height: Some(data.msg.proof_height.into()),
                             signer: signer.to_string(),
                         })
@@ -246,7 +251,7 @@ where
                     }
                 };
 
-                broadcast_tx_commit(self, signer, [msg_any])
+                self.broadcast_tx_commit(signer, [msg_any])
                     .await
                     .map(|_| ())
             })
@@ -254,7 +259,7 @@ where
     }
 }
 
-impl<Tr: ChainExt, Hc: Wraps<Self, Fetch<Tr> = UnionFetch<Hc, Tr>>> DoFetchState<Hc, Tr> for Union
+impl<Tr: ChainExt, Hc: Wraps<Self, StateProof = MerkleProof, Fetch<Tr> = UnionFetch<Hc, Tr>>> DoFetchState<Hc, Tr> for Union
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -437,7 +442,7 @@ impl<Hc, Tr> DoFetch<Hc> for UnionFetch<Hc, Tr>
 where
     Hc: Wraps<Union>
         + CosmosSdkChain
-        + ChainExt<Data<Tr> = UnionDataMsg<Tr>, Fetch<Tr> = UnionFetch<Hc, Tr>>,
+        + ChainExt<StateProof = MerkleProof, Data<Tr> = UnionDataMsg<Tr>, Fetch<Tr> = UnionFetch<Hc, Tr>>,
     Tr: ChainExt,
 
     // Tr::SelfClientState: Decode<unionlabs::encoding::Proto>,
@@ -568,21 +573,12 @@ where
                             .signatures
                             .into_iter()
                             .map(|sig| match sig {
-                                tendermint::block::CommitSig::BlockIdFlagAbsent => CommitSig {
-                                    block_id_flag: BlockIdFlag::Absent,
-                                    validator_address: H160([0; 20]),
-                                    timestamp: unionlabs::google::protobuf::timestamp::Timestamp {
-                                        seconds: 0.try_into().unwrap(),
-                                        nanos: 0.try_into().unwrap(),
-                                    },
-                                    signature: H512([0; 64]),
-                                },
+                                tendermint::block::CommitSig::BlockIdFlagAbsent => CommitSig::Absent,
                                 tendermint::block::CommitSig::BlockIdFlagCommit {
                                     validator_address,
                                     timestamp,
                                     signature,
-                                } => CommitSig {
-                                    block_id_flag: BlockIdFlag::Commit,
+                                } => CommitSig::Commit {
                                     validator_address: Vec::from(validator_address)
                                         .try_into()
                                         .unwrap(),
@@ -603,8 +599,7 @@ where
                                     validator_address,
                                     timestamp,
                                     signature,
-                                } => CommitSig {
-                                    block_id_flag: BlockIdFlag::Nil,
+                                } => CommitSig::Nil {
                                     validator_address: Vec::from(validator_address)
                                         .try_into()
                                         .unwrap(),
@@ -668,11 +663,9 @@ where
                     .into_proto(),
                 )
                 .await
-                .map(|x| x.into_inner().try_into().unwrap())
-                .unwrap();
+                .map(|x| x.into_inner().try_into().unwrap());
 
-                match response {
-                    PollResponse::Pending => [seq([
+                let retry = || [seq([
                         // REVIEW: How long should we wait between polls?
                         defer_relative(3),
                         fetch::<Hc, Tr>(
@@ -682,12 +675,17 @@ where
                             )),
                         ),
                     ])]
-                    .into(),
-                    PollResponse::Failed(ProveRequestFailed { message }) => {
+                    .into();
+
+                match response {
+                    Ok(PollResponse::Pending) => retry(),
+                    Err(status) if status.message() == "busy_building" => retry(),
+                    Err(err)  => panic!("prove request failed: {:?}", err),
+                    Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
                         tracing::error!(%message, "prove request failed");
                         panic!()
                     }
-                    PollResponse::Done(ProveRequestDone { response }) => [data::<Hc, Tr>(
+                    Ok(PollResponse::Done(ProveRequestDone { response })) => [data::<Hc, Tr>(
                         hc.chain_id(),
                         LightClientSpecificData(UnionDataMsg::ProveResponse(ProveResponse {
                             prove_response: response,
@@ -704,13 +702,15 @@ where
     }
 }
 
-async fn fetch_abci_query<Hc: CosmosSdkChain + ChainExt, Tr: ChainExt>(
+async fn fetch_abci_query<Hc, Tr>(
     c: &Hc,
     path: Path<Hc::ClientId, Tr::Height>,
     height: HeightOf<Hc>,
     ty: AbciQueryType,
 ) -> RelayerMsg
 where
+    Hc: CosmosSdkChain + ChainExt<StateProof = MerkleProof>,
+    Tr: ChainExt,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
 
@@ -813,8 +813,7 @@ where
                     })
                     .collect::<Vec<_>>(),
             })
-            .unwrap()
-            .into_eth_abi_bytes();
+            .unwrap();
 
             match path {
                 Path::ClientStatePath(path) => data::<Hc, Tr>(
@@ -1192,30 +1191,31 @@ where
             // don't find a validator for a given signature as the validator set
             // may have drifted (trusted validator set).
             for sig in signed_header.commit.signatures.iter() {
-                match sig.block_id_flag {
-                    BlockIdFlag::Absent => {
+                match sig {
+                    CommitSig::Absent => {
                         tracing::debug!("Validator did not sign: {:?}", sig);
                     }
-                    BlockIdFlag::Commit => {
-                        if let Some(validator_index) = validators_map
-                            .get(&sig.validator_address.0.to_vec().try_into().unwrap())
+                    CommitSig::Commit {
+                        validator_address,
+                        timestamp: _,
+                        signature,
+                    } => {
+                        if let Some(validator_index) =
+                            validators_map.get(&validator_address.0.to_vec().try_into().unwrap())
                         {
                             bitmap.set_bit(*validator_index as u64, true);
-                            signatures.push(sig.signature.clone().into());
+                            signatures.push(signature.clone().into());
                             tracing::debug!(
                                 "Validator {:?} at index {} signed",
-                                sig.validator_address,
+                                validator_address,
                                 validator_index
                             );
                         } else {
-                            tracing::warn!("Validator set drifted? Could not find validator for signature {:?}", sig.validator_address);
+                            tracing::warn!("Validator set drifted? Could not find validator for signature {:?}", validator_address);
                         }
                     }
-                    BlockIdFlag::Nil { .. } => {
+                    CommitSig::Nil { .. } => {
                         tracing::warn!("Validator commit is nil: {:?}", sig);
-                    }
-                    BlockIdFlag::Unknown => {
-                        tracing::warn!("Validator commit is unknown, wtf: {:?}", sig);
                     }
                 }
             }

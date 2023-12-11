@@ -1,13 +1,8 @@
 //! Code to convert the Rust-styled field/variant (e.g. `my_field`, `MyType`) to the
 //! case of the source (e.g. `my-field`, `MY_FIELD`).
 
-// See https://users.rust-lang.org/t/psa-dealing-with-warning-unused-import-std-ascii-asciiext-in-today-s-nightly/13726
-#[allow(deprecated, unused_imports)]
-use std::ascii::AsciiExt;
-
-use std::fmt::{self, Debug, Display};
-
 use self::RenameRule::*;
+use std::fmt::{self, Debug, Display};
 
 /// The different possible ways to change case of fields in a struct, or variants in an enum.
 #[derive(Copy, Clone, PartialEq)]
@@ -59,8 +54,8 @@ impl RenameRule {
     }
 
     /// Apply a renaming rule to an enum variant, returning the version expected in the source.
-    pub fn apply_to_variant(&self, variant: &str) -> String {
-        match *self {
+    pub fn apply_to_variant(self, variant: &str) -> String {
+        match self {
             None | PascalCase => variant.to_owned(),
             LowerCase => variant.to_ascii_lowercase(),
             UpperCase => variant.to_ascii_uppercase(),
@@ -84,8 +79,8 @@ impl RenameRule {
     }
 
     /// Apply a renaming rule to a struct field, returning the version expected in the source.
-    pub fn apply_to_field(&self, field: &str) -> String {
-        match *self {
+    pub fn apply_to_field(self, field: &str) -> String {
+        match self {
             None | LowerCase | SnakeCase => field.to_owned(),
             UpperCase => field.to_ascii_uppercase(),
             PascalCase => {
@@ -110,6 +105,14 @@ impl RenameRule {
             ScreamingSnakeCase => field.to_ascii_uppercase(),
             KebabCase => field.replace('_', "-"),
             ScreamingKebabCase => ScreamingSnakeCase.apply_to_field(field).replace('_', "-"),
+        }
+    }
+
+    /// Returns the `RenameRule` if it is not `None`, `rule_b` otherwise.
+    pub fn or(self, rule_b: Self) -> Self {
+        match self {
+            None => rule_b,
+            _ => self,
         }
     }
 }

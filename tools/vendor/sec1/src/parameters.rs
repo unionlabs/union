@@ -18,7 +18,6 @@ use der::{
 ///   -- with ANSI X9.
 /// ```
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(docsrs, doc(cfg(feature = "der")))]
 pub enum EcParameters {
     /// Elliptic curve named by a particular OID.
     ///
@@ -41,7 +40,7 @@ impl EncodeValue for EcParameters {
         }
     }
 
-    fn encode_value(&self, writer: &mut dyn Writer) -> der::Result<()> {
+    fn encode_value(&self, writer: &mut impl Writer) -> der::Result<()> {
         match self {
             Self::NamedCurve(oid) => oid.encode_value(writer),
         }

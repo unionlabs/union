@@ -120,4 +120,3 @@ This should help catch bugs sooner than later.
 ## TODO
 
 * improve documentation and add examples
-* figure out `Send`/`Sync` traits support

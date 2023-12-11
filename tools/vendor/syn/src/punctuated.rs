@@ -369,6 +369,11 @@ where
             last: self.last.clone(),
         }
     }
+
+    fn clone_from(&mut self, other: &Self) {
+        self.inner.clone_from(&other.inner);
+        self.last.clone_from(&other.last);
+    }
 }
 
 #[cfg(feature = "extra-traits")]

@@ -10,51 +10,86 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-edition = "2018"
+edition = "2021"
+rust-version = "1.70"
 name = "wasmer-types"
-version = "2.3.0"
+version = "4.2.2"
 authors = ["Wasmer Engineering Team <engineering@wasmer.io>"]
 description = "Wasmer Common Types"
+homepage = "https://wasmer.io/"
 readme = "README.md"
-keywords = ["wasm", "webassembly", "types"]
-categories = ["wasm", "no-std", "data-structures"]
+keywords = [
+    "wasm",
+    "webassembly",
+    "types",
+]
+categories = [
+    "wasm",
+    "no-std",
+    "data-structures",
+]
 license = "MIT OR Apache-2.0 WITH LLVM-exception"
 repository = "https://github.com/wasmerio/wasmer"
-resolver = "2"
-[dependencies.backtrace]
-version = "0.3"
+
+[package.metadata.docs.rs]
+rustc-args = [
+    "--cfg",
+    "docsrs",
+]
+
+[dependencies.bytecheck]
+version = "0.6.8"
 
 [dependencies.enum-iterator]
 version = "0.7.0"
 
+[dependencies.enumset]
+version = "1.0"
+
 [dependencies.indexmap]
 version = "1.6"
-features = ["serde-1"]
-
-[dependencies.loupe]
-version = "0.1"
-features = ["enable-indexmap"]
 
 [dependencies.more-asserts]
 version = "0.2"
 
 [dependencies.rkyv]
-version = "0.7.20"
-optional = true
+version = "0.7.40"
+features = [
+    "indexmap",
+    "validation",
+    "strict",
+]
 
 [dependencies.serde]
 version = "1.0"
-features = ["derive", "rc"]
+features = [
+    "derive",
+    "rc",
+]
 optional = true
+default-features = false
+
+[dependencies.serde_bytes]
+version = "0.11"
+optional = true
+
+[dependencies.target-lexicon]
+version = "0.12.2"
 default-features = false
 
 [dependencies.thiserror]
 version = "1.0"
 
+[dev-dependencies.memoffset]
+version = "0.6"
+
 [features]
 core = []
-default = ["std", "enable-serde", "enable-rkyv"]
-enable-rkyv = ["rkyv"]
-enable-serde = ["serde", "serde/std"]
-experimental-reference-types-extern-ref = []
+default = ["std"]
+enable-serde = [
+    "serde",
+    "serde/std",
+    "serde_bytes",
+    "indexmap/serde-1",
+]
 std = []

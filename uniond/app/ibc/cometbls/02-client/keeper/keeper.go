@@ -4,6 +4,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/errors"
 	wasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
@@ -12,6 +13,11 @@ import (
 	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+)
+
+var (
+	_ exported.ClientState    = (*ClientState)(nil)
+	_ exported.ConsensusState = (*ConsensusState)(nil)
 )
 
 type Keeper struct {
@@ -90,3 +96,150 @@ func (k Keeper) ClientStore(ctx sdk.Context, clientID string) storetypes.KVStore
 func (k Keeper) GetClientStatus(ctx sdk.Context, clientState exported.ClientState, clientID string) exported.Status {
 	return k.clientKeeper.GetClientStatus(ctx, clientState, clientID)
 }
+
+func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	registry.RegisterImplementations(
+		(*exported.ClientState)(nil),
+		&ClientState{},
+	)
+	registry.RegisterImplementations(
+		(*exported.ConsensusState)(nil),
+		&ConsensusState{},
+	)
+}
+
+// ===
+// Cometbls exported.ClientState implementation
+// ===
+
+func (_ ClientState) ClientType() string { return "cometbls" }
+func (cs ClientState) GetLatestHeight() exported.Height {
+	return cs.GetLatestHeight()
+}
+func (_ ClientState) Validate() error { return nil }
+
+// Status must return the status of the client. Only Active clients are allowed to process packets.
+func (_ ClientState) Status(_ sdk.Context, _ storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
+	return ""
+}
+
+// ExportMetadata must export metadata stored within the clientStore for genesis export
+func (_ ClientState) ExportMetadata(_ storetypes.KVStore) []exported.GenesisMetadata {
+	return []exported.GenesisMetadata{}
+}
+
+// ZeroCustomFields zeroes out any client customizable fields in client state
+// Ledger enforced fields are maintained while all custom fields are zero values
+// Used to verify upgrades
+func (cs ClientState) ZeroCustomFields() exported.ClientState {
+	return nil
+}
+
+// GetTimestampAtHeight must return the timestamp for the consensus state associated with the provided height.
+func (_ ClientState) GetTimestampAtHeight(
+	_ sdk.Context,
+	_ storetypes.KVStore,
+	_ codec.BinaryCodec,
+	_ exported.Height,
+) (uint64, error) {
+	return 0, nil
+}
+
+// Initialize is called upon client creation, it allows the client to perform validation on the initial consensus state and set the
+// client state, consensus state and any client-specific metadata necessary for correct light client operation in the provided client store.
+func (_ ClientState) Initialize(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ConsensusState) error {
+	return nil
+}
+
+// VerifyMembership is a generic proof verification method which verifies a proof of the existence of a value at a given CommitmentPath at the specified height.
+// The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
+func (_ ClientState) VerifyMembership(
+	_ sdk.Context,
+	_ storetypes.KVStore,
+	_ codec.BinaryCodec,
+	_ exported.Height,
+	_ uint64,
+	_ uint64,
+	_ []byte,
+	_ exported.Path,
+	_ []byte,
+) error {
+	return nil
+}
+
+// VerifyNonMembership is a generic proof verification method which verifies the absence of a given CommitmentPath at a specified height.
+// The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
+func (_ ClientState) VerifyNonMembership(
+	_ sdk.Context,
+	_ storetypes.KVStore,
+	_ codec.BinaryCodec,
+	_ exported.Height,
+	_ uint64,
+	_ uint64,
+	_ []byte,
+	_ exported.Path,
+) error {
+	return nil
+}
+
+// VerifyClientMessage must verify a ClientMessage. A ClientMessage could be a Header, Misbehaviour, or batch update.
+// It must handle each type of ClientMessage appropriately. Calls to CheckForMisbehaviour, UpdateState, and UpdateStateOnMisbehaviour
+// will assume that the content of the ClientMessage has been verified and can be trusted. An error should be returned
+// if the ClientMessage fails to verify.
+func (_ ClientState) VerifyClientMessage(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, clientMsg exported.ClientMessage) error {
+	return nil
+}
+
+// Checks for evidence of a misbehaviour in Header or Misbehaviour type. It assumes the ClientMessage
+// has already been verified.
+func (_ ClientState) CheckForMisbehaviour(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) bool {
+	return false
+}
+
+// UpdateStateOnMisbehaviour should perform appropriate state changes on a client state given that misbehaviour has been detected and verified
+func (_ ClientState) UpdateStateOnMisbehaviour(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) {
+	return
+}
+
+// UpdateState updates and stores as necessary any associated information for an IBC client, such as the ClientState and corresponding ConsensusState.
+// Upon successful update, a list of consensus heights is returned. It assumes the ClientMessage has already been verified.
+func (_ ClientState) UpdateState(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) []exported.Height {
+	return nil
+}
+
+// CheckSubstituteAndUpdateState must verify that the provided substitute may be used to update the subject client.
+// The light client must set the updated client and consensus states within the clientStore for the subject client.
+func (_ ClientState) CheckSubstituteAndUpdateState(_ sdk.Context, _ codec.BinaryCodec, _, _ storetypes.KVStore, _ exported.ClientState) error {
+	return nil
+}
+
+// Upgrade functions
+// NOTE: proof heights are not included as upgrade to a new revision is expected to pass only on the last
+// height committed by the current revision. Clients are responsible for ensuring that the planned last
+// height of the current revision is somehow encoded in the proof verification process.
+// This is to ensure that no premature upgrades occur, since upgrade plans committed to by the counterparty
+// may be cancelled or modified before the last planned height.
+// If the upgrade is verified, the upgraded client and consensus states must be set in the client store.
+func (_ ClientState) VerifyUpgradeAndUpdateState(
+	_ sdk.Context,
+	_ codec.BinaryCodec,
+	_ storetypes.KVStore,
+	_ exported.ClientState,
+	_ exported.ConsensusState,
+	_,
+	_ []byte,
+) error {
+	return nil
+}
+
+// ===
+// Cometbls exported.ConsensusState implementation
+// ===
+
+// Consensus kind
+func (_ ConsensusState) ClientType() string { return "cometbls" }
+
+// GetTimestamp returns the timestamp (in nanoseconds) of the consensus state
+func (cs ConsensusState) GetTimestamp() uint64 { return cs.Timestamp }
+
+func (_ ConsensusState) ValidateBasic() error { return nil }

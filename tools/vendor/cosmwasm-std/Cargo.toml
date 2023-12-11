@@ -12,7 +12,7 @@
 [package]
 edition = "2021"
 name = "cosmwasm-std"
-version = "1.3.0"
+version = "1.5.0"
 authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
 description = "Standard library for Wasm based smart contracts on Cosmos blockchains"
 readme = "README.md"
@@ -25,21 +25,22 @@ features = [
     "stargate",
     "staking",
     "ibc3",
-    "cosmwasm_1_3",
+    "cosmwasm_1_4",
 ]
 
 [dependencies]
-base64 = "0.13.0"
-bnum = "0.7.0"
+base64 = "0.21.0"
+bnum = "0.8.0"
 derivative = "2"
 forward_ref = "1"
 hex = "0.4"
 schemars = "0.8.3"
 sha2 = "0.10.3"
+static_assertions = "1.1.0"
 thiserror = "1.0.26"
 
 [dependencies.cosmwasm-derive]
-version = "1.3.0"
+version = "1.5.0"
 path = "../derive"
 
 [dependencies.serde]
@@ -54,6 +55,7 @@ default-features = false
 version = "0.5.0"
 
 [dev-dependencies]
+crc32fast = "1.3.2"
 hex-literal = "0.3.1"
 serde_json = "1.0.81"
 
@@ -74,6 +76,7 @@ backtraces = []
 cosmwasm_1_1 = []
 cosmwasm_1_2 = ["cosmwasm_1_1"]
 cosmwasm_1_3 = ["cosmwasm_1_2"]
+cosmwasm_1_4 = ["cosmwasm_1_3"]
 default = [
     "iterator",
     "abort",
@@ -83,6 +86,9 @@ iterator = []
 staking = []
 stargate = []
 
+[target."cfg(not(target_arch = \"wasm32\"))".dependencies]
+bech32 = "0.9.1"
+
 [target."cfg(not(target_arch = \"wasm32\"))".dependencies.cosmwasm-crypto]
-version = "1.3.0"
+version = "1.5.0"
 path = "../crypto"

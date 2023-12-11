@@ -1,3 +1,4 @@
+export QUICKCHECK_TESTS=1000000
 iters=0
 while true
 do

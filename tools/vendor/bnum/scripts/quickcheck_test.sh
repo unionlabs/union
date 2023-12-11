@@ -1,3 +1,4 @@
+export QUICKCHECK_TESTS=1000000
 while true
 do
 	RUSTFLAGS="--cfg test_int_bits=\"$1\"" cargo test quickcheck_ --quiet --features="$2 rand numtraits nightly"

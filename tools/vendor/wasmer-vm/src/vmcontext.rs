@@ -4,58 +4,54 @@
 //! This file declares `VMContext` and several related structs which contain
 //! fields that compiled wasm code accesses directly.
 
-use crate::func_data_registry::VMFuncRef;
-use crate::global::Global;
+use crate::global::VMGlobal;
 use crate::instance::Instance;
-use crate::memory::Memory;
-use crate::table::Table;
+use crate::memory::VMMemory;
+use crate::store::InternalStoreHandle;
 use crate::trap::{Trap, TrapCode};
-use crate::VMBuiltinFunctionIndex;
-use crate::VMExternRef;
-use loupe::{MemoryUsage, MemoryUsageTracker, POINTER_BYTE_SIZE};
-use std::any::Any;
+use crate::VMFunctionBody;
+use crate::VMTable;
+use crate::{VMBuiltinFunctionIndex, VMFunction};
 use std::convert::TryFrom;
-use std::fmt;
-use std::mem;
 use std::ptr::{self, NonNull};
-use std::sync::Arc;
+use std::sync::atomic::{AtomicPtr, Ordering};
 use std::u32;
-pub use wasmer_artifact::VMFunctionBody;
+use wasmer_types::RawValue;
 
 /// Union representing the first parameter passed when calling a function.
 ///
 /// It may either be a pointer to the [`VMContext`] if it's a Wasm function
 /// or a pointer to arbitrary data controlled by the host if it's a host function.
 #[derive(Copy, Clone, Eq)]
-pub union VMFunctionEnvironment {
+pub union VMFunctionContext {
     /// Wasm functions take a pointer to [`VMContext`].
     pub vmctx: *mut VMContext,
     /// Host functions can have custom environments.
     pub host_env: *mut std::ffi::c_void,
 }
 
-impl VMFunctionEnvironment {
+impl VMFunctionContext {
     /// Check whether the pointer stored is null or not.
     pub fn is_null(&self) -> bool {
         unsafe { self.host_env.is_null() }
     }
 }
 
-impl std::fmt::Debug for VMFunctionEnvironment {
+impl std::fmt::Debug for VMFunctionContext {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_struct("VMFunctionEnvironment")
+        f.debug_struct("VMFunctionContext")
             .field("vmctx_or_hostenv", unsafe { &self.host_env })
             .finish()
     }
 }
 
-impl std::cmp::PartialEq for VMFunctionEnvironment {
+impl std::cmp::PartialEq for VMFunctionContext {
     fn eq(&self, rhs: &Self) -> bool {
         unsafe { self.host_env as usize == rhs.host_env as usize }
     }
 }
 
-impl std::hash::Hash for VMFunctionEnvironment {
+impl std::hash::Hash for VMFunctionContext {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         unsafe {
             self.vmctx.hash(state);
@@ -63,30 +59,27 @@ impl std::hash::Hash for VMFunctionEnvironment {
     }
 }
 
-impl MemoryUsage for VMFunctionEnvironment {
-    fn size_of_val(&self, _: &mut dyn MemoryUsageTracker) -> usize {
-        mem::size_of_val(self)
-    }
-}
-
 /// An imported function.
-#[derive(Debug, Copy, Clone, MemoryUsage)]
+#[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct VMFunctionImport {
     /// A pointer to the imported function body.
     pub body: *const VMFunctionBody,
 
     /// A pointer to the `VMContext` that owns the function or host env data.
-    pub environment: VMFunctionEnvironment,
+    pub environment: VMFunctionContext,
+
+    /// Handle to the `VMFunction` in the context.
+    pub handle: InternalStoreHandle<VMFunction>,
 }
 
 #[cfg(test)]
 mod test_vmfunction_import {
     use super::VMFunctionImport;
-    use crate::VMOffsets;
     use memoffset::offset_of;
     use std::mem::size_of;
     use wasmer_types::ModuleInfo;
+    use wasmer_types::VMOffsets;
 
     #[test]
     fn check_vmfunction_import_offsets() {
@@ -116,7 +109,7 @@ mod test_vmfunction_import {
 /// containing the relevant context for running the function indicated
 /// in `address`.
 #[repr(C)]
-pub struct VMDynamicFunctionContext<T: Sized + Send + Sync> {
+pub struct VMDynamicFunctionContext<T> {
     /// The address of the inner dynamic function.
     ///
     /// Note: The function must be on the form of
@@ -171,7 +164,7 @@ mod test_vmdynamicfunction_import_context {
 }
 
 /// A function kind is a calling convention into and out of wasm code.
-#[derive(Debug, Copy, Clone, PartialEq, MemoryUsage)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[repr(C)]
 pub enum VMFunctionKind {
     /// A static function has the native signature:
@@ -192,14 +185,14 @@ pub enum VMFunctionKind {
 
 /// The fields compiled code needs to access to utilize a WebAssembly table
 /// imported from another instance.
-#[derive(Debug, Clone, MemoryUsage)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct VMTableImport {
     /// A pointer to the imported table description.
     pub definition: NonNull<VMTableDefinition>,
 
-    /// A pointer to the `Table` that owns the table description.
-    pub from: Arc<dyn Table>,
+    /// Handle to the `VMTable` in the context.
+    pub handle: InternalStoreHandle<VMTable>,
 }
 
 #[cfg(test)]
@@ -222,23 +215,19 @@ mod test_vmtable_import {
             offset_of!(VMTableImport, definition),
             usize::from(offsets.vmtable_import_definition())
         );
-        assert_eq!(
-            offset_of!(VMTableImport, from),
-            usize::from(offsets.vmtable_import_from())
-        );
     }
 }
 
 /// The fields compiled code needs to access to utilize a WebAssembly linear
 /// memory imported from another instance.
-#[derive(Debug, Clone, MemoryUsage)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct VMMemoryImport {
     /// A pointer to the imported memory description.
     pub definition: NonNull<VMMemoryDefinition>,
 
-    /// A pointer to the `Memory` that owns the memory description.
-    pub from: Arc<dyn Memory>,
+    /// A handle to the `Memory` that owns the memory description.
+    pub handle: InternalStoreHandle<VMMemory>,
 }
 
 #[cfg(test)]
@@ -262,28 +251,28 @@ mod test_vmmemory_import {
             usize::from(offsets.vmmemory_import_definition())
         );
         assert_eq!(
-            offset_of!(VMMemoryImport, from),
-            usize::from(offsets.vmmemory_import_from())
+            offset_of!(VMMemoryImport, handle),
+            usize::from(offsets.vmmemory_import_handle())
         );
     }
 }
 
 /// The fields compiled code needs to access to utilize a WebAssembly global
 /// variable imported from another instance.
-#[derive(Debug, Clone, MemoryUsage)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct VMGlobalImport {
     /// A pointer to the imported global variable description.
     pub definition: NonNull<VMGlobalDefinition>,
 
-    /// A pointer to the `Global` that owns the global description.
-    pub from: Arc<Global>,
+    /// A handle to the `Global` that owns the global description.
+    pub handle: InternalStoreHandle<VMGlobal>,
 }
 
 /// # Safety
 /// This data is safe to share between threads because it's plain data that
 /// is the user's responsibility to synchronize. Additionally, all operations
-/// on `from` are thread-safe through the use of a mutex in [`Global`].
+/// on `from` are thread-safe through the use of a mutex in [`VMGlobal`].
 unsafe impl Send for VMGlobalImport {}
 /// # Safety
 /// This data is safe to share between threads because it's plain data that
@@ -312,137 +301,142 @@ mod test_vmglobal_import {
             offset_of!(VMGlobalImport, definition),
             usize::from(offsets.vmglobal_import_definition())
         );
-        assert_eq!(
-            offset_of!(VMGlobalImport, from),
-            usize::from(offsets.vmglobal_import_from())
-        );
     }
 }
 
-/// The fields compiled code needs to access to utilize a WebAssembly linear
-/// memory defined within the instance, namely the start address and the
-/// size in bytes.
-#[derive(Debug, Copy, Clone)]
-#[repr(C)]
-pub struct VMMemoryDefinition {
-    /// The start address which is always valid, even if the memory grows.
-    pub base: *mut u8,
-
-    /// The current logical size of this linear memory in bytes.
-    pub current_length: usize,
-}
-
+/// Do an unsynchronized, non-atomic `memory.copy` for the memory.
+///
+/// # Errors
+///
+/// Returns a `Trap` error when the source or destination ranges are out of
+/// bounds.
+///
 /// # Safety
-/// This data is safe to share between threads because it's plain data that
-/// is the user's responsibility to synchronize.
-unsafe impl Send for VMMemoryDefinition {}
+/// The memory is not copied atomically and is not synchronized: it's the
+/// caller's responsibility to synchronize.
+pub(crate) unsafe fn memory_copy(
+    mem: &VMMemoryDefinition,
+    dst: u32,
+    src: u32,
+    len: u32,
+) -> Result<(), Trap> {
+    // https://webassembly.github.io/reference-types/core/exec/instructions.html#exec-memory-copy
+    if src
+        .checked_add(len)
+        .map_or(true, |n| usize::try_from(n).unwrap() > mem.current_length)
+        || dst
+            .checked_add(len)
+            .map_or(true, |m| usize::try_from(m).unwrap() > mem.current_length)
+    {
+        return Err(Trap::lib(TrapCode::HeapAccessOutOfBounds));
+    }
+
+    let dst = usize::try_from(dst).unwrap();
+    let src = usize::try_from(src).unwrap();
+
+    // Bounds and casts are checked above, by this point we know that
+    // everything is safe.
+    let dst = mem.base.add(dst);
+    let src = mem.base.add(src);
+    ptr::copy(src, dst, len as usize);
+
+    Ok(())
+}
+
+/// Perform the `memory.fill` operation for the memory in an unsynchronized,
+/// non-atomic way.
+///
+/// # Errors
+///
+/// Returns a `Trap` error if the memory range is out of bounds.
+///
 /// # Safety
-/// This data is safe to share between threads because it's plain data that
-/// is the user's responsibility to synchronize. And it's `Copy` so there's
-/// really no difference between passing it by reference or by value as far as
-/// correctness in a multi-threaded context is concerned.
-unsafe impl Sync for VMMemoryDefinition {}
-
-impl MemoryUsage for VMMemoryDefinition {
-    fn size_of_val(&self, tracker: &mut dyn MemoryUsageTracker) -> usize {
-        if tracker.track(self.base as *const _ as *const ()) {
-            POINTER_BYTE_SIZE * self.current_length
-        } else {
-            0
-        }
+/// The memory is not filled atomically and is not synchronized: it's the
+/// caller's responsibility to synchronize.
+pub(crate) unsafe fn memory_fill(
+    mem: &VMMemoryDefinition,
+    dst: u32,
+    val: u32,
+    len: u32,
+) -> Result<(), Trap> {
+    if dst
+        .checked_add(len)
+        .map_or(true, |m| usize::try_from(m).unwrap() > mem.current_length)
+    {
+        return Err(Trap::lib(TrapCode::HeapAccessOutOfBounds));
     }
+
+    let dst = isize::try_from(dst).unwrap();
+    let val = val as u8;
+
+    // Bounds and casts are checked above, by this point we know that
+    // everything is safe.
+    let dst = mem.base.offset(dst);
+    ptr::write_bytes(dst, val, len as usize);
+
+    Ok(())
 }
 
-impl VMMemoryDefinition {
-    /// Do an unsynchronized, non-atomic `memory.copy` for the memory.
-    ///
-    /// # Errors
-    ///
-    /// Returns a `Trap` error when the source or destination ranges are out of
-    /// bounds.
-    ///
-    /// # Safety
-    /// The memory is not copied atomically and is not synchronized: it's the
-    /// caller's responsibility to synchronize.
-    pub(crate) unsafe fn memory_copy(&self, dst: u32, src: u32, len: u32) -> Result<(), Trap> {
-        // https://webassembly.github.io/reference-types/core/exec/instructions.html#exec-memory-copy
-        if src
-            .checked_add(len)
-            .map_or(true, |n| usize::try_from(n).unwrap() > self.current_length)
-            || dst
-                .checked_add(len)
-                .map_or(true, |m| usize::try_from(m).unwrap() > self.current_length)
-        {
-            return Err(Trap::lib(TrapCode::HeapAccessOutOfBounds));
-        }
-
-        let dst = usize::try_from(dst).unwrap();
-        let src = usize::try_from(src).unwrap();
-
-        // Bounds and casts are checked above, by this point we know that
-        // everything is safe.
-        let dst = self.base.add(dst);
-        let src = self.base.add(src);
-        ptr::copy(src, dst, len as usize);
-
-        Ok(())
+/// Perform the `memory32.atomic.check32` operation for the memory. Return 0 if same, 1 if different
+///
+/// # Errors
+///
+/// Returns a `Trap` error if the memory range is out of bounds or 32bits unligned.
+///
+/// # Safety
+/// memory access is unsafe
+pub(crate) unsafe fn memory32_atomic_check32(
+    mem: &VMMemoryDefinition,
+    dst: u32,
+    val: u32,
+) -> Result<u32, Trap> {
+    if usize::try_from(dst).unwrap() > mem.current_length {
+        return Err(Trap::lib(TrapCode::HeapAccessOutOfBounds));
     }
 
-    /// Perform the `memory.fill` operation for the memory in an unsynchronized,
-    /// non-atomic way.
-    ///
-    /// # Errors
-    ///
-    /// Returns a `Trap` error if the memory range is out of bounds.
-    ///
-    /// # Safety
-    /// The memory is not filled atomically and is not synchronized: it's the
-    /// caller's responsibility to synchronize.
-    pub(crate) unsafe fn memory_fill(&self, dst: u32, val: u32, len: u32) -> Result<(), Trap> {
-        if dst
-            .checked_add(len)
-            .map_or(true, |m| usize::try_from(m).unwrap() > self.current_length)
-        {
-            return Err(Trap::lib(TrapCode::HeapAccessOutOfBounds));
-        }
-
-        let dst = isize::try_from(dst).unwrap();
-        let val = val as u8;
-
-        // Bounds and casts are checked above, by this point we know that
-        // everything is safe.
-        let dst = self.base.offset(dst);
-        ptr::write_bytes(dst, val, len as usize);
-
-        Ok(())
+    let dst = isize::try_from(dst).unwrap();
+    if dst & 0b11 != 0 {
+        return Err(Trap::lib(TrapCode::UnalignedAtomic));
     }
+
+    // Bounds and casts are checked above, by this point we know that
+    // everything is safe.
+    let dst = mem.base.offset(dst) as *mut u32;
+    let atomic_dst = AtomicPtr::new(dst);
+    let read_val = *atomic_dst.load(Ordering::Acquire);
+    let ret = if read_val == val { 0 } else { 1 };
+    Ok(ret)
 }
 
-#[cfg(test)]
-mod test_vmmemory_definition {
-    use super::VMMemoryDefinition;
-    use crate::VMOffsets;
-    use memoffset::offset_of;
-    use std::mem::size_of;
-    use wasmer_types::ModuleInfo;
-
-    #[test]
-    fn check_vmmemory_definition_offsets() {
-        let module = ModuleInfo::new();
-        let offsets = VMOffsets::new(size_of::<*mut u8>() as u8, &module);
-        assert_eq!(
-            size_of::<VMMemoryDefinition>(),
-            usize::from(offsets.size_of_vmmemory_definition())
-        );
-        assert_eq!(
-            offset_of!(VMMemoryDefinition, base),
-            usize::from(offsets.vmmemory_definition_base())
-        );
-        assert_eq!(
-            offset_of!(VMMemoryDefinition, current_length),
-            usize::from(offsets.vmmemory_definition_current_length())
-        );
+/// Perform the `memory32.atomic.check64` operation for the memory. Return 0 if same, 1 if different
+///
+/// # Errors
+///
+/// Returns a `Trap` error if the memory range is out of bounds or 64bits unaligned.
+///
+/// # Safety
+/// memory access is unsafe
+pub(crate) unsafe fn memory32_atomic_check64(
+    mem: &VMMemoryDefinition,
+    dst: u32,
+    val: u64,
+) -> Result<u32, Trap> {
+    if usize::try_from(dst).unwrap() > mem.current_length {
+        return Err(Trap::lib(TrapCode::HeapAccessOutOfBounds));
     }
+
+    let dst = isize::try_from(dst).unwrap();
+    if dst & 0b111 != 0 {
+        return Err(Trap::lib(TrapCode::UnalignedAtomic));
+    }
+
+    // Bounds and casts are checked above, by this point we know that
+    // everything is safe.
+    let dst = mem.base.offset(dst) as *mut u64;
+    let atomic_dst = AtomicPtr::new(dst);
+    let read_val = *atomic_dst.load(Ordering::Acquire);
+    let ret = if read_val == val { 0 } else { 1 };
+    Ok(ret)
 }
 
 /// The fields compiled code needs to access to utilize a WebAssembly table
@@ -455,16 +449,6 @@ pub struct VMTableDefinition {
 
     /// The current number of elements in the table.
     pub current_elements: u32,
-}
-
-impl MemoryUsage for VMTableDefinition {
-    fn size_of_val(&self, tracker: &mut dyn MemoryUsageTracker) -> usize {
-        if tracker.track(self.base as *const _ as *const ()) {
-            POINTER_BYTE_SIZE * (self.current_elements as usize)
-        } else {
-            0
-        }
-    }
 }
 
 #[cfg(test)]
@@ -494,51 +478,15 @@ mod test_vmtable_definition {
     }
 }
 
-/// A typesafe wrapper around the storage for a global variables.
-///
-/// # Safety
-///
-/// Accessing the different members of this union is always safe because there
-/// are no invalid values for any of the types and the whole object is
-/// initialized by VMGlobalDefinition::new().
-#[derive(Clone, Copy)]
-#[repr(C, align(16))]
-pub union VMGlobalDefinitionStorage {
-    as_i32: i32,
-    as_u32: u32,
-    as_f32: f32,
-    as_i64: i64,
-    as_u64: u64,
-    as_f64: f64,
-    as_u128: u128,
-    as_funcref: VMFuncRef,
-    as_externref: VMExternRef,
-    bytes: [u8; 16],
-}
-
-impl fmt::Debug for VMGlobalDefinitionStorage {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("VMGlobalDefinitionStorage")
-            .field("bytes", unsafe { &self.bytes })
-            .finish()
-    }
-}
-
-impl MemoryUsage for VMGlobalDefinitionStorage {
-    fn size_of_val(&self, _: &mut dyn MemoryUsageTracker) -> usize {
-        mem::size_of_val(self)
-    }
-}
-
 /// The storage for a WebAssembly global defined within the instance.
 ///
 /// TODO: Pack the globals more densely, rather than using the same size
 /// for every type.
-#[derive(Debug, Clone, MemoryUsage)]
+#[derive(Debug, Clone)]
 #[repr(C, align(16))]
 pub struct VMGlobalDefinition {
-    storage: VMGlobalDefinitionStorage,
-    // If more elements are added here, remember to add offset_of tests below!
+    /// Raw value of the global.
+    pub val: RawValue,
 }
 
 #[cfg(test)]
@@ -581,202 +529,15 @@ impl VMGlobalDefinition {
     /// Construct a `VMGlobalDefinition`.
     pub fn new() -> Self {
         Self {
-            storage: VMGlobalDefinitionStorage { bytes: [0; 16] },
+            val: Default::default(),
         }
-    }
-
-    /// Return the value as an i32.
-    ///
-    /// If this is not an I32 typed global it is unspecified what value is returned.
-    pub fn to_i32(&self) -> i32 {
-        unsafe { self.storage.as_i32 }
-    }
-
-    /// Return a mutable reference to the value as an i32.
-    ///
-    /// # Safety
-    ///
-    /// It is the callers responsibility to make sure the global has I32 type.
-    /// Until the returned borrow is dropped, reads and writes of this global
-    /// must be done exclusively through this borrow. That includes reads and
-    /// writes of globals inside wasm functions.
-    pub unsafe fn as_i32_mut(&mut self) -> &mut i32 {
-        &mut self.storage.as_i32
-    }
-
-    /// Return a reference to the value as an u32.
-    ///
-    /// If this is not an I32 typed global it is unspecified what value is returned.
-    pub fn to_u32(&self) -> u32 {
-        unsafe { self.storage.as_u32 }
-    }
-
-    /// Return a mutable reference to the value as an u32.
-    ///
-    /// # Safety
-    ///
-    /// It is the callers responsibility to make sure the global has I32 type.
-    /// Until the returned borrow is dropped, reads and writes of this global
-    /// must be done exclusively through this borrow. That includes reads and
-    /// writes of globals inside wasm functions.
-    pub unsafe fn as_u32_mut(&mut self) -> &mut u32 {
-        &mut self.storage.as_u32
-    }
-
-    /// Return a reference to the value as an i64.
-    ///
-    /// If this is not an I64 typed global it is unspecified what value is returned.
-    pub fn to_i64(&self) -> i64 {
-        unsafe { self.storage.as_i64 }
-    }
-
-    /// Return a mutable reference to the value as an i64.
-    ///
-    /// # Safety
-    ///
-    /// It is the callers responsibility to make sure the global has I32 type.
-    /// Until the returned borrow is dropped, reads and writes of this global
-    /// must be done exclusively through this borrow. That includes reads and
-    /// writes of globals inside wasm functions.
-    pub unsafe fn as_i64_mut(&mut self) -> &mut i64 {
-        &mut self.storage.as_i64
-    }
-
-    /// Return a reference to the value as an u64.
-    ///
-    /// If this is not an I64 typed global it is unspecified what value is returned.
-    pub fn to_u64(&self) -> u64 {
-        unsafe { self.storage.as_u64 }
-    }
-
-    /// Return a mutable reference to the value as an u64.
-    ///
-    /// # Safety
-    ///
-    /// It is the callers responsibility to make sure the global has I64 type.
-    /// Until the returned borrow is dropped, reads and writes of this global
-    /// must be done exclusively through this borrow. That includes reads and
-    /// writes of globals inside wasm functions.
-    pub unsafe fn as_u64_mut(&mut self) -> &mut u64 {
-        &mut self.storage.as_u64
-    }
-
-    /// Return a reference to the value as an f32.
-    ///
-    /// If this is not an F32 typed global it is unspecified what value is returned.
-    pub fn to_f32(&self) -> f32 {
-        unsafe { self.storage.as_f32 }
-    }
-
-    /// Return a mutable reference to the value as an f32.
-    ///
-    /// # Safety
-    ///
-    /// It is the callers responsibility to make sure the global has F32 type.
-    /// Until the returned borrow is dropped, reads and writes of this global
-    /// must be done exclusively through this borrow. That includes reads and
-    /// writes of globals inside wasm functions.
-    pub unsafe fn as_f32_mut(&mut self) -> &mut f32 {
-        &mut self.storage.as_f32
-    }
-
-    /// Return a reference to the value as an f64.
-    ///
-    /// If this is not an F64 typed global it is unspecified what value is returned.
-    pub fn to_f64(&self) -> f64 {
-        unsafe { self.storage.as_f64 }
-    }
-
-    /// Return a mutable reference to the value as an f64.
-    ///
-    /// # Safety
-    ///
-    /// It is the callers responsibility to make sure the global has F64 type.
-    /// Until the returned borrow is dropped, reads and writes of this global
-    /// must be done exclusively through this borrow. That includes reads and
-    /// writes of globals inside wasm functions.
-    pub unsafe fn as_f64_mut(&mut self) -> &mut f64 {
-        &mut self.storage.as_f64
-    }
-
-    /// Return a reference to the value as a `VMFuncRef`.
-    ///
-    /// If this is not a `VMFuncRef` typed global it is unspecified what value is returned.
-    pub fn to_funcref(&self) -> VMFuncRef {
-        unsafe { self.storage.as_funcref }
-    }
-
-    /// Return a mutable reference to the value as a `VMFuncRef`.
-    ///
-    /// # Safety
-    ///
-    /// It is the callers responsibility to make sure the global has `VMFuncRef` type.
-    /// Until the returned borrow is dropped, reads and writes of this global
-    /// must be done exclusively through this borrow. That includes reads and
-    /// writes of globals inside wasm functions.
-    pub unsafe fn as_funcref_mut(&mut self) -> &mut VMFuncRef {
-        &mut self.storage.as_funcref
-    }
-
-    /// Return a mutable reference to the value as an `VMExternRef`.
-    ///
-    /// # Safety
-    ///
-    /// It is the callers responsibility to make sure the global has I32 type.
-    /// Until the returned borrow is dropped, reads and writes of this global
-    /// must be done exclusively through this borrow. That includes reads and
-    /// writes of globals inside wasm functions.
-    pub unsafe fn as_externref_mut(&mut self) -> &mut VMExternRef {
-        &mut self.storage.as_externref
-    }
-
-    /// Return a reference to the value as an `VMExternRef`.
-    ///
-    /// If this is not an I64 typed global it is unspecified what value is returned.
-    pub fn to_externref(&self) -> VMExternRef {
-        unsafe { self.storage.as_externref }
-    }
-
-    /// Return a reference to the value as an u128.
-    ///
-    /// If this is not an V128 typed global it is unspecified what value is returned.
-    pub fn to_u128(&self) -> u128 {
-        unsafe { self.storage.as_u128 }
-    }
-
-    /// Return a mutable reference to the value as an u128.
-    ///
-    /// # Safety
-    ///
-    /// It is the callers responsibility to make sure the global has V128 type.
-    /// Until the returned borrow is dropped, reads and writes of this global
-    /// must be done exclusively through this borrow. That includes reads and
-    /// writes of globals inside wasm functions.
-    pub unsafe fn as_u128_mut(&mut self) -> &mut u128 {
-        &mut self.storage.as_u128
-    }
-
-    /// Return a reference to the value as bytes.
-    pub fn to_bytes(&self) -> [u8; 16] {
-        unsafe { self.storage.bytes }
-    }
-
-    /// Return a mutable reference to the value as bytes.
-    ///
-    /// # Safety
-    ///
-    /// Until the returned borrow is dropped, reads and writes of this global
-    /// must be done exclusively through this borrow. That includes reads and
-    /// writes of globals inside wasm functions.
-    pub unsafe fn as_bytes_mut(&mut self) -> &mut [u8; 16] {
-        &mut self.storage.bytes
     }
 }
 
 /// An index into the shared signature registry, usable for checking signatures
 /// at indirect calls.
 #[repr(C)]
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash, MemoryUsage)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Hash)]
 pub struct VMSharedSignatureIndex(u32);
 
 #[cfg(test)]
@@ -820,7 +581,7 @@ impl Default for VMSharedSignatureIndex {
 /// The VM caller-checked "anyfunc" record, for caller-side signature checking.
 /// It consists of the actual function pointer and a signature id to be checked
 /// by the caller.
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, MemoryUsage)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[repr(C)]
 pub struct VMCallerCheckedAnyfunc {
     /// Function body.
@@ -828,7 +589,10 @@ pub struct VMCallerCheckedAnyfunc {
     /// Function signature id.
     pub type_index: VMSharedSignatureIndex,
     /// Function `VMContext` or host env.
-    pub vmctx: VMFunctionEnvironment,
+    pub vmctx: VMFunctionContext,
+    /// Address of the function call trampoline to invoke this function using
+    /// a dynamic argument list.
+    pub call_trampoline: VMTrampoline,
     // If more elements are added here, remember to add offset_of tests below!
 }
 
@@ -860,18 +624,6 @@ mod test_vmcaller_checked_anyfunc {
             offset_of!(VMCallerCheckedAnyfunc, vmctx),
             usize::from(offsets.vmcaller_checked_anyfunc_vmctx())
         );
-    }
-}
-
-impl Default for VMCallerCheckedAnyfunc {
-    fn default() -> Self {
-        Self {
-            func_ptr: ptr::null_mut(),
-            type_index: Default::default(),
-            vmctx: VMFunctionEnvironment {
-                vmctx: ptr::null_mut(),
-            },
-        }
     }
 }
 
@@ -944,10 +696,19 @@ impl VMBuiltinFunctionsArray {
             wasmer_vm_func_ref as usize;
         ptrs[VMBuiltinFunctionIndex::get_table_fill_index().index() as usize] =
             wasmer_vm_table_fill as usize;
-        ptrs[VMBuiltinFunctionIndex::get_externref_inc_index().index() as usize] =
-            wasmer_vm_externref_inc as usize;
-        ptrs[VMBuiltinFunctionIndex::get_externref_dec_index().index() as usize] =
-            wasmer_vm_externref_dec as usize;
+
+        ptrs[VMBuiltinFunctionIndex::get_memory_atomic_wait32_index().index() as usize] =
+            wasmer_vm_memory32_atomic_wait32 as usize;
+        ptrs[VMBuiltinFunctionIndex::get_imported_memory_atomic_wait32_index().index() as usize] =
+            wasmer_vm_imported_memory32_atomic_wait32 as usize;
+        ptrs[VMBuiltinFunctionIndex::get_memory_atomic_wait64_index().index() as usize] =
+            wasmer_vm_memory32_atomic_wait64 as usize;
+        ptrs[VMBuiltinFunctionIndex::get_imported_memory_atomic_wait64_index().index() as usize] =
+            wasmer_vm_imported_memory32_atomic_wait64 as usize;
+        ptrs[VMBuiltinFunctionIndex::get_memory_atomic_notify_index().index() as usize] =
+            wasmer_vm_memory32_atomic_notify as usize;
+        ptrs[VMBuiltinFunctionIndex::get_imported_memory_atomic_notify_index().index() as usize] =
+            wasmer_vm_imported_memory32_atomic_notify as usize;
 
         debug_assert!(ptrs.iter().cloned().all(|p| p != 0));
 
@@ -980,14 +741,9 @@ impl VMContext {
         &*((self as *const Self as *mut u8).offset(-Instance::vmctx_offset()) as *const Instance)
     }
 
-    /// Return a reference to the host state associated with this `Instance`.
-    ///
-    /// # Safety
-    /// This is unsafe because it doesn't work on just any `VMContext`, it must
-    /// be a `VMContext` allocated as part of an `Instance`.
     #[inline]
-    pub unsafe fn host_state(&self) -> &dyn Any {
-        self.instance().host_state()
+    pub(crate) unsafe fn instance_mut(&mut self) -> &mut Instance {
+        &mut *((self as *const Self as *mut u8).offset(-Instance::vmctx_offset()) as *mut Instance)
     }
 }
 
@@ -995,5 +751,56 @@ impl VMContext {
 pub type VMTrampoline = unsafe extern "C" fn(
     *mut VMContext,        // callee vmctx
     *const VMFunctionBody, // function we're actually calling
-    *mut u128,             // space for arguments and return values
+    *mut RawValue,         // space for arguments and return values
 );
+
+/// The fields compiled code needs to access to utilize a WebAssembly linear
+/// memory defined within the instance, namely the start address and the
+/// size in bytes.
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
+pub struct VMMemoryDefinition {
+    /// The start address which is always valid, even if the memory grows.
+    pub base: *mut u8,
+
+    /// The current logical size of this linear memory in bytes.
+    pub current_length: usize,
+}
+
+/// # Safety
+/// This data is safe to share between threads because it's plain data that
+/// is the user's responsibility to synchronize.
+unsafe impl Send for VMMemoryDefinition {}
+/// # Safety
+/// This data is safe to share between threads because it's plain data that
+/// is the user's responsibility to synchronize. And it's `Copy` so there's
+/// really no difference between passing it by reference or by value as far as
+/// correctness in a multi-threaded context is concerned.
+unsafe impl Sync for VMMemoryDefinition {}
+
+#[cfg(test)]
+mod test_vmmemory_definition {
+    use super::VMMemoryDefinition;
+    use crate::VMOffsets;
+    use memoffset::offset_of;
+    use std::mem::size_of;
+    use wasmer_types::ModuleInfo;
+
+    #[test]
+    fn check_vmmemory_definition_offsets() {
+        let module = ModuleInfo::new();
+        let offsets = VMOffsets::new(size_of::<*mut u8>() as u8, &module);
+        assert_eq!(
+            size_of::<VMMemoryDefinition>(),
+            usize::from(offsets.size_of_vmmemory_definition())
+        );
+        assert_eq!(
+            offset_of!(VMMemoryDefinition, base),
+            usize::from(offsets.vmmemory_definition_base())
+        );
+        assert_eq!(
+            offset_of!(VMMemoryDefinition, current_length),
+            usize::from(offsets.vmmemory_definition_current_length())
+        );
+    }
+}

@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.65"
 name = "sec1"
-version = "0.3.0"
+version = "0.7.3"
 authors = ["RustCrypto Developers"]
 description = """
 Pure Rust implementation of SEC1: Elliptic Curve Cryptography encoding formats
@@ -36,7 +36,6 @@ categories = [
 ]
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/RustCrypto/formats/tree/master/sec1"
-resolver = "2"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -46,27 +45,27 @@ rustdoc-args = [
 ]
 
 [dependencies.base16ct]
-version = "0.1.1"
+version = "0.2"
 optional = true
 default-features = false
 
 [dependencies.der]
-version = "0.6"
+version = "0.7"
 features = ["oid"]
 optional = true
 
 [dependencies.generic-array]
-version = "0.14.4"
+version = "0.14.7"
 optional = true
 default-features = false
 
 [dependencies.pkcs8]
-version = "0.9"
+version = "0.10"
 optional = true
 default-features = false
 
 [dependencies.serdect]
-version = "0.1"
+version = "0.2"
 features = ["alloc"]
 optional = true
 default-features = false
@@ -82,20 +81,24 @@ optional = true
 default-features = false
 
 [dev-dependencies.hex-literal]
-version = "0.3"
+version = "0.4"
 
 [dev-dependencies.tempfile]
 version = "3"
 
 [features]
 alloc = [
-    "der/alloc",
-    "pkcs8/alloc",
-    "zeroize/alloc",
+    "der?/alloc",
+    "pkcs8?/alloc",
+    "zeroize?/alloc",
 ]
 default = [
     "der",
     "point",
+]
+der = [
+    "dep:der",
+    "zeroize",
 ]
 pem = [
     "alloc",
@@ -103,11 +106,15 @@ pem = [
     "pkcs8/pem",
 ]
 point = [
-    "base16ct",
-    "generic-array",
+    "dep:base16ct",
+    "dep:generic-array",
 ]
-serde = ["serdect"]
+serde = ["dep:serdect"]
 std = [
-    "der/std",
     "alloc",
+    "der?/std",
+]
+zeroize = [
+    "dep:zeroize",
+    "der?/zeroize",
 ]

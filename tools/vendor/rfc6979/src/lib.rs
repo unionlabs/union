@@ -1,36 +1,5 @@
-#![doc = include_str!("../README.md")]
-
-//! ## Usage
-//!
-//! See also: the documentation for the [`generate_k`] function.
-//!
-//! ```
-//! use crypto_bigint::{ArrayEncoding, U256};
-//! use sha2::{Digest, Sha256};
-//!
-//! // NIST P-256 field modulus
-//! const NIST_P256_MODULUS: U256 =
-//!     U256::from_be_hex("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551");
-//!
-//! // Public key for RFC6979 NIST P256/SHA256 test case
-//! const RFC6979_KEY: U256 =
-//!     U256::from_be_hex("C9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721");
-//!
-//! // Test message for RFC6979 NIST P256/SHA256 test case
-//! const RFC6979_MSG: &[u8; 6] = b"sample";
-//!
-//! // Expected K for RFC6979 NIST P256/SHA256 test case
-//! const RFC6979_EXPECTED_K: U256 =
-//!     U256::from_be_hex("A6E3C57DD01ABE90086538398355DD4C3B17AA873382B0F24D6129493D8AAD60");
-//!
-//! let h = Sha256::digest(RFC6979_MSG);
-//! let aad = b"";
-//! let k = rfc6979::generate_k::<Sha256, U256>(&RFC6979_KEY, &NIST_P256_MODULUS, &h, aad);
-//! assert_eq!(&k.to_be_byte_array(), &RFC6979_EXPECTED_K.to_be_byte_array());
-//! ```
-
 #![no_std]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![doc = include_str!("../README.md")]
 #![forbid(unsafe_code, clippy::unwrap_used)]
 #![warn(missing_docs, rust_2018_idioms)]
 #![doc(
@@ -38,15 +7,51 @@
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/8f1a9894/logo.svg"
 )]
 
-use crypto_bigint::{ArrayEncoding, ByteArray, Integer};
+//! ## Usage
+//!
+//! See also: the documentation for the [`generate_k`] function.
+//!
+//! ```
+//! use hex_literal::hex;
+//! use rfc6979::consts::U32;
+//! use sha2::{Digest, Sha256};
+//!
+//! // NIST P-256 field modulus
+//! const NIST_P256_MODULUS: [u8; 32] =
+//!     hex!("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551");
+//!
+//! // Public key for RFC6979 NIST P256/SHA256 test case
+//! const RFC6979_KEY: [u8; 32] =
+//!     hex!("C9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721");
+//!
+//! // Test message for RFC6979 NIST P256/SHA256 test case
+//! const RFC6979_MSG: &[u8; 6] = b"sample";
+//!
+//! // Expected K for RFC6979 NIST P256/SHA256 test case
+//! const RFC6979_EXPECTED_K: [u8; 32] =
+//!     hex!("A6E3C57DD01ABE90086538398355DD4C3B17AA873382B0F24D6129493D8AAD60");
+//!
+//! let h = Sha256::digest(RFC6979_MSG);
+//! let aad = b"";
+//! let k = rfc6979::generate_k::<Sha256, U32>(&RFC6979_KEY.into(), &NIST_P256_MODULUS.into(), &h, aad);
+//! assert_eq!(k.as_slice(), &RFC6979_EXPECTED_K);
+//! ```
+
+mod ct_cmp;
+
+pub use hmac::digest::generic_array::typenum::consts;
+
 use hmac::{
     digest::{
-        core_api::BlockSizeUser, generic_array::GenericArray, Digest, FixedOutput,
-        FixedOutputReset, Mac,
+        core_api::BlockSizeUser,
+        generic_array::{ArrayLength, GenericArray},
+        Digest, FixedOutput, FixedOutputReset, Mac,
     },
     SimpleHmac,
 };
-use zeroize::{Zeroize, Zeroizing};
+
+/// Array of bytes representing a scalar serialized as a big endian integer.
+pub type ByteArray<Size> = GenericArray<u8, Size>;
 
 /// Deterministically generate ephemeral scalar `k`.
 ///
@@ -57,22 +62,25 @@ use zeroize::{Zeroize, Zeroizing};
 /// - `h`: hash/digest of input message: must be reduced modulo `n` in advance
 /// - `data`: additional associated data, e.g. CSRNG output used as added entropy
 #[inline]
-pub fn generate_k<D, I>(x: &I, n: &I, h: &ByteArray<I>, data: &[u8]) -> Zeroizing<I>
+pub fn generate_k<D, N>(
+    x: &ByteArray<N>,
+    n: &ByteArray<N>,
+    h: &ByteArray<N>,
+    data: &[u8],
+) -> ByteArray<N>
 where
-    D: Digest + BlockSizeUser + FixedOutput<OutputSize = I::ByteSize> + FixedOutputReset,
-    I: ArrayEncoding + Integer + Zeroize,
+    D: Digest + BlockSizeUser + FixedOutput<OutputSize = N> + FixedOutputReset,
+    N: ArrayLength<u8>,
 {
-    let mut x = x.to_be_byte_array();
-    let mut hmac_drbg = HmacDrbg::<D>::new(&x, h, data);
-    x.zeroize();
+    let mut hmac_drbg = HmacDrbg::<D>::new(x, h, data);
 
     loop {
-        let mut bytes = ByteArray::<I>::default();
-        hmac_drbg.fill_bytes(&mut bytes);
-        let k = I::from_be_byte_array(bytes);
+        let mut k = ByteArray::<N>::default();
+        hmac_drbg.fill_bytes(&mut k);
 
-        if (!k.is_zero() & k.ct_lt(n)).into() {
-            return Zeroizing::new(k);
+        let k_is_zero = ct_cmp::ct_eq(&k, &ByteArray::default());
+        if (!k_is_zero & ct_cmp::ct_lt(&k, n)).into() {
+            return k;
         }
     }
 }

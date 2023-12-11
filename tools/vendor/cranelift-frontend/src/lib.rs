@@ -69,7 +69,7 @@
 //!
 //! use cranelift_codegen::entity::EntityRef;
 //! use cranelift_codegen::ir::types::*;
-//! use cranelift_codegen::ir::{AbiParam, ExternalName, Function, InstBuilder, Signature};
+//! use cranelift_codegen::ir::{AbiParam, UserFuncName, Function, InstBuilder, Signature};
 //! use cranelift_codegen::isa::CallConv;
 //! use cranelift_codegen::settings;
 //! use cranelift_codegen::verifier::verify_function;
@@ -79,7 +79,7 @@
 //! sig.returns.push(AbiParam::new(I32));
 //! sig.params.push(AbiParam::new(I32));
 //! let mut fn_builder_ctx = FunctionBuilderContext::new();
-//! let mut func = Function::with_name_signature(ExternalName::user(0, 0), sig);
+//! let mut func = Function::with_name_signature(UserFuncName::user(0, 0), sig);
 //! {
 //!     let mut builder = FunctionBuilder::new(&mut func, &mut fn_builder_ctx);
 //!
@@ -189,9 +189,9 @@ extern crate alloc;
 extern crate std;
 
 #[cfg(not(feature = "std"))]
-use hashbrown::{hash_map, HashMap};
+use hashbrown::HashMap;
 #[cfg(feature = "std")]
-use std::collections::{hash_map, HashMap};
+use std::collections::HashMap;
 
 pub use crate::frontend::{FunctionBuilder, FunctionBuilderContext};
 pub use crate::switch::Switch;

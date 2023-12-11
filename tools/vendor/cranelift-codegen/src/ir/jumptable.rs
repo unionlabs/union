@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 /// Contents of a jump table.
 ///
 /// All jump tables use 0-based indexing and are densely populated.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Hash)]
 #[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
 pub struct JumpTableData {
     // Table entries.
@@ -32,6 +32,10 @@ impl JumpTableData {
         Self {
             table: Vec::with_capacity(capacity),
         }
+    }
+    /// Create a new jump table with the provided blocks
+    pub fn with_blocks(table: Vec<Block>) -> Self {
+        Self { table }
     }
 
     /// Get the number of table entries.

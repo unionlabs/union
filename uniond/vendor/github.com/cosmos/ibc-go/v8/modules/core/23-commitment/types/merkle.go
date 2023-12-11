@@ -9,7 +9,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
-	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	tmcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
@@ -243,7 +243,7 @@ func verifyChainedMembershipProof(root []byte, specs []*ics23.ProofSpec, proofs 
 // and are declared as globals to avoid having to unnecessarily re-allocate on every comparison.
 var (
 	blankMerkleProof = &MerkleProof{}
-	blankProofOps    = &cmtcrypto.ProofOps{}
+	blankProofOps    = &tmcrypto.ProofOps{}
 )
 
 // Empty returns true if the root is empty

@@ -1,5 +1,8 @@
 //! `expand_message_xmd` based on a hash function.
 
+// TODO(tarcieri): checked arithmetic
+#![allow(clippy::integer_arithmetic)]
+
 use core::marker::PhantomData;
 
 use super::{Domain, ExpandMsg, Expander};
@@ -10,7 +13,7 @@ use digest::{
         typenum::{IsLess, IsLessOrEqual, Unsigned, U256},
         GenericArray,
     },
-    Digest,
+    FixedOutput, HashMarker,
 };
 
 /// Placeholder type for implementing `expand_message_xmd` based on a hash function
@@ -22,14 +25,14 @@ use digest::{
 /// - `len_in_bytes > 255 * HashT::OutputSize`
 pub struct ExpandMsgXmd<HashT>(PhantomData<HashT>)
 where
-    HashT: Digest + BlockSizeUser,
+    HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
     HashT::OutputSize: IsLess<U256>,
     HashT::OutputSize: IsLessOrEqual<HashT::BlockSize>;
 
 /// ExpandMsgXmd implements expand_message_xmd for the ExpandMsg trait
 impl<'a, HashT> ExpandMsg<'a> for ExpandMsgXmd<HashT>
 where
-    HashT: Digest + BlockSizeUser,
+    HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
     // If `len_in_bytes` is bigger then 256, length of the `DST` will depend on
     // the output size of the hash, which is still not allowed to be bigger then 256:
     // https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-13.html#section-5.4.1-6
@@ -42,7 +45,7 @@ where
 
     fn expand_message(
         msgs: &[&[u8]],
-        dst: &'a [u8],
+        dsts: &'a [&'a [u8]],
         len_in_bytes: usize,
     ) -> Result<Self::Expander> {
         if len_in_bytes == 0 {
@@ -54,26 +57,26 @@ where
         let b_in_bytes = HashT::OutputSize::to_usize();
         let ell = u8::try_from((len_in_bytes + b_in_bytes - 1) / b_in_bytes).map_err(|_| Error)?;
 
-        let domain = Domain::xmd::<HashT>(dst)?;
-        let mut b_0 = HashT::new();
-        b_0.update(GenericArray::<u8, HashT::BlockSize>::default());
+        let domain = Domain::xmd::<HashT>(dsts)?;
+        let mut b_0 = HashT::default();
+        b_0.update(&GenericArray::<u8, HashT::BlockSize>::default());
 
         for msg in msgs {
             b_0.update(msg);
         }
 
-        b_0.update(len_in_bytes_u16.to_be_bytes());
-        b_0.update([0]);
-        b_0.update(domain.data());
-        b_0.update([domain.len()]);
-        let b_0 = b_0.finalize();
+        b_0.update(&len_in_bytes_u16.to_be_bytes());
+        b_0.update(&[0]);
+        domain.update_hash(&mut b_0);
+        b_0.update(&[domain.len()]);
+        let b_0 = b_0.finalize_fixed();
 
-        let mut b_vals = HashT::new();
+        let mut b_vals = HashT::default();
         b_vals.update(&b_0[..]);
-        b_vals.update([1u8]);
-        b_vals.update(domain.data());
-        b_vals.update([domain.len()]);
-        let b_vals = b_vals.finalize();
+        b_vals.update(&[1u8]);
+        domain.update_hash(&mut b_vals);
+        b_vals.update(&[domain.len()]);
+        let b_vals = b_vals.finalize_fixed();
 
         Ok(ExpanderXmd {
             b_0,
@@ -89,7 +92,7 @@ where
 /// [`Expander`] type for [`ExpandMsgXmd`].
 pub struct ExpanderXmd<'a, HashT>
 where
-    HashT: Digest + BlockSizeUser,
+    HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
     HashT::OutputSize: IsLess<U256>,
     HashT::OutputSize: IsLessOrEqual<HashT::BlockSize>,
 {
@@ -103,7 +106,7 @@ where
 
 impl<'a, HashT> ExpanderXmd<'a, HashT>
 where
-    HashT: Digest + BlockSizeUser,
+    HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
     HashT::OutputSize: IsLess<U256>,
     HashT::OutputSize: IsLessOrEqual<HashT::BlockSize>,
 {
@@ -118,12 +121,12 @@ where
                 .zip(&self.b_vals[..])
                 .enumerate()
                 .for_each(|(j, (b0val, bi1val))| tmp[j] = b0val ^ bi1val);
-            let mut b_vals = HashT::new();
-            b_vals.update(tmp);
-            b_vals.update([self.index]);
-            b_vals.update(self.domain.data());
-            b_vals.update([self.domain.len()]);
-            self.b_vals = b_vals.finalize();
+            let mut b_vals = HashT::default();
+            b_vals.update(&tmp);
+            b_vals.update(&[self.index]);
+            self.domain.update_hash(&mut b_vals);
+            b_vals.update(&[self.domain.len()]);
+            self.b_vals = b_vals.finalize_fixed();
             true
         } else {
             false
@@ -133,7 +136,7 @@ where
 
 impl<'a, HashT> Expander for ExpanderXmd<'a, HashT>
 where
-    HashT: Digest + BlockSizeUser,
+    HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
     HashT::OutputSize: IsLess<U256>,
     HashT::OutputSize: IsLessOrEqual<HashT::BlockSize>,
 {
@@ -165,7 +168,7 @@ mod test {
         len_in_bytes: u16,
         bytes: &[u8],
     ) where
-        HashT: Digest + BlockSizeUser,
+        HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
         HashT::OutputSize: IsLess<U256>,
     {
         let block = HashT::BlockSize::to_usize();
@@ -183,8 +186,8 @@ mod test {
         let pad = l + mem::size_of::<u8>();
         assert_eq!([0], &bytes[l..pad]);
 
-        let dst = pad + domain.data().len();
-        assert_eq!(domain.data(), &bytes[pad..dst]);
+        let dst = pad + usize::from(domain.len());
+        domain.assert(&bytes[pad..dst]);
 
         let dst_len = dst + mem::size_of::<u8>();
         assert_eq!([domain.len()], &bytes[dst..dst_len]);
@@ -205,13 +208,14 @@ mod test {
             domain: &Domain<'_, HashT::OutputSize>,
         ) -> Result<()>
         where
-            HashT: Digest + BlockSizeUser,
+            HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
             HashT::OutputSize: IsLess<U256> + IsLessOrEqual<HashT::BlockSize>,
         {
             assert_message::<HashT>(self.msg, domain, L::to_u16(), self.msg_prime);
 
+            let dst = [dst];
             let mut expander =
-                ExpandMsgXmd::<HashT>::expand_message(&[self.msg], dst, L::to_usize())?;
+                ExpandMsgXmd::<HashT>::expand_message(&[self.msg], &dst, L::to_usize())?;
 
             let mut uniform_bytes = GenericArray::<u8, L>::default();
             expander.fill_bytes(&mut uniform_bytes);
@@ -227,8 +231,8 @@ mod test {
         const DST_PRIME: &[u8] =
             &hex!("515555582d5630312d435330322d776974682d657870616e6465722d5348413235362d31323826");
 
-        let dst_prime = Domain::xmd::<Sha256>(DST)?;
-        dst_prime.assert(DST_PRIME);
+        let dst_prime = Domain::xmd::<Sha256>(&[DST])?;
+        dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
             TestVector {
@@ -299,8 +303,8 @@ mod test {
         const DST_PRIME: &[u8] =
             &hex!("412717974da474d0f8c420f320ff81e8432adb7c927d9bd082b4fb4d16c0a23620");
 
-        let dst_prime = Domain::xmd::<Sha256>(DST)?;
-        dst_prime.assert(DST_PRIME);
+        let dst_prime = Domain::xmd::<Sha256>(&[DST])?;
+        dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
             TestVector {
@@ -377,8 +381,8 @@ mod test {
         const DST_PRIME: &[u8] =
             &hex!("515555582d5630312d435330322d776974682d657870616e6465722d5348413531322d32353626");
 
-        let dst_prime = Domain::xmd::<Sha512>(DST)?;
-        dst_prime.assert(DST_PRIME);
+        let dst_prime = Domain::xmd::<Sha512>(&[DST])?;
+        dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
             TestVector {

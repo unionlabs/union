@@ -11,7 +11,12 @@ use crate::formatting::{
 };
 use crate::{error, Date, Time, UtcOffset};
 
-/// A type that can be formatted.
+/// A type that describes a format.
+///
+/// Implementors of [`Formattable`] are [format descriptions](crate::format_description).
+///
+/// [`Date::format`] and [`Time::format`] each use a format description to generate
+/// a String from their data. See the respective methods for usage examples.
 #[cfg_attr(__time_03_docs, doc(notable_trait))]
 pub trait Formattable: sealed::Sealed {}
 impl Formattable for FormatItem<'_> {}
@@ -173,22 +178,21 @@ impl sealed::Sealed for Rfc2822 {
             &WEEKDAY_NAMES[date.weekday().number_days_from_monday() as usize][..3],
         )?;
         bytes += write(output, b", ")?;
-        bytes += format_number_pad_zero::<2, _, _>(output, day)?;
+        bytes += format_number_pad_zero::<2>(output, day)?;
         bytes += write(output, b" ")?;
         bytes += write(output, &MONTH_NAMES[month as usize - 1][..3])?;
         bytes += write(output, b" ")?;
-        bytes += format_number_pad_zero::<4, _, _>(output, year as u32)?;
+        bytes += format_number_pad_zero::<4>(output, year as u32)?;
         bytes += write(output, b" ")?;
-        bytes += format_number_pad_zero::<2, _, _>(output, time.hour())?;
+        bytes += format_number_pad_zero::<2>(output, time.hour())?;
         bytes += write(output, b":")?;
-        bytes += format_number_pad_zero::<2, _, _>(output, time.minute())?;
+        bytes += format_number_pad_zero::<2>(output, time.minute())?;
         bytes += write(output, b":")?;
-        bytes += format_number_pad_zero::<2, _, _>(output, time.second())?;
+        bytes += format_number_pad_zero::<2>(output, time.second())?;
         bytes += write(output, b" ")?;
         bytes += write(output, if offset.is_negative() { b"-" } else { b"+" })?;
-        bytes += format_number_pad_zero::<2, _, _>(output, offset.whole_hours().unsigned_abs())?;
-        bytes +=
-            format_number_pad_zero::<2, _, _>(output, offset.minutes_past_hour().unsigned_abs())?;
+        bytes += format_number_pad_zero::<2>(output, offset.whole_hours().unsigned_abs())?;
+        bytes += format_number_pad_zero::<2>(output, offset.minutes_past_hour().unsigned_abs())?;
 
         Ok(bytes)
     }
@@ -217,40 +221,40 @@ impl sealed::Sealed for Rfc3339 {
             return Err(error::Format::InvalidComponent("offset_second"));
         }
 
-        bytes += format_number_pad_zero::<4, _, _>(output, year as u32)?;
+        bytes += format_number_pad_zero::<4>(output, year as u32)?;
         bytes += write(output, b"-")?;
-        bytes += format_number_pad_zero::<2, _, _>(output, date.month() as u8)?;
+        bytes += format_number_pad_zero::<2>(output, date.month() as u8)?;
         bytes += write(output, b"-")?;
-        bytes += format_number_pad_zero::<2, _, _>(output, date.day())?;
+        bytes += format_number_pad_zero::<2>(output, date.day())?;
         bytes += write(output, b"T")?;
-        bytes += format_number_pad_zero::<2, _, _>(output, time.hour())?;
+        bytes += format_number_pad_zero::<2>(output, time.hour())?;
         bytes += write(output, b":")?;
-        bytes += format_number_pad_zero::<2, _, _>(output, time.minute())?;
+        bytes += format_number_pad_zero::<2>(output, time.minute())?;
         bytes += write(output, b":")?;
-        bytes += format_number_pad_zero::<2, _, _>(output, time.second())?;
+        bytes += format_number_pad_zero::<2>(output, time.second())?;
 
         #[allow(clippy::if_not_else)]
         if time.nanosecond() != 0 {
             let nanos = time.nanosecond();
             bytes += write(output, b".")?;
             bytes += if nanos % 10 != 0 {
-                format_number_pad_zero::<9, _, _>(output, nanos)
+                format_number_pad_zero::<9>(output, nanos)
             } else if (nanos / 10) % 10 != 0 {
-                format_number_pad_zero::<8, _, _>(output, nanos / 10)
+                format_number_pad_zero::<8>(output, nanos / 10)
             } else if (nanos / 100) % 10 != 0 {
-                format_number_pad_zero::<7, _, _>(output, nanos / 100)
+                format_number_pad_zero::<7>(output, nanos / 100)
             } else if (nanos / 1_000) % 10 != 0 {
-                format_number_pad_zero::<6, _, _>(output, nanos / 1_000)
+                format_number_pad_zero::<6>(output, nanos / 1_000)
             } else if (nanos / 10_000) % 10 != 0 {
-                format_number_pad_zero::<5, _, _>(output, nanos / 10_000)
+                format_number_pad_zero::<5>(output, nanos / 10_000)
             } else if (nanos / 100_000) % 10 != 0 {
-                format_number_pad_zero::<4, _, _>(output, nanos / 100_000)
+                format_number_pad_zero::<4>(output, nanos / 100_000)
             } else if (nanos / 1_000_000) % 10 != 0 {
-                format_number_pad_zero::<3, _, _>(output, nanos / 1_000_000)
+                format_number_pad_zero::<3>(output, nanos / 1_000_000)
             } else if (nanos / 10_000_000) % 10 != 0 {
-                format_number_pad_zero::<2, _, _>(output, nanos / 10_000_000)
+                format_number_pad_zero::<2>(output, nanos / 10_000_000)
             } else {
-                format_number_pad_zero::<1, _, _>(output, nanos / 100_000_000)
+                format_number_pad_zero::<1>(output, nanos / 100_000_000)
             }?;
         }
 
@@ -260,10 +264,9 @@ impl sealed::Sealed for Rfc3339 {
         }
 
         bytes += write(output, if offset.is_negative() { b"-" } else { b"+" })?;
-        bytes += format_number_pad_zero::<2, _, _>(output, offset.whole_hours().unsigned_abs())?;
+        bytes += format_number_pad_zero::<2>(output, offset.whole_hours().unsigned_abs())?;
         bytes += write(output, b":")?;
-        bytes +=
-            format_number_pad_zero::<2, _, _>(output, offset.minutes_past_hour().unsigned_abs())?;
+        bytes += format_number_pad_zero::<2>(output, offset.minutes_past_hour().unsigned_abs())?;
 
         Ok(bytes)
     }
@@ -281,15 +284,15 @@ impl<const CONFIG: EncodedConfig> sealed::Sealed for Iso8601<CONFIG> {
 
         if Self::FORMAT_DATE {
             let date = date.ok_or(error::Format::InsufficientTypeInformation)?;
-            bytes += iso8601::format_date::<_, CONFIG>(output, date)?;
+            bytes += iso8601::format_date::<CONFIG>(output, date)?;
         }
         if Self::FORMAT_TIME {
             let time = time.ok_or(error::Format::InsufficientTypeInformation)?;
-            bytes += iso8601::format_time::<_, CONFIG>(output, time)?;
+            bytes += iso8601::format_time::<CONFIG>(output, time)?;
         }
         if Self::FORMAT_OFFSET {
             let offset = offset.ok_or(error::Format::InsufficientTypeInformation)?;
-            bytes += iso8601::format_offset::<_, CONFIG>(output, offset)?;
+            bytes += iso8601::format_offset::<CONFIG>(output, offset)?;
         }
 
         if bytes == 0 {

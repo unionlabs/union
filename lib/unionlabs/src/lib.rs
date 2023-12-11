@@ -204,8 +204,16 @@ pub enum TryFromProtoBytesError<E> {
 
 pub type TryFromProtoErrorOf<T> = <T as TryFrom<<T as Proto>::Proto>>::Error;
 
-pub trait TypeUrl: Message {
+pub trait TypeUrl {
     const TYPE_URL: &'static str;
+}
+
+impl<T> TypeUrl for T
+where
+    T: Proto,
+    T::Proto: TypeUrl,
+{
+    const TYPE_URL: &'static str = T::Proto::TYPE_URL;
 }
 
 #[cfg(any(feature = "fuzzing", test))]
@@ -316,12 +324,12 @@ impl<T> TryFromEthAbi for T where T: EthAbi + TryFrom<T::EthAbi> {}
 #[cfg(feature = "ethabi")]
 pub struct InlineFields<T>(pub T);
 
-#[cfg(feature = "ethabi")]
-impl<T> From<T> for InlineFields<T> {
-    fn from(value: T) -> Self {
-        Self(value)
-    }
-}
+// #[cfg(feature = "ethabi")]
+// impl<T> From<T> for InlineFields<T> {
+//     fn from(value: T) -> Self {
+//         Self(value)
+//     }
+// }
 
 #[cfg(feature = "ethabi")]
 impl<T> ethers_core::abi::AbiEncode for InlineFields<T>
@@ -358,12 +366,12 @@ where
 
 /// A simple wrapper around a cosmos account, easily representable as a bech32 string.
 #[derive(Debug, Clone)]
-pub struct CosmosAccountId {
+pub struct CosmosSigner {
     signing_key: k256::ecdsa::SigningKey,
     prefix: String,
 }
 
-impl CosmosAccountId {
+impl CosmosSigner {
     #[must_use]
     pub fn new(signing_key: k256::ecdsa::SigningKey, prefix: String) -> Self {
         Self {
@@ -387,7 +395,7 @@ impl CosmosAccountId {
     }
 }
 
-impl Display for CosmosAccountId {
+impl Display for CosmosSigner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // TODO: benchmark this, and consider caching it in the struct
         // bech32(prefix, ripemd(sha256(pubkey)))
@@ -501,11 +509,12 @@ pub mod traits {
         hash::H256,
         ibc::{
             core::client::height::{Height, IsHeight},
-            lightclients::{cometbls, ethereum, wasm},
+            lightclients::{cometbls, ethereum, tendermint, wasm},
         },
         id::{ChannelId, PortId},
         uint::U256,
         validated::{Validate, Validated},
+        TypeUrl,
     };
 
     /// A convenience trait for a string id (`ChainId`, `ClientId`, `ConnectionId`, etc)
@@ -546,6 +555,7 @@ pub mod traits {
             + Serialize
             + for<'de> Deserialize<'de>
             + crate::IntoProto // hack
+            + TypeUrl // hack
             // TODO: Bound ChainId in the same way
             + ClientState<Height = Self::Height>;
         type SelfConsensusState: ConsensusState
@@ -553,6 +563,7 @@ pub mod traits {
             + Clone
             + PartialEq
             + crate::IntoProto // hack
+            + TypeUrl // hack
             + Serialize
             + for<'de> Deserialize<'de>;
 
@@ -582,6 +593,8 @@ pub mod traits {
         type ClientId: Id;
 
         type IbcStateEncoding: Encoding;
+
+        type StateProof: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
         /// Available client types for this chain.
         type ClientType: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
@@ -687,6 +700,19 @@ pub mod traits {
         }
     }
 
+    impl ClientState for tendermint::client_state::ClientState {
+        type ChainId = String;
+        type Height = Height;
+
+        fn height(&self) -> Height {
+            self.latest_height
+        }
+
+        fn chain_id(&self) -> Self::ChainId {
+            self.chain_id.clone()
+        }
+    }
+
     impl<T> ClientState for Any<T>
     where
         T: ClientState,
@@ -725,6 +751,12 @@ pub mod traits {
         }
     }
 
+    impl Header for tendermint::header::Header {
+        fn trusted_height(&self) -> Height {
+            self.trusted_height
+        }
+    }
+
     pub trait ConsensusState {
         fn timestamp(&self) -> u64;
     }
@@ -744,6 +776,13 @@ pub mod traits {
     impl ConsensusState for cometbls::consensus_state::ConsensusState {
         fn timestamp(&self) -> u64 {
             self.timestamp
+        }
+    }
+
+    impl ConsensusState for tendermint::consensus_state::ConsensusState {
+        fn timestamp(&self) -> u64 {
+            // REVIEW: Perhaps this fn should return Timestamp
+            self.timestamp.seconds.inner().try_into().unwrap()
         }
     }
 

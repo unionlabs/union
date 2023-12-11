@@ -28,7 +28,7 @@ impl Checksum {
 impl fmt::Display for Checksum {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for byte in self.0.iter() {
-            write!(f, "{:02x}", byte)?;
+            write!(f, "{byte:02x}")?;
         }
         Ok(())
     }
@@ -82,7 +82,7 @@ mod tests {
         let wasm = vec![0x68, 0x69, 0x6a];
         let checksum = Checksum::generate(&wasm);
         // echo -n "hij" | sha256sum
-        let embedded = format!("Check: {}", checksum);
+        let embedded = format!("Check: {checksum}");
         assert_eq!(
             embedded,
             "Check: 722c8c993fd75a7627d69ed941344fe2a1423a3e75efd3e6778a142884227104"

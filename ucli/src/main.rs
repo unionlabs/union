@@ -1,6 +1,6 @@
 use std::{fs::read_to_string, sync::Arc};
 
-use chain_utils::union::{account_info, Union};
+use chain_utils::{cosmos_sdk::CosmosSdkChainExt, union::Union};
 use clap::Parser;
 use cli::Evm;
 use contracts::{
@@ -114,18 +114,16 @@ async fn main() {
             },
             cli::QueryCmd::Union(union_query) => match union_query {
                 cli::UnionQuery::AccountInfo { address } => {
-                    let info = account_info(
-                        &Union::new(chain_utils::union::Config {
-                            signers: config.union.signers,
-                            fee_denom: config.union.fee_denom,
-                            ws_url: config.union.ws_url,
-                            prover_endpoint: config.union.prover_endpoint,
-                            grpc_url: config.union.grpc_url,
-                        })
-                        .await
-                        .unwrap(),
-                        &address,
-                    )
+                    let info = Union::new(chain_utils::union::Config {
+                        signers: config.union.signers,
+                        fee_denom: config.union.fee_denom,
+                        ws_url: config.union.ws_url,
+                        prover_endpoint: config.union.prover_endpoint,
+                        grpc_url: config.union.grpc_url,
+                    })
+                    .await
+                    .unwrap()
+                    .account_info(&address)
                     .await;
                     println!("{info:#?}");
                 }

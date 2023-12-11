@@ -2,6 +2,7 @@
 
 use core::time::Duration as StdDuration;
 
+use crate::convert::*;
 use crate::Duration;
 
 /// Sealed trait to prevent downstream implementations.
@@ -116,31 +117,31 @@ impl NumericalDuration for f64 {
     }
 
     fn microseconds(self) -> Duration {
-        Duration::nanoseconds((self * 1_000.) as _)
+        Duration::nanoseconds((self * Nanosecond.per(Microsecond) as Self) as _)
     }
 
     fn milliseconds(self) -> Duration {
-        Duration::nanoseconds((self * 1_000_000.) as _)
+        Duration::nanoseconds((self * Nanosecond.per(Millisecond) as Self) as _)
     }
 
     fn seconds(self) -> Duration {
-        Duration::nanoseconds((self * 1_000_000_000.) as _)
+        Duration::nanoseconds((self * Nanosecond.per(Second) as Self) as _)
     }
 
     fn minutes(self) -> Duration {
-        Duration::nanoseconds((self * 60_000_000_000.) as _)
+        Duration::nanoseconds((self * Nanosecond.per(Minute) as Self) as _)
     }
 
     fn hours(self) -> Duration {
-        Duration::nanoseconds((self * 3_600_000_000_000.) as _)
+        Duration::nanoseconds((self * Nanosecond.per(Hour) as Self) as _)
     }
 
     fn days(self) -> Duration {
-        Duration::nanoseconds((self * 86_400_000_000_000.) as _)
+        Duration::nanoseconds((self * Nanosecond.per(Day) as Self) as _)
     }
 
     fn weeks(self) -> Duration {
-        Duration::nanoseconds((self * 604_800_000_000_000.) as _)
+        Duration::nanoseconds((self * Nanosecond.per(Week) as Self) as _)
     }
 }
 // endregion NumericalDuration
@@ -219,19 +220,19 @@ impl NumericalStdDuration for u64 {
     }
 
     fn std_minutes(self) -> StdDuration {
-        StdDuration::from_secs(self * 60)
+        StdDuration::from_secs(self * Second.per(Minute) as Self)
     }
 
     fn std_hours(self) -> StdDuration {
-        StdDuration::from_secs(self * 3_600)
+        StdDuration::from_secs(self * Second.per(Hour) as Self)
     }
 
     fn std_days(self) -> StdDuration {
-        StdDuration::from_secs(self * 86_400)
+        StdDuration::from_secs(self * Second.per(Day) as Self)
     }
 
     fn std_weeks(self) -> StdDuration {
-        StdDuration::from_secs(self * 604_800)
+        StdDuration::from_secs(self * Second.per(Week) as Self)
     }
 }
 
@@ -243,37 +244,37 @@ impl NumericalStdDuration for f64 {
 
     fn std_microseconds(self) -> StdDuration {
         assert!(self >= 0.);
-        StdDuration::from_nanos((self * 1_000.) as _)
+        StdDuration::from_nanos((self * Nanosecond.per(Microsecond) as Self) as _)
     }
 
     fn std_milliseconds(self) -> StdDuration {
         assert!(self >= 0.);
-        StdDuration::from_nanos((self * 1_000_000.) as _)
+        StdDuration::from_nanos((self * Nanosecond.per(Millisecond) as Self) as _)
     }
 
     fn std_seconds(self) -> StdDuration {
         assert!(self >= 0.);
-        StdDuration::from_nanos((self * 1_000_000_000.) as _)
+        StdDuration::from_nanos((self * Nanosecond.per(Second) as Self) as _)
     }
 
     fn std_minutes(self) -> StdDuration {
         assert!(self >= 0.);
-        StdDuration::from_nanos((self * 60_000_000_000.) as _)
+        StdDuration::from_nanos((self * Nanosecond.per(Minute) as Self) as _)
     }
 
     fn std_hours(self) -> StdDuration {
         assert!(self >= 0.);
-        StdDuration::from_nanos((self * 3_600_000_000_000.) as _)
+        StdDuration::from_nanos((self * Nanosecond.per(Hour) as Self) as _)
     }
 
     fn std_days(self) -> StdDuration {
         assert!(self >= 0.);
-        StdDuration::from_nanos((self * 86_400_000_000_000.) as _)
+        StdDuration::from_nanos((self * Nanosecond.per(Day) as Self) as _)
     }
 
     fn std_weeks(self) -> StdDuration {
         assert!(self >= 0.);
-        StdDuration::from_nanos((self * 604_800_000_000_000.) as _)
+        StdDuration::from_nanos((self * Nanosecond.per(Week) as Self) as _)
     }
 }
 // endregion NumericalStdDuration

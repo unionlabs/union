@@ -26,13 +26,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgStoreCode{},
-	)
-	registry.RegisterImplementations(
-		(*sdk.Msg)(nil),
 		&MsgMigrateContract{},
-	)
-	registry.RegisterImplementations(
-		(*sdk.Msg)(nil),
 		&MsgRemoveChecksum{},
 	)
 

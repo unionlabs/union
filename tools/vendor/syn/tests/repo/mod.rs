@@ -13,10 +13,17 @@ use std::path::{Path, PathBuf};
 use tar::Archive;
 use walkdir::{DirEntry, WalkDir};
 
-const REVISION: &str = "fe7454bf439c93cbe9ac8a8f7fcfacd5a40244c2";
+const REVISION: &str = "85bf07972a1041b9e25393b803d0e006bec3eaaf";
 
 #[rustfmt::skip]
 static EXCLUDE_FILES: &[&str] = &[
+    // CStr literals (c"…") are not yet supported by rustc's lexer
+    // https://github.com/rust-lang/rust/issues/113333
+    "src/tools/clippy/tests/ui/needless_raw_string_hashes.rs",
+    "src/tools/rust-analyzer/crates/parser/test_data/parser/inline/ok/0085_expr_literals.rs",
+    "src/tools/rust-analyzer/crates/parser/test_data/parser/inline/ok/0085_expr_literals.rs",
+    "tests/ui/explicit-tail-calls/return-lifetime-sub.rs",
+
     // TODO: non-lifetime binders: `where for<'a, T> &'a Struct<T>: Trait`
     // https://github.com/dtolnay/syn/issues/1435
     "tests/rustdoc-json/non_lifetime_binders.rs",

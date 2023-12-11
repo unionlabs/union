@@ -1,9 +1,10 @@
 use std::ptr::NonNull;
-use std::sync::Arc;
 
-use loupe::MemoryUsage;
 use wasmer::{
-    vm::{self, MemoryError, MemoryStyle, TableStyle, VMMemoryDefinition, VMTableDefinition},
+    vm::{
+        MemoryError, MemoryStyle, TableStyle, VMMemory, VMMemoryDefinition, VMTable,
+        VMTableDefinition,
+    },
     MemoryType, Pages, TableType, Tunables,
 };
 
@@ -11,7 +12,6 @@ use wasmer::{
 ///
 /// After adjusting the memory limits, it delegates all other logic
 /// to the base tunables.
-#[derive(MemoryUsage)]
 pub struct LimitingTunables<T: Tunables> {
     /// The maxium a linear memory is allowed to be (in Wasm pages, 65 KiB each).
     /// Since Wasmer ensures there is only none or one memory, this is practically
@@ -84,7 +84,7 @@ impl<T: Tunables> Tunables for LimitingTunables<T> {
         &self,
         ty: &MemoryType,
         style: &MemoryStyle,
-    ) -> Result<Arc<dyn vm::Memory>, MemoryError> {
+    ) -> Result<VMMemory, MemoryError> {
         let adjusted = self.adjust_memory(ty);
         self.validate_memory(&adjusted)?;
         self.base.create_host_memory(&adjusted, style)
@@ -98,7 +98,7 @@ impl<T: Tunables> Tunables for LimitingTunables<T> {
         ty: &MemoryType,
         style: &MemoryStyle,
         vm_definition_location: NonNull<VMMemoryDefinition>,
-    ) -> Result<Arc<dyn vm::Memory>, MemoryError> {
+    ) -> Result<VMMemory, MemoryError> {
         let adjusted = self.adjust_memory(ty);
         self.validate_memory(&adjusted)?;
         self.base
@@ -108,11 +108,7 @@ impl<T: Tunables> Tunables for LimitingTunables<T> {
     /// Create a table owned by the host given a [`TableType`] and a [`TableStyle`].
     ///
     /// Delegated to base.
-    fn create_host_table(
-        &self,
-        ty: &TableType,
-        style: &TableStyle,
-    ) -> Result<Arc<dyn vm::Table>, String> {
+    fn create_host_table(&self, ty: &TableType, style: &TableStyle) -> Result<VMTable, String> {
         self.base.create_host_table(ty, style)
     }
 
@@ -124,7 +120,7 @@ impl<T: Tunables> Tunables for LimitingTunables<T> {
         ty: &TableType,
         style: &TableStyle,
         vm_definition_location: NonNull<VMTableDefinition>,
-    ) -> Result<Arc<dyn vm::Table>, String> {
+    ) -> Result<VMTable, String> {
         self.base.create_vm_table(ty, style, vm_definition_location)
     }
 }
@@ -190,7 +186,7 @@ mod tests {
             MemoryError::Generic(msg) => {
                 assert_eq!(msg, "Maximum exceeds the allowed memory limit")
             }
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
 
         // Maximum not set
@@ -198,7 +194,7 @@ mod tests {
         let result = limiting.validate_memory(&memory);
         match result.unwrap_err() {
             MemoryError::Generic(msg) => assert_eq!(msg, "Maximum unset"),
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
 
         // Minimum greater than maximum (not our problem)
@@ -212,7 +208,7 @@ mod tests {
             MemoryError::Generic(msg) => {
                 assert_eq!(msg, "Minimum exceeds the allowed memory limit")
             }
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 }

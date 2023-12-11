@@ -35,6 +35,7 @@ pub(crate) trait ArrayVecImpl {
     /// Return a raw mutable pointer to the vector's buffer.
     fn as_mut_ptr(&mut self) -> *mut Self::Item;
 
+    #[track_caller]
     fn push(&mut self, element: Self::Item) {
         self.try_push(element).unwrap()
     }

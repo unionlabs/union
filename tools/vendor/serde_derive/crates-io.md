@@ -16,7 +16,7 @@ You may be looking for:
 ## Serde in action
 
 ```rust
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Point {

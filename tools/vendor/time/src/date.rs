@@ -6,6 +6,7 @@ use core::time::Duration as StdDuration;
 #[cfg(feature = "formatting")]
 use std::io;
 
+use crate::convert::*;
 #[cfg(feature = "formatting")]
 use crate::formatting::Formattable;
 #[cfg(feature = "parsing")]
@@ -528,6 +529,106 @@ impl Date {
         }
     }
 
+    /// Calculates the first occurrence of a weekday that is strictly later than a given `Date`.
+    ///
+    /// # Panics
+    /// Panics if an overflow occurred.
+    ///
+    /// # Examples
+    /// ```
+    /// # use time::Weekday;
+    /// # use time_macros::date;
+    /// assert_eq!(
+    ///     date!(2023 - 06 - 28).next_occurrence(Weekday::Monday),
+    ///     date!(2023 - 07 - 03)
+    /// );
+    /// assert_eq!(
+    ///     date!(2023 - 06 - 19).next_occurrence(Weekday::Monday),
+    ///     date!(2023 - 06 - 26)
+    /// );
+    /// ```
+    pub const fn next_occurrence(self, weekday: Weekday) -> Self {
+        expect_opt!(
+            self.checked_next_occurrence(weekday),
+            "overflow calculating the next occurrence of a weekday"
+        )
+    }
+
+    /// Calculates the first occurrence of a weekday that is strictly earlier than a given `Date`.
+    ///
+    /// # Panics
+    /// Panics if an overflow occurred.
+    ///
+    /// # Examples
+    /// ```
+    /// # use time::Weekday;
+    /// # use time_macros::date;
+    /// assert_eq!(
+    ///     date!(2023 - 06 - 28).prev_occurrence(Weekday::Monday),
+    ///     date!(2023 - 06 - 26)
+    /// );
+    /// assert_eq!(
+    ///     date!(2023 - 06 - 19).prev_occurrence(Weekday::Monday),
+    ///     date!(2023 - 06 - 12)
+    /// );
+    /// ```
+    pub const fn prev_occurrence(self, weekday: Weekday) -> Self {
+        expect_opt!(
+            self.checked_prev_occurrence(weekday),
+            "overflow calculating the previous occurrence of a weekday"
+        )
+    }
+
+    /// Calculates the `n`th occurrence of a weekday that is strictly later than a given `Date`.
+    ///
+    /// # Panics
+    /// Panics if an overflow occurred or if `n == 0`.
+    ///
+    /// # Examples
+    /// ```
+    /// # use time::Weekday;
+    /// # use time_macros::date;
+    /// assert_eq!(
+    ///     date!(2023 - 06 - 25).nth_next_occurrence(Weekday::Monday, 5),
+    ///     date!(2023 - 07 - 24)
+    /// );
+    /// assert_eq!(
+    ///     date!(2023 - 06 - 26).nth_next_occurrence(Weekday::Monday, 5),
+    ///     date!(2023 - 07 - 31)
+    /// );
+    /// ```
+    pub const fn nth_next_occurrence(self, weekday: Weekday, n: u8) -> Self {
+        expect_opt!(
+            self.checked_nth_next_occurrence(weekday, n),
+            "overflow calculating the next occurrence of a weekday"
+        )
+    }
+
+    /// Calculates the `n`th occurrence of a weekday that is strictly earlier than a given `Date`.
+    ///
+    /// # Panics
+    /// Panics if an overflow occurred or if `n == 0`.
+    ///
+    /// # Examples
+    /// ```
+    /// # use time::Weekday;
+    /// # use time_macros::date;
+    /// assert_eq!(
+    ///     date!(2023 - 06 - 27).nth_prev_occurrence(Weekday::Monday, 3),
+    ///     date!(2023 - 06 - 12)
+    /// );
+    /// assert_eq!(
+    ///     date!(2023 - 06 - 26).nth_prev_occurrence(Weekday::Monday, 3),
+    ///     date!(2023 - 06 - 05)
+    /// );
+    /// ```
+    pub const fn nth_prev_occurrence(self, weekday: Weekday, n: u8) -> Self {
+        expect_opt!(
+            self.checked_nth_prev_occurrence(weekday, n),
+            "overflow calculating the previous occurrence of a weekday"
+        )
+    }
+
     /// Get the Julian day for the date.
     ///
     /// The algorithm to perform this conversion is derived from one provided by Peter Baum; it is
@@ -639,6 +740,66 @@ impl Date {
         } else {
             None
         }
+    }
+
+    /// Calculates the first occurrence of a weekday that is strictly later than a given `Date`.
+    /// Returns `None` if an overflow occurred.
+    pub(crate) const fn checked_next_occurrence(self, weekday: Weekday) -> Option<Self> {
+        let day_diff = match weekday as i8 - self.weekday() as i8 {
+            1 | -6 => 1,
+            2 | -5 => 2,
+            3 | -4 => 3,
+            4 | -3 => 4,
+            5 | -2 => 5,
+            6 | -1 => 6,
+            val => {
+                debug_assert!(val == 0);
+                7
+            }
+        };
+
+        self.checked_add(Duration::days(day_diff))
+    }
+
+    /// Calculates the first occurrence of a weekday that is strictly earlier than a given `Date`.
+    /// Returns `None` if an overflow occurred.
+    pub(crate) const fn checked_prev_occurrence(self, weekday: Weekday) -> Option<Self> {
+        let day_diff = match weekday as i8 - self.weekday() as i8 {
+            1 | -6 => 6,
+            2 | -5 => 5,
+            3 | -4 => 4,
+            4 | -3 => 3,
+            5 | -2 => 2,
+            6 | -1 => 1,
+            val => {
+                debug_assert!(val == 0);
+                7
+            }
+        };
+
+        self.checked_sub(Duration::days(day_diff))
+    }
+
+    /// Calculates the `n`th occurrence of a weekday that is strictly later than a given `Date`.
+    /// Returns `None` if an overflow occurred or if `n == 0`.
+    pub(crate) const fn checked_nth_next_occurrence(self, weekday: Weekday, n: u8) -> Option<Self> {
+        if n == 0 {
+            return None;
+        }
+
+        const_try_opt!(self.checked_next_occurrence(weekday))
+            .checked_add(Duration::weeks(n as i64 - 1))
+    }
+
+    /// Calculates the `n`th occurrence of a weekday that is strictly earlier than a given `Date`.
+    /// Returns `None` if an overflow occurred or if `n == 0`.
+    pub(crate) const fn checked_nth_prev_occurrence(self, weekday: Weekday, n: u8) -> Option<Self> {
+        if n == 0 {
+            return None;
+        }
+
+        const_try_opt!(self.checked_prev_occurrence(weekday))
+            .checked_sub(Duration::weeks(n as i64 - 1))
     }
     // endregion: checked arithmetic
 
@@ -1013,8 +1174,10 @@ impl Add<StdDuration> for Date {
     type Output = Self;
 
     fn add(self, duration: StdDuration) -> Self::Output {
-        Self::from_julian_day(self.to_julian_day() + (duration.as_secs() / 86_400) as i32)
-            .expect("overflow adding duration to date")
+        Self::from_julian_day(
+            self.to_julian_day() + (duration.as_secs() / Second.per(Day) as u64) as i32,
+        )
+        .expect("overflow adding duration to date")
     }
 }
 
@@ -1033,8 +1196,10 @@ impl Sub<StdDuration> for Date {
     type Output = Self;
 
     fn sub(self, duration: StdDuration) -> Self::Output {
-        Self::from_julian_day(self.to_julian_day() - (duration.as_secs() / 86_400) as i32)
-            .expect("overflow subtracting duration from date")
+        Self::from_julian_day(
+            self.to_julian_day() - (duration.as_secs() / Second.per(Day) as u64) as i32,
+        )
+        .expect("overflow subtracting duration from date")
     }
 }
 

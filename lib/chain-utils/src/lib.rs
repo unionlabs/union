@@ -16,8 +16,11 @@ use unionlabs::{
     traits::{Chain, ClientState},
 };
 
+pub mod cosmos;
 pub mod evm;
 pub mod union;
+
+pub mod cosmos_sdk;
 
 pub mod private_key;
 

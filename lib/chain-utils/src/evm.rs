@@ -101,6 +101,8 @@ impl<C: ChainSpec> Chain for Evm<C> {
 
     type Error = beacon_api::errors::Error;
 
+    type StateProof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof;
+
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id
     }
@@ -815,9 +817,6 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .map_err(EvmEventSourceError::ConnectionIdParse)?,
                                     client_id: connection.client_id,
                                     counterparty_client_id: connection.counterparty.client_id,
-                                    counterparty_connection_id: connection
-                                        .counterparty
-                                        .connection_id,
                                 }))
                             }
                             IBCHandlerEvents::ConnectionOpenTryFilter(event) => {

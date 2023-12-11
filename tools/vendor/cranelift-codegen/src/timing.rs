@@ -29,6 +29,7 @@ macro_rules! define_passes {
 
         $(
             #[doc=$desc]
+            #[must_use]
             pub fn $pass() -> TimingToken {
                 details::start_pass($enum::$pass)
             }
@@ -40,6 +41,8 @@ macro_rules! define_passes {
 define_passes! {
     Pass, NUM_PASSES, DESCRIPTIONS;
 
+    // All these are used in other crates but defined here so they appear in the unified
+    // `PassTimes` output.
     process_file: "Processing test file",
     parse_text: "Parsing textual Cranelift IR",
     wasm_translate_module: "Translate WASM module",
@@ -49,6 +52,8 @@ define_passes! {
     verify_flags: "Verify CPU flags",
 
     compile: "Compilation passes",
+    try_incremental_cache: "Try loading from incremental cache",
+    store_incremental_cache: "Store in incremental cache",
     flowgraph: "Control flow graph",
     domtree: "Dominator tree",
     loop_analysis: "Loop analysis",
@@ -60,12 +65,11 @@ define_passes! {
     remove_constant_phis: "Remove constant phi-nodes",
 
     vcode_lower: "VCode lowering",
-    vcode_post_ra: "VCode post-register allocation finalization",
     vcode_emit: "VCode emission",
     vcode_emit_finish: "VCode emission finalization",
 
     regalloc: "Register allocation",
-    binemit: "Binary machine code emission",
+    regalloc_checker: "Register allocation symbolic verification",
     layout_renumber: "Layout full renumbering",
 
     canonicalize_nans: "Canonicalization of NaNs",
@@ -176,7 +180,7 @@ mod details {
 
     // Information about passes in a single thread.
     thread_local! {
-        static CURRENT_PASS: Cell<Pass> = Cell::new(Pass::None);
+        static CURRENT_PASS: Cell<Pass> = const { Cell::new(Pass::None) };
         static PASS_TIME: RefCell<PassTimes> = RefCell::new(Default::default());
     }
 

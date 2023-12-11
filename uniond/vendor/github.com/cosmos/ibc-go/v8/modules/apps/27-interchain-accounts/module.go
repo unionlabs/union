@@ -121,6 +121,27 @@ func NewAppModule(controllerKeeper *controllerkeeper.Keeper, hostKeeper *hostkee
 	}
 }
 
+// InitModule will initialize the interchain accounts module. It should only be
+// called once and as an alternative to InitGenesis.
+func (am AppModule) InitModule(ctx sdk.Context, controllerParams controllertypes.Params, hostParams hosttypes.Params) {
+	if am.controllerKeeper != nil {
+		controllerkeeper.InitGenesis(ctx, *am.controllerKeeper, genesistypes.ControllerGenesisState{
+			Params: controllerParams,
+		})
+	}
+
+	if am.hostKeeper != nil {
+		if err := hostParams.Validate(); err != nil {
+			panic(fmt.Errorf("could not set ica host params at initialization: %v", err))
+		}
+
+		hostkeeper.InitGenesis(ctx, *am.hostKeeper, genesistypes.HostGenesisState{
+			Params: hostParams,
+			Port:   types.HostPortID,
+		})
+	}
+}
+
 // RegisterServices registers module services
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if am.controllerKeeper != nil {

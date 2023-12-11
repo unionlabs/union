@@ -6,12 +6,11 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MsgAcknowledgement {
+pub struct MsgAcknowledgement<ProofAcked> {
     pub packet: Packet,
     #[serde(with = "::serde_utils::hex_string")]
     pub acknowledgement: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof_acked: Vec<u8>,
+    pub proof_acked: ProofAcked,
     pub proof_height: Height,
 }
 

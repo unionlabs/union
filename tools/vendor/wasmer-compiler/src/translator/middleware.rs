@@ -1,19 +1,18 @@
 //! The middleware parses the function binary bytecodes and transform them
 //! with the chosen functions.
 
-use loupe::MemoryUsage;
 use smallvec::SmallVec;
 use std::collections::VecDeque;
 use std::fmt::Debug;
-use std::ops::Deref;
-use wasmer_types::{LocalFunctionIndex, ModuleInfo};
-use wasmparser::{BinaryReader, Operator, Range, Type};
+use std::ops::{Deref, Range};
+use wasmer_types::{LocalFunctionIndex, MiddlewareError, ModuleInfo, WasmResult};
+use wasmparser::{BinaryReader, Operator, ValType};
 
-use crate::error::{MiddlewareError, WasmResult};
+use super::error::from_binaryreadererror_wasmerror;
 use crate::translator::environ::FunctionBinaryReader;
 
 /// A shared builder for function middlewares.
-pub trait ModuleMiddleware: Debug + Send + Sync + MemoryUsage {
+pub trait ModuleMiddleware: Debug + Send + Sync {
     /// Generates a `FunctionMiddleware` for a given function.
     ///
     /// Here we generate a separate object for each function instead of executing directly on per-function operators,
@@ -132,24 +131,43 @@ impl<'a> MiddlewareBinaryReader<'a> {
 
 impl<'a> FunctionBinaryReader<'a> for MiddlewareBinaryReader<'a> {
     fn read_local_count(&mut self) -> WasmResult<u32> {
-        Ok(self.state.inner.read_var_u32()?)
+        self.state
+            .inner
+            .read_var_u32()
+            .map_err(from_binaryreadererror_wasmerror)
     }
 
-    fn read_local_decl(&mut self) -> WasmResult<(u32, Type)> {
-        let count = self.state.inner.read_var_u32()?;
-        let ty = self.state.inner.read_type()?;
+    fn read_local_decl(&mut self) -> WasmResult<(u32, ValType)> {
+        let count = self
+            .state
+            .inner
+            .read_var_u32()
+            .map_err(from_binaryreadererror_wasmerror)?;
+        let ty: ValType = self
+            .state
+            .inner
+            .read_val_type()
+            .map_err(from_binaryreadererror_wasmerror)?;
         Ok((count, ty))
     }
 
     fn read_operator(&mut self) -> WasmResult<Operator<'a>> {
         if self.chain.is_empty() {
             // We short-circuit in case no chain is used
-            return Ok(self.state.inner.read_operator()?);
+            return self
+                .state
+                .inner
+                .read_operator()
+                .map_err(from_binaryreadererror_wasmerror);
         }
 
         // Try to fill the `self.pending_operations` buffer, until it is non-empty.
         while self.state.pending_operations.is_empty() {
-            let raw_op = self.state.inner.read_operator()?;
+            let raw_op = self
+                .state
+                .inner
+                .read_operator()
+                .map_err(from_binaryreadererror_wasmerror)?;
 
             // Fill the initial raw operator into pending buffer.
             self.state.pending_operations.push_back(raw_op);
@@ -186,7 +204,7 @@ impl<'a> FunctionBinaryReader<'a> for MiddlewareBinaryReader<'a> {
         self.state.inner.eof()
     }
 
-    fn range(&self) -> Range {
+    fn range(&self) -> Range<usize> {
         self.state.inner.range()
     }
 }

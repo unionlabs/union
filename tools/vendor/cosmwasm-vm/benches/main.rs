@@ -112,7 +112,7 @@ fn bench_instance(c: &mut Criterion) {
             assert!(contract_result.into_result().is_ok());
             gas_used = gas_before - instance.get_gas_left();
         });
-        println!("Gas used: {}", gas_used);
+        println!("Gas used: {gas_used}");
     });
 
     group.finish();
@@ -149,6 +149,19 @@ fn bench_cache(c: &mut Criterion) {
         });
     });
 
+    group.bench_function("load wasm unchecked", |b| {
+        let options = CacheOptions { ..options.clone() };
+        let mut cache: Cache<MockApi, MockStorage, MockQuerier> =
+            unsafe { Cache::new(options).unwrap() };
+        cache.set_module_unchecked(true);
+        let checksum = cache.save_wasm(CONTRACT).unwrap();
+
+        b.iter(|| {
+            let result = cache.load_wasm(&checksum);
+            assert!(result.is_ok());
+        });
+    });
+
     group.bench_function("analyze", |b| {
         let cache: Cache<MockApi, MockStorage, MockQuerier> =
             unsafe { Cache::new(options.clone()).unwrap() };
@@ -169,6 +182,29 @@ fn bench_cache(c: &mut Criterion) {
         };
         let cache: Cache<MockApi, MockStorage, MockQuerier> =
             unsafe { Cache::new(non_memcache).unwrap() };
+        let checksum = cache.save_wasm(CONTRACT).unwrap();
+
+        b.iter(|| {
+            let _ = cache
+                .get_instance(&checksum, mock_backend(&[]), DEFAULT_INSTANCE_OPTIONS)
+                .unwrap();
+            assert_eq!(cache.stats().hits_pinned_memory_cache, 0);
+            assert_eq!(cache.stats().hits_memory_cache, 0);
+            assert!(cache.stats().hits_fs_cache >= 1);
+            assert_eq!(cache.stats().misses, 0);
+        });
+    });
+
+    group.bench_function("instantiate from fs unchecked", |b| {
+        let non_memcache = CacheOptions {
+            base_dir: TempDir::new().unwrap().into_path(),
+            available_capabilities: capabilities_from_csv("iterator,staking"),
+            memory_cache_size: Size(0),
+            instance_memory_limit: DEFAULT_MEMORY_LIMIT,
+        };
+        let mut cache: Cache<MockApi, MockStorage, MockQuerier> =
+            unsafe { Cache::new(non_memcache).unwrap() };
+        cache.set_module_unchecked(true);
         let checksum = cache.save_wasm(CONTRACT).unwrap();
 
         b.iter(|| {
@@ -282,7 +318,6 @@ pub fn bench_instance_threads(c: &mut Criterion) {
                         let checksum = random_checksum();
 
                         thread::spawn(move || {
-                            let checksum = checksum;
                             // Perform measurement internally
                             let t = SystemTime::now();
                             black_box(

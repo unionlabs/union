@@ -224,7 +224,7 @@ macro_rules! impl_clone_for_custom_keyword {
 macro_rules! impl_extra_traits_for_custom_keyword {
     ($ident:ident) => {
         impl $crate::__private::Debug for $ident {
-            fn fmt(&self, f: &mut $crate::__private::Formatter) -> $crate::__private::fmt::Result {
+            fn fmt(&self, f: &mut $crate::__private::Formatter) -> $crate::__private::FmtResult {
                 $crate::__private::Formatter::write_str(
                     f,
                     $crate::__private::concat!(

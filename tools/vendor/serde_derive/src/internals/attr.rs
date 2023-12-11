@@ -1,15 +1,14 @@
-use internals::symbol::*;
-use internals::{ungroup, Ctxt};
+use crate::internals::symbol::*;
+use crate::internals::{ungroup, Ctxt};
 use proc_macro2::{Spacing, Span, TokenStream, TokenTree};
 use quote::ToTokens;
 use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
-use syn;
 use syn::meta::ParseNestedMeta;
 use syn::parse::ParseStream;
 use syn::punctuated::Punctuated;
-use syn::{token, Ident, Lifetime};
+use syn::{parse_quote, token, Ident, Lifetime, Token};
 
 // This module handles parsing of `#[serde(...)]` attributes. The entrypoints
 // are `attr::Container::from_ast`, `attr::Variant::from_ast`, and
@@ -19,7 +18,7 @@ use syn::{token, Ident, Lifetime};
 // user will see errors simultaneously for all bad attributes in the crate
 // rather than just the first.
 
-pub use internals::case::RenameRule;
+pub use crate::internals::case::RenameRule;
 
 struct Attr<'c, T> {
     cx: &'c Ctxt,
@@ -135,7 +134,7 @@ pub struct Name {
     serialize_renamed: bool,
     deserialize: String,
     deserialize_renamed: bool,
-    deserialize_aliases: Vec<String>,
+    deserialize_aliases: BTreeSet<String>,
 }
 
 fn unraw(ident: &Ident) -> String {
@@ -149,16 +148,12 @@ impl Name {
         de_name: Attr<String>,
         de_aliases: Option<VecAttr<String>>,
     ) -> Name {
-        let deserialize_aliases = match de_aliases {
-            Some(de_aliases) => {
-                let mut alias_list = BTreeSet::new();
-                for alias_name in de_aliases.get() {
-                    alias_list.insert(alias_name);
-                }
-                alias_list.into_iter().collect()
+        let mut alias_set = BTreeSet::new();
+        if let Some(de_aliases) = de_aliases {
+            for alias_name in de_aliases.get() {
+                alias_set.insert(alias_name);
             }
-            None => Vec::new(),
-        };
+        }
 
         let ser_name = ser_name.get();
         let ser_renamed = ser_name.is_some();
@@ -169,33 +164,40 @@ impl Name {
             serialize_renamed: ser_renamed,
             deserialize: de_name.unwrap_or(source_name),
             deserialize_renamed: de_renamed,
-            deserialize_aliases,
+            deserialize_aliases: alias_set,
         }
     }
 
     /// Return the container name for the container when serializing.
-    pub fn serialize_name(&self) -> String {
-        self.serialize.clone()
+    pub fn serialize_name(&self) -> &str {
+        &self.serialize
     }
 
     /// Return the container name for the container when deserializing.
-    pub fn deserialize_name(&self) -> String {
-        self.deserialize.clone()
+    pub fn deserialize_name(&self) -> &str {
+        &self.deserialize
     }
 
-    fn deserialize_aliases(&self) -> Vec<String> {
-        let mut aliases = self.deserialize_aliases.clone();
-        let main_name = self.deserialize_name();
-        if !aliases.contains(&main_name) {
-            aliases.push(main_name);
-        }
-        aliases
+    fn deserialize_aliases(&self) -> &BTreeSet<String> {
+        &self.deserialize_aliases
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct RenameAllRules {
     serialize: RenameRule,
     deserialize: RenameRule,
+}
+
+impl RenameAllRules {
+    /// Returns a new `RenameAllRules` with the individual rules of `self` and
+    /// `other_rules` joined by `RenameRules::or`.
+    pub fn or(self, other_rules: Self) -> Self {
+        Self {
+            serialize: self.serialize.or(other_rules.serialize),
+            deserialize: self.deserialize.or(other_rules.deserialize),
+        }
+    }
 }
 
 /// Represents struct or enum attribute information.
@@ -205,6 +207,7 @@ pub struct Container {
     deny_unknown_fields: bool,
     default: Default,
     rename_all_rules: RenameAllRules,
+    rename_all_fields_rules: RenameAllRules,
     ser_bound: Option<Vec<syn::WherePredicate>>,
     de_bound: Option<Vec<syn::WherePredicate>>,
     tag: TagType,
@@ -218,6 +221,7 @@ pub struct Container {
     is_packed: bool,
     /// Error message generated when type can't be deserialized
     expecting: Option<String>,
+    non_exhaustive: bool,
 }
 
 /// Styles of representing an enum.
@@ -288,6 +292,8 @@ impl Container {
         let mut default = Attr::none(cx, DEFAULT);
         let mut rename_all_ser_rule = Attr::none(cx, RENAME_ALL);
         let mut rename_all_de_rule = Attr::none(cx, RENAME_ALL);
+        let mut rename_all_fields_ser_rule = Attr::none(cx, RENAME_ALL_FIELDS);
+        let mut rename_all_fields_de_rule = Attr::none(cx, RENAME_ALL_FIELDS);
         let mut ser_bound = Attr::none(cx, BOUND);
         let mut de_bound = Attr::none(cx, BOUND);
         let mut untagged = BoolAttr::none(cx, UNTAGGED);
@@ -301,9 +307,12 @@ impl Container {
         let mut variant_identifier = BoolAttr::none(cx, VARIANT_IDENTIFIER);
         let mut serde_path = Attr::none(cx, CRATE);
         let mut expecting = Attr::none(cx, EXPECTING);
+        let mut non_exhaustive = false;
 
         for attr in &item.attrs {
             if attr.path() != SERDE {
+                non_exhaustive |=
+                    matches!(&attr.meta, syn::Meta::Path(path) if path == NON_EXHAUSTIVE);
                 continue;
             }
 
@@ -341,6 +350,44 @@ impl Container {
                             }
                         }
                     }
+                } else if meta.path == RENAME_ALL_FIELDS {
+                    // #[serde(rename_all_fields = "foo")]
+                    // #[serde(rename_all_fields(serialize = "foo", deserialize = "bar"))]
+                    let one_name = meta.input.peek(Token![=]);
+                    let (ser, de) = get_renames(cx, RENAME_ALL_FIELDS, &meta)?;
+
+                    match item.data {
+                        syn::Data::Enum(_) => {
+                            if let Some(ser) = ser {
+                                match RenameRule::from_str(&ser.value()) {
+                                    Ok(rename_rule) => {
+                                        rename_all_fields_ser_rule.set(&meta.path, rename_rule);
+                                    }
+                                    Err(err) => cx.error_spanned_by(ser, err),
+                                }
+                            }
+                            if let Some(de) = de {
+                                match RenameRule::from_str(&de.value()) {
+                                    Ok(rename_rule) => {
+                                        rename_all_fields_de_rule.set(&meta.path, rename_rule);
+                                    }
+                                    Err(err) => {
+                                        if !one_name {
+                                            cx.error_spanned_by(de, err);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        syn::Data::Struct(_) => {
+                            let msg = "#[serde(rename_all_fields)] can only be used on enums";
+                            cx.syn_error(meta.error(msg));
+                        }
+                        syn::Data::Union(_) => {
+                            let msg = "#[serde(rename_all_fields)] can only be used on enums";
+                            cx.syn_error(meta.error(msg));
+                        }
+                    }
                 } else if meta.path == TRANSPARENT {
                     // #[serde(transparent)]
                     transparent.set_true(meta.path);
@@ -353,21 +400,21 @@ impl Container {
                         if let Some(path) = parse_lit_into_expr_path(cx, DEFAULT, &meta)? {
                             match &item.data {
                                 syn::Data::Struct(syn::DataStruct { fields, .. }) => match fields {
-                                    syn::Fields::Named(_) => {
+                                    syn::Fields::Named(_) | syn::Fields::Unnamed(_) => {
                                         default.set(&meta.path, Default::Path(path));
                                     }
-                                    syn::Fields::Unnamed(_) | syn::Fields::Unit => {
-                                        let msg = "#[serde(default = \"...\")] can only be used on structs with named fields";
-                                        cx.error_spanned_by(fields, msg);
+                                    syn::Fields::Unit => {
+                                        let msg = "#[serde(default = \"...\")] can only be used on structs that have fields";
+                                        cx.syn_error(meta.error(msg));
                                     }
                                 },
-                                syn::Data::Enum(syn::DataEnum { enum_token, .. }) => {
-                                    let msg = "#[serde(default = \"...\")] can only be used on structs with named fields";
-                                    cx.error_spanned_by(enum_token, msg);
+                                syn::Data::Enum(_) => {
+                                    let msg = "#[serde(default = \"...\")] can only be used on structs";
+                                    cx.syn_error(meta.error(msg));
                                 }
-                                syn::Data::Union(syn::DataUnion { union_token, .. }) => {
-                                    let msg = "#[serde(default = \"...\")] can only be used on structs with named fields";
-                                    cx.error_spanned_by(union_token, msg);
+                                syn::Data::Union(_) => {
+                                    let msg = "#[serde(default = \"...\")] can only be used on structs";
+                                    cx.syn_error(meta.error(msg));
                                 }
                             }
                         }
@@ -375,21 +422,21 @@ impl Container {
                         // #[serde(default)]
                         match &item.data {
                             syn::Data::Struct(syn::DataStruct { fields, .. }) => match fields {
-                                syn::Fields::Named(_) => {
+                                syn::Fields::Named(_) | syn::Fields::Unnamed(_) => {
                                     default.set(meta.path, Default::Default);
                                 }
-                                syn::Fields::Unnamed(_) | syn::Fields::Unit => {
-                                    let msg = "#[serde(default)] can only be used on structs with named fields";
+                                syn::Fields::Unit => {
+                                    let msg = "#[serde(default)] can only be used on structs that have fields";
                                     cx.error_spanned_by(fields, msg);
                                 }
                             },
-                            syn::Data::Enum(syn::DataEnum { enum_token, .. }) => {
-                                let msg = "#[serde(default)] can only be used on structs with named fields";
-                                cx.error_spanned_by(enum_token, msg);
+                            syn::Data::Enum(_) => {
+                                let msg = "#[serde(default)] can only be used on structs";
+                                cx.syn_error(meta.error(msg));
                             }
-                            syn::Data::Union(syn::DataUnion { union_token, .. }) => {
-                                let msg = "#[serde(default)] can only be used on structs with named fields";
-                                cx.error_spanned_by(union_token, msg);
+                            syn::Data::Union(_) => {
+                                let msg = "#[serde(default)] can only be used on structs";
+                                cx.syn_error(meta.error(msg));
                             }
                         }
                     }
@@ -405,13 +452,13 @@ impl Container {
                         syn::Data::Enum(_) => {
                             untagged.set_true(&meta.path);
                         }
-                        syn::Data::Struct(syn::DataStruct { struct_token, .. }) => {
+                        syn::Data::Struct(_) => {
                             let msg = "#[serde(untagged)] can only be used on enums";
-                            cx.error_spanned_by(struct_token, msg);
+                            cx.syn_error(meta.error(msg));
                         }
-                        syn::Data::Union(syn::DataUnion { union_token, .. }) => {
+                        syn::Data::Union(_) => {
                             let msg = "#[serde(untagged)] can only be used on enums";
-                            cx.error_spanned_by(union_token, msg);
+                            cx.syn_error(meta.error(msg));
                         }
                     }
                 } else if meta.path == TAG {
@@ -427,12 +474,12 @@ impl Container {
                                 }
                                 syn::Fields::Unnamed(_) | syn::Fields::Unit => {
                                     let msg = "#[serde(tag = \"...\")] can only be used on enums and structs with named fields";
-                                    cx.error_spanned_by(fields, msg);
+                                    cx.syn_error(meta.error(msg));
                                 }
                             },
-                            syn::Data::Union(syn::DataUnion { union_token, .. }) => {
+                            syn::Data::Union(_) => {
                                 let msg = "#[serde(tag = \"...\")] can only be used on enums and structs with named fields";
-                                cx.error_spanned_by(union_token, msg);
+                                cx.syn_error(meta.error(msg));
                             }
                         }
                     }
@@ -443,13 +490,13 @@ impl Container {
                             syn::Data::Enum(_) => {
                                 content.set(&meta.path, s.value());
                             }
-                            syn::Data::Struct(syn::DataStruct { struct_token, .. }) => {
+                            syn::Data::Struct(_) => {
                                 let msg = "#[serde(content = \"...\")] can only be used on enums";
-                                cx.error_spanned_by(struct_token, msg);
+                                cx.syn_error(meta.error(msg));
                             }
-                            syn::Data::Union(syn::DataUnion { union_token, .. }) => {
+                            syn::Data::Union(_) => {
                                 let msg = "#[serde(content = \"...\")] can only be used on enums";
-                                cx.error_spanned_by(union_token, msg);
+                                cx.syn_error(meta.error(msg));
                             }
                         }
                     }
@@ -528,6 +575,10 @@ impl Container {
                 serialize: rename_all_ser_rule.get().unwrap_or(RenameRule::None),
                 deserialize: rename_all_de_rule.get().unwrap_or(RenameRule::None),
             },
+            rename_all_fields_rules: RenameAllRules {
+                serialize: rename_all_fields_ser_rule.get().unwrap_or(RenameRule::None),
+                deserialize: rename_all_fields_de_rule.get().unwrap_or(RenameRule::None),
+            },
             ser_bound: ser_bound.get(),
             de_bound: de_bound.get(),
             tag: decide_tag(cx, item, untagged, internal_tag, content),
@@ -540,6 +591,7 @@ impl Container {
             serde_path: serde_path.get(),
             is_packed,
             expecting: expecting.get(),
+            non_exhaustive,
         }
     }
 
@@ -547,8 +599,12 @@ impl Container {
         &self.name
     }
 
-    pub fn rename_all_rules(&self) -> &RenameAllRules {
-        &self.rename_all_rules
+    pub fn rename_all_rules(&self) -> RenameAllRules {
+        self.rename_all_rules
+    }
+
+    pub fn rename_all_fields_rules(&self) -> RenameAllRules {
+        self.rename_all_fields_rules
     }
 
     pub fn transparent(&self) -> bool {
@@ -621,6 +677,10 @@ impl Container {
     pub fn expecting(&self) -> Option<&str> {
         self.expecting.as_ref().map(String::as_ref)
     }
+
+    pub fn non_exhaustive(&self) -> bool {
+        self.non_exhaustive
+    }
 }
 
 fn decide_tag(
@@ -656,7 +716,7 @@ fn decide_tag(
             }
             TagType::Internal { tag }
         }
-        (Some((untagged_tokens, _)), Some((tag_tokens, _)), None) => {
+        (Some((untagged_tokens, ())), Some((tag_tokens, _)), None) => {
             let msg = "enum cannot be both untagged and internally tagged";
             cx.error_spanned_by(untagged_tokens, msg);
             cx.error_spanned_by(tag_tokens, msg);
@@ -667,14 +727,14 @@ fn decide_tag(
             cx.error_spanned_by(content_tokens, msg);
             TagType::External
         }
-        (Some((untagged_tokens, _)), None, Some((content_tokens, _))) => {
+        (Some((untagged_tokens, ())), None, Some((content_tokens, _))) => {
             let msg = "untagged enum cannot have #[serde(content = \"...\")]";
             cx.error_spanned_by(untagged_tokens, msg);
             cx.error_spanned_by(content_tokens, msg);
             TagType::External
         }
         (None, Some((_, tag)), Some((_, content))) => TagType::Adjacent { tag, content },
-        (Some((untagged_tokens, _)), Some((tag_tokens, _)), Some((content_tokens, _))) => {
+        (Some((untagged_tokens, ())), Some((tag_tokens, _)), Some((content_tokens, _))) => {
             let msg = "untagged enum cannot have #[serde(tag = \"...\", content = \"...\")]";
             cx.error_spanned_by(untagged_tokens, msg);
             cx.error_spanned_by(tag_tokens, msg);
@@ -696,7 +756,7 @@ fn decide_identifier(
         variant_identifier.0.get_with_tokens(),
     ) {
         (_, None, None) => Identifier::No,
-        (_, Some((field_identifier_tokens, _)), Some((variant_identifier_tokens, _))) => {
+        (_, Some((field_identifier_tokens, ())), Some((variant_identifier_tokens, ()))) => {
             let msg =
                 "#[serde(field_identifier)] and #[serde(variant_identifier)] cannot both be set";
             cx.error_spanned_by(field_identifier_tokens, msg);
@@ -917,21 +977,24 @@ impl Variant {
         &self.name
     }
 
-    pub fn aliases(&self) -> Vec<String> {
+    pub fn aliases(&self) -> &BTreeSet<String> {
         self.name.deserialize_aliases()
     }
 
-    pub fn rename_by_rules(&mut self, rules: &RenameAllRules) {
+    pub fn rename_by_rules(&mut self, rules: RenameAllRules) {
         if !self.name.serialize_renamed {
             self.name.serialize = rules.serialize.apply_to_variant(&self.name.serialize);
         }
         if !self.name.deserialize_renamed {
             self.name.deserialize = rules.deserialize.apply_to_variant(&self.name.deserialize);
         }
+        self.name
+            .deserialize_aliases
+            .insert(self.name.deserialize.clone());
     }
 
-    pub fn rename_all_rules(&self) -> &RenameAllRules {
-        &self.rename_all_rules
+    pub fn rename_all_rules(&self) -> RenameAllRules {
+        self.rename_all_rules
     }
 
     pub fn ser_bound(&self) -> Option<&[syn::WherePredicate]> {
@@ -1256,17 +1319,20 @@ impl Field {
         &self.name
     }
 
-    pub fn aliases(&self) -> Vec<String> {
+    pub fn aliases(&self) -> &BTreeSet<String> {
         self.name.deserialize_aliases()
     }
 
-    pub fn rename_by_rules(&mut self, rules: &RenameAllRules) {
+    pub fn rename_by_rules(&mut self, rules: RenameAllRules) {
         if !self.name.serialize_renamed {
             self.name.serialize = rules.serialize.apply_to_field(&self.name.serialize);
         }
         if !self.name.deserialize_renamed {
             self.name.deserialize = rules.deserialize.apply_to_field(&self.name.deserialize);
         }
+        self.name
+            .deserialize_aliases
+            .insert(self.name.deserialize.clone());
     }
 
     pub fn skip_serializing(&self) -> bool {
@@ -1418,6 +1484,13 @@ fn get_lit_str2(
         ..
     }) = value
     {
+        let suffix = lit.suffix();
+        if !suffix.is_empty() {
+            cx.error_spanned_by(
+                lit,
+                format!("unexpected suffix `{}` on string literal", suffix),
+            );
+        }
         Ok(Some(lit.clone()))
     } else {
         cx.error_spanned_by(

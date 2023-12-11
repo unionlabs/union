@@ -1,0 +1,10 @@
+(type u32 (primitive u32))
+
+(decl ctor (u32) u32)
+(rule (ctor x) x)
+
+(decl entry (u32) u32)
+
+(rule (entry x)
+      (if-let y (ctor x))
+      y)

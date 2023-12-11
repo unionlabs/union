@@ -9,7 +9,6 @@ pub fn decode(src: impl AsRef<[u8]>, dst: &mut [u8]) -> Result<&[u8], Error> {
 
 /// Decode an upper Base16 (hex) string into a byte vector.
 #[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn decode_vec(input: impl AsRef<[u8]>) -> Result<Vec<u8>, Error> {
     let mut output = vec![0u8; decoded_len(input.as_ref())?];
     decode(input, &mut output)?;
@@ -41,7 +40,6 @@ pub fn encode_str<'a>(src: &[u8], dst: &'a mut [u8]) -> Result<&'a str, Error> {
 /// # Panics
 /// If `input` length is greater than `usize::MAX/2`.
 #[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn encode_string(input: &[u8]) -> String {
     let elen = encoded_len(input);
     let mut dst = vec![0u8; elen];

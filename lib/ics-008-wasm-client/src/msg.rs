@@ -10,10 +10,12 @@ use protos::ibc::{
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::Height;
 
+// TODO(aeryz): Handle all these properly
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InstantiateMsg {
-    pub client_state: ProtoClientState,
-    pub consensus_state: ProtoConsensusState,
+    pub client_state: Binary,
+    pub consensus_state: Binary,
+    pub checksum: Option<Binary>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -74,11 +76,11 @@ pub enum SudoMsg {
         path: MerklePath,
     },
     UpdateState {
-        client_message: ClientMessage,
+        client_message: Binary,
     },
 
     UpdateStateOnMisbehaviour {
-        client_message: ClientMessage,
+        client_message: Binary,
     },
 
     VerifyUpgradeAndUpdateState {
@@ -94,9 +96,9 @@ pub enum SudoMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
-    VerifyClientMessage { client_message: ClientMessage },
+    VerifyClientMessage { client_message: Binary },
 
-    CheckForMisbehaviour { client_message: ClientMessage },
+    CheckForMisbehaviour { client_message: Binary },
 
     TimestampAtHeight { height: Height },
 

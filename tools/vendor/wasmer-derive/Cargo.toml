@@ -10,17 +10,19 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-edition = "2018"
+edition = "2021"
+rust-version = "1.70"
 name = "wasmer-derive"
-version = "2.3.0"
+version = "4.2.2"
 authors = ["Wasmer Engineering Team <engineering@wasmer.io>"]
 description = "Wasmer derive macros"
+homepage = "https://wasmer.io/"
 license = "MIT"
 repository = "https://github.com/wasmerio/wasmer"
-resolver = "2"
 
 [lib]
 proc-macro = true
+
 [dependencies.proc-macro-error]
 version = "1.0.0"
 
@@ -32,6 +34,10 @@ version = "1"
 
 [dependencies.syn]
 version = "1.0.72"
-features = ["full", "extra-traits"]
+features = [
+    "full",
+    "extra-traits",
+]
+
 [dev-dependencies.compiletest_rs]
 version = "0.6"

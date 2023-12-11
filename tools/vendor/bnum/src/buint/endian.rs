@@ -74,7 +74,10 @@ macro_rules! endian {
                     let ptr = uninit.as_ptr().cast_mut() as *mut u8; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
                     let digit_bytes = unsafe {
                         slice_ptr
-                            .add(len - digit::$Digit::BYTES as usize - (i << digit::$Digit::BYTE_SHIFT))
+                            .add(
+                                len - digit::$Digit::BYTES as usize
+                                    - (i << digit::$Digit::BYTE_SHIFT),
+                            )
                             .copy_to_nonoverlapping(ptr, digit::$Digit::BYTES as usize);
                         uninit.assume_init()
                     };
@@ -238,8 +241,8 @@ macro_rules! endian {
                 let arr_ptr = bytes.as_ptr();
                 let mut i = 0;
                 while i < N {
-                    let mut uninit = MaybeUninit::<[u8; digit::$Digit::BYTES as usize]>::uninit();
-                    let ptr = uninit.as_mut_ptr() as *mut u8;
+                    let uninit = MaybeUninit::<[u8; digit::$Digit::BYTES as usize]>::uninit();
+                    let ptr = uninit.as_ptr().cast_mut() as *mut u8; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
                     let digit_bytes = unsafe {
                         arr_ptr
                             .add((N - 1 - i) << digit::$Digit::BYTE_SHIFT)
@@ -262,8 +265,8 @@ macro_rules! endian {
                 let arr_ptr = bytes.as_ptr();
                 let mut i = 0;
                 while i < N {
-                    let mut uninit = MaybeUninit::<[u8; digit::$Digit::BYTES as usize]>::uninit();
-                    let ptr = uninit.as_mut_ptr() as *mut u8;
+                    let uninit = MaybeUninit::<[u8; digit::$Digit::BYTES as usize]>::uninit();
+                    let ptr = uninit.as_ptr().cast_mut() as *mut u8; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
                     let digit_bytes = unsafe {
                         arr_ptr
                             .add(i << digit::$Digit::BYTE_SHIFT)

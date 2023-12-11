@@ -5,7 +5,6 @@
 //! signature checking.
 
 use crate::vmcontext::VMSharedSignatureIndex;
-use loupe::MemoryUsage;
 use more_asserts::{assert_lt, debug_assert_lt};
 use std::collections::{hash_map, HashMap};
 use std::convert::TryFrom;
@@ -16,7 +15,7 @@ use wasmer_types::FunctionType;
 /// call must match. To implement this efficiently, keep a registry of all
 /// signatures, shared by all instances, so that call sites can just do an
 /// index comparison.
-#[derive(Debug, MemoryUsage)]
+#[derive(Debug, Default)]
 pub struct SignatureRegistry {
     // This structure is stored in an `Engine` and is intended to be shared
     // across many instances. Ideally instances can themselves be sent across
@@ -26,7 +25,7 @@ pub struct SignatureRegistry {
     inner: RwLock<Inner>,
 }
 
-#[derive(Debug, Default, MemoryUsage)]
+#[derive(Debug, Default)]
 struct Inner {
     signature2index: HashMap<FunctionType, VMSharedSignatureIndex>,
     index2signature: HashMap<VMSharedSignatureIndex, FunctionType>,
@@ -35,16 +34,15 @@ struct Inner {
 impl SignatureRegistry {
     /// Create a new `SignatureRegistry`.
     pub fn new() -> Self {
-        Self {
-            inner: Default::default(),
-        }
+        Default::default()
     }
 
     /// Register a signature and return its unique index.
     pub fn register(&self, sig: &FunctionType) -> VMSharedSignatureIndex {
         let mut inner = self.inner.write().unwrap();
         let len = inner.signature2index.len();
-        match inner.signature2index.entry(sig.clone()) {
+        let entry = inner.signature2index.entry(sig.clone());
+        match entry {
             hash_map::Entry::Occupied(entry) => *entry.get(),
             hash_map::Entry::Vacant(entry) => {
                 // Keep `signature_hash` len under 2**32 -- VMSharedSignatureIndex::new(std::u32::MAX)

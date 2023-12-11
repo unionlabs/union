@@ -10,11 +10,12 @@ use base16ct::HexDisplay;
 use core::{
     cmp::Ordering,
     fmt::{self, Debug},
+    hash::{Hash, Hasher},
     ops::Add,
     str,
 };
 use generic_array::{
-    typenum::{U1, U28, U32, U48, U66},
+    typenum::{U1, U24, U28, U32, U48, U66},
     ArrayLength, GenericArray,
 };
 
@@ -59,7 +60,7 @@ macro_rules! impl_modulus_size {
     }
 }
 
-impl_modulus_size!(U28, U32, U48, U66);
+impl_modulus_size!(U24, U28, U32, U48, U66);
 
 /// SEC1 encoded curve point.
 ///
@@ -157,7 +158,6 @@ where
 
     /// Get boxed byte slice containing the serialized [`EncodedPoint`]
     #[cfg(feature = "alloc")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     pub fn to_bytes(&self) -> Box<[u8]> {
         self.as_bytes().to_vec().into_boxed_slice()
     }
@@ -295,6 +295,15 @@ where
     }
 }
 
+impl<Size> Hash for EncodedPoint<Size>
+where
+    Size: ModulusSize,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.as_bytes().hash(state)
+    }
+}
+
 impl<Size: ModulusSize> PartialOrd for EncodedPoint<Size>
 where
     Size: ModulusSize,
@@ -381,7 +390,6 @@ where
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<Size> Serialize for EncodedPoint<Size>
 where
     Size: ModulusSize,
@@ -395,7 +403,6 @@ where
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de, Size> Deserialize<'de> for EncodedPoint<Size>
 where
     Size: ModulusSize,
@@ -405,7 +412,7 @@ where
         D: de::Deserializer<'de>,
     {
         let bytes = serdect::slice::deserialize_hex_or_bin_vec(deserializer)?;
-        Self::from_bytes(&bytes).map_err(de::Error::custom)
+        Self::from_bytes(bytes).map_err(de::Error::custom)
     }
 }
 
@@ -663,8 +670,8 @@ mod tests {
 
     #[test]
     fn decode_invalid_tag() {
-        let mut compressed_bytes = COMPRESSED_BYTES.clone();
-        let mut uncompressed_bytes = UNCOMPRESSED_BYTES.clone();
+        let mut compressed_bytes = COMPRESSED_BYTES;
+        let mut uncompressed_bytes = UNCOMPRESSED_BYTES;
 
         for bytes in &mut [&mut compressed_bytes[..], &mut uncompressed_bytes[..]] {
             for tag in 0..=0xFF {

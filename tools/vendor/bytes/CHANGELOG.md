@@ -1,3 +1,66 @@
+# 1.4.0 (January 31, 2023)
+
+### Added
+
+- Make `IntoIter` constructor public (#581)
+
+### Fixed
+
+- Avoid large reallocations when freezing `BytesMut` (#592)
+
+### Documented
+
+- Document which functions require `std` (#591)
+- Fix duplicate "the the" typos (#585)
+
+# 1.3.0 (November 20, 2022)
+
+### Added
+
+- Rename and expose `BytesMut::spare_capacity_mut` (#572)
+- Implement native-endian get and put functions for `Buf` and `BufMut` (#576)
+
+### Fixed
+
+- Don't have important data in unused capacity when calling reserve (#563)
+
+### Documented
+
+- `Bytes::new` etc should return `Self` not `Bytes` (#568)
+
+# 1.2.1 (July 30, 2022)
+
+### Fixed
+
+- Fix unbounded memory growth when using `reserve` (#560)
+
+# 1.2.0 (July 19, 2022)
+
+### Added
+
+- Add `BytesMut::zeroed` (#517)
+- Implement `Extend<Bytes>` for `BytesMut` (#527)
+- Add conversion from `BytesMut` to `Vec<u8>` (#543, #554)
+- Add conversion from `Bytes` to `Vec<u8>` (#547)
+- Add `UninitSlice::as_uninit_slice_mut()` (#548)
+- Add const to `Bytes::{len,is_empty}` (#514)
+
+### Changed
+
+- Reuse vector in `BytesMut::reserve` (#539, #544)
+
+### Fixed
+
+- Make miri happy (#515, #523, #542, #545, #553)
+- Make tsan happy (#541)
+- Fix `remaining_mut()` on chain (#488)
+- Fix amortized asymptotics of `BytesMut` (#555)
+
+### Documented
+
+- Redraw layout diagram with box drawing characters (#539)
+- Clarify `BytesMut::unsplit` docs (#535)
+
 # 1.1.0 (August 25, 2021)
 
 ### Added

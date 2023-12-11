@@ -3,30 +3,28 @@ pub mod de;
 #[cfg(not(no_serde_derive))]
 pub mod ser;
 
-pub mod size_hint;
-
 // FIXME: #[cfg(doctest)] once https://github.com/rust-lang/rust/issues/67295 is fixed.
 pub mod doc;
 
-pub use lib::clone::Clone;
-pub use lib::convert::{From, Into};
-pub use lib::default::Default;
-pub use lib::fmt::{self, Formatter};
-pub use lib::marker::PhantomData;
-pub use lib::option::Option::{self, None, Some};
-pub use lib::ptr;
-pub use lib::result::Result::{self, Err, Ok};
+pub use crate::lib::clone::Clone;
+pub use crate::lib::convert::{From, Into};
+pub use crate::lib::default::Default;
+pub use crate::lib::fmt::{self, Formatter};
+pub use crate::lib::marker::PhantomData;
+pub use crate::lib::option::Option::{self, None, Some};
+pub use crate::lib::ptr;
+pub use crate::lib::result::Result::{self, Err, Ok};
 
 pub use self::string::from_utf8_lossy;
 
 #[cfg(any(feature = "alloc", feature = "std"))]
-pub use lib::{ToString, Vec};
+pub use crate::lib::{ToString, Vec};
 
 #[cfg(not(no_core_try_from))]
-pub use lib::convert::TryFrom;
+pub use crate::lib::convert::TryFrom;
 
 mod string {
-    use lib::*;
+    use crate::lib::*;
 
     #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn from_utf8_lossy(bytes: &[u8]) -> Cow<str> {

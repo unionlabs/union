@@ -3,7 +3,6 @@ use core::str::FromStr;
 use crate::{
     ibc::core::{channel::order::Order, client::height::Height},
     id::{ChannelId, ConnectionId, PortId},
-    EmptyString,
 };
 
 macro_rules! event {
@@ -181,7 +180,7 @@ event! {
             consensus_height: Height,
         },
 
-        #[event(tag = "update_client", deprecated("consensus_height"))]
+        #[event(tag = "update_client", deprecated("consensus_height", "header"))]
         UpdateClient<ClientId, ClientType> {
             #[parse(ClientId::from_str)]
             client_id: ClientId,
@@ -206,7 +205,7 @@ event! {
             evidence_hash: String,
         },
 
-        #[event(tag = "connection_open_init")]
+        #[event(tag = "connection_open_init", deprecated("counterparty_connection_id"))]
         ConnectionOpenInit<ClientId, CounterpartyClientId> {
             #[parse(ConnectionId::from_str)]
             connection_id: ConnectionId,
@@ -214,8 +213,6 @@ event! {
             client_id: ClientId,
             #[parse(CounterpartyClientId::from_str)]
             counterparty_client_id: CounterpartyClientId,
-            #[parse(EmptyString::from_str)]
-            counterparty_connection_id: EmptyString,
         },
 
         #[event(tag = "connection_open_try")]
@@ -447,7 +444,9 @@ event! {
 mod tests {
     mod event_conversion {
         use crate::{
-            events::{ConnectionOpenConfirm, TryFromTendermintEventError, UpdateClient},
+            events::{
+                ConnectionOpenConfirm, CreateClient, TryFromTendermintEventError, UpdateClient,
+            },
             ibc::core::client::height::{Height, HeightFromStrError},
             tendermint::abci::{event::Event, event_attribute::EventAttribute},
         };
@@ -638,6 +637,49 @@ mod tests {
                 Err(TryFromTendermintEventError::UnknownField(
                     "abracadabra".to_string()
                 ))
+            );
+        }
+
+        #[test]
+        fn create() {
+            let client_type = "07-tendermint";
+            let client_id = "07-tendermint-0";
+            let consensus_height = "1-88";
+
+            let create_client_event = Event {
+                ty: "create_client".to_owned(),
+                attributes: [
+                    EventAttribute {
+                        key: "client_id".to_owned(),
+                        value: client_id.to_owned(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "client_type".to_owned(),
+                        value: client_type.to_owned(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "consensus_height".to_owned(),
+                        value: consensus_height.to_owned(),
+                        index: true,
+                    },
+                    EventAttribute {
+                        key: "msg_index".to_owned(),
+                        value: "0".to_owned(),
+                        index: true,
+                    },
+                ]
+                .to_vec(),
+            };
+
+            assert_eq!(
+                CreateClient::<String, String>::try_from(create_client_event).unwrap(),
+                CreateClient {
+                    client_id: client_id.to_owned(),
+                    client_type: client_type.to_owned(),
+                    consensus_height: consensus_height.parse().unwrap(),
+                }
             );
         }
     }

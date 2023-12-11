@@ -1,0 +1,6 @@
+(type u32 (primitive u32))
+
+(decl A (u32 u32) u32)
+
+(rule 1 (A x x) x)
+(rule 0 (A x _) 0)

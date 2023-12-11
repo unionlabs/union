@@ -21,11 +21,10 @@ pub struct StrOwned {
 impl StrOwned {
     /// Create a new [`StrOwned`], ensuring that the byte representation of
     /// the provided `str` value is shorter than `Length::max()`.
-    pub fn new(s: &str) -> Result<Self> {
-        Ok(Self {
-            inner: String::from(s),
-            length: Length::try_from(s.as_bytes().len())?,
-        })
+    pub fn new(s: String) -> Result<Self> {
+        let length = Length::try_from(s.as_bytes().len())?;
+
+        Ok(Self { inner: s, length })
     }
 
     /// Parse a [`String`] from UTF-8 encoded bytes.

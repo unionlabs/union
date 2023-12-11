@@ -32,9 +32,12 @@ cfg_if! {
 }
 
 use crate::FieldBytes;
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::{
+    iter::{Product, Sum},
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+};
 use elliptic_curve::{
-    ff::Field,
+    ff::{self, Field, PrimeField},
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -47,51 +50,12 @@ use num_bigint::{BigUint, ToBigUint};
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(FieldElementImpl);
 
-impl Field for FieldElement {
-    fn random(mut rng: impl RngCore) -> Self {
-        let mut bytes = FieldBytes::default();
-
-        loop {
-            rng.fill_bytes(&mut bytes);
-            if let Some(fe) = Self::from_bytes(&bytes).into() {
-                return fe;
-            }
-        }
-    }
-
-    fn zero() -> Self {
-        Self::ZERO
-    }
-
-    fn one() -> Self {
-        Self::ONE
-    }
-
-    #[must_use]
-    fn square(&self) -> Self {
-        self.square()
-    }
-
-    #[must_use]
-    fn double(&self) -> Self {
-        self.double()
-    }
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
-    }
-
-    fn sqrt(&self) -> CtOption<Self> {
-        self.sqrt()
-    }
-}
-
 impl FieldElement {
     /// Zero element.
-    pub const ZERO: Self = Self(FieldElementImpl::zero());
+    pub const ZERO: Self = Self(FieldElementImpl::ZERO);
 
     /// Multiplicative identity.
-    pub const ONE: Self = Self(FieldElementImpl::one());
+    pub const ONE: Self = Self(FieldElementImpl::ONE);
 
     /// Determine if this `FieldElement` is zero.
     ///
@@ -132,6 +96,11 @@ impl FieldElement {
     /// [0, p).
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         FieldElementImpl::from_bytes(bytes).map(Self)
+    }
+
+    /// Convert a `u64` to a field element.
+    pub const fn from_u64(w: u64) -> Self {
+        Self(FieldElementImpl::from_u64(w))
     }
 
     /// Returns the SEC1 encoding of this field element.
@@ -272,7 +241,84 @@ impl FieldElement {
 
     #[cfg(test)]
     pub fn modulus_as_biguint() -> BigUint {
-        Self::one().negate(1).to_biguint().unwrap() + 1.to_biguint().unwrap()
+        Self::ONE.negate(1).to_biguint().unwrap() + 1.to_biguint().unwrap()
+    }
+}
+
+impl Field for FieldElement {
+    const ZERO: Self = Self::ZERO;
+    const ONE: Self = Self::ONE;
+
+    fn random(mut rng: impl RngCore) -> Self {
+        let mut bytes = FieldBytes::default();
+
+        loop {
+            rng.fill_bytes(&mut bytes);
+            if let Some(fe) = Self::from_bytes(&bytes).into() {
+                return fe;
+            }
+        }
+    }
+
+    #[must_use]
+    fn square(&self) -> Self {
+        self.square()
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        self.double()
+    }
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
+    }
+
+    fn sqrt(&self) -> CtOption<Self> {
+        self.sqrt()
+    }
+
+    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+        ff::helpers::sqrt_ratio_generic(num, div)
+    }
+}
+
+impl PrimeField for FieldElement {
+    type Repr = FieldBytes;
+
+    const MODULUS: &'static str =
+        "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
+    const NUM_BITS: u32 = 256;
+    const CAPACITY: u32 = 255;
+    const TWO_INV: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f, 0xff,
+        0xfe, 0x18,
+    ]));
+    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
+    const S: u32 = 1;
+    const ROOT_OF_UNITY: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff,
+        0xfc, 0x2e,
+    ]));
+    const ROOT_OF_UNITY_INV: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff,
+        0xfc, 0x2e,
+    ]));
+    const DELTA: Self = Self::from_u64(9);
+
+    fn from_repr(repr: Self::Repr) -> CtOption<Self> {
+        Self::from_bytes(&repr)
+    }
+
+    fn to_repr(&self) -> Self::Repr {
+        self.to_bytes()
+    }
+
+    fn is_odd(&self) -> Choice {
+        self.is_odd()
     }
 }
 
@@ -290,13 +336,19 @@ impl ConstantTimeEq for FieldElement {
 
 impl Default for FieldElement {
     fn default() -> Self {
-        Self::zero()
+        Self::ZERO
     }
 }
 
 impl DefaultIsZeroes for FieldElement {}
 
 impl Eq for FieldElement {}
+
+impl From<u64> for FieldElement {
+    fn from(k: u64) -> Self {
+        Self(FieldElementImpl::from_u64(k))
+    }
+}
 
 impl PartialEq for FieldElement {
     fn eq(&self, other: &Self) -> bool {
@@ -420,9 +472,33 @@ impl Neg for &FieldElement {
     }
 }
 
+impl Sum for FieldElement {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
+    }
+}
+
+impl<'a> Sum<&'a FieldElement> for FieldElement {
+    fn sum<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
+        iter.copied().sum()
+    }
+}
+
+impl Product for FieldElement {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
+    }
+}
+
+impl<'a> Product<&'a FieldElement> for FieldElement {
+    fn product<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
+        iter.copied().product()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use elliptic_curve::ff::Field;
+    use elliptic_curve::ff::{Field, PrimeField};
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 
@@ -446,17 +522,69 @@ mod tests {
         }
     }
 
+    /// t = (modulus - 1) >> S
+    const T: [u64; 4] = [
+        0xffffffff7ffffe17,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0x7fffffffffffffff,
+    ];
+
+    #[test]
+    fn two_inv_constant() {
+        assert_eq!(
+            (FieldElement::from(2u64) * FieldElement::TWO_INV).normalize(),
+            FieldElement::ONE
+        );
+    }
+
+    #[test]
+    fn root_of_unity_constant() {
+        // ROOT_OF_UNITY^{2^s} mod m == 1
+        assert_eq!(
+            FieldElement::ROOT_OF_UNITY
+                .pow_vartime(&[1u64 << FieldElement::S, 0, 0, 0])
+                .normalize(),
+            FieldElement::ONE
+        );
+
+        // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
+        assert_eq!(
+            FieldElement::MULTIPLICATIVE_GENERATOR
+                .pow_vartime(&T)
+                .normalize(),
+            FieldElement::ROOT_OF_UNITY
+        )
+    }
+
+    #[test]
+    fn root_of_unity_inv_constant() {
+        assert_eq!(
+            (FieldElement::ROOT_OF_UNITY * FieldElement::ROOT_OF_UNITY_INV).normalize(),
+            FieldElement::ONE
+        );
+    }
+
+    #[test]
+    fn delta_constant() {
+        // DELTA^{t} mod m == 1
+        assert_eq!(
+            FieldElement::DELTA.pow_vartime(&T).normalize(),
+            FieldElement::ONE
+        );
+    }
+
     #[test]
     fn zero_is_additive_identity() {
-        let zero = FieldElement::zero();
-        let one = FieldElement::one();
+        let zero = FieldElement::ZERO;
+        let one = FieldElement::ONE;
         assert_eq!((zero + &zero).normalize(), zero);
         assert_eq!((one + &zero).normalize(), one);
     }
 
     #[test]
     fn one_is_multiplicative_identity() {
-        let one = FieldElement::one();
+        let one = FieldElement::ONE;
         assert_eq!((one * &one).normalize(), one);
     }
 
@@ -464,7 +592,7 @@ mod tests {
     fn from_bytes() {
         assert_eq!(
             FieldElement::from_bytes(&FieldBytes::default()).unwrap(),
-            FieldElement::zero()
+            FieldElement::ZERO
         );
         assert_eq!(
             FieldElement::from_bytes(
@@ -475,7 +603,7 @@ mod tests {
                 .into()
             )
             .unwrap(),
-            FieldElement::one()
+            FieldElement::ONE
         );
         assert!(bool::from(
             FieldElement::from_bytes(&[0xff; 32].into()).is_none()
@@ -484,9 +612,9 @@ mod tests {
 
     #[test]
     fn to_bytes() {
-        assert_eq!(FieldElement::zero().to_bytes(), [0; 32].into());
+        assert_eq!(FieldElement::ZERO.to_bytes(), [0; 32].into());
         assert_eq!(
-            FieldElement::one().to_bytes(),
+            FieldElement::ONE.to_bytes(),
             [
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 1
@@ -497,7 +625,7 @@ mod tests {
 
     #[test]
     fn repeated_add() {
-        let mut r = FieldElement::one();
+        let mut r = FieldElement::ONE;
         for i in 0..DBL_TEST_VECTORS.len() {
             assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i].into());
             r = (r + &r).normalize();
@@ -506,7 +634,7 @@ mod tests {
 
     #[test]
     fn repeated_double() {
-        let mut r = FieldElement::one();
+        let mut r = FieldElement::ONE;
         for i in 0..DBL_TEST_VECTORS.len() {
             assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i].into());
             r = r.double().normalize();
@@ -515,7 +643,7 @@ mod tests {
 
     #[test]
     fn repeated_mul() {
-        let mut r = FieldElement::one();
+        let mut r = FieldElement::ONE;
         let two = r + &r;
         for i in 0..DBL_TEST_VECTORS.len() {
             assert_eq!(r.normalize().to_bytes(), DBL_TEST_VECTORS[i].into());
@@ -525,17 +653,17 @@ mod tests {
 
     #[test]
     fn negation() {
-        let two = FieldElement::one().double();
+        let two = FieldElement::ONE.double();
         let neg_two = two.negate(2);
-        assert_eq!((two + &neg_two).normalize(), FieldElement::zero());
+        assert_eq!((two + &neg_two).normalize(), FieldElement::ZERO);
         assert_eq!(neg_two.negate(3).normalize(), two.normalize());
     }
 
     #[test]
     fn invert() {
-        assert!(bool::from(FieldElement::zero().invert().is_none()));
+        assert!(bool::from(FieldElement::ZERO.invert().is_none()));
 
-        let one = FieldElement::one();
+        let one = FieldElement::ONE;
         assert_eq!(one.invert().unwrap().normalize(), one);
 
         let two = one + &one;
@@ -545,7 +673,7 @@ mod tests {
 
     #[test]
     fn sqrt() {
-        let one = FieldElement::one();
+        let one = FieldElement::ONE;
         let two = one + &one;
         let four = two.square();
         assert_eq!(four.sqrt().unwrap().normalize(), two.normalize());
@@ -575,7 +703,7 @@ mod tests {
         assert!(y.normalize().is_odd().unwrap_u8() == 0);
 
         // This panics since `y` is not normalized.
-        let _result = y.is_odd().unwrap_u8();
+        let _result = y.is_odd();
     }
 
     prop_compose! {
@@ -663,7 +791,7 @@ mod tests {
         fn fuzzy_invert(
             a in field_element()
         ) {
-            let a = if bool::from(a.is_zero()) { FieldElement::one() } else { a };
+            let a = if bool::from(a.is_zero()) { FieldElement::ONE } else { a };
             let a_bi = a.to_biguint().unwrap();
             let inv = a.invert().unwrap().normalize();
             let inv_bi = inv.to_biguint().unwrap();

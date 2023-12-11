@@ -19,7 +19,7 @@ macro_rules! test_bignum {
         }
     };
     {
-        function: <$primitive: ty $(as $Trait: ty)?> :: $function: ident,
+        function: <$primitive: ty> :: $function: ident,
         cases: [
             $(($($(ref $re2: tt)? $arg: expr), *)), *
         ]
@@ -35,7 +35,23 @@ macro_rules! test_bignum {
         }
     };
     {
-        function: <$primitive: ty $(as $Trait: ty)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
+        function: <$primitive: ty as $Trait: ty> :: $function: ident,
+        cases: [
+            $(($($(ref $re2: tt)? $arg: expr), *)), *
+        ]
+    } => {
+        paste::paste! {
+            #[test]
+            fn [<cases_ $primitive _ $function>]() {
+                $(
+                    let (big, primitive) = crate::test::results!(<$primitive as $Trait> :: $function ($($($re2)? Into::into($arg)), *));
+                    assert_eq!(big, primitive);
+                )*
+            }
+        }
+    };
+    {
+        function: <$primitive: ty $(as $Trait: ident)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
         $(, skip: $skip: expr)?
         , cases: [
             $(($($(ref $re2: tt)? $arg: expr), *)), *

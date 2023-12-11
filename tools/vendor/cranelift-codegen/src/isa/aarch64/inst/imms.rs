@@ -5,8 +5,7 @@
 use crate::ir::types::*;
 use crate::ir::Type;
 use crate::isa::aarch64::inst::{OperandSize, ScalarSize};
-
-use regalloc::{PrettyPrint, RealRegUniverse};
+use crate::machinst::{AllocationConsumer, PrettyPrint};
 
 use core::convert::TryFrom;
 use std::string::String;
@@ -87,11 +86,6 @@ impl SImm7Scaled {
         } else {
             None
         }
-    }
-
-    /// Create a zero immediate of this format.
-    pub fn zero(scale_ty: Type) -> SImm7Scaled {
-        SImm7Scaled { value: 0, scale_ty }
     }
 
     /// Bits for encoding.
@@ -203,11 +197,6 @@ impl SImm9 {
         }
     }
 
-    /// Create a zero immediate of this format.
-    pub fn zero() -> SImm9 {
-        SImm9 { value: 0 }
-    }
-
     /// Bits for encoding.
     pub fn bits(&self) -> u32 {
         (self.value as u32) & 0x1ff
@@ -232,9 +221,6 @@ impl UImm12Scaled {
     /// Create a UImm12Scaled from a raw offset and the known scale type, if
     /// possible.
     pub fn maybe_from_i64(value: i64, scale_ty: Type) -> Option<UImm12Scaled> {
-        // Ensure the type is at least one byte.
-        let scale_ty = if scale_ty == B1 { B8 } else { scale_ty };
-
         let scale = scale_ty.bytes();
         assert!(scale.is_power_of_two());
         let scale = scale as i64;
@@ -300,14 +286,6 @@ impl Imm12 {
             })
         } else {
             None
-        }
-    }
-
-    /// Create a zero immediate of this format.
-    pub fn zero() -> Self {
-        Imm12 {
-            bits: 0,
-            shift12: false,
         }
     }
 
@@ -549,37 +527,6 @@ impl ImmLogic {
         // For every ImmLogical immediate, the inverse can also be encoded.
         Self::maybe_from_u64(!self.value, self.size.to_ty()).unwrap()
     }
-
-    /// This provides a safe(ish) way to avoid the costs of `maybe_from_u64` when we want to
-    /// encode a constant that we know at compiler-build time.  It constructs an `ImmLogic` from
-    /// the fields `n`, `r`, `s` and `size`, but in a debug build, checks that `value_to_check`
-    /// corresponds to those four fields.  The intention is that, in a non-debug build, this
-    /// reduces to something small enough that it will be a candidate for inlining.
-    pub fn from_n_r_s(value_to_check: u64, n: bool, r: u8, s: u8, size: OperandSize) -> Self {
-        // Construct it from the components we got given.
-        let imml = Self {
-            value: value_to_check,
-            n,
-            r,
-            s,
-            size,
-        };
-
-        // In debug mode, check that `n`/`r`/`s` are correct, given `value` and `size`.
-        debug_assert!(match ImmLogic::maybe_from_u64(
-            value_to_check,
-            if size == OperandSize::Size64 {
-                I64
-            } else {
-                I32
-            }
-        ) {
-            None => false, // fail: `value` is unrepresentable
-            Some(imml_check) => imml_check == imml,
-        });
-
-        imml
-    }
 }
 
 /// An immediate for shift instructions.
@@ -661,9 +608,8 @@ impl MoveWideConst {
         }
     }
 
-    /// Returns the value that this constant represents.
-    pub fn value(&self) -> u64 {
-        (self.bits as u64) << (16 * self.shift)
+    pub fn zero() -> MoveWideConst {
+        MoveWideConst { bits: 0, shift: 0 }
     }
 }
 
@@ -871,7 +817,7 @@ impl ASIMDFPModImm {
 }
 
 impl PrettyPrint for NZCV {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         let fmt = |c: char, v| if v { c.to_ascii_uppercase() } else { c };
         format!(
             "#{}{}{}{}",
@@ -884,13 +830,13 @@ impl PrettyPrint for NZCV {
 }
 
 impl PrettyPrint for UImm5 {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("#{}", self.value)
     }
 }
 
 impl PrettyPrint for Imm12 {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         let shift = if self.shift12 { 12 } else { 0 };
         let value = u32::from(self.bits) << shift;
         format!("#{}", value)
@@ -898,49 +844,49 @@ impl PrettyPrint for Imm12 {
 }
 
 impl PrettyPrint for SImm7Scaled {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("#{}", self.value)
     }
 }
 
 impl PrettyPrint for FPULeftShiftImm {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("#{}", self.amount)
     }
 }
 
 impl PrettyPrint for FPURightShiftImm {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("#{}", self.amount)
     }
 }
 
 impl PrettyPrint for SImm9 {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("#{}", self.value)
     }
 }
 
 impl PrettyPrint for UImm12Scaled {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("#{}", self.value)
     }
 }
 
 impl PrettyPrint for ImmLogic {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("#{}", self.value())
     }
 }
 
 impl PrettyPrint for ImmShift {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("#{}", self.imm)
     }
 }
 
 impl PrettyPrint for MoveWideConst {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         if self.shift == 0 {
             format!("#{}", self.bits)
         } else {
@@ -950,7 +896,7 @@ impl PrettyPrint for MoveWideConst {
 }
 
 impl PrettyPrint for ASIMDMovModImm {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         if self.is_64bit {
             debug_assert_eq!(self.shift, 0);
 
@@ -974,7 +920,7 @@ impl PrettyPrint for ASIMDMovModImm {
 }
 
 impl PrettyPrint for ASIMDFPModImm {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         if self.is_64bit {
             format!("#{}", f64::from_bits(Self::value64(self.imm)))
         } else {

@@ -1,6 +1,18 @@
 Recent Changes (arrayvec)
 =========================
 
+## 0.7.4
+
+- Add feature zeroize to support the `Zeroize` trait by @elichai
+
+## 0.7.3
+
+- Use track_caller on multiple methods like push and similar, for capacity
+  overflows by @kornelski
+- impl BorrowMut for ArrayString by @msrd0
+- Fix stacked borrows violations by @clubby789
+- Update Miri CI by @RalfJung
+
 ## 0.7.2
 
 - Add `.as_mut_str()` to `ArrayString` by @clarfonthey

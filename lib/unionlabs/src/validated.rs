@@ -1,6 +1,7 @@
 use std::{
     fmt::{Debug, Display},
     marker::PhantomData,
+    ops::Deref,
     str::FromStr,
 };
 
@@ -53,6 +54,20 @@ impl<T: PartialEq, V: Validate<T>> PartialEq for Validated<T, V> {
         self.0.eq(&other.0)
     }
 }
+
+impl<T: Deref, V: Validate<T>> Deref for Validated<T, V> {
+    type Target = T::Target;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+// impl<T: AsRef<U>, U, V: Validate<T> + Validate<U>> AsRef<Validated<U, V>> for Validated<T, V> {
+//     fn as_ref(&self) -> &Validated<U, V> {
+//         Validated(self.0.as_ref(), PhantomData)
+//     }
+// }
 
 impl<T, V: Validate<T>> Validated<T, V> {
     pub fn new(t: T) -> Result<Self, V::Error> {

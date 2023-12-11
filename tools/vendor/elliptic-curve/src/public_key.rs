@@ -1,19 +1,16 @@
 //! Elliptic curve public keys.
 
 use crate::{
-    AffinePoint, Curve, Error, NonZeroScalar, ProjectiveArithmetic, ProjectivePoint, Result,
+    point::NonIdentity, AffinePoint, CurveArithmetic, Error, NonZeroScalar, ProjectivePoint, Result,
 };
 use core::fmt::Debug;
-use group::{Curve as _, Group};
+use group::{Curve, Group};
 
 #[cfg(feature = "jwk")]
 use crate::{JwkEcKey, JwkParameters};
 
-#[cfg(all(feature = "sec1", feature = "pkcs8"))]
-use crate::{
-    pkcs8::{self, AssociatedOid, DecodePublicKey},
-    ALGORITHM_OID,
-};
+#[cfg(feature = "pkcs8")]
+use pkcs8::spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier, ObjectIdentifier};
 
 #[cfg(feature = "pem")]
 use core::str::FromStr;
@@ -21,21 +18,37 @@ use core::str::FromStr;
 #[cfg(feature = "sec1")]
 use {
     crate::{
-        sec1::{EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint},
-        FieldSize, PointCompression,
+        point::PointCompression,
+        sec1::{CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint},
+        FieldBytesSize,
     },
     core::cmp::Ordering,
-    subtle::CtOption,
+    subtle::{Choice, CtOption},
 };
-
-#[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
 
 #[cfg(all(feature = "alloc", feature = "pkcs8"))]
 use pkcs8::EncodePublicKey;
 
+#[cfg(all(feature = "alloc", feature = "sec1"))]
+use alloc::boxed::Box;
+
 #[cfg(any(feature = "jwk", feature = "pem"))]
 use alloc::string::{String, ToString};
+
+#[cfg(feature = "serde")]
+use serdect::serde::{de, ser, Deserialize, Serialize};
+
+#[cfg(any(feature = "pem", feature = "serde"))]
+use pkcs8::DecodePublicKey;
+
+#[cfg(all(feature = "sec1", feature = "pkcs8"))]
+use {
+    crate::{
+        pkcs8::{self, AssociatedOid},
+        ALGORITHM_OID,
+    },
+    pkcs8::der,
+};
 
 /// Elliptic curve public keys.
 ///
@@ -73,18 +86,17 @@ use alloc::string::{String, ToString};
 /// Subject Public Key Info (SPKI) as the encoding format.
 ///
 /// For a more text-friendly encoding of public keys, use [`JwkEcKey`] instead.
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PublicKey<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
 {
     point: AffinePoint<C>,
 }
 
 impl<C> PublicKey<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
 {
     /// Convert an [`AffinePoint`] into a [`PublicKey`]
     pub fn from_affine(point: AffinePoint<C>) -> Result<Self> {
@@ -113,12 +125,27 @@ where
     #[cfg(feature = "sec1")]
     pub fn from_sec1_bytes(bytes: &[u8]) -> Result<Self>
     where
-        C: Curve,
-        FieldSize<C>: ModulusSize,
+        FieldBytesSize<C>: ModulusSize,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
     {
         let point = EncodedPoint::<C>::from_bytes(bytes).map_err(|_| Error)?;
         Option::from(Self::from_encoded_point(&point)).ok_or(Error)
+    }
+
+    /// Convert this [`PublicKey`] into the
+    /// `Elliptic-Curve-Point-to-Octet-String` encoding described in
+    /// SEC 1: Elliptic Curve Cryptography (Version 2.0) section 2.3.3
+    /// (page 10).
+    ///
+    /// <http://www.secg.org/sec1-v2.pdf>
+    #[cfg(all(feature = "alloc", feature = "sec1"))]
+    pub fn to_sec1_bytes(&self) -> Box<[u8]>
+    where
+        C: PointCompression,
+        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+        FieldBytesSize<C>: ModulusSize,
+    {
+        EncodedPoint::<C>::from(self).to_bytes()
     }
 
     /// Borrow the inner [`AffinePoint`] from this [`PublicKey`].
@@ -133,50 +160,51 @@ where
         self.point.into()
     }
 
+    /// Convert this [`PublicKey`] to a [`NonIdentity`] of the inner [`AffinePoint`]
+    pub fn to_nonidentity(&self) -> NonIdentity<AffinePoint<C>> {
+        NonIdentity::new_unchecked(self.point)
+    }
+
     /// Parse a [`JwkEcKey`] JSON Web Key (JWK) into a [`PublicKey`].
     #[cfg(feature = "jwk")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
     pub fn from_jwk(jwk: &JwkEcKey) -> Result<Self>
     where
-        C: Curve + JwkParameters,
+        C: JwkParameters,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        FieldBytesSize<C>: ModulusSize,
     {
         jwk.to_public_key::<C>()
     }
 
     /// Parse a string containing a JSON Web Key (JWK) into a [`PublicKey`].
     #[cfg(feature = "jwk")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
     pub fn from_jwk_str(jwk: &str) -> Result<Self>
     where
-        C: Curve + JwkParameters,
+        C: JwkParameters,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        FieldBytesSize<C>: ModulusSize,
     {
         jwk.parse::<JwkEcKey>().and_then(|jwk| Self::from_jwk(&jwk))
     }
 
     /// Serialize this public key as [`JwkEcKey`] JSON Web Key (JWK).
     #[cfg(feature = "jwk")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
     pub fn to_jwk(&self) -> JwkEcKey
     where
-        C: Curve + JwkParameters,
+        C: JwkParameters,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        FieldBytesSize<C>: ModulusSize,
     {
         self.into()
     }
 
     /// Serialize this public key as JSON Web Key (JWK) string.
     #[cfg(feature = "jwk")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
     pub fn to_jwk_string(&self) -> String
     where
-        C: Curve + JwkParameters,
+        C: JwkParameters,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        FieldBytesSize<C>: ModulusSize,
     {
         self.to_jwk().to_string()
     }
@@ -184,39 +212,37 @@ where
 
 impl<C> AsRef<AffinePoint<C>> for PublicKey<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
 {
     fn as_ref(&self) -> &AffinePoint<C> {
         self.as_affine()
     }
 }
 
-impl<C> Copy for PublicKey<C> where C: Curve + ProjectiveArithmetic {}
+impl<C> Copy for PublicKey<C> where C: CurveArithmetic {}
 
 #[cfg(feature = "sec1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sec1")))]
 impl<C> FromEncodedPoint<C> for PublicKey<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     /// Initialize [`PublicKey`] from an [`EncodedPoint`]
     fn from_encoded_point(encoded_point: &EncodedPoint<C>) -> CtOption<Self> {
         AffinePoint::<C>::from_encoded_point(encoded_point).and_then(|point| {
-            let is_identity = ProjectivePoint::<C>::from(point).is_identity();
+            let is_identity = Choice::from(encoded_point.is_identity() as u8);
             CtOption::new(PublicKey { point }, !is_identity)
         })
     }
 }
 
 #[cfg(feature = "sec1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sec1")))]
 impl<C> ToEncodedPoint<C> for PublicKey<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     /// Serialize this [`PublicKey`] as a SEC1 [`EncodedPoint`], optionally applying
     /// point compression
@@ -226,12 +252,35 @@ where
 }
 
 #[cfg(feature = "sec1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sec1")))]
+impl<C> From<PublicKey<C>> for CompressedPoint<C>
+where
+    C: CurveArithmetic + PointCompression,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    FieldBytesSize<C>: ModulusSize,
+{
+    fn from(public_key: PublicKey<C>) -> CompressedPoint<C> {
+        CompressedPoint::<C>::from(&public_key)
+    }
+}
+
+#[cfg(feature = "sec1")]
+impl<C> From<&PublicKey<C>> for CompressedPoint<C>
+where
+    C: CurveArithmetic + PointCompression,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    FieldBytesSize<C>: ModulusSize,
+{
+    fn from(public_key: &PublicKey<C>) -> CompressedPoint<C> {
+        CompressedPoint::<C>::clone_from_slice(public_key.to_encoded_point(true).as_bytes())
+    }
+}
+
+#[cfg(feature = "sec1")]
 impl<C> From<PublicKey<C>> for EncodedPoint<C>
 where
-    C: Curve + ProjectiveArithmetic + PointCompression,
+    C: CurveArithmetic + PointCompression,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     fn from(public_key: PublicKey<C>) -> EncodedPoint<C> {
         EncodedPoint::<C>::from(&public_key)
@@ -239,25 +288,63 @@ where
 }
 
 #[cfg(feature = "sec1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sec1")))]
 impl<C> From<&PublicKey<C>> for EncodedPoint<C>
 where
-    C: Curve + ProjectiveArithmetic + PointCompression,
+    C: CurveArithmetic + PointCompression,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     fn from(public_key: &PublicKey<C>) -> EncodedPoint<C> {
         public_key.to_encoded_point(C::COMPRESS_POINTS)
     }
 }
 
+impl<C, P> From<NonIdentity<P>> for PublicKey<C>
+where
+    C: CurveArithmetic,
+    P: Copy + Into<AffinePoint<C>>,
+{
+    fn from(value: NonIdentity<P>) -> Self {
+        Self::from(&value)
+    }
+}
+
+impl<C, P> From<&NonIdentity<P>> for PublicKey<C>
+where
+    C: CurveArithmetic,
+    P: Copy + Into<AffinePoint<C>>,
+{
+    fn from(value: &NonIdentity<P>) -> Self {
+        Self {
+            point: value.to_point().into(),
+        }
+    }
+}
+
+impl<C> From<PublicKey<C>> for NonIdentity<AffinePoint<C>>
+where
+    C: CurveArithmetic,
+{
+    fn from(value: PublicKey<C>) -> Self {
+        Self::from(&value)
+    }
+}
+
+impl<C> From<&PublicKey<C>> for NonIdentity<AffinePoint<C>>
+where
+    C: CurveArithmetic,
+{
+    fn from(value: &PublicKey<C>) -> Self {
+        PublicKey::to_nonidentity(value)
+    }
+}
+
 #[cfg(feature = "sec1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sec1")))]
 impl<C> PartialOrd for PublicKey<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -265,12 +352,11 @@ where
 }
 
 #[cfg(feature = "sec1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sec1")))]
 impl<C> Ord for PublicKey<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         // TODO(tarcieri): more efficient implementation?
@@ -280,64 +366,136 @@ where
     }
 }
 
-#[cfg(all(feature = "pkcs8", feature = "sec1"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "pkcs8", feature = "sec1"))))]
-impl<C> TryFrom<pkcs8::SubjectPublicKeyInfo<'_>> for PublicKey<C>
+#[cfg(feature = "sec1")]
+impl<C> TryFrom<CompressedPoint<C>> for PublicKey<C>
 where
-    C: Curve + AssociatedOid + ProjectiveArithmetic,
+    C: CurveArithmetic,
+    FieldBytesSize<C>: ModulusSize,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+{
+    type Error = Error;
+
+    fn try_from(point: CompressedPoint<C>) -> Result<Self> {
+        Self::from_sec1_bytes(&point)
+    }
+}
+
+#[cfg(feature = "sec1")]
+impl<C> TryFrom<&CompressedPoint<C>> for PublicKey<C>
+where
+    C: CurveArithmetic,
+    FieldBytesSize<C>: ModulusSize,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+{
+    type Error = Error;
+
+    fn try_from(point: &CompressedPoint<C>) -> Result<Self> {
+        Self::from_sec1_bytes(point)
+    }
+}
+
+#[cfg(feature = "sec1")]
+impl<C> TryFrom<EncodedPoint<C>> for PublicKey<C>
+where
+    C: CurveArithmetic,
+    FieldBytesSize<C>: ModulusSize,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+{
+    type Error = Error;
+
+    fn try_from(point: EncodedPoint<C>) -> Result<Self> {
+        Self::from_sec1_bytes(point.as_bytes())
+    }
+}
+
+#[cfg(feature = "sec1")]
+impl<C> TryFrom<&EncodedPoint<C>> for PublicKey<C>
+where
+    C: CurveArithmetic,
+    FieldBytesSize<C>: ModulusSize,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+{
+    type Error = Error;
+
+    fn try_from(point: &EncodedPoint<C>) -> Result<Self> {
+        Self::from_sec1_bytes(point.as_bytes())
+    }
+}
+
+#[cfg(feature = "pkcs8")]
+impl<C> AssociatedAlgorithmIdentifier for PublicKey<C>
+where
+    C: AssociatedOid + CurveArithmetic,
+{
+    type Params = ObjectIdentifier;
+
+    const ALGORITHM_IDENTIFIER: AlgorithmIdentifier<ObjectIdentifier> = AlgorithmIdentifier {
+        oid: ALGORITHM_OID,
+        parameters: Some(C::OID),
+    };
+}
+
+#[cfg(feature = "pkcs8")]
+impl<C> TryFrom<pkcs8::SubjectPublicKeyInfoRef<'_>> for PublicKey<C>
+where
+    C: AssociatedOid + CurveArithmetic,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    FieldBytesSize<C>: ModulusSize,
 {
     type Error = pkcs8::spki::Error;
 
-    fn try_from(spki: pkcs8::SubjectPublicKeyInfo<'_>) -> pkcs8::spki::Result<Self> {
+    fn try_from(spki: pkcs8::SubjectPublicKeyInfoRef<'_>) -> pkcs8::spki::Result<Self> {
+        Self::try_from(&spki)
+    }
+}
+
+#[cfg(feature = "pkcs8")]
+impl<C> TryFrom<&pkcs8::SubjectPublicKeyInfoRef<'_>> for PublicKey<C>
+where
+    C: AssociatedOid + CurveArithmetic,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    FieldBytesSize<C>: ModulusSize,
+{
+    type Error = pkcs8::spki::Error;
+
+    fn try_from(spki: &pkcs8::SubjectPublicKeyInfoRef<'_>) -> pkcs8::spki::Result<Self> {
         spki.algorithm.assert_oids(ALGORITHM_OID, C::OID)?;
-        Self::from_sec1_bytes(spki.subject_public_key)
+
+        let public_key_bytes = spki
+            .subject_public_key
+            .as_bytes()
+            .ok_or_else(|| der::Tag::BitString.value_error())?;
+
+        Self::from_sec1_bytes(public_key_bytes)
             .map_err(|_| der::Tag::BitString.value_error().into())
     }
 }
 
-#[cfg(all(feature = "pkcs8", feature = "sec1"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "pkcs8", feature = "sec1"))))]
-impl<C> DecodePublicKey for PublicKey<C>
-where
-    C: Curve + AssociatedOid + ProjectiveArithmetic,
-    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
-{
-}
-
 #[cfg(all(feature = "alloc", feature = "pkcs8"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "alloc", feature = "pkcs8"))))]
 impl<C> EncodePublicKey for PublicKey<C>
 where
-    C: Curve + AssociatedOid + ProjectiveArithmetic,
+    C: AssociatedOid + CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     fn to_public_key_der(&self) -> pkcs8::spki::Result<der::Document> {
-        let algorithm = pkcs8::AlgorithmIdentifier {
-            oid: ALGORITHM_OID,
-            parameters: Some((&C::OID).into()),
-        };
-
         let public_key_bytes = self.to_encoded_point(false);
+        let subject_public_key = der::asn1::BitStringRef::new(0, public_key_bytes.as_bytes())?;
 
         pkcs8::SubjectPublicKeyInfo {
-            algorithm,
-            subject_public_key: public_key_bytes.as_ref(),
+            algorithm: Self::ALGORITHM_IDENTIFIER,
+            subject_public_key,
         }
         .try_into()
     }
 }
 
 #[cfg(feature = "pem")]
-#[cfg_attr(docsrs, doc(cfg(feature = "pem")))]
 impl<C> FromStr for PublicKey<C>
 where
-    C: Curve + AssociatedOid + ProjectiveArithmetic,
+    C: AssociatedOid + CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     type Err = Error;
 
@@ -347,12 +505,11 @@ where
 }
 
 #[cfg(feature = "pem")]
-#[cfg_attr(docsrs, doc(cfg(feature = "pem")))]
 impl<C> ToString for PublicKey<C>
 where
-    C: Curve + AssociatedOid + ProjectiveArithmetic,
+    C: AssociatedOid + CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     fn to_string(&self) -> String {
         self.to_public_key_pem(Default::default())
@@ -361,12 +518,11 @@ where
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<C> Serialize for PublicKey<C>
 where
-    C: Curve + AssociatedOid + ProjectiveArithmetic,
+    C: AssociatedOid + CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where
@@ -378,12 +534,11 @@ where
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de, C> Deserialize<'de> for PublicKey<C>
 where
-    C: Curve + AssociatedOid + ProjectiveArithmetic,
+    C: AssociatedOid + CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
 {
     fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
     where

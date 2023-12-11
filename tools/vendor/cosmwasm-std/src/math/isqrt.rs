@@ -1,4 +1,4 @@
-use std::{cmp, ops};
+use core::{cmp, ops};
 
 use crate::{Uint128, Uint256, Uint512, Uint64};
 
@@ -59,19 +59,19 @@ mod tests {
     #[test]
     fn isqrt_primitives() {
         // Let's check correctness.
-        assert_eq!(0u8.isqrt(), 0);
-        assert_eq!(1u8.isqrt(), 1);
-        assert_eq!(24u8.isqrt(), 4);
-        assert_eq!(25u8.isqrt(), 5);
-        assert_eq!(26u8.isqrt(), 5);
-        assert_eq!(36u8.isqrt(), 6);
+        assert_eq!(super::Isqrt::isqrt(0u8), 0);
+        assert_eq!(super::Isqrt::isqrt(1u8), 1);
+        assert_eq!(super::Isqrt::isqrt(24u8), 4);
+        assert_eq!(super::Isqrt::isqrt(25u8), 5);
+        assert_eq!(super::Isqrt::isqrt(26u8), 5);
+        assert_eq!(super::Isqrt::isqrt(36u8), 6);
 
         // Let's also check different types.
-        assert_eq!(26u8.isqrt(), 5);
-        assert_eq!(26u16.isqrt(), 5);
-        assert_eq!(26u32.isqrt(), 5);
-        assert_eq!(26u64.isqrt(), 5);
-        assert_eq!(26u128.isqrt(), 5);
+        assert_eq!(super::Isqrt::isqrt(26u8), 5);
+        assert_eq!(super::Isqrt::isqrt(26u16), 5);
+        assert_eq!(super::Isqrt::isqrt(26u32), 5);
+        assert_eq!(super::Isqrt::isqrt(26u64), 5);
+        assert_eq!(super::Isqrt::isqrt(26u128), 5);
     }
 
     #[test]

@@ -44,18 +44,17 @@ pub fn main() {
 
         threads.push(thread::spawn(move || {
             let checksum = cache.save_wasm(CONTRACT).unwrap();
-            println!("Done saving Wasm {}", checksum);
+            println!("Done saving Wasm {checksum}");
         }));
     }
-    for _ in 0..INSTANTIATION_THREADS {
+    for i in 0..INSTANTIATION_THREADS {
         let cache = Arc::clone(&cache);
 
         threads.push(thread::spawn(move || {
-            let checksum = checksum;
             let mut instance = cache
                 .get_instance(&checksum, mock_backend(&[]), DEFAULT_INSTANCE_OPTIONS)
                 .unwrap();
-            println!("Done instantiating contract");
+            println!("Done instantiating contract {i}");
 
             let info = mock_info("creator", &coins(1000, "earth"));
             let msg = br#"{"verifier": "verifies", "beneficiary": "benefits"}"#;
@@ -74,7 +73,7 @@ pub fn main() {
     threads.into_iter().for_each(|thread| {
         thread
             .join()
-            .expect("The thread creating or execution failed !")
+            .expect("The threaded instantiation or execution failed !")
     });
 
     assert_eq!(cache.stats().misses, 0);

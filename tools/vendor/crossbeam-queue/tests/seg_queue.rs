@@ -52,9 +52,11 @@ fn len() {
     assert_eq!(q.len(), 0);
 }
 
-#[cfg_attr(miri, ignore)] // Miri is too slow
 #[test]
 fn spsc() {
+    #[cfg(miri)]
+    const COUNT: usize = 100;
+    #[cfg(not(miri))]
     const COUNT: usize = 100_000;
 
     let q = SegQueue::new();
@@ -80,9 +82,11 @@ fn spsc() {
     .unwrap();
 }
 
-#[cfg_attr(miri, ignore)] // Miri is too slow
 #[test]
 fn mpmc() {
+    #[cfg(miri)]
+    const COUNT: usize = 50;
+    #[cfg(not(miri))]
     const COUNT: usize = 25_000;
     const THREADS: usize = 4;
 
@@ -117,10 +121,11 @@ fn mpmc() {
     }
 }
 
-#[cfg_attr(miri, ignore)] // Miri is too slow
 #[test]
 fn drops() {
-    const RUNS: usize = 100;
+    let runs: usize = if cfg!(miri) { 5 } else { 100 };
+    let steps: usize = if cfg!(miri) { 50 } else { 10_000 };
+    let additional: usize = if cfg!(miri) { 100 } else { 1_000 };
 
     static DROPS: AtomicUsize = AtomicUsize::new(0);
 
@@ -135,9 +140,9 @@ fn drops() {
 
     let mut rng = thread_rng();
 
-    for _ in 0..RUNS {
-        let steps = rng.gen_range(0..10_000);
-        let additional = rng.gen_range(0..1000);
+    for _ in 0..runs {
+        let steps = rng.gen_range(0..steps);
+        let additional = rng.gen_range(0..additional);
 
         DROPS.store(0, Ordering::SeqCst);
         let q = SegQueue::new();

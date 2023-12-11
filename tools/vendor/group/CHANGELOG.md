@@ -7,6 +7,10 @@ and this library adheres to Rust's notion of
 
 ## [Unreleased]
 
+## [0.13.0] - 2022-12-06
+### Changed
+- Bumped `ff` to `0.13`
+
 ## [0.12.1] - 2022-10-13
 ### Added
 - `group::{WnafBase, WnafScalar}` structs for caching precomputations of both

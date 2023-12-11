@@ -2,7 +2,7 @@ use crate::{
     alphabet::Alphabet,
     engine::{
         general_purpose::{self, decode_table, encode_table},
-        Config, DecodeEstimate, DecodePaddingMode, Engine,
+        Config, DecodeEstimate, DecodeMetadata, DecodePaddingMode, Engine,
     },
     DecodeError, PAD_BYTE,
 };
@@ -112,7 +112,7 @@ impl Engine for Naive {
         input: &[u8],
         output: &mut [u8],
         estimate: Self::DecodeEstimate,
-    ) -> Result<usize, DecodeError> {
+    ) -> Result<DecodeMetadata, DecodeError> {
         if estimate.rem == 1 {
             // trailing whitespace is so common that it's worth it to check the last byte to
             // possibly return a better error message

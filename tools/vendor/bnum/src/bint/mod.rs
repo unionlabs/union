@@ -1,18 +1,16 @@
 macro_rules! ilog {
     ($method: ident $(, $base: ident : $ty: ty)?) => {
-        crate::nightly::const_fn! {
-            #[doc = doc::$method!(I)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const fn $method(self, $($base : $ty),*) -> ExpType {
-                if self.is_negative() {
-                    #[cfg(debug_assertions)]
-                    panic!(errors::err_msg!("attempt to calculate ilog of negative number"));
-                    #[cfg(not(debug_assertions))]
-                    0
-                } else {
-                    self.bits.$method($($base.bits)?)
-                }
+        #[doc = doc::$method!(I)]
+        #[must_use = doc::must_use_op!()]
+        #[inline]
+        pub const fn $method(self, $($base : $ty),*) -> ExpType {
+            if self.is_negative() {
+                #[cfg(debug_assertions)]
+                panic!(errors::err_msg!("attempt to calculate ilog of negative number"));
+                #[cfg(not(debug_assertions))]
+                0
+            } else {
+                self.bits.$method($($base.bits)?)
             }
         }
     }
@@ -148,22 +146,20 @@ macro_rules! mod_impl {
                 self.wrapping_pow(exp)
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::div_euclid!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn div_euclid(self, rhs: Self) -> Self {
-                    assert!(self.ne(&Self::MIN) || rhs.ne(&Self::NEG_ONE), errors::err_msg!("attempt to divide with overflow"));
-                    self.wrapping_div_euclid(rhs)
-                }
+            #[doc = doc::div_euclid!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn div_euclid(self, rhs: Self) -> Self {
+                assert!(self.ne(&Self::MIN) || rhs.ne(&Self::NEG_ONE), errors::err_msg!("attempt to divide with overflow"));
+                self.wrapping_div_euclid(rhs)
+            }
 
-                #[doc = doc::rem_euclid!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn rem_euclid(self, rhs: Self) -> Self {
-                    assert!(self.ne(&Self::MIN) || rhs.ne(&Self::NEG_ONE), errors::err_msg!("attempt to calculate remainder with overflow"));
-                    self.wrapping_rem_euclid(rhs)
-                }
+            #[doc = doc::rem_euclid!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn rem_euclid(self, rhs: Self) -> Self {
+                assert!(self.ne(&Self::MIN) || rhs.ne(&Self::NEG_ONE), errors::err_msg!("attempt to calculate remainder with overflow"));
+                self.wrapping_rem_euclid(rhs)
             }
 
             #[doc = doc::abs!(I)]
@@ -232,57 +228,55 @@ macro_rules! mod_impl {
             #[must_use = doc::must_use_op!()]
             #[inline]
             pub const fn abs_diff(self, other: Self) -> $BUint<N> {
-                if self.lt(other) {
+                if self.lt(&other) {
                     other.wrapping_sub(self).to_bits()
                 } else {
                     self.wrapping_sub(other).to_bits()
                 }
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::next_multiple_of!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn next_multiple_of(self, rhs: Self) -> Self {
-                    let rem = self.wrapping_rem_euclid(rhs);
-                    if rem.is_zero() {
-                        return self;
-                    }
-                    if rem.is_negative() == rhs.is_negative() {
-                        self.add(rhs.sub(rem))
-                    } else {
-                        self.sub(rem)
-                    }
+            #[doc = doc::next_multiple_of!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn next_multiple_of(self, rhs: Self) -> Self {
+                let rem = self.wrapping_rem_euclid(rhs);
+                if rem.is_zero() {
+                    return self;
                 }
-
-                #[doc = doc::div_floor!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn div_floor(self, rhs: Self) -> Self {
-                    if rhs.is_zero() {
-                        errors::div_zero!();
-                    }
-                    let (div, rem) = self.div_rem_unchecked(rhs);
-                    if rem.is_zero() || self.is_negative() == rhs.is_negative() {
-                        div
-                    } else {
-                        div.sub(Self::ONE)
-                    }
+                if rem.is_negative() == rhs.is_negative() {
+                    self.add(rhs.sub(rem))
+                } else {
+                    self.sub(rem)
                 }
+            }
 
-                #[doc = doc::div_ceil!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn div_ceil(self, rhs: Self) -> Self {
-                    if rhs.is_zero() {
-                        errors::div_zero!();
-                    }
-                    let (div, rem) = self.div_rem_unchecked(rhs);
-                    if rem.is_zero() || self.is_negative() != rhs.is_negative() {
-                        div
-                    } else {
-                        div.add(Self::ONE)
-                    }
+            #[doc = doc::div_floor!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn div_floor(self, rhs: Self) -> Self {
+                if rhs.is_zero() {
+                    errors::div_zero!();
+                }
+                let (div, rem) = self.div_rem_unchecked(rhs);
+                if rem.is_zero() || self.is_negative() == rhs.is_negative() {
+                    div
+                } else {
+                    div.sub(Self::ONE)
+                }
+            }
+
+            #[doc = doc::div_ceil!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn div_ceil(self, rhs: Self) -> Self {
+                if rhs.is_zero() {
+                    errors::div_zero!();
+                }
+                let (div, rem) = self.div_rem_unchecked(rhs);
+                if rem.is_zero() || self.is_negative() != rhs.is_negative() {
+                    div
+                } else {
+                    div.add(Self::ONE)
                 }
             }
         }
@@ -394,6 +388,14 @@ macro_rules! mod_impl {
         }
 
         #[cfg(test)]
+        impl<const N: usize> quickcheck::Arbitrary for $BInt<N> {
+            #[inline]
+            fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+                Self::from_bits(<$BUint::<N> as quickcheck::Arbitrary>::arbitrary(g))
+            }
+        }
+
+        #[cfg(test)]
         paste::paste! {
             mod [<$Digit _digit_tests>] {
                 use crate::test::{
@@ -473,7 +475,7 @@ macro_rules! mod_impl {
 
 crate::macro_impl!(mod_impl);
 
-mod cast;
+pub mod cast;
 mod checked;
 mod cmp;
 mod const_trait_fillers;

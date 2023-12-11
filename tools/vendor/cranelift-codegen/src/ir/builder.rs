@@ -4,6 +4,7 @@
 //! function. Many of its methods are generated from the meta language instruction definitions.
 
 use crate::ir;
+use crate::ir::instructions::InstructionFormat;
 use crate::ir::types;
 use crate::ir::{DataFlowGraph, InstructionData};
 use crate::ir::{Inst, Opcode, Type, Value};
@@ -217,7 +218,7 @@ mod tests {
     use crate::cursor::{Cursor, FuncCursor};
     use crate::ir::condcodes::*;
     use crate::ir::types::*;
-    use crate::ir::{Function, InstBuilder, ValueDef};
+    use crate::ir::{Function, InstBuilder, Opcode, TrapCode, ValueDef};
 
     #[test]
     fn types() {
@@ -237,7 +238,7 @@ mod tests {
 
         // Formula.
         let cmp = pos.ins().icmp(IntCC::Equal, arg0, v0);
-        assert_eq!(pos.func.dfg.value_type(cmp), B1);
+        assert_eq!(pos.func.dfg.value_type(cmp), I8);
     }
 
     #[test]
@@ -261,5 +262,18 @@ mod tests {
         let iconst = pos.prev_inst().unwrap();
         assert!(iadd != iconst);
         assert_eq!(pos.func.dfg.value_def(v0), ValueDef::Result(iconst, 0));
+    }
+
+    #[test]
+    #[should_panic]
+    fn panics_when_inserting_wrong_opcode() {
+        let mut func = Function::new();
+        let block0 = func.dfg.make_block();
+        let mut pos = FuncCursor::new(&mut func);
+        pos.insert_block(block0);
+
+        // We are trying to create a Opcode::Return with the InstData::Trap, which is obviously wrong
+        pos.ins()
+            .Trap(Opcode::Return, I32, TrapCode::BadConversionToInteger);
     }
 }

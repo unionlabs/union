@@ -1,4 +1,14 @@
 // @generated
+/// DenomAuthorityMetadata specifies metadata for addresses that have specific
+/// capabilities over a token factory denom. Right now there is only one Admin
+/// permission, but is planned to be extended to the future.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DenomAuthorityMetadata {
+    /// Can be empty for no admin, or a valid address
+    #[prost(string, tag = "1")]
+    pub admin: ::prost::alloc::string::String,
+}
 /// Params defines the parameters for the tokenfactory module.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -11,15 +21,26 @@ pub struct Params {
     #[prost(uint64, tag = "2")]
     pub denom_creation_gas_consume: u64,
 }
-/// DenomAuthorityMetadata specifies metadata for addresses that have specific
-/// capabilities over a token factory denom. Right now there is only one Admin
-/// permission, but is planned to be extended to the future.
+/// GenesisState defines the tokenfactory module's genesis state.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DenomAuthorityMetadata {
-    /// Can be empty for no admin, or a valid address
+pub struct GenesisState {
+    /// params defines the paramaters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+    #[prost(message, repeated, tag = "2")]
+    pub factory_denoms: ::prost::alloc::vec::Vec<GenesisDenom>,
+}
+/// GenesisDenom defines a tokenfactory denom that is defined within genesis
+/// state. The structure contains DenomAuthorityMetadata which defines the
+/// denom's admin.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisDenom {
     #[prost(string, tag = "1")]
-    pub admin: ::prost::alloc::string::String,
+    pub denom: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub authority_metadata: ::core::option::Option<DenomAuthorityMetadata>,
 }
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -153,26 +174,5 @@ pub struct MsgSetDenomMetadata {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSetDenomMetadataResponse {}
-/// GenesisState defines the tokenfactory module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// params defines the paramaters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-    #[prost(message, repeated, tag = "2")]
-    pub factory_denoms: ::prost::alloc::vec::Vec<GenesisDenom>,
-}
-/// GenesisDenom defines a tokenfactory denom that is defined within genesis
-/// state. The structure contains DenomAuthorityMetadata which defines the
-/// denom's admin.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisDenom {
-    #[prost(string, tag = "1")]
-    pub denom: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub authority_metadata: ::core::option::Option<DenomAuthorityMetadata>,
-}
 include!("tokenfactory.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

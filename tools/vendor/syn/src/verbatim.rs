@@ -1,9 +1,9 @@
-use crate::parse::{ParseBuffer, ParseStream};
+use crate::parse::ParseStream;
 use proc_macro2::{Delimiter, TokenStream};
 use std::cmp::Ordering;
 use std::iter;
 
-pub(crate) fn between<'a>(begin: ParseBuffer<'a>, end: ParseStream<'a>) -> TokenStream {
+pub(crate) fn between<'a>(begin: ParseStream<'a>, end: ParseStream<'a>) -> TokenStream {
     let end = end.cursor();
     let mut cursor = begin.cursor();
     assert!(crate::buffer::same_buffer(end, cursor));

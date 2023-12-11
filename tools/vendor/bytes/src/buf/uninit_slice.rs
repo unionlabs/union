@@ -22,6 +22,10 @@ use core::ops::{
 pub struct UninitSlice([MaybeUninit<u8>]);
 
 impl UninitSlice {
+    pub(crate) fn from_slice(slice: &mut [MaybeUninit<u8>]) -> &mut UninitSlice {
+        unsafe { &mut *(slice as *mut [MaybeUninit<u8>] as *mut UninitSlice) }
+    }
+
     /// Create a `&mut UninitSlice` from a pointer and a length.
     ///
     /// # Safety
@@ -44,7 +48,7 @@ impl UninitSlice {
     pub unsafe fn from_raw_parts_mut<'a>(ptr: *mut u8, len: usize) -> &'a mut UninitSlice {
         let maybe_init: &mut [MaybeUninit<u8>] =
             core::slice::from_raw_parts_mut(ptr as *mut _, len);
-        &mut *(maybe_init as *mut [MaybeUninit<u8>] as *mut UninitSlice)
+        Self::from_slice(maybe_init)
     }
 
     /// Write a single byte at the specified offset.
@@ -122,6 +126,32 @@ impl UninitSlice {
     #[inline]
     pub fn as_mut_ptr(&mut self) -> *mut u8 {
         self.0.as_mut_ptr() as *mut _
+    }
+
+    /// Return a `&mut [MaybeUninit<u8>]` to this slice's buffer.
+    ///
+    /// # Safety
+    ///
+    /// The caller **must not** read from the referenced memory and **must not** write
+    /// **uninitialized** bytes to the slice either. This is because `BufMut` implementation
+    /// that created the `UninitSlice` knows which parts are initialized. Writing uninitalized
+    /// bytes to the slice may cause the `BufMut` to read those bytes and trigger undefined
+    /// behavior.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::BufMut;
+    ///
+    /// let mut data = [0, 1, 2];
+    /// let mut slice = &mut data[..];
+    /// unsafe {
+    ///     let uninit_slice = BufMut::chunk_mut(&mut slice).as_uninit_slice_mut();
+    /// };
+    /// ```
+    #[inline]
+    pub unsafe fn as_uninit_slice_mut<'a>(&'a mut self) -> &'a mut [MaybeUninit<u8>] {
+        &mut *(self as *mut _ as *mut [MaybeUninit<u8>])
     }
 
     /// Returns the number of bytes in the slice.

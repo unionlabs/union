@@ -10,8 +10,6 @@ use crate::lib::std::boxed::Box;
 use crate::lib::std::marker::PhantomData;
 use crate::lib::std::ops::{Index, IndexMut};
 use crate::lib::std::slice;
-use loupe::{MemoryUsage, MemoryUsageTracker};
-use std::mem;
 
 /// A slice mapping `K -> V` allocating dense entity references.
 ///
@@ -143,21 +141,6 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         IterMut::new(self.elems.iter_mut())
-    }
-}
-
-impl<K, V> MemoryUsage for BoxedSlice<K, V>
-where
-    K: EntityRef,
-    V: MemoryUsage,
-{
-    fn size_of_val(&self, tracker: &mut dyn MemoryUsageTracker) -> usize {
-        mem::size_of_val(self)
-            + self
-                .elems
-                .iter()
-                .map(|value| value.size_of_val(tracker) - mem::size_of_val(value))
-                .sum::<usize>()
     }
 }
 

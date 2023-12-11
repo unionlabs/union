@@ -369,8 +369,8 @@ mod tests {
             .map(OpcodeMap::_0F38)
             .w(true)
             .opcode(0x1F)
-            .reg(dst.get_hw_encoding())
-            .rm(src.get_hw_encoding())
+            .reg(dst.to_real_reg().unwrap().hw_enc())
+            .rm(src.to_real_reg().unwrap().hw_enc())
             .length(EvexVectorLength::V128)
             .encode(&mut sink0);
 
@@ -393,8 +393,8 @@ mod tests {
             .map(OpcodeMap::None)
             .w(false)
             .opcode(0x00)
-            .reg(regs::rax().get_hw_encoding())
-            .rm(regs::rax().get_hw_encoding())
+            .reg(regs::rax().to_real_reg().unwrap().hw_enc())
+            .rm(regs::rax().to_real_reg().unwrap().hw_enc())
             .mask(EvexMasking::None)
             .encode(&mut sink1);
 

@@ -10,16 +10,18 @@ use std::{
 };
 
 use chain_utils::{
+    cosmos::Cosmos,
+    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
     evm::Evm,
-    union::{broadcast_tx_commit, BroadcastTxCommitError, CosmosSdkChain, Union},
+    union::Union,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use futures::{future::BoxFuture, FutureExt};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    encoding::Proto,
+    encoding::{Encode, Proto},
     ethereum::config::{Mainnet, Minimal},
-    google::protobuf::any::{mk_any, Any},
+    google::protobuf::any::{mk_any, Any, IntoAny},
     hash::H256,
     ibc::{core::client::height::IsHeight, lightclients::wasm},
     proof::{self},
@@ -137,7 +139,13 @@ impl RelayerMsg {
         depth: usize,
     ) -> BoxFuture<'_, Result<Vec<RelayerMsg>, Box<dyn std::error::Error>>>
     where
-        G: Send + Sync + GetChain<Evm<Mainnet>> + GetChain<Evm<Minimal>> + GetChain<Wasm<Union>>,
+        G: Send
+            + Sync
+            + GetChain<Evm<Mainnet>>
+            + GetChain<Evm<Minimal>>
+            + GetChain<Wasm<Union>>
+            + GetChain<Union>
+            + GetChain<Wasm<Cosmos>>,
     {
         tracing::info!(
             depth,
@@ -152,6 +160,8 @@ impl RelayerMsg {
                     AnyLightClientIdentified::UnionOnEvmMainnet($msg) => $expr,
                     AnyLightClientIdentified::EvmMinimalOnUnion($msg) => $expr,
                     AnyLightClientIdentified::UnionOnEvmMinimal($msg) => $expr,
+                    AnyLightClientIdentified::CosmosOnUnion($msg) => $expr,
+                    AnyLightClientIdentified::UnionOnCosmos($msg) => $expr,
                 }
             };
         }
@@ -175,12 +185,25 @@ impl RelayerMsg {
                 RelayerMsg::Msg(msg) => {
                     // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
                     match msg {
-  AnyLightClientIdentified::EvmMainnetOnUnion(msg) => DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.data).await?,
-  AnyLightClientIdentified::EvmMinimalOnUnion(msg) => DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.data).await?,
-  AnyLightClientIdentified::UnionOnEvmMainnet(msg) => DoMsg::msg(&GetChain::<Evm<Mainnet>>::get_chain(g, &msg.chain_id),msg.data).await?,
-  AnyLightClientIdentified::UnionOnEvmMinimal(msg) => DoMsg::msg(&GetChain::<Evm<Minimal>>::get_chain(g, &msg.chain_id),msg.data).await?,
-
-  };
+                        AnyLightClientIdentified::EvmMainnetOnUnion(msg) => {
+                            DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.data).await?
+                        },
+                        AnyLightClientIdentified::EvmMinimalOnUnion(msg) => {
+                            DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.data).await?
+                        },
+                        AnyLightClientIdentified::UnionOnEvmMainnet(msg) => {
+                            DoMsg::msg(&GetChain::<Evm<Mainnet>>::get_chain(g, &msg.chain_id),msg.data).await?
+                        },
+                        AnyLightClientIdentified::UnionOnEvmMinimal(msg) => {
+                            DoMsg::msg(&GetChain::<Evm<Minimal>>::get_chain(g, &msg.chain_id),msg.data).await?
+                        },
+                        AnyLightClientIdentified::CosmosOnUnion(msg) => {
+                            DoMsg::msg(&GetChain::<Union>::get_chain(g, &msg.chain_id),msg.data).await?
+                        },
+                        AnyLightClientIdentified::UnionOnCosmos(msg) => {
+                            DoMsg::msg(&GetChain::<Wasm<Cosmos>>::get_chain(g, &msg.chain_id),msg.data).await?
+                        },
+                    };
 
                     Ok([].into())
                 },
@@ -293,6 +316,8 @@ impl RelayerMsg {
                             AnyLightClientIdentified::UnionOnEvmMinimal(msg) => {
                                 msg.handle(data)
                             }
+                            AnyLightClientIdentified::CosmosOnUnion(msg) => msg.handle(data),
+                            AnyLightClientIdentified::UnionOnCosmos(msg) => msg.handle(data),
                         };
 
                         Ok(res)
@@ -488,6 +513,11 @@ pub enum AnyLightClientIdentified<T: AnyLightClient> {
     // The solidity client on Evm<Minimal> tracking the state of Wasm<Union>.
     #[display(fmt = "UnionOnEvmMinimal({}, {})", "_0.chain_id", "_0.data")]
     UnionOnEvmMinimal(Identified<Evm<Minimal>, Wasm<Union>, InnerOf<T, Evm<Minimal>, Wasm<Union>>>),
+
+    #[display(fmt = "CosmosOnUnion({}, {})", "_0.chain_id", "_0.data")]
+    CosmosOnUnion(Identified<Union, Wasm<Cosmos>, InnerOf<T, Union, Wasm<Cosmos>>>),
+    #[display(fmt = "UnionOnCosmos({}, {})", "_0.chain_id", "_0.data")]
+    UnionOnCosmos(Identified<Wasm<Cosmos>, Union, InnerOf<T, Wasm<Cosmos>, Union>>),
 }
 
 #[macro_export]
@@ -785,7 +815,7 @@ mod tests {
 
     use std::{collections::VecDeque, fmt::Debug, marker::PhantomData};
 
-    use chain_utils::{evm::Evm, union::Union};
+    use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union};
     use hex_literal::hex;
     use serde::{de::DeserializeOwned, Serialize};
     use unionlabs::{
@@ -835,6 +865,7 @@ mod tests {
     fn msg_serde() {
         let union_chain_id: String = parse!("union-devnet-1");
         let eth_chain_id: U256 = parse!("32382");
+        let cosmos_chain_id: String = parse!("wasmd-devnet-1");
 
         print_json(msg::<Wasm<Union>, Evm<Minimal>>(
             union_chain_id.clone(),
@@ -962,74 +993,130 @@ mod tests {
 
         println!("\ncreate client msgs\n");
 
-        print_json(RelayerMsg::Sequence(
-            [
-                RelayerMsg::Aggregate {
-                    queue: [
-                        fetch::<Wasm<Union>, Evm<Minimal>>(
-                            union_chain_id.clone(),
-                            FetchSelfClientState {
-                                at: QueryHeight::Latest,
-                                __marker: PhantomData,
-                            },
-                        ),
-                        fetch::<Wasm<Union>, Evm<Minimal>>(
-                            union_chain_id.clone(),
-                            FetchSelfConsensusState {
-                                at: QueryHeight::Latest,
-                                __marker: PhantomData,
-                            },
-                        ),
-                    ]
-                    .into(),
-                    data: [].into_iter().collect(),
-                    receiver: aggregate::<Evm<Minimal>, Wasm<Union>>(
-                        eth_chain_id,
-                        AggregateCreateClient {
-                            config: EvmConfig {
-                                client_type: "cometbls".to_string(),
-                                client_address: H160(hex!(
-                                    "83428c7db9815f482a39a1715684dcf755021997"
-                                )),
-                            },
-                            __marker: PhantomData,
-                        },
-                    ),
-                },
-                RelayerMsg::Aggregate {
-                    queue: [
-                        fetch::<Evm<Minimal>, Wasm<Union>>(
-                            eth_chain_id,
-                            FetchSelfClientState {
-                                at: QueryHeight::Latest,
-                                __marker: PhantomData,
-                            },
-                        ),
-                        fetch::<Evm<Minimal>, Wasm<Union>>(
-                            eth_chain_id,
-                            FetchSelfConsensusState {
-                                at: QueryHeight::Latest,
-                                __marker: PhantomData,
-                            },
-                        ),
-                    ]
-                    .into(),
-                    data: [].into_iter().collect(),
-                    receiver: aggregate::<Wasm<Union>, Evm<Minimal>>(
+        print_json(seq([
+            RelayerMsg::Aggregate {
+                queue: [
+                    fetch::<Wasm<Union>, Evm<Minimal>>(
                         union_chain_id.clone(),
-                        AggregateCreateClient {
-                            config: WasmConfig {
-                                checksum: H256(hex!(
-                                    "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
-                                )),
-                            },
+                        FetchSelfClientState {
+                            at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
                     ),
-                },
-            ]
-            .into(),
-        ));
+                    fetch::<Wasm<Union>, Evm<Minimal>>(
+                        union_chain_id.clone(),
+                        FetchSelfConsensusState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ]
+                .into(),
+                data: [].into_iter().collect(),
+                receiver: aggregate::<Evm<Minimal>, Wasm<Union>>(
+                    eth_chain_id,
+                    AggregateCreateClient {
+                        config: EvmConfig {
+                            client_type: "cometbls".to_string(),
+                            client_address: H160(hex!("83428c7db9815f482a39a1715684dcf755021997")),
+                        },
+                        __marker: PhantomData,
+                    },
+                ),
+            },
+            RelayerMsg::Aggregate {
+                queue: [
+                    fetch::<Evm<Minimal>, Wasm<Union>>(
+                        eth_chain_id,
+                        FetchSelfClientState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                    fetch::<Evm<Minimal>, Wasm<Union>>(
+                        eth_chain_id,
+                        FetchSelfConsensusState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ]
+                .into(),
+                data: [].into_iter().collect(),
+                receiver: aggregate::<Wasm<Union>, Evm<Minimal>>(
+                    union_chain_id.clone(),
+                    AggregateCreateClient {
+                        config: WasmConfig {
+                            checksum: H256(hex!(
+                                "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
+                            )),
+                        },
+                        __marker: PhantomData,
+                    },
+                ),
+            },
+        ]));
+
+        print_json(seq([
+            RelayerMsg::Aggregate {
+                queue: [
+                    fetch::<Wasm<Cosmos>, Union>(
+                        cosmos_chain_id.clone(),
+                        FetchSelfClientState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                    fetch::<Wasm<Cosmos>, Union>(
+                        cosmos_chain_id.clone(),
+                        FetchSelfConsensusState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ]
+                .into(),
+                data: [].into_iter().collect(),
+                receiver: aggregate::<Union, Wasm<Cosmos>>(
+                    union_chain_id.clone(),
+                    AggregateCreateClient {
+                        config: (),
+                        __marker: PhantomData,
+                    },
+                ),
+            },
+            RelayerMsg::Aggregate {
+                queue: [
+                    fetch::<Union, Wasm<Cosmos>>(
+                        union_chain_id.clone(),
+                        FetchSelfClientState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                    fetch::<Union, Wasm<Cosmos>>(
+                        union_chain_id.clone(),
+                        FetchSelfConsensusState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ]
+                .into(),
+                data: [].into_iter().collect(),
+                receiver: aggregate::<Wasm<Cosmos>, Union>(
+                    cosmos_chain_id,
+                    AggregateCreateClient {
+                        config: WasmConfig {
+                            checksum: H256(hex!(
+                                "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
+                            )),
+                        },
+                        __marker: PhantomData,
+                    },
+                ),
+            },
+        ]));
 
         // print_json(RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Event(
         //     Identified {
@@ -1089,8 +1176,12 @@ impl<T: CosmosSdkChain> CosmosSdkChain for Wasm<T> {
         self.0.tm_client()
     }
 
-    fn signers(&self) -> &chain_utils::Pool<unionlabs::CosmosAccountId> {
+    fn signers(&self) -> &chain_utils::Pool<unionlabs::CosmosSigner> {
         self.0.signers()
+    }
+
+    fn checksum_cache(&self) -> &std::sync::Arc<dashmap::DashMap<H256, unionlabs::WasmClientType>> {
+        self.0.checksum_cache()
     }
 }
 
@@ -1132,6 +1223,8 @@ impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {
     type Error = Hc::Error;
 
     type IbcStateEncoding = Proto;
+
+    type StateProof = Hc::StateProof;
 
     fn chain_id(&self) -> <Self::SelfClientState as unionlabs::traits::ClientState>::ChainId {
         self.0.chain_id()
@@ -1249,7 +1342,8 @@ where
         Config = WasmConfig,
     >,
 
-    Tr::StoredClientState<Wasm<Hc>>: IntoProto,
+    Tr::StoredClientState<Wasm<Hc>>: IntoProto + IntoAny,
+    Tr::StateProof: Encode<Proto>,
 {
     async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
         self.0
@@ -1265,20 +1359,20 @@ where
                             delay_period: data.msg.delay_period,
                         })
                     }
-                    Msg::ConnectionOpenTry(data) =>
-                    {
+                    Msg::ConnectionOpenTry(data) => {
                         #[allow(deprecated)]
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                             client_id: data.msg.client_id.to_string(),
                             previous_connection_id: String::new(),
-                            client_state: Some(
-                                Any(wasm::client_state::ClientState {
-                                    latest_height: data.msg.client_state.height().into(),
-                                    data: data.msg.client_state,
-                                    checksum: H256::default(),
-                                })
-                                .into(),
-                            ),
+                            client_state: Some(data.msg.client_state.into_any().into()),
+                            // client_state: Some(
+                            //     Any(wasm::client_state::ClientState {
+                            //         latest_height: data.msg.client_state.height().into(),
+                            //         data: data.msg.client_state,
+                            //         checksum: H256::default(),
+                            //     })
+                            //     .into(),
+                            // ),
                             counterparty: Some(data.msg.counterparty.into()),
                             delay_period: data.msg.delay_period,
                             counterparty_versions: data
@@ -1288,9 +1382,9 @@ where
                                 .map(Into::into)
                                 .collect(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
-                            proof_init: data.msg.proof_init,
-                            proof_client: data.msg.proof_client,
-                            proof_consensus: data.msg.proof_consensus,
+                            proof_init: data.msg.proof_init.encode(),
+                            proof_client: data.msg.proof_client.encode(),
+                            proof_consensus: data.msg.proof_consensus.encode(),
                             consensus_height: Some(data.msg.consensus_height.into_height().into()),
                             signer: signer.to_string(),
                             host_consensus_state_proof: vec![],
@@ -1298,17 +1392,18 @@ where
                     }
                     Msg::ConnectionOpenAck(data) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
-                            client_state: Some(
-                                Any(wasm::client_state::ClientState {
-                                    latest_height: data.msg.client_state.height().into(),
-                                    data: data.msg.client_state,
-                                    checksum: H256::default(),
-                                })
-                                .into(),
-                            ),
+                            client_state: Some(data.msg.client_state.into_any().into()),
+                            // client_state: Some(
+                            //     Any(wasm::client_state::ClientState {
+                            //         latest_height: data.msg.client_state.height().into(),
+                            //         data: data.msg.client_state,
+                            //         checksum: H256::default(),
+                            //     })
+                            //     .into(),
+                            // ),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
-                            proof_client: data.msg.proof_client,
-                            proof_consensus: data.msg.proof_consensus,
+                            proof_client: data.msg.proof_client.encode(),
+                            proof_consensus: data.msg.proof_consensus.encode(),
                             consensus_height: Some(data.msg.consensus_height.into_height().into()),
                             signer: signer.to_string(),
                             host_consensus_state_proof: vec![],
@@ -1318,13 +1413,13 @@ where
                                 .counterparty_connection_id
                                 .to_string(),
                             version: Some(data.msg.version.into()),
-                            proof_try: data.msg.proof_try,
+                            proof_try: data.msg.proof_try.encode(),
                         })
                     }
                     Msg::ConnectionOpenConfirm(data) => mk_any(
                         &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
                             connection_id: data.msg.connection_id.to_string(),
-                            proof_ack: data.msg.proof_ack,
+                            proof_ack: data.msg.proof_ack.encode(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
                         },
@@ -1343,7 +1438,7 @@ where
                             port_id: data.msg.port_id.to_string(),
                             channel: Some(data.msg.channel.into()),
                             counterparty_version: data.msg.counterparty_version,
-                            proof_init: data.msg.proof_init,
+                            proof_init: data.msg.proof_init.encode(),
                             proof_height: Some(data.msg.proof_height.into()),
                             previous_channel_id: String::new(),
                             signer: signer.to_string(),
@@ -1355,7 +1450,7 @@ where
                             channel_id: data.msg.channel_id.to_string(),
                             counterparty_version: data.msg.counterparty_version,
                             counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
-                            proof_try: data.msg.proof_try,
+                            proof_try: data.msg.proof_try.encode(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
                         })
@@ -1366,7 +1461,7 @@ where
                             channel_id: data.msg.channel_id.to_string(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
-                            proof_ack: data.msg.proof_ack,
+                            proof_ack: data.msg.proof_ack.encode(),
                         })
                     }
                     Msg::RecvPacket(data) => {
@@ -1374,14 +1469,14 @@ where
                             packet: Some(data.msg.packet.into()),
                             proof_height: Some(data.msg.proof_height.into()),
                             signer: signer.to_string(),
-                            proof_commitment: data.msg.proof_commitment,
+                            proof_commitment: data.msg.proof_commitment.encode(),
                         })
                     }
                     Msg::AckPacket(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
                             packet: Some(data.msg.packet.into()),
                             acknowledgement: data.msg.acknowledgement,
-                            proof_acked: data.msg.proof_acked,
+                            proof_acked: data.msg.proof_acked.encode(),
                             proof_height: Some(data.msg.proof_height.into()),
                             signer: signer.to_string(),
                         })
@@ -1419,7 +1514,8 @@ where
                     }
                 };
 
-                broadcast_tx_commit(&self.0, signer, [msg_any])
+                self.0
+                    .broadcast_tx_commit(signer, [msg_any])
                     .await
                     .map(|_| ())
             })

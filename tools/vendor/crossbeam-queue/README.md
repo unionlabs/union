@@ -8,7 +8,7 @@ https://github.com/crossbeam-rs/crossbeam/tree/master/crossbeam-queue#license)
 https://crates.io/crates/crossbeam-queue)
 [![Documentation](https://docs.rs/crossbeam-queue/badge.svg)](
 https://docs.rs/crossbeam-queue)
-[![Rust 1.36+](https://img.shields.io/badge/rust-1.36+-lightgray.svg)](
+[![Rust 1.38+](https://img.shields.io/badge/rust-1.38+-lightgray.svg)](
 https://www.rust-lang.org)
 [![chat](https://img.shields.io/discord/569610676205781012.svg?logo=discord)](https://discord.com/invite/JXYwgWZ)
 
@@ -36,7 +36,7 @@ crossbeam-queue = "0.3"
 
 Crossbeam Queue supports stable Rust releases going back at least six months,
 and every time the minimum supported Rust version is increased, a new minor
-version is released. Currently, the minimum supported Rust version is 1.36.
+version is released. Currently, the minimum supported Rust version is 1.38.
 
 ## License
 

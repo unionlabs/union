@@ -6,18 +6,15 @@
 use crate::translator::{compiled_function_unwind_info, signature_to_cranelift_ir};
 use cranelift_codegen::ir;
 use cranelift_codegen::ir::{
-    ExternalName, Function, InstBuilder, MemFlags, StackSlotData, StackSlotKind,
+    Function, InstBuilder, MemFlags, StackSlotData, StackSlotKind, UserFuncName,
 };
 use cranelift_codegen::isa::TargetIsa;
-use cranelift_codegen::print_errors::pretty_error;
 use cranelift_codegen::Context;
 use std::cmp;
 use std::mem;
 
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
-use wasmer_compiler::{CompileError, FunctionBody};
-use wasmer_types::FunctionType;
-use wasmer_types::VMOffsets;
+use wasmer_types::{CompileError, FunctionBody, FunctionType, VMOffsets};
 
 /// Create a trampoline for invoking a WebAssembly function.
 pub fn make_trampoline_dynamic_function(
@@ -45,9 +42,9 @@ pub fn make_trampoline_dynamic_function(
         (value_size * cmp::max(signature.params.len() - 1, signature.returns.len())) as u32;
 
     let mut context = Context::new();
-    context.func = Function::with_name_signature(ExternalName::user(0, 0), signature.clone());
+    context.func = Function::with_name_signature(UserFuncName::user(0, 0), signature.clone());
 
-    let ss = context.func.create_stack_slot(StackSlotData::new(
+    let ss = context.func.create_sized_stack_slot(StackSlotData::new(
         StackSlotKind::ExplicitSlot,
         values_vec_len,
     ));
@@ -109,7 +106,7 @@ pub fn make_trampoline_dynamic_function(
     let mut code_buf = Vec::new();
     context
         .compile_and_emit(isa, &mut code_buf)
-        .map_err(|error| CompileError::Codegen(pretty_error(&context.func, error)))?;
+        .map_err(|error| CompileError::Codegen(error.inner.to_string()))?;
 
     let unwind_info = compiled_function_unwind_info(isa, &context)?.maybe_into_to_windows_unwind();
 

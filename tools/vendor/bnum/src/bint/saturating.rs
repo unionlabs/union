@@ -72,17 +72,15 @@ macro_rules! saturating {
                 }
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::saturating::saturating_div!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn saturating_div(self, rhs: Self) -> Self {
-                    let (div, overflow) = self.overflowing_div(rhs);
-                    if overflow {
-                        Self::MAX
-                    } else {
-                        div
-                    }
+            #[doc = doc::saturating::saturating_div!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn saturating_div(self, rhs: Self) -> Self {
+                let (div, overflow) = self.overflowing_div(rhs);
+                if overflow {
+                    Self::MAX
+                } else {
+                    div
                 }
             }
 

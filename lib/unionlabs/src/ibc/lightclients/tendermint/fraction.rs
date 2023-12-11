@@ -1,12 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-#[cfg_attr(
-    feature = "ethabi",
-    derive(
-        ethers_contract_derive::EthAbiType,
-        ethers_contract_derive::EthAbiCodec
-    )
-)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Fraction {
     pub numerator: u64,
@@ -31,6 +24,7 @@ impl From<protos::ibc::lightclients::tendermint::v1::Fraction> for Fraction {
     }
 }
 
+// TODO(benluelo): This will be replaced with tendermint once the solidity contract types are regenerated
 #[cfg(feature = "ethabi")]
 impl From<Fraction> for contracts::glue::IbcLightclientsTendermintV1FractionData {
     fn from(value: Fraction) -> Self {

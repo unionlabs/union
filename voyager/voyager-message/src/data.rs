@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData};
+use std::marker::PhantomData;
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
@@ -97,25 +97,14 @@ pub struct IbcState<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
     pub state: P::Output,
 }
 
-#[derive(CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct IbcProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
     pub path: P,
     pub height: HeightOf<Hc>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof: Vec<u8>,
+    pub proof: Hc::StateProof,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> Tr>,
-}
-
-impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> Debug for IbcProof<Hc, Tr, P> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("IbcProof")
-            .field("path", &self.path)
-            .field("height", &self.height)
-            .field("proof", &serde_utils::to_hex(&self.proof))
-            .finish()
-    }
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]

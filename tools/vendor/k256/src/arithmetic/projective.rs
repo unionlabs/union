@@ -18,7 +18,7 @@ use elliptic_curve::{
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    Error, PrimeCurveArithmetic, ProjectiveArithmetic, Result,
+    Error, Result,
 };
 
 #[rustfmt::skip]
@@ -29,17 +29,8 @@ const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
     0xc1, 0x39, 0x6c, 0x28, 0x71, 0x95, 0x01, 0xee,
 ]);
 
-impl ProjectiveArithmetic for Secp256k1 {
-    type ProjectivePoint = ProjectivePoint;
-}
-
-impl PrimeCurveArithmetic for Secp256k1 {
-    type CurveGroup = ProjectivePoint;
-}
-
 /// A point on the secp256k1 curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct ProjectivePoint {
     x: FieldElement,
     y: FieldElement,
@@ -78,7 +69,11 @@ impl ProjectivePoint {
     pub fn to_affine(&self) -> AffinePoint {
         self.z
             .invert()
-            .map(|zinv| AffinePoint::new(self.x * &zinv, self.y * &zinv))
+            .map(|zinv| {
+                let x = self.x * &zinv;
+                let y = self.y * &zinv;
+                AffinePoint::new(x.normalize(), y.normalize())
+            })
             .unwrap_or_else(|| AffinePoint::IDENTITY)
     }
 
@@ -228,7 +223,7 @@ impl ProjectivePoint {
     /// Check whether `self` is equal to an affine point.
     ///
     /// This is a lot faster than first converting `self` to an `AffinePoint` and then doing the
-    /// comparision. It is a little bit faster than converting `other` to a `ProjectivePoint` first.
+    /// comparison. It is a little bit faster than converting `other` to a `ProjectivePoint` first.
     pub fn eq_affine(&self, other: &AffinePoint) -> Choice {
         // For understanding of this algorithm see Projective equality comment. It's the same except
         // that we know z = 1 for rhs and we have to check identity as a separate case.
@@ -249,7 +244,7 @@ impl From<AffinePoint> for ProjectivePoint {
         let projective = ProjectivePoint {
             x: p.x,
             y: p.y,
-            z: FieldElement::one(),
+            z: FieldElement::ONE,
         };
         Self::conditional_select(&projective, &Self::IDENTITY, p.is_identity())
     }
@@ -306,7 +301,7 @@ impl ConstantTimeEq for ProjectivePoint {
         // and check lhs == rhs which implies x₁ == x₂ and y₁ == y₂.
         //
         // If one point is infinity it is always in the form (0, y, 0). Note that the above
-        // algorithm still works here. If They are both infinity then they'll both evalute to (0,0).
+        // algorithm still works here. If They are both infinity then they'll both evaluate to (0,0).
         // If for example the first point is infinity then the above will evaluate to (z₂ * 0, z₂ *
         // y₂) = (0, z₂y₂) for the first point and (0 * x₂z₂, 0 * y₂z₂) = (0, 0) for the second.
         //

@@ -1,6 +1,7 @@
 use proc_macro2::extra::DelimSpan;
 use proc_macro2::{Delimiter, Group, Span, TokenStream};
 
+#[doc(hidden)]
 pub trait IntoSpans<S> {
     fn into_spans(self) -> S;
 }

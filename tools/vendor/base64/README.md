@@ -76,10 +76,10 @@ free time to give each PR the attention it deserves. I will get to everyone even
 
 ## Developing
 
-Benchmarks are in `benches/`. Running them requires nightly rust, but `rustup` makes it easy:
+Benchmarks are in `benches/`.
 
 ```bash
-rustup run nightly cargo bench
+cargo bench
 ```
 
 ## no_std
@@ -92,12 +92,12 @@ to bring back the support for heap allocations.
 ## Profiling
 
 On Linux, you can use [perf](https://perf.wiki.kernel.org/index.php/Main_Page) for profiling. Then compile the
-benchmarks with `rustup nightly run cargo bench --no-run`.
+benchmarks with `cargo bench --no-run`.
 
 Run the benchmark binary with `perf` (shown here filtering to one particular benchmark, which will make the results
 easier to read). `perf` is only available to the root user on most systems as it fiddles with event counters in your
 CPU, so use `sudo`. We need to run the actual benchmark binary, hence the path into `target`. You can see the actual
-full path with `rustup run nightly cargo bench -v`; it will print out the commands it runs. If you use the exact path
+full path with `cargo bench -v`; it will print out the commands it runs. If you use the exact path
 that `bench` outputs, make sure you get the one that's for the benchmarks, not the tests. You may also want
 to `cargo clean` so you have only one `benchmarks-` binary (they tend to accumulate).
 

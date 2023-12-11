@@ -95,7 +95,7 @@ mod tests {
                 assert_eq!(length, 13);
                 assert_eq!(max_length, 5);
             }
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 

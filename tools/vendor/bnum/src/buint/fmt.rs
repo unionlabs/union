@@ -46,7 +46,7 @@ macro_rules! fmt {
         impl<const N: usize> Display for $BUint<N> {
             #[inline]
             fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-                write!(f, "{}", self.to_str_radix(10))
+                f.pad_integral(true, "", &self.to_str_radix(10))
             }
         }
 
@@ -54,24 +54,25 @@ macro_rules! fmt {
             ($e: expr) => {
                 #[inline]
                 fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-                    let decimal_str = format!("{}", self);
-                    if decimal_str == "0" {
-                        return write!(f, "{}{}0", 0, $e);
-                    }
-                    let exp = decimal_str.len() - 1;
-                    let decimal_str = decimal_str.trim_end_matches('0');
-                    if decimal_str.len() == 1 {
-                        write!(f, "{}{}{}", &decimal_str[0..1], $e, exp)
+                    let decimal_str = self.to_str_radix(10);
+                    let buf = if decimal_str == "0" {
+                        format!("{}{}0", 0, $e)
                     } else {
-                        write!(
-                            f,
-                            "{}.{}{}{}",
-                            &decimal_str[0..1],
-                            &decimal_str[1..],
-                            $e,
-                            exp
-                        )
-                    }
+                        let exp = decimal_str.len() - 1;
+                        let decimal_str = decimal_str.trim_end_matches('0');
+                        if decimal_str.len() == 1 {
+                            format!("{}{}{}", &decimal_str[0..1], $e, exp)
+                        } else {
+                            format!(
+                                "{}.{}{}{}",
+                                &decimal_str[0..1],
+                                &decimal_str[1..],
+                                $e,
+                                exp
+                            )
+                        }
+                    };
+                    f.pad_integral(true, "", &buf)
                 }
             };
         }

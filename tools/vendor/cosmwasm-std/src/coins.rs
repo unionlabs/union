@@ -1,21 +1,22 @@
-use std::collections::BTreeMap;
-use std::fmt;
-use std::str::FromStr;
+use alloc::collections::BTreeMap;
+use core::fmt;
+use core::str::FromStr;
 
-use crate::{errors::CoinsError, Coin, StdError, StdResult, Uint128};
-use crate::{OverflowError, OverflowOperation};
+use crate::{
+    errors::CoinsError, Coin, OverflowError, OverflowOperation, StdError, StdResult, Uint128,
+};
 
 /// A collection of coins, similar to Cosmos SDK's `sdk.Coins` struct.
 ///
 /// Differently from `sdk.Coins`, which is a vector of `sdk.Coin`, here we
-/// implement Coins as a BTreeMap that maps from coin denoms to amounts.
+/// implement Coins as a BTreeMap that maps from coin denoms to `Coin`.
 /// This has a number of advantages:
 ///
 /// - coins are naturally sorted alphabetically by denom
 /// - duplicate denoms are automatically removed
 /// - cheaper for searching/inserting/deleting: O(log(n)) compared to O(n)
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
-pub struct Coins(BTreeMap<String, Uint128>);
+pub struct Coins(BTreeMap<String, Coin>);
 
 /// Casting a Vec<Coin> to Coins.
 /// The Vec can be out of order, but must not contain duplicate denoms.
@@ -26,13 +27,13 @@ impl TryFrom<Vec<Coin>> for Coins {
 
     fn try_from(vec: Vec<Coin>) -> Result<Self, CoinsError> {
         let mut map = BTreeMap::new();
-        for Coin { amount, denom } in vec {
-            if amount.is_zero() {
+        for coin in vec {
+            if coin.amount.is_zero() {
                 continue;
             }
 
             // if the insertion returns a previous value, we have a duplicate denom
-            if map.insert(denom, amount).is_some() {
+            if map.insert(coin.denom.clone(), coin).is_some() {
                 return Err(CoinsError::DuplicateDenom);
             }
         }
@@ -91,8 +92,8 @@ impl fmt::Display for Coins {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = self
             .0
-            .iter()
-            .map(|(denom, amount)| format!("{amount}{denom}"))
+            .values()
+            .map(|coin| coin.to_string())
             .collect::<Vec<_>>()
             .join(",");
         write!(f, "{s}")
@@ -100,23 +101,20 @@ impl fmt::Display for Coins {
 }
 
 impl Coins {
-    /// Conversion to Vec<Coin>, while NOT consuming the original object
+    /// Conversion to Vec<Coin>, while NOT consuming the original object.
+    ///
+    /// This produces a vector of coins that is sorted alphabetically by denom with
+    /// no duplicate denoms.
     pub fn to_vec(&self) -> Vec<Coin> {
-        self.0
-            .iter()
-            .map(|(denom, amount)| Coin {
-                denom: denom.clone(),
-                amount: *amount,
-            })
-            .collect()
+        self.0.values().cloned().collect()
     }
 
-    /// Conversion to Vec<Coin>, consuming the original object
+    /// Conversion to Vec<Coin>, consuming the original object.
+    ///
+    /// This produces a vector of coins that is sorted alphabetically by denom with
+    /// no duplicate denoms.
     pub fn into_vec(self) -> Vec<Coin> {
-        self.0
-            .into_iter()
-            .map(|(denom, amount)| Coin { denom, amount })
-            .collect()
+        self.0.into_values().collect()
     }
 
     /// Returns the number of different denoms in this collection.
@@ -137,7 +135,10 @@ impl Coins {
 
     /// Returns the amount of the given denom or zero if the denom is not present.
     pub fn amount_of(&self, denom: &str) -> Uint128 {
-        self.0.get(denom).copied().unwrap_or_else(Uint128::zero)
+        self.0
+            .get(denom)
+            .map(|c| c.amount)
+            .unwrap_or_else(Uint128::zero)
     }
 
     /// Returns the amount of the given denom if and only if this collection contains only
@@ -161,7 +162,7 @@ impl Coins {
     /// ```
     pub fn contains_only(&self, denom: &str) -> Option<Uint128> {
         if self.len() == 1 {
-            self.0.get(denom).copied()
+            self.0.get(denom).map(|c| c.amount)
         } else {
             None
         }
@@ -174,8 +175,15 @@ impl Coins {
             return Ok(());
         }
 
-        let amount = self.0.entry(coin.denom).or_insert_with(Uint128::zero);
-        *amount = amount.checked_add(coin.amount)?;
+        // if the coin is not present yet, insert it, otherwise add to existing amount
+        match self.0.get_mut(&coin.denom) {
+            None => {
+                self.0.insert(coin.denom.clone(), coin);
+            }
+            Some(existing) => {
+                existing.amount = existing.amount.checked_add(coin.amount)?;
+            }
+        }
         Ok(())
     }
 
@@ -183,10 +191,10 @@ impl Coins {
     /// Errors in case of overflow or if the denom is not present.
     pub fn sub(&mut self, coin: Coin) -> StdResult<()> {
         match self.0.get_mut(&coin.denom) {
-            Some(v) => {
-                *v = v.checked_sub(coin.amount)?;
+            Some(existing) => {
+                existing.amount = existing.amount.checked_sub(coin.amount)?;
                 // make sure to remove zero coin
-                if v.is_zero() {
+                if existing.amount.is_zero() {
                     self.0.remove(&coin.denom);
                 }
             }
@@ -205,6 +213,105 @@ impl Coins {
         }
 
         Ok(())
+    }
+
+    /// Returns an iterator over the coins.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cosmwasm_std::{coin, Coin, Coins, Uint128};
+    /// let mut coins = Coins::default();
+    /// coins.add(coin(500, "uluna")).unwrap();
+    /// coins.add(coin(1000, "uatom")).unwrap();
+    /// let mut iterator = coins.iter();
+    ///
+    /// let uatom = iterator.next().unwrap();
+    /// assert_eq!(uatom.denom, "uatom");
+    /// assert_eq!(uatom.amount.u128(), 1000);
+    ///
+    /// let uluna = iterator.next().unwrap();
+    /// assert_eq!(uluna.denom, "uluna");
+    /// assert_eq!(uluna.amount.u128(), 500);
+    ///
+    /// assert_eq!(iterator.next(), None);
+    /// ```
+    pub fn iter(&self) -> CoinsIter<'_> {
+        CoinsIter(self.0.iter())
+    }
+}
+
+impl IntoIterator for Coins {
+    type Item = Coin;
+    type IntoIter = CoinsIntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        CoinsIntoIter(self.0.into_iter())
+    }
+}
+
+impl<'a> IntoIterator for &'a Coins {
+    type Item = &'a Coin;
+    type IntoIter = CoinsIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+#[derive(Debug)]
+pub struct CoinsIntoIter(alloc::collections::btree_map::IntoIter<String, Coin>);
+
+impl Iterator for CoinsIntoIter {
+    type Item = Coin;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(_, coin)| coin)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        // Since btree_map::IntoIter implements ExactSizeIterator, this is guaranteed to return the exact length
+        self.0.size_hint()
+    }
+}
+
+impl DoubleEndedIterator for CoinsIntoIter {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|(_, coin)| coin)
+    }
+}
+
+impl ExactSizeIterator for CoinsIntoIter {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+#[derive(Debug)]
+pub struct CoinsIter<'a>(alloc::collections::btree_map::Iter<'a, String, Coin>);
+
+impl<'a> Iterator for CoinsIter<'a> {
+    type Item = &'a Coin;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(_, coin)| coin)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        // Since btree_map::Iter implements ExactSizeIterator, this is guaranteed to return the exact length
+        self.0.size_hint()
+    }
+}
+
+impl<'a> DoubleEndedIterator for CoinsIter<'a> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|(_, coin)| coin)
+    }
+}
+
+impl<'a> ExactSizeIterator for CoinsIter<'a> {
+    fn len(&self) -> usize {
+        self.0.len()
     }
 }
 
@@ -387,6 +494,42 @@ mod tests {
         // happy path
         let coins = Coins::from(coin(12345, "uatom"));
         assert_eq!(coins.len(), 1);
+        assert_eq!(coins.amount_of("uatom").u128(), 12345);
+    }
+
+    #[test]
+    fn exact_size_iterator() {
+        let coins = mock_coins();
+        let iter = coins.iter();
+        assert_eq!(iter.len(), 3);
+        assert_eq!(iter.size_hint(), (3, Some(3)));
+
+        let iter = coins.into_iter();
+        assert_eq!(iter.len(), 3);
+        assert_eq!(iter.size_hint(), (3, Some(3)));
+    }
+
+    #[test]
+    fn can_iterate_owned() {
+        let coins = mock_coins();
+        let mut moved = Coins::default();
+        for c in coins {
+            moved.add(c).unwrap();
+        }
+        assert_eq!(moved.len(), 3);
+
+        assert!(mock_coins().into_iter().eq(mock_coins().to_vec()));
+    }
+
+    #[test]
+    fn can_iterate_borrowed() {
+        let coins = mock_coins();
+        assert!(coins
+            .iter()
+            .map(|c| &c.denom)
+            .eq(coins.to_vec().iter().map(|c| &c.denom)));
+
+        // can still use the coins afterwards
         assert_eq!(coins.amount_of("uatom").u128(), 12345);
     }
 }

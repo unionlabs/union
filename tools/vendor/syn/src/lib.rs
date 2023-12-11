@@ -249,7 +249,7 @@
 //!   dynamic library libproc_macro from rustc toolchain.
 
 // Syn types in rustdoc of other crates get linked to here.
-#![doc(html_root_url = "https://docs.rs/syn/2.0.22")]
+#![doc(html_root_url = "https://docs.rs/syn/2.0.29")]
 #![cfg_attr(doc_cfg, feature(doc_cfg))]
 #![allow(non_camel_case_types)]
 #![allow(
@@ -373,6 +373,7 @@ pub use crate::generics::{
 pub use crate::generics::{ImplGenerics, Turbofish, TypeGenerics};
 
 mod ident;
+#[doc(inline)]
 pub use crate::ident::Ident;
 
 #[cfg(feature = "full")]
@@ -388,9 +389,11 @@ pub use crate::item::{
 };
 
 mod lifetime;
+#[doc(inline)]
 pub use crate::lifetime::Lifetime;
 
 mod lit;
+#[doc(inline)]
 pub use crate::lit::{
     Lit, LitBool, LitByte, LitByteStr, LitChar, LitFloat, LitInt, LitStr, StrStyle,
 };

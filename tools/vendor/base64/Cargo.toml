@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.57.0"
 name = "base64"
-version = "0.21.0"
+version = "0.21.2"
 authors = [
     "Alice Maz <alice@alicemaz.com>",
     "Marshall Pierce <marshall@mpierce.org>",

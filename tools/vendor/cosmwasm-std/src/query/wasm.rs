@@ -1,9 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::Binary;
-#[cfg(feature = "cosmwasm_1_2")]
-use crate::HexBinary;
+use crate::{Binary, HexBinary};
 
 use super::query_response::QueryResponseType;
 
@@ -76,7 +74,6 @@ impl ContractInfoResponse {
 /// [CodeInfoResponse]: https://github.com/CosmWasm/wasmd/blob/v0.30.0/proto/cosmwasm/wasm/v1/query.proto#L184-L199
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, JsonSchema)]
-#[cfg(feature = "cosmwasm_1_2")]
 pub struct CodeInfoResponse {
     pub code_id: u64,
     /// The address that initially stored the code
@@ -85,7 +82,6 @@ pub struct CodeInfoResponse {
     pub checksum: HexBinary,
 }
 
-#[cfg(feature = "cosmwasm_1_2")]
 impl_response_constructor!(
     CodeInfoResponse,
     code_id: u64,
@@ -93,20 +89,19 @@ impl_response_constructor!(
     checksum: HexBinary
 );
 
-#[cfg(feature = "cosmwasm_1_2")]
 impl QueryResponseType for CodeInfoResponse {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::to_binary;
+    use crate::to_json_binary;
 
     #[test]
     fn wasm_query_contract_info_serialization() {
         let query = WasmQuery::ContractInfo {
             contract_addr: "aabbccdd456".into(),
         };
-        let json = to_binary(&query).unwrap();
+        let json = to_json_binary(&query).unwrap();
         assert_eq!(
             String::from_utf8_lossy(&json),
             r#"{"contract_info":{"contract_addr":"aabbccdd456"}}"#,
@@ -117,7 +112,7 @@ mod tests {
     #[cfg(feature = "cosmwasm_1_2")]
     fn wasm_query_code_info_serialization() {
         let query = WasmQuery::CodeInfo { code_id: 70 };
-        let json = to_binary(&query).unwrap();
+        let json = to_json_binary(&query).unwrap();
         assert_eq!(
             String::from_utf8_lossy(&json),
             r#"{"code_info":{"code_id":70}}"#,
@@ -133,7 +128,7 @@ mod tests {
             pinned: true,
             ibc_port: Some("wasm.123".to_string()),
         };
-        let json = to_binary(&response).unwrap();
+        let json = to_json_binary(&response).unwrap();
         assert_eq!(
             String::from_utf8_lossy(&json),
             r#"{"code_id":67,"creator":"jane","admin":"king","pinned":true,"ibc_port":"wasm.123"}"#,
@@ -153,7 +148,7 @@ mod tests {
             )
             .unwrap(),
         };
-        let json = to_binary(&response).unwrap();
+        let json = to_json_binary(&response).unwrap();
         assert_eq!(
             String::from_utf8_lossy(&json),
             r#"{"code_id":67,"creator":"jane","checksum":"f7bb7b18fb01bbf425cf4ed2cd4b7fb26a019a7fc75a4dc87e8a0b768c501f00"}"#,

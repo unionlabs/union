@@ -4,13 +4,15 @@ use crate::dominator_tree::DominatorTree;
 use crate::entity::EntityList;
 use crate::fx::FxHashMap;
 use crate::fx::FxHashSet;
+use crate::ir;
 use crate::ir::instructions::BranchInfo;
 use crate::ir::Function;
 use crate::ir::{Block, Inst, Value};
 use crate::timing;
-
-use smallvec::{smallvec, SmallVec};
-use std::vec::Vec;
+use arrayvec::ArrayVec;
+use bumpalo::Bump;
+use cranelift_entity::SecondaryMap;
+use smallvec::SmallVec;
 
 // A note on notation.  For the sake of clarity, this file uses the phrase
 // "formal parameters" to mean the `Value`s listed in the block head, and
@@ -65,18 +67,20 @@ use std::vec::Vec;
 // reducing the isel/regalloc cost downstream.  Gains of up to 7% have been
 // seen for large functions.
 
-// The `Value`s (Group B) that can flow to a formal parameter (Group A).
+/// The `Value`s (Group B) that can flow to a formal parameter (Group A).
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum AbstractValue {
-    // Two or more values flow to this formal.
+    /// Two or more values flow to this formal.
     Many,
-    // Exactly one value, as stated, flows to this formal.  The `Value`s that
-    // can appear here are exactly: `Value`s defined by `Inst`s, plus the
-    // `Value`s defined by the formals of the entry block.  Note that this is
-    // exactly the set of `Value`s that are *not* tracked in the solver below
-    // (see `SolverState`).
+
+    /// Exactly one value, as stated, flows to this formal.  The `Value`s that
+    /// can appear here are exactly: `Value`s defined by `Inst`s, plus the
+    /// `Value`s defined by the formals of the entry block.  Note that this is
+    /// exactly the set of `Value`s that are *not* tracked in the solver below
+    /// (see `SolverState`).
     One(Value /*Group B*/),
-    // No value flows to this formal.
+
+    /// No value flows to this formal.
     None,
 }
 
@@ -99,59 +103,107 @@ impl AbstractValue {
             }
         }
     }
+
     fn is_one(self) -> bool {
-        if let AbstractValue::One(_) = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, AbstractValue::One(_))
     }
 }
 
-// For some block, a useful bundle of info.  The `Block` itself is not stored
-// here since it will be the key in the associated `FxHashMap` -- see
-// `summaries` below.  For the `SmallVec` tuning params: most blocks have
-// few parameters, hence `4`.  And almost all blocks have either one or two
-// successors, hence `2`.
-#[derive(Debug)]
-struct BlockSummary {
-    // Formal parameters for this `Block`
-    formals: SmallVec<[Value; 4] /*Group A*/>,
-    // For each `Inst` in this block that transfers to another block: the
-    // `Inst` itself, the destination `Block`, and the actual parameters
-    // passed.  We don't bother to include transfers that pass zero parameters
-    // since that makes more work for the solver for no purpose.
-    dests: SmallVec<[(Inst, Block, SmallVec<[Value; 4] /*both Groups A and B*/>); 2]>,
+#[derive(Clone, Copy, Debug)]
+struct OutEdge<'a> {
+    /// An instruction that transfers control.
+    inst: Inst,
+    /// The block that control is transferred to.
+    block: Block,
+    /// The arguments to that block.
+    ///
+    /// These values can be from both groups A and B.
+    args: &'a [Value],
 }
-impl BlockSummary {
-    fn new(formals: SmallVec<[Value; 4]>) -> Self {
+
+impl<'a> OutEdge<'a> {
+    /// Construct a new `OutEdge` for the given instruction.
+    ///
+    /// Returns `None` if this is an edge without any block arguments, which
+    /// means we can ignore it for this analysis's purposes.
+    #[inline]
+    fn new(bump: &'a Bump, dfg: &ir::DataFlowGraph, inst: Inst, block: Block) -> Option<Self> {
+        let inst_var_args = dfg.inst_variable_args(inst);
+
+        // Skip edges without params.
+        if inst_var_args.is_empty() {
+            return None;
+        }
+
+        Some(OutEdge {
+            inst,
+            block,
+            args: bump.alloc_slice_fill_iter(
+                inst_var_args
+                    .iter()
+                    .map(|value| dfg.resolve_aliases(*value)),
+            ),
+        })
+    }
+}
+
+/// For some block, a useful bundle of info.  The `Block` itself is not stored
+/// here since it will be the key in the associated `FxHashMap` -- see
+/// `summaries` below.  For the `SmallVec` tuning params: most blocks have
+/// few parameters, hence `4`.  And almost all blocks have either one or two
+/// successors, hence `2`.
+#[derive(Clone, Debug, Default)]
+struct BlockSummary<'a> {
+    /// Formal parameters for this `Block`.
+    ///
+    /// These values are from group A.
+    formals: &'a [Value],
+
+    /// Each outgoing edge from this block.
+    ///
+    /// We don't bother to include transfers that pass zero parameters
+    /// since that makes more work for the solver for no purpose.
+    ///
+    /// Note that, because blocks used with `br_table`s cannot have block
+    /// arguments, there are at most two outgoing edges from these blocks.
+    dests: ArrayVec<OutEdge<'a>, 2>,
+}
+
+impl<'a> BlockSummary<'a> {
+    /// Construct a new `BlockSummary`, using `values` as its backing storage.
+    #[inline]
+    fn new(bump: &'a Bump, formals: &[Value]) -> Self {
         Self {
-            formals,
-            dests: smallvec![],
+            formals: bump.alloc_slice_copy(formals),
+            dests: Default::default(),
         }
     }
 }
 
-// Solver state.  This holds a AbstractValue for each formal parameter, except
-// for those from the entry block.
+/// Solver state.  This holds a AbstractValue for each formal parameter, except
+/// for those from the entry block.
 struct SolverState {
     absvals: FxHashMap<Value /*Group A*/, AbstractValue>,
 }
+
 impl SolverState {
     fn new() -> Self {
         Self {
             absvals: FxHashMap::default(),
         }
     }
+
     fn get(&self, actual: Value) -> AbstractValue {
-        match self.absvals.get(&actual) {
-            Some(lp) => *lp,
-            None => panic!("SolverState::get: formal param {:?} is untracked?!", actual),
-        }
+        *self
+            .absvals
+            .get(&actual)
+            .unwrap_or_else(|| panic!("SolverState::get: formal param {:?} is untracked?!", actual))
     }
+
     fn maybe_get(&self, actual: Value) -> Option<&AbstractValue> {
         self.absvals.get(&actual)
     }
+
     fn set(&mut self, actual: Value, lp: AbstractValue) {
         match self.absvals.insert(actual, lp) {
             Some(_old_lp) => {}
@@ -167,38 +219,27 @@ pub fn do_remove_constant_phis(func: &mut Function, domtree: &mut DominatorTree)
     let _tt = timing::remove_constant_phis();
     debug_assert!(domtree.is_valid());
 
-    // Get the blocks, in reverse postorder
-    let mut blocks_reverse_postorder = Vec::<Block>::new();
-    for block in domtree.cfg_postorder() {
-        blocks_reverse_postorder.push(*block);
-    }
-    blocks_reverse_postorder.reverse();
-
     // Phase 1 of 3: for each block, make a summary containing all relevant
     // info.  The solver will iterate over the summaries, rather than having
     // to inspect each instruction in each block.
-    let mut summaries = FxHashMap::<Block, BlockSummary>::default();
+    let bump =
+        Bump::with_capacity(domtree.cfg_postorder().len() * 4 * std::mem::size_of::<Value>());
+    let mut summaries =
+        SecondaryMap::<Block, BlockSummary>::with_capacity(domtree.cfg_postorder().len());
 
-    for b in &blocks_reverse_postorder {
-        let formals = func.dfg.block_params(*b);
-        let mut summary = BlockSummary::new(SmallVec::from(formals));
+    for b in domtree.cfg_postorder().iter().rev().copied() {
+        let formals = func.dfg.block_params(b);
+        let mut summary = BlockSummary::new(&bump, formals);
 
-        for inst in func.layout.block_insts(*b) {
+        for inst in func.layout.block_insts(b) {
             let idetails = &func.dfg[inst];
             // Note that multi-dest transfers (i.e., branch tables) don't
             // carry parameters in our IR, so we only have to care about
             // `SingleDest` here.
             if let BranchInfo::SingleDest(dest, _) = idetails.analyze_branch(&func.dfg.value_lists)
             {
-                let inst_var_args = func.dfg.inst_variable_args(inst);
-                // Skip branches/jumps that carry no params.
-                if inst_var_args.len() > 0 {
-                    let mut actuals = SmallVec::<[Value; 4]>::new();
-                    for arg in inst_var_args {
-                        let arg = func.dfg.resolve_aliases(*arg);
-                        actuals.push(arg);
-                    }
-                    summary.dests.push((inst, dest, actuals));
+                if let Some(edge) = OutEdge::new(&bump, &func.dfg, inst, dest) {
+                    summary.dests.push(edge);
                 }
             }
         }
@@ -207,7 +248,7 @@ pub fn do_remove_constant_phis(func: &mut Function, domtree: &mut DominatorTree)
         // in the summary, *unless* they have neither formals nor any
         // param-carrying branches/jumps.
         if formals.len() > 0 || summary.dests.len() > 0 {
-            summaries.insert(*b, summary);
+            summaries[b] = summary;
         }
     }
 
@@ -223,12 +264,12 @@ pub fn do_remove_constant_phis(func: &mut Function, domtree: &mut DominatorTree)
     // Set up initial solver state
     let mut state = SolverState::new();
 
-    for b in &blocks_reverse_postorder {
+    for b in domtree.cfg_postorder().iter().rev().copied() {
         // For each block, get the formals
-        if *b == entry_block {
+        if b == entry_block {
             continue;
         }
-        let formals: &[Value] = func.dfg.block_params(*b);
+        let formals = func.dfg.block_params(b);
         for formal in formals {
             let mb_old_absval = state.absvals.insert(*formal, AbstractValue::None);
             assert!(mb_old_absval.is_none());
@@ -242,27 +283,18 @@ pub fn do_remove_constant_phis(func: &mut Function, domtree: &mut DominatorTree)
         iter_no += 1;
         let mut changed = false;
 
-        for src in &blocks_reverse_postorder {
-            let mb_src_summary = summaries.get(src);
-            // The src block might have no summary.  This means it has no
-            // branches/jumps that carry parameters *and* it doesn't take any
-            // parameters itself.  Phase 1 ensures this.  So we can ignore it.
-            if mb_src_summary.is_none() {
-                continue;
-            }
-            let src_summary = mb_src_summary.unwrap();
-            for (_inst, dst, src_actuals) in &src_summary.dests {
-                assert!(*dst != entry_block);
+        for src in domtree.cfg_postorder().iter().rev().copied() {
+            let src_summary = &summaries[src];
+            for edge in &src_summary.dests {
+                assert!(edge.block != entry_block);
                 // By contrast, the dst block must have a summary.  Phase 1
                 // will have only included an entry in `src_summary.dests` if
                 // that branch/jump carried at least one parameter.  So the
                 // dst block does take parameters, so it must have a summary.
-                let dst_summary = summaries
-                    .get(dst)
-                    .expect("remove_constant_phis: dst block has no summary");
+                let dst_summary = &summaries[edge.block];
                 let dst_formals = &dst_summary.formals;
-                assert!(src_actuals.len() == dst_formals.len());
-                for (formal, actual) in dst_formals.iter().zip(src_actuals.iter()) {
+                assert_eq!(edge.args.len(), dst_formals.len());
+                for (formal, actual) in dst_formals.iter().zip(edge.args) {
                     // Find the abstract value for `actual`.  If it is a block
                     // formal parameter then the most recent abstract value is
                     // to be found in the solver state.  If not, then it's a
@@ -288,6 +320,7 @@ pub fn do_remove_constant_phis(func: &mut Function, domtree: &mut DominatorTree)
             break;
         }
     }
+
     let mut n_consts = 0;
     for absval in state.absvals.values() {
         if absval.is_one() {
@@ -300,14 +333,14 @@ pub fn do_remove_constant_phis(func: &mut Function, domtree: &mut DominatorTree)
 
     // Make up a set of blocks that need editing.
     let mut need_editing = FxHashSet::<Block>::default();
-    for (block, summary) in &summaries {
-        if *block == entry_block {
+    for (block, summary) in summaries.iter() {
+        if block == entry_block {
             continue;
         }
-        for formal in &summary.formals {
+        for formal in summary.formals {
             let formal_absval = state.get(*formal);
             if formal_absval.is_one() {
-                need_editing.insert(*block);
+                need_editing.insert(block);
                 break;
             }
         }
@@ -327,11 +360,10 @@ pub fn do_remove_constant_phis(func: &mut Function, domtree: &mut DominatorTree)
         }
         // We can delete the formals in any order.  However,
         // `remove_block_param` works by sliding backwards all arguments to
-        // the right of the it is asked to delete.  Hence when removing more
+        // the right of the value it is asked to delete.  Hence when removing more
         // than one formal, it is significantly more efficient to ask it to
-        // remove the rightmost formal first, and hence this `reverse`.
-        del_these.reverse();
-        for (redundant_formal, replacement_val) in del_these {
+        // remove the rightmost formal first, and hence this `rev()`.
+        for (redundant_formal, replacement_val) in del_these.into_iter().rev() {
             func.dfg.remove_block_param(redundant_formal);
             func.dfg.change_to_alias(redundant_formal, replacement_val);
         }
@@ -340,23 +372,26 @@ pub fn do_remove_constant_phis(func: &mut Function, domtree: &mut DominatorTree)
     // Secondly, visit all branch insns.  If the destination has had its
     // formals changed, change the actuals accordingly.  Don't scan all insns,
     // rather just visit those as listed in the summaries we prepared earlier.
-    for (_src_block, summary) in &summaries {
-        for (inst, dst_block, _src_actuals) in &summary.dests {
-            if !need_editing.contains(dst_block) {
+    for summary in summaries.values() {
+        for edge in &summary.dests {
+            if !need_editing.contains(&edge.block) {
                 continue;
             }
 
-            let old_actuals = func.dfg[*inst].take_value_list().unwrap();
+            let old_actuals = func.dfg[edge.inst].take_value_list().unwrap();
             let num_old_actuals = old_actuals.len(&func.dfg.value_lists);
-            let num_fixed_actuals = func.dfg[*inst]
+            let num_fixed_actuals = func.dfg[edge.inst]
                 .opcode()
                 .constraints()
                 .num_fixed_value_arguments();
-            let dst_summary = summaries.get(&dst_block).unwrap();
+            let dst_summary = &summaries[edge.block];
 
             // Check that the numbers of arguments make sense.
             assert!(num_fixed_actuals <= num_old_actuals);
-            assert!(num_fixed_actuals + dst_summary.formals.len() == num_old_actuals);
+            assert_eq!(
+                num_fixed_actuals + dst_summary.formals.len(),
+                num_old_actuals
+            );
 
             // Create a new value list.
             let mut new_actuals = EntityList::<Value>::new();
@@ -368,17 +403,16 @@ pub fn do_remove_constant_phis(func: &mut Function, domtree: &mut DominatorTree)
 
             // Copy the variable args (the actual block params) to the new
             // list, filtering out redundant ones.
-            for i in 0..dst_summary.formals.len() {
+            for (i, formal_i) in dst_summary.formals.iter().enumerate() {
                 let actual_i = old_actuals
                     .get(num_fixed_actuals + i, &func.dfg.value_lists)
                     .unwrap();
-                let formal_i = dst_summary.formals[i];
-                let is_redundant = state.get(formal_i).is_one();
+                let is_redundant = state.get(*formal_i).is_one();
                 if !is_redundant {
                     new_actuals.push(actual_i, &mut func.dfg.value_lists);
                 }
             }
-            func.dfg[*inst].put_value_list(new_actuals);
+            func.dfg[edge.inst].put_value_list(new_actuals);
         }
     }
 

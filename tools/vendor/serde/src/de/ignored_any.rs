@@ -1,6 +1,6 @@
-use lib::*;
+use crate::lib::*;
 
-use de::{
+use crate::de::{
     Deserialize, Deserializer, EnumAccess, Error, MapAccess, SeqAccess, VariantAccess, Visitor,
 };
 
@@ -10,13 +10,12 @@ use de::{
 /// any type, except that it does not store any information about the data that
 /// gets deserialized.
 ///
-/// ```edition2018
-/// use std::fmt;
-/// use std::marker::PhantomData;
-///
+/// ```edition2021
 /// use serde::de::{
 ///     self, Deserialize, DeserializeSeed, Deserializer, IgnoredAny, SeqAccess, Visitor,
 /// };
+/// use std::fmt;
+/// use std::marker::PhantomData;
 ///
 /// /// A seed that can be used to deserialize only the `n`th element of a sequence
 /// /// while efficiently discarding elements of any type before or after index `n`.
@@ -108,7 +107,7 @@ use de::{
 /// #     Ok(())
 /// # }
 /// ```
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct IgnoredAny;
 
 impl<'de> Visitor<'de> for IgnoredAny {
@@ -130,12 +129,10 @@ impl<'de> Visitor<'de> for IgnoredAny {
         Ok(IgnoredAny)
     }
 
-    serde_if_integer128! {
-        #[inline]
-        fn visit_i128<E>(self, x: i128) -> Result<Self::Value, E> {
-            let _ = x;
-            Ok(IgnoredAny)
-        }
+    #[inline]
+    fn visit_i128<E>(self, x: i128) -> Result<Self::Value, E> {
+        let _ = x;
+        Ok(IgnoredAny)
     }
 
     #[inline]
@@ -144,12 +141,10 @@ impl<'de> Visitor<'de> for IgnoredAny {
         Ok(IgnoredAny)
     }
 
-    serde_if_integer128! {
-        #[inline]
-        fn visit_u128<E>(self, x: u128) -> Result<Self::Value, E> {
-            let _ = x;
-            Ok(IgnoredAny)
-        }
+    #[inline]
+    fn visit_u128<E>(self, x: u128) -> Result<Self::Value, E> {
+        let _ = x;
+        Ok(IgnoredAny)
     }
 
     #[inline]
@@ -198,7 +193,7 @@ impl<'de> Visitor<'de> for IgnoredAny {
     where
         A: SeqAccess<'de>,
     {
-        while let Some(IgnoredAny) = try!(seq.next_element()) {
+        while let Some(IgnoredAny) = tri!(seq.next_element()) {
             // Gobble
         }
         Ok(IgnoredAny)
@@ -209,7 +204,7 @@ impl<'de> Visitor<'de> for IgnoredAny {
     where
         A: MapAccess<'de>,
     {
-        while let Some((IgnoredAny, IgnoredAny)) = try!(map.next_entry()) {
+        while let Some((IgnoredAny, IgnoredAny)) = tri!(map.next_entry()) {
             // Gobble
         }
         Ok(IgnoredAny)
@@ -228,7 +223,7 @@ impl<'de> Visitor<'de> for IgnoredAny {
     where
         A: EnumAccess<'de>,
     {
-        try!(data.variant::<IgnoredAny>()).1.newtype_variant()
+        tri!(data.variant::<IgnoredAny>()).1.newtype_variant()
     }
 }
 

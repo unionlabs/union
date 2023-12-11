@@ -88,7 +88,7 @@ macro_rules! impls {
             impl<const N: usize> CheckedShl for $Int<N> {
                 #[inline]
                 fn checked_shl(&self, rhs: u32) -> Option<Self> {
-                    Self::checked_shl(*self, rhs)
+                    Self::checked_shl(*self, rhs as ExpType)
                 }
             }
         //}
@@ -97,10 +97,34 @@ macro_rules! impls {
             impl<const N: usize> CheckedShr for $Int<N> {
                 #[inline]
                 fn checked_shr(&self, rhs: u32) -> Option<Self> {
-                    Self::checked_shr(*self, rhs)
+                    Self::checked_shr(*self, rhs as ExpType)
                 }
             }
         //}
+
+        impl<const N: usize> CheckedEuclid for $Int<N> {
+            #[inline]
+            fn checked_div_euclid(&self, rhs: &Self) -> Option<Self> {
+                Self::checked_div_euclid(*self, *rhs)
+            }
+
+            #[inline]
+            fn checked_rem_euclid(&self, rhs: &Self) -> Option<Self> {
+                Self::checked_rem_euclid(*self, *rhs)
+            }
+        }
+
+        impl<const N: usize> Euclid for $Int<N> {
+            #[inline]
+            fn div_euclid(&self, rhs: &Self) -> Self {
+                Self::div_euclid(*self, *rhs)
+            }
+
+            #[inline]
+            fn rem_euclid(&self, rhs: &Self) -> Self {
+                Self::rem_euclid(*self, *rhs)
+            }
+        }
 
         //crate::nightly::impl_const! {
             impl<const N: usize> WrappingNeg for $Int<N> {

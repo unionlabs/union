@@ -37,6 +37,29 @@ impl Index<Range<Position>> for Url {
     }
 }
 
+// Counts how many base-10 digits are required to represent n in the given base
+fn count_digits(n: u16) -> usize {
+    match n {
+        0..=9 => 1,
+        10..=99 => 2,
+        100..=999 => 3,
+        1000..=9999 => 4,
+        10000..=65535 => 5,
+    }
+}
+
+#[test]
+fn test_count_digits() {
+    assert_eq!(count_digits(0), 1);
+    assert_eq!(count_digits(1), 1);
+    assert_eq!(count_digits(9), 1);
+    assert_eq!(count_digits(10), 2);
+    assert_eq!(count_digits(99), 2);
+    assert_eq!(count_digits(100), 3);
+    assert_eq!(count_digits(9999), 4);
+    assert_eq!(count_digits(65535), 5);
+}
+
 /// Indicates a position within a URL based on its components.
 ///
 /// A range of positions can be used for slicing `Url`:
@@ -149,7 +172,14 @@ impl Url {
                 }
             }
 
-            Position::AfterPort => self.path_start as usize,
+            Position::AfterPort => {
+                if let Some(port) = self.port {
+                    debug_assert!(self.byte_at(self.host_end) == b':');
+                    self.host_end as usize + ":".len() + count_digits(port)
+                } else {
+                    self.host_end as usize
+                }
+            }
 
             Position::BeforePath => self.path_start as usize,
 

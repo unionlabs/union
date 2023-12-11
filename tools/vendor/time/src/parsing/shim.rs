@@ -31,7 +31,7 @@ macro_rules! impl_parse_bytes {
         }
     )*)
 }
-impl_parse_bytes! { u8 u16 u32 }
+impl_parse_bytes! { u8 u16 u32 u128 }
 
 /// Parse the given types from bytes.
 macro_rules! impl_parse_bytes_nonzero {

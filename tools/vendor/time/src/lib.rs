@@ -108,6 +108,7 @@
     clippy::print_stdout,
     clippy::todo,
     clippy::unimplemented,
+    clippy::uninlined_format_args,
     clippy::unnested_or_patterns,
     clippy::unwrap_in_result,
     clippy::unwrap_used,
@@ -203,13 +204,15 @@ macro_rules! cascade {
     (@year year) => {};
 
     // Cascade an out-of-bounds value from "from" to "to".
-    ($from:ident in $min:literal.. $max:literal => $to:tt) => {
+    ($from:ident in $min:literal.. $max:expr => $to:tt) => {
         #[allow(unused_comparisons, unused_assignments)]
-        if $from >= $max {
-            $from -= $max - $min;
+        let min = $min;
+        let max = $max;
+        if $from >= max {
+            $from -= max - min;
             $to += 1;
-        } else if $from < $min {
-            $from += $max - $min;
+        } else if $from < min {
+            $from += max - min;
             $to -= 1;
         }
     };
@@ -263,6 +266,50 @@ macro_rules! ensure_value_in_range {
     }};
 }
 
+/// Constructs a ranged integer, returning a `ComponentRange` error if the value is out of range.
+macro_rules! ensure_ranged {
+    ($type:ident : $value:ident) => {
+        match $type::new($value) {
+            Some(val) => val,
+            None => {
+                return Err(crate::error::ComponentRange {
+                    name: stringify!($value),
+                    minimum: $type::MIN.get() as _,
+                    maximum: $type::MAX.get() as _,
+                    value: $value as _,
+                    conditional_range: false,
+                });
+            }
+        }
+    };
+
+    ($type:ident : $value:ident $(as $as_type:ident)? * $factor:expr) => {
+        match ($value $(as $as_type)?).checked_mul($factor) {
+            Some(val) => match $type::new(val) {
+                Some(val) => val,
+                None => {
+                    return Err(crate::error::ComponentRange {
+                        name: stringify!($value),
+                        minimum: $type::MIN.get() as i64 / $factor as i64,
+                        maximum: $type::MAX.get() as i64 / $factor as i64,
+                        value: $value as _,
+                        conditional_range: false,
+                    });
+                }
+            },
+            None => {
+                return Err(crate::error::ComponentRange {
+                    name: stringify!($value),
+                    minimum: $type::MIN.get() as i64 / $factor as i64,
+                    maximum: $type::MAX.get() as i64 / $factor as i64,
+                    value: $value as _,
+                    conditional_range: false,
+                });
+            }
+        }
+    };
+}
+
 /// Try to unwrap an expression, returning if not possible.
 ///
 /// This is similar to the `?` operator, but does not perform `.into()`. Because of this, it is
@@ -299,10 +346,15 @@ macro_rules! expect_opt {
         }
     };
 }
-// endregion macros
 
-#[macro_use]
-mod shim;
+/// `unreachable!()`, but better.
+macro_rules! bug {
+    () => { compile_error!("provide an error message to help fix a possible bug") };
+    ($descr:literal $($rest:tt)?) => {
+        panic!(concat!("internal error: ", $descr) $($rest)?)
+    }
+}
+// endregion macros
 
 mod date;
 mod date_time;
@@ -336,6 +388,9 @@ mod time;
 mod utc_offset;
 pub mod util;
 mod weekday;
+
+// Not public yet.
+use time_core::convert;
 
 pub use crate::date::Date;
 use crate::date_time::DateTime;

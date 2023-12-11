@@ -31,19 +31,19 @@ where
     I: IntoIterator<Item = &'a mut F>,
 {
     fn batch_invert(self) -> F {
-        let mut acc = F::one();
+        let mut acc = F::ONE;
         let iter = self.into_iter();
         let mut tmp = alloc::vec::Vec::with_capacity(iter.size_hint().0);
         for p in iter {
             let q = *p;
             tmp.push((acc, p));
-            acc = F::conditional_select(&(acc * q), &acc, q.ct_eq(&F::zero()));
+            acc = F::conditional_select(&(acc * q), &acc, q.is_zero());
         }
         acc = acc.invert().unwrap();
         let allinv = acc;
 
         for (tmp, p) in tmp.into_iter().rev() {
-            let skip = p.ct_eq(&F::zero());
+            let skip = p.is_zero();
 
             let tmp = tmp * acc;
             acc = F::conditional_select(&(acc * *p), &acc, skip);
@@ -74,17 +74,17 @@ impl BatchInverter {
     {
         assert_eq!(elements.len(), scratch_space.len());
 
-        let mut acc = F::one();
+        let mut acc = F::ONE;
         for (p, scratch) in elements.iter().zip(scratch_space.iter_mut()) {
             *scratch = acc;
-            acc = F::conditional_select(&(acc * *p), &acc, p.ct_eq(&F::zero()));
+            acc = F::conditional_select(&(acc * *p), &acc, p.is_zero());
         }
         acc = acc.invert().unwrap();
         let allinv = acc;
 
         for (p, scratch) in elements.iter_mut().zip(scratch_space.iter()).rev() {
             let tmp = *scratch * acc;
-            let skip = p.ct_eq(&F::zero());
+            let skip = p.is_zero();
             acc = F::conditional_select(&(acc * *p), &acc, skip);
             *p = F::conditional_select(&tmp, &p, skip);
         }
@@ -109,11 +109,11 @@ impl BatchInverter {
         TE: Fn(&mut T) -> &mut F,
         TS: Fn(&mut T) -> &mut F,
     {
-        let mut acc = F::one();
+        let mut acc = F::ONE;
         for item in items.iter_mut() {
             *(scratch_space)(item) = acc;
             let p = (element)(item);
-            acc = F::conditional_select(&(acc * *p), &acc, p.ct_eq(&F::zero()));
+            acc = F::conditional_select(&(acc * *p), &acc, p.is_zero());
         }
         acc = acc.invert().unwrap();
         let allinv = acc;
@@ -121,7 +121,7 @@ impl BatchInverter {
         for item in items.iter_mut().rev() {
             let tmp = *(scratch_space)(item) * acc;
             let p = (element)(item);
-            let skip = p.ct_eq(&F::zero());
+            let skip = p.is_zero();
             acc = F::conditional_select(&(acc * *p), &acc, skip);
             *p = F::conditional_select(&tmp, &p, skip);
         }

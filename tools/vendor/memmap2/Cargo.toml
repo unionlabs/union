@@ -12,7 +12,7 @@
 [package]
 edition = "2018"
 name = "memmap2"
-version = "0.5.10"
+version = "0.6.2"
 authors = [
     "Dan Burkert <dan@danburkert.com>",
     "Yevhenii Reizner <razrfalcon@gmail.com>",

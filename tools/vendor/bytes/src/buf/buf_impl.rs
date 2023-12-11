@@ -160,6 +160,7 @@ pub trait Buf {
     ///
     /// [`writev`]: http://man7.org/linux/man-pages/man2/readv.2.html
     #[cfg(feature = "std")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     fn chunks_vectored<'a>(&'a self, dst: &mut [IoSlice<'a>]) -> usize {
         if dst.is_empty() {
             return 0;
@@ -354,6 +355,29 @@ pub trait Buf {
         buf_get_impl!(self, u16::from_le_bytes);
     }
 
+    /// Gets an unsigned 16 bit integer from `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by 2.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x08\x09 hello",
+    ///     false => b"\x09\x08 hello",
+    /// };
+    /// assert_eq!(0x0809, buf.get_u16_ne());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_u16_ne(&mut self) -> u16 {
+        buf_get_impl!(self, u16::from_ne_bytes);
+    }
+
     /// Gets a signed 16 bit integer from `self` in big-endian byte order.
     ///
     /// The current position is advanced by 2.
@@ -392,6 +416,29 @@ pub trait Buf {
     /// This function panics if there is not enough remaining data in `self`.
     fn get_i16_le(&mut self) -> i16 {
         buf_get_impl!(self, i16::from_le_bytes);
+    }
+
+    /// Gets a signed 16 bit integer from `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by 2.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x08\x09 hello",
+    ///     false => b"\x09\x08 hello",
+    /// };
+    /// assert_eq!(0x0809, buf.get_i16_ne());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_i16_ne(&mut self) -> i16 {
+        buf_get_impl!(self, i16::from_ne_bytes);
     }
 
     /// Gets an unsigned 32 bit integer from `self` in the big-endian byte order.
@@ -434,6 +481,29 @@ pub trait Buf {
         buf_get_impl!(self, u32::from_le_bytes);
     }
 
+    /// Gets an unsigned 32 bit integer from `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by 4.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x08\x09\xA0\xA1 hello",
+    ///     false => b"\xA1\xA0\x09\x08 hello",
+    /// };
+    /// assert_eq!(0x0809A0A1, buf.get_u32_ne());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_u32_ne(&mut self) -> u32 {
+        buf_get_impl!(self, u32::from_ne_bytes);
+    }
+
     /// Gets a signed 32 bit integer from `self` in big-endian byte order.
     ///
     /// The current position is advanced by 4.
@@ -472,6 +542,29 @@ pub trait Buf {
     /// This function panics if there is not enough remaining data in `self`.
     fn get_i32_le(&mut self) -> i32 {
         buf_get_impl!(self, i32::from_le_bytes);
+    }
+
+    /// Gets a signed 32 bit integer from `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by 4.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x08\x09\xA0\xA1 hello",
+    ///     false => b"\xA1\xA0\x09\x08 hello",
+    /// };
+    /// assert_eq!(0x0809A0A1, buf.get_i32_ne());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_i32_ne(&mut self) -> i32 {
+        buf_get_impl!(self, i32::from_ne_bytes);
     }
 
     /// Gets an unsigned 64 bit integer from `self` in big-endian byte order.
@@ -514,6 +607,29 @@ pub trait Buf {
         buf_get_impl!(self, u64::from_le_bytes);
     }
 
+    /// Gets an unsigned 64 bit integer from `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by 8.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x01\x02\x03\x04\x05\x06\x07\x08 hello",
+    ///     false => b"\x08\x07\x06\x05\x04\x03\x02\x01 hello",
+    /// };
+    /// assert_eq!(0x0102030405060708, buf.get_u64_ne());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_u64_ne(&mut self) -> u64 {
+        buf_get_impl!(self, u64::from_ne_bytes);
+    }
+
     /// Gets a signed 64 bit integer from `self` in big-endian byte order.
     ///
     /// The current position is advanced by 8.
@@ -552,6 +668,29 @@ pub trait Buf {
     /// This function panics if there is not enough remaining data in `self`.
     fn get_i64_le(&mut self) -> i64 {
         buf_get_impl!(self, i64::from_le_bytes);
+    }
+
+    /// Gets a signed 64 bit integer from `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by 8.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x01\x02\x03\x04\x05\x06\x07\x08 hello",
+    ///     false => b"\x08\x07\x06\x05\x04\x03\x02\x01 hello",
+    /// };
+    /// assert_eq!(0x0102030405060708, buf.get_i64_ne());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_i64_ne(&mut self) -> i64 {
+        buf_get_impl!(self, i64::from_ne_bytes);
     }
 
     /// Gets an unsigned 128 bit integer from `self` in big-endian byte order.
@@ -594,6 +733,29 @@ pub trait Buf {
         buf_get_impl!(self, u128::from_le_bytes);
     }
 
+    /// Gets an unsigned 128 bit integer from `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by 16.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x10\x11\x12\x13\x14\x15\x16 hello",
+    ///     false => b"\x16\x15\x14\x13\x12\x11\x10\x09\x08\x07\x06\x05\x04\x03\x02\x01 hello",
+    /// };
+    /// assert_eq!(0x01020304050607080910111213141516, buf.get_u128_ne());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_u128_ne(&mut self) -> u128 {
+        buf_get_impl!(self, u128::from_ne_bytes);
+    }
+
     /// Gets a signed 128 bit integer from `self` in big-endian byte order.
     ///
     /// The current position is advanced by 16.
@@ -632,6 +794,29 @@ pub trait Buf {
     /// This function panics if there is not enough remaining data in `self`.
     fn get_i128_le(&mut self) -> i128 {
         buf_get_impl!(self, i128::from_le_bytes);
+    }
+
+    /// Gets a signed 128 bit integer from `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by 16.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x10\x11\x12\x13\x14\x15\x16 hello",
+    ///     false => b"\x16\x15\x14\x13\x12\x11\x10\x09\x08\x07\x06\x05\x04\x03\x02\x01 hello",
+    /// };
+    /// assert_eq!(0x01020304050607080910111213141516, buf.get_i128_ne());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_i128_ne(&mut self) -> i128 {
+        buf_get_impl!(self, i128::from_ne_bytes);
     }
 
     /// Gets an unsigned n-byte integer from `self` in big-endian byte order.
@@ -674,6 +859,33 @@ pub trait Buf {
         buf_get_impl!(le => self, u64, nbytes);
     }
 
+    /// Gets an unsigned n-byte integer from `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by `nbytes`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x01\x02\x03 hello",
+    ///     false => b"\x03\x02\x01 hello",
+    /// };
+    /// assert_eq!(0x010203, buf.get_uint_ne(3));
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_uint_ne(&mut self, nbytes: usize) -> u64 {
+        if cfg!(target_endian = "big") {
+            self.get_uint(nbytes)
+        } else {
+            self.get_uint_le(nbytes)
+        }
+    }
+
     /// Gets a signed n-byte integer from `self` in big-endian byte order.
     ///
     /// The current position is advanced by `nbytes`.
@@ -712,6 +924,33 @@ pub trait Buf {
     /// This function panics if there is not enough remaining data in `self`.
     fn get_int_le(&mut self, nbytes: usize) -> i64 {
         buf_get_impl!(le => self, i64, nbytes);
+    }
+
+    /// Gets a signed n-byte integer from `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by `nbytes`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x01\x02\x03 hello",
+    ///     false => b"\x03\x02\x01 hello",
+    /// };
+    /// assert_eq!(0x010203, buf.get_int_ne(3));
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_int_ne(&mut self, nbytes: usize) -> i64 {
+        if cfg!(target_endian = "big") {
+            self.get_int(nbytes)
+        } else {
+            self.get_int_le(nbytes)
+        }
     }
 
     /// Gets an IEEE754 single-precision (4 bytes) floating point number from
@@ -756,6 +995,30 @@ pub trait Buf {
         f32::from_bits(Self::get_u32_le(self))
     }
 
+    /// Gets an IEEE754 single-precision (4 bytes) floating point number from
+    /// `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by 4.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x3F\x99\x99\x9A hello",
+    ///     false => b"\x9A\x99\x99\x3F hello",
+    /// };
+    /// assert_eq!(1.2f32, buf.get_f32_ne());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_f32_ne(&mut self) -> f32 {
+        f32::from_bits(Self::get_u32_ne(self))
+    }
+
     /// Gets an IEEE754 double-precision (8 bytes) floating point number from
     /// `self` in big-endian byte order.
     ///
@@ -796,6 +1059,30 @@ pub trait Buf {
     /// This function panics if there is not enough remaining data in `self`.
     fn get_f64_le(&mut self) -> f64 {
         f64::from_bits(Self::get_u64_le(self))
+    }
+
+    /// Gets an IEEE754 double-precision (8 bytes) floating point number from
+    /// `self` in native-endian byte order.
+    ///
+    /// The current position is advanced by 8.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bytes::Buf;
+    ///
+    /// let mut buf: &[u8] = match cfg!(target_endian = "big") {
+    ///     true => b"\x3F\xF3\x33\x33\x33\x33\x33\x33 hello",
+    ///     false => b"\x33\x33\x33\x33\x33\x33\xF3\x3F hello",
+    /// };
+    /// assert_eq!(1.2f64, buf.get_f64_ne());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is not enough remaining data in `self`.
+    fn get_f64_ne(&mut self) -> f64 {
+        f64::from_bits(Self::get_u64_ne(self))
     }
 
     /// Consumes `len` bytes inside self and returns new instance of `Bytes`
@@ -897,6 +1184,7 @@ pub trait Buf {
     /// assert_eq!(&dst[..11], &b"hello world"[..]);
     /// ```
     #[cfg(feature = "std")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     fn reader(self) -> Reader<Self>
     where
         Self: Sized,
@@ -948,12 +1236,20 @@ macro_rules! deref_forward_buf {
             (**self).get_u16_le()
         }
 
+        fn get_u16_ne(&mut self) -> u16 {
+            (**self).get_u16_ne()
+        }
+
         fn get_i16(&mut self) -> i16 {
             (**self).get_i16()
         }
 
         fn get_i16_le(&mut self) -> i16 {
             (**self).get_i16_le()
+        }
+
+        fn get_i16_ne(&mut self) -> i16 {
+            (**self).get_i16_ne()
         }
 
         fn get_u32(&mut self) -> u32 {
@@ -964,12 +1260,20 @@ macro_rules! deref_forward_buf {
             (**self).get_u32_le()
         }
 
+        fn get_u32_ne(&mut self) -> u32 {
+            (**self).get_u32_ne()
+        }
+
         fn get_i32(&mut self) -> i32 {
             (**self).get_i32()
         }
 
         fn get_i32_le(&mut self) -> i32 {
             (**self).get_i32_le()
+        }
+
+        fn get_i32_ne(&mut self) -> i32 {
+            (**self).get_i32_ne()
         }
 
         fn get_u64(&mut self) -> u64 {
@@ -980,12 +1284,20 @@ macro_rules! deref_forward_buf {
             (**self).get_u64_le()
         }
 
+        fn get_u64_ne(&mut self) -> u64 {
+            (**self).get_u64_ne()
+        }
+
         fn get_i64(&mut self) -> i64 {
             (**self).get_i64()
         }
 
         fn get_i64_le(&mut self) -> i64 {
             (**self).get_i64_le()
+        }
+
+        fn get_i64_ne(&mut self) -> i64 {
+            (**self).get_i64_ne()
         }
 
         fn get_uint(&mut self, nbytes: usize) -> u64 {
@@ -996,12 +1308,20 @@ macro_rules! deref_forward_buf {
             (**self).get_uint_le(nbytes)
         }
 
+        fn get_uint_ne(&mut self, nbytes: usize) -> u64 {
+            (**self).get_uint_ne(nbytes)
+        }
+
         fn get_int(&mut self, nbytes: usize) -> i64 {
             (**self).get_int(nbytes)
         }
 
         fn get_int_le(&mut self, nbytes: usize) -> i64 {
             (**self).get_int_le(nbytes)
+        }
+
+        fn get_int_ne(&mut self, nbytes: usize) -> i64 {
+            (**self).get_int_ne(nbytes)
         }
 
         fn copy_to_bytes(&mut self, len: usize) -> crate::Bytes {

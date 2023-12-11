@@ -1,15 +1,13 @@
 macro_rules! checked_ilog {
     ($method: ident $(, $base: ident: $ty: ty)?) => {
-        crate::nightly::const_fn! {
-            #[doc = doc::checked::$method!(I)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const fn $method(self $(, $base: $ty)?) -> Option<ExpType> {
-                if self.is_negative() {
-                    None
-                } else {
-                    self.bits.$method($($base)?)
-                }
+        #[doc = doc::checked::$method!(I)]
+        #[must_use = doc::must_use_op!()]
+        #[inline]
+        pub const fn $method(self $(, $base: $ty)?) -> Option<ExpType> {
+            if self.is_negative() {
+                None
+            } else {
+                self.bits.$method($($base)?)
             }
         }
     }
@@ -58,49 +56,47 @@ macro_rules! checked {
                 tuple_to_option(self.overflowing_mul(rhs))
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::checked::checked_div!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_div(self, rhs: Self) -> Option<Self> {
-                    if rhs.is_zero() {
-                        None
-                    } else {
-                        tuple_to_option(self.overflowing_div(rhs))
-                    }
+            #[doc = doc::checked::checked_div!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_div(self, rhs: Self) -> Option<Self> {
+                if rhs.is_zero() {
+                    None
+                } else {
+                    tuple_to_option(self.overflowing_div(rhs))
                 }
+            }
 
-                #[doc = doc::checked::checked_div_euclid!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_div_euclid(self, rhs: Self) -> Option<Self> {
-                    if rhs.is_zero() {
-                        None
-                    } else {
-                        tuple_to_option(self.overflowing_div_euclid(rhs))
-                    }
+            #[doc = doc::checked::checked_div_euclid!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_div_euclid(self, rhs: Self) -> Option<Self> {
+                if rhs.is_zero() {
+                    None
+                } else {
+                    tuple_to_option(self.overflowing_div_euclid(rhs))
                 }
+            }
 
-                #[doc = doc::checked::checked_rem!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_rem(self, rhs: Self) -> Option<Self> {
-                    if rhs.is_zero() {
-                        None
-                    } else {
-                        tuple_to_option(self.overflowing_rem(rhs))
-                    }
+            #[doc = doc::checked::checked_rem!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_rem(self, rhs: Self) -> Option<Self> {
+                if rhs.is_zero() {
+                    None
+                } else {
+                    tuple_to_option(self.overflowing_rem(rhs))
                 }
+            }
 
-                #[doc = doc::checked::checked_rem_euclid!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_rem_euclid(self, rhs: Self) -> Option<Self> {
-                    if rhs.is_zero() {
-                        None
-                    } else {
-                        tuple_to_option(self.overflowing_rem_euclid(rhs))
-                    }
+            #[doc = doc::checked::checked_rem_euclid!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_rem_euclid(self, rhs: Self) -> Option<Self> {
+                if rhs.is_zero() {
+                    None
+                } else {
+                    tuple_to_option(self.overflowing_rem_euclid(rhs))
                 }
             }
 
@@ -159,34 +155,32 @@ macro_rules! checked {
                 }
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::checked::checked_next_multiple_of!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
-                    if rhs.is_zero() {
-                        return None;
-                    }
-                    let rem = self.wrapping_rem_euclid(rhs);
-                    if rem.is_zero() {
-                        return Some(self);
-                    }
-                    if rem.is_negative() == rhs.is_negative() {
-                        self.checked_add(rhs.wrapping_sub(rem))
-                    } else {
-                        self.checked_sub(rem)
-                    }
+            #[doc = doc::checked::checked_next_multiple_of!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
+                if rhs.is_zero() {
+                    return None;
                 }
+                let rem = self.wrapping_rem_euclid(rhs);
+                if rem.is_zero() {
+                    return Some(self);
+                }
+                if rem.is_negative() == rhs.is_negative() {
+                    self.checked_add(rhs.wrapping_sub(rem))
+                } else {
+                    self.checked_sub(rem)
+                }
+            }
 
-                #[doc = doc::checked::checked_ilog!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_ilog(self, base: Self) -> Option<ExpType> {
-                    if base.is_negative() || self.is_negative() {
-                        None
-                    } else {
-                        self.to_bits().checked_ilog(base.to_bits())
-                    }
+            #[doc = doc::checked::checked_ilog!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_ilog(self, base: Self) -> Option<ExpType> {
+                if base.is_negative() || self.is_negative() {
+                    None
+                } else {
+                    self.to_bits().checked_ilog(base.to_bits())
                 }
             }
 

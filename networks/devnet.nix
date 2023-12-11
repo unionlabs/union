@@ -17,6 +17,20 @@
         })
         devnetConfig.validatorCount));
 
+      wasmd-services = (builtins.listToAttrs (builtins.genList
+        (id: {
+          name = "wasmd-${toString id}";
+          value = import ./services/wasmd.nix {
+            inherit pkgs;
+            inherit id;
+            wasmd = self'.packages.wasmd;
+            wasmd-genesis = self'.packages.wasmd-genesis;
+            wasmd-validator-keys = self'.packages.wasmd-validator-keys;
+            wasmd-validator-node-ids = self'.packages.wasmd-validator-node-ids;
+          };
+        })
+        devnetConfig.validatorCount));
+
       uniond-testnet-genesis-services = (builtins.listToAttrs (builtins.genList
         (id: {
           name = "uniond-${toString id}";
@@ -83,6 +97,14 @@
         modules = [ (union // { networks.union-devnet = { }; }) ];
       };
 
+      spec-wasmd = {
+        modules = [{
+          project.name = "wasmd-devnet";
+          networks.wasmd-devnet = { };
+          services = wasmd-services;
+        }];
+      };
+
       spec-eth = {
         modules = [{
           project.name = "union-devnet-eth";
@@ -96,6 +118,8 @@
       build-eth = arion.build spec-eth;
 
       build-union = arion.build spec-union;
+
+      build-wasmd = arion.build spec-wasmd;
 
       build-voyager-queue = arion.build {
         modules = [{
@@ -111,6 +135,15 @@
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build} up --build --force-recreate -V --always-recreate-deps --remove-orphans
+          '';
+        };
+
+      packages.devnet-wasmd =
+        pkgs.writeShellApplication {
+          name = "wasmd-devnet";
+          runtimeInputs = [ arion ];
+          text = ''
+            arion --prebuilt-file ${build-wasmd} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
         };
 

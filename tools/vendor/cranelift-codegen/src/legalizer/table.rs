@@ -7,9 +7,11 @@ use crate::cursor::{Cursor, FuncCursor};
 use crate::ir::condcodes::IntCC;
 use crate::ir::immediates::Offset32;
 use crate::ir::{self, InstBuilder};
+use crate::isa::TargetIsa;
 
 /// Expand a `table_addr` instruction according to the definition of the table.
 pub fn expand_table_addr(
+    isa: &dyn TargetIsa,
     inst: ir::Inst,
     func: &mut ir::Function,
     table: ir::Table,
@@ -31,6 +33,15 @@ pub fn expand_table_addr(
         .icmp(IntCC::UnsignedGreaterThanOrEqual, index, bound);
     pos.ins().trapnz(oob, ir::TrapCode::TableOutOfBounds);
 
+    // If Spectre mitigations are enabled, we will use a comparison to
+    // short-circuit the computed table element address to the start
+    // of the table on the misspeculation path when out-of-bounds.
+    let spectre_oob_cmp = if isa.flags().enable_table_access_spectre_mitigation() {
+        Some((index, bound))
+    } else {
+        None
+    };
+
     compute_addr(
         inst,
         table,
@@ -39,6 +50,7 @@ pub fn expand_table_addr(
         index_ty,
         element_offset,
         pos.func,
+        spectre_oob_cmp,
     );
 }
 
@@ -51,6 +63,7 @@ fn compute_addr(
     index_ty: ir::Type,
     element_offset: Offset32,
     func: &mut ir::Function,
+    spectre_oob_cmp: Option<(ir::Value, ir::Value)>,
 ) {
     let mut pos = FuncCursor::new(func).at_inst(inst);
     pos.use_srcloc(inst);
@@ -77,11 +90,25 @@ fn compute_addr(
         offset = pos.ins().imul_imm(index, element_size as i64);
     }
 
-    if element_offset == Offset32::new(0) {
-        pos.func.dfg.replace(inst).iadd(base, offset);
+    let element_addr = if element_offset == Offset32::new(0) {
+        pos.ins().iadd(base, offset)
     } else {
         let imm: i64 = element_offset.into();
         offset = pos.ins().iadd(base, offset);
-        pos.func.dfg.replace(inst).iadd_imm(offset, imm);
-    }
+        pos.ins().iadd_imm(offset, imm)
+    };
+
+    let element_addr = if let Some((index, bound)) = spectre_oob_cmp {
+        let cond = pos
+            .ins()
+            .icmp(IntCC::UnsignedGreaterThanOrEqual, index, bound);
+        // If out-of-bounds, choose the table base on the misspeculation path.
+        pos.ins().select_spectre_guard(cond, base, element_addr)
+    } else {
+        element_addr
+    };
+    let new_inst = pos.func.dfg.value_def(element_addr).inst().unwrap();
+
+    pos.func.dfg.replace_with_aliases(inst, new_inst);
+    pos.remove_inst();
 }

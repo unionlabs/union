@@ -98,8 +98,9 @@ pub struct MockInstanceOptions<'a> {
 impl MockInstanceOptions<'_> {
     fn default_capabilities() -> HashSet<String> {
         #[allow(unused_mut)]
-        let mut out =
-            capabilities_from_csv("iterator,staking,cosmwasm_1_1,cosmwasm_1_2,cosmwasm_1_3");
+        let mut out = capabilities_from_csv(
+            "iterator,staking,cosmwasm_1_1,cosmwasm_1_2,cosmwasm_1_3,cosmwasm_1_4",
+        );
         #[cfg(feature = "stargate")]
         out.insert("stargate".to_string());
         out
@@ -193,8 +194,7 @@ where
             let wasm_data = instance.read_memory(wasm_ptr, size).expect("error reading");
             assert_eq!(
                 original, wasm_data,
-                "failed for size {}; expected: {:?}; actual: {:?}",
-                size, original, wasm_data
+                "failed for size {size}; expected: {original:?}; actual: {wasm_data:?}"
             );
             instance
                 .deallocate(wasm_ptr)

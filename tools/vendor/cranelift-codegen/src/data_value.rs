@@ -10,9 +10,8 @@ use core::fmt::{self, Display, Formatter};
 ///
 /// [Value]: crate::ir::Value
 #[allow(missing_docs)]
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialOrd)]
 pub enum DataValue {
-    B(bool),
     I8(i8),
     I16(i16),
     I32(i32),
@@ -26,6 +25,43 @@ pub enum DataValue {
     F32(Ieee32),
     F64(Ieee64),
     V128([u8; 16]),
+    V64([u8; 8]),
+}
+
+impl PartialEq for DataValue {
+    fn eq(&self, other: &Self) -> bool {
+        use DataValue::*;
+        match (self, other) {
+            (I8(l), I8(r)) => l == r,
+            (I8(_), _) => false,
+            (I16(l), I16(r)) => l == r,
+            (I16(_), _) => false,
+            (I32(l), I32(r)) => l == r,
+            (I32(_), _) => false,
+            (I64(l), I64(r)) => l == r,
+            (I64(_), _) => false,
+            (I128(l), I128(r)) => l == r,
+            (I128(_), _) => false,
+            (U8(l), U8(r)) => l == r,
+            (U8(_), _) => false,
+            (U16(l), U16(r)) => l == r,
+            (U16(_), _) => false,
+            (U32(l), U32(r)) => l == r,
+            (U32(_), _) => false,
+            (U64(l), U64(r)) => l == r,
+            (U64(_), _) => false,
+            (U128(l), U128(r)) => l == r,
+            (U128(_), _) => false,
+            (F32(l), F32(r)) => l.as_f32() == r.as_f32(),
+            (F32(_), _) => false,
+            (F64(l), F64(r)) => l.as_f64() == r.as_f64(),
+            (F64(_), _) => false,
+            (V128(l), V128(r)) => l == r,
+            (V128(_), _) => false,
+            (V64(l), V64(r)) => l == r,
+            (V64(_), _) => false,
+        }
+    }
 }
 
 impl DataValue {
@@ -45,7 +81,6 @@ impl DataValue {
     /// Return the Cranelift IR [Type] for this [DataValue].
     pub fn ty(&self) -> Type {
         match self {
-            DataValue::B(_) => types::B8, // A default type.
             DataValue::I8(_) | DataValue::U8(_) => types::I8,
             DataValue::I16(_) | DataValue::U16(_) => types::I16,
             DataValue::I32(_) | DataValue::U32(_) => types::I32,
@@ -54,21 +89,14 @@ impl DataValue {
             DataValue::F32(_) => types::F32,
             DataValue::F64(_) => types::F64,
             DataValue::V128(_) => types::I8X16, // A default type.
+            DataValue::V64(_) => types::I8X8,   // A default type.
         }
     }
 
     /// Return true if the value is a vector (i.e. `DataValue::V128`).
     pub fn is_vector(&self) -> bool {
         match self {
-            DataValue::V128(_) => true,
-            _ => false,
-        }
-    }
-
-    /// Return true if the value is a bool (i.e. `DataValue::B`).
-    pub fn is_bool(&self) -> bool {
-        match self {
-            DataValue::B(_) => true,
+            DataValue::V128(_) | DataValue::V64(_) => true,
             _ => false,
         }
     }
@@ -80,8 +108,6 @@ impl DataValue {
     /// Panics if the slice does not have enough space to accommodate the [DataValue]
     pub fn write_to_slice(&self, dst: &mut [u8]) {
         match self {
-            DataValue::B(true) => dst[..16].copy_from_slice(&[u8::MAX; 16][..]),
-            DataValue::B(false) => dst[..16].copy_from_slice(&[0; 16][..]),
             DataValue::I8(i) => dst[..1].copy_from_slice(&i.to_ne_bytes()[..]),
             DataValue::I16(i) => dst[..2].copy_from_slice(&i.to_ne_bytes()[..]),
             DataValue::I32(i) => dst[..4].copy_from_slice(&i.to_ne_bytes()[..]),
@@ -90,6 +116,7 @@ impl DataValue {
             DataValue::F32(f) => dst[..4].copy_from_slice(&f.bits().to_ne_bytes()[..]),
             DataValue::F64(f) => dst[..8].copy_from_slice(&f.bits().to_ne_bytes()[..]),
             DataValue::V128(v) => dst[..16].copy_from_slice(&v[..]),
+            DataValue::V64(v) => dst[..8].copy_from_slice(&v[..]),
             _ => unimplemented!(),
         };
     }
@@ -112,15 +139,14 @@ impl DataValue {
             types::F64 => DataValue::F64(Ieee64::with_bits(u64::from_ne_bytes(
                 src[..8].try_into().unwrap(),
             ))),
-            _ if ty.is_bool() => {
-                // Only `ty.bytes()` are guaranteed to be written
-                // so we can only test the first n bytes of `src`
-
-                let size = ty.bytes() as usize;
-                DataValue::B(src[..size].iter().any(|&i| i != 0))
-            }
-            _ if ty.is_vector() && ty.bytes() == 16 => {
-                DataValue::V128(src[..16].try_into().unwrap())
+            _ if ty.is_vector() => {
+                if ty.bytes() == 16 {
+                    DataValue::V128(src[..16].try_into().unwrap())
+                } else if ty.bytes() == 8 {
+                    DataValue::V64(src[..8].try_into().unwrap())
+                } else {
+                    unimplemented!()
+                }
             }
             _ => unimplemented!(),
         }
@@ -128,13 +154,7 @@ impl DataValue {
 
     /// Write a [DataValue] to a memory location.
     pub unsafe fn write_value_to(&self, p: *mut u128) {
-        // Since `DataValue` does not have type info for bools we always
-        // write out a full 16 byte slot.
-        let size = match self.ty() {
-            ty if ty.is_bool() => 16,
-            ty => ty.bytes() as usize,
-        };
-
+        let size = self.ty().bytes() as usize;
         self.write_to_slice(std::slice::from_raw_parts_mut(p as *mut u8, size));
     }
 
@@ -144,6 +164,25 @@ impl DataValue {
             std::slice::from_raw_parts(p as *const u8, ty.bytes() as usize),
             ty,
         )
+    }
+
+    /// Performs a bitwise comparison over the contents of [DataValue].
+    ///
+    /// Returns true if all bits are equal.
+    ///
+    /// This behaviour is different from PartialEq for NaN floats.
+    pub fn bitwise_eq(&self, other: &DataValue) -> bool {
+        match (self, other) {
+            // We need to bit compare the floats to ensure that we produce the correct values
+            // on NaN's. The test suite expects to assert the precise bit pattern on NaN's or
+            // works around it in the tests themselves.
+            (DataValue::F32(a), DataValue::F32(b)) => a.bits() == b.bits(),
+            (DataValue::F64(a), DataValue::F64(b)) => a.bits() == b.bits(),
+
+            // We don't need to worry about F32x4 / F64x2 Since we compare V128 which is already the
+            // raw bytes anyway
+            (a, b) => a == b,
+        }
     }
 }
 
@@ -204,7 +243,6 @@ macro_rules! build_conversion_impl {
         }
     };
 }
-build_conversion_impl!(bool, B, B8);
 build_conversion_impl!(i8, I8, I8);
 build_conversion_impl!(i16, I16, I16);
 build_conversion_impl!(i32, I32, I32);
@@ -218,6 +256,7 @@ build_conversion_impl!(u128, U128, I128);
 build_conversion_impl!(Ieee32, F32, F32);
 build_conversion_impl!(Ieee64, F64, F64);
 build_conversion_impl!([u8; 16], V128, I8X16);
+build_conversion_impl!([u8; 8], V64, I8X8);
 impl From<Offset32> for DataValue {
     fn from(o: Offset32) -> Self {
         DataValue::from(Into::<i32>::into(o))
@@ -227,7 +266,6 @@ impl From<Offset32> for DataValue {
 impl Display for DataValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            DataValue::B(dv) => write!(f, "{}", dv),
             DataValue::I8(dv) => write!(f, "{}", dv),
             DataValue::I16(dv) => write!(f, "{}", dv),
             DataValue::I32(dv) => write!(f, "{}", dv),
@@ -243,6 +281,7 @@ impl Display for DataValue {
             DataValue::F64(dv) => write!(f, "{}", dv),
             // Again, for syntax consistency, use ConstantData, which in this case displays as hex.
             DataValue::V128(dv) => write!(f, "{}", ConstantData::from(&dv[..])),
+            DataValue::V64(dv) => write!(f, "{}", ConstantData::from(&dv[..])),
         }
     }
 }
@@ -286,16 +325,6 @@ mod test {
 
     #[test]
     fn type_conversions() {
-        assert_eq!(DataValue::B(true).ty(), types::B8);
-        assert_eq!(
-            TryInto::<bool>::try_into(DataValue::B(false)).unwrap(),
-            false
-        );
-        assert_eq!(
-            TryInto::<i32>::try_into(DataValue::B(false)).unwrap_err(),
-            DataValueCastFailure::TryInto(types::B8, types::I32)
-        );
-
         assert_eq!(DataValue::V128([0; 16]).ty(), types::I8X16);
         assert_eq!(
             TryInto::<[u8; 16]>::try_into(DataValue::V128([0; 16])).unwrap(),

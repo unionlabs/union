@@ -1,0 +1,134 @@
+;; Constant propagation.
+
+(rule (simplify
+       (iadd (fits_in_64 ty)
+             (iconst ty (u64_from_imm64 k1))
+             (iconst ty (u64_from_imm64 k2))))
+      (subsume (iconst ty (imm64 (u64_add k1 k2)))))
+
+(rule (simplify
+       (isub (fits_in_64 ty)
+             (iconst ty (u64_from_imm64 k1))
+             (iconst ty (u64_from_imm64 k2))))
+      (subsume (iconst ty (imm64 (u64_sub k1 k2)))))
+
+(rule (simplify
+       (imul (fits_in_64 ty)
+             (iconst ty (u64_from_imm64 k1))
+             (iconst ty (u64_from_imm64 k2))))
+      (subsume (iconst ty (imm64 (u64_mul k1 k2)))))
+
+(rule (simplify
+       (sdiv (fits_in_64 ty)
+             (iconst ty (u64_from_imm64 k1))
+             (iconst ty (u64_from_imm64 k2))))
+      (if-let d (u64_sdiv k1 k2))
+      (subsume (iconst ty (imm64 d))))
+
+(rule (simplify
+       (udiv (fits_in_64 ty)
+             (iconst ty (u64_from_imm64 k1))
+             (iconst ty (u64_from_imm64 k2))))
+      (if-let d (u64_udiv k1 k2))
+      (subsume (iconst ty (imm64 d))))
+
+(rule (simplify
+       (bor (fits_in_64 ty)
+            (iconst ty (u64_from_imm64 k1))
+            (iconst ty (u64_from_imm64 k2))))
+      (subsume (iconst ty (imm64 (u64_or k1 k2)))))
+
+(rule (simplify
+       (band (fits_in_64 ty)
+            (iconst ty (u64_from_imm64 k1))
+            (iconst ty (u64_from_imm64 k2))))
+      (subsume (iconst ty (imm64 (u64_and k1 k2)))))
+
+(rule (simplify
+       (bxor (fits_in_64 ty)
+            (iconst ty (u64_from_imm64 k1))
+            (iconst ty (u64_from_imm64 k2))))
+      (subsume (iconst ty (imm64 (u64_xor k1 k2)))))
+
+(rule (simplify
+       (bnot (fits_in_64 ty)
+            (iconst ty (u64_from_imm64 k))))
+      (subsume (iconst ty (imm64 (u64_not k)))))
+
+;; Canonicalize via commutativity: push immediates to the right.
+;;
+;;   (op k x) --> (op x k)
+
+(rule (simplify
+       (iadd ty k @ (iconst ty _) x))
+      (iadd ty x k))
+;; sub is not commutative, but we can flip the args and negate the
+;; whole thing.
+(rule (simplify
+       (isub ty k @ (iconst ty _) x))
+      (ineg ty (isub ty x k)))
+(rule (simplify
+       (imul ty k @ (iconst ty _) x))
+      (imul ty x k))
+
+(rule (simplify
+       (bor ty k @ (iconst ty _) x))
+      (bor ty x k))
+(rule (simplify
+       (band ty k @ (iconst ty _) x))
+      (band ty x k))
+(rule (simplify
+       (bxor ty k @ (iconst ty _) x))
+      (bxor ty x k))
+
+;; Canonicalize via associativity: reassociate to a right-heavy tree
+;; for constants.
+;;
+;;   (op (op x k) k) --> (op x (op k k))
+
+(rule (simplify
+       (iadd ty (iadd ty x k1 @ (iconst ty _)) k2 @ (iconst ty _)))
+      (iadd ty x (iadd ty k1 k2)))
+;; sub is not directly associative, but we can flip a sub to an add to
+;; make it work:
+;; - (sub (sub x k1) k2) -> (sub x (add k1 k2))
+;; - (sub (sub k1 x) k2) -> (sub (sub k1 k2) x)
+;; - (sub (add x k1) k2) -> (sub x (sub k2 k1))
+;; - (add (sub x k1) k2) -> (add x (sub k2 k1))
+;; - (add (sub k1 x) k2) -> (sub (add k1 k2) x)
+(rule (simplify (isub ty
+                      (isub ty x (iconst ty (u64_from_imm64 k1)))
+                      (iconst ty (u64_from_imm64 k2))))
+      (isub ty x (iconst ty (imm64 (u64_add k1 k2)))))
+(rule (simplify (isub ty
+                      (isub ty (iconst ty (u64_from_imm64 k1)) x)
+                      (iconst ty (u64_from_imm64 k2))))
+      (isub ty (iconst ty (imm64 (u64_sub k1 k2))) x))
+(rule (simplify (isub ty
+                      (iadd ty x (iconst ty (u64_from_imm64 k1)))
+                      (iconst ty (u64_from_imm64 k2))))
+      (isub ty x (iconst ty (imm64 (u64_sub k1 k2)))))
+(rule (simplify (iadd ty
+                      (isub ty x (iconst ty (u64_from_imm64 k1)))
+                      (iconst ty (u64_from_imm64 k2))))
+      (iadd ty x (iconst ty (imm64 (u64_sub k2 k1)))))
+(rule (simplify (iadd ty
+                      (isub ty (iconst ty (u64_from_imm64 k1)) x)
+                      (iconst ty (u64_from_imm64 k2))))
+      (isub ty (iconst ty (imm64 (u64_add k1 k2))) x))
+
+(rule (simplify
+       (imul ty (imul ty x k1 @ (iconst ty _)) k2 @ (iconst ty _)))
+      (imul ty x (imul ty k1 k2)))
+(rule (simplify
+       (bor ty (bor ty x k1 @ (iconst ty _)) k2 @ (iconst ty _)))
+      (bor ty x (bor ty k1 k2)))
+(rule (simplify
+       (band ty (band ty x k1 @ (iconst ty _)) k2 @ (iconst ty _)))
+      (band ty x (band ty k1 k2)))
+(rule (simplify
+       (bxor ty (bxor ty x k1 @ (iconst ty _)) k2 @ (iconst ty _)))
+      (bxor ty x (bxor ty k1 k2)))
+
+;; TODO: fadd, fsub, fmul, fdiv, fneg, fabs
+

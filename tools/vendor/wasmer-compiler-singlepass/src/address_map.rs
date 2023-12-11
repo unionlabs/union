@@ -1,8 +1,9 @@
-use wasmer_compiler::{FunctionAddressMap, FunctionBodyData, InstructionAddressMap, SourceLoc};
+use wasmer_compiler::FunctionBodyData;
+use wasmer_types::{FunctionAddressMap, InstructionAddressMap, SourceLoc};
 
-pub fn get_function_address_map<'data>(
+pub fn get_function_address_map(
     instructions: Vec<InstructionAddressMap>,
-    data: &FunctionBodyData<'data>,
+    data: &FunctionBodyData,
     body_len: usize,
 ) -> FunctionAddressMap {
     // Generate source loc for a function start/end to identify boundary within module.

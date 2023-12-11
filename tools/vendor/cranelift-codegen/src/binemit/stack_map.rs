@@ -99,8 +99,8 @@ impl StackMap {
     pub fn get_bit(&self, bit_index: usize) -> bool {
         assert!(bit_index < NUM_BITS * self.bitmap.len());
         let word_index = bit_index / NUM_BITS;
-        let word_offset = (bit_index % NUM_BITS) as u8;
-        self.bitmap[word_index].contains(word_offset)
+        let word_offset = bit_index % NUM_BITS;
+        self.bitmap[word_index].contains(word_offset as u32)
     }
 
     /// Returns the raw bitmap that represents this stack map.

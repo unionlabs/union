@@ -7,8 +7,9 @@ import (
 
 // InstantiateMessage is the message that is sent to the contract's instantiate entry point.
 type InstantiateMessage struct {
-	ClientState    *ClientState    `json:"client_state"`
-	ConsensusState *ConsensusState `json:"consensus_state"`
+	ClientState    []byte `json:"client_state"`
+	ConsensusState []byte `json:"consensus_state"`
+	Checksum       []byte `json:"checksum"`
 }
 
 // QueryMsg is used to encode messages that are sent to the contract's query entry point.
@@ -36,12 +37,12 @@ type TimestampAtHeightMsg struct {
 
 // VerifyClientMessageMsg is a queryMsg sent to the contract to verify a client message.
 type VerifyClientMessageMsg struct {
-	ClientMessage *ClientMessage `json:"client_message"`
+	ClientMessage []byte `json:"client_message"`
 }
 
 // CheckForMisbehaviourMsg is a queryMsg sent to the contract to check for misbehaviour.
 type CheckForMisbehaviourMsg struct {
-	ClientMessage *ClientMessage `json:"client_message"`
+	ClientMessage []byte `json:"client_message"`
 }
 
 // SudoMsg is used to encode messages that are sent to the contract's sudo entry point.
@@ -59,12 +60,12 @@ type SudoMsg struct {
 
 // UpdateStateMsg is a sudoMsg sent to the contract to update the client state.
 type UpdateStateMsg struct {
-	ClientMessage *ClientMessage `json:"client_message"`
+	ClientMessage []byte `json:"client_message"`
 }
 
 // UpdateStateOnMisbehaviourMsg is a sudoMsg sent to the contract to update its state on misbehaviour.
 type UpdateStateOnMisbehaviourMsg struct {
-	ClientMessage *ClientMessage `json:"client_message"`
+	ClientMessage []byte `json:"client_message"`
 }
 
 // VerifyMembershipMsg is a sudoMsg sent to the contract to verify a membership proof.
@@ -88,10 +89,10 @@ type VerifyNonMembershipMsg struct {
 
 // VerifyUpgradeAndUpdateStateMsg is a sudoMsg sent to the contract to verify an upgrade and update its state.
 type VerifyUpgradeAndUpdateStateMsg struct {
-	UpgradeClientState         ClientState    `json:"upgrade_client_state"`
-	UpgradeConsensusState      ConsensusState `json:"upgrade_consensus_state"`
-	ProofUpgradeClient         []byte         `json:"proof_upgrade_client"`
-	ProofUpgradeConsensusState []byte         `json:"proof_upgrade_consensus_state"`
+	UpgradeClientState         []byte `json:"upgrade_client_state"`
+	UpgradeConsensusState      []byte `json:"upgrade_consensus_state"`
+	ProofUpgradeClient         []byte `json:"proof_upgrade_client"`
+	ProofUpgradeConsensusState []byte `json:"proof_upgrade_consensus_state"`
 }
 
 // MigrateClientStore is a sudoMsg sent to the contract to verify a given substitute client and update to its state.

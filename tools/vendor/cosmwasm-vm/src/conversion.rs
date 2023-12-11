@@ -53,7 +53,7 @@ mod tests {
                 assert_eq!(to_type, "u32");
                 assert_eq!(input, "4294967296");
             }
-            Err(err) => panic!("unexpected error: {:?}", err),
+            Err(err) => panic!("unexpected error: {err:?}"),
             Ok(_) => panic!("must not succeed"),
         };
     }
@@ -77,7 +77,7 @@ mod tests {
                 assert_eq!(to_type, "u32");
                 assert_eq!(input, "4294967296");
             }
-            Err(err) => panic!("unexpected error: {:?}", err),
+            Err(err) => panic!("unexpected error: {err:?}"),
             Ok(_) => panic!("must not succeed"),
         };
     }
@@ -99,7 +99,7 @@ mod tests {
                 assert_eq!(to_type, "u32");
                 assert_eq!(input, "-1");
             }
-            Err(err) => panic!("unexpected error: {:?}", err),
+            Err(err) => panic!("unexpected error: {err:?}"),
             Ok(_) => panic!("must not succeed"),
         };
     }
@@ -121,7 +121,7 @@ mod tests {
                 assert_eq!(to_type, "u32");
                 assert_eq!(input, "-1");
             }
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         };
 
         // usize
@@ -141,7 +141,7 @@ mod tests {
                 assert_eq!(to_type, "u32");
                 assert_eq!(input, "4294967296");
             }
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         };
     }
 
@@ -162,7 +162,7 @@ mod tests {
                 assert_eq!(to_type, "i32");
                 assert_eq!(input, "2147483648");
             }
-            Err(err) => panic!("unexpected error: {:?}", err),
+            Err(err) => panic!("unexpected error: {err:?}"),
             Ok(_) => panic!("must not succeed"),
         };
     }
@@ -188,7 +188,7 @@ mod tests {
                 assert_eq!(to_type, "i32");
                 assert_eq!(input, "-2147483649");
             }
-            Err(err) => panic!("unexpected error: {:?}", err),
+            Err(err) => panic!("unexpected error: {err:?}"),
             Ok(_) => panic!("must not succeed"),
         };
     }

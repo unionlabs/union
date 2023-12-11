@@ -11,7 +11,7 @@
 /// input. This requires repetitive implementations of all the [`Deserializer`]
 /// trait methods.
 ///
-/// ```edition2018
+/// ```edition2021
 /// # use serde::forward_to_deserialize_any;
 /// # use serde::de::{value, Deserializer, Visitor};
 /// #
@@ -47,7 +47,7 @@
 /// methods so that they forward directly to [`Deserializer::deserialize_any`].
 /// You can choose which methods to forward.
 ///
-/// ```edition2018
+/// ```edition2021
 /// # use serde::forward_to_deserialize_any;
 /// # use serde::de::{value, Deserializer, Visitor};
 /// #
@@ -78,11 +78,10 @@
 /// called `V`. A different type parameter and a different lifetime can be
 /// specified explicitly if necessary.
 ///
-/// ```edition2018
-/// # use std::marker::PhantomData;
-/// #
+/// ```edition2021
 /// # use serde::forward_to_deserialize_any;
 /// # use serde::de::{value, Deserializer, Visitor};
+/// # use std::marker::PhantomData;
 /// #
 /// # struct MyDeserializer<V>(PhantomData<V>);
 /// #
@@ -155,9 +154,7 @@ macro_rules! forward_to_deserialize_any_helper {
         forward_to_deserialize_any_method!{deserialize_i64<$l, $v>()}
     };
     (i128<$l:tt, $v:ident>) => {
-        serde_if_integer128! {
-            forward_to_deserialize_any_method!{deserialize_i128<$l, $v>()}
-        }
+        forward_to_deserialize_any_method!{deserialize_i128<$l, $v>()}
     };
     (u8<$l:tt, $v:ident>) => {
         forward_to_deserialize_any_method!{deserialize_u8<$l, $v>()}
@@ -172,9 +169,7 @@ macro_rules! forward_to_deserialize_any_helper {
         forward_to_deserialize_any_method!{deserialize_u64<$l, $v>()}
     };
     (u128<$l:tt, $v:ident>) => {
-        serde_if_integer128! {
-            forward_to_deserialize_any_method!{deserialize_u128<$l, $v>()}
-        }
+        forward_to_deserialize_any_method!{deserialize_u128<$l, $v>()}
     };
     (f32<$l:tt, $v:ident>) => {
         forward_to_deserialize_any_method!{deserialize_f32<$l, $v>()}
