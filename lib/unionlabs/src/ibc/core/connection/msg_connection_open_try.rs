@@ -7,8 +7,7 @@ use crate::{
         client::height::IsHeight,
         connection::{counterparty::Counterparty, version::Version},
     },
-    traits::Id,
-    IntoProto, TypeUrl,
+    TypeUrl,
 };
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -82,55 +81,4 @@ impl<
 
 impl TypeUrl for protos::ibc::core::connection::v1::MsgConnectionOpenTry {
     const TYPE_URL: &'static str = "/ibc.core.connection.v1.MsgConnectionOpenTry";
-}
-
-#[cfg(feature = "ethabi")]
-impl<
-        ClientState,
-        ClientId,
-        CounterpartyClientId,
-        ProofHeight: IsHeight,
-        ConsensusHeight: IsHeight,
-    >
-    From<
-        MsgConnectionOpenTry<
-            ClientState,
-            ClientId,
-            CounterpartyClientId,
-            ProofHeight,
-            ConsensusHeight,
-        >,
-    > for contracts::ibc_handler::MsgConnectionOpenTry
-where
-    ClientState: IntoProto,
-    ClientId: Id,
-    CounterpartyClientId: Id,
-{
-    fn from(
-        msg: MsgConnectionOpenTry<
-            ClientState,
-            ClientId,
-            CounterpartyClientId,
-            ProofHeight,
-            ConsensusHeight,
-        >,
-    ) -> Self {
-        Self {
-            counterparty: msg.counterparty.into(),
-            delay_period: msg.delay_period,
-            client_id: msg.client_id.to_string(),
-            // TODO(benluelo): Figure out what this is expected to be (i.e. eth abi or proto)
-            client_state_bytes: msg.client_state.into_proto_bytes().into(),
-            counterparty_versions: msg
-                .counterparty_versions
-                .into_iter()
-                .map(Into::into)
-                .collect(),
-            proof_init: msg.proof_init.into(),
-            proof_client: msg.proof_client.into(),
-            proof_consensus: msg.proof_consensus.into(),
-            proof_height: msg.proof_height.into_height().into(),
-            consensus_height: msg.consensus_height.into_height().into(),
-        }
-    }
 }
