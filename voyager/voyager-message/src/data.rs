@@ -1,58 +1,65 @@
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     self,
-    ibc::core::channel::channel::Channel,
-    traits::{
-        ChainOf, ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf, LightClientBase,
+    proof::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath,
     },
+    traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
 use crate::{
-    any_enum, fetch::FetchPacketAcknowledgement, identified, AnyLightClientIdentified, LightClient,
+    any_enum, fetch::FetchPacketAcknowledgement, identified, AnyLightClientIdentified, ChainExt,
 };
 
 any_enum! {
     /// Data that will likely be used in a [`RelayerMsg::Aggregate`].
     #[any = AnyData]
-    pub enum Data<L: LightClient> {
-        SelfClientState(SelfClientState<L>),
-        SelfConsensusState(SelfConsensusState<L>),
+    pub enum Data<Hc: ChainExt, Tr: ChainExt> {
+        SelfClientState(SelfClientState<Hc, Tr>),
+        SelfConsensusState(SelfConsensusState<Hc, Tr>),
 
-        ChannelEnd(ChannelEnd<L>),
-        ConnectionEnd(ConnectionEnd<L>),
-        PacketAcknowledgement(PacketAcknowledgement<L>),
+        PacketAcknowledgement(PacketAcknowledgement<Hc, Tr>),
 
-        TrustedClientState(TrustedClientState<L>),
+        ClientStateProof(IbcProof<Hc, Tr, ClientStatePath<Hc::ClientId>>),
+        ClientConsensusStateProof(IbcProof<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>),
+        ConnectionProof(IbcProof<Hc, Tr, ConnectionPath>),
+        ChannelEndProof(IbcProof<Hc, Tr, ChannelEndPath>),
+        CommitmentProof(IbcProof<Hc, Tr, CommitmentPath>),
+        AcknowledgementProof(IbcProof<Hc, Tr, AcknowledgementPath>),
 
-        ClientStateProof(ClientStateProof<L>),
-        ClientConsensusStateProof(ClientConsensusStateProof<L>),
-        ConnectionProof(ConnectionProof<L>),
-        ChannelEndProof(ChannelEndProof<L>),
-        CommitmentProof(CommitmentProof<L>),
-        AcknowledgementProof(AcknowledgementProof<L>),
+        ClientState(IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>),
+        ClientConsensusState(IbcState<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>),
+        Connection(IbcState<Hc, Tr, ConnectionPath>),
+        ChannelEnd(IbcState<Hc, Tr, ChannelEndPath>),
+        Commitment(IbcState<Hc, Tr, CommitmentPath>),
+        Acknowledgement(IbcState<Hc, Tr, AcknowledgementPath>),
 
-        LightClientSpecific(LightClientSpecificData<L>),
+        LightClientSpecific(LightClientSpecificData<Hc, Tr>),
     }
 }
 
-impl<L: LightClient> std::fmt::Display for Data<L> {
+impl<Hc: ChainExt, Tr: ChainExt> std::fmt::Display for Data<Hc, Tr> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Data::SelfClientState(_) => write!(f, "SelfClientState"),
             Data::SelfConsensusState(_) => write!(f, "SelfConsensusState"),
-            Data::ChannelEnd(_) => write!(f, "ChannelEnd"),
-            Data::ConnectionEnd(_) => write!(f, "ConnectionEnd"),
             Data::PacketAcknowledgement(_) => write!(f, "PacketAcknowledgement"),
-            Data::TrustedClientState(_) => write!(f, "TrustedClientState"),
             Data::ClientStateProof(_) => write!(f, "ClientStateProof"),
             Data::ClientConsensusStateProof(_) => write!(f, "ClientConsensusStateProof"),
             Data::ConnectionProof(_) => write!(f, "ConnectionProof"),
             Data::ChannelEndProof(_) => write!(f, "ChannelEndProof"),
             Data::CommitmentProof(_) => write!(f, "CommitmentProof"),
             Data::AcknowledgementProof(_) => write!(f, "AcknowledgementProof"),
+            Data::ClientState(_) => write!(f, "ClientState"),
+            Data::ClientConsensusState(_) => write!(f, "ClientConsensusState"),
+            Data::Connection(_) => write!(f, "Connection"),
+            Data::ChannelEnd(_) => write!(f, "ChannelEnd"),
+            Data::Commitment(_) => write!(f, "Commitment"),
+            Data::Acknowledgement(_) => write!(f, "Acknowledgement"),
             Data::LightClientSpecific(data) => write!(f, "LightClientSpecific({})", data.0),
         }
     }
@@ -60,122 +67,88 @@ impl<L: LightClient> std::fmt::Display for Data<L> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct SelfClientState<L: LightClient>(pub ClientStateOf<L::HostChain>);
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct SelfConsensusState<L: LightClient>(pub ConsensusStateOf<L::HostChain>);
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct Header<L: LightClient>(pub HeaderOf<L::HostChain>);
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct ClientStateProof<L: LightClient> {
-    pub height: HeightOf<ChainOf<L>>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof: Vec<u8>,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct ClientConsensusStateProof<L: LightClient> {
-    pub height: HeightOf<ChainOf<L>>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof: Vec<u8>,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct ConnectionProof<L: LightClient> {
-    pub height: HeightOf<ChainOf<L>>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof: Vec<u8>,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct ChannelEndProof<L: LightClient> {
-    pub height: HeightOf<ChainOf<L>>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof: Vec<u8>,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct CommitmentProof<L: LightClient> {
-    pub height: HeightOf<ChainOf<L>>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof: Vec<u8>,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct AcknowledgementProof<L: LightClient> {
-    pub height: HeightOf<ChainOf<L>>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof: Vec<u8>,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct ChannelEnd<L: LightClient> {
-    pub channel: Channel,
+pub struct SelfClientState<Hc: ChainExt, Tr: ChainExt> {
+    pub self_client_state: ClientStateOf<Hc>,
     #[serde(skip)]
-    pub __marker: PhantomData<fn() -> L>,
+    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct ConnectionEnd<L: LightClient>(
-    pub  unionlabs::ibc::core::connection::connection_end::ConnectionEnd<
-        ClientIdOf<ChainOf<L>>,
-        ClientIdOf<ChainOf<L::Counterparty>>,
-        // NOTE: String used here since it may be empty; figure out a way to more strongly type this
-        String,
-    >,
-);
+pub struct SelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
+    pub self_consensus_state: ConsensusStateOf<Hc>,
+    #[serde(skip)]
+    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
+}
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct PacketAcknowledgement<L: LightClient> {
-    pub fetched_by: FetchPacketAcknowledgement<L>,
+pub struct Header<Hc: ChainExt, Tr: ChainExt> {
+    pub header: HeaderOf<Hc>,
+    #[serde(skip)]
+    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
+}
+
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct IbcState<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
+    pub path: P,
+    pub height: HeightOf<Hc>,
+    pub state: P::Output,
+}
+
+#[derive(CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct IbcProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
+    pub path: P,
+    pub height: HeightOf<Hc>,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub proof: Vec<u8>,
+    #[serde(skip)]
+    pub __marker: PhantomData<fn() -> Tr>,
+}
+
+impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> Debug for IbcProof<Hc, Tr, P> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("IbcProof")
+            .field("path", &self.path)
+            .field("height", &self.height)
+            .field("proof", &serde_utils::to_hex(&self.proof))
+            .finish()
+    }
+}
+
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct PacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
+    pub fetched_by: FetchPacketAcknowledgement<Hc, Tr>,
     pub ack: Vec<u8>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct TrustedClientState<L: LightClient> {
-    pub fetched_at: HeightOf<ChainOf<L>>,
-    pub client_id: ClientIdOf<ChainOf<L>>,
-    pub trusted_client_state: ClientStateOf<<L::Counterparty as LightClientBase>::HostChain>,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct LightClientSpecificData<L: LightClient>(pub L::Data);
+pub struct LightClientSpecificData<Hc: ChainExt, Tr: ChainExt>(pub Hc::Data<Tr>);
 
 macro_rules! data_msg {
     ($($Ty:ident,)+) => {
         $(
-            impl<L: LightClient> From<crate::Identified<L, $Ty<L>>> for crate::AnyLightClientIdentified<crate::data::AnyData>
+            impl<Hc: ChainExt, Tr: ChainExt> From<crate::Identified<Hc, Tr, $Ty<Hc, Tr>>> for crate::AnyLightClientIdentified<crate::data::AnyData>
             where
-                $Ty<L>: Into<Data<L>>,
-                crate::AnyLightClientIdentified<crate::data::AnyData>: From<identified!(Data<L>)>,
+                $Ty<Hc, Tr>: Into<Data<Hc, Tr>>,
+                crate::AnyLightClientIdentified<crate::data::AnyData>: From<identified!(Data<Hc, Tr>)>,
             {
-                fn from(crate::Identified { chain_id, data }: identified!($Ty<L>)) -> Self {
-                    Self::from(crate::Identified {
+                fn from(crate::Identified { chain_id, data, __marker: _ }: identified!($Ty<Hc, Tr>)) -> Self {
+                    Self::from(crate::Identified::new(
                         chain_id,
-                        data: Data::from(data),
-                    })
+                        Data::from(data),
+                    ))
                 }
             }
 
-            impl<L: LightClient> TryFrom<AnyLightClientIdentified<AnyData>>
-                for crate::Identified<L, $Ty<L>>
+            impl<Hc: ChainExt, Tr: ChainExt> TryFrom<AnyLightClientIdentified<AnyData>>
+                for crate::Identified<Hc, Tr, $Ty<Hc, Tr>>
             where
-                identified!(Data<L>): TryFrom<
+                identified!(Data<Hc, Tr>): TryFrom<
                         crate::AnyLightClientIdentified<AnyData>,
                         Error = crate::AnyLightClientIdentified<AnyData>,
                     > + Into<crate::AnyLightClientIdentified<AnyData>>,
@@ -183,12 +156,12 @@ macro_rules! data_msg {
                 type Error = AnyLightClientIdentified<AnyData>;
 
                 fn try_from(value: crate::AnyLightClientIdentified<AnyData>) -> Result<Self, Self::Error> {
-                    let crate::Identified { chain_id, data } =
-                        <crate::Identified<L, Data<L>>>::try_from(value)?;
+                    let crate::Identified { chain_id, data, __marker: _ } =
+                        <crate::Identified<Hc, Tr, Data<Hc, Tr>>>::try_from(value)?;
 
                     Ok(crate::Identified::new(
                         chain_id.clone(),
-                        <$Ty<L>>::try_from(data).map_err(|x: Data<L>| {
+                        <$Ty<Hc, Tr>>::try_from(data).map_err(|x: Data<Hc, Tr>| {
                             Into::<AnyLightClientIdentified<_>>::into(crate::Identified::new(chain_id, x))
                         })?,
                     ))
@@ -202,11 +175,14 @@ data_msg! {
     SelfClientState,
     SelfConsensusState,
 
-    ChannelEnd,
-    ConnectionEnd,
     PacketAcknowledgement,
 
-    TrustedClientState,
+    ClientState,
+    ClientConsensusState,
+    Connection,
+    ChannelEnd,
+    Commitment,
+    Acknowledgement,
 
     ClientStateProof,
     ClientConsensusStateProof,
@@ -217,3 +193,20 @@ data_msg! {
 
     LightClientSpecificData,
 }
+
+// these are just bc im too lazy to fix the above macro
+type ClientStateProof<Hc, Tr> = IbcProof<Hc, Tr, ClientStatePath<ClientIdOf<Hc>>>;
+type ClientConsensusStateProof<Hc, Tr> =
+    IbcProof<Hc, Tr, ClientConsensusStatePath<ClientIdOf<Hc>, HeightOf<Tr>>>;
+type ConnectionProof<Hc, Tr> = IbcProof<Hc, Tr, ConnectionPath>;
+type ChannelEndProof<Hc, Tr> = IbcProof<Hc, Tr, ChannelEndPath>;
+type CommitmentProof<Hc, Tr> = IbcProof<Hc, Tr, CommitmentPath>;
+type AcknowledgementProof<Hc, Tr> = IbcProof<Hc, Tr, AcknowledgementPath>;
+
+type ClientState<Hc, Tr> = IbcState<Hc, Tr, ClientStatePath<ClientIdOf<Hc>>>;
+type ClientConsensusState<Hc, Tr> =
+    IbcState<Hc, Tr, ClientConsensusStatePath<ClientIdOf<Hc>, HeightOf<Tr>>>;
+type Connection<Hc, Tr> = IbcState<Hc, Tr, ConnectionPath>;
+type ChannelEnd<Hc, Tr> = IbcState<Hc, Tr, ChannelEndPath>;
+type Commitment<Hc, Tr> = IbcState<Hc, Tr, CommitmentPath>;
+type Acknowledgement<Hc, Tr> = IbcState<Hc, Tr, AcknowledgementPath>;

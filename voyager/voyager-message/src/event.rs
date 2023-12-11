@@ -1,11 +1,11 @@
-use std::fmt::Display;
+use std::{fmt::Display, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
-    traits::{Chain, ChainOf, ClientIdOf, ClientTypeOf, HeightOf},
-    QueryHeight,
+    proof::{ChannelEndPath, ClientStatePath, ConnectionPath},
+    traits::{ClientIdOf, ClientTypeOf, HeightOf},
 };
 
 use crate::{
@@ -18,26 +18,26 @@ use crate::{
         ChannelHandshakeEvent, PacketEvent,
     },
     any_enum, fetch,
-    fetch::{AnyFetch, Fetch, FetchChannelEnd, FetchConnectionEnd, FetchTrustedClientState},
+    fetch::{AnyFetch, Fetch, FetchLatestClientState, FetchState},
     identified, seq, wait,
     wait::{AnyWait, Wait, WaitForBlock},
-    AnyLightClientIdentified, LightClient, RelayerMsg,
+    AnyLightClientIdentified, ChainExt, RelayerMsg,
 };
 
 any_enum! {
     #[any = AnyEvent]
-    pub enum Event<L: LightClient> {
-        Ibc(IbcEvent<L>),
-        Command(Command<L>),
+    pub enum Event<Hc: ChainExt, Tr: ChainExt> {
+        Ibc(IbcEvent<Hc, Tr>),
+        Command(Command<Hc, Tr>),
     }
 }
 
-impl<L: LightClient> Event<L> {
-    pub fn handle(self, l: L) -> Vec<RelayerMsg>
+impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
+    pub fn handle(self, l: Hc) -> Vec<RelayerMsg>
     where
-        AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<L>)>,
-        AnyLightClientIdentified<AnyWait>: From<identified!(Wait<L>)>,
-        AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<L>)>,
+        AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+        AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
+        AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
     {
         match self {
             Event::Ibc(ibc_event) => match ibc_event.event {
@@ -59,18 +59,24 @@ impl<L: LightClient> Event<L> {
                 unionlabs::events::IbcEvent::SubmitEvidence(_) => unimplemented!(),
 
                 unionlabs::events::IbcEvent::ConnectionOpenInit(init) => [seq([
-                    wait::<L>(l.chain().chain_id(), WaitForBlock(ibc_event.height)),
+                    wait::<Hc, Tr>(
+                        l.chain_id(),
+                        WaitForBlock {
+                            height: ibc_event.height,
+                            __marker: PhantomData,
+                        },
+                    ),
                     RelayerMsg::Aggregate {
                         data: [].into(),
                         queue: [mk_aggregate_wait_for_update(
-                            l.chain().chain_id(),
+                            l.chain_id(),
                             init.client_id.clone(),
                             init.counterparty_client_id.clone(),
                             ibc_event.height,
                         )]
                         .into(),
                         receiver: aggregate(
-                            l.chain().chain_id(),
+                            l.chain_id(),
                             AggregateMsgAfterUpdate::ConnectionOpenTry(
                                 AggregateConnectionOpenTry {
                                     event_height: ibc_event.height,
@@ -85,14 +91,14 @@ impl<L: LightClient> Event<L> {
                     [seq([RelayerMsg::Aggregate {
                         data: [].into(),
                         queue: [mk_aggregate_wait_for_update(
-                            l.chain().chain_id(),
+                            l.chain_id(),
                             try_.client_id.clone(),
                             try_.counterparty_client_id.clone(),
                             ibc_event.height,
                         )]
                         .into(),
                         receiver: aggregate(
-                            l.chain().chain_id(),
+                            l.chain_id(),
                             AggregateMsgAfterUpdate::ConnectionOpenAck(
                                 AggregateConnectionOpenAck {
                                     event_height: ibc_event.height,
@@ -107,14 +113,14 @@ impl<L: LightClient> Event<L> {
                     [seq([RelayerMsg::Aggregate {
                         data: [].into(),
                         queue: [mk_aggregate_wait_for_update(
-                            l.chain().chain_id(),
+                            l.chain_id(),
                             ack.client_id.clone(),
                             ack.counterparty_client_id.clone(),
                             ibc_event.height,
                         )]
                         .into(),
                         receiver: aggregate(
-                            l.chain().chain_id(),
+                            l.chain_id(),
                             AggregateMsgAfterUpdate::ConnectionOpenConfirm(
                                 AggregateConnectionOpenConfirm {
                                     event_height: ibc_event.height,
@@ -137,28 +143,33 @@ impl<L: LightClient> Event<L> {
                         queue: [RelayerMsg::Aggregate {
                             data: [].into(),
                             queue: [fetch(
-                                l.chain().chain_id(),
-                                FetchChannelEnd {
+                                l.chain_id(),
+                                FetchState {
                                     at: ibc_event.height,
-                                    port_id: init.port_id.clone(),
-                                    channel_id: init.channel_id.clone(),
+                                    path: ChannelEndPath {
+                                        port_id: init.port_id.clone(),
+                                        channel_id: init.channel_id.clone(),
+                                    }
+                                    .into(),
                                 },
                             )]
                             .into(),
                             receiver: aggregate(
-                                l.chain().chain_id(),
+                                l.chain_id(),
                                 AggregateConnectionFetchFromChannelEnd {
                                     at: ibc_event.height,
+                                    __marker: PhantomData,
                                 },
                             ),
                         }]
                         .into(),
                         receiver: aggregate(
-                            l.chain().chain_id(),
+                            l.chain_id(),
                             AggregateChannelHandshakeUpdateClient {
                                 update_to: ibc_event.height,
                                 event_height: ibc_event.height,
                                 channel_handshake_event: ChannelHandshakeEvent::Init(init),
+                                __marker: PhantomData,
                             },
                         ),
                     }])]
@@ -170,30 +181,35 @@ impl<L: LightClient> Event<L> {
                         queue: [RelayerMsg::Aggregate {
                             data: [].into(),
                             queue: [fetch(
-                                l.chain().chain_id(),
-                                FetchChannelEnd {
+                                l.chain_id(),
+                                FetchState {
                                     at: ibc_event.height,
-                                    port_id: try_.port_id.clone(),
-                                    channel_id: try_.channel_id.clone(),
+                                    path: ChannelEndPath {
+                                        port_id: try_.port_id.clone(),
+                                        channel_id: try_.channel_id.clone(),
+                                    }
+                                    .into(),
                                 },
                             )]
                             .into(),
                             receiver: aggregate(
-                                l.chain().chain_id(),
+                                l.chain_id(),
                                 Aggregate::ConnectionFetchFromChannelEnd(
                                     AggregateConnectionFetchFromChannelEnd {
                                         at: ibc_event.height,
+                                        __marker: PhantomData,
                                     },
                                 ),
                             ),
                         }]
                         .into(),
                         receiver: aggregate(
-                            l.chain().chain_id(),
+                            l.chain_id(),
                             AggregateChannelHandshakeUpdateClient {
                                 update_to: ibc_event.height,
                                 event_height: ibc_event.height,
                                 channel_handshake_event: ChannelHandshakeEvent::Try(try_),
+                                __marker: PhantomData,
                             },
                         ),
                     }])]
@@ -205,28 +221,33 @@ impl<L: LightClient> Event<L> {
                         queue: [RelayerMsg::Aggregate {
                             data: [].into(),
                             queue: [fetch(
-                                l.chain().chain_id(),
-                                FetchChannelEnd {
+                                l.chain_id(),
+                                FetchState {
                                     at: ibc_event.height,
-                                    port_id: ack.port_id.clone(),
-                                    channel_id: ack.channel_id.clone(),
+                                    path: ChannelEndPath {
+                                        port_id: ack.port_id.clone(),
+                                        channel_id: ack.channel_id.clone(),
+                                    }
+                                    .into(),
                                 },
                             )]
                             .into(),
                             receiver: aggregate(
-                                l.chain().chain_id(),
+                                l.chain_id(),
                                 AggregateConnectionFetchFromChannelEnd {
                                     at: ibc_event.height,
+                                    __marker: PhantomData,
                                 },
                             ),
                         }]
                         .into(),
                         receiver: aggregate(
-                            l.chain().chain_id(),
+                            l.chain_id(),
                             AggregateChannelHandshakeUpdateClient {
                                 update_to: ibc_event.height,
                                 event_height: ibc_event.height,
                                 channel_handshake_event: ChannelHandshakeEvent::Ack(ack),
+                                __marker: PhantomData,
                             },
                         ),
                     }])]
@@ -242,20 +263,24 @@ impl<L: LightClient> Event<L> {
                 unionlabs::events::IbcEvent::RecvPacket(packet) => [seq([RelayerMsg::Aggregate {
                     data: [].into(),
                     queue: [fetch(
-                        l.chain().chain_id(),
-                        FetchConnectionEnd {
+                        l.chain_id(),
+                        FetchState {
                             at: ibc_event.height,
-                            connection_id: packet.connection_id.clone(),
+                            path: ConnectionPath {
+                                connection_id: packet.connection_id.clone(),
+                            }
+                            .into(),
                         },
                     )]
                     .into(),
                     receiver: aggregate(
-                        l.chain().chain_id(),
+                        l.chain_id(),
                         AggregatePacketUpdateClient {
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             block_hash: ibc_event.block_hash,
                             packet_event: PacketEvent::Recv(packet),
+                            __marker: PhantomData,
                         },
                     ),
                 }])]
@@ -263,20 +288,24 @@ impl<L: LightClient> Event<L> {
                 unionlabs::events::IbcEvent::SendPacket(packet) => [seq([RelayerMsg::Aggregate {
                     data: [].into(),
                     queue: [fetch(
-                        l.chain().chain_id(),
-                        FetchConnectionEnd {
+                        l.chain_id(),
+                        FetchState {
                             at: ibc_event.height,
-                            connection_id: packet.connection_id.clone(),
+                            path: ConnectionPath {
+                                connection_id: packet.connection_id.clone(),
+                            }
+                            .into(),
                         },
                     )]
                     .into(),
                     receiver: aggregate(
-                        l.chain().chain_id(),
+                        l.chain_id(),
                         AggregatePacketUpdateClient {
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             block_hash: ibc_event.block_hash,
                             packet_event: PacketEvent::Send(packet),
+                            __marker: PhantomData,
                         },
                     ),
                 }])]
@@ -299,17 +328,19 @@ impl<L: LightClient> Event<L> {
                     client_id,
                     counterparty_client_id,
                 } => [RelayerMsg::Aggregate {
-                    queue: [fetch::<L>(
-                        l.chain().chain_id(),
-                        FetchTrustedClientState {
-                            at: QueryHeight::Latest,
-                            client_id: client_id.clone(),
+                    queue: [fetch::<Hc, Tr>(
+                        l.chain_id(),
+                        FetchLatestClientState {
+                            path: ClientStatePath {
+                                client_id: client_id.clone(),
+                            },
+                            __marker: PhantomData,
                         },
                     )]
                     .into(),
                     data: [].into(),
                     receiver: aggregate(
-                        l.chain().chain_id(),
+                        l.chain_id(),
                         AggregateUpdateClientFromClientId {
                             client_id,
                             counterparty_client_id,
@@ -322,7 +353,7 @@ impl<L: LightClient> Event<L> {
     }
 }
 
-impl<L: LightClient> Display for Event<L> {
+impl<Hc: ChainExt, Tr: ChainExt> Display for Event<Hc, Tr> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Event::Ibc(_) => write!(f, "Ibc"),
@@ -333,17 +364,13 @@ impl<L: LightClient> Display for Event<L> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct IbcEvent<L: LightClient> {
+pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
     pub block_hash: H256,
-    pub height: HeightOf<ChainOf<L>>,
-    pub event: unionlabs::events::IbcEvent<
-        ClientIdOf<ChainOf<L>>,
-        ClientTypeOf<ChainOf<L>>,
-        ClientIdOf<ChainOf<L::Counterparty>>,
-    >,
+    pub height: HeightOf<Hc>,
+    pub event: unionlabs::events::IbcEvent<ClientIdOf<Hc>, ClientTypeOf<Hc>, ClientIdOf<Tr>>,
 }
 
-impl<L: LightClient> Display for IbcEvent<L> {
+impl<Hc: ChainExt, Tr: ChainExt> Display for IbcEvent<Hc, Tr> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use unionlabs::events::IbcEvent::*;
 
@@ -375,10 +402,10 @@ impl<L: LightClient> Display for IbcEvent<L> {
 )]
 #[serde(bound(serialize = "", deserialize = ""))]
 #[display(fmt = "Command::{}")]
-pub enum Command<L: LightClient> {
+pub enum Command<Hc: ChainExt, Tr: ChainExt> {
     #[display(fmt = "UpdateClient({client_id}, {counterparty_client_id})")]
     UpdateClient {
-        client_id: ClientIdOf<ChainOf<L>>,
-        counterparty_client_id: ClientIdOf<ChainOf<L::Counterparty>>,
+        client_id: ClientIdOf<Hc>,
+        counterparty_client_id: ClientIdOf<Tr>,
     },
 }

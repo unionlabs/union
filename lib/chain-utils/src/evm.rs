@@ -12,26 +12,25 @@ use contracts::{
     shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
 };
 use ethers::{
-    abi::{AbiEncode, Tokenizable},
+    abi::Tokenizable,
     contract::{ContractError, EthCall, EthLogDecode},
     core::k256::ecdsa,
     middleware::{NonceManagerMiddleware, SignerMiddleware},
     providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
     signers::{LocalWallet, Wallet},
-    utils::{keccak256, secret_key_to_address},
+    utils::secret_key_to_address,
 };
 use futures::{stream, Future, FutureExt, Stream, StreamExt};
-use prost::Message;
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
+    encoding::{Decode, EthAbi},
     ethereum::config::ChainSpec,
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
         CreateClient, IbcEvent, RecvPacket, SendPacket,
     },
-    google::protobuf::any::Any,
     hash::{H160, H256},
     ibc::{
         core::{
@@ -39,16 +38,15 @@ use unionlabs::{
             client::height::{Height, IsHeight},
             connection::connection_end::ConnectionEnd,
         },
-        lightclients::{cometbls, ethereum, tendermint::fraction::Fraction, wasm},
+        lightclients::{cometbls, ethereum, tendermint::fraction::Fraction},
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
     proof::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, IbcPath, IbcStateRead,
+        CommitmentPath, ConnectionPath, IbcPath,
     },
     traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
     uint::U256,
-    validated::ValidateT,
     EmptyString, TryFromEthAbi, TryFromEthAbiErrorOf,
 };
 
@@ -85,16 +83,19 @@ pub struct Config {
 }
 
 impl<C: ChainSpec> Chain for Evm<C> {
-    type SelfClientState =
-        Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>;
-    type SelfConsensusState =
-        Any<wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>>;
+    type SelfClientState = ethereum::client_state::ClientState;
+    type SelfConsensusState = ethereum::consensus_state::ConsensusState;
 
-    type Header = wasm::client_message::ClientMessage<ethereum::header::Header<C>>;
+    type StoredClientState<Tr: Chain> = Tr::SelfClientState;
+    type StoredConsensusState<Tr: Chain> = Tr::SelfConsensusState;
+
+    type Header = ethereum::header::Header<C>;
 
     type Height = Height;
 
     type ClientId = EvmClientId;
+
+    type IbcStateEncoding = EthAbi;
 
     type ClientType = String;
 
@@ -174,39 +175,35 @@ impl<C: ChainSpec> Chain for Evm<C> {
         async move {
             let genesis = self.beacon_api_client.genesis().await.unwrap().data;
 
-            Any(wasm::client_state::ClientState {
-                data: ethereum::client_state::ClientState {
-                    chain_id: self.chain_id,
-                    genesis_validators_root: genesis.genesis_validators_root,
-                    genesis_time: genesis.genesis_time,
-                    fork_parameters: self
-                        .beacon_api_client
-                        .spec()
-                        .await
-                        .unwrap()
-                        .data
-                        .into_fork_parameters(),
-                    // REVIEW: Is this a preset config param? Or a per-chain config?
-                    seconds_per_slot: C::SECONDS_PER_SLOT::U64,
-                    slots_per_epoch: C::SLOTS_PER_EPOCH::U64,
-                    epochs_per_sync_committee_period: C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64,
-                    trusting_period: 100_000_000,
-                    latest_slot: beacon_height.revision_height,
-                    min_sync_committee_participants: 0,
-                    trust_level: Fraction {
-                        numerator: 1,
-                        denominator: 3,
-                    },
-                    frozen_height: Height {
-                        revision_number: 0,
-                        revision_height: 0,
-                    },
-                    counterparty_commitment_slot: U256::from(0),
-                    ibc_contract_address: self.readonly_ibc_handler.address().into(),
+            ethereum::client_state::ClientState {
+                chain_id: self.chain_id,
+                genesis_validators_root: genesis.genesis_validators_root,
+                genesis_time: genesis.genesis_time,
+                fork_parameters: self
+                    .beacon_api_client
+                    .spec()
+                    .await
+                    .unwrap()
+                    .data
+                    .into_fork_parameters(),
+                // REVIEW: Is this a preset config param? Or a per-chain config?
+                seconds_per_slot: C::SECONDS_PER_SLOT::U64,
+                slots_per_epoch: C::SLOTS_PER_EPOCH::U64,
+                epochs_per_sync_committee_period: C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64,
+                trusting_period: 100_000_000,
+                latest_slot: beacon_height.revision_height,
+                min_sync_committee_participants: 0,
+                trust_level: Fraction {
+                    numerator: 1,
+                    denominator: 3,
                 },
-                checksum: H256::default(),
-                latest_height: beacon_height,
-            })
+                frozen_height: Height {
+                    revision_number: 0,
+                    revision_height: 0,
+                },
+                counterparty_commitment_slot: U256::from(0),
+                ibc_contract_address: self.readonly_ibc_handler.address().into(),
+            }
         }
     }
 
@@ -252,18 +249,16 @@ impl<C: ChainSpec> Chain for Evm<C> {
             };
 
             let timestamp = bootstrap.header.execution.timestamp;
-            Any(wasm::consensus_state::ConsensusState {
-                data: ethereum::consensus_state::ConsensusState {
-                    slot: bootstrap.header.beacon.slot,
-                    // REVIEW: Should this be default?
-                    storage_root: H256::default(),
-                    timestamp,
-                    current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
-                    next_sync_committee: light_client_update
-                        .next_sync_committee
-                        .map(|nsc| nsc.aggregate_pubkey),
-                },
-            })
+            ethereum::consensus_state::ConsensusState {
+                slot: bootstrap.header.beacon.slot,
+                // REVIEW: Should this be default?
+                storage_root: H256::default(),
+                timestamp,
+                current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
+                next_sync_committee: light_client_update
+                    .next_sync_committee
+                    .map(|nsc| nsc.aggregate_pubkey),
+            }
         }
     }
 
@@ -381,7 +376,7 @@ impl<C: ChainSpec> Evm<C> {
         }
     }
 
-    pub async fn read_ibc_state<Call>(
+    pub async fn ibc_state_read_at_execution_height<Call>(
         &self,
         call: Call,
         at_execution_height: u64,
@@ -401,6 +396,80 @@ impl<C: ChainSpec> Evm<C> {
             .await
             .map(Call::Return::tuple_to_option)
     }
+
+    pub async fn ibc_state_read<P, Tracking>(
+        &self,
+        at: Height,
+        path: P,
+    ) -> Result<P::Output, ContractError<Provider<Ws>>>
+    where
+        P: EthereumStateRead<C, Tracking> + 'static,
+        Tracking: Chain,
+    {
+        let execution_block_number = self.execution_height(at).await;
+
+        self.readonly_ibc_handler
+            .method_hash::<P::EthCall, <P::EthCall as EthCallExt>::Return>(
+                P::EthCall::selector(),
+                path.into_eth_call(),
+            )
+            .expect("valid contract selector")
+            .block(execution_block_number)
+            .call()
+            .await
+            .map(P::decode_ibc_state)
+    }
+
+    // async fn ibc_state_proof<P, Tracking>(&self, at: Height, path: P) -> Vec<u8>
+    // where
+    //     P: IbcPath<Evm<C>, Tracking> + EthereumStateRead<C, Tracking> + 'static,
+    //     Tracking: Chain,
+    // {
+    //     let execution_height = self.execution_height(at).await;
+
+    //     let path = path.to_string();
+
+    //     let location = keccak256(
+    //         keccak256(path.as_bytes())
+    //             .into_iter()
+    //             .chain(ethers::types::U256::from(0).encode())
+    //             .collect::<Vec<_>>(),
+    //     );
+
+    //     let proof = self
+    //         .provider
+    //         .get_proof(
+    //             self.readonly_ibc_handler.address(),
+    //             vec![location.into()],
+    //             Some(execution_height.into()),
+    //         )
+    //         .await
+    //         .unwrap();
+
+    //     tracing::info!(?proof);
+
+    //     let proof = match <[_; 1]>::try_from(proof.storage_proof) {
+    //         Ok([proof]) => proof,
+    //         Err(invalid) => {
+    //             panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
+    //         }
+    //     };
+
+    //     protos::union::ibc::lightclients::ethereum::v1::StorageProof {
+    //         proofs: [protos::union::ibc::lightclients::ethereum::v1::Proof {
+    //             key: proof.key.to_fixed_bytes().to_vec(),
+    //             // REVIEW(benluelo): Make sure this encoding works
+    //             value: proof.value.encode(),
+    //             proof: proof
+    //                 .proof
+    //                 .into_iter()
+    //                 .map(|bytes| bytes.to_vec())
+    //                 .collect(),
+    //         }]
+    //         .to_vec(),
+    //     }
+    //     .encode_to_vec()
+    // }
 }
 
 pub type EvmClientId = ClientId;
@@ -514,7 +583,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                         };
 
                         let read_channel = |port_id: String, channel_id: String| async {
-                            this.read_ibc_state(
+                            this.ibc_state_read_at_execution_height(
                                 GetChannelCall {
                                     port_id: port_id.clone(),
                                     channel_id: channel_id.clone(),
@@ -532,7 +601,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                         };
 
                         let read_connection = |connection_id: String| async {
-                            this.read_ibc_state(
+                            this.ibc_state_read_at_execution_height(
                                 GetConnectionCall {
                                     connection_id: connection_id.clone(),
                                 },
@@ -644,11 +713,6 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .channel_id
                                         .parse()
                                         .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    // TODO: Ensure that event.counterparty_channel_id is `EmptyString`
-                                    counterparty_channel_id: ""
-                                        .to_string()
-                                        .validate()
-                                        .expect("empty string is a valid empty string; qed;"),
                                     counterparty_port_id: event
                                         .counterparty_port_id
                                         .parse()
@@ -728,7 +792,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     String,
                                     EmptyString,
                                 > = this
-                                    .read_ibc_state(
+                                    .ibc_state_read_at_execution_height(
                                         GetConnectionCall {
                                             connection_id: event.connection_id.clone(),
                                         },
@@ -985,111 +1049,151 @@ pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> 
     genesis_timestamp + (next_epoch_slot * C::SECONDS_PER_SLOT::U64)
 }
 
-impl<Counterparty, C, P> IbcStateRead<Counterparty, P> for Evm<C>
+// impl<C: ChainSpec> IbcStateRead for Evm<C> {
+//     fn client_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientStatePath<ClientIdOf<Self>>,
+//     ) -> impl Future<Output = <ClientStatePath<ClientIdOf<Self>> as IbcPath<Self, Tracking>>::Output>
+//     where
+//         <ClientStatePath<ClientIdOf<Self>> as IbcPath<Self, Tracking>>::Output:
+//             Decode<Self::IbcStateEncoding>,
+//     {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//             .map(|x| x.unwrap())
+//     }
+
+//     fn client_consensus_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>>,
+//     ) -> impl Future<
+//         Output = <ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>> as IbcPath<
+//             Self,
+//             Tracking,
+//         >>::Output,
+//     >
+//     where
+//         ConsensusStateOf<Tracking>: Decode<Self::IbcStateEncoding>,
+//     {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//             .map(|x| x.unwrap())
+//     }
+
+//     fn connection<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ConnectionPath,
+//     ) -> impl Future<Output = <ConnectionPath as IbcPath<Self, Tracking>>::Output> {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//             .map(|x| x.unwrap())
+//     }
+
+//     fn channel_end<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ChannelEndPath,
+//     ) -> impl Future<Output = <ChannelEndPath as IbcPath<Self, Tracking>>::Output> {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//             .map(|x| x.unwrap())
+//     }
+
+//     fn commitment<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: CommitmentPath,
+//     ) -> impl Future<Output = <CommitmentPath as IbcPath<Self, Tracking>>::Output> {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//             .map(|x| x.unwrap())
+//     }
+
+//     fn acknowledgement<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: AcknowledgementPath,
+//     ) -> impl Future<Output = <AcknowledgementPath as IbcPath<Self, Tracking>>::Output> {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//             .map(|x| x.unwrap())
+//     }
+// }
+
+// impl<C: ChainSpec> IbcStateProve for Evm<C> {
+//     fn client_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientStatePath<ClientIdOf<Self>>,
+//     ) -> impl Future<Output = Vec<u8>>
+//     where
+//         ClientStateOf<Tracking>: Decode<Self::IbcStateEncoding>,
+//     {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+
+//     fn client_consensus_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>>,
+//     ) -> impl Future<Output = Vec<u8>>
+//     where
+//         ConsensusStateOf<Tracking>: Decode<Self::IbcStateEncoding>,
+//     {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+
+//     fn connection<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ConnectionPath,
+//     ) -> impl Future<Output = Vec<u8>> {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+
+//     fn channel_end<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ChannelEndPath,
+//     ) -> impl Future<Output = Vec<u8>> {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+
+//     fn commitment<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: CommitmentPath,
+//     ) -> impl Future<Output = Vec<u8>> {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+
+//     fn acknowledgement<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: AcknowledgementPath,
+//     ) -> impl Future<Output = Vec<u8>> {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+// }
+
+pub trait EthereumStateRead<C, Tr>: IbcPath<Evm<C>, Tr>
 where
-    Counterparty: Chain,
-    C: ChainSpec,
-    P: IbcPath<Evm<C>, Counterparty>
-        + EthereumStateRead<
-            C,
-            Counterparty,
-            Encoded = <<<P as EthereumStateRead<C, Counterparty>>::EthCall as EthCallExt>::Return as TupleToOption>::Inner,
-        > + 'static,
-    <P::EthCall as EthCallExt>::Return: TupleToOption,
-{
-    fn proof(
-        &self,
-        path: P,
-        at: Height,
-    ) -> impl Future<Output = Vec<u8>> + '_ {
-        async move {
-            let execution_height = self.execution_height(at).await;
-
-            let path = path.to_string();
-
-            let location = keccak256(
-                keccak256(path.as_bytes())
-                    .into_iter()
-                    .chain(ethers::types::U256::from(0).encode())
-                    .collect::<Vec<_>>(),
-            );
-
-            let proof = self
-                .provider
-                .get_proof(
-                    self.readonly_ibc_handler.address(),
-                    vec![location.into()],
-                    Some(execution_height.into()),
-                )
-                .await
-                .unwrap();
-
-            tracing::info!(?proof);
-
-            let proof = match <[_; 1]>::try_from(proof.storage_proof) {
-                Ok([proof]) => proof,
-                Err(invalid) => {
-                    panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
-                }
-            };
-
-                protos::union::ibc::lightclients::ethereum::v1::StorageProof {
-                    proofs: [protos::union::ibc::lightclients::ethereum::v1::Proof {
-                        key: proof.key.to_fixed_bytes().to_vec(),
-                        // REVIEW(benluelo): Make sure this encoding works
-                        value: proof.value.encode(),
-                        proof: proof
-                            .proof
-                            .into_iter()
-                            .map(|bytes| bytes.to_vec())
-                            .collect(),
-                    }]
-                    .to_vec(),
-                }
-                .encode_to_vec()
-        }
-    }
-
-    fn state(&self, path: P, at: Self::Height) -> impl Future<Output = <P as IbcPath<Evm<C>, Counterparty>>::Output> + '_
-    {
-        async move {
-            let execution_block_number = self.execution_height(at).await;
-
-            self.read_ibc_state(path.into_eth_call(), execution_block_number)
-                .await
-                .unwrap()
-                .map(|x| P::decode_ibc_state(x))
-                .unwrap()
-        }
-    }
-}
-
-pub trait EthereumStateRead<C, Counterparty>: IbcPath<Evm<C>, Counterparty>
-where
-    Counterparty: Chain,
+    Tr: Chain,
     C: ChainSpec,
 {
-    /// The type of the encoded state returned from the contract. This may be bytes (see client state)
-    /// or a type (see connection end)
-    /// Since solidity doesn't support generics, it emulates generics by using bytes in interfaces and
-    /// "downcasting" (via parsing) to expected types in implementations.
-    type Encoded;
-
     type EthCall: EthCallExt + 'static;
 
     fn into_eth_call(self) -> Self::EthCall;
 
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output;
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output;
 }
 
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
+impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr>
     for ClientStatePath<<Evm<C> as Chain>::ClientId>
 where
-    ClientStateOf<Counterparty>: TryFromEthAbi,
-    TryFromEthAbiErrorOf<ClientStateOf<Counterparty>>: Debug,
+    ClientStateOf<Tr>: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
+    Tr::SelfClientState: Decode<EthAbi>,
+    Tr::SelfClientState: Decode<EthAbi>,
+    Tr::SelfClientState: unionlabs::EthAbi,
+    <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
-    type Encoded = Vec<u8>;
-
     type EthCall = GetClientStateCall;
 
     fn into_eth_call(self) -> Self::EthCall {
@@ -1098,19 +1202,19 @@ where
         }
     }
 
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        Self::Output::try_from_eth_abi_bytes(&encoded).unwrap()
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
+        <Self::Output as Decode<EthAbi>>::decode(&encoded.0).unwrap()
     }
 }
 
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty>
-    for ClientConsensusStatePath<<Evm<C> as Chain>::ClientId, <Counterparty as Chain>::Height>
+impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr>
+    for ClientConsensusStatePath<<Evm<C> as Chain>::ClientId, <Tr as Chain>::Height>
 where
-    ConsensusStateOf<Counterparty>: TryFromEthAbi,
-    TryFromEthAbiErrorOf<ConsensusStateOf<Counterparty>>: Debug,
+    ConsensusStateOf<Tr>: Decode<EthAbi>,
+    Tr::SelfClientState: Decode<EthAbi>,
+    Tr::SelfClientState: unionlabs::EthAbi,
+    <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
-    type Encoded = Vec<u8>;
-
     type EthCall = GetConsensusStateCall;
 
     fn into_eth_call(self) -> Self::EthCall {
@@ -1120,15 +1224,13 @@ where
         }
     }
 
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        dbg!(hex::encode(&encoded));
-        Self::Output::try_from_eth_abi_bytes(&encoded).unwrap()
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
+        dbg!(hex::encode(&encoded.consensus_state_bytes));
+        <Self::Output as Decode<EthAbi>>::decode(&encoded.consensus_state_bytes).unwrap()
     }
 }
 
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for ConnectionPath {
-    type Encoded = IbcCoreConnectionV1ConnectionEndData;
-
+impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for ConnectionPath {
     type EthCall = GetConnectionCall;
 
     fn into_eth_call(self) -> Self::EthCall {
@@ -1137,14 +1239,12 @@ impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for C
         }
     }
 
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        encoded.try_into().unwrap()
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
+        encoded.0.try_into().unwrap()
     }
 }
 
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for ChannelEndPath {
-    type Encoded = IbcCoreChannelV1ChannelData;
-
+impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for ChannelEndPath {
     type EthCall = GetChannelCall;
 
     fn into_eth_call(self) -> Self::EthCall {
@@ -1154,14 +1254,12 @@ impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for C
         }
     }
 
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        encoded.try_into().unwrap()
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
+        encoded.0.try_into().unwrap()
     }
 }
 
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for CommitmentPath {
-    type Encoded = [u8; 32];
-
+impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for CommitmentPath {
     type EthCall = GetHashedPacketCommitmentCall;
 
     fn into_eth_call(self) -> Self::EthCall {
@@ -1172,14 +1270,12 @@ impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for C
         }
     }
 
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        encoded.into()
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
+        encoded.0.into()
     }
 }
 
-impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for AcknowledgementPath {
-    type Encoded = [u8; 32];
-
+impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for AcknowledgementPath {
     type EthCall = GetHashedPacketAcknowledgementCommitmentCall;
 
     fn into_eth_call(self) -> Self::EthCall {
@@ -1190,8 +1286,8 @@ impl<C: ChainSpec, Counterparty: Chain> EthereumStateRead<C, Counterparty> for A
         }
     }
 
-    fn decode_ibc_state(encoded: Self::Encoded) -> Self::Output {
-        encoded.into()
+    fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
+        encoded.0.into()
     }
 }
 
@@ -1240,7 +1336,7 @@ pub async fn setup_initial_channel<C: ChainSpec>(
     //                 features: vec!["ORDER_ORDERED".into(), "ORDER_UNORDERED".into()],
     //             }],
     //             state: 3,
-    //             counterparty: IbcCoreConnectionV1CounterpartyData {
+    //             counterparty: IbcCoreConnectionV1TrData {
     //                 client_id: "08-wasm-0".into(),
     //                 connection_id: "connection-0".into(),
     //                 prefix: IbcCoreCommitmentV1MerklePrefixData {
@@ -1254,7 +1350,7 @@ pub async fn setup_initial_channel<C: ChainSpec>(
     //         IbcCoreChannelV1ChannelData {
     //             state: 3,
     //             ordering: 1,
-    //             counterparty: IbcCoreChannelV1CounterpartyData {
+    //             counterparty: IbcCoreChannelV1TrData {
     //                 port_id: counterparty_port_id,
     //                 channel_id,
     //             },

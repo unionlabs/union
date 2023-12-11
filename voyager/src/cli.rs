@@ -8,15 +8,25 @@ use ethers::{
     signers::LocalWallet,
     types::{Address, H256},
 };
+use frunk::{hlist_pat, HList};
 use reqwest::Url;
 use unionlabs::{
     ibc::core::client::height::Height,
+    id::ClientId,
     proof::{
-        self, ClientConsensusStatePath, ClientStatePath, IbcPath, IbcStateRead, IbcStateReadPaths,
+        self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath,
     },
-    traits::{Chain, HeightOf},
+    traits::HeightOf,
     QueryHeight,
 };
+use voyager_message::{
+    data::{IbcProof, IbcState},
+    use_aggregate::{HListTryFromIterator, IsAggregateData},
+    ChainExt, DoFetchProof, DoFetchState, Identified,
+};
+
+use crate::queue::{InMemoryQueue, Queue, Voyager};
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -54,14 +64,33 @@ pub enum Command {
 #[derive(Debug, Subcommand)]
 pub enum QueryCmd {
     #[command(subcommand)]
-    IbcPath(proof::Path<String, Height>),
+    IbcPath(proof::Path<ClientId, Height>),
 }
 
-pub async fn any_state_proof_to_json<Counterparty: Chain, This: IbcStateReadPaths<Counterparty>>(
-    path: proof::Path<String, Height>,
-    c: This,
-    height: QueryHeight<HeightOf<This>>,
-) -> String {
+pub async fn any_state_proof_to_json<Hc, Tr>(
+    mut voyager: Voyager<InMemoryQueue>,
+    path: proof::Path<Hc::ClientId, Tr::Height>,
+    c: Hc,
+    height: QueryHeight<HeightOf<Hc>>,
+) -> String
+where
+    Hc: ChainExt + DoFetchState<Hc, Tr> + DoFetchProof<Hc, Tr>,
+    Tr: ChainExt,
+    Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>>:
+        IsAggregateData,
+    Identified<Hc, Tr, IbcProof<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>>:
+        IsAggregateData,
+    Identified<Hc, Tr, IbcState<Hc, Tr, ConnectionPath>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<Hc, Tr, ConnectionPath>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<Hc, Tr, ChannelEndPath>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<Hc, Tr, ChannelEndPath>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<Hc, Tr, CommitmentPath>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<Hc, Tr, CommitmentPath>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<Hc, Tr, AcknowledgementPath>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<Hc, Tr, AcknowledgementPath>>: IsAggregateData,
+{
     use serde_json::to_string_pretty as json;
 
     let height = match height {
@@ -69,63 +98,120 @@ pub async fn any_state_proof_to_json<Counterparty: Chain, This: IbcStateReadPath
         QueryHeight::Specific(height) => height,
     };
 
-    async fn state_proof<
-        Counterparty: Chain,
-        This: IbcStateRead<Counterparty, P>,
-        P: IbcPath<This, Counterparty>,
-    >(
-        path: P,
-        c: This,
-        height: HeightOf<This>,
-    ) -> StateProof<Counterparty, This, P> {
-        StateProof {
-            state: c.state(path.clone(), height).await,
-            proof: c.proof(path, height).await,
-            height,
+    tracing::info!("latest height is {height}");
+
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    let (fut, abort_handle) =
+        futures::future::abortable(voyager.worker(0).run(voyager.queue.clone(), Some(tx)));
+    let handle = tokio::spawn(fut);
+
+    voyager
+        .queue
+        .enqueue(Hc::state(&c, height, path.clone()))
+        .await
+        .unwrap();
+    voyager
+        .queue
+        .enqueue(Hc::proof(&c, height, path.clone()))
+        .await
+        .unwrap();
+
+    tracing::info!("spawned worker");
+
+    let mut output = vec![];
+    for t in rx.iter() {
+        tracing::warn!(%t, "received data");
+        output.push(t);
+        if output.len() >= 2 {
+            tracing::warn!("received all data");
+            break;
         }
     }
 
-    #[derive(Debug, serde::Serialize)]
-    #[serde(bound(serialize = ""))]
-    struct StateProof<
-        Counterparty: Chain,
-        This: IbcStateRead<Counterparty, P>,
-        P: IbcPath<This, Counterparty>,
-    > {
-        state: P::Output,
-        #[serde(with = "::serde_utils::hex_string")]
-        proof: Vec<u8>,
-        height: HeightOf<This>,
-    }
+    dbg!(&output);
+
+    abort_handle.abort();
+    handle.abort();
 
     match path {
-        proof::Path::ClientStatePath(path) => json(
-            &state_proof(
-                ClientStatePath {
-                    client_id: path.client_id.parse().unwrap(),
-                },
-                c,
-                height,
-            )
-            .await,
-        ),
-        proof::Path::ClientConsensusStatePath(path) => json(
-            &state_proof(
-                ClientConsensusStatePath {
-                    client_id: path.client_id.parse().unwrap(),
-                    height: path.height.into(),
-                },
-                c,
-                height,
-            )
-            .await,
-        ),
-        proof::Path::ConnectionPath(path) => json(&state_proof(path, c, height).await),
-        proof::Path::ChannelEndPath(path) => json(&state_proof(path, c, height).await),
-        proof::Path::CommitmentPath(path) => json(&state_proof(path, c, height).await),
-        proof::Path::AcknowledgementPath(path) => json(&state_proof(path, c, height).await),
+        proof::Path::ClientStatePath(path) => json(&StateProof::<Hc, Tr, _>::from_data(
+            path,
+            HListTryFromIterator::try_from_iter(output.into()).unwrap(),
+        )),
+        proof::Path::ClientConsensusStatePath(path) => json(&StateProof::<Hc, Tr, _>::from_data(
+            path,
+            HListTryFromIterator::try_from_iter(output.into()).unwrap(),
+        )),
+        proof::Path::ConnectionPath(path) => json(&StateProof::<Hc, Tr, _>::from_data(
+            path,
+            HListTryFromIterator::try_from_iter(output.into()).unwrap(),
+        )),
+        proof::Path::ChannelEndPath(path) => json(&StateProof::<Hc, Tr, _>::from_data(
+            path,
+            HListTryFromIterator::try_from_iter(output.into()).unwrap(),
+        )),
+        proof::Path::CommitmentPath(path) => json(&StateProof::<Hc, Tr, _>::from_data(
+            path,
+            HListTryFromIterator::try_from_iter(output.into()).unwrap(),
+        )),
+        proof::Path::AcknowledgementPath(path) => json(&StateProof::<Hc, Tr, _>::from_data(
+            path,
+            HListTryFromIterator::try_from_iter(output.into()).unwrap(),
+        )),
     }
     .unwrap()
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(bound(serialize = ""))]
+struct StateProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
+    #[serde(with = "::serde_utils::string")]
+    path: P,
+    state: P::Output,
+    #[serde(with = "::serde_utils::hex_string")]
+    proof: Vec<u8>,
+    height: HeightOf<Hc>,
+}
+
+type StateProofAggregatedData<Hc, Tr, P> =
+    HList![Identified<Hc, Tr, IbcState<Hc, Tr, P>>, Identified<Hc, Tr, IbcProof<Hc, Tr, P>>];
+
+impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> StateProof<Hc, Tr, P> {
+    fn from_data(
+        path: P,
+        hlist_pat![
+            Identified {
+                chain_id: _state_chain_id,
+                data: IbcState {
+                    path: state_path,
+                    height: state_height,
+                    state,
+                },
+                __marker: _,
+            },
+            Identified {
+                chain_id: _proof_chain_id,
+                data: IbcProof {
+                    path: proof_path,
+                    height: proof_height,
+                    proof,
+                    __marker: _,
+                },
+                __marker: _,
+            },
+        ]: StateProofAggregatedData<Hc, Tr, P>,
+    ) -> Self {
+        assert_eq!(state_path, proof_path);
+        assert_eq!(state_height, proof_height);
+
+        Self {
+            path,
+            state,
+            proof,
+            height: proof_height,
+        }
+    }
 }
 
 #[derive(Debug, Subcommand)]

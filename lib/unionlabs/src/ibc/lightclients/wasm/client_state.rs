@@ -3,8 +3,8 @@ use std::fmt::Debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::InvalidLength, hash::H256, ibc::core::client::height::Height, IntoProto, Proto,
-    TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl,
+    encoding::Decode, errors::InvalidLength, hash::H256, ibc::core::client::height::Height,
+    IntoProto, Proto, TypeUrl,
 };
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClientState<Data> {
@@ -30,7 +30,7 @@ where
     }
 }
 
-impl<Data: Proto> Proto for ClientState<Data> {
+impl<Data> Proto for ClientState<Data> {
     type Proto = protos::ibc::lightclients::wasm::v1::ClientState;
 }
 
@@ -43,18 +43,15 @@ pub enum TryFromWasmClientStateError<Err> {
 
 impl<Data> TryFrom<protos::ibc::lightclients::wasm::v1::ClientState> for ClientState<Data>
 where
-    Data: TryFromProto,
-    <Data as Proto>::Proto: prost::Message + Default,
-    TryFromProtoErrorOf<Data>: Debug,
+    Data: Decode<crate::encoding::Proto>,
 {
-    type Error = TryFromWasmClientStateError<TryFromProtoBytesError<TryFromProtoErrorOf<Data>>>;
+    type Error = TryFromWasmClientStateError<Data::Error>;
 
     fn try_from(
         value: protos::ibc::lightclients::wasm::v1::ClientState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            data: Data::try_from_proto_bytes(&value.data)
-                .map_err(TryFromWasmClientStateError::TryFromProto)?,
+            data: Data::decode(&value.data).map_err(TryFromWasmClientStateError::TryFromProto)?,
             checksum: value
                 .checksum
                 .try_into()

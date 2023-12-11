@@ -60,6 +60,8 @@
           cargoTestExtraAttrs ? { }
         , # extra args to be passed to cargo build.
           cargoBuildExtraArgs ? ""
+        , # extra args to be passed to cargo clippy.
+          cargoClippyExtraArgs ? ""
         , # if set to a string, the crate will be built for the specified target and will
           # rebuild the std library. incompatible with `cargoBuildRustToolchain`.
           buildStdTarget ? null
@@ -281,11 +283,10 @@
             )
           );
 
-
           checks = mkChecks "${cratePname}" {
             clippy = craneLib.cargoClippy (crateAttrs // {
               cargoArtifacts = artifacts;
-              cargoClippyExtraArgs = " -- --deny warnings";
+              cargoClippyExtraArgs = " -- --deny warnings ${cargoClippyExtraArgs}";
             });
             tests = craneLib.cargoNextest cargoNextestAttrs;
           };

@@ -10,7 +10,6 @@ serde = { version = "1.0.173", features = ["derive"] }
 frame-support-procedural = "18.0.0"
 unionlabs = { workspace = true, features = ["ethabi"] }
 serde-utils.workspace = true
-lightclient.workspace = true
 chain-utils.workspace = true
 frunk = "0.4.2"
 futures = "0.3.28"
@@ -30,6 +29,8 @@ thiserror = "1.0.50"
 serde_json = "1.0.108"
 tokio = { version = "1.33.0", default-features = false, features = ["time"] }
 derive_more = { workspace = true, features = ["display"] }
+enumorph = "0.1.2"
+hex = { version = "0.4.3", features = [ "serde" ] }
 
 [dev-dependencies]
 hex-literal = "0.4.1"

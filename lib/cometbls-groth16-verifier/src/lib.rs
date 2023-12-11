@@ -450,6 +450,7 @@ impl From<[u8; COMMITMENT_HASH_SIZE]> for CommitmentHashLE {
     }
 }
 
+#[derive(Debug)]
 pub struct ZKP<FromOrder, P: Pairing> {
     pub proof: Proof<P>,
     pub commitment_hash: U256,

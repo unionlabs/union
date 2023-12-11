@@ -254,14 +254,12 @@ event! {
             counterparty_connection_id: ConnectionId,
         },
 
-        #[event(tag = "channel_open_init")]
+        #[event(tag = "channel_open_init", deprecated("counterparty_channel_id"))]
         ChannelOpenInit {
             #[parse(PortId::from_str)]
             port_id: PortId,
             #[parse(ChannelId::from_str)]
             channel_id: ChannelId,
-            #[parse(EmptyString::from_str)]
-            counterparty_channel_id: EmptyString,
             #[parse(PortId::from_str)]
             counterparty_port_id: PortId,
             #[parse(ConnectionId::from_str)]
@@ -529,7 +527,6 @@ mod tests {
                     revision_number: 1,
                     revision_height: 1,
                 }],
-                header: vec![0x01],
             };
 
             assert_eq!(

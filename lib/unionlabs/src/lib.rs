@@ -61,6 +61,8 @@ pub mod validated;
 
 pub mod hash;
 
+pub mod encoding;
+
 // TODO: Replace with something like <https://github.com/recmo/uint>
 pub mod uint;
 
@@ -244,15 +246,6 @@ pub mod test_utils {
 
         assert_eq!(t, &from_str, "string roundtrip failed");
     }
-}
-
-/// The various `msg` types for cosmos have an extra `signer` field that
-/// the solidity equivalents don't have; this trait is required to allow
-/// the signer to be passed in.
-pub trait MsgIntoProto {
-    type Proto: TypeUrl;
-
-    fn into_proto_with_signer(self, signer: &CosmosAccountId) -> Self::Proto;
 }
 
 #[cfg(feature = "ethabi")]
@@ -502,19 +495,15 @@ pub mod traits {
     use serde::{Deserialize, Serialize};
 
     use crate::{
+        encoding::{Decode, Encode, Encoding},
         ethereum::config::ChainSpec,
         google::protobuf::any::Any,
         hash::H256,
         ibc::{
-            core::{
-                channel::channel::Channel,
-                client::height::{Height, IsHeight},
-                connection::connection_end::ConnectionEnd,
-            },
+            core::client::height::{Height, IsHeight},
             lightclients::{cometbls, ethereum, wasm},
         },
-        id::{ChannelId, ConnectionId, PortId},
-        proof::IbcStateReadPaths,
+        id::{ChannelId, PortId},
         uint::U256,
         validated::{Validate, Validated},
     };
@@ -550,15 +539,40 @@ pub mod traits {
 
     /// Represents a chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
     /// various other [`Chain`]s, all sharing a common config.
-    pub trait Chain {
+    pub trait Chain: Sized + Send + Sync + 'static {
         type SelfClientState: Debug
             + Clone
             + PartialEq
             + Serialize
             + for<'de> Deserialize<'de>
+            + crate::IntoProto // hack
             // TODO: Bound ChainId in the same way
             + ClientState<Height = Self::Height>;
-        type SelfConsensusState: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+        type SelfConsensusState: ConsensusState
+            + Debug
+            + Clone
+            + PartialEq
+            + crate::IntoProto // hack
+            + Serialize
+            + for<'de> Deserialize<'de>;
+
+        type StoredClientState<Tr: Chain>: Debug
+            + Clone
+            + PartialEq
+            + Serialize
+            + for<'de> Deserialize<'de>
+            // + StoredState<Self>
+            + ClientState<ChainId = ChainIdOf<Tr>, Height = Tr::Height>
+            // + Encode<Self::IbcStateEncoding>
+            + 'static;
+        type StoredConsensusState<Tr: Chain>: Debug
+            + Clone
+            + PartialEq
+            + Serialize
+            + for<'de> Deserialize<'de>
+            // + Encode<Self::IbcStateEncoding>
+            // + StoredState<Self>
+            + 'static;
 
         type Header: Header + Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
@@ -567,12 +581,16 @@ pub mod traits {
 
         type ClientId: Id;
 
+        type IbcStateEncoding: Encoding;
+
         /// Available client types for this chain.
         type ClientType: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
         type Error: Debug;
 
         fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId;
+
+        // fn encode_stored_client_state(cs: &Self::StoredClientState)
 
         fn query_latest_height(
             &self,
@@ -603,6 +621,12 @@ pub mod traits {
             destination_port_id: PortId,
             sequence: u64,
         ) -> impl Future<Output = Vec<u8>> + '_;
+    }
+
+    pub trait StoredState<Hc: Chain> {}
+    impl<Hc: Chain, State: Encode<Hc::IbcStateEncoding> + Decode<Hc::IbcStateEncoding>>
+        StoredState<Hc> for State
+    {
     }
 
     pub trait ClientState {
@@ -680,80 +704,54 @@ pub mod traits {
     }
 
     pub trait Header {
-        fn timestamp(&self) -> u64;
+        fn trusted_height(&self) -> Height;
     }
 
-    impl<C: ChainSpec> Header for wasm::client_message::ClientMessage<ethereum::header::Header<C>> {
-        fn timestamp(&self) -> u64 {
-            self.data
-                .consensus_update
-                .attested_header
-                .execution
-                .timestamp
+    impl<C: ChainSpec> Header for ethereum::header::Header<C> {
+        fn trusted_height(&self) -> Height {
+            self.trusted_sync_committee.trusted_height
+        }
+    }
+
+    impl<Data: Header> Header for wasm::client_message::ClientMessage<Data> {
+        fn trusted_height(&self) -> Height {
+            self.data.trusted_height()
         }
     }
 
     impl Header for cometbls::header::Header {
-        fn timestamp(&self) -> u64 {
-            self.signed_header
-                .header
-                .time
-                .seconds
-                .inner()
-                .try_into()
-                .unwrap()
+        fn trusted_height(&self) -> Height {
+            self.trusted_height
         }
     }
-    /// The IBC interface on a [`Chain`] that knows how to connect to a counterparty.
-    pub trait LightClientBase: Send + Sync + Sized {
-        /// The chain that this light client is on.
-        type HostChain: Chain
-            + IbcStateReadPaths<<Self::Counterparty as LightClientBase>::HostChain>;
-        type Counterparty: LightClientBase<Counterparty = Self>;
 
-        /// The config required to construct this light client.
-        type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+    pub trait ConsensusState {
+        fn timestamp(&self) -> u64;
+    }
 
-        /// Get the underlying [`Self::HostChain`] that this client is on.
-        fn chain(&self) -> &Self::HostChain;
+    impl ConsensusState for ethereum::consensus_state::ConsensusState {
+        fn timestamp(&self) -> u64 {
+            self.timestamp
+        }
+    }
 
-        fn from_chain(chain: Self::HostChain) -> Self;
+    impl<Data: ConsensusState> ConsensusState for wasm::consensus_state::ConsensusState<Data> {
+        fn timestamp(&self) -> u64 {
+            self.data.timestamp()
+        }
+    }
 
-        fn channel(
-            &self,
-            channel_id: ChannelId,
-            port_id: PortId,
-            at: HeightOf<Self::HostChain>,
-        ) -> impl Future<Output = Channel> + '_;
-
-        fn connection(
-            &self,
-            connection_id: ConnectionId,
-            at: HeightOf<Self::HostChain>,
-        ) -> impl Future<
-            Output = ConnectionEnd<
-                <Self::HostChain as Chain>::ClientId,
-                <<Self::Counterparty as LightClientBase>::HostChain as Chain>::ClientId,
-                String,
-            >,
-        > + '_;
-
-        // TODO: Use state_proof instead
-        fn query_client_state(
-            &self,
-            // TODO: Make this Into<_>
-            client_id: <Self::HostChain as Chain>::ClientId,
-            height: HeightOf<Self::HostChain>,
-        ) -> impl Future<Output = ClientStateOf<<Self::Counterparty as LightClientBase>::HostChain>> + '_;
+    impl ConsensusState for cometbls::consensus_state::ConsensusState {
+        fn timestamp(&self) -> u64 {
+            self.timestamp
+        }
     }
 
     pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
     pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
     pub type HeaderOf<C> = <C as Chain>::Header;
     pub type HeightOf<C> = <C as Chain>::Height;
-    pub type ChainOf<L> = <L as LightClientBase>::HostChain;
-    pub type ChainIdOf<L> =
-        <<<L as LightClientBase>::HostChain as Chain>::SelfClientState as ClientState>::ChainId;
+    pub type ChainIdOf<C> = <<C as Chain>::SelfClientState as ClientState>::ChainId;
     pub type ClientIdOf<C> = <C as Chain>::ClientId;
     pub type ClientTypeOf<C> = <C as Chain>::ClientType;
 }

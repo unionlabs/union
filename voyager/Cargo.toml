@@ -53,4 +53,3 @@ tikv-jemallocator = "0.5"
 tokio-util = "0.7.9"
 
 voyager-message.workspace = true
-lightclient.workspace = true

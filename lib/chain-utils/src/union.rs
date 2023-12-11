@@ -8,23 +8,26 @@ use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tendermint_rpc::{query::Query, Client, Order, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
+    encoding::{Decode, Proto},
     events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
     hash::H256,
     ibc::{
-        core::{client::height::Height, commitment::merkle_root::MerkleRoot},
+        core::{
+            client::height::{Height, IsHeight},
+            commitment::merkle_root::MerkleRoot,
+        },
         lightclients::cometbls,
     },
     id::{ClientId, ConnectionId},
     parse_wasm_client_type,
     proof::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, IbcPath, IbcStateRead,
+        CommitmentPath, ConnectionPath, IbcPath,
     },
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
     traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
     validated::ValidateT,
-    CosmosAccountId, IntoEthAbi, MaybeRecoverableError, TryFromProto, TryFromProtoErrorOf,
-    WasmClientType,
+    CosmosAccountId, MaybeRecoverableError, TryFromProto, WasmClientType,
 };
 
 use crate::{
@@ -43,7 +46,7 @@ pub struct Union {
     pub prover_endpoint: String,
     pub grpc_url: String,
 
-    pub code_id_cache: Arc<dashmap::DashMap<H256, WasmClientType>>,
+    pub checksum_cache: Arc<dashmap::DashMap<H256, WasmClientType>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,6 +62,9 @@ impl Chain for Union {
     type SelfClientState = cometbls::client_state::ClientState;
     type SelfConsensusState = cometbls::consensus_state::ConsensusState;
 
+    type StoredClientState<Tr: Chain> = Tr::SelfClientState;
+    type StoredConsensusState<Tr: Chain> = Tr::SelfConsensusState;
+
     type Header = cometbls::header::Header;
 
     type Height = Height;
@@ -68,6 +74,8 @@ impl Chain for Union {
     type ClientType = String;
 
     type Error = tendermint_rpc::Error;
+
+    type IbcStateEncoding = Proto;
 
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id.clone()
@@ -326,24 +334,24 @@ impl Union {
             prover_endpoint: config.prover_endpoint,
             grpc_url: config.grpc_url,
             fee_denom: config.fee_denom,
-            code_id_cache: Arc::new(DashMap::default()),
+            checksum_cache: Arc::new(DashMap::default()),
         })
     }
 
-    pub async fn client_type_of_code_id(&self, code_id: H256) -> WasmClientType {
-        if let Some(ty) = self.code_id_cache.get(&code_id) {
+    pub async fn client_type_of_checksum(&self, checksum: H256) -> WasmClientType {
+        if let Some(ty) = self.checksum_cache.get(&checksum) {
             tracing::debug!(
-                code_id = %code_id.to_string_unprefixed(),
+                checksum = %checksum.to_string_unprefixed(),
                 ty = ?*ty,
-                "cache hit for code_id"
+                "cache hit for checksum"
             );
 
             return *ty;
         };
 
         tracing::info!(
-            code_id = %code_id.to_string_unprefixed(),
-            "cache miss for code_id"
+            checksum = %checksum.to_string_unprefixed(),
+            "cache miss for checksum"
         );
 
         let bz = protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
@@ -352,7 +360,7 @@ impl Union {
         .await
         .unwrap()
         .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
-            checksum: code_id.to_string_unprefixed(),
+            checksum: checksum.to_string_unprefixed(),
         })
         .await
         .unwrap()
@@ -362,149 +370,14 @@ impl Union {
         let ty = parse_wasm_client_type(bz).unwrap().unwrap();
 
         tracing::info!(
-            code_id = %code_id.to_string_unprefixed(),
+            checksum = %checksum.to_string_unprefixed(),
             ?ty,
-            "parsed code_id"
+            "parsed checksum"
         );
 
-        self.code_id_cache.insert(code_id, ty);
+        self.checksum_cache.insert(checksum, ty);
 
         ty
-    }
-
-    pub async fn broadcast_tx_commit(
-        &self,
-        signer: CosmosAccountId,
-        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
-    ) -> Result<H256, BroadcastTxCommitError> {
-        use protos::cosmos::tx;
-
-        let account = self.account_info_of_signer(&signer).await;
-
-        let sign_doc = tx::v1beta1::SignDoc {
-            body_bytes: tx::v1beta1::TxBody {
-                messages: messages.clone().into_iter().collect(),
-                // TODO(benluelo): What do we want to use as our memo?
-                memo: String::new(),
-                timeout_height: 123_123_123,
-                extension_options: vec![],
-                non_critical_extension_options: vec![],
-            }
-            .encode_to_vec(),
-            #[allow(deprecated)]
-            auth_info_bytes: tx::v1beta1::AuthInfo {
-                signer_infos: [tx::v1beta1::SignerInfo {
-                    public_key: Some(protos::google::protobuf::Any {
-                        type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-                        value: signer.public_key().encode_to_vec(),
-                    }),
-                    mode_info: Some(tx::v1beta1::ModeInfo {
-                        sum: Some(tx::v1beta1::mode_info::Sum::Single(
-                            tx::v1beta1::mode_info::Single {
-                                mode: tx::signing::v1beta1::SignMode::Direct.into(),
-                            },
-                        )),
-                    }),
-                    sequence: account.sequence,
-                }]
-                .to_vec(),
-                fee: Some(tx::v1beta1::Fee {
-                    amount: vec![protos::cosmos::base::v1beta1::Coin {
-                        // TODO: This needs to be configurable
-                        denom: self.fee_denom.clone(),
-                        amount: "1".to_string(),
-                    }],
-                    gas_limit: 5_000_000_000,
-                    payer: String::new(),
-                    granter: String::new(),
-                }),
-                tip: None,
-            }
-            .encode_to_vec(),
-            chain_id: self.chain_id.clone(),
-            account_number: account.account_number,
-        };
-
-        let signature = signer
-            .try_sign(&sign_doc.encode_to_vec())
-            .expect("signing failed")
-            .to_vec();
-
-        let tx_raw = tx::v1beta1::TxRaw {
-            body_bytes: sign_doc.body_bytes,
-            auth_info_bytes: sign_doc.auth_info_bytes,
-            signatures: [signature].to_vec(),
-        };
-
-        let tx_raw_bytes = tx_raw.encode_to_vec();
-
-        let tx_hash = hex::encode_upper(sha2::Sha256::new().chain_update(&tx_raw_bytes).finalize());
-
-        if self
-            .tm_client
-            .tx(tx_hash.parse().unwrap(), false)
-            .await
-            .is_ok()
-        {
-            tracing::info!(%tx_hash, "tx already included");
-            return Ok(tx_hash.parse().unwrap());
-        }
-
-        let response_result = self.tm_client.broadcast_tx_sync(tx_raw_bytes.clone()).await;
-
-        let response = response_result.unwrap();
-
-        assert_eq!(
-            tx_hash,
-            response.hash.to_string(),
-            "tx hash calculated incorrectly"
-        );
-
-        tracing::debug!(%tx_hash);
-
-        tracing::info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
-
-        let tx_hash_normalized = H256(hex::decode(&tx_hash).unwrap().try_into().unwrap());
-
-        if response.code.is_err() {
-            let value = tm_types::CosmosSdkError::from_code_and_codespace(
-                &response.codespace,
-                response.code.value(),
-            );
-
-            tracing::error!("cosmos tx failed: {}", value);
-
-            return Ok(tx_hash_normalized);
-        };
-
-        let mut target_height = self.query_latest_height().await?.increment();
-        let mut i = 0;
-        loop {
-            let reached_height = 'l: loop {
-                let current_height = self.query_latest_height().await?;
-                if current_height >= target_height {
-                    break 'l current_height;
-                }
-                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-            };
-
-            let tx_inclusion = self.tm_client.tx(tx_hash.parse().unwrap(), false).await;
-
-            tracing::debug!(?tx_inclusion);
-
-            match tx_inclusion {
-                Ok(_) => break Ok(tx_hash_normalized),
-                Err(err) if i > 5 => {
-                    tracing::warn!("tx inclusion couldn't be retrieved after {} try", i);
-                    break Err(BroadcastTxCommitError::Inclusion(err));
-                }
-                Err(_) => {
-                    target_height = reached_height.increment();
-                    i += 1;
-                    continue;
-                }
-            }
-        }
     }
 
     #[must_use]
@@ -515,31 +388,7 @@ impl Union {
         }
     }
 
-    async fn account_info_of_signer(
-        &self,
-        signer: &CosmosAccountId,
-    ) -> protos::cosmos::auth::v1beta1::BaseAccount {
-        let account = protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .unwrap()
-        .account(protos::cosmos::auth::v1beta1::QueryAccountRequest {
-            address: signer.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .account
-        .unwrap();
-
-        // TODO: Type in `unionlabs` for this
-        assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
-
-        protos::cosmos::auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
-    }
-
-    pub async fn code_id_of_client_id(&self, client_id: UnionClientId) -> H256 {
+    pub async fn checksum_of_client_id(&self, client_id: UnionClientId) -> H256 {
         let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
             self.grpc_url.clone(),
         )
@@ -582,7 +431,7 @@ impl Union {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum BroadcastTxCommitError {
     #[error("tx was not included")]
     Inclusion(#[from] tendermint_rpc::Error),
@@ -706,7 +555,7 @@ impl EventSource for Union {
                                             height: Height {
                                                 revision_number: chain_revision,
                                                 revision_height: height.try_into().unwrap(),
-                                            },
+                                            }.increment(),
                                             event,
                                         }),
                                         Err(e) => Err(UnionEventSourceError::Subscription(e)), },
@@ -728,6 +577,202 @@ impl EventSource for Union {
         .flatten_stream()
         .map(futures::stream::iter)
         .flatten()
+    }
+}
+
+pub trait CosmosSdkChain: Chain {
+    fn grpc_url(&self) -> String;
+    fn fee_denom(&self) -> String;
+    fn tm_client(&self) -> &WebSocketClient;
+    fn signers(&self) -> &Pool<CosmosAccountId>;
+
+    // fn decode_client_state<T: Decode<Proto>>(bz: &[u8]) -> T;
+    // fn decode_consensus_state<T: Decode<Proto>>(bz: &[u8]) -> T;
+}
+
+impl CosmosSdkChain for Union {
+    fn grpc_url(&self) -> String {
+        self.grpc_url.clone()
+    }
+
+    fn fee_denom(&self) -> String {
+        self.fee_denom.clone()
+    }
+
+    fn tm_client(&self) -> &WebSocketClient {
+        &self.tm_client
+    }
+
+    fn signers(&self) -> &Pool<CosmosAccountId> {
+        &self.signers
+    }
+
+    // fn decode_client_state<Cs: Decode<Proto>>(bz: &[u8]) -> Cs {
+    //     Cs::decode(bz).unwrap()
+    // }
+
+    // fn decode_consensus_state<Cs: Decode<Proto>>(bz: &[u8]) -> Cs {
+    //     Cs::decode(bz).unwrap()
+    // }
+}
+
+pub async fn account_info_of_signer<C: CosmosSdkChain>(
+    c: &C,
+    signer: &CosmosAccountId,
+) -> protos::cosmos::auth::v1beta1::BaseAccount {
+    let account = protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(c.grpc_url())
+        .await
+        .unwrap()
+        .account(protos::cosmos::auth::v1beta1::QueryAccountRequest {
+            address: signer.to_string(),
+        })
+        .await
+        .unwrap()
+        .into_inner()
+        .account
+        .unwrap();
+
+    // TODO: Type in `unionlabs` for this
+    assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
+
+    protos::cosmos::auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
+}
+
+pub async fn broadcast_tx_commit<C: CosmosSdkChain>(
+    c: &C,
+    signer: CosmosAccountId,
+    messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
+) -> Result<H256, BroadcastTxCommitError> {
+    use protos::cosmos::tx;
+
+    let account = account_info_of_signer(c, &signer).await;
+
+    #[allow(deprecated)]
+    // TODO: types in unionlabs for these types
+    let sign_doc = tx::v1beta1::SignDoc {
+        body_bytes: tx::v1beta1::TxBody {
+            messages: messages.clone().into_iter().collect(),
+            // TODO(benluelo): What do we want to use as our memo?
+            memo: String::new(),
+            timeout_height: 123_123_123,
+            extension_options: vec![],
+            non_critical_extension_options: vec![],
+        }
+        .encode_to_vec(),
+        auth_info_bytes: tx::v1beta1::AuthInfo {
+            signer_infos: [tx::v1beta1::SignerInfo {
+                public_key: Some(protos::google::protobuf::Any {
+                    type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
+                    value: signer.public_key().encode_to_vec(),
+                }),
+                mode_info: Some(tx::v1beta1::ModeInfo {
+                    sum: Some(tx::v1beta1::mode_info::Sum::Single(
+                        tx::v1beta1::mode_info::Single {
+                            mode: tx::signing::v1beta1::SignMode::Direct.into(),
+                        },
+                    )),
+                }),
+                sequence: account.sequence,
+            }]
+            .to_vec(),
+            fee: Some(tx::v1beta1::Fee {
+                amount: vec![protos::cosmos::base::v1beta1::Coin {
+                    // TODO: This needs to be configurable
+                    denom: c.fee_denom(),
+                    amount: "1".to_string(),
+                }],
+                gas_limit: 5_000_000_000,
+                payer: String::new(),
+                granter: String::new(),
+            }),
+            tip: None,
+        }
+        .encode_to_vec(),
+        chain_id: c.chain_id().to_string(),
+        account_number: account.account_number,
+    };
+
+    let signature = signer
+        .try_sign(&sign_doc.encode_to_vec())
+        .expect("signing failed")
+        .to_vec();
+
+    let tx_raw = tx::v1beta1::TxRaw {
+        body_bytes: sign_doc.body_bytes,
+        auth_info_bytes: sign_doc.auth_info_bytes,
+        signatures: [signature].to_vec(),
+    };
+
+    let tx_raw_bytes = tx_raw.encode_to_vec();
+
+    let tx_hash_normalized: H256 = sha2::Sha256::new()
+        .chain_update(&tx_raw_bytes)
+        .finalize()
+        .into();
+    let tx_hash = hex::encode_upper(&tx_hash_normalized);
+
+    if c.tm_client()
+        .tx(tx_hash.parse().unwrap(), false)
+        .await
+        .is_ok()
+    {
+        tracing::info!(%tx_hash, "tx already included");
+        return Ok(hex::decode(tx_hash).unwrap().try_into().unwrap());
+    }
+
+    let response_result = c.tm_client().broadcast_tx_sync(tx_raw_bytes.clone()).await;
+
+    let response = response_result.unwrap();
+
+    assert_eq!(
+        tx_hash,
+        response.hash.to_string(),
+        "tx hash calculated incorrectly"
+    );
+
+    tracing::debug!(%tx_hash);
+
+    tracing::info!(check_tx_code = ?response.code, codespace = %response.codespace, check_tx_log = %response.log);
+
+    if response.code.is_err() {
+        let value = tm_types::CosmosSdkError::from_code_and_codespace(
+            &response.codespace,
+            response.code.value(),
+        );
+
+        tracing::error!("cosmos tx failed: {}", value);
+
+        // TODO: Return an error here
+        return Ok(tx_hash_normalized);
+    };
+
+    let mut target_height = c.query_latest_height().await.unwrap().increment();
+    let mut i = 0;
+    loop {
+        let reached_height = 'l: loop {
+            let current_height = c.query_latest_height().await.unwrap();
+            if current_height.into_height() >= target_height.into_height() {
+                break 'l current_height;
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        };
+
+        let tx_inclusion = c.tm_client().tx(tx_hash.parse().unwrap(), false).await;
+
+        tracing::debug!(?tx_inclusion);
+
+        match tx_inclusion {
+            Ok(_) => break Ok(tx_hash_normalized),
+            Err(err) if i > 5 => {
+                tracing::warn!("tx inclusion couldn't be retrieved after {} try", i);
+                break Err(BroadcastTxCommitError::Inclusion(err));
+            }
+            Err(_) => {
+                target_height = reached_height.increment();
+                i += 1;
+                continue;
+            }
+        }
     }
 }
 
@@ -1052,40 +1097,40 @@ pub mod tm_types {
     }
 }
 
-pub trait AbciStateRead<Counterparty>: IbcPath<Union, Counterparty>
+pub trait AbciStateRead<Tr>: IbcPath<Union, Tr>
 where
-    Counterparty: Chain,
+    Tr: Chain,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output;
 }
 
-impl<Counterparty> AbciStateRead<Counterparty> for ClientStatePath<<Union as Chain>::ClientId>
+impl<Tr> AbciStateRead<Tr> for ClientStatePath<<Union as Chain>::ClientId>
 where
-    Counterparty: Chain,
-    ClientStateOf<Counterparty>: TryFromProto,
-    TryFromProtoErrorOf<ClientStateOf<Counterparty>>: Debug,
+    Tr: Chain,
+    ClientStateOf<Tr>: Decode<Proto>,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
-        Self::Output::try_from_proto_bytes(&bytes).unwrap()
+        <Self::Output as Decode<Proto>>::decode(&bytes).unwrap()
     }
 }
 
-impl<Counterparty> AbciStateRead<Counterparty>
-    for ClientConsensusStatePath<<Union as Chain>::ClientId, <Counterparty as Chain>::Height>
+impl<Tr> AbciStateRead<Tr>
+    for ClientConsensusStatePath<<Union as Chain>::ClientId, <Tr as Chain>::Height>
 where
-    Counterparty: Chain,
-    ConsensusStateOf<Counterparty>: TryFromProto,
-    TryFromProtoErrorOf<ConsensusStateOf<Counterparty>>: Debug,
+    Tr: Chain,
+    ConsensusStateOf<Tr>: Decode<Proto>,
+    Tr::SelfClientState: Decode<Proto>,
+    // Tr::SelfClientState: From<<Tr::SelfClientState as unionlabs::Proto>::Proto>,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
-        Self::Output::try_from_proto_bytes(&bytes).unwrap()
+        <Self::Output as Decode<Proto>>::decode(&bytes).unwrap()
     }
 }
 
-impl<Counterparty> AbciStateRead<Counterparty> for ConnectionPath
+impl<Tr> AbciStateRead<Tr> for ConnectionPath
 where
-    Counterparty: Chain,
-    // <Counterparty as Chain>::ClientId: ClientId,
+    Tr: Chain,
+    // <Tr as Chain>::ClientId: ClientId,
     // Self::Output: Proto + TryFrom<protos::ibc::core::connection::v1::ConnectionEnd>,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
@@ -1093,110 +1138,140 @@ where
     }
 }
 
-impl<Counterparty> AbciStateRead<Counterparty> for ChannelEndPath
+impl<Tr> AbciStateRead<Tr> for ChannelEndPath
 where
-    Counterparty: Chain,
+    Tr: Chain,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
         Self::Output::try_from_proto_bytes(&bytes).unwrap()
     }
 }
 
-impl<Counterparty> AbciStateRead<Counterparty> for CommitmentPath
+impl<Tr> AbciStateRead<Tr> for CommitmentPath
 where
-    Counterparty: Chain,
+    Tr: Chain,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
         bytes.try_into().unwrap()
     }
 }
 
-impl<Counterparty> AbciStateRead<Counterparty> for AcknowledgementPath
+impl<Tr> AbciStateRead<Tr> for AcknowledgementPath
 where
-    Counterparty: Chain,
+    Tr: Chain,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
         bytes.try_into().unwrap()
     }
 }
 
-impl<Counterparty, P> IbcStateRead<Counterparty, P> for Union
-where
-    Counterparty: Chain,
-    ClientStateOf<Counterparty>: TryFromProto,
-    ConsensusStateOf<Counterparty>: TryFromProto,
-    P: IbcPath<Union, Counterparty> + AbciStateRead<Counterparty> + 'static,
-{
-    fn proof(&self, path: P, at: Height) -> impl Future<Output = Vec<u8>> + '_ {
-        async move {
-            tracing::info!(%path, %at, "fetching state proof");
+// impl IbcStateRead for Union {
+//     fn client_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientStatePath<ClientIdOf<Self>>,
+//     ) -> impl Future<Output = <ClientStatePath<ClientIdOf<Self>> as IbcPath<Self, Tracking>>::Output>
+//     where
+//         ClientStateOf<Tracking>: Decode<Self::IbcStateEncoding>,
+//     {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//     }
 
-            let mut client =
-                protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
-                    self.grpc_url.clone(),
-                )
-                .await
-                .unwrap();
+//     fn client_consensus_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>>,
+//     ) -> impl Future<
+//         Output = <ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>> as IbcPath<
+//             Self,
+//             Tracking,
+//         >>::Output,
+//     >
+//     where
+//         ConsensusStateOf<Tracking>: Decode<Self::IbcStateEncoding>,
+//     {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//     }
 
-            let query_result = client
-                .abci_query(
-                    protos::cosmos::base::tendermint::v1beta1::AbciQueryRequest {
-                        data: path.to_string().into_bytes(),
-                        path: "store/ibc/key".to_string(),
-                        height: i64::try_from(at.revision_height).unwrap(),
-                        prove: true,
-                    },
-                )
-                .await
-                .unwrap()
-                .into_inner();
+//     fn connection<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ConnectionPath,
+//     ) -> impl Future<Output = <ConnectionPath as IbcPath<Self, Tracking>>::Output> {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//     }
 
-            unionlabs::cosmos::ics23::proof::MerkleProof::try_from(
-                protos::ibc::core::commitment::v1::MerkleProof {
-                    proofs: query_result
-                        .proof_ops
-                        .unwrap()
-                        .ops
-                        .into_iter()
-                        .map(|op| {
-                            protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
-                                .unwrap()
-                        })
-                        .collect::<Vec<_>>(),
-                },
-            )
-            .unwrap()
-            .into_eth_abi_bytes()
-        }
-    }
+//     fn channel_end<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ChannelEndPath,
+//     ) -> impl Future<Output = <ChannelEndPath as IbcPath<Self, Tracking>>::Output> {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//     }
 
-    fn state(
-        &self,
-        path: P,
-        at: Self::Height,
-    ) -> impl Future<Output = <P as IbcPath<Union, Counterparty>>::Output> + '_ {
-        async move {
-            let mut client =
-                protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
-                    self.grpc_url.clone(),
-                )
-                .await
-                .unwrap();
+//     fn commitment<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: CommitmentPath,
+//     ) -> impl Future<Output = <CommitmentPath as IbcPath<Self, Tracking>>::Output> {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//     }
 
-            let query_result = client
-                .abci_query(
-                    protos::cosmos::base::tendermint::v1beta1::AbciQueryRequest {
-                        data: path.to_string().into_bytes(),
-                        path: "store/ibc/key".to_string(),
-                        height: i64::try_from(at.revision_height).unwrap(),
-                        prove: false,
-                    },
-                )
-                .await
-                .unwrap()
-                .into_inner();
+//     fn acknowledgement<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: AcknowledgementPath,
+//     ) -> impl Future<Output = <AcknowledgementPath as IbcPath<Self, Tracking>>::Output> {
+//         self.ibc_state_read::<_, Tracking>(at, path)
+//     }
+// }
 
-            P::from_abci_bytes(query_result.value)
-        }
-    }
-}
+// impl IbcStateProve for Union {
+//     fn client_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientStatePath<ClientIdOf<Self>>,
+//     ) -> impl Future<Output = Vec<u8>> {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+
+//     fn client_consensus_state<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>>,
+//     ) -> impl Future<Output = Vec<u8>> {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+
+//     fn connection<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ConnectionPath,
+//     ) -> impl Future<Output = Vec<u8>> {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+
+//     fn channel_end<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: ChannelEndPath,
+//     ) -> impl Future<Output = Vec<u8>> {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+
+//     fn commitment<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: CommitmentPath,
+//     ) -> impl Future<Output = Vec<u8>> {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+
+//     fn acknowledgement<Tracking: Chain>(
+//         &self,
+//         at: Height,
+//         path: AcknowledgementPath,
+//     ) -> impl Future<Output = Vec<u8>> {
+//         self.ibc_state_proof::<_, Tracking>(at, path)
+//     }
+// }

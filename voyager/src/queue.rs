@@ -5,7 +5,7 @@ use std::{
     error::Error,
     fmt::{Debug, Display},
     str::FromStr,
-    sync::{Arc, Mutex},
+    sync::{mpsc, Arc, Mutex},
     time::Duration,
 };
 
@@ -15,10 +15,6 @@ use chain_utils::{
     EventSource,
 };
 use futures::{stream, Future, FutureExt, StreamExt, TryStreamExt};
-use lightclient::{
-    cometbls::{CometblsMainnet, CometblsMinimal},
-    ethereum::{EthereumMainnet, EthereumMinimal},
-};
 use pg_queue::ProcessFlow;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
@@ -31,10 +27,12 @@ use unionlabs::{
         ConnectionOpenTry, CreateClient, IbcEvent, RecvPacket, SendPacket, SubmitEvidence,
         TimeoutPacket, UpdateClient, WriteAcknowledgement,
     },
-    traits::{Chain, ChainIdOf, ChainOf, ClientIdOf, ClientState, ClientTypeOf, LightClientBase},
+    traits::{Chain, ChainIdOf, ClientIdOf, ClientState},
     WasmClientType,
 };
-use voyager_message::{event, GetLc, LightClient, RelayerMsg};
+use voyager_message::{
+    data::AnyData, event, AnyLightClientIdentified, ChainExt, GetChain, RelayerMsg, Wasm,
+};
 
 use crate::{
     chain::{AnyChain, AnyChainTryFromConfigError},
@@ -48,13 +46,32 @@ pub struct Voyager<Q> {
     chains: Arc<Chains>,
     num_workers: u16,
     msg_server: msg_server::MsgServer,
-    queue: Q,
+    // NOTE: pub temporarily
+    pub queue: Q,
 }
 
 #[derive(Debug, Clone)]
 pub struct Worker {
     pub id: u16,
     pub chains: Arc<Chains>,
+}
+
+impl GetChain<Wasm<Union>> for Worker {
+    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Union>>) -> Wasm<Union> {
+        Wasm(self.chains.union.get(chain_id).unwrap().clone())
+    }
+}
+
+impl GetChain<Evm<Minimal>> for Worker {
+    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Minimal>>) -> Evm<Minimal> {
+        self.chains.evm_minimal.get(chain_id).unwrap().clone()
+    }
+}
+
+impl GetChain<Evm<Mainnet>> for Worker {
+    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Mainnet>>) -> Evm<Mainnet> {
+        self.chains.evm_mainnet.get(chain_id).unwrap().clone()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -166,6 +183,7 @@ impl Queue for InMemoryQueue {
         &mut self,
         item: RelayerMsg,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
+        tracing::warn!(%item, "enqueueing new item");
         self.0.lock().expect("mutex is poisoned").push_back(item);
         futures::future::ok(())
     }
@@ -271,7 +289,7 @@ pub enum VoyagerInitError<Q: Queue> {
 }
 
 impl<Q: Queue> Voyager<Q> {
-    fn worker(&self, id: u16) -> Worker {
+    pub fn worker(&self, id: u16) -> Worker {
         Worker {
             id,
             chains: self.chains.clone(),
@@ -370,22 +388,22 @@ impl<Q: Queue> Voyager<Q> {
 
                             Ok(
                                 match client_type_from_ibc_event(&c, &chain_event.event).await {
-                                    WasmClientType::EthereumMinimal => event::<EthereumMinimal>(
+                                    WasmClientType::EthereumMinimal => event::<Wasm<Union>, Evm<Minimal>>(
                                         chain_event.chain_id,
                                         voyager_message::event::IbcEvent {
                                             block_hash: chain_event.block_hash,
                                             height: chain_event.height,
-                                            event: chain_event_to_lc_event::<EthereumMinimal>(
+                                            event: chain_event_to_lc_event::<Union, Evm<Minimal>>(
                                                 chain_event.event,
                                             ),
                                         },
                                     ),
-                                    WasmClientType::EthereumMainnet => event::<EthereumMainnet>(
+                                    WasmClientType::EthereumMainnet => event::<Wasm<Union>, Evm<Mainnet>>(
                                         chain_event.chain_id,
                                         voyager_message::event::IbcEvent {
                                             block_hash: chain_event.block_hash,
                                             height: chain_event.height,
-                                            event: chain_event_to_lc_event::<EthereumMainnet>(
+                                            event: chain_event_to_lc_event::<Wasm<Union>, Evm<Mainnet>>(
                                                 chain_event.event,
                                             ),
                                         },
@@ -412,12 +430,12 @@ impl<Q: Queue> Voyager<Q> {
                                 );
                             }
 
-                            event::<CometblsMinimal>(
+                            event::<Evm<Minimal>, Wasm<Union>>(
                                 chain_event.chain_id,
                                 voyager_message::event::IbcEvent {
                                     block_hash: chain_event.block_hash,
                                     height: chain_event.height,
-                                    event: chain_event_to_lc_event::<CometblsMinimal>(
+                                    event: chain_event_to_lc_event::<Evm<Minimal>, Union>(
                                         chain_event.event,
                                     ),
                                 },
@@ -439,12 +457,12 @@ impl<Q: Queue> Voyager<Q> {
                                 );
                             }
 
-                            event::<CometblsMainnet>(
+                            event::<Evm<Mainnet>, Wasm<Union>>(
                                 chain_event.chain_id,
                                 voyager_message::event::IbcEvent {
                                     block_hash: chain_event.block_hash,
                                     height: chain_event.height,
-                                    event: chain_event_to_lc_event::<CometblsMainnet>(
+                                    event: chain_event_to_lc_event::<Evm<Mainnet>, Union>(
                                         chain_event.event,
                                     ),
                                 },
@@ -489,7 +507,7 @@ impl<Q: Queue> Voyager<Q> {
 
             let worker = self.worker(i);
 
-            join_set.spawn(worker.run(self.queue.clone()));
+            join_set.spawn(worker.run(self.queue.clone(), None));
         }
 
         let mut errs = vec![];
@@ -530,24 +548,57 @@ impl Display for RunError {
 }
 
 impl Worker {
-    fn run<Q: Queue>(
+    pub fn run<Q>(
         self,
         mut q: Q,
-    ) -> impl Future<Output = Result<(), Box<dyn Error + Send + Sync>>> + Send + 'static {
+        data_out_stream: Option<mpsc::Sender<AnyLightClientIdentified<AnyData>>>,
+    ) -> impl Future<Output = Result<(), Box<dyn Error + Send + Sync>>> + Send + 'static
+    where
+        Q: Queue,
+        // S: SinkExt<AnyLightClientIdentified<AnyData>> + Clone + Sized + Send + Unpin + 'static,
+    {
         async move {
             loop {
-                let worker = self.clone();
-                q.process(move |msg| async move {
-                    let new_msgs = msg.handle(&worker, 0).await;
+                // yield back to the runtime
+                tokio::time::sleep(Duration::from_millis(10)).await;
 
-                    match new_msgs {
-                        Ok(ok) => ProcessFlow::Success(ok),
-                        // REVIEW: Check if this error is recoverable or not - i.e. if this is an IO error,
-                        // the msg can likely be retried
-                        Err(err) => {
-                            // ProcessFlow::Fail(err.to_string())
-                            // HACK: panic is OK here since this is spawned in a task, and will be caught by the runtime worker
-                            panic!("{err}");
+                let worker = self.clone();
+                let mut data_out_stream = data_out_stream.clone();
+
+                q.process(move |msg| {
+                    async move {
+                        let new_msgs = msg.handle(&worker, 0).await;
+
+                        match new_msgs {
+                            Ok(ok) => {
+                                let ok = if let Some(ref mut data_out_stream) = data_out_stream {
+                                    let mut vec = ok;
+
+                                    for data in vec
+                                        .extract_if(|x| matches!(x, RelayerMsg::Data(_)))
+                                        .map(|x| match x {
+                                            RelayerMsg::Data(data) => data,
+                                            _ => panic!(),
+                                        })
+                                    {
+                                        tracing::warn!(%data, "received data in worker");
+                                        data_out_stream.send(data).unwrap();
+                                    }
+
+                                    vec
+                                } else {
+                                    ok
+                                };
+
+                                ProcessFlow::Success(ok)
+                            }
+                            // REVIEW: Check if this error is recoverable or not - i.e. if this is an IO error,
+                            // the msg can likely be retried
+                            Err(err) => {
+                                // ProcessFlow::Fail(err.to_string())
+                                // HACK: panic is OK here since this is spawned in a task, and will be caught by the runtime worker
+                                panic!("{err}");
+                            }
                         }
                     }
                 })
@@ -560,33 +611,6 @@ impl Worker {
 // pub enum AnyLcError_ {}
 
 // impl AnyLightClient for AnyLcError_ {}
-
-// TODO: Implement this on Chains, not Worker
-impl GetLc<CometblsMinimal> for Worker {
-    fn get_lc(&self, chain_id: &ChainIdOf<CometblsMinimal>) -> CometblsMinimal {
-        CometblsMinimal::from_chain(self.chains.evm_minimal.get(chain_id).unwrap().clone())
-    }
-}
-
-impl GetLc<CometblsMainnet> for Worker {
-    fn get_lc(&self, chain_id: &ChainIdOf<CometblsMainnet>) -> CometblsMainnet {
-        CometblsMainnet::from_chain(self.chains.evm_mainnet.get(chain_id).unwrap().clone())
-    }
-}
-
-impl GetLc<EthereumMinimal> for Worker {
-    fn get_lc(&self, chain_id: &ChainIdOf<EthereumMinimal>) -> EthereumMinimal {
-        // TODO: Ensure that the wasm code is for the correct config
-        EthereumMinimal::from_chain(self.chains.union.get(chain_id).unwrap().clone())
-    }
-}
-
-impl GetLc<EthereumMainnet> for Worker {
-    fn get_lc(&self, chain_id: &ChainIdOf<EthereumMainnet>) -> EthereumMainnet {
-        // TODO: Ensure that the wasm code is for the correct config
-        EthereumMainnet::from_chain(self.chains.union.get(chain_id).unwrap().clone())
-    }
-}
 
 // /// For updating a client, the information we have originally is:
 // ///
@@ -612,11 +636,11 @@ impl GetLc<EthereumMainnet> for Worker {
 // ///   greater than `update_to`, but never less; as such the latest trusted height should
 // ///   always be fetched whenever it's needed)
 // ///   - `FetchUpdateHeaders<L>`, which delegates to `L::generate_counterparty_updates`
-// fn mk_aggregate_update<L: LightClient>(
-//     chain_id: ChainIdOf<L>,
-//     client_id: ClientIdOf<ChainOf<L>>,
+// fn mk_aggregate_update<Hc: ChainExt, Tr: ChainExt>(
+//     chain_id: ChainIdOf<HostChain>,
+//     client_id: Hc::ClientId,
 //     counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
-//     event_height: HeightOf<ChainOf<L>>,
+//     event_height: HeightOf<HostChain>,
 // ) -> RelayerMsg
 // where
 //     AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
@@ -644,11 +668,11 @@ impl GetLc<EthereumMainnet> for Worker {
 //     }
 // }
 
-fn chain_event_to_lc_event<L: LightClient>(
-    event: IbcEvent<ClientIdOf<ChainOf<L>>, ClientTypeOf<ChainOf<L>>, String>,
-) -> IbcEvent<ClientIdOf<ChainOf<L>>, ClientTypeOf<ChainOf<L>>, ClientIdOf<ChainOf<L>>>
+fn chain_event_to_lc_event<Hc: ChainExt, Tr: ChainExt>(
+    event: IbcEvent<Hc::ClientId, Hc::ClientType, String>,
+) -> IbcEvent<Hc::ClientId, Hc::ClientType, Hc::ClientId>
 where
-    <ClientIdOf<ChainOf<L::Counterparty>> as FromStr>::Err: Debug,
+    <ClientIdOf<Tr> as FromStr>::Err: Debug,
 {
     match event {
         IbcEvent::CreateClient(CreateClient {
@@ -728,14 +752,12 @@ where
         IbcEvent::ChannelOpenInit(ChannelOpenInit {
             port_id,
             channel_id,
-            counterparty_channel_id,
             counterparty_port_id,
             connection_id,
             version,
         }) => IbcEvent::ChannelOpenInit(ChannelOpenInit {
             port_id,
             channel_id,
-            counterparty_channel_id,
             counterparty_port_id,
             connection_id,
             version,
@@ -902,115 +924,115 @@ async fn client_type_from_ibc_event(
     match ibc_event {
         IbcEvent::CreateClient(CreateClient { client_id, .. }) => {
             union
-                .code_id_of_client_id(client_id.clone())
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .checksum_of_client_id(client_id.clone())
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::UpdateClient(UpdateClient { client_id, .. }) => {
             union
-                .code_id_of_client_id(client_id.clone())
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .checksum_of_client_id(client_id.clone())
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::ClientMisbehaviour(ClientMisbehaviour { client_id, .. }) => {
             union
-                .code_id_of_client_id(client_id.clone())
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .checksum_of_client_id(client_id.clone())
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::SubmitEvidence(SubmitEvidence { .. }) => {
             // TODO: Not sure how to handle this one, since it only contains the hash
             // union
             //     .code_id_of_client_id(client_id)
-            //     .then(|code_id| union.client_type_of_code_id(code_id))
+            //     .then(|checksum| union.client_type_of_code_id(checksum))
             //     .await
             panic!()
         }
         IbcEvent::ConnectionOpenInit(ConnectionOpenInit { client_id, .. }) => {
             union
-                .code_id_of_client_id(client_id.clone())
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .checksum_of_client_id(client_id.clone())
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::ConnectionOpenTry(ConnectionOpenTry { client_id, .. }) => {
             union
-                .code_id_of_client_id(client_id.clone())
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .checksum_of_client_id(client_id.clone())
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::ConnectionOpenAck(ConnectionOpenAck { client_id, .. }) => {
             union
-                .code_id_of_client_id(client_id.clone())
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .checksum_of_client_id(client_id.clone())
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm { client_id, .. }) => {
             union
-                .code_id_of_client_id(client_id.clone())
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .checksum_of_client_id(client_id.clone())
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::ChannelOpenInit(ChannelOpenInit { connection_id, .. }) => {
             union
                 .client_id_of_connection(connection_id.clone())
-                .then(|client_id| union.code_id_of_client_id(client_id))
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .then(|client_id| union.checksum_of_client_id(client_id))
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::ChannelOpenTry(ChannelOpenTry { connection_id, .. }) => {
             union
                 .client_id_of_connection(connection_id.clone())
-                .then(|client_id| union.code_id_of_client_id(client_id))
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .then(|client_id| union.checksum_of_client_id(client_id))
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::ChannelOpenAck(ChannelOpenAck { connection_id, .. }) => {
             union
                 .client_id_of_connection(connection_id.clone())
-                .then(|client_id| union.code_id_of_client_id(client_id))
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .then(|client_id| union.checksum_of_client_id(client_id))
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm { connection_id, .. }) => {
             union
                 .client_id_of_connection(connection_id.clone())
-                .then(|client_id| union.code_id_of_client_id(client_id))
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .then(|client_id| union.checksum_of_client_id(client_id))
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::WriteAcknowledgement(WriteAcknowledgement { connection_id, .. }) => {
             union
                 .client_id_of_connection(connection_id.clone())
-                .then(|client_id| union.code_id_of_client_id(client_id))
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .then(|client_id| union.checksum_of_client_id(client_id))
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::RecvPacket(RecvPacket { connection_id, .. }) => {
             union
                 .client_id_of_connection(connection_id.clone())
-                .then(|client_id| union.code_id_of_client_id(client_id))
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .then(|client_id| union.checksum_of_client_id(client_id))
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::SendPacket(SendPacket { connection_id, .. }) => {
             union
                 .client_id_of_connection(connection_id.clone())
-                .then(|client_id| union.code_id_of_client_id(client_id))
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .then(|client_id| union.checksum_of_client_id(client_id))
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::AcknowledgePacket(AcknowledgePacket { connection_id, .. }) => {
             union
                 .client_id_of_connection(connection_id.clone())
-                .then(|client_id| union.code_id_of_client_id(client_id))
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .then(|client_id| union.checksum_of_client_id(client_id))
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
         IbcEvent::TimeoutPacket(TimeoutPacket { connection_id, .. }) => {
             union
                 .client_id_of_connection(connection_id.clone())
-                .then(|client_id| union.code_id_of_client_id(client_id))
-                .then(|code_id| union.client_type_of_code_id(code_id))
+                .then(|client_id| union.checksum_of_client_id(client_id))
+                .then(|checksum| union.client_type_of_checksum(checksum))
                 .await
         }
     }

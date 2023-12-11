@@ -107,6 +107,7 @@ aarch
 abci
 abigen
 abigens
+abortable
 accs
 acked
 acknowledgemets
@@ -259,6 +260,7 @@ emptively
 endfor
 endianness
 endraw
+enumorph
 errorsmod
 esac
 ethabi

@@ -7,10 +7,7 @@ use serde::{
     Deserialize, Serialize,
 };
 
-use crate::{
-    CosmosAccountId, IntoProto, MsgIntoProto, Proto, TryFromProto, TryFromProtoBytesError,
-    TryFromProtoErrorOf, TypeUrl,
-};
+use crate::{IntoProto, Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf, TypeUrl};
 
 /// Wrapper type to indicate that a type is to be serialized as an Any.
 #[derive(Debug, Clone, PartialEq)]
@@ -19,7 +16,7 @@ pub struct Any<T>(pub T);
 /// TODO(unionlabs/union#876): Properly implement google.protobuf.Any json serde
 impl<'de, T> Deserialize<'de> for Any<T>
 where
-    T: Deserialize<'de> + TryFromProto,
+    T: Deserialize<'de> + Proto,
     <T as Proto>::Proto: TypeUrl,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -30,7 +27,7 @@ where
 
         impl<'de, T> Visitor<'de> for AnyVisitor<T>
         where
-            T: Deserialize<'de> + TryFromProto,
+            T: Deserialize<'de> + Proto,
             <T as Proto>::Proto: TypeUrl,
         {
             type Value = Any<T>;
@@ -111,27 +108,8 @@ where
     }
 }
 
-impl<T> Proto for Any<T>
-where
-    T: IntoProto,
-    <T as Proto>::Proto: TypeUrl,
-{
+impl<T> Proto for Any<T> {
     type Proto = protos::google::protobuf::Any;
-}
-
-impl<T> MsgIntoProto for Any<T>
-where
-    T: MsgIntoProto,
-    <T as MsgIntoProto>::Proto: TypeUrl,
-{
-    type Proto = protos::google::protobuf::Any;
-
-    fn into_proto_with_signer(self, signer: &CosmosAccountId) -> Self::Proto {
-        protos::google::protobuf::Any {
-            type_url: <T as MsgIntoProto>::Proto::TYPE_URL.to_string(),
-            value: self.0.into_proto_with_signer(signer).encode_to_vec(),
-        }
-    }
 }
 
 impl TypeUrl for protos::google::protobuf::Any {
@@ -139,27 +117,20 @@ impl TypeUrl for protos::google::protobuf::Any {
 }
 
 #[derive(Debug)]
-pub enum TryFromAnyError<T>
-where
-    T: TryFromProto,
-    T::Proto: TypeUrl,
-    <T as TryFrom<T::Proto>>::Error: Debug,
-{
+pub enum TryFromAnyError<E> {
     IncorrectTypeUrl {
         found: String,
         expected: &'static str,
     },
-    TryFromProto(TryFromProtoBytesError<TryFromProtoErrorOf<T>>),
+    TryFromProto(E),
 }
 
 impl<T> TryFrom<protos::google::protobuf::Any> for Any<T>
 where
     T: TryFromProto,
     T::Proto: TypeUrl,
-    // REVIEW: Is this bound required?
-    TryFromProtoErrorOf<T>: Debug,
 {
-    type Error = TryFromAnyError<T>;
+    type Error = TryFromAnyError<TryFromProtoBytesError<TryFromProtoErrorOf<T>>>;
 
     fn try_from(value: protos::google::protobuf::Any) -> Result<Self, Self::Error> {
         if value.type_url == T::Proto::TYPE_URL {
@@ -172,5 +143,17 @@ where
                 expected: T::Proto::TYPE_URL,
             })
         }
+    }
+}
+
+pub fn mk_any<T: TypeUrl + prost::Message>(t: &T) -> protos::google::protobuf::Any {
+    mk_any_from_bytes::<T>(t.encode_to_vec())
+}
+
+#[must_use]
+pub fn mk_any_from_bytes<T: TypeUrl>(bz: Vec<u8>) -> protos::google::protobuf::Any {
+    protos::google::protobuf::Any {
+        type_url: T::TYPE_URL.to_string(),
+        value: bz,
     }
 }

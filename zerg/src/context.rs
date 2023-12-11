@@ -6,7 +6,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use chain_utils::EventSource;
+use chain_utils::{union::broadcast_tx_commit, EventSource};
 use contracts::{
     erc20,
     ibc_handler::SendPacketFilter,
@@ -179,7 +179,7 @@ impl Context {
 
                         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
 
-                        match self.union.broadcast_tx_commit(signer.clone(), [msg]).await {
+                        match broadcast_tx_commit(&self.union, signer.clone(), [msg]).await {
                             Ok(tx_hash) => {
                                 let tx_res = self
                                     .union

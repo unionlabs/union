@@ -166,7 +166,3 @@ impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id> crate
 {
     type EthAbi = contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData;
 }
-
-// fn t(proto: protos::ibc::core::connection::v1::ConnectionEnd) {
-//     let _: ConnectionEnd<String, String> = t.try_into().unwrap();
-// }
