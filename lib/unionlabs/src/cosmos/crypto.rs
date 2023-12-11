@@ -17,6 +17,7 @@ pub mod secp256r1;
 pub enum AnyPubKey {
     Bn254(bn254::PubKey),
     Ed25519(ed25519::PubKey),
+    Secp256k1(secp256k1::PubKey),
 }
 
 impl AnyPubKey {
@@ -41,7 +42,11 @@ impl AnyPubKey {
 
 #[derive(Debug)]
 pub enum TryFromAnyPubKeyError {
-    IncorrectTypeUrl { found: String },
+    // TODO: This is also in any.rs, find a way to generalize?
+    IncorrectTypeUrl {
+        found: String,
+        expected: &'static [&'static str],
+    },
     TryFromProto(TryFromProtoBytesError<InvalidLength>),
 }
 
@@ -60,9 +65,18 @@ impl TryFrom<protos::google::protobuf::Any> for AnyPubKey {
                     .map(Self::Ed25519)
                     .map_err(TryFromAnyPubKeyError::TryFromProto)
             }
-
+            <secp256k1::PubKey as Proto>::Proto::TYPE_URL => {
+                secp256k1::PubKey::try_from_proto_bytes(&value.value)
+                    .map(Self::Secp256k1)
+                    .map_err(TryFromAnyPubKeyError::TryFromProto)
+            }
             _ => Err(TryFromAnyPubKeyError::IncorrectTypeUrl {
                 found: value.type_url,
+                expected: &[
+                    <bn254::PubKey as Proto>::Proto::TYPE_URL,
+                    <ed25519::PubKey as Proto>::Proto::TYPE_URL,
+                    <secp256k1::PubKey as Proto>::Proto::TYPE_URL,
+                ],
             }),
         }
     }
@@ -73,6 +87,7 @@ impl From<AnyPubKey> for protos::google::protobuf::Any {
         match value {
             AnyPubKey::Bn254(key) => Any(key).into_proto(),
             AnyPubKey::Ed25519(key) => Any(key).into_proto(),
+            AnyPubKey::Secp256k1(key) => Any(key).into_proto(),
         }
     }
 }
@@ -90,5 +105,11 @@ impl From<Any<bn254::PubKey>> for AnyPubKey {
 impl From<Any<ed25519::PubKey>> for AnyPubKey {
     fn from(value: Any<ed25519::PubKey>) -> Self {
         Self::Ed25519(value.0)
+    }
+}
+
+impl From<Any<secp256k1::PubKey>> for AnyPubKey {
+    fn from(value: Any<secp256k1::PubKey>) -> Self {
+        Self::Secp256k1(value.0)
     }
 }
