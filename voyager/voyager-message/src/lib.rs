@@ -65,14 +65,6 @@ pub trait ChainExt: Chain {
     /// The config required to construct this light client.
     type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
-    // // i hate this
-    // fn encode_client_state_for_counterparty<Tr: ChainExt>(cs: Tr::SelfClientState) -> Vec<u8>
-    // where
-    //     Tr::SelfClientState: Encode<Self::IbcStateEncoding>;
-    // fn encode_consensus_state_for_counterparty<Tr: ChainExt>(cs: Tr::SelfConsensusState) -> Vec<u8>
-    // where
-    //     Tr::SelfConsensusState: Encode<Self::IbcStateEncoding>;
-
     fn do_fetch<Tr: ChainExt>(
         &self,
         msg: Self::Fetch<Tr>,
@@ -1100,21 +1092,6 @@ impl<T: CosmosSdkChain> CosmosSdkChain for Wasm<T> {
     fn signers(&self) -> &chain_utils::Pool<unionlabs::CosmosAccountId> {
         self.0.signers()
     }
-
-    // fn decode_client_state<Cs: Decode<Proto>>(bz: &[u8]) -> Cs {
-    //     dbg!(serde_utils::to_hex(bz));
-    //     <Any<wasm::client_state::ClientState<Cs>> as Decode<Proto>>::decode(bz)
-    //         .unwrap()
-    //         .0
-    //         .data
-    // }
-
-    // fn decode_consensus_state<Cs: Decode<Proto>>(bz: &[u8]) -> Cs {
-    //     <Any<wasm::consensus_state::ConsensusState<Cs>> as Decode<Proto>>::decode(bz)
-    //         .unwrap()
-    //         .0
-    //         .data
-    // }
 }
 
 impl<T: CosmosSdkChain + ChainExt> Wraps<T> for T {
@@ -1241,21 +1218,6 @@ where
     }
 }
 
-// impl<Hc> ChainExt for Wasm<Hc>
-// where
-//     Self: Chain<ClientId = Hc::ClientId, ClientType = Hc::ClientType, Height = Hc::Height>,
-
-//     Hc: ChainExt + CosmosSdkChain,
-// {
-//     type Data<Tr: ChainExt> = WasmDataMsg<Hc, Tr>;
-//     type Fetch<Tr: ChainExt> = WasmFetchMsg<Hc, Tr>;
-//     type Aggregate<Tr: ChainExt> = WasmAggregateMsg<Hc, Tr>;
-
-//     type MsgError = Hc::MsgError;
-
-//     type Config = WasmConfig;
-// }
-
 impl<Hc, Tr> DoMsg<Self, Tr> for Wasm<Hc>
 where
     Hc: ChainExt<MsgError = BroadcastTxCommitError> + CosmosSdkChain,
@@ -1309,12 +1271,14 @@ where
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                             client_id: data.msg.client_id.to_string(),
                             previous_connection_id: String::new(),
-                            client_state: Some(dbg!(Any(wasm::client_state::ClientState {
-                                latest_height: data.msg.client_state.height().into(),
-                                data: data.msg.client_state,
-                                checksum: H256::default(),
-                            })
-                            .into())),
+                            client_state: Some(
+                                Any(wasm::client_state::ClientState {
+                                    latest_height: data.msg.client_state.height().into(),
+                                    data: data.msg.client_state,
+                                    checksum: H256::default(),
+                                })
+                                .into(),
+                            ),
                             counterparty: Some(data.msg.counterparty.into()),
                             delay_period: data.msg.delay_period,
                             counterparty_versions: data

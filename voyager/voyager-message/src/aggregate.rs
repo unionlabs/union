@@ -2161,8 +2161,9 @@ impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateAckPacket
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<Hc, Tr, AcknowledgementPath>>: IsAggregateData,
+
     identified!(PacketAcknowledgement<Hc, Tr>): IsAggregateData,
-    Identified<Hc, Tr, IbcProof<Hc, Tr, AcknowledgementPath>>: IsAggregateData,
+
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
     AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Hc>)>,
 {

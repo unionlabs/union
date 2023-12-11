@@ -89,31 +89,6 @@ impl ChainExt for Wasm<Union> {
     type MsgError = BroadcastTxCommitError;
 
     type Config = WasmConfig;
-
-    // fn encode_client_state_for_counterparty<Tr: ChainExt>(cs: Tr::SelfClientState) -> Vec<u8>
-    // where
-    //     Tr::SelfClientState: Encode<Self::IbcStateEncoding>,
-    // {
-    //     let bz = Any(wasm::client_state::ClientState {
-    //         latest_height: cs.height().into_height(),
-    //         data: cs,
-    //         code_id: H256::default(),
-    //     })
-    //     .encode();
-    //     dbg!(hex::encode(&bz));
-    //     bz
-    // }
-
-    // fn encode_consensus_state_for_counterparty<Tr: ChainExt>(cs: Tr::SelfConsensusState) -> Vec<u8>
-    // where
-    //     Tr::SelfConsensusState: Encode<Self::IbcStateEncoding>,
-    // {
-    //     Any(wasm::consensus_state::ConsensusState {
-    //         timestamp: cs.timestamp(),
-    //         data: cs,
-    //     })
-    //     .encode()
-    // }
 }
 
 impl<Tr: ChainExt, Hc: Wraps<Self>> DoMsg<Hc, Tr> for Union

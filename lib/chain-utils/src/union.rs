@@ -8,8 +8,10 @@ use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tendermint_rpc::{query::Query, Client, Order, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
+    cosmos::auth::base_account::BaseAccount,
     encoding::{Decode, Proto},
     events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
+    google::protobuf::any::Any,
     hash::H256,
     ibc::{
         core::{
@@ -585,9 +587,6 @@ pub trait CosmosSdkChain: Chain {
     fn fee_denom(&self) -> String;
     fn tm_client(&self) -> &WebSocketClient;
     fn signers(&self) -> &Pool<CosmosAccountId>;
-
-    // fn decode_client_state<T: Decode<Proto>>(bz: &[u8]) -> T;
-    // fn decode_consensus_state<T: Decode<Proto>>(bz: &[u8]) -> T;
 }
 
 impl CosmosSdkChain for Union {
@@ -606,36 +605,26 @@ impl CosmosSdkChain for Union {
     fn signers(&self) -> &Pool<CosmosAccountId> {
         &self.signers
     }
-
-    // fn decode_client_state<Cs: Decode<Proto>>(bz: &[u8]) -> Cs {
-    //     Cs::decode(bz).unwrap()
-    // }
-
-    // fn decode_consensus_state<Cs: Decode<Proto>>(bz: &[u8]) -> Cs {
-    //     Cs::decode(bz).unwrap()
-    // }
 }
 
-pub async fn account_info_of_signer<C: CosmosSdkChain>(
-    c: &C,
-    signer: &CosmosAccountId,
-) -> protos::cosmos::auth::v1beta1::BaseAccount {
-    let account = protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(c.grpc_url())
-        .await
-        .unwrap()
-        .account(protos::cosmos::auth::v1beta1::QueryAccountRequest {
-            address: signer.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .account
-        .unwrap();
+pub async fn account_info<C: CosmosSdkChain>(c: &C, account: &str) -> BaseAccount {
+    let Any(account) = dbg!(
+        protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(c.grpc_url())
+            .await
+            .unwrap()
+            .account(protos::cosmos::auth::v1beta1::QueryAccountRequest {
+                address: account.to_string(),
+            })
+            .await
+            .unwrap()
+            .into_inner()
+            .account
+    )
+    .unwrap()
+    .try_into()
+    .unwrap();
 
-    // TODO: Type in `unionlabs` for this
-    assert!(account.type_url == "/cosmos.auth.v1beta1.BaseAccount");
-
-    protos::cosmos::auth::v1beta1::BaseAccount::decode(&*account.value).unwrap()
+    account
 }
 
 pub async fn broadcast_tx_commit<C: CosmosSdkChain>(
@@ -645,7 +634,7 @@ pub async fn broadcast_tx_commit<C: CosmosSdkChain>(
 ) -> Result<H256, BroadcastTxCommitError> {
     use protos::cosmos::tx;
 
-    let account = account_info_of_signer(c, &signer).await;
+    let account = account_info(c, &signer.to_string()).await;
 
     #[allow(deprecated)]
     // TODO: types in unionlabs for these types
@@ -1119,8 +1108,6 @@ impl<Tr> AbciStateRead<Tr>
 where
     Tr: Chain,
     ConsensusStateOf<Tr>: Decode<Proto>,
-    Tr::SelfClientState: Decode<Proto>,
-    // Tr::SelfClientState: From<<Tr::SelfClientState as unionlabs::Proto>::Proto>,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
         <Self::Output as Decode<Proto>>::decode(&bytes).unwrap()
@@ -1130,8 +1117,6 @@ where
 impl<Tr> AbciStateRead<Tr> for ConnectionPath
 where
     Tr: Chain,
-    // <Tr as Chain>::ClientId: ClientId,
-    // Self::Output: Proto + TryFrom<protos::ibc::core::connection::v1::ConnectionEnd>,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
         Self::Output::try_from_proto_bytes(&bytes).unwrap()
@@ -1164,114 +1149,3 @@ where
         bytes.try_into().unwrap()
     }
 }
-
-// impl IbcStateRead for Union {
-//     fn client_state<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ClientStatePath<ClientIdOf<Self>>,
-//     ) -> impl Future<Output = <ClientStatePath<ClientIdOf<Self>> as IbcPath<Self, Tracking>>::Output>
-//     where
-//         ClientStateOf<Tracking>: Decode<Self::IbcStateEncoding>,
-//     {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//     }
-
-//     fn client_consensus_state<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>>,
-//     ) -> impl Future<
-//         Output = <ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>> as IbcPath<
-//             Self,
-//             Tracking,
-//         >>::Output,
-//     >
-//     where
-//         ConsensusStateOf<Tracking>: Decode<Self::IbcStateEncoding>,
-//     {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//     }
-
-//     fn connection<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ConnectionPath,
-//     ) -> impl Future<Output = <ConnectionPath as IbcPath<Self, Tracking>>::Output> {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//     }
-
-//     fn channel_end<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ChannelEndPath,
-//     ) -> impl Future<Output = <ChannelEndPath as IbcPath<Self, Tracking>>::Output> {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//     }
-
-//     fn commitment<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: CommitmentPath,
-//     ) -> impl Future<Output = <CommitmentPath as IbcPath<Self, Tracking>>::Output> {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//     }
-
-//     fn acknowledgement<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: AcknowledgementPath,
-//     ) -> impl Future<Output = <AcknowledgementPath as IbcPath<Self, Tracking>>::Output> {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//     }
-// }
-
-// impl IbcStateProve for Union {
-//     fn client_state<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ClientStatePath<ClientIdOf<Self>>,
-//     ) -> impl Future<Output = Vec<u8>> {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-
-//     fn client_consensus_state<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>>,
-//     ) -> impl Future<Output = Vec<u8>> {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-
-//     fn connection<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ConnectionPath,
-//     ) -> impl Future<Output = Vec<u8>> {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-
-//     fn channel_end<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ChannelEndPath,
-//     ) -> impl Future<Output = Vec<u8>> {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-
-//     fn commitment<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: CommitmentPath,
-//     ) -> impl Future<Output = Vec<u8>> {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-
-//     fn acknowledgement<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: AcknowledgementPath,
-//     ) -> impl Future<Output = Vec<u8>> {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-// }

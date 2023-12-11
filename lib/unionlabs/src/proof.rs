@@ -113,10 +113,7 @@ impl<ClientId: traits::Id> FromStr for ClientStatePath<ClientId> {
     }
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ClientStatePath<Hc::ClientId>
-// where
-//     Tr::SelfClientState: Encode<Hc::IbcStateEncoding> + Decode<Hc::IbcStateEncoding>,
-{
+impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ClientStatePath<Hc::ClientId> {
     type Output = Hc::StoredClientState<Tr>;
 }
 
@@ -156,10 +153,7 @@ impl<ClientId: traits::Id, Height: IsHeight> FromStr
     }
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ClientConsensusStatePath<Hc::ClientId, Tr::Height>
-// where
-//     Tr::SelfClientState: Encode<Hc::IbcStateEncoding> + Decode<Hc::IbcStateEncoding>,
-{
+impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ClientConsensusStatePath<Hc::ClientId, Tr::Height> {
     type Output = Hc::StoredConsensusState<Tr>;
 }
 

@@ -68,6 +68,8 @@ pub enum EvmTx {
 pub enum QueryCmd {
     #[command(subcommand)]
     Evm(EvmQuery),
+    #[command(subcommand)]
+    Union(UnionQuery),
 }
 
 #[derive(Debug, Subcommand)]
@@ -86,6 +88,14 @@ pub enum EvmQuery {
         contract_address: H160,
         #[arg(long)]
         address: H160,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum UnionQuery {
+    AccountInfo {
+        #[arg(long)]
+        address: String,
     },
 }
 
