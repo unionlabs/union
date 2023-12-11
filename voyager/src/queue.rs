@@ -46,7 +46,7 @@ pub struct Voyager<Q> {
     chains: Arc<Chains>,
     num_workers: u16,
     msg_server: msg_server::MsgServer,
-    // NOTE: pub temporarilly
+    // NOTE: pub temporarily
     pub queue: Q,
 }
 
@@ -581,7 +581,7 @@ impl Worker {
                                             _ => panic!(),
                                         })
                                     {
-                                        tracing::warn!(%data, "recieved data in worker");
+                                        tracing::warn!(%data, "received data in worker");
                                         data_out_stream.send(data).unwrap();
                                     }
 

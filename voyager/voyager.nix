@@ -7,8 +7,8 @@
           pkgs.lib.hasPrefix ".sqlx" path;
         additionalTestSrcFilter = path: _:
           pkgs.lib.hasPrefix "hubble/src/graphql" path;
-        # temporarilly, to keep warnings in-editor until i fix them
-        cargoClippyExtraArgs = "-Adeprecated";
+        # temporarily, to keep warnings in-editor until i fix them
+        cargoClippyExtraArgs = "--allow deprecated";
         extraEnv = {
           SQLX_OFFLINE = "1";
         };

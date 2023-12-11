@@ -458,31 +458,6 @@ macro_rules! any_enum {
 
 pub(crate) use any_enum;
 
-// pub trait AnyPath<
-//     Hc: ChainExt,
-//     Tr: ChainExt + onnectTo<Hc>,
-// >
-// {
-//     type Inner<P: IbcPath<Hc, Tr>>;
-// }
-
-// pub enum Path2<
-//     Hc: ChainExt,
-//     Tr: ChainExt,
-//     P: AnyPath<Hc, Tr>,
-// > {
-//     ClientStatePath(P::Inner<ClientStatePath<<Hc as Chain>::ClientId>>),
-//     ClientConsensusStatePath(
-//         P::Inner<
-//             ClientConsensusStatePath<<Hc as Chain>::ClientId, <Tr as Chain>::Height>,
-//         >,
-//     ),
-//     ConnectionPath(P::Inner<ConnectionPath>),
-//     ChannelEndPath(P::Inner<ChannelEndPath>),
-//     CommitmentPath(P::Inner<CommitmentPath>),
-//     AcknowledgementPath(P::Inner<AcknowledgementPath>),
-// }
-
 pub type PathOf<Hc, Tr> = proof::Path<ClientIdOf<Hc>, HeightOf<Tr>>;
 
 pub trait AnyLightClient {
@@ -524,7 +499,7 @@ pub enum AnyLightClientIdentified<T: AnyLightClient> {
 }
 
 #[macro_export]
-// TODO: Replace al luses of this with enumorph
+// TODO: Replace all uses of this with enumorph
 macro_rules! enum_variants_conversions {
     (
         $(#[$meta:meta])*

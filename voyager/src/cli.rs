@@ -121,10 +121,10 @@ where
 
     let mut output = vec![];
     for t in rx.iter() {
-        tracing::warn!(%t, "recieved data");
+        tracing::warn!(%t, "received data");
         output.push(t);
         if output.len() >= 2 {
-            tracing::warn!("recieved all data");
+            tracing::warn!("received all data");
             break;
         }
     }
