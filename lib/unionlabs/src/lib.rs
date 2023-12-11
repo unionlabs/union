@@ -621,18 +621,6 @@ pub mod traits {
             destination_port_id: PortId,
             sequence: u64,
         ) -> impl Future<Output = Vec<u8>> + '_;
-
-        // fn proof<Tracking: Chain, P: IbcPath<Self, Tracking>>(
-        //     &self,
-        //     path: P,
-        //     at: Self::Height,
-        // ) -> impl Future<Output = Vec<u8>> + '_;
-
-        // fn state<Tracking: Chain, P: IbcPath<Self, Tracking>>(
-        //     &self,
-        //     path: P,
-        //     at: Self::Height,
-        // ) -> impl Future<Output = P::Output> + '_;
     }
 
     pub trait StoredState<Hc: Chain> {}
@@ -716,41 +704,22 @@ pub mod traits {
     }
 
     pub trait Header {
-        // fn timestamp(&self) -> u64;
         fn trusted_height(&self) -> Height;
     }
 
     impl<C: ChainSpec> Header for ethereum::header::Header<C> {
-        // fn timestamp(&self) -> u64 {
-        //     self.consensus_update.attested_header.execution.timestamp
-        // }
-
         fn trusted_height(&self) -> Height {
             self.trusted_sync_committee.trusted_height
         }
     }
 
     impl<Data: Header> Header for wasm::client_message::ClientMessage<Data> {
-        // fn timestamp(&self) -> u64 {
-        //     self.data.timestamp()
-        // }
-
         fn trusted_height(&self) -> Height {
             self.data.trusted_height()
         }
     }
 
     impl Header for cometbls::header::Header {
-        // fn timestamp(&self) -> u64 {
-        //     self.signed_header
-        //         .header
-        //         .time
-        //         .seconds
-        //         .inner()
-        //         .try_into()
-        //         .unwrap()
-        // }
-
         fn trusted_height(&self) -> Height {
             self.trusted_height
         }
