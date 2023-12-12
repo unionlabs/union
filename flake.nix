@@ -164,7 +164,7 @@
             builtins.trace (pkgs.lib.generators.toPretty { } value) value;
 
           uniondBundleVersions = rec {
-            complete = [ "v0.14.0" "v0.15.0" ];
+            complete = [ "v0.14.0" "v0.15.0" "v0.16.0" ];
             first = pkgs.lib.lists.head complete;
             last = pkgs.lib.lists.last complete;
           };
