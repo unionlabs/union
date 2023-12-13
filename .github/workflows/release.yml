@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ['v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', 'v[0-9]+\.[0-9]+\.[0-9]+']
+    # tags: ['v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', 'v[0-9]+\.[0-9]+\.[0-9]+']
 
 jobs:
   build:
@@ -71,7 +71,7 @@ jobs:
 
           if [[ ${{ matrix.package }} =~ uniond-release ]]
           then
-            mv ${{ matrix.system }}.${{ matrix.package }}/bin/uniond ${{ matrix.package }}-${{ matrix.system }}
+            mv ${{ matrix.system }}.${{ matrix.package }}/bin/uniond uniond-${{ matrix.system }}
           else
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
           fi
@@ -112,6 +112,7 @@ jobs:
 
       - name: Tag Docker Images
         run: |
+          exit 1
           echo "Entering for loop"
           for arch in 'aarch64-linux' 'x86_64-linux'
           do
@@ -202,6 +203,7 @@ jobs:
           lfs: true
           fetch-depth: 0
       - run: |
+          exit 1
           semantic_version_tags=$(git tag --sort v:refname | grep -E 'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$')
 
           current_semantic_version="${{github.ref_name}}"
