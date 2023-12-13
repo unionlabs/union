@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    uses: unionlabs/workflows/.github/workflows/build.yml@1509d864f8b273f4d40986b10ebaaacba1b9012a
+    uses: unionlabs/workflows/.github/workflows/build.yml@d051991e4b808b70746fbef3900ed33307a65db6
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
