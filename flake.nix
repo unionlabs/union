@@ -75,9 +75,12 @@
       url = "github:unionlabs/union/14007cbae6d464e70ca68220a36b30cb445f82fd";
       flake = false;
     };
-
     v0_15_0 = {
       url = "github:unionlabs/union/release-v0.15.0";
+      flake = false;
+    };
+    v0_16_0 = {
+      url = "github:unionlabs/union/release-v0.16.0";
       flake = false;
     };
   };
@@ -164,7 +167,7 @@
             builtins.trace (pkgs.lib.generators.toPretty { } value) value;
 
           uniondBundleVersions = rec {
-            complete = [ "v0.14.0" "v0.15.0" ];
+            complete = [ "v0.14.0" "v0.15.0" "v0.16.0" ];
             first = pkgs.lib.lists.head complete;
             last = pkgs.lib.lists.last complete;
           };
