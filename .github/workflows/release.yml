@@ -74,9 +74,9 @@ jobs:
           echo "$(ls -a ${{ matrix.system }}.${{ matrix.package }})"
           echo "Files package bin:"
           echo "$(ls -a ${{ matrix.system }}.${{ matrix.package }}/bin)"
-          if [[ ${{ matrix.package }} =~ galoisd-.* ]]
+          if [[ ${{ matrix.package }} =~ uniond-release ]]
           then
-            mv ${{ matrix.system }}.${{ matrix.package }}/bin/galoisd ${{ matrix.package }}-${{ matrix.system }}
+            mv ${{ matrix.system }}.${{ matrix.package }}/bin/uniond ${{ matrix.package }}-${{ matrix.system }}
           else
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
           fi
