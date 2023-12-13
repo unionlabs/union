@@ -71,7 +71,7 @@ jobs:
 
           if [[ ${{ matrix.package }} =~ uniond-release ]]
           then
-            mv ${{ matrix.system }}.${{ matrix.package }}/bin/uniond ${{ matrix.package }}-${{ matrix.system }}
+            mv ${{ matrix.system }}.${{ matrix.package }}/bin/uniond uniond-${{ matrix.system }}
           else
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
           fi
