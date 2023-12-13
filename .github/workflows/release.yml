@@ -71,7 +71,7 @@ jobs:
 
           if [[ ${{ matrix.package }} =~ uniond-release ]]
           then
-            mv ${{ matrix.system }}.${{ matrix.package }}/bin/uniond uniond-${{ matrix.system }}
+            mv ${{ matrix.system }}.${{ matrix.package }}/bin/uniond ${{ matrix.package }}-${{ matrix.system }}
           else
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
           fi
@@ -228,8 +228,8 @@ jobs:
           tag_name: ${{github.ref_name}}
           fail_on_unmatched_files: true
           files: |
-            **/uniond-aarch64-linux
-            **/uniond-x86_64-linux
+            **/uniond-release-aarch64-linux
+            **/uniond-release-x86_64-linux
             **/galoisd-aarch64-linux
             **/galoisd-x86_64-linux
       - if: "!contains(github.ref_name, 'rc')"
@@ -241,7 +241,7 @@ jobs:
           body_path: ${{github.ref_name}}-CHANGELOG.md
           fail_on_unmatched_files: true
           files: |
-            **/uniond-aarch64-linux
-            **/uniond-x86_64-linux
+            **/uniond-release-aarch64-linux
+            **/uniond-release-x86_64-linux
             **/galoisd-aarch64-linux
             **/galoisd-x86_64-linux
