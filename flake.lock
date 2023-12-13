@@ -432,6 +432,7 @@
         "treefmt-nix": "treefmt-nix",
         "v0_14_0": "v0_14_0",
         "v0_15_0": "v0_15_0",
+        "v0_16_0": "v0_16_0",
         "wasmd": "wasmd"
       }
     },
@@ -595,6 +596,23 @@
       "original": {
         "owner": "unionlabs",
         "ref": "release-v0.15.0",
+        "repo": "union",
+        "type": "github"
+      }
+    },
+    "v0_16_0": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1702335982,
+        "narHash": "sha256-GXZV7/yGZBEEU8dik1xTn/2nozwjUvqlvIIebsTRB0A=",
+        "owner": "unionlabs",
+        "repo": "union",
+        "rev": "c67a12ac910e3bc7665e85665bf087d53ce0fa79",
+        "type": "github"
+      },
+      "original": {
+        "owner": "unionlabs",
+        "ref": "release-v0.16.0",
         "repo": "union",
         "type": "github"
       }
