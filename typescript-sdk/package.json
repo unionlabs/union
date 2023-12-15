@@ -47,7 +47,6 @@
     "@leapwallet/cosmos-snap-provider": "^0.1.25",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/node": "^20.10.4",
-    "bun": "^1.0.18",
     "bun-types": "^1.0.18",
     "publint": "^0.2.6",
     "tsup": "^8.0.1",
