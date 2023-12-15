@@ -2,8 +2,6 @@
   "private": true,
   "name": "union",
   "workspaces": [
-    "docs",
-    "site",
-    "typescript-sdk"
+    "docs"
   ]
 }
