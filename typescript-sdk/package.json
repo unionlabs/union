@@ -1,0 +1,71 @@
+{
+  "name": "@unionlabs/client",
+  "version": "0.0.0",
+  "description": "Union Labs cross-chain transfers client",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.cts",
+  "module": "./dist/index.js",
+  "source": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "require": "./dist/index.cjs",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "./package.json"
+  ],
+  "scripts": {
+    "build": "tsup --config=tsup.config.ts",
+    "faucet": "bun ./scripts/faucet.ts",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "demo": "node --import=tsx --env-file=.env ./scripts/demo.ts",
+    "check-package": "publint --public --strict && npm pack && attw --pack",
+    "clean": "rm -rf dist node_modules"
+  },
+  "dependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.32.1",
+    "@cosmjs/encoding": "^0.32.1",
+    "@cosmjs/stargate": "^0.32.1",
+    "@cosmjs/tendermint-rpc": "^0.32.1",
+    "viem": "2.0.0-beta.15"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.13.3",
+    "@biomejs/biome": "^1.4.1",
+    "@cosmjs/amino": "^0.32.1",
+    "@cosmjs/proto-signing": "^0.32.1",
+    "@leapwallet/cosmos-snap-provider": "^0.1.25",
+    "@total-typescript/ts-reset": "^0.5.1",
+    "@types/node": "^20.10.4",
+    "bun": "^1.0.18",
+    "bun-types": "^1.0.18",
+    "publint": "^0.2.6",
+    "tsup": "^8.0.1",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "engineStrict": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unionlabs/union.git",
+    "directory": "lib/typescript"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}

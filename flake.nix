@@ -380,11 +380,14 @@
               settings.global.excludes = [ "**/vendor/**" ];
               programs.prettier.enable = true;
               settings.formatter.prettier = {
-                options = if pkgs.stdenv.isLinux then [ "--write" "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ];
+                # TODO: Use settings.pluginSearchDirs
+                options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
                 includes = [
                   "*.css"
                   "*.html"
                   "*.js"
+                  "*.cjs"
+                  "*.mjs"
                   "*.json"
                   "*.jsx"
                   "*.md"
@@ -392,6 +395,7 @@
                   "*.scss"
                   "*.ts"
                   "*.tsx"
+                  "*.d.ts"
                   "*.yaml"
                   "*.yml"
                   "*.sol"

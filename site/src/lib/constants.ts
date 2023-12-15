@@ -1,4 +1,4 @@
-import erc20abi from "$lib/abi/ERC20.json";
+import erc20abi from "$lib/abi/erc20.json";
 import ibcAbi from "$lib/abi/UCS01Relay.json";
 
 export const UNION_CHAIN_ID = "union-testnet-4";

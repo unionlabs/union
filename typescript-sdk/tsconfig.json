@@ -1,0 +1,38 @@
+{
+  "schema": "https://json.schemastore.org/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "alwaysStrict": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "strictNullChecks": true,
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+    "moduleResolution": "Bundler",
+    "useDefineForClassFields": true,
+    "allowArbitraryExtensions": true,
+    "noUncheckedIndexedAccess": true,
+    "resolvePackageJsonImports": true,
+    "resolvePackageJsonExports": true,
+    "useUnknownInCatchVariables": true,
+    "allowImportingTsExtensions": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "forceConsistentCasingInFileNames": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "types": ["node", "bun-types"],
+    "paths": {
+      "#/*": ["src/*"]
+    }
+  },
+  "include": ["src", "scripts", "test"],
+  "files": ["reset.d.ts", "tsup.config.ts", "environment.d.ts"]
+}

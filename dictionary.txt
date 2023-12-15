@@ -125,9 +125,11 @@ appchain
 appchains
 appmodule
 appparams
+arethetypeswrong
 arion
 arkworks
 attrsets
+attw
 authcmd
 authcodec
 authkeeper
@@ -151,6 +153,7 @@ benluelo
 bigtestnet
 binaryen
 bindir
+biomejs
 bitarray
 bitslice
 bitvec
@@ -250,6 +253,7 @@ distrkeeper
 distrtypes
 docgen
 doctest
+domrehype
 dont
 downcasting
 drawio
@@ -384,6 +388,7 @@ jsonschema
 jwtsecret
 karel
 katex
+katexremark
 keccak
 keepertest
 keybase
@@ -410,6 +415,8 @@ lifecycles
 lightclient
 lightclients
 linkmode
+loaderreact
+lockb
 logformat
 logline
 logtostderr
@@ -523,6 +530,7 @@ prysmctl
 pubkey
 pubkey's
 pubkeys
+publint
 pxplusqx
 pxqx
 pxrx
@@ -654,10 +662,12 @@ tokenz
 tombstoned
 tonumber
 treefmt
+treeshake
 trustlessly
 tryopen
 tsdb
 tsdbadmin
+tsup
 txes
 txmodule
 txpool
@@ -722,6 +732,7 @@ verison
 verkle
 vestingtypes
 vhosts
+viem
 virtualisation
 vmdebug
 vuex

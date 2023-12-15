@@ -40,3 +40,5 @@ dump
 fuzzing-code-coverage
 
 *.wasm
+_
+bun.lockb
