@@ -1,15 +1,49 @@
 {
   "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
+    // temporarily off until migration to our sdk
+    "noUncheckedIndexedAccess": false,
+    "noPropertyAccessFromIndexSignature": false,
+
+    "strict": true,
+    "baseUrl": ".",
+    "noEmit": true,
     "allowJs": true,
     "checkJs": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
+    "target": "ESNext",
+    "module": "ESNext",
     "skipLibCheck": true,
-    "sourceMap": true,
-    "strict": true
-  }
+    "alwaysStrict": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "strictNullChecks": true,
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+    "moduleResolution": "Bundler",
+    "useDefineForClassFields": true,
+    "allowArbitraryExtensions": true,
+    "resolvePackageJsonImports": true,
+    "resolvePackageJsonExports": true,
+    "useUnknownInCatchVariables": true,
+    "allowImportingTsExtensions": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"],
+    "paths": {
+      "$*": ["./src/*"]
+      // "#/*": ["./src/*"]
+    }
+  },
+  "include": ["src"],
+  "files": [
+    "vite.config.ts",
+    "tailwind.config.ts",
+    "svelte.config.js",
+    "postcss.config.js",
+    ".eslintrc.cjs"
+  ]
   // Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
   //
   // If you want to overwrite includes/excludes, make sure to copy over the relevant includes/excludes

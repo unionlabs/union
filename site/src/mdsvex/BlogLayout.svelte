@@ -1,15 +1,15 @@
-<script>
-	export let title;
-	export let date;
-	export let author;
-	export let preview;
-	export let published
+<script lang="ts">
+	export let title: string;
+	export let date: string;
+	export let author: string;
+	export let preview: string;
+	export let published: boolean;
 </script>
 
 
 <div class="flex flex-1 justify-center">
 <main
-	class="blog-post-container sm:text-xl p-4 sm:mt-4  justify-center max-w-2xl justify-center self-center"
+	class="blog-post-container sm:text-xl p-4 sm:mt-4  justify-center max-w-2xl self-center"
 >
 	{#if published}
 	<h1 class="text-3xl sm:text-5xl font-bold mb-0">{title}</h1>

@@ -5,10 +5,9 @@ import type { SigningStargateClient } from "@cosmjs/stargate";
 import type { AccountData, Coin } from "@cosmjs/amino";
 import type {
   ApolloClient,
-  InMemoryCache,
   NormalizedCacheObject,
 } from "@apollo/client";
-import type { BrowserProvider, JsonRpcSigner, Signature } from "ethers";
+import type { BrowserProvider, JsonRpcSigner } from "ethers";
 import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import type { CosmjsOfflineSigner } from "@leapwallet/cosmos-snap-provider";
 

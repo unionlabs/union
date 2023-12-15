@@ -83,7 +83,7 @@ export const getUnoFromFaucet = async () => {
     return;
   }
 
-  let response = await apollo.mutate({
+  let _response = await apollo.mutate({
     mutation: GET_UNO_FROM_FAUCET,
     variables: { addr: uAccount.address },
   });
@@ -96,7 +96,7 @@ export const sendUnoToUnionAddress = async () => {
     console.error("trying to get uno from faucet before accounts are loaded");
     return;
   }
-  const txResponse = await sgClient.sendTokens(
+  const _txResponse = await sgClient.sendTokens(
     uAccount.address,
     "union1v39zvpn9ff7quu9lxsawdwpg60lyfpz8pmhfey",
     [{ denom: "muno", amount: "1000" }],
@@ -110,7 +110,7 @@ const balanceWorker = async (
   fetcher: () => Promise<void>,
   interval: number
 ) => {
-  while (true) {
+  for (; ;) {
     fetcher();
     await sleep(interval);
   }

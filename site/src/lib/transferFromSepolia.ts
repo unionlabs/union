@@ -1,9 +1,5 @@
 import {
-  apolloClient,
-  tendermintClient,
-  stargateClient,
   unionAccount,
-  unionUnoBalance,
   ethersProvider,
   ethersSigner,
   ethereumAddress,
@@ -25,9 +21,9 @@ import {
 import { sendingUnoToUnion } from "../routes/blog/ics20-transfers-to-ethereum/demoStore";
 
 export const approveUnoTransferToUnion = async () => {
-  const eProvider = get(ethersProvider);
+  const _eProvider = get(ethersProvider);
   const eSigner = get(ethersSigner);
-  const eAddress = get(ethereumAddress);
+  const _eAddress = get(ethereumAddress);
   const contract = new ethers.Contract(
     MUNO_ERC20_ADDRESS,
     ERC20_CONTRACT_ABI,
@@ -62,7 +58,7 @@ export const sendUnoToUnion = async () => {
     eProvider
   );
 
-  const erc20balance = await contract.balanceOf(eAddress);
+  const _erc20balance = await contract.balanceOf(eAddress);
 
   const ibcContract = new ethers.Contract(
     UCS01_EVM_ADDRESS,

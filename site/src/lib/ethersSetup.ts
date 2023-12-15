@@ -26,7 +26,7 @@ export const updateConnectedToSepolia = async () => {
 };
 
 export const updateSnapInstalled = async () => {
-  //@ts-ignore
+  // @ts-expect-error
   window.process = { env: {} };
   const { getSnap } = await import("@leapwallet/cosmos-snap-provider");
   const snap = await getSnap();
@@ -76,10 +76,10 @@ export const ethersSetup = async () => {
 };
 
 export const connectLeapSnap = async () => {
-  const { getSnap, connectSnap, getKey } = await import(
+  const { getSnap, connectSnap } = await import(
     "@leapwallet/cosmos-snap-provider"
   );
-  //@ts-ignore
+  //@ts-expect-error
   window.process = { env: {} };
   const snap = await getSnap();
   if (snap === undefined) {
@@ -89,7 +89,7 @@ export const connectLeapSnap = async () => {
 };
 
 export const connectToUnion = async () => {
-  const { suggestChain, getKey } = await import(
+  const { suggestChain } = await import(
     "@leapwallet/cosmos-snap-provider"
   );
 
@@ -108,11 +108,11 @@ export const connectToUnion = async () => {
 };
 
 export const updateConnectedToUnion = async () => {
-  const { suggestChain, getKey } = await import(
+  const { getKey } = await import(
     "@leapwallet/cosmos-snap-provider"
   );
   try {
-    const key = await getKey(UNION_CHAIN_ID);
+    const _key = await getKey(UNION_CHAIN_ID);
     connectedToUnion.set(true);
   } catch {
     // not connected to union yet

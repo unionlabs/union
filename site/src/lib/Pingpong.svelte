@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Tendermint37Client as TmClient, NewBlockEvent, TxEvent } from '@cosmjs/tendermint-rpc';
+	import { Tendermint37Client as TmClient, type NewBlockEvent, type TxEvent } from '@cosmjs/tendermint-rpc';
 	import { ethers } from 'ethers';
 
 	const cosmosUrl = 'localhost:26657';
@@ -10,7 +10,7 @@
 	let cosmosContract = 'union1hzzmyldthamamhxgsgvl3utudjngkmyn055udp9c9yzccfncxj7s2lhq9d';
 	let evmContract = '0x433488cec14C4478e5ff18DDC7E7384Fc416f148';
 	let listening = false;
-	let txs = [];
+	let txs: any[] = [];
 
 	const runCosmos = async () => {
 		const client = await TmClient.connect(cosmosUrl);

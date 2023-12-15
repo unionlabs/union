@@ -21,7 +21,7 @@
 		<div class="flex flex-col items-center z-20 relative">
 			<h2 class="text-4xl md:text-6xl font-bold text-center">ETH &lt;-&gt; IBC</h2>
 			<h3 class="text-[16px] md:text-[27px] font-bold text-center text-gray-200">Union's flagship product</h3>
-			<p class="md:text-2xl mt-4 text-center mt-10">Built using Zero-Knowledge Cryptography and BLS Signatures, a</p>
+			<p class="md:text-2xl text-center mt-10">Built using Zero-Knowledge Cryptography and BLS Signatures, a</p>
 			<div class="text-center trustless-connection text-2xl md:text-5xl text-accent font-black italic animate-character animate-character-delay">Trustless Ethereum IBC Connection</div>
 			<p class="text-center md:text-2xl">Live between Union's Testnet and Ethereum's Testnet.</p>
 			<div class="mt-4">

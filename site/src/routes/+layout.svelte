@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import '../app.css';
 	import Header from '$lib/Header.svelte';
 	import Footer from '$lib/Footer.svelte';
@@ -8,7 +8,7 @@
 	<title>Union</title>
 </svelte:head>
 
-<div class="flex flex-col min-h-screen grid-effect-bg flex-1 flex-col flex gap-8 shadow-effect-bg p-4">
+<div class="flex flex-col min-h-screen grid-effect-bg flex-1 gap-8 shadow-effect-bg p-4">
 	<Header />
 	<slot />
 	<Footer />
