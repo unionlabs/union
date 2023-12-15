@@ -26,3 +26,25 @@
   src: url("/fonts/Disket-Mono-Bold.ttf") format("truetype");
   font-weight: 700;
 }
+
+*::-webkit-scrollbar {
+  height: 0.3rem;
+  width: 0rem;
+}
+
+*::-webkit-scrollbar-track {
+  -ms-overflow-style: none;
+  overflow: -moz-scrollbars-none;
+}
+
+*::-webkit-scrollbar-thumb {
+  -ms-overflow-style: none;
+  overflow: -moz-scrollbars-none;
+}
+
+@supports (scrollbar-gutter: stable) {
+  html {
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+}
