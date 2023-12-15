@@ -562,6 +562,7 @@ rustls
 rustup
 schemars
 schnorr
+scrollbars
 sdkerrors
 secp
 sepolia
