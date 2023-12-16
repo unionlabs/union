@@ -16,7 +16,7 @@ const SEPOLIA_CHAIN_ID = "0xaa36a7";
 export const updateConnectedToSepolia = async () => {
   if (window.ethereum === undefined) {
     console.error(
-      "trying to update connected to sepolia with no metamask installed"
+      "trying to update connected to sepolia with no metamask installed",
     );
   }
   const currentChainId = await window.ethereum.request({
@@ -102,7 +102,7 @@ export const connectToUnion = async () => {
         bech32PrefixAccAddr: "union",
       },
     },
-    { force: false }
+    { force: false },
   );
   connectedToUnion.set(true);
 };

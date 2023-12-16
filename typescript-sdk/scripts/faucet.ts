@@ -20,21 +20,21 @@ async function main() {
   if (!Object.hasOwn(faucetResponse, "union")) {
     console.error(
       "Failed to get uno from faucet",
-      JSON.stringify(faucetResponse, undefined, 2)
+      JSON.stringify(faucetResponse, undefined, 2),
     );
   }
   const {
     balances: [balance],
   } = await fetcher<{ balances: Array<Coin> }>(
-    `https://union-testnet-api.polkachu.com/cosmos/bank/v1beta1/balances/${address}`
+    `https://union-testnet-api.polkachu.com/cosmos/bank/v1beta1/balances/${address}`,
   );
   if (!balance || !balance.amount) {
     console.error(
       "Failed to get uno balance",
-      JSON.stringify(balance, undefined, 2)
+      JSON.stringify(balance, undefined, 2),
     );
   }
   console.info(
-    `Deposited a nice sum of ${balance?.denom} into ${address}.\nCurrent balance: ${balance?.amount}`
+    `Deposited a nice sum of ${balance?.denom} into ${address}.\nCurrent balance: ${balance?.amount}`,
   );
 }

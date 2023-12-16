@@ -1,41 +1,24 @@
 { ... }: {
-  perSystem = { pkgs, lib, ... }:
+  perSystem = { pkgs, lib, ensureAtRepositoryRoot, ... }:
     let
-      npmDepsHash = "sha256-X4ULmQxW+u9arTjzyXbSfEPawMf+7ZW0dlmc1pshD+I=";
-      src = ../.;
-      pname = "docs";
-      version = "0.0.1";
+      pkgsDeps = with pkgs; [ nodejs_20 vips pkg-config ];
     in
     {
       packages = {
+        docs = pkgs.buildNpmPackage {
+          npmDepsHash = "sha256-Q1fkOgi4NgJPNU/RD0xMch3rX3+2qQ2ZQmO6f/fXZ2s=";
+          src = ./.;
+          pname = "docs";
+          version = "0.0.1";
+          PUPPETEER_SKIP_DOWNLOAD = true;
 
-        docs = pkgs.mkYarnPackage rec {
-          inherit pname version src;
-          name = pname;
-          packageJSON = src + "/package.json";
-
-          offlineCache = pkgs.fetchYarnDeps {
-            yarnLock = src + "/yarn.lock";
-            sha256 = npmDepsHash;
-          };
-
-          nativeBuildInputs = [
-            pkgs.fixup_yarn_lock
-          ];
-
-          configurePhase = ''
-            export HOME=$NIX_BUILD_TOP
-            yarn config --offline set yarn-offline-mirror ${offlineCache}
-            fixup_yarn_lock yarn.lock
-            yarn install --offline --ignore-optional --frozen-lockfile --ignore-scripts --no-progress --non-interactive
-            patchShebangs node_modules/
-          '';
-
-          postBuild = "yarn workspace docs --offline --no-progress build";
+          nodejs = pkgs.nodejs_20;
+          nativeBuildInputs = pkgsDeps;
+          buildInputs = pkgsDeps;
 
           installPhase = ''
             mkdir -p $out
-            cp -r ./docs/build/* $out
+            cp -r ./dist/* $out
           '';
 
           doDist = false;
@@ -47,10 +30,13 @@
           type = "app";
           program = pkgs.writeShellApplication {
             name = "docs-dev-server";
-            runtimeInputs = [ pkgs.nodejs pkgs.yarn ];
+            runtimeInputs = pkgsDeps;
             text = ''
-              yarn install
-              yarn workspace docs run start
+              ${ensureAtRepositoryRoot}
+              cd docs/
+
+              npm install
+              npm run dev
             '';
           };
         };

@@ -27,13 +27,13 @@ import { http, publicActions, createWalletClient } from "viem";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 
 const demoEthereumAccount = privateKeyToAccount(
-  "0x1075394148aee9ccae14500c37cfdfca7bea4a4984fd5882a9ecf1be610d84ee"
+  "0x1075394148aee9ccae14500c37cfdfca7bea4a4984fd5882a9ecf1be610d84ee",
 );
 const demoEthereumAddress = demoEthereumAccount.address;
 
 const demoUnionAccount = await DirectSecp256k1HdWallet.fromMnemonic(
   "enlist hip relief stomach skate base shallow young switch frequent cry park",
-  { prefix: "union" }
+  { prefix: "union" },
 );
 
 const [demoUnionAccountData] = await demoUnionAccount.getAccounts();

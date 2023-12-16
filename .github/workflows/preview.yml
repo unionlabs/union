@@ -16,6 +16,8 @@ concurrency:
 
 jobs:
   preview:
+    # temporarily disable
+    if: ${{ false }}
     runs-on: ubuntu-latest
     outputs:
       preview-url: ${{ steps.publish-preview.outputs.preview-url }}

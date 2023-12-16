@@ -1,0 +1,57 @@
+---
+import Layout from '#/layouts/layout.astro'
+import { getCollection } from 'astro:content'
+
+const isProduction = import.meta.env.PROD
+
+let blogEntries = await getCollection('blog', ({ data }) =>
+  // filter out unpublished posts in production
+  isProduction ? data.hidden !== true : true
+)
+blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
+---
+
+<Layout>
+  <main
+    class='blog-post-container sm:text-xl px-4 sm:mt-0 mt-2 justify-center max-w-[45rem] self-center pb-40'
+  >
+    <ul class='list-none'>
+      {
+        blogEntries.map(blogPostEntry => (
+          <li class='mb-12'>
+            <a
+              href={`/blog/${blogPostEntry.slug}`}
+              class='text-3xl sm:text-5xl font-extrabold mb-0'
+            >
+              {blogPostEntry.data.title}
+            </a>
+            <div class='font-argon mt-1 sm:text-lg uppercase tracking-widest'>
+              <time datetime={blogPostEntry.data.date.toISOString()}>
+                {blogPostEntry.data.date.toLocaleDateString('fr-CA', {
+                  year: 'numeric',
+                  month: 'numeric',
+                  day: 'numeric'
+                })}
+              </time>
+              <a
+                class='text-[rgb(255,135,195)] font-normal'
+                href={`https://x.com/${blogPostEntry.data.author}`}
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                @{blogPostEntry.data.author}
+              </a>
+            </div>
+            <p class='sm:text-xl font-extralight'>{blogPostEntry.data.description}</p>
+            <a
+              href={`/blog/${blogPostEntry.slug}`}
+              class='font-argon uppercase'
+            >
+              read full post ->
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </main>
+</Layout>

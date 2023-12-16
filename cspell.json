@@ -35,6 +35,7 @@
     "site/src/lib/abi/**",
     "e2e/upgrades.nix",
     "yarn.lock",
-    "bun.lockb"
+    "bun.lockb",
+    "package-lock.json"
   ]
 }

@@ -31,7 +31,7 @@ export const approveUnoTransferToUnion = async () => {
   const contract = new ethers.Contract(
     MUNO_ERC20_ADDRESS,
     ERC20_CONTRACT_ABI,
-    eSigner
+    eSigner,
   );
 
   const tx = await contract.approve(UCS01_EVM_ADDRESS, AMOUNT_TO_SEND_TO_UNION);
@@ -59,7 +59,7 @@ export const sendUnoToUnion = async () => {
   const contract = new ethers.Contract(
     MUNO_ERC20_ADDRESS,
     ERC20_CONTRACT_ABI,
-    eProvider
+    eProvider,
   );
 
   const erc20balance = await contract.balanceOf(eAddress);
@@ -67,7 +67,7 @@ export const sendUnoToUnion = async () => {
   const ibcContract = new ethers.Contract(
     UCS01_EVM_ADDRESS,
     UCS01_RELAY_EVM_ABI,
-    eSigner
+    eSigner,
   );
 
   // string calldata portId,
@@ -82,7 +82,7 @@ export const sendUnoToUnion = async () => {
     fromBech32(uAccount.address).data,
     [[MUNO_ERC20_ADDRESS, AMOUNT_TO_SEND_TO_UNION]],
     4,
-    800000000
+    800000000,
   );
 
   sendingUnoToUnion.set("sending");

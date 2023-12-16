@@ -3,7 +3,7 @@ name: Deploy Docs
 on:
   push:
     branches:
-    - main
+      - main
 
 env:
   NIX_VERSION: nix-2.13.2
@@ -15,22 +15,29 @@ concurrency:
 
 jobs:
   deploy:
+    # temporarily disable
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3  
+      - uses: actions/checkout@v4
         with:
           lfs: true
-      - uses: cachix/install-nix-action@v20
+      - uses: cachix/install-nix-action@v24
         with:
           nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
           github_access_token: ${{ github.token }}
       - run: |
           nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
           nix-channel --update
-          nix-env -iA nixpkgs.nodePackages.vercel
-      - name: "Publish to Vercel"
-        working-directory: docs
+
+      - name: Build Docs
+        run: nix build .#docs
+
+      - name: '🔶 Publish to Cloudflare Pages'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: |
-          vercel pull --scope=unionbuild --yes --environment=production --token=${{secrets.VERCEL_TOKEN}}
-          vercel build --scope=unionbuild --prod --token=${{secrets.VERCEL_TOKEN}}
-          vercel deploy --scope=unionbuild --prod --prebuilt --token=${{secrets.VERCEL_TOKEN}}
+          CLOUDFLARE_ACCOUNT_ID="${{ env.CLOUDFLARE_ACCOUNT_ID }}"
+          CLOUDFLARE_API_TOKEN="${{ env.CLOUDFLARE_API_TOKEN }}"
+          npm_config_yes npx wrangler@latest pages deploy result

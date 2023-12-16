@@ -1,0 +1,35 @@
+# build output
+dist/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+.eslintcache
+bun.*
+
+.astro
+
+functions/*.js
+
+_
+
+.dev.vars
+yarn-error.log
+out
+dev-dist
+pnpm-lock.yaml
+.vercel
+README.md
+*.mdx

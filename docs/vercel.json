@@ -1,4 +1,0 @@
-{
-  "outputDirectory": "result",
-  "buildCommand": "nix build ./#docs"
-}

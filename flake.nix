@@ -363,13 +363,12 @@
               nil
               nixfmt
               nix-tree
-              nodejs
+              nodejs_20
               openssl
               pkg-config
               protobuf
               self'.packages.tdc
               solc
-              yarn
               yq
               nodePackages.graphqurl
               nodePackages.svelte-language-server
@@ -392,6 +391,7 @@
               alias voy-send-msg='curl localhost:65534/msg -H "content-type: application/json" -d'
             '';
           };
+
 
           treefmt =
             let
@@ -429,7 +429,7 @@
               programs.prettier.enable = true;
               settings.formatter.prettier = {
                 # TODO: Use settings.pluginSearchDirs
-                options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
+                # options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
                 includes = [
                   "*.css"
                   "*.html"
@@ -446,7 +446,6 @@
                   "*.d.ts"
                   "*.yaml"
                   "*.yml"
-                  "*.sol"
                 ];
               };
             };

@@ -42,3 +42,7 @@ fuzzing-code-coverage
 *.wasm
 _
 bun.lockb
+.astro
+._*
+.wrangler
+.nfs*

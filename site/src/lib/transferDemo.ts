@@ -53,14 +53,14 @@ export const initClients = async (): Promise<void> => {
   stargateClient.set(
     await SigningStargateClient.createWithSigner(tmClient, offlineSigner, {
       gasPrice: GasPrice.fromString("0.001muno"),
-    })
+    }),
   );
 
   apolloClient.set(
     new ApolloClient({
       uri: "https://graphql.union.build/v1/graphql",
       cache: new InMemoryCache(),
-    })
+    }),
   );
   initCosmwasmClient();
 };
@@ -78,7 +78,7 @@ export const getUnoFromFaucet = async () => {
   const apollo = get(apolloClient);
   if (uAccount === null || apollo === null) {
     console.error(
-      "trying to get uno from faucet before accounts are loaded or apollo client has not been init"
+      "trying to get uno from faucet before accounts are loaded or apollo client has not been init",
     );
     return;
   }
@@ -100,7 +100,7 @@ export const sendUnoToUnionAddress = async () => {
     uAccount.address,
     "union1v39zvpn9ff7quu9lxsawdwpg60lyfpz8pmhfey",
     [{ denom: "muno", amount: "1000" }],
-    "auto"
+    "auto",
   );
 };
 
@@ -108,7 +108,7 @@ export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const balanceWorker = async (
   fetcher: () => Promise<void>,
-  interval: number
+  interval: number,
 ) => {
   while (true) {
     fetcher();
@@ -163,7 +163,7 @@ export const initCosmwasmClient = async () => {
     cSigner,
     {
       gasPrice: GasPrice.fromString("0.001muno"),
-    }
+    },
   );
   cosmwasmClient.set(cwClient);
 };
@@ -195,7 +195,7 @@ export const sendUnoToEthereum = async () => {
     },
     "auto",
     undefined,
-    [{ denom: "muno", amount: "1000" }]
+    [{ denom: "muno", amount: "1000" }],
   );
 };
 
@@ -218,7 +218,7 @@ export const updateEthereumUnoBalance = async () => {
   const contract = new ethers.Contract(
     MUNO_ERC20_ADDRESS,
     ERC20_CONTRACT_ABI,
-    eProvider
+    eProvider,
   );
   const balance = await contract.balanceOf(eAddress);
   ethereumUnoBalance.set(balance);

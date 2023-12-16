@@ -24,7 +24,7 @@ async function main() {
     demoMnemonic,
     {
       prefix: "union",
-    }
+    },
   );
   const [demoUnionAccountData] = await demoUnionAccount.getAccounts();
   const demoUnionAddress =
