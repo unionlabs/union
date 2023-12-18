@@ -1,33 +1,14 @@
 { ... }: {
-  perSystem = { pkgs, rust, system, lib, dbg, inputs', goPkgs,  ensureAtRepositoryRoot,...}: {
+  perSystem = { self', pkgs, rust, system, lib, dbg, inputs', goPkgs,  ensureAtRepositoryRoot,...}: {
     packages = let
-      # interchaintest = goPkgs.buildGoModule {
-      #   pname = "interchaintest";
-      #   version = "v8.0.0";
-      #   src = pkgs.fetchFromGitHub {
-      #     owner = "strangelove-ventures";
-      #     repo = "interchaintest";
-      #     rev = "2f014d308bea4429169c94c4ba08759ce5e7be03";
-      #     sha256 = "sha256-PY2S1ieVBmtb9OlF8YKke/Qlk/xZZdOe0TthmJlJyWg=";
-      #   };
-      #   vendorHash = "sha256-hJZ6klBzD6sbh6G7nwX+rEkh2e7Tq/3nLlOD4dlAvXk=";
-      #   buildFlags = ["-c" "-o ./bin/interchaintest ./cmd/interchaintest"];
-      #   ldflags = [ "-X github.com/strangelove-ventures/interchaintest/v8/internal/version.GitSha=$(shell git describe --always --dirty)" ];
-      #   preBuild = ''
-      #     export GOWORK=off
-      #     rm -rf local-interchain
-      #   '';
-      #   doCheck = false;
-      # };
-      # };
       interchaintest = goPkgs.buildGoModule {
         pname = "interchaintest";
         version = "v8.0.0";
         src = pkgs.fetchFromGitHub {
-          owner = "strangelove-ventures";
+          owner = "unionlabs";
           repo = "interchaintest";
-          rev = "2f014d308bea4429169c94c4ba08759ce5e7be03";
-          sha256 = "sha256-PY2S1ieVBmtb9OlF8YKke/Qlk/xZZdOe0TthmJlJyWg=";
+          rev = "acf6294ec4e3eddecabb18816b8c2ded6d444dd9";
+          sha256 = "sha256-UG61FoJsu2XSttI4yeKYNX4EMMAiWOm5yHTs8bvkORw=";
         };
         vendorHash = "sha256-hJZ6klBzD6sbh6G7nwX+rEkh2e7Tq/3nLlOD4dlAvXk=";
         buildInputs = [ pkgs.git ];
@@ -50,13 +31,29 @@
         '';
         doCheck = false;
       };
-      union_matrix = {
+      imageReplaceString = "REPLACE_IMAGE_TAG";
+      unionMatrix = {
         Relayers = [ "rly" ];
         ChainSets = [
           [
             {
               Name = "union";
-              Version = "latest";
+              Type = "cosmos";
+              ChainId = "union-devnet";
+              Images = [
+                {
+                  Repository = "uniond";
+                  Version = "REPLACE_IMAGE_TAG";
+                  UidGid = "1025:1025";
+                }
+              ];
+              Bin = "uniond";
+              Bech32Prefix = "union";
+              Denom = "muno";
+              GasPrices = "0.01muno";
+              GasAdjustment = 1.3;
+              TrustingPeriod = "504h";
+              InitExtraArgs = "bn254";
             }
             {
               Name = "osmosis";
@@ -68,21 +65,30 @@
       union_interchaintest_config = pkgs.linkFarm "union_interchaintest_config" [
         {
           name = "union_matrix.json";
-          path = pkgs.writeText "union_matrix.json" (builtins.toJSON union_matrix);
+          path = pkgs.writeText "union_matrix.json" (builtins.toJSON unionMatrix);
         }
       ];
     in
     {
       interchaintest-uniond-conformance = pkgs.writeShellApplication {
         name = "interchaintest-uniond-conformance";
-        runtimeInputs = [ interchaintest ];
+        runtimeInputs = [ interchaintest self'.packages.uniond-release-image union_interchaintest_config ];
         text = ''
           set -eo pipefail
           ${ensureAtRepositoryRoot}
-          cd uniond
+
+          docker_string=$(docker load < ${self'.packages.uniond-release-image})
+          image_tag="''${docker_string##*':'}"
+
+          cp ${union_interchaintest_config}/union_matrix.json .
+
+          sed -i "s/${imageReplaceString}/$image_tag/g" union_matrix.json
+
+          jq . < union_matrix.json
 
           echo "Running interchaintest conformance check for uniond..."
 
+          ${interchaintest}/bin/interchaintest -matrix union_matrix.json
         '';
       };
     };
