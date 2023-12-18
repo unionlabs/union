@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"cosmossdk.io/client/v2/autocli"
@@ -412,7 +413,8 @@ lru_size = 0`
 }
 
 var tempDir = func() string {
-	dir, err := os.MkdirTemp("", "uniond")
+	dir, err := os.UserHomeDir()
+	dir = filepath.Join(dir, "uniond")
 	if err != nil {
 		panic("failed to create temp dir: " + err.Error())
 	}
