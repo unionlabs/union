@@ -3,30 +3,33 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: "Inter";
-  src: url("/fonts/Inter.var.woff2") format("woff2 supports variations"),
-    url("/fonts/Inter.var.woff2") format("woff2-variations");
+  font-family: 'Inter';
+  src: url('/fonts/Inter.var.woff2') format('woff2 supports variations'),
+    url('/fonts/Inter.var.woff2') format('woff2-variations');
   font-weight: 100 1000;
 }
 
 @font-face {
-  font-family: "JetBrainsMono";
-  src: url("/fonts/JetBrainsMono.ttf");
+  font-family: 'JetBrainsMono';
+  src: url('/fonts/JetBrainsMono.ttf');
   font-weight: 100 1000;
 }
 
 @font-face {
-  font-family: "Disket-Mono";
-  src: url("/fonts/Disket-Mono-Regular.ttf") format("truetype");
+  font-family: 'Disket-Mono';
+  src: url('/fonts/Disket-Mono-Regular.ttf') format('truetype');
   font-weight: 400;
 }
 
 @font-face {
-  font-family: "Disket-Mono";
-  src: url("/fonts/Disket-Mono-Bold.ttf") format("truetype");
+  font-family: 'Disket-Mono';
+  src: url('/fonts/Disket-Mono-Bold.ttf') format('truetype');
   font-weight: 700;
 }
 
+/**
+ * Hides default ugly browser scrollbar while still allowing scrolling
+ */
 *::-webkit-scrollbar {
   height: 0.3rem;
   width: 0rem;
@@ -47,4 +50,12 @@
     overflow-y: auto;
     scrollbar-gutter: stable;
   }
+}
+
+/**
+ * text selection background color
+ */
+::selection {
+  background-color: rgb(255, 255, 255);
+  color:#000000;
 }

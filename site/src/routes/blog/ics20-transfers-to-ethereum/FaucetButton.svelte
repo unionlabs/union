@@ -27,7 +27,9 @@
 	let fingerprint = null;
 
 	const clickHandler = async () => {
+		// @ts-expect-error
 		if (graphqlChecked && getBrowserFingerprint != null) {
+			// @ts-expect-error
 			const fp = getBrowserFingerprint.default();
 			const apollo = get(apolloClient);
 			let uAccount = get(unionAccount);
@@ -57,6 +59,7 @@
 	};
 
 	onMount(async () => {
+		// @ts-expect-error
 		getBrowserFingerprint = await import ("get-browser-fingerprint");
 	})
 </script>

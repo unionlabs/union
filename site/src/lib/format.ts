@@ -9,6 +9,7 @@ export const toFixedEth = (value: bigint) => {
   return toFixedPoint(value, 18).slice(0, -12);
 };
 
-export const toFixedUno = (value: bigint) => {
+export const toFixedUno = (value: bigint | null) => {
+  if (!value) return
   return toFixedPoint(value, 6);
 };

@@ -58,12 +58,16 @@
 		});
 		const client = await TmClient.connect(cosmosUrl);
 		client.subscribeTx().addListener({
+			// @ts-expect-error
 			next: (event: TxEvent) => {
 				const wasmEvent = event.result.events.find((e) => e.type === 'wasm');
 				if (wasmEvent) {
+					// @ts-expect-error
 					const contractAddress = wasmEvent.attributes.find((a) => a.key == '_contract_address');
 					if (contractAddress) {
+						// @ts-expect-error
 						if (contractAddress.value === cosmosContract) {
+							// @ts-expect-error
 							const action = wasmEvent.attributes.find((a) => a.key == 'action');
 							if (action) {
 								txs = txs.concat([

@@ -1,12 +1,7 @@
-<script lang="ts">
-    import Footer from '$lib/Footer.svelte';
-	import Header from '$lib/Header.svelte';
-</script>
-
 <main class="flex flex-col flex-1 gap-[100px] md:gap-[200px] my-[50px] md:my-[100px]">
 	<div class="flex flex-col items-center">
 		<div class="main-text">Infrastructure for the</div> 
-		<div class="next-century-text animate-character">next century</div>
+		<div class="next-century-text animate-character selection:text-white selection:bg-transparent selection:[-webkit-text-fill-color:#FF87C3]">next century</div>
 		<div class="tagline">
 			Union is a hyper-efficient, zero-knowledge interoperability layer<br> 
 			that connects Appchains, Layer 1, and Layer 2 networks.
@@ -81,9 +76,7 @@
 	}
 
 	.next-century-text {
-
 		padding: 2px 8px;
-	
 		font-style: italic; 
 		font-size: 40px;
 		font-weight: 900; 

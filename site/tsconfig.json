@@ -18,12 +18,8 @@
     "isolatedModules": true,
     "strictNullChecks": true,
     "resolveJsonModule": true,
-    "verbatimModuleSyntax": true,
-    "moduleResolution": "Bundler",
     "useDefineForClassFields": true,
     "allowArbitraryExtensions": true,
-    "resolvePackageJsonImports": true,
-    "resolvePackageJsonExports": true,
     "useUnknownInCatchVariables": true,
     "allowImportingTsExtensions": true,
     "noFallthroughCasesInSwitch": true,
@@ -32,8 +28,9 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"],
     "paths": {
-      "$*": ["./src/*"]
-      // "#/*": ["./src/*"]
+      "$*": ["./src/*"],
+      "$lib": ["./src/lib"],
+      "$lib/*": ["./src/lib/*"]
     }
   },
   "include": ["src"],
@@ -41,7 +38,7 @@
     "vite.config.ts",
     "tailwind.config.ts",
     "svelte.config.js",
-    "postcss.config.js",
+    "postcss.config.cjs",
     ".eslintrc.cjs"
   ]
   // Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
