@@ -32,11 +32,15 @@ let
 
   upgradeTo = version: height: ''
     union.succeed('docker cp ${mkUpgradeProposal version height}/proposal-${version}.json devnet-minimal-uniond-0-1:/proposal-${version}.json')
-    union.succeed('docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} --root . call --bundle /bundle -- tx gov submit-proposal proposal-${version}.json --from val-0 --keyring-backend test --home ./home -y')
+    print(union.succeed('docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} --root . call --bundle /bundle -- tx gov submit-proposal proposal-${version}.json --from val-0 --keyring-backend test --home ./home -y --gas 3000000000'))
 
     time.sleep(6)
 
-    ${forEachNode (id: "union.succeed('docker exec devnet-minimal-uniond-${id}-1 ${unionvisorBin} --root . call --bundle /bundle -- tx gov vote 1 yes --keyring-backend test --from val-${id} --home ./home -y')")}
+    union.wait_until_succeeds("[[ $(docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- query gov proposal ${toString (height / 10)} --home ./home --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.status == \"PROPOSAL_STATUS_VOTING_PERIOD\"') == true ]]", timeout=30)
+
+    ${forEachNode (id: "print(union.succeed('docker exec devnet-minimal-uniond-${id}-1 ${unionvisorBin} --root . call --bundle /bundle -- tx gov vote ${toString (height / 10)} yes --keyring-backend test --from val-${id} --home ./home -y'))")}
+
+    union.wait_until_succeeds("[[ $(docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- query gov proposal ${toString (height / 10)} --home ./home --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.status == \"PROPOSAL_STATUS_PASSED\"') == true ]]", timeout=30)
 
     union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > ${toString height}") == "true" ]]')
   '';
@@ -55,7 +59,8 @@ in
       union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
 
       ${upgradeTo "v0.15.0" 10}
-      ${upgradeTo "v0.16.0" 20}
+      # We skip v0.16.0 as it was never deployed
+      ${upgradeTo "v0.17.0" 20}
     '';
 
     nodes = {
@@ -81,7 +86,9 @@ in
       ${upgradeTo "v0.15.0" 10}
       union.succeed("[[ $(docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- query tokenfactory denom-authority-metadata factory/union14fldwd959h7glh2e3k45veuqfszvgm69q07jhw/bazinga --home ./home --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.authority_metadata.admin == \"union14fldwd959h7glh2e3k45veuqfszvgm69q07jhw\"') == true ]]")
 
-      ${upgradeTo "v0.16.0" 20}
+      # We skip v0.16.0 as it was never deployed
+
+      ${upgradeTo "v0.17.0" 20}
       union.succeed("[[ $(docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- query tokenfactory denom-authority-metadata factory/union14fldwd959h7glh2e3k45veuqfszvgm69q07jhw/bazinga --home ./home --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.authority_metadata.admin == \"union14fldwd959h7glh2e3k45veuqfszvgm69q07jhw\"') == true ]]")
     '';
 
