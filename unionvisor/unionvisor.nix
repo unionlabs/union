@@ -89,7 +89,7 @@
           mkBundle {
             name = "testnet-4";
             versions = uniondBundleVersions.complete;
-            nextVersion = "v0.16.0";
+            nextVersion = "v0.17.0";
             genesis = ../networks/genesis/union-testnet-4/genesis.json;
             meta = {
               binary_name = "uniond";
