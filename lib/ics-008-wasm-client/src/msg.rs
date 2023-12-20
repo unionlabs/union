@@ -15,7 +15,7 @@ use unionlabs::ibc::core::client::height::Height;
 pub struct InstantiateMsg {
     pub client_state: Binary,
     pub consensus_state: Binary,
-    pub checksum: Option<Binary>,
+    pub checksum: Binary,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

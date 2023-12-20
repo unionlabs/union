@@ -40,7 +40,7 @@ pub fn instantiate(
         deps,
         ProtoClientState {
             data: msg.client_state.into(),
-            checksum: msg.checksum.unwrap().into(),
+            checksum: msg.checksum.into(),
             latest_height: Some(
                 Height {
                     revision_number: 0,
