@@ -33,6 +33,8 @@
     "networks/genesis/union-testnet-4/**",
     "hubble/hasura/**",
     "site/src/lib/abi/**",
-    "e2e/upgrades.nix"
+    "e2e/upgrades.nix",
+    "yarn.lock",
+    "bun.lockb"
   ]
 }
