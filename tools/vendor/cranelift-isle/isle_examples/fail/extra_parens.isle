@@ -1,0 +1,6 @@
+(type u32 (primitive u32))
+
+(decl f (u32) u32)
+;; Should get an error about `x` not being a term, with a suggestion that it is
+;; a bound var instead.
+(rule (f x) (x))

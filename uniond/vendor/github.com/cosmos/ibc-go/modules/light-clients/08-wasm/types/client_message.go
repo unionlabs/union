@@ -10,7 +10,7 @@ var _ exported.ClientMessage = &ClientMessage{}
 
 // ClientType is a Wasm light client.
 func (ClientMessage) ClientType() string {
-	return exported.Wasm
+	return Wasm
 }
 
 // ValidateBasic defines a basic validation for the wasm client message.

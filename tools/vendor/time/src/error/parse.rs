@@ -15,6 +15,10 @@ pub enum Parse {
     ParseFromDescription(ParseFromDescription),
     /// The input should have ended, but there were characters remaining.
     #[non_exhaustive]
+    #[deprecated(
+        since = "0.3.28",
+        note = "no longer output. moved to the `ParseFromDescription` variant"
+    )]
     UnexpectedTrailingCharacters,
 }
 
@@ -23,7 +27,8 @@ impl fmt::Display for Parse {
         match self {
             Self::TryFromParsed(err) => err.fmt(f),
             Self::ParseFromDescription(err) => err.fmt(f),
-            Self::UnexpectedTrailingCharacters => f.write_str("unexpected trailing characters"),
+            #[allow(deprecated)]
+            Self::UnexpectedTrailingCharacters => bug!("variant should not be used"),
         }
     }
 }
@@ -34,7 +39,8 @@ impl std::error::Error for Parse {
         match self {
             Self::TryFromParsed(err) => Some(err),
             Self::ParseFromDescription(err) => Some(err),
-            Self::UnexpectedTrailingCharacters => None,
+            #[allow(deprecated)]
+            Self::UnexpectedTrailingCharacters => bug!("variant should not be used"),
         }
     }
 }
@@ -78,7 +84,8 @@ impl From<Parse> for crate::Error {
         match err {
             Parse::TryFromParsed(err) => Self::TryFromParsed(err),
             Parse::ParseFromDescription(err) => Self::ParseFromDescription(err),
-            Parse::UnexpectedTrailingCharacters => Self::UnexpectedTrailingCharacters,
+            #[allow(deprecated)]
+            Parse::UnexpectedTrailingCharacters => bug!("variant should not be used"),
         }
     }
 }
@@ -89,7 +96,8 @@ impl TryFrom<crate::Error> for Parse {
     fn try_from(err: crate::Error) -> Result<Self, Self::Error> {
         match err {
             crate::Error::ParseFromDescription(err) => Ok(Self::ParseFromDescription(err)),
-            crate::Error::UnexpectedTrailingCharacters => Ok(Self::UnexpectedTrailingCharacters),
+            #[allow(deprecated)]
+            crate::Error::UnexpectedTrailingCharacters => bug!("variant should not be used"),
             crate::Error::TryFromParsed(err) => Ok(Self::TryFromParsed(err)),
             _ => Err(error::DifferentVariant),
         }

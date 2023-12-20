@@ -7,9 +7,7 @@
 //! directory.
 
 use alloc::vec::Vec;
-use core::convert::{TryFrom, TryInto};
 use core::fmt::{self, Display, Formatter};
-use core::num::NonZeroU32;
 use core::ops::{Deref, DerefMut};
 use core::str::FromStr;
 
@@ -17,7 +15,6 @@ use core::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 use crate::bitset::BitSet;
-use crate::data_value::DataValue;
 use crate::entity;
 use crate::ir::{
     self,
@@ -75,24 +72,6 @@ impl Opcode {
             Opcode::ResumableTrap | Opcode::ResumableTrapnz => true,
             _ => false,
         }
-    }
-}
-
-impl TryFrom<NonZeroU32> for Opcode {
-    type Error = ();
-
-    #[inline]
-    fn try_from(x: NonZeroU32) -> Result<Self, ()> {
-        let x: u16 = x.get().try_into().map_err(|_| ())?;
-        Self::try_from(x)
-    }
-}
-
-impl From<Opcode> for NonZeroU32 {
-    #[inline]
-    fn from(op: Opcode) -> NonZeroU32 {
-        let x = op as u8;
-        NonZeroU32::new(x as u32).unwrap()
     }
 }
 
@@ -206,26 +185,11 @@ impl InstructionData {
                 ref args,
                 ..
             } => BranchInfo::SingleDest(destination, args.as_slice(pool)),
-            Self::BranchInt {
-                destination,
-                ref args,
-                ..
-            }
-            | Self::BranchFloat {
-                destination,
-                ref args,
-                ..
-            }
-            | Self::Branch {
+            Self::Branch {
                 destination,
                 ref args,
                 ..
             } => BranchInfo::SingleDest(destination, &args.as_slice(pool)[1..]),
-            Self::BranchIcmp {
-                destination,
-                ref args,
-                ..
-            } => BranchInfo::SingleDest(destination, &args.as_slice(pool)[2..]),
             Self::BranchTable {
                 table, destination, ..
             } => BranchInfo::Table(table, Some(destination)),
@@ -242,11 +206,7 @@ impl InstructionData {
     /// Multi-destination branches like `br_table` return `None`.
     pub fn branch_destination(&self) -> Option<Block> {
         match *self {
-            Self::Jump { destination, .. }
-            | Self::Branch { destination, .. }
-            | Self::BranchInt { destination, .. }
-            | Self::BranchFloat { destination, .. }
-            | Self::BranchIcmp { destination, .. } => Some(destination),
+            Self::Jump { destination, .. } | Self::Branch { destination, .. } => Some(destination),
             Self::BranchTable { .. } => None,
             _ => {
                 debug_assert!(!self.opcode().is_branch());
@@ -268,18 +228,6 @@ impl InstructionData {
             | Self::Branch {
                 ref mut destination,
                 ..
-            }
-            | Self::BranchInt {
-                ref mut destination,
-                ..
-            }
-            | Self::BranchFloat {
-                ref mut destination,
-                ..
-            }
-            | Self::BranchIcmp {
-                ref mut destination,
-                ..
             } => Some(destination),
             Self::BranchTable { .. } => None,
             _ => {
@@ -289,49 +237,11 @@ impl InstructionData {
         }
     }
 
-    /// Return the value of an immediate if the instruction has one or `None` otherwise. Only
-    /// immediate values are considered, not global values, constant handles, condition codes, etc.
-    pub fn imm_value(&self) -> Option<DataValue> {
-        match self {
-            &InstructionData::UnaryBool { imm, .. } => Some(DataValue::from(imm)),
-            // 8-bit.
-            &InstructionData::BinaryImm8 { imm, .. }
-            | &InstructionData::TernaryImm8 { imm, .. } => Some(DataValue::from(imm as i8)), // Note the switch from unsigned to signed.
-            // 32-bit
-            &InstructionData::UnaryIeee32 { imm, .. } => Some(DataValue::from(imm)),
-            &InstructionData::HeapAddr { imm, .. } => {
-                let imm: u32 = imm.into();
-                Some(DataValue::from(imm as i32)) // Note the switch from unsigned to signed.
-            }
-            &InstructionData::Load { offset, .. }
-            | &InstructionData::LoadComplex { offset, .. }
-            | &InstructionData::Store { offset, .. }
-            | &InstructionData::StoreComplex { offset, .. }
-            | &InstructionData::StackLoad { offset, .. }
-            | &InstructionData::StackStore { offset, .. }
-            | &InstructionData::TableAddr { offset, .. } => Some(DataValue::from(offset)),
-            // 64-bit.
-            &InstructionData::UnaryImm { imm, .. }
-            | &InstructionData::BinaryImm64 { imm, .. }
-            | &InstructionData::IntCompareImm { imm, .. } => Some(DataValue::from(imm.bits())),
-            &InstructionData::UnaryIeee64 { imm, .. } => Some(DataValue::from(imm)),
-            // 128-bit; though these immediates are present logically in the IR they are not
-            // included in the `InstructionData` for memory-size reasons. This case, returning
-            // `None`, is left here to alert users of this method that they should retrieve the
-            // value using the `DataFlowGraph`.
-            &InstructionData::Shuffle { imm: _, .. } => None,
-            _ => None,
-        }
-    }
-
     /// If this is a trapping instruction, get its trap code. Otherwise, return
     /// `None`.
     pub fn trap_code(&self) -> Option<TrapCode> {
         match *self {
-            Self::CondTrap { code, .. }
-            | Self::FloatCondTrap { code, .. }
-            | Self::IntCondTrap { code, .. }
-            | Self::Trap { code, .. } => Some(code),
+            Self::CondTrap { code, .. } | Self::Trap { code, .. } => Some(code),
             _ => None,
         }
     }
@@ -340,12 +250,7 @@ impl InstructionData {
     /// condition.  Otherwise, return `None`.
     pub fn cond_code(&self) -> Option<IntCC> {
         match self {
-            &InstructionData::IntCond { cond, .. }
-            | &InstructionData::BranchIcmp { cond, .. }
-            | &InstructionData::IntCompare { cond, .. }
-            | &InstructionData::IntCondTrap { cond, .. }
-            | &InstructionData::BranchInt { cond, .. }
-            | &InstructionData::IntSelect { cond, .. }
+            &InstructionData::IntCompare { cond, .. }
             | &InstructionData::IntCompareImm { cond, .. } => Some(cond),
             _ => None,
         }
@@ -355,10 +260,7 @@ impl InstructionData {
     /// condition.  Otherwise, return `None`.
     pub fn fp_cond_code(&self) -> Option<FloatCC> {
         match self {
-            &InstructionData::BranchFloat { cond, .. }
-            | &InstructionData::FloatCompare { cond, .. }
-            | &InstructionData::FloatCond { cond, .. }
-            | &InstructionData::FloatCondTrap { cond, .. } => Some(cond),
+            &InstructionData::FloatCompare { cond, .. } => Some(cond),
             _ => None,
         }
     }
@@ -367,10 +269,7 @@ impl InstructionData {
     /// trap code. Otherwise, return `None`.
     pub fn trap_code_mut(&mut self) -> Option<&mut TrapCode> {
         match self {
-            Self::CondTrap { code, .. }
-            | Self::FloatCondTrap { code, .. }
-            | Self::IntCondTrap { code, .. }
-            | Self::Trap { code, .. } => Some(code),
+            Self::CondTrap { code, .. } | Self::Trap { code, .. } => Some(code),
             _ => None,
         }
     }
@@ -388,10 +287,8 @@ impl InstructionData {
         match self {
             &InstructionData::Load { offset, .. }
             | &InstructionData::StackLoad { offset, .. }
-            | &InstructionData::LoadComplex { offset, .. }
             | &InstructionData::Store { offset, .. }
-            | &InstructionData::StackStore { offset, .. }
-            | &InstructionData::StoreComplex { offset, .. } => Some(offset.into()),
+            | &InstructionData::StackStore { offset, .. } => Some(offset.into()),
             _ => None,
         }
     }
@@ -400,10 +297,8 @@ impl InstructionData {
     pub fn memflags(&self) -> Option<MemFlags> {
         match self {
             &InstructionData::Load { flags, .. }
-            | &InstructionData::LoadComplex { flags, .. }
             | &InstructionData::LoadNoOffset { flags, .. }
             | &InstructionData::Store { flags, .. }
-            | &InstructionData::StoreComplex { flags, .. }
             | &InstructionData::StoreNoOffset { flags, .. } => Some(flags),
             _ => None,
         }
@@ -635,10 +530,10 @@ pub struct ValueTypeSet {
     pub ints: BitSet8,
     /// Allowed float widths
     pub floats: BitSet8,
-    /// Allowed bool widths
-    pub bools: BitSet8,
     /// Allowed ref widths
     pub refs: BitSet8,
+    /// Allowed dynamic vectors minimum lane sizes
+    pub dynamic_lanes: BitSet16,
 }
 
 impl ValueTypeSet {
@@ -651,8 +546,6 @@ impl ValueTypeSet {
             self.ints.contains(l2b)
         } else if scalar.is_float() {
             self.floats.contains(l2b)
-        } else if scalar.is_bool() {
-            self.bools.contains(l2b)
         } else if scalar.is_ref() {
             self.refs.contains(l2b)
         } else {
@@ -662,8 +555,13 @@ impl ValueTypeSet {
 
     /// Does `typ` belong to this set?
     pub fn contains(self, typ: Type) -> bool {
-        let l2l = typ.log2_lane_count();
-        self.lanes.contains(l2l) && self.is_base_type(typ.lane_type())
+        if typ.is_dynamic_vector() {
+            let l2l = typ.log2_min_lane_count();
+            self.dynamic_lanes.contains(l2l) && self.is_base_type(typ.lane_type())
+        } else {
+            let l2l = typ.log2_lane_count();
+            self.lanes.contains(l2l) && self.is_base_type(typ.lane_type())
+        }
     }
 
     /// Get an example member of this type set.
@@ -674,10 +572,8 @@ impl ValueTypeSet {
             types::I32
         } else if self.floats.max().unwrap_or(0) > 5 {
             types::F32
-        } else if self.bools.max().unwrap_or(0) > 5 {
-            types::B32
         } else {
-            types::B1
+            types::I8
         };
         t.by(1 << self.lanes.min().unwrap()).unwrap()
     }
@@ -718,6 +614,9 @@ enum OperandConstraint {
 
     /// This operand is `ctrlType.merge_lanes()`.
     MergeLanes,
+
+    /// This operands is `ctrlType.dynamic_to_vector()`.
+    DynamicToVector,
 }
 
 impl OperandConstraint {
@@ -744,15 +643,48 @@ impl OperandConstraint {
                     .expect("invalid type for half_vector"),
             ),
             DoubleVector => Bound(ctrl_type.by(2).expect("invalid type for double_vector")),
-            SplitLanes => Bound(
+            SplitLanes => {
+                if ctrl_type.is_dynamic_vector() {
+                    Bound(
+                        ctrl_type
+                            .dynamic_to_vector()
+                            .expect("invalid type for dynamic_to_vector")
+                            .split_lanes()
+                            .expect("invalid type for split_lanes")
+                            .vector_to_dynamic()
+                            .expect("invalid dynamic type"),
+                    )
+                } else {
+                    Bound(
+                        ctrl_type
+                            .split_lanes()
+                            .expect("invalid type for split_lanes"),
+                    )
+                }
+            }
+            MergeLanes => {
+                if ctrl_type.is_dynamic_vector() {
+                    Bound(
+                        ctrl_type
+                            .dynamic_to_vector()
+                            .expect("invalid type for dynamic_to_vector")
+                            .merge_lanes()
+                            .expect("invalid type for merge_lanes")
+                            .vector_to_dynamic()
+                            .expect("invalid dynamic type"),
+                    )
+                } else {
+                    Bound(
+                        ctrl_type
+                            .merge_lanes()
+                            .expect("invalid type for merge_lanes"),
+                    )
+                }
+            }
+            DynamicToVector => Bound(
                 ctrl_type
-                    .split_lanes()
-                    .expect("invalid type for split_lanes"),
-            ),
-            MergeLanes => Bound(
-                ctrl_type
-                    .merge_lanes()
-                    .expect("invalid type for merge_lanes"),
+                    .dynamic_to_vector()
+                    .expect("invalid type for dynamic_to_vector"),
             ),
         }
     }
@@ -771,6 +703,19 @@ pub enum ResolvedConstraint {
 mod tests {
     use super::*;
     use alloc::string::ToString;
+
+    #[test]
+    fn inst_data_is_copy() {
+        fn is_copy<T: Copy>() {}
+        is_copy::<InstructionData>();
+    }
+
+    #[test]
+    fn inst_data_size() {
+        // The size of `InstructionData` is performance sensitive, so make sure
+        // we don't regress it unintentionally.
+        assert_eq!(std::mem::size_of::<InstructionData>(), 16);
+    }
 
     #[test]
     fn opcodes() {
@@ -864,17 +809,15 @@ mod tests {
             lanes: BitSet16::from_range(0, 8),
             ints: BitSet8::from_range(4, 7),
             floats: BitSet8::from_range(0, 0),
-            bools: BitSet8::from_range(3, 7),
             refs: BitSet8::from_range(5, 7),
+            dynamic_lanes: BitSet16::from_range(0, 4),
         };
         assert!(!vts.contains(I8));
         assert!(vts.contains(I32));
         assert!(vts.contains(I64));
         assert!(vts.contains(I32X4));
+        assert!(vts.contains(I32X4XN));
         assert!(!vts.contains(F32));
-        assert!(!vts.contains(B1));
-        assert!(vts.contains(B8));
-        assert!(vts.contains(B64));
         assert!(vts.contains(R32));
         assert!(vts.contains(R64));
         assert_eq!(vts.example().to_string(), "i32");
@@ -883,8 +826,8 @@ mod tests {
             lanes: BitSet16::from_range(0, 8),
             ints: BitSet8::from_range(0, 0),
             floats: BitSet8::from_range(5, 7),
-            bools: BitSet8::from_range(3, 7),
             refs: BitSet8::from_range(0, 0),
+            dynamic_lanes: BitSet16::from_range(0, 8),
         };
         assert_eq!(vts.example().to_string(), "f32");
 
@@ -892,29 +835,27 @@ mod tests {
             lanes: BitSet16::from_range(1, 8),
             ints: BitSet8::from_range(0, 0),
             floats: BitSet8::from_range(5, 7),
-            bools: BitSet8::from_range(3, 7),
             refs: BitSet8::from_range(0, 0),
+            dynamic_lanes: BitSet16::from_range(0, 8),
         };
         assert_eq!(vts.example().to_string(), "f32x2");
 
         let vts = ValueTypeSet {
             lanes: BitSet16::from_range(2, 8),
-            ints: BitSet8::from_range(0, 0),
+            ints: BitSet8::from_range(3, 7),
             floats: BitSet8::from_range(0, 0),
-            bools: BitSet8::from_range(3, 7),
             refs: BitSet8::from_range(0, 0),
+            dynamic_lanes: BitSet16::from_range(0, 8),
         };
-        assert!(!vts.contains(B32X2));
-        assert!(vts.contains(B32X4));
-        assert_eq!(vts.example().to_string(), "b32x4");
+        assert_eq!(vts.example().to_string(), "i32x4");
 
         let vts = ValueTypeSet {
             // TypeSet(lanes=(1, 256), ints=(8, 64))
             lanes: BitSet16::from_range(0, 9),
             ints: BitSet8::from_range(3, 7),
             floats: BitSet8::from_range(0, 0),
-            bools: BitSet8::from_range(0, 0),
             refs: BitSet8::from_range(0, 0),
+            dynamic_lanes: BitSet16::from_range(0, 8),
         };
         assert!(vts.contains(I32));
         assert!(vts.contains(I32X4));

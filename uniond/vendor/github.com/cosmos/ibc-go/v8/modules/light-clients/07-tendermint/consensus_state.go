@@ -5,8 +5,8 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	cmttypes "github.com/cometbft/cometbft/types"
+	tmbytes "github.com/cometbft/cometbft/libs/bytes"
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
@@ -20,7 +20,7 @@ const SentinelRoot = "sentinel_root"
 
 // NewConsensusState creates a new ConsensusState instance.
 func NewConsensusState(
-	timestamp time.Time, root commitmenttypes.MerkleRoot, nextValsHash cmtbytes.HexBytes,
+	timestamp time.Time, root commitmenttypes.MerkleRoot, nextValsHash tmbytes.HexBytes,
 ) *ConsensusState {
 	return &ConsensusState{
 		Timestamp:          timestamp,
@@ -51,7 +51,7 @@ func (cs ConsensusState) ValidateBasic() error {
 	if cs.Root.Empty() {
 		return errorsmod.Wrap(clienttypes.ErrInvalidConsensus, "root cannot be empty")
 	}
-	if err := cmttypes.ValidateHash(cs.NextValidatorsHash); err != nil {
+	if err := tmtypes.ValidateHash(cs.NextValidatorsHash); err != nil {
 		return errorsmod.Wrap(err, "next validators hash is invalid")
 	}
 	if cs.Timestamp.Unix() <= 0 {

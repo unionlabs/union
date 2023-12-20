@@ -1,26 +1,14 @@
-//! Registers, the Universe thereof, and printing.
+//! Register definitions for regalloc2.
 //!
-//! These are ordered by sequence number, as required in the Universe.
+//! We define 16 GPRs, with indices equal to the hardware encoding,
+//! and 16 XMM registers.
 //!
-//! The caller-saved registers are placed first in order to prefer not to clobber (requiring
-//! saves/restores in prologue/epilogue code) when possible. Note that there is no other heuristic
-//! in the backend that will apply such pressure; the register allocator's cost heuristics are not
-//! aware of the cost of clobber-save/restore code.
-//!
-//! One might worry that this pessimizes code with many callsites, where using caller-saves causes
-//! us to have to save them (as we are the caller) frequently. However, the register allocator
-//! *should be* aware of *this* cost, because it sees that the call instruction modifies all of the
-//! caller-saved (i.e., callee-clobbered) registers.
-//!
-//! Hence, this ordering encodes pressure in one direction (prefer not to clobber registers that we
-//! ourselves have to save) and this is balanaced against the RA's pressure in the other direction
-//! at callsites.
+//! Note also that we make use of pinned VRegs to refer to PRegs.
 
+use crate::machinst::{AllocationConsumer, RealReg, Reg};
 use crate::settings;
-use alloc::vec::Vec;
-use regalloc::{
-    PrettyPrint, RealReg, RealRegUniverse, Reg, RegClass, RegClassInfo, NUM_REG_CLASSES,
-};
+use alloc::string::ToString;
+use regalloc2::{MachineEnv, PReg, RegClass, VReg};
 use std::string::String;
 
 // Hardware encodings (note the special rax, rcx, rdx, rbx order).
@@ -42,53 +30,65 @@ pub const ENC_R13: u8 = 13;
 pub const ENC_R14: u8 = 14;
 pub const ENC_R15: u8 = 15;
 
-fn gpr(enc: u8, index: u8) -> Reg {
-    Reg::new_real(RegClass::I64, enc, index)
+// Constructors for Regs.
+
+fn gpr(enc: u8) -> Reg {
+    let preg = gpr_preg(enc);
+    Reg::from(VReg::new(preg.index(), RegClass::Int))
+}
+pub(crate) const fn gpr_preg(enc: u8) -> PReg {
+    PReg::new(enc as usize, RegClass::Int)
 }
 
 pub(crate) fn rsi() -> Reg {
-    gpr(ENC_RSI, 16)
+    gpr(ENC_RSI)
 }
 pub(crate) fn rdi() -> Reg {
-    gpr(ENC_RDI, 17)
+    gpr(ENC_RDI)
 }
 pub(crate) fn rax() -> Reg {
-    gpr(ENC_RAX, 18)
+    gpr(ENC_RAX)
 }
 pub(crate) fn rcx() -> Reg {
-    gpr(ENC_RCX, 19)
+    gpr(ENC_RCX)
 }
 pub(crate) fn rdx() -> Reg {
-    gpr(ENC_RDX, 20)
+    gpr(ENC_RDX)
 }
 pub(crate) fn r8() -> Reg {
-    gpr(ENC_R8, 21)
+    gpr(ENC_R8)
 }
 pub(crate) fn r9() -> Reg {
-    gpr(ENC_R9, 22)
+    gpr(ENC_R9)
 }
 pub(crate) fn r10() -> Reg {
-    gpr(ENC_R10, 23)
+    gpr(ENC_R10)
 }
 pub(crate) fn r11() -> Reg {
-    gpr(ENC_R11, 24)
+    gpr(ENC_R11)
 }
 pub(crate) fn r12() -> Reg {
-    gpr(ENC_R12, 25)
+    gpr(ENC_R12)
 }
 pub(crate) fn r13() -> Reg {
-    gpr(ENC_R13, 26)
+    gpr(ENC_R13)
 }
 pub(crate) fn r14() -> Reg {
-    gpr(ENC_R14, 27)
+    gpr(ENC_R14)
 }
 pub(crate) fn rbx() -> Reg {
-    gpr(ENC_RBX, 28)
+    gpr(ENC_RBX)
 }
 
 pub(crate) fn r15() -> Reg {
-    // r15 is put aside since this is the pinned register.
-    gpr(ENC_R15, 29)
+    gpr(ENC_R15)
+}
+
+pub(crate) fn rsp() -> Reg {
+    gpr(ENC_RSP)
+}
+pub(crate) fn rbp() -> Reg {
+    gpr(ENC_RBP)
 }
 
 /// The pinned register on this architecture.
@@ -98,163 +98,180 @@ pub(crate) fn pinned_reg() -> Reg {
     r15()
 }
 
-fn fpr(enc: u8, index: u8) -> Reg {
-    Reg::new_real(RegClass::V128, enc, index)
+fn fpr(enc: u8) -> Reg {
+    let preg = fpr_preg(enc);
+    Reg::from(VReg::new(preg.index(), RegClass::Float))
+}
+
+pub(crate) const fn fpr_preg(enc: u8) -> PReg {
+    PReg::new(enc as usize, RegClass::Float)
 }
 
 pub(crate) fn xmm0() -> Reg {
-    fpr(0, 0)
+    fpr(0)
 }
 pub(crate) fn xmm1() -> Reg {
-    fpr(1, 1)
+    fpr(1)
 }
 pub(crate) fn xmm2() -> Reg {
-    fpr(2, 2)
+    fpr(2)
 }
 pub(crate) fn xmm3() -> Reg {
-    fpr(3, 3)
+    fpr(3)
 }
 pub(crate) fn xmm4() -> Reg {
-    fpr(4, 4)
+    fpr(4)
 }
 pub(crate) fn xmm5() -> Reg {
-    fpr(5, 5)
+    fpr(5)
 }
 pub(crate) fn xmm6() -> Reg {
-    fpr(6, 6)
+    fpr(6)
 }
 pub(crate) fn xmm7() -> Reg {
-    fpr(7, 7)
+    fpr(7)
 }
 pub(crate) fn xmm8() -> Reg {
-    fpr(8, 8)
+    fpr(8)
 }
 pub(crate) fn xmm9() -> Reg {
-    fpr(9, 9)
+    fpr(9)
 }
 pub(crate) fn xmm10() -> Reg {
-    fpr(10, 10)
+    fpr(10)
 }
 pub(crate) fn xmm11() -> Reg {
-    fpr(11, 11)
+    fpr(11)
 }
 pub(crate) fn xmm12() -> Reg {
-    fpr(12, 12)
+    fpr(12)
 }
 pub(crate) fn xmm13() -> Reg {
-    fpr(13, 13)
+    fpr(13)
 }
 pub(crate) fn xmm14() -> Reg {
-    fpr(14, 14)
+    fpr(14)
 }
 pub(crate) fn xmm15() -> Reg {
-    fpr(15, 15)
+    fpr(15)
 }
 
-pub(crate) fn rsp() -> Reg {
-    gpr(ENC_RSP, 30)
-}
-pub(crate) fn rbp() -> Reg {
-    gpr(ENC_RBP, 31)
-}
-
-/// Create the register universe for X64.
-///
-/// The ordering of registers matters, as commented in the file doc comment: assumes the
-/// calling-convention is SystemV, at the moment.
-pub(crate) fn create_reg_universe_systemv(flags: &settings::Flags) -> RealRegUniverse {
-    let mut regs = Vec::<(RealReg, String)>::new();
-    let mut allocable_by_class = [None; NUM_REG_CLASSES];
-
-    let use_pinned_reg = flags.enable_pinned_reg();
-
-    // XMM registers
-    let first_fpr = regs.len();
-    regs.push((xmm0().to_real_reg(), "%xmm0".into()));
-    regs.push((xmm1().to_real_reg(), "%xmm1".into()));
-    regs.push((xmm2().to_real_reg(), "%xmm2".into()));
-    regs.push((xmm3().to_real_reg(), "%xmm3".into()));
-    regs.push((xmm4().to_real_reg(), "%xmm4".into()));
-    regs.push((xmm5().to_real_reg(), "%xmm5".into()));
-    regs.push((xmm6().to_real_reg(), "%xmm6".into()));
-    regs.push((xmm7().to_real_reg(), "%xmm7".into()));
-    regs.push((xmm8().to_real_reg(), "%xmm8".into()));
-    regs.push((xmm9().to_real_reg(), "%xmm9".into()));
-    regs.push((xmm10().to_real_reg(), "%xmm10".into()));
-    regs.push((xmm11().to_real_reg(), "%xmm11".into()));
-    regs.push((xmm12().to_real_reg(), "%xmm12".into()));
-    regs.push((xmm13().to_real_reg(), "%xmm13".into()));
-    regs.push((xmm14().to_real_reg(), "%xmm14".into()));
-    regs.push((xmm15().to_real_reg(), "%xmm15".into()));
-    let last_fpr = regs.len() - 1;
-
-    // Integer regs.
-    let first_gpr = regs.len();
-
-    // Caller-saved, in the SystemV x86_64 ABI.
-    regs.push((rsi().to_real_reg(), "%rsi".into()));
-    regs.push((rdi().to_real_reg(), "%rdi".into()));
-    regs.push((rax().to_real_reg(), "%rax".into()));
-    regs.push((rcx().to_real_reg(), "%rcx".into()));
-    regs.push((rdx().to_real_reg(), "%rdx".into()));
-    regs.push((r8().to_real_reg(), "%r8".into()));
-    regs.push((r9().to_real_reg(), "%r9".into()));
-    regs.push((r10().to_real_reg(), "%r10".into()));
-    regs.push((r11().to_real_reg(), "%r11".into()));
-
-    // Callee-saved, in the SystemV x86_64 ABI.
-    regs.push((r12().to_real_reg(), "%r12".into()));
-    regs.push((r13().to_real_reg(), "%r13".into()));
-    regs.push((r14().to_real_reg(), "%r14".into()));
-
-    regs.push((rbx().to_real_reg(), "%rbx".into()));
-
-    // Other regs, not available to the allocator.
-    debug_assert_eq!(r15(), pinned_reg());
-    let allocable = if use_pinned_reg {
-        // The pinned register is not allocatable in this case, so record the length before adding
-        // it.
-        let len = regs.len();
-        regs.push((r15().to_real_reg(), "%r15/pinned".into()));
-        len
-    } else {
-        regs.push((r15().to_real_reg(), "%r15".into()));
-        regs.len()
-    };
-    let last_gpr = allocable - 1;
-
-    regs.push((rsp().to_real_reg(), "%rsp".into()));
-    regs.push((rbp().to_real_reg(), "%rbp".into()));
-
-    allocable_by_class[RegClass::I64.rc_to_usize()] = Some(RegClassInfo {
-        first: first_gpr,
-        last: last_gpr,
-        suggested_scratch: Some(r12().get_index()),
-    });
-    allocable_by_class[RegClass::V128.rc_to_usize()] = Some(RegClassInfo {
-        first: first_fpr,
-        last: last_fpr,
-        suggested_scratch: Some(xmm15().get_index()),
-    });
-
-    // Sanity-check: the index passed to the Reg ctor must match the order in the register list.
-    for (i, reg) in regs.iter().enumerate() {
-        assert_eq!(i, reg.0.get_index());
+/// Create the register environment for x64.
+pub(crate) fn create_reg_env_systemv(flags: &settings::Flags) -> MachineEnv {
+    fn preg(r: Reg) -> PReg {
+        r.to_real_reg().unwrap().into()
     }
 
-    RealRegUniverse {
-        regs,
-        allocable,
-        allocable_by_class,
+    let mut env = MachineEnv {
+        preferred_regs_by_class: [
+            // Preferred GPRs: caller-saved in the SysV ABI.
+            vec![
+                preg(rsi()),
+                preg(rdi()),
+                preg(rax()),
+                preg(rcx()),
+                preg(rdx()),
+                preg(r8()),
+                preg(r9()),
+                preg(r10()),
+                preg(r11()),
+            ],
+            // Preferred XMMs: all of them.
+            vec![
+                preg(xmm0()),
+                preg(xmm1()),
+                preg(xmm2()),
+                preg(xmm3()),
+                preg(xmm4()),
+                preg(xmm5()),
+                preg(xmm6()),
+                preg(xmm7()),
+                preg(xmm8()),
+                preg(xmm9()),
+                preg(xmm10()),
+                preg(xmm11()),
+                preg(xmm12()),
+                preg(xmm13()),
+                preg(xmm14()),
+                preg(xmm15()),
+            ],
+        ],
+        non_preferred_regs_by_class: [
+            // Non-preferred GPRs: callee-saved in the SysV ABI.
+            vec![preg(rbx()), preg(r12()), preg(r13()), preg(r14())],
+            // Non-preferred XMMs: none.
+            vec![],
+        ],
+        fixed_stack_slots: vec![],
+    };
+
+    debug_assert_eq!(r15(), pinned_reg());
+    if !flags.enable_pinned_reg() {
+        env.non_preferred_regs_by_class[0].push(preg(r15()));
+    }
+
+    env
+}
+
+/// Give the name of a RealReg.
+pub fn realreg_name(reg: RealReg) -> &'static str {
+    let preg = PReg::from(reg);
+    match preg.class() {
+        RegClass::Int => match preg.hw_enc() as u8 {
+            ENC_RAX => "%rax",
+            ENC_RBX => "%rbx",
+            ENC_RCX => "%rcx",
+            ENC_RDX => "%rdx",
+            ENC_RSI => "%rsi",
+            ENC_RDI => "%rdi",
+            ENC_RBP => "%rbp",
+            ENC_RSP => "%rsp",
+            ENC_R8 => "%r8",
+            ENC_R9 => "%r9",
+            ENC_R10 => "%r10",
+            ENC_R11 => "%r11",
+            ENC_R12 => "%r12",
+            ENC_R13 => "%r13",
+            ENC_R14 => "%r14",
+            ENC_R15 => "%r15",
+            _ => panic!("Invalid PReg: {:?}", preg),
+        },
+        RegClass::Float => match preg.hw_enc() {
+            0 => "%xmm0",
+            1 => "%xmm1",
+            2 => "%xmm2",
+            3 => "%xmm3",
+            4 => "%xmm4",
+            5 => "%xmm5",
+            6 => "%xmm6",
+            7 => "%xmm7",
+            8 => "%xmm8",
+            9 => "%xmm9",
+            10 => "%xmm10",
+            11 => "%xmm11",
+            12 => "%xmm12",
+            13 => "%xmm13",
+            14 => "%xmm14",
+            15 => "%xmm15",
+            _ => panic!("Invalid PReg: {:?}", preg),
+        },
+    }
+}
+
+pub fn show_reg(reg: Reg) -> String {
+    if let Some(rreg) = reg.to_real_reg() {
+        realreg_name(rreg).to_string()
+    } else {
+        format!("%{:?}", reg)
     }
 }
 
 /// If `ireg` denotes an I64-classed reg, make a best-effort attempt to show its name at some
 /// smaller size (4, 2 or 1 bytes).
-pub fn show_ireg_sized(reg: Reg, mb_rru: Option<&RealRegUniverse>, size: u8) -> String {
-    let mut s = reg.show_rru(mb_rru);
+pub fn show_ireg_sized(reg: Reg, size: u8) -> String {
+    let mut s = show_reg(reg);
 
-    if reg.get_class() != RegClass::I64 || size == 8 {
+    if reg.class() != RegClass::Int || size == 8 {
         // We can't do any better.
         return s;
     }
@@ -301,4 +318,16 @@ pub fn show_ireg_sized(reg: Reg, mb_rru: Option<&RealRegUniverse>, size: u8) -> 
     }
 
     s
+}
+
+// N.B.: this is not an `impl PrettyPrint for Reg` because it is
+// specific to x64; other backends have analogous functions. The
+// disambiguation happens statically by virtue of higher-level,
+// x64-specific, types calling the right `pretty_print_reg`. (In other
+// words, we can't pretty-print a `Reg` all by itself in a build that
+// may have multiple backends; but we can pretty-print one as part of
+// an x64 Inst or x64 RegMemImm.)
+pub fn pretty_print_reg(reg: Reg, size: u8, allocs: &mut AllocationConsumer<'_>) -> String {
+    let reg = allocs.next(reg);
+    show_ireg_sized(reg, size)
 }

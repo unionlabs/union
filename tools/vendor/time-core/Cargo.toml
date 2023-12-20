@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.60.0"
+rust-version = "1.65.0"
 name = "time-core"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
     "Jacob Pratt <open-source@jhpratt.dev>",
     "Time contributors",

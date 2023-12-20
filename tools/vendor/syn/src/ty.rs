@@ -525,7 +525,7 @@ pub(crate) mod parsing {
             let star_token: Option<Token![*]> = input.parse()?;
             let bounds = TypeTraitObject::parse_bounds(dyn_span, input, allow_plus)?;
             return Ok(if star_token.is_some() {
-                Type::Verbatim(verbatim::between(begin, input))
+                Type::Verbatim(verbatim::between(&begin, input))
             } else {
                 Type::TraitObject(TypeTraitObject {
                     dyn_token: Some(dyn_token),
@@ -947,7 +947,7 @@ pub(crate) mod parsing {
             Some(ty) if !has_mut_self => ty,
             _ => {
                 name = None;
-                Type::Verbatim(verbatim::between(begin, input))
+                Type::Verbatim(verbatim::between(&begin, input))
             }
         };
 

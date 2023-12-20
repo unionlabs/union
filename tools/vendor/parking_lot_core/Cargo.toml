@@ -12,7 +12,7 @@
 [package]
 edition = "2018"
 name = "parking_lot_core"
-version = "0.9.3"
+version = "0.9.8"
 authors = ["Amanieu d'Antras <amanieu@gmail.com>"]
 description = "An advanced API for creating custom synchronization primitives."
 keywords = [
@@ -53,16 +53,10 @@ deadlock_detection = [
 nightly = []
 
 [target."cfg(target_os = \"redox\")".dependencies.redox_syscall]
-version = "0.2.8"
+version = "0.3"
 
 [target."cfg(unix)".dependencies.libc]
 version = "0.2.95"
 
-[target."cfg(windows)".dependencies.windows-sys]
-version = "0.36.0"
-features = [
-    "Win32_Foundation",
-    "Win32_System_LibraryLoader",
-    "Win32_System_SystemServices",
-    "Win32_System_WindowsProgramming",
-]
+[target."cfg(windows)".dependencies.windows-targets]
+version = "0.48.0"

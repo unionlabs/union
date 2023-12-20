@@ -1,24 +1,45 @@
 //! Scalar types.
 
+#[cfg(feature = "arithmetic")]
+mod blinded;
+#[cfg(feature = "arithmetic")]
+mod nonzero;
+mod primitive;
+
+pub use self::primitive::ScalarPrimitive;
+#[cfg(feature = "arithmetic")]
+pub use self::{blinded::BlindedScalar, nonzero::NonZeroScalar};
+
+use crypto_bigint::Integer;
 use subtle::Choice;
 
-pub(crate) mod core;
-
 #[cfg(feature = "arithmetic")]
-pub(crate) mod nonzero;
-
-#[cfg(feature = "arithmetic")]
-use crate::ScalarArithmetic;
+use crate::CurveArithmetic;
 
 /// Scalar field element for a particular elliptic curve.
 #[cfg(feature = "arithmetic")]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub type Scalar<C> = <C as ScalarArithmetic>::Scalar;
+pub type Scalar<C> = <C as CurveArithmetic>::Scalar;
 
 /// Bit representation of a scalar field element of a given curve.
 #[cfg(feature = "bits")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 pub type ScalarBits<C> = ff::FieldBits<<Scalar<C> as ff::PrimeFieldBits>::ReprBits>;
+
+/// Instantiate a scalar from an unsigned integer without checking for overflow.
+pub trait FromUintUnchecked {
+    /// Unsigned integer type (i.e. `Curve::Uint`)
+    type Uint: Integer;
+
+    /// Instantiate scalar from an unsigned integer without checking
+    /// whether the value overflows the field modulus.
+    ///
+    /// ⚠️ WARNING!
+    ///
+    /// Incorrectly used this can lead to mathematically invalid results,
+    /// which can lead to potential security vulnerabilities.
+    ///
+    /// Use with care!
+    fn from_uint_unchecked(uint: Self::Uint) -> Self;
+}
 
 /// Is this scalar greater than n / 2?
 ///

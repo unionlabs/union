@@ -4,7 +4,7 @@
 //! which correspond to mapping a [`File`] to a [`&[u8]`](https://doc.rust-lang.org/std/primitive.slice.html)
 //! or [`&mut [u8]`](https://doc.rust-lang.org/std/primitive.slice.html)
 //! respectively. Both function by dereferencing to a slice, allowing the
-//! [`Mmap`]/[`MmapMut`] to be used in the same way you would the equivelant slice
+//! [`Mmap`]/[`MmapMut`] to be used in the same way you would the equivalent slice
 //! types.
 //!
 //! [`File`]: std::fs::File
@@ -497,6 +497,21 @@ impl MmapOptions {
         MmapInner::map_mut(self.get_len(&file)?, desc.0, self.offset, self.populate)
             .map(|inner| MmapRaw { inner })
     }
+
+    /// Creates a read-only raw memory map
+    ///
+    /// This is primarily useful to avoid intermediate `Mmap` instances when
+    /// read-only access to files modified elsewhere are required.
+    ///
+    /// # Errors
+    ///
+    /// This method returns an error when the underlying system call fails
+    pub fn map_raw_read_only<T: MmapAsRawDesc>(&self, file: T) -> Result<MmapRaw> {
+        let desc = file.as_raw_desc();
+
+        MmapInner::map(self.get_len(&file)?, desc.0, self.offset, self.populate)
+            .map(|inner| MmapRaw { inner })
+    }
 }
 
 /// A handle to an immutable memory mapped buffer.
@@ -646,7 +661,7 @@ impl Mmap {
     ///
     /// See [mlock()](https://man7.org/linux/man-pages/man2/mlock.2.html) map page.
     #[cfg(unix)]
-    pub fn lock(&mut self) -> Result<()> {
+    pub fn lock(&self) -> Result<()> {
         self.inner.lock()
     }
 
@@ -654,7 +669,7 @@ impl Mmap {
     ///
     /// See [munlock()](https://man7.org/linux/man-pages/man2/munlock.2.html) map page.
     #[cfg(unix)]
-    pub fn unlock(&mut self) -> Result<()> {
+    pub fn unlock(&self) -> Result<()> {
         self.inner.unlock()
     }
 }
@@ -837,7 +852,7 @@ impl MmapRaw {
     ///
     /// See [mlock()](https://man7.org/linux/man-pages/man2/mlock.2.html) map page.
     #[cfg(unix)]
-    pub fn lock(&mut self) -> Result<()> {
+    pub fn lock(&self) -> Result<()> {
         self.inner.lock()
     }
 
@@ -845,7 +860,7 @@ impl MmapRaw {
     ///
     /// See [munlock()](https://man7.org/linux/man-pages/man2/munlock.2.html) map page.
     #[cfg(unix)]
-    pub fn unlock(&mut self) -> Result<()> {
+    pub fn unlock(&self) -> Result<()> {
         self.inner.unlock()
     }
 }
@@ -1105,7 +1120,7 @@ impl MmapMut {
     ///
     /// See [mlock()](https://man7.org/linux/man-pages/man2/mlock.2.html) map page.
     #[cfg(unix)]
-    pub fn lock(&mut self) -> Result<()> {
+    pub fn lock(&self) -> Result<()> {
         self.inner.lock()
     }
 
@@ -1113,7 +1128,7 @@ impl MmapMut {
     ///
     /// See [munlock()](https://man7.org/linux/man-pages/man2/munlock.2.html) map page.
     #[cfg(unix)]
-    pub fn unlock(&mut self) -> Result<()> {
+    pub fn unlock(&self) -> Result<()> {
         self.inner.unlock()
     }
 }
@@ -1166,8 +1181,9 @@ mod test {
 
     #[cfg(unix)]
     use crate::advice::Advice;
-    use std::fs::OpenOptions;
+    use std::fs::{File, OpenOptions};
     use std::io::{Read, Write};
+    use std::mem;
     #[cfg(unix)]
     use std::os::unix::io::AsRawFd;
     #[cfg(windows)]
@@ -1257,8 +1273,10 @@ mod test {
             .unwrap();
         let mmap = unsafe { Mmap::map(&file).unwrap() };
         assert!(mmap.is_empty());
+        assert_eq!(mmap.as_ptr().align_offset(mem::size_of::<usize>()), 0);
         let mmap = unsafe { MmapMut::map_mut(&file).unwrap() };
         assert!(mmap.is_empty());
+        assert_eq!(mmap.as_ptr().align_offset(mem::size_of::<usize>()), 0);
     }
 
     #[test]
@@ -1482,7 +1500,7 @@ mod test {
 
         let mmap = mmap.make_exec().expect("make_exec");
 
-        let jitfn: extern "C" fn() -> u8 = unsafe { std::mem::transmute(mmap.as_ptr()) };
+        let jitfn: extern "C" fn() -> u8 = unsafe { mem::transmute(mmap.as_ptr()) };
         assert_eq!(jitfn(), 0xab);
     }
 
@@ -1633,6 +1651,22 @@ mod test {
         assert_eq!(unsafe { std::ptr::read(mmap.as_ptr()) }, b'a');
     }
 
+    #[test]
+    fn raw_read_only() {
+        let tempdir = tempfile::tempdir().unwrap();
+        let path = tempdir.path().join("mmaprawro");
+
+        File::create(&path).unwrap().write_all(b"abc123").unwrap();
+
+        let mmap = MmapOptions::new()
+            .map_raw_read_only(&File::open(&path).unwrap())
+            .unwrap();
+
+        assert_eq!(mmap.len(), 6);
+        assert!(!mmap.as_ptr().is_null());
+        assert_eq!(unsafe { std::ptr::read(mmap.as_ptr()) }, b'a');
+    }
+
     /// Something that relies on StableDeref
     #[test]
     #[cfg(feature = "stable_deref_trait")]
@@ -1728,7 +1762,7 @@ mod test {
             .unwrap();
         file.set_len(128).unwrap();
 
-        let mut mmap = unsafe { Mmap::map(&file).unwrap() };
+        let mmap = unsafe { Mmap::map(&file).unwrap() };
         #[cfg(target_os = "linux")]
         assert!(!is_locked());
 

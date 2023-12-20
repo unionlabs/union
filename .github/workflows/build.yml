@@ -57,6 +57,7 @@ jobs:
                 [
                   "uniond-release",
                   "devnet",
+                  "devnet-simd",
                   "devnet-union",
                   "devnet-eth",
                   "docgen",
@@ -96,6 +97,7 @@ jobs:
               [.attr] | inside(
                 [
                   "devnet",
+                  "devnet-simd",
                   "devnet-union",
                   "devnet-eth",
                   "evm",

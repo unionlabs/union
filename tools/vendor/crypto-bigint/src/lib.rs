@@ -1,5 +1,5 @@
 #![no_std]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!("../README.md")]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
@@ -7,6 +7,7 @@
 )]
 #![deny(unsafe_code)]
 #![warn(
+    clippy::mod_module_files,
     clippy::unwrap_used,
     missing_docs,
     missing_debug_implementations,
@@ -19,9 +20,9 @@
 
 //! ## Usage
 //!
-//! This crate defines a [`UInt`] type which is const generic around an inner
+//! This crate defines a [`Uint`] type which is const generic around an inner
 //! [`Limb`] array, where a [`Limb`] is a newtype for a word-sized integer.
-//! Thus large integers are represented as a arrays of smaller integers which
+//! Thus large integers are represented as arrays of smaller integers which
 //! are sized appropriately for the CPU, giving us some assurances of how
 //! arithmetic operations over those smaller integers will behave.
 //!
@@ -32,7 +33,7 @@
 //!
 //! ### `const fn` usage
 //!
-//! The [`UInt`] type provides a number of `const fn` inherent methods which
+//! The [`Uint`] type provides a number of `const fn` inherent methods which
 //! can be used for initializing and performing arithmetic on big integers in
 //! const contexts:
 //!
@@ -47,9 +48,18 @@
 //! pub const MODULUS_SHR1: U256 = MODULUS.shr_vartime(1);
 //! ```
 //!
+//! Note that large constant computations may accidentally trigger a the `const_eval_limit` of the compiler.
+//! The current way to deal with this problem is to either simplify this computation,
+//! or increase the compiler's limit (currently a nightly feature).
+//! One can completely remove the compiler's limit using:
+//! ```ignore
+//! #![feature(const_eval_limit)]
+//! #![const_eval_limit = "0"]
+//! ```
+//!
 //! ### Trait-based usage
 //!
-//! The [`UInt`] type itself does not implement the standard arithmetic traits
+//! The [`Uint`] type itself does not implement the standard arithmetic traits
 //! such as [`Add`], [`Sub`], [`Mul`], and [`Div`].
 //!
 //! To use these traits you must first pick a wrapper type which determines
@@ -100,10 +110,15 @@
 //! assert_eq!(b, U256::ZERO);
 //! ```
 //!
+//! It also supports modular arithmetic over constant moduli using `Residue`,
+//! and over moduli set at runtime using `DynResidue`.
+//! That includes modular exponentiation and multiplicative inverses.
+//! These features are described in the [`modular`] module.
+//!
 //! ### Random number generation
 //!
 //! When the `rand_core` or `rand` features of this crate are enabled, it's
-//! possible to generate random numbers using any [`CryptoRng`] by using the
+//! possible to generate random numbers using any CSRNG by using the
 //! [`Random`] trait:
 //!
 //! ```
@@ -135,7 +150,6 @@
 //! [`Mul`]: core::ops::Mul
 //! [`Rem`]: core::ops::Rem
 //! [`Sub`]: core::ops::Sub
-//! [`CryptoRng`]: rand_core::CryptoRng
 
 #[cfg(all(feature = "alloc", test))]
 extern crate alloc;
@@ -146,6 +160,7 @@ mod nlimbs;
 #[cfg(feature = "generic-array")]
 mod array;
 mod checked;
+mod ct_choice;
 mod limb;
 mod non_zero;
 mod traits;
@@ -154,19 +169,15 @@ mod wrapping;
 
 pub use crate::{
     checked::Checked,
+    ct_choice::CtChoice,
     limb::{Limb, WideWord, Word},
     non_zero::NonZero,
     traits::*,
+    uint::div_limb::Reciprocal,
     uint::*,
     wrapping::Wrapping,
 };
 pub use subtle;
-
-// TODO(tarcieri): remove these in the next breaking release
-#[allow(deprecated)]
-pub use crate::limb::{LimbUInt, WideLimbUInt};
-
-pub(crate) use limb::{SignedWord, WideSignedWord};
 
 #[cfg(feature = "generic-array")]
 pub use {

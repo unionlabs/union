@@ -3,6 +3,9 @@
 //! The formatted value will be output to the provided writer. Format descriptions can be
 //! [well-known](crate::format_description::well_known) or obtained by using the
 //! [`format_description!`](crate::macros::format_description) macro or a function listed below.
+//!
+//! For examples, see the implementors of [Formattable](crate::formatting::Formattable),
+//! e.g. [`well_known::Rfc3339`].
 
 mod borrowed_format_item;
 mod component;

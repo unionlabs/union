@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	cmttypes "github.com/cometbft/cometbft/types"
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -57,12 +57,12 @@ func (ClientState) CheckForMisbehaviour(ctx sdk.Context, cdc codec.BinaryCodec, 
 		// if heights are equal check that this is valid misbehaviour of a fork
 		// otherwise if heights are unequal check that this is valid misbehavior of BFT time violation
 		if msg.Header1.GetHeight().EQ(msg.Header2.GetHeight()) {
-			blockID1, err := cmttypes.BlockIDFromProto(&msg.Header1.SignedHeader.Commit.BlockID)
+			blockID1, err := tmtypes.BlockIDFromProto(&msg.Header1.SignedHeader.Commit.BlockID)
 			if err != nil {
 				return false
 			}
 
-			blockID2, err := cmttypes.BlockIDFromProto(&msg.Header2.SignedHeader.Commit.BlockID)
+			blockID2, err := tmtypes.BlockIDFromProto(&msg.Header2.SignedHeader.Commit.BlockID)
 			if err != nil {
 				return false
 			}
@@ -128,12 +128,12 @@ func (cs *ClientState) verifyMisbehaviour(ctx sdk.Context, clientStore storetype
 func checkMisbehaviourHeader(
 	clientState *ClientState, consState *ConsensusState, header *Header, currentTimestamp time.Time,
 ) error {
-	tmTrustedValset, err := cmttypes.ValidatorSetFromProto(header.TrustedValidators)
+	tmTrustedValset, err := tmtypes.ValidatorSetFromProto(header.TrustedValidators)
 	if err != nil {
 		return errorsmod.Wrap(err, "trusted validator set is not tendermint validator set type")
 	}
 
-	tmCommit, err := cmttypes.CommitFromProto(header.Commit)
+	tmCommit, err := tmtypes.CommitFromProto(header.Commit)
 	if err != nil {
 		return errorsmod.Wrap(err, "commit is not tendermint commit type")
 	}

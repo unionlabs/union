@@ -1,9 +1,7 @@
 use digest::{Digest, Update}; // trait
 use k256::{
-    ecdsa::recoverable,
-    ecdsa::signature::{DigestVerifier, Signature as _}, // traits
-    ecdsa::{Signature, VerifyingKey},                   // type aliases
-    elliptic_curve::sec1::ToEncodedPoint,
+    ecdsa::signature::DigestVerifier,             // traits
+    ecdsa::{RecoveryId, Signature, VerifyingKey}, // type aliases
 };
 
 use crate::errors::{CryptoError, CryptoResult};
@@ -52,8 +50,8 @@ pub fn secp256k1_verify(
     // Already hashed, just build Digest container
     let message_digest = Identity256::new().chain(message_hash);
 
-    let mut signature =
-        Signature::from_bytes(&signature).map_err(|e| CryptoError::generic_err(e.to_string()))?;
+    let mut signature = Signature::from_bytes(&signature.into())
+        .map_err(|e| CryptoError::generic_err(e.to_string()))?;
 
     // High-S signatures require normalization since our verification implementation
     // rejects them by default. If we had a verifier that does not restrict to
@@ -106,19 +104,20 @@ pub fn secp256k1_recover_pubkey(
     let message_hash = read_hash(message_hash)?;
     let signature = read_signature(signature)?;
 
-    let id =
-        recoverable::Id::new(recovery_param).map_err(|_| CryptoError::invalid_recovery_param())?;
+    // params other than 0 and 1 are explicitly not supported
+    let id = match recovery_param {
+        0 => RecoveryId::new(false, false),
+        1 => RecoveryId::new(true, false),
+        _ => return Err(CryptoError::invalid_recovery_param()),
+    };
 
     // Compose extended signature
-    let signature =
-        Signature::from_bytes(&signature).map_err(|e| CryptoError::generic_err(e.to_string()))?;
-    let extended_signature = recoverable::Signature::new(&signature, id)
+    let signature = Signature::from_bytes(&signature.into())
         .map_err(|e| CryptoError::generic_err(e.to_string()))?;
 
     // Recover
     let message_digest = Identity256::new().chain(message_hash);
-    let pubkey = extended_signature
-        .recover_verifying_key_from_digest(message_digest)
+    let pubkey = VerifyingKey::recover_from_digest(message_digest, &signature, id)
         .map_err(|e| CryptoError::generic_err(e.to_string()))?;
     let encoded: Vec<u8> = pubkey.to_encoded_point(false).as_bytes().into();
     Ok(encoded)
@@ -183,7 +182,6 @@ mod tests {
         ecdsa::signature::DigestSigner, // trait
         ecdsa::SigningKey,              // type alias
         elliptic_curve::rand_core::OsRng,
-        elliptic_curve::sec1::ToEncodedPoint,
     };
     use serde::Deserialize;
     use sha2::Sha256;
@@ -195,7 +193,8 @@ mod tests {
 
     // Cosmos secp256k1 signature verification
     // tendermint/PubKeySecp256k1 pubkey
-    const COSMOS_SECP256K1_PUBKEY_BASE64: &str = "A08EGB7ro1ORuFhjOnZcSgwYlpe0DSFjVNUIkNNQxwKQ";
+    const COSMOS_SECP256K1_PUBKEY_HEX: &str =
+        "034f04181eeba35391b858633a765c4a0c189697b40d216354d50890d350c70290";
 
     const COSMOS_SECP256K1_MSG_HEX1: &str = "0a93010a90010a1c2f636f736d6f732e62616e6b2e763162657461312e4d736753656e6412700a2d636f736d6f7331706b707472653766646b6c366766727a6c65736a6a766878686c63337234676d6d6b38727336122d636f736d6f7331717970717870713971637273737a673270767871367273307a716733797963356c7a763778751a100a0575636f736d12073132333435363712650a4e0a460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a21034f04181eeba35391b858633a765c4a0c189697b40d216354d50890d350c7029012040a02080112130a0d0a0575636f736d12043230303010c09a0c1a0c73696d642d74657374696e672001";
     const COSMOS_SECP256K1_MSG_HEX2: &str = "0a93010a90010a1c2f636f736d6f732e62616e6b2e763162657461312e4d736753656e6412700a2d636f736d6f7331706b707472653766646b6c366766727a6c65736a6a766878686c63337234676d6d6b38727336122d636f736d6f7331717970717870713971637273737a673270767871367273307a716733797963356c7a763778751a100a0575636f736d12073132333435363712670a500a460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a21034f04181eeba35391b858633a765c4a0c189697b40d216354d50890d350c7029012040a020801180112130a0d0a0575636f736d12043230303010c09a0c1a0c73696d642d74657374696e672001";
@@ -236,7 +235,7 @@ mod tests {
         // Verification (uncompressed public key)
         assert!(secp256k1_verify(
             &message_hash,
-            signature.as_bytes(),
+            signature.to_bytes().as_slice(),
             public_key.to_encoded_point(false).as_bytes()
         )
         .unwrap());
@@ -244,7 +243,7 @@ mod tests {
         // Verification (compressed public key)
         assert!(secp256k1_verify(
             &message_hash,
-            signature.as_bytes(),
+            signature.to_bytes().as_slice(),
             public_key.to_encoded_point(true).as_bytes()
         )
         .unwrap());
@@ -253,7 +252,7 @@ mod tests {
         let bad_message_hash = Sha256::new().chain(MSG).chain("\0").finalize();
         assert!(!secp256k1_verify(
             &bad_message_hash,
-            signature.as_bytes(),
+            signature.to_bytes().as_slice(),
             public_key.to_encoded_point(false).as_bytes()
         )
         .unwrap());
@@ -263,7 +262,7 @@ mod tests {
         let other_public_key = VerifyingKey::from(&other_secret_key);
         assert!(!secp256k1_verify(
             &message_hash,
-            signature.as_bytes(),
+            signature.to_bytes().as_slice(),
             other_public_key.to_encoded_point(false).as_bytes()
         )
         .unwrap());
@@ -271,7 +270,7 @@ mod tests {
 
     #[test]
     fn test_cosmos_secp256k1_verify() {
-        let public_key = base64::decode(COSMOS_SECP256K1_PUBKEY_BASE64).unwrap();
+        let public_key = hex::decode(COSMOS_SECP256K1_PUBKEY_HEX).unwrap();
 
         for ((i, msg), sig) in (1..)
             .zip(&[
@@ -329,7 +328,7 @@ mod tests {
         {
             let private_key =
                 hex!("3c9229289a6125f7fdf1885a77bb12c37a8d3b4962d936f7e3084dece32a3ca1");
-            let expected = SigningKey::from_bytes(&private_key)
+            let expected = SigningKey::from_bytes(&private_key.into())
                 .unwrap()
                 .verifying_key()
                 .to_encoded_point(false)
@@ -348,7 +347,7 @@ mod tests {
         {
             let expected_x = "F3F8BB913AA68589A2C8C607A877AB05252ADBD963E1BE846DDEB8456942AEDC";
             let expected_y = "A2ED51F08CA3EF3DAC0A7504613D54CD539FC1B3CBC92453CD704B6A2D012B2C";
-            let expected = hex::decode(format!("04{}{}", expected_x, expected_y)).unwrap();
+            let expected = hex::decode(format!("04{expected_x}{expected_y}")).unwrap();
             let r_s = hex!("E30F2E6A0F705F4FB5F8501BA79C7C0D3FAC847F1AD70B873E9797B17B89B39081F1A4457589F30D76AB9F89E748A68C8A94C30FE0BAC8FB5C0B54EA70BF6D2F");
             let recovery_param: u8 = 0;
             let message_hash =
@@ -404,24 +403,24 @@ mod tests {
         let recovery_param: u8 = 2;
         match secp256k1_recover_pubkey(&message_hash, &r_s, recovery_param).unwrap_err() {
             CryptoError::InvalidRecoveryParam { .. } => {}
-            err => panic!("Unexpected error: {}", err),
+            err => panic!("Unexpected error: {err}"),
         }
         let recovery_param: u8 = 3;
         match secp256k1_recover_pubkey(&message_hash, &r_s, recovery_param).unwrap_err() {
             CryptoError::InvalidRecoveryParam { .. } => {}
-            err => panic!("Unexpected error: {}", err),
+            err => panic!("Unexpected error: {err}"),
         }
 
         // Other values are garbage
         let recovery_param: u8 = 4;
         match secp256k1_recover_pubkey(&message_hash, &r_s, recovery_param).unwrap_err() {
             CryptoError::InvalidRecoveryParam { .. } => {}
-            err => panic!("Unexpected error: {}", err),
+            err => panic!("Unexpected error: {err}"),
         }
         let recovery_param: u8 = 255;
         match secp256k1_recover_pubkey(&message_hash, &r_s, recovery_param).unwrap_err() {
             CryptoError::InvalidRecoveryParam { .. } => {}
-            err => panic!("Unexpected error: {}", err),
+            err => panic!("Unexpected error: {err}"),
         }
     }
 }

@@ -363,6 +363,14 @@ func (vals *ValidatorSet) Hash() []byte {
 	return merkle.MimcHashFromByteSlices(bzs)
 }
 
+func (vals *ValidatorSet) HashSha256() []byte {
+	bzs := make([][]byte, len(vals.Validators))
+	for i, val := range vals.Validators {
+		bzs[i] = val.Bytes()
+	}
+	return merkle.HashFromByteSlices(bzs)
+}
+
 // Iterate will run the given function over the set.
 func (vals *ValidatorSet) Iterate(fn func(index int, val *Validator) bool) {
 	for i, val := range vals.Validators {
@@ -674,6 +682,12 @@ func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
 	return VerifyCommit(chainID, vals, blockID, height, commit)
 }
 
+func (vals *ValidatorSet) VerifyCommitLegacy(chainID string, blockID BlockID,
+	height int64, commit *Commit,
+) error {
+	return VerifyCommitLegacy(chainID, vals, blockID, height, commit)
+}
+
 // LIGHT CLIENT VERIFICATION METHODS
 
 // VerifyCommitLight verifies +2/3 of the set had signed the given commit.
@@ -683,10 +697,22 @@ func (vals *ValidatorSet) VerifyCommitLight(chainID string, blockID BlockID,
 	return VerifyCommitLight(chainID, vals, blockID, height, commit)
 }
 
+func (vals *ValidatorSet) VerifyCommitLightLegacy(chainID string, blockID BlockID,
+	height int64, commit *Commit,
+) error {
+	return VerifyCommitLightLegacy(chainID, vals, blockID, height, commit)
+}
+
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
 // this commit.
 func (vals *ValidatorSet) VerifyCommitLightTrusting(chainID string, commit *Commit, trustLevel cmtmath.Fraction) error {
 	return VerifyCommitLightTrusting(chainID, vals, commit, trustLevel)
+}
+
+// VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
+// this commit.
+func (vals *ValidatorSet) VerifyCommitLightTrustingLegacy(chainID string, commit *Commit, trustLevel cmtmath.Fraction) error {
+	return VerifyCommitLightTrustingLegacy(chainID, vals, commit, trustLevel)
 }
 
 // findPreviousProposer reverses the compare proposer priority function to find the validator

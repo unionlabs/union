@@ -1,10 +1,10 @@
-//! [`UInt`] addition operations.
+//! [`Uint`] addition operations.
 
-use crate::{Checked, CheckedAdd, Limb, UInt, Wrapping, Zero};
+use crate::{Checked, CheckedAdd, CtChoice, Limb, Uint, Wrapping, Zero};
 use core::ops::{Add, AddAssign};
 use subtle::CtOption;
 
-impl<const LIMBS: usize> UInt<LIMBS> {
+impl<const LIMBS: usize> Uint<LIMBS> {
     /// Computes `a + b + carry`, returning the result along with the new carry.
     #[inline(always)]
     pub const fn adc(&self, rhs: &Self, mut carry: Limb) -> (Self, Limb) {
@@ -36,9 +36,21 @@ impl<const LIMBS: usize> UInt<LIMBS> {
     pub const fn wrapping_add(&self, rhs: &Self) -> Self {
         self.adc(rhs, Limb::ZERO).0
     }
+
+    /// Perform wrapping addition, returning the truthy value as the second element of the tuple
+    /// if an overflow has occurred.
+    pub(crate) const fn conditional_wrapping_add(
+        &self,
+        rhs: &Self,
+        choice: CtChoice,
+    ) -> (Self, CtChoice) {
+        let actual_rhs = Uint::ct_select(&Uint::ZERO, rhs, choice);
+        let (sum, carry) = self.adc(&actual_rhs, Limb::ZERO);
+        (sum, CtChoice::from_lsb(carry.0))
+    }
 }
 
-impl<const LIMBS: usize> CheckedAdd<&UInt<LIMBS>> for UInt<LIMBS> {
+impl<const LIMBS: usize> CheckedAdd<&Uint<LIMBS>> for Uint<LIMBS> {
     type Output = Self;
 
     fn checked_add(&self, rhs: &Self) -> CtOption<Self> {
@@ -47,54 +59,54 @@ impl<const LIMBS: usize> CheckedAdd<&UInt<LIMBS>> for UInt<LIMBS> {
     }
 }
 
-impl<const LIMBS: usize> Add for Wrapping<UInt<LIMBS>> {
+impl<const LIMBS: usize> Add for Wrapping<Uint<LIMBS>> {
     type Output = Self;
 
-    fn add(self, rhs: Self) -> Wrapping<UInt<LIMBS>> {
+    fn add(self, rhs: Self) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.wrapping_add(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> Add<&Wrapping<UInt<LIMBS>>> for Wrapping<UInt<LIMBS>> {
-    type Output = Wrapping<UInt<LIMBS>>;
+impl<const LIMBS: usize> Add<&Wrapping<Uint<LIMBS>>> for Wrapping<Uint<LIMBS>> {
+    type Output = Wrapping<Uint<LIMBS>>;
 
-    fn add(self, rhs: &Wrapping<UInt<LIMBS>>) -> Wrapping<UInt<LIMBS>> {
+    fn add(self, rhs: &Wrapping<Uint<LIMBS>>) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.wrapping_add(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> Add<Wrapping<UInt<LIMBS>>> for &Wrapping<UInt<LIMBS>> {
-    type Output = Wrapping<UInt<LIMBS>>;
+impl<const LIMBS: usize> Add<Wrapping<Uint<LIMBS>>> for &Wrapping<Uint<LIMBS>> {
+    type Output = Wrapping<Uint<LIMBS>>;
 
-    fn add(self, rhs: Wrapping<UInt<LIMBS>>) -> Wrapping<UInt<LIMBS>> {
+    fn add(self, rhs: Wrapping<Uint<LIMBS>>) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.wrapping_add(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> Add<&Wrapping<UInt<LIMBS>>> for &Wrapping<UInt<LIMBS>> {
-    type Output = Wrapping<UInt<LIMBS>>;
+impl<const LIMBS: usize> Add<&Wrapping<Uint<LIMBS>>> for &Wrapping<Uint<LIMBS>> {
+    type Output = Wrapping<Uint<LIMBS>>;
 
-    fn add(self, rhs: &Wrapping<UInt<LIMBS>>) -> Wrapping<UInt<LIMBS>> {
+    fn add(self, rhs: &Wrapping<Uint<LIMBS>>) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.wrapping_add(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> AddAssign for Wrapping<UInt<LIMBS>> {
+impl<const LIMBS: usize> AddAssign for Wrapping<Uint<LIMBS>> {
     fn add_assign(&mut self, other: Self) {
         *self = *self + other;
     }
 }
 
-impl<const LIMBS: usize> AddAssign<&Wrapping<UInt<LIMBS>>> for Wrapping<UInt<LIMBS>> {
+impl<const LIMBS: usize> AddAssign<&Wrapping<Uint<LIMBS>>> for Wrapping<Uint<LIMBS>> {
     fn add_assign(&mut self, other: &Self) {
         *self = *self + other;
     }
 }
 
-impl<const LIMBS: usize> Add for Checked<UInt<LIMBS>> {
+impl<const LIMBS: usize> Add for Checked<Uint<LIMBS>> {
     type Output = Self;
 
-    fn add(self, rhs: Self) -> Checked<UInt<LIMBS>> {
+    fn add(self, rhs: Self) -> Checked<Uint<LIMBS>> {
         Checked(
             self.0
                 .and_then(|lhs| rhs.0.and_then(|rhs| lhs.checked_add(&rhs))),
@@ -102,10 +114,10 @@ impl<const LIMBS: usize> Add for Checked<UInt<LIMBS>> {
     }
 }
 
-impl<const LIMBS: usize> Add<&Checked<UInt<LIMBS>>> for Checked<UInt<LIMBS>> {
-    type Output = Checked<UInt<LIMBS>>;
+impl<const LIMBS: usize> Add<&Checked<Uint<LIMBS>>> for Checked<Uint<LIMBS>> {
+    type Output = Checked<Uint<LIMBS>>;
 
-    fn add(self, rhs: &Checked<UInt<LIMBS>>) -> Checked<UInt<LIMBS>> {
+    fn add(self, rhs: &Checked<Uint<LIMBS>>) -> Checked<Uint<LIMBS>> {
         Checked(
             self.0
                 .and_then(|lhs| rhs.0.and_then(|rhs| lhs.checked_add(&rhs))),
@@ -113,10 +125,10 @@ impl<const LIMBS: usize> Add<&Checked<UInt<LIMBS>>> for Checked<UInt<LIMBS>> {
     }
 }
 
-impl<const LIMBS: usize> Add<Checked<UInt<LIMBS>>> for &Checked<UInt<LIMBS>> {
-    type Output = Checked<UInt<LIMBS>>;
+impl<const LIMBS: usize> Add<Checked<Uint<LIMBS>>> for &Checked<Uint<LIMBS>> {
+    type Output = Checked<Uint<LIMBS>>;
 
-    fn add(self, rhs: Checked<UInt<LIMBS>>) -> Checked<UInt<LIMBS>> {
+    fn add(self, rhs: Checked<Uint<LIMBS>>) -> Checked<Uint<LIMBS>> {
         Checked(
             self.0
                 .and_then(|lhs| rhs.0.and_then(|rhs| lhs.checked_add(&rhs))),
@@ -124,10 +136,10 @@ impl<const LIMBS: usize> Add<Checked<UInt<LIMBS>>> for &Checked<UInt<LIMBS>> {
     }
 }
 
-impl<const LIMBS: usize> Add<&Checked<UInt<LIMBS>>> for &Checked<UInt<LIMBS>> {
-    type Output = Checked<UInt<LIMBS>>;
+impl<const LIMBS: usize> Add<&Checked<Uint<LIMBS>>> for &Checked<Uint<LIMBS>> {
+    type Output = Checked<Uint<LIMBS>>;
 
-    fn add(self, rhs: &Checked<UInt<LIMBS>>) -> Checked<UInt<LIMBS>> {
+    fn add(self, rhs: &Checked<Uint<LIMBS>>) -> Checked<Uint<LIMBS>> {
         Checked(
             self.0
                 .and_then(|lhs| rhs.0.and_then(|rhs| lhs.checked_add(&rhs))),
@@ -135,13 +147,13 @@ impl<const LIMBS: usize> Add<&Checked<UInt<LIMBS>>> for &Checked<UInt<LIMBS>> {
     }
 }
 
-impl<const LIMBS: usize> AddAssign for Checked<UInt<LIMBS>> {
+impl<const LIMBS: usize> AddAssign for Checked<Uint<LIMBS>> {
     fn add_assign(&mut self, other: Self) {
         *self = *self + other;
     }
 }
 
-impl<const LIMBS: usize> AddAssign<&Checked<UInt<LIMBS>>> for Checked<UInt<LIMBS>> {
+impl<const LIMBS: usize> AddAssign<&Checked<Uint<LIMBS>>> for Checked<Uint<LIMBS>> {
     fn add_assign(&mut self, other: &Self) {
         *self = *self + other;
     }

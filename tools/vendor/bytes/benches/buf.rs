@@ -46,7 +46,7 @@ impl TestBuf {
 }
 impl Buf for TestBuf {
     fn remaining(&self) -> usize {
-        return self.buf.len() - self.pos;
+        self.buf.len() - self.pos
     }
     fn advance(&mut self, cnt: usize) {
         self.pos += cnt;

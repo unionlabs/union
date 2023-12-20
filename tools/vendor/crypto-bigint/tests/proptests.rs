@@ -1,7 +1,11 @@
 //! Equivalence tests between `num-bigint` and `crypto-bigint`
 
-use crypto_bigint::{Encoding, U256};
+use crypto_bigint::{
+    modular::runtime_mod::{DynResidue, DynResidueParams},
+    Encoding, Limb, NonZero, Word, U256,
+};
 use num_bigint::BigUint;
+use num_integer::Integer;
 use num_traits::identities::Zero;
 use proptest::prelude::*;
 use std::mem;
@@ -15,9 +19,9 @@ fn to_biguint(uint: &U256) -> BigUint {
 }
 
 fn to_uint(big_uint: BigUint) -> U256 {
-    let mut input = [0u8; U256::BYTE_SIZE];
+    let mut input = [0u8; U256::BYTES];
     let encoded = big_uint.to_bytes_le();
-    let l = encoded.len().min(U256::BYTE_SIZE);
+    let l = encoded.len().min(U256::BYTES);
     input[..l].copy_from_slice(&encoded[..l]);
 
     U256::from_le_slice(&input)
@@ -33,11 +37,26 @@ prop_compose! {
         a.wrapping_rem(&p)
     }
 }
+prop_compose! {
+    fn nonzero_limb()(x in any::<Word>()) -> Limb {
+        if x == 0 { Limb::from(1u32) } else {Limb::from(x)}
+    }
+}
 
 proptest! {
     #[test]
     fn roundtrip(a in uint()) {
         assert_eq!(a, to_uint(to_biguint(&a)));
+    }
+
+    #[test]
+    fn shl_vartime(a in uint(), shift in any::<u8>()) {
+        let a_bi = to_biguint(&a);
+
+        let expected = to_uint(a_bi << shift);
+        let actual = a.shl_vartime(shift as usize);
+
+        assert_eq!(expected, actual);
     }
 
     #[test]
@@ -131,6 +150,30 @@ proptest! {
     }
 
     #[test]
+    fn div_rem_limb(a in uint(), b in nonzero_limb()) {
+        let a_bi = to_biguint(&a);
+        let b_bi = to_biguint(&U256::from(b));
+
+        let (expected_quo, expected_rem) = a_bi.div_rem(&b_bi);
+        let (actual_quo, actual_rem) = a.div_rem_limb(NonZero::new(b).unwrap());
+        assert_eq!(to_uint(expected_quo), actual_quo);
+        assert_eq!(to_uint(expected_rem), U256::from(actual_rem));
+    }
+
+    #[test]
+    fn div_rem_limb_min_max(a in uint()) {
+        let a_bi = to_biguint(&a);
+
+        for b in [Limb::from(1u32), Limb::MAX] {
+            let b_bi = to_biguint(&U256::from(b));
+            let (expected_quo, expected_rem) = a_bi.div_rem(&b_bi);
+            let (actual_quo, actual_rem) = a.div_rem_limb(NonZero::new(b).unwrap());
+            assert_eq!(to_uint(expected_quo), actual_quo);
+            assert_eq!(to_uint(expected_rem), U256::from(actual_rem));
+        }
+    }
+
+    #[test]
     fn wrapping_rem(a in uint(), b in uint()) {
         let a_bi = to_biguint(&a);
         let b_bi = to_biguint(&b);
@@ -205,5 +248,59 @@ proptest! {
         let mut bytes = a.to_le_bytes();
         bytes.reverse();
         assert_eq!(a, U256::from_be_bytes(bytes));
-}
+    }
+
+    #[test]
+    fn residue_pow(a in uint_mod_p(P), b in uint()) {
+        let a_bi = to_biguint(&a);
+        let b_bi = to_biguint(&b);
+        let p_bi = to_biguint(&P);
+
+        let expected = to_uint(a_bi.modpow(&b_bi, &p_bi));
+
+        let params = DynResidueParams::new(&P);
+        let a_m = DynResidue::new(&a, params);
+        let actual = a_m.pow(&b).retrieve();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn residue_pow_bounded_exp(a in uint_mod_p(P), b in uint(), exponent_bits in any::<u8>()) {
+
+        let b_masked = b & (U256::ONE << exponent_bits.into()).wrapping_sub(&U256::ONE);
+
+        let a_bi = to_biguint(&a);
+        let b_bi = to_biguint(&b_masked);
+        let p_bi = to_biguint(&P);
+
+        let expected = to_uint(a_bi.modpow(&b_bi, &p_bi));
+
+        let params = DynResidueParams::new(&P);
+        let a_m = DynResidue::new(&a, params);
+        let actual = a_m.pow_bounded_exp(&b, exponent_bits.into()).retrieve();
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn residue_div_by_2(a in uint_mod_p(P)) {
+        let a_bi = to_biguint(&a);
+        let p_bi = to_biguint(&P);
+        let two = BigUint::from(2u32);
+
+        let expected = if a_bi.is_even() {
+            &a_bi / two
+        }
+        else {
+            (&a_bi + &p_bi) / two
+        };
+        let expected = to_uint(expected);
+
+        let params = DynResidueParams::new(&P);
+        let a_m = DynResidue::new(&a, params);
+        let actual = a_m.div_by_2().retrieve();
+
+        assert_eq!(expected, actual);
+    }
 }

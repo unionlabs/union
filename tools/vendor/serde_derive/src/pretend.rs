@@ -1,7 +1,6 @@
+use crate::internals::ast::{Container, Data, Field, Style, Variant};
 use proc_macro2::TokenStream;
-use quote::format_ident;
-
-use internals::ast::{Container, Data, Field, Style, Variant};
+use quote::{format_ident, quote};
 
 // Suppress dead_code warnings that would otherwise appear when using a remote
 // derive. Other than this pretend code, a struct annotated with remote derive

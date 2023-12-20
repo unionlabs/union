@@ -60,9 +60,9 @@ pub fn entry_point(_attr: TokenStream, mut item: TokenStream) -> TokenStream {
     let args = function.sig.inputs.len() - 1;
 
     // E.g. "ptr0: u32, ptr1: u32, ptr2: u32, "
-    let typed_ptrs = (0..args).fold(String::new(), |acc, i| format!("{}ptr{}: u32, ", acc, i));
+    let typed_ptrs = (0..args).fold(String::new(), |acc, i| format!("{acc}ptr{i}: u32, "));
     // E.g. "ptr0, ptr1, ptr2, "
-    let ptrs = (0..args).fold(String::new(), |acc, i| format!("{}ptr{}, ", acc, i));
+    let ptrs = (0..args).fold(String::new(), |acc, i| format!("{acc}ptr{i}, "));
 
     let new_code = format!(
         r##"
@@ -73,10 +73,7 @@ pub fn entry_point(_attr: TokenStream, mut item: TokenStream) -> TokenStream {
                 cosmwasm_std::do_{name}(&super::{name}, {ptrs})
             }}
         }}
-    "##,
-        name = name,
-        typed_ptrs = typed_ptrs,
-        ptrs = ptrs
+    "##
     );
     let entry = TokenStream::from_str(&new_code).unwrap();
     item.extend(entry);

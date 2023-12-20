@@ -124,6 +124,7 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 	solomachine "github.com/cosmos/ibc-go/v8/modules/light-clients/06-solomachine"
+	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/spf13/cast"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -618,13 +619,17 @@ func NewUnionApp(
 		wasmOpts...,
 	)
 
+	querierOption := ibcwasmkeeper.WithQueryPlugins(&ibcwasmtypes.QueryPlugins{
+		Custom: unioncustomquery.CustomQuerier(),
+	})
 	app.WasmClientKeeper = ibcwasmkeeper.NewKeeperWithVM(
 		appCodec,
 		runtime.NewKVStoreService(keys[ibcwasmtypes.StoreKey]),
 		ibcKeeper.ClientKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		wasmer,
-		&unioncustomquery.UnionCustomQueryHandler{},
+		app.GRPCQueryRouter(),
+		querierOption,
 	)
 
 	govConfig := govtypes.DefaultConfig()
@@ -727,6 +732,7 @@ func NewUnionApp(
 		icaModule,
 		unionModule,
 		tfModule,
+		ibctm.NewAppModule(),
 		solomachine.NewAppModule(),
 	)
 
@@ -744,6 +750,7 @@ func NewUnionApp(
 				},
 			),
 		})
+	ibccometblsclient.RegisterInterfaces(interfaceRegistry)
 	app.BasicModuleManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
 

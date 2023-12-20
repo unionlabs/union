@@ -10,14 +10,13 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-edition = "2018"
+edition = "2021"
 name = "cranelift-codegen-shared"
-version = "0.82.3"
+version = "0.91.1"
 authors = ["The Cranelift Project Developers"]
 description = "For code shared between cranelift-codegen-meta and cranelift-codegen"
 readme = "README.md"
 license = "Apache-2.0 WITH LLVM-exception"
 repository = "https://github.com/bytecodealliance/wasmtime"
-resolver = "2"
 
 [dependencies]

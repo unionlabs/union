@@ -10,18 +10,31 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-edition = "2018"
+edition = "2021"
+rust-version = "1.70"
 name = "wasmer-compiler-singlepass"
-version = "2.3.0"
+version = "4.2.2"
 authors = ["Wasmer Engineering Team <engineering@wasmer.io>"]
 description = "Singlepass compiler for Wasmer WebAssembly runtime"
+homepage = "https://wasmer.io/"
 documentation = "https://docs.rs/wasmer-compiler-singlepass/"
 readme = "README.md"
-keywords = ["wasm", "webassembly", "compiler", "singlepass"]
+keywords = [
+    "wasm",
+    "webassembly",
+    "compiler",
+    "singlepass",
+]
 categories = ["wasm"]
 license = "MIT"
 repository = "https://github.com/wasmerio/wasmer"
-resolver = "2"
+
+[package.metadata.docs.rs]
+rustc-args = [
+    "--cfg",
+    "docsrs",
+]
+
 [dependencies.byteorder]
 version = "1.3"
 
@@ -30,6 +43,9 @@ version = "1.2.3"
 
 [dependencies.dynasmrt]
 version = "1.2.3"
+
+[dependencies.enumset]
+version = "1.0.2"
 
 [dependencies.gimli]
 version = "0.26"
@@ -42,9 +58,6 @@ optional = true
 [dependencies.lazy_static]
 version = "1.4"
 
-[dependencies.loupe]
-version = "0.1"
-
 [dependencies.more-asserts]
 version = "0.2"
 
@@ -52,28 +65,49 @@ version = "0.2"
 version = "1.6"
 
 [dependencies.wasmer-compiler]
-version = "=2.3.0"
-features = ["translator"]
+version = "=4.2.2"
+features = [
+    "translator",
+    "compiler",
+]
 default-features = false
 
 [dependencies.wasmer-types]
-version = "=2.3.0"
+version = "=4.2.2"
 features = ["std"]
 default-features = false
+
 [dev-dependencies.target-lexicon]
 version = "0.12.2"
 default-features = false
 
 [features]
 avx = []
-core = ["hashbrown", "wasmer-types/core"]
-default = ["std", "rayon", "unwind", "avx"]
+core = [
+    "hashbrown",
+    "wasmer-types/core",
+]
+default = [
+    "std",
+    "rayon",
+    "unwind",
+    "avx",
+]
 sse = []
-std = ["wasmer-compiler/std", "wasmer-types/std"]
+std = [
+    "wasmer-compiler/std",
+    "wasmer-types/std",
+]
 unwind = ["gimli"]
-wasm = ["std", "unwind", "avx"]
+wasm = [
+    "std",
+    "unwind",
+    "avx",
+]
+
 [target."cfg(not(target_arch = \"wasm32\"))".dependencies.rayon]
 version = "1.5"
 optional = true
+
 [badges.maintenance]
 status = "actively-developed"

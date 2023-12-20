@@ -1,5 +1,3 @@
-#![cfg(feature = "stargate")]
-
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

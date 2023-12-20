@@ -9,7 +9,7 @@ use subtle::{
 };
 
 #[cfg(feature = "rand_core")]
-use rand_core::{CryptoRng, RngCore};
+use rand_core::CryptoRngCore;
 
 /// Integer type.
 pub trait Integer:
@@ -47,6 +47,15 @@ pub trait Integer:
     /// Maximum value this integer can express.
     const MAX: Self;
 
+    /// Total size of the represented integer in bits.
+    const BITS: usize;
+
+    /// Total size of the represented integer in bytes.
+    const BYTES: usize;
+
+    /// The number of limbs used on this platform.
+    const LIMBS: usize;
+
     /// Is this integer value an odd number?
     ///
     /// # Returns
@@ -81,28 +90,26 @@ pub trait Zero: ConstantTimeEq + Sized {
 
 /// Random number generation support.
 #[cfg(feature = "rand_core")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 pub trait Random: Sized {
     /// Generate a cryptographically secure random value.
-    fn random(rng: impl CryptoRng + RngCore) -> Self;
+    fn random(rng: &mut impl CryptoRngCore) -> Self;
 }
 
 /// Modular random number generation support.
 #[cfg(feature = "rand_core")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 pub trait RandomMod: Sized + Zero {
     /// Generate a cryptographically secure random number which is less than
     /// a given `modulus`.
     ///
     /// This function uses rejection sampling, a method which produces an
     /// unbiased distribution of in-range values provided the underlying
-    /// [`CryptoRng`] is unbiased, but runs in variable-time.
+    /// CSRNG is unbiased, but runs in variable-time.
     ///
     /// The variable-time nature of the algorithm should not pose a security
     /// issue so long as the underlying random number generator is truly a
-    /// [`CryptoRng`], where previous outputs are unrelated to subsequent
+    /// CSRNG, where previous outputs are unrelated to subsequent
     /// outputs and do not reveal information about the RNG's internal state.
-    fn random_mod(rng: impl CryptoRng + RngCore, modulus: &NonZero<Self>) -> Self;
+    fn random_mod(rng: &mut impl CryptoRngCore, modulus: &NonZero<Self>) -> Self;
 }
 
 /// Compute `self + rhs mod p`.
@@ -170,7 +177,7 @@ pub trait CheckedMul<Rhs = Self>: Sized {
     fn checked_mul(&self, rhs: Rhs) -> CtOption<Self>;
 }
 
-/// Checked substraction.
+/// Checked subtraction.
 pub trait CheckedSub<Rhs = Self>: Sized {
     /// Output type.
     type Output;
@@ -202,14 +209,17 @@ pub trait Split<Rhs = Self> {
     fn split(&self) -> (Self::Output, Self::Output);
 }
 
-/// Encoding support.
-pub trait Encoding: Sized {
+/// Integers whose representation takes a bounded amount of space.
+pub trait Bounded {
     /// Size of this integer in bits.
-    const BIT_SIZE: usize;
+    const BITS: usize;
 
     /// Size of this integer in bytes.
-    const BYTE_SIZE: usize;
+    const BYTES: usize;
+}
 
+/// Encoding support.
+pub trait Encoding: Sized {
     /// Byte array representation.
     type Repr: AsRef<[u8]> + AsMut<[u8]> + Copy + Clone + Sized;
 
@@ -224,4 +234,46 @@ pub trait Encoding: Sized {
 
     /// Encode to little endian bytes.
     fn to_le_bytes(&self) -> Self::Repr;
+}
+
+/// Support for optimized squaring
+pub trait Square: Sized
+where
+    for<'a> &'a Self: core::ops::Mul<&'a Self, Output = Self>,
+{
+    /// Computes the same as `self.mul(self)`, but may be more efficient.
+    fn square(&self) -> Self {
+        self * self
+    }
+}
+
+/// Constant-time exponentiation.
+pub trait Pow<Exponent> {
+    /// Raises to the `exponent` power.
+    fn pow(&self, exponent: &Exponent) -> Self;
+}
+
+impl<T: PowBoundedExp<Exponent>, Exponent: Bounded> Pow<Exponent> for T {
+    fn pow(&self, exponent: &Exponent) -> Self {
+        self.pow_bounded_exp(exponent, Exponent::BITS)
+    }
+}
+
+/// Constant-time exponentiation with exponent of a bounded bit size.
+pub trait PowBoundedExp<Exponent> {
+    /// Raises to the `exponent` power,
+    /// with `exponent_bits` representing the number of (least significant) bits
+    /// to take into account for the exponent.
+    ///
+    /// NOTE: `exponent_bits` may be leaked in the time pattern.
+    fn pow_bounded_exp(&self, exponent: &Exponent, exponent_bits: usize) -> Self;
+}
+
+/// Constant-time inversion.
+pub trait Invert: Sized {
+    /// Output of the inversion.
+    type Output;
+
+    /// Computes the inverse.
+    fn invert(&self) -> Self::Output;
 }

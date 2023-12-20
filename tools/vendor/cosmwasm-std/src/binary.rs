@@ -1,6 +1,7 @@
-use std::fmt;
-use std::ops::Deref;
+use core::fmt;
+use core::ops::Deref;
 
+use base64::engine::{Engine, GeneralPurpose};
 use schemars::JsonSchema;
 use serde::{de, ser, Deserialize, Deserializer, Serialize};
 
@@ -15,17 +16,29 @@ use crate::errors::{StdError, StdResult};
 pub struct Binary(#[schemars(with = "String")] pub Vec<u8>);
 
 impl Binary {
+    /// Base64 encoding engine used in conversion to/from base64.
+    ///
+    /// The engine adds padding when encoding and accepts strings with or
+    /// without padding when decoding.
+    const B64_ENGINE: GeneralPurpose = GeneralPurpose::new(
+        &base64::alphabet::STANDARD,
+        base64::engine::GeneralPurposeConfig::new()
+            .with_decode_padding_mode(base64::engine::DecodePaddingMode::Indifferent),
+    );
+
     /// take an (untrusted) string and decode it into bytes.
     /// fails if it is not valid base64
     pub fn from_base64(encoded: &str) -> StdResult<Self> {
-        let binary = base64::decode(encoded).map_err(StdError::invalid_base64)?;
-        Ok(Binary(binary))
+        Self::B64_ENGINE
+            .decode(encoded.as_bytes())
+            .map(Binary::from)
+            .map_err(StdError::invalid_base64)
     }
 
     /// encode to base64 string (guaranteed to be success as we control the data inside).
     /// this returns normalized form (with trailing = if needed)
     pub fn to_base64(&self) -> String {
-        base64::encode(&self.0)
+        Self::B64_ENGINE.encode(self.0.as_slice())
     }
 
     pub fn as_slice(&self) -> &[u8] {
@@ -76,7 +89,7 @@ impl fmt::Debug for Binary {
         // but with a custom implementation to avoid the need for an intemediate hex string.
         write!(f, "Binary(")?;
         for byte in self.0.iter() {
-            write!(f, "{:02x}", byte)?;
+            write!(f, "{byte:02x}")?;
         }
         write!(f, ")")?;
         Ok(())
@@ -135,7 +148,7 @@ impl From<Binary> for Vec<u8> {
     }
 }
 
-/// Implement `encoding::Binary == std::vec::Vec<u8>`
+/// Implement `encoding::Binary == alloc::vec::Vec<u8>`
 impl PartialEq<Vec<u8>> for Binary {
     fn eq(&self, rhs: &Vec<u8>) -> bool {
         // Use Vec<u8> == Vec<u8>
@@ -143,7 +156,7 @@ impl PartialEq<Vec<u8>> for Binary {
     }
 }
 
-/// Implement `std::vec::Vec<u8> == encoding::Binary`
+/// Implement `alloc::vec::Vec<u8> == encoding::Binary`
 impl PartialEq<Binary> for Vec<u8> {
     fn eq(&self, rhs: &Binary) -> bool {
         // Use Vec<u8> == Vec<u8>
@@ -230,7 +243,7 @@ impl<'de> de::Visitor<'de> for Base64Visitor {
     {
         match Binary::from_base64(v) {
             Ok(binary) => Ok(binary),
-            Err(_) => Err(E::custom(format!("invalid base64: {}", v))),
+            Err(_) => Err(E::custom(format!("invalid base64: {v}"))),
         }
     }
 }
@@ -238,29 +251,9 @@ impl<'de> de::Visitor<'de> for Base64Visitor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::assert_hash_works;
     use crate::errors::StdError;
-    use crate::serde::{from_slice, to_vec};
-    use std::collections::hash_map::DefaultHasher;
-    use std::collections::HashSet;
-    use std::hash::{Hash, Hasher};
-
-    #[test]
-    fn encode_decode() {
-        let binary: &[u8] = b"hello";
-        let encoded = Binary::from(binary).to_base64();
-        assert_eq!(8, encoded.len());
-        let decoded = Binary::from_base64(&encoded).unwrap();
-        assert_eq!(binary, decoded.as_slice());
-    }
-
-    #[test]
-    fn encode_decode_non_ascii() {
-        let binary = vec![12u8, 187, 0, 17, 250, 1];
-        let encoded = Binary(binary.clone()).to_base64();
-        assert_eq!(8, encoded.len());
-        let decoded = Binary::from_base64(&encoded).unwrap();
-        assert_eq!(binary.deref(), decoded.deref());
-    }
+    use crate::serde::{from_json, to_json_vec};
 
     #[test]
     fn to_array_works() {
@@ -284,7 +277,7 @@ mod tests {
                 assert_eq!(expected, 8);
                 assert_eq!(actual, 3);
             }
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
 
         // long array (32 bytes)
@@ -314,29 +307,32 @@ mod tests {
     }
 
     #[test]
-    fn from_valid_string() {
-        let valid_base64 = "cmFuZG9taVo=";
-        let binary = Binary::from_base64(valid_base64).unwrap();
-        assert_eq!(b"randomiZ", binary.as_slice());
+    fn test_base64_encoding_success() {
+        for (value, encoded, encoded_no_pad) in [
+            (&b""[..], "", ""),
+            (&b"hello"[..], "aGVsbG8=", "aGVsbG8"),
+            (&b"\x0C\xBB\x00\x11\xFA\x01"[..], "DLsAEfoB", "DLsAEfoB"),
+            (&b"rand"[..], "cmFuZA==", "cmFuZA"),
+            (&b"rand"[..], "cmFuZA==", "cmFuZA="),
+            (&b"randomiZ"[..], "cmFuZG9taVo=", "cmFuZG9taVo"),
+        ] {
+            let value = Binary::from(value);
+            assert_eq!(encoded, value.to_base64());
+            assert_eq!(Ok(value.clone()), Binary::from_base64(encoded));
+            assert_eq!(Ok(value.clone()), Binary::from_base64(encoded_no_pad));
+        }
     }
 
-    // this accepts input without a trailing = but outputs normal form
     #[test]
-    fn from_shortened_string() {
-        let short = "cmFuZG9taVo";
-        let long = "cmFuZG9taVo=";
-        let binary = Binary::from_base64(short).unwrap();
-        assert_eq!(b"randomiZ", binary.as_slice());
-        assert_eq!(long, binary.to_base64());
-    }
-
-    #[test]
-    fn from_invalid_string() {
-        let invalid_base64 = "cm%uZG9taVo";
-        let res = Binary::from_base64(invalid_base64);
-        match res.unwrap_err() {
-            StdError::InvalidBase64 { msg, .. } => assert_eq!(msg, "Invalid byte 37, offset 2."),
-            _ => panic!("Unexpected error type"),
+    fn test_base64_encoding_error() {
+        for (invalid_base64, want) in [
+            ("cm%uZG9taVo", "Invalid byte 37, offset 2."),
+            ("cmFuZ", "Encoded text cannot have a 6-bit remainder."),
+        ] {
+            match Binary::from_base64(invalid_base64) {
+                Err(StdError::InvalidBase64 { msg }) => assert_eq!(want, msg),
+                result => panic!("Unexpected result: {result:?}"),
+            }
         }
     }
 
@@ -454,8 +450,8 @@ mod tests {
     fn serialization_works() {
         let binary = Binary(vec![0u8, 187, 61, 11, 250, 0]);
 
-        let json = to_vec(&binary).unwrap();
-        let deserialized: Binary = from_slice(&json).unwrap();
+        let json = to_json_vec(&binary).unwrap();
+        let deserialized: Binary = from_json(json).unwrap();
 
         assert_eq!(binary, deserialized);
     }
@@ -466,16 +462,16 @@ mod tests {
         // this is the binary behind above string
         let expected = vec![0u8, 187, 61, 11, 250, 0];
 
-        let serialized = to_vec(&b64_str).unwrap();
-        let deserialized: Binary = from_slice(&serialized).unwrap();
+        let serialized = to_json_vec(&b64_str).unwrap();
+        let deserialized: Binary = from_json(serialized).unwrap();
         assert_eq!(expected, deserialized.as_slice());
     }
 
     #[test]
     fn deserialize_from_invalid_string() {
         let invalid_str = "**BAD!**";
-        let serialized = to_vec(&invalid_str).unwrap();
-        let res = from_slice::<Binary>(&serialized);
+        let serialized = to_json_vec(&invalid_str).unwrap();
+        let res = from_json::<Binary>(&serialized);
         assert!(res.is_err());
     }
 
@@ -483,11 +479,11 @@ mod tests {
     fn binary_implements_debug() {
         // Some data
         let binary = Binary(vec![0x07, 0x35, 0xAA, 0xcb, 0x00, 0xff]);
-        assert_eq!(format!("{:?}", binary), "Binary(0735aacb00ff)",);
+        assert_eq!(format!("{binary:?}"), "Binary(0735aacb00ff)",);
 
         // Empty
         let binary = Binary(vec![]);
-        assert_eq!(format!("{:?}", binary), "Binary()",);
+        assert_eq!(format!("{binary:?}"), "Binary()",);
     }
 
     #[test]
@@ -505,69 +501,19 @@ mod tests {
 
     #[test]
     fn binary_implements_as_ref() {
-        // Can use as_ref (this we already get via the Deref implementation)
-        let data = Binary(vec![7u8, 35, 49, 101, 0, 255]);
-        assert_eq!(data.as_ref(), &[7u8, 35, 49, 101, 0, 255]);
-
-        let data = Binary(vec![7u8, 35, 49, 101, 0, 255]);
-        let data_ref = &data;
-        assert_eq!(data_ref.as_ref(), &[7u8, 35, 49, 101, 0, 255]);
-
-        // Implements as ref
-
-        // This is a dummy function to mimic the signature of
-        // https://docs.rs/sha2/0.10.6/sha2/trait.Digest.html#tymethod.digest
-        fn hash(data: impl AsRef<[u8]>) -> u64 {
-            let mut hasher = DefaultHasher::new();
-            data.as_ref().hash(&mut hasher);
-            hasher.finish()
-        }
-
-        let data = Binary(vec![7u8, 35, 49, 101, 0, 255]);
-        hash(data);
-
-        let data = Binary(vec![7u8, 35, 49, 101, 0, 255]);
-        let data_ref = &data;
-        hash(data_ref);
+        let want = &[7u8, 35, 49, 101, 0, 255];
+        let data = Binary(want.to_vec());
+        assert_eq!(want, AsRef::<[u8]>::as_ref(&data));
+        assert_eq!(want, AsRef::<[u8]>::as_ref(&&data));
     }
 
+    /// Tests that `Binary` implements `EQ` and `Hash` correctly and thus can be
+    /// used with hash maps and sets.
     #[test]
-    fn binary_implements_hash() {
-        let a1 = Binary::from([0, 187, 61, 11, 250, 0]);
-        let mut hasher = DefaultHasher::new();
-        a1.hash(&mut hasher);
-        let a1_hash = hasher.finish();
-
-        let a2 = Binary::from([0, 187, 61, 11, 250, 0]);
-        let mut hasher = DefaultHasher::new();
-        a2.hash(&mut hasher);
-        let a2_hash = hasher.finish();
-
+    fn binary_implements_hash_eq() {
+        let a = Binary::from([0, 187, 61, 11, 250, 0]);
         let b = Binary::from([16, 21, 33, 0, 255, 9]);
-        let mut hasher = DefaultHasher::new();
-        b.hash(&mut hasher);
-        let b_hash = hasher.finish();
-
-        assert_eq!(a1_hash, a2_hash);
-        assert_ne!(a1_hash, b_hash);
-    }
-
-    /// This requires Hash and Eq to be implemented
-    #[test]
-    fn binary_can_be_used_in_hash_set() {
-        let a1 = Binary::from([0, 187, 61, 11, 250, 0]);
-        let a2 = Binary::from([0, 187, 61, 11, 250, 0]);
-        let b = Binary::from([16, 21, 33, 0, 255, 9]);
-
-        let mut set = HashSet::new();
-        set.insert(a1.clone());
-        set.insert(a2.clone());
-        set.insert(b.clone());
-        assert_eq!(set.len(), 2);
-
-        let set1 = HashSet::<Binary>::from_iter(vec![b.clone(), a1.clone()]);
-        let set2 = HashSet::from_iter(vec![a1, a2, b]);
-        assert_eq!(set1, set2);
+        assert_hash_works!(a, b);
     }
 
     #[test]

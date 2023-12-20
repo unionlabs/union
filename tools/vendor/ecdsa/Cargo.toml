@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.65"
 name = "ecdsa"
-version = "0.14.8"
+version = "0.16.8"
 authors = ["RustCrypto Developers"]
 description = """
 Pure Rust implementation of the Elliptic Curve Digital Signature Algorithm
@@ -43,11 +43,17 @@ rustdoc-args = [
 ]
 
 [dependencies.der]
-version = "0.6"
+version = "0.7"
 optional = true
 
+[dependencies.digest]
+version = "0.10.7"
+features = ["oid"]
+optional = true
+default-features = false
+
 [dependencies.elliptic-curve]
-version = "0.12"
+version = "0.13.5"
 features = [
     "digest",
     "sec1",
@@ -55,37 +61,49 @@ features = [
 default-features = false
 
 [dependencies.rfc6979]
-version = "0.3"
+version = "0.4"
 optional = true
 
 [dependencies.serdect]
-version = "0.1"
+version = "0.2"
 features = ["alloc"]
 optional = true
 default-features = false
 
+[dependencies.sha2]
+version = "0.10"
+features = ["oid"]
+optional = true
+default-features = false
+
 [dependencies.signature]
-version = ">=1.6.2, <1.7"
-features = [
-    "hazmat-preview",
-    "rand-preview",
-]
+version = "2.0, <2.2"
+features = ["rand_core"]
+default-features = false
+
+[dependencies.spki]
+version = "0.7.2"
+optional = true
 default-features = false
 
 [dev-dependencies.elliptic-curve]
-version = "0.12"
+version = "0.13"
 features = ["dev"]
 default-features = false
 
 [dev-dependencies.hex-literal]
-version = "0.3"
+version = "0.4"
 
 [dev-dependencies.sha2]
 version = "0.10"
 default-features = false
 
 [features]
-alloc = []
+alloc = [
+    "elliptic-curve/alloc",
+    "signature/alloc",
+    "spki/alloc",
+]
 arithmetic = ["elliptic-curve/arithmetic"]
 default = ["digest"]
 dev = [
@@ -94,13 +112,17 @@ dev = [
     "elliptic-curve/dev",
     "hazmat",
 ]
-digest = ["signature/digest-preview"]
+digest = [
+    "dep:digest",
+    "signature/digest",
+]
 hazmat = []
 pem = [
     "elliptic-curve/pem",
     "pkcs8",
 ]
 pkcs8 = [
+    "digest",
     "elliptic-curve/pkcs8",
     "der",
 ]
@@ -108,7 +130,7 @@ serde = [
     "elliptic-curve/serde",
     "serdect",
 ]
-sign = [
+signing = [
     "arithmetic",
     "digest",
     "hazmat",
@@ -119,7 +141,7 @@ std = [
     "elliptic-curve/std",
     "signature/std",
 ]
-verify = [
+verifying = [
     "arithmetic",
     "digest",
     "hazmat",

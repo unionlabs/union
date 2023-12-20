@@ -53,6 +53,25 @@ pub enum TrapCode {
     User(u16),
 }
 
+impl TrapCode {
+    /// Returns a slice of all traps except `TrapCode::User` traps
+    pub const fn non_user_traps() -> &'static [TrapCode] {
+        &[
+            TrapCode::StackOverflow,
+            TrapCode::HeapOutOfBounds,
+            TrapCode::HeapMisaligned,
+            TrapCode::TableOutOfBounds,
+            TrapCode::IndirectCallToNull,
+            TrapCode::BadSignature,
+            TrapCode::IntegerOverflow,
+            TrapCode::IntegerDivisionByZero,
+            TrapCode::BadConversionToInteger,
+            TrapCode::UnreachableCodeReached,
+            TrapCode::Interrupt,
+        ]
+    }
+}
+
 impl Display for TrapCode {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         use self::TrapCode::*;
@@ -102,24 +121,9 @@ mod tests {
     use super::*;
     use alloc::string::ToString;
 
-    // Everything but user-defined codes.
-    const CODES: [TrapCode; 11] = [
-        TrapCode::StackOverflow,
-        TrapCode::HeapOutOfBounds,
-        TrapCode::HeapMisaligned,
-        TrapCode::TableOutOfBounds,
-        TrapCode::IndirectCallToNull,
-        TrapCode::BadSignature,
-        TrapCode::IntegerOverflow,
-        TrapCode::IntegerDivisionByZero,
-        TrapCode::BadConversionToInteger,
-        TrapCode::UnreachableCodeReached,
-        TrapCode::Interrupt,
-    ];
-
     #[test]
     fn display() {
-        for r in &CODES {
+        for r in TrapCode::non_user_traps() {
             let tc = *r;
             assert_eq!(tc.to_string().parse(), Ok(tc));
         }

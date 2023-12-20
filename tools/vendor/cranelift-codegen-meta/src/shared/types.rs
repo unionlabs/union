@@ -1,50 +1,6 @@
 //! This module predefines all the Cranelift scalar types.
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub(crate) enum Bool {
-    /// 1-bit bool.
-    B1 = 1,
-    /// 8-bit bool.
-    B8 = 8,
-    /// 16-bit bool.
-    B16 = 16,
-    /// 32-bit bool.
-    B32 = 32,
-    /// 64-bit bool.
-    B64 = 64,
-    /// 128-bit bool.
-    B128 = 128,
-}
-
-/// This provides an iterator through all of the supported bool variants.
-pub(crate) struct BoolIterator {
-    index: u8,
-}
-
-impl BoolIterator {
-    pub fn new() -> Self {
-        Self { index: 0 }
-    }
-}
-
-impl Iterator for BoolIterator {
-    type Item = Bool;
-    fn next(&mut self) -> Option<Self::Item> {
-        let res = match self.index {
-            0 => Some(Bool::B1),
-            1 => Some(Bool::B8),
-            2 => Some(Bool::B16),
-            3 => Some(Bool::B32),
-            4 => Some(Bool::B64),
-            5 => Some(Bool::B128),
-            _ => return None,
-        };
-        self.index += 1;
-        res
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub(crate) enum Int {
     /// 8-bit int.
     I8 = 8,
@@ -186,18 +142,6 @@ impl Iterator for ReferenceIterator {
 #[cfg(test)]
 mod iter_tests {
     use super::*;
-
-    #[test]
-    fn bool_iter_works() {
-        let mut bool_iter = BoolIterator::new();
-        assert_eq!(bool_iter.next(), Some(Bool::B1));
-        assert_eq!(bool_iter.next(), Some(Bool::B8));
-        assert_eq!(bool_iter.next(), Some(Bool::B16));
-        assert_eq!(bool_iter.next(), Some(Bool::B32));
-        assert_eq!(bool_iter.next(), Some(Bool::B64));
-        assert_eq!(bool_iter.next(), Some(Bool::B128));
-        assert_eq!(bool_iter.next(), None);
-    }
 
     #[test]
     fn int_iter_works() {

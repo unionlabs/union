@@ -5,6 +5,20 @@ use core::mem::MaybeUninit;
 use crate::util::local_offset::{self, Soundness};
 use crate::{OffsetDateTime, UtcOffset};
 
+/// Whether the operating system has a thread-safe environment. This allows bypassing the check for
+/// if the process is multi-threaded.
+// This is the same value as `cfg!(target_os = "x")`.
+// Use byte-strings to work around current limitations of const eval.
+const OS_HAS_THREAD_SAFE_ENVIRONMENT: bool = match std::env::consts::OS.as_bytes() {
+    // https://github.com/illumos/illumos-gate/blob/0fb96ba1f1ce26ff8b286f8f928769a6afcb00a6/usr/src/lib/libc/port/gen/getenv.c
+    b"illumos"
+    // https://github.com/NetBSD/src/blob/f45028636a44111bc4af44d460924958a4460844/lib/libc/stdlib/getenv.c
+    // https://github.com/NetBSD/src/blob/f45028636a44111bc4af44d460924958a4460844/lib/libc/stdlib/setenv.c
+    | b"netbsd"
+    => true,
+    _ => false,
+};
+
 /// Convert the given Unix timestamp to a `libc::tm`. Returns `None` on any error.
 ///
 /// # Safety
@@ -114,14 +128,19 @@ fn tm_to_offset(unix_timestamp: i64, tm: libc::tm) -> Option<UtcOffset> {
 
 /// Obtain the system's UTC offset.
 pub(super) fn local_offset_at(datetime: OffsetDateTime) -> Option<UtcOffset> {
-    // Ensure that the process is single-threaded unless the user has explicitly opted out of this
-    // check. This is to prevent issues with the environment being mutated by a different thread in
-    // the process while execution of this function is taking place, which can cause a segmentation
-    // fault by dereferencing a dangling pointer.
+    // Continue to obtaining the UTC offset if and only if the call is sound or the user has
+    // explicitly opted out of soundness.
+    //
+    // Soundness can be guaranteed either by knowledge of the operating system or knowledge that the
+    // process is single-threaded. If the process is single-threaded, then the environment cannot
+    // be mutated by a different thread in the process while execution of this function is taking
+    // place, which can cause a segmentation fault by dereferencing a dangling pointer.
+    //
     // If the `num_threads` crate is incapable of determining the number of running threads, then
     // we conservatively return `None` to avoid a soundness bug.
 
-    if local_offset::get_soundness() == Soundness::Unsound
+    if OS_HAS_THREAD_SAFE_ENVIRONMENT
+        || local_offset::get_soundness() == Soundness::Unsound
         || num_threads::is_single_threaded() == Some(true)
     {
         let unix_timestamp = datetime.unix_timestamp();

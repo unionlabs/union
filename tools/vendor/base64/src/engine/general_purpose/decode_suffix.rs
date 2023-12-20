@@ -1,13 +1,13 @@
 use crate::{
-    engine::{general_purpose::INVALID_VALUE, DecodePaddingMode},
+    engine::{general_purpose::INVALID_VALUE, DecodeMetadata, DecodePaddingMode},
     DecodeError, PAD_BYTE,
 };
 
 /// Decode the last 1-8 bytes, checking for trailing set bits and padding per the provided
 /// parameters.
 ///
-/// Returns the total number of bytes decoded, including the ones indicated as already written by
-/// `output_index`.
+/// Returns the decode metadata representing the total number of bytes decoded, including the ones
+/// indicated as already written by `output_index`.
 pub(crate) fn decode_suffix(
     input: &[u8],
     input_index: usize,
@@ -16,7 +16,7 @@ pub(crate) fn decode_suffix(
     decode_table: &[u8; 256],
     decode_allow_trailing_bits: bool,
     padding_mode: DecodePaddingMode,
-) -> Result<usize, DecodeError> {
+) -> Result<DecodeMetadata, DecodeError> {
     // Decode any leftovers that aren't a complete input block of 8 bytes.
     // Use a u64 as a stack-resident 8 byte buffer.
     let mut leftover_bits: u64 = 0;
@@ -157,5 +157,12 @@ pub(crate) fn decode_suffix(
         leftover_bits_appended_to_buf += 8;
     }
 
-    Ok(output_index)
+    Ok(DecodeMetadata::new(
+        output_index,
+        if padding_bytes > 0 {
+            Some(input_index + first_padding_index)
+        } else {
+            None
+        },
+    ))
 }

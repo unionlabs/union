@@ -12,7 +12,7 @@
 [package]
 edition = "2021"
 name = "ff"
-version = "0.12.1"
+version = "0.13.0"
 authors = ["Sean Bowe <ewillbefull@gmail.com>", "Jack Grigg <thestr4d@gmail.com>"]
 description = "Library for building and interfacing with finite fields"
 homepage = "https://github.com/zkcrypto/ff"
@@ -39,7 +39,7 @@ optional = true
 default-features = false
 
 [dependencies.ff_derive]
-version = "0.12.1"
+version = "0.13"
 optional = true
 
 [dependencies.rand_core]
@@ -50,6 +50,9 @@ default-features = false
 version = "2.2.1"
 features = ["i128"]
 default-features = false
+[dev-dependencies.blake2b_simd]
+version = "1"
+
 [dev-dependencies.rand]
 version = "0.8"
 

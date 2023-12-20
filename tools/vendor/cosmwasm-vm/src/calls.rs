@@ -1,5 +1,5 @@
 use serde::de::DeserializeOwned;
-use wasmer::Val;
+use wasmer::Value;
 
 use cosmwasm_std::{ContractResult, CustomMsg, Env, MessageInfo, QueryResponse, Reply, Response};
 #[cfg(feature = "stargate")]
@@ -206,9 +206,8 @@ where
         from_slice(&data, deserialization_limits::RESULT_QUERY)?;
     // Ensure query response is valid JSON
     if let ContractResult::Ok(binary_response) = &result {
-        serde_json::from_slice::<serde_json::Value>(binary_response.as_slice()).map_err(|e| {
-            VmError::generic_err(format!("Query response must be valid JSON. {}", e))
-        })?;
+        serde_json::from_slice::<serde_json::Value>(binary_response.as_slice())
+            .map_err(|e| VmError::generic_err(format!("Query response must be valid JSON. {e}")))?;
     }
 
     Ok(result)
@@ -574,7 +573,7 @@ where
     S: Storage + 'static,
     Q: Querier + 'static,
 {
-    let mut arg_region_ptrs = Vec::<Val>::with_capacity(args.len());
+    let mut arg_region_ptrs = Vec::<Value>::with_capacity(args.len());
     for arg in args {
         let region_ptr = instance.allocate(arg.len())?;
         instance.write_memory(region_ptr, arg)?;
@@ -591,11 +590,15 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{mock_env, mock_info, mock_instance};
-    use cosmwasm_std::{coins, Empty};
+    use crate::testing::{
+        mock_env, mock_info, mock_instance, mock_instance_with_options, MockInstanceOptions,
+    };
+    use cosmwasm_std::{coins, from_json, to_json_string, Empty};
+    use sha2::{Digest, Sha256};
 
     static CONTRACT: &[u8] = include_bytes!("../testdata/hackatom.wasm");
     static CYBERPUNK: &[u8] = include_bytes!("../testdata/cyberpunk.wasm");
+    static FLOATY2: &[u8] = include_bytes!("../testdata/floaty_2.0.wasm");
 
     #[test]
     fn call_instantiate_works() {
@@ -666,7 +669,7 @@ mod tests {
                     "RuntimeError: Aborted: panicked at 'This page intentionally faulted'"
                 ))
             }
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 
@@ -688,7 +691,7 @@ mod tests {
             VmError::RuntimeErr { msg } => {
                 assert!(msg.contains("RuntimeError: unreachable"))
             }
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 
@@ -733,6 +736,86 @@ mod tests {
         let contract_result = call_query(&mut instance, &mock_env(), msg).unwrap();
         let query_response = contract_result.unwrap();
         assert_eq!(query_response.as_slice(), b"{\"verifier\":\"verifies\"}");
+    }
+
+    #[test]
+    fn float_instrs_are_deterministic() {
+        #[derive(Debug, serde::Serialize, serde::Deserialize)]
+        #[serde(rename_all = "snake_case")]
+        pub enum Value {
+            U32(u32),
+            U64(u64),
+            F32(u32),
+            F64(u64),
+        }
+
+        let mut instance = mock_instance_with_options(
+            FLOATY2,
+            MockInstanceOptions {
+                gas_limit: u64::MAX,
+                memory_limit: None,
+                ..Default::default()
+            },
+        );
+
+        // init
+        let info = mock_info("creator", &[]);
+        call_instantiate::<_, _, _, Empty>(&mut instance, &mock_env(), &info, br#"{}"#)
+            .unwrap()
+            .unwrap();
+
+        // query instructions
+        let msg = br#"{"instructions":{}}"#;
+        let contract_result = call_query(&mut instance, &mock_env(), msg)
+            .unwrap()
+            .unwrap();
+        let instructions: Vec<String> = from_json(contract_result).unwrap();
+        // little sanity check
+        assert_eq!(instructions.len(), 70);
+
+        const RUNS_PER_INSTRUCTION: u64 = 150;
+        let mut hasher = Sha256::new();
+        for instr in &instructions {
+            for seed in 0..RUNS_PER_INSTRUCTION {
+                // query some input values for the instruction
+                let args: Vec<Value> = from_json(
+                    &call_query(
+                        &mut instance,
+                        &mock_env(),
+                        format!(
+                            r#"{{"random_args_for":{{ "instruction": "{instr}", "seed": {seed}}}}}"#
+                        )
+                        .as_bytes(),
+                    )
+                    .unwrap()
+                    .unwrap(),
+                )
+                .unwrap();
+
+                // build the run message
+                let args = to_json_string(&args).unwrap();
+                let msg: String = format!(
+                    r#"{{"run":{{
+                        "instruction": "{instr}",
+                        "args": {args}
+                    }}}}"#
+                );
+                // run the instruction
+                // this might throw a runtime error (e.g. if the instruction traps)
+                let result = match call_query(&mut instance, &mock_env(), msg.as_bytes()) {
+                    Ok(ContractResult::Ok(r)) => format!("{:?}", from_json::<Value>(&r).unwrap()),
+                    Err(VmError::RuntimeErr { msg, .. }) => msg,
+                    e => panic!("unexpected error: {e:?}"),
+                };
+                // add the result to the hash
+                hasher.update(format!("{instr}{seed}{result}").as_bytes());
+            }
+        }
+        let hash = Digest::finalize(hasher);
+        assert_eq!(
+            hex::encode(hash.as_slice()),
+            "95f70fa6451176ab04a9594417a047a1e4d8e2ff809609b8f81099496bee2393"
+        );
     }
 
     #[cfg(feature = "stargate")]

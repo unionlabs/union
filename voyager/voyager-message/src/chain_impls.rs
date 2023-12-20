@@ -107,5 +107,6 @@ macro_rules! try_from_relayer_msg {
     };
 }
 
+pub mod cosmos;
 pub mod evm;
 pub mod union;

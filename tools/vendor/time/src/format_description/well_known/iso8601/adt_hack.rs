@@ -11,7 +11,7 @@ use super::{Config, DateKind, FormattedComponents as FC, OffsetPrecision, TimePr
 #[doc(hidden)]
 pub type DoNotRelyOnWhatThisIs = u128;
 
-/// An encoded [`Config`] that can be used as a const parameter to [`Iso8601`].
+/// An encoded [`Config`] that can be used as a const parameter to [`Iso8601`](super::Iso8601).
 ///
 /// The type this is aliased to must not be relied upon. It can change in any release without
 /// notice.
@@ -49,10 +49,11 @@ impl<const CONFIG: EncodedConfig> Iso8601<CONFIG> {
 }
 
 impl Config {
-    /// Encode the configuration, permitting it to be used as a const parameter of [`Iso8601`].
+    /// Encode the configuration, permitting it to be used as a const parameter of
+    /// [`Iso8601`](super::Iso8601).
     ///
-    /// The value returned by this method must only be used as a const parameter to [`Iso8601`]. Any
-    /// other usage is unspecified behavior.
+    /// The value returned by this method must only be used as a const parameter to
+    /// [`Iso8601`](super::Iso8601). Any other usage is unspecified behavior.
     pub const fn encode(&self) -> EncodedConfig {
         let mut bytes = [0; EncodedConfig::BITS as usize / 8];
 

@@ -8,11 +8,12 @@
 use crate::{EcParameters, Error, Result};
 use core::fmt;
 use der::{
-    asn1::{BitStringRef, ContextSpecific, OctetStringRef},
-    Decode, DecodeValue, Encode, Header, Reader, Sequence, Tag, TagMode, TagNumber,
+    asn1::{BitStringRef, ContextSpecific, ContextSpecificRef, OctetStringRef},
+    Decode, DecodeValue, Encode, EncodeValue, Header, Length, Reader, Sequence, Tag, TagMode,
+    TagNumber, Writer,
 };
 
-#[cfg(feature = "alloc")]
+#[cfg(all(feature = "alloc", feature = "zeroize"))]
 use der::SecretDocument;
 
 #[cfg(feature = "pem")]
@@ -58,7 +59,6 @@ const PUBLIC_KEY_TAG: TagNumber = TagNumber::new(1);
 /// [SEC1: Elliptic Curve Cryptography (Version 2.0)]: https://www.secg.org/sec1-v2.pdf
 /// [RFC5915 Section 3]: https://datatracker.ietf.org/doc/html/rfc5915#section-3
 #[derive(Clone)]
-#[cfg_attr(docsrs, doc(cfg(feature = "der")))]
 pub struct EcPrivateKey<'a> {
     /// Private key data.
     pub private_key: &'a [u8],
@@ -68,6 +68,30 @@ pub struct EcPrivateKey<'a> {
 
     /// Public key data, optionally available if version is V2.
     pub public_key: Option<&'a [u8]>,
+}
+
+impl<'a> EcPrivateKey<'a> {
+    fn context_specific_parameters(&self) -> Option<ContextSpecificRef<'_, EcParameters>> {
+        self.parameters.as_ref().map(|params| ContextSpecificRef {
+            tag_number: EC_PARAMETERS_TAG,
+            tag_mode: TagMode::Explicit,
+            value: params,
+        })
+    }
+
+    fn context_specific_public_key(
+        &self,
+    ) -> der::Result<Option<ContextSpecific<BitStringRef<'a>>>> {
+        self.public_key
+            .map(|pk| {
+                BitStringRef::from_bytes(pk).map(|value| ContextSpecific {
+                    tag_number: PUBLIC_KEY_TAG,
+                    tag_mode: TagMode::Explicit,
+                    value,
+                })
+            })
+            .transpose()
+    }
 }
 
 impl<'a> DecodeValue<'a> for EcPrivateKey<'a> {
@@ -93,32 +117,24 @@ impl<'a> DecodeValue<'a> for EcPrivateKey<'a> {
     }
 }
 
-impl<'a> Sequence<'a> for EcPrivateKey<'a> {
-    fn fields<F, T>(&self, f: F) -> der::Result<T>
-    where
-        F: FnOnce(&[&dyn Encode]) -> der::Result<T>,
-    {
-        f(&[
-            &VERSION,
-            &OctetStringRef::new(self.private_key)?,
-            &self.parameters.as_ref().map(|params| ContextSpecific {
-                tag_number: EC_PARAMETERS_TAG,
-                tag_mode: TagMode::Explicit,
-                value: *params,
-            }),
-            &self
-                .public_key
-                .map(|pk| {
-                    BitStringRef::from_bytes(pk).map(|value| ContextSpecific {
-                        tag_number: PUBLIC_KEY_TAG,
-                        tag_mode: TagMode::Explicit,
-                        value,
-                    })
-                })
-                .transpose()?,
-        ])
+impl EncodeValue for EcPrivateKey<'_> {
+    fn value_len(&self) -> der::Result<Length> {
+        VERSION.encoded_len()?
+            + OctetStringRef::new(self.private_key)?.encoded_len()?
+            + self.context_specific_parameters().encoded_len()?
+            + self.context_specific_public_key()?.encoded_len()?
+    }
+
+    fn encode_value(&self, writer: &mut impl Writer) -> der::Result<()> {
+        VERSION.encode(writer)?;
+        OctetStringRef::new(self.private_key)?.encode(writer)?;
+        self.context_specific_parameters().encode(writer)?;
+        self.context_specific_public_key()?.encode(writer)?;
+        Ok(())
     }
 }
+
+impl<'a> Sequence<'a> for EcPrivateKey<'a> {}
 
 impl<'a> TryFrom<&'a [u8]> for EcPrivateKey<'a> {
     type Error = Error;
@@ -138,7 +154,6 @@ impl<'a> fmt::Debug for EcPrivateKey<'a> {
 }
 
 #[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 impl TryFrom<EcPrivateKey<'_>> for SecretDocument {
     type Error = Error;
 
@@ -148,7 +163,6 @@ impl TryFrom<EcPrivateKey<'_>> for SecretDocument {
 }
 
 #[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 impl TryFrom<&EcPrivateKey<'_>> for SecretDocument {
     type Error = Error;
 
@@ -158,7 +172,6 @@ impl TryFrom<&EcPrivateKey<'_>> for SecretDocument {
 }
 
 #[cfg(feature = "pem")]
-#[cfg_attr(docsrs, doc(cfg(feature = "pem")))]
 impl PemLabel for EcPrivateKey<'_> {
     const PEM_LABEL: &'static str = "EC PRIVATE KEY";
 }

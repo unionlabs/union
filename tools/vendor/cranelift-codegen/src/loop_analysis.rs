@@ -10,6 +10,7 @@ use crate::ir::{Block, Function, Layout};
 use crate::packed_option::PackedOption;
 use crate::timing;
 use alloc::vec::Vec;
+use smallvec::{smallvec, SmallVec};
 
 /// A opaque reference to a code loop.
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
@@ -29,6 +30,48 @@ pub struct LoopAnalysis {
 struct LoopData {
     header: Block,
     parent: PackedOption<Loop>,
+    level: LoopLevel,
+}
+
+/// A level in a loop nest.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LoopLevel(u8);
+impl LoopLevel {
+    const INVALID: u8 = 0xff;
+
+    /// Get the root level (no loop).
+    pub fn root() -> Self {
+        Self(0)
+    }
+    /// Get the loop level.
+    pub fn level(self) -> usize {
+        self.0 as usize
+    }
+    /// Invalid loop level.
+    pub fn invalid() -> Self {
+        Self(Self::INVALID)
+    }
+    /// One loop level deeper.
+    pub fn inc(self) -> Self {
+        if self.0 == (Self::INVALID - 1) {
+            self
+        } else {
+            Self(self.0 + 1)
+        }
+    }
+    /// A clamped loop level from a larger-width (usize) depth.
+    pub fn clamped(level: usize) -> Self {
+        Self(
+            u8::try_from(std::cmp::min(level, (Self::INVALID as usize) - 1))
+                .expect("Clamped value must always convert"),
+        )
+    }
+}
+
+impl std::default::Default for LoopLevel {
+    fn default() -> Self {
+        LoopLevel::invalid()
+    }
 }
 
 impl LoopData {
@@ -37,6 +80,7 @@ impl LoopData {
         Self {
             header,
             parent: parent.into(),
+            level: LoopLevel::invalid(),
         }
     }
 }
@@ -71,6 +115,17 @@ impl LoopAnalysis {
         self.loops[lp].parent.expand()
     }
 
+    /// Return the innermost loop for a given block.
+    pub fn innermost_loop(&self, block: Block) -> Option<Loop> {
+        self.block_loop_map[block].expand()
+    }
+
+    /// Determine if a Block is a loop header. If so, return the loop.
+    pub fn is_loop_header(&self, block: Block) -> Option<Loop> {
+        self.innermost_loop(block)
+            .filter(|&lp| self.loop_header(lp) == block)
+    }
+
     /// Determine if a Block belongs to a loop by running a finger along the loop tree.
     ///
     /// Returns `true` if `block` is in loop `lp`.
@@ -96,6 +151,12 @@ impl LoopAnalysis {
         }
         false
     }
+
+    /// Returns the loop-nest level of a given block.
+    pub fn loop_level(&self, block: Block) -> LoopLevel {
+        self.innermost_loop(block)
+            .map_or(LoopLevel(0), |lp| self.loops[lp].level)
+    }
 }
 
 impl LoopAnalysis {
@@ -107,6 +168,7 @@ impl LoopAnalysis {
         self.block_loop_map.resize(func.dfg.num_blocks());
         self.find_loop_headers(cfg, domtree, &func.layout);
         self.discover_loop_blocks(cfg, domtree, &func.layout);
+        self.assign_loop_levels();
         self.valid = true;
     }
 
@@ -228,6 +290,28 @@ impl LoopAnalysis {
             }
         }
     }
+
+    fn assign_loop_levels(&mut self) {
+        let mut stack: SmallVec<[Loop; 8]> = smallvec![];
+        for lp in self.loops.keys() {
+            if self.loops[lp].level == LoopLevel::invalid() {
+                stack.push(lp);
+                while let Some(&lp) = stack.last() {
+                    if let Some(parent) = self.loops[lp].parent.into() {
+                        if self.loops[parent].level != LoopLevel::invalid() {
+                            self.loops[lp].level = self.loops[parent].level.inc();
+                            stack.pop();
+                        } else {
+                            stack.push(parent);
+                        }
+                    } else {
+                        self.loops[lp].level = LoopLevel::root().inc();
+                        stack.pop();
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -286,6 +370,10 @@ mod tests {
         assert_eq!(loop_analysis.is_in_loop(block2, loops[0]), true);
         assert_eq!(loop_analysis.is_in_loop(block3, loops[0]), true);
         assert_eq!(loop_analysis.is_in_loop(block0, loops[1]), false);
+        assert_eq!(loop_analysis.loop_level(block0).level(), 1);
+        assert_eq!(loop_analysis.loop_level(block1).level(), 2);
+        assert_eq!(loop_analysis.loop_level(block2).level(), 2);
+        assert_eq!(loop_analysis.loop_level(block3).level(), 1);
     }
 
     #[test]
@@ -345,5 +433,11 @@ mod tests {
         assert_eq!(loop_analysis.is_in_loop(block3, loops[2]), true);
         assert_eq!(loop_analysis.is_in_loop(block4, loops[2]), true);
         assert_eq!(loop_analysis.is_in_loop(block5, loops[0]), true);
+        assert_eq!(loop_analysis.loop_level(block0).level(), 1);
+        assert_eq!(loop_analysis.loop_level(block1).level(), 2);
+        assert_eq!(loop_analysis.loop_level(block2).level(), 2);
+        assert_eq!(loop_analysis.loop_level(block3).level(), 2);
+        assert_eq!(loop_analysis.loop_level(block4).level(), 2);
+        assert_eq!(loop_analysis.loop_level(block5).level(), 1);
     }
 }

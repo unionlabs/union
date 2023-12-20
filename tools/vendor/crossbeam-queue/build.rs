@@ -15,10 +15,11 @@
 use std::env;
 
 include!("no_atomic.rs");
+include!("build-common.rs");
 
 fn main() {
     let target = match env::var("TARGET") {
-        Ok(target) => target,
+        Ok(target) => convert_custom_linux_target(target),
         Err(e) => {
             println!(
                 "cargo:warning={}: unable to get TARGET environment variable: {}",
@@ -29,10 +30,9 @@ fn main() {
         }
     };
 
-    // Note that this is `no_*`, not `has_*`. This allows treating
-    // `cfg(target_has_atomic = "ptr")` as true when the build script doesn't
-    // run. This is needed for compatibility with non-cargo build systems that
-    // don't run the build script.
+    // Note that this is `no_`*, not `has_*`. This allows treating as the latest
+    // stable rustc is used when the build script doesn't run. This is useful
+    // for non-cargo build systems that don't run the build script.
     if NO_ATOMIC_CAS.contains(&&*target) {
         println!("cargo:rustc-cfg=crossbeam_no_atomic_cas");
     }

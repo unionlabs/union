@@ -882,6 +882,13 @@ func (commit *Commit) VoteSignBytes(chainID string, valIdx int32) []byte {
 	return VoteSignBytes(chainID, v)
 }
 
+// Same as `VoteSignBytes` but uses `Tendermint/CometBFT` vote for signing to support
+// `07-tendermint` light clients.
+func (commit *Commit) VoteSignBytesLegacy(chainID string, valIdx int32) []byte {
+	v := commit.GetVote(valIdx).ToProto()
+	return VoteSignBytesLegacy(chainID, v)
+}
+
 // Size returns the number of signatures in the commit.
 func (commit *Commit) Size() int {
 	if commit == nil {

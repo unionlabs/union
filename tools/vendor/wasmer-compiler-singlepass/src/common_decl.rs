@@ -224,8 +224,7 @@ impl MachineState {
 impl MachineStateDiff {
     /// Creates a `MachineState` from the given `&FunctionStateMap`.
     pub fn _build_state(&self, m: &FunctionStateMap) -> MachineState {
-        let mut chain: Vec<&MachineStateDiff> = vec![];
-        chain.push(self);
+        let mut chain: Vec<&MachineStateDiff> = vec![self];
         let mut current = self.last;
         while let Some(x) = current {
             let that = &m.diffs[x];

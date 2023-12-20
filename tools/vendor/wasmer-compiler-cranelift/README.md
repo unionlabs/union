@@ -5,12 +5,11 @@ This crate contains a compiler implementation based on Cranelift.
 ## Usage
 
 ```rust
-use wasmer::{Store, Universal};
+use wasmer::{Store, EngineBuilder};
 use wasmer_compiler_cranelift::Cranelift;
 
 let compiler = Cranelift::new();
-// Put it into an engine and add it to the store
-let store = Store::new(&Universal::new(compiler).engine());
+let mut store = Store::new(compiler);
 ```
 
 *Note: you can find a [full working example using Cranelift compiler

@@ -974,6 +974,7 @@ pub(crate) mod parsing {
         }
     }
 
+    #[doc(hidden)]
     pub fn punct<const N: usize>(input: ParseStream, token: &str) -> Result<[Span; N]> {
         let mut spans = [input.span(); N];
         punct_helper(input, token, &mut spans)?;
@@ -1006,6 +1007,7 @@ pub(crate) mod parsing {
         })
     }
 
+    #[doc(hidden)]
     pub fn peek_punct(mut cursor: Cursor, token: &str) -> bool {
         for (i, ch) in token.chars().enumerate() {
             match cursor.punct() {
@@ -1033,6 +1035,7 @@ pub(crate) mod printing {
     use proc_macro2::{Delimiter, Group, Ident, Punct, Spacing, Span, TokenStream};
     use quote::TokenStreamExt;
 
+    #[doc(hidden)]
     pub fn punct(s: &str, spans: &[Span], tokens: &mut TokenStream) {
         assert_eq!(s.len(), spans.len());
 

@@ -1,6 +1,6 @@
+use core::fmt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 /// This is the final result type that is created and serialized in a contract for
 /// every init/execute/migrate call. The VM then deserializes this type to distinguish
@@ -88,62 +88,62 @@ impl<S> From<ContractResult<S>> for Result<S, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{from_slice, to_vec, Response, StdError, StdResult};
+    use crate::{from_json, to_json_vec, Response, StdError, StdResult};
 
     #[test]
     fn contract_result_serialization_works() {
         let result = ContractResult::Ok(12);
-        assert_eq!(&to_vec(&result).unwrap(), b"{\"ok\":12}");
+        assert_eq!(&to_json_vec(&result).unwrap(), b"{\"ok\":12}");
 
         let result = ContractResult::Ok("foo");
-        assert_eq!(&to_vec(&result).unwrap(), b"{\"ok\":\"foo\"}");
+        assert_eq!(&to_json_vec(&result).unwrap(), b"{\"ok\":\"foo\"}");
 
         let result: ContractResult<Response> = ContractResult::Ok(Response::default());
         assert_eq!(
-            to_vec(&result).unwrap(),
+            to_json_vec(&result).unwrap(),
             br#"{"ok":{"messages":[],"attributes":[],"events":[],"data":null}}"#
         );
 
         let result: ContractResult<Response> = ContractResult::Err("broken".to_string());
-        assert_eq!(&to_vec(&result).unwrap(), b"{\"error\":\"broken\"}");
+        assert_eq!(&to_json_vec(&result).unwrap(), b"{\"error\":\"broken\"}");
     }
 
     #[test]
     fn contract_result_deserialization_works() {
-        let result: ContractResult<u64> = from_slice(br#"{"ok":12}"#).unwrap();
+        let result: ContractResult<u64> = from_json(br#"{"ok":12}"#).unwrap();
         assert_eq!(result, ContractResult::Ok(12));
 
-        let result: ContractResult<String> = from_slice(br#"{"ok":"foo"}"#).unwrap();
+        let result: ContractResult<String> = from_json(br#"{"ok":"foo"}"#).unwrap();
         assert_eq!(result, ContractResult::Ok("foo".to_string()));
 
         let result: ContractResult<Response> =
-            from_slice(br#"{"ok":{"messages":[],"attributes":[],"events":[],"data":null}}"#)
+            from_json(br#"{"ok":{"messages":[],"attributes":[],"events":[],"data":null}}"#)
                 .unwrap();
         assert_eq!(result, ContractResult::Ok(Response::default()));
 
-        let result: ContractResult<Response> = from_slice(br#"{"error":"broken"}"#).unwrap();
+        let result: ContractResult<Response> = from_json(br#"{"error":"broken"}"#).unwrap();
         assert_eq!(result, ContractResult::Err("broken".to_string()));
 
         // ignores whitespace
-        let result: ContractResult<u64> = from_slice(b" {\n\t  \"ok\": 5898\n}  ").unwrap();
+        let result: ContractResult<u64> = from_json(b" {\n\t  \"ok\": 5898\n}  ").unwrap();
         assert_eq!(result, ContractResult::Ok(5898));
 
         // fails for additional attributes
-        let parse: StdResult<ContractResult<u64>> = from_slice(br#"{"unrelated":321,"ok":4554}"#);
+        let parse: StdResult<ContractResult<u64>> = from_json(br#"{"unrelated":321,"ok":4554}"#);
         match parse.unwrap_err() {
             StdError::ParseErr { .. } => {}
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
-        let parse: StdResult<ContractResult<u64>> = from_slice(br#"{"ok":4554,"unrelated":321}"#);
+        let parse: StdResult<ContractResult<u64>> = from_json(br#"{"ok":4554,"unrelated":321}"#);
         match parse.unwrap_err() {
             StdError::ParseErr { .. } => {}
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
         let parse: StdResult<ContractResult<u64>> =
-            from_slice(br#"{"ok":4554,"error":"What's up now?"}"#);
+            from_json(br#"{"ok":4554,"error":"What's up now?"}"#);
         match parse.unwrap_err() {
             StdError::ParseErr { .. } => {}
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 

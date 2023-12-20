@@ -233,21 +233,19 @@ macro_rules! mod_impl {
                 self.wrapping_pow(exp)
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::div_euclid!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn div_euclid(self, rhs: Self) -> Self {
-                    self.wrapping_div_euclid(rhs)
-                }
+            #[doc = doc::div_euclid!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn div_euclid(self, rhs: Self) -> Self {
+                self.wrapping_div_euclid(rhs)
+            }
 
 
-                #[doc = doc::rem_euclid!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn rem_euclid(self, rhs: Self) -> Self {
-                    self.wrapping_rem_euclid(rhs)
-                }
+            #[doc = doc::rem_euclid!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn rem_euclid(self, rhs: Self) -> Self {
+                self.wrapping_rem_euclid(rhs)
             }
 
             #[doc = doc::doc_comment! {
@@ -303,31 +301,29 @@ macro_rules! mod_impl {
                 }
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::ilog10!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn ilog10(self) -> ExpType {
-                    #[cfg(debug_assertions)]
-                    return option_expect!(self.checked_ilog10(), errors::err_msg!("attempt to calculate ilog10 of zero"));
-                    #[cfg(not(debug_assertions))]
-                    match self.checked_ilog10() {
-                        Some(n) => n,
-                        None => 0,
-                    }
+            #[doc = doc::ilog10!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn ilog10(self) -> ExpType {
+                #[cfg(debug_assertions)]
+                return option_expect!(self.checked_ilog10(), errors::err_msg!("attempt to calculate ilog10 of zero"));
+                #[cfg(not(debug_assertions))]
+                match self.checked_ilog10() {
+                    Some(n) => n,
+                    None => 0,
                 }
+            }
 
-                #[doc = doc::ilog!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn ilog(self, base: Self) -> ExpType {
-                    #[cfg(debug_assertions)]
-                    return option_expect!(self.checked_ilog(base), errors::err_msg!("attempt to calculate ilog of zero or ilog with base < 2"));
-                    #[cfg(not(debug_assertions))]
-                    match self.checked_ilog(base) {
-                        Some(n) => n,
-                        None => 0,
-                    }
+            #[doc = doc::ilog!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn ilog(self, base: Self) -> ExpType {
+                #[cfg(debug_assertions)]
+                return option_expect!(self.checked_ilog(base), errors::err_msg!("attempt to calculate ilog of zero or ilog with base < 2"));
+                #[cfg(not(debug_assertions))]
+                match self.checked_ilog(base) {
+                    Some(n) => n,
+                    None => 0,
                 }
             }
 
@@ -335,43 +331,41 @@ macro_rules! mod_impl {
             #[must_use = doc::must_use_op!()]
             #[inline]
             pub const fn abs_diff(self, other: Self) -> Self {
-                if self.lt(other) {
+                if self.lt(&other) {
                     other.wrapping_sub(self)
                 } else {
                     self.wrapping_sub(other)
                 }
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::next_multiple_of!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn next_multiple_of(self, rhs: Self) -> Self {
-                    let rem = self.wrapping_rem(rhs);
-                    if rem.is_zero() {
-                        self
-                    } else {
-                        self.add(rhs.sub(rem))
-                    }
+            #[doc = doc::next_multiple_of!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn next_multiple_of(self, rhs: Self) -> Self {
+                let rem = self.wrapping_rem(rhs);
+                if rem.is_zero() {
+                    self
+                } else {
+                    self.add(rhs.sub(rem))
                 }
+            }
 
-                #[doc = doc::div_floor!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn div_floor(self, rhs: Self) -> Self {
-                    self.wrapping_div(rhs)
-                }
+            #[doc = doc::div_floor!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn div_floor(self, rhs: Self) -> Self {
+                self.wrapping_div(rhs)
+            }
 
-                #[doc = doc::div_ceil!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn div_ceil(self, rhs: Self) -> Self {
-                    let (div, rem) = self.div_rem(rhs);
-                    if rem.is_zero() {
-                        div
-                    } else {
-                        div.add(Self::ONE)
-                    }
+            #[doc = doc::div_ceil!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn div_ceil(self, rhs: Self) -> Self {
+                let (div, rem) = self.div_rem(rhs);
+                if rem.is_zero() {
+                    div
+                } else {
+                    div.add(Self::ONE)
                 }
             }
         }
@@ -604,6 +598,17 @@ macro_rules! mod_impl {
         }
 
         #[cfg(test)]
+        impl<const N: usize> quickcheck::Arbitrary for $BUint<N> {
+            fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+                let mut out = Self::ZERO;
+                for digit in out.digits.iter_mut() {
+                    *digit = <$Digit as quickcheck::Arbitrary>::arbitrary(g);
+                }
+                out
+            }
+        }
+
+        #[cfg(test)]
         paste::paste! {
             mod [<$Digit _digit_tests>] {
                 use crate::test::{debug_skip, test_bignum, types::utest};
@@ -664,14 +669,16 @@ macro_rules! mod_impl {
 
 crate::main_impl!(mod_impl);
 
+pub mod float_as;
 mod bigint_helpers;
-mod cast;
+pub mod cast;
 mod checked;
 mod cmp;
 mod const_trait_fillers;
 mod consts;
 mod convert;
 mod endian;
+pub mod as_float;
 mod fmt;
 #[cfg(feature = "numtraits")]
 mod numtraits;

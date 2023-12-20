@@ -13,6 +13,8 @@ import "ibc/core/commitment/v1/commitment.proto";
 import "gogoproto/gogo.proto";
 
 message ClientState {
+  option (gogoproto.goproto_getters) = false;
+
   string chain_id = 1;
   // duration of the period since the LastestTimestamp during which the
   // submitted headers are valid for upgrade
@@ -22,12 +24,14 @@ message ClientState {
   // defines how much new (untrusted) header's Time can drift into the future.
   uint64 max_clock_drift = 4;
   // Block height when the client was frozen due to a misbehaviour
-  .ibc.core.client.v1.Height frozen_height = 5;
+  .ibc.core.client.v1.Height frozen_height = 5 [(gogoproto.nullable) = false];
   // Latest height the client was updated to
-  .ibc.core.client.v1.Height latest_height = 6;
+  .ibc.core.client.v1.Height latest_height = 6 [(gogoproto.nullable) = false];
 }
 
 message ConsensusState {
+  option (gogoproto.goproto_getters) = false;
+
   // timestamp that corresponds to the block height in which the ConsensusState
   // was stored.
   uint64 timestamp = 1;

@@ -62,4 +62,5 @@ pub type FTEST = crate::float::Float<8, 52>;
 
 #[cfg(feature = "nightly")]
 #[cfg(not(test_int_bits = "64"))]
-pub type FTEST = crate::float::Float<4, 23>;*/
+pub type FTEST = crate::float::Float<4, 23>;
+*/

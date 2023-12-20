@@ -23,13 +23,13 @@ In version `0.1.0`, the `from_be` and `to_be` methods on all integers were imple
 To install and use `bnum`, simply add the following line to your `Cargo.toml` file in the `[dependencies]` section:
 
 ```toml
-bnum = "0.7.0"
+bnum = "0.8.0"
 ```
 
 Or, to enable various `bnum` features as well, add for example this line instead:
 
 ```toml
-bnum = { version = "0.7.0", features = ["rand"] } # enables the "rand" feature
+bnum = { version = "0.8.0", features = ["rand"] } # enables the "rand" feature
 ```
 
 ## Example Usage
@@ -94,7 +94,7 @@ assert_eq!(neg_one.count_ones(), 80); // signed integers are stored in two's com
 
 ### Fuzzing
 
-The `arbitrary` feature derives the [`Arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/trait.Arbitrary.html) trait from the [`arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/) crate. **Note: currently, this feature cannot be used with `no_std`.**
+The `arbitrary` feature derives the [`Arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/trait.Arbitrary.html) trait from the [`arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/) crate. **Note: currently, this feature cannot be used with `no_std` (see <https://github.com/rust-fuzz/arbitrary/issues/38>).**
 
 ### Random Number Generation
 
@@ -110,9 +110,9 @@ The `numtraits` feature includes implementations of traits from the [`num_traits
 
 ### Nightly features
 
-Some functionality in this crate currently only works with the Nightly Rust compiler. The `nightly` feature enables this functionality, at the cost of only being able to compile on nightly. The nightly features that this crate uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_mut_refs`](https://github.com/rust-lang/rust/issues/57349), [`const_maybe_uninit_as_mut_ptr`](https://github.com/rust-lang/rust/issues/75251), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792), [`const_num_from_num`](https://github.com/rust-lang/rust/issues/87852), [`const_swap`](https://github.com/rust-lang/rust/issues/83163) and [`const_option_ext`](https://github.com/rust-lang/rust/issues/91930).
+Some functionality in this crate currently only works with the Nightly Rust compiler. The `nightly` feature enables this functionality, at the cost of only being able to compile on nightly. The nightly features that this crate uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792) and [`const_option_ext`](https://github.com/rust-lang/rust/issues/91930).
 
-Activating the `nightly` feature will make nearly every method defined in the library `const`, and will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on bnum's unsigned and signed integers.
+Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on bnum's unsigned and signed integers and will make nearly every method defined in the library `const` (although as of `v0.8.0`, most methods are already `const` on stable).
 
 ## Testing
 
@@ -120,7 +120,7 @@ This crate is tested with the [`quickcheck`](https://docs.rs/quickcheck/latest/q
 
 ## Documentation
 
-Documentation for this project has not been fully written. However, since the API for all undocumented methods is the same as for the equivalent signed or unsigned primitive integer, the documentation for these can be referred to instead, e.g. [`u64`](https://doc.rust-lang.org/std/primitive.u64.html) or [`i64`](https://doc.rust-lang.org/std/primitive.i64.html). The link to the `u64`/`i64` implementation is given in the docs.
+If a method is not documented explicitly, it will have a link to the equivalent method defined on primitive Rust integers (since the methods have the same functionality).
 
 **NB: `bnum` is currently pre-`1.0.0`. As per the [Semantic Versioning guidelines](https://semver.org/#spec-item-4), the public API may contain breaking changes while it is in this stage. However, as the API is designed to be as similar as possible to the API of Rust's primitive integers, it is unlikely that there will be a large number of breaking changes.**
 
@@ -134,11 +134,9 @@ The [`num_traits::NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/tr
 
 This library aims to provide arbitrary, fixed precision equivalents of Rust's 3 built-in number types: signed integers, unsigned integers and floats. Signed and unsigned integers have been implemented and fully tested, and will aim to keep up to date with Rust's integer interface. (e.g. when a new method is implemented on a Rust primitive integer, this library will attempt to keep in step to include that method as well. This includes nightly-only methods.)
 
-Currently, arbitrary precision fixed size floats are being worked on but are incomplete. Most of the basic methods have been implemented but are not fully tested, and at the moment there is no implementation of the transcendental floating point methods such as `sin`, `exp`, `log`, etc.
+Currently, arbitrary precision fixed size floats are being worked on but are incomplete. Most of the basic methods, such as arithmetic and classification, have been implemented, but at the moment there is no implementation of the transcendental floating point methods such as `sin`, `exp`, `log`, etc.
 
-Obviously, the documentation needs to be completed, and benchmarks need to be written as well. This will take priority over the implementation of floats.
-
-Additionally, a proc macro for parsing numeric values is being developed, which will allow easier creation of large constant values for bnum's numeric types.
+Additionally, a proc macro for parsing numeric values will be developed at some point, which will allow easier creation of large constant values for bnum's numeric types.
 
 ## Licensing
 

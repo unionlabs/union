@@ -77,7 +77,7 @@ pub(crate) fn encode_with_padding<E: Engine + ?Sized>(
     let b64_bytes_written = engine.internal_encode(input, output);
 
     let padding_bytes = if engine.config().encode_padding() {
-        add_padding(input.len(), &mut output[b64_bytes_written..])
+        add_padding(b64_bytes_written, &mut output[b64_bytes_written..])
     } else {
         0
     };
@@ -117,20 +117,20 @@ pub fn encoded_len(bytes_len: usize, padding: bool) -> Option<usize> {
 }
 
 /// Write padding characters.
-/// `input_len` is the size of the original, not encoded, input.
+/// `unpadded_output_len` is the size of the unpadded but base64 encoded data.
 /// `output` is the slice where padding should be written, of length at least 2.
 ///
 /// Returns the number of padding bytes written.
-pub(crate) fn add_padding(input_len: usize, output: &mut [u8]) -> usize {
-    // TODO base on encoded len to use cheaper mod by 4 (aka & 7)
-    let rem = input_len % 3;
-    let mut bytes_written = 0;
-    for _ in 0..((3 - rem) % 3) {
-        output[bytes_written] = PAD_BYTE;
-        bytes_written += 1;
+pub(crate) fn add_padding(unpadded_output_len: usize, output: &mut [u8]) -> usize {
+    let pad_bytes = (4 - (unpadded_output_len % 4)) % 4;
+    // for just a couple bytes, this has better performance than using
+    // .fill(), or iterating over mutable refs, which call memset()
+    #[allow(clippy::needless_range_loop)]
+    for i in 0..pad_bytes {
+        output[i] = PAD_BYTE;
     }
 
-    bytes_written
+    pad_bytes
 }
 
 /// Errors that can occur while encoding into a slice.
@@ -434,18 +434,18 @@ mod tests {
 
         let mut rng = rand::rngs::SmallRng::from_entropy();
 
-        // cover our bases for length % 3
-        for input_len in 0..10 {
+        // cover our bases for length % 4
+        for unpadded_output_len in 0..20 {
             output.clear();
 
             // fill output with random
-            for _ in 0..10 {
+            for _ in 0..100 {
                 output.push(rng.gen());
             }
 
             let orig_output_buf = output.clone();
 
-            let bytes_written = add_padding(input_len, &mut output);
+            let bytes_written = add_padding(unpadded_output_len, &mut output);
 
             // make sure the part beyond bytes_written is the same garbage it was before
             assert_eq!(orig_output_buf[bytes_written..], output[bytes_written..]);

@@ -10,32 +10,42 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-edition = "2018"
+edition = "2021"
+rust-version = "1.70"
 name = "wasmer-middlewares"
-version = "2.3.0"
+version = "4.2.2"
 authors = ["Wasmer Engineering Team <engineering@wasmer.io>"]
 description = "A collection of various useful middlewares"
+homepage = "https://wasmer.io/"
 readme = "README.md"
-keywords = ["webassembly", "wasm"]
+keywords = [
+    "webassembly",
+    "wasm",
+]
 categories = ["wasm"]
-license = "MIT OR Apache-2.0 WITH LLVM-exception"
+license = "MIT"
 repository = "https://github.com/wasmerio/wasmer"
-resolver = "2"
-[dependencies.loupe]
-version = "0.1"
+
+[package.metadata.docs.rs]
+rustc-args = [
+    "--cfg",
+    "docsrs",
+]
 
 [dependencies.wasmer]
-version = "=2.3.0"
+version = "=4.2.2"
 features = ["compiler"]
 default-features = false
 
 [dependencies.wasmer-types]
-version = "=2.3.0"
+version = "=4.2.2"
 
 [dependencies.wasmer-vm]
-version = "=2.3.0"
+version = "=4.2.2"
+
 [dev-dependencies.wasmer]
-version = "=2.3.0"
+version = "=4.2.2"
 features = ["compiler"]
+
 [badges.maintenance]
 status = "actively-developed"

@@ -20,7 +20,7 @@ mod sub;
 #[cfg(feature = "rand_core")]
 mod rand;
 
-use crate::Zero;
+use crate::{Bounded, Zero};
 use core::fmt;
 use subtle::{Choice, ConditionallySelectable};
 
@@ -38,17 +38,9 @@ compile_error!("this crate builds on 32-bit and 64-bit platforms only");
 #[cfg(target_pointer_width = "32")]
 pub type Word = u32;
 
-/// Signed integer type that corresponds to [`Word`].
-#[cfg(target_pointer_width = "32")]
-pub(crate) type SignedWord = i32;
-
 /// Unsigned wide integer type: double the width of [`Word`].
 #[cfg(target_pointer_width = "32")]
 pub type WideWord = u64;
-
-/// Signed wide integer type: double the width of [`Limb`].
-#[cfg(target_pointer_width = "32")]
-pub(crate) type WideSignedWord = i64;
 
 //
 // 64-bit definitions
@@ -58,38 +50,16 @@ pub(crate) type WideSignedWord = i64;
 #[cfg(target_pointer_width = "64")]
 pub type Word = u64;
 
-/// Signed integer type that corresponds to [`Word`].
-#[cfg(target_pointer_width = "64")]
-pub(crate) type SignedWord = i64;
-
 /// Wide integer type: double the width of [`Word`].
 #[cfg(target_pointer_width = "64")]
 pub type WideWord = u128;
 
-/// Signed wide integer type: double the width of [`SignedWord`].
-#[cfg(target_pointer_width = "64")]
-pub(crate) type WideSignedWord = i128;
-
-//
-// Deprecated legacy names
-//
-
-// TODO(tarcieri): remove these in the next breaking release
-
-/// Deprecated: unsigned integer type that the [`Limb`] newtype wraps.
-#[deprecated(since = "0.4.8", note = "please use `Word` instead")]
-pub type LimbUInt = Word;
-
-/// Deprecated: wide integer type which is double the width of [`Word`].
-#[deprecated(since = "0.4.8", note = "please use `WideWord` instead")]
-pub type WideLimbUInt = WideWord;
-
 /// Highest bit in a [`Limb`].
-pub(crate) const HI_BIT: usize = Limb::BIT_SIZE - 1;
+pub(crate) const HI_BIT: usize = Limb::BITS - 1;
 
 /// Big integers are represented as an array of smaller CPU word-size integers
 /// called "limbs".
-#[derive(Copy, Clone, Debug, Default, Hash)]
+#[derive(Copy, Clone, Default, Hash)]
 #[repr(transparent)]
 pub struct Limb(pub Word);
 
@@ -107,27 +77,24 @@ impl Limb {
 
     /// Size of the inner integer in bits.
     #[cfg(target_pointer_width = "32")]
-    pub const BIT_SIZE: usize = 32;
+    pub const BITS: usize = 32;
     /// Size of the inner integer in bytes.
     #[cfg(target_pointer_width = "32")]
-    pub const BYTE_SIZE: usize = 4;
+    pub const BYTES: usize = 4;
 
     // 64-bit
 
     /// Size of the inner integer in bits.
     #[cfg(target_pointer_width = "64")]
-    pub const BIT_SIZE: usize = 64;
+    pub const BITS: usize = 64;
     /// Size of the inner integer in bytes.
     #[cfg(target_pointer_width = "64")]
-    pub const BYTE_SIZE: usize = 8;
+    pub const BYTES: usize = 8;
+}
 
-    /// Return `a` if `c`==0 or `b` if `c`==`Word::MAX`.
-    ///
-    /// Const-friendly: we can't yet use `subtle` in `const fn` contexts.
-    #[inline]
-    pub(crate) const fn ct_select(a: Self, b: Self, c: Word) -> Self {
-        Self(a.0 ^ (c & (a.0 ^ b.0)))
-    }
+impl Bounded for Limb {
+    const BITS: usize = Self::BITS;
+    const BYTES: usize = Self::BYTES;
 }
 
 impl ConditionallySelectable for Limb {
@@ -141,6 +108,12 @@ impl Zero for Limb {
     const ZERO: Self = Self::ZERO;
 }
 
+impl fmt::Debug for Limb {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Limb(0x{self:X})")
+    }
+}
+
 impl fmt::Display for Limb {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -151,19 +124,18 @@ impl fmt::Display for Limb {
 impl fmt::LowerHex for Limb {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:0width$x}", &self.0, width = Self::BYTE_SIZE * 2)
+        write!(f, "{:0width$x}", &self.0, width = Self::BYTES * 2)
     }
 }
 
 impl fmt::UpperHex for Limb {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:0width$X}", &self.0, width = Self::BYTE_SIZE * 2)
+        write!(f, "{:0width$X}", &self.0, width = Self::BYTES * 2)
     }
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de> Deserialize<'de> for Limb {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -174,8 +146,7 @@ impl<'de> Deserialize<'de> for Limb {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
-impl<'de> Serialize for Limb {
+impl Serialize for Limb {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -185,5 +156,20 @@ impl<'de> Serialize for Limb {
 }
 
 #[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 impl zeroize::DefaultIsZeroes for Limb {}
+
+#[cfg(test)]
+mod tests {
+    #[cfg(feature = "alloc")]
+    use {super::Limb, alloc::format};
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn debug() {
+        #[cfg(target_pointer_width = "32")]
+        assert_eq!(format!("{:?}", Limb(42)), "Limb(0x0000002A)");
+
+        #[cfg(target_pointer_width = "64")]
+        assert_eq!(format!("{:?}", Limb(42)), "Limb(0x000000000000002A)");
+    }
+}

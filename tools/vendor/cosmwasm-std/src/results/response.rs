@@ -72,14 +72,14 @@ pub struct Response<T = Empty> {
     ///
     /// More info about events (and their attributes) can be found in [*Cosmos SDK* docs].
     ///
-    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/main/core/events.html
+    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/main/learn/advanced/events
     pub attributes: Vec<Attribute>,
     /// Extra, custom events separate from the main `wasm` one. These will have
     /// `wasm-` prepended to the type.
     ///
     /// More info about events can be found in [*Cosmos SDK* docs].
     ///
-    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/main/core/events.html
+    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/main/learn/advanced/events
     pub events: Vec<Event>,
     /// The binary payload to include in the response.
     pub data: Option<Binary>,
@@ -209,7 +209,7 @@ impl<T> Response<T> {
     /// }
     /// ```
     pub fn add_submessages(mut self, msgs: impl IntoIterator<Item = SubMsg<T>>) -> Self {
-        self.messages.extend(msgs.into_iter());
+        self.messages.extend(msgs);
         self
     }
 
@@ -219,7 +219,7 @@ impl<T> Response<T> {
     /// The `wasm-` prefix will be appended by the runtime to the provided types
     /// of events.
     pub fn add_events(mut self, events: impl IntoIterator<Item = Event>) -> Self {
-        self.events.extend(events.into_iter());
+        self.events.extend(events);
         self
     }
 
@@ -235,11 +235,11 @@ mod tests {
     use super::super::BankMsg;
     use super::*;
     use crate::results::submessages::{ReplyOn, UNUSED_MSG_ID};
-    use crate::{coins, from_slice, to_vec, ContractResult};
+    use crate::{coins, from_json, to_json_vec, ContractResult};
 
     #[test]
     fn response_add_attributes_works() {
-        let res = Response::<Empty>::new().add_attributes(std::iter::empty::<Attribute>());
+        let res = Response::<Empty>::new().add_attributes(core::iter::empty::<Attribute>());
         assert_eq!(res.attributes.len(), 0);
 
         let res = Response::<Empty>::new().add_attributes([Attribute::new("test", "ing")]);
@@ -261,11 +261,11 @@ mod tests {
         assert_eq!(res.attributes, attrs);
 
         let optional = Option::<Attribute>::None;
-        let res: Response = Response::new().add_attributes(optional.into_iter());
+        let res: Response = Response::new().add_attributes(optional);
         assert_eq!(res.attributes.len(), 0);
 
         let optional = Option::<Attribute>::Some(Attribute::new("test", "ing"));
-        let res: Response = Response::new().add_attributes(optional.into_iter());
+        let res: Response = Response::new().add_attributes(optional);
         assert_eq!(res.attributes.len(), 1);
         assert_eq!(
             res.attributes[0],
@@ -308,8 +308,8 @@ mod tests {
             events: vec![],
             data: Some(Binary::from([0xAA, 0xBB])),
         };
-        let serialized = to_vec(&original).expect("encode contract result");
-        let deserialized: Response = from_slice(&serialized).expect("decode contract result");
+        let serialized = to_json_vec(&original).expect("encode contract result");
+        let deserialized: Response = from_json(serialized).expect("decode contract result");
         assert_eq!(deserialized, original);
     }
 

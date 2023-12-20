@@ -1,5 +1,7 @@
 use crate::{Decimal, Uint128};
-use std::str::FromStr as _;
+#[cfg(test)]
+use core::hash::{Hash, Hasher};
+use core::str::FromStr as _;
 
 /// Asserts that two expressions are approximately equal to each other.
 ///
@@ -21,6 +23,25 @@ macro_rules! assert_approx_eq {
     }};
 }
 
+/// Tests that type `T` implements `Eq` and `Hash` traits correctly.
+///
+/// `left` and `right` must be unequal objects.
+///
+/// Some object pairs may produce the same hash causing test failure.
+/// In those cases try different objects. The test uses stable hasher
+/// so once working pair is identified, the test’s going to continue
+/// passing.
+#[macro_export]
+#[cfg(test)]
+macro_rules! assert_hash_works {
+    ($left:expr, $right:expr $(,)?) => {{
+        $crate::testing::assert_hash_works_impl($left, $right, None);
+    }};
+    ($left:expr, $right:expr, $($args:tt)+) => {{
+        $crate::testing::assert_hash_works_impl($left, $right, Some(format!($($args)*)));
+    }};
+}
+
 /// Implementation for the [`cosmwasm_std::assert_approx_eq`] macro. This does not provide any
 /// stability guarantees and may change any time.
 #[track_caller]
@@ -35,20 +56,62 @@ pub fn assert_approx_eq_impl<U: Into<Uint128>>(
     let right = right.into();
     let max_rel_diff = Decimal::from_str(max_rel_diff).unwrap();
 
-    let largest = std::cmp::max(left, right);
+    let largest = core::cmp::max(left, right);
     let rel_diff = Decimal::from_ratio(left.abs_diff(right), largest);
 
     if rel_diff > max_rel_diff {
-        match panic_msg {
-            Some(panic_msg) => panic!(
-                "assertion failed: `(left ≈ right)`\nleft: {}\nright: {}\nrelative difference: {}\nmax allowed relative difference: {}\n: {}",
-                left, right, rel_diff, max_rel_diff, panic_msg
-            ),
-            None => panic!(
-                "assertion failed: `(left ≈ right)`\nleft: {}\nright: {}\nrelative difference: {}\nmax allowed relative difference: {}\n",
-                left, right, rel_diff, max_rel_diff
-            ),
-        }
+        do_panic(format_args!("assertion failed: `(left ≈ right)`\nleft: {left}\nright: {right}\nrelative difference: {rel_diff}\nmax allowed relative difference: {max_rel_diff}"), panic_msg);
+    }
+}
+
+/// Tests that type `T` implements `Eq` and `Hash` traits correctly.
+///
+/// `left` and `right` must be unequal objects.
+///
+/// Some object pairs may produce the same hash causing test failure.  In those
+/// cases try different objects. The test uses stable hasher so once working
+/// pair is identified, the test’s going to continue passing.
+#[track_caller]
+#[doc(hidden)]
+#[cfg(test)]
+pub fn assert_hash_works_impl<T: Clone + Eq + Hash>(left: T, right: T, panic_msg: Option<String>) {
+    fn hash(value: &impl Hash) -> u64 {
+        let mut hasher = crc32fast::Hasher::default();
+        value.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    // Check clone
+    #[allow(clippy::redundant_clone)]
+    let clone = left.clone();
+    if left != clone {
+        do_panic("assertion failed: `left == left.clone()`", panic_msg);
+    }
+    if hash(&left) != hash(&clone) {
+        do_panic(
+            "assertion failed: `hash(left) == hash(left.clone())`",
+            panic_msg,
+        );
+    }
+
+    // Check different object
+    if left == right {
+        do_panic("assertion failed: `left != right`", panic_msg);
+    }
+    if hash(&left) == hash(&right) {
+        do_panic("assertion failed: `hash(left) != hash(right)`", panic_msg);
+    }
+}
+
+/// Panics concatenating both arguments.
+///
+/// If second argument is `None` panics with just the first argument as message.
+/// Otherwise, formats the panic message as `{reason}:\n{panic_msg}`.
+#[track_caller]
+fn do_panic(reason: impl core::fmt::Display, panic_msg: Option<String>) -> ! {
+    match panic_msg {
+        Some(panic_msg) => panic!("{reason}:\n{panic_msg}"),
+        None => panic!("{reason}"),
     }
 }
 
@@ -82,7 +145,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "assertion failed: `(left ≈ right)`\nleft: 8\nright: 10\nrelative difference: 0.2\nmax allowed relative difference: 0.12\n"
+        expected = "assertion failed: `(left ≈ right)`\nleft: 8\nright: 10\nrelative difference: 0.2\nmax allowed relative difference: 0.12"
     )]
     fn assert_approx_fail() {
         assert_approx_eq!(8_u32, 10_u32, "0.12");
@@ -90,7 +153,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "assertion failed: `(left ≈ right)`\nleft: 17\nright: 20\nrelative difference: 0.15\nmax allowed relative difference: 0.12\n: some extra info about the error: Foo(8)"
+        expected = "assertion failed: `(left ≈ right)`\nleft: 17\nright: 20\nrelative difference: 0.15\nmax allowed relative difference: 0.12:\nsome extra info about the error: Foo(8)"
     )]
     fn assert_approx_with_custom_panic_msg() {
         let adjective = "extra";

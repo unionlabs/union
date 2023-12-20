@@ -1,5 +1,3 @@
-#![cfg(feature = "staking")]
-
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -132,10 +130,15 @@ impl_response_constructor!(ValidatorResponse, validator: Option<Validator>);
 /// Instances are created in the querier.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct Validator {
-    /// A validator address (e.g. cosmosvaloper1...)
+    /// The operator address of the validator (e.g. cosmosvaloper1...).
+    /// See https://github.com/cosmos/cosmos-sdk/blob/v0.47.4/proto/cosmos/staking/v1beta1/staking.proto#L95-L96
+    /// for more information.
+    ///
+    /// This uses `String` instead of `Addr` since the bech32 address prefix is different from
+    /// the ones that regular user accounts use.
     pub address: String,
     pub commission: Decimal,
     pub max_commission: Decimal,
-    /// TODO: what units are these (in terms of time)?
+    /// The maximum daily increase of the commission
     pub max_change_rate: Decimal,
 }

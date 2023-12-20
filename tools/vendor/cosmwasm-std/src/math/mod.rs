@@ -1,3 +1,4 @@
+mod conversion;
 mod decimal;
 mod decimal256;
 mod fraction;
@@ -6,6 +7,9 @@ mod int256;
 mod int512;
 mod int64;
 mod isqrt;
+mod num_consts;
+mod signed_decimal;
+mod signed_decimal_256;
 mod uint128;
 mod uint256;
 mod uint512;
@@ -19,6 +23,8 @@ pub use int256::Int256;
 pub use int512::Int512;
 pub use int64::Int64;
 pub use isqrt::Isqrt;
+pub use signed_decimal::{SignedDecimal, SignedDecimalRangeExceeded};
+pub use signed_decimal_256::{SignedDecimal256, SignedDecimal256RangeExceeded};
 pub use uint128::Uint128;
 pub use uint256::Uint256;
 pub use uint512::Uint512;
@@ -27,7 +33,7 @@ pub use uint64::Uint64;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::ops::*;
+    use core::ops::*;
 
     /// A trait that ensures other traits are implemented for our number types
     trait AllImpl<'a>:
@@ -69,6 +75,8 @@ mod tests {
         + Shr<&'a u32>
         + ShrAssign<u32>
         + ShrAssign<&'a u32>
+        + Not<Output = Self>
+        + super::num_consts::NumConsts
     {
     }
 

@@ -100,7 +100,7 @@ impl Formatter {
         let path_str = format!("{}/{}", directory, filename.as_ref());
 
         let path = path::Path::new(&path_str);
-        println!("Writing generated file: {}", path.display());
+        eprintln!("Writing generated file: {}", path.display());
         let mut f = fs::File::create(path)?;
 
         for l in self.lines.iter().map(|l| l.as_bytes()) {

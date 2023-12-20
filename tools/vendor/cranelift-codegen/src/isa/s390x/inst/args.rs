@@ -1,14 +1,10 @@
 //! S390x ISA definitions: instruction arguments.
 
-// Some variants are never constructed, but we still want them as options in the future.
-#![allow(dead_code)]
-
 use crate::ir::condcodes::{FloatCC, IntCC};
 use crate::ir::MemFlags;
 use crate::isa::s390x::inst::*;
 use crate::machinst::MachLabel;
-
-use regalloc::{PrettyPrint, RealRegUniverse, Reg};
+use crate::machinst::{PrettyPrint, Reg};
 
 use std::string::String;
 
@@ -113,6 +109,100 @@ impl MemArg {
     pub(crate) fn can_trap(&self) -> bool {
         !self.get_flags().notrap()
     }
+
+    /// Edit registers with allocations.
+    pub fn with_allocs(&self, allocs: &mut AllocationConsumer<'_>) -> Self {
+        match self {
+            &MemArg::BXD12 {
+                base,
+                index,
+                disp,
+                flags,
+            } => MemArg::BXD12 {
+                base: allocs.next(base),
+                index: allocs.next(index),
+                disp,
+                flags,
+            },
+            &MemArg::BXD20 {
+                base,
+                index,
+                disp,
+                flags,
+            } => MemArg::BXD20 {
+                base: allocs.next(base),
+                index: allocs.next(index),
+                disp,
+                flags,
+            },
+            &MemArg::RegOffset { reg, off, flags } => MemArg::RegOffset {
+                reg: allocs.next(reg),
+                off,
+                flags,
+            },
+            x => x.clone(),
+        }
+    }
+}
+
+/// A memory argument for an instruction with two memory operands.
+/// We cannot use two instances of MemArg, because we do not have
+/// two free temp registers that would be needed to reload two
+/// addresses in the general case.  Also, two copies of MemArg would
+/// increase the size of Inst beyond its current limit.  Use this
+/// simplified form instead that never needs any reloads, and suffices
+/// for all current users.
+#[derive(Clone, Debug)]
+pub struct MemArgPair {
+    pub base: Reg,
+    pub disp: UImm12,
+    pub flags: MemFlags,
+}
+
+impl MemArgPair {
+    /// Convert a MemArg to a MemArgPair if possible.
+    pub fn maybe_from_memarg(mem: &MemArg) -> Option<MemArgPair> {
+        match mem {
+            &MemArg::BXD12 {
+                base,
+                index,
+                disp,
+                flags,
+            } => {
+                if index != zero_reg() {
+                    None
+                } else {
+                    Some(MemArgPair { base, disp, flags })
+                }
+            }
+            &MemArg::RegOffset { reg, off, flags } => {
+                if off < 0 {
+                    None
+                } else {
+                    let disp = UImm12::maybe_from_u64(off as u64)?;
+                    Some(MemArgPair {
+                        base: reg,
+                        disp,
+                        flags,
+                    })
+                }
+            }
+            _ => None,
+        }
+    }
+
+    pub(crate) fn can_trap(&self) -> bool {
+        !self.flags.notrap()
+    }
+
+    /// Edit registers with allocations.
+    pub fn with_allocs(&self, allocs: &mut AllocationConsumer<'_>) -> Self {
+        MemArgPair {
+            base: allocs.next(self.base),
+            disp: self.disp,
+            flags: self.flags,
+        }
+    }
 }
 
 //=============================================================================
@@ -143,8 +233,6 @@ impl Cond {
             IntCC::UnsignedGreaterThan => 2,
             IntCC::UnsignedLessThanOrEqual => 8 | 4,
             IntCC::UnsignedLessThan => 4,
-            IntCC::Overflow => 1,
-            IntCC::NotOverflow => 8 | 4 | 2,
         };
         Cond { mask }
     }
@@ -183,56 +271,60 @@ impl Cond {
 }
 
 impl PrettyPrint for MemArg {
-    fn show_rru(&self, mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, allocs: &mut AllocationConsumer<'_>) -> String {
         match self {
             &MemArg::BXD12 {
                 base, index, disp, ..
             } => {
+                let base = allocs.next(base);
+                let index = allocs.next(index);
                 if base != zero_reg() {
                     if index != zero_reg() {
                         format!(
                             "{}({},{})",
-                            disp.show_rru(mb_rru),
-                            index.show_rru(mb_rru),
-                            base.show_rru(mb_rru)
+                            disp.pretty_print_default(),
+                            show_reg(index),
+                            show_reg(base),
                         )
                     } else {
-                        format!("{}({})", disp.show_rru(mb_rru), base.show_rru(mb_rru))
+                        format!("{}({})", disp.pretty_print_default(), show_reg(base))
                     }
                 } else {
                     if index != zero_reg() {
-                        format!("{}({},)", disp.show_rru(mb_rru), index.show_rru(mb_rru))
+                        format!("{}({},)", disp.pretty_print_default(), show_reg(index))
                     } else {
-                        format!("{}", disp.show_rru(mb_rru))
+                        format!("{}", disp.pretty_print_default())
                     }
                 }
             }
             &MemArg::BXD20 {
                 base, index, disp, ..
             } => {
+                let base = allocs.next(base);
+                let index = allocs.next(index);
                 if base != zero_reg() {
                     if index != zero_reg() {
                         format!(
                             "{}({},{})",
-                            disp.show_rru(mb_rru),
-                            index.show_rru(mb_rru),
-                            base.show_rru(mb_rru)
+                            disp.pretty_print_default(),
+                            show_reg(index),
+                            show_reg(base),
                         )
                     } else {
-                        format!("{}({})", disp.show_rru(mb_rru), base.show_rru(mb_rru))
+                        format!("{}({})", disp.pretty_print_default(), show_reg(base))
                     }
                 } else {
                     if index != zero_reg() {
-                        format!("{}({},)", disp.show_rru(mb_rru), index.show_rru(mb_rru))
+                        format!("{}({},)", disp.pretty_print_default(), show_reg(index))
                     } else {
-                        format!("{}", disp.show_rru(mb_rru))
+                        format!("{}", disp.pretty_print_default())
                     }
                 }
             }
             &MemArg::Label { target } => target.to_string(),
             &MemArg::Symbol {
                 ref name, offset, ..
-            } => format!("{} + {}", name, offset),
+            } => format!("{} + {}", name.display(None), offset),
             // Eliminated by `mem_finalize()`.
             &MemArg::InitialSPOffset { .. }
             | &MemArg::NominalSPOffset { .. }
@@ -244,7 +336,7 @@ impl PrettyPrint for MemArg {
 }
 
 impl PrettyPrint for Cond {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         let s = match self.mask {
             1 => "o",
             2 => "h",

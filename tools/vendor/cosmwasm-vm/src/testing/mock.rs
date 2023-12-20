@@ -249,7 +249,7 @@ mod tests {
         let (result, _gas_info) = api.human_address(&input);
         match result.unwrap_err() {
             BackendError::UserErr { .. } => {}
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 
@@ -259,7 +259,7 @@ mod tests {
         let human = "1";
         match api.canonical_address(human).0.unwrap_err() {
             BackendError::UserErr { msg } => assert!(msg.contains("too short")),
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 
@@ -269,7 +269,7 @@ mod tests {
         let human = "longer-than-the-address-length-supported-by-this-api-longer-than-54";
         match api.canonical_address(human).0.unwrap_err() {
             BackendError::UserErr { msg } => assert!(msg.contains("too long")),
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 }

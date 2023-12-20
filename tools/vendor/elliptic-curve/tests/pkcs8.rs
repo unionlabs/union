@@ -8,6 +8,7 @@ use elliptic_curve::{
     sec1::ToEncodedPoint,
 };
 use hex_literal::hex;
+use pkcs8::der;
 
 /// DER-encoded PKCS#8 public key
 const PKCS8_PUBLIC_KEY_DER: &[u8; 91] = include_bytes!("examples/pkcs8-public-key.der");
@@ -22,7 +23,7 @@ const EXAMPLE_SCALAR: [u8; 32] =
 
 /// Example PKCS#8 private key
 fn example_private_key() -> der::SecretDocument {
-    SecretKey::from_be_bytes(&EXAMPLE_SCALAR)
+    SecretKey::from_slice(&EXAMPLE_SCALAR)
         .unwrap()
         .to_pkcs8_der()
         .unwrap()
@@ -30,8 +31,9 @@ fn example_private_key() -> der::SecretDocument {
 
 #[test]
 fn decode_pkcs8_private_key_from_der() {
+    dbg!(example_private_key().as_bytes());
     let secret_key = SecretKey::from_pkcs8_der(example_private_key().as_bytes()).unwrap();
-    assert_eq!(secret_key.to_be_bytes().as_slice(), &EXAMPLE_SCALAR);
+    assert_eq!(secret_key.to_bytes().as_slice(), &EXAMPLE_SCALAR);
 }
 
 #[test]

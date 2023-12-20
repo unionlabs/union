@@ -21,7 +21,6 @@ use std::path::Path;
 use zeroize::Zeroizing;
 
 /// Parse an [`EcPrivateKey`] from a SEC1-encoded document.
-#[cfg_attr(docsrs, doc(cfg(feature = "der")))]
 pub trait DecodeEcPrivateKey: Sized {
     /// Deserialize SEC1 private key from ASN.1 DER-encoded data
     /// (binary format).
@@ -35,7 +34,6 @@ pub trait DecodeEcPrivateKey: Sized {
     /// -----BEGIN EC PRIVATE KEY-----
     /// ```
     #[cfg(feature = "pem")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "pem")))]
     fn from_sec1_pem(s: &str) -> Result<Self> {
         let (label, doc) = SecretDocument::from_pem(s)?;
         EcPrivateKey::validate_pem_label(label)?;
@@ -45,15 +43,12 @@ pub trait DecodeEcPrivateKey: Sized {
     /// Load SEC1 private key from an ASN.1 DER-encoded file on the local
     /// filesystem (binary format).
     #[cfg(feature = "std")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     fn read_sec1_der_file(path: impl AsRef<Path>) -> Result<Self> {
         Self::from_sec1_der(SecretDocument::read_der_file(path)?.as_bytes())
     }
 
     /// Load SEC1 private key from a PEM-encoded file on the local filesystem.
     #[cfg(all(feature = "pem", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "pem")))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     fn read_sec1_pem_file(path: impl AsRef<Path>) -> Result<Self> {
         let (label, doc) = SecretDocument::read_pem_file(path)?;
         EcPrivateKey::validate_pem_label(&label)?;
@@ -63,7 +58,6 @@ pub trait DecodeEcPrivateKey: Sized {
 
 /// Serialize a [`EcPrivateKey`] to a SEC1 encoded document.
 #[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "alloc", feature = "der"))))]
 pub trait EncodeEcPrivateKey {
     /// Serialize a [`SecretDocument`] containing a SEC1-encoded private key.
     fn to_sec1_der(&self) -> Result<SecretDocument>;
@@ -72,7 +66,6 @@ pub trait EncodeEcPrivateKey {
     ///
     /// To use the OS's native line endings, pass `Default::default()`.
     #[cfg(feature = "pem")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "pem")))]
     fn to_sec1_pem(&self, line_ending: LineEnding) -> Result<Zeroizing<String>> {
         let doc = self.to_sec1_der()?;
         Ok(doc.to_pem(EcPrivateKey::PEM_LABEL, line_ending)?)
@@ -80,15 +73,12 @@ pub trait EncodeEcPrivateKey {
 
     /// Write ASN.1 DER-encoded SEC1 private key to the given path.
     #[cfg(feature = "std")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     fn write_sec1_der_file(&self, path: impl AsRef<Path>) -> Result<()> {
         Ok(self.to_sec1_der()?.write_der_file(path)?)
     }
 
     /// Write ASN.1 DER-encoded SEC1 private key to the given path.
     #[cfg(all(feature = "pem", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "pem")))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     fn write_sec1_pem_file(&self, path: impl AsRef<Path>, line_ending: LineEnding) -> Result<()> {
         let doc = self.to_sec1_der()?;
         Ok(doc.write_pem_file(path, EcPrivateKey::PEM_LABEL, line_ending)?)
@@ -96,14 +86,16 @@ pub trait EncodeEcPrivateKey {
 }
 
 #[cfg(feature = "pkcs8")]
-#[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
-impl<T: pkcs8::DecodePrivateKey> DecodeEcPrivateKey for T {
+impl<T> DecodeEcPrivateKey for T
+where
+    T: for<'a> TryFrom<pkcs8::PrivateKeyInfo<'a>, Error = pkcs8::Error>,
+{
     fn from_sec1_der(private_key: &[u8]) -> Result<Self> {
         let params_oid = EcPrivateKey::from_der(private_key)?
             .parameters
             .and_then(|params| params.named_curve());
 
-        let algorithm = pkcs8::AlgorithmIdentifier {
+        let algorithm = pkcs8::AlgorithmIdentifierRef {
             oid: ALGORITHM_OID,
             parameters: params_oid.as_ref().map(Into::into),
         };
@@ -117,7 +109,6 @@ impl<T: pkcs8::DecodePrivateKey> DecodeEcPrivateKey for T {
 }
 
 #[cfg(all(feature = "alloc", feature = "pkcs8"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "alloc", feature = "pkcs8"))))]
 impl<T: pkcs8::EncodePrivateKey> EncodeEcPrivateKey for T {
     fn to_sec1_der(&self) -> Result<SecretDocument> {
         let doc = self.to_pkcs8_der()?;

@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::query::CustomQuery;
 use crate::results::Empty;
@@ -69,6 +69,28 @@ impl<'a, C: CustomQuery> DepsMut<'a, C> {
             querier: self.querier,
         }
     }
+
+    /// This allows to convert any `DepsMut` into one generic over `Empty` custom
+    /// query type.
+    pub fn into_empty(self) -> DepsMut<'a, Empty> {
+        DepsMut {
+            storage: self.storage,
+            api: self.api,
+            querier: self.querier.into_empty(),
+        }
+    }
+}
+
+impl<'a, C: CustomQuery> Deps<'a, C> {
+    /// This allows to convert any `Deps` into one generic over `Empty` custom
+    /// query type.
+    pub fn into_empty(self) -> Deps<'a, Empty> {
+        Deps {
+            storage: self.storage,
+            api: self.api,
+            querier: self.querier.into_empty(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -98,12 +120,13 @@ mod tests {
         query(deps.as_ref())
     }
 
+    #[derive(Clone, Serialize, Deserialize)]
+    struct MyQuery;
+    impl CustomQuery for MyQuery {}
+
     #[test]
     fn deps_implements_copy() {
         impl CustomQuery for u64 {}
-        #[derive(Clone, Serialize, Deserialize)]
-        struct MyQuery;
-        impl CustomQuery for MyQuery {}
 
         // With C: Copy
         let owned = OwnedDeps::<_, _, _, u64> {
@@ -126,5 +149,21 @@ mod tests {
         let deps: Deps<MyQuery> = owned.as_ref();
         let _copy1 = deps;
         let _copy2 = deps;
+    }
+
+    #[test]
+    fn deps_to_empty() {
+        let mut owned = OwnedDeps::<_, _, _, MyQuery> {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: MockQuerier::<u64>::new(&[]),
+            custom_query_type: PhantomData,
+        };
+
+        let deps_mut: DepsMut<MyQuery> = owned.as_mut();
+        let _: DepsMut<Empty> = deps_mut.into_empty();
+
+        let deps: Deps<MyQuery> = owned.as_ref();
+        let _: Deps<Empty> = deps.into_empty();
     }
 }

@@ -1,6 +1,6 @@
 //! Tests for SEC1 encoding/decoding traits.
 
-#![cfg(any(feature = "pem", feature = "std"))]
+#![cfg(any(feature = "pem", all(feature = "der", feature = "std")))]
 
 use der::SecretDocument;
 use sec1::{DecodeEcPrivateKey, EncodeEcPrivateKey, Result};

@@ -14,7 +14,6 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     /// ASN.1 DER-related errors.
     #[cfg(feature = "der")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "der")))]
     Asn1(der::Error),
 
     /// Cryptographic errors.
@@ -52,7 +51,6 @@ impl fmt::Display for Error {
 }
 
 #[cfg(feature = "der")]
-#[cfg_attr(docsrs, doc(cfg(feature = "der")))]
 impl From<der::Error> for Error {
     fn from(err: der::Error) -> Error {
         Error::Asn1(err)

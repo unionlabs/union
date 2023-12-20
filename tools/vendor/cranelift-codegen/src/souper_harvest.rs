@@ -150,11 +150,11 @@ fn harvest_candidate_lhs(
                         a.into()
                     } else {
                         // The only arguments we get that we haven't already
-                        // converted into a souper instruction are `iconst`s and
-                        // `bconst`s. This is because souper only allows
+                        // converted into a souper instruction are `iconst`s.
+                        // This is because souper only allows
                         // constants as operands, and it doesn't allow assigning
                         // constants to a variable name. So we lazily convert
-                        // `iconst`s and `bconst`s into souper operands here,
+                        // `iconst`s into souper operands here,
                         // when they are actually used.
                         match func.dfg.value_def(arg) {
                             ir::ValueDef::Result(inst, 0) => match func.dfg[inst] {
@@ -166,20 +166,13 @@ fn harvest_candidate_lhs(
                                         r#type: souper_type_of(&func.dfg, arg),
                                     })
                                 }
-                                ir::InstructionData::UnaryBool { opcode, imm } => {
-                                    debug_assert_eq!(opcode, ir::Opcode::Iconst);
-                                    ast::Operand::Constant(ast::Constant {
-                                        value: imm.into(),
-                                        r#type: souper_type_of(&func.dfg, arg),
-                                    })
-                                }
                                 _ => unreachable!(
-                                    "only iconst and bconst instructions \
+                                    "only iconst instructions \
                                      aren't in `ir_to_souper_val`"
                                 ),
                             },
                             _ => unreachable!(
-                                "only iconst and bconst instructions \
+                                "only iconst instructions \
                                  aren't in `ir_to_souper_val`"
                             ),
                         }
@@ -487,11 +480,11 @@ fn harvest_candidate_lhs(
                     }
                     // Because Souper doesn't allow constants to be on the right
                     // hand side of an assignment (i.e. `%0:i32 = 1234` is
-                    // disallowed) we have to ignore `iconst` and `bconst`
+                    // disallowed) we have to ignore `iconst`
                     // instructions until we process them as operands for some
                     // other instruction. See the `arg` closure above for
                     // details.
-                    (ir::Opcode::Iconst, _) | (ir::Opcode::Bconst, _) => return,
+                    (ir::Opcode::Iconst, _) => return,
                     _ => ast::AssignmentRhs::Var,
                 }
             }
@@ -533,9 +526,11 @@ fn harvest_candidate_lhs(
 
 fn souper_type_of(dfg: &ir::DataFlowGraph, val: ir::Value) -> Option<ast::Type> {
     let ty = dfg.value_type(val);
-    assert!(ty.is_int() || ty.is_bool());
+    assert!(ty.is_int());
     assert_eq!(ty.lane_count(), 1);
-    Some(ast::Type { width: ty.bits() })
+    Some(ast::Type {
+        width: ty.bits().try_into().unwrap(),
+    })
 }
 
 #[derive(Debug)]

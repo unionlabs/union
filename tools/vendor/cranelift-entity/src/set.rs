@@ -19,6 +19,16 @@ where
     unused: PhantomData<K>,
 }
 
+impl<K: EntityRef> Default for EntitySet<K> {
+    fn default() -> Self {
+        Self {
+            elems: Vec::new(),
+            len: 0,
+            unused: PhantomData,
+        }
+    }
+}
+
 /// Shared `EntitySet` implementation for all value types.
 impl<K> EntitySet<K>
 where
@@ -26,11 +36,7 @@ where
 {
     /// Create a new empty set.
     pub fn new() -> Self {
-        Self {
-            elems: Vec::new(),
-            len: 0,
-            unused: PhantomData,
-        }
+        Self::default()
     }
 
     /// Creates a new empty set with the specified capacity.

@@ -4,23 +4,9 @@ mod adt_hack;
 
 use core::num::NonZeroU8;
 
-pub use self::adt_hack::{DoNotRelyOnWhatThisIs, EncodedConfig};
-
-/// A configuration for [`Iso8601`] that only parses values.
-const PARSING_ONLY: EncodedConfig = Config {
-    formatted_components: FormattedComponents::None,
-    use_separators: false,
-    year_is_six_digits: false,
-    date_kind: DateKind::Calendar,
-    time_precision: TimePrecision::Hour {
-        decimal_digits: None,
-    },
-    offset_precision: OffsetPrecision::Hour,
-}
-.encode();
-
-/// The default configuration for [`Iso8601`].
-const DEFAULT_CONFIG: EncodedConfig = Config::DEFAULT.encode();
+#[doc(hidden)]
+pub use self::adt_hack::DoNotRelyOnWhatThisIs;
+pub use self::adt_hack::EncodedConfig;
 
 /// The format described in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html).
 ///
@@ -43,7 +29,7 @@ const DEFAULT_CONFIG: EncodedConfig = Config::DEFAULT.encode();
 /// # Ok::<_, time::Error>(())
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Iso8601<const CONFIG: EncodedConfig = DEFAULT_CONFIG>;
+pub struct Iso8601<const CONFIG: EncodedConfig = { Config::DEFAULT.encode() }>;
 
 impl<const CONFIG: EncodedConfig> core::fmt::Debug for Iso8601<CONFIG> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -53,7 +39,18 @@ impl<const CONFIG: EncodedConfig> core::fmt::Debug for Iso8601<CONFIG> {
     }
 }
 
-impl Iso8601<DEFAULT_CONFIG> {
+/// Define associated constants for `Iso8601`.
+macro_rules! define_assoc_consts {
+    ($($(#[$doc:meta])* $vis:vis const $const_name:ident = $format:expr;)*) => {$(
+        const $const_name: EncodedConfig = $format.encode();
+        impl Iso8601<$const_name> {
+            $(#[$doc])*
+            $vis const $const_name: Self = Self;
+        }
+    )*};
+}
+
+define_assoc_consts! {
     /// An [`Iso8601`] with the default configuration.
     ///
     /// The following is the default behavior:
@@ -66,15 +63,29 @@ impl Iso8601<DEFAULT_CONFIG> {
     /// - The time has precision to the second and nine decimal digits.
     /// - The UTC offset has precision to the minute.
     ///
-    /// If you need different behavior, use [`Config::DEFAULT`] and [`Config`]'s methods to create
-    /// a custom configuration.
-    pub const DEFAULT: Self = Self;
-}
-
-impl Iso8601<PARSING_ONLY> {
+    /// If you need different behavior, use another associated constant. For full customization, use
+    /// [`Config::DEFAULT`] and [`Config`]'s methods to create a custom configuration.
+    pub const DEFAULT = Config::DEFAULT;
     /// An [`Iso8601`] that can only be used for parsing. Using this to format a value is
     /// unspecified behavior.
-    pub const PARSING: Self = Self;
+    pub const PARSING = Config::PARSING;
+    /// An [`Iso8601`] that handles only the date, but is otherwise the same as [`Config::DEFAULT`].
+    pub const DATE = Config::DEFAULT.set_formatted_components(FormattedComponents::Date);
+    /// An [`Iso8601`] that handles only the time, but is otherwise the same as [`Config::DEFAULT`].
+    pub const TIME = Config::DEFAULT.set_formatted_components(FormattedComponents::Time);
+    /// An [`Iso8601`] that handles only the UTC offset, but is otherwise the same as
+    /// [`Config::DEFAULT`].
+    pub const OFFSET = Config::DEFAULT.set_formatted_components(FormattedComponents::Offset);
+    /// An [`Iso8601`] that handles the date and time, but is otherwise the same as
+    /// [`Config::DEFAULT`].
+    pub const DATE_TIME = Config::DEFAULT.set_formatted_components(FormattedComponents::DateTime);
+    /// An [`Iso8601`] that handles the date, time, and UTC offset. This is the same as
+    /// [`Config::DEFAULT`].
+    pub const DATE_TIME_OFFSET = Config::DEFAULT;
+    /// An [`Iso8601`] that handles the time and UTC offset, but is otherwise the same as
+    /// [`Config::DEFAULT`].
+    pub const TIME_OFFSET = Config::DEFAULT
+        .set_formatted_components(FormattedComponents::TimeOffset);
 }
 
 /// Which components to format.
@@ -184,6 +195,19 @@ impl Config {
             decimal_digits: NonZeroU8::new(9),
         },
         offset_precision: OffsetPrecision::Minute,
+    };
+
+    /// A configuration that can only be used for parsing. Using this to format a value is
+    /// unspecified behavior.
+    const PARSING: Self = Self {
+        formatted_components: FormattedComponents::None,
+        use_separators: false,
+        year_is_six_digits: false,
+        date_kind: DateKind::Calendar,
+        time_precision: TimePrecision::Hour {
+            decimal_digits: None,
+        },
+        offset_precision: OffsetPrecision::Hour,
     };
 
     /// Set whether the format the date, time, and/or UTC offset.

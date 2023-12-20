@@ -67,6 +67,7 @@ macro_rules! quote_inner {
     ($ts:ident ! $($tail:tt)*) => { sym!($ts '!'); quote_inner!($ts $($tail)*); };
     ($ts:ident | $($tail:tt)*) => { sym!($ts '|'); quote_inner!($ts $($tail)*); };
     ($ts:ident * $($tail:tt)*) => { sym!($ts '*'); quote_inner!($ts $($tail)*); };
+    ($ts:ident + $($tail:tt)*) => { sym!($ts '+'); quote_inner!($ts $($tail)*); };
 
     // Identifier
     ($ts:ident $i:ident $($tail:tt)*) => {

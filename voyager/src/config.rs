@@ -49,6 +49,7 @@ pub enum GetChainError {
 pub enum ChainConfig {
     Evm(EvmChainConfig),
     Union(UnionChainConfig),
+    Cosmos(CosmosChainConfig),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,6 +80,14 @@ pub struct UnionChainConfig {
     pub fee_denom: String,
     pub ws_url: WebSocketClientUrl,
     pub prover_endpoint: String,
+    pub grpc_url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CosmosChainConfig {
+    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
+    pub fee_denom: String,
+    pub ws_url: WebSocketClientUrl,
     pub grpc_url: String,
 }
 

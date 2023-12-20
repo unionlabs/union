@@ -1,20 +1,21 @@
 //! Elliptic curve arithmetic traits.
 
 use crate::{
-    ops::LinearCombination, AffineXCoordinate, Curve, FieldBytes, IsHigh, PrimeCurve, ScalarCore,
+    ops::{Invert, LinearCombination, MulByGenerator, Reduce, ShrAssign},
+    point::AffineCoordinates,
+    scalar::{FromUintUnchecked, IsHigh},
+    Curve, FieldBytes, PrimeCurve, ScalarPrimitive,
 };
 use core::fmt::Debug;
-use subtle::{ConditionallySelectable, ConstantTimeEq};
+use subtle::{ConditionallySelectable, ConstantTimeEq, CtOption};
 use zeroize::DefaultIsZeroes;
 
-/// Elliptic curve with affine arithmetic implementation.
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub trait AffineArithmetic: Curve + ScalarArithmetic {
+/// Elliptic curve with an arithmetic implementation.
+pub trait CurveArithmetic: Curve {
     /// Elliptic curve point in affine coordinates.
     type AffinePoint: 'static
-        + AffineXCoordinate<Self>
+        + AffineCoordinates<FieldRepr = FieldBytes<Self>>
         + Copy
-        + Clone
         + ConditionallySelectable
         + ConstantTimeEq
         + Debug
@@ -25,20 +26,7 @@ pub trait AffineArithmetic: Curve + ScalarArithmetic {
         + Sized
         + Send
         + Sync;
-}
 
-/// Prime order elliptic curve with projective arithmetic implementation.
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub trait PrimeCurveArithmetic:
-    PrimeCurve + ProjectiveArithmetic<ProjectivePoint = Self::CurveGroup>
-{
-    /// Prime order elliptic curve group.
-    type CurveGroup: group::prime::PrimeCurve<Affine = <Self as AffineArithmetic>::AffinePoint>;
-}
-
-/// Elliptic curve with projective arithmetic implementation.
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub trait ProjectiveArithmetic: Curve + AffineArithmetic {
     /// Elliptic curve point in projective coordinates.
     ///
     /// Note: the following bounds are provided by [`group::Group`]:
@@ -57,15 +45,11 @@ pub trait ProjectiveArithmetic: Curve + AffineArithmetic {
         + From<Self::AffinePoint>
         + Into<Self::AffinePoint>
         + LinearCombination
+        + MulByGenerator
         + group::Curve<AffineRepr = Self::AffinePoint>
         + group::Group<Scalar = Self::Scalar>;
-}
 
-/// Scalar arithmetic.
-#[cfg(feature = "arithmetic")]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub trait ScalarArithmetic: Curve {
-    /// Scalar field type.
+    /// Scalar field modulo this curve's order.
     ///
     /// Note: the following bounds are provided by [`ff::Field`]:
     /// - `'static`
@@ -77,11 +61,26 @@ pub trait ScalarArithmetic: Curve {
     /// - [`Default`]
     /// - [`Send`]
     /// - [`Sync`]
-    type Scalar: DefaultIsZeroes
-        + From<ScalarCore<Self>>
+    type Scalar: AsRef<Self::Scalar>
+        + DefaultIsZeroes
+        + From<ScalarPrimitive<Self>>
+        + FromUintUnchecked<Uint = Self::Uint>
         + Into<FieldBytes<Self>>
-        + Into<Self::UInt>
+        + Into<ScalarPrimitive<Self>>
+        + Into<Self::Uint>
+        + Invert<Output = CtOption<Self::Scalar>>
         + IsHigh
+        + PartialOrd
+        + Reduce<Self::Uint, Bytes = FieldBytes<Self>>
+        + ShrAssign<usize>
         + ff::Field
         + ff::PrimeField<Repr = FieldBytes<Self>>;
+}
+
+/// Prime order elliptic curve with projective arithmetic implementation.
+pub trait PrimeCurveArithmetic:
+    PrimeCurve + CurveArithmetic<ProjectivePoint = Self::CurveGroup>
+{
+    /// Prime order elliptic curve group.
+    type CurveGroup: group::prime::PrimeCurve<Affine = <Self as CurveArithmetic>::AffinePoint>;
 }

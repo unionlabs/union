@@ -85,7 +85,7 @@ fn test_tuple_multi_index() {
         assert_eq!(expected, syn::parse_str(input).unwrap());
     }
 
-    for tokens in vec![
+    for tokens in [
         quote!(tuple.0.0),
         quote!(tuple .0.0),
         quote!(tuple. 0.0),

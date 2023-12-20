@@ -3,37 +3,31 @@ use crate::cdsl::settings::{SettingGroup, SettingGroupBuilder};
 pub(crate) fn define() -> SettingGroup {
     let mut settings = SettingGroupBuilder::new("shared");
 
-    settings.add_enum(
-        "regalloc",
-        "Register allocator to use with the MachInst backend.",
+    settings.add_bool(
+        "regalloc_checker",
+        "Enable the symbolic checker for register allocation.",
         r#"
-            This selects the register allocator as an option among those offered by the `regalloc.rs`
-            crate. Please report register allocation bugs to the maintainers of this crate whenever
-            possible.
-
-            Note: this only applies to target that use the MachInst backend. As of 2020-04-17, this
-            means the x86_64 backend doesn't use this yet.
-
-            Possible values:
-
-            - `backtracking` is a greedy, backtracking register allocator as implemented in
-            Spidermonkey's optimizing tier IonMonkey. It may take more time to allocate registers, but
-            it should generate better code in general, resulting in better throughput of generated
-            code.
-            - `backtracking_checked` is the backtracking allocator with additional self checks that may
-            take some time to run, and thus these checks are disabled by default.
-            - `experimental_linear_scan` is an experimental linear scan allocator. It may take less
-            time to allocate registers, but generated code's quality may be inferior. As of
-            2020-04-17, it is still experimental and it should not be used in production settings.
-            - `experimental_linear_scan_checked` is the linear scan allocator with additional self
-            checks that may take some time to run, and thus these checks are disabled by default.
+            This performs a verification that the register allocator preserves
+            equivalent dataflow with respect to the original (pre-regalloc)
+            program. This analysis is somewhat expensive. However, if it succeeds,
+            it provides independent evidence (by a carefully-reviewed, from-first-principles
+            analysis) that no regalloc bugs were triggered for the particular compilations
+            performed. This is a valuable assurance to have as regalloc bugs can be
+            very dangerous and difficult to debug.
         "#,
-        vec![
-            "backtracking",
-            "backtracking_checked",
-            "experimental_linear_scan",
-            "experimental_linear_scan_checked",
-        ],
+        false,
+    );
+
+    settings.add_bool(
+        "regalloc_verbose_logs",
+        "Enable verbose debug logs for regalloc2.",
+        r#"
+            This adds extra logging for regalloc2 output, that is quite valuable to understand
+            decisions taken by the register allocator as well as debugging it. It is disabled by
+            default, as it can cause many log calls which can slow down compilation by a large
+            amount.
+        "#,
+        false,
     );
 
     settings.add_enum(
@@ -47,6 +41,27 @@ pub(crate) fn define() -> SettingGroup {
             - `speed_and_size`: like "speed", but also perform transformations aimed at reducing code size.
         "#,
         vec!["none", "speed", "speed_and_size"],
+    );
+
+    settings.add_bool(
+        "enable_alias_analysis",
+        "Do redundant-load optimizations with alias analysis.",
+        r#"
+            This enables the use of a simple alias analysis to optimize away redundant loads.
+            Only effective when `opt_level` is `speed` or `speed_and_size`.
+        "#,
+        true,
+    );
+
+    settings.add_bool(
+        "use_egraphs",
+        "Enable egraph-based optimization.",
+        r#"
+            This enables an optimization phase that converts CLIF to an egraph (equivalence graph)
+            representation, performs various rewrites, and then converts it back. This can result in
+            better optimization, but is currently considered experimental.
+        "#,
+        false,
     );
 
     settings.add_bool(
@@ -84,8 +99,8 @@ pub(crate) fn define() -> SettingGroup {
         "avoid_div_traps",
         "Generate explicit checks around native division instructions to avoid their trapping.",
         r#"
-            This is primarily used by SpiderMonkey which doesn't install a signal
-            handler for SIGFPE, but expects a SIGILL trap for division by zero.
+            Generate explicit checks around native division instructions to
+            avoid their trapping.
 
             On ISAs like ARM where the native division instructions don't trap,
             this setting has no effect - explicit checks are always inserted.
@@ -171,8 +186,6 @@ pub(crate) fn define() -> SettingGroup {
         vec!["none", "elf_gd", "macho", "coff"],
     );
 
-    // Settings specific to the `baldrdash` calling convention.
-
     settings.add_enum(
         "libcall_call_conv",
         "Defines the calling convention to use for LibCalls call expansion.",
@@ -192,27 +205,8 @@ pub(crate) fn define() -> SettingGroup {
             "system_v",
             "windows_fastcall",
             "apple_aarch64",
-            "baldrdash_system_v",
-            "baldrdash_windows",
-            "baldrdash_2020",
             "probestack",
         ],
-    );
-
-    settings.add_num(
-        "baldrdash_prologue_words",
-        "Number of pointer-sized words pushed by the baldrdash prologue.",
-        r#"
-            Functions with the `baldrdash` calling convention don't generate their
-            own prologue and epilogue. They depend on externally generated code
-            that pushes a fixed number of words in the prologue and restores them
-            in the epilogue.
-
-            This setting configures the number of pointer-sized words pushed on the
-            stack when the Cranelift-generated code is entered. This includes the
-            pushed return address on x86.
-        "#,
-        0,
     );
 
     settings.add_bool(
@@ -246,6 +240,19 @@ pub(crate) fn define() -> SettingGroup {
     );
 
     settings.add_bool(
+        "preserve_frame_pointers",
+        "Preserve frame pointers",
+        r#"
+            Preserving frame pointers -- even inside leaf functions -- makes it
+            easy to capture the stack of a running program, without requiring any
+            side tables or metadata (like `.eh_frame` sections). Many sampling
+            profilers and similar tools walk frame pointers to capture stacks.
+            Enabling this option will play nice with those tools.
+        "#,
+        false,
+    );
+
+    settings.add_bool(
         "machine_code_cfg_info",
         "Generate CFG metadata for machine code.",
         r#"
@@ -260,22 +267,13 @@ pub(crate) fn define() -> SettingGroup {
         false,
     );
 
-    // BaldrMonkey requires that not-yet-relocated function addresses be encoded
-    // as all-ones bitpatterns.
-    settings.add_bool(
-        "emit_all_ones_funcaddrs",
-        "Emit not-yet-relocated function addresses as all-ones bit patterns.",
-        "",
-        false,
-    );
-
     // Stack probing options.
 
     settings.add_bool(
         "enable_probestack",
         "Enable the use of stack probes for supported calling conventions.",
         "",
-        true,
+        false,
     );
 
     settings.add_bool(
@@ -295,6 +293,18 @@ pub(crate) fn define() -> SettingGroup {
             The default is 12, which translates to a size of 4096.
         "#,
         12,
+    );
+
+    settings.add_enum(
+        "probestack_strategy",
+        "Controls what kinds of stack probes are emitted.",
+        r#"
+            Supported strategies:
+
+            - `outline`: Always emits stack probes as calls to a probe stack function.
+            - `inline`: Always emits inline stack probes.
+        "#,
+        vec!["outline", "inline"],
     );
 
     // Jump table options.
@@ -323,5 +333,38 @@ pub(crate) fn define() -> SettingGroup {
         true,
     );
 
+    settings.add_bool(
+        "enable_table_access_spectre_mitigation",
+        "Enable Spectre mitigation on table bounds checks.",
+        r#"
+            This option uses a conditional move to ensure that when a table
+            access index is bounds-checked and a conditional branch is used
+            for the out-of-bounds case, a misspeculation of that conditional
+            branch (falsely predicted in-bounds) will select an in-bounds
+            index to load on the speculative path.
+
+            This option is enabled by default because it is highly
+            recommended for secure sandboxing. The embedder should consider
+            the security implications carefully before disabling this option.
+        "#,
+        true,
+    );
+
+    settings.add_bool(
+        "enable_incremental_compilation_cache_checks",
+        "Enable additional checks for debugging the incremental compilation cache.",
+        r#"
+            Enables additional checks that are useful during development of the incremental
+            compilation cache. This should be mostly useful for Cranelift hackers, as well as for
+            helping to debug false incremental cache positives for embedders.
+
+            This option is disabled by default and requires enabling the "incremental-cache" Cargo
+            feature in cranelift-codegen.
+        "#,
+        false,
+    );
+
+    // When adding new settings please check if they can also be added
+    // in cranelift/fuzzgen/src/lib.rs for fuzzing.
     settings.build()
 }

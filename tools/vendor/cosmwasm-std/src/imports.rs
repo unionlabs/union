@@ -1,4 +1,4 @@
-use std::vec::Vec;
+use alloc::vec::Vec;
 
 use crate::addresses::{Addr, CanonicalAddr};
 use crate::errors::{RecoverPubkeyError, StdError, StdResult, SystemError, VerificationError};
@@ -8,7 +8,7 @@ use crate::results::SystemResult;
 #[cfg(feature = "iterator")]
 use crate::sections::decode_sections2;
 use crate::sections::encode_sections;
-use crate::serde::from_slice;
+use crate::serde::from_json;
 use crate::traits::{Api, Querier, QuerierResult, Storage};
 #[cfg(feature = "iterator")]
 use crate::{
@@ -37,6 +37,10 @@ extern "C" {
     fn db_scan(start_ptr: u32, end_ptr: u32, order: i32) -> u32;
     #[cfg(feature = "iterator")]
     fn db_next(iterator_id: u32) -> u32;
+    #[cfg(all(feature = "iterator", feature = "cosmwasm_1_4"))]
+    fn db_next_key(iterator_id: u32) -> u32;
+    #[cfg(all(feature = "iterator", feature = "cosmwasm_1_4"))]
+    fn db_next_value(iterator_id: u32) -> u32;
 
     fn addr_validate(source_ptr: u32) -> u32;
     fn addr_canonicalize(source_ptr: u32, destination_ptr: u32) -> u32;
@@ -129,15 +133,97 @@ impl Storage for ExternalStorage {
         end: Option<&[u8]>,
         order: Order,
     ) -> Box<dyn Iterator<Item = Record>> {
-        // There is lots of gotchas on turning options into regions for FFI, thus this design
-        // See: https://github.com/CosmWasm/cosmwasm/pull/509
-        let start_region = start.map(build_region);
-        let end_region = end.map(build_region);
-        let start_region_addr = get_optional_region_address(&start_region.as_ref());
-        let end_region_addr = get_optional_region_address(&end_region.as_ref());
-        let iterator_id = unsafe { db_scan(start_region_addr, end_region_addr, order as i32) };
+        let iterator_id = create_iter(start, end, order);
         let iter = ExternalIterator { iterator_id };
         Box::new(iter)
+    }
+
+    #[cfg(all(feature = "cosmwasm_1_4", feature = "iterator"))]
+    fn range_keys<'a>(
+        &'a self,
+        start: Option<&[u8]>,
+        end: Option<&[u8]>,
+        order: Order,
+    ) -> Box<dyn Iterator<Item = Vec<u8>> + 'a> {
+        let iterator_id = create_iter(start, end, order);
+        let iter = ExternalPartialIterator {
+            iterator_id,
+            partial_type: PartialType::Keys,
+        };
+        Box::new(iter)
+    }
+
+    #[cfg(all(feature = "cosmwasm_1_4", feature = "iterator"))]
+    fn range_values<'a>(
+        &'a self,
+        start: Option<&[u8]>,
+        end: Option<&[u8]>,
+        order: Order,
+    ) -> Box<dyn Iterator<Item = Vec<u8>> + 'a> {
+        let iterator_id = create_iter(start, end, order);
+        let iter = ExternalPartialIterator {
+            iterator_id,
+            partial_type: PartialType::Values,
+        };
+        Box::new(iter)
+    }
+}
+
+#[cfg(feature = "iterator")]
+fn create_iter(start: Option<&[u8]>, end: Option<&[u8]>, order: Order) -> u32 {
+    // There is lots of gotchas on turning options into regions for FFI, thus this design
+    // See: https://github.com/CosmWasm/cosmwasm/pull/509
+    let start_region = start.map(build_region);
+    let end_region = end.map(build_region);
+    let start_region_addr = get_optional_region_address(&start_region.as_ref());
+    let end_region_addr = get_optional_region_address(&end_region.as_ref());
+    unsafe { db_scan(start_region_addr, end_region_addr, order as i32) }
+}
+
+#[cfg(all(feature = "cosmwasm_1_4", feature = "iterator"))]
+enum PartialType {
+    Keys,
+    Values,
+}
+
+/// ExternalPartialIterator makes a call out to `next_key` or `next_value`
+/// depending on its `partial_type`.
+/// Compared to `ExternalIterator`, it allows iterating only over the keys or
+/// values instead of both.
+#[cfg(all(feature = "cosmwasm_1_4", feature = "iterator"))]
+struct ExternalPartialIterator {
+    iterator_id: u32,
+    partial_type: PartialType,
+}
+
+#[cfg(all(feature = "cosmwasm_1_4", feature = "iterator"))]
+impl Iterator for ExternalPartialIterator {
+    type Item = Vec<u8>;
+
+    /// The default implementation calls `next` repeatedly,
+    /// which we can do a little more efficiently by using `db_next_key` instead.
+    /// It is used by `skip`, so it allows cheaper skipping.
+    #[cfg(feature = "cosmwasm_1_4")]
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        skip_iter(self.iterator_id, n);
+        self.next()
+    }
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // here we differentiate between the two types
+        let next_result = match self.partial_type {
+            PartialType::Keys => unsafe { db_next_key(self.iterator_id) },
+            PartialType::Values => unsafe { db_next_value(self.iterator_id) },
+        };
+
+        if next_result == 0 {
+            // iterator is done
+            return None;
+        }
+
+        let data_region = next_result as *mut Region;
+        let data = unsafe { consume_region(data_region) };
+        Some(data)
     }
 }
 
@@ -152,6 +238,15 @@ struct ExternalIterator {
 impl Iterator for ExternalIterator {
     type Item = Record;
 
+    /// The default implementation calls `next` repeatedly,
+    /// which we can do a little more efficiently by using `db_next_key` instead.
+    /// It is used by `skip`, so it allows cheaper skipping.
+    #[cfg(feature = "cosmwasm_1_4")]
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        skip_iter(self.iterator_id, n);
+        self.next()
+    }
+
     fn next(&mut self) -> Option<Self::Item> {
         let next_result = unsafe { db_next(self.iterator_id) };
         let kv_region_ptr = next_result as *mut Region;
@@ -162,6 +257,20 @@ impl Iterator for ExternalIterator {
         } else {
             Some((key, value))
         }
+    }
+}
+
+/// Helper function to skip `count` elements of an iterator.
+#[cfg(all(feature = "iterator", feature = "cosmwasm_1_4"))]
+fn skip_iter(iter_id: u32, count: usize) {
+    for _ in 0..count {
+        let region = unsafe { db_next_key(iter_id) };
+        if region == 0 {
+            // early return
+            return;
+        }
+        // just deallocate the region
+        unsafe { consume_region(region as *mut Region) };
     }
 }
 
@@ -389,7 +498,7 @@ impl Querier for ExternalQuerier {
         let response_ptr = unsafe { query_chain(request_ptr) };
         let response = unsafe { consume_region(response_ptr as *mut Region) };
 
-        from_slice(&response).unwrap_or_else(|parsing_err| {
+        from_json(&response).unwrap_or_else(|parsing_err| {
             SystemResult::Err(SystemError::InvalidResponse {
                 error: parsing_err.to_string(),
                 response: response.into(),

@@ -11,11 +11,12 @@
 
 [package]
 edition = "2018"
-rust-version = "1.36"
+rust-version = "1.38"
 name = "crossbeam-queue"
-version = "0.3.5"
+version = "0.3.8"
 description = "Concurrent queues"
 homepage = "https://github.com/crossbeam-rs/crossbeam/tree/master/crossbeam-queue"
+readme = "README.md"
 keywords = [
     "queue",
     "mpmc",

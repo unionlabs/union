@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// The default source location uses the all-ones bit pattern `!0`. It is used for instructions
 /// that can't be given a real source location.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
 pub struct SourceLoc(u32);
 
@@ -47,6 +47,61 @@ impl fmt::Display for SourceLoc {
             write!(f, "@-")
         } else {
             write!(f, "@{:04x}", self.0)
+        }
+    }
+}
+
+/// Source location relative to another base source location.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
+pub struct RelSourceLoc(u32);
+
+impl RelSourceLoc {
+    /// Create a new relative source location with the given bits.
+    pub fn new(bits: u32) -> Self {
+        Self(bits)
+    }
+
+    /// Creates a new `RelSourceLoc` based on the given base and offset.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the offset is smaller than the base.
+    pub fn from_base_offset(base: SourceLoc, offset: SourceLoc) -> Self {
+        if base.is_default() || offset.is_default() {
+            Self::default()
+        } else {
+            Self(offset.bits().wrapping_sub(base.bits()))
+        }
+    }
+
+    /// Expands the relative source location into an absolute one, using the given base.
+    pub fn expand(&self, base: SourceLoc) -> SourceLoc {
+        if self.is_default() || base.is_default() {
+            Default::default()
+        } else {
+            SourceLoc::new(self.0.wrapping_add(base.bits()))
+        }
+    }
+
+    /// Is this the default relative source location?
+    pub fn is_default(self) -> bool {
+        self == Default::default()
+    }
+}
+
+impl Default for RelSourceLoc {
+    fn default() -> Self {
+        Self(!0)
+    }
+}
+
+impl fmt::Display for RelSourceLoc {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_default() {
+            write!(f, "@-")
+        } else {
+            write!(f, "@+{:04x}", self.0)
         }
     }
 }

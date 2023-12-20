@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.56"
 name = "signature"
-version = "2.0.0"
+version = "2.1.0"
 authors = ["RustCrypto Developers"]
 description = "Traits for cryptographic signature algorithms (e.g. ECDSA, Ed25519)"
 documentation = "https://docs.rs/signature"

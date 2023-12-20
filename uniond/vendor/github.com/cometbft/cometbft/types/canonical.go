@@ -56,10 +56,23 @@ func CanonicalizeProposal(chainID string, proposal *cmtproto.Proposal) cmtproto.
 // relating to vote extensions.
 func CanonicalizeVote(chainID string, vote *cmtproto.Vote) cmtproto.CanonicalVote {
 	return cmtproto.CanonicalVote{
+		Type:    vote.Type,
+		Height:  vote.Height,       // encoded as sfixed64
+		Round:   int64(vote.Round), // encoded as sfixed64
+		BlockID: CanonicalizeBlockID(vote.BlockID),
+		ChainID: chainID,
+	}
+}
+
+// Same as `CanonicalizeVote` but uses `Tendermint/CometBFT`'s `CanonicalVote` instead to
+// be able to be used by the `07-tendermint` light client.
+func CanonicalizeVoteLegacy(chainID string, vote *cmtproto.Vote) cmtproto.LegacyCanonicalVote {
+	return cmtproto.LegacyCanonicalVote{
 		Type:      vote.Type,
 		Height:    vote.Height,       // encoded as sfixed64
 		Round:     int64(vote.Round), // encoded as sfixed64
 		BlockID:   CanonicalizeBlockID(vote.BlockID),
+		Timestamp: vote.Timestamp,
 		ChainID:   chainID,
 	}
 }

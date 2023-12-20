@@ -14,7 +14,7 @@ pub struct Empty {}
 mod tests {
     use super::*;
 
-    use crate::serde::{from_slice, to_vec};
+    use crate::serde::{from_json, to_json_vec};
 
     #[test]
     fn empty_can_be_instantiated() {
@@ -25,13 +25,13 @@ mod tests {
     #[test]
     fn empty_can_be_instantiated_serialized_and_deserialized() {
         let instance = Empty {};
-        let serialized = to_vec(&instance).unwrap();
+        let serialized = to_json_vec(&instance).unwrap();
         assert_eq!(serialized, b"{}");
 
-        let deserialized: Empty = from_slice(b"{}").unwrap();
+        let deserialized: Empty = from_json(b"{}").unwrap();
         assert_eq!(deserialized, instance);
 
-        let deserialized: Empty = from_slice(b"{\"stray\":\"data\"}").unwrap();
+        let deserialized: Empty = from_json(b"{\"stray\":\"data\"}").unwrap();
         assert_eq!(deserialized, instance);
     }
 }

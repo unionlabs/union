@@ -30,7 +30,7 @@
 macro_rules! ensure {
     ($cond:expr, $e:expr) => {
         if !($cond) {
-            return Err(std::convert::From::from($e));
+            return Err(core::convert::From::from($e));
         }
     };
 }
@@ -68,7 +68,7 @@ macro_rules! ensure_eq {
     ($a:expr, $b:expr, $e:expr) => {
         // Not implemented via `ensure!` because the caller would have to import both macros.
         if !($a == $b) {
-            return Err(std::convert::From::from($e));
+            return Err(core::convert::From::from($e));
         }
     };
 }
@@ -100,7 +100,7 @@ macro_rules! ensure_ne {
     ($a:expr, $b:expr, $e:expr) => {
         // Not implemented via `ensure!` because the caller would have to import both macros.
         if !($a != $b) {
-            return Err(std::convert::From::from($e));
+            return Err(core::convert::From::from($e));
         }
     };
 }

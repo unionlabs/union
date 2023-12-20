@@ -3,7 +3,7 @@ use std::collections::hash_map::RandomState;
 use std::num::NonZeroUsize;
 use wasmer::Module;
 
-use super::sized_module::SizedModule;
+use super::cached_module::CachedModule;
 use crate::{Checksum, Size, VmError, VmResult};
 
 // Minimum module size.
@@ -18,16 +18,16 @@ const MINIMUM_MODULE_SIZE: Size = Size::kibi(250);
 #[derive(Debug)]
 struct SizeScale;
 
-impl WeightScale<Checksum, SizedModule> for SizeScale {
+impl WeightScale<Checksum, CachedModule> for SizeScale {
     #[inline]
-    fn weight(&self, _key: &Checksum, value: &SizedModule) -> usize {
-        value.size
+    fn weight(&self, key: &Checksum, value: &CachedModule) -> usize {
+        std::mem::size_of_val(key) + value.size_estimate
     }
 }
 
 /// An in-memory module cache
 pub struct InMemoryCache {
-    modules: Option<CLruCache<Checksum, SizedModule, RandomState, SizeScale>>,
+    modules: Option<CLruCache<Checksum, CachedModule, RandomState, SizeScale>>,
 }
 
 impl InMemoryCache {
@@ -49,20 +49,31 @@ impl InMemoryCache {
         }
     }
 
-    pub fn store(&mut self, checksum: &Checksum, module: Module, size: usize) -> VmResult<()> {
+    pub fn store(
+        &mut self,
+        checksum: &Checksum,
+        entry: Module,
+        module_size: usize,
+    ) -> VmResult<()> {
         if let Some(modules) = &mut self.modules {
             modules
-                .put_with_weight(*checksum, SizedModule { module, size })
-                .map_err(|e| VmError::cache_err(format!("{:?}", e)))?;
+                .put_with_weight(
+                    *checksum,
+                    CachedModule {
+                        module: entry,
+                        size_estimate: module_size,
+                    },
+                )
+                .map_err(|e| VmError::cache_err(format!("{e:?}")))?;
         }
         Ok(())
     }
 
     /// Looks up a module in the cache and creates a new module
-    pub fn load(&mut self, checksum: &Checksum) -> VmResult<Option<SizedModule>> {
+    pub fn load(&mut self, checksum: &Checksum) -> VmResult<Option<CachedModule>> {
         if let Some(modules) = &mut self.modules {
             match modules.get(checksum) {
-                Some(module) => Ok(Some(module.clone())),
+                Some(cached) => Ok(Some(cached.clone())),
                 None => Ok(None),
             }
         } else {
@@ -93,12 +104,15 @@ impl InMemoryCache {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::size::Size;
-    use crate::wasm_backend::compile;
+    use crate::{
+        size::Size,
+        wasm_backend::{compile, make_compiling_engine},
+    };
     use std::mem;
-    use wasmer::{imports, Instance as WasmerInstance};
+    use wasmer::{imports, Instance as WasmerInstance, Store};
     use wasmer_middlewares::metering::set_remaining_points;
 
+    const TESTING_MEMORY_LIMIT: Option<Size> = Some(Size::mebi(16));
     const TESTING_GAS_LIMIT: u64 = 500_000_000;
     // Based on `examples/module_size.sh`
     const TESTING_WASM_SIZE_FACTOR: usize = 18;
@@ -108,12 +122,8 @@ mod tests {
         let key_size = mem::size_of::<Checksum>();
         assert_eq!(key_size, 32);
 
-        // A Module consists of a Store (3 Arcs) and an Arc to the Engine.
-        // This is 3 * 64bit of data, but we don't get any guarantee how the Rust structs
-        // Module and Store are aligned (https://doc.rust-lang.org/reference/type-layout.html#the-default-representation).
-        // So we get this value by trial and error. It can change over time and across platforms.
         let value_size = mem::size_of::<Module>();
-        assert_eq!(value_size, 56);
+        assert_eq!(value_size, 8);
 
         // Just in case we want to go that route
         let boxed_value_size = mem::size_of::<Box<Module>>();
@@ -142,14 +152,16 @@ mod tests {
         assert!(cache_entry.is_none());
 
         // Compile module
-        let original = compile(&wasm, None, &[]).unwrap();
+        let engine = make_compiling_engine(TESTING_MEMORY_LIMIT);
+        let original = compile(&engine, &wasm).unwrap();
 
         // Ensure original module can be executed
         {
-            let instance = WasmerInstance::new(&original, &imports! {}).unwrap();
-            set_remaining_points(&instance, TESTING_GAS_LIMIT);
+            let mut store = Store::new(engine.clone());
+            let instance = WasmerInstance::new(&mut store, &original, &imports! {}).unwrap();
+            set_remaining_points(&mut store, &instance, TESTING_GAS_LIMIT);
             let add_one = instance.exports.get_function("add_one").unwrap();
-            let result = add_one.call(&[42.into()]).unwrap();
+            let result = add_one.call(&mut store, &[42.into()]).unwrap();
             assert_eq!(result[0].unwrap_i32(), 43);
         }
 
@@ -162,10 +174,11 @@ mod tests {
 
         // Ensure cached module can be executed
         {
-            let instance = WasmerInstance::new(&cached.module, &imports! {}).unwrap();
-            set_remaining_points(&instance, TESTING_GAS_LIMIT);
+            let mut store = Store::new(engine);
+            let instance = WasmerInstance::new(&mut store, &cached.module, &imports! {}).unwrap();
+            set_remaining_points(&mut store, &instance, TESTING_GAS_LIMIT);
             let add_one = instance.exports.get_function("add_one").unwrap();
-            let result = add_one.call(&[42.into()]).unwrap();
+            let result = add_one.call(&mut store, &[42.into()]).unwrap();
             assert_eq!(result[0].unwrap_i32(), 43);
         }
     }
@@ -212,21 +225,21 @@ mod tests {
         assert_eq!(cache.len(), 0);
 
         // Add 1
-        cache
-            .store(&checksum1, compile(&wasm1, None, &[]).unwrap(), 900_000)
-            .unwrap();
+        let engine1 = make_compiling_engine(TESTING_MEMORY_LIMIT);
+        let module = compile(&engine1, &wasm1).unwrap();
+        cache.store(&checksum1, module, 900_000).unwrap();
         assert_eq!(cache.len(), 1);
 
         // Add 2
-        cache
-            .store(&checksum2, compile(&wasm2, None, &[]).unwrap(), 900_000)
-            .unwrap();
+        let engine2 = make_compiling_engine(TESTING_MEMORY_LIMIT);
+        let module = compile(&engine2, &wasm2).unwrap();
+        cache.store(&checksum2, module, 900_000).unwrap();
         assert_eq!(cache.len(), 2);
 
         // Add 3 (pushes out the previous two)
-        cache
-            .store(&checksum3, compile(&wasm3, None, &[]).unwrap(), 1_500_000)
-            .unwrap();
+        let engine3 = make_compiling_engine(TESTING_MEMORY_LIMIT);
+        let module = compile(&engine3, &wasm3).unwrap();
+        cache.store(&checksum3, module, 1_500_000).unwrap();
         assert_eq!(cache.len(), 1);
     }
 
@@ -272,21 +285,21 @@ mod tests {
         assert_eq!(cache.size(), 0);
 
         // Add 1
-        cache
-            .store(&checksum1, compile(&wasm1, None, &[]).unwrap(), 900_000)
-            .unwrap();
-        assert_eq!(cache.size(), 900_000);
+        let engine1 = make_compiling_engine(TESTING_MEMORY_LIMIT);
+        let module = compile(&engine1, &wasm1).unwrap();
+        cache.store(&checksum1, module, 900_000).unwrap();
+        assert_eq!(cache.size(), 900_032);
 
         // Add 2
-        cache
-            .store(&checksum2, compile(&wasm2, None, &[]).unwrap(), 800_000)
-            .unwrap();
-        assert_eq!(cache.size(), 1_700_000);
+        let engine2 = make_compiling_engine(TESTING_MEMORY_LIMIT);
+        let module = compile(&engine2, &wasm2).unwrap();
+        cache.store(&checksum2, module, 800_000).unwrap();
+        assert_eq!(cache.size(), 900_032 + 800_032);
 
         // Add 3 (pushes out the previous two)
-        cache
-            .store(&checksum3, compile(&wasm3, None, &[]).unwrap(), 1_500_000)
-            .unwrap();
-        assert_eq!(cache.size(), 1_500_000);
+        let engine3 = make_compiling_engine(TESTING_MEMORY_LIMIT);
+        let module = compile(&engine3, &wasm3).unwrap();
+        cache.store(&checksum3, module, 1_500_000).unwrap();
+        assert_eq!(cache.size(), 1_500_032);
     }
 }

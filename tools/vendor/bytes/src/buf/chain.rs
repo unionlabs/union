@@ -198,8 +198,7 @@ where
     fn remaining_mut(&self) -> usize {
         self.a
             .remaining_mut()
-            .checked_add(self.b.remaining_mut())
-            .unwrap()
+            .saturating_add(self.b.remaining_mut())
     }
 
     fn chunk_mut(&mut self) -> &mut UninitSlice {

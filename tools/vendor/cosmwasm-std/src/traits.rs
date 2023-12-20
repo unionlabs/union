@@ -1,6 +1,6 @@
+use core::marker::PhantomData;
+use core::ops::Deref;
 use serde::{de::DeserializeOwned, Serialize};
-use std::marker::PhantomData;
-use std::ops::Deref;
 
 use crate::addresses::{Addr, CanonicalAddr};
 use crate::binary::Binary;
@@ -21,11 +21,12 @@ use crate::query::{
     DelegationResponse, FullDelegation, StakingQuery, Validator, ValidatorResponse,
 };
 #[cfg(feature = "cosmwasm_1_3")]
-use crate::query::{AllDenomMetadataResponse, DenomMetadataResponse};
-#[cfg(feature = "cosmwasm_1_3")]
-use crate::query::{DelegatorWithdrawAddressResponse, DistributionQuery};
+use crate::query::{
+    AllDenomMetadataResponse, DelegatorWithdrawAddressResponse, DenomMetadataResponse,
+    DistributionQuery,
+};
 use crate::results::{ContractResult, Empty, SystemResult};
-use crate::serde::{from_binary, to_binary, to_vec};
+use crate::serde::{from_json, to_json_binary, to_json_vec};
 use crate::ContractInfoResponse;
 #[cfg(feature = "cosmwasm_1_3")]
 use crate::{DenomMetadata, PageRequest};
@@ -224,24 +225,32 @@ impl<'a, C: CustomQuery> QuerierWrapper<'a, C> {
         }
     }
 
+    /// This allows to convert any `QuerierWrapper` into a `QuerierWrapper` generic
+    /// over `Empty` custom query type.
+    pub fn into_empty(self) -> QuerierWrapper<'a, Empty> {
+        QuerierWrapper {
+            querier: self.querier,
+            custom_query_type: PhantomData,
+        }
+    }
+
     /// Makes the query and parses the response.
     ///
     /// Any error (System Error, Error or called contract, or Parse Error) are flattened into
     /// one level. Only use this if you don't need to check the SystemError
     /// eg. If you don't differentiate between contract missing and contract returned error
     pub fn query<U: DeserializeOwned>(&self, request: &QueryRequest<C>) -> StdResult<U> {
-        let raw = to_vec(request).map_err(|serialize_err| {
-            StdError::generic_err(format!("Serializing QueryRequest: {}", serialize_err))
+        let raw = to_json_vec(request).map_err(|serialize_err| {
+            StdError::generic_err(format!("Serializing QueryRequest: {serialize_err}"))
         })?;
         match self.raw_query(&raw) {
             SystemResult::Err(system_err) => Err(StdError::generic_err(format!(
-                "Querier system error: {}",
-                system_err
+                "Querier system error: {system_err}"
             ))),
             SystemResult::Ok(ContractResult::Err(contract_err)) => Err(StdError::generic_err(
-                format!("Querier contract error: {}", contract_err),
+                format!("Querier contract error: {contract_err}"),
             )),
-            SystemResult::Ok(ContractResult::Ok(value)) => from_binary(&value),
+            SystemResult::Ok(ContractResult::Ok(value)) => from_json(value),
         }
     }
 
@@ -313,8 +322,53 @@ impl<'a, C: CustomQuery> QuerierWrapper<'a, C> {
         self.query(&request)
     }
 
-    // this queries another wasm contract. You should know a priori the proper types for T and U
-    // (response and request) based on the contract API
+    #[cfg(feature = "cosmwasm_1_4")]
+    pub fn query_delegation_rewards(
+        &self,
+        delegator: impl Into<String>,
+        validator: impl Into<String>,
+    ) -> StdResult<Vec<crate::DecCoin>> {
+        use crate::DelegationRewardsResponse;
+
+        let request = DistributionQuery::DelegationRewards {
+            delegator_address: delegator.into(),
+            validator_address: validator.into(),
+        }
+        .into();
+        let DelegationRewardsResponse { rewards } = self.query(&request)?;
+
+        Ok(rewards)
+    }
+
+    #[cfg(feature = "cosmwasm_1_4")]
+    pub fn query_delegation_total_rewards(
+        &self,
+        delegator: impl Into<String>,
+    ) -> StdResult<crate::DelegationTotalRewardsResponse> {
+        let request = DistributionQuery::DelegationTotalRewards {
+            delegator_address: delegator.into(),
+        }
+        .into();
+        self.query(&request)
+    }
+
+    #[cfg(feature = "cosmwasm_1_4")]
+    pub fn query_delegator_validators(
+        &self,
+        delegator: impl Into<String>,
+    ) -> StdResult<Vec<String>> {
+        use crate::DelegatorValidatorsResponse;
+
+        let request = DistributionQuery::DelegatorValidators {
+            delegator_address: delegator.into(),
+        }
+        .into();
+        let res: DelegatorValidatorsResponse = self.query(&request)?;
+        Ok(res.validators)
+    }
+
+    /// Queries another wasm contract. You should know a priori the proper types for T and U
+    /// (response and request) based on the contract API
     pub fn query_wasm_smart<T: DeserializeOwned>(
         &self,
         contract_addr: impl Into<String>,
@@ -322,19 +376,20 @@ impl<'a, C: CustomQuery> QuerierWrapper<'a, C> {
     ) -> StdResult<T> {
         let request = WasmQuery::Smart {
             contract_addr: contract_addr.into(),
-            msg: to_binary(msg)?,
+            msg: to_json_binary(msg)?,
         }
         .into();
         self.query(&request)
     }
 
-    // this queries the raw storage from another wasm contract.
-    // you must know the exact layout and are implementation dependent
-    // (not tied to an interface like query_wasm_smart)
-    // that said, if you are building a few contracts together, this is a much cheaper approach
-    //
-    // Similar return value to Storage.get(). Returns Some(val) or None if the data is there.
-    // It only returns error on some runtime issue, not on any data cases.
+    /// Queries the raw storage from another wasm contract.
+    ///
+    /// You must know the exact layout and are implementation dependent
+    /// (not tied to an interface like query_wasm_smart).
+    /// That said, if you are building a few contracts together, this is a much cheaper approach
+    ///
+    /// Similar return value to [`Storage::get`]. Returns `Some(val)` or `None` if the data is there.
+    /// It only returns error on some runtime issue, not on any data cases.
     pub fn query_wasm_raw(
         &self,
         contract_addr: impl Into<String>,
@@ -347,16 +402,15 @@ impl<'a, C: CustomQuery> QuerierWrapper<'a, C> {
         .into();
         // we cannot use query, as it will try to parse the binary data, when we just want to return it,
         // so a bit of code copy here...
-        let raw = to_vec(&request).map_err(|serialize_err| {
-            StdError::generic_err(format!("Serializing QueryRequest: {}", serialize_err))
+        let raw = to_json_vec(&request).map_err(|serialize_err| {
+            StdError::generic_err(format!("Serializing QueryRequest: {serialize_err}"))
         })?;
         match self.raw_query(&raw) {
             SystemResult::Err(system_err) => Err(StdError::generic_err(format!(
-                "Querier system error: {}",
-                system_err
+                "Querier system error: {system_err}"
             ))),
             SystemResult::Ok(ContractResult::Err(contract_err)) => Err(StdError::generic_err(
-                format!("Querier contract error: {}", contract_err),
+                format!("Querier contract error: {contract_err}"),
             )),
             SystemResult::Ok(ContractResult::Ok(value)) => {
                 if value.is_empty() {
@@ -442,9 +496,11 @@ impl<'a, C: CustomQuery> QuerierWrapper<'a, C> {
 
 #[cfg(test)]
 mod tests {
+    use serde::Deserialize;
+
     use super::*;
     use crate::testing::MockQuerier;
-    use crate::{coins, from_slice, Uint128};
+    use crate::{coins, from_json, Uint128};
 
     // this is a simple demo helper to prove we can use it
     fn demo_helper(_querier: &dyn Querier) -> u64 {
@@ -477,10 +533,10 @@ mod tests {
         });
 
         let raw = wrapper
-            .raw_query(&to_vec(&query).unwrap())
+            .raw_query(&to_json_vec(&query).unwrap())
             .unwrap()
             .unwrap();
-        let balance: BalanceResponse = from_slice(&raw).unwrap();
+        let balance: BalanceResponse = from_json(raw).unwrap();
         assert_eq!(balance.amount.amount, Uint128::new(5));
     }
 
@@ -523,7 +579,7 @@ mod tests {
             if q == &(WasmQuery::ContractInfo {
                 contract_addr: ACCT.to_string(),
             }) {
-                SystemResult::Ok(ContractResult::Ok(to_binary(&mock_resp()).unwrap()))
+                SystemResult::Ok(ContractResult::Ok(to_json_binary(&mock_resp()).unwrap()))
             } else {
                 SystemResult::Err(crate::SystemError::NoSuchContract {
                     addr: ACCT.to_string(),
@@ -554,7 +610,7 @@ mod tests {
             if q == &(WasmQuery::ContractInfo {
                 contract_addr: ACCT.to_string(),
             }) {
-                SystemResult::Ok(ContractResult::Ok(to_binary(&mock_resp()).unwrap()))
+                SystemResult::Ok(ContractResult::Ok(to_json_binary(&mock_resp()).unwrap()))
             } else {
                 SystemResult::Err(crate::SystemError::NoSuchContract {
                     addr: ACCT.to_string(),
@@ -571,5 +627,17 @@ mod tests {
                 ..
             } if msg == "Querier system error: No such contract: foobar"
         ));
+    }
+
+    #[test]
+    fn querier_into_empty() {
+        #[derive(Clone, Serialize, Deserialize)]
+        struct MyQuery;
+        impl CustomQuery for MyQuery {}
+
+        let querier: MockQuerier<MyQuery> = MockQuerier::new(&[]);
+        let wrapper = QuerierWrapper::<MyQuery>::new(&querier);
+
+        let _: QuerierWrapper<Empty> = wrapper.into_empty();
     }
 }

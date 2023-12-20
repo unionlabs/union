@@ -1,5 +1,7 @@
 //! Various modifiers for components.
 
+use core::num::NonZeroU16;
+
 // region: date modifiers
 /// Day of the month.
 #[non_exhaustive]
@@ -234,6 +236,56 @@ pub enum Padding {
     None,
 }
 
+/// Ignore some number of bytes.
+///
+/// This has no effect when formatting.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Ignore {
+    /// The number of bytes to ignore.
+    pub count: NonZeroU16,
+}
+
+// Needed as `Default` is deliberately not implemented for `Ignore`. The number of bytes to ignore
+// must be explicitly provided.
+impl Ignore {
+    /// Create an instance of `Ignore` with the provided number of bytes to ignore.
+    pub const fn count(count: NonZeroU16) -> Self {
+        Self { count }
+    }
+}
+
+/// The precision of a Unix timestamp.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnixTimestampPrecision {
+    /// Seconds since the Unix epoch.
+    Second,
+    /// Milliseconds since the Unix epoch.
+    Millisecond,
+    /// Microseconds since the Unix epoch.
+    Microsecond,
+    /// Nanoseconds since the Unix epoch.
+    Nanosecond,
+}
+
+/// A Unix timestamp.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UnixTimestamp {
+    /// The precision of the timestamp.
+    pub precision: UnixTimestampPrecision,
+    /// Whether the `+` sign must be present for a non-negative timestamp.
+    pub sign_is_mandatory: bool,
+}
+
+/// The end of input.
+///
+/// There is currently not customization for this modifier.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct End;
+
 /// Generate the provided code if and only if `pub` is present.
 macro_rules! if_pub {
     (pub $(#[$attr:meta])*; $($x:tt)*) => {
@@ -352,4 +404,15 @@ impl_const_default! {
     @pub OffsetSecond => Self { padding: Padding::Zero };
     /// Creates a modifier that indicates the value is [padded with zeroes](Self::Zero).
     Padding => Self::Zero;
+    /// Creates a modifier that indicates the value represents the [number of seconds](Self::Second)
+    /// since the Unix epoch.
+    UnixTimestampPrecision => Self::Second;
+    /// Creates a modifier that indicates the value represents the [number of
+    /// seconds](UnixTimestampPrecision::Second) since the Unix epoch. The sign is not mandatory.
+    @pub UnixTimestamp => Self {
+        precision: UnixTimestampPrecision::Second,
+        sign_is_mandatory: false,
+    };
+    /// Creates a modifier used to represent the end of input.
+    @pub End => End;
 }

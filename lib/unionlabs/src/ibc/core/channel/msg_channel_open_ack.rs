@@ -7,14 +7,13 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MsgChannelOpenAck {
+pub struct MsgChannelOpenAck<ProofTry> {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub counterparty_channel_id: ChannelId,
     // yes, this is actually just an unbounded string
     pub counterparty_version: String,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof_try: Vec<u8>,
+    pub proof_try: ProofTry,
     pub proof_height: Height,
 }
 

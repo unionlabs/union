@@ -2,6 +2,7 @@ use std::fmt::Debug;
 use thiserror::Error;
 
 use super::region_validation_error::RegionValidationError;
+use crate::memory::Region;
 
 /// An error in the communcation between contract and host. Those happen around imports and exports.
 #[derive(Error, Debug)]
@@ -32,6 +33,12 @@ pub enum CommunicationError {
     RegionLengthTooBig { length: usize, max_length: usize },
     #[error("Region too small. Got {}, required {}", size, required)]
     RegionTooSmall { size: usize, required: usize },
+    #[error("Tried to access memory of region {:?} in Wasm memory of size {} bytes. This typically happens when the given Region pointer does not point to a proper Region struct.", region, memory_size)]
+    RegionAccessErr {
+        region: Region,
+        /// Current size of the linear memory in bytes
+        memory_size: usize,
+    },
     #[error("Got a zero Wasm address")]
     ZeroAddress {},
 }
@@ -64,6 +71,13 @@ impl CommunicationError {
         CommunicationError::RegionTooSmall { size, required }
     }
 
+    pub(crate) fn region_access_err(region: Region, memory_size: usize) -> Self {
+        CommunicationError::RegionAccessErr {
+            region,
+            memory_size,
+        }
+    }
+
     pub(crate) fn zero_address() -> Self {
         CommunicationError::ZeroAddress {}
     }
@@ -83,7 +97,7 @@ mod tests {
                 assert_eq!(offset, 345);
                 assert_eq!(msg, "broken stuff");
             }
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -92,7 +106,7 @@ mod tests {
         let error = CommunicationError::invalid_order(-745);
         match error {
             CommunicationError::InvalidOrder { value, .. } => assert_eq!(value, -745),
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -101,7 +115,7 @@ mod tests {
         let error = CommunicationError::invalid_utf8("broken");
         match error {
             CommunicationError::InvalidUtf8 { msg, .. } => assert_eq!(msg, "broken"),
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -115,7 +129,7 @@ mod tests {
                 assert_eq!(length, 50);
                 assert_eq!(max_length, 20);
             }
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -127,7 +141,7 @@ mod tests {
                 assert_eq!(size, 12);
                 assert_eq!(required, 33);
             }
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -136,7 +150,7 @@ mod tests {
         let error = CommunicationError::zero_address();
         match error {
             CommunicationError::ZeroAddress { .. } => {}
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 }

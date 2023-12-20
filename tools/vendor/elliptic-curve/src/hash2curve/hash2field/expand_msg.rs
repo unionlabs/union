@@ -25,8 +25,11 @@ pub trait ExpandMsg<'a> {
     ///
     /// Returns an expander that can be used to call `read` until enough
     /// bytes have been consumed
-    fn expand_message(msgs: &[&[u8]], dst: &'a [u8], len_in_bytes: usize)
-        -> Result<Self::Expander>;
+    fn expand_message(
+        msgs: &[&[u8]],
+        dsts: &'a [&'a [u8]],
+        len_in_bytes: usize,
+    ) -> Result<Self::Expander>;
 }
 
 /// Expander that, call `read` until enough bytes have been consumed.
@@ -47,54 +50,66 @@ where
     /// > 255
     Hashed(GenericArray<u8, L>),
     /// <= 255
-    Array(&'a [u8]),
+    Array(&'a [&'a [u8]]),
 }
 
 impl<'a, L> Domain<'a, L>
 where
     L: ArrayLength<u8> + IsLess<U256>,
 {
-    pub fn xof<X>(dst: &'a [u8]) -> Result<Self>
+    pub fn xof<X>(dsts: &'a [&'a [u8]]) -> Result<Self>
     where
         X: Default + ExtendableOutput + Update,
     {
-        if dst.is_empty() {
+        if dsts.is_empty() {
             Err(Error)
-        } else if dst.len() > MAX_DST_LEN {
+        } else if dsts.iter().map(|dst| dst.len()).sum::<usize>() > MAX_DST_LEN {
             let mut data = GenericArray::<u8, L>::default();
-            X::default()
-                .chain(OVERSIZE_DST_SALT)
-                .chain(dst)
-                .finalize_xof()
-                .read(&mut data);
+            let mut hash = X::default();
+            hash.update(OVERSIZE_DST_SALT);
+
+            for dst in dsts {
+                hash.update(dst);
+            }
+
+            hash.finalize_xof().read(&mut data);
+
             Ok(Self::Hashed(data))
         } else {
-            Ok(Self::Array(dst))
+            Ok(Self::Array(dsts))
         }
     }
 
-    pub fn xmd<X>(dst: &'a [u8]) -> Result<Self>
+    pub fn xmd<X>(dsts: &'a [&'a [u8]]) -> Result<Self>
     where
         X: Digest<OutputSize = L>,
     {
-        if dst.is_empty() {
+        if dsts.is_empty() {
             Err(Error)
-        } else if dst.len() > MAX_DST_LEN {
+        } else if dsts.iter().map(|dst| dst.len()).sum::<usize>() > MAX_DST_LEN {
             Ok(Self::Hashed({
                 let mut hash = X::new();
                 hash.update(OVERSIZE_DST_SALT);
-                hash.update(dst);
+
+                for dst in dsts {
+                    hash.update(dst);
+                }
+
                 hash.finalize()
             }))
         } else {
-            Ok(Self::Array(dst))
+            Ok(Self::Array(dsts))
         }
     }
 
-    pub fn data(&self) -> &[u8] {
+    pub fn update_hash<HashT: Update>(&self, hash: &mut HashT) {
         match self {
-            Self::Hashed(d) => &d[..],
-            Self::Array(d) => *d,
+            Self::Hashed(d) => hash.update(d),
+            Self::Array(d) => {
+                for d in d.iter() {
+                    hash.update(d)
+                }
+            }
         }
     }
 
@@ -103,13 +118,28 @@ where
             // Can't overflow because it's enforced on a type level.
             Self::Hashed(_) => L::to_u8(),
             // Can't overflow because it's checked on creation.
-            Self::Array(d) => u8::try_from(d.len()).expect("length overflow"),
+            Self::Array(d) => {
+                u8::try_from(d.iter().map(|d| d.len()).sum::<usize>()).expect("length overflow")
+            }
         }
     }
 
     #[cfg(test)]
     pub fn assert(&self, bytes: &[u8]) {
-        assert_eq!(self.data(), &bytes[..bytes.len() - 1]);
+        let data = match self {
+            Domain::Hashed(d) => d.to_vec(),
+            Domain::Array(d) => d.iter().copied().flatten().copied().collect(),
+        };
+        assert_eq!(data, bytes);
+    }
+
+    #[cfg(test)]
+    pub fn assert_dst(&self, bytes: &[u8]) {
+        let data = match self {
+            Domain::Hashed(d) => d.to_vec(),
+            Domain::Array(d) => d.iter().copied().flatten().copied().collect(),
+        };
+        assert_eq!(data, &bytes[..bytes.len() - 1]);
         assert_eq!(self.len(), bytes[bytes.len() - 1]);
     }
 }

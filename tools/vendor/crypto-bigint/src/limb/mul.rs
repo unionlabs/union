@@ -13,7 +13,7 @@ impl Limb {
         let c = c.0 as WideWord;
         let carry = carry.0 as WideWord;
         let ret = a + (b * c) + carry;
-        (Limb(ret as Word), Limb((ret >> Self::BIT_SIZE) as Word))
+        (Limb(ret as Word), Limb((ret >> Self::BITS) as Word))
     }
 
     /// Perform saturating multiplication.
@@ -40,7 +40,7 @@ impl CheckedMul for Limb {
     #[inline]
     fn checked_mul(&self, rhs: Self) -> CtOption<Self> {
         let result = self.mul_wide(rhs);
-        let overflow = Limb((result >> Self::BIT_SIZE) as Word);
+        let overflow = Limb((result >> Self::BITS) as Word);
         CtOption::new(Limb(result as Word), overflow.is_zero())
     }
 }
@@ -159,7 +159,7 @@ mod tests {
 
     #[test]
     fn mul_wide() {
-        let primes: &[u32] = &[3, 5, 17, 256, 65537];
+        let primes: &[u32] = &[3, 5, 17, 257, 65537];
 
         for &a_int in primes {
             for &b_int in primes {

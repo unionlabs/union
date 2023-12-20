@@ -1,4 +1,5 @@
 use chain_utils::{
+    cosmos::{Cosmos, CosmosInitError},
     evm::{Evm, EvmInitError},
     union::{Union, UnionInitError},
 };
@@ -11,6 +12,7 @@ use crate::{
 
 pub enum AnyChain {
     Union(Union),
+    Cosmos(Cosmos),
     EvmMainnet(Evm<Mainnet>),
     EvmMinimal(Evm<Minimal>),
 }
@@ -19,6 +21,8 @@ pub enum AnyChain {
 pub enum AnyChainTryFromConfigError {
     #[error("error initializing a union chain")]
     Union(#[from] UnionInitError),
+    #[error("error initializing a cosmos chain")]
+    Cosmos(#[from] CosmosInitError),
     #[error("error initializing an ethereum chain")]
     Evm(#[from] EvmInitError),
 }
@@ -53,6 +57,15 @@ impl AnyChain {
                     prover_endpoint: union.prover_endpoint,
                     grpc_url: union.grpc_url,
                     fee_denom: union.fee_denom,
+                })
+                .await?,
+            ),
+            ChainConfig::Cosmos(cosmos) => Self::Cosmos(
+                Cosmos::new(chain_utils::cosmos::Config {
+                    signers: cosmos.signers,
+                    ws_url: cosmos.ws_url,
+                    grpc_url: cosmos.grpc_url,
+                    fee_denom: cosmos.fee_denom,
                 })
                 .await?,
             ),

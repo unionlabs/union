@@ -29,19 +29,20 @@ pub struct TestVector {
 
 /// Define ECDSA signing test.
 #[macro_export]
-#[cfg_attr(docsrs, doc(cfg(feature = "dev")))]
 macro_rules! new_signing_test {
     ($curve:path, $vectors:expr) => {
         use $crate::{
             elliptic_curve::{
-                bigint::Encoding, generic_array::GenericArray, group::ff::PrimeField, Curve,
-                ProjectiveArithmetic, Scalar,
+                bigint::Encoding,
+                generic_array::{typenum::Unsigned, GenericArray},
+                group::ff::PrimeField,
+                Curve, CurveArithmetic, Scalar,
             },
             hazmat::SignPrimitive,
         };
 
         fn decode_scalar(bytes: &[u8]) -> Option<Scalar<$curve>> {
-            if bytes.len() == <$curve as Curve>::UInt::BYTE_SIZE {
+            if bytes.len() == <$curve as Curve>::FieldBytesSize::USIZE {
                 Scalar::<$curve>::from_repr(GenericArray::clone_from_slice(bytes)).into()
             } else {
                 None
@@ -53,8 +54,14 @@ macro_rules! new_signing_test {
             for vector in $vectors {
                 let d = decode_scalar(vector.d).expect("invalid vector.d");
                 let k = decode_scalar(vector.k).expect("invalid vector.m");
+
+                assert_eq!(
+                    <$curve as Curve>::FieldBytesSize::USIZE,
+                    vector.m.len(),
+                    "invalid vector.m (must be field-sized digest)"
+                );
                 let z = GenericArray::clone_from_slice(vector.m);
-                let sig = d.try_sign_prehashed(k, z).expect("ECDSA sign failed").0;
+                let sig = d.try_sign_prehashed(k, &z).expect("ECDSA sign failed").0;
 
                 assert_eq!(vector.r, sig.r().to_bytes().as_slice());
                 assert_eq!(vector.s, sig.s().to_bytes().as_slice());
@@ -65,7 +72,6 @@ macro_rules! new_signing_test {
 
 /// Define ECDSA verification test.
 #[macro_export]
-#[cfg_attr(docsrs, doc(cfg(feature = "dev")))]
 macro_rules! new_verification_test {
     ($curve:path, $vectors:expr) => {
         use $crate::{
@@ -73,7 +79,7 @@ macro_rules! new_verification_test {
                 generic_array::GenericArray,
                 group::ff::PrimeField,
                 sec1::{EncodedPoint, FromEncodedPoint},
-                AffinePoint, ProjectiveArithmetic, Scalar,
+                AffinePoint, CurveArithmetic, Scalar,
             },
             hazmat::VerifyPrimitive,
             Signature,
@@ -97,7 +103,7 @@ macro_rules! new_verification_test {
                 )
                 .unwrap();
 
-                let result = q.verify_prehashed(z, &sig);
+                let result = q.verify_prehashed(&z, &sig);
                 assert!(result.is_ok());
             }
         }
@@ -122,7 +128,7 @@ macro_rules! new_verification_test {
                     Signature::from_scalars(GenericArray::clone_from_slice(vector.r), s_tweaked)
                         .unwrap();
 
-                let result = q.verify_prehashed(z, &sig);
+                let result = q.verify_prehashed(&z, &sig);
                 assert!(result.is_err());
             }
         }
@@ -133,10 +139,13 @@ macro_rules! new_verification_test {
 
 /// Define a Wycheproof verification test.
 #[macro_export]
-#[cfg_attr(docsrs, doc(cfg(feature = "dev")))]
 macro_rules! new_wycheproof_test {
     ($name:ident, $test_name: expr, $curve:path) => {
-        use $crate::{elliptic_curve::sec1::EncodedPoint, signature::Verifier, Signature};
+        use $crate::{
+            elliptic_curve::{bigint::Integer, sec1::EncodedPoint},
+            signature::Verifier,
+            Signature,
+        };
 
         #[test]
         fn $name() {
@@ -148,7 +157,7 @@ macro_rules! new_wycheproof_test {
             fn element_from_padded_slice<C: elliptic_curve::Curve>(
                 data: &[u8],
             ) -> elliptic_curve::FieldBytes<C> {
-                let point_len = C::UInt::BYTE_SIZE;
+                let point_len = C::FieldBytesSize::USIZE;
                 if data.len() >= point_len {
                     let offset = data.len() - point_len;
                     for v in data.iter().take(offset) {

@@ -1,17 +1,23 @@
-use forward_ref::{forward_ref_binop, forward_ref_op_assign};
-use schemars::JsonSchema;
-use serde::{de, ser, Deserialize, Deserializer, Serialize};
-use std::fmt::{self};
-use std::ops::{
+use core::fmt::{self};
+use core::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign,
     Sub, SubAssign,
 };
+use forward_ref::{forward_ref_binop, forward_ref_op_assign};
+use schemars::JsonSchema;
+use serde::{de, ser, Deserialize, Deserializer, Serialize};
+use std::ops::Not;
 
 use crate::errors::{
     CheckedMultiplyFractionError, CheckedMultiplyRatioError, DivideByZeroError, OverflowError,
     OverflowOperation, StdError,
 };
-use crate::{forward_ref_partial_eq, impl_mul_fraction, Fraction, Uint128};
+use crate::{
+    forward_ref_partial_eq, impl_mul_fraction, Fraction, Int128, Int256, Int512, Int64, Uint128,
+};
+
+use super::conversion::forward_try_from;
+use super::num_consts::NumConsts;
 
 /// A thin wrapper around u64 that is using strings for JSON encoding/decoding,
 /// such that the full u64 range can be used for clients that convert JSON numbers to floats,
@@ -261,6 +267,13 @@ impl Uint64 {
     }
 }
 
+impl NumConsts for Uint64 {
+    const ZERO: Self = Self::zero();
+    const ONE: Self = Self::one();
+    const MAX: Self = Self::MAX;
+    const MIN: Self = Self::MIN;
+}
+
 impl_mul_fraction!(Uint64);
 
 // `From<u{128,64,32,16,8}>` is implemented manually instead of
@@ -268,6 +281,7 @@ impl_mul_fraction!(Uint64);
 // of the conflict with `TryFrom<&str>` as described here
 // https://stackoverflow.com/questions/63136970/how-do-i-work-around-the-upstream-crates-may-add-a-new-impl-of-trait-error
 
+// uint to Uint
 impl From<u64> for Uint64 {
     fn from(val: u64) -> Self {
         Uint64(val)
@@ -292,13 +306,19 @@ impl From<u8> for Uint64 {
     }
 }
 
+// Int to Uint
+forward_try_from!(Int64, Uint64);
+forward_try_from!(Int128, Uint64);
+forward_try_from!(Int256, Uint64);
+forward_try_from!(Int512, Uint64);
+
 impl TryFrom<&str> for Uint64 {
     type Error = StdError;
 
     fn try_from(val: &str) -> Result<Self, Self::Error> {
         match val.parse::<u64>() {
             Ok(u) => Ok(Uint64(u)),
-            Err(e) => Err(StdError::generic_err(format!("Parsing u64: {}", e))),
+            Err(e) => Err(StdError::generic_err(format!("Parsing u64: {e}"))),
         }
     }
 }
@@ -405,6 +425,14 @@ impl Rem for Uint64 {
     }
 }
 forward_ref_binop!(impl Rem, rem for Uint64, Uint64);
+
+impl Not for Uint64 {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Self(!self.0)
+    }
+}
 
 impl RemAssign<Uint64> for Uint64 {
     fn rem_assign(&mut self, rhs: Uint64) {
@@ -532,12 +560,12 @@ impl<'de> de::Visitor<'de> for Uint64Visitor {
     {
         match v.parse::<u64>() {
             Ok(u) => Ok(Uint64(u)),
-            Err(e) => Err(E::custom(format!("invalid Uint64 '{}' - {}", v, e))),
+            Err(e) => Err(E::custom(format!("invalid Uint64 '{v}' - {e}"))),
         }
     }
 }
 
-impl<A> std::iter::Sum<A> for Uint64
+impl<A> core::iter::Sum<A> for Uint64
 where
     Self: Add<A, Output = Self>,
 {
@@ -550,11 +578,20 @@ where
 mod tests {
     use super::*;
     use crate::errors::CheckedMultiplyFractionError::{ConversionOverflow, DivideByZero};
-    use crate::{from_slice, to_vec, ConversionOverflowError};
+    use crate::math::conversion::test_try_from_int_to_uint;
+    use crate::{from_json, to_json_vec, ConversionOverflowError};
 
     #[test]
     fn size_of_works() {
-        assert_eq!(std::mem::size_of::<Uint64>(), 8);
+        assert_eq!(core::mem::size_of::<Uint64>(), 8);
+    }
+
+    #[test]
+    fn uint64_not_works() {
+        assert_eq!(!Uint64::new(1234806), Uint64::new(!1234806));
+
+        assert_eq!(!Uint64::MAX, Uint64::new(!u64::MAX));
+        assert_eq!(!Uint64::MIN, Uint64::new(!u64::MIN));
     }
 
     #[test]
@@ -602,20 +639,33 @@ mod tests {
     }
 
     #[test]
+    fn uint64_try_from_signed_works() {
+        test_try_from_int_to_uint::<Int64, Uint64>("Int64", "Uint64");
+        test_try_from_int_to_uint::<Int128, Uint64>("Int128", "Uint64");
+        test_try_from_int_to_uint::<Int256, Uint64>("Int256", "Uint64");
+        test_try_from_int_to_uint::<Int512, Uint64>("Int512", "Uint64");
+    }
+
+    #[test]
     fn uint64_implements_display() {
         let a = Uint64(12345);
-        assert_eq!(format!("Embedded: {}", a), "Embedded: 12345");
+        assert_eq!(format!("Embedded: {a}"), "Embedded: 12345");
         assert_eq!(a.to_string(), "12345");
 
         let a = Uint64(0);
-        assert_eq!(format!("Embedded: {}", a), "Embedded: 0");
+        assert_eq!(format!("Embedded: {a}"), "Embedded: 0");
         assert_eq!(a.to_string(), "0");
     }
 
     #[test]
     fn uint64_display_padding_works() {
+        // width > natural representation
         let a = Uint64::from(123u64);
-        assert_eq!(format!("Embedded: {:05}", a), "Embedded: 00123");
+        assert_eq!(format!("Embedded: {a:05}"), "Embedded: 00123");
+
+        // width < natural representation
+        let a = Uint64::from(123u64);
+        assert_eq!(format!("Embedded: {a:02}"), "Embedded: 123");
     }
 
     #[test]
@@ -660,9 +710,9 @@ mod tests {
     #[test]
     fn uint64_json() {
         let orig = Uint64(1234567890987654321);
-        let serialized = to_vec(&orig).unwrap();
+        let serialized = to_json_vec(&orig).unwrap();
         assert_eq!(serialized.as_slice(), b"\"1234567890987654321\"");
-        let parsed: Uint64 = from_slice(&serialized).unwrap();
+        let parsed: Uint64 = from_json(serialized).unwrap();
         assert_eq!(parsed, orig);
     }
 

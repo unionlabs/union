@@ -14,13 +14,13 @@ type EntryIndex = u128;
 ///
 /// ```rust
 /// # use cranelift_codegen::ir::types::*;
-/// # use cranelift_codegen::ir::{ExternalName, Function, Signature, InstBuilder};
+/// # use cranelift_codegen::ir::{UserFuncName, Function, Signature, InstBuilder};
 /// # use cranelift_codegen::isa::CallConv;
 /// # use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Switch};
 /// #
 /// # let mut sig = Signature::new(CallConv::SystemV);
 /// # let mut fn_builder_ctx = FunctionBuilderContext::new();
-/// # let mut func = Function::with_name_signature(ExternalName::user(0, 0), sig);
+/// # let mut func = Function::with_name_signature(UserFuncName::user(0, 0), sig);
 /// # let mut builder = FunctionBuilder::new(&mut func, &mut fn_builder_ctx);
 /// #
 /// # let entry = builder.create_block();
@@ -264,21 +264,23 @@ impl Switch {
                 }
             };
 
-            let discr = if bx.func.dfg.value_type(discr).bits() > 64 {
-                // Check for overflow of cast to u32. This is the max supported jump table entries.
-                let new_block = bx.create_block();
-                let bigger_than_u32 =
-                    bx.ins()
-                        .icmp_imm(IntCC::UnsignedGreaterThan, discr, u32::MAX as i64);
-                bx.ins().brnz(bigger_than_u32, otherwise, &[]);
-                bx.ins().jump(new_block, &[]);
-                bx.seal_block(new_block);
-                bx.switch_to_block(new_block);
+            let discr = match bx.func.dfg.value_type(discr).bits() {
+                bits if bits > 32 => {
+                    // Check for overflow of cast to u32. This is the max supported jump table entries.
+                    let new_block = bx.create_block();
+                    let bigger_than_u32 =
+                        bx.ins()
+                            .icmp_imm(IntCC::UnsignedGreaterThan, discr, u32::MAX as i64);
+                    bx.ins().brnz(bigger_than_u32, otherwise, &[]);
+                    bx.ins().jump(new_block, &[]);
+                    bx.seal_block(new_block);
+                    bx.switch_to_block(new_block);
 
-                // Cast to u64, as br_table is not implemented for i128
-                bx.ins().isplit(discr).0
-            } else {
-                discr
+                    // Cast to i32, as br_table is not implemented for i64/i128
+                    bx.ins().ireduce(types::I32, discr)
+                }
+                bits if bits < 32 => bx.ins().uextend(types::I32, discr),
+                _ => discr,
             };
 
             bx.ins().br_table(discr, otherwise, jump_table);
@@ -293,11 +295,16 @@ impl Switch {
     /// * The value to switch on
     /// * The default block
     pub fn emit(self, bx: &mut FunctionBuilder, val: Value, otherwise: Block) {
-        // FIXME icmp(_imm) doesn't have encodings for i8 and i16 on x86(_64) yet
-        let val = match bx.func.dfg.value_type(val) {
-            types::I8 | types::I16 => bx.ins().uextend(types::I32, val),
-            _ => val,
-        };
+        // Validate that the type of `val` is sufficiently wide to address all cases.
+        let max = self.cases.keys().max().copied().unwrap_or(0);
+        let val_ty = bx.func.dfg.value_type(val);
+        let val_ty_max = val_ty.bounds(false).1;
+        if max > val_ty_max {
+            panic!(
+                "The index type {} does not fit the maximum switch entry of {}",
+                val_ty, max
+            );
+        }
 
         let contiguous_case_ranges = self.collect_contiguous_case_ranges();
         let cases_and_jt_blocks =
@@ -384,8 +391,7 @@ mod tests {
             func,
             "block0:
     v0 = iconst.i8 0
-    v1 = uextend.i32 v0
-    brz v1, block1
+    brz v0, block1  ; v0 = 0
     jump block0"
         );
     }
@@ -397,9 +403,8 @@ mod tests {
             func,
             "block0:
     v0 = iconst.i8 0
-    v1 = uextend.i32 v0
-    v2 = icmp_imm eq v1, 1
-    brnz v2, block1
+    v1 = icmp_imm eq v0, 1  ; v0 = 0
+    brnz v1, block1
     jump block0"
         );
     }
@@ -413,11 +418,11 @@ mod tests {
 
 block0:
     v0 = iconst.i8 0
-    v1 = uextend.i32 v0
     jump block3
 
 block3:
-    br_table.i32 v1, block0, jt0"
+    v1 = uextend.i32 v0  ; v0 = 0
+    br_table v1, block0, jt0"
         );
     }
 
@@ -428,13 +433,12 @@ block3:
             func,
             "block0:
     v0 = iconst.i8 0
-    v1 = uextend.i32 v0
-    v2 = icmp_imm eq v1, 2
-    brnz v2, block2
+    v1 = icmp_imm eq v0, 2  ; v0 = 0
+    brnz v1, block2
     jump block3
 
 block3:
-    brz.i32 v1, block1
+    brz.i8 v0, block1  ; v0 = 0
     jump block0"
         );
     }
@@ -449,90 +453,101 @@ block3:
 
 block0:
     v0 = iconst.i8 0
-    v1 = uextend.i32 v0
-    v2 = icmp_imm uge v1, 7
-    brnz v2, block9
+    v1 = icmp_imm uge v0, 7  ; v0 = 0
+    brnz v1, block9
     jump block8
 
 block9:
-    v3 = icmp_imm.i32 uge v1, 10
-    brnz v3, block10
+    v2 = icmp_imm.i8 uge v0, 10  ; v0 = 0
+    brnz v2, block10
     jump block11
 
 block11:
-    v4 = icmp_imm.i32 eq v1, 7
-    brnz v4, block4
+    v3 = icmp_imm.i8 eq v0, 7  ; v0 = 0
+    brnz v3, block4
     jump block0
 
 block8:
-    v5 = icmp_imm.i32 eq v1, 5
-    brnz v5, block3
+    v4 = icmp_imm.i8 eq v0, 5  ; v0 = 0
+    brnz v4, block3
     jump block12
 
 block12:
-    br_table.i32 v1, block0, jt0
+    v5 = uextend.i32 v0  ; v0 = 0
+    br_table v5, block0, jt0
 
 block10:
-    v6 = iadd_imm.i32 v1, -10
-    br_table v6, block0, jt1"
+    v6 = iadd_imm.i8 v0, -10  ; v0 = 0
+    v7 = uextend.i32 v6
+    br_table v7, block0, jt1"
         );
     }
 
     #[test]
     fn switch_min_index_value() {
-        let func = setup!(0, [::core::i64::MIN as u64 as u128, 1,]);
+        let func = setup!(0, [i8::MIN as u8 as u128, 1,]);
         assert_eq!(
             func,
             "block0:
     v0 = iconst.i8 0
-    v1 = uextend.i32 v0
-    v2 = icmp_imm eq v1, 0x8000_0000_0000_0000
-    brnz v2, block1
+    v1 = icmp_imm eq v0, 128  ; v0 = 0
+    brnz v1, block1
     jump block3
 
 block3:
-    v3 = icmp_imm.i32 eq v1, 1
-    brnz v3, block2
+    v2 = icmp_imm.i8 eq v0, 1  ; v0 = 0
+    brnz v2, block2
     jump block0"
         );
     }
 
     #[test]
     fn switch_max_index_value() {
-        let func = setup!(0, [::core::i64::MAX as u64 as u128, 1,]);
+        let func = setup!(0, [i8::MAX as u8 as u128, 1,]);
         assert_eq!(
             func,
             "block0:
     v0 = iconst.i8 0
-    v1 = uextend.i32 v0
-    v2 = icmp_imm eq v1, 0x7fff_ffff_ffff_ffff
-    brnz v2, block1
+    v1 = icmp_imm eq v0, 127  ; v0 = 0
+    brnz v1, block1
     jump block3
 
 block3:
-    v3 = icmp_imm.i32 eq v1, 1
-    brnz v3, block2
+    v2 = icmp_imm.i8 eq v0, 1  ; v0 = 0
+    brnz v2, block2
     jump block0"
         )
     }
 
     #[test]
     fn switch_optimal_codegen() {
-        let func = setup!(0, [-1i64 as u64 as u128, 0, 1,]);
+        let func = setup!(0, [-1i8 as u8 as u128, 0, 1,]);
         assert_eq!(
             func,
             "    jt0 = jump_table [block2, block3]
 
 block0:
     v0 = iconst.i8 0
-    v1 = uextend.i32 v0
-    v2 = icmp_imm eq v1, -1
-    brnz v2, block1
+    v1 = icmp_imm eq v0, 255  ; v0 = 0
+    brnz v1, block1
     jump block4
 
 block4:
-    br_table.i32 v1, block0, jt0"
+    v2 = uextend.i32 v0  ; v0 = 0
+    br_table v2, block0, jt0"
         );
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "The index type i8 does not fit the maximum switch entry of 4683743612477887600"
+    )]
+    fn switch_rejects_small_inputs() {
+        // This is a regression test for a bug that we found where we would emit a cmp
+        // with a type that was not able to fully represent a large index.
+        //
+        // See: https://github.com/bytecodealliance/wasmtime/pull/4502#issuecomment-1191961677
+        setup!(1, [0x4100_0000_00bf_d470,]);
     }
 
     #[test]
@@ -611,7 +626,13 @@ block0:
     jump block4
 
 block4:
-    br_table.i64 v0, block3, jt0"
+    v1 = icmp_imm.i64 ugt v0, 0xffff_ffff  ; v0 = 0
+    brnz v1, block3
+    jump block5
+
+block5:
+    v2 = ireduce.i32 v0  ; v0 = 0
+    br_table v2, block3, jt0"
         );
     }
 
@@ -623,7 +644,8 @@ block4:
             let mut bx = FunctionBuilder::new(&mut func, &mut func_ctx);
             let block0 = bx.create_block();
             bx.switch_to_block(block0);
-            let val = bx.ins().iconst(types::I128, 0);
+            let val = bx.ins().iconst(types::I64, 0);
+            let val = bx.ins().uextend(types::I128, val);
             let mut switch = Switch::new();
             let block1 = bx.create_block();
             switch.set_entry(1, block1);
@@ -642,17 +664,18 @@ block4:
             "    jt0 = jump_table [block2, block1]
 
 block0:
-    v0 = iconst.i128 0
+    v0 = iconst.i64 0
+    v1 = uextend.i128 v0  ; v0 = 0
     jump block4
 
 block4:
-    v1 = icmp_imm.i128 ugt v0, 0xffff_ffff
-    brnz v1, block3
+    v2 = icmp_imm.i128 ugt v1, 0xffff_ffff
+    brnz v2, block3
     jump block5
 
 block5:
-    v2, v3 = isplit.i128 v0
-    br_table v2, block3, jt0"
+    v3 = ireduce.i32 v1
+    br_table v3, block3, jt0"
         );
     }
 }

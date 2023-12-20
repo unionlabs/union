@@ -11,7 +11,7 @@ use unionlabs::{
 };
 
 use crate::{
-    msg::{ClientMessage, MerklePath, QueryMsg},
+    msg::{MerklePath, QueryMsg},
     CheckForMisbehaviourResult, EmptyResult, Error, ExportMetadataResult, Status, StatusResult,
     SudoMsg, TimestampAtHeightResult, UpdateStateResult,
 };
@@ -77,7 +77,7 @@ pub trait IbcClient {
             )?),
             SudoMsg::UpdateState { client_message } => {
                 if let Ok(header) =
-                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.data)
+                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.0)
                 {
                     to_binary(&Self::update_state(deps, env, header)?)
                 } else {
@@ -87,7 +87,7 @@ pub trait IbcClient {
                 }
             }
             SudoMsg::UpdateStateOnMisbehaviour { client_message } => {
-                Self::update_state_on_misbehaviour(deps, env, client_message)?;
+                Self::update_state_on_misbehaviour(deps, env, client_message.0)?;
                 to_binary(&EmptyResult {})
             }
             SudoMsg::VerifyUpgradeAndUpdateState {
@@ -130,7 +130,7 @@ pub trait IbcClient {
             }),
             QueryMsg::VerifyClientMessage { client_message } => {
                 if let Ok(header) =
-                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.data)
+                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.0)
                 {
                     to_binary(&Self::verify_header(deps, env, header)?)
                 } else {
@@ -141,7 +141,7 @@ pub trait IbcClient {
             }
             QueryMsg::CheckForMisbehaviour { client_message } => {
                 if let Ok(header) =
-                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.data)
+                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.0)
                 {
                     to_binary(&Self::verify_header(deps, env, header)?)
                 } else {
@@ -189,7 +189,7 @@ pub trait IbcClient {
     fn update_state_on_misbehaviour(
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
-        client_message: ClientMessage,
+        client_message: Vec<u8>,
     ) -> Result<(), Self::Error>;
 
     fn check_for_misbehaviour_on_header(

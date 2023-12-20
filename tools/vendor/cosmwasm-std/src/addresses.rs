@@ -1,12 +1,12 @@
+use alloc::borrow::Cow;
+use core::fmt;
+use core::ops::Deref;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sha2::{
     digest::{Digest, Update},
     Sha256,
 };
-use std::borrow::Cow;
-use std::fmt;
-use std::ops::Deref;
 use thiserror::Error;
 
 use crate::{binary::Binary, forward_ref_partial_eq, HexBinary};
@@ -167,7 +167,7 @@ impl<'a> From<&'a Addr> for Cow<'a, Addr> {
 ///
 /// The safe way to obtain a valid `CanonicalAddr` is using `Api::addr_canonicalize`. In
 /// addition to that there are many unsafe ways to convert any binary data into an instance.
-/// So the type shoud be treated as a marker to express the intended data type, not as
+/// So the type should be treated as a marker to express the intended data type, not as
 /// a validity guarantee of any sort.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, JsonSchema)]
 pub struct CanonicalAddr(pub Binary);
@@ -284,7 +284,7 @@ impl CanonicalAddr {
 impl fmt::Display for CanonicalAddr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for byte in self.0.as_slice() {
-            write!(f, "{:02X}", byte)?;
+            write!(f, "{byte:02X}")?;
         }
         Ok(())
     }
@@ -351,11 +351,14 @@ pub fn instantiate2_address(
     creator: &CanonicalAddr,
     salt: &[u8],
 ) -> Result<CanonicalAddr, Instantiate2AddressError> {
-    instantiate2_address_impl(checksum, creator, salt, b"")
+    // Non-empty msg values are discouraged.
+    // See https://medium.com/cosmwasm/dev-note-3-limitations-of-instantiate2-and-how-to-deal-with-them-a3f946874230.
+    let msg = b"";
+    instantiate2_address_impl(checksum, creator, salt, msg)
 }
 
 /// The instantiate2 address derivation implementation. This API is used for
-/// testing puposes only. The `msg` field is discouraged and should not be used.
+/// testing purposes only. The `msg` field is discouraged and should not be used.
 /// Use [`instantiate2_address`].
 #[doc(hidden)]
 fn instantiate2_address_impl(
@@ -396,11 +399,8 @@ fn hash(ty: &str, key: &[u8]) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::HexBinary;
+    use crate::{assert_hash_works, HexBinary};
     use hex_literal::hex;
-    use std::collections::hash_map::DefaultHasher;
-    use std::collections::HashSet;
-    use std::hash::{Hash, Hasher};
 
     #[test]
     fn addr_unchecked_works() {
@@ -429,7 +429,7 @@ mod tests {
     #[test]
     fn addr_implements_display() {
         let addr = Addr::unchecked("cos934gh9034hg04g0h134");
-        let embedded = format!("Address: {}", addr);
+        let embedded = format!("Address: {addr}");
         assert_eq!(embedded, "Address: cos934gh9034hg04g0h134");
         assert_eq!(addr.to_string(), "cos934gh9034hg04g0h134");
     }
@@ -626,7 +626,7 @@ mod tests {
             0xff,
         ];
         let address = CanonicalAddr::from(bytes);
-        let embedded = format!("Address: {}", address);
+        let embedded = format!("Address: {address}");
         assert_eq!(embedded, "Address: 1203AB00FF");
         assert_eq!(address.to_string(), "1203AB00FF");
     }
@@ -646,43 +646,13 @@ mod tests {
         assert_eq!(canonical_addr_slice, &[0u8, 187, 61, 11, 250, 0]);
     }
 
+    /// Tests that `CanonicalAddr` implements `EQ` and `Hash` correctly and thus
+    /// can be used with hash maps and sets.
     #[test]
-    fn canonical_addr_implements_hash() {
-        let alice1 = CanonicalAddr::from([0, 187, 61, 11, 250, 0]);
-        let mut hasher = DefaultHasher::new();
-        alice1.hash(&mut hasher);
-        let alice1_hash = hasher.finish();
-
-        let alice2 = CanonicalAddr::from([0, 187, 61, 11, 250, 0]);
-        let mut hasher = DefaultHasher::new();
-        alice2.hash(&mut hasher);
-        let alice2_hash = hasher.finish();
-
+    fn canonical_addr_implements_hash_eq() {
+        let alice = CanonicalAddr::from([0, 187, 61, 11, 250, 0]);
         let bob = CanonicalAddr::from([16, 21, 33, 0, 255, 9]);
-        let mut hasher = DefaultHasher::new();
-        bob.hash(&mut hasher);
-        let bob_hash = hasher.finish();
-
-        assert_eq!(alice1_hash, alice2_hash);
-        assert_ne!(alice1_hash, bob_hash);
-    }
-
-    /// This requires Hash and Eq to be implemented
-    #[test]
-    fn canonical_addr_can_be_used_in_hash_set() {
-        let alice1 = CanonicalAddr::from([0, 187, 61, 11, 250, 0]);
-        let alice2 = CanonicalAddr::from([0, 187, 61, 11, 250, 0]);
-        let bob = CanonicalAddr::from([16, 21, 33, 0, 255, 9]);
-
-        let mut set = HashSet::new();
-        set.insert(alice1.clone());
-        set.insert(alice2.clone());
-        set.insert(bob.clone());
-        assert_eq!(set.len(), 2);
-
-        let set1 = HashSet::<CanonicalAddr>::from_iter(vec![bob.clone(), alice1.clone()]);
-        let set2 = HashSet::from_iter(vec![alice1, alice2, bob]);
-        assert_eq!(set1, set2);
+        assert_hash_works!(alice, bob);
     }
 
     // helper to show we can handle Addr and &Addr equally
@@ -781,7 +751,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate2_address_impl_works_for_cosmjs_testvectors() {
+    fn instantiate2_address_impl_works_for_cosmjs_test_vectors() {
         // Test data from https://github.com/cosmos/cosmjs/pull/1253
         const COSMOS_ED25519_TESTS_JSON: &str = "./testdata/instantiate2_addresses.json";
 

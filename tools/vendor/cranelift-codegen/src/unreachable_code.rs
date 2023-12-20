@@ -3,8 +3,8 @@
 use crate::cursor::{Cursor, FuncCursor};
 use crate::dominator_tree::DominatorTree;
 use crate::flowgraph::ControlFlowGraph;
-use crate::ir;
 use crate::timing;
+use crate::{ir, trace};
 
 /// Eliminate unreachable code.
 ///
@@ -24,14 +24,14 @@ pub fn eliminate_unreachable_code(
             continue;
         }
 
-        log::trace!("Eliminating unreachable {}", block);
+        trace!("Eliminating unreachable {}", block);
         // Move the cursor out of the way and make sure the next lop iteration goes to the right
         // block.
         pos.prev_block();
 
         // Remove all instructions from `block`.
         while let Some(inst) = pos.func.layout.first_inst(block) {
-            log::trace!(" - {}", pos.func.dfg.display_inst(inst));
+            trace!(" - {}", pos.func.dfg.display_inst(inst));
             pos.func.layout.remove_inst(inst);
         }
 

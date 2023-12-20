@@ -49,7 +49,8 @@ impl<'e, E: Engine + ?Sized> ChunkedEncoder<'e, E> {
             if self.engine.config().encode_padding() && !more_input_left {
                 // no more input, add padding if needed. Buffer will have room because
                 // max_input_length leaves room for it.
-                b64_bytes_written += add_padding(bytes.len(), &mut encode_buf[b64_bytes_written..]);
+                b64_bytes_written +=
+                    add_padding(b64_bytes_written, &mut encode_buf[b64_bytes_written..]);
             }
 
             sink.write_encoded_bytes(&encode_buf[0..b64_bytes_written])?;

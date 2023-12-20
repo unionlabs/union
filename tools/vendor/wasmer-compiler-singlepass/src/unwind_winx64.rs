@@ -95,10 +95,7 @@ impl UnwindCode {
                 reg,
                 stack_offset,
             } => {
-                let is_xmm = match self {
-                    Self::SaveXmm { .. } => true,
-                    _ => false,
-                };
+                let is_xmm = matches!(self, Self::SaveXmm { .. });
                 let (op_small, op_large) = if is_xmm {
                     (UnwindOperation::SaveXmm128, UnwindOperation::SaveXmm128Far)
                 } else {
@@ -243,7 +240,7 @@ impl UnwindInfo {
 
 const UNWIND_RBP_REG: u8 = 5;
 
-pub(crate) fn create_unwind_info_from_insts(insts: &Vec<(usize, UnwindOps)>) -> Option<UnwindInfo> {
+pub(crate) fn create_unwind_info_from_insts(insts: &[(usize, UnwindOps)]) -> Option<UnwindInfo> {
     let mut unwind_codes = vec![];
     let mut frame_register_offset = 0;
     let mut max_unwind_offset = 0;

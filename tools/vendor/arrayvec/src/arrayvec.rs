@@ -77,6 +77,8 @@ impl<T, const CAP: usize> ArrayVec<T, CAP> {
     /// assert_eq!(&array[..], &[1, 2]);
     /// assert_eq!(array.capacity(), 16);
     /// ```
+    #[inline]
+    #[track_caller]
     pub fn new() -> ArrayVec<T, CAP> {
         assert_capacity_limit!(CAP);
         unsafe {
@@ -172,6 +174,7 @@ impl<T, const CAP: usize> ArrayVec<T, CAP> {
     ///
     /// assert_eq!(&array[..], &[1, 2]);
     /// ```
+    #[track_caller]
     pub fn push(&mut self, element: T) {
         ArrayVecImpl::push(self, element)
     }
@@ -277,6 +280,7 @@ impl<T, const CAP: usize> ArrayVec<T, CAP> {
     /// assert_eq!(&array[..], &["y", "x"]);
     ///
     /// ```
+    #[track_caller]
     pub fn insert(&mut self, index: usize, element: T) {
         self.try_insert(index, element).unwrap()
     }
@@ -507,7 +511,7 @@ impl<T, const CAP: usize> ArrayVec<T, CAP> {
             }
             if DELETED {
                 unsafe {
-                    let hole_slot = g.v.as_mut_ptr().add(g.processed_len - g.deleted_cnt);
+                    let hole_slot = cur.sub(g.deleted_cnt);
                     ptr::copy_nonoverlapping(cur, hole_slot, 1);
                 }
             }
@@ -748,6 +752,7 @@ impl<T, const CAP: usize> DerefMut for ArrayVec<T, CAP> {
 /// assert_eq!(array.capacity(), 3);
 /// ```
 impl<T, const CAP: usize> From<[T; CAP]> for ArrayVec<T, CAP> {
+    #[track_caller]
     fn from(array: [T; CAP]) -> Self {
         let array = ManuallyDrop::new(array);
         let mut vec = <ArrayVec<T, CAP>>::new();
@@ -842,6 +847,32 @@ impl<T, const CAP: usize> IntoIterator for ArrayVec<T, CAP> {
     }
 }
 
+
+#[cfg(feature = "zeroize")]
+/// "Best efforts" zeroing of the `ArrayVec`'s buffer when the `zeroize` feature is enabled.
+///
+/// The length is set to 0, and the buffer is dropped and zeroized.
+/// Cannot ensure that previous moves of the `ArrayVec` did not leave values on the stack.
+///
+/// ```
+/// use arrayvec::ArrayVec;
+/// use zeroize::Zeroize;
+/// let mut array = ArrayVec::from([1, 2, 3]);
+/// array.zeroize();
+/// assert_eq!(array.len(), 0);
+/// let data = unsafe { core::slice::from_raw_parts(array.as_ptr(), array.capacity()) };
+/// assert_eq!(data, [0, 0, 0]);
+/// ```
+impl<Z: zeroize::Zeroize, const CAP: usize> zeroize::Zeroize for ArrayVec<Z, CAP> {
+    fn zeroize(&mut self) {
+        // Zeroize all the contained elements.
+        self.iter_mut().zeroize();
+        // Drop all the elements and set the length to 0.
+        self.clear();
+        // Zeroize the backing array.
+        self.xs.zeroize();
+    }
+}
 
 /// By-value iterator for `ArrayVec`.
 pub struct IntoIter<T, const CAP: usize> {
@@ -978,9 +1009,8 @@ impl<'a, T: 'a, const CAP: usize> Drop for Drain<'a, T, CAP> {
                 // memmove back untouched tail, update to new length
                 let start = source_vec.len();
                 let tail = self.tail_start;
-                let src = source_vec.as_ptr().add(tail);
-                let dst = source_vec.as_mut_ptr().add(start);
-                ptr::copy(src, dst, self.tail_len);
+                let ptr = source_vec.as_mut_ptr();
+                ptr::copy(ptr.add(tail), ptr.add(start), self.tail_len);
                 source_vec.set_len(start + self.tail_len);
             }
         }
@@ -1012,6 +1042,7 @@ impl<T, const CAP: usize> Extend<T> for ArrayVec<T, CAP> {
     /// Extend the `ArrayVec` with an iterator.
     /// 
     /// ***Panics*** if extending the vector exceeds its capacity.
+    #[track_caller]
     fn extend<I: IntoIterator<Item=T>>(&mut self, iter: I) {
         unsafe {
             self.extend_from_iter::<_, true>(iter)
@@ -1021,6 +1052,7 @@ impl<T, const CAP: usize> Extend<T> for ArrayVec<T, CAP> {
 
 #[inline(never)]
 #[cold]
+#[track_caller]
 fn extend_panic() {
     panic!("ArrayVec: capacity exceeded in extend/from_iter");
 }
@@ -1032,6 +1064,7 @@ impl<T, const CAP: usize> ArrayVec<T, CAP> {
     ///
     /// Unsafe because if CHECK is false, the length of the input is not checked.
     /// The caller must ensure the length of the input fits in the capacity.
+    #[track_caller]
     pub(crate) unsafe fn extend_from_iter<I, const CHECK: bool>(&mut self, iterable: I)
         where I: IntoIterator<Item = T>
     {
@@ -1082,7 +1115,7 @@ impl<T, const CAP: usize> ArrayVec<T, CAP> {
 unsafe fn raw_ptr_add<T>(ptr: *mut T, offset: usize) -> *mut T {
     if mem::size_of::<T>() == 0 {
         // Special case for ZST
-        (ptr as usize).wrapping_add(offset) as _
+        ptr.cast::<u8>().wrapping_add(offset).cast()
     } else {
         ptr.add(offset)
     }

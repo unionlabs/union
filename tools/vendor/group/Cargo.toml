@@ -12,7 +12,7 @@
 [package]
 edition = "2021"
 name = "group"
-version = "0.12.1"
+version = "0.13.0"
 authors = ["Sean Bowe <ewillbefull@gmail.com>", "Jack Grigg <jack@z.cash>"]
 description = "Elliptic curve group traits and utilities"
 homepage = "https://github.com/zkcrypto/group"
@@ -22,7 +22,7 @@ license = "MIT/Apache-2.0"
 repository = "https://github.com/zkcrypto/group"
 resolver = "2"
 [dependencies.ff]
-version = "0.12"
+version = "0.13"
 default-features = false
 
 [dependencies.memuse]

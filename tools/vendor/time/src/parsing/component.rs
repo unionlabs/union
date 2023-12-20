@@ -2,11 +2,12 @@
 
 use core::num::{NonZeroU16, NonZeroU8};
 
+use crate::convert::*;
 use crate::format_description::modifier;
 #[cfg(feature = "large-dates")]
 use crate::parsing::combinator::n_to_m_digits_padded;
 use crate::parsing::combinator::{
-    any_digit, exactly_n_digits, exactly_n_digits_padded, first_match, opt, sign,
+    any_digit, exactly_n_digits, exactly_n_digits_padded, first_match, n_to_m_digits, opt, sign,
 };
 use crate::parsing::ParsedItem;
 use crate::{Month, Weekday};
@@ -296,3 +297,49 @@ pub(crate) fn parse_offset_second(
     )
 }
 // endregion offset components
+
+/// Ignore the given number of bytes.
+pub(crate) fn parse_ignore(
+    input: &[u8],
+    modifiers: modifier::Ignore,
+) -> Option<ParsedItem<'_, ()>> {
+    let modifier::Ignore { count } = modifiers;
+    let input = input.get((count.get() as usize)..)?;
+    Some(ParsedItem(input, ()))
+}
+
+/// Parse the Unix timestamp component.
+pub(crate) fn parse_unix_timestamp(
+    input: &[u8],
+    modifiers: modifier::UnixTimestamp,
+) -> Option<ParsedItem<'_, i128>> {
+    let ParsedItem(input, sign) = opt(sign)(input);
+    let ParsedItem(input, nano_timestamp) = match modifiers.precision {
+        modifier::UnixTimestampPrecision::Second => {
+            n_to_m_digits::<1, 14, u128>(input)?.map(|val| val * Nanosecond.per(Second) as u128)
+        }
+        modifier::UnixTimestampPrecision::Millisecond => n_to_m_digits::<1, 17, u128>(input)?
+            .map(|val| val * Nanosecond.per(Millisecond) as u128),
+        modifier::UnixTimestampPrecision::Microsecond => n_to_m_digits::<1, 20, u128>(input)?
+            .map(|val| val * Nanosecond.per(Microsecond) as u128),
+        modifier::UnixTimestampPrecision::Nanosecond => n_to_m_digits::<1, 23, _>(input)?,
+    };
+
+    match sign {
+        Some(b'-') => Some(ParsedItem(input, -(nano_timestamp as i128))),
+        None if modifiers.sign_is_mandatory => None,
+        _ => Some(ParsedItem(input, nano_timestamp as _)),
+    }
+}
+
+/// Parse the `end` component, which represents the end of input. If any input is remaining, `None`
+/// is returned.
+pub(crate) const fn parse_end(input: &[u8], end: modifier::End) -> Option<ParsedItem<'_, ()>> {
+    let modifier::End {} = end;
+
+    if input.is_empty() {
+        Some(ParsedItem(input, ()))
+    } else {
+        None
+    }
+}

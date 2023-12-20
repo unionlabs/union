@@ -4,8 +4,8 @@
 //! WebAssembly trap handling, which is built on top of the lower-level
 //! signalhandling mechanisms.
 
-use crate::vmcontext::{VMFunctionBody, VMFunctionEnvironment, VMTrampoline};
-use crate::Trap;
+use crate::vmcontext::{VMFunctionContext, VMTrampoline};
+use crate::{Trap, VMFunctionBody};
 use backtrace::Backtrace;
 use core::ptr::{read, read_unaligned};
 use corosensei::stack::DefaultStack;
@@ -20,22 +20,53 @@ use std::mem;
 #[cfg(unix)]
 use std::mem::MaybeUninit;
 use std::ptr::{self, NonNull};
-use std::sync::atomic::{compiler_fence, AtomicPtr, Ordering};
-use std::sync::{Mutex, Once};
+use std::sync::atomic::{compiler_fence, AtomicPtr, AtomicUsize, Ordering};
+use std::sync::Once;
 use wasmer_types::TrapCode;
+
+/// Configuration for the the runtime VM
+/// Currently only the stack size is configurable
+pub struct VMConfig {
+    /// Optionnal stack size (in byte) of the VM. Value lower than 8K will be rounded to 8K.
+    pub wasm_stack_size: Option<usize>,
+}
 
 // TrapInformation can be stored in the "Undefined Instruction" itself.
 // On x86_64, 0xC? select a "Register" for the Mod R/M part of "ud1" (so with no other bytes after)
 // On Arm64, the udf alows for a 16bits values, so we'll use the same 0xC? to store the trapinfo
 static MAGIC: u8 = 0xc0;
 
+static DEFAULT_STACK_SIZE: AtomicUsize = AtomicUsize::new(1024 * 1024);
+
+// Current definition of `ucontext_t` in the `libc` crate is incorrect
+// on aarch64-apple-drawin so it's defined here with a more accurate definition.
+#[repr(C)]
+#[cfg(all(target_arch = "aarch64", target_os = "macos"))]
+#[allow(non_camel_case_types)]
+struct ucontext_t {
+    uc_onstack: libc::c_int,
+    uc_sigmask: libc::sigset_t,
+    uc_stack: libc::stack_t,
+    uc_link: *mut libc::ucontext_t,
+    uc_mcsize: usize,
+    uc_mcontext: libc::mcontext_t,
+}
+
+#[cfg(all(unix, not(all(target_arch = "aarch64", target_os = "macos"))))]
+use libc::ucontext_t;
+
+/// Default stack size is 1MB.
+pub fn set_stack_size(size: usize) {
+    DEFAULT_STACK_SIZE.store(size.max(8 * 1024).min(100 * 1024 * 1024), Ordering::Relaxed);
+}
+
 cfg_if::cfg_if! {
     if #[cfg(unix)] {
         /// Function which may handle custom signals while processing traps.
-        pub type TrapHandlerFn = dyn Fn(libc::c_int, *const libc::siginfo_t, *const libc::c_void) -> bool;
+        pub type TrapHandlerFn<'a> = dyn Fn(libc::c_int, *const libc::siginfo_t, *const libc::c_void) -> bool + Send + Sync + 'a;
     } else if #[cfg(target_os = "windows")] {
         /// Function which may handle custom signals while processing traps.
-        pub type TrapHandlerFn = dyn Fn(winapi::um::winnt::PEXCEPTION_POINTERS) -> bool;
+        pub type TrapHandlerFn<'a> = dyn Fn(winapi::um::winnt::PEXCEPTION_POINTERS) -> bool + Send + Sync + 'a;
     }
 }
 
@@ -74,30 +105,16 @@ unsafe fn process_illegal_op(addr: usize) -> Option<TrapCode> {
             1 => Some(TrapCode::HeapAccessOutOfBounds),
             2 => Some(TrapCode::HeapMisaligned),
             3 => Some(TrapCode::TableAccessOutOfBounds),
-            4 => Some(TrapCode::OutOfBounds),
-            5 => Some(TrapCode::IndirectCallToNull),
-            6 => Some(TrapCode::BadSignature),
-            7 => Some(TrapCode::IntegerOverflow),
-            8 => Some(TrapCode::IntegerDivisionByZero),
-            9 => Some(TrapCode::BadConversionToInteger),
-            10 => Some(TrapCode::UnreachableCodeReached),
-            11 => Some(TrapCode::UnalignedAtomic),
+            4 => Some(TrapCode::IndirectCallToNull),
+            5 => Some(TrapCode::BadSignature),
+            6 => Some(TrapCode::IntegerOverflow),
+            7 => Some(TrapCode::IntegerDivisionByZero),
+            8 => Some(TrapCode::BadConversionToInteger),
+            9 => Some(TrapCode::UnreachableCodeReached),
+            10 => Some(TrapCode::UnalignedAtomic),
             _ => None,
         },
     }
-}
-
-/// A package of functionality needed by `catch_traps` to figure out what to do
-/// when handling a trap.
-///
-/// Note that this is an `unsafe` trait at least because it's being run in the
-/// context of a synchronous signal handler, so it needs to be careful to not
-/// access too much state in answering these queries.
-pub unsafe trait TrapHandler {
-    /// Uses `call` to call a custom signal handler, if one is specified.
-    ///
-    /// Returns `true` if `call` returns true, otherwise returns `false`.
-    fn custom_trap_handler(&self, call: &dyn Fn(&TrapHandlerFn) -> bool) -> bool;
 }
 
 cfg_if::cfg_if! {
@@ -181,7 +198,7 @@ cfg_if::cfg_if! {
 
                 task_set_exception_ports(
                     mach_task_self(),
-                    EXC_MASK_BAD_ACCESS | EXC_MASK_ARITHMETIC,
+                    EXC_MASK_BAD_ACCESS | EXC_MASK_ARITHMETIC | EXC_MASK_BAD_INSTRUCTION,
                     MACH_PORT_NULL,
                     EXCEPTION_STATE_IDENTITY as exception_behavior_t,
                     MACHINE_THREAD_STATE,
@@ -216,7 +233,7 @@ cfg_if::cfg_if! {
                 }
                 _ => None,
             };
-            let ucontext = &mut *(context as *mut libc::ucontext_t);
+            let ucontext = &mut *(context as *mut ucontext_t);
             let (pc, sp) = get_pc_sp(ucontext);
             let handled = TrapHandlerContext::handle_trap(
                 pc,
@@ -256,7 +273,7 @@ cfg_if::cfg_if! {
             }
         }
 
-        unsafe fn get_pc_sp(context: &libc::ucontext_t) -> (usize, usize) {
+        unsafe fn get_pc_sp(context: &ucontext_t) -> (usize, usize) {
             let (pc, sp);
             cfg_if::cfg_if! {
                 if #[cfg(all(
@@ -272,6 +289,9 @@ cfg_if::cfg_if! {
                     pc = context.uc_mcontext.gregs[libc::REG_EIP as usize] as usize;
                     sp = context.uc_mcontext.gregs[libc::REG_ESP as usize] as usize;
                 } else if #[cfg(all(target_os = "freebsd", target_arch = "x86"))] {
+                    pc = context.uc_mcontext.mc_eip as usize;
+                    sp = context.uc_mcontext.mc_esp as usize;
+                } else if #[cfg(all(target_os = "freebsd", target_arch = "x86_64"))] {
                     pc = context.uc_mcontext.mc_rip as usize;
                     sp = context.uc_mcontext.mc_rsp as usize;
                 } else if #[cfg(all(target_vendor = "apple", target_arch = "x86_64"))] {
@@ -308,7 +328,7 @@ cfg_if::cfg_if! {
             (pc, sp)
         }
 
-        unsafe fn update_context(context: &mut libc::ucontext_t, regs: TrapHandlerRegs) {
+        unsafe fn update_context(context: &mut ucontext_t, regs: TrapHandlerRegs) {
             cfg_if::cfg_if! {
                 if #[cfg(all(
                         any(target_os = "linux", target_os = "android"),
@@ -337,6 +357,13 @@ cfg_if::cfg_if! {
                     (*context.uc_mcontext).__ss.__rbp = rbp;
                     (*context.uc_mcontext).__ss.__rdi = rdi;
                     (*context.uc_mcontext).__ss.__rsi = rsi;
+                } else if #[cfg(all(target_os = "freebsd", target_arch = "x86"))] {
+                    let TrapHandlerRegs { eip, esp, ebp, ecx, edx } = regs;
+                    context.uc_mcontext.mc_eip = eip as libc::register_t;
+                    context.uc_mcontext.mc_esp = esp as libc::register_t;
+                    context.uc_mcontext.mc_ebp = ebp as libc::register_t;
+                    context.uc_mcontext.mc_ecx = ecx as libc::register_t;
+                    context.uc_mcontext.mc_edx = edx as libc::register_t;
                 } else if #[cfg(all(target_os = "freebsd", target_arch = "x86_64"))] {
                     let TrapHandlerRegs { rip, rsp, rbp, rdi, rsi } = regs;
                     context.uc_mcontext.mc_rip = rip as libc::register_t;
@@ -609,14 +636,15 @@ pub unsafe fn resume_panic(payload: Box<dyn Any + Send>) -> ! {
 /// Wildly unsafe because it calls raw function pointers and reads/writes raw
 /// function pointers.
 pub unsafe fn wasmer_call_trampoline(
-    trap_handler: &(impl TrapHandler + 'static),
-    vmctx: VMFunctionEnvironment,
+    trap_handler: Option<*const TrapHandlerFn<'static>>,
+    config: &VMConfig,
+    vmctx: VMFunctionContext,
     trampoline: VMTrampoline,
     callee: *const VMFunctionBody,
     values_vec: *mut u8,
 ) -> Result<(), Trap> {
-    catch_traps(trap_handler, || {
-        mem::transmute::<_, extern "C" fn(VMFunctionEnvironment, *const VMFunctionBody, *mut u8)>(
+    catch_traps(trap_handler, config, || {
+        mem::transmute::<_, extern "C" fn(VMFunctionContext, *const VMFunctionBody, *mut u8)>(
             trampoline,
         )(vmctx, callee, values_vec);
     })
@@ -625,9 +653,12 @@ pub unsafe fn wasmer_call_trampoline(
 /// Catches any wasm traps that happen within the execution of `closure`,
 /// returning them as a `Result`.
 ///
+/// # Safety
+///
 /// Highly unsafe since `closure` won't have any dtors run.
 pub unsafe fn catch_traps<F, R>(
-    trap_handler: &(dyn TrapHandler + 'static),
+    trap_handler: Option<*const TrapHandlerFn<'static>>,
+    config: &VMConfig,
     closure: F,
 ) -> Result<R, Trap>
 where
@@ -635,8 +666,10 @@ where
 {
     // Ensure that per-thread initialization is done.
     lazy_per_thread_init()?;
-
-    on_wasm_stack(trap_handler, closure).map_err(UnwindReason::to_trap)
+    let stack_size = config
+        .wasm_stack_size
+        .unwrap_or_else(|| DEFAULT_STACK_SIZE.load(Ordering::Relaxed));
+    on_wasm_stack(stack_size, trap_handler, closure).map_err(UnwindReason::into_trap)
 }
 
 // We need two separate thread-local variables here:
@@ -654,6 +687,7 @@ thread_local! {
 
 /// Read-only information that is used by signal handlers to handle and recover
 /// from traps.
+#[allow(clippy::type_complexity)]
 struct TrapHandlerContext {
     inner: *const u8,
     handle_trap: fn(
@@ -664,7 +698,7 @@ struct TrapHandlerContext {
         Option<TrapCode>,
         &mut dyn FnMut(TrapHandlerRegs),
     ) -> bool,
-    custom_trap: *const dyn TrapHandler,
+    custom_trap: Option<*const TrapHandlerFn<'static>>,
 }
 struct TrapHandlerContextInner<T> {
     /// Information about the currently running coroutine. This is used to
@@ -676,7 +710,7 @@ impl TrapHandlerContext {
     /// Runs the given function with a trap handler context. The previous
     /// trap handler context is preserved and restored afterwards.
     fn install<T, R>(
-        custom_trap: &(dyn TrapHandler + 'static),
+        custom_trap: Option<*const TrapHandlerFn<'static>>,
         coro_trap_handler: CoroutineTrapHandler<Result<T, UnwindReason>>,
         f: impl FnOnce() -> R,
     ) -> R {
@@ -700,7 +734,7 @@ impl TrapHandlerContext {
             }
         }
         let inner = TrapHandlerContextInner { coro_trap_handler };
-        let ctx = TrapHandlerContext {
+        let ctx = Self {
             inner: &inner as *const _ as *const u8,
             handle_trap: func::<T>,
             custom_trap,
@@ -709,10 +743,7 @@ impl TrapHandlerContext {
         compiler_fence(Ordering::Release);
         let prev = TRAP_HANDLER.with(|ptr| {
             let prev = ptr.load(Ordering::Relaxed);
-            ptr.store(
-                &ctx as *const TrapHandlerContext as *mut TrapHandlerContext,
-                Ordering::Relaxed,
-            );
+            ptr.store(&ctx as *const Self as *mut Self, Ordering::Relaxed);
             prev
         });
 
@@ -731,7 +762,7 @@ impl TrapHandlerContext {
         maybe_fault_address: Option<usize>,
         trap_code: Option<TrapCode>,
         mut update_regs: impl FnMut(TrapHandlerRegs),
-        call_handler: impl Fn(&TrapHandlerFn) -> bool,
+        call_handler: impl Fn(&TrapHandlerFn<'static>) -> bool,
     ) -> bool {
         let ptr = TRAP_HANDLER.with(|ptr| ptr.load(Ordering::Relaxed));
         if ptr.is_null() {
@@ -741,8 +772,10 @@ impl TrapHandlerContext {
         let ctx = &*ptr;
 
         // Check if this trap is handled by a custom trap handler.
-        if (*ctx.custom_trap).custom_trap_handler(&call_handler) {
-            return true;
+        if let Some(trap_handler) = ctx.custom_trap {
+            if call_handler(&*trap_handler) {
+                return true;
+            }
         }
 
         (ctx.handle_trap)(
@@ -824,16 +857,16 @@ enum UnwindReason {
 }
 
 impl UnwindReason {
-    fn to_trap(self) -> Trap {
+    fn into_trap(self) -> Trap {
         match self {
-            UnwindReason::UserTrap(data) => Trap::User(data),
-            UnwindReason::LibTrap(trap) => trap,
-            UnwindReason::WasmTrap {
+            Self::UserTrap(data) => Trap::User(data),
+            Self::LibTrap(trap) => trap,
+            Self::WasmTrap {
                 backtrace,
                 pc,
                 signal_trap,
             } => Trap::wasm(pc, backtrace, signal_trap),
-            UnwindReason::Panic(panic) => std::panic::resume_unwind(panic),
+            Self::Panic(panic) => std::panic::resume_unwind(panic),
         }
     }
 }
@@ -853,7 +886,8 @@ unsafe fn unwind_with(reason: UnwindReason) -> ! {
 /// bounded. Stack overflows and other traps can be caught and execution
 /// returned to the root of the stack.
 fn on_wasm_stack<F: FnOnce() -> T, T>(
-    trap_handler: &(dyn TrapHandler + 'static),
+    stack_size: usize,
+    trap_handler: Option<*const TrapHandlerFn<'static>>,
     f: F,
 ) -> Result<T, UnwindReason> {
     // Allocating a new stack is pretty expensive since it involves several
@@ -861,10 +895,12 @@ fn on_wasm_stack<F: FnOnce() -> T, T>(
     // allows them to be reused multiple times.
     // FIXME(Amanieu): We should refactor this to avoid the lock.
     lazy_static::lazy_static! {
-        static ref STACK_POOL: Mutex<Vec<DefaultStack>> = Mutex::new(vec![]);
+        static ref STACK_POOL: crossbeam_queue::SegQueue<DefaultStack> = crossbeam_queue::SegQueue::new();
     }
-    let stack = STACK_POOL.lock().unwrap().pop().unwrap_or_default();
-    let mut stack = scopeguard::guard(stack, |stack| STACK_POOL.lock().unwrap().push(stack));
+    let stack = STACK_POOL
+        .pop()
+        .unwrap_or_else(|| DefaultStack::new(stack_size).unwrap());
+    let mut stack = scopeguard::guard(stack, |stack| STACK_POOL.push(stack));
 
     // Create a coroutine with a new stack to run the function on.
     let mut coro = ScopedCoroutine::with_stack(&mut *stack, move |yielder, ()| {
@@ -927,7 +963,10 @@ pub fn on_host_stack<F: FnOnce() -> T, T>(f: F) -> T {
     struct SendWrapper<T>(T);
     unsafe impl<T> Send for SendWrapper<T> {}
     let wrapped = SendWrapper(f);
-    yielder.on_parent_stack(move || (wrapped.0)())
+    yielder.on_parent_stack(move || {
+        let wrapped = wrapped;
+        (wrapped.0)()
+    })
 }
 
 #[cfg(windows)]
@@ -964,7 +1003,7 @@ pub fn lazy_per_thread_init() -> Result<(), Trap> {
     const MIN_STACK_SIZE: usize = 16 * 4096;
 
     enum Tls {
-        OOM,
+        OutOfMemory,
         Allocated {
             mmap_ptr: *mut libc::c_void,
             mmap_size: usize,
@@ -997,7 +1036,7 @@ pub fn lazy_per_thread_init() -> Result<(), Trap> {
             0,
         );
         if ptr == libc::MAP_FAILED {
-            return Tls::OOM;
+            return Tls::OutOfMemory;
         }
 
         // Prepare the stack with readable/writable memory and then register it
@@ -1026,7 +1065,7 @@ pub fn lazy_per_thread_init() -> Result<(), Trap> {
     // Ensure TLS runs its initializer and return an error if it failed to
     // set up a separate stack for signal handlers.
     return TLS.with(|tls| {
-        if let Tls::OOM = tls {
+        if let Tls::OutOfMemory = tls {
             Err(Trap::oom())
         } else {
             Ok(())

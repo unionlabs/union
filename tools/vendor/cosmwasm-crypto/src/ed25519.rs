@@ -253,8 +253,7 @@ mod tests {
             // ed25519_verify() works
             assert!(
                 ed25519_verify(&message, &signature, &public_key).unwrap(),
-                "verify() failed (test case {})",
-                i
+                "verify() failed (test case {i})"
             );
         }
     }

@@ -1,31 +1,20 @@
-use crate::js::export::{Export, VMMemory};
-use crate::js::exports::{ExportError, Exportable};
-use crate::js::externals::Extern;
-use crate::js::store::Store;
-use crate::js::{MemoryType, MemoryView};
-use std::convert::TryInto;
-use thiserror::Error;
+use crate::js::vm::{VMExtern, VMMemory};
+use crate::mem_access::MemoryAccessError;
+use crate::store::{AsStoreMut, AsStoreRef, StoreObjects};
+use crate::MemoryType;
+use std::marker::PhantomData;
+use std::mem::MaybeUninit;
+use std::slice;
+#[cfg(feature = "tracing")]
+use tracing::warn;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use wasmer_types::{Bytes, Pages, ValueType};
+use wasmer_types::Pages;
 
-/// Error type describing things that can go wrong when operating on Wasm Memories.
-#[derive(Error, Debug, Clone, PartialEq, Hash)]
-pub enum MemoryError {
-    /// The operation would cause the size of the memory to exceed the maximum or would cause
-    /// an overflow leading to unindexable memory.
-    #[error("The memory could not grow: current size {} pages, requested increase: {} pages", current.0, attempted_delta.0)]
-    CouldNotGrow {
-        /// The current size in pages.
-        current: Pages,
-        /// The attempted amount to grow by in pages.
-        attempted_delta: Pages,
-    },
-    /// A user defined error value, used for error cases not listed above.
-    #[error("A user-defined error occurred: {0}")]
-    Generic(String),
-}
+use super::memory_view::MemoryView;
+
+pub use wasmer_types::MemoryError;
 
 #[wasm_bindgen]
 extern "C" {
@@ -59,191 +48,85 @@ extern "C" {
     pub fn grow(this: &JSMemory, pages: u32) -> Result<u32, JsValue>;
 }
 
-/// A WebAssembly `memory` instance.
-///
-/// A memory instance is the runtime representation of a linear memory.
-/// It consists of a vector of bytes and an optional maximum size.
-///
-/// The length of the vector always is a multiple of the WebAssembly
-/// page size, which is defined to be the constant 65536 – abbreviated 64Ki.
-/// Like in a memory type, the maximum size in a memory instance is
-/// given in units of this page size.
-///
-/// A memory created by the host or in WebAssembly code will be accessible and
-/// mutable from both host and WebAssembly.
-///
-/// Spec: <https://webassembly.github.io/spec/core/exec/runtime.html#memory-instances>
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Memory {
-    store: Store,
-    vm_memory: VMMemory,
+    pub(crate) handle: VMMemory,
 }
 
+// Only SharedMemories can be Send in js, becuase they support `structuredClone`.
+// Normal memories will fail while doing structuredClone.
+// In this case, we implement Send just in case as it can be a shared memory.
+// https://developer.mozilla.org/en-US/docs/Web/API/structuredClone
+// ```js
+// const memory = new WebAssembly.Memory({
+//   initial: 10,
+//   maximum: 100,
+//   shared: true // <--- It must be shared, otherwise structuredClone will fail
+// });
+// structuredClone(memory)
+// ```
+unsafe impl Send for Memory {}
+unsafe impl Sync for Memory {}
+
 impl Memory {
-    /// Creates a new host `Memory` from the provided [`MemoryType`].
-    ///
-    /// This function will construct the `Memory` using the store
-    /// [`BaseTunables`][crate::js::tunables::BaseTunables].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Memory, MemoryType, Pages, Store, Type, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let m = Memory::new(&store, MemoryType::new(1, None, false)).unwrap();
-    /// ```
-    pub fn new(store: &Store, ty: MemoryType) -> Result<Self, MemoryError> {
+    pub fn new(store: &mut impl AsStoreMut, ty: MemoryType) -> Result<Self, MemoryError> {
+        let vm_memory = VMMemory::new(Self::js_memory_from_type(&ty)?, ty);
+        Ok(Self::from_vm_extern(store, vm_memory))
+    }
+
+    pub(crate) fn js_memory_from_type(
+        ty: &MemoryType,
+    ) -> Result<js_sys::WebAssembly::Memory, MemoryError> {
         let descriptor = js_sys::Object::new();
-        js_sys::Reflect::set(&descriptor, &"initial".into(), &ty.minimum.0.into()).unwrap();
-        if let Some(max) = ty.maximum {
-            js_sys::Reflect::set(&descriptor, &"maximum".into(), &max.0.into()).unwrap();
+        // Annotation is here to prevent spurious IDE warnings.
+        #[allow(unused_unsafe)]
+        unsafe {
+            js_sys::Reflect::set(&descriptor, &"initial".into(), &ty.minimum.0.into()).unwrap();
+            if let Some(max) = ty.maximum {
+                js_sys::Reflect::set(&descriptor, &"maximum".into(), &max.0.into()).unwrap();
+            }
+            js_sys::Reflect::set(&descriptor, &"shared".into(), &ty.shared.into()).unwrap();
         }
-        js_sys::Reflect::set(&descriptor, &"shared".into(), &ty.shared.into()).unwrap();
 
         let js_memory = js_sys::WebAssembly::Memory::new(&descriptor)
             .map_err(|_e| MemoryError::Generic("Error while creating the memory".to_owned()))?;
 
-        let memory = VMMemory::new(js_memory, ty);
-        Ok(Self {
-            store: store.clone(),
-            vm_memory: memory,
-        })
+        Ok(js_memory)
     }
 
-    /// Returns the [`MemoryType`] of the `Memory`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Memory, MemoryType, Pages, Store, Type, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let mt = MemoryType::new(1, None, false);
-    /// let m = Memory::new(&store, mt).unwrap();
-    ///
-    /// assert_eq!(m.ty(), mt);
-    /// ```
-    pub fn ty(&self) -> MemoryType {
-        let mut ty = self.vm_memory.ty.clone();
-        ty.minimum = self.size();
-        ty
+    pub fn new_from_existing(new_store: &mut impl AsStoreMut, memory: VMMemory) -> Self {
+        Self::from_vm_extern(new_store, memory)
     }
 
-    /// Returns the [`Store`] where the `Memory` belongs.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Memory, MemoryType, Pages, Store, Type, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let m = Memory::new(&store, MemoryType::new(1, None, false)).unwrap();
-    ///
-    /// assert_eq!(m.store(), &store);
-    /// ```
-    pub fn store(&self) -> &Store {
-        &self.store
+    pub(crate) fn to_vm_extern(&self) -> VMExtern {
+        VMExtern::Memory(self.handle.clone())
     }
 
-    /// Retrieve a slice of the memory contents.
-    ///
-    /// # Safety
-    ///
-    /// Until the returned slice is dropped, it is undefined behaviour to
-    /// modify the memory contents in any way including by calling a wasm
-    /// function that writes to the memory or by resizing the memory.
-    pub unsafe fn data_unchecked(&self) -> &[u8] {
-        unimplemented!("direct data pointer access is not possible in JavaScript");
+    pub fn ty(&self, _store: &impl AsStoreRef) -> MemoryType {
+        self.handle.ty
     }
 
-    /// Retrieve a mutable slice of the memory contents.
-    ///
-    /// # Safety
-    ///
-    /// This method provides interior mutability without an UnsafeCell. Until
-    /// the returned value is dropped, it is undefined behaviour to read or
-    /// write to the pointed-to memory in any way except through this slice,
-    /// including by calling a wasm function that reads the memory contents or
-    /// by resizing this Memory.
-    #[allow(clippy::mut_from_ref)]
-    pub unsafe fn data_unchecked_mut(&self) -> &mut [u8] {
-        unimplemented!("direct data pointer access is not possible in JavaScript");
+    /// Creates a view into the memory that then allows for
+    /// read and write
+    pub fn view<'a>(&self, store: &'a impl AsStoreRef) -> MemoryView<'a> {
+        MemoryView::new(self, store)
     }
 
-    /// Returns the pointer to the raw bytes of the `Memory`.
-    pub fn data_ptr(&self) -> *mut u8 {
-        unimplemented!("direct data pointer access is not possible in JavaScript");
-    }
-
-    /// Returns the size (in bytes) of the `Memory`.
-    pub fn data_size(&self) -> u64 {
-        js_sys::Reflect::get(&self.vm_memory.memory.buffer(), &"byteLength".into())
-            .unwrap()
-            .as_f64()
-            .unwrap() as _
-    }
-
-    /// Returns the size (in [`Pages`]) of the `Memory`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Memory, MemoryType, Pages, Store, Type, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let m = Memory::new(&store, MemoryType::new(1, None, false)).unwrap();
-    ///
-    /// assert_eq!(m.size(), Pages(1));
-    /// ```
-    pub fn size(&self) -> Pages {
-        let bytes = js_sys::Reflect::get(&self.vm_memory.memory.buffer(), &"byteLength".into())
-            .unwrap()
-            .as_f64()
-            .unwrap() as u64;
-        Bytes(bytes as usize).try_into().unwrap()
-    }
-
-    /// Grow memory by the specified amount of WebAssembly [`Pages`] and return
-    /// the previous memory size.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Memory, MemoryType, Pages, Store, Type, Value, WASM_MAX_PAGES};
-    /// # let store = Store::default();
-    /// #
-    /// let m = Memory::new(&store, MemoryType::new(1, Some(3), false)).unwrap();
-    /// let p = m.grow(2).unwrap();
-    ///
-    /// assert_eq!(p, Pages(1));
-    /// assert_eq!(m.size(), Pages(3));
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if memory can't be grown by the specified amount
-    /// of pages.
-    ///
-    /// ```should_panic
-    /// # use wasmer::{Memory, MemoryType, Pages, Store, Type, Value, WASM_MAX_PAGES};
-    /// # let store = Store::default();
-    /// #
-    /// let m = Memory::new(&store, MemoryType::new(1, Some(1), false)).unwrap();
-    ///
-    /// // This results in an error: `MemoryError::CouldNotGrow`.
-    /// let s = m.grow(1).unwrap();
-    /// ```
-    pub fn grow<IntoPages>(&self, delta: IntoPages) -> Result<Pages, MemoryError>
+    pub fn grow<IntoPages>(
+        &self,
+        store: &mut impl AsStoreMut,
+        delta: IntoPages,
+    ) -> Result<Pages, MemoryError>
     where
         IntoPages: Into<Pages>,
     {
         let pages = delta.into();
-        let js_memory = self.vm_memory.memory.clone().unchecked_into::<JSMemory>();
-        let new_pages = js_memory.grow(pages.0).map_err(|err| {
+        let js_memory = &self.handle.memory;
+        let our_js_memory: &JSMemory = JsCast::unchecked_from_js_ref(js_memory);
+        let new_pages = our_js_memory.grow(pages.0).map_err(|err| {
             if err.is_instance_of::<js_sys::RangeError>() {
                 MemoryError::CouldNotGrow {
-                    current: self.size(),
+                    current: self.view(&store.as_store_ref()).size(),
                     attempted_delta: pages,
                 }
             } else {
@@ -253,82 +136,105 @@ impl Memory {
         Ok(Pages(new_pages))
     }
 
-    /// Return a "view" of the currently accessible memory. By
-    /// default, the view is unsynchronized, using regular memory
-    /// accesses. You can force a memory view to use atomic accesses
-    /// by calling the [`MemoryView::atomically`] method.
-    ///
-    /// # Notes:
-    ///
-    /// This method is safe (as in, it won't cause the host to crash or have UB),
-    /// but it doesn't obey rust's rules involving data races, especially concurrent ones.
-    /// Therefore, if this memory is shared between multiple threads, a single memory
-    /// location can be mutated concurrently without synchronization.
-    ///
-    /// # Usage:
-    ///
-    /// ```
-    /// # use wasmer::{Memory, MemoryView};
-    /// # use std::{cell::Cell, sync::atomic::Ordering};
-    /// # fn view_memory(memory: Memory) {
-    /// // Without synchronization.
-    /// let view: MemoryView<u8> = memory.view();
-    /// for byte in view[0x1000 .. 0x1010].iter().map(Cell::get) {
-    ///     println!("byte: {}", byte);
-    /// }
-    ///
-    /// // With synchronization.
-    /// let atomic_view = view.atomically();
-    /// for byte in atomic_view[0x1000 .. 0x1010].iter().map(|atom| atom.load(Ordering::SeqCst)) {
-    ///     println!("byte: {}", byte);
-    /// }
-    /// # }
-    /// ```
-    pub fn view<T: ValueType>(&self) -> MemoryView<T> {
-        unimplemented!("The view function is not yet implemented in Wasmer Javascript");
+    pub(crate) fn from_vm_extern(_store: &mut impl AsStoreMut, internal: VMMemory) -> Self {
+        Self { handle: internal }
     }
 
-    /// A theoretical alais to `Self::view::<u8>` but it returns a `js::Uint8Array` in this case.
-    ///
-    /// This code is going to be refactored. Use it as your own risks.
-    #[doc(hidden)]
-    pub fn uint8view(&self) -> js_sys::Uint8Array {
-        js_sys::Uint8Array::new(&self.vm_memory.memory.buffer())
+    /// Cloning memory will create another reference to the same memory that
+    /// can be put into a new store
+    pub fn try_clone(&self, _store: &impl AsStoreRef) -> Result<VMMemory, MemoryError> {
+        self.handle.try_clone()
     }
 
-    pub(crate) fn from_vm_export(store: &Store, vm_memory: VMMemory) -> Self {
-        Self {
-            store: store.clone(),
-            vm_memory,
-        }
+    /// Copying the memory will actually copy all the bytes in the memory to
+    /// a identical byte copy of the original that can be put into a new store
+    pub fn try_copy(&self, store: &impl AsStoreRef) -> Result<VMMemory, MemoryError> {
+        let mut cloned = self.try_clone(store)?;
+        cloned.copy()
     }
 
-    /// Returns whether or not these two memories refer to the same data.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Memory, MemoryType, Store, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let m = Memory::new(&store, MemoryType::new(1, None, false)).unwrap();
-    ///
-    /// assert!(m.same(&m));
-    /// ```
-    pub fn same(&self, other: &Self) -> bool {
-        self.vm_memory == other.vm_memory
+    pub fn is_from_store(&self, _store: &impl AsStoreRef) -> bool {
+        true
     }
 }
 
-impl<'a> Exportable<'a> for Memory {
-    fn to_export(&self) -> Export {
-        Export::Memory(self.vm_memory.clone())
+impl std::cmp::PartialEq for Memory {
+    fn eq(&self, other: &Self) -> bool {
+        self.handle == other.handle
+    }
+}
+
+/// Underlying buffer for a memory.
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct MemoryBuffer<'a> {
+    pub(crate) base: *mut js_sys::Uint8Array,
+    pub(crate) marker: PhantomData<(&'a Memory, &'a StoreObjects)>,
+}
+
+impl<'a> MemoryBuffer<'a> {
+    pub(crate) fn read(&self, offset: u64, buf: &mut [u8]) -> Result<(), MemoryAccessError> {
+        let end = offset
+            .checked_add(buf.len() as u64)
+            .ok_or(MemoryAccessError::Overflow)?;
+        let view = unsafe { &*(self.base) };
+        if end > view.length().into() {
+            #[cfg(feature = "tracing")]
+            warn!(
+                "attempted to read ({} bytes) beyond the bounds of the memory view ({} > {})",
+                buf.len(),
+                end,
+                view.length()
+            );
+            return Err(MemoryAccessError::HeapOutOfBounds);
+        }
+        view.subarray(offset as _, end as _)
+            .copy_to(unsafe { &mut slice::from_raw_parts_mut(buf.as_mut_ptr(), buf.len()) });
+        Ok(())
     }
 
-    fn get_self_from_extern(_extern: &'a Extern) -> Result<&'a Self, ExportError> {
-        match _extern {
-            Extern::Memory(memory) => Ok(memory),
-            _ => Err(ExportError::IncompatibleType),
+    pub(crate) fn read_uninit<'b>(
+        &self,
+        offset: u64,
+        buf: &'b mut [MaybeUninit<u8>],
+    ) -> Result<&'b mut [u8], MemoryAccessError> {
+        let end = offset
+            .checked_add(buf.len() as u64)
+            .ok_or(MemoryAccessError::Overflow)?;
+        let view = unsafe { &*(self.base) };
+        if end > view.length().into() {
+            #[cfg(feature = "tracing")]
+            warn!(
+                "attempted to read ({} bytes) beyond the bounds of the memory view ({} > {})",
+                buf.len(),
+                end,
+                view.length()
+            );
+            return Err(MemoryAccessError::HeapOutOfBounds);
         }
+        let buf_ptr = buf.as_mut_ptr() as *mut u8;
+        view.subarray(offset as _, end as _)
+            .copy_to(unsafe { &mut slice::from_raw_parts_mut(buf_ptr, buf.len()) });
+
+        Ok(unsafe { slice::from_raw_parts_mut(buf_ptr, buf.len()) })
+    }
+
+    pub(crate) fn write(&self, offset: u64, data: &[u8]) -> Result<(), MemoryAccessError> {
+        let end = offset
+            .checked_add(data.len() as u64)
+            .ok_or(MemoryAccessError::Overflow)?;
+        let view = unsafe { &mut *(self.base) };
+        if end > view.length().into() {
+            #[cfg(feature = "tracing")]
+            warn!(
+                "attempted to write ({} bytes) beyond the bounds of the memory view ({} > {})",
+                data.len(),
+                end,
+                view.length()
+            );
+            return Err(MemoryAccessError::HeapOutOfBounds);
+        }
+        view.subarray(offset as _, end as _).copy_from(data);
+
+        Ok(())
     }
 }

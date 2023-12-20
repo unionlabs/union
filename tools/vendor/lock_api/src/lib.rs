@@ -86,6 +86,7 @@
 //!   requires the `alloc` crate to be present.
 
 #![no_std]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![warn(missing_docs)]
 #![warn(rust_2018_idioms)]
 
@@ -106,7 +107,9 @@ unsafe impl Sync for GuardNoSend {}
 mod mutex;
 pub use crate::mutex::*;
 
+#[cfg(feature = "atomic_usize")]
 mod remutex;
+#[cfg(feature = "atomic_usize")]
 pub use crate::remutex::*;
 
 mod rwlock;

@@ -51,7 +51,7 @@ mod tests {
                 assert_eq!(length, 50);
                 assert_eq!(capacity, 20);
             }
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -65,7 +65,7 @@ mod tests {
                 assert_eq!(offset, u32::MAX);
                 assert_eq!(capacity, 1);
             }
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -74,7 +74,7 @@ mod tests {
         let error = RegionValidationError::zero_offset();
         match error {
             RegionValidationError::ZeroOffset { .. } => {}
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 }

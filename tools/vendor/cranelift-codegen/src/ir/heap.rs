@@ -8,7 +8,7 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 /// Information about a heap declaration.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Hash)]
 #[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
 pub struct HeapData {
     /// The address of the start of the heap's storage.
@@ -29,7 +29,7 @@ pub struct HeapData {
 }
 
 /// Style of heap including style-specific information.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Hash)]
 #[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
 pub enum HeapStyle {
     /// A dynamic heap can be relocated to a different base address when it is grown.

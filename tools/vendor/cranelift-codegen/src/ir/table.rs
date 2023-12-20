@@ -8,7 +8,7 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 /// Information about a table declaration.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Hash)]
 #[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
 pub struct TableData {
     /// Global value giving the address of the start of the table.

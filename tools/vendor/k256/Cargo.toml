@@ -11,15 +11,15 @@
 
 [package]
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.65"
 name = "k256"
-version = "0.11.6"
+version = "0.13.1"
 authors = ["RustCrypto Developers"]
 description = """
 secp256k1 elliptic curve library written in pure Rust with support for ECDSA
-signing/verification (including Ethereum-style signatures with public-key
-recovery), Elliptic Curve Diffie-Hellman (ECDH), and general purpose secp256k1
-curve arithmetic useful for implementing arbitrary group-based protocols.
+signing/verification/public-key recovery, Taproot Schnorr signatures,
+Elliptic Curve Diffie-Hellman (ECDH), and general-purpose secp256k1 elliptic
+curve group operations which can be used to implement arbitrary protocols
 """
 documentation = "https://docs.rs/k256"
 readme = "README.md"
@@ -42,7 +42,6 @@ repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/k256"
 features = [
     "ecdh",
     "ecdsa",
-    "keccak256",
     "schnorr",
 ]
 rustdoc-args = [
@@ -71,14 +70,14 @@ harness = false
 version = "1.0"
 
 [dependencies.ecdsa-core]
-version = "0.14.6"
+version = "0.16"
 features = ["der"]
 optional = true
 default-features = false
 package = "ecdsa"
 
 [dependencies.elliptic-curve]
-version = "0.12.3"
+version = "0.13"
 features = [
     "hazmat",
     "sec1",
@@ -86,11 +85,16 @@ features = [
 default-features = false
 
 [dependencies.hex-literal]
-version = "0.3"
+version = "0.4"
 optional = true
 
+[dependencies.once_cell]
+version = "1.17"
+optional = true
+default-features = false
+
 [dependencies.serdect]
-version = "0.1"
+version = "0.2"
 optional = true
 default-features = false
 
@@ -99,10 +103,9 @@ version = "0.10"
 optional = true
 default-features = false
 
-[dependencies.sha3]
-version = "0.10"
+[dependencies.signature]
+version = "2"
 optional = true
-default-features = false
 
 [dev-dependencies.blobby]
 version = "0.3"
@@ -111,13 +114,13 @@ version = "0.3"
 version = "0.4"
 
 [dev-dependencies.ecdsa-core]
-version = "0.14"
+version = "0.16"
 features = ["dev"]
 default-features = false
 package = "ecdsa"
 
 [dev-dependencies.hex-literal]
-version = "0.3"
+version = "0.4"
 
 [dev-dependencies.num-bigint]
 version = "0.4"
@@ -126,22 +129,35 @@ version = "0.4"
 version = "0.2"
 
 [dev-dependencies.proptest]
-version = "1.0"
+version = "1.1"
 
 [dev-dependencies.rand_core]
 version = "0.6"
 features = ["getrandom"]
 
+[dev-dependencies.sha3]
+version = "0.10"
+default-features = false
+
 [features]
+alloc = [
+    "ecdsa-core?/alloc",
+    "elliptic-curve/alloc",
+]
 arithmetic = ["elliptic-curve/arithmetic"]
 bits = [
     "arithmetic",
     "elliptic-curve/bits",
 ]
+critical-section = [
+    "once_cell/critical-section",
+    "precomputed-tables",
+]
 default = [
     "arithmetic",
     "ecdsa",
     "pkcs8",
+    "precomputed-tables",
     "schnorr",
     "std",
 ]
@@ -155,8 +171,8 @@ ecdh = [
 ]
 ecdsa = [
     "arithmetic",
-    "ecdsa-core/sign",
-    "ecdsa-core/verify",
+    "ecdsa-core/signing",
+    "ecdsa-core/verifying",
     "sha256",
 ]
 expose-field = ["arithmetic"]
@@ -165,10 +181,6 @@ hash2curve = [
     "elliptic-curve/hash2curve",
 ]
 jwk = ["elliptic-curve/jwk"]
-keccak256 = [
-    "digest",
-    "sha3",
-]
 pem = [
     "ecdsa-core/pem",
     "elliptic-curve/pem",
@@ -178,9 +190,14 @@ pkcs8 = [
     "ecdsa-core/pkcs8",
     "elliptic-curve/pkcs8",
 ]
+precomputed-tables = [
+    "arithmetic",
+    "once_cell",
+]
 schnorr = [
     "arithmetic",
     "sha256",
+    "signature",
 ]
 serde = [
     "ecdsa-core/serde",
@@ -192,7 +209,9 @@ sha256 = [
     "sha2",
 ]
 std = [
-    "ecdsa-core/std",
+    "alloc",
+    "ecdsa-core?/std",
     "elliptic-curve/std",
+    "once_cell?/std",
 ]
 test-vectors = ["hex-literal"]

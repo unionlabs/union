@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.65"
 name = "elliptic-curve"
-version = "0.12.3"
+version = "0.13.5"
 authors = ["RustCrypto Developers"]
 description = """
 General purpose Elliptic Curve Cryptography (ECC) support, including types
@@ -33,7 +33,6 @@ categories = [
 ]
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/RustCrypto/traits/tree/master/elliptic-curve"
-resolver = "2"
 
 [package.metadata.docs.rs]
 features = [
@@ -51,15 +50,16 @@ rustdoc-args = [
 ]
 
 [dependencies.base16ct]
-version = "0.1.1"
+version = "0.2"
 
 [dependencies.base64ct]
 version = "1"
+features = ["alloc"]
 optional = true
 default-features = false
 
 [dependencies.crypto-bigint]
-version = "0.4.8"
+version = "0.5"
 features = [
     "rand_core",
     "generic-array",
@@ -67,31 +67,27 @@ features = [
 ]
 default-features = false
 
-[dependencies.der]
-version = "0.6"
-features = ["oid"]
-default-features = false
-
 [dependencies.digest]
 version = "0.10"
 optional = true
 
 [dependencies.ff]
-version = "0.12"
+version = "0.13"
 optional = true
 default-features = false
 
 [dependencies.generic-array]
-version = "0.14"
+version = "0.14.6"
+features = ["zeroize"]
 default-features = false
 
 [dependencies.group]
-version = "0.12"
+version = "0.13"
 optional = true
 default-features = false
 
 [dependencies.hex-literal]
-version = "0.3"
+version = "0.4"
 optional = true
 
 [dependencies.hkdf]
@@ -100,20 +96,21 @@ optional = true
 default-features = false
 
 [dependencies.pem-rfc7468]
-version = "0.6"
+version = "0.7"
+features = ["alloc"]
 optional = true
 
 [dependencies.pkcs8]
-version = "0.9"
+version = "0.10.2"
 optional = true
 default-features = false
 
 [dependencies.rand_core]
-version = "0.6"
+version = "0.6.4"
 default-features = false
 
 [dependencies.sec1]
-version = "0.3"
+version = "0.7.1"
 features = [
     "subtle",
     "zeroize",
@@ -127,7 +124,7 @@ optional = true
 default-features = false
 
 [dependencies.serdect]
-version = "0.1"
+version = "0.2"
 features = ["alloc"]
 optional = true
 default-features = false
@@ -141,7 +138,7 @@ version = "1.5"
 default-features = false
 
 [dev-dependencies.hex-literal]
-version = "0.3"
+version = "0.4"
 
 [dev-dependencies.sha2]
 version = "0.10"
@@ -152,14 +149,13 @@ version = "0.10"
 [features]
 alloc = [
     "base16ct/alloc",
-    "der/alloc",
-    "sec1/alloc",
+    "ff?/alloc",
+    "group?/alloc",
+    "pkcs8?/alloc",
+    "sec1?/alloc",
     "zeroize/alloc",
 ]
-arithmetic = [
-    "ff",
-    "group",
-]
+arithmetic = ["group"]
 bits = [
     "arithmetic",
     "ff/bits",
@@ -167,14 +163,18 @@ bits = [
 default = ["arithmetic"]
 dev = [
     "arithmetic",
-    "hex-literal",
+    "dep:hex-literal",
     "pem",
     "pkcs8",
 ]
 ecdh = [
     "arithmetic",
     "digest",
-    "hkdf",
+    "dep:hkdf",
+]
+group = [
+    "dep:group",
+    "ff",
 ]
 hash2curve = [
     "arithmetic",
@@ -182,28 +182,33 @@ hash2curve = [
 ]
 hazmat = []
 jwk = [
+    "dep:base64ct",
+    "dep:serde_json",
     "alloc",
-    "base64ct/alloc",
     "serde",
-    "serde_json",
     "zeroize/alloc",
 ]
 pem = [
+    "dep:pem-rfc7468",
     "alloc",
     "arithmetic",
-    "der/pem",
-    "pem-rfc7468/alloc",
     "pkcs8",
     "sec1/pem",
 ]
+pkcs8 = [
+    "dep:pkcs8",
+    "sec1",
+]
 serde = [
+    "dep:serdect",
     "alloc",
     "pkcs8",
     "sec1/serde",
-    "serdect",
 ]
 std = [
     "alloc",
     "rand_core/std",
+    "pkcs8?/std",
+    "sec1?/std",
 ]
 voprf = ["digest"]

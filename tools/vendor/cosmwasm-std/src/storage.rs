@@ -1,9 +1,9 @@
-use std::collections::BTreeMap;
-use std::fmt;
+use alloc::collections::BTreeMap;
+use core::fmt;
 #[cfg(feature = "iterator")]
-use std::iter;
+use core::iter;
 #[cfg(feature = "iterator")]
-use std::ops::{Bound, RangeBounds};
+use core::ops::{Bound, RangeBounds};
 
 #[cfg(feature = "iterator")]
 use crate::iterator::{Order, Record};
@@ -74,11 +74,11 @@ impl fmt::Debug for MemoryStorage {
         for (key, value) in &self.data {
             f.write_str("  0x")?;
             for byte in key {
-                write!(f, "{:02x}", byte)?;
+                write!(f, "{byte:02x}")?;
             }
             f.write_str(": 0x")?;
             for byte in value {
-                write!(f, "{:02x}", byte)?;
+                write!(f, "{byte:02x}")?;
             }
             f.write_str("\n")?;
         }
@@ -284,7 +284,7 @@ mod tests {
     fn memory_storage_implements_debug() {
         let store = MemoryStorage::new();
         assert_eq!(
-            format!("{:?}", store),
+            format!("{store:?}"),
             "MemoryStorage (0 entries) {\n\
             }"
         );
@@ -293,7 +293,7 @@ mod tests {
         let mut store = MemoryStorage::new();
         store.set(&[0x00, 0xAB, 0xDD], &[0xFF, 0xD5]);
         assert_eq!(
-            format!("{:?}", store),
+            format!("{store:?}"),
             "MemoryStorage (1 entries) {\n\
             \x20\x200x00abdd: 0xffd5\n\
             }"
@@ -305,7 +305,7 @@ mod tests {
         store.set(&[0x00, 0xAB, 0xEE], &[0xFF, 0xD5]);
         store.set(&[0x00, 0xAB, 0xCC], &[0xFF, 0xD5]);
         assert_eq!(
-            format!("{:?}", store),
+            format!("{store:?}"),
             "MemoryStorage (3 entries) {\n\
             \x20\x200x00abcc: 0xffd5\n\
             \x20\x200x00abdd: 0xffd5\n\
@@ -320,7 +320,7 @@ mod tests {
         store.set(&[0xAA, 0xBB, 0xCC], &[0x11, 0x22, 0x33]);
         store.set(&[0xAA, 0xBB, 0xCC, 0xDD], &[0x11, 0x22, 0x33, 0x44]);
         assert_eq!(
-            format!("{:?}", store),
+            format!("{store:?}"),
             "MemoryStorage (4 entries) {\n\
             \x20\x200xaa: 0x11\n\
             \x20\x200xaabb: 0x1122\n\

@@ -79,13 +79,21 @@ pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt> {
         ClientIdOf<Tr>,
         HeightOf<Tr>,
         HeightOf<Hc>,
+        Tr::StateProof,
+        Tr::StateProof,
+        Tr::StateProof,
     >,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgConnectionOpenAck<Tr::StoredClientState<Hc>>,
+    pub msg: MsgConnectionOpenAck<
+        Tr::StoredClientState<Hc>,
+        Tr::StateProof,
+        Tr::StateProof,
+        Tr::StateProof,
+    >,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> Tr>,
 }
@@ -93,7 +101,7 @@ pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgConnectionOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgConnectionOpenConfirm<HeightOf<Tr>>,
+    pub msg: MsgConnectionOpenConfirm<HeightOf<Tr>, Tr::StateProof>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> Hc>,
 }
@@ -109,7 +117,7 @@ pub struct MsgChannelOpenInitData<Hc: ChainExt, Tr: ChainExt> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgChannelOpenTryData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgChannelOpenTry,
+    pub msg: MsgChannelOpenTry<Tr::StateProof>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
@@ -117,7 +125,7 @@ pub struct MsgChannelOpenTryData<Hc: ChainExt, Tr: ChainExt> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgChannelOpenAckData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgChannelOpenAck,
+    pub msg: MsgChannelOpenAck<Tr::StateProof>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
@@ -125,7 +133,7 @@ pub struct MsgChannelOpenAckData<Hc: ChainExt, Tr: ChainExt> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgChannelOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgChannelOpenConfirm,
+    pub msg: MsgChannelOpenConfirm<Tr::StateProof>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
@@ -133,7 +141,7 @@ pub struct MsgChannelOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgRecvPacketData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgRecvPacket,
+    pub msg: MsgRecvPacket<Tr::StateProof>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
@@ -141,7 +149,7 @@ pub struct MsgRecvPacketData<Hc: ChainExt, Tr: ChainExt> {
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MsgAckPacketData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgAcknowledgement,
+    pub msg: MsgAcknowledgement<Tr::StateProof>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }

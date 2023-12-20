@@ -23,4 +23,9 @@ pub trait SignatureEncoding:
     fn to_vec(&self) -> Vec<u8> {
         self.to_bytes().as_ref().to_vec()
     }
+
+    /// Get the length of this signature when encoded.
+    fn encoded_len(&self) -> usize {
+        self.to_bytes().as_ref().len()
+    }
 }

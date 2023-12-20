@@ -10,9 +10,9 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-edition = "2018"
+edition = "2021"
 name = "cranelift-codegen"
-version = "0.82.3"
+version = "0.91.1"
 authors = ["The Cranelift Project Developers"]
 build = "build.rs"
 description = "Low-level code generator library"
@@ -26,80 +26,93 @@ keywords = [
 categories = ["no-std"]
 license = "Apache-2.0 WITH LLVM-exception"
 repository = "https://github.com/bytecodealliance/wasmtime"
-resolver = "2"
 
 [[bench]]
 name = "x64-evex-encoding"
 harness = false
 
+[dependencies.arrayvec]
+version = "0.7"
+
 [dependencies.bincode]
 version = "1.2.1"
 optional = true
 
+[dependencies.bumpalo]
+version = "3"
+
 [dependencies.cranelift-bforest]
-version = "0.82.3"
+version = "0.91.1"
 
 [dependencies.cranelift-codegen-shared]
-version = "0.82.3"
+version = "0.91.1"
+
+[dependencies.cranelift-egraph]
+version = "0.91.1"
 
 [dependencies.cranelift-entity]
-version = "0.82.3"
+version = "0.91.1"
 
 [dependencies.gimli]
 version = "0.26.0"
-features = ["write"]
+features = [
+    "read",
+    "std",
+    "write",
+]
 optional = true
 default-features = false
 
 [dependencies.hashbrown]
-version = "0.9.1"
+version = "0.12"
 optional = true
 
 [dependencies.log]
-version = "0.4.6"
+version = "0.4.8"
 default-features = false
 
-[dependencies.regalloc]
-version = "0.0.34"
+[dependencies.regalloc2]
+version = "0.5.0"
+features = ["checker"]
 
 [dependencies.serde]
 version = "1.0.94"
 features = ["derive"]
 optional = true
 
+[dependencies.sha2]
+version = "0.10.2"
+optional = true
+
 [dependencies.smallvec]
 version = "1.6.1"
+features = ["union"]
 
 [dependencies.souper-ir]
 version = "2.1.0"
 optional = true
 
 [dependencies.target-lexicon]
-version = "0.12"
+version = "0.12.3"
+default-features = false
 
 [dev-dependencies.criterion]
 version = "0.3"
 
 [build-dependencies.cranelift-codegen-meta]
-version = "0.82.3"
+version = "0.91.1"
 
 [build-dependencies.cranelift-isle]
-version = "=0.82.3"
-optional = true
-
-[build-dependencies.miette]
-version = "3"
-features = ["fancy"]
-optional = true
+version = "=0.91.1"
 
 [features]
 all-arch = [
     "x86",
     "arm64",
     "s390x",
+    "riscv64",
 ]
 arm64 = []
-completely-skip-isle-for-ci-deterministic-check = []
 core = ["hashbrown"]
 default = [
     "std",
@@ -107,19 +120,19 @@ default = [
 ]
 enable-serde = [
     "serde",
-    "regalloc/enable-serde",
     "cranelift-entity/enable-serde",
+    "regalloc2/enable-serde",
+    "smallvec/serde",
 ]
 experimental_x64 = []
-rebuild-isle = [
-    "cranelift-isle",
-    "miette",
-    "cranelift-codegen-meta/rebuild-isle",
-]
-regalloc-snapshot = [
+incremental-cache = [
+    "enable-serde",
     "bincode",
-    "regalloc/enable-serde",
+    "sha2",
 ]
+isle-errors = ["cranelift-isle/fancy-errors"]
+isle-in-source-tree = []
+riscv64 = []
 s390x = []
 souper-harvest = [
     "souper-ir",
@@ -127,6 +140,7 @@ souper-harvest = [
 ]
 std = []
 testing_hooks = []
+trace-log = []
 unwind = ["gimli"]
 x86 = []
 

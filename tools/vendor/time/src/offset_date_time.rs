@@ -97,6 +97,30 @@ impl OffsetDateTime {
         Self(self.0.to_offset(offset))
     }
 
+    /// Convert the `OffsetDateTime` from the current [`UtcOffset`] to the provided [`UtcOffset`],
+    /// returning `None` if the date-time in the resulting offset is invalid.
+    ///
+    /// ```rust
+    /// # use time::PrimitiveDateTime;
+    /// # use time_macros::{datetime, offset};
+    /// assert_eq!(
+    ///     datetime!(2000-01-01 0:00 UTC)
+    ///         .checked_to_offset(offset!(-1))
+    ///         .unwrap()
+    ///         .year(),
+    ///     1999,
+    /// );
+    /// assert_eq!(
+    ///     PrimitiveDateTime::MAX
+    ///         .assume_utc()
+    ///         .checked_to_offset(offset!(+1)),
+    ///     None,
+    /// );
+    /// ```
+    pub const fn checked_to_offset(self, offset: UtcOffset) -> Option<Self> {
+        Some(Self(const_try_opt!(self.0.checked_to_offset(offset))))
+    }
+
     // region: constructors
     /// Create an `OffsetDateTime` from the provided Unix timestamp. Calling `.offset()` on the
     /// resulting value is guaranteed to return UTC.

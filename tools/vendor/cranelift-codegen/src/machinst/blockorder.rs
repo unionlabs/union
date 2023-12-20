@@ -71,9 +71,9 @@
 
 use crate::entity::SecondaryMap;
 use crate::fx::{FxHashMap, FxHashSet};
+use crate::inst_predicates::visit_block_succs;
 use crate::ir::{Block, Function, Inst, Opcode};
-use crate::machinst::lower::visit_block_succs;
-use crate::machinst::*;
+use crate::{machinst::*, trace};
 
 use smallvec::SmallVec;
 
@@ -106,6 +106,8 @@ pub struct BlockLoweringOrder {
     /// which is used by VCode emission to sink the blocks at the last
     /// moment (when we actually emit bytes into the MachBuffer).
     cold_blocks: FxHashSet<BlockIndex>,
+    /// Lowered blocks that are indirect branch targets.
+    indirect_branch_targets: FxHashSet<BlockIndex>,
 }
 
 /// The origin of a block in the lowered block-order: either an original CLIF
@@ -127,6 +129,9 @@ pub enum LoweredBlock {
         /// to the next, i.e., corresponding to the included edge-block. This
         /// will be an instruction in `block`.
         edge_inst: Inst,
+        /// The successor index in this edge, to distinguish multiple
+        /// edges between the same block pair.
+        succ_idx: usize,
         /// The successor CLIF block.
         succ: Block,
     },
@@ -138,6 +143,9 @@ pub enum LoweredBlock {
         /// The edge (jump) instruction corresponding to the included
         /// edge-block. This will be an instruction in `pred`.
         edge_inst: Inst,
+        /// The successor index in this edge, to distinguish multiple
+        /// edges between the same block pair.
+        succ_idx: usize,
         /// The original CLIF block included in this lowered block.
         block: Block,
     },
@@ -150,6 +158,9 @@ pub enum LoweredBlock {
         /// The edge (jump) instruction corresponding to this edge's transition.
         /// This will be an instruction in `pred`.
         edge_inst: Inst,
+        /// The successor index in this edge, to distinguish multiple
+        /// edges between the same block pair.
+        succ_idx: usize,
         /// The successor CLIF block.
         succ: Block,
     },
@@ -168,29 +179,34 @@ impl LoweredBlock {
     }
 
     /// The associated in-edge, if any.
+    #[cfg(test)]
     pub fn in_edge(self) -> Option<(Block, Inst, Block)> {
         match self {
             LoweredBlock::EdgeAndOrig {
                 pred,
                 edge_inst,
                 block,
+                ..
             } => Some((pred, edge_inst, block)),
             _ => None,
         }
     }
 
     /// the associated out-edge, if any. Also includes edge-only blocks.
+    #[cfg(test)]
     pub fn out_edge(self) -> Option<(Block, Inst, Block)> {
         match self {
             LoweredBlock::OrigAndEdge {
                 block,
                 edge_inst,
                 succ,
+                ..
             } => Some((block, edge_inst, succ)),
             LoweredBlock::Edge {
                 pred,
                 edge_inst,
                 succ,
+                ..
             } => Some((pred, edge_inst, succ)),
             _ => None,
         }
@@ -200,22 +216,36 @@ impl LoweredBlock {
 impl BlockLoweringOrder {
     /// Compute and return a lowered block order for `f`.
     pub fn new(f: &Function) -> BlockLoweringOrder {
-        log::trace!("BlockLoweringOrder: function body {:?}", f);
+        trace!("BlockLoweringOrder: function body {:?}", f);
+
+        // Make sure that we have an entry block, and the entry block is
+        // not marked as cold. (The verifier ensures this as well, but
+        // the user may not have run the verifier, and this property is
+        // critical to avoid a miscompile, so we assert it here too.)
+        let entry = f.layout.entry_block().expect("Must have entry block");
+        assert!(!f.layout.is_cold(entry));
 
         // Step 1: compute the in-edge and out-edge count of every block.
         let mut block_in_count = SecondaryMap::with_default(0);
         let mut block_out_count = SecondaryMap::with_default(0);
 
         // Cache the block successors to avoid re-examining branches below.
-        let mut block_succs: SmallVec<[(Inst, Block); 128]> = SmallVec::new();
+        let mut block_succs: SmallVec<[(Inst, usize, Block); 128]> = SmallVec::new();
         let mut block_succ_range = SecondaryMap::with_default((0, 0));
-        let mut fallthrough_return_block = None;
+        let mut indirect_branch_target_clif_blocks = FxHashSet::default();
+
         for block in f.layout.blocks() {
             let block_succ_start = block_succs.len();
-            visit_block_succs(f, block, |inst, succ| {
+            let mut succ_idx = 0;
+            visit_block_succs(f, block, |inst, succ, from_table| {
                 block_out_count[block] += 1;
                 block_in_count[succ] += 1;
-                block_succs.push((inst, succ));
+                block_succs.push((inst, succ_idx, succ));
+                succ_idx += 1;
+
+                if from_table {
+                    indirect_branch_target_clif_blocks.insert(succ);
+                }
             });
             let block_succ_end = block_succs.len();
             block_succ_range[block] = (block_succ_start, block_succ_end);
@@ -225,16 +255,37 @@ impl BlockLoweringOrder {
                     // Implicit output edge for any return.
                     block_out_count[block] += 1;
                 }
-                if f.dfg[inst].opcode() == Opcode::FallthroughReturn {
-                    // Fallthrough return block must come last.
-                    debug_assert!(fallthrough_return_block == None);
-                    fallthrough_return_block = Some(block);
-                }
             }
         }
         // Implicit input edge for entry block.
-        if let Some(entry) = f.layout.entry_block() {
-            block_in_count[entry] += 1;
+        block_in_count[entry] += 1;
+
+        // All blocks ending in conditional branches or br_tables must
+        // have edge-moves inserted at the top of successor blocks,
+        // not at the end of themselves. This is because the moves
+        // would have to be inserted prior to the branch's register
+        // use; but RA2's model is that the moves happen *on* the
+        // edge, after every def/use in the block. RA2 will check for
+        // "branch register use safety" and panic if such a problem
+        // occurs. To avoid this, we force the below algorithm to
+        // never merge the edge block onto the end of a block that
+        // ends in a conditional branch. We do this by "faking" more
+        // than one successor, even if there is only one.
+        //
+        // (One might ask, isn't that always the case already? It
+        // could not be, in cases of br_table with no table and just a
+        // default label, for example.)
+        for block in f.layout.blocks() {
+            for inst in f.layout.block_likely_branches(block) {
+                // If the block has a branch with any "fixed args"
+                // (not blockparam args) ...
+                if f.dfg[inst].opcode().is_branch() && f.dfg.inst_fixed_args(inst).len() > 0 {
+                    // ... then force a minimum successor count of
+                    // two, so the below algorithm cannot put
+                    // edge-moves on the end of the block.
+                    block_out_count[block] = std::cmp::max(2, block_out_count[block]);
+                }
+            }
         }
 
         // Here we define the implicit CLIF-plus-edges graph. There are
@@ -262,13 +313,14 @@ impl BlockLoweringOrder {
                     // At an orig block; successors are always edge blocks,
                     // possibly with orig blocks following.
                     let range = block_succ_range[block];
-                    for &(edge_inst, succ) in &block_succs[range.0..range.1] {
+                    for &(edge_inst, succ_idx, succ) in &block_succs[range.0..range.1] {
                         if block_in_count[succ] == 1 {
                             ret.push((
                                 edge_inst,
                                 LoweredBlock::EdgeAndOrig {
                                     pred: block,
                                     edge_inst,
+                                    succ_idx,
                                     block: succ,
                                 },
                             ));
@@ -278,6 +330,7 @@ impl BlockLoweringOrder {
                                 LoweredBlock::Edge {
                                     pred: block,
                                     edge_inst,
+                                    succ_idx,
                                     succ,
                                 },
                             ));
@@ -298,12 +351,13 @@ impl BlockLoweringOrder {
                         // implicit return succ).
                         if range.1 - range.0 > 0 {
                             debug_assert!(range.1 - range.0 == 1);
-                            let (succ_edge_inst, succ_succ) = block_succs[range.0];
+                            let (succ_edge_inst, succ_succ_idx, succ_succ) = block_succs[range.0];
                             ret.push((
                                 edge_inst,
                                 LoweredBlock::OrigAndEdge {
                                     block: succ,
                                     edge_inst: succ_edge_inst,
+                                    succ_idx: succ_succ_idx,
                                     succ: succ_succ,
                                 },
                             ));
@@ -335,31 +389,26 @@ impl BlockLoweringOrder {
         let mut stack: SmallVec<[StackEntry; 16]> = SmallVec::new();
         let mut visited = FxHashSet::default();
         let mut postorder = vec![];
-        if let Some(entry) = f.layout.entry_block() {
-            // FIXME(cfallin): we might be able to use OrigAndEdge. Find a way
-            // to not special-case the entry block here.
-            let block = LoweredBlock::Orig { block: entry };
-            visited.insert(block);
-            let range = compute_lowered_succs(&mut lowered_succs, block);
-            lowered_succ_indices.resize(lowered_succs.len(), 0);
-            stack.push(StackEntry {
-                this: block,
-                succs: range,
-                cur_succ: range.1,
-            });
-        }
 
-        let mut deferred_last = None;
+        // Add the entry block.
+        //
+        // FIXME(cfallin): we might be able to use OrigAndEdge. Find a
+        // way to not special-case the entry block here.
+        let block = LoweredBlock::Orig { block: entry };
+        visited.insert(block);
+        let range = compute_lowered_succs(&mut lowered_succs, block);
+        lowered_succ_indices.resize(lowered_succs.len(), 0);
+        stack.push(StackEntry {
+            this: block,
+            succs: range,
+            cur_succ: range.1,
+        });
+
         while !stack.is_empty() {
             let stack_entry = stack.last_mut().unwrap();
             let range = stack_entry.succs;
             if stack_entry.cur_succ == range.0 {
-                let orig_block = stack_entry.this.orig_block();
-                if orig_block.is_some() && orig_block == fallthrough_return_block {
-                    deferred_last = Some((stack_entry.this, range));
-                } else {
-                    postorder.push((stack_entry.this, range));
-                }
+                postorder.push((stack_entry.this, range));
                 stack.pop();
             } else {
                 // Heuristic: chase the children in reverse. This puts the first
@@ -384,28 +433,41 @@ impl BlockLoweringOrder {
         }
 
         postorder.reverse();
-        let mut rpo = postorder;
-        if let Some(d) = deferred_last {
-            rpo.push(d);
-        }
+        let rpo = postorder;
 
         // Step 3: now that we have RPO, build the BlockIndex/BB fwd/rev maps.
         let mut lowered_order = vec![];
         let mut cold_blocks = FxHashSet::default();
         let mut lowered_succ_ranges = vec![];
         let mut lb_to_bindex = FxHashMap::default();
+        let mut indirect_branch_targets = FxHashSet::default();
         for (block, succ_range) in rpo.into_iter() {
-            let index = lowered_order.len() as BlockIndex;
+            let index = BlockIndex::new(lowered_order.len());
             lb_to_bindex.insert(block, index);
             lowered_order.push(block);
             lowered_succ_ranges.push(succ_range);
 
-            if block
-                .orig_block()
-                .map(|b| f.layout.is_cold(b))
-                .unwrap_or(false)
-            {
-                cold_blocks.insert(index);
+            match block {
+                LoweredBlock::Orig { block }
+                | LoweredBlock::OrigAndEdge { block, .. }
+                | LoweredBlock::EdgeAndOrig { block, .. } => {
+                    if f.layout.is_cold(block) {
+                        cold_blocks.insert(index);
+                    }
+
+                    if indirect_branch_target_clif_blocks.contains(&block) {
+                        indirect_branch_targets.insert(index);
+                    }
+                }
+                LoweredBlock::Edge { pred, succ, .. } => {
+                    if f.layout.is_cold(pred) || f.layout.is_cold(succ) {
+                        cold_blocks.insert(index);
+                    }
+
+                    if indirect_branch_target_clif_blocks.contains(&succ) {
+                        indirect_branch_targets.insert(index);
+                    }
+                }
             }
         }
 
@@ -416,7 +478,7 @@ impl BlockLoweringOrder {
 
         let mut orig_map = SecondaryMap::with_default(None);
         for (i, lb) in lowered_order.iter().enumerate() {
-            let i = i as BlockIndex;
+            let i = BlockIndex::new(i);
             if let Some(b) = lb.orig_block() {
                 orig_map[b] = Some(i);
             }
@@ -429,8 +491,9 @@ impl BlockLoweringOrder {
             lowered_succ_ranges,
             orig_map,
             cold_blocks,
+            indirect_branch_targets,
         };
-        log::trace!("BlockLoweringOrder: {:?}", result);
+        trace!("BlockLoweringOrder: {:?}", result);
         result
     }
 
@@ -441,13 +504,19 @@ impl BlockLoweringOrder {
 
     /// Get the successor indices for a lowered block.
     pub fn succ_indices(&self, block: BlockIndex) -> &[(Inst, BlockIndex)] {
-        let range = self.lowered_succ_ranges[block as usize];
+        let range = self.lowered_succ_ranges[block.index()];
         &self.lowered_succ_indices[range.0..range.1]
     }
 
     /// Determine whether the given lowered-block index is cold.
     pub fn is_cold(&self, block: BlockIndex) -> bool {
         self.cold_blocks.contains(&block)
+    }
+
+    /// Determine whether the given lowered block index is an indirect branch
+    /// target.
+    pub fn is_indirect_branch_target(&self, block: BlockIndex) -> bool {
+        self.indirect_branch_targets.contains(&block)
     }
 }
 
@@ -456,13 +525,14 @@ mod test {
     use super::*;
     use crate::cursor::{Cursor, FuncCursor};
     use crate::ir::types::*;
-    use crate::ir::{AbiParam, ExternalName, Function, InstBuilder, Signature};
+    use crate::ir::UserFuncName;
+    use crate::ir::{AbiParam, Function, InstBuilder, Signature};
     use crate::isa::CallConv;
 
     fn build_test_func(n_blocks: usize, edges: &[(usize, usize)]) -> Function {
         assert!(n_blocks > 0);
 
-        let name = ExternalName::testcase("test0");
+        let name = UserFuncName::testcase("test0");
         let mut sig = Signature::new(CallConv::SystemV);
         sig.params.push(AbiParam::new(I32));
         let mut func = Function::with_name_signature(name, sig);

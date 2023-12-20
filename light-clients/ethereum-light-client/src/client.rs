@@ -243,7 +243,7 @@ impl IbcClient for EthereumLightClient {
     fn update_state_on_misbehaviour(
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
-        _client_message: ics008_wasm_client::ClientMessage,
+        _client_message: Vec<u8>,
     ) -> Result<(), Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         client_state.data.frozen_height = Height {
@@ -384,15 +384,14 @@ fn do_verify_membership(
         .map_err(|_| Error::UnknownIbcPath(path))?;
 
     let canonical_value = match path {
-        Path::ClientStatePath(_) => Any::<
-            wasm::client_state::ClientState<cometbls::client_state::ClientState>,
-        >::try_from_proto_bytes(raw_value.as_ref())
-        .map_err(|e| Error::DecodeFromProto {
-            reason: format!("{e:?}"),
-        })?
-        .0
-        .data
-        .into_eth_abi_bytes(),
+        Path::ClientStatePath(_) => {
+            Any::<cometbls::client_state::ClientState>::try_from_proto_bytes(raw_value.as_ref())
+                .map_err(|e| Error::DecodeFromProto {
+                    reason: format!("{e:?}"),
+                })?
+                .0
+                .into_eth_abi_bytes()
+        }
         Path::ClientConsensusStatePath(_) => Any::<
             wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
         >::try_from_proto_bytes(raw_value.as_ref())

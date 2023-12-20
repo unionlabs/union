@@ -10,9 +10,9 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-edition = "2018"
+edition = "2021"
 name = "cranelift-entity"
-version = "0.82.3"
+version = "0.91.1"
 authors = ["The Cranelift Project Developers"]
 description = "Data structures using entity references as mapping keys"
 documentation = "https://docs.rs/cranelift-entity"
@@ -25,7 +25,6 @@ keywords = [
 categories = ["no-std"]
 license = "Apache-2.0 WITH LLVM-exception"
 repository = "https://github.com/bytecodealliance/wasmtime"
-resolver = "2"
 
 [dependencies.serde]
 version = "1.0.94"

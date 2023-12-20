@@ -44,11 +44,6 @@ pub(crate) struct Immediates {
     /// IEEE 754-2008 binary64 interchange format.
     pub ieee64: OperandKind,
 
-    /// An immediate boolean operand.
-    ///
-    /// This type of immediate boolean can interact with SSA values with any BoolType type.
-    pub boolean: OperandKind,
-
     /// A condition code for comparing integer values.
     ///
     /// This enumerated operand kind is used for the `icmp` instruction and corresponds to the
@@ -63,6 +58,9 @@ pub(crate) struct Immediates {
 
     /// Flags for memory operations like `load` and `store`.
     pub memflags: OperandKind,
+
+    /// A reference to out-of-line immediates for heap accesses.
+    pub heap_imm: OperandKind,
 
     /// A trap code indicating the reason for trapping.
     ///
@@ -142,7 +140,6 @@ impl Immediates {
                 "ir::immediates::Ieee64",
                 "A 64-bit immediate floating point number.",
             ),
-            boolean: new_imm("imm", "bool", "An immediate boolean."),
             intcc: {
                 let mut intcc_values = HashMap::new();
                 intcc_values.insert("eq", "Equal");
@@ -155,8 +152,6 @@ impl Immediates {
                 intcc_values.insert("ugt", "UnsignedGreaterThan");
                 intcc_values.insert("ule", "UnsignedLessThanOrEqual");
                 intcc_values.insert("ult", "UnsignedLessThan");
-                intcc_values.insert("of", "Overflow");
-                intcc_values.insert("nof", "NotOverflow");
                 new_enum(
                     "cond",
                     "ir::condcodes::IntCC",
@@ -190,6 +185,13 @@ impl Immediates {
             },
 
             memflags: new_imm("flags", "ir::MemFlags", "Memory operation flags"),
+
+            heap_imm: new_imm(
+                "heap_imm",
+                "ir::HeapImm",
+                "Reference to out-of-line heap access immediates",
+            ),
+
             trapcode: {
                 let mut trapcode_values = HashMap::new();
                 trapcode_values.insert("stk_ovf", "StackOverflow");

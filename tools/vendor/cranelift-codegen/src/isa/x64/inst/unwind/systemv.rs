@@ -1,8 +1,8 @@
 //! Unwind information for System V ABI (x86-64).
 
 use crate::isa::unwind::systemv::RegisterMappingError;
+use crate::machinst::{Reg, RegClass};
 use gimli::{write::CommonInformationEntry, Encoding, Format, Register, X86_64};
-use regalloc::{Reg, RegClass};
 
 /// Creates a new x86-64 common information entry (CIE).
 pub fn create_cie() -> CommonInformationEntry {
@@ -69,14 +69,13 @@ pub fn map_reg(reg: Reg) -> Result<Register, RegisterMappingError> {
         X86_64::XMM15,
     ];
 
-    match reg.get_class() {
-        RegClass::I64 => {
+    match reg.class() {
+        RegClass::Int => {
             // x86 GP registers have a weird mapping to DWARF registers, so we use a
             // lookup table.
-            Ok(X86_GP_REG_MAP[reg.get_hw_encoding() as usize])
+            Ok(X86_GP_REG_MAP[reg.to_real_reg().unwrap().hw_enc() as usize])
         }
-        RegClass::V128 => Ok(X86_XMM_REG_MAP[reg.get_hw_encoding() as usize]),
-        _ => Err(RegisterMappingError::UnsupportedRegisterBank("class?")),
+        RegClass::Float => Ok(X86_XMM_REG_MAP[reg.to_real_reg().unwrap().hw_enc() as usize]),
     }
 }
 
@@ -98,8 +97,7 @@ impl crate::isa::unwind::systemv::RegisterMapper<Reg> for RegisterMapper {
 mod tests {
     use crate::cursor::{Cursor, FuncCursor};
     use crate::ir::{
-        types, AbiParam, ExternalName, Function, InstBuilder, Signature, StackSlotData,
-        StackSlotKind,
+        types, AbiParam, Function, InstBuilder, Signature, StackSlotData, StackSlotKind,
     };
     use crate::isa::{lookup, CallConv};
     use crate::settings::{builder, Flags};
@@ -120,9 +118,9 @@ mod tests {
             Some(StackSlotData::new(StackSlotKind::ExplicitSlot, 64)),
         ));
 
-        context.compile(&*isa).expect("expected compilation");
+        let code = context.compile(&*isa).expect("expected compilation");
 
-        let fde = match context
+        let fde = match code
             .create_unwind_info(isa.as_ref())
             .expect("can create unwind info")
         {
@@ -136,8 +134,7 @@ mod tests {
     }
 
     fn create_function(call_conv: CallConv, stack_slot: Option<StackSlotData>) -> Function {
-        let mut func =
-            Function::with_name_signature(ExternalName::user(0, 0), Signature::new(call_conv));
+        let mut func = Function::with_name_signature(Default::default(), Signature::new(call_conv));
 
         let block0 = func.dfg.make_block();
         let mut pos = FuncCursor::new(&mut func);
@@ -145,7 +142,7 @@ mod tests {
         pos.ins().return_(&[]);
 
         if let Some(stack_slot) = stack_slot {
-            func.stack_slots.push(stack_slot);
+            func.sized_stack_slots.push(stack_slot);
         }
 
         func
@@ -160,9 +157,9 @@ mod tests {
 
         let mut context = Context::for_function(create_multi_return_function(CallConv::SystemV));
 
-        context.compile(&*isa).expect("expected compilation");
+        let code = context.compile(&*isa).expect("expected compilation");
 
-        let fde = match context
+        let fde = match code
             .create_unwind_info(isa.as_ref())
             .expect("can create unwind info")
         {
@@ -178,7 +175,7 @@ mod tests {
     fn create_multi_return_function(call_conv: CallConv) -> Function {
         let mut sig = Signature::new(call_conv);
         sig.params.push(AbiParam::new(types::I32));
-        let mut func = Function::with_name_signature(ExternalName::user(0, 0), sig);
+        let mut func = Function::with_name_signature(Default::default(), sig);
 
         let block0 = func.dfg.make_block();
         let v0 = func.dfg.append_block_param(block0, types::I32);

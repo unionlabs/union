@@ -1,11 +1,12 @@
-use internals::ast::{Container, Data, Field, Style};
-use internals::attr::{Identifier, TagType};
-use internals::{ungroup, Ctxt, Derive};
+use crate::internals::ast::{Container, Data, Field, Style};
+use crate::internals::attr::{Default, Identifier, TagType};
+use crate::internals::{ungroup, Ctxt, Derive};
 use syn::{Member, Type};
 
 // Cross-cutting checks that require looking at more than a single attrs object.
 // Simpler checks should happen when parsing and building the attrs.
 pub fn check(cx: &Ctxt, cont: &mut Container, derive: Derive) {
+    check_default_on_tuple(cx, cont);
     check_remote_generic(cx, cont);
     check_getter(cx, cont);
     check_flatten(cx, cont);
@@ -15,6 +16,39 @@ pub fn check(cx: &Ctxt, cont: &mut Container, derive: Derive) {
     check_adjacent_tag_conflict(cx, cont);
     check_transparent(cx, cont, derive);
     check_from_and_try_from(cx, cont);
+}
+
+// If some field of a tuple struct is marked #[serde(default)] then all fields
+// after it must also be marked with that attribute, or the struct must have a
+// container-level serde(default) attribute. A field's default value is only
+// used for tuple fields if the sequence is exhausted at that point; that means
+// all subsequent fields will fail to deserialize if they don't have their own
+// default.
+fn check_default_on_tuple(cx: &Ctxt, cont: &Container) {
+    if let Default::None = cont.attrs.default() {
+        if let Data::Struct(Style::Tuple, fields) = &cont.data {
+            let mut first_default_index = None;
+            for (i, field) in fields.iter().enumerate() {
+                // Skipped fields automatically get the #[serde(default)]
+                // attribute. We are interested only on non-skipped fields here.
+                if field.attrs.skip_deserializing() {
+                    continue;
+                }
+                if let Default::None = field.attrs.default() {
+                    if let Some(first) = first_default_index {
+                        cx.error_spanned_by(
+                            field.ty,
+                            format!("field must have #[serde(default)] because previous field {} has #[serde(default)]", first),
+                        );
+                    }
+                    continue;
+                }
+                if first_default_index.is_none() {
+                    first_default_index = Some(i);
+                }
+            }
+        }
+    }
 }
 
 // Remote derive definition type must have either all of the generics of the
@@ -110,9 +144,7 @@ fn check_flatten_field(cx: &Ctxt, style: Style, field: &Field) {
 fn check_identifier(cx: &Ctxt, cont: &Container) {
     let variants = match &cont.data {
         Data::Enum(variants) => variants,
-        Data::Struct(_, _) => {
-            return;
-        }
+        Data::Struct(_, _) => return,
     };
 
     for (i, variant) in variants.iter().enumerate() {
@@ -194,12 +226,10 @@ fn check_identifier(cx: &Ctxt, cont: &Container) {
 fn check_variant_skip_attrs(cx: &Ctxt, cont: &Container) {
     let variants = match &cont.data {
         Data::Enum(variants) => variants,
-        Data::Struct(_, _) => {
-            return;
-        }
+        Data::Struct(_, _) => return,
     };
 
-    for variant in variants.iter() {
+    for variant in variants {
         if variant.attrs.serialize_with().is_some() {
             if variant.attrs.skip_serializing() {
                 cx.error_spanned_by(
@@ -289,8 +319,10 @@ fn check_internal_tag_field_name_conflict(cx: &Ctxt, cont: &Container) {
         match variant.style {
             Style::Struct => {
                 for field in &variant.fields {
-                    let check_ser = !field.attrs.skip_serializing();
-                    let check_de = !field.attrs.skip_deserializing();
+                    let check_ser =
+                        !(field.attrs.skip_serializing() || variant.attrs.skip_serializing());
+                    let check_de =
+                        !(field.attrs.skip_deserializing() || variant.attrs.skip_deserializing());
                     let name = field.attrs.name();
                     let ser_name = name.serialize_name();
 

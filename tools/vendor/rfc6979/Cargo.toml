@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.61"
 name = "rfc6979"
-version = "0.3.1"
+version = "0.4.0"
 authors = ["RustCrypto Developers"]
 description = """
 Pure Rust implementation of RFC6979: Deterministic Usage of the
@@ -32,29 +32,17 @@ categories = [
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/RustCrypto/signatures/tree/master/rfc6979"
 
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = [
-    "--cfg",
-    "docsrs",
-]
-
-[dependencies.crypto-bigint]
-version = "0.4"
-features = [
-    "generic-array",
-    "zeroize",
-]
-default-features = false
-
 [dependencies.hmac]
 version = "0.12"
 features = ["reset"]
 default-features = false
 
-[dependencies.zeroize]
-version = "1"
+[dependencies.subtle]
+version = "2"
 default-features = false
+
+[dev-dependencies.hex-literal]
+version = "0.3"
 
 [dev-dependencies.sha2]
 version = "0.10"

@@ -124,7 +124,7 @@ as_trait!();
 
 macro_rules! primitive_cast_impl {
     ($from: ty as [$($ty: ty), *]) => {
-        $(crate::nightly::impl_const! {
+        $(crate::nightly::const_impl! {
             impl const CastFrom<$from> for $ty {
                 #[inline]
                 fn cast_from(from: $from) -> Self {

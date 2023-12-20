@@ -12,7 +12,7 @@
 [package]
 edition = "2021"
 name = "cosmwasm-crypto"
-version = "1.3.0"
+version = "1.5.0"
 authors = ["Mauro Lacy <maurolacy@users.noreply.github.com>"]
 description = "Crypto bindings for cosmwasm contracts"
 readme = "README.md"
@@ -28,11 +28,12 @@ harness = false
 
 [dependencies]
 digest = "0.10"
+ecdsa = "0.16.2"
 ed25519-zebra = "3"
 thiserror = "1.0.38"
 
 [dependencies.k256]
-version = "0.11.1"
+version = "0.13.1"
 features = ["ecdsa"]
 
 [dependencies.rand_core]
@@ -40,7 +41,6 @@ version = "0.6"
 features = ["getrandom"]
 
 [dev-dependencies]
-base64 = "0.13.0"
 criterion = "0.4"
 english-numbers = "0.3"
 hex = "0.4"

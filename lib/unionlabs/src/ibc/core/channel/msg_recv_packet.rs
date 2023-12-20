@@ -6,10 +6,9 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MsgRecvPacket {
+pub struct MsgRecvPacket<ProofCommitment> {
     pub packet: Packet,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof_commitment: Vec<u8>,
+    pub proof_commitment: ProofCommitment,
     pub proof_height: Height,
 }
 

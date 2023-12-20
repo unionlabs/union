@@ -36,245 +36,281 @@ macro_rules! checked {
                 tuple_to_option(self.overflowing_mul(rhs))
             }
 
-            crate::nightly::const_fns! {
-                pub(crate) const fn div_rem_digit(self, rhs: $Digit) -> (Self, $Digit) {
-                    let mut out = Self::ZERO;
-                    let mut rem: $Digit = 0;
-                    let mut i = N;
-                    while i > 0 {
-                        i -= 1;
-                        let (q, r) = digit::$Digit::div_rem_wide(self.digits[i], rem, rhs);
-                        rem = r;
-                        out.digits[i] = q;
-                    }
-                    (out, rem)
+            pub(crate) const fn div_rem_digit(self, rhs: $Digit) -> (Self, $Digit) {
+                let mut out = Self::ZERO;
+                let mut rem: $Digit = 0;
+                let mut i = N;
+                while i > 0 {
+                    i -= 1;
+                    let (q, r) = digit::$Digit::div_rem_wide(self.digits[i], rem, rhs);
+                    rem = r;
+                    out.digits[i] = q;
                 }
-                const fn basecase_div_rem(self, mut v: Self, n: usize) -> (Self, Self) {
-                    // The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
-
-                    let mut q = Self::ZERO;
-                    let m = self.last_digit_index() + 1 - n;
-                    let shift = v.digits[n - 1].leading_zeros() as ExpType;
-
-                    v = unsafe {
-                        Self::unchecked_shl_internal(v, shift)
-                    }; // D1
-
-                    struct Remainder<const M: usize> {
-                        first: $Digit,
-                        rest: [$Digit; M],
-                    }
-                    impl<const M: usize> Remainder<M> {
-                        const fn digit(&self, index: usize) -> $Digit {
-                            if index == 0 {
-                                self.first
-                            } else {
-                                self.rest[index - 1]
-                            }
-                        }
-                        const fn shr(self, shift: ExpType) -> $BUint<M> {
-                            let mut out = $BUint::ZERO;
-                            let mut i = 0;
-                            while i < M {
-                                out.digits[i] = self.digit(i) >> shift;
-                                i += 1;
-                            }
-                            if shift > 0 {
-                                i = 0;
-                                while i < M {
-                                    out.digits[i] |= self.rest[i] << (digit::$Digit::BITS as ExpType - shift);
-                                    i += 1;
-                                }
-                            }
-                            out
-                        }
-                        crate::nightly::const_fns! {
-                            const fn new(uint: $BUint<M>, shift: ExpType) -> Self {
-                                let first = uint.digits[0] << shift;
-                                let rest = uint.wrapping_shr(digit::$Digit::BITS - shift);
-                                Self {
-                                    first,
-                                    rest: rest.digits,
-                                }
-                            }
-                            const fn set_digit(&mut self, index: usize, digit: $Digit) -> () {
-                                if index == 0 {
-                                    self.first = digit;
-                                } else {
-                                    self.rest[index - 1] = digit;
-                                }
-                            }
-                            const fn sub(&mut self, rhs: Mul<M>, start: usize, range: usize) -> bool {
-                                let mut borrow = false;
-                                let mut i = 0;
-                                while i <= range {
-                                    let (sub, overflow) = digit::$Digit::borrowing_sub(self.digit(i + start), rhs.digit(i), borrow);
-                                    self.set_digit(i + start, sub);
-                                    borrow = overflow;
-                                    i += 1;
-                                }
-                                borrow
-                            }
-                            const fn add(&mut self, rhs: $BUint<M>, start: usize, range: usize) -> () {
-                                let mut carry = false;
-                                let mut i = 0;
-                                while i < range {
-                                    let (sum, overflow) = digit::$Digit::carrying_add(self.digit(i + start), rhs.digits[i], carry);
-                                    self.set_digit(i + start, sum);
-                                    carry = overflow;
-                                    i += 1;
-                                }
-                                if carry {
-                                    self.set_digit(range + start, self.digit(range + start).wrapping_add(1)); // we use wrapping_add here, not regular addition as a carry will always occur to the left of self.digit(range + start)
-                                }
-                            }
-                        }
-                    }
-
-                    #[derive(Clone, Copy)]
-                    struct Mul<const M: usize> {
-                        last: $Digit,
-                        rest: [$Digit; M],
-                    }
-                    impl<const M: usize> Mul<M> {
-                        const fn new(uint: $BUint<M>, rhs: $Digit) -> Self {
-                            let mut rest = [0; M];
-                            let mut carry: $Digit = 0;
-                            let mut i = 0;
-                            while i < M {
-                                let (prod, c) = digit::$Digit::carrying_mul(uint.digits[i], rhs, carry, 0);
-                                carry = c;
-                                rest[i] = prod;
-                                i += 1;
-                            }
-                            Self {
-                                last: carry,
-                                rest,
-                            }
-                        }
-                        const fn digit(&self, index: usize) -> $Digit {
-                            if index == M {
-                                self.last
-                            } else {
-                                self.rest[index]
-                            }
-                        }
-                    }
-
-                    let v_n_m1 = v.digits[n - 1];
-                    let v_n_m2 = v.digits[n - 2];
-
-                    let mut u = Remainder::new(self, shift);
-
-                    let mut j = m + 1; // D2
-                    while j > 0 {
-                        j -= 1; // D7
-
-                        let u_jn = u.digit(j + n);
-
-                        #[inline]
-                        const fn tuple_gt(a: ($Digit, $Digit), b: ($Digit, $Digit)) -> bool {
-                            a.1 > b.1 || a.1 == b.1 && a.0 > b.0
-                        }
-
-                        // q_hat will be either `q` or `q + 1`
-                        let mut q_hat = if u_jn < v_n_m1 {
-                            let (mut q_hat, r_hat) = digit::$Digit::div_rem_wide(u.digit(j + n - 1), u_jn, v_n_m1); // D3
-
-                            if tuple_gt(digit::$Digit::widening_mul(q_hat, v_n_m2), (u.digit(j + n - 2), r_hat as $Digit)) {
-                                q_hat -= 1;
-
-                                if let Some(r_hat) = r_hat.checked_add(v_n_m1) { // this checks if `r_hat <= b`, where `b` is the digit base
-                                    if tuple_gt(digit::$Digit::widening_mul(q_hat, v_n_m2), (u.digit(j + n - 2), r_hat as $Digit)) {
-                                        q_hat -= 1;
-                                    }
-                                }
-                            }
-                            q_hat
+                (out, rem)
+            }
+            const fn basecase_div_rem(self, mut v: Self, n: usize) -> (Self, Self) {
+                // The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
+                
+                let mut q = Self::ZERO;
+                let m = self.last_digit_index() + 1 - n;
+                let shift = v.digits[n - 1].leading_zeros() as ExpType;
+                
+                v = unsafe {
+                    Self::unchecked_shl_internal(v, shift)
+                }; // D1
+                
+                struct Remainder<const M: usize> {
+                    first: $Digit,
+                    rest: [$Digit; M],
+                }
+                impl<const M: usize> Remainder<M> {
+                    const fn digit(&self, index: usize) -> $Digit {
+                        if index == 0 {
+                            self.first
                         } else {
-                            // `u[j + n - 1] >= v[n - 1]` so we know that estimate for q_hat would be larger than `Digit::MAX`. This is either equal to `q` or `q + 1` (very unlikely to be `q + 1`).
-                            $Digit::MAX
-                        };
-                        let overflow = u.sub(Mul::new(v, q_hat), j, n); // D4
-
-                        if overflow { // D5 - unlikely, probability of this being true is ~ 2 / b where b is the digit base (i.e. `Digit::MAX`)
-                            q_hat -= 1;
-                            u.add(v, j, n);
+                            self.rest[index - 1]
                         }
-                        q.digits[j] = q_hat;
                     }
-                    (q, u.shr(shift))
-                }
-
-                #[inline]
-                pub(crate) const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
-                    use core::cmp::Ordering;
-
-                    if self.is_zero() {
-                        return (Self::ZERO, Self::ZERO);
-                    }
-
-                    match self.cmp(&rhs) {
-                        Ordering::Less => (Self::ZERO, self),
-                        Ordering::Equal => (Self::ONE, Self::ZERO),
-                        Ordering::Greater => {
-                            let ldi = rhs.last_digit_index();
-                            if ldi == 0 {
-                                let (div, rem) = self.div_rem_digit(rhs.digits[0]);
-                                (div, Self::from_digit(rem))
-                            } else {
-                                self.basecase_div_rem(rhs, ldi + 1)
+                    const fn shr(self, shift: ExpType) -> $BUint<M> {
+                        let mut out = $BUint::ZERO;
+                        let mut i = 0;
+                        while i < M {
+                            out.digits[i] = self.digit(i) >> shift;
+                            i += 1;
+                        }
+                        if shift > 0 {
+                            i = 0;
+                            while i < M {
+                                out.digits[i] |= self.rest[i] << (digit::$Digit::BITS as ExpType - shift);
+                                i += 1;
                             }
                         }
+                        out
+                    }
+                    const fn new(uint: $BUint<M>, shift: ExpType) -> Self {
+                        let first = uint.digits[0] << shift;
+                        let rest = uint.wrapping_shr(digit::$Digit::BITS - shift);
+                        Self {
+                            first,
+                            rest: rest.digits,
+                        }
+                    }
+                    /*crate::nightly::const_fns! {
+                        const fn set_digit(&mut self, index: usize, digit: $Digit) -> () {
+                            if index == 0 {
+                                self.first = digit;
+                            } else {
+                                self.rest[index - 1] = digit;
+                            }
+                        }
+                        const fn sub(&mut self, rhs: Mul<M>, start: usize, range: usize) -> bool {
+                            let mut borrow = false;
+                            let mut i = 0;
+                            while i <= range {
+                                let (sub, overflow) = digit::$Digit::borrowing_sub(self.digit(i + start), rhs.digit(i), borrow);
+                                self.set_digit(i + start, sub);
+                                borrow = overflow;
+                                i += 1;
+                            }
+                            borrow
+                        }
+                        const fn add(&mut self, rhs: $BUint<M>, start: usize, range: usize) -> () {
+                            let mut carry = false;
+                            let mut i = 0;
+                            while i < range {
+                                let (sum, overflow) = digit::$Digit::carrying_add(self.digit(i + start), rhs.digits[i], carry);
+                                self.set_digit(i + start, sum);
+                                carry = overflow;
+                                i += 1;
+                            }
+                            if carry {
+                                self.set_digit(range + start, self.digit(range + start).wrapping_add(1)); // we use wrapping_add here, not regular addition as a carry will always occur to the left of self.digit(range + start)
+                            }
+                        }
+                    }*/
+                    const fn sub(mut self, rhs: Mul<M>, start: usize, range: usize) -> (Self, bool) {
+                        let mut borrow = false;
+                        let mut i = 0;
+                        while i <= range {
+                            let (sub, overflow) = digit::$Digit::borrowing_sub(self.digit(i + start), rhs.digit(i), borrow);
+                            if start == 0 && i == 0 {
+                                self.first = sub;
+                            } else {
+                                self.rest[i + start - 1] = sub;
+                            }
+                            borrow = overflow;
+                            i += 1;
+                        }
+                        (self, borrow)
+                    }
+                    const fn add(mut self, rhs: $BUint<M>, start: usize, range: usize) -> Self {
+                        let mut carry = false;
+                        let mut i = 0;
+                        while i < range {
+                            let (sum, overflow) = digit::$Digit::carrying_add(self.digit(i + start), rhs.digits[i], carry);
+                            if start == 0 && i == 0 {
+                                self.first = sum;
+                            } else {
+                                self.rest[i + start - 1] = sum;
+                            }
+                            carry = overflow;
+                            i += 1;
+                        }
+                        if carry {
+                            if start == 0 && range == 0 {
+                                self.first = self.first.wrapping_add(1);
+                            } else {
+                                self.rest[range + start - 1] = self.rest[range + start - 1].wrapping_add(1);
+                            }
+                        }
+                        self
                     }
                 }
-
-                #[inline]
-                pub(crate) const fn div_rem(self, rhs: Self) -> (Self, Self) {
-                    if rhs.is_zero() {
-                        div_zero!()
+                
+                #[derive(Clone, Copy)]
+                struct Mul<const M: usize> {
+                    last: $Digit,
+                    rest: [$Digit; M],
+                }
+                impl<const M: usize> Mul<M> {
+                    const fn new(uint: $BUint<M>, rhs: $Digit) -> Self {
+                        let mut rest = [0; M];
+                        let mut carry: $Digit = 0;
+                        let mut i = 0;
+                        while i < M {
+                            let (prod, c) = digit::$Digit::carrying_mul(uint.digits[i], rhs, carry, 0);
+                            carry = c;
+                            rest[i] = prod;
+                            i += 1;
+                        }
+                        Self {
+                            last: carry,
+                            rest,
+                        }
+                    }
+                    const fn digit(&self, index: usize) -> $Digit {
+                        if index == M {
+                            self.last
+                        } else {
+                            self.rest[index]
+                        }
+                    }
+                }
+                
+                let v_n_m1 = v.digits[n - 1];
+                let v_n_m2 = v.digits[n - 2];
+                
+                let mut u = Remainder::new(self, shift);
+                
+                let mut j = m + 1; // D2
+                while j > 0 {
+                    j -= 1; // D7
+                    
+                    let u_jn = u.digit(j + n);
+                    
+                    #[inline]
+                    const fn tuple_gt(a: ($Digit, $Digit), b: ($Digit, $Digit)) -> bool {
+                        a.1 > b.1 || a.1 == b.1 && a.0 > b.0
+                    }
+                    
+                    // q_hat will be either `q` or `q + 1`
+                    let mut q_hat = if u_jn < v_n_m1 {
+                        let (mut q_hat, r_hat) = digit::$Digit::div_rem_wide(u.digit(j + n - 1), u_jn, v_n_m1); // D3
+                        
+                        if tuple_gt(digit::$Digit::widening_mul(q_hat, v_n_m2), (u.digit(j + n - 2), r_hat as $Digit)) {
+                            q_hat -= 1;
+                            
+                            if let Some(r_hat) = r_hat.checked_add(v_n_m1) { // this checks if `r_hat <= b`, where `b` is the digit base
+                                if tuple_gt(digit::$Digit::widening_mul(q_hat, v_n_m2), (u.digit(j + n - 2), r_hat as $Digit)) {
+                                    q_hat -= 1;
+                                }
+                            }
+                        }
+                        q_hat
                     } else {
-                        self.div_rem_unchecked(rhs)
+                        // `u[j + n - 1] >= v[n - 1]` so we know that estimate for q_hat would be larger than `Digit::MAX`. This is either equal to `q` or `q + 1` (very unlikely to be `q + 1`).
+                        $Digit::MAX
+                    };
+                    let (u_new, overflow) = u.sub(Mul::new(v, q_hat), j, n); // D4
+                    u = u_new;
+                    
+                    if overflow { // D5 - unlikely, probability of this being true is ~ 2 / b where b is the digit base (i.e. `Digit::MAX + 1`)
+                        q_hat -= 1;
+                        u = u.add(v, j, n);
                     }
+                    q.digits[j] = q_hat;
                 }
-
-                #[doc = doc::checked::checked_div!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_div(self, rhs: Self) -> Option<Self> {
-                    if rhs.is_zero() {
-                        None
-                    } else {
-                        Some(self.div_rem_unchecked(rhs).0)
+                (q, u.shr(shift))
+            }
+            
+            #[inline]
+            pub(crate) const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
+                use core::cmp::Ordering;
+                
+                if self.is_zero() {
+                    return (Self::ZERO, Self::ZERO);
+                }
+                
+                match self.cmp(&rhs) {
+                    Ordering::Less => (Self::ZERO, self),
+                    Ordering::Equal => (Self::ONE, Self::ZERO),
+                    Ordering::Greater => {
+                        let ldi = rhs.last_digit_index();
+                        if ldi == 0 {
+                            let (div, rem) = self.div_rem_digit(rhs.digits[0]);
+                            (div, Self::from_digit(rem))
+                        } else {
+                            self.basecase_div_rem(rhs, ldi + 1)
+                        }
                     }
-                }
-
-                #[doc = doc::checked::checked_div_euclid!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_div_euclid(self, rhs: Self) -> Option<Self> {
-                    self.checked_div(rhs)
-                }
-
-                #[doc = doc::checked::checked_rem!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_rem(self, rhs: Self) -> Option<Self> {
-                    if rhs.is_zero() {
-                        None
-                    } else {
-                        Some(self.div_rem_unchecked(rhs).1)
-                    }
-                }
-
-                #[doc = doc::checked::checked_rem_euclid!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_rem_euclid(self, rhs: Self) -> Option<Self> {
-                    self.checked_rem(rhs)
                 }
             }
-
+            
+            #[inline]
+            pub(crate) const fn div_rem(self, rhs: Self) -> (Self, Self) {
+                if rhs.is_zero() {
+                    div_zero!()
+                } else {
+                    self.div_rem_unchecked(rhs)
+                }
+            }
+            
+            #[doc = doc::checked::checked_div!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_div(self, rhs: Self) -> Option<Self> {
+                if rhs.is_zero() {
+                    None
+                } else {
+                    Some(self.div_rem_unchecked(rhs).0)
+                }
+            }
+            
+            #[doc = doc::checked::checked_div_euclid!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_div_euclid(self, rhs: Self) -> Option<Self> {
+                self.checked_div(rhs)
+            }
+            
+            #[doc = doc::checked::checked_rem!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_rem(self, rhs: Self) -> Option<Self> {
+                if rhs.is_zero() {
+                    None
+                } else {
+                    Some(self.div_rem_unchecked(rhs).1)
+                }
+            }
+            
+            #[doc = doc::checked::checked_rem_euclid!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_rem_euclid(self, rhs: Self) -> Option<Self> {
+                self.checked_rem(rhs)
+            }
+        
             #[doc = doc::checked::checked_neg!(U)]
             #[must_use = doc::must_use_op!()]
             #[inline]
@@ -337,6 +373,24 @@ macro_rules! checked {
                 self.checked_mul(y)
             }
 
+            #[doc = doc::checked::checked_next_multiple_of!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
+                match self.checked_rem(rhs) {
+                    Some(rem) => {
+                        if rem.is_zero() {
+                            // `rhs` divides `self` exactly so just return `self`
+                            Some(self)
+                        } else {
+                            // `next_multiple = floor(self / rhs) * rhs + rhs = (self - rem) + rhs`
+                            self.checked_add(rhs.sub(rem))
+                        }
+                    },
+                    None => None,
+                }
+            }
+
             #[doc = doc::checked::checked_ilog2!(U)]
             #[must_use = doc::must_use_op!()]
             #[inline]
@@ -344,70 +398,50 @@ macro_rules! checked {
                 self.bits().checked_sub(1)
             }
 
-            crate::nightly::const_fns! {
-                #[inline]
-                const fn iilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
-                    // https://people.csail.mit.edu/jaffer/III/iilog.pdf
-                    if b.gt(k) {
-                        (m, k)
+            #[inline]
+            const fn iilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
+                // https://people.csail.mit.edu/jaffer/III/iilog.pdf
+                if b.gt(&k) {
+                    (m, k)
+                } else {
+                    let (new, q) = Self::iilog(m << 1, b.mul(b), k.div_rem_unchecked(b).0);
+                    if b.gt(&q) {
+                        (new, q)
                     } else {
-                        let (new, q) = Self::iilog(m << 1, b.mul(b), k.div_rem_unchecked(b).0);
-                        if b.gt(q) {
-                            (new, q)
-                        } else {
-                            (new + m, q.div(b))
+                        (new + m, q.div(b))
+                    }
+                }
+            }
+
+            #[doc = doc::checked::checked_ilog10!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_ilog10(self) -> Option<ExpType> {
+                if self.is_zero() {
+                    return None;
+                }
+                if Self::TEN.gt(&self) {
+                    return Some(0);
+                }
+                Some(Self::iilog(1, Self::TEN, self.div_rem_digit(10).0).0)
+            }
+
+            #[doc = doc::checked::checked_ilog!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn checked_ilog(self, base: Self) -> Option<ExpType> {
+                use core::cmp::Ordering;
+                match base.cmp(&Self::TWO) {
+                    Ordering::Less => None,
+                    Ordering::Equal => self.checked_ilog2(),
+                    Ordering::Greater => {
+                        if self.is_zero() {
+                            return None;
                         }
-                    }
-                }
-
-                #[doc = doc::checked::checked_ilog10!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_ilog10(self) -> Option<ExpType> {
-                    if self.is_zero() {
-                        return None;
-                    }
-                    if Self::TEN.gt(self) {
-                        return Some(0);
-                    }
-                    Some(Self::iilog(1, Self::TEN, self.div_rem_digit(10).0).0)
-                }
-
-                #[doc = doc::checked::checked_ilog!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_ilog(self, base: Self) -> Option<ExpType> {
-                    use core::cmp::Ordering;
-                    match base.cmp(&Self::TWO) {
-                        Ordering::Less => None,
-                        Ordering::Equal => self.checked_ilog2(),
-                        Ordering::Greater => {
-                            if self.is_zero() {
-                                return None;
-                            }
-                            if base.gt(self) {
-                                return Some(0);
-                            }
-                            Some(Self::iilog(1, base, self.div(base)).0)
+                        if base.gt(&self) {
+                            return Some(0);
                         }
-                    }
-                }
-
-                #[doc = doc::checked::checked_next_multiple_of!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
-                    match self.checked_rem(rhs) {
-                        Some(rem) => {
-                            if rem.is_zero() {
-                                // `rhs` divides `self` exactly so just return `self`
-                                Some(self)
-                            } else {
-                                // `next_multiple = floor(self / rhs) * rhs + rhs = (self - rem) + rhs`
-                                self.checked_add(rhs.sub(rem))
-                            }
-                        },
-                        None => None,
+                        Some(Self::iilog(1, base, self.div(base)).0)
                     }
                 }
             }

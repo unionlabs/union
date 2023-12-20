@@ -10,9 +10,9 @@ impl Limb {
     pub const fn sbb(self, rhs: Limb, borrow: Limb) -> (Limb, Limb) {
         let a = self.0 as WideWord;
         let b = rhs.0 as WideWord;
-        let borrow = (borrow.0 >> (Self::BIT_SIZE - 1)) as WideWord;
+        let borrow = (borrow.0 >> (Self::BITS - 1)) as WideWord;
         let ret = a.wrapping_sub(b + borrow);
-        (Limb(ret as Word), Limb((ret >> Self::BIT_SIZE) as Word))
+        (Limb(ret as Word), Limb((ret >> Self::BITS) as Word))
     }
 
     /// Perform saturating subtraction.

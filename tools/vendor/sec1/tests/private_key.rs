@@ -6,6 +6,9 @@ use der::asn1::ObjectIdentifier;
 use hex_literal::hex;
 use sec1::{EcParameters, EcPrivateKey};
 
+#[cfg(feature = "alloc")]
+use der::Encode;
+
 /// NIST P-256 SEC1 private key encoded as ASN.1 DER.
 ///
 /// Note: this key is extracted from the corresponding `p256-priv.der`
@@ -29,4 +32,12 @@ fn decode_p256_der() {
         ))
     );
     assert_eq!(key.public_key, Some(hex!("041CACFFB55F2F2CEFD89D89EB374B2681152452802DEEA09916068137D839CF7FC481A44492304D7EF66AC117BEFE83A8D08F155F2B52F9F618DD447029048E0F").as_ref()));
+}
+
+#[cfg(feature = "alloc")]
+#[test]
+fn encode_p256_der() {
+    let key = EcPrivateKey::try_from(P256_DER_EXAMPLE).unwrap();
+    let key_encoded = key.to_der().unwrap();
+    assert_eq!(P256_DER_EXAMPLE, key_encoded);
 }

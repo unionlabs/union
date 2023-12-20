@@ -25,7 +25,8 @@ type Keeper struct {
 	// implements gRPC QueryServer interface
 	types.QueryServer
 
-	cdc codec.BinaryCodec
+	cdc          codec.BinaryCodec
+	storeService storetypes.KVStoreService
 
 	clientKeeper types.ClientKeeper
 
@@ -41,12 +42,12 @@ func NewKeeperWithVM(
 	clientKeeper types.ClientKeeper,
 	authority string,
 	vm ibcwasm.WasmEngine,
-	querier wasmvm.Querier,
+	queryRouter ibcwasm.QueryRouter,
+	opts ...Option,
 ) Keeper {
 	if clientKeeper == nil {
 		panic(errors.New("client keeper must be not nil"))
 	}
-	types.Querier = querier
 
 	if vm == nil {
 		panic(errors.New("wasm VM must be not nil"))
@@ -60,14 +61,25 @@ func NewKeeperWithVM(
 		panic(errors.New("authority must be non-empty"))
 	}
 
-	ibcwasm.SetVM(vm)
-	ibcwasm.SetupWasmStoreService(storeService)
-
-	return Keeper{
+	keeper := &Keeper{
 		cdc:          cdc,
+		storeService: storeService,
 		clientKeeper: clientKeeper,
 		authority:    authority,
 	}
+
+	// set query plugins to ensure there is a non-nil query plugin
+	// regardless of what options the user provides
+	ibcwasm.SetQueryPlugins(types.NewDefaultQueryPlugins())
+	for _, opt := range opts {
+		opt.apply(keeper)
+	}
+
+	ibcwasm.SetVM(vm)
+	ibcwasm.SetQueryRouter(queryRouter)
+	ibcwasm.SetupWasmStoreService(storeService)
+
+	return *keeper
 }
 
 // NewKeeperWithConfig creates a new Keeper instance with the provided Wasm configuration.
@@ -79,14 +91,15 @@ func NewKeeperWithConfig(
 	clientKeeper types.ClientKeeper,
 	authority string,
 	wasmConfig types.WasmConfig,
-	querier wasmvm.Querier,
+	queryRouter ibcwasm.QueryRouter,
+	opts ...Option,
 ) Keeper {
 	vm, err := wasmvm.NewVM(wasmConfig.DataDir, wasmConfig.SupportedCapabilities, types.ContractMemoryLimit, wasmConfig.ContractDebugMode, types.MemoryCacheSize)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate new Wasm VM instance: %v", err))
 	}
 
-	return NewKeeperWithVM(cdc, storeService, clientKeeper, authority, vm, querier)
+	return NewKeeperWithVM(cdc, storeService, clientKeeper, authority, vm, queryRouter, opts...)
 }
 
 // GetAuthority returns the 08-wasm module's authority.
@@ -94,7 +107,7 @@ func (k Keeper) GetAuthority() string {
 	return k.authority
 }
 
-func (Keeper) storeWasmCode(ctx sdk.Context, code []byte) ([]byte, error) {
+func (Keeper) storeWasmCode(ctx sdk.Context, code []byte, storeFn func(code wasmvm.WasmCode) (wasmvm.Checksum, error)) ([]byte, error) {
 	var err error
 	if types.IsGzip(code) {
 		ctx.GasMeter().ConsumeGas(types.VMGasRegister.UncompressCosts(len(code)), "Uncompress gzip bytecode")
@@ -121,7 +134,7 @@ func (Keeper) storeWasmCode(ctx sdk.Context, code []byte) ([]byte, error) {
 
 	// create the code in the vm
 	ctx.GasMeter().ConsumeGas(types.VMGasRegister.CompileCosts(len(code)), "Compiling wasm bytecode")
-	vmChecksum, err := ibcwasm.GetVM().StoreCode(code)
+	vmChecksum, err := storeFn(code)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to store contract")
 	}
@@ -190,4 +203,19 @@ func (k Keeper) GetWasmClientState(ctx sdk.Context, clientID string) (*types.Cli
 	}
 
 	return wasmClientState, nil
+}
+
+// InitializePinnedCodes updates wasmvm to pin to cache all contracts marked as pinned
+func InitializePinnedCodes(ctx sdk.Context) error {
+	checksums, err := types.GetAllChecksums(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, checksum := range checksums {
+		if err := ibcwasm.GetVM().Pin(checksum); err != nil {
+			return err
+		}
+	}
+	return nil
 }

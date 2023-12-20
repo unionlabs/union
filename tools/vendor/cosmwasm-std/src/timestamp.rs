@@ -1,6 +1,6 @@
+use core::fmt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 use crate::math::Uint64;
 
@@ -120,7 +120,7 @@ impl fmt::Display for Timestamp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let whole = self.seconds();
         let fractional = self.subsec_nanos();
-        write!(f, "{}.{:09}", whole, fractional)
+        write!(f, "{whole}.{fractional:09}")
     }
 }
 

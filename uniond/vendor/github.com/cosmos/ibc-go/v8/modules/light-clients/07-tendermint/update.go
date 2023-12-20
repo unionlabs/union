@@ -11,7 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cometbft/cometbft/light"
-	cmttypes "github.com/cometbft/cometbft/types"
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
@@ -68,17 +68,17 @@ func (cs *ClientState) verifyHeader(
 		)
 	}
 
-	tmTrustedValidators, err := cmttypes.ValidatorSetFromProto(header.TrustedValidators)
+	tmTrustedValidators, err := tmtypes.ValidatorSetFromProto(header.TrustedValidators)
 	if err != nil {
 		return errorsmod.Wrap(err, "trusted validator set in not tendermint validator set type")
 	}
 
-	tmSignedHeader, err := cmttypes.SignedHeaderFromProto(header.SignedHeader)
+	tmSignedHeader, err := tmtypes.SignedHeaderFromProto(header.SignedHeader)
 	if err != nil {
 		return errorsmod.Wrap(err, "signed header in not tendermint signed header type")
 	}
 
-	tmValidatorSet, err := cmttypes.ValidatorSetFromProto(header.ValidatorSet)
+	tmValidatorSet, err := tmtypes.ValidatorSetFromProto(header.ValidatorSet)
 	if err != nil {
 		return errorsmod.Wrap(err, "validator set in not tendermint validator set type")
 	}
@@ -94,13 +94,13 @@ func (cs *ClientState) verifyHeader(
 	// Construct a trusted header using the fields in consensus state
 	// Only Height, Time, and NextValidatorsHash are necessary for verification
 	// NOTE: updates must be within the same revision
-	trustedHeader := cmttypes.Header{
+	trustedHeader := tmtypes.Header{
 		ChainID:            cs.GetChainID(),
 		Height:             int64(header.TrustedHeight.RevisionHeight),
 		Time:               consState.Timestamp,
 		NextValidatorsHash: consState.NextValidatorsHash,
 	}
-	signedHeader := cmttypes.SignedHeader{
+	signedHeader := tmtypes.SignedHeader{
 		Header: &trustedHeader,
 	}
 
@@ -109,7 +109,7 @@ func (cs *ClientState) verifyHeader(
 	// - assert header timestamp is not past the trusting period
 	// - assert header timestamp is past latest stored consensus state timestamp
 	// - assert that a TrustLevel proportion of TrustedValidators signed new Commit
-	err = light.Verify(
+	err = light.VerifyLegacy(
 		&signedHeader,
 		tmTrustedValidators, tmSignedHeader, tmValidatorSet,
 		cs.TrustingPeriod, currentTimestamp, cs.MaxClockDrift, cs.TrustLevel.ToTendermint(),
@@ -207,14 +207,14 @@ func (cs ClientState) UpdateStateOnMisbehaviour(ctx sdk.Context, cdc codec.Binar
 
 // checkTrustedHeader checks that consensus state matches trusted fields of Header
 func checkTrustedHeader(header *Header, consState *ConsensusState) error {
-	tmTrustedValidators, err := cmttypes.ValidatorSetFromProto(header.TrustedValidators)
+	tmTrustedValidators, err := tmtypes.ValidatorSetFromProto(header.TrustedValidators)
 	if err != nil {
 		return errorsmod.Wrap(err, "trusted validator set in not tendermint validator set type")
 	}
 
 	// assert that trustedVals is NextValidators of last trusted header
 	// to do this, we check that trustedVals.Hash() == consState.NextValidatorsHash
-	tvalHash := tmTrustedValidators.Hash()
+	tvalHash := tmTrustedValidators.HashSha256()
 	if !bytes.Equal(consState.NextValidatorsHash, tvalHash) {
 		return errorsmod.Wrapf(
 			ErrInvalidValidatorSet,

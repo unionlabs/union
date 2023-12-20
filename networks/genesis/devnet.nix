@@ -57,7 +57,7 @@
           '') devMnemonics)}
         '';
 
-      applyGenesisOverwrites = home: genesisOverwrites:
+      applyGenesisOverwrites = genesisOverwrites: home:
         let
           overwrites = builtins.toFile "overwrite.json" (builtins.toJSON genesisOverwrites);
         in
@@ -155,6 +155,21 @@
             '.app_state.ibc.connection_genesis.next_connection_sequence = "1"' \
             $out/config/genesis.json | sponge $out/config/genesis.json
         '';
+
+      add08WasmToAllowedClients = home: pkgs.runCommand "add-ibc-connection-to-genesis"
+        {
+          buildInputs = [ pkgs.jq pkgs.moreutils ];
+        }
+        ''
+          export HOME=$(pwd)
+          mkdir -p $out
+          cp --no-preserve=mode -r ${home}/* $out
+
+          jq \
+           '.app_state.ibc.client_genesis.params.allowed_clients += ["08-wasm"]' \
+            $out/config/genesis.json | sponge $out/config/genesis.json
+        '';
+
 
       addIbcChannelToGenesis = home: pkgs.runCommand "add-ibc-channel-to-genesis"
         {
@@ -475,15 +490,18 @@
           validatorKeys;
       genesisHome = pkgs.lib.foldl
         (home: f: f home)
-        (applyGenesisOverwrites initHome devnetConfig.genesisOverwrites)
+        initHome
         (
+          [ (applyGenesisOverwrites devnetConfig.genesisOverwrites) ]
           # add light clients
-          (builtins.map addLightClientCodeToGenesis [
+          ++ (builtins.map addLightClientCodeToGenesis [
             self'.packages.ethereum-light-client-minimal
             self'.packages.ethereum-light-client-mainnet
           ])
           # add ibc contracts
           ++ [
+            add08WasmToAllowedClients
+
             (addIbcContractCodesToGenesis [
               self'.packages.ucs01-relay
               self'.packages.ucs00-pingpong
