@@ -42,7 +42,7 @@ let
 
     union.wait_until_succeeds("[[ $(docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- query gov proposal ${toString (height / 10)} --home ./home --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.status == \"PROPOSAL_STATUS_PASSED\"') == true ]]", timeout=30)
 
-    union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > ${toString height}") == "true" ]]')
+    union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > ${toString height}") == "true" ]]', timeout=66)
   '';
 in
 {
@@ -56,7 +56,7 @@ in
       ${forEachNode (id: "union.succeed('docker cp ${bundle} devnet-minimal-uniond-${id}-1:/bundle')")}
 
       # Ensure the union network commits more than one block
-      union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+      union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]', timeout=60)
 
       ${upgradeTo "v0.15.0" 10}
       # We skip v0.16.0 as it was never deployed
@@ -77,7 +77,7 @@ in
       ${forEachNode (id: "union.succeed('docker cp ${bundle} devnet-minimal-uniond-${id}-1:/bundle')")}
 
       # Ensure the union network commits more than one block
-      union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+      union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]', timeout=60)
 
       union.succeed("docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} --root . call --bundle /bundle -- tx tokenfactory create-denom bazinga --from val-0 --keyring-backend test --home ./home -y --gas 3000000000")
       time.sleep(6)
