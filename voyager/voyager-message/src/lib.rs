@@ -865,7 +865,7 @@ mod tests {
     fn msg_serde() {
         let union_chain_id: String = parse!("union-devnet-1");
         let eth_chain_id: U256 = parse!("32382");
-        let cosmos_chain_id: String = parse!("wasmd-devnet-1");
+        let cosmos_chain_id: String = parse!("simd-devnet-1");
 
         print_json(msg::<Wasm<Union>, Evm<Minimal>>(
             union_chain_id.clone(),

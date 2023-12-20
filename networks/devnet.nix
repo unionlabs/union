@@ -17,16 +17,16 @@
         })
         devnetConfig.validatorCount));
 
-      wasmd-services = (builtins.listToAttrs (builtins.genList
+      simd-services = (builtins.listToAttrs (builtins.genList
         (id: {
-          name = "wasmd-${toString id}";
-          value = import ./services/wasmd.nix {
+          name = "simd-${toString id}";
+          value = import ./services/simd.nix {
             inherit pkgs;
             inherit id;
-            wasmd = self'.packages.wasmd;
-            wasmd-genesis = self'.packages.wasmd-genesis;
-            wasmd-validator-keys = self'.packages.wasmd-validator-keys;
-            wasmd-validator-node-ids = self'.packages.wasmd-validator-node-ids;
+            simd = self'.packages.simd;
+            simd-genesis = self'.packages.simd-genesis;
+            simd-validator-keys = self'.packages.simd-validator-keys;
+            simd-validator-node-ids = self'.packages.simd-validator-node-ids;
           };
         })
         devnetConfig.validatorCount));
@@ -97,11 +97,11 @@
         modules = [ (union // { networks.union-devnet = { }; }) ];
       };
 
-      spec-wasmd = {
+      spec-simd = {
         modules = [{
-          project.name = "wasmd-devnet";
-          networks.wasmd-devnet = { };
-          services = wasmd-services;
+          project.name = "simd-devnet";
+          networks.simd-devnet = { };
+          services = simd-services;
         }];
       };
 
@@ -119,7 +119,7 @@
 
       build-union = arion.build spec-union;
 
-      build-wasmd = arion.build spec-wasmd;
+      build-simd = arion.build spec-simd;
 
       build-voyager-queue = arion.build {
         modules = [{
@@ -138,12 +138,12 @@
           '';
         };
 
-      packages.devnet-wasmd =
+      packages.devnet-simd =
         pkgs.writeShellApplication {
-          name = "wasmd-devnet";
+          name = "simd-devnet";
           runtimeInputs = [ arion ];
           text = ''
-            arion --prebuilt-file ${build-wasmd} up --build --force-recreate -V --always-recreate-deps --remove-orphans
+            arion --prebuilt-file ${build-simd} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
         };
 

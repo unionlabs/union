@@ -2,8 +2,8 @@
   perSystem = { pkgs, goPkgs, self', crane, system, ensureAtRepositoryRoot, ... }:
     {
       packages = {
-        wasmd = goPkgs.pkgsStatic.buildGoModule ({
-          name = "wasmd";
+        simd = goPkgs.pkgsStatic.buildGoModule ({
+          name = "simd";
           src = pkgs.fetchFromGitHub {
             owner = "aeryz";
             repo = "wasmd";
@@ -38,8 +38,8 @@
             { }
         ));
 
-        wasmd-image = pkgs.dockerTools.buildImage {
-          name = "wasmd";
+        simd-image = pkgs.dockerTools.buildImage {
+          name = "simd";
 
           copyToRoot = pkgs.buildEnv {
             name = "image-root";
@@ -47,7 +47,7 @@
             pathsToLink = [ "/bin" ];
           };
           config = {
-            Entrypoint = [ (pkgs.lib.getExe self'.packages.wasmd) ];
+            Entrypoint = [ (pkgs.lib.getExe self'.packages.simd) ];
             Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
           };
         };

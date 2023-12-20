@@ -15,13 +15,13 @@
         "rebuild equip basket entire hurt index chase camera gravity pave boat vendor hero pizza october narrow train spoon cage intact jazz suffer ten spirit"
       ];
       genesisAccountName = "testkey";
-      wasmd = pkgs.lib.getExe self'.packages.wasmd;
-      chainId = "wasmd-devnet-1";
+      simd = pkgs.lib.getExe self'.packages.simd;
+      chainId = "simd-devnet-1";
       mkNodeID = name:
         pkgs.runCommand "node-id" { } ''
           export HOME=$(pwd)
 
-          ${wasmd} init testnet --chain-id ${chainId} --home .
+          ${simd} init testnet --chain-id ${chainId} --home .
           mkdir -p $out
           mv ./config/node_key.json $out/${name}
         '';
@@ -34,24 +34,24 @@
           export HOME=$(pwd)
           mkdir -p $out
 
-          ${wasmd} init testnet --chain-id ${chainId} --home $out
+          ${simd} init testnet --chain-id ${chainId} --home $out
 
-          echo ${alice} | ${wasmd} keys add \
+          echo ${alice} | ${simd} keys add \
             --recover ${genesisAccountName} \
             --keyring-backend test \
             --home $out
 
-          ${wasmd} genesis add-genesis-account ${genesisAccountName} 10000000000000000000000000stake \
+          ${simd} genesis add-genesis-account ${genesisAccountName} 10000000000000000000000000stake \
             --keyring-backend test \
             --home $out
 
           ${builtins.concatStringsSep "\n" (pkgs.lib.lists.imap0 (i: mnemonic: ''
             # Add the dev account
-            echo ${mnemonic} | ${wasmd} keys add \
+            echo ${mnemonic} | ${simd} keys add \
               --recover ${genesisAccountName}-${toString i} \
               --keyring-backend test \
               --home $out
-            ${wasmd} genesis add-genesis-account ${genesisAccountName}-${toString i} 10000000000000000000000000stake \
+            ${simd} genesis add-genesis-account ${genesisAccountName}-${toString i} 10000000000000000000000000stake \
               --keyring-backend test \
               --home $out
           '') devMnemonics)}
@@ -66,7 +66,7 @@
           mkdir -p $out
           cp --no-preserve=mode -r ${home}/* $out
 
-          ALICE_ADDRESS=$(${wasmd} keys list \
+          ALICE_ADDRESS=$(${simd} keys list \
             --keyring-backend test \
             --home $out \
             --output json \
@@ -74,7 +74,7 @@
 
           CODE_HASH=$(sha256sum ${self'.packages.ucs01-relay}/lib/ucs01_relay.wasm | cut -f1 -d" ")
 
-          ${wasmd} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/CW20_ICS20_CONTRACT_ADDRESS
+          ${simd} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/CW20_ICS20_CONTRACT_ADDRESS
         '';
 
       calculatePingPongAddress = home: pkgs.runCommand "calculate-ping-pong-contract-address"
@@ -86,7 +86,7 @@
           mkdir -p $out
           cp --no-preserve=mode -r ${home}/* $out
 
-          ALICE_ADDRESS=$(${wasmd} keys list \
+          ALICE_ADDRESS=$(${simd} keys list \
             --keyring-backend test \
             --home $out \
             --output json \
@@ -94,7 +94,7 @@
 
           CODE_HASH=$(sha256sum ${self'.packages.ucs00-pingpong}/lib/ucs00_pingpong.wasm | cut -f1 -d" ")
 
-          ${wasmd} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/PING_PONG_CONTRACT_ADDRESS
+          ${simd} query wasm build-address $CODE_HASH $ALICE_ADDRESS ${cw-instantiate2-salt} > $out/PING_PONG_CONTRACT_ADDRESS
         '';
 
       addIbcConnectionToGenesis = home: pkgs.runCommand "add-ibc-connection-to-genesis"
@@ -164,7 +164,7 @@
           mkdir -p $out
           cp --no-preserve=mode -r ${home}/* $out
 
-          ALICE_ADDRESS=$(${wasmd} keys list \
+          ALICE_ADDRESS=$(${simd} keys list \
             --keyring-backend test \
             --home $out \
             --output json \
@@ -337,7 +337,7 @@
               mkdir -p $out
               cp --no-preserve=mode -r ${home}/* $out
 
-              ALICE_ADDRESS=$(${wasmd} keys list \
+              ALICE_ADDRESS=$(${simd} keys list \
                 --keyring-backend test \
                 --home $out \
                 --output json \
@@ -410,7 +410,7 @@
               echo $val_index
               echo "
                 set timeout 30
-                spawn ${wasmd} keys mnemonic --unsafe-entropy --home $out
+                spawn ${simd} keys mnemonic --unsafe-entropy --home $out
                 expect \"WARNING:\"
                 send \"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz$val_index\\r\"
                 expect \"Input length:\"
@@ -420,8 +420,8 @@
               val_mnemonic=$(expect expect-${key}.exp | tail -n 1)
               echo $val_mnemonic
 
-              echo $val_mnemonic | ${wasmd} keys add --recover ${key} --keyring-backend test --home $out
-              ${wasmd} genesis add-genesis-account ${key} 100000000000000000000000000stake --keyring-backend test --home $out
+              echo $val_mnemonic | ${simd} keys add --recover ${key} --keyring-backend test --home $out
+              ${simd} genesis add-genesis-account ${key} 100000000000000000000000000stake --keyring-backend test --home $out
             '') genesisAccounts)}
           '';
       mkValidatorKeys = { validatorCount, home }:
@@ -456,7 +456,7 @@
                 }.json | jq ."pub_key"."value"`
                 PUBKEY="{\"@type\":\"/cosmos.crypto.ed25519.PubKey\",\"key\":$PUBKEY}"
                 mkdir -p $out
-                ${wasmd} genesis gentx val-${toString i} 1000000000000000000000stake --keyring-backend test --chain-id ${chainId} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
+                ${simd} genesis gentx val-${toString i} 1000000000000000000000stake --keyring-backend test --chain-id ${chainId} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
                   toString i
                 }.json
               '')
@@ -495,7 +495,7 @@
       validatorNodeIDs = { validatorCount }: builtins.genList (i: mkNodeID "valnode-${toString i}.json") validatorCount;
     in
     {
-      packages.wasmd-genesis = pkgs.runCommand "genesis" { } ''
+      packages.simd-genesis = pkgs.runCommand "genesis" { } ''
         mkdir $out
         cd $out
 
@@ -511,21 +511,21 @@
           }.json
         '') validatorGentxs)}
 
-        ${wasmd} genesis collect-gentxs --home . 2> /dev/null
-        ${wasmd} genesis validate --home .
+        ${simd} genesis collect-gentxs --home . 2> /dev/null
+        ${simd} genesis validate --home .
       '';
 
-      packages.wasmd-validator-keys = pkgs.symlinkJoin {
+      packages.simd-validator-keys = pkgs.symlinkJoin {
         name = "validator-keys";
         paths = validatorKeys;
       };
 
-      packages.wasmd-validator-gentxs = pkgs.symlinkJoin {
+      packages.simd-validator-gentxs = pkgs.symlinkJoin {
         name = "validator-gentxs";
         paths = validatorGentxs;
       };
 
-      packages.wasmd-validator-node-ids = pkgs.symlinkJoin {
+      packages.simd-validator-node-ids = pkgs.symlinkJoin {
         name = "validator-node-ids";
         paths = validatorNodeIDs { inherit (devnetConfig) validatorCount; };
       };
