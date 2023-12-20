@@ -1,0 +1,7 @@
+{
+  "include": ["*.ts"],
+  "compilerOptions": {
+    "target": "esnext",
+    "noEmit": true
+  }
+}
