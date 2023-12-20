@@ -1,9 +1,12 @@
-<script lang="ts">
-  export let title: string
-  export let date: string
-  export let author: string
-  export let preview: string
-  export let published: boolean
+<script>
+  /** @type {string} */
+   export let title
+  /** @type {string} */
+   export let date
+  /** @type {string} */
+   export let author
+  /** @type {boolean} */
+   export let published
 </script>
 
 <div class="flex flex-1 justify-center">

@@ -6,7 +6,6 @@
     "noPropertyAccessFromIndexSignature": false,
 
     "strict": true,
-    "baseUrl": ".",
     "noEmit": true,
     "allowJs": true,
     "checkJs": true,
@@ -27,13 +26,8 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "forceConsistentCasingInFileNames": true,
     "types": ["node"],
-    "paths": {
-      "$*": ["./src/*"],
-      "$lib": ["./src/lib"],
-      "$lib/*": ["./src/lib/*"]
-    }
   },
-  "include": ["src"],
+  "include": ["src", "scripts"],
   "files": [
     "vite.config.ts",
     "tailwind.config.ts",

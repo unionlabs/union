@@ -3,7 +3,7 @@ import path from 'node:path'
 import { mdsvex } from 'mdsvex'
 import preprocess from 'svelte-preprocess'
 import adapter from '@sveltejs/adapter-static'
-import { vitePreprocess } from '@sveltejs/kit/vite'
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 
