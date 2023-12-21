@@ -581,6 +581,7 @@ shacham
 shallue
 shazow
 sigint
+sigtypes
 simapp
 simd
 simtestutil
