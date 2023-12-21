@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{ibc::core::channel::channel::Channel, id::PortId, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MsgChannelOpenInit {
     pub port_id: PortId,
     pub channel: Channel,

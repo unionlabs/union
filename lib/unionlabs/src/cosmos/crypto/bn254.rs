@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PubKey {
     #[serde(with = "::serde_utils::base64")]
     pub key: H256,

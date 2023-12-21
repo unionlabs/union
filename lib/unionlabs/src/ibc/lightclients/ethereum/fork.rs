@@ -11,6 +11,7 @@ use crate::{errors::InvalidLength, ethereum::Version, Proto, TypeUrl};
     )
 )]
 #[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Fork {
     pub version: Version,
     pub epoch: u64,

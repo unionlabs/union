@@ -8,6 +8,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Commit {
     pub height: BoundedI64<0, { i64::MAX }>,
     pub round: BoundedI32<0, { i32::MAX }>,

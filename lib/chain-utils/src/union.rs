@@ -23,7 +23,7 @@ use unionlabs::{
         CommitmentPath, ConnectionPath, IbcPath,
     },
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
-    traits::{Chain, ClientState},
+    traits::{Chain, ClientState, FromStrExact},
     CosmosSigner, TryFromProto, WasmClientType,
 };
 
@@ -51,7 +51,15 @@ pub struct Config {
     pub grpc_url: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct UnionChainType;
+
+impl FromStrExact for UnionChainType {
+    const EXPECTING: &'static str = "union";
+}
+
 impl Chain for Union {
+    type ChainType = UnionChainType;
     type SelfClientState = cometbls::client_state::ClientState;
     type SelfConsensusState = cometbls::consensus_state::ConsensusState;
 

@@ -63,7 +63,7 @@
       "prover_endpoint": "https://prover.cryptware.io",
       "grpc_url": "http://localhost:9090"
     },
-    "wasmd-devnet": {
+    "simd-devnet": {
       "chain_type": "cosmos",
       "signers": [
         {

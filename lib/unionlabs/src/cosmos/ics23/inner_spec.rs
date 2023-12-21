@@ -4,6 +4,7 @@ use super::hash_op::HashOp;
 use crate::{errors::UnknownEnumVariant, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct InnerSpec {
     pub child_order: Vec<i32>,
     pub child_size: i32,

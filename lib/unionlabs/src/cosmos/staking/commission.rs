@@ -8,6 +8,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Commission {
     /// commission_rates defines the initial commission rates to be used for creating a validator.
     pub commission_rates: CommissionRates,

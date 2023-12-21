@@ -16,6 +16,7 @@ use crate::{
     )
 )]
 #[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ForkParameters {
     pub genesis_fork_version: Version,
     pub genesis_slot: u64,

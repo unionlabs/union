@@ -12,6 +12,7 @@ use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
     )
 )]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MerkleRoot {
     pub hash: H256,
 }

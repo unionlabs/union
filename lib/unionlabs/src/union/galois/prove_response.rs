@@ -8,6 +8,7 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProveResponse {
     pub proof: ZeroKnowledgeProof,
     pub trusted_validator_set_root: H256,

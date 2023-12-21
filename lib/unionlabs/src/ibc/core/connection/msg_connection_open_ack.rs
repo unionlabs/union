@@ -9,6 +9,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MsgConnectionOpenAck<ClientState, ProofTry, ProofClient, ProofConsensus> {
     pub connection_id: ConnectionId,
     pub counterparty_connection_id: ConnectionId,

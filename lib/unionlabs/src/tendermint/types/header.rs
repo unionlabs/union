@@ -14,6 +14,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 // REVIEW: Are all hashes here hex_upper_unprefixed?
+#[serde(deny_unknown_fields)]
 pub struct Header {
     /// basic block info
     pub version: Consensus,

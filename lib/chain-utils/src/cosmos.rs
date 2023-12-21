@@ -23,7 +23,7 @@ use unionlabs::{
     },
     id::ClientId,
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
-    traits::{Chain, ClientState},
+    traits::{Chain, ClientState, FromStrExact},
     CosmosSigner, WasmClientType,
 };
 
@@ -74,7 +74,16 @@ impl CosmosSdkChain for Cosmos {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct CosmosChainType;
+
+impl FromStrExact for CosmosChainType {
+    const EXPECTING: &'static str = "cosmos";
+}
+
 impl Chain for Cosmos {
+    type ChainType = CosmosChainType;
+
     type SelfClientState = tendermint::client_state::ClientState;
     type SelfConsensusState = tendermint::consensus_state::ConsensusState;
 

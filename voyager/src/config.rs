@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct Config<Q: Queue> {
     /// Map of chain name to it's respective config.
     pub chain: BTreeMap<String, ChainConfig>,

@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PubKey {
     #[serde(with = "::serde_utils::base64")]
     pub key: [u8; 33],
@@ -28,7 +29,7 @@ impl TryFrom<protos::cosmos::crypto::secp256k1::PubKey> for PubKey {
                 .key
                 .try_into()
                 .map_err(|invalid: Vec<u8>| InvalidLength {
-                    expected: ExpectedLength::Exact(32),
+                    expected: ExpectedLength::Exact(33),
                     found: invalid.len(),
                 })?,
         })

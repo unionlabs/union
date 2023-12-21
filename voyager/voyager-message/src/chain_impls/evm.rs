@@ -52,7 +52,10 @@ use crate::{
     fetch,
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
     identified, msg,
-    msg::{AnyMsg, Msg, MsgUpdateClientData},
+    msg::{
+        AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
+        MsgUpdateClientData,
+    },
     seq,
     use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
     wait,
@@ -64,6 +67,7 @@ use crate::{
 pub const EVM_REVISION_NUMBER: u64 = 0;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EvmConfig {
     pub client_type: String,
     pub client_address: H160,
@@ -77,20 +81,6 @@ impl<C: ChainSpec> ChainExt for Evm<C> {
     type MsgError = TxSubmitError;
 
     type Config = EvmConfig;
-
-    // fn encode_client_state_for_counterparty<Tr: ChainExt>(cs: Tr::SelfClientState) -> Vec<u8>
-    // where
-    //     Tr::SelfClientState: Encode<Self::IbcStateEncoding>,
-    // {
-    //     todo!()
-    // }
-
-    // fn encode_consensus_state_for_counterparty<Tr: ChainExt>(cs: Tr::SelfConsensusState) -> Vec<u8>
-    // where
-    //     Tr::SelfConsensusState: Encode<Self::IbcStateEncoding>,
-    // {
-    //     todo!()
-    // }
 }
 
 impl<C: ChainSpec, Tr: ChainExt> DoMsg<Self, Tr> for Evm<C>
@@ -106,62 +96,58 @@ where
     async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
         let f = |ibc_handler| async move {
             let msg: ethers::contract::FunctionCall<_, _, ()> = match msg {
-                Msg::ConnectionOpenInit(data) => mk_function_call(
+                Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => mk_function_call(
                     ibc_handler,
                     ConnectionOpenInitCall {
                         msg: contracts::ibc_handler::MsgConnectionOpenInit {
-                            client_id: data.msg.client_id.to_string(),
-                            counterparty: data.msg.counterparty.into(),
-                            delay_period: data.msg.delay_period,
+                            client_id: data.client_id.to_string(),
+                            counterparty: data.counterparty.into(),
+                            delay_period: data.delay_period,
                         },
                     },
                 ),
-                Msg::ConnectionOpenTry(data) => mk_function_call(
+                Msg::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => mk_function_call(
                     ibc_handler,
                     ConnectionOpenTryCall {
                         msg: contracts::ibc_handler::MsgConnectionOpenTry {
-                            counterparty: data.msg.counterparty.into(),
-                            delay_period: data.msg.delay_period,
-                            client_id: data.msg.client_id.to_string(),
+                            counterparty: data.counterparty.into(),
+                            delay_period: data.delay_period,
+                            client_id: data.client_id.to_string(),
                             // needs to be encoded how the counterparty is encoding it
                             client_state_bytes: Encode::<Tr::IbcStateEncoding>::encode(
-                                data.msg.client_state,
+                                data.client_state,
                             )
                             .into(),
                             counterparty_versions: data
-                                .msg
                                 .counterparty_versions
                                 .into_iter()
                                 .map(Into::into)
                                 .collect(),
-                            proof_init: data.msg.proof_init.encode().into(),
-                            proof_client: data.msg.proof_client.encode().into(),
-                            proof_consensus: data.msg.proof_consensus.encode().into(),
-                            proof_height: data.msg.proof_height.into_height().into(),
-                            consensus_height: data.msg.consensus_height.into(),
+                            proof_init: data.proof_init.encode().into(),
+                            proof_client: data.proof_client.encode().into(),
+                            proof_consensus: data.proof_consensus.encode().into(),
+                            proof_height: data.proof_height.into_height().into(),
+                            consensus_height: data.consensus_height.into(),
                         },
                     },
                 ),
-                Msg::ConnectionOpenAck(data) => mk_function_call(
+                Msg::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => mk_function_call(
                     ibc_handler,
                     ConnectionOpenAckCall {
                         msg: contracts::ibc_handler::MsgConnectionOpenAck {
-                            connection_id: data.msg.connection_id.to_string(),
-                            counterparty_connection_id: data
-                                .msg
-                                .counterparty_connection_id
-                                .to_string(),
-                            version: data.msg.version.into(),
+                            connection_id: data.connection_id.to_string(),
+                            counterparty_connection_id: data.counterparty_connection_id.to_string(),
+                            version: data.version.into(),
                             // needs to be encoded how the counterparty is encoding it
                             client_state_bytes: Encode::<Tr::IbcStateEncoding>::encode(
-                                data.msg.client_state,
+                                data.client_state,
                             )
                             .into(),
-                            proof_height: data.msg.proof_height.into(),
-                            proof_try: data.msg.proof_try.encode().into(),
-                            proof_client: data.msg.proof_client.encode().into(),
-                            proof_consensus: data.msg.proof_consensus.encode().into(),
-                            consensus_height: data.msg.consensus_height.into(),
+                            proof_height: data.proof_height.into(),
+                            proof_try: data.proof_try.encode().into(),
+                            proof_client: data.proof_client.encode().into(),
+                            proof_consensus: data.proof_consensus.encode().into(),
+                            consensus_height: data.consensus_height.into(),
                         },
                     },
                 ),
@@ -205,7 +191,7 @@ where
                             counterparty_version: data.msg.counterparty_version,
                             counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
                             proof_try: data.msg.proof_try.encode().into(),
-                            proof_height: data.msg.proof_height.into(),
+                            proof_height: data.msg.proof_height.into_height().into(),
                         },
                     },
                 ),
@@ -216,7 +202,7 @@ where
                             port_id: data.msg.port_id.to_string(),
                             channel_id: data.msg.channel_id.to_string(),
                             proof_ack: data.msg.proof_ack.encode().into(),
-                            proof_height: data.msg.proof_height.into(),
+                            proof_height: data.msg.proof_height.into_height().into(),
                         },
                     },
                 ),
@@ -226,7 +212,7 @@ where
                         msg: contracts::ibc_handler::MsgPacketRecv {
                             packet: data.msg.packet.into(),
                             proof: data.msg.proof_commitment.encode().into(),
-                            proof_height: data.msg.proof_height.into(),
+                            proof_height: data.msg.proof_height.into_height().into(),
                         },
                     },
                 ),
@@ -237,7 +223,7 @@ where
                             packet: data.msg.packet.into(),
                             acknowledgement: data.msg.acknowledgement.into(),
                             proof: data.msg.proof_acked.encode().into(),
-                            proof_height: data.msg.proof_height.into(),
+                            proof_height: data.msg.proof_height.into_height().into(),
                         },
                     },
                 ),
@@ -277,17 +263,12 @@ where
                         },
                     )
                 }
-                Msg::UpdateClient(data) => mk_function_call(
+                Msg::UpdateClient(MsgUpdateClientData(data)) => mk_function_call(
                     ibc_handler,
                     UpdateClientCall {
                         msg: ibc_handler::MsgUpdateClient {
-                            client_id: data.msg.client_id.to_string(),
-                            client_message: data
-                                .msg
-                                .client_message
-                                .clone()
-                                .into_eth_abi_bytes()
-                                .into(),
+                            client_id: data.client_id.to_string(),
+                            client_message: data.client_message.clone().into_eth_abi_bytes().into(),
                         },
                     },
                 ),
@@ -707,7 +688,7 @@ where
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Evm<C>, Tr>,
     pub currently_trusted_slot: u64,
@@ -716,13 +697,13 @@ pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct MakeCreateUpdatesData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Evm<C>, Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct MakeCreateUpdatesFromLightClientUpdatesData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Evm<C>, Tr>,
     pub trusted_height: Height,
@@ -730,7 +711,7 @@ pub struct MakeCreateUpdatesFromLightClientUpdatesData<C: ChainSpec, Tr: ChainEx
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchLightClientUpdate<C: ChainSpec> {
     pub period: u64,
     #[serde(skip)]
@@ -738,7 +719,7 @@ pub struct FetchLightClientUpdate<C: ChainSpec> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchLightClientUpdates<C: ChainSpec> {
     pub trusted_period: u64,
     pub target_period: u64,
@@ -747,7 +728,7 @@ pub struct FetchLightClientUpdates<C: ChainSpec> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchBootstrap<C: ChainSpec> {
     pub slot: u64,
     #[serde(skip)]
@@ -755,7 +736,7 @@ pub struct FetchBootstrap<C: ChainSpec> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchAccountUpdate<C: ChainSpec> {
     pub slot: u64,
     #[serde(skip)]
@@ -763,14 +744,14 @@ pub struct FetchAccountUpdate<C: ChainSpec> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchBeaconGenesis<C: ChainSpec> {
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> C>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct BootstrapData<C: ChainSpec, Tr: ChainExt> {
     pub slot: u64,
     pub bootstrap: LightClientBootstrap<C>,
@@ -779,7 +760,7 @@ pub struct BootstrapData<C: ChainSpec, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AccountUpdateData<C: ChainSpec, Tr: ChainExt> {
     pub slot: u64,
     pub ibc_handler_address: H160,
@@ -789,7 +770,7 @@ pub struct AccountUpdateData<C: ChainSpec, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct BeaconGenesisData<C: ChainSpec, Tr: ChainExt> {
     genesis: GenesisData,
     #[serde(skip)]
@@ -812,7 +793,12 @@ try_from_relayer_msg! {
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    bound(serialize = "", deserialize = ""),
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case"
+)]
 pub enum EvmFetchMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "FinalityUpdate")]
     FetchFinalityUpdate(PhantomData<C>),
@@ -835,7 +821,12 @@ pub enum EvmFetchMsg<C: ChainSpec, Tr: ChainExt> {
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    bound(serialize = "", deserialize = ""),
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case"
+)]
 #[allow(clippy::large_enum_variant)]
 pub enum EvmDataMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "FinalityUpdate")]
@@ -852,153 +843,15 @@ pub enum EvmDataMsg<C: ChainSpec, Tr: ChainExt> {
     BeaconGenesis(BeaconGenesisData<C, Tr>),
 }
 
-// impl<C, L> From<LightClientUpdates<C>> for Data<L>
-// where
-//     C: ChainSpec,
-//     L: LightClient<Self = Evm<C>, Data = CometblsDataMsg<C>>,
-// {
-//     fn from(value: LightClientUpdates<C>) -> Self {
-//         Data::LightClientSpecific(LightClientSpecificData(
-//             CometblsDataMsg::LightClientUpdates(value),
-//         ))
-//     }
-// }
-
-// impl<C, L> From<LightClientUpdate<C>> for Data<L>
-// where
-//     C: ChainSpec,
-//     L: LightClient<Self = Evm<C>, Data = CometblsDataMsg<C>>,
-// {
-//     fn from(value: LightClientUpdate<C>) -> Self {
-//         Data::LightClientSpecific(LightClientSpecificData(CometblsDataMsg::LightClientUpdate(
-//             value,
-//         )))
-//     }
-// }
-
-// impl<C, L> TryFrom<Data<L>> for LightClientUpdates<C>
-// where
-//     C: ChainSpec,
-//     L: LightClient<Self = Evm<C>, Data = CometblsDataMsg<C>>,
-// {
-//     type Error = Data<L>;
-
-//     fn try_from(value: Data<L>) -> Result<Self, Self::Error> {
-//         let LightClientSpecificData(value) = LightClientSpecificData::try_from(value)?;
-
-//         match value {
-//             CometblsDataMsg::LightClientUpdates(ok) => Ok(ok),
-//             _ => Err(LightClientSpecificData(value).into()),
-//         }
-//     }
-// }
-
-// impl<C, L> TryFrom<Data<L>> for LightClientUpdate<C>
-// where
-//     C: ChainSpec,
-//     L: LightClient<Self = Evm<C>, Data = CometblsDataMsg<C>>,
-// {
-//     type Error = Data<L>;
-
-//     fn try_from(value: Data<L>) -> Result<Self, Self::Error> {
-//         let LightClientSpecificData(value) = LightClientSpecificData::try_from(value)?;
-
-//         match value {
-//             CometblsDataMsg::LightClientUpdate(ok) => Ok(ok),
-//             _ => Err(LightClientSpecificData(value).into()),
-//         }
-//     }
-// }
-
-// impl<C, L> From<BootstrapData<C>> for Data<L>
-// where
-//     C: ChainSpec,
-//     L: LightClient<Self = Evm<C>, Data = CometblsDataMsg<C>>,
-// {
-//     fn from(value: BootstrapData<C>) -> Self {
-//         Data::LightClientSpecific(LightClientSpecificData(CometblsDataMsg::Bootstrap(value)))
-//     }
-// }
-
-// impl<C, L> TryFrom<Data<L>> for BootstrapData<C>
-// where
-//     C: ChainSpec,
-//     L: LightClient<Self = Evm<C>, Data = CometblsDataMsg<C>>,
-// {
-//     type Error = Data<L>;
-
-//     fn try_from(value: Data<L>) -> Result<Self, Self::Error> {
-//         let LightClientSpecificData(value) = LightClientSpecificData::try_from(value)?;
-
-//         match value {
-//             CometblsDataMsg::Bootstrap(ok) => Ok(ok),
-//             _ => Err(LightClientSpecificData(value).into()),
-//         }
-//     }
-// }
-
-// impl<C, L> From<AccountUpdateData<C>> for Data<L>
-// where
-//     C: ChainSpec,
-//     L: LightClient<Self = Evm<C>, Data = CometblsDataMsg<C>>,
-// {
-//     fn from(value: AccountUpdateData<C>) -> Self {
-//         Data::LightClientSpecific(LightClientSpecificData(CometblsDataMsg::AccountUpdate(
-//             value,
-//         )))
-//     }
-// }
-
-// impl<C, L> TryFrom<Data<L>> for AccountUpdateData<C>
-// where
-//     C: ChainSpec,
-//     L: LightClient<Self = Evm<C>, Data = CometblsDataMsg<C>>,
-// {
-//     type Error = Data<L>;
-
-//     fn try_from(value: Data<L>) -> Result<Self, Self::Error> {
-//         let LightClientSpecificData(value) = LightClientSpecificData::try_from(value)?;
-
-//         match value {
-//             CometblsDataMsg::AccountUpdate(ok) => Ok(ok),
-//             _ => Err(LightClientSpecificData(value).into()),
-//         }
-//     }
-// }
-
-// impl<C, L> From<BeaconGenesisData<C>> for Data<L>
-// where
-//     C: ChainSpec,
-//     L: LightClient<Self = Evm<C>, Data = CometblsDataMsg<C>>,
-// {
-//     fn from(value: BeaconGenesisData<C>) -> Self {
-//         Data::LightClientSpecific(LightClientSpecificData(CometblsDataMsg::BeaconGenesis(
-//             value,
-//         )))
-//     }
-// }
-
-// impl<C, L> TryFrom<Data<L>> for BeaconGenesisData<C>
-// where
-//     C: ChainSpec,
-//     L: LightClient<Self = Evm<C>, Data = CometblsDataMsg<C>>,
-// {
-//     type Error = Data<L>;
-
-//     fn try_from(value: Data<L>) -> Result<Self, Self::Error> {
-//         let LightClientSpecificData(value) = LightClientSpecificData::try_from(value)?;
-
-//         match value {
-//             CometblsDataMsg::BeaconGenesis(ok) => Ok(ok),
-//             _ => Err(LightClientSpecificData(value).into()),
-//         }
-//     }
-// }
-
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    bound(serialize = "", deserialize = ""),
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case"
+)]
 #[allow(clippy::large_enum_variant)]
 pub enum EvmAggregateMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "CreateUpdate")]
@@ -1010,7 +863,7 @@ pub enum EvmAggregateMsg<C: ChainSpec, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FinalityUpdate<C: ChainSpec, Tr: ChainExt> {
     pub finality_update: LightClientFinalityUpdate<C>,
     #[serde(skip)]
@@ -1018,7 +871,7 @@ pub struct FinalityUpdate<C: ChainSpec, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct LightClientUpdates<C: ChainSpec, Tr: ChainExt> {
     pub light_client_updates: Vec<light_client_update::LightClientUpdate<C>>,
     #[serde(skip)]
@@ -1026,7 +879,7 @@ pub struct LightClientUpdates<C: ChainSpec, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct LightClientUpdate<C: ChainSpec, Tr: ChainExt> {
     pub update: light_client_update::LightClientUpdate<C>,
     #[serde(skip)]
@@ -1058,7 +911,7 @@ where
     fn do_aggregate(
         Identified {
             chain_id,
-            data,
+            t: data,
             __marker: _,
         }: Self,
         aggregated_data: VecDeque<AnyLightClientIdentified<AnyData>>,
@@ -1168,14 +1021,14 @@ fn mk_function_call<Call: EthCall>(
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct GetProof<C: ChainSpec, Tr: ChainExt> {
     path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
     height: HeightOf<Evm<C>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchIbcState<C: ChainSpec, Tr: ChainExt> {
     path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
     height: HeightOf<Evm<C>>,
@@ -1202,7 +1055,7 @@ where
     fn aggregate(
         Identified {
             chain_id,
-            data:
+            t:
                 CreateUpdateData {
                     req,
                     currently_trusted_slot,
@@ -1214,7 +1067,7 @@ where
         hlist_pat![
             Identified {
                 chain_id: light_client_update_chain_id,
-                data: LightClientUpdate {
+                t: LightClientUpdate {
                     update: light_client_update::LightClientUpdate {
                         next_sync_committee,
                         ..
@@ -1225,7 +1078,7 @@ where
             },
             Identified {
                 chain_id: account_update_chain_id,
-                data: AccountUpdateData {
+                t: AccountUpdateData {
                     slot: _account_update_data_beacon_slot,
                     ibc_handler_address,
                     update: account_update,
@@ -1235,7 +1088,7 @@ where
             },
             Identified {
                 chain_id: beacon_api_chain_id,
-                data: BeaconGenesisData {
+                t: BeaconGenesisData {
                     genesis,
                     __marker: _,
                 },
@@ -1286,16 +1139,10 @@ where
             ),
             msg::<Tr, Evm<C>>(
                 req.counterparty_chain_id,
-                MsgUpdateClientData {
-                    msg: MsgUpdateClient {
-                        client_id: req.counterparty_client_id,
-                        client_message: header,
-                    },
-                    update_from: Height {
-                        revision_number: EVM_REVISION_NUMBER,
-                        revision_height: currently_trusted_slot,
-                    },
-                },
+                MsgUpdateClientData(MsgUpdateClient {
+                    client_id: req.counterparty_client_id,
+                    client_message: header,
+                }),
             ),
         ])
     }
@@ -1317,12 +1164,12 @@ where
     fn aggregate(
         Identified {
             chain_id,
-            data: MakeCreateUpdatesData { req },
+            t: MakeCreateUpdatesData { req },
             __marker: _,
         }: Self,
         hlist_pat![Identified {
             chain_id: bootstrap_chain_id,
-            data: FinalityUpdate {
+            t: FinalityUpdate {
                 finality_update,
                 __marker: _
             },
@@ -1397,7 +1244,7 @@ where
     fn aggregate(
         Identified {
             chain_id,
-            data:
+            t:
                 MakeCreateUpdatesFromLightClientUpdatesData {
                     req,
                     trusted_height,
@@ -1407,7 +1254,7 @@ where
         }: Self,
         hlist_pat![Identified {
             chain_id: light_client_updates_chain_id,
-            data: LightClientUpdates {
+            t: LightClientUpdates {
                 light_client_updates,
                 __marker: _,
             },

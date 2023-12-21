@@ -5,6 +5,7 @@ use tree_hash::TreeHash;
 use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BeaconBlockHeader {
     #[serde(with = "serde_utils::string")]
     pub slot: u64,

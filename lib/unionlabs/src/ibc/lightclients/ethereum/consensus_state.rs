@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{bls::BlsPublicKey, errors::InvalidLength, hash::H256, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ConsensusState {
     // REVIEW: Remove this field as this height is what is used to query the consensus state?
     pub slot: u64,

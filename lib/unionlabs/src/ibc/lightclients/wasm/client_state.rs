@@ -6,7 +6,9 @@ use crate::{
     encoding::Decode, errors::InvalidLength, hash::H256, ibc::core::client::height::Height,
     IntoProto, Proto, TypeUrl,
 };
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ClientState<Data> {
     pub data: Data,
     pub checksum: H256,

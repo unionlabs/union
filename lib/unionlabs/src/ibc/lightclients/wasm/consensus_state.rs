@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{encoding::Decode, IntoProto, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ConsensusState<Data> {
     pub data: Data,
 }
