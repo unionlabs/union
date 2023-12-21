@@ -10,12 +10,21 @@ This guide assumes you have [Docker](https://www.docker.com/get-started/) correc
 
 ## Getting the Docker Image
 
-To get the `uniond` image, you can visit [our container on the GitHub Container Registry](https://github.com/orgs/unionlabs/packages/container/package/uniond), or run the following command:
+To get the `uniond` image, you can visit our container on the GitHub Container Registry ([`uniond` for v0.15.0 and earlier](https://github.com/orgs/unionlabs/packages/container/package/uniond), [`uniond-release` for v0.16.0 and later](https://github.com/orgs/unionlabs/packages/container/package/uniond-release)), or run the following command:
 
-```sh
-export UNIOND_VERSION='v0.14.0'
-docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION
-```
+- For versions v0.15.0 and earlier
+
+  ```sh
+  export UNIOND_VERSION='v0.14.0'
+  docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION
+  ```
+
+- For versions v0.16.0 and later
+
+  ```sh
+  export UNIOND_VERSION='v0.16.0'
+  docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
+  ```
 
 ## Running uniond
 

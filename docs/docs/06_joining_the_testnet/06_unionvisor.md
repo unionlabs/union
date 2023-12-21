@@ -93,14 +93,14 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
 ```sh
-export UNIONVISOR_VERSION='v0.16.0'
-alias uniond='docker run -v ~/.unionvisor:/.unionvisor --network host -it ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION --log-level off call'
+export UNIONVISOR_VERSION='v0.17.0'
+alias uniond='docker run -v ~/.unionvisor:/.unionvisor --network host -it ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION call'
 ```
 
 :::note
 
 - The `unionvisor call` sub-command passes commands and arguments to `uniond`.
-- We pass `--log-level off` to Unionvisor here to prevent extra output while issuing sub-commands.
+- You may wish to pass `--log-level off` when calling Unionvisor to prevent extra output while issuing sub-commands.
 
 :::
 
