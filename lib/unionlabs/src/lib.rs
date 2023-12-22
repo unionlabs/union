@@ -478,7 +478,7 @@ pub mod traits {
     use serde::{Deserialize, Serialize};
 
     use crate::{
-        encoding::{Decode, Encode, Encoding},
+        encoding::Encoding,
         ethereum::config::ChainSpec,
         google::protobuf::any::Any,
         hash::H256,
@@ -582,17 +582,13 @@ pub mod traits {
             + PartialEq
             + Serialize
             + for<'de> Deserialize<'de>
-            // + StoredState<Self>
             + ClientState<ChainId = ChainIdOf<Tr>, Height = Tr::Height>
-            // + Encode<Self::IbcStateEncoding>
             + 'static;
         type StoredConsensusState<Tr: Chain>: Debug
             + Clone
             + PartialEq
             + Serialize
             + for<'de> Deserialize<'de>
-            // + Encode<Self::IbcStateEncoding>
-            // + StoredState<Self>
             + 'static;
 
         type Header: Header + Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
@@ -644,12 +640,6 @@ pub mod traits {
             destination_port_id: PortId,
             sequence: u64,
         ) -> impl Future<Output = Vec<u8>> + '_;
-    }
-
-    pub trait StoredState<Hc: Chain> {}
-    impl<Hc: Chain, State: Encode<Hc::IbcStateEncoding> + Decode<Hc::IbcStateEncoding>>
-        StoredState<Hc> for State
-    {
     }
 
     pub trait ClientState {

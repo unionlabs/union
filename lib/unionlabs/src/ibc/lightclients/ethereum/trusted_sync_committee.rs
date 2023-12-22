@@ -20,7 +20,8 @@ use crate::{
     tag = "@type",
     content = "@value",
     bound(serialize = "", deserialize = ""),
-    deny_unknown_fields
+    deny_unknown_fields,
+    rename_all = "snake_case"
 )]
 pub enum ActiveSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     Current(SyncCommittee<C>),
