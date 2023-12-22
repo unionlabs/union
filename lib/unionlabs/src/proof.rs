@@ -292,10 +292,16 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for AcknowledgementPath {
     clap::Subcommand,
     enumorph::Enumorph,
 )]
-#[serde(bound(
-    serialize = "ClientId: Serialize",
-    deserialize = "ClientId: for<'d> Deserialize<'d>",
-))]
+#[serde(
+    bound(
+        serialize = "ClientId: Serialize",
+        deserialize = "ClientId: for<'d> Deserialize<'d>",
+    ),
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
 pub enum Path<ClientId: traits::Id, Height: IsHeight> {
     #[display(fmt = "{_0}")]
     ClientStatePath(ClientStatePath<ClientId>),

@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProveRequest {
     pub vote: CanonicalVote,
     pub trusted_commit: ValidatorSetCommit,

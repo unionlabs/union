@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{union::galois::prove_request::ProveRequest, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PollRequest {
     pub request: ProveRequest,
 }

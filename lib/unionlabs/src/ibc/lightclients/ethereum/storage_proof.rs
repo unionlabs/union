@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StorageProof {
     pub proofs: Vec<Proof>,
 }

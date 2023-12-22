@@ -2,7 +2,8 @@
   "trusted_sync_committee": {
     "trusted_height": { "revision_number": 0, "revision_height": 88 },
     "sync_committee": {
-      "Next": {
+      "@type": "next",
+      "@value": {
         "pubkeys": [
           "0xa3a32b0f8b4ddb83f1a0a853d81dd725dfe577d4f4c3db8ece52ce2b026eca84815c1a7e8e92a4de3d755733bf7e4a9b",
           "0x88c141df77cd9d8d7a71a75c826c41a9c9f03c6ee1b180f3e7852f6a280099ded351b58d66e653af8e42816a4d8f532e",
@@ -174,6 +175,5 @@
         "0xf869a020d239f2246a63740e6f24af4056714ae4348ff05fd2d1c81044da6158a398beb846f8440180a0b150f1dfce809634efe2bdf4f889d9691f33e918290475315253f9ad01c1764da0aae0c2cc3e778696ffdac89bc58e055ecd863b91cbbb58456e996b9d994ed90b"
       ]
     }
-  },
-  "timestamp": 1690497992
+  }
 }

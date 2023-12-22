@@ -3,6 +3,7 @@ use contracts::ibc_handler::IbcCoreCommitmentV1MerklePrefixData;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MerklePrefix {
     #[serde(with = "::serde_utils::hex_string")]
     pub key_prefix: Vec<u8>,

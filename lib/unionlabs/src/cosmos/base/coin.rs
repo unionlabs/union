@@ -3,9 +3,12 @@ use serde::{Deserialize, Serialize};
 use crate::{Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Coin {
+    // REVIEW: Is this bounded?
     pub denom: String,
     // NOTE: Exists in range from -(2^256 - 1) to 2^256 - 1
+    // TODO: Make this into a type that upholds the invariants
     pub amount: String,
 }
 

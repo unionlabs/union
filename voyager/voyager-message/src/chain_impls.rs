@@ -34,15 +34,16 @@ macro_rules! try_from_relayer_msg {
                                         RelayerMsg::Data(data) => {
                                             let Identified {
                                                 chain_id,
-                                                data,
+                                                t,
                                                 __marker: _,
                                             } = data.try_into().map_err(RelayerMsg::Data)?;
 
-                                            match data {
-                                                crate::Data::LightClientSpecific(LightClientSpecificData($d Enum::$d Variant(
-                                                    data,
-                                                ))) => Ok(Identified::new(chain_id, data)),
-                                                _ => Err(RelayerMsg::Data(Into::<AnyLightClientIdentified<AnyData>>::into(Identified::new(chain_id, data))))
+                                            match t {
+                                                crate::Data::LightClientSpecific(
+                                                    LightClientSpecificData($d Enum::$d Variant(
+                                                    t,
+                                                ))) => Ok(Identified::new(chain_id, t)),
+                                                _ => Err(RelayerMsg::Data(Into::<AnyLightClientIdentified<AnyData>>::into(Identified::new(chain_id, t))))
                                             }
 
                                         },
@@ -55,11 +56,11 @@ macro_rules! try_from_relayer_msg {
                             where
                                 AnyLightClientIdentified<AnyData>: From<identified!(Data<$d Chain, Tr>)>
                             {
-                                fn from(Identified { chain_id, data, __marker: _ }: Identified<$d Chain, Tr, $d Ty>) -> crate::AnyLightClientIdentified<crate::data::AnyData> {
+                                fn from(Identified { chain_id, t, __marker: _ }: Identified<$d Chain, Tr, $d Ty>) -> crate::AnyLightClientIdentified<crate::data::AnyData> {
                                     crate::AnyLightClientIdentified::from(Identified::new(
                                         chain_id,
                                         Data::LightClientSpecific(LightClientSpecificData($d Enum::$d Variant(
-                                            data,
+                                            t,
                                         ))),
                                     ))
                                 }
@@ -74,15 +75,15 @@ macro_rules! try_from_relayer_msg {
                                 fn try_from(value: crate::AnyLightClientIdentified<crate::data::AnyData>) -> Result<Identified<$d Chain, Tr, $d Ty>, crate::AnyLightClientIdentified<crate::data::AnyData>> {
                                     let Identified {
                                         chain_id,
-                                        data,
+                                        t,
                                         __marker: _,
                                     } = value.try_into()?;
 
-                                    match data {
+                                    match t {
                                         Data::LightClientSpecific(LightClientSpecificData($d Enum::$d Variant(
-                                            data,
-                                        ))) => Ok(Identified::new(chain_id, data)),
-                                        _ => Err(Into::<AnyLightClientIdentified<AnyData>>::into(Identified::new(chain_id, data)))
+                                            t,
+                                        ))) => Ok(Identified::new(chain_id, t)),
+                                        _ => Err(Into::<AnyLightClientIdentified<AnyData>>::into(Identified::new(chain_id, t)))
                                     }
                                 }
                             }

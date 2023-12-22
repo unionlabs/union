@@ -3,9 +3,11 @@ use serde::{Deserialize, Serialize};
 use crate::{Proto, TypeUrl};
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Consensus {
     #[serde(with = "::serde_utils::string")]
     pub block: u64,
+    // REVIEW: Why default?
     #[serde(with = "::serde_utils::string", default)]
     pub app: u64,
 }

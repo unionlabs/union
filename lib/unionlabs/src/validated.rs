@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 #[serde(
-    transparent,
-    bound(serialize = "T: Serialize", deserialize = "T: for<'d> Deserialize<'d>")
+    bound(serialize = "T: Serialize", deserialize = "T: for<'d> Deserialize<'d>"),
+    transparent
 )]
 pub struct Validated<T, V: Validate<T>>(T, #[serde(skip)] PhantomData<fn() -> V>);
 

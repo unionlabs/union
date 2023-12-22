@@ -1,8 +1,10 @@
+use std::fmt::Debug;
+
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 
 use crate::{
-    errors::{MissingField, TryFromBranchError},
+    errors::{InvalidLength, MissingField},
     ethereum::config::{
         consts::{floorlog2, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX},
         BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE,
@@ -12,7 +14,7 @@ use crate::{
         light_client_header::LightClientHeader, sync_aggregate::SyncAggregate,
         sync_committee::SyncCommittee,
     },
-    try_from_proto_branch, Proto, TryFromProtoErrorOf, TypeUrl,
+    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 /// TODO: Move these to a more central location
@@ -20,7 +22,7 @@ pub type NextSyncCommitteeBranch = [H256; floorlog2(NEXT_SYNC_COMMITTEE_INDEX)];
 pub type FinalityBranch = [H256; floorlog2(FINALIZED_ROOT_INDEX)];
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct LightClientUpdate<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     /// Header attested to by the sync committee
     pub attested_header: LightClientHeader<C>,
@@ -141,4 +143,28 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> Proto
     for LightClientUpdate<C>
 {
     type Proto = protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate;
+}
+
+fn try_from_proto_branch<T>(proto: Vec<Vec<u8>>) -> Result<T, TryFromBranchError<T>>
+where
+    T: TryFrom<Vec<H256>>,
+    <T as TryFrom<Vec<H256>>>::Error: Debug + PartialEq + Eq,
+{
+    proto
+        .into_iter()
+        .map(H256::try_from)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(TryFromBranchError::BranchNode)?
+        .try_into()
+        .map_err(TryFromBranchError::Branch)
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum TryFromBranchError<T>
+where
+    T: TryFrom<Vec<H256>>,
+    <T as TryFrom<Vec<H256>>>::Error: Debug + PartialEq + Eq,
+{
+    Branch(<T as TryFrom<Vec<H256>>>::Error),
+    BranchNode(InvalidLength),
 }

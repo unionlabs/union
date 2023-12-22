@@ -16,7 +16,13 @@ use crate::{
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[ssz(enum_behaviour = "union")]
 #[tree_hash(enum_behaviour = "union")]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields,
+    rename_all = "snake_case"
+)]
 pub enum ActiveSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     Current(SyncCommittee<C>),
     Next(SyncCommittee<C>),
@@ -43,7 +49,7 @@ impl<C: SYNC_COMMITTEE_SIZE> ActiveSyncCommittee<C> {
 }
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct TrustedSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     pub trusted_height: Height,
     pub sync_committee: ActiveSyncCommittee<C>,

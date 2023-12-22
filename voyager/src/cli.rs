@@ -131,8 +131,6 @@ where
         }
     }
 
-    dbg!(&output);
-
     abort_handle.abort();
     handle.abort();
 
@@ -184,7 +182,7 @@ impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> StateProof<Hc, Tr, P> {
         hlist_pat![
             Identified {
                 chain_id: _state_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: state_path,
                     height: state_height,
                     state,
@@ -193,7 +191,7 @@ impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> StateProof<Hc, Tr, P> {
             },
             Identified {
                 chain_id: _proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     path: proof_path,
                     height: proof_height,
                     proof,

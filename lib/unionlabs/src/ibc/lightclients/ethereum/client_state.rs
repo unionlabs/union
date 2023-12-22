@@ -15,6 +15,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ClientState {
     pub chain_id: U256,
     pub genesis_validators_root: H256,

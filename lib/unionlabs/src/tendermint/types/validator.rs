@@ -9,6 +9,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Validator {
     #[serde(with = "::serde_utils::hex_upper_unprefixed")]
     pub address: H160,

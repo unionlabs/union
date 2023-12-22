@@ -22,6 +22,7 @@ macro_rules! event {
         }
     ) => {
         #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+        #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
         pub enum $Enum$(<$($generics),*>)? {
             $(
                 $Struct($Struct$(<$($struct_generics),+>)?),
@@ -60,6 +61,7 @@ macro_rules! event {
 
         $(
             #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+            #[serde(deny_unknown_fields)]
             pub struct $Struct$(<$($struct_generics),+>)? {
                 $(
                     $(#[doc = $doc])*
@@ -372,6 +374,7 @@ event! {
             #[serde(with = "::serde_utils::hex_string")]
             packet_data_hex: Vec<u8>,
             #[parse(Height::from_str)]
+            // TODO: Make this generic height instead of concrete
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,

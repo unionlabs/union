@@ -137,7 +137,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Wait<Hc, Tr> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct WaitForBlock<Hc: ChainExt, Tr: ChainExt> {
     pub height: HeightOf<Hc>,
     #[serde(skip)]
@@ -145,7 +145,7 @@ pub struct WaitForBlock<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct WaitForTimestamp<Hc: ChainExt, Tr: ChainExt> {
     pub timestamp: i64,
     #[serde(skip)]
@@ -153,7 +153,7 @@ pub struct WaitForTimestamp<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct WaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
     pub client_id: Hc::ClientId,
     pub counterparty_client_id: Tr::ClientId,

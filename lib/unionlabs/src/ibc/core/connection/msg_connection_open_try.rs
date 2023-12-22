@@ -11,8 +11,9 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(bound(
-    serialize = "
+#[serde(
+    bound(
+        serialize = "
         ClientId: Serialize,
         CounterpartyClientId: Serialize,
         ClientState: Serialize,
@@ -20,7 +21,7 @@ use crate::{
         ProofClient: Serialize,
         ProofConsensus: Serialize,
     ",
-    deserialize = "
+        deserialize = "
         ClientId: for<'d> Deserialize<'d>,
         CounterpartyClientId: for<'d> Deserialize<'d>,
         ClientState: for<'d> Deserialize<'d>,
@@ -28,7 +29,9 @@ use crate::{
         ProofClient: for<'d> Deserialize<'d>,
         ProofConsensus: for<'d> Deserialize<'d>,
     ",
-))]
+    ),
+    deny_unknown_fields
+)]
 pub struct MsgConnectionOpenTry<
     ClientState,
     ClientId,

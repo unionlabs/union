@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{cosmos::ics23::commitment_proof::CommitmentProof, TryFromProtoErrorOf};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MerkleProof {
     pub proofs: Vec<CommitmentProof>,
 }

@@ -4,10 +4,13 @@ use crate::{cosmos::base::coin::Coin, Proto, TypeUrl};
 
 /// `MsgExecuteContract` submits the given message data to a smart contract
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MsgExecuteContract {
     /// Sender is the that actor that signed the messages
+    // TODO: bech32 encoded address
     pub sender: String,
     /// Contract is the address of the smart contract
+    // TODO: bech32 encoded address
     pub contract: String,
     /// Msg json encoded message to be passed to the contract
     pub msg: Vec<u8>,

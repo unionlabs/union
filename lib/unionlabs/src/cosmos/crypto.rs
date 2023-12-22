@@ -14,6 +14,12 @@ pub mod secp256k1;
 pub mod secp256r1;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
 pub enum AnyPubKey {
     Bn254(bn254::PubKey),
     Ed25519(ed25519::PubKey),

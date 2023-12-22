@@ -67,7 +67,6 @@ impl GetChain<Wasm<Union>> for Worker {
 
 impl GetChain<Wasm<Cosmos>> for Worker {
     fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Cosmos>>) -> Wasm<Cosmos> {
-        dbg!(&self.chains.cosmos, chain_id);
         Wasm(self.chains.cosmos.get(chain_id).unwrap().clone())
     }
 }
@@ -1013,7 +1012,7 @@ async fn client_type_from_ibc_event<Hc: ChainExt + CosmosSdkChain>(
     ibc_event: &IbcEvent<ClientId, String, String>,
 ) -> ClientType {
     let client_type_from_client_id = |client_id: ClientId| async {
-        if dbg!(&client_id).rsplit_once('-').unwrap().0 == "07-tendermint" {
+        if client_id.rsplit_once('-').unwrap().0 == "07-tendermint" {
             ClientType::Tendermint
         } else {
             ClientType::Wasm(

@@ -16,6 +16,7 @@ use tree_hash::TreeHash;
     )
 )]
 #[derive(Clone, Copy, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct Height {
     // REVIEW: Why default?
     #[serde(default)]

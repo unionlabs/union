@@ -7,14 +7,15 @@ use typenum::Unsigned;
 use crate::{
     ethereum::Version,
     ibc::lightclients::ethereum::{fork::Fork, fork_parameters::ForkParameters},
+    traits::FromStrExact,
 };
 
 /// Minimal config.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Minimal;
 
 /// Mainnet config.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Mainnet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -34,6 +35,14 @@ impl FromStr for PresetBaseKind {
             _ => Err(s.to_string()),
         }
     }
+}
+
+impl FromStrExact for Minimal {
+    const EXPECTING: &'static str = "minimal";
+}
+
+impl FromStrExact for Mainnet {
+    const EXPECTING: &'static str = "mainnet";
 }
 
 /// A way to emulate HKTs in the context of [`ChainSpec`]s.
@@ -82,7 +91,7 @@ macro_rules! consts_traits {
             }
         )+
 
-        pub trait ChainSpec: 'static + Debug + Clone + PartialEq + Send + Sync + $($CONST+)+ {
+        pub trait ChainSpec: 'static + FromStrExact + Debug + Clone + PartialEq + Default + Send + Sync + $($CONST+)+ {
             const PRESET: preset::Preset;
             const PRESET_BASE_KIND: PresetBaseKind;
 

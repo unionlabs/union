@@ -2,14 +2,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
-    ibc::core::client::height::Height,
+    ibc::core::client::height::{Height, IsHeight},
     id::{ChannelId, ChannelIdValidator, PortId, PortIdValidator},
     validated::{Validate, ValidateT},
     Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct Packet {
+    // REVIEW: Is this nonzero?
     pub sequence: u64,
     pub source_port: PortId,
     pub source_channel: ChannelId,
@@ -38,7 +40,7 @@ impl From<Packet> for protos::ibc::core::channel::v1::Packet {
             destination_port: value.destination_port.to_string(),
             destination_channel: value.destination_channel.to_string(),
             data: value.data,
-            timeout_height: Some(value.timeout_height.into()),
+            timeout_height: Some(value.timeout_height.into_height().into()),
             timeout_timestamp: value.timeout_timestamp,
         }
     }
@@ -100,7 +102,7 @@ impl From<Packet> for contracts::ibc_handler::IbcCoreChannelV1PacketData {
             destination_port: value.destination_port.to_string(),
             destination_channel: value.destination_channel.to_string(),
             data: value.data.into(),
-            timeout_height: value.timeout_height.into(),
+            timeout_height: value.timeout_height.into_height().into(),
             timeout_timestamp: value.timeout_timestamp,
         }
     }

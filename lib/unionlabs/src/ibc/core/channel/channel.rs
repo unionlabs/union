@@ -13,6 +13,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Channel {
     pub state: State,
     pub ordering: Order,

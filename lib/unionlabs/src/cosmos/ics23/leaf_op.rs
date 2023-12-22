@@ -4,6 +4,7 @@ use super::{hash_op::HashOp, length_op::LengthOp};
 use crate::{errors::UnknownEnumVariant, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LeafOp {
     pub hash: HashOp,
     pub prehash_key: HashOp,

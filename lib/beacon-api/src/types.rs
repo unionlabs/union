@@ -148,11 +148,11 @@ use unionlabs::{
 };
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct LightClientUpdatesResponse<C: ChainSpec>(pub Vec<LightClientUpdateResponse<C>>);
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct LightClientUpdateResponse<C: ChainSpec> {
     pub version: String,
     pub data: LightClientUpdate<C>,

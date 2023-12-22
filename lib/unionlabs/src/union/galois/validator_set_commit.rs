@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{tendermint::types::simple_validator::SimpleValidator, Proto, TypeUrl};
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ValidatorSetCommit {
     pub validators: Vec<SimpleValidator>,
     // REVIEW: Is this arbitrary bytes or strongly typed? (i.e. H512)

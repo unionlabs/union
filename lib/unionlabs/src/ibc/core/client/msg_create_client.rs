@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::TypeUrl;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MsgCreateClient<ClientState, ConsensusState> {
     pub client_state: ClientState,
     pub consensus_state: ConsensusState,
