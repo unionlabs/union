@@ -3,6 +3,8 @@ title: "Getting Started"
 sidebar_position: 0
 ---
 
+import Version from '@site/src/components/Version'
+
 This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](./nixos) and the [Kubernetes](./kubernetes) guide for more production-ready deployments.
 
 Validators are the backbone of the network. Becoming one requires significant token bonding and delegations, and is not intended for non-power users.
@@ -21,9 +23,12 @@ You can obtain `uniond` from a recent [release](https://github.com/unionlabs/uni
 Double-check the version and architecture in the link before downloading.
 :::
 
-```sh
-curl -L -o uniond https://github.com/unionlabs/union/releases/download/v0.14.0/uniond-x86_64-linux
-```
+<pre language="sh" title="x86_64-linux">
+curl -L -o uniond https://github.com/unionlabs/union/releases/download/{Version('union-testnet-4')}/uniond-release-x86_64-linux
+</pre>
+<pre language="sh" title="aarch64-linux">
+curl -L -o uniond https://github.com/unionlabs/union/releases/download/{Version('union-testnet-4')}/uniond-release-aarch64-linux
+</pre>
 
 Verify that the binary works on your server by running:
 
@@ -41,9 +46,9 @@ mv ./uniond /usr/bin/
 
 We also provide containers in our [package registry](https://github.com/unionlabs/union/pkgs/container/uniond).
 
-```sh
-docker pull ghcr.io/unionlabs/uniond:v0.14.0
-```
+<pre language="sh">
+docker pull ghcr.io/unionlabs/uniond:{Version('union-testnet-4')}
+</pre>
 
 When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](./docker-compose) section is more suited for docker users.
 

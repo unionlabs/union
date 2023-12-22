@@ -1,3 +1,5 @@
+import Version from '@site/src/components/Version'
+
 # Unionvisor
 
 Unionvisor is a utility for managing `uniond` deployments. It manages running, upgrading, and interacting with the node.
@@ -8,9 +10,10 @@ We release container images of Unionvisor called bundles. Each bundle contains e
 
 Alternatively, you can run the following command:
 
-```sh
-docker pull ghcr.io/unionlabs/bundle-testnet-4:$UNIOND_VERSION
-```
+<pre language="sh">
+export UNIONVISOR_VERSION='{Version('union-testnet-4')}'{'\n'}
+docker pull ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION{'\n'}
+</pre>
 
 ## Running Unionvisor
 
@@ -92,10 +95,10 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
-```sh
-export UNIONVISOR_VERSION='v0.17.0'
-alias uniond='docker run -v ~/.unionvisor:/.unionvisor --network host -it ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION call'
-```
+<pre language="sh">
+export UNIONVISOR_VERSION='{Version('union-testnet-4', false)}'{'\n'}
+alias uniond='docker run -v ~/.unionvisor:/.unionvisor --network host -it ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION call'{'\n'}
+</pre>
 
 :::note
 
@@ -115,7 +118,7 @@ A minimal Docker Compose file for Unionvisor looks like this:
 ```yaml
 services:
   node:
-    image: ghcr.io/unionlabs/bundle-testnet-4:$UNIOND_VERSION
+    image: ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION
     volumes:
       - ~/.unionvisor:/.unionvisor
       - /tmp:/tmp
