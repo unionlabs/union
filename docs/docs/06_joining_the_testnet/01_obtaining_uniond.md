@@ -1,6 +1,7 @@
 ---
 title: "Obtaining the Union Testnet Binary"
 ---
+import Version from '@site/src/components/Version'
 
 Currently, we are only officially supporting running the Union Testnet binary (`uniond`) as a Docker container.
 
@@ -14,17 +15,17 @@ To get the `uniond` image, you can visit our container on the GitHub Container R
 
 - For versions v0.15.0 and earlier
 
-  ```sh
-  export UNIOND_VERSION='v0.14.0'
-  docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION
-  ```
+  <pre language="sh">
+  export UNIOND_VERSION='{Version('union-testnet-4', true)}'{'\n'}
+  docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION{'\n'}
+  </pre>
 
 - For versions v0.16.0 and later
 
-  ```sh
-  export UNIOND_VERSION='v0.16.0'
-  docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
-  ```
+  <pre language="sh">
+  export UNIOND_VERSION='{Version('union-testnet-4')}'{'\n'}
+  docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION{'\n'}
+  </pre>
 
 ## Running uniond
 
@@ -87,10 +88,10 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
-```sh
-export UNIOND_VERSION='v0.14.0'
+<pre language="sh">
+export UNIOND_VERSION='{Version('union-testnet-4')}'{'\n'}
 alias uniond='docker run -v ~/.union:/.union --network host -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION --home /.union'
-```
+</pre>
 
 This will enable you to issue `uniond` sub-commands with such as `uniond keys add` with ease.
 
