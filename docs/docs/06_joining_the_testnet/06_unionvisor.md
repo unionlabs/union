@@ -15,7 +15,6 @@ export UNIONVISOR_VERSION='{Version('union-testnet-4')}'{'\n'}
 docker pull ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION{'\n'}
 </pre>
 
-
 ## Running Unionvisor
 
 Before running this image, we need to create a folder to host the chain configuration and state.
