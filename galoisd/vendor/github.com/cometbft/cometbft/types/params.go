@@ -40,6 +40,7 @@ type ConsensusParams struct {
 	Evidence  EvidenceParams  `json:"evidence"`
 	Validator ValidatorParams `json:"validator"`
 	Version   VersionParams   `json:"version"`
+	ABCI      ABCIParams      `json:"abci"`
 }
 
 // BlockParams define limits on the block size and gas plus minimum time
@@ -66,6 +67,24 @@ type VersionParams struct {
 	App uint64 `json:"app"`
 }
 
+// ABCIParams configure ABCI functionality specific to the Application Blockchain
+// Interface.
+type ABCIParams struct {
+	VoteExtensionsEnableHeight int64 `json:"vote_extensions_enable_height"`
+}
+
+// VoteExtensionsEnabled returns true if vote extensions are enabled at height h
+// and false otherwise.
+func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
+	if h < 1 {
+		panic(fmt.Errorf("cannot check if vote extensions enabled for height %d (< 1)", h))
+	}
+	if a.VoteExtensionsEnableHeight == 0 {
+		return false
+	}
+	return a.VoteExtensionsEnableHeight <= h
+}
+
 // DefaultConsensusParams returns a default ConsensusParams.
 func DefaultConsensusParams() *ConsensusParams {
 	return &ConsensusParams{
@@ -73,6 +92,7 @@ func DefaultConsensusParams() *ConsensusParams {
 		Evidence:  DefaultEvidenceParams(),
 		Validator: DefaultValidatorParams(),
 		Version:   DefaultVersionParams(),
+		ABCI:      DefaultABCIParams(),
 	}
 }
 
@@ -97,13 +117,20 @@ func DefaultEvidenceParams() EvidenceParams {
 // only ed25519 pubkeys.
 func DefaultValidatorParams() ValidatorParams {
 	return ValidatorParams{
-		PubKeyTypes: []string{ABCIPubKeyTypeEd25519},
+		PubKeyTypes: []string{ABCIPubKeyTypeBn254},
 	}
 }
 
 func DefaultVersionParams() VersionParams {
 	return VersionParams{
 		App: 0,
+	}
+}
+
+func DefaultABCIParams() ABCIParams {
+	return ABCIParams{
+		// When set to 0, vote extensions are not required.
+		VoteExtensionsEnableHeight: 0,
 	}
 }
 
@@ -119,8 +146,12 @@ func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
 // Validate validates the ConsensusParams to ensure all values are within their
 // allowed limits, and returns an error if they are not.
 func (params ConsensusParams) ValidateBasic() error {
-	if params.Block.MaxBytes <= 0 {
-		return fmt.Errorf("block.MaxBytes must be greater than 0. Got %d",
+	if params.Block.MaxBytes == 0 {
+		return fmt.Errorf("block.MaxBytes cannot be 0")
+	}
+	if params.Block.MaxBytes < -1 {
+		return fmt.Errorf("block.MaxBytes must be -1 or greater than 0. Got %d",
+
 			params.Block.MaxBytes)
 	}
 	if params.Block.MaxBytes > MaxBlockSizeBytes {
@@ -143,7 +174,11 @@ func (params ConsensusParams) ValidateBasic() error {
 			params.Evidence.MaxAgeDuration)
 	}
 
-	if params.Evidence.MaxBytes > params.Block.MaxBytes {
+	maxBytes := params.Block.MaxBytes
+	if maxBytes == -1 {
+		maxBytes = int64(MaxBlockSizeBytes)
+	}
+	if params.Evidence.MaxBytes > maxBytes {
 		return fmt.Errorf("evidence.MaxBytesEvidence is greater than upper bound, %d > %d",
 			params.Evidence.MaxBytes, params.Block.MaxBytes)
 	}
@@ -151,6 +186,10 @@ func (params ConsensusParams) ValidateBasic() error {
 	if params.Evidence.MaxBytes < 0 {
 		return fmt.Errorf("evidence.MaxBytes must be non negative. Got: %d",
 			params.Evidence.MaxBytes)
+	}
+
+	if params.ABCI.VoteExtensionsEnableHeight < 0 {
+		return fmt.Errorf("ABCI.VoteExtensionsEnableHeight cannot be negative. Got: %d", params.ABCI.VoteExtensionsEnableHeight)
 	}
 
 	if len(params.Validator.PubKeyTypes) == 0 {
@@ -166,6 +205,30 @@ func (params ConsensusParams) ValidateBasic() error {
 		}
 	}
 
+	return nil
+}
+
+func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, h int64) error {
+	if updated.Abci == nil {
+		return nil
+	}
+	if params.ABCI.VoteExtensionsEnableHeight == updated.Abci.VoteExtensionsEnableHeight {
+		return nil
+	}
+	if params.ABCI.VoteExtensionsEnableHeight != 0 && updated.Abci.VoteExtensionsEnableHeight == 0 {
+		return errors.New("vote extensions cannot be disabled once enabled")
+	}
+	if updated.Abci.VoteExtensionsEnableHeight <= h {
+		return fmt.Errorf("VoteExtensionsEnableHeight cannot be updated to a past height, "+
+			"initial height: %d, current height %d",
+			params.ABCI.VoteExtensionsEnableHeight, h)
+	}
+	if params.ABCI.VoteExtensionsEnableHeight <= h {
+		return fmt.Errorf("VoteExtensionsEnableHeight cannot be modified once"+
+			"the initial height has occurred, "+
+			"initial height: %d, current height %d",
+			params.ABCI.VoteExtensionsEnableHeight, h)
+	}
 	return nil
 }
 
@@ -220,6 +283,9 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 	if params2.Version != nil {
 		res.Version.App = params2.Version.App
 	}
+	if params2.Abci != nil {
+		res.ABCI.VoteExtensionsEnableHeight = params2.Abci.GetVoteExtensionsEnableHeight()
+	}
 	return res
 }
 
@@ -240,11 +306,14 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 		Version: &cmtproto.VersionParams{
 			App: params.Version.App,
 		},
+		Abci: &cmtproto.ABCIParams{
+			VoteExtensionsEnableHeight: params.ABCI.VoteExtensionsEnableHeight,
+		},
 	}
 }
 
 func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams {
-	return ConsensusParams{
+	c := ConsensusParams{
 		Block: BlockParams{
 			MaxBytes: pbParams.Block.MaxBytes,
 			MaxGas:   pbParams.Block.MaxGas,
@@ -261,4 +330,8 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 			App: pbParams.Version.App,
 		},
 	}
+	if pbParams.Abci != nil {
+		c.ABCI.VoteExtensionsEnableHeight = pbParams.Abci.GetVoteExtensionsEnableHeight()
+	}
+	return c
 }

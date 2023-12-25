@@ -15,7 +15,18 @@ type Uint struct {
 
 // BigInt converts Uint to big.Int
 func (u Uint) BigInt() *big.Int {
+	if u.IsNil() {
+		return nil
+	}
 	return new(big.Int).Set(u.i)
+}
+
+// BigInt converts Uint to big.Int, mutative the input
+func (u Uint) BigIntMut() *big.Int {
+	if u.IsNil() {
+		return nil
+	}
+	return u.i
 }
 
 // IsNil returns true if Uint is uninitialized
@@ -235,7 +246,7 @@ func checkNewUint(i *big.Int) (Uint, error) {
 	if err := UintOverflow(i); err != nil {
 		return Uint{}, err
 	}
-	return Uint{i}, nil
+	return Uint{new(big.Int).Set(i)}, nil
 }
 
 // RelativePow raises x to the power of n, where x (and the result, z) are scaled by factor b
@@ -243,7 +254,7 @@ func checkNewUint(i *big.Int) (Uint, error) {
 func RelativePow(x, n, b Uint) (z Uint) {
 	if x.IsZero() {
 		if n.IsZero() {
-			z = b // 0^0 = 1
+			z = OneUint() // 0^0 = 1
 			return z
 		}
 		z = ZeroUint() // otherwise 0^a = 0

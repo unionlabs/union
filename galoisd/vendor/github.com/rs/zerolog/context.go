@@ -57,7 +57,7 @@ func (c Context) Array(key string, arr LogArrayMarshaler) Context {
 
 // Object marshals an object that implement the LogObjectMarshaler interface.
 func (c Context) Object(key string, obj LogObjectMarshaler) Context {
-	e := newEvent(levelWriterAdapter{ioutil.Discard}, 0)
+	e := newEvent(LevelWriterAdapter{ioutil.Discard}, 0)
 	e.Object(key, obj)
 	c.l.context = enc.AppendObjectData(c.l.context, e.buf)
 	putEvent(e)
@@ -66,7 +66,7 @@ func (c Context) Object(key string, obj LogObjectMarshaler) Context {
 
 // EmbedObject marshals and Embeds an object that implement the LogObjectMarshaler interface.
 func (c Context) EmbedObject(obj LogObjectMarshaler) Context {
-	e := newEvent(levelWriterAdapter{ioutil.Discard}, 0)
+	e := newEvent(LevelWriterAdapter{ioutil.Discard}, 0)
 	e.EmbedObject(obj)
 	c.l.context = enc.AppendObjectData(c.l.context, e.buf)
 	putEvent(e)
@@ -377,6 +377,11 @@ func (c Context) Durs(key string, d []time.Duration) Context {
 func (c Context) Interface(key string, i interface{}) Context {
 	c.l.context = enc.AppendInterface(enc.AppendKey(c.l.context, key), i)
 	return c
+}
+
+// Any is a wrapper around Context.Interface.
+func (c Context) Any(key string, i interface{}) Context {
+	return c.Interface(key, i)
 }
 
 type callerHook struct {

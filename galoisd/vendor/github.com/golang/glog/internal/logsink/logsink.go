@@ -16,6 +16,7 @@ package logsink
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -77,6 +78,11 @@ func ParseSeverity(name string) (Severity, error) {
 
 // Meta is metadata about a logging call.
 type Meta struct {
+	// The context with which the log call was made (or nil). If set, the context
+	// is only valid during the logsink.Structured.Printf call, it should not be
+	// retained.
+	Context context.Context
+
 	// Time is the time at which the log call was made.
 	Time time.Time
 

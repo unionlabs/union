@@ -352,11 +352,11 @@ func (vals *ValidatorSet) Hash() []byte {
 		var pubKey bn254.G1Affine
 		_, err := pubKey.SetBytes(val.PubKey.Bytes())
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("ValidatorSet.Hash(): impossible invalid validator: %v", val))
 		}
 		leaf, err := cometbn254.NewMerkleLeaf(pubKey, val.VotingPower)
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("ValidatorSet.Hash(): impossible merkle leaf creation: %v", err))
 		}
 		bzs[i] = leaf.Hash()
 	}

@@ -1,9 +1,10 @@
 package p2p
 
 import (
-	"github.com/cometbft/cometbft/p2p/conn"
-	cmtp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 	"github.com/cosmos/gogoproto/proto"
+
+	"github.com/cometbft/cometbft/p2p/conn"
+	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
 
 type ChannelDescriptor = conn.ChannelDescriptor
@@ -35,6 +36,6 @@ type Wrapper interface {
 }
 
 var (
-	_ Wrapper = &cmtp2p.PexRequest{}
-	_ Wrapper = &cmtp2p.PexAddrs{}
+	_ Wrapper = &tmp2p.PexRequest{}
+	_ Wrapper = &tmp2p.PexAddrs{}
 )

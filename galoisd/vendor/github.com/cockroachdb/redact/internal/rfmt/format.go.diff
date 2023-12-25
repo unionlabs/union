@@ -1,0 +1,81 @@
+--- format.go.orig	2022-01-07 15:25:57.762807000 +0100
++++ format.go	2022-01-07 15:26:16.154491000 +0100
+@@ -1,8 +1,11 @@
++// Code generated from the Go standard library. DO NOT EDIT
++// GENERATED FILE DO NOT EDIT
++//
+ // Copyright 2009 The Go Authors. All rights reserved.
+ // Use of this source code is governed by a BSD-style
+ // license that can be found in the LICENSE file.
+ 
+-package fmt
++package rfmt
+ 
+ import (
+ 	"strconv"
+@@ -65,25 +68,17 @@
+ 	if n <= 0 { // No padding bytes needed.
+ 		return
+ 	}
+-	buf := *f.buf
+-	oldLen := len(buf)
+-	newLen := oldLen + n
+ 	// Make enough room for padding.
+-	if newLen > cap(buf) {
+-		buf = make(buffer, cap(buf)*2+n)
+-		copy(buf, *f.buf)
+-	}
++	f.buf.Grow(n)
+ 	// Decide which byte the padding should be filled with.
+ 	padByte := byte(' ')
+ 	if f.zero {
+ 		padByte = byte('0')
+ 	}
+ 	// Fill padding with padByte.
+-	padding := buf[oldLen:newLen]
+-	for i := range padding {
+-		padding[i] = padByte
++	for i := 0; i < n; i++ {
++		f.buf.writeByte(padByte)
+ 	}
+-	*f.buf = buf[:newLen]
+ }
+ 
+ // pad appends b to f.buf, padded on left (!f.minus) or right (f.minus).
+@@ -401,19 +396,20 @@
+ 		f.writePadding(f.wid - width)
+ 	}
+ 	// Write the encoding directly into the output buffer.
+-	buf := *f.buf
+ 	if f.sharp {
+ 		// Add leading 0x or 0X.
+-		buf = append(buf, '0', digits[16])
++		f.buf.WriteByte('0')
++		f.buf.WriteByte(digits[16])
+ 	}
+ 	var c byte
+ 	for i := 0; i < length; i++ {
+ 		if f.space && i > 0 {
+ 			// Separate elements with a space.
+-			buf = append(buf, ' ')
++			f.buf.WriteByte(' ')
+ 			if f.sharp {
+ 				// Add leading 0x or 0X for each element.
+-				buf = append(buf, '0', digits[16])
++				f.buf.WriteByte('0')
++				f.buf.WriteByte(digits[16])
+ 			}
+ 		}
+ 		if b != nil {
+@@ -422,9 +418,9 @@
+ 			c = s[i] // Take a byte from the input string.
+ 		}
+ 		// Encode each byte as two hexadecimal digits.
+-		buf = append(buf, digits[c>>4], digits[c&0xF])
++		f.buf.WriteByte(digits[c>>4])
++		f.buf.WriteByte(digits[c&0xF])
+ 	}
+-	*f.buf = buf
+ 	// Handle padding to the right.
+ 	if f.widPresent && f.wid > width && f.minus {
+ 		f.writePadding(f.wid - width)

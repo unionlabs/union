@@ -1079,8 +1079,8 @@ github.com/ugorji/go/codec v1.2.11/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZ
 github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=
 github.com/ulikunitz/xz v0.5.11/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/unionlabs/cometbls v0.0.0-20231216100528-9f4050850624 h1:eegwOVncwJI+cix5V+E2SCsLoyWFc2s4cmUgjQUVu9s=
-github.com/unionlabs/cometbls v0.0.0-20231216100528-9f4050850624/go.mod h1:3H1gcLEVOQZbPwdH8gyv4UzwHtEawNgcnytglkCQVOQ=
+github.com/unionlabs/cometbls v0.0.0-20231225001748-d638e57b7566 h1:OWKrbO4k1RdsNo4I9lva2QAGrgaw5bAcxjQoUSpiYEY=
+github.com/unionlabs/cometbls v0.0.0-20231225001748-d638e57b7566/go.mod h1:3H1gcLEVOQZbPwdH8gyv4UzwHtEawNgcnytglkCQVOQ=
 github.com/unionlabs/cosmos-sdk v0.0.0-20231206211859-a69e5866af6b h1:SIQ50Mp4xL6fmV6MEgAMIcI5zDpkhVP8m2RAicfRudA=
 github.com/unionlabs/cosmos-sdk v0.0.0-20231206211859-a69e5866af6b/go.mod h1:l3RzTzpYWTygKb0ZCFdKv/UtJI4j4xiLDzOa1B8dlQ0=
 github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578 h1:Owzup0XvshGNHgS1s0xUI/mZM+fPvTT7dLg7P0cT2vQ=

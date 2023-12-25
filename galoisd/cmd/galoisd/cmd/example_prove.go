@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"strconv"
 
+	"cosmossdk.io/math"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/protoio"
@@ -38,7 +39,7 @@ func ExampleProveCmd() *cobra.Command {
 				}
 				return &types.SimpleValidator{
 					PubKey:      &protoPK,
-					VotingPower: sdk.TokensToConsensusPower(sdk.NewInt(rand.Int63n(9223372036854775807/8)), sdk.DefaultPowerReduction),
+					VotingPower: sdk.TokensToConsensusPower(math.NewInt(rand.Int63n(9223372036854775807/8)), sdk.DefaultPowerReduction),
 				}, nil
 			}
 

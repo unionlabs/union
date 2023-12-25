@@ -12,7 +12,7 @@ func bz(s string) []byte {
 }
 
 // Str constructs a random alphanumeric string of given length.
-func randStr(length int) string {
+func randStr(length int) string { //nolint:unparam
 	chars := []byte{}
 MAIN_LOOP:
 	for {

@@ -109,7 +109,7 @@ func (r *readerWrapper) readBig(n int, dst []byte) ([]byte, error) {
 }
 
 func (r *readerWrapper) readByte() (byte, error) {
-	n2, err := r.r.Read(r.tmp[:1])
+	n2, err := io.ReadFull(r.r, r.tmp[:1])
 	if err != nil {
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF

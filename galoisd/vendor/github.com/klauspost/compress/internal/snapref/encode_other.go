@@ -87,18 +87,6 @@ func emitCopy(dst []byte, offset, length int) int {
 	return i + 2
 }
 
-// extendMatch returns the largest k such that k <= len(src) and that
-// src[i:i+k-j] and src[j:k] have the same contents.
-//
-// It assumes that:
-//
-//	0 <= i && i < j && j <= len(src)
-func extendMatch(src []byte, i, j int) int {
-	for ; j < len(src) && src[i] == src[j]; i, j = i+1, j+1 {
-	}
-	return j
-}
-
 func hash(u, shift uint32) uint32 {
 	return (u * 0x1e35a7bd) >> shift
 }
