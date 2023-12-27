@@ -20,7 +20,7 @@ members = [
   "cosmwasm/*",
   "hubble",
   "tools/parse-wasm-client-type",
-  "zerg",
+  "zerg", "lib/ics23",
 ]
 
 resolver = "2"

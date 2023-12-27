@@ -1,0 +1,13 @@
+[package]
+name = "ics23"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+unionlabs = { workspace = true, default-features = false }
+thiserror = { version = "1.0", package = "thiserror-core", default-features = false }
+prost = { version = "0.11.9", default-features = false, features = ["std"] }
+sha2 = { version = "0.10.7", default-features = false }
+ripemd = { version = "0.1.3", default-features = false }

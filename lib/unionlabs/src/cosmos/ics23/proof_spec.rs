@@ -17,6 +17,21 @@ pub struct ProofSpec {
     pub min_depth: i32,
 }
 
+impl ProofSpec {
+    // TODO(aeryz): what the hell is this
+    pub fn compatible(&self, spec: &ProofSpec) -> bool {
+        self.leaf_spec.hash == spec.leaf_spec.hash
+            && self.leaf_spec.prehash_key == spec.leaf_spec.prehash_key
+            && self.leaf_spec.prehash_value == spec.leaf_spec.prehash_value
+            && self.leaf_spec.length == spec.leaf_spec.length
+            && self.inner_spec.hash == spec.inner_spec.hash
+            && self.inner_spec.min_prefix_length == spec.inner_spec.min_prefix_length
+            && self.inner_spec.max_prefix_length == spec.inner_spec.max_prefix_length
+            && self.inner_spec.child_size == spec.inner_spec.child_size
+            && self.inner_spec.child_order.len() == spec.inner_spec.child_order.len()
+    }
+}
+
 impl TypeUrl for protos::cosmos::ics23::v1::ProofSpec {
     const TYPE_URL: &'static str = "/cosmos.ics23.v1.ProofSpec";
 }

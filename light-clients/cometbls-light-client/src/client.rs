@@ -7,9 +7,24 @@ use ics008_wasm_client::{
 };
 use prost::Message;
 use protos::ibc::core::client::v1::GenesisMetadata;
+use sha2::Digest;
 use unionlabs::{
+    cosmos::ics23::{
+        batch_proof::BatchProof,
+        commitment_proof::CommitmentProof,
+        existence_proof::{ExistenceProof, SpecMismatchError},
+        hash_op::HashOp,
+        inner_op::InnerOp,
+        inner_spec::InnerSpec,
+        leaf_op::LeafOp,
+        length_op::LengthOp,
+        proof_spec::ProofSpec,
+    },
     ibc::{
-        core::{client::height::Height, commitment::merkle_root::MerkleRoot},
+        core::{
+            client::height::Height,
+            commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
+        },
         lightclients::cometbls::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
         },
@@ -313,5 +328,216 @@ fn canonical_vote(
             }),
         }),
         chain_id,
+    }
+}
+
+#[derive(Debug)]
+pub enum VerifyMembershipError {
+    SpecMismatch(SpecMismatchError),
+    KeyAndExistenceProofKeyMismatch {
+        key: Vec<u8>,
+        existence_proof_key: Vec<u8>,
+    },
+    ValueAndExistenceProofValueMismatch {
+        value: Vec<u8>,
+        existence_proof_value: Vec<u8>,
+    },
+    RootCalculation(unionlabs::cosmos::ics23::existence_proof::CalculateRootError),
+    CalculatedAndGivenRootMismatch {
+        calculated_root: Vec<u8>,
+        given_root: Vec<u8>,
+    },
+    ProofDoesNotExist,
+}
+
+fn verify_membership(
+    proof: MerkleProof,
+    consensus_root: &MerkleRoot,
+    path: MerklePath,
+    value: &[u8],
+) -> Result<(), VerifyMembershipError> {
+    // TODO(aeryz): check if this supposed to be embedded or configurable
+    if proof.proofs.len() != 2 {
+        panic!("Proof length needs to match the spec");
+    }
+
+    // TODO(aeryz): Make this spec a global constant if it's going to be embedded
+    if path.key_path.len() != 2 {
+        panic!("Path length needs to match the spec");
+    }
+
+    verify_chained_membership_proof(consensus_root.hash.as_ref(), &proof.proofs, path, value, 0)
+}
+
+fn verify_chained_membership_proof(
+    root: &[u8],
+    proofs: &[CommitmentProof],
+    keys: MerklePath,
+    value: &[u8],
+    mut index: usize,
+) -> Result<(), VerifyMembershipError> {
+    let specs = [iavl_spec(), tendermint_proof_spec()];
+
+    // FIXME(aeryz): ugly change
+    let mut tmp_value = value.to_vec();
+
+    while index < proofs.len() {
+        match &proofs[index] {
+            CommitmentProof::Exist(proof) => {
+                let subroot = proof
+                    .calculate_root(None)
+                    .map_err(VerifyMembershipError::RootCalculation)?;
+
+                if let Some(key) = keys.key_path.get(keys.key_path.len() - 1 - index) {
+                    do_verify_membership(
+                        specs[index].clone(), // TODO(aeryz): I'm about to throw up
+                        &subroot,
+                        CommitmentProof::Exist(proof.clone()), // TODO(aeryz): disgusting
+                        key.as_bytes(), // TODO(aeryz): weird? is this really like this?
+                        &tmp_value,
+                    )?;
+                } else {
+                    panic!("could not retrieve key bytes for key");
+                };
+
+                tmp_value = subroot;
+            }
+            CommitmentProof::Nonexist(_) => {
+                panic!("chained membership proof contains nonexistence proof at index %d");
+            }
+            _ => {
+                panic!("invalid proof type");
+            }
+        }
+
+        index += 1;
+    }
+
+    Ok(())
+}
+
+fn do_verify_membership(
+    spec: ProofSpec,
+    root: &[u8],
+    proof: CommitmentProof,
+    key: &[u8],
+    value: &[u8],
+) -> Result<(), VerifyMembershipError> {
+    let proof = proof.decompress();
+
+    if let Some(ep) = get_exist_proof_for_key(proof, key) {
+        verify_existence_proof(ep, spec, root, key, value)
+    } else {
+        Err(VerifyMembershipError::ProofDoesNotExist)
+    }
+}
+
+fn verify_existence_proof(
+    existence_proof: ExistenceProof,
+    spec: ProofSpec,
+    root: &[u8],
+    key: &[u8],
+    value: &[u8],
+) -> Result<(), VerifyMembershipError> {
+    existence_proof
+        .check_against_spec(&spec, &iavl_spec())
+        .map_err(VerifyMembershipError::SpecMismatch)?;
+
+    if key != existence_proof.key {
+        return Err(VerifyMembershipError::KeyAndExistenceProofKeyMismatch {
+            key: key.into(),
+            existence_proof_key: existence_proof.key,
+        });
+    }
+
+    if value != existence_proof.value {
+        return Err(VerifyMembershipError::ValueAndExistenceProofValueMismatch {
+            value: value.into(),
+            existence_proof_value: existence_proof.value,
+        });
+    }
+
+    let calc = existence_proof
+        .calculate_root(Some(spec))
+        .map_err(VerifyMembershipError::RootCalculation)?;
+
+    if root != calc {
+        return Err(VerifyMembershipError::CalculatedAndGivenRootMismatch {
+            calculated_root: calc,
+            given_root: root.into(),
+        });
+    }
+
+    Ok(())
+}
+
+fn get_exist_proof_for_key(proof: CommitmentProof, key: &[u8]) -> Option<ExistenceProof> {
+    match proof {
+        CommitmentProof::Exist(exist) => {
+            if exist.key.as_slice() == key {
+                return Some(exist);
+            }
+
+            None
+        }
+        CommitmentProof::Batch(batch) => {
+            for sub in batch.entries {
+                match sub {
+                    unionlabs::cosmos::ics23::batch_entry::BatchEntry::Exist(exist) => {
+                        if exist.key.as_slice() == key {
+                            return Some(exist);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            None
+        }
+        _ => None,
+    }
+}
+
+fn iavl_spec() -> ProofSpec {
+    ProofSpec {
+        leaf_spec: LeafOp {
+            hash: HashOp::Sha256,
+            prehash_key: HashOp::NoHash,
+            prehash_value: HashOp::Sha256,
+            length: LengthOp::VarProto,
+            prefix: vec![0],
+        },
+        inner_spec: InnerSpec {
+            child_order: vec![0, 1],
+            child_size: 33,
+            min_prefix_length: 4,
+            max_prefix_length: 12,
+            empty_child: vec![],
+            hash: HashOp::Sha256,
+        },
+        max_depth: 0,
+        min_depth: 0,
+    }
+}
+
+fn tendermint_proof_spec() -> ProofSpec {
+    ProofSpec {
+        leaf_spec: LeafOp {
+            hash: HashOp::Sha256,
+            prehash_key: HashOp::NoHash,
+            prehash_value: HashOp::Sha256,
+            length: LengthOp::VarProto,
+            prefix: [0].into(),
+        },
+        inner_spec: InnerSpec {
+            child_order: [0, 1].into(),
+            child_size: 32,
+            min_prefix_length: 1,
+            max_prefix_length: 1,
+            empty_child: [].into(),
+            hash: HashOp::Sha256,
+        },
+        max_depth: 0,
+        min_depth: 0,
     }
 }
