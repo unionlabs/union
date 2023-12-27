@@ -5,7 +5,7 @@
         galoisd = goPkgs.buildGoModule ({
           name = "galoisd";
           src = ./.;
-          vendorSha256 = null;
+          vendorHash = null;
           doCheck = false;
           meta = {
             mainProgram = "galoisd";

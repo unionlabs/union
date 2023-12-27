@@ -61,7 +61,7 @@
                 (nix-filter.matchExt "md")
               ];
             };
-          vendorSha256 = null;
+          vendorHash = null;
           doCheck = true;
           meta.mainProgram = "uniond";
         } // (
@@ -116,7 +116,7 @@
                 rev = "a1ea6c775ac230bb1a1428bb96e4306044aa944b";
                 sha256 = "sha256-7AdE5qps4OMjaubt9Af6ATaqrV3n73ZuI7zTz7Kgm6w=";
               };
-              vendorSha256 = null;
+              vendorHash = null;
             };
 
             # must be run from a directory with vendor/
