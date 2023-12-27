@@ -1,0 +1,14 @@
+# Code coverage artifacts
+coverage.txt
+coverage.out
+coverage.html
+.coverage/
+
+# Just my personal way of tracking stuff — Kamil
+FIXME.md
+TODO.md
+!NOTES.md
+
+# IDE system files
+.idea
+.vscode

@@ -5,6 +5,7 @@ package zstd
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/klauspost/compress/internal/cpuinfo"
 )
@@ -134,6 +135,9 @@ func (s *sequenceDecs) decodeSyncSimple(hist []byte) (bool, error) {
 		return true, fmt.Errorf("unexpected literal count, want %d bytes, but only %d is available",
 			ctx.ll, ctx.litRemain+ctx.ll)
 
+	case errorOverread:
+		return true, io.ErrUnexpectedEOF
+
 	case errorNotEnoughSpace:
 		size := ctx.outPosition + ctx.ll + ctx.ml
 		if debugDecoder {
@@ -202,6 +206,9 @@ const errorNotEnoughLiterals = 4
 // error reported when capacity of `out` is too small
 const errorNotEnoughSpace = 5
 
+// error reported when bits are overread.
+const errorOverread = 6
+
 // sequenceDecs_decode implements the main loop of sequenceDecs in x86 asm.
 //
 // Please refer to seqdec_generic.go for the reference implementation.
@@ -247,6 +254,10 @@ func (s *sequenceDecs) decode(seqs []seqVals) error {
 		litRemain: len(s.literals),
 	}
 
+	if debugDecoder {
+		println("decode: decoding", len(seqs), "sequences", br.remain(), "bits remain on stream")
+	}
+
 	s.seqSize = 0
 	lte56bits := s.maxBits+s.offsets.fse.actualTableLog+s.matchLengths.fse.actualTableLog+s.litLengths.fse.actualTableLog <= 56
 	var errCode int
@@ -277,6 +288,8 @@ func (s *sequenceDecs) decode(seqs []seqVals) error {
 		case errorNotEnoughLiterals:
 			ll := ctx.seqs[i].ll
 			return fmt.Errorf("unexpected literal count, want %d bytes, but only %d is available", ll, ctx.litRemain+ll)
+		case errorOverread:
+			return io.ErrUnexpectedEOF
 		}
 
 		return fmt.Errorf("sequenceDecs_decode_amd64 returned erronous code %d", errCode)
@@ -290,6 +303,9 @@ func (s *sequenceDecs) decode(seqs []seqVals) error {
 	s.seqSize += ctx.litRemain
 	if s.seqSize > maxBlockSize {
 		return fmt.Errorf("output bigger than max block size (%d)", maxBlockSize)
+	}
+	if debugDecoder {
+		println("decode: ", br.remain(), "bits remain on stream. code:", errCode)
 	}
 	err := br.close()
 	if err != nil {

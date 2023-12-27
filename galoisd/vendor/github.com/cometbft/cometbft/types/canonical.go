@@ -52,14 +52,40 @@ func CanonicalizeProposal(chainID string, proposal *cmtproto.Proposal) cmtproto.
 }
 
 // CanonicalizeVote transforms the given Vote to a CanonicalVote, which does
-// not contain ValidatorIndex and ValidatorAddress fields.
+// not contain ValidatorIndex and ValidatorAddress fields, or any fields
+// relating to vote extensions.
 func CanonicalizeVote(chainID string, vote *cmtproto.Vote) cmtproto.CanonicalVote {
 	return cmtproto.CanonicalVote{
+		Type:    vote.Type,
+		Height:  vote.Height,       // encoded as sfixed64
+		Round:   int64(vote.Round), // encoded as sfixed64
+		BlockID: CanonicalizeBlockID(vote.BlockID),
+		ChainID: chainID,
+	}
+}
+
+// Same as `CanonicalizeVote` but uses `Tendermint/CometBFT`'s `CanonicalVote` instead to
+// be able to be used by the `07-tendermint` light client.
+func CanonicalizeVoteLegacy(chainID string, vote *cmtproto.Vote) cmtproto.LegacyCanonicalVote {
+	return cmtproto.LegacyCanonicalVote{
 		Type:      vote.Type,
 		Height:    vote.Height,       // encoded as sfixed64
 		Round:     int64(vote.Round), // encoded as sfixed64
 		BlockID:   CanonicalizeBlockID(vote.BlockID),
+		Timestamp: vote.Timestamp,
 		ChainID:   chainID,
+	}
+}
+
+// CanonicalizeVoteExtension extracts the vote extension from the given vote
+// and constructs a CanonicalizeVoteExtension struct, whose representation in
+// bytes is what is signed in order to produce the vote extension's signature.
+func CanonicalizeVoteExtension(chainID string, vote *cmtproto.Vote) cmtproto.CanonicalVoteExtension {
+	return cmtproto.CanonicalVoteExtension{
+		Extension: vote.Extension,
+		Height:    vote.Height,
+		Round:     int64(vote.Round),
+		ChainId:   chainID,
 	}
 }
 

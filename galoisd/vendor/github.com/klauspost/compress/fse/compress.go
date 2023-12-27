@@ -199,7 +199,8 @@ func (s *Scratch) compress(src []byte) error {
 	c2.flush(s.actualTableLog)
 	c1.flush(s.actualTableLog)
 
-	return s.bw.close()
+	s.bw.close()
+	return nil
 }
 
 // writeCount will write the normalized histogram count to header.
@@ -211,7 +212,7 @@ func (s *Scratch) writeCount() error {
 		previous0 bool
 		charnum   uint16
 
-		maxHeaderSize = ((int(s.symbolLen) * int(tableLog)) >> 3) + 3
+		maxHeaderSize = ((int(s.symbolLen)*int(tableLog) + 4 + 2) >> 3) + 3
 
 		// Write Table Size
 		bitStream = uint32(tableLog - minTablelog)

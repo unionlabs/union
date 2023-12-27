@@ -236,13 +236,16 @@ func (s *sequenceDecs) decodeSync(hist []byte) error {
 		maxBlockSize = s.windowSize
 	}
 
+	if debugDecoder {
+		println("decodeSync: decoding", seqs, "sequences", br.remain(), "bits remain on stream")
+	}
 	for i := seqs - 1; i >= 0; i-- {
 		if br.overread() {
-			printf("reading sequence %d, exceeded available data\n", seqs-i)
+			printf("reading sequence %d, exceeded available data. Overread by %d\n", seqs-i, -br.remain())
 			return io.ErrUnexpectedEOF
 		}
 		var ll, mo, ml int
-		if br.off > 4+((maxOffsetBits+16+16)>>3) {
+		if len(br.in) > 4+((maxOffsetBits+16+16)>>3) {
 			// inlined function:
 			// ll, mo, ml = s.nextFast(br, llState, mlState, ofState)
 
@@ -449,18 +452,13 @@ func (s *sequenceDecs) next(br *bitReader, llState, mlState, ofState decSymbol) 
 
 	// extra bits are stored in reverse order.
 	br.fill()
-	if s.maxBits <= 32 {
-		mo += br.getBits(moB)
-		ml += br.getBits(mlB)
-		ll += br.getBits(llB)
-	} else {
-		mo += br.getBits(moB)
+	mo += br.getBits(moB)
+	if s.maxBits > 32 {
 		br.fill()
-		// matchlength+literal length, max 32 bits
-		ml += br.getBits(mlB)
-		ll += br.getBits(llB)
-
 	}
+	// matchlength+literal length, max 32 bits
+	ml += br.getBits(mlB)
+	ll += br.getBits(llB)
 	mo = s.adjustOffset(mo, ll, moB)
 	return
 }

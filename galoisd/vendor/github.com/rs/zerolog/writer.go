@@ -17,11 +17,13 @@ type LevelWriter interface {
 	WriteLevel(level Level, p []byte) (n int, err error)
 }
 
-type levelWriterAdapter struct {
+// LevelWriterAdapter adapts an io.Writer to support the LevelWriter interface.
+type LevelWriterAdapter struct {
 	io.Writer
 }
 
-func (lw levelWriterAdapter) WriteLevel(l Level, p []byte) (n int, err error) {
+// WriteLevel simply writes everything to the adapted writer, ignoring the level.
+func (lw LevelWriterAdapter) WriteLevel(l Level, p []byte) (n int, err error) {
 	return lw.Write(p)
 }
 
@@ -38,7 +40,7 @@ func SyncWriter(w io.Writer) io.Writer {
 	if lw, ok := w.(LevelWriter); ok {
 		return &syncWriter{lw: lw}
 	}
-	return &syncWriter{lw: levelWriterAdapter{w}}
+	return &syncWriter{lw: LevelWriterAdapter{w}}
 }
 
 // Write implements the io.Writer interface.
@@ -96,7 +98,7 @@ func MultiLevelWriter(writers ...io.Writer) LevelWriter {
 		if lw, ok := w.(LevelWriter); ok {
 			lwriters = append(lwriters, lw)
 		} else {
-			lwriters = append(lwriters, levelWriterAdapter{w})
+			lwriters = append(lwriters, LevelWriterAdapter{w})
 		}
 	}
 	return multiLevelWriter{lwriters}
@@ -151,4 +153,30 @@ func ConsoleTestWriter(t TestingLog) func(w *ConsoleWriter) {
 	return func(w *ConsoleWriter) {
 		w.Out = TestWriter{T: t, Frame: 6}
 	}
+}
+
+// FilteredLevelWriter writes only logs at Level or above to Writer.
+//
+// It should be used only in combination with MultiLevelWriter when you
+// want to write to multiple destinations at different levels. Otherwise
+// you should just set the level on the logger and filter events early.
+// When using MultiLevelWriter then you set the level on the logger to
+// the lowest of the levels you use for writers.
+type FilteredLevelWriter struct {
+	Writer LevelWriter
+	Level  Level
+}
+
+// Write writes to the underlying Writer.
+func (w *FilteredLevelWriter) Write(p []byte) (int, error) {
+	return w.Writer.Write(p)
+}
+
+// WriteLevel calls WriteLevel of the underlying Writer only if the level is equal
+// or above the Level.
+func (w *FilteredLevelWriter) WriteLevel(level Level, p []byte) (int, error) {
+	if level >= w.Level {
+		return w.Writer.WriteLevel(level, p)
+	}
+	return len(p), nil
 }

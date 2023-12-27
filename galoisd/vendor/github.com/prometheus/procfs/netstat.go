@@ -15,7 +15,6 @@ package procfs
 
 import (
 	"bufio"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -38,12 +37,7 @@ func (fs FS) NetStat() ([]NetStat, error) {
 	var netStatsTotal []NetStat
 
 	for _, filePath := range statFiles {
-		file, err := os.Open(filePath)
-		if err != nil {
-			return nil, err
-		}
-
-		procNetstat, err := parseNetstat(file)
+		procNetstat, err := parseNetstat(filePath)
 		if err != nil {
 			return nil, err
 		}
@@ -56,14 +50,17 @@ func (fs FS) NetStat() ([]NetStat, error) {
 
 // parseNetstat parses the metrics from `/proc/net/stat/` file
 // and returns a NetStat structure.
-func parseNetstat(r io.Reader) (NetStat, error) {
-	var (
-		scanner = bufio.NewScanner(r)
-		netStat = NetStat{
-			Stats: make(map[string][]uint64),
-		}
-	)
+func parseNetstat(filePath string) (NetStat, error) {
+	netStat := NetStat{
+		Stats: make(map[string][]uint64),
+	}
+	file, err := os.Open(filePath)
+	if err != nil {
+		return netStat, err
+	}
+	defer file.Close()
 
+	scanner := bufio.NewScanner(file)
 	scanner.Scan()
 
 	// First string is always a header for stats

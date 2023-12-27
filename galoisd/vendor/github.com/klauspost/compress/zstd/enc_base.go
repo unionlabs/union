@@ -144,6 +144,7 @@ func (e *fastBase) resetBase(d *dict, singleBlock bool) {
 	} else {
 		e.crc.Reset()
 	}
+	e.blk.dictLitEnc = nil
 	if d != nil {
 		low := e.lowMem
 		if singleBlock {

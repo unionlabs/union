@@ -1,0 +1,489 @@
+--- print.go.orig	2021-06-18 16:45:56.623967000 +0200
++++ print.go	2021-06-19 16:26:32.751061000 +0200
+@@ -1,16 +1,27 @@
++// Code generated from print.go.orig. DO NOT EDIT
++// GENERATED FILE DO NOT EDIT
++//
+ // Copyright 2009 The Go Authors. All rights reserved.
+ // Use of this source code is governed by a BSD-style
+ // license that can be found in the LICENSE file.
+ 
+-package fmt
++package rfmt
+ 
+ import (
+-	"internal/fmtsort"
++	// CUSTOM: needed to avoid a type mismatch on Formatter.
++	origFmt "fmt"
+ 	"io"
+ 	"os"
+ 	"reflect"
+ 	"sync"
+ 	"unicode/utf8"
++
++	// CUSTOM: our own imports.
++	i "github.com/cockroachdb/redact/interfaces"
++	b "github.com/cockroachdb/redact/internal/buffer"
++	m "github.com/cockroachdb/redact/internal/markers"
++	w "github.com/cockroachdb/redact/internal/redact"
++	"github.com/cockroachdb/redact/internal/rfmt/fmtsort"
+ )
+ 
+ // Strings for use with buffer.WriteString.
+@@ -51,7 +62,8 @@
+ // The implementation controls how State and rune are interpreted,
+ // and may call Sprint(f) or Fprint(f) etc. to generate its output.
+ type Formatter interface {
+-	Format(f State, verb rune)
++	// CUSTOM: refer to the original type, not the one defined here.
++	Format(f origFmt.State, verb rune)
+ }
+ 
+ // Stringer is implemented by any value that has a String method,
+@@ -71,40 +83,34 @@
+ 	GoString() string
+ }
+ 
+-// Use simple []byte instead of bytes.Buffer to avoid large dependency.
+-type buffer []byte
++// CUSTOM: smarter buffer.
++type buffer struct {
++	b.Buffer
++}
+ 
+ func (b *buffer) write(p []byte) {
+-	*b = append(*b, p...)
++	b.Write(p)
+ }
+ 
+ func (b *buffer) writeString(s string) {
+-	*b = append(*b, s...)
++	b.WriteString(s)
+ }
+ 
+ func (b *buffer) writeByte(c byte) {
+-	*b = append(*b, c)
++	b.WriteByte(c)
+ }
+ 
+ func (bp *buffer) writeRune(r rune) {
+-	if r < utf8.RuneSelf {
+-		*bp = append(*bp, byte(r))
+-		return
+-	}
+-
+-	b := *bp
+-	n := len(b)
+-	for n+utf8.UTFMax > cap(b) {
+-		b = append(b, 0)
+-	}
+-	w := utf8.EncodeRune(b[n:n+utf8.UTFMax], r)
+-	*bp = b[:n+w]
++	bp.WriteRune(r)
+ }
+ 
+ // pp is used to store a printer's state and is reused with sync.Pool to avoid allocations.
+ type pp struct {
+ 	buf buffer
+ 
++	// CUSTOM: override safety in recursive calls.
++	override overrideMode
++
+ 	// arg holds the current item, as an interface{}.
+ 	arg interface{}
+ 
+@@ -150,11 +156,11 @@
+ 	// to place back in the pool.
+ 	//
+ 	// See https://golang.org/issue/23199
+-	if cap(p.buf) > 64<<10 {
++	if p.buf.Cap() > 64<<10 {
+ 		return
+ 	}
+ 
+-	p.buf = p.buf[:0]
++	p.buf.Reset()
+ 	p.arg = nil
+ 	p.value = reflect.Value{}
+ 	p.wrappedErr = nil
+@@ -183,14 +189,16 @@
+ 
+ // Implement Write so we can call Fprintf on a pp (through State), for
+ // recursive use in custom verbs.
+-func (p *pp) Write(b []byte) (ret int, err error) {
+-	p.buf.write(b)
+-	return len(b), nil
++func (p *pp) Write(bs []byte) (ret int, err error) {
++	defer p.startUnsafe().restore()
++	p.buf.write(bs)
++	return len(bs), nil
+ }
+ 
+ // Implement WriteString so that we can call io.WriteString
+ // on a pp (through state), for efficiency.
+ func (p *pp) WriteString(s string) (ret int, err error) {
++	defer p.startUnsafe().restore()
+ 	p.buf.writeString(s)
+ 	return len(s), nil
+ }
+@@ -202,7 +210,7 @@
+ func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error) {
+ 	p := newPrinter()
+ 	p.doPrintf(format, a)
+-	n, err = w.Write(p.buf)
++	n, err = w.Write([]byte(p.buf.TakeRedactableBytes()))
+ 	p.free()
+ 	return
+ }
+@@ -214,10 +222,10 @@
+ }
+ 
+ // Sprintf formats according to a format specifier and returns the resulting string.
+-func Sprintf(format string, a ...interface{}) string {
++func Sprintf(format string, a ...interface{}) m.RedactableString {
+ 	p := newPrinter()
+ 	p.doPrintf(format, a)
+-	s := string(p.buf)
++	s := p.buf.TakeRedactableString()
+ 	p.free()
+ 	return s
+ }
+@@ -230,7 +238,7 @@
+ func Fprint(w io.Writer, a ...interface{}) (n int, err error) {
+ 	p := newPrinter()
+ 	p.doPrint(a)
+-	n, err = w.Write(p.buf)
++	n, err = w.Write([]byte(p.buf.TakeRedactableBytes()))
+ 	p.free()
+ 	return
+ }
+@@ -244,10 +252,10 @@
+ 
+ // Sprint formats using the default formats for its operands and returns the resulting string.
+ // Spaces are added between operands when neither is a string.
+-func Sprint(a ...interface{}) string {
++func Sprint(a ...interface{}) m.RedactableString {
+ 	p := newPrinter()
+ 	p.doPrint(a)
+-	s := string(p.buf)
++	s := p.buf.TakeRedactableString()
+ 	p.free()
+ 	return s
+ }
+@@ -262,7 +270,7 @@
+ func Fprintln(w io.Writer, a ...interface{}) (n int, err error) {
+ 	p := newPrinter()
+ 	p.doPrintln(a)
+-	n, err = w.Write(p.buf)
++	n, err = w.Write([]byte(p.buf.TakeRedactableBytes()))
+ 	p.free()
+ 	return
+ }
+@@ -276,10 +284,10 @@
+ 
+ // Sprintln formats using the default formats for its operands and returns the resulting string.
+ // Spaces are always added between operands and a newline is appended.
+-func Sprintln(a ...interface{}) string {
++func Sprintln(a ...interface{}) m.RedactableString {
+ 	p := newPrinter()
+ 	p.doPrintln(a)
+-	s := string(p.buf)
++	s := p.buf.TakeRedactableString()
+ 	p.free()
+ 	return s
+ }
+@@ -351,6 +359,7 @@
+ func (p *pp) fmtBool(v bool, verb rune) {
+ 	switch verb {
+ 	case 't', 'v':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtBoolean(v)
+ 	default:
+ 		p.badVerb(verb)
+@@ -362,6 +371,7 @@
+ func (p *pp) fmt0x64(v uint64, leading0x bool) {
+ 	sharp := p.fmt.sharp
+ 	p.fmt.sharp = leading0x
++	defer p.startUnsafe().restore()
+ 	p.fmt.fmtInteger(v, 16, unsigned, 'v', ldigits)
+ 	p.fmt.sharp = sharp
+ }
+@@ -373,23 +383,32 @@
+ 		if p.fmt.sharpV && !isSigned {
+ 			p.fmt0x64(v, true)
+ 		} else {
++			defer p.startUnsafe().restore()
+ 			p.fmt.fmtInteger(v, 10, isSigned, verb, ldigits)
+ 		}
+ 	case 'd':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtInteger(v, 10, isSigned, verb, ldigits)
+ 	case 'b':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtInteger(v, 2, isSigned, verb, ldigits)
+ 	case 'o', 'O':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtInteger(v, 8, isSigned, verb, ldigits)
+ 	case 'x':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtInteger(v, 16, isSigned, verb, ldigits)
+ 	case 'X':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtInteger(v, 16, isSigned, verb, udigits)
+ 	case 'c':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtC(v)
+ 	case 'q':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtQc(v)
+ 	case 'U':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtUnicode(v)
+ 	default:
+ 		p.badVerb(verb)
+@@ -401,12 +420,16 @@
+ func (p *pp) fmtFloat(v float64, size int, verb rune) {
+ 	switch verb {
+ 	case 'v':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtFloat(v, size, 'g', -1)
+ 	case 'b', 'g', 'G', 'x', 'X':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtFloat(v, size, verb, -1)
+ 	case 'f', 'e', 'E':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtFloat(v, size, verb, 6)
+ 	case 'F':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtFloat(v, size, 'f', 6)
+ 	default:
+ 		p.badVerb(verb)
+@@ -437,18 +460,23 @@
+ func (p *pp) fmtString(v string, verb rune) {
+ 	switch verb {
+ 	case 'v':
++		defer p.startUnsafe().restore()
+ 		if p.fmt.sharpV {
+ 			p.fmt.fmtQ(v)
+ 		} else {
+ 			p.fmt.fmtS(v)
+ 		}
+ 	case 's':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtS(v)
+ 	case 'x':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtSx(v, ldigits)
+ 	case 'X':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtSx(v, udigits)
+ 	case 'q':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtQ(v)
+ 	default:
+ 		p.badVerb(verb)
+@@ -478,17 +506,24 @@
+ 				if i > 0 {
+ 					p.buf.writeByte(' ')
+ 				}
+-				p.fmt.fmtInteger(uint64(c), 10, unsigned, verb, ldigits)
++				func(p *pp, c byte, verb rune) {
++					defer p.startUnsafe().restore()
++					p.fmt.fmtInteger(uint64(c), 10, unsigned, verb, ldigits)
++				}(p, c, verb)
+ 			}
+ 			p.buf.writeByte(']')
+ 		}
+ 	case 's':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtBs(v)
+ 	case 'x':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtBx(v, ldigits)
+ 	case 'X':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtBx(v, udigits)
+ 	case 'q':
++		defer p.startUnsafe().restore()
+ 		p.fmt.fmtQ(string(v))
+ 	default:
+ 		p.printValue(reflect.ValueOf(v), verb, 0)
+@@ -519,6 +554,7 @@
+ 			p.buf.writeByte(')')
+ 		} else {
+ 			if u == 0 {
++				defer p.startUnsafe().restore()
+ 				p.fmt.padString(nilAngleString)
+ 			} else {
+ 				p.fmt0x64(uint64(u), !p.fmt.sharp)
+@@ -586,10 +622,37 @@
+ 		verb = 'v'
+ 	}
+ 
++	if p.override != overrideUnsafe {
++		switch v := p.arg.(type) {
++		case i.SafeFormatter:
++			handled = true
++			defer p.catchPanic(p.arg, verb, "SafeFormat")
++			v.SafeFormat(p, verb)
++			return
++
++		case i.SafeMessager:
++			handled = true
++			defer p.catchPanic(p.arg, verb, "SafeMessager")
++			defer p.startSafeOverride().restore()
++			p.fmtString(v.SafeMessage(), verb)
++			return
++
++		case error:
++			if redactErrorFn != nil {
++				handled = true
++				defer p.catchPanic(p.arg, verb, "SafeFormatter")
++				redactErrorFn(v, p, verb)
++				return
++			}
++		}
++	}
++
+ 	// Is it a Formatter?
+ 	if formatter, ok := p.arg.(Formatter); ok {
+ 		handled = true
+ 		defer p.catchPanic(p.arg, verb, "Format")
++		// The mode is implicit: the Format() call will
++		// use p.Write() which already sets the mode.
+ 		formatter.Format(p, verb)
+ 		return
+ 	}
+@@ -600,6 +663,7 @@
+ 			handled = true
+ 			defer p.catchPanic(p.arg, verb, "GoString")
+ 			// Print the result of GoString unadorned.
++			defer p.startUnsafe().restore()
+ 			p.fmt.fmtS(stringer.GoString())
+ 			return
+ 		}
+@@ -632,6 +696,21 @@
+ }
+ 
+ func (p *pp) printArg(arg interface{}, verb rune) {
++	t := reflect.TypeOf(arg)
++	if safeTypeRegistry[t] {
++		defer p.startSafeOverride().restore()
++	} else if t == safeWrapperType {
++		defer p.startSafeOverride().restore()
++		arg = arg.(w.SafeWrapper).GetValue()
++	} else if t == unsafeWrapperType {
++		defer p.startUnsafeOverride().restore()
++		arg = arg.(w.UnsafeWrap).GetValue()
++	}
++
++	if _, ok := arg.(i.SafeValue); ok {
++		defer p.startSafeOverride().restore()
++	}
++
+ 	p.arg = arg
+ 	p.value = reflect.Value{}
+ 
+@@ -697,13 +776,35 @@
+ 	case reflect.Value:
+ 		// Handle extractable values with special methods
+ 		// since printValue does not handle them at depth 0.
+-		if f.IsValid() && f.CanInterface() {
+-			p.arg = f.Interface()
+-			if p.handleMethods(verb) {
++		if f.IsValid() {
++			t := f.Type()
++			if p.handleSpecialValues(f, t, verb, 0) {
+ 				return
+ 			}
++
++			if safeTypeRegistry[t] {
++				defer p.startSafeOverride().restore()
++			}
++
++			if f.CanInterface() {
++				p.arg = f.Interface()
++				if _, ok := p.arg.(i.SafeValue); ok {
++					defer p.startSafeOverride().restore()
++				}
++				if p.handleMethods(verb) {
++					return
++				}
++			}
+ 		}
+ 		p.printValue(f, verb, 0)
++	case m.RedactableString:
++		defer p.startPreRedactable().restore()
++		p.buf.WriteString(string(f))
++		return
++	case m.RedactableBytes:
++		defer p.startPreRedactable().restore()
++		p.buf.Write([]byte(f))
++		return
+ 	default:
+ 		// If the type is not simple, it might have methods.
+ 		if !p.handleMethods(verb) {
+@@ -718,11 +819,25 @@
+ // It does not handle 'p' and 'T' verbs because these should have been already handled by printArg.
+ func (p *pp) printValue(value reflect.Value, verb rune, depth int) {
+ 	// Handle values with special methods if not already handled by printArg (depth == 0).
+-	if depth > 0 && value.IsValid() && value.CanInterface() {
+-		p.arg = value.Interface()
+-		if p.handleMethods(verb) {
++	if depth > 0 && value.IsValid() {
++		t := value.Type()
++		if p.handleSpecialValues(value, t, verb, depth) {
+ 			return
+ 		}
++
++		if safeTypeRegistry[t] {
++			defer p.startSafeOverride().restore()
++		}
++
++		if value.CanInterface() {
++			p.arg = value.Interface()
++			if _, ok := p.arg.(i.SafeValue); ok {
++				defer p.startSafeOverride().restore()
++			}
++			if p.handleMethods(verb) {
++				return
++			}
++		}
+ 	}
+ 	p.arg = nil
+ 	p.value = value
+@@ -946,7 +1061,9 @@
+ // argNumber returns the next argument to evaluate, which is either the value of the passed-in
+ // argNum or the value of the bracketed integer that begins format[i:]. It also returns
+ // the new value of i, that is, the index of the next byte of the format to process.
+-func (p *pp) argNumber(argNum int, format string, i int, numArgs int) (newArgNum, newi int, found bool) {
++func (p *pp) argNumber(
++	argNum int, format string, i int, numArgs int,
++) (newArgNum, newi int, found bool) {
+ 	if len(format) <= i || format[i] != '[' {
+ 		return argNum, i, false
+ 	}
+@@ -972,6 +1089,7 @@
+ }
+ 
+ func (p *pp) doPrintf(format string, a []interface{}) {
++	p.buf.SetMode(b.SafeEscaped)
+ 	end := len(format)
+ 	argNum := 0         // we process one argument per non-trivial format
+ 	afterIndex := false // previous item in format was an index like [3].
+@@ -1147,6 +1265,7 @@
+ }
+ 
+ func (p *pp) doPrint(a []interface{}) {
++	p.buf.SetMode(b.SafeEscaped)
+ 	prevString := false
+ 	for argNum, arg := range a {
+ 		isString := arg != nil && reflect.TypeOf(arg).Kind() == reflect.String
+@@ -1162,6 +1281,7 @@
+ // doPrintln is like doPrint but always adds a space between arguments
+ // and a newline after the last argument.
+ func (p *pp) doPrintln(a []interface{}) {
++	p.buf.SetMode(b.SafeEscaped)
+ 	for argNum, arg := range a {
+ 		if argNum > 0 {
+ 			p.buf.writeByte(' ')

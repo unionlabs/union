@@ -10,6 +10,7 @@ import (
 	"log"
 	"math/big"
 
+	"cosmossdk.io/math"
 	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
@@ -50,7 +51,7 @@ func ExampleVerifyCmd() *cobra.Command {
 				}
 				return &types.SimpleValidator{
 					PubKey:      &protoPK,
-					VotingPower: sdk.TokensToConsensusPower(sdk.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction),
+					VotingPower: sdk.TokensToConsensusPower(math.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction),
 				}
 			}
 

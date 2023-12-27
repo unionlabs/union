@@ -100,6 +100,18 @@ var _ crypto.PubKey = PubKey{}
 
 type PubKey []byte
 
+func(pubKey PubKey) EnsureValid() error {
+	var public bn254.G1Affine
+	_, err := public.SetBytes(pubKey)
+	if err != nil {
+		return err
+	}
+	if public.IsInfinity() {
+		return fmt.Errorf("point at infinity")
+	}
+	return nil
+}
+
 func (PubKey) TypeTag() string { return PubKeyName }
 
 func (pubKey PubKey) Address() crypto.Address {

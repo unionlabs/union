@@ -6,6 +6,18 @@ option go_package = "github.com/cometbft/cometbft/proto/tendermint/types";
 import "gogoproto/gogo.proto";
 import "tendermint/crypto/keys.proto";
 
+// BlockIdFlag indicates which BlockID the signature is for
+enum BlockIDFlag {
+  option (gogoproto.goproto_enum_stringer) = true;
+  option (gogoproto.goproto_enum_prefix)   = false;
+
+  BLOCK_ID_FLAG_UNKNOWN = 0 [(gogoproto.enumvalue_customname) = "BlockIDFlagUnknown"];  // indicates an error condition
+  BLOCK_ID_FLAG_ABSENT  = 1 [(gogoproto.enumvalue_customname) = "BlockIDFlagAbsent"];   // the vote was not received
+  BLOCK_ID_FLAG_COMMIT  = 2 [(gogoproto.enumvalue_customname) = "BlockIDFlagCommit"];   // voted for the block that received the majority
+  BLOCK_ID_FLAG_NIL     = 3 [(gogoproto.enumvalue_customname) = "BlockIDFlagNil"];      // voted for nil
+}
+
+
 message ValidatorSet {
   repeated Validator validators         = 1;
   Validator          proposer           = 2;

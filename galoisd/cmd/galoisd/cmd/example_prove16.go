@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/big"
 
+	"cosmossdk.io/math"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
@@ -44,7 +45,7 @@ func ExampleProve16Cmd() *cobra.Command {
 				}
 				return &types.SimpleValidator{
 					PubKey:      &protoPK,
-					VotingPower: sdk.TokensToConsensusPower(sdk.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction),
+					VotingPower: sdk.TokensToConsensusPower(math.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction),
 				}
 			}
 

@@ -34,26 +34,26 @@ import (
 // key/value pairs.  Keys must be hashable, and users should define their own
 // types for keys.  Values should not be modified after they are added to an
 // Attributes or if they were received from one.  If values implement 'Equal(o
-// interface{}) bool', it will be called by (*Attributes).Equal to determine
-// whether two values with the same key should be considered equal.
+// any) bool', it will be called by (*Attributes).Equal to determine whether
+// two values with the same key should be considered equal.
 type Attributes struct {
-	m map[interface{}]interface{}
+	m map[any]any
 }
 
 // New returns a new Attributes containing the key/value pair.
-func New(key, value interface{}) *Attributes {
-	return &Attributes{m: map[interface{}]interface{}{key: value}}
+func New(key, value any) *Attributes {
+	return &Attributes{m: map[any]any{key: value}}
 }
 
 // WithValue returns a new Attributes containing the previous keys and values
 // and the new key/value pair.  If the same key appears multiple times, the
 // last value overwrites all previous values for that key.  To remove an
 // existing key, use a nil value.  value should not be modified later.
-func (a *Attributes) WithValue(key, value interface{}) *Attributes {
+func (a *Attributes) WithValue(key, value any) *Attributes {
 	if a == nil {
 		return New(key, value)
 	}
-	n := &Attributes{m: make(map[interface{}]interface{}, len(a.m)+1)}
+	n := &Attributes{m: make(map[any]any, len(a.m)+1)}
 	for k, v := range a.m {
 		n.m[k] = v
 	}
@@ -63,20 +63,19 @@ func (a *Attributes) WithValue(key, value interface{}) *Attributes {
 
 // Value returns the value associated with these attributes for key, or nil if
 // no value is associated with key.  The returned value should not be modified.
-func (a *Attributes) Value(key interface{}) interface{} {
+func (a *Attributes) Value(key any) any {
 	if a == nil {
 		return nil
 	}
 	return a.m[key]
 }
 
-// Equal returns whether a and o are equivalent.  If 'Equal(o interface{})
-// bool' is implemented for a value in the attributes, it is called to
-// determine if the value matches the one stored in the other attributes.  If
-// Equal is not implemented, standard equality is used to determine if the two
-// values are equal. Note that some types (e.g. maps) aren't comparable by
-// default, so they must be wrapped in a struct, or in an alias type, with Equal
-// defined.
+// Equal returns whether a and o are equivalent.  If 'Equal(o any) bool' is
+// implemented for a value in the attributes, it is called to determine if the
+// value matches the one stored in the other attributes.  If Equal is not
+// implemented, standard equality is used to determine if the two values are
+// equal. Note that some types (e.g. maps) aren't comparable by default, so
+// they must be wrapped in a struct, or in an alias type, with Equal defined.
 func (a *Attributes) Equal(o *Attributes) bool {
 	if a == nil && o == nil {
 		return true
@@ -93,7 +92,7 @@ func (a *Attributes) Equal(o *Attributes) bool {
 			// o missing element of a
 			return false
 		}
-		if eq, ok := v.(interface{ Equal(o interface{}) bool }); ok {
+		if eq, ok := v.(interface{ Equal(o any) bool }); ok {
 			if !eq.Equal(ov) {
 				return false
 			}
@@ -122,9 +121,9 @@ func (a *Attributes) String() string {
 	return sb.String()
 }
 
-func str(x interface{}) string {
+func str(x any) (s string) {
 	if v, ok := x.(fmt.Stringer); ok {
-		return v.String()
+		return fmt.Sprint(v)
 	} else if v, ok := x.(string); ok {
 		return v
 	}

@@ -1,0 +1,149 @@
+syntax = "proto3";
+package cockroach.errorspb;
+option go_package = "errorspb";
+
+import "google/protobuf/any.proto";
+import "gogoproto/gogo.proto";
+
+// EncodedError is the wire-encodable representation
+// of an error (or error cause chain).
+message EncodedError {
+  oneof error {
+    // This is used for leaf error objects.
+    EncodedErrorLeaf leaf = 1;
+    // This is used for wrapper errors.
+    EncodedWrapper wrapper = 2;
+  }
+}
+
+// EncodedErrorLeaf is the wire-encodable representation
+// of an error leaf or a multi-cause wrapper from go 1.20+
+message EncodedErrorLeaf {
+  // The main error message (mandatory), that can be printed to human
+  // users and may contain PII. This contains the value of the leaf
+  // error's Error(), or using a registered encoder.
+  string message = 1;
+
+  // The error details.
+  EncodedErrorDetails details = 2 [(gogoproto.nullable) = false];
+
+  // multierror_causes is a list of errors that contain the causal tree
+  // of this leaf. If this field is not empty, then this leaf encodes
+  // an error from go 1.20 or later that encodes multiple causes in its
+  // chain.
+  repeated EncodedError multierror_causes = 3;
+}
+
+message EncodedErrorDetails {
+  // The original fully qualified error type name (mandatory).
+  // This is primarily used to print out error details
+  // in error reports and Format().
+  //
+  // It is additionally used to populate the error mark
+  // below when the family name is not known/set.
+  // See the `markers` error package and the
+  // RFC on error handling for details.
+  string original_type_name = 1;
+
+  // The error mark. This is used to determine error equivalence and
+  // identifying a decode function.
+  // See the `markers` error package and the
+  // RFC on error handling for details.
+  ErrorTypeMark error_type_mark = 2 [(gogoproto.nullable) = false];
+
+  // The reportable payload (optional), which is as descriptive as
+  // possible but may not contain PII.
+  //
+  // This is extracted automatically using a registered encoder, if
+  // any, or the SafeDetailer interface.
+  repeated string reportable_payload = 3;
+
+  // An arbitrary payload that (presumably) encodes the
+  // native error object. This is also optional.
+  //
+  // This is extracted automatically using a registered encoder, if
+  // any.
+  google.protobuf.Any full_details = 4;
+}
+
+// MessageType encodes information regarding the interpretation of an
+// error's message string.
+enum MessageType {
+  // Keeping zero value as default for backwards compatibility.
+  // PREFIX is a message that should be prepended to its cause.
+  PREFIX = 0;
+  // FULL_MESSAGE is a complete error message that can be displayed
+  // without its cause.
+  FULL_MESSAGE = 1;
+}
+
+// EncodedWrapper is the wire-encodable representation
+// of an error wrapper.
+message EncodedWrapper {
+  // The cause error. Mandatory.
+  EncodedError cause = 1 [(gogoproto.nullable) = false];
+
+  // The wrapper message. This could either be a full error message
+  // that can be printed independently, or a (potentially empty) prefix
+  // which is printed before the cause's own message to construct the
+  // full message. This may contain PII.
+  //
+  // This is extracted automatically:
+  //
+  // - for wrappers that have a registered encoder,
+  // - otherwise, when the wrapper's Error() has its cause's Error() as suffix.
+  string message = 2;
+
+  // The error details.
+  EncodedErrorDetails details = 3 [(gogoproto.nullable) = false];
+
+  // message_type encodes the interpretation of `message`. Prior
+  // versions will not set this field and it will be left as `PREFIX`.
+  // This retains backwards compatibility since the new behavior is
+  // only enabled when this enum is set to `FULL_MESSAGE`.
+  MessageType message_type = 4;
+}
+
+// ErrorTypeMark identifies an error type for the purpose of determining
+// error equivalences and looking up decoder functions.
+message ErrorTypeMark {
+  // The family name identifies the error type.
+  // This is equal to original_type_name above in the common case, but
+  // can be overridden when e.g. the package that defines the type
+  // changes path.
+  // This is the field also used for looking up a decode function.
+  string family_name = 1;
+
+  // This marker string is used in combination with
+  // the family name for the purpose of determining error equivalence.
+  // This can be used to separate error instances that have the same type
+  // into separate equivalence classes.
+  // See the `markers` error package and the
+  // RFC on error handling for details.
+  string extension = 2;
+}
+
+// StringsPayload is used to encode the payload of certain error
+// types.
+message StringsPayload {
+  repeated string details = 1;
+}
+
+// ErrnoPayload is used to encode the payload of syscall.Errno
+// errors.
+message ErrnoPayload {
+  // The original errno numeric code.
+  int64 orig_errno = 1;
+  // The platform where the syscall.Errno was encoded. This
+  // is needed because the numeric values of syscall.Errno
+  // have different meanings depending on the platform.
+  // When decoding, if the arch field does not match we
+  // use a substitute data type instead.
+  string arch = 2;
+
+  bool is_permission = 3;
+  bool is_exist = 4;
+  bool is_not_exist = 5;
+  bool is_timeout = 6;
+  bool is_temporary = 7;
+}

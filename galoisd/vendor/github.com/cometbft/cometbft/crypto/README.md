@@ -12,11 +12,11 @@ For any specific algorithm, use its specific module e.g.
 
 ## Binary encoding
 
-For Binary encoding, please refer to the [CometBFT encoding specification](https://github.com/cometbft/cometbft/blob/v0.37.x/spec/core/encoding.md).
+For Binary encoding, please refer to the [CometBFT encoding specification](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/core/encoding.md).
 
 ## JSON Encoding
 
-JSON encoding is done using CometBFT's internal json encoder. For more information on JSON encoding, please refer to [CometBFT JSON encoding](https://github.com/cometbft/cometbft/blob/v0.37.x/libs/json/doc.go)
+JSON encoding is done using CometBFT's internal json encoder. For more information on JSON encoding, please refer to [CometBFT JSON encoding](https://github.com/cometbft/cometbft/blob/v0.38.x/libs/json/doc.go)
 
 ```go
 Example JSON encodings:

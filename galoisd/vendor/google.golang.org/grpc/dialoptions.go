@@ -139,6 +139,20 @@ func newJoinDialOption(opts ...DialOption) DialOption {
 	return &joinDialOption{opts: opts}
 }
 
+// WithSharedWriteBuffer allows reusing per-connection transport write buffer.
+// If this option is set to true every connection will release the buffer after
+// flushing the data on the wire.
+//
+// # Experimental
+//
+// Notice: This API is EXPERIMENTAL and may be changed or removed in a
+// later release.
+func WithSharedWriteBuffer(val bool) DialOption {
+	return newFuncDialOption(func(o *dialOptions) {
+		o.copts.SharedWriteBuffer = val
+	})
+}
+
 // WithWriteBufferSize determines how much data can be batched before doing a
 // write on the wire. The corresponding memory allocation for this buffer will
 // be twice the size to keep syscalls low. The default value for this buffer is
@@ -630,6 +644,7 @@ func defaultDialOptions() dialOptions {
 			UseProxy:        true,
 		},
 		recvBufferPool: nopBufferPool{},
+		idleTimeout:    30 * time.Minute,
 	}
 }
 
@@ -666,8 +681,8 @@ func WithResolvers(rs ...resolver.Builder) DialOption {
 // channel will exit idle mode when the Connect() method is called or when an
 // RPC is initiated.
 //
-// By default this feature is disabled, which can also be explicitly configured
-// by passing zero to this function.
+// A default timeout of 30 minutes will be used if this dial option is not set
+// at dial time and idleness can be disabled by passing a timeout of zero.
 //
 // # Experimental
 //

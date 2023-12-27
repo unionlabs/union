@@ -6,10 +6,11 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	"github.com/cometbft/cometbft/libs/cmap"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
-	"github.com/cosmos/gogoproto/proto"
 
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 )
@@ -36,8 +37,8 @@ type Peer interface {
 	Status() cmtconn.ConnectionStatus
 	SocketAddr() *NetAddress // actual address of the socket
 
-	SendEnvelope(Envelope) bool
-	TrySendEnvelope(Envelope) bool
+	Send(Envelope) bool
+	TrySend(Envelope) bool
 
 	Set(string, interface{})
 	Get(string) interface{}
@@ -201,7 +202,7 @@ func (p *peer) OnStart() error {
 }
 
 // FlushStop mimics OnStop but additionally ensures that all successful
-// SendEnvelope() calls will get flushed before closing the connection.
+// .Send() calls will get flushed before closing the connection.
 // NOTE: it is not safe to call this method more than once.
 func (p *peer) FlushStop() {
 	p.metricsTicker.Stop()
@@ -254,16 +255,15 @@ func (p *peer) Status() cmtconn.ConnectionStatus {
 	return p.mconn.Status()
 }
 
-// SendEnvelope sends the message in the envelope on the channel specified by the
-// envelope. Returns false if the connection times out trying to place the message
-// onto its internal queue.
-func (p *peer) SendEnvelope(e Envelope) bool {
+// Send msg bytes to the channel identified by chID byte. Returns false if the
+// send queue is full after timeout, specified by MConnection.
+func (p *peer) Send(e Envelope) bool {
 	return p.send(e.ChannelID, e.Message, p.mconn.Send)
 }
 
-// TrySendEnvelope attempts to sends the message in the envelope on the channel specified by the
-// envelope. Returns false immediately if the connection's internal queue is full
-func (p *peer) TrySendEnvelope(e Envelope) bool {
+// TrySend msg bytes to the channel identified by chID byte. Immediately returns
+// false if the send queue is full.
+func (p *peer) TrySend(e Envelope) bool {
 	return p.send(e.ChannelID, e.Message, p.mconn.TrySend)
 }
 
@@ -422,7 +422,7 @@ func createMConnection(
 		}
 		p.metrics.PeerReceiveBytesTotal.With(labels...).Add(float64(len(msgBytes)))
 		p.metrics.MessageReceiveBytesTotal.With("message_type", p.mlc.ValueToMetricLabel(msg)).Add(float64(len(msgBytes)))
-		reactor.ReceiveEnvelope(Envelope{
+		reactor.Receive(Envelope{
 			ChannelID: chID,
 			Src:       p,
 			Message:   msg,
