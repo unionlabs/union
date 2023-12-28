@@ -19,6 +19,7 @@
         # Tests from ./upgrades.nix
         upgrade-from-genesis = upgrades.upgrade-from-genesis;
         upgrade-with-tokenfactory-state = upgrades.upgrade-with-tokenfactory-state;
+        upgrade-invalid-val = upgrades.upgrade-invalid-val;
 
         virtualisation-works = e2e.mkTest {
           name = "devnet";

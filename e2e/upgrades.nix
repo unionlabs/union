@@ -67,6 +67,32 @@ in
       union = e2e.unionTestnetGenesisNode.node;
     };
   };
+
+  upgrade-invalid-val = e2e.mkTest {
+    name = "upgrade-from-genesis";
+
+    testScript = ''
+      import time
+      union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
+
+      ${forEachNode (id: "union.succeed('docker cp ${bundle} devnet-minimal-uniond-${id}-1:/bundle')")}
+
+      # Ensure the union network commits more than one block
+      union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+
+      union.succeed("docker exec devnet-minimal-uniond-0-1 echo lollll > ./home/validator.json")
+      union.succeed("docker exec devnet-minimal-uniond-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- tx staking create-validator --from val-0 --keyring-backend test --home ./home -y --gas 30000000000")
+
+      ${upgradeTo "v0.15.0" 5}
+      # We skip v0.16.0 as it was never deployed
+      ${upgradeTo "v0.17.0" 10}
+
+    '';
+
+    nodes = {
+      union = e2e.unionTestnetGenesisNode.node;
+    };
+  };
   upgrade-with-tokenfactory-state = e2e.mkTest {
     name = "upgrade-with-tokenfactory-state";
 
