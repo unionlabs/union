@@ -89,9 +89,7 @@ export const connectLeapSnap = async () => {
 };
 
 export const connectToUnion = async () => {
-  const { suggestChain } = await import(
-    "@leapwallet/cosmos-snap-provider"
-  );
+  const { suggestChain } = await import("@leapwallet/cosmos-snap-provider");
 
   await suggestChain(
     {
@@ -108,9 +106,7 @@ export const connectToUnion = async () => {
 };
 
 export const updateConnectedToUnion = async () => {
-  const { getKey } = await import(
-    "@leapwallet/cosmos-snap-provider"
-  );
+  const { getKey } = await import("@leapwallet/cosmos-snap-provider");
   try {
     const _key = await getKey(UNION_CHAIN_ID);
     connectedToUnion.set(true);

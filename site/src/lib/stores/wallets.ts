@@ -3,10 +3,7 @@ import type { Writable } from "svelte/store";
 import type { Tendermint37Client } from "@cosmjs/tendermint-rpc";
 import type { SigningStargateClient } from "@cosmjs/stargate";
 import type { AccountData, Coin } from "@cosmjs/amino";
-import type {
-  ApolloClient,
-  NormalizedCacheObject,
-} from "@apollo/client";
+import type { ApolloClient, NormalizedCacheObject } from "@apollo/client";
 import type { BrowserProvider, JsonRpcSigner } from "ethers";
 import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import type { CosmjsOfflineSigner } from "@leapwallet/cosmos-snap-provider";

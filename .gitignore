@@ -40,3 +40,4 @@ dump
 fuzzing-code-coverage
 
 *.wasm
+dist

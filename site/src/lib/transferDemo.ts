@@ -110,7 +110,7 @@ const balanceWorker = async (
   fetcher: () => Promise<void>,
   interval: number
 ) => {
-  for (; ;) {
+  for (;;) {
     fetcher();
     await sleep(interval);
   }

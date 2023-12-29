@@ -31,6 +31,7 @@
     "@sveltejs/adapter-static": "^3.0.1",
     "@sveltejs/kit": "^2.0.4",
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
+    "@types/node": "^20.10.5",
     "@types/postcss-import": "^14.0.3",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",

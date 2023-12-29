@@ -25,7 +25,7 @@
     "allowSyntheticDefaultImports": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "forceConsistentCasingInFileNames": true,
-    "types": ["node"],
+    "types": ["node"]
   },
   "include": ["src", "scripts"],
   "files": [

@@ -10,6 +10,6 @@ export const toFixedEth = (value: bigint) => {
 };
 
 export const toFixedUno = (value: bigint | null) => {
-  if (!value) return
+  if (!value) return;
   return toFixedPoint(value, 6);
 };
