@@ -205,7 +205,7 @@ pub type SubMsgExecutionResponse = SubMsgResponse;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{from_slice, to_vec, StdError, StdResult};
+    use crate::{from_json, to_json_vec, StdError, StdResult};
 
     #[test]
     fn sub_msg_result_serialization_works() {
@@ -214,7 +214,7 @@ mod tests {
             events: vec![],
         });
         assert_eq!(
-            &to_vec(&result).unwrap(),
+            &to_json_vec(&result).unwrap(),
             br#"{"ok":{"events":[],"data":null}}"#
         );
 
@@ -223,17 +223,17 @@ mod tests {
             events: vec![Event::new("wasm").add_attribute("fo", "ba")],
         });
         assert_eq!(
-            &to_vec(&result).unwrap(),
+            &to_json_vec(&result).unwrap(),
             br#"{"ok":{"events":[{"type":"wasm","attributes":[{"key":"fo","value":"ba"}]}],"data":"MTIzCg=="}}"#
         );
 
         let result: SubMsgResult = SubMsgResult::Err("broken".to_string());
-        assert_eq!(&to_vec(&result).unwrap(), b"{\"error\":\"broken\"}");
+        assert_eq!(&to_json_vec(&result).unwrap(), b"{\"error\":\"broken\"}");
     }
 
     #[test]
     fn sub_msg_result_deserialization_works() {
-        let result: SubMsgResult = from_slice(br#"{"ok":{"events":[],"data":null}}"#).unwrap();
+        let result: SubMsgResult = from_json(br#"{"ok":{"events":[],"data":null}}"#).unwrap();
         assert_eq!(
             result,
             SubMsgResult::Ok(SubMsgResponse {
@@ -242,7 +242,7 @@ mod tests {
             })
         );
 
-        let result: SubMsgResult = from_slice(
+        let result: SubMsgResult = from_json(
             br#"{"ok":{"events":[{"type":"wasm","attributes":[{"key":"fo","value":"ba"}]}],"data":"MTIzCg=="}}"#).unwrap();
         assert_eq!(
             result,
@@ -252,19 +252,19 @@ mod tests {
             })
         );
 
-        let result: SubMsgResult = from_slice(br#"{"error":"broken"}"#).unwrap();
+        let result: SubMsgResult = from_json(br#"{"error":"broken"}"#).unwrap();
         assert_eq!(result, SubMsgResult::Err("broken".to_string()));
 
         // fails for additional attributes
-        let parse: StdResult<SubMsgResult> = from_slice(br#"{"unrelated":321,"error":"broken"}"#);
+        let parse: StdResult<SubMsgResult> = from_json(br#"{"unrelated":321,"error":"broken"}"#);
         match parse.unwrap_err() {
             StdError::ParseErr { .. } => {}
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
-        let parse: StdResult<SubMsgResult> = from_slice(br#"{"error":"broken","unrelated":321}"#);
+        let parse: StdResult<SubMsgResult> = from_json(br#"{"error":"broken","unrelated":321}"#);
         match parse.unwrap_err() {
             StdError::ParseErr { .. } => {}
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 

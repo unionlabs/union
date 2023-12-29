@@ -3,6 +3,7 @@
     let
       CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O -D__BLST_PORTABLE__";
       CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${self'.packages.libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
+      CGO_LD_TEST_FLAGS = "-L${self'.packages.bls-eth}/lib";
 
       mkUniondImage = uniond: pkgs.dockerTools.buildImage {
         name = "uniond";
@@ -60,7 +61,7 @@
                 (nix-filter.matchExt "md")
               ];
             };
-          vendorSha256 = null;
+          vendorHash = null;
           doCheck = true;
           meta.mainProgram = "uniond";
         } // (
@@ -115,7 +116,7 @@
                 rev = "a1ea6c775ac230bb1a1428bb96e4306044aa944b";
                 sha256 = "sha256-7AdE5qps4OMjaubt9Af6ATaqrV3n73ZuI7zTz7Kgm6w=";
               };
-              vendorSha256 = null;
+              vendorHash = null;
             };
 
             # must be run from a directory with vendor/
@@ -184,6 +185,7 @@
           src = ./.;
           doCheck = true;
           inherit CGO_CFLAGS;
+          CGO_LDFLAGS = CGO_LD_TEST_FLAGS;
           checkPhase = ''
             # Go will try to create a .cache/ dir in $HOME.
             # We avoid this by setting $HOME to the builder directory

@@ -7,11 +7,11 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MsgChannelOpenConfirm {
+#[serde(deny_unknown_fields)]
+pub struct MsgChannelOpenConfirm<ProofAck> {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof_ack: Vec<u8>,
+    pub proof_ack: ProofAck,
     pub proof_height: Height,
 }
 

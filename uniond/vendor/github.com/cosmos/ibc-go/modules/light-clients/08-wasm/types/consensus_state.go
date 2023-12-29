@@ -17,7 +17,7 @@ func NewConsensusState(data []byte) *ConsensusState {
 
 // ClientType returns Wasm type.
 func (ConsensusState) ClientType() string {
-	return exported.Wasm
+	return Wasm
 }
 
 // GetTimestamp returns block time in nanoseconds of the header that created consensus state.

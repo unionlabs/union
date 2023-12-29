@@ -1,6 +1,6 @@
+use core::fmt;
 #[cfg(feature = "backtraces")]
 use std::backtrace::Backtrace;
-use std::fmt;
 use thiserror::Error;
 
 use crate::errors::{RecoverPubkeyError, VerificationError};
@@ -433,14 +433,14 @@ impl PartialEq<StdError> for StdError {
     }
 }
 
-impl From<std::str::Utf8Error> for StdError {
-    fn from(source: std::str::Utf8Error) -> Self {
+impl From<core::str::Utf8Error> for StdError {
+    fn from(source: core::str::Utf8Error) -> Self {
         Self::invalid_utf8(source)
     }
 }
 
-impl From<std::string::FromUtf8Error> for StdError {
-    fn from(source: std::string::FromUtf8Error) -> Self {
+impl From<alloc::string::FromUtf8Error> for StdError {
+    fn from(source: alloc::string::FromUtf8Error) -> Self {
         Self::invalid_utf8(source)
     }
 }
@@ -488,7 +488,7 @@ pub enum OverflowOperation {
 
 impl fmt::Display for OverflowOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -517,7 +517,7 @@ impl OverflowError {
 /// The error returned by [`TryFrom`] conversions that overflow, for example
 /// when converting from [`Uint256`] to [`Uint128`].
 ///
-/// [`TryFrom`]: std::convert::TryFrom
+/// [`TryFrom`]: core::convert::TryFrom
 /// [`Uint256`]: crate::Uint256
 /// [`Uint128`]: crate::Uint128
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -600,6 +600,10 @@ pub enum CheckedFromRatioError {
 pub struct RoundUpOverflowError;
 
 #[derive(Error, Debug, PartialEq, Eq)]
+#[error("Round down operation failed because of overflow")]
+pub struct RoundDownOverflowError;
+
+#[derive(Error, Debug, PartialEq, Eq)]
 pub enum CoinsError {
     #[error("Duplicate denom")]
     DuplicateDenom,
@@ -607,7 +611,7 @@ pub enum CoinsError {
 
 impl From<CoinsError> for StdError {
     fn from(value: CoinsError) -> Self {
-        Self::generic_err(format!("Creating Coins: {}", value))
+        Self::generic_err(format!("Creating Coins: {value}"))
     }
 }
 
@@ -618,25 +622,25 @@ pub enum CoinFromStrError {
     #[error("Missing amount or non-digit characters in amount")]
     MissingAmount,
     #[error("Invalid amount: {0}")]
-    InvalidAmount(std::num::ParseIntError),
+    InvalidAmount(core::num::ParseIntError),
 }
 
-impl From<std::num::ParseIntError> for CoinFromStrError {
-    fn from(value: std::num::ParseIntError) -> Self {
+impl From<core::num::ParseIntError> for CoinFromStrError {
+    fn from(value: core::num::ParseIntError) -> Self {
         Self::InvalidAmount(value)
     }
 }
 
 impl From<CoinFromStrError> for StdError {
     fn from(value: CoinFromStrError) -> Self {
-        Self::generic_err(format!("Parsing Coin: {}", value))
+        Self::generic_err(format!("Parsing Coin: {value}"))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str;
+    use core::str;
 
     // constructors
 
@@ -644,12 +648,12 @@ mod tests {
     #[test]
     fn generic_err_owned() {
         let guess = 7;
-        let error = StdError::generic_err(format!("{} is too low", guess));
+        let error = StdError::generic_err(format!("{guess} is too low"));
         match error {
             StdError::GenericErr { msg, .. } => {
                 assert_eq!(msg, String::from("7 is too low"));
             }
-            e => panic!("unexpected error, {:?}", e),
+            e => panic!("unexpected error, {e:?}"),
         }
     }
 
@@ -659,7 +663,7 @@ mod tests {
         let error = StdError::generic_err("not implemented");
         match error {
             StdError::GenericErr { msg, .. } => assert_eq!(msg, "not implemented"),
-            e => panic!("unexpected error, {:?}", e),
+            e => panic!("unexpected error, {e:?}"),
         }
     }
 
@@ -841,7 +845,7 @@ mod tests {
     #[test]
     fn implements_debug() {
         let error: StdError = StdError::from(OverflowError::new(OverflowOperation::Sub, 3, 5));
-        let embedded = format!("Debug: {:?}", error);
+        let embedded = format!("Debug: {error:?}");
         #[cfg(not(feature = "backtraces"))]
         let expected = r#"Debug: Overflow { source: OverflowError { operation: Sub, operand1: "3", operand2: "5" } }"#;
         #[cfg(feature = "backtraces")]
@@ -852,7 +856,7 @@ mod tests {
     #[test]
     fn implements_display() {
         let error: StdError = StdError::from(OverflowError::new(OverflowOperation::Sub, 3, 5));
-        let embedded = format!("Display: {}", error);
+        let embedded = format!("Display: {error}");
         assert_eq!(embedded, "Display: Overflow: Cannot Sub with 3 and 5");
     }
 
@@ -873,19 +877,18 @@ mod tests {
 
     #[test]
     fn from_std_str_utf8error_works() {
-        let error: StdError = str::from_utf8(b"Hello \xF0\x90\x80World")
-            .unwrap_err()
-            .into();
+        let broken = b"Hello \xF0\x90\x80World";
+        let error: StdError = str::from_utf8(broken).unwrap_err().into();
         match error {
             StdError::InvalidUtf8 { msg, .. } => {
                 assert_eq!(msg, "invalid utf-8 sequence of 3 bytes from index 6")
             }
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 
     #[test]
-    fn from_std_string_fromutf8error_works() {
+    fn from_std_string_from_utf8error_works() {
         let error: StdError = String::from_utf8(b"Hello \xF0\x90\x80World".to_vec())
             .unwrap_err()
             .into();
@@ -893,7 +896,7 @@ mod tests {
             StdError::InvalidUtf8 { msg, .. } => {
                 assert_eq!(msg, "invalid utf-8 sequence of 3 bytes from index 6")
             }
-            err => panic!("Unexpected error: {:?}", err),
+            err => panic!("Unexpected error: {err:?}"),
         }
     }
 }

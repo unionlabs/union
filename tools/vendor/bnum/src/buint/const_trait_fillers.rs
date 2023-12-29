@@ -90,18 +90,14 @@ macro_rules! const_trait_fillers {
 
             crate::int::ops::trait_fillers!();
 
-            crate::nightly::const_fn! {
-                #[inline]
-                pub const fn div(self, rhs: Self) -> Self {
-                    self.wrapping_div(rhs)
-                }
+            #[inline]
+            pub const fn div(self, rhs: Self) -> Self {
+                self.wrapping_div(rhs)
             }
 
-            crate::nightly::const_fn! {
-                #[inline]
-                pub const fn rem(self, rhs: Self) -> Self {
-                    self.wrapping_rem(rhs)
-                }
+            #[inline]
+            pub const fn rem(self, rhs: Self) -> Self {
+                self.wrapping_rem(rhs)
             }
         }
     };

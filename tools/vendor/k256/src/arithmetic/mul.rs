@@ -34,16 +34,25 @@
 //! (Note that 'd' is also equal to the curve order here because `[a1,b1]` and `[a2,b2]` are found
 //! as outputs of the Extended Euclidean Algorithm on inputs 'order' and 'lambda').
 
+#[cfg(all(
+    feature = "precomputed-tables",
+    not(any(feature = "critical-section", feature = "std"))
+))]
+compile_error!("`precomputed-tables` feature requires either `critical-section` or `std`");
+
 use crate::arithmetic::{
     scalar::{Scalar, WideScalar},
     ProjectivePoint,
 };
 use core::ops::{Mul, MulAssign};
 use elliptic_curve::{
-    ops::LinearCombination,
+    ops::{LinearCombination, MulByGenerator},
+    scalar::IsHigh,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
-    IsHigh,
 };
+
+#[cfg(feature = "precomputed-tables")]
+use once_cell::sync::Lazy;
 
 /// Lookup table containing precomputed values `[p, 2p, 3p, ..., 8p]`
 #[derive(Copy, Clone, Default)]
@@ -61,7 +70,7 @@ impl From<&ProjectivePoint> for LookupTable {
 
 impl LookupTable {
     /// Given -8 <= x <= 8, returns x * p in constant time.
-    pub fn select(&self, x: i8) -> ProjectivePoint {
+    fn select(&self, x: i8) -> ProjectivePoint {
         debug_assert!(x >= -8);
         debug_assert!(x <= 8);
 
@@ -230,30 +239,30 @@ fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
 // (required because it's used in static_map later)
 // Otherwise we could just have a function returning an array.
 #[derive(Copy, Clone)]
-struct Radix16Decomposition([i8; 33]);
+struct Radix16Decomposition<const D: usize>([i8; D]);
 
-impl Radix16Decomposition {
+impl<const D: usize> Radix16Decomposition<D> {
     /// Returns an object containing a decomposition
-    /// `[a_0, ..., a_32]` such that `sum(a_j * 2^(j * 4)) == x`,
+    /// `[a_0, ..., a_D]` such that `sum(a_j * 2^(j * 4)) == x`,
     /// and `-8 <= a_j <= 7`.
-    /// Assumes `x < 2^128`.
+    /// Assumes `x < 2^(4*(D-1))`.
     fn new(x: &Scalar) -> Self {
-        debug_assert!((x >> 128).is_zero().unwrap_u8() == 1);
+        debug_assert!((x >> (4 * (D - 1))).is_zero().unwrap_u8() == 1);
 
         // The resulting decomposition can be negative, so, despite the limit on `x`,
-        // it can have up to 256 bits, and we need an additional byte to store the carry.
-        let mut output = [0i8; 33];
+        // we need an additional byte to store the carry.
+        let mut output = [0i8; D];
 
         // Step 1: change radix.
         // Convert from radix 256 (bytes) to radix 16 (nibbles)
         let bytes = x.to_bytes();
-        for i in 0..16 {
+        for i in 0..(D - 1) / 2 {
             output[2 * i] = (bytes[31 - i] & 0xf) as i8;
             output[2 * i + 1] = ((bytes[31 - i] >> 4) & 0xf) as i8;
         }
 
         // Step 2: recenter coefficients from [0,16) to [-8,8)
-        for i in 0..32 {
+        for i in 0..(D - 1) {
             let carry = (output[i] + 8) >> 4;
             output[i] -= carry << 4;
             output[i + 1] += carry;
@@ -263,9 +272,9 @@ impl Radix16Decomposition {
     }
 }
 
-impl Default for Radix16Decomposition {
+impl<const D: usize> Default for Radix16Decomposition<D> {
     fn default() -> Self {
-        Self([0i8; 33])
+        Self([0i8; D])
     }
 }
 
@@ -342,14 +351,14 @@ fn lincomb_generic<const N: usize>(xs: &[ProjectivePoint; N], ks: &[Scalar; N]) 
     );
 
     let digits1 = static_map(
-        |r| Radix16Decomposition::new(&r),
+        |r| Radix16Decomposition::<33>::new(&r),
         &r1s_c,
-        Radix16Decomposition::default(),
+        Radix16Decomposition::<33>::default(),
     );
     let digits2 = static_map(
-        |r| Radix16Decomposition::new(&r),
+        |r| Radix16Decomposition::<33>::new(&r),
         &r2s_c,
-        Radix16Decomposition::default(),
+        Radix16Decomposition::<33>::default(),
     );
 
     let mut acc = ProjectivePoint::IDENTITY;
@@ -369,6 +378,53 @@ fn lincomb_generic<const N: usize>(xs: &[ProjectivePoint; N], ks: &[Scalar; N]) 
         }
     }
     acc
+}
+
+/// Lazily computed basepoint table.
+#[cfg(feature = "precomputed-tables")]
+static GEN_LOOKUP_TABLE: Lazy<[LookupTable; 33]> = Lazy::new(precompute_gen_lookup_table);
+
+#[cfg(feature = "precomputed-tables")]
+fn precompute_gen_lookup_table() -> [LookupTable; 33] {
+    let mut gen = ProjectivePoint::GENERATOR;
+    let mut res = [LookupTable::default(); 33];
+    #[allow(clippy::needless_range_loop)]
+    for i in 0..33 {
+        res[i] = LookupTable::from(&gen);
+        // We are storing tables spaced by two radix steps,
+        // to decrease the size of the precomputed data.
+        for _ in 0..8 {
+            gen = gen.double();
+        }
+    }
+    res
+}
+
+impl MulByGenerator for ProjectivePoint {
+    /// Calculates `k * G`, where `G` is the generator.
+    #[cfg(not(feature = "precomputed-tables"))]
+    fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
+        ProjectivePoint::GENERATOR * k
+    }
+
+    /// Calculates `k * G`, where `G` is the generator.
+    #[cfg(feature = "precomputed-tables")]
+    fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
+        let digits = Radix16Decomposition::<65>::new(k);
+        let table = *GEN_LOOKUP_TABLE;
+        let mut acc = table[32].select(digits.0[64]);
+        let mut acc2 = ProjectivePoint::IDENTITY;
+        for i in (0..32).rev() {
+            acc2 += &table[i].select(digits.0[i * 2 + 1]);
+            acc += &table[i].select(digits.0[i * 2]);
+        }
+        // This is the price of halving the precomputed table size (from 60kb to 30kb)
+        // The performance hit is minor, about 3%.
+        for _ in 0..4 {
+            acc2 = acc2.double();
+        }
+        acc + acc2
+    }
 }
 
 #[inline(always)]
@@ -426,7 +482,11 @@ impl MulAssign<&Scalar> for ProjectivePoint {
 #[cfg(test)]
 mod tests {
     use crate::arithmetic::{ProjectivePoint, Scalar};
-    use elliptic_curve::{ops::LinearCombination, rand_core::OsRng, Field, Group};
+    use elliptic_curve::{
+        ops::{LinearCombination, MulByGenerator},
+        rand_core::OsRng,
+        Field, Group,
+    };
 
     #[test]
     fn test_lincomb() {
@@ -437,6 +497,14 @@ mod tests {
 
         let reference = &x * &k + &y * &l;
         let test = ProjectivePoint::lincomb(&x, &k, &y, &l);
+        assert_eq!(reference, test);
+    }
+
+    #[test]
+    fn test_mul_by_generator() {
+        let k = Scalar::random(&mut OsRng);
+        let reference = &ProjectivePoint::GENERATOR * &k;
+        let test = ProjectivePoint::mul_by_generator(&k);
         assert_eq!(reference, test);
     }
 }

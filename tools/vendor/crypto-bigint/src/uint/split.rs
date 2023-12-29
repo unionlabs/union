@@ -5,7 +5,7 @@ macro_rules! impl_split {
             impl $name {
                 /// Split this number in half, returning its high and low components
                 /// respectively.
-                pub const fn split(&self) -> (UInt<{nlimbs!($bits) / 2}>, UInt<{nlimbs!($bits) / 2}>) {
+                pub const fn split(&self) -> (Uint<{nlimbs!($bits) / 2}>, Uint<{nlimbs!($bits) / 2}>) {
                     let mut lo = [Limb::ZERO; nlimbs!($bits) / 2];
                     let mut hi = [Limb::ZERO; nlimbs!($bits) / 2];
                     let mut i = 0;
@@ -24,20 +24,20 @@ macro_rules! impl_split {
                         j += 1;
                     }
 
-                    (UInt { limbs: hi }, UInt { limbs: lo })
+                    (Uint { limbs: hi }, Uint { limbs: lo })
                 }
             }
 
             impl Split for $name {
-                type Output = UInt<{nlimbs!($bits) / 2}>;
+                type Output = Uint<{nlimbs!($bits) / 2}>;
 
                 fn split(&self) -> (Self::Output, Self::Output) {
                     self.split()
                 }
             }
 
-            impl From<$name> for (UInt<{nlimbs!($bits) / 2}>, UInt<{nlimbs!($bits) / 2}>) {
-                fn from(num: $name) -> (UInt<{nlimbs!($bits) / 2}>, UInt<{nlimbs!($bits) / 2}>) {
+            impl From<$name> for (Uint<{nlimbs!($bits) / 2}>, Uint<{nlimbs!($bits) / 2}>) {
+                fn from(num: $name) -> (Uint<{nlimbs!($bits) / 2}>, Uint<{nlimbs!($bits) / 2}>) {
                     num.split()
                 }
             }

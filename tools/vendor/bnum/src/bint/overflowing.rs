@@ -98,103 +98,100 @@ macro_rules! overflowing {
                 }
             }
 
-            crate::nightly::const_fns! {
-                #[inline]
-                pub(crate) const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
-                    if self.eq(&Self::MIN) && rhs.is_one() {
-                        return (self, Self::ZERO);
-                    }
-                    //println!("unchecked - self: {}, rhs: {}", self, rhs);
-                    let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
-                    let (div, rem) = (Self::from_bits(div), Self::from_bits(rem));
+            #[inline]
+            pub(crate) const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
+                if self.eq(&Self::MIN) && rhs.is_one() {
+                    return (self, Self::ZERO);
+                }
+                let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
+                let (div, rem) = (Self::from_bits(div), Self::from_bits(rem));
 
-                    match (self.is_negative(), rhs.is_negative()) {
-                        (false, false) => (div, rem),
-                        (false, true) => (div.neg(), rem),
-                        (true, false) => (div.neg(), rem.neg()),
-                        (true, true) => (div, rem.neg()),
+                match (self.is_negative(), rhs.is_negative()) {
+                    (false, false) => (div, rem),
+                    (false, true) => (div.neg(), rem),
+                    (true, false) => (div.neg(), rem.neg()),
+                    (true, true) => (div, rem.neg()),
+                }
+            }
+
+            #[doc = doc::overflowing::overflowing_div!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
+                if rhs.is_zero() {
+                    div_zero!()
+                }
+                if self.eq(&Self::MIN) {
+                    if rhs.eq(&Self::NEG_ONE) {
+                        return (self, true);
+                    } else if rhs.is_one() {
+                        return (self, false);
                     }
                 }
+                (self.div_rem_unchecked(rhs).0, false)
+            }
 
-                #[doc = doc::overflowing::overflowing_div!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
-                    if rhs.is_zero() {
-                        div_zero!()
-                    }
-                    if self.eq(&Self::MIN) {
-                        if rhs.eq(&Self::NEG_ONE) {
-                            return (self, true);
-                        } else if rhs.is_one() {
-                            return (self, false);
-                        }
-                    }
-                    (self.div_rem_unchecked(rhs).0, false)
+            #[doc = doc::overflowing::overflowing_div_euclid!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
+                if rhs.is_zero() {
+                    div_zero!()
                 }
-
-                #[doc = doc::overflowing::overflowing_div_euclid!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
-                    if rhs.is_zero() {
-                        div_zero!()
-                    }
-                    if self.eq(&Self::MIN) {
-                        if rhs.eq(&Self::NEG_ONE) {
-                            return (self, true);
-                        } else if rhs.is_one() {
-                            return (self, false);
-                        }
-                    }
-                    let (div, rem) = self.div_rem_unchecked(rhs);
-                    if self.is_negative() {
-                        let r_neg = rhs.is_negative();
-                        if !rem.is_zero() {
-                            if r_neg {
-                                return (div.add(Self::ONE), false)
-                            } else {
-                                return (div.sub(Self::ONE), false)
-                            };
-                        }
-                    }
-                    (div, false)
-                }
-
-                #[doc = doc::overflowing::overflowing_rem!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
-                    if rhs.is_zero() {
-                        div_zero!()
-                    }
-                    if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-                        (Self::ZERO, true)
-                    } else {
-                        (self.div_rem_unchecked(rhs).1, false)
+                if self.eq(&Self::MIN) {
+                    if rhs.eq(&Self::NEG_ONE) {
+                        return (self, true);
+                    } else if rhs.is_one() {
+                        return (self, false);
                     }
                 }
+                let (div, rem) = self.div_rem_unchecked(rhs);
+                if self.is_negative() {
+                    let r_neg = rhs.is_negative();
+                    if !rem.is_zero() {
+                        if r_neg {
+                            return (div.add(Self::ONE), false)
+                        } else {
+                            return (div.sub(Self::ONE), false)
+                        };
+                    }
+                }
+                (div, false)
+            }
 
-                #[doc = doc::overflowing::overflowing_rem_euclid!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
-                    if rhs.is_zero() {
-                        div_zero!()
-                    }
-                    if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-                        (Self::ZERO, true)
-                    } else {
-                        let mut rem = self.div_rem_unchecked(rhs).1;
-                        if rem.is_negative() {
-                            if rhs.is_negative() {
-                                rem = rem.wrapping_sub(rhs);
-                            } else {
-                                rem = rem.wrapping_add(rhs);
-                            }
+            #[doc = doc::overflowing::overflowing_rem!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
+                if rhs.is_zero() {
+                    div_zero!()
+                }
+                if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
+                    (Self::ZERO, true)
+                } else {
+                    (self.div_rem_unchecked(rhs).1, false)
+                }
+            }
+
+            #[doc = doc::overflowing::overflowing_rem_euclid!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
+                if rhs.is_zero() {
+                    div_zero!()
+                }
+                if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
+                    (Self::ZERO, true)
+                } else {
+                    let mut rem = self.div_rem_unchecked(rhs).1;
+                    if rem.is_negative() {
+                        if rhs.is_negative() {
+                            rem = rem.wrapping_sub(rhs);
+                        } else {
+                            rem = rem.wrapping_add(rhs);
                         }
-                        (rem, false)
                     }
+                    (rem, false)
                 }
             }
 
@@ -242,9 +239,9 @@ macro_rules! overflowing {
                 };
                 let u = unsafe {
                     if self.is_negative() {
-                        $BUint::unchecked_shr_pad_internal::<{$Digit::MAX}>(bits, shift)
+                        $BUint::unchecked_shr_pad_internal::<{ $Digit::MAX }>(bits, shift)
                     } else {
-                        $BUint::unchecked_shr_pad_internal::<{$Digit::MIN}>(bits, shift)
+                        $BUint::unchecked_shr_pad_internal::<{ $Digit::MIN }>(bits, shift)
                     }
                 };
                 (Self::from_bits(u), overflow)

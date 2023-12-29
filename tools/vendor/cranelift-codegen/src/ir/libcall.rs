@@ -1,6 +1,9 @@
 //! Naming well-known routines in the runtime library.
 
-use crate::ir::{types, ExternalName, FuncRef, Function, Opcode, Type};
+use crate::{
+    ir::{types, AbiParam, ExternalName, FuncRef, Function, Signature},
+    isa::CallConv,
+};
 use core::fmt;
 use core::str::FromStr;
 #[cfg(feature = "enable-serde")]
@@ -20,20 +23,6 @@ pub enum LibCall {
     /// probe for stack overflow. These are emitted for functions which need
     /// when the `enable_probestack` setting is true.
     Probestack,
-    /// udiv.i64
-    UdivI64,
-    /// sdiv.i64
-    SdivI64,
-    /// urem.i64
-    UremI64,
-    /// srem.i64
-    SremI64,
-    /// ishl.i64
-    IshlI64,
-    /// ushr.i64
-    UshrI64,
-    /// sshr.i64
-    SshrI64,
     /// ceil.f32
     CeilF32,
     /// ceil.f64
@@ -50,6 +39,10 @@ pub enum LibCall {
     NearestF32,
     /// nearest.f64
     NearestF64,
+    /// fma.f32
+    FmaF32,
+    /// fma.f64
+    FmaF64,
     /// libc.memcpy
     Memcpy,
     /// libc.memset
@@ -61,6 +54,8 @@ pub enum LibCall {
 
     /// Elf __tls_get_addr
     ElfTlsGetAddr,
+    /// Elf __tls_get_offset
+    ElfTlsGetOffset,
     // When adding a new variant make sure to add it to `all_libcalls` too.
 }
 
@@ -76,13 +71,6 @@ impl FromStr for LibCall {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "Probestack" => Ok(Self::Probestack),
-            "UdivI64" => Ok(Self::UdivI64),
-            "SdivI64" => Ok(Self::SdivI64),
-            "UremI64" => Ok(Self::UremI64),
-            "SremI64" => Ok(Self::SremI64),
-            "IshlI64" => Ok(Self::IshlI64),
-            "UshrI64" => Ok(Self::UshrI64),
-            "SshrI64" => Ok(Self::SshrI64),
             "CeilF32" => Ok(Self::CeilF32),
             "CeilF64" => Ok(Self::CeilF64),
             "FloorF32" => Ok(Self::FloorF32),
@@ -91,64 +79,26 @@ impl FromStr for LibCall {
             "TruncF64" => Ok(Self::TruncF64),
             "NearestF32" => Ok(Self::NearestF32),
             "NearestF64" => Ok(Self::NearestF64),
+            "FmaF32" => Ok(Self::FmaF32),
+            "FmaF64" => Ok(Self::FmaF64),
             "Memcpy" => Ok(Self::Memcpy),
             "Memset" => Ok(Self::Memset),
             "Memmove" => Ok(Self::Memmove),
             "Memcmp" => Ok(Self::Memcmp),
 
             "ElfTlsGetAddr" => Ok(Self::ElfTlsGetAddr),
+            "ElfTlsGetOffset" => Ok(Self::ElfTlsGetOffset),
             _ => Err(()),
         }
     }
 }
 
 impl LibCall {
-    /// Get the well-known library call name to use as a replacement for an instruction with the
-    /// given opcode and controlling type variable.
-    ///
-    /// Returns `None` if no well-known library routine name exists for that instruction.
-    pub fn for_inst(opcode: Opcode, ctrl_type: Type) -> Option<Self> {
-        Some(match ctrl_type {
-            types::I64 => match opcode {
-                Opcode::Udiv => Self::UdivI64,
-                Opcode::Sdiv => Self::SdivI64,
-                Opcode::Urem => Self::UremI64,
-                Opcode::Srem => Self::SremI64,
-                Opcode::Ishl => Self::IshlI64,
-                Opcode::Ushr => Self::UshrI64,
-                Opcode::Sshr => Self::SshrI64,
-                _ => return None,
-            },
-            types::F32 => match opcode {
-                Opcode::Ceil => Self::CeilF32,
-                Opcode::Floor => Self::FloorF32,
-                Opcode::Trunc => Self::TruncF32,
-                Opcode::Nearest => Self::NearestF32,
-                _ => return None,
-            },
-            types::F64 => match opcode {
-                Opcode::Ceil => Self::CeilF64,
-                Opcode::Floor => Self::FloorF64,
-                Opcode::Trunc => Self::TruncF64,
-                Opcode::Nearest => Self::NearestF64,
-                _ => return None,
-            },
-            _ => return None,
-        })
-    }
-
     /// Get a list of all known `LibCall`'s.
     pub fn all_libcalls() -> &'static [LibCall] {
         use LibCall::*;
         &[
             Probestack,
-            UdivI64,
-            SdivI64,
-            UremI64,
-            SremI64,
-            IshlI64,
-            UshrI64,
-            SshrI64,
             CeilF32,
             CeilF64,
             FloorF32,
@@ -157,12 +107,49 @@ impl LibCall {
             TruncF64,
             NearestF32,
             NearestF64,
+            FmaF32,
+            FmaF64,
             Memcpy,
             Memset,
             Memmove,
             Memcmp,
             ElfTlsGetAddr,
+            ElfTlsGetOffset,
         ]
+    }
+
+    /// Get a [Signature] for the function targeted by this [LibCall].
+    pub fn signature(&self, call_conv: CallConv) -> Signature {
+        use types::*;
+        let mut sig = Signature::new(call_conv);
+
+        match self {
+            LibCall::CeilF32 | LibCall::FloorF32 | LibCall::TruncF32 | LibCall::NearestF32 => {
+                sig.params.push(AbiParam::new(F32));
+                sig.returns.push(AbiParam::new(F32));
+            }
+            LibCall::TruncF64 | LibCall::FloorF64 | LibCall::CeilF64 | LibCall::NearestF64 => {
+                sig.params.push(AbiParam::new(F64));
+                sig.returns.push(AbiParam::new(F64));
+            }
+            LibCall::FmaF32 | LibCall::FmaF64 => {
+                let ty = if *self == LibCall::FmaF32 { F32 } else { F64 };
+
+                sig.params.push(AbiParam::new(ty));
+                sig.params.push(AbiParam::new(ty));
+                sig.params.push(AbiParam::new(ty));
+                sig.returns.push(AbiParam::new(ty));
+            }
+            LibCall::Probestack
+            | LibCall::Memcpy
+            | LibCall::Memset
+            | LibCall::Memmove
+            | LibCall::Memcmp
+            | LibCall::ElfTlsGetAddr
+            | LibCall::ElfTlsGetOffset => unimplemented!(),
+        }
+
+        sig
     }
 }
 

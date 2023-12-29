@@ -24,8 +24,7 @@ unsafe impl GlobalAlloc for Odd {
             };
             let ptr = System.alloc(new_layout);
             if !ptr.is_null() {
-                let ptr = ptr.offset(1);
-                ptr
+                ptr.offset(1)
             } else {
                 ptr
             }
@@ -66,4 +65,33 @@ fn test_bytes_clone_drop() {
     let vec = vec![33u8; 1024];
     let b1 = Bytes::from(vec);
     let _b2 = b1.clone();
+}
+
+#[test]
+fn test_bytes_into_vec() {
+    let vec = vec![33u8; 1024];
+
+    // Test cases where kind == KIND_VEC
+    let b1 = Bytes::from(vec.clone());
+    assert_eq!(Vec::from(b1), vec);
+
+    // Test cases where kind == KIND_ARC, ref_cnt == 1
+    let b1 = Bytes::from(vec.clone());
+    drop(b1.clone());
+    assert_eq!(Vec::from(b1), vec);
+
+    // Test cases where kind == KIND_ARC, ref_cnt == 2
+    let b1 = Bytes::from(vec.clone());
+    let b2 = b1.clone();
+    assert_eq!(Vec::from(b1), vec);
+
+    // Test cases where vtable = SHARED_VTABLE, kind == KIND_ARC, ref_cnt == 1
+    assert_eq!(Vec::from(b2), vec);
+
+    // Test cases where offset != 0
+    let mut b1 = Bytes::from(vec.clone());
+    let b2 = b1.split_off(20);
+
+    assert_eq!(Vec::from(b2), vec[20..]);
+    assert_eq!(Vec::from(b1), vec[..20]);
 }

@@ -6,6 +6,8 @@ mod internal_macros;
 
 mod any;
 mod bit_string;
+#[cfg(feature = "alloc")]
+mod bmp_string;
 mod boolean;
 mod choice;
 mod context_specific;
@@ -52,6 +54,7 @@ pub use self::{
 pub use self::{
     any::Any,
     bit_string::BitString,
+    bmp_string::BmpString,
     ia5_string::Ia5String,
     integer::{int::Int, uint::Uint},
     octet_string::OctetString,

@@ -13,8 +13,9 @@ use super::func_environ::{FuncEnvironment, GlobalVariable};
 use crate::{HashMap, Occupied, Vacant};
 use cranelift_codegen::ir::{self, Block, Inst, Value};
 use std::vec::Vec;
-use wasmer_compiler::WasmResult;
-use wasmer_types::{FunctionIndex, GlobalIndex, MemoryIndex, SignatureIndex, TableIndex};
+use wasmer_types::{
+    FunctionIndex, GlobalIndex, MemoryIndex, SignatureIndex, TableIndex, WasmResult,
+};
 
 /// Information about the presence of an associated `else` for an `if`, or the
 /// lack thereof.
@@ -62,7 +63,7 @@ pub enum ControlStackFrame {
         num_return_values: usize,
         original_stack_size: usize,
         exit_is_branched_to: bool,
-        blocktype: wasmer_compiler::wasmparser::TypeOrFuncType,
+        blocktype: wasmer_compiler::wasmparser::BlockType,
         /// Was the head of the `if` reachable?
         head_is_reachable: bool,
         /// What was the reachability at the end of the consequent?
@@ -188,7 +189,7 @@ impl ControlStackFrame {
     /// Pop values from the value stack so that it is left at the
     /// input-parameters to an else-block.
     pub fn truncate_value_stack_to_else_params(&self, stack: &mut Vec<Value>) {
-        debug_assert!(matches!(self, &ControlStackFrame::If { .. }));
+        debug_assert!(matches!(self, &Self::If { .. }));
         stack.truncate(self.original_stack_size());
     }
 
@@ -201,7 +202,7 @@ impl ControlStackFrame {
         // block can see the same number of parameters as the consequent block. As a matter of
         // fact, we need to substract an extra number of parameter values for if blocks.
         let num_duplicated_params = match self {
-            &ControlStackFrame::If {
+            &Self::If {
                 num_param_values, ..
             } => {
                 debug_assert!(num_param_values <= self.original_stack_size());
@@ -211,13 +212,6 @@ impl ControlStackFrame {
         };
         stack.truncate(self.original_stack_size() - num_duplicated_params);
     }
-}
-
-/// Extra info about values. For example, on the stack.
-#[derive(Debug, Clone, Default)]
-pub struct ValueExtraInfo {
-    /// Whether or not the value should be ref counted.
-    pub ref_counted: bool,
 }
 
 /// Contains information passed along during a function's translation and that records:
@@ -309,63 +303,40 @@ impl FuncTranslationState {
         );
     }
 
-    /// Push a value with extra info attached.
-    pub(crate) fn push1_extra(&mut self, val: (Value, ValueExtraInfo)) {
-        self.stack.push(val.0);
-        // TODO(reftypes):
-        //self.metadata_stack.push(val.1);
-    }
-
-    /// Push a value with default extra info.
+    /// Push a value.
     pub(crate) fn push1(&mut self, val: Value) {
         self.stack.push(val);
-        // TODO(reftypes):
-        //self.metadata_stack.push(ValueExtraInfo::default());
     }
 
     /// Push multiple values.
-    pub(crate) fn pushn(&mut self, vals: &[Value], _vals_metadata: &[ValueExtraInfo]) {
-        assert_eq!(vals.len(), _vals_metadata.len());
+    pub(crate) fn pushn(&mut self, vals: &[Value]) {
         self.stack.extend_from_slice(vals);
-        // TODO(reftypes):
-        //self.metadata_stack.extend_from_slice(vals_metadata);
     }
 
     /// Pop one value.
-    pub(crate) fn pop1(&mut self) -> (Value, ValueExtraInfo) {
-        let val = self
-            .stack
+    pub(crate) fn pop1(&mut self) -> Value {
+        self.stack
             .pop()
-            .expect("attempted to pop a value from an empty stack");
-        let val_metadata = Default::default();
-        (val, val_metadata)
+            .expect("attempted to pop a value from an empty stack")
     }
 
     /// Peek at the top of the stack without popping it.
-    pub(crate) fn peek1(&self) -> (Value, ValueExtraInfo) {
-        let val = *self
+    pub(crate) fn peek1(&self) -> Value {
+        *self
             .stack
             .last()
-            .expect("attempted to peek at a value on an empty stack");
-        let val_metadata = Default::default();
-        (val, val_metadata)
+            .expect("attempted to peek at a value on an empty stack")
     }
 
     /// Pop two values. Return them in the order they were pushed.
-    pub(crate) fn pop2(&mut self) -> ((Value, ValueExtraInfo), (Value, ValueExtraInfo)) {
+    pub(crate) fn pop2(&mut self) -> (Value, Value) {
         let v2 = self.pop1();
         let v1 = self.pop1();
         (v1, v2)
     }
 
     /// Pop three values. Return them in the order they were pushed.
-    pub(crate) fn pop3(
-        &mut self,
-    ) -> (
-        (Value, ValueExtraInfo),
-        (Value, ValueExtraInfo),
-        (Value, ValueExtraInfo),
-    ) {
+    pub(crate) fn pop3(&mut self) -> (Value, Value, Value) {
         let v3 = self.pop1();
         let v2 = self.pop1();
         let v1 = self.pop1();
@@ -382,13 +353,6 @@ impl FuncTranslationState {
             n,
             self.stack.len()
         );
-        // TODO(reftypes):
-        /*debug_assert!(
-            n <= self.metadata_stack.len(),
-            "attempted to access {} values but stack only has {} values",
-            n,
-            self.metadata_stack.len()
-        );*/
     }
 
     /// Pop the top `n` values on the stack.
@@ -401,25 +365,16 @@ impl FuncTranslationState {
     }
 
     /// Peek at the top `n` values on the stack in the order they were pushed.
-    pub(crate) fn peekn(&self, n: usize) -> (&[Value], &[ValueExtraInfo]) {
+    pub(crate) fn peekn(&self, n: usize) -> &[Value] {
         self.ensure_length_is_at_least(n);
-        let vals = &self.stack[self.stack.len() - n..];
-        // TODO(reftypes):
-        let vals_metadata = &[]; //&self.metadata_stack[self.metadata_stack.len() - n..];
-        (vals, vals_metadata)
+        &self.stack[self.stack.len() - n..]
     }
 
     /// Peek at the top `n` values on the stack in the order they were pushed.
-    pub(crate) fn peekn_mut(&mut self, n: usize) -> (&mut [Value], &mut [ValueExtraInfo]) {
+    pub(crate) fn peekn_mut(&mut self, n: usize) -> &mut [Value] {
         self.ensure_length_is_at_least(n);
         let len = self.stack.len();
-        // TODO(reftypes):
-        //let metadata_len = self.metadata_stack.len();
-        //assert_eq!(len, metadata_len);
-        let vals = &mut self.stack[len - n..];
-        // TODO(reftypes):
-        let vals_metadata = &mut []; //&mut self.metadata_stack[metadata_len - n..];
-        (vals, vals_metadata)
+        &mut self.stack[len - n..]
     }
 
     /// Push a block on the control stack.
@@ -464,7 +419,7 @@ impl FuncTranslationState {
         else_data: ElseData,
         num_param_types: usize,
         num_result_types: usize,
-        blocktype: wasmer_compiler::wasmparser::TypeOrFuncType,
+        blocktype: wasmer_compiler::wasmparser::BlockType,
     ) {
         debug_assert!(num_param_types <= self.stack.len());
 

@@ -5,7 +5,10 @@ test_integer_info () {
 	echo "\n${CYAN_COLOR}info${RESET_FORMAT}: running tests with $1-bit test integers..."
 }
 
+export QUICKCHECK_TESTS=10000
+
 run_test () {
+    echo $QUICKCHECK_TESTS
 	test_integer_info "$1"
 	RUSTFLAGS="--cfg test_int_bits=\"$1\"" cargo test int --lib --quiet $2
 	if [ $? -ne 0 ]

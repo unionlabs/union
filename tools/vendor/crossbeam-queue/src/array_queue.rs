@@ -444,10 +444,24 @@ impl<T> ArrayQueue<T> {
 impl<T> Drop for ArrayQueue<T> {
     fn drop(&mut self) {
         // Get the index of the head.
-        let hix = self.head.load(Ordering::Relaxed) & (self.one_lap - 1);
+        let head = *self.head.get_mut();
+        let tail = *self.tail.get_mut();
+
+        let hix = head & (self.one_lap - 1);
+        let tix = tail & (self.one_lap - 1);
+
+        let len = if hix < tix {
+            tix - hix
+        } else if hix > tix {
+            self.cap - hix + tix
+        } else if tail == head {
+            0
+        } else {
+            self.cap
+        };
 
         // Loop over all slots that hold a message and drop them.
-        for i in 0..self.len() {
+        for i in 0..len {
             // Compute the index of the next slot holding a message.
             let index = if hix + i < self.cap {
                 hix + i

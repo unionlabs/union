@@ -1,7 +1,9 @@
 //! Data structure for tracking the (possibly multiple) registers that hold one
 //! SSA `Value`.
 
-use regalloc::{RealReg, Reg, VirtualReg, Writable};
+use regalloc2::{PReg, VReg};
+
+use super::{RealReg, Reg, VirtualReg, Writable};
 use std::fmt::Debug;
 
 const VALUE_REGS_PARTS: usize = 2;
@@ -35,17 +37,17 @@ pub trait InvalidSentinel: Copy + Eq {
 }
 impl InvalidSentinel for Reg {
     fn invalid_sentinel() -> Self {
-        Reg::invalid()
+        Reg::from(VReg::invalid())
     }
 }
 impl InvalidSentinel for VirtualReg {
     fn invalid_sentinel() -> Self {
-        VirtualReg::invalid()
+        VirtualReg::from(VReg::invalid())
     }
 }
 impl InvalidSentinel for RealReg {
     fn invalid_sentinel() -> Self {
-        RealReg::invalid()
+        RealReg::from(PReg::invalid())
     }
 }
 impl InvalidSentinel for Writable<Reg> {

@@ -12,7 +12,7 @@
 [package]
 edition = "2021"
 name = "bnum"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["isaac-holt <isaac_holt@icloud.com>"]
 exclude = [
     "src/float/*",
@@ -40,13 +40,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/isaacholt100/bnum"
 
 [package.metadata.docs.rs]
-features = [
-    "nightly",
-    "serde",
-    "numtraits",
-    "rand",
-    "arbitrary",
-]
+all-features = true
 
 [profile.release]
 opt-level = 3
@@ -63,7 +57,7 @@ optional = true
 default-features = false
 
 [dependencies.num-traits]
-version = "0.2.15"
+version = "0.2.16"
 optional = true
 default-features = false
 
@@ -78,18 +72,18 @@ optional = true
 default-features = false
 
 [dependencies.serde]
-version = "1.0.152"
+version = "1.0.174"
 features = ["derive"]
 optional = true
 default-features = false
 
 [dependencies.serde-big-array]
-version = "0.4.1"
+version = "0.5.1"
 optional = true
 default-features = false
 
 [dev-dependencies.paste]
-version = "1.0.6"
+version = "1.0.14"
 
 [dev-dependencies.quickcheck]
 version = "1.0.3"

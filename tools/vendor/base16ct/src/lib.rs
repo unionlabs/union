@@ -1,3 +1,18 @@
+#![no_std]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
+    html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg"
+)]
+#![warn(
+    clippy::mod_module_files,
+    clippy::unwrap_used,
+    missing_docs,
+    rust_2018_idioms,
+    unused_lifetimes,
+    unused_qualifications
+)]
+
 //! Pure Rust implementation of Base16 ([RFC 4648], a.k.a. hex).
 //!
 //! Implements lower and upper case Base16 variants without data-dependent branches
@@ -43,15 +58,6 @@
 //! ```
 //!
 //! [RFC 4648]: https://tools.ietf.org/html/rfc4648
-
-#![no_std]
-#![cfg_attr(docsrs, feature(doc_cfg))]
-#![warn(missing_docs, rust_2018_idioms)]
-#![doc(
-    html_logo_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
-    html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/media/6ee8e381/logo.svg",
-    html_root_url = "https://docs.rs/base16ct/0.1.1"
-)]
 
 #[cfg(feature = "alloc")]
 #[macro_use]

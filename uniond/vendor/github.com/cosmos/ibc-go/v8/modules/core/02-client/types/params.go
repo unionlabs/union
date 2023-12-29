@@ -9,7 +9,7 @@ import (
 )
 
 // DefaultAllowedClients are the default clients for the AllowedClients parameter.
-var DefaultAllowedClients = []string{exported.Solomachine, exported.Tendermint, exported.Wasm, exported.Localhost}
+var DefaultAllowedClients = []string{exported.Solomachine, exported.Tendermint, exported.Localhost}
 
 // NewParams creates a new parameter configuration for the ibc client module
 func NewParams(allowedClients ...string) Params {

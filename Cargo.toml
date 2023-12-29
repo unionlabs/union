@@ -1,6 +1,13 @@
 [workspace]
 members = [
-  "lib/*",
+  "lib/beacon-api",
+  "lib/chain-utils",
+  "lib/cometbls-groth16-verifier",
+  "lib/ethereum-verifier",
+  "lib/ics-008-wasm-client",
+  "lib/pg-queue",
+  "lib/serde-utils",
+  "lib/unionlabs",
   "lib/*/fuzz",
   "tools/generate-rust-sol-bindings",
   "light-clients/*",

@@ -57,7 +57,7 @@ fn parse_lit_str_cooked(mut s: &str) -> Vec<u8> {
                             continue 'outer;
                         }
                     },
-                    _ => unreachable!("invalid escape"),
+                    _ => bug!("invalid escape"),
                 }
             }
             b'\r' => {
@@ -120,7 +120,7 @@ fn parse_lit_byte_str_cooked(mut v: &[u8]) -> Vec<u8> {
                             continue 'outer;
                         }
                     },
-                    _ => unreachable!("invalid escape"),
+                    _ => bug!("invalid escape"),
                 }
             }
             b'\r' => {
@@ -151,7 +151,7 @@ where
         b'0'..=b'9' => b1 - b'0',
         b'a'..=b'f' => 10 + (b1 - b'a'),
         b'A'..=b'F' => 10 + (b1 - b'A'),
-        _ => unreachable!("invalid hex escape"),
+        _ => bug!("invalid hex escape"),
     };
     (ch, &s[2..])
 }
@@ -172,7 +172,7 @@ fn backslash_u(mut s: &str) -> (char, &str) {
                 continue;
             }
             b'}' if digits != 0 => break,
-            _ => unreachable!("invalid unicode escape"),
+            _ => bug!("invalid unicode escape"),
         };
         ch *= 0x10;
         ch += u32::from(digit);

@@ -67,8 +67,16 @@ macro_rules! endian {
                     return Some(Self::ZERO);
                 }
                 let is_negative = (slice[0] as i8).is_negative();
-                let sign_bits = if is_negative { $Digit::MAX } else { $Digit::MIN };
-                let mut out_digits = if is_negative { [$Digit::MAX; N] } else { [0; N] };
+                let sign_bits = if is_negative {
+                    $Digit::MAX
+                } else {
+                    $Digit::MIN
+                };
+                let mut out_digits = if is_negative {
+                    [$Digit::MAX; N]
+                } else {
+                    [0; N]
+                };
                 let slice_ptr = slice.as_ptr();
                 let mut i = 0;
                 let exact = len >> digit::$Digit::BYTE_SHIFT;
@@ -77,7 +85,10 @@ macro_rules! endian {
                     let ptr = uninit.as_ptr().cast_mut() as *mut u8;
                     let digit_bytes = unsafe {
                         slice_ptr
-                            .add(len - digit::$Digit::BYTES as usize - (i << digit::$Digit::BYTE_SHIFT))
+                            .add(
+                                len - digit::$Digit::BYTES as usize
+                                    - (i << digit::$Digit::BYTE_SHIFT),
+                            )
                             .copy_to_nonoverlapping(ptr, digit::$Digit::BYTES as usize);
                         uninit.assume_init()
                     };
@@ -119,7 +130,11 @@ macro_rules! endian {
                     return Some(Self::ZERO);
                 }
                 let is_negative = (slice[len - 1] as i8).is_negative();
-                let sign_bits = if is_negative { $Digit::MAX } else { $Digit::MIN };
+                let sign_bits = if is_negative {
+                    $Digit::MAX
+                } else {
+                    $Digit::MIN
+                };
                 let mut out_digits = [sign_bits; N];
                 let slice_ptr = slice.as_ptr();
                 let mut i = 0;

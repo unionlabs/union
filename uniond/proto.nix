@@ -18,7 +18,7 @@
             sha256 = "sha256-jJWqkMEBAJq50KaXccVpmgx/hwTdKgTtNkz8/xYO+Dc=";
           };
 
-          vendorSha256 = "sha256-jVOb2uHjPley+K41pV+iMPNx67jtb75Rb/ENhw+ZMoM=";
+          vendorHash = "sha256-jVOb2uHjPley+K41pV+iMPNx67jtb75Rb/ENhw+ZMoM=";
         };
 
         cosmos-proto = pkgs.buildGoModule {
@@ -32,7 +32,7 @@
           };
           doCheck = false;
 
-          vendorSha256 = "sha256-7kDz0RAon2L/3NTHIxya8nWMyN28G9rAfqUu+lbkea4=";
+          vendorHash = "sha256-7kDz0RAon2L/3NTHIxya8nWMyN28G9rAfqUu+lbkea4=";
         };
 
         gogoproto = pkgs.buildGoModule {
@@ -47,7 +47,7 @@
           nativeBuildInputs = with pkgs; [ protobuf ];
           doCheck = false;
 
-          vendorSha256 = "sha256-nfeqVsPMQz7EL+qWxFzRukCE3YqXErhS9urRaJo44Fg=";
+          vendorHash = "sha256-nfeqVsPMQz7EL+qWxFzRukCE3YqXErhS9urRaJo44Fg=";
         };
         generate-uniond-proto = pkgs.stdenv.mkDerivation {
           name = "generate-uniond-proto";

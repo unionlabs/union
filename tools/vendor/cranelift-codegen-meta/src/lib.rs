@@ -1,7 +1,6 @@
 //! This crate generates Rust sources for use by
 //! [`cranelift_codegen`](../cranelift_codegen/index.html).
 
-use std::path::Path;
 #[macro_use]
 mod cdsl;
 mod srcgen;
@@ -23,7 +22,7 @@ pub fn isa_from_arch(arch: &str) -> Result<isa::Isa, String> {
 }
 
 /// Generates all the Rust source files used in Cranelift from the meta-language.
-pub fn generate(isas: &[isa::Isa], out_dir: &str, crate_dir: &Path) -> Result<(), error::Error> {
+pub fn generate(isas: &[isa::Isa], out_dir: &str, isle_dir: &str) -> Result<(), error::Error> {
     // Create all the definitions:
     // - common definitions.
     let mut shared_defs = shared::define();
@@ -48,9 +47,10 @@ pub fn generate(isas: &[isa::Isa], out_dir: &str, crate_dir: &Path) -> Result<()
         &shared_defs.all_instructions,
         "opcodes.rs",
         "inst_builder.rs",
-        "clif.isle",
+        "clif_opt.isle",
+        "clif_lower.isle",
         &out_dir,
-        crate_dir,
+        isle_dir,
     )?;
 
     for isa in target_isas {

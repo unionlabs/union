@@ -110,6 +110,15 @@ impl Preset {
         }
         layout
     }
+
+    pub fn setting_names<'a>(
+        &'a self,
+        group: &'a SettingGroup,
+    ) -> impl Iterator<Item = &'static str> + 'a {
+        self.values
+            .iter()
+            .map(|bool_index| group.settings[bool_index.0].name)
+    }
 }
 
 pub(crate) struct SettingGroup {

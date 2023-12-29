@@ -2,6 +2,8 @@
 title: "Obtaining the Union Testnet Binary"
 ---
 
+import Version from '@site/src/components/Version'
+
 Currently, we are only officially supporting running the Union Testnet binary (`uniond`) as a Docker container.
 
 It is possible to run the `uniond` binary outside of containers, however, we aren't directly supplying bare-metal binaries at this time.
@@ -10,12 +12,21 @@ This guide assumes you have [Docker](https://www.docker.com/get-started/) correc
 
 ## Getting the Docker Image
 
-To get the `uniond` image, you can visit [our container on the GitHub Container Registry](https://github.com/orgs/unionlabs/packages/container/package/uniond), or run the following command:
+To get the `uniond` image, you can visit our container on the GitHub Container Registry ([`uniond` for v0.15.0 and earlier](https://github.com/orgs/unionlabs/packages/container/package/uniond), [`uniond-release` for v0.16.0 and later](https://github.com/orgs/unionlabs/packages/container/package/uniond-release)), or run the following command:
 
-```sh
-export UNIOND_VERSION='v0.14.0'
-docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION
-```
+- For versions v0.15.0 and earlier
+
+  <pre language="sh">
+  export UNIOND_VERSION='{Version('union-testnet-4', true)}'{'\n'}
+  docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION{'\n'}
+  </pre>
+
+- For versions v0.16.0 and later
+
+  <pre language="sh">
+  export UNIOND_VERSION='{Version('union-testnet-4')}'{'\n'}
+  docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION{'\n'}
+  </pre>
 
 ## Running uniond
 
@@ -78,10 +89,10 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
-```sh
-export UNIOND_VERSION='v0.14.0'
+<pre language="sh">
+export UNIOND_VERSION='{Version('union-testnet-4')}'{'\n'}
 alias uniond='docker run -v ~/.union:/.union --network host -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION --home /.union'
-```
+</pre>
 
 This will enable you to issue `uniond` sub-commands with such as `uniond keys add` with ease.
 

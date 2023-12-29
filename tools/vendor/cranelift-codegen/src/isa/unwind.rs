@@ -1,6 +1,6 @@
 //! Represents information relating to function unwinding.
 
-use regalloc::RealReg;
+use crate::machinst::RealReg;
 
 #[cfg(feature = "enable-serde")]
 use serde::{Deserialize, Serialize};

@@ -81,7 +81,7 @@ fn parse_inner<
 
         Some(match next {
             lexer::Token::Literal(Spanned { value: _, span: _ }) if NESTED => {
-                unreachable!("internal error: literal should not be present in nested description")
+                bug!("literal should not be present in nested description")
             }
             lexer::Token::Literal(value) => Ok(Item::Literal(value)),
             lexer::Token::Bracket {
@@ -105,23 +105,18 @@ fn parse_inner<
                 kind: lexer::BracketKind::Closing,
                 location: _,
             } if NESTED => {
-                unreachable!(
-                    "internal error: closing bracket should be caught by the `if` statement"
-                )
+                bug!("closing bracket should be caught by the `if` statement")
             }
             lexer::Token::Bracket {
                 kind: lexer::BracketKind::Closing,
                 location: _,
             } => {
-                unreachable!(
-                    "internal error: closing bracket should have been consumed by \
-                     `parse_component`"
-                )
+                bug!("closing bracket should have been consumed by `parse_component`")
             }
             lexer::Token::ComponentPart { kind: _, value } if NESTED => Ok(Item::Literal(value)),
-            lexer::Token::ComponentPart { kind: _, value: _ } => unreachable!(
-                "internal error: component part should have been consumed by `parse_component`"
-            ),
+            lexer::Token::ComponentPart { kind: _, value: _ } => {
+                bug!("component part should have been consumed by `parse_component`")
+            }
         })
     })
 }
@@ -132,24 +127,24 @@ fn parse_component<'a, I: Iterator<Item = Result<lexer::Token<'a>, Error>>, cons
 ) -> Result<Item<'a>, Error> {
     let leading_whitespace = tokens.next_if_whitespace();
 
-    guard!(let Some(name) = tokens.next_if_not_whitespace() else {
+    let Some(name) = tokens.next_if_not_whitespace() else {
         let span = match leading_whitespace {
             Some(Spanned { value: _, span }) => span,
             None => opening_bracket.to(opening_bracket),
         };
         return Err(span.error("expected component name"));
-    });
+    };
 
     if *name == b"optional" {
-        guard!(let Some(whitespace) = tokens.next_if_whitespace() else {
+        let Some(whitespace) = tokens.next_if_whitespace() else {
             return Err(name.span.error("expected whitespace after `optional`"));
-        });
+        };
 
         let nested = parse_nested::<_, VERSION>(whitespace.span.end, tokens)?;
 
-        guard!(let Some(closing_bracket) = tokens.next_if_closing_bracket() else {
+        let Some(closing_bracket) = tokens.next_if_closing_bracket() else {
             return Err(opening_bracket.error("unclosed bracket"));
-        });
+        };
 
         return Ok(Item::Optional {
             opening_bracket,
@@ -162,18 +157,18 @@ fn parse_component<'a, I: Iterator<Item = Result<lexer::Token<'a>, Error>>, cons
     }
 
     if *name == b"first" {
-        guard!(let Some(whitespace) = tokens.next_if_whitespace() else {
+        let Some(whitespace) = tokens.next_if_whitespace() else {
             return Err(name.span.error("expected whitespace after `first`"));
-        });
+        };
 
         let mut nested_format_descriptions = Vec::new();
         while let Ok(description) = parse_nested::<_, VERSION>(whitespace.span.end, tokens) {
             nested_format_descriptions.push(description);
         }
 
-        guard!(let Some(closing_bracket) = tokens.next_if_closing_bracket() else {
+        let Some(closing_bracket) = tokens.next_if_closing_bracket() else {
             return Err(opening_bracket.error("unclosed bracket"));
-        });
+        };
 
         return Ok(Item::First {
             opening_bracket,
@@ -187,7 +182,9 @@ fn parse_component<'a, I: Iterator<Item = Result<lexer::Token<'a>, Error>>, cons
 
     let mut modifiers = Vec::new();
     let trailing_whitespace = loop {
-        guard!(let Some(whitespace) = tokens.next_if_whitespace() else { break None });
+        let Some(whitespace) = tokens.next_if_whitespace() else {
+            break None;
+        };
 
         if let Some(location) = tokens.next_if_opening_bracket() {
             return Err(location
@@ -195,13 +192,13 @@ fn parse_component<'a, I: Iterator<Item = Result<lexer::Token<'a>, Error>>, cons
                 .error("modifier must be of the form `key:value`"));
         }
 
-        guard!(let Some(Spanned { value, span }) = tokens.next_if_not_whitespace() else {
+        let Some(Spanned { value, span }) = tokens.next_if_not_whitespace() else {
             break Some(whitespace);
-        });
+        };
 
-        guard!(let Some(colon_index) = value.iter().position(|&b| b == b':') else {
+        let Some(colon_index) = value.iter().position(|&b| b == b':') else {
             return Err(span.error("modifier must be of the form `key:value`"));
-        });
+        };
         let key = &value[..colon_index];
         let value = &value[colon_index + 1..];
 
@@ -220,9 +217,9 @@ fn parse_component<'a, I: Iterator<Item = Result<lexer::Token<'a>, Error>>, cons
         });
     };
 
-    guard!(let Some(closing_bracket) = tokens.next_if_closing_bracket() else {
+    let Some(closing_bracket) = tokens.next_if_closing_bracket() else {
         return Err(opening_bracket.error("unclosed bracket"));
-    });
+    };
 
     Ok(Item::Component {
         _opening_bracket: unused(opening_bracket),
@@ -238,13 +235,13 @@ fn parse_nested<'a, I: Iterator<Item = Result<lexer::Token<'a>, Error>>, const V
     last_location: Location,
     tokens: &mut lexer::Lexed<I>,
 ) -> Result<NestedFormatDescription<'a>, Error> {
-    guard!(let Some(opening_bracket) = tokens.next_if_opening_bracket() else {
+    let Some(opening_bracket) = tokens.next_if_opening_bracket() else {
         return Err(last_location.error("expected opening bracket"));
-    });
+    };
     let items = parse_inner::<_, true, VERSION>(tokens).collect::<Result<_, _>>()?;
-    guard!(let Some(closing_bracket) = tokens.next_if_closing_bracket() else {
+    let Some(closing_bracket) = tokens.next_if_closing_bracket() else {
         return Err(opening_bracket.error("unclosed bracket"));
-    });
+    };
     let trailing_whitespace = tokens.next_if_whitespace();
 
     Ok(NestedFormatDescription {

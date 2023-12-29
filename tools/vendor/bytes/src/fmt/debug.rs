@@ -25,7 +25,7 @@ impl Debug for BytesRef<'_> {
             } else if b == b'\0' {
                 write!(f, "\\0")?;
             // ASCII printable
-            } else if b >= 0x20 && b < 0x7f {
+            } else if (0x20..0x7f).contains(&b) {
                 write!(f, "{}", b as char)?;
             } else {
                 write!(f, "\\x{:02x}", b)?;
@@ -38,12 +38,12 @@ impl Debug for BytesRef<'_> {
 
 impl Debug for Bytes {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        Debug::fmt(&BytesRef(&self.as_ref()), f)
+        Debug::fmt(&BytesRef(self.as_ref()), f)
     }
 }
 
 impl Debug for BytesMut {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        Debug::fmt(&BytesRef(&self.as_ref()), f)
+        Debug::fmt(&BytesRef(self.as_ref()), f)
     }
 }

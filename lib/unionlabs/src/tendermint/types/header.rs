@@ -1,5 +1,6 @@
 use prost::Message;
-use rs_merkle::{algorithms::Sha256, Hasher, MerkleTree};
+use protos::google::protobuf::{BytesValue, Int64Value, StringValue};
+use rs_merkle::{algorithms::Sha256, Hasher};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -12,6 +13,8 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// REVIEW: Are all hashes here hex_upper_unprefixed?
+#[serde(deny_unknown_fields)]
 pub struct Header {
     /// basic block info
     pub version: Consensus,
@@ -49,27 +52,119 @@ pub struct Header {
 
 impl Header {
     #[must_use]
+    #[allow(clippy::too_many_lines)]
     pub fn calculate_merkle_root(&self) -> Option<[u8; 32]> {
+        const LEAF_PREFIX: u8 = 0;
+        const INNER_PREFIX: u8 = 1;
+
         let header: protos::tendermint::types::Header = self.clone().into();
 
-        let leaves = [
-            Sha256::hash(&header.version?.encode_to_vec()),
-            Sha256::hash(&header.chain_id.encode_to_vec()),
-            Sha256::hash(&header.height.encode_to_vec()),
-            Sha256::hash(&header.time?.encode_to_vec()),
-            Sha256::hash(&header.last_block_id?.encode_to_vec()),
-            Sha256::hash(&header.last_commit_hash.encode_to_vec()),
-            Sha256::hash(&header.data_hash.encode_to_vec()),
-            Sha256::hash(&header.validators_hash.encode_to_vec()),
-            Sha256::hash(&header.next_validators_hash.encode_to_vec()),
-            Sha256::hash(&header.consensus_hash.encode_to_vec()),
-            Sha256::hash(&header.app_hash.encode_to_vec()),
-            Sha256::hash(&header.last_results_hash.encode_to_vec()),
-            Sha256::hash(&header.evidence_hash.encode_to_vec()),
-            Sha256::hash(&header.proposer_address.encode_to_vec()),
+        let do_hash = |prefix: u8, v: Vec<u8>| {
+            Sha256::hash(&[prefix].into_iter().chain(v).collect::<Vec<_>>())
+        };
+
+        let leaf_hash = |v: Vec<u8>| do_hash(LEAF_PREFIX, v);
+        let inner_hash = |l: &<Sha256 as Hasher>::Hash, r: &<Sha256 as Hasher>::Hash| {
+            do_hash(
+                INNER_PREFIX,
+                l.iter()
+                    .copied()
+                    .chain(r.iter().copied())
+                    .collect::<Vec<_>>(),
+            )
+        };
+
+        let mut leaves = [
+            leaf_hash(header.version?.encode_to_vec()),
+            leaf_hash(
+                StringValue {
+                    value: header.chain_id,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                Int64Value {
+                    value: header.height,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(header.time?.encode_to_vec()),
+            leaf_hash(header.last_block_id?.encode_to_vec()),
+            leaf_hash(
+                BytesValue {
+                    value: header.last_commit_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.data_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.validators_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.next_validators_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.consensus_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.app_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.last_results_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.evidence_hash,
+                }
+                .encode_to_vec(),
+            ),
+            leaf_hash(
+                BytesValue {
+                    value: header.proposer_address,
+                }
+                .encode_to_vec(),
+            ),
         ];
 
-        MerkleTree::<Sha256>::from_leaves(&leaves).root()
+        leaves[0] = inner_hash(&leaves[0], &leaves[1]);
+        leaves[1] = inner_hash(&leaves[2], &leaves[3]);
+        leaves[2] = inner_hash(&leaves[4], &leaves[5]);
+        leaves[3] = inner_hash(&leaves[6], &leaves[7]);
+        leaves[4] = inner_hash(&leaves[8], &leaves[9]);
+        leaves[5] = inner_hash(&leaves[10], &leaves[11]);
+        leaves[6] = inner_hash(&leaves[12], &leaves[13]);
+
+        leaves[0] = inner_hash(&leaves[0], &leaves[1]);
+        leaves[1] = inner_hash(&leaves[2], &leaves[3]);
+        leaves[2] = inner_hash(&leaves[4], &leaves[5]);
+        leaves[3] = leaves[6];
+
+        leaves[0] = inner_hash(&leaves[0], &leaves[1]);
+        leaves[1] = inner_hash(&leaves[2], &leaves[3]);
+
+        let root = inner_hash(&leaves[0], &leaves[1]);
+
+        Some(root)
     }
 }
 

@@ -4,10 +4,12 @@
 //! Each type here should have a corresponding definition in the
 //! `cranelift-codegen/meta/src/shared/immediates` crate in the meta language.
 
+use crate::ir;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 use core::convert::TryFrom;
 use core::fmt::{self, Display, Formatter};
+use core::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Sub};
 use core::str::FromStr;
 use core::{i32, u32};
 #[cfg(feature = "enable-serde")]
@@ -76,7 +78,7 @@ impl Imm64 {
 
     /// Sign extend this immediate as if it were a signed integer of the given
     /// power-of-two width.
-    pub fn sign_extend_from_width(&mut self, bit_width: u16) {
+    pub fn sign_extend_from_width(&mut self, bit_width: u32) {
         debug_assert!(bit_width.is_power_of_two());
 
         if bit_width >= 64 {
@@ -425,6 +427,12 @@ impl From<i32> for Offset32 {
     }
 }
 
+impl From<u8> for Offset32 {
+    fn from(val: u8) -> Offset32 {
+        Self(val.into())
+    }
+}
+
 impl Display for Offset32 {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         // 0 displays as an empty offset.
@@ -465,6 +473,12 @@ impl FromStr for Offset32 {
 /// An IEEE binary32 immediate floating point value, represented as a u32
 /// containing the bit pattern.
 ///
+/// We specifically avoid using a f32 here since some architectures may silently alter floats.
+/// See: <https://github.com/bytecodealliance/wasmtime/pull/2251#discussion_r498508646>
+///
+/// The [PartialEq] and [Hash] implementations are over the underlying bit pattern, but
+/// [PartialOrd] respects IEEE754 semantics.
+///
 /// All bit patterns are allowed.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
@@ -473,6 +487,12 @@ pub struct Ieee32(u32);
 
 /// An IEEE binary64 immediate floating point value, represented as a u64
 /// containing the bit pattern.
+///
+/// We specifically avoid using a f64 here since some architectures may silently alter floats.
+/// See: <https://github.com/bytecodealliance/wasmtime/pull/2251#discussion_r498508646>
+///
+/// The [PartialEq] and [Hash] implementations are over the underlying bit pattern, but
+/// [PartialOrd] respects IEEE754 semantics.
 ///
 /// All bit patterns are allowed.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -761,13 +781,74 @@ impl Ieee32 {
 
     /// Check if the value is a NaN.
     pub fn is_nan(&self) -> bool {
-        f32::from_bits(self.0).is_nan()
+        self.as_f32().is_nan()
+    }
+
+    /// Converts Self to a rust f32
+    pub fn as_f32(self) -> f32 {
+        f32::from_bits(self.0)
+    }
+
+    /// Returns the square root of self.
+    pub fn sqrt(self) -> Self {
+        Self::with_float(self.as_f32().sqrt())
+    }
+
+    /// Computes the absolute value of self.
+    pub fn abs(self) -> Self {
+        Self::with_float(self.as_f32().abs())
+    }
+
+    /// Returns a number composed of the magnitude of self and the sign of sign.
+    pub fn copysign(self, sign: Self) -> Self {
+        Self::with_float(self.as_f32().copysign(sign.as_f32()))
+    }
+
+    /// Returns true if self has a negative sign, including -0.0, NaNs with negative sign bit and negative infinity.
+    pub fn is_negative(&self) -> bool {
+        self.as_f32().is_sign_negative()
+    }
+
+    /// Returns true if self is positive or negative zero
+    pub fn is_zero(&self) -> bool {
+        self.as_f32() == 0.0
+    }
+
+    /// Returns the smallest integer greater than or equal to `self`.
+    pub fn ceil(self) -> Self {
+        Self::with_float(self.as_f32().ceil())
+    }
+
+    /// Returns the largest integer less than or equal to `self`.
+    pub fn floor(self) -> Self {
+        Self::with_float(self.as_f32().floor())
+    }
+
+    /// Returns the integer part of `self`. This means that non-integer numbers are always truncated towards zero.
+    pub fn trunc(self) -> Self {
+        Self::with_float(self.as_f32().trunc())
+    }
+
+    /// Returns the nearest integer to `self`. Rounds half-way cases to the number
+    /// with an even least significant digit.
+    pub fn round_ties_even(self) -> Self {
+        // TODO: Replace with the native implementation once
+        // https://github.com/rust-lang/rust/issues/96710 is stabilized
+        let toint_32: f32 = 1.0 / f32::EPSILON;
+
+        let f = self.as_f32();
+        let e = self.0 >> 23 & 0xff;
+        if e >= 0x7f_u32 + 23 {
+            self
+        } else {
+            Self::with_float((f.abs() + toint_32 - toint_32).copysign(f))
+        }
     }
 }
 
 impl PartialOrd for Ieee32 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        f32::from_bits(self.0).partial_cmp(&f32::from_bits(other.0))
+        self.as_f32().partial_cmp(&other.as_f32())
     }
 }
 
@@ -798,6 +879,78 @@ impl From<f32> for Ieee32 {
 impl IntoBytes for Ieee32 {
     fn into_bytes(self) -> Vec<u8> {
         self.0.to_le_bytes().to_vec()
+    }
+}
+
+impl Neg for Ieee32 {
+    type Output = Ieee32;
+
+    fn neg(self) -> Self::Output {
+        Self::with_float(self.as_f32().neg())
+    }
+}
+
+impl Add for Ieee32 {
+    type Output = Ieee32;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::with_float(self.as_f32() + rhs.as_f32())
+    }
+}
+
+impl Sub for Ieee32 {
+    type Output = Ieee32;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::with_float(self.as_f32() - rhs.as_f32())
+    }
+}
+
+impl Mul for Ieee32 {
+    type Output = Ieee32;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self::with_float(self.as_f32() * rhs.as_f32())
+    }
+}
+
+impl Div for Ieee32 {
+    type Output = Ieee32;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Self::with_float(self.as_f32() / rhs.as_f32())
+    }
+}
+
+impl BitAnd for Ieee32 {
+    type Output = Ieee32;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self::with_bits(self.bits() & rhs.bits())
+    }
+}
+
+impl BitOr for Ieee32 {
+    type Output = Ieee32;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self::with_bits(self.bits() | rhs.bits())
+    }
+}
+
+impl BitXor for Ieee32 {
+    type Output = Ieee32;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self::with_bits(self.bits() ^ rhs.bits())
+    }
+}
+
+impl Not for Ieee32 {
+    type Output = Ieee32;
+
+    fn not(self) -> Self::Output {
+        Self::with_bits(!self.bits())
     }
 }
 
@@ -846,13 +999,74 @@ impl Ieee64 {
     /// Check if the value is a NaN. For [Ieee64], this means checking that the 11 exponent bits are
     /// all set.
     pub fn is_nan(&self) -> bool {
-        f64::from_bits(self.0).is_nan()
+        self.as_f64().is_nan()
+    }
+
+    /// Converts Self to a rust f64
+    pub fn as_f64(self) -> f64 {
+        f64::from_bits(self.0)
+    }
+
+    /// Returns the square root of self.
+    pub fn sqrt(self) -> Self {
+        Self::with_float(self.as_f64().sqrt())
+    }
+
+    /// Computes the absolute value of self.
+    pub fn abs(self) -> Self {
+        Self::with_float(self.as_f64().abs())
+    }
+
+    /// Returns a number composed of the magnitude of self and the sign of sign.
+    pub fn copysign(self, sign: Self) -> Self {
+        Self::with_float(self.as_f64().copysign(sign.as_f64()))
+    }
+
+    /// Returns true if self has a negative sign, including -0.0, NaNs with negative sign bit and negative infinity.
+    pub fn is_negative(&self) -> bool {
+        self.as_f64().is_sign_negative()
+    }
+
+    /// Returns true if self is positive or negative zero
+    pub fn is_zero(&self) -> bool {
+        self.as_f64() == 0.0
+    }
+
+    /// Returns the smallest integer greater than or equal to `self`.
+    pub fn ceil(self) -> Self {
+        Self::with_float(self.as_f64().ceil())
+    }
+
+    /// Returns the largest integer less than or equal to `self`.
+    pub fn floor(self) -> Self {
+        Self::with_float(self.as_f64().floor())
+    }
+
+    /// Returns the integer part of `self`. This means that non-integer numbers are always truncated towards zero.
+    pub fn trunc(self) -> Self {
+        Self::with_float(self.as_f64().trunc())
+    }
+
+    /// Returns the nearest integer to `self`. Rounds half-way cases to the number
+    /// with an even least significant digit.
+    pub fn round_ties_even(self) -> Self {
+        // TODO: Replace with the native implementation once
+        // https://github.com/rust-lang/rust/issues/96710 is stabilized
+        let toint_64: f64 = 1.0 / f64::EPSILON;
+
+        let f = self.as_f64();
+        let e = self.0 >> 52 & 0x7ff_u64;
+        if e >= 0x3ff_u64 + 52 {
+            self
+        } else {
+            Self::with_float((f.abs() + toint_64 - toint_64).copysign(f))
+        }
     }
 }
 
 impl PartialOrd for Ieee64 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        f64::from_bits(self.0).partial_cmp(&f64::from_bits(other.0))
+        self.as_f64().partial_cmp(&other.as_f64())
     }
 }
 
@@ -890,6 +1104,90 @@ impl IntoBytes for Ieee64 {
     fn into_bytes(self) -> Vec<u8> {
         self.0.to_le_bytes().to_vec()
     }
+}
+
+impl Neg for Ieee64 {
+    type Output = Ieee64;
+
+    fn neg(self) -> Self::Output {
+        Self::with_float(self.as_f64().neg())
+    }
+}
+
+impl Add for Ieee64 {
+    type Output = Ieee64;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::with_float(self.as_f64() + rhs.as_f64())
+    }
+}
+
+impl Sub for Ieee64 {
+    type Output = Ieee64;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::with_float(self.as_f64() - rhs.as_f64())
+    }
+}
+
+impl Mul for Ieee64 {
+    type Output = Ieee64;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self::with_float(self.as_f64() * rhs.as_f64())
+    }
+}
+
+impl Div for Ieee64 {
+    type Output = Ieee64;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Self::with_float(self.as_f64() / rhs.as_f64())
+    }
+}
+
+impl BitAnd for Ieee64 {
+    type Output = Ieee64;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self::with_bits(self.bits() & rhs.bits())
+    }
+}
+
+impl BitOr for Ieee64 {
+    type Output = Ieee64;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self::with_bits(self.bits() | rhs.bits())
+    }
+}
+
+impl BitXor for Ieee64 {
+    type Output = Ieee64;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self::with_bits(self.bits() ^ rhs.bits())
+    }
+}
+
+impl Not for Ieee64 {
+    type Output = Ieee64;
+
+    fn not(self) -> Self::Output {
+        Self::with_bits(!self.bits())
+    }
+}
+
+/// Out-of-line heap access immediates.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
+pub struct HeapImmData {
+    /// The memory flags for the heap access.
+    pub flags: ir::MemFlags,
+    /// The heap being accessed.
+    pub heap: ir::Heap,
+    /// The static offset added to the heap access's index.
+    pub offset: Uimm32,
 }
 
 #[cfg(test)]

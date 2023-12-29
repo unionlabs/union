@@ -42,13 +42,20 @@ macro_rules! to_int {
     };
 }
 
-use crate::buint::cast::{decode_f32, decode_f64, u32_bits, u64_bits};
+pub const fn u32_bits(u: u32) -> ExpType {
+    32 - u.leading_zeros() as ExpType
+}
+
+pub const fn u64_bits(u: u64) -> ExpType {
+    64 - u.leading_zeros() as ExpType
+}
+use crate::buint::cast::{decode_f32, decode_f64};
 //use crate::nightly::impl_const;
 use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
     AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl,
-    CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt,
+    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt,
     Saturating, SaturatingAdd, SaturatingMul, SaturatingSub, ToPrimitive, Unsigned, WrappingAdd,
     WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
 };

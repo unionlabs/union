@@ -6,8 +6,7 @@ use crate::location::CombinedRegister;
 use crate::location::Reg as AbstractReg;
 use std::collections::BTreeMap;
 use std::slice::Iter;
-use wasmer_compiler::CallingConvention;
-use wasmer_types::Type;
+use wasmer_types::{CallingConvention, Type};
 
 /// General-purpose registers.
 #[repr(u8)]
@@ -261,8 +260,8 @@ impl ArgumentRegisterAllocator {
     pub fn next(&mut self, ty: Type, calling_convention: CallingConvention) -> Option<X64Register> {
         match calling_convention {
             CallingConvention::WindowsFastcall => {
-                static GPR_SEQ: &'static [GPR] = &[GPR::RCX, GPR::RDX, GPR::R8, GPR::R9];
-                static XMM_SEQ: &'static [XMM] = &[XMM::XMM0, XMM::XMM1, XMM::XMM2, XMM::XMM3];
+                static GPR_SEQ: &[GPR] = &[GPR::RCX, GPR::RDX, GPR::R8, GPR::R9];
+                static XMM_SEQ: &[XMM] = &[XMM::XMM0, XMM::XMM1, XMM::XMM2, XMM::XMM3];
                 let idx = self.n_gprs + self.n_xmms;
                 match ty {
                     Type::I32 | Type::I64 => {
@@ -290,9 +289,9 @@ impl ArgumentRegisterAllocator {
                 }
             }
             _ => {
-                static GPR_SEQ: &'static [GPR] =
+                static GPR_SEQ: &[GPR] =
                     &[GPR::RDI, GPR::RSI, GPR::RDX, GPR::RCX, GPR::R8, GPR::R9];
-                static XMM_SEQ: &'static [XMM] = &[
+                static XMM_SEQ: &[XMM] = &[
                     XMM::XMM0,
                     XMM::XMM1,
                     XMM::XMM2,

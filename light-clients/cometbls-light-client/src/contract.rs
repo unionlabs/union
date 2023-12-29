@@ -1,38 +1,14 @@
-use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response};
+use cosmwasm_std::{entry_point, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response};
 use ics008_wasm_client::{
-    storage_utils::{save_client_state, save_consensus_state},
-    IbcClient, QueryMsg, SudoMsg,
+    storage_utils::{save_proto_client_state, save_proto_consensus_state},
+    IbcClient, InstantiateMsg, QueryMsg, SudoMsg,
 };
-use serde::{Deserialize, Serialize};
-use unionlabs::{
-    ibc::{
-        core::client::height::Height,
-        lightclients::{
-            cometbls::client_state::ClientState,
-            ethereum::consensus_state::ConsensusState,
-            wasm::{
-                client_state::ClientState as WasmClientState,
-                consensus_state::ConsensusState as WasmConsensusState,
-            },
-        },
-    },
-    TryFromProto,
+use protos::ibc::lightclients::wasm::v1::{
+    ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
 };
+use unionlabs::{ibc::lightclients::cometbls::client_state::ClientState, TryFromProto};
 
 use crate::{client::CometblsLightClient, errors::Error};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct InputClientState {
-    pub data: Binary,
-    pub checksum: Binary,
-    pub latest_height: Height,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct InstantiateMsg {
-    client_state: InputClientState,
-    consensus_state: WasmConsensusState<Binary>,
-}
 
 #[entry_point]
 pub fn instantiate(
@@ -41,23 +17,25 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, Error> {
-    // TODO(aeryz): remove unwrap
-    let client_state = ClientState::try_from_proto_bytes(&msg.client_state.data).unwrap();
-    let consensus_state = ConsensusState::try_from_proto_bytes(&msg.consensus_state.data).unwrap();
+    let client_state = ClientState::try_from_proto_bytes(&msg.client_state).map_err(|e| {
+        Error::DecodeFromProto {
+            reason: format!("{:?}", e),
+        }
+    })?;
 
-    save_consensus_state(
+    save_proto_consensus_state(
         deps.branch(),
-        WasmConsensusState::<ConsensusState> {
-            data: consensus_state,
+        ProtoConsensusState {
+            data: msg.consensus_state.into(),
         },
         &client_state.latest_height,
     );
-    save_client_state(
+    save_proto_client_state(
         deps,
-        WasmClientState::<ClientState> {
-            data: client_state,
-            checksum: msg.client_state.checksum.as_slice().try_into().unwrap(),
-            latest_height: msg.client_state.latest_height,
+        ProtoClientState {
+            data: msg.client_state.into(),
+            checksum: msg.checksum.into(),
+            latest_height: Some(client_state.latest_height.into()),
         },
     );
     Ok(Response::default())

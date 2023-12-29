@@ -7,7 +7,7 @@ use crate::Binary;
 ///
 /// This is used on return values for Querier as a nested result: Result<StdResult<T>, SystemError>
 /// The first wrap (SystemError) will trigger if the contract address doesn't exist,
-/// the QueryRequest is malformated, etc. The second wrap will be an error message from
+/// the QueryRequest is malformed, etc. The second wrap will be an error message from
 /// the contract itself.
 ///
 /// Such errors are only created by the VM. The error type is defined in the standard library, to ensure
@@ -41,8 +41,8 @@ pub enum SystemError {
 
 impl std::error::Error for SystemError {}
 
-impl std::fmt::Display for SystemError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for SystemError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             SystemError::InvalidRequest { error, request } => write!(
                 f,
@@ -56,11 +56,11 @@ impl std::fmt::Display for SystemError {
                 error,
                 String::from_utf8_lossy(response)
             ),
-            SystemError::NoSuchContract { addr } => write!(f, "No such contract: {}", addr),
-            SystemError::NoSuchCode { code_id } => write!(f, "No such code: {}", code_id),
+            SystemError::NoSuchContract { addr } => write!(f, "No such contract: {addr}"),
+            SystemError::NoSuchCode { code_id } => write!(f, "No such code: {code_id}"),
             SystemError::Unknown {} => write!(f, "Unknown system error"),
             SystemError::UnsupportedRequest { kind } => {
-                write!(f, "Unsupported query type: {}", kind)
+                write!(f, "Unsupported query type: {kind}")
             }
         }
     }
@@ -69,7 +69,7 @@ impl std::fmt::Display for SystemError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{from_slice, to_vec};
+    use crate::{from_json, to_json_vec};
 
     #[test]
     fn system_error_no_such_contract_serialization() {
@@ -78,14 +78,14 @@ mod tests {
         };
 
         // ser
-        let json = to_vec(&err).unwrap();
+        let json = to_json_vec(&err).unwrap();
         assert_eq!(
             String::from_utf8_lossy(&json),
             r#"{"no_such_contract":{"addr":"gibtsnicht"}}"#,
         );
 
         // de
-        let err: SystemError = from_slice(br#"{"no_such_contract":{"addr":"nada"}}"#).unwrap();
+        let err: SystemError = from_json(br#"{"no_such_contract":{"addr":"nada"}}"#).unwrap();
         assert_eq!(
             err,
             SystemError::NoSuchContract {
@@ -99,14 +99,14 @@ mod tests {
         let err = SystemError::NoSuchCode { code_id: 13 };
 
         // ser
-        let json = to_vec(&err).unwrap();
+        let json = to_json_vec(&err).unwrap();
         assert_eq!(
             String::from_utf8_lossy(&json),
             r#"{"no_such_code":{"code_id":13}}"#,
         );
 
         // de
-        let err: SystemError = from_slice(br#"{"no_such_code":{"code_id":987}}"#).unwrap();
+        let err: SystemError = from_json(br#"{"no_such_code":{"code_id":987}}"#).unwrap();
         assert_eq!(err, SystemError::NoSuchCode { code_id: 987 },);
     }
 }

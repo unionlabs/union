@@ -253,7 +253,7 @@ fn muladd(a: u64, b: u64, c0: u64, c1: u64, c2: u64) -> (u64, u64, u64) {
     let tl = t as u64;
 
     let new_c0 = c0.wrapping_add(tl); // overflow is handled on the next line
-    let new_th = th + if new_c0 < tl { 1 } else { 0 }; // at most 0xFFFFFFFFFFFFFFFF
+    let new_th = th + u64::from(new_c0 < tl); // at most 0xFFFFFFFFFFFFFFFF
     let new_c1 = c1.wrapping_add(new_th); // overflow is handled on the next line
     let new_c2 = c2 + ct_less(new_c1, new_th); // never overflows by contract (verified in the next line)
     debug_assert!((new_c1 >= new_th) || (new_c2 != 0));

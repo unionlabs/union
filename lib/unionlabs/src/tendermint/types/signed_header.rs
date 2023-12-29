@@ -7,6 +7,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SignedHeader {
     pub header: Header,
     pub commit: Commit,

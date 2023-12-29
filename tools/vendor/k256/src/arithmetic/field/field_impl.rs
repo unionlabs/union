@@ -22,6 +22,20 @@ pub struct FieldElementImpl {
 }
 
 impl FieldElementImpl {
+    /// Zero element.
+    pub const ZERO: Self = Self {
+        value: FieldElementUnsafeImpl::ZERO,
+        magnitude: 1,
+        normalized: true,
+    };
+
+    /// Multiplicative identity.
+    pub const ONE: Self = Self {
+        value: FieldElementUnsafeImpl::ONE,
+        magnitude: 1,
+        normalized: true,
+    };
+
     const fn new_normalized(value: &FieldElementUnsafeImpl) -> Self {
         Self {
             value: *value,
@@ -47,18 +61,13 @@ impl FieldElementImpl {
         }
     }
 
-    pub const fn zero() -> Self {
-        Self::new_normalized(&FieldElementUnsafeImpl::zero())
-    }
-
-    /// Returns the multiplicative identity.
-    pub const fn one() -> Self {
-        Self::new_normalized(&FieldElementUnsafeImpl::one())
-    }
-
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         let value = FieldElementUnsafeImpl::from_bytes_unchecked(bytes);
         Self::new_normalized(&value)
+    }
+
+    pub(crate) const fn from_u64(val: u64) -> Self {
+        Self::new_normalized(&FieldElementUnsafeImpl::from_u64(val))
     }
 
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
@@ -128,7 +137,7 @@ impl FieldElementImpl {
 
 impl Default for FieldElementImpl {
     fn default() -> Self {
-        Self::zero()
+        Self::ZERO
     }
 }
 

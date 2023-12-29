@@ -10,6 +10,10 @@ use cosmwasm_std::{Order, Record};
 /// A structure that represents gas cost to be deducted from the remaining gas.
 /// This is always needed when computations are performed outside of
 /// Wasm execution, such as calling crypto APIs or calls into the blockchain.
+///
+/// All values are measured in [CosmWasm gas].
+///
+/// [CosmWasm gas]: https://github.com/CosmWasm/cosmwasm/blob/main/docs/GAS.md
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct GasInfo {
     /// The gas cost of a computation that was executed already but not yet charged.
@@ -19,6 +23,12 @@ pub struct GasInfo {
     pub cost: u64,
     /// Gas that was used and charged externally. This is needed to
     /// adjust the VM's gas limit but does not affect the gas usage.
+    ///
+    /// Since this is measured in [CosmWasm gas], the caller may need
+    /// to convert from Cosmos SDK gas in cases where an SDK gas meter
+    /// is used.
+    ///
+    /// [CosmWasm gas]: https://github.com/CosmWasm/cosmwasm/blob/main/docs/GAS.md
     pub externally_used: u64,
 }
 
@@ -112,6 +122,34 @@ pub trait Storage {
     #[cfg(feature = "iterator")]
     fn next(&mut self, iterator_id: u32) -> BackendResult<Option<Record>>;
 
+    /// Returns the next value of the iterator with the given ID.
+    /// Since the iterator is incremented, the corresponding key will never be accessible.
+    ///
+    /// If the ID is not found, a BackendError::IteratorDoesNotExist is returned.
+    ///
+    /// The default implementation uses [`Storage::next`] and discards the key.
+    /// More efficient implementations might be possible depending on the storage.
+    #[cfg(feature = "iterator")]
+    fn next_value(&mut self, iterator_id: u32) -> BackendResult<Option<Vec<u8>>> {
+        let (result, gas_info) = self.next(iterator_id);
+        let result = result.map(|record| record.map(|(_, v)| v));
+        (result, gas_info)
+    }
+
+    /// Returns the next key of the iterator with the given ID.
+    /// Since the iterator is incremented, the corresponding value will never be accessible.
+    ///
+    /// If the ID is not found, a BackendError::IteratorDoesNotExist is returned.
+    ///
+    /// The default implementation uses [`Storage::next`] and discards the value.
+    /// More efficient implementations might be possible depending on the storage.
+    #[cfg(feature = "iterator")]
+    fn next_key(&mut self, iterator_id: u32) -> BackendResult<Option<Vec<u8>>> {
+        let (result, gas_info) = self.next(iterator_id);
+        let result = result.map(|record| record.map(|(k, _)| k));
+        (result, gas_info)
+    }
+
     fn set(&mut self, key: &[u8], value: &[u8]) -> BackendResult<()>;
 
     /// Removes a database entry at `key`.
@@ -141,10 +179,12 @@ pub trait Querier {
     /// knowing the custom format, or we can decode it, with the knowledge of the allowed
     /// types.
     ///
-    /// The gas limit describes how much VM gas this particular query is allowed
+    /// The gas limit describes how much [CosmWasm gas] this particular query is allowed
     /// to comsume when measured separately from the rest of the contract.
     /// The returned gas info (in BackendResult) can exceed the gas limit in cases
     /// where the query could not be aborted exactly at the limit.
+    ///
+    /// [CosmWasm gas]: https://github.com/CosmWasm/cosmwasm/blob/main/docs/GAS.md
     fn query_raw(
         &self,
         request: &[u8],
@@ -153,8 +193,8 @@ pub trait Querier {
 }
 
 /// A result type for calling into the backend. Such a call can cause
-/// non-negligible computational cost in both success and faiure case and must always have gas information
-/// attached.
+/// non-negligible computational cost in both success and faiure case and
+/// must always have gas information attached.
 pub type BackendResult<T> = (core::result::Result<T, BackendError>, GasInfo);
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -304,7 +344,7 @@ mod tests {
         let error = BackendError::foreign_panic();
         match error {
             BackendError::ForeignPanic { .. } => {}
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -313,7 +353,7 @@ mod tests {
         let error = BackendError::bad_argument();
         match error {
             BackendError::BadArgument { .. } => {}
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -322,7 +362,7 @@ mod tests {
         let error = BackendError::iterator_does_not_exist(15);
         match error {
             BackendError::IteratorDoesNotExist { id, .. } => assert_eq!(id, 15),
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -331,7 +371,7 @@ mod tests {
         let error = BackendError::out_of_gas();
         match error {
             BackendError::OutOfGas { .. } => {}
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -340,7 +380,7 @@ mod tests {
         let error = BackendError::unknown("broken");
         match error {
             BackendError::Unknown { msg, .. } => assert_eq!(msg, "broken"),
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -349,7 +389,7 @@ mod tests {
         let error = BackendError::user_err("invalid input");
         match error {
             BackendError::UserErr { msg, .. } => assert_eq!(msg, "invalid input"),
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 
@@ -360,7 +400,7 @@ mod tests {
         let error: BackendError = String::from_utf8(vec![0x80]).unwrap_err().into();
         match error {
             BackendError::InvalidUtf8 { .. } => {}
-            e => panic!("Unexpected error: {:?}", e),
+            e => panic!("Unexpected error: {e:?}"),
         }
     }
 }

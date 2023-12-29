@@ -1,6 +1,8 @@
 package address
 
 import (
+	errorsmod "cosmossdk.io/errors"
+
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
@@ -16,7 +18,7 @@ func LengthPrefix(bz []byte) ([]byte, error) {
 	}
 
 	if bzLen > MaxAddrLen {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "address length should be max %d bytes, got %d", MaxAddrLen, bzLen)
+		return nil, errorsmod.Wrapf(sdkerrors.ErrUnknownAddress, "address length should be max %d bytes, got %d", MaxAddrLen, bzLen)
 	}
 
 	return append([]byte{byte(bzLen)}, bz...), nil

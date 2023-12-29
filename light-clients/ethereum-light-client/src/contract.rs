@@ -3,6 +3,13 @@ use ics008_wasm_client::{
     storage_utils::{save_proto_client_state, save_proto_consensus_state},
     IbcClient, InstantiateMsg, QueryMsg, SudoMsg,
 };
+use protos::ibc::lightclients::wasm::v1::{
+    ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
+};
+use unionlabs::{
+    ibc::{core::client::height::Height, lightclients::ethereum::client_state::ClientState},
+    TryFromProto,
+};
 
 use crate::{client::EthereumLightClient, custom_query::CustomQuery, errors::Error};
 
@@ -13,18 +20,36 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, Error> {
+    let client_state = ClientState::try_from_proto_bytes(&msg.client_state).map_err(|e| {
+        Error::DecodeFromProto {
+            reason: format!("{:?}", e),
+        }
+    })?;
+
     save_proto_consensus_state(
         deps.branch(),
-        msg.consensus_state,
-        &msg.client_state
-            .latest_height
-            .clone()
-            .ok_or(Error::DecodeFromProto {
-                reason: "`latest_height` is missing".to_string(),
-            })?
-            .into(),
+        ProtoConsensusState {
+            data: msg.consensus_state.into(),
+        },
+        &Height {
+            revision_number: 0,
+            revision_height: client_state.latest_slot,
+        },
     );
-    save_proto_client_state(deps, msg.client_state);
+    save_proto_client_state(
+        deps,
+        ProtoClientState {
+            data: msg.client_state.into(),
+            checksum: msg.checksum.into(),
+            latest_height: Some(
+                Height {
+                    revision_number: 0,
+                    revision_height: client_state.latest_slot,
+                }
+                .into(),
+            ),
+        },
+    );
     Ok(Response::default())
 }
 

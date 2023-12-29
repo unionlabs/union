@@ -1,5 +1,5 @@
-use lib::fmt::{self, Write};
-use lib::str;
+use crate::lib::fmt::{self, Write};
+use crate::lib::str;
 
 pub(super) struct Buf<'a> {
     bytes: &'a mut [u8],

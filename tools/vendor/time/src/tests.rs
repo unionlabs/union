@@ -14,7 +14,7 @@
     feature = "serde",
 ))]
 #![allow(
-    clippy::let_underscore_drop,
+    let_underscore_drop,
     clippy::clone_on_copy,
     clippy::cognitive_complexity,
     clippy::std_instead_of_core
@@ -69,14 +69,6 @@ fn digit_count() {
     assert_eq!(100_000_000_u32.num_digits(), 9);
     assert_eq!(999_999_999_u32.num_digits(), 9);
     assert_eq!(1_000_000_000_u32.num_digits(), 10);
-}
-
-#[test]
-fn default() {
-    assert_eq!(
-        duration::Padding::Optimize.clone(),
-        duration::Padding::default()
-    );
 }
 
 #[test]

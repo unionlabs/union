@@ -228,7 +228,17 @@ impl LitStr {
         let mut tokens = TokenStream::from_str(&self.value())?;
         tokens = respan_token_stream(tokens, self.span());
 
-        parser.parse2(tokens)
+        let result = parser.parse2(tokens)?;
+
+        let suffix = self.suffix();
+        if !suffix.is_empty() {
+            return Err(Error::new(
+                self.span(),
+                format!("unexpected suffix `{}` on string literal", suffix),
+            ));
+        }
+
+        Ok(result)
     }
 
     pub fn span(&self) -> Span {

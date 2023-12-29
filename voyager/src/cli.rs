@@ -54,6 +54,8 @@ pub enum Command {
     Query {
         #[arg(long)]
         on: String,
+        #[arg(long)]
+        tracking: String,
         #[arg(long, default_value_t = QueryHeight::<Height>::Latest)]
         at: QueryHeight<Height>,
         #[command(subcommand)]
@@ -129,8 +131,6 @@ where
         }
     }
 
-    dbg!(&output);
-
     abort_handle.abort();
     handle.abort();
 
@@ -169,8 +169,7 @@ struct StateProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
     #[serde(with = "::serde_utils::string")]
     path: P,
     state: P::Output,
-    #[serde(with = "::serde_utils::hex_string")]
-    proof: Vec<u8>,
+    proof: Hc::StateProof,
     height: HeightOf<Hc>,
 }
 
@@ -183,7 +182,7 @@ impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> StateProof<Hc, Tr, P> {
         hlist_pat![
             Identified {
                 chain_id: _state_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: state_path,
                     height: state_height,
                     state,
@@ -192,7 +191,7 @@ impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> StateProof<Hc, Tr, P> {
             },
             Identified {
                 chain_id: _proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     path: proof_path,
                     height: proof_height,
                     proof,

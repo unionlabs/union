@@ -30,11 +30,18 @@ pub struct Cli {
 
     /// The log level for unionvisor. uniond logs are piped to stdout and stderr regardless of level.
     /// and should be controlled with the commands args.
-    #[arg(short, long, env = "UNIONVISOR_LOG_LEVEL", default_value = "INFO")]
+    #[arg(
+        global = true,
+        short,
+        long,
+        env = "UNIONVISOR_LOG_LEVEL",
+        default_value = "INFO"
+    )]
     pub log_level: LevelFilter,
 
     /// The log format for both unionvisor and uniond.
     #[arg(
+        global = true,
         short = 'f',
         long,
         env = "UNIONVISOR_LOG_FORMAT",

@@ -114,6 +114,10 @@ func (pubKey *PubKey) Address() crypto.Address {
 	if len(pubKey.Key) != PubKeySize {
 		panic("pubkey is incorrect size")
 	}
+	var pKey bn254.PubKey = pubKey.Bytes()
+	if err := pKey.EnsureValid(); err != nil {
+		panic(err)
+	}
 	// For ADR-28 compatible address we would need to
 	// return address.Hash(proto.MessageName(pubKey), pubKey.Key)
 	hash := sha256.Sum256(pubKey.Key.Bytes())
@@ -154,6 +158,10 @@ func (pubKey PubKey) MarshalAmino() ([]byte, error) {
 func (pubKey *PubKey) UnmarshalAmino(bz []byte) error {
 	if len(bz) != PubKeySize {
 		return errorsmod.Wrap(errors.ErrInvalidPubKey, "invalid pubkey size")
+	}
+	var pKey bn254.PubKey = bz
+	if err := pKey.EnsureValid(); err != nil {
+		panic(err)
 	}
 	pubKey.Key = bz
 

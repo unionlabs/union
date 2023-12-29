@@ -1,3 +1,5 @@
+import Version from '@site/src/components/Version'
+
 # Unionvisor
 
 Unionvisor is a utility for managing `uniond` deployments. It manages running, upgrading, and interacting with the node.
@@ -8,9 +10,10 @@ We release container images of Unionvisor called bundles. Each bundle contains e
 
 Alternatively, you can run the following command:
 
-```sh
-docker pull ghcr.io/unionlabs/bundle-testnet-4:$UNIOND_VERSION
-```
+<pre language="sh">
+export UNIONVISOR_VERSION='{Version('union-testnet-4')}'{'\n'}
+docker pull ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION{'\n'}
+</pre>
 
 ## Running Unionvisor
 
@@ -35,7 +38,7 @@ Now, using the `unionvisor` image and the folder we just created, we can initial
 To do this, we'll be using Docker volumes.
 
 ```sh
-docker run -v ~/.unionvisor:/.unionvisor -it ghcr.io/unionlabs/bundle-testnet-4:$UNIOND_VERSION init --moniker $MONIKER --network union-testnet-4 --seeds "a069a341154484298156a56ace42b6e6a71e7b9d@blazingbit.io:27656,8a07752a234bb16471dbb577180de7805ba6b5d9@union.testnet.4.seed.poisonphang.com:26656"
+docker run -v ~/.unionvisor:/.unionvisor -it ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION init --moniker $MONIKER --network union-testnet-4 --seeds "a069a341154484298156a56ace42b6e6a71e7b9d@blazingbit.io:27656,8a07752a234bb16471dbb577180de7805ba6b5d9@union.testnet.4.seed.poisonphang.com:26656"
 ```
 
 _Where `MONIKER` is the preferred moniker you'd like to use on this node._
@@ -66,20 +69,41 @@ After the `uniond init` command is done running, you should have a `.union` fold
 └── uniond -> /versions/v0.14.0/uniond
 ```
 
+### Migrating an Existing Node (Optional)
+
+If you have an existing node, either from running the `uniond` image or raw binary - you can migrate it to Unionvisor starting here.
+
+To migrate, you only need to copy over your `uniond` state into the `~/.unionvisor/home` directory - then start Unionvisor normally.
+
+If you have a `uniond` state saved to `~/.union`, you can run the following command.
+
+```sh
+sudo cp -r ~/.union/* ~/.unionvisor/home
+```
+
+Then continue to follow the guide normally.
+
+:::note
+
+We use `sudo` here because Docker created the files we are copying with elevated permissions.
+
+:::
+
 ### Issuing Sub-Commands to uniond via Unionvisor
 
 To run `uniond` sub-commands, it will be useful to alias the Docker command in your shell `.*rc` file.
 
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
-```sh
-export UNIOND_VERSION='v0.14.0'
-alias uniond='docker run -v ~/.unionvisor:/.unionvisor --network host -it ghcr.io/unionlabs/bundle-testnet-4:$UNIOND_VERSION call'
-```
+<pre language="sh">
+export UNIONVISOR_VERSION='{Version('union-testnet-4', false)}'{'\n'}
+alias uniond='docker run -v ~/.unionvisor:/.unionvisor --network host -it ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION call'{'\n'}
+</pre>
 
 :::note
 
-The `unionvisor call` sub-command passes commands and arguments to `uniond`.
+- The `unionvisor call` sub-command passes commands and arguments to `uniond`.
+- You may wish to pass `--log-level off` when calling Unionvisor to prevent extra output while issuing sub-commands.
 
 :::
 
@@ -94,7 +118,7 @@ A minimal Docker Compose file for Unionvisor looks like this:
 ```yaml
 services:
   node:
-    image: ghcr.io/unionlabs/bundle-testnet-4:$UNIOND_VERSION
+    image: ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION
     volumes:
       - ~/.unionvisor:/.unionvisor
       - /tmp:/tmp
@@ -114,6 +138,7 @@ This will mount our chain configuration and settings folder while also exposing 
 After creating a `compose.yml` file with the contents above, you'll be able to start your Union node with `docker compose`.
 
 :::warning
+
 Before starting your Union node for the first time, you should configure your node correctly.
 
 For some configuration recommendations see our [Node Configuration](../04_infrastructure/01_node_operators/node_configuration.md) page.

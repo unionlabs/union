@@ -17,6 +17,20 @@
         })
         devnetConfig.validatorCount));
 
+      simd-services = (builtins.listToAttrs (builtins.genList
+        (id: {
+          name = "simd-${toString id}";
+          value = import ./services/simd.nix {
+            inherit pkgs;
+            inherit id;
+            simd = self'.packages.simd;
+            simd-genesis = self'.packages.simd-genesis;
+            simd-validator-keys = self'.packages.simd-validator-keys;
+            simd-validator-node-ids = self'.packages.simd-validator-node-ids;
+          };
+        })
+        devnetConfig.validatorCount));
+
       uniond-testnet-genesis-services = (builtins.listToAttrs (builtins.genList
         (id: {
           name = "uniond-${toString id}";
@@ -83,6 +97,14 @@
         modules = [ (union // { networks.union-devnet = { }; }) ];
       };
 
+      spec-simd = {
+        modules = [{
+          project.name = "simd-devnet";
+          networks.simd-devnet = { };
+          services = simd-services;
+        }];
+      };
+
       spec-eth = {
         modules = [{
           project.name = "union-devnet-eth";
@@ -96,6 +118,8 @@
       build-eth = arion.build spec-eth;
 
       build-union = arion.build spec-union;
+
+      build-simd = arion.build spec-simd;
 
       build-voyager-queue = arion.build {
         modules = [{
@@ -111,6 +135,15 @@
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build} up --build --force-recreate -V --always-recreate-deps --remove-orphans
+          '';
+        };
+
+      packages.devnet-simd =
+        pkgs.writeShellApplication {
+          name = "simd-devnet";
+          runtimeInputs = [ arion ];
+          text = ''
+            arion --prebuilt-file ${build-simd} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
         };
 

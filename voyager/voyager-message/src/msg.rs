@@ -65,41 +65,47 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Msg<Hc, Tr> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct MsgConnectionOpenInitData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgConnectionOpenInit<ClientIdOf<Hc>, ClientIdOf<Tr>>,
-}
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
+pub struct MsgConnectionOpenInitData<Hc: ChainExt, Tr: ChainExt>(
+    pub MsgConnectionOpenInit<ClientIdOf<Hc>, ClientIdOf<Tr>>,
+);
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgConnectionOpenTry<
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
+pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt>(
+    pub  MsgConnectionOpenTry<
         Tr::StoredClientState<Hc>,
         ClientIdOf<Hc>,
         ClientIdOf<Tr>,
-        HeightOf<Tr>,
-        HeightOf<Hc>,
+        Tr::Height,
+        Hc::Height,
+        Tr::StateProof,
+        Tr::StateProof,
+        Tr::StateProof,
     >,
-}
+);
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgConnectionOpenAck<Tr::StoredClientState<Hc>>,
-    #[serde(skip)]
-    pub __marker: PhantomData<fn() -> Tr>,
-}
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
+pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt>(
+    pub  MsgConnectionOpenAck<
+        Tr::StoredClientState<Hc>,
+        Tr::StateProof,
+        Tr::StateProof,
+        Tr::StateProof,
+    >,
+);
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
 pub struct MsgConnectionOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgConnectionOpenConfirm<HeightOf<Tr>>,
+    pub msg: MsgConnectionOpenConfirm<HeightOf<Tr>, Tr::StateProof>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> Hc>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
 pub struct MsgChannelOpenInitData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenInit,
     #[serde(skip)]
@@ -107,56 +113,54 @@ pub struct MsgChannelOpenInitData<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
 pub struct MsgChannelOpenTryData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgChannelOpenTry,
+    pub msg: MsgChannelOpenTry<Tr::StateProof>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
 pub struct MsgChannelOpenAckData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgChannelOpenAck,
+    pub msg: MsgChannelOpenAck<Tr::StateProof, Tr::Height>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
 pub struct MsgChannelOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgChannelOpenConfirm,
+    pub msg: MsgChannelOpenConfirm<Tr::StateProof>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
 pub struct MsgRecvPacketData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgRecvPacket,
+    pub msg: MsgRecvPacket<Tr::StateProof, Tr::Height>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
 pub struct MsgAckPacketData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgAcknowledgement,
+    pub msg: MsgAcknowledgement<Tr::StateProof, Tr::Height>,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct MsgCreateClientData<Hc: ChainExt, Tr: ChainExt> {
-    pub config: <Hc as ChainExt>::Config,
+    pub config: Hc::Config,
     pub msg: MsgCreateClient<ClientStateOf<Tr>, ConsensusStateOf<Tr>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct MsgUpdateClientData<Hc: ChainExt, Tr: ChainExt> {
-    pub msg: MsgUpdateClient<ClientIdOf<Hc>, HeaderOf<Tr>>,
-    // REVIEW: Remove this field? It's currently unused
-    pub update_from: HeightOf<Tr>,
-}
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
+pub struct MsgUpdateClientData<Hc: ChainExt, Tr: ChainExt>(
+    pub MsgUpdateClient<ClientIdOf<Hc>, HeaderOf<Tr>>,
+);

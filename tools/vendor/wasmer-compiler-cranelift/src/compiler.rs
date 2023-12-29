@@ -12,33 +12,28 @@ use crate::translator::{
     compiled_function_unwind_info, irlibcall_to_libcall, irreloc_to_relocationkind,
     signature_to_cranelift_ir, CraneliftUnwindInfo, FuncTranslator,
 };
-use cranelift_codegen::ir::ExternalName;
-use cranelift_codegen::print_errors::pretty_error;
+use cranelift_codegen::ir::{ExternalName, UserFuncName};
 use cranelift_codegen::{ir, MachReloc};
 use cranelift_codegen::{Context, MachTrap};
 #[cfg(feature = "unwind")]
 use gimli::write::{Address, EhFrame, FrameTable};
-use loupe::MemoryUsage;
 #[cfg(feature = "rayon")]
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use std::sync::Arc;
 use wasmer_compiler::{
-    CallingConvention, ModuleTranslationState, RelocationTarget, Target, TrapInformation,
+    Compiler, FunctionBinaryReader, FunctionBodyData, MiddlewareBinaryReader, ModuleMiddleware,
+    ModuleMiddlewareChain, ModuleTranslationState,
 };
-use wasmer_compiler::{
-    Compilation, CompileModuleInfo, CompiledFunction, CompiledFunctionFrameInfo,
-    CompiledFunctionUnwindInfo, Compiler, Dwarf, FunctionBinaryReader, FunctionBody,
-    FunctionBodyData, MiddlewareBinaryReader, ModuleMiddleware, ModuleMiddlewareChain,
-    SectionIndex,
-};
-use wasmer_compiler::{CompileError, Relocation};
 use wasmer_types::entity::{EntityRef, PrimaryMap};
-use wasmer_types::TrapCode;
-use wasmer_types::{FunctionIndex, LocalFunctionIndex, ModuleInfo, SignatureIndex};
+use wasmer_types::{
+    CallingConvention, Compilation, CompileError, CompileModuleInfo, CompiledFunction,
+    CompiledFunctionFrameInfo, CompiledFunctionUnwindInfo, Dwarf, FunctionBody, FunctionIndex,
+    LocalFunctionIndex, ModuleInfo, Relocation, RelocationTarget, SectionIndex, SignatureIndex,
+    Target, TrapCode, TrapInformation,
+};
 
 /// A compiler that compiles a WebAssembly module with Cranelift, translating the Wasm to Cranelift IR,
 /// optimizing it and then translating to assembly.
-#[derive(MemoryUsage)]
 pub struct CraneliftCompiler {
     config: Cranelift,
 }
@@ -56,6 +51,10 @@ impl CraneliftCompiler {
 }
 
 impl Compiler for CraneliftCompiler {
+    fn name(&self) -> &str {
+        "cranelift"
+    }
+
     /// Get the middlewares for this compiler
     fn get_middlewares(&self) -> &[Arc<dyn ModuleMiddleware>] {
         &self.config.middlewares
@@ -127,7 +126,18 @@ impl Compiler for CraneliftCompiler {
                     &memory_styles,
                     &table_styles,
                 );
-                context.func.name = get_function_name(func_index);
+                context.func.name = match get_function_name(func_index) {
+                    ExternalName::User(nameref) => {
+                        if context.func.params.user_named_funcs().is_valid(nameref) {
+                            let name = &context.func.params.user_named_funcs()[nameref];
+                            UserFuncName::User(name.clone())
+                        } else {
+                            UserFuncName::default()
+                        }
+                    }
+                    ExternalName::TestCase(testcase) => UserFuncName::Testcase(testcase),
+                    _ => UserFuncName::default(),
+                };
                 context.func.signature = signatures[module.functions[func_index]].clone();
                 // if generate_debug_info {
                 //     context.func.collect_debug_info();
@@ -151,9 +161,9 @@ impl Compiler for CraneliftCompiler {
                 let mut code_buf: Vec<u8> = Vec::new();
                 context
                     .compile_and_emit(&*isa, &mut code_buf)
-                    .map_err(|error| CompileError::Codegen(pretty_error(&context.func, error)))?;
+                    .map_err(|error| CompileError::Codegen(error.inner.to_string()))?;
 
-                let result = context.mach_compile_result.as_ref().unwrap();
+                let result = context.compiled_code().unwrap();
                 let func_relocs = result
                     .buffer
                     .relocs()
@@ -170,7 +180,7 @@ impl Compiler for CraneliftCompiler {
 
                 let (unwind_info, fde) = match compiled_function_unwind_info(&*isa, &context)? {
                     #[cfg(feature = "unwind")]
-                    CraneliftUnwindInfo::FDE(fde) => {
+                    CraneliftUnwindInfo::Fde(fde) => {
                         if dwarf_frametable.is_some() {
                             let fde = fde.to_fde(Address::Symbol {
                                 // The symbol is the kind of relocation.
@@ -225,10 +235,21 @@ impl Compiler for CraneliftCompiler {
                     isa.frontend_config(),
                     module,
                     &signatures,
-                    &memory_styles,
-                    &table_styles,
+                    memory_styles,
+                    table_styles,
                 );
-                context.func.name = get_function_name(func_index);
+                context.func.name = match get_function_name(func_index) {
+                    ExternalName::User(nameref) => {
+                        if context.func.params.user_named_funcs().is_valid(nameref) {
+                            let name = &context.func.params.user_named_funcs()[nameref];
+                            UserFuncName::User(name.clone())
+                        } else {
+                            UserFuncName::default()
+                        }
+                    }
+                    ExternalName::TestCase(testcase) => UserFuncName::Testcase(testcase),
+                    _ => UserFuncName::default(),
+                };
                 context.func.signature = signatures[module.functions[func_index]].clone();
                 // if generate_debug_info {
                 //     context.func.collect_debug_info();
@@ -252,26 +273,26 @@ impl Compiler for CraneliftCompiler {
                 let mut code_buf: Vec<u8> = Vec::new();
                 context
                     .compile_and_emit(&*isa, &mut code_buf)
-                    .map_err(|error| CompileError::Codegen(pretty_error(&context.func, error)))?;
+                    .map_err(|error| CompileError::Codegen(error.inner.to_string()))?;
 
-                let result = context.mach_compile_result.as_ref().unwrap();
+                let result = context.compiled_code().unwrap();
                 let func_relocs = result
                     .buffer
                     .relocs()
-                    .into_iter()
+                    .iter()
                     .map(|r| mach_reloc_to_reloc(module, r))
                     .collect::<Vec<_>>();
 
                 let traps = result
                     .buffer
                     .traps()
-                    .into_iter()
+                    .iter()
                     .map(mach_trap_to_trap)
                     .collect::<Vec<_>>();
 
                 let (unwind_info, fde) = match compiled_function_unwind_info(&*isa, &context)? {
                     #[cfg(feature = "unwind")]
-                    CraneliftUnwindInfo::FDE(fde) => {
+                    CraneliftUnwindInfo::Fde(fde) => {
                         if dwarf_frametable.is_some() {
                             let fde = fde.to_fde(Address::Symbol {
                                 // The symbol is the kind of relocation.
@@ -317,10 +338,8 @@ impl Compiler for CraneliftCompiler {
 
         #[cfg(feature = "unwind")]
         let dwarf = if let Some((mut dwarf_frametable, cie_id)) = dwarf_frametable {
-            for fde in fdes {
-                if let Some(fde) = fde {
-                    dwarf_frametable.add_fde(cie_id, fde);
-                }
+            for fde in fdes.into_iter().flatten() {
+                dwarf_frametable.add_fde(cie_id, fde);
             }
             let mut eh_frame = EhFrame(WriterRelocate::new(target.triple().endianness().ok()));
             dwarf_frametable.write_eh_frame(&mut eh_frame).unwrap();
@@ -353,8 +372,8 @@ impl Compiler for CraneliftCompiler {
             .values()
             .collect::<Vec<_>>()
             .par_iter()
-            .map_init(FunctionBuilderContext::new, |mut cx, sig| {
-                make_trampoline_function_call(&*isa, &mut cx, sig)
+            .map_init(FunctionBuilderContext::new, |cx, sig| {
+                make_trampoline_function_call(&*isa, cx, sig)
             })
             .collect::<Result<Vec<FunctionBody>, CompileError>>()?
             .into_iter()
@@ -379,36 +398,35 @@ impl Compiler for CraneliftCompiler {
             .imported_function_types()
             .collect::<Vec<_>>()
             .par_iter()
-            .map_init(FunctionBuilderContext::new, |mut cx, func_type| {
-                make_trampoline_dynamic_function(&*isa, &offsets, &mut cx, &func_type)
+            .map_init(FunctionBuilderContext::new, |cx, func_type| {
+                make_trampoline_dynamic_function(&*isa, &offsets, cx, func_type)
             })
             .collect::<Result<Vec<_>, CompileError>>()?
             .into_iter()
             .collect::<PrimaryMap<FunctionIndex, FunctionBody>>();
 
-        Ok(Compilation::new(
-            functions.into_iter().collect(),
+        Ok(Compilation {
+            functions: functions.into_iter().collect(),
             custom_sections,
             function_call_trampolines,
             dynamic_function_trampolines,
-            dwarf,
-        ))
+            debug: dwarf,
+        })
     }
 }
 
 fn mach_reloc_to_reloc(module: &ModuleInfo, reloc: &MachReloc) -> Relocation {
     let &MachReloc {
         offset,
-        srcloc: _,
         kind,
         ref name,
         addend,
     } = reloc;
-    let reloc_target = if let ExternalName::User { namespace, index } = *name {
-        debug_assert_eq!(namespace, 0);
+    let reloc_target = if let ExternalName::User(extname_ref) = *name {
+        //debug_assert_eq!(namespace, 0);
         RelocationTarget::LocalFunc(
             module
-                .local_func_index(FunctionIndex::from_u32(index))
+                .local_func_index(FunctionIndex::from_u32(extname_ref.as_u32()))
                 .expect("The provided function should be local"),
         )
     } else if let ExternalName::LibCall(libcall) = *name {
@@ -425,11 +443,7 @@ fn mach_reloc_to_reloc(module: &ModuleInfo, reloc: &MachReloc) -> Relocation {
 }
 
 fn mach_trap_to_trap(trap: &MachTrap) -> TrapInformation {
-    let &MachTrap {
-        offset,
-        srcloc: _,
-        code,
-    } = trap;
+    let &MachTrap { offset, code } = trap;
     TrapInformation {
         code_offset: offset,
         trap_code: translate_ir_trapcode(code),
@@ -441,7 +455,7 @@ fn translate_ir_trapcode(trap: ir::TrapCode) -> TrapCode {
     match trap {
         ir::TrapCode::StackOverflow => TrapCode::StackOverflow,
         ir::TrapCode::HeapOutOfBounds => TrapCode::HeapAccessOutOfBounds,
-        ir::TrapCode::HeapMisaligned => TrapCode::HeapMisaligned,
+        ir::TrapCode::HeapMisaligned => TrapCode::UnalignedAtomic,
         ir::TrapCode::TableOutOfBounds => TrapCode::TableAccessOutOfBounds,
         ir::TrapCode::IndirectCallToNull => TrapCode::IndirectCallToNull,
         ir::TrapCode::BadSignature => TrapCode::BadSignature,

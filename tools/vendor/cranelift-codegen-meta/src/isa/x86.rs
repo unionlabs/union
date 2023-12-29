@@ -52,6 +52,12 @@ fn define_settings(shared: &SettingGroup) -> SettingGroup {
         "AVX2: CPUID.07H:EBX.AVX2[bit 5]",
         false,
     );
+    let has_fma = settings.add_bool(
+        "has_fma",
+        "Has support for FMA.",
+        "FMA: CPUID.01H:ECX.FMA[bit 12]",
+        false,
+    );
     let has_avx512bitalg = settings.add_bool(
         "has_avx512bitalg",
         "Has support for AVX512BITALG.",
@@ -116,6 +122,7 @@ fn define_settings(shared: &SettingGroup) -> SettingGroup {
     settings.add_predicate("use_ssse3", predicate!(has_ssse3));
     settings.add_predicate("use_sse41", predicate!(has_sse41));
     settings.add_predicate("use_sse42", predicate!(has_sse41 && has_sse42));
+    settings.add_predicate("use_fma", predicate!(has_avx && has_fma));
 
     settings.add_predicate(
         "use_ssse3_simd",
@@ -163,17 +170,8 @@ fn define_settings(shared: &SettingGroup) -> SettingGroup {
     // back in the shared SettingGroup, and use it in x86 instruction predicates.
 
     let is_pic = shared.get_bool("is_pic");
-    let emit_all_ones_funcaddrs = shared.get_bool("emit_all_ones_funcaddrs");
     settings.add_predicate("is_pic", predicate!(is_pic));
     settings.add_predicate("not_is_pic", predicate!(!is_pic));
-    settings.add_predicate(
-        "all_ones_funcaddrs_and_not_is_pic",
-        predicate!(emit_all_ones_funcaddrs && !is_pic),
-    );
-    settings.add_predicate(
-        "not_all_ones_funcaddrs_and_not_is_pic",
-        predicate!(!emit_all_ones_funcaddrs && !is_pic),
-    );
 
     // Presets corresponding to x86 CPUs.
 
@@ -195,7 +193,7 @@ fn define_settings(shared: &SettingGroup) -> SettingGroup {
     let broadwell = settings.add_preset(
         "broadwell",
         "Broadwell microarchitecture.",
-        preset!(haswell),
+        preset!(haswell && has_fma),
     );
     let skylake = settings.add_preset("skylake", "Skylake microarchitecture.", preset!(broadwell));
     let cannonlake = settings.add_preset(

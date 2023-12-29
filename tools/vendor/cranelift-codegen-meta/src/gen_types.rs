@@ -33,6 +33,19 @@ fn emit_vectors(bits: u64, fmt: &mut srcgen::Formatter) {
     }
 }
 
+/// Emit definition for all dynamic vector types with `bits` total size.
+fn emit_dynamic_vectors(bits: u64, fmt: &mut srcgen::Formatter) {
+    let vec_size: u64 = bits / 8;
+    for vec in cdsl_types::ValueType::all_lane_types()
+        .map(|ty| (ty, cdsl_types::ValueType::from(ty).membytes()))
+        .filter(|&(_, lane_size)| lane_size != 0 && lane_size < vec_size)
+        .map(|(ty, lane_size)| (ty, vec_size / lane_size))
+        .map(|(ty, lanes)| cdsl_types::DynamicVectorType::new(ty, lanes))
+    {
+        emit_type(&cdsl_types::ValueType::from(vec), fmt);
+    }
+}
+
 /// Emit types using the given formatter object.
 fn emit_types(fmt: &mut srcgen::Formatter) {
     // Emit all of the special types, such as types for CPU flags.
@@ -51,8 +64,10 @@ fn emit_types(fmt: &mut srcgen::Formatter) {
     }
 
     // Emit vector definitions for common SIMD sizes.
+    // Emit dynamic vector definitions.
     for vec_size in &[64_u64, 128, 256, 512] {
         emit_vectors(*vec_size, fmt);
+        emit_dynamic_vectors(*vec_size, fmt);
     }
 }
 

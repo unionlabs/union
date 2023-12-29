@@ -94,62 +94,60 @@ macro_rules! radix {
                 crate::nightly::ok!(Self::from_str_radix(s, radix))
             }
 
-            crate::nightly::const_fns! {
-                /// Converts a slice of big-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
-                ///
-                /// # Panics
-                ///
-                /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
-                ///
-                /// # Examples
-                ///
-                /// ```
-                /// use bnum::types::U512;
-                ///
-                /// let n = U512::from(34598748526857897975u128);
-                /// let digits = n.to_radix_be(12);
-                /// assert_eq!(Some(n), U512::from_radix_be(&digits, 12));
-                /// ```
-                #[inline]
-                pub const fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
-                    assert_range!(radix, 256);
-                    if buf.is_empty() {
-                        return Some(Self::ZERO);
-                    }
-                    if radix == 256 {
-                        return Self::from_be_slice(buf);
-                    }
-
-                    crate::nightly::ok!(Self::from_buf_radix_internal::<false, true>(buf, radix, false))
+            /// Converts a slice of big-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
+            ///
+            /// # Panics
+            ///
+            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
+            ///
+            /// # Examples
+            ///
+            /// ```
+            /// use bnum::types::U512;
+            ///
+            /// let n = U512::from(34598748526857897975u128);
+            /// let digits = n.to_radix_be(12);
+            /// assert_eq!(Some(n), U512::from_radix_be(&digits, 12));
+            /// ```
+            #[inline]
+            pub const fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
+                assert_range!(radix, 256);
+                if buf.is_empty() {
+                    return Some(Self::ZERO);
+                }
+                if radix == 256 {
+                    return Self::from_be_slice(buf);
                 }
 
-                /// Converts a slice of little-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
-                ///
-                /// # Panics
-                ///
-                /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
-                ///
-                /// # Examples
-                ///
-                /// ```
-                /// use bnum::types::U512;
-                ///
-                /// let n = U512::from(109837459878951038945798u128);
-                /// let digits = n.to_radix_le(15);
-                /// assert_eq!(Some(n), U512::from_radix_le(&digits, 15));
-                /// ```
-                #[inline]
-                pub const fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
-                    assert_range!(radix, 256);
-                    if buf.is_empty() {
-                        return Some(Self::ZERO);
-                    }
-                    if radix == 256 {
-                        return Self::from_le_slice(buf);
-                    }
+                crate::nightly::ok!(Self::from_buf_radix_internal::<false, true>(buf, radix, false))
+            }
 
-                    crate::nightly::ok!(Self::from_buf_radix_internal::<false, false>(buf, radix, false))
+            /// Converts a slice of little-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
+            ///
+            /// # Panics
+            ///
+            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
+            ///
+            /// # Examples
+            ///
+            /// ```
+            /// use bnum::types::U512;
+            ///
+            /// let n = U512::from(109837459878951038945798u128);
+            /// let digits = n.to_radix_le(15);
+            /// assert_eq!(Some(n), U512::from_radix_le(&digits, 15));
+            /// ```
+            #[inline]
+            pub const fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
+                assert_range!(radix, 256);
+                if buf.is_empty() {
+                    return Some(Self::ZERO);
                 }
+                if radix == 256 {
+                    return Self::from_le_slice(buf);
+                }
+
+                crate::nightly::ok!(Self::from_buf_radix_internal::<false, false>(buf, radix, false))
             }
 
             #[inline]

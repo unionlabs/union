@@ -2,7 +2,6 @@ use quote::ToTokens;
 use std::cell::RefCell;
 use std::fmt::Display;
 use std::thread;
-use syn;
 
 /// A type to collect errors together and format them.
 ///

@@ -3,7 +3,7 @@
 #[macro_export]
 macro_rules! nlimbs {
     ($bits:expr) => {
-        $bits / $crate::Limb::BIT_SIZE
+        $bits / $crate::Limb::BITS
     };
 }
 

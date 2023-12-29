@@ -39,7 +39,7 @@ func (o *encoderOptions) setDefault() {
 		blockSize:     maxCompressedBlockSize,
 		windowSize:    8 << 20,
 		level:         SpeedDefault,
-		allLitEntropy: true,
+		allLitEntropy: false,
 		lowMem:        false,
 	}
 }
@@ -129,7 +129,7 @@ func WithEncoderPadding(n int) EOption {
 		}
 		// No need to waste our time.
 		if n == 1 {
-			o.pad = 0
+			n = 0
 		}
 		if n > 1<<30 {
 			return fmt.Errorf("padding must less than 1GB (1<<30 bytes) ")
@@ -238,7 +238,7 @@ func WithEncoderLevel(l EncoderLevel) EOption {
 			}
 		}
 		if !o.customALEntropy {
-			o.allLitEntropy = l > SpeedFastest
+			o.allLitEntropy = l > SpeedDefault
 		}
 
 		return nil

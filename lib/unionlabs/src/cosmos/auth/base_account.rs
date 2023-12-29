@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{cosmos::crypto::AnyPubKey, errors::MissingField, Proto, TryFromProtoErrorOf, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BaseAccount {
     // REVIEW: is this a bech32 address?
     pub address: String,

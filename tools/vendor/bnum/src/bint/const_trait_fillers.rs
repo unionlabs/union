@@ -64,31 +64,27 @@ macro_rules! const_trait_fillers {
 
             crate::int::ops::trait_fillers!();
 
-            crate::nightly::const_fn! {
-                #[inline]
-                pub const fn div(self, rhs: Self) -> Self {
-                    if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-                        panic!(crate::errors::err_msg!("attempt to divide with overflow"))
-                    } else {
-                        if rhs.is_zero() {
-                            crate::errors::div_zero!()
-                        }
-                        self.div_rem_unchecked(rhs).0
+            #[inline]
+            pub const fn div(self, rhs: Self) -> Self {
+                if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
+                    panic!(crate::errors::err_msg!("attempt to divide with overflow"))
+                } else {
+                    if rhs.is_zero() {
+                        crate::errors::div_zero!()
                     }
+                    self.div_rem_unchecked(rhs).0
                 }
             }
 
-            crate::nightly::const_fn! {
-                #[inline]
-                pub const fn rem(self, rhs: Self) -> Self {
-                    if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-                        panic!(crate::errors::err_msg!("attempt to calculate remainder with overflow"))
-                    } else {
-                        if rhs.is_zero() {
-                            crate::errors::rem_zero!()
-                        }
-                        self.div_rem_unchecked(rhs).1
+            #[inline]
+            pub const fn rem(self, rhs: Self) -> Self {
+                if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
+                    panic!(crate::errors::err_msg!("attempt to calculate remainder with overflow"))
+                } else {
+                    if rhs.is_zero() {
+                        crate::errors::rem_zero!()
                     }
+                    self.div_rem_unchecked(rhs).1
                 }
             }
         }

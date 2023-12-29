@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(Clone, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub parent_hash: H256,
     pub fee_recipient: H160,

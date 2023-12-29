@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Div, str::FromStr, sync::Arc};
+use std::{fmt::Debug, marker::PhantomData, ops::Div, str::FromStr, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
@@ -45,7 +45,7 @@ use unionlabs::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath,
     },
-    traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf},
+    traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf, FromStrExact},
     uint::U256,
     EmptyString, TryFromEthAbi, TryFromEthAbiErrorOf,
 };
@@ -82,7 +82,39 @@ pub struct Config {
     pub eth_beacon_rpc_api: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct EvmChainType<C: ChainSpec>(PhantomData<fn() -> C>);
+
+impl<C: ChainSpec> FromStrExact for EvmChainType<C> {
+    const EXPECTING: &'static str = {
+        const PREFIX: [u8; 4] = *b"eth-";
+
+        const fn concat(cs: &[u8]) -> [u8; 11] {
+            [
+                PREFIX[0], PREFIX[1], PREFIX[2], PREFIX[3], cs[0], cs[1], cs[2], cs[3], cs[4],
+                cs[5], cs[6],
+            ]
+        }
+
+        // generic_const_exprs is still incomplete :(
+        const CHAIN_SPEC_LEN: usize = 7;
+        assert!(
+            C::EXPECTING.len() == CHAIN_SPEC_LEN,
+            "ChainSpec string value is expected to be 7 bytes"
+        );
+
+        match core::str::from_utf8(&concat(C::EXPECTING.as_bytes())) {
+            Ok(ok) => ok,
+            Err(_) => {
+                panic!()
+            }
+        }
+    };
+}
+
 impl<C: ChainSpec> Chain for Evm<C> {
+    type ChainType = EvmChainType<C>;
+
     type SelfClientState = ethereum::client_state::ClientState;
     type SelfConsensusState = ethereum::consensus_state::ConsensusState;
 
@@ -100,6 +132,8 @@ impl<C: ChainSpec> Chain for Evm<C> {
     type ClientType = String;
 
     type Error = beacon_api::errors::Error;
+
+    type StateProof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof;
 
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id
@@ -815,9 +849,6 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .map_err(EvmEventSourceError::ConnectionIdParse)?,
                                     client_id: connection.client_id,
                                     counterparty_client_id: connection.counterparty.client_id,
-                                    counterparty_connection_id: connection
-                                        .counterparty
-                                        .connection_id,
                                 }))
                             }
                             IBCHandlerEvents::ConnectionOpenTryFilter(event) => {
@@ -1366,4 +1397,16 @@ pub async fn setup_initial_channel<C: ChainSpec>(
     //     .unwrap()
     //     .unwrap();
     todo!()
+}
+
+#[test]
+fn eth_chain_type() {
+    assert_eq!(
+        <<Evm<unionlabs::ethereum::config::Mainnet> as Chain>::ChainType as FromStrExact>::EXPECTING,
+        "eth-mainnet",
+    );
+    assert_eq!(
+        <<Evm<unionlabs::ethereum::config::Minimal> as Chain>::ChainType as FromStrExact>::EXPECTING,
+        "eth-minimal",
+    );
 }

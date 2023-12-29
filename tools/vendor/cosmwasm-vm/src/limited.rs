@@ -73,9 +73,9 @@ fn collection_to_string_limited<E: AsRef<str>, I: ExactSizeIterator<Item = E>>(
             let skipped = elements_count - lengths_stack.len();
             let remaining = elements_count - skipped;
             let skipped_text = if remaining == 0 {
-                format!("... {} elements", skipped)
+                format!("... {skipped} elements")
             } else {
-                format!(", ... {} more", skipped)
+                format!(", ... {skipped} more")
             };
             if previous_length + skipped_text.len() + closing.len() <= max_length {
                 out.truncate(previous_length);

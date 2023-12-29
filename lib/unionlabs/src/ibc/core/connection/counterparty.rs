@@ -11,6 +11,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Counterparty<ClientId, ConnectionId = id::ConnectionId> {
     pub client_id: ClientId,
     pub connection_id: ConnectionId,

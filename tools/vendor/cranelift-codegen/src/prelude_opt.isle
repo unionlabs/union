@@ -1,0 +1,61 @@
+;; Prelude definitions specific to the mid-end.
+
+;;;;; eclass and enode access ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; An eclass ID.
+(type Id (primitive Id))
+
+;; What is the type of an eclass (if a single type)?
+(decl eclass_type (Type) Id)
+(extern extractor eclass_type eclass_type)
+
+;; Helper to wrap an Id-matching pattern and extract type.
+(decl has_type (Type Id) Id)
+(extractor (has_type ty id)
+           (and (eclass_type ty)
+                id))
+
+;; Extract any node(s) for the given eclass ID.
+(decl multi enodes (Type InstructionImms IdArray) Id)
+(extern extractor enodes enodes_etor)
+
+;; Construct a pure node, returning a new (or deduplicated
+;; already-existing) eclass ID.
+(decl pure_enode (Type InstructionImms IdArray) Id)
+(extern constructor pure_enode pure_enode_ctor)
+
+;; Type of an Id slice (for args).
+(type IdArray (primitive IdArray))
+
+(decl id_array_0 () IdArray)
+(extern constructor id_array_0 id_array_0_ctor)
+(extern extractor id_array_0 id_array_0_etor)
+(decl id_array_1 (Id) IdArray)
+(extern constructor id_array_1 id_array_1_ctor)
+(extern extractor id_array_1 id_array_1_etor)
+(decl id_array_2 (Id Id) IdArray)
+(extern constructor id_array_2 id_array_2_ctor)
+(extern extractor id_array_2 id_array_2_etor)
+(decl id_array_3 (Id Id Id) IdArray)
+(extern constructor id_array_3 id_array_3_ctor)
+(extern extractor id_array_3 id_array_3_etor)
+
+;; Extractor to get the min loop-level of an eclass.
+(decl at_loop_level (u8 Id) Id)
+(extern extractor infallible at_loop_level at_loop_level)
+
+;;;;; optimization toplevel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The main matcher rule invoked by the toplevel driver.
+(decl multi simplify (Id) Id)
+
+;; Mark a node as requiring remat when used in a different block.
+(decl remat (Id) Id)
+(extern constructor remat remat)
+
+;; Mark a node as subsuming whatever else it's rewritten from -- this
+;; is definitely preferable, not just a possible option. Useful for,
+;; e.g., constant propagation where we arrive at a definite "final
+;; answer".
+(decl subsume (Id) Id)
+(extern constructor subsume subsume)

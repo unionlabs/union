@@ -599,6 +599,7 @@ where
 ///
 /// The data protected by the mutex can be accessed through this guard via its
 /// `Deref` implementation.
+#[clippy::has_significant_drop]
 #[must_use = "if unused the ReentrantMutex will immediately unlock"]
 pub struct ReentrantMutexGuard<'a, R: RawMutex, G: GetThreadId, T: ?Sized> {
     remutex: &'a ReentrantMutex<R, G, T>,
@@ -646,7 +647,7 @@ impl<'a, R: RawMutex + 'a, G: GetThreadId + 'a, T: ?Sized + 'a> ReentrantMutexGu
     /// in already locked the mutex.
     ///
     /// This is an associated function that needs to be
-    /// used as `ReentrantMutexGuard::map(...)`. A method would interfere with methods of
+    /// used as `ReentrantMutexGuard::try_map(...)`. A method would interfere with methods of
     /// the same name on the contents of the locked data.
     #[inline]
     pub fn try_map<U: ?Sized, F>(
@@ -654,10 +655,10 @@ impl<'a, R: RawMutex + 'a, G: GetThreadId + 'a, T: ?Sized + 'a> ReentrantMutexGu
         f: F,
     ) -> Result<MappedReentrantMutexGuard<'a, R, G, U>, Self>
     where
-        F: FnOnce(&mut T) -> Option<&mut U>,
+        F: FnOnce(&T) -> Option<&U>,
     {
         let raw = &s.remutex.raw;
-        let data = match f(unsafe { &mut *s.remutex.data.get() }) {
+        let data = match f(unsafe { &*s.remutex.data.get() }) {
             Some(data) => data,
             None => return Err(s),
         };
@@ -794,6 +795,7 @@ unsafe impl<'a, R: RawMutex + 'a, G: GetThreadId + 'a, T: ?Sized + 'a> StableAdd
 /// `Mutex` it uses an `Arc<ReentrantMutex>`. This has several advantages, most notably that it has an `'static`
 /// lifetime.
 #[cfg(feature = "arc_lock")]
+#[clippy::has_significant_drop]
 #[must_use = "if unused the ReentrantMutex will immediately unlock"]
 pub struct ArcReentrantMutexGuard<R: RawMutex, G: GetThreadId, T: ?Sized> {
     remutex: Arc<ReentrantMutex<R, G, T>>,
@@ -897,6 +899,7 @@ impl<R: RawMutex, G: GetThreadId, T: ?Sized> Drop for ArcReentrantMutexGuard<R, 
 /// former doesn't support temporarily unlocking and re-locking, since that
 /// could introduce soundness issues if the locked object is modified by another
 /// thread.
+#[clippy::has_significant_drop]
 #[must_use = "if unused the ReentrantMutex will immediately unlock"]
 pub struct MappedReentrantMutexGuard<'a, R: RawMutex, G: GetThreadId, T: ?Sized> {
     raw: &'a RawReentrantMutex<R, G>,
@@ -942,7 +945,7 @@ impl<'a, R: RawMutex + 'a, G: GetThreadId + 'a, T: ?Sized + 'a>
     /// in already locked the mutex.
     ///
     /// This is an associated function that needs to be
-    /// used as `MappedReentrantMutexGuard::map(...)`. A method would interfere with methods of
+    /// used as `MappedReentrantMutexGuard::try_map(...)`. A method would interfere with methods of
     /// the same name on the contents of the locked data.
     #[inline]
     pub fn try_map<U: ?Sized, F>(

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.0 (2023-02-28)
+### Changed
+- MSRV 1.60 ([#628])
+- Decouple from `crypto-bigint` ([#639])
+
+[#628]: https://github.com/RustCrypto/signatures/pull/628
+[#639]: https://github.com/RustCrypto/signatures/pull/639
+
 ## 0.3.1 (2022-11-03)
 ### Added
 - Usage example ([#577])

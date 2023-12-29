@@ -23,7 +23,7 @@ use serde::{
 ///
 /// The map does not track if an entry for a key has been inserted or not. Instead it behaves as if
 /// all keys have a default entry from the beginning.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub struct SecondaryMap<K, V>
 where
     K: EntityRef,

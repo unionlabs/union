@@ -5,7 +5,7 @@ import (
 
 	"encoding/json"
 
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const (
@@ -27,45 +27,40 @@ type QueryAggregateVerify struct {
 	Message    []byte   `json:"message"`
 }
 
-type UnionCustomQueryHandler struct{}
+func CustomQuerier() func(sdk.Context, json.RawMessage) ([]byte, error) {
+	return func(_ sdk.Context, request json.RawMessage) ([]byte, error) {
+		var customQuery CustomQuery
+		err := json.Unmarshal([]byte(request), &customQuery)
 
-func (h *UnionCustomQueryHandler) GasConsumed() uint64 {
-	return 0
-}
-
-// TODO: /!\ verify gasLimit <= the gas we wanna consume and update GasConsumed()
-func (h *UnionCustomQueryHandler) Query(request wasmvmtypes.QueryRequest, gasLimit uint64) ([]byte, error) {
-	var customQuery CustomQuery
-	err := json.Unmarshal([]byte(request.Custom), &customQuery)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse custom query %v", err)
-	}
-
-	if customQuery.Aggregate != nil {
-		aggregatedPublicKeys, err := AggregatePublicKeys(customQuery.Aggregate.PublicKeys)
 		if err != nil {
-			return nil, fmt.Errorf("failed to aggregate public keys %v", err)
+			return nil, fmt.Errorf("failed to parse custom query %v", err)
 		}
-		return json.Marshal(aggregatedPublicKeys.Marshal())
-	} else if customQuery.AggregateVerify != nil {
-		if len(customQuery.AggregateVerify.Message) != MessageSize {
-			return nil, fmt.Errorf("invalid message length, must be a 32bytes hash: %x", customQuery.AggregateVerify.Message)
-		}
-		msg := [MessageSize]byte{}
-		for i := 0; i < MessageSize; i++ {
-			msg[i] = customQuery.AggregateVerify.Message[i]
-		}
-		result, err := VerifySignature(customQuery.AggregateVerify.Signature, msg, customQuery.AggregateVerify.PublicKeys)
-		if err != nil {
-			return nil, fmt.Errorf("failed to verify signature %v", err)
-		}
-		if result {
-			return json.Marshal(true)
+
+		if customQuery.Aggregate != nil {
+			aggregatedPublicKeys, err := AggregatePublicKeys(customQuery.Aggregate.PublicKeys)
+			if err != nil {
+				return nil, fmt.Errorf("failed to aggregate public keys %v", err)
+			}
+			return json.Marshal(aggregatedPublicKeys.Marshal())
+		} else if customQuery.AggregateVerify != nil {
+			if len(customQuery.AggregateVerify.Message) != MessageSize {
+				return nil, fmt.Errorf("invalid message length, must be a 32bytes hash: %x", customQuery.AggregateVerify.Message)
+			}
+			msg := [MessageSize]byte{}
+			for i := 0; i < MessageSize; i++ {
+				msg[i] = customQuery.AggregateVerify.Message[i]
+			}
+			result, err := VerifySignature(customQuery.AggregateVerify.Signature, msg, customQuery.AggregateVerify.PublicKeys)
+			if err != nil {
+				return nil, fmt.Errorf("failed to verify signature %v", err)
+			}
+			if result {
+				return json.Marshal(true)
+			} else {
+				return json.Marshal(false)
+			}
 		} else {
-			return json.Marshal(false)
+			return nil, fmt.Errorf("unknown custom query %v", request)
 		}
-	} else {
-		return nil, fmt.Errorf("unknown custom query %v", request)
 	}
 }

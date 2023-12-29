@@ -1,4 +1,4 @@
-use lib::{Debug, Display};
+use crate::lib::{Debug, Display};
 
 /// Either a re-export of std::error::Error or a new identical trait, depending
 /// on whether Serde's "std" feature is enabled.
@@ -9,7 +9,7 @@ use lib::{Debug, Display};
 /// generally provide their error types with a `std::error::Error` impl
 /// directly:
 ///
-/// ```edition2018
+/// ```edition2021
 /// #[derive(Debug)]
 /// struct MySerError {...}
 ///
@@ -29,7 +29,7 @@ use lib::{Debug, Display};
 /// std = ["serde/std"]
 /// ```
 ///
-/// ```edition2018
+/// ```edition2021
 /// #[cfg(feature = "std")]
 /// impl std::error::Error for MySerError {}
 /// ```
@@ -37,7 +37,7 @@ use lib::{Debug, Display};
 /// ... or else provide the std Error impl unconditionally via Serde's
 /// re-export:
 ///
-/// ```edition2018
+/// ```edition2021
 /// impl serde::ser::StdError for MySerError {}
 /// ```
 pub trait Error: Debug + Display {

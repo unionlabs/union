@@ -1,0 +1,5 @@
+Copyright (c) 2022 Isaac Holt
+
+This project uses some code modified from third party sources, under the MIT license:
+- rand: Copyright 2018 Developers of the Rand project; Copyright 2013-2017 The Rust Project Developers; Copyright 2018-2020 Developers of the Rand project; Copyright 2017 The Rust Project Developers. A copy of the original license for this can be found at /licenses/LICENSE-rand.
+- num-bigint: Copyright (c) 2014 The Rust Project Developers. A copy of the original license for this can found at /licenses/LICENSE-num-bigint.

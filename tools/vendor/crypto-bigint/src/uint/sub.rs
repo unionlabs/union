@@ -1,11 +1,11 @@
-//! [`UInt`] addition operations.
+//! [`Uint`] addition operations.
 
-use super::UInt;
-use crate::{Checked, CheckedSub, Limb, Wrapping, Zero};
+use super::Uint;
+use crate::{Checked, CheckedSub, CtChoice, Limb, Wrapping, Zero};
 use core::ops::{Sub, SubAssign};
 use subtle::CtOption;
 
-impl<const LIMBS: usize> UInt<LIMBS> {
+impl<const LIMBS: usize> Uint<LIMBS> {
     /// Computes `a - (b + borrow)`, returning the result along with the new borrow.
     #[inline(always)]
     pub const fn sbb(&self, rhs: &Self, mut borrow: Limb) -> (Self, Limb) {
@@ -38,9 +38,21 @@ impl<const LIMBS: usize> UInt<LIMBS> {
     pub const fn wrapping_sub(&self, rhs: &Self) -> Self {
         self.sbb(rhs, Limb::ZERO).0
     }
+
+    /// Perform wrapping subtraction, returning the truthy value as the second element of the tuple
+    /// if an underflow has occurred.
+    pub(crate) const fn conditional_wrapping_sub(
+        &self,
+        rhs: &Self,
+        choice: CtChoice,
+    ) -> (Self, CtChoice) {
+        let actual_rhs = Uint::ct_select(&Uint::ZERO, rhs, choice);
+        let (res, borrow) = self.sbb(&actual_rhs, Limb::ZERO);
+        (res, CtChoice::from_mask(borrow.0))
+    }
 }
 
-impl<const LIMBS: usize> CheckedSub<&UInt<LIMBS>> for UInt<LIMBS> {
+impl<const LIMBS: usize> CheckedSub<&Uint<LIMBS>> for Uint<LIMBS> {
     type Output = Self;
 
     fn checked_sub(&self, rhs: &Self) -> CtOption<Self> {
@@ -49,54 +61,54 @@ impl<const LIMBS: usize> CheckedSub<&UInt<LIMBS>> for UInt<LIMBS> {
     }
 }
 
-impl<const LIMBS: usize> Sub for Wrapping<UInt<LIMBS>> {
+impl<const LIMBS: usize> Sub for Wrapping<Uint<LIMBS>> {
     type Output = Self;
 
-    fn sub(self, rhs: Self) -> Wrapping<UInt<LIMBS>> {
+    fn sub(self, rhs: Self) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.wrapping_sub(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> Sub<&Wrapping<UInt<LIMBS>>> for Wrapping<UInt<LIMBS>> {
-    type Output = Wrapping<UInt<LIMBS>>;
+impl<const LIMBS: usize> Sub<&Wrapping<Uint<LIMBS>>> for Wrapping<Uint<LIMBS>> {
+    type Output = Wrapping<Uint<LIMBS>>;
 
-    fn sub(self, rhs: &Wrapping<UInt<LIMBS>>) -> Wrapping<UInt<LIMBS>> {
+    fn sub(self, rhs: &Wrapping<Uint<LIMBS>>) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.wrapping_sub(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> Sub<Wrapping<UInt<LIMBS>>> for &Wrapping<UInt<LIMBS>> {
-    type Output = Wrapping<UInt<LIMBS>>;
+impl<const LIMBS: usize> Sub<Wrapping<Uint<LIMBS>>> for &Wrapping<Uint<LIMBS>> {
+    type Output = Wrapping<Uint<LIMBS>>;
 
-    fn sub(self, rhs: Wrapping<UInt<LIMBS>>) -> Wrapping<UInt<LIMBS>> {
+    fn sub(self, rhs: Wrapping<Uint<LIMBS>>) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.wrapping_sub(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> Sub<&Wrapping<UInt<LIMBS>>> for &Wrapping<UInt<LIMBS>> {
-    type Output = Wrapping<UInt<LIMBS>>;
+impl<const LIMBS: usize> Sub<&Wrapping<Uint<LIMBS>>> for &Wrapping<Uint<LIMBS>> {
+    type Output = Wrapping<Uint<LIMBS>>;
 
-    fn sub(self, rhs: &Wrapping<UInt<LIMBS>>) -> Wrapping<UInt<LIMBS>> {
+    fn sub(self, rhs: &Wrapping<Uint<LIMBS>>) -> Wrapping<Uint<LIMBS>> {
         Wrapping(self.0.wrapping_sub(&rhs.0))
     }
 }
 
-impl<const LIMBS: usize> SubAssign for Wrapping<UInt<LIMBS>> {
+impl<const LIMBS: usize> SubAssign for Wrapping<Uint<LIMBS>> {
     fn sub_assign(&mut self, other: Self) {
         *self = *self - other;
     }
 }
 
-impl<const LIMBS: usize> SubAssign<&Wrapping<UInt<LIMBS>>> for Wrapping<UInt<LIMBS>> {
+impl<const LIMBS: usize> SubAssign<&Wrapping<Uint<LIMBS>>> for Wrapping<Uint<LIMBS>> {
     fn sub_assign(&mut self, other: &Self) {
         *self = *self - other;
     }
 }
 
-impl<const LIMBS: usize> Sub for Checked<UInt<LIMBS>> {
+impl<const LIMBS: usize> Sub for Checked<Uint<LIMBS>> {
     type Output = Self;
 
-    fn sub(self, rhs: Self) -> Checked<UInt<LIMBS>> {
+    fn sub(self, rhs: Self) -> Checked<Uint<LIMBS>> {
         Checked(
             self.0
                 .and_then(|lhs| rhs.0.and_then(|rhs| lhs.checked_sub(&rhs))),
@@ -104,10 +116,10 @@ impl<const LIMBS: usize> Sub for Checked<UInt<LIMBS>> {
     }
 }
 
-impl<const LIMBS: usize> Sub<&Checked<UInt<LIMBS>>> for Checked<UInt<LIMBS>> {
-    type Output = Checked<UInt<LIMBS>>;
+impl<const LIMBS: usize> Sub<&Checked<Uint<LIMBS>>> for Checked<Uint<LIMBS>> {
+    type Output = Checked<Uint<LIMBS>>;
 
-    fn sub(self, rhs: &Checked<UInt<LIMBS>>) -> Checked<UInt<LIMBS>> {
+    fn sub(self, rhs: &Checked<Uint<LIMBS>>) -> Checked<Uint<LIMBS>> {
         Checked(
             self.0
                 .and_then(|lhs| rhs.0.and_then(|rhs| lhs.checked_sub(&rhs))),
@@ -115,10 +127,10 @@ impl<const LIMBS: usize> Sub<&Checked<UInt<LIMBS>>> for Checked<UInt<LIMBS>> {
     }
 }
 
-impl<const LIMBS: usize> Sub<Checked<UInt<LIMBS>>> for &Checked<UInt<LIMBS>> {
-    type Output = Checked<UInt<LIMBS>>;
+impl<const LIMBS: usize> Sub<Checked<Uint<LIMBS>>> for &Checked<Uint<LIMBS>> {
+    type Output = Checked<Uint<LIMBS>>;
 
-    fn sub(self, rhs: Checked<UInt<LIMBS>>) -> Checked<UInt<LIMBS>> {
+    fn sub(self, rhs: Checked<Uint<LIMBS>>) -> Checked<Uint<LIMBS>> {
         Checked(
             self.0
                 .and_then(|lhs| rhs.0.and_then(|rhs| lhs.checked_sub(&rhs))),
@@ -126,10 +138,10 @@ impl<const LIMBS: usize> Sub<Checked<UInt<LIMBS>>> for &Checked<UInt<LIMBS>> {
     }
 }
 
-impl<const LIMBS: usize> Sub<&Checked<UInt<LIMBS>>> for &Checked<UInt<LIMBS>> {
-    type Output = Checked<UInt<LIMBS>>;
+impl<const LIMBS: usize> Sub<&Checked<Uint<LIMBS>>> for &Checked<Uint<LIMBS>> {
+    type Output = Checked<Uint<LIMBS>>;
 
-    fn sub(self, rhs: &Checked<UInt<LIMBS>>) -> Checked<UInt<LIMBS>> {
+    fn sub(self, rhs: &Checked<Uint<LIMBS>>) -> Checked<Uint<LIMBS>> {
         Checked(
             self.0
                 .and_then(|lhs| rhs.0.and_then(|rhs| lhs.checked_sub(&rhs))),
@@ -137,13 +149,13 @@ impl<const LIMBS: usize> Sub<&Checked<UInt<LIMBS>>> for &Checked<UInt<LIMBS>> {
     }
 }
 
-impl<const LIMBS: usize> SubAssign for Checked<UInt<LIMBS>> {
+impl<const LIMBS: usize> SubAssign for Checked<Uint<LIMBS>> {
     fn sub_assign(&mut self, other: Self) {
         *self = *self - other;
     }
 }
 
-impl<const LIMBS: usize> SubAssign<&Checked<UInt<LIMBS>>> for Checked<UInt<LIMBS>> {
+impl<const LIMBS: usize> SubAssign<&Checked<Uint<LIMBS>>> for Checked<Uint<LIMBS>> {
     fn sub_assign(&mut self, other: &Self) {
         *self = *self - other;
     }

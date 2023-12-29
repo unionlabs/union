@@ -12,6 +12,7 @@ use crate::{
 };
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Header {
     pub signed_header: SignedHeader,
     pub trusted_height: Height,

@@ -10,6 +10,9 @@ pub enum Error {
     #[error("{0}")]
     Std(#[from] StdError),
 
+    #[error("error while decoding proto ({reason})")]
+    DecodeFromProto { reason: String },
+
     #[error("Unimplemented")]
     Unimplemented,
 

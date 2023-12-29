@@ -12,25 +12,40 @@
 [package]
 edition = "2018"
 name = "arrayvec"
-version = "0.7.2"
+version = "0.7.4"
 authors = ["bluss"]
 description = "A vector with fixed capacity, backed by an array (it can be stored on the stack too). Implements fixed capacity ArrayVec and ArrayString."
 documentation = "https://docs.rs/arrayvec/"
-keywords = ["stack", "vector", "array", "data-structure", "no_std"]
-categories = ["data-structures", "no-std"]
+readme = "README.md"
+keywords = [
+    "stack",
+    "vector",
+    "array",
+    "data-structure",
+    "no_std",
+]
+categories = [
+    "data-structures",
+    "no-std",
+]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/bluss/arrayvec"
+
 [package.metadata.docs.rs]
-features = ["serde"]
+features = [
+    "serde",
+    "zeroize",
+]
 
 [package.metadata.release]
 no-dev-version = true
 tag-name = "{{version}}"
+
 [profile.bench]
-debug = true
+debug = 2
 
 [profile.release]
-debug = true
+debug = 2
 
 [[bench]]
 name = "extend"
@@ -39,10 +54,17 @@ harness = false
 [[bench]]
 name = "arraystring"
 harness = false
+
 [dependencies.serde]
 version = "1.0"
 optional = true
 default-features = false
+
+[dependencies.zeroize]
+version = "1.4"
+optional = true
+default-features = false
+
 [dev-dependencies.bencher]
 version = "0.1.4"
 

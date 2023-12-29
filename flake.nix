@@ -83,6 +83,10 @@
       url = "github:unionlabs/union/release-v0.16.0";
       flake = false;
     };
+    v0_17_0 = {
+      url = "github:unionlabs/union/release-v0.17.0";
+      flake = false;
+    };
   };
   outputs =
     inputs@{ self
@@ -139,6 +143,8 @@
         ./networks/devnet.nix
         ./networks/genesis/devnet-minimal.nix
         ./networks/genesis/devnet.nix
+        ./networks/simulation/simd.nix
+        ./networks/simulation/genesis.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
@@ -166,8 +172,10 @@
           dbg = value:
             builtins.trace (pkgs.lib.generators.toPretty { } value) value;
 
+          versions = builtins.fromJSON (builtins.readFile ./versions.json);
+
           uniondBundleVersions = rec {
-            complete = [ "v0.14.0" "v0.15.0" "v0.16.0" ];
+            complete = versions.union-testnet-4;
             first = pkgs.lib.lists.head complete;
             last = pkgs.lib.lists.last complete;
           };
@@ -380,11 +388,14 @@
               settings.global.excludes = [ "**/vendor/**" ];
               programs.prettier.enable = true;
               settings.formatter.prettier = {
-                options = if pkgs.stdenv.isLinux then [ "--write" "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ];
+                # TODO: Use settings.pluginSearchDirs
+                options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
                 includes = [
                   "*.css"
                   "*.html"
                   "*.js"
+                  "*.cjs"
+                  "*.mjs"
                   "*.json"
                   "*.jsx"
                   "*.md"
@@ -392,6 +403,7 @@
                   "*.scss"
                   "*.ts"
                   "*.tsx"
+                  "*.d.ts"
                   "*.yaml"
                   "*.yml"
                   "*.sol"

@@ -312,6 +312,11 @@ func needsQuote(s string) bool {
 
 // colorize returns the string s wrapped in ANSI code c, unless disabled is true.
 func colorize(s interface{}, c int, disabled bool) string {
+	e := os.Getenv("NO_COLOR")
+	if e != "" {
+		disabled = true
+	}
+
 	if disabled {
 		return fmt.Sprintf("%s", s)
 	}

@@ -22,12 +22,12 @@ func (r ResponseCheckTx) IsErr() bool {
 }
 
 // IsOK returns true if Code is OK.
-func (r ResponseDeliverTx) IsOK() bool {
+func (r ExecTxResult) IsOK() bool {
 	return r.Code == CodeTypeOK
 }
 
 // IsErr returns true if Code is something other than OK.
-func (r ResponseDeliverTx) IsErr() bool {
+func (r ExecTxResult) IsErr() bool {
 	return r.Code != CodeTypeOK
 }
 
@@ -51,6 +51,15 @@ func (r ResponseProcessProposal) IsStatusUnknown() bool {
 	return r.Status == ResponseProcessProposal_UNKNOWN
 }
 
+func (r ResponseVerifyVoteExtension) IsAccepted() bool {
+	return r.Status == ResponseVerifyVoteExtension_ACCEPT
+}
+
+// IsStatusUnknown returns true if Code is Unknown
+func (r ResponseVerifyVoteExtension) IsStatusUnknown() bool {
+	return r.Status == ResponseVerifyVoteExtension_UNKNOWN
+}
+
 //---------------------------------------------------------------------------
 // override JSON marshaling so we emit defaults (ie. disable omitempty)
 
@@ -72,12 +81,12 @@ func (r *ResponseCheckTx) UnmarshalJSON(b []byte) error {
 	return jsonpbUnmarshaller.Unmarshal(reader, r)
 }
 
-func (r *ResponseDeliverTx) MarshalJSON() ([]byte, error) {
+func (r *ExecTxResult) MarshalJSON() ([]byte, error) {
 	s, err := jsonpbMarshaller.MarshalToString(r)
 	return []byte(s), err
 }
 
-func (r *ResponseDeliverTx) UnmarshalJSON(b []byte) error {
+func (r *ExecTxResult) UnmarshalJSON(b []byte) error {
 	reader := bytes.NewBuffer(b)
 	return jsonpbUnmarshaller.Unmarshal(reader, r)
 }
@@ -124,7 +133,38 @@ type jsonRoundTripper interface {
 
 var _ jsonRoundTripper = (*ResponseCommit)(nil)
 var _ jsonRoundTripper = (*ResponseQuery)(nil)
-var _ jsonRoundTripper = (*ResponseDeliverTx)(nil)
+var _ jsonRoundTripper = (*ExecTxResult)(nil)
 var _ jsonRoundTripper = (*ResponseCheckTx)(nil)
 
 var _ jsonRoundTripper = (*EventAttribute)(nil)
+
+// deterministicExecTxResult constructs a copy of response that omits
+// non-deterministic fields. The input response is not modified.
+func deterministicExecTxResult(response *ExecTxResult) *ExecTxResult {
+	return &ExecTxResult{
+		Code:      response.Code,
+		Data:      response.Data,
+		GasWanted: response.GasWanted,
+		GasUsed:   response.GasUsed,
+	}
+}
+
+// MarshalTxResults encodes the the TxResults as a list of byte
+// slices. It strips off the non-deterministic pieces of the TxResults
+// so that the resulting data can be used for hash comparisons and used
+// in Merkle proofs.
+func MarshalTxResults(r []*ExecTxResult) ([][]byte, error) {
+	s := make([][]byte, len(r))
+	for i, e := range r {
+		d := deterministicExecTxResult(e)
+		b, err := d.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		s[i] = b
+	}
+	return s, nil
+}
+
+// -----------------------------------------------
+// construct Result data

@@ -1,0 +1,17 @@
+(type i64 (primitive i64))
+
+(decl X (i64) i64)
+(rule (X -1) -2)
+(rule (X -2) -3)
+(rule (X 0x7fff_ffff_ffff_ffff) 0x8000_0000_0000_0000)
+(rule (X 0xffff_ffff_ffff_fff0) 1)
+
+(type i128 (primitive i128))
+
+(decl Y (i128) i128)
+
+(rule (Y 0x1000_0000_0000_0000_1234_5678_9abc_def0) -1)
+(rule (Y 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff) 3)
+
+(rule (Y -0x1000_0000_0000_0000_1234_5678_9abc_def0) 1)
+(rule (Y -0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff) -3)

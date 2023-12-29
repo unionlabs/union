@@ -6,7 +6,7 @@ mod expand_msg;
 
 pub use expand_msg::{xmd::*, xof::*, *};
 
-use crate::Result;
+use crate::{Error, Result};
 use generic_array::{typenum::Unsigned, ArrayLength, GenericArray};
 
 /// The trait for helping to convert to a field element.
@@ -32,12 +32,12 @@ pub trait FromOkm {
 /// [`ExpandMsgXmd`]: crate::hash2field::ExpandMsgXmd
 /// [`ExpandMsgXof`]: crate::hash2field::ExpandMsgXof
 #[doc(hidden)]
-pub fn hash_to_field<'a, E, T>(data: &[&[u8]], domain: &'a [u8], out: &mut [T]) -> Result<()>
+pub fn hash_to_field<'a, E, T>(data: &[&[u8]], domain: &'a [&'a [u8]], out: &mut [T]) -> Result<()>
 where
     E: ExpandMsg<'a>,
     T: FromOkm + Default,
 {
-    let len_in_bytes = T::Length::to_usize() * out.len();
+    let len_in_bytes = T::Length::to_usize().checked_mul(out.len()).ok_or(Error)?;
     let mut tmp = GenericArray::<u8, <T as FromOkm>::Length>::default();
     let mut expander = E::expand_message(data, domain, len_in_bytes)?;
     for o in out.iter_mut() {

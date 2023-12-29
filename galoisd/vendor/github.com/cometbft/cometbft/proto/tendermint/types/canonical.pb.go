@@ -300,48 +300,208 @@ func (m *CanonicalVote) GetChainID() string {
 	return ""
 }
 
+type LegacyCanonicalVote struct {
+	Type      SignedMsgType     `protobuf:"varint,1,opt,name=type,proto3,enum=tendermint.types.SignedMsgType" json:"type,omitempty"`
+	Height    int64             `protobuf:"fixed64,2,opt,name=height,proto3" json:"height,omitempty"`
+	Round     int64             `protobuf:"fixed64,3,opt,name=round,proto3" json:"round,omitempty"`
+	BlockID   *CanonicalBlockID `protobuf:"bytes,4,opt,name=block_id,json=blockId,proto3" json:"block_id,omitempty"`
+	Timestamp time.Time         `protobuf:"bytes,5,opt,name=timestamp,proto3,stdtime" json:"timestamp"`
+	ChainID   string            `protobuf:"bytes,6,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+}
+
+func (m *LegacyCanonicalVote) Reset()         { *m = LegacyCanonicalVote{} }
+func (m *LegacyCanonicalVote) String() string { return proto.CompactTextString(m) }
+func (*LegacyCanonicalVote) ProtoMessage()    {}
+func (*LegacyCanonicalVote) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8d1a1a84ff7267ed, []int{4}
+}
+func (m *LegacyCanonicalVote) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *LegacyCanonicalVote) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_LegacyCanonicalVote.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *LegacyCanonicalVote) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LegacyCanonicalVote.Merge(m, src)
+}
+func (m *LegacyCanonicalVote) XXX_Size() int {
+	return m.Size()
+}
+func (m *LegacyCanonicalVote) XXX_DiscardUnknown() {
+	xxx_messageInfo_LegacyCanonicalVote.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LegacyCanonicalVote proto.InternalMessageInfo
+
+func (m *LegacyCanonicalVote) GetType() SignedMsgType {
+	if m != nil {
+		return m.Type
+	}
+	return UnknownType
+}
+
+func (m *LegacyCanonicalVote) GetHeight() int64 {
+	if m != nil {
+		return m.Height
+	}
+	return 0
+}
+
+func (m *LegacyCanonicalVote) GetRound() int64 {
+	if m != nil {
+		return m.Round
+	}
+	return 0
+}
+
+func (m *LegacyCanonicalVote) GetBlockID() *CanonicalBlockID {
+	if m != nil {
+		return m.BlockID
+	}
+	return nil
+}
+
+func (m *LegacyCanonicalVote) GetTimestamp() time.Time {
+	if m != nil {
+		return m.Timestamp
+	}
+	return time.Time{}
+}
+
+func (m *LegacyCanonicalVote) GetChainID() string {
+	if m != nil {
+		return m.ChainID
+	}
+	return ""
+}
+
+// CanonicalVoteExtension provides us a way to serialize a vote extension from
+// a particular validator such that we can sign over those serialized bytes.
+type CanonicalVoteExtension struct {
+	Extension []byte `protobuf:"bytes,1,opt,name=extension,proto3" json:"extension,omitempty"`
+	Height    int64  `protobuf:"fixed64,2,opt,name=height,proto3" json:"height,omitempty"`
+	Round     int64  `protobuf:"fixed64,3,opt,name=round,proto3" json:"round,omitempty"`
+	ChainId   string `protobuf:"bytes,4,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+}
+
+func (m *CanonicalVoteExtension) Reset()         { *m = CanonicalVoteExtension{} }
+func (m *CanonicalVoteExtension) String() string { return proto.CompactTextString(m) }
+func (*CanonicalVoteExtension) ProtoMessage()    {}
+func (*CanonicalVoteExtension) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8d1a1a84ff7267ed, []int{5}
+}
+func (m *CanonicalVoteExtension) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CanonicalVoteExtension) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CanonicalVoteExtension.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CanonicalVoteExtension) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CanonicalVoteExtension.Merge(m, src)
+}
+func (m *CanonicalVoteExtension) XXX_Size() int {
+	return m.Size()
+}
+func (m *CanonicalVoteExtension) XXX_DiscardUnknown() {
+	xxx_messageInfo_CanonicalVoteExtension.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CanonicalVoteExtension proto.InternalMessageInfo
+
+func (m *CanonicalVoteExtension) GetExtension() []byte {
+	if m != nil {
+		return m.Extension
+	}
+	return nil
+}
+
+func (m *CanonicalVoteExtension) GetHeight() int64 {
+	if m != nil {
+		return m.Height
+	}
+	return 0
+}
+
+func (m *CanonicalVoteExtension) GetRound() int64 {
+	if m != nil {
+		return m.Round
+	}
+	return 0
+}
+
+func (m *CanonicalVoteExtension) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*CanonicalBlockID)(nil), "tendermint.types.CanonicalBlockID")
 	proto.RegisterType((*CanonicalPartSetHeader)(nil), "tendermint.types.CanonicalPartSetHeader")
 	proto.RegisterType((*CanonicalProposal)(nil), "tendermint.types.CanonicalProposal")
 	proto.RegisterType((*CanonicalVote)(nil), "tendermint.types.CanonicalVote")
+	proto.RegisterType((*LegacyCanonicalVote)(nil), "tendermint.types.LegacyCanonicalVote")
+	proto.RegisterType((*CanonicalVoteExtension)(nil), "tendermint.types.CanonicalVoteExtension")
 }
 
 func init() { proto.RegisterFile("tendermint/types/canonical.proto", fileDescriptor_8d1a1a84ff7267ed) }
 
 var fileDescriptor_8d1a1a84ff7267ed = []byte{
-	// 489 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x53, 0x4f, 0x6b, 0xdb, 0x3e,
-	0x18, 0x8e, 0x52, 0x37, 0x71, 0xd4, 0xe6, 0xf7, 0xcb, 0x44, 0x29, 0x26, 0x0c, 0xdb, 0xf8, 0x30,
-	0xbc, 0x8b, 0x0d, 0xcd, 0x37, 0x70, 0x77, 0x58, 0xc6, 0xca, 0x8a, 0x5a, 0x7a, 0xd8, 0x25, 0xc8,
-	0xb6, 0x6a, 0x9b, 0xd9, 0x96, 0xb0, 0x95, 0x43, 0x2f, 0xfb, 0x0c, 0xfd, 0x58, 0x3d, 0xf6, 0xb8,
-	0x5d, 0xb2, 0xe1, 0xc0, 0x3e, 0xc7, 0x90, 0x9c, 0xc4, 0xa1, 0xdd, 0x76, 0x19, 0xec, 0x22, 0xde,
-	0x3f, 0x8f, 0x9e, 0xf7, 0xd1, 0xf3, 0x22, 0x68, 0x0b, 0x5a, 0xc6, 0xb4, 0x2a, 0xb2, 0x52, 0xf8,
-	0xe2, 0x8e, 0xd3, 0xda, 0x8f, 0x48, 0xc9, 0xca, 0x2c, 0x22, 0xb9, 0xc7, 0x2b, 0x26, 0x18, 0x9a,
-	0x74, 0x08, 0x4f, 0x21, 0xa6, 0x27, 0x09, 0x4b, 0x98, 0x6a, 0xfa, 0x32, 0x6a, 0x71, 0xd3, 0x97,
-	0xcf, 0x98, 0xd4, 0xb9, 0xe9, 0x5a, 0x09, 0x63, 0x49, 0x4e, 0x7d, 0x95, 0x85, 0xcb, 0x5b, 0x5f,
-	0x64, 0x05, 0xad, 0x05, 0x29, 0x78, 0x0b, 0x70, 0x3e, 0xc3, 0xc9, 0xf9, 0x76, 0x72, 0x90, 0xb3,
-	0xe8, 0xd3, 0xfc, 0x0d, 0x42, 0x50, 0x4b, 0x49, 0x9d, 0x1a, 0xc0, 0x06, 0xee, 0x31, 0x56, 0x31,
-	0xba, 0x81, 0xff, 0x73, 0x52, 0x89, 0x45, 0x4d, 0xc5, 0x22, 0xa5, 0x24, 0xa6, 0x95, 0xd1, 0xb7,
-	0x81, 0x7b, 0x74, 0xe6, 0x7a, 0x4f, 0x85, 0x7a, 0x3b, 0xc2, 0x4b, 0x52, 0x89, 0x2b, 0x2a, 0xde,
-	0x2a, 0x7c, 0xa0, 0x3d, 0xac, 0xac, 0x1e, 0x1e, 0xf3, 0xfd, 0xa2, 0x13, 0xc0, 0xd3, 0x5f, 0xc3,
-	0xd1, 0x09, 0x3c, 0x14, 0x4c, 0x90, 0x5c, 0xc9, 0x18, 0xe3, 0x36, 0xd9, 0x69, 0xeb, 0x77, 0xda,
-	0x9c, 0xaf, 0x7d, 0xf8, 0xa2, 0x23, 0xa9, 0x18, 0x67, 0x35, 0xc9, 0xd1, 0x0c, 0x6a, 0x52, 0x8e,
-	0xba, 0xfe, 0xdf, 0x99, 0xf5, 0x5c, 0xe6, 0x55, 0x96, 0x94, 0x34, 0xbe, 0xa8, 0x93, 0xeb, 0x3b,
-	0x4e, 0xb1, 0x02, 0xa3, 0x53, 0x38, 0x48, 0x69, 0x96, 0xa4, 0x42, 0x0d, 0x98, 0xe0, 0x4d, 0x26,
-	0xc5, 0x54, 0x6c, 0x59, 0xc6, 0xc6, 0x81, 0x2a, 0xb7, 0x09, 0x7a, 0x0d, 0x47, 0x9c, 0xe5, 0x8b,
-	0xb6, 0xa3, 0xd9, 0xc0, 0x3d, 0x08, 0x8e, 0x9b, 0x95, 0xa5, 0x5f, 0x7e, 0x78, 0x8f, 0x65, 0x0d,
-	0xeb, 0x9c, 0xe5, 0x2a, 0x42, 0xef, 0xa0, 0x1e, 0x4a, 0x7b, 0x17, 0x59, 0x6c, 0x1c, 0x2a, 0xe3,
-	0x9c, 0x3f, 0x18, 0xb7, 0xd9, 0x44, 0x70, 0xd4, 0xac, 0xac, 0xe1, 0x26, 0xc1, 0x43, 0x45, 0x30,
-	0x8f, 0x51, 0x00, 0x47, 0xbb, 0x35, 0x1a, 0x03, 0x45, 0x36, 0xf5, 0xda, 0x45, 0x7b, 0xdb, 0x45,
-	0x7b, 0xd7, 0x5b, 0x44, 0xa0, 0x4b, 0xdf, 0xef, 0xbf, 0x59, 0x00, 0x77, 0xd7, 0xd0, 0x2b, 0xa8,
-	0x47, 0x29, 0xc9, 0x4a, 0xa9, 0x67, 0x68, 0x03, 0x77, 0xd4, 0xce, 0x3a, 0x97, 0x35, 0x39, 0x4b,
-	0x35, 0xe7, 0xb1, 0xf3, 0x03, 0xc0, 0xf1, 0x4e, 0xd6, 0x0d, 0x13, 0xf4, 0x5f, 0xf8, 0xba, 0x6f,
-	0x96, 0xf6, 0x97, 0x66, 0xed, 0x3f, 0x74, 0xf0, 0xfb, 0x87, 0x06, 0x17, 0x0f, 0x8d, 0x09, 0x1e,
-	0x1b, 0x13, 0x7c, 0x6f, 0x4c, 0x70, 0xbf, 0x36, 0x7b, 0x8f, 0x6b, 0xb3, 0xf7, 0x65, 0x6d, 0xf6,
-	0x3e, 0xce, 0x92, 0x4c, 0xa4, 0xcb, 0xd0, 0x8b, 0x58, 0xe1, 0x47, 0xac, 0xa0, 0x22, 0xbc, 0x15,
-	0x5d, 0xd0, 0x7e, 0xc8, 0xa7, 0x9f, 0x30, 0x1c, 0xa8, 0xfa, 0xec, 0x67, 0x00, 0x00, 0x00, 0xff,
-	0xff, 0x83, 0x71, 0x05, 0xcf, 0xe9, 0x03, 0x00, 0x00,
+	// 546 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x54, 0x4d, 0x6a, 0xdb, 0x40,
+	0x14, 0xf6, 0x38, 0xfe, 0x9d, 0xc4, 0xad, 0x3b, 0x0d, 0xc1, 0x35, 0x41, 0x32, 0x5a, 0x14, 0x75,
+	0x23, 0x41, 0x7c, 0x03, 0xa5, 0x85, 0xba, 0x24, 0x34, 0x28, 0x21, 0x8b, 0x6e, 0xcc, 0x48, 0x9a,
+	0x48, 0xa2, 0x92, 0x46, 0x48, 0x63, 0xa8, 0x37, 0xed, 0x15, 0x72, 0x94, 0x1e, 0x23, 0xcb, 0x2c,
+	0xdb, 0x8d, 0x5b, 0x64, 0xe8, 0x39, 0xca, 0x8c, 0x64, 0x49, 0x4d, 0x8a, 0xa1, 0x04, 0x0a, 0xd9,
+	0x88, 0xf7, 0xf3, 0xcd, 0x7b, 0xdf, 0x7c, 0x6f, 0xf4, 0xe0, 0x84, 0x91, 0xc8, 0x21, 0x49, 0xe8,
+	0x47, 0x4c, 0x67, 0xcb, 0x98, 0xa4, 0xba, 0x8d, 0x23, 0x1a, 0xf9, 0x36, 0x0e, 0xb4, 0x38, 0xa1,
+	0x8c, 0xa2, 0x61, 0x85, 0xd0, 0x04, 0x62, 0xbc, 0xef, 0x52, 0x97, 0x8a, 0xa4, 0xce, 0xad, 0x1c,
+	0x37, 0x3e, 0xbc, 0x57, 0x49, 0x7c, 0x8b, 0xac, 0xec, 0x52, 0xea, 0x06, 0x44, 0x17, 0x9e, 0xb5,
+	0xb8, 0xd2, 0x99, 0x1f, 0x92, 0x94, 0xe1, 0x30, 0xce, 0x01, 0xca, 0x67, 0x38, 0x3c, 0xde, 0x74,
+	0x36, 0x02, 0x6a, 0x7f, 0x9c, 0xbd, 0x46, 0x08, 0xb6, 0x3c, 0x9c, 0x7a, 0x23, 0x30, 0x01, 0xea,
+	0x9e, 0x29, 0x6c, 0x74, 0x09, 0x9f, 0xc6, 0x38, 0x61, 0xf3, 0x94, 0xb0, 0xb9, 0x47, 0xb0, 0x43,
+	0x92, 0x51, 0x73, 0x02, 0xd4, 0xdd, 0x23, 0x55, 0xbb, 0x4b, 0x54, 0x2b, 0x0b, 0x9e, 0xe1, 0x84,
+	0x9d, 0x13, 0xf6, 0x56, 0xe0, 0x8d, 0xd6, 0xcd, 0x4a, 0x6e, 0x98, 0x83, 0xb8, 0x1e, 0x54, 0x0c,
+	0x78, 0xf0, 0x77, 0x38, 0xda, 0x87, 0x6d, 0x46, 0x19, 0x0e, 0x04, 0x8d, 0x81, 0x99, 0x3b, 0x25,
+	0xb7, 0x66, 0xc5, 0x4d, 0xf9, 0xde, 0x84, 0xcf, 0xaa, 0x22, 0x09, 0x8d, 0x69, 0x8a, 0x03, 0x34,
+	0x85, 0x2d, 0x4e, 0x47, 0x1c, 0x7f, 0x72, 0x24, 0xdf, 0xa7, 0x79, 0xee, 0xbb, 0x11, 0x71, 0x4e,
+	0x53, 0xf7, 0x62, 0x19, 0x13, 0x53, 0x80, 0xd1, 0x01, 0xec, 0x78, 0xc4, 0x77, 0x3d, 0x26, 0x1a,
+	0x0c, 0xcd, 0xc2, 0xe3, 0x64, 0x12, 0xba, 0x88, 0x9c, 0xd1, 0x8e, 0x08, 0xe7, 0x0e, 0x7a, 0x05,
+	0xfb, 0x31, 0x0d, 0xe6, 0x79, 0xa6, 0x35, 0x01, 0xea, 0x8e, 0xb1, 0x97, 0xad, 0xe4, 0xde, 0xd9,
+	0xfb, 0x13, 0x93, 0xc7, 0xcc, 0x5e, 0x4c, 0x03, 0x61, 0xa1, 0x77, 0xb0, 0x67, 0x71, 0x79, 0xe7,
+	0xbe, 0x33, 0x6a, 0x0b, 0xe1, 0x94, 0x2d, 0xc2, 0x15, 0x93, 0x30, 0x76, 0xb3, 0x95, 0xdc, 0x2d,
+	0x1c, 0xb3, 0x2b, 0x0a, 0xcc, 0x1c, 0x64, 0xc0, 0x7e, 0x39, 0xc6, 0x51, 0x47, 0x14, 0x1b, 0x6b,
+	0xf9, 0xa0, 0xb5, 0xcd, 0xa0, 0xb5, 0x8b, 0x0d, 0xc2, 0xe8, 0x71, 0xdd, 0xaf, 0x7f, 0xc8, 0xc0,
+	0xac, 0x8e, 0xa1, 0x97, 0xb0, 0x67, 0x7b, 0xd8, 0x8f, 0x38, 0x9f, 0xee, 0x04, 0xa8, 0xfd, 0xbc,
+	0xd7, 0x31, 0x8f, 0xf1, 0x5e, 0x22, 0x39, 0x73, 0x94, 0x5f, 0x00, 0x0e, 0x4a, 0x5a, 0x97, 0x94,
+	0x91, 0xff, 0xa1, 0x6b, 0x5d, 0xac, 0xd6, 0x03, 0xc5, 0xaa, 0x5f, 0xb4, 0xb3, 0xe5, 0xa2, 0x5f,
+	0x9b, 0xf0, 0xf9, 0x09, 0x71, 0xb1, 0xbd, 0x7c, 0xd4, 0xd7, 0xfd, 0xe3, 0x6d, 0xb4, 0x1f, 0xfe,
+	0x36, 0xb6, 0x49, 0xf6, 0xa5, 0xf6, 0xef, 0x72, 0xad, 0xde, 0x7c, 0x62, 0x24, 0x4a, 0x7d, 0x1a,
+	0xa1, 0x43, 0xd8, 0x27, 0x1b, 0xa7, 0x58, 0x23, 0x55, 0xe0, 0x1f, 0xd5, 0x79, 0x51, 0x63, 0xc3,
+	0xd5, 0xe9, 0x97, 0x04, 0x8c, 0xd3, 0x9b, 0x4c, 0x02, 0xb7, 0x99, 0x04, 0x7e, 0x66, 0x12, 0xb8,
+	0x5e, 0x4b, 0x8d, 0xdb, 0xb5, 0xd4, 0xf8, 0xb6, 0x96, 0x1a, 0x1f, 0xa6, 0xae, 0xcf, 0xbc, 0x85,
+	0xa5, 0xd9, 0x34, 0xd4, 0x6d, 0x1a, 0x12, 0x66, 0x5d, 0xb1, 0xca, 0xc8, 0x97, 0xe8, 0xdd, 0xc5,
+	0x69, 0x75, 0x44, 0x7c, 0xfa, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x13, 0xb5, 0xcc, 0x07, 0x9d, 0x05,
+	0x00, 0x00,
 }
 
 func (m *CanonicalBlockID) Marshal() (dAtA []byte, err error) {
@@ -550,6 +710,122 @@ func (m *CanonicalVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *LegacyCanonicalVote) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LegacyCanonicalVote) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LegacyCanonicalVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ChainID) > 0 {
+		i -= len(m.ChainID)
+		copy(dAtA[i:], m.ChainID)
+		i = encodeVarintCanonical(dAtA, i, uint64(len(m.ChainID)))
+		i--
+		dAtA[i] = 0x32
+	}
+	n5, err5 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp):])
+	if err5 != nil {
+		return 0, err5
+	}
+	i -= n5
+	i = encodeVarintCanonical(dAtA, i, uint64(n5))
+	i--
+	dAtA[i] = 0x2a
+	if m.BlockID != nil {
+		{
+			size, err := m.BlockID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCanonical(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.Round != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.Round))
+		i--
+		dAtA[i] = 0x19
+	}
+	if m.Height != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.Height))
+		i--
+		dAtA[i] = 0x11
+	}
+	if m.Type != 0 {
+		i = encodeVarintCanonical(dAtA, i, uint64(m.Type))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CanonicalVoteExtension) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CanonicalVoteExtension) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CanonicalVoteExtension) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintCanonical(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.Round != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.Round))
+		i--
+		dAtA[i] = 0x19
+	}
+	if m.Height != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.Height))
+		i--
+		dAtA[i] = 0x11
+	}
+	if len(m.Extension) > 0 {
+		i -= len(m.Extension)
+		copy(dAtA[i:], m.Extension)
+		i = encodeVarintCanonical(dAtA, i, uint64(len(m.Extension)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintCanonical(dAtA []byte, offset int, v uint64) int {
 	offset -= sovCanonical(v)
 	base := offset
@@ -643,6 +919,57 @@ func (m *CanonicalVote) Size() (n int) {
 		n += 1 + l + sovCanonical(uint64(l))
 	}
 	l = len(m.ChainID)
+	if l > 0 {
+		n += 1 + l + sovCanonical(uint64(l))
+	}
+	return n
+}
+
+func (m *LegacyCanonicalVote) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Type != 0 {
+		n += 1 + sovCanonical(uint64(m.Type))
+	}
+	if m.Height != 0 {
+		n += 9
+	}
+	if m.Round != 0 {
+		n += 9
+	}
+	if m.BlockID != nil {
+		l = m.BlockID.Size()
+		n += 1 + l + sovCanonical(uint64(l))
+	}
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp)
+	n += 1 + l + sovCanonical(uint64(l))
+	l = len(m.ChainID)
+	if l > 0 {
+		n += 1 + l + sovCanonical(uint64(l))
+	}
+	return n
+}
+
+func (m *CanonicalVoteExtension) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Extension)
+	if l > 0 {
+		n += 1 + l + sovCanonical(uint64(l))
+	}
+	if m.Height != 0 {
+		n += 9
+	}
+	if m.Round != 0 {
+		n += 9
+	}
+	l = len(m.ChainId)
 	if l > 0 {
 		n += 1 + l + sovCanonical(uint64(l))
 	}
@@ -1219,6 +1546,332 @@ func (m *CanonicalVote) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.ChainID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCanonical(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LegacyCanonicalVote) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCanonical
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LegacyCanonicalVote: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LegacyCanonicalVote: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCanonical
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Type |= SignedMsgType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Height = int64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+		case 3:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Round", wireType)
+			}
+			m.Round = 0
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Round = int64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCanonical
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.BlockID == nil {
+				m.BlockID = &CanonicalBlockID{}
+			}
+			if err := m.BlockID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCanonical
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCanonical
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCanonical(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CanonicalVoteExtension) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCanonical
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CanonicalVoteExtension: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CanonicalVoteExtension: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Extension", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCanonical
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Extension = append(m.Extension[:0], dAtA[iNdEx:postIndex]...)
+			if m.Extension == nil {
+				m.Extension = []byte{}
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Height = int64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+		case 3:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Round", wireType)
+			}
+			m.Round = 0
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Round = int64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCanonical
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCanonical
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

@@ -3,20 +3,20 @@
 use self::inst::EmitInfo;
 
 use super::TargetIsa;
-use crate::ir::{condcodes::IntCC, Function};
+use crate::ir::{condcodes::IntCC, Function, Type};
 #[cfg(feature = "unwind")]
 use crate::isa::unwind::systemv;
-use crate::isa::x64::{inst::regs::create_reg_universe_systemv, settings as x64_settings};
+use crate::isa::x64::{inst::regs::create_reg_env_systemv, settings as x64_settings};
 use crate::isa::Builder as IsaBuilder;
 use crate::machinst::{
-    compile, MachCompileResult, MachTextSectionBuilder, TextSectionBuilder, VCode,
+    compile, CompiledCode, CompiledCodeStencil, MachTextSectionBuilder, Reg, SigSet,
+    TextSectionBuilder, VCode,
 };
 use crate::result::{CodegenError, CodegenResult};
 use crate::settings::{self as shared_settings, Flags};
 use alloc::{boxed::Box, vec::Vec};
 use core::fmt;
-
-use regalloc::{PrettyPrint, RealRegUniverse, Reg};
+use regalloc2::MachineEnv;
 use target_lexicon::Triple;
 
 mod abi;
@@ -30,27 +30,31 @@ pub(crate) struct X64Backend {
     triple: Triple,
     flags: Flags,
     x64_flags: x64_settings::Flags,
-    reg_universe: RealRegUniverse,
+    reg_env: MachineEnv,
 }
 
 impl X64Backend {
     /// Create a new X64 backend with the given (shared) flags.
     fn new_with_flags(triple: Triple, flags: Flags, x64_flags: x64_settings::Flags) -> Self {
-        let reg_universe = create_reg_universe_systemv(&flags);
+        let reg_env = create_reg_env_systemv(&flags);
         Self {
             triple,
             flags,
             x64_flags,
-            reg_universe,
+            reg_env,
         }
     }
 
-    fn compile_vcode(&self, func: &Function, flags: Flags) -> CodegenResult<VCode<inst::Inst>> {
+    fn compile_vcode(
+        &self,
+        func: &Function,
+    ) -> CodegenResult<(VCode<inst::Inst>, regalloc2::Output)> {
         // This performs lowering to VCode, register-allocates the code, computes
         // block layout and finalizes branches. The result is ready for binary emission.
-        let emit_info = EmitInfo::new(flags.clone(), self.x64_flags.clone());
-        let abi = Box::new(abi::X64ABICallee::new(&func, flags, self.isa_flags())?);
-        compile::compile::<Self>(&func, self, abi, &self.reg_universe, emit_info)
+        let emit_info = EmitInfo::new(self.flags.clone(), self.x64_flags.clone());
+        let sigs = SigSet::new::<abi::X64ABIMachineSpec>(func, &self.flags)?;
+        let abi = abi::X64Callee::new(&func, self, &self.x64_flags, &sigs)?;
+        compile::compile::<Self>(&func, self, abi, emit_info, sigs)
     }
 }
 
@@ -59,30 +63,34 @@ impl TargetIsa for X64Backend {
         &self,
         func: &Function,
         want_disasm: bool,
-    ) -> CodegenResult<MachCompileResult> {
-        let flags = self.flags();
-        let vcode = self.compile_vcode(func, flags.clone())?;
+    ) -> CodegenResult<CompiledCodeStencil> {
+        let (vcode, regalloc_result) = self.compile_vcode(func)?;
 
-        let (buffer, bb_starts, bb_edges) = vcode.emit();
-        let buffer = buffer.finish();
-        let frame_size = vcode.frame_size();
-        let value_labels_ranges = vcode.value_labels_ranges();
-        let stackslot_offsets = vcode.stackslot_offsets().clone();
+        let emit_result = vcode.emit(
+            &regalloc_result,
+            want_disasm,
+            self.flags.machine_code_cfg_info(),
+        );
+        let frame_size = emit_result.frame_size;
+        let value_labels_ranges = emit_result.value_labels_ranges;
+        let buffer = emit_result.buffer.finish();
+        let sized_stackslot_offsets = emit_result.sized_stackslot_offsets;
+        let dynamic_stackslot_offsets = emit_result.dynamic_stackslot_offsets;
 
-        let disasm = if want_disasm {
-            Some(vcode.show_rru(Some(&create_reg_universe_systemv(flags))))
-        } else {
-            None
-        };
+        if let Some(disasm) = emit_result.disasm.as_ref() {
+            log::trace!("disassembly:\n{}", disasm);
+        }
 
-        Ok(MachCompileResult {
+        Ok(CompiledCodeStencil {
             buffer,
             frame_size,
-            disasm,
+            disasm: emit_result.disasm,
             value_labels_ranges,
-            stackslot_offsets,
-            bb_starts,
-            bb_edges,
+            sized_stackslot_offsets,
+            dynamic_stackslot_offsets,
+            bb_starts: emit_result.bb_offsets,
+            bb_edges: emit_result.bb_edges,
+            alignment: emit_result.alignment,
         })
     }
 
@@ -90,8 +98,16 @@ impl TargetIsa for X64Backend {
         &self.flags
     }
 
+    fn machine_env(&self) -> &MachineEnv {
+        &self.reg_env
+    }
+
     fn isa_flags(&self) -> Vec<shared_settings::Value> {
         self.x64_flags.iter().collect()
+    }
+
+    fn dynamic_vector_bytes(&self, _dyn_ty: Type) -> u32 {
+        16
     }
 
     fn name(&self) -> &'static str {
@@ -111,7 +127,7 @@ impl TargetIsa for X64Backend {
     #[cfg(feature = "unwind")]
     fn emit_unwind_info(
         &self,
-        result: &MachCompileResult,
+        result: &CompiledCode,
         kind: crate::machinst::UnwindInfoKind,
     ) -> CodegenResult<Option<crate::isa::unwind::UnwindInfo>> {
         use crate::isa::unwind::UnwindInfo;
@@ -146,8 +162,14 @@ impl TargetIsa for X64Backend {
         inst::unwind::systemv::map_reg(reg).map(|reg| reg.0)
     }
 
-    fn text_section_builder(&self, num_funcs: u32) -> Box<dyn TextSectionBuilder> {
+    fn text_section_builder(&self, num_funcs: usize) -> Box<dyn TextSectionBuilder> {
         Box::new(MachTextSectionBuilder::<inst::Inst>::new(num_funcs))
+    }
+
+    /// Align functions on x86 to 16 bytes, ensuring that rip-relative loads to SSE registers are
+    /// always from aligned memory.
+    fn function_alignment(&self) -> u32 {
+        16
     }
 }
 
@@ -199,8 +221,8 @@ fn isa_constructor(
 mod test {
     use super::*;
     use crate::cursor::{Cursor, FuncCursor};
-    use crate::ir::{types::*, SourceLoc, ValueLabel, ValueLabelStart};
-    use crate::ir::{AbiParam, ExternalName, Function, InstBuilder, Signature};
+    use crate::ir::{types::*, RelSourceLoc, SourceLoc, UserFuncName, ValueLabel, ValueLabelStart};
+    use crate::ir::{AbiParam, Function, InstBuilder, JumpTableData, Signature};
     use crate::isa::CallConv;
     use crate::settings;
     use crate::settings::Configurable;
@@ -215,7 +237,7 @@ mod test {
     /// well do the test here, where we have a backend to use.
     #[test]
     fn test_cold_blocks() {
-        let name = ExternalName::testcase("test0");
+        let name = UserFuncName::testcase("test0");
         let mut sig = Signature::new(CallConv::SystemV);
         sig.params.push(AbiParam::new(I32));
         sig.returns.push(AbiParam::new(I32));
@@ -269,35 +291,35 @@ mod test {
         pos.func.dfg.values_labels.as_mut().unwrap().insert(
             v0,
             crate::ir::ValueLabelAssignments::Starts(vec![ValueLabelStart {
-                from: SourceLoc::new(1),
+                from: RelSourceLoc::new(1),
                 label: ValueLabel::new(1),
             }]),
         );
         pos.func.dfg.values_labels.as_mut().unwrap().insert(
             v1,
             crate::ir::ValueLabelAssignments::Starts(vec![ValueLabelStart {
-                from: SourceLoc::new(2),
+                from: RelSourceLoc::new(2),
                 label: ValueLabel::new(1),
             }]),
         );
         pos.func.dfg.values_labels.as_mut().unwrap().insert(
             v2,
             crate::ir::ValueLabelAssignments::Starts(vec![ValueLabelStart {
-                from: SourceLoc::new(3),
+                from: RelSourceLoc::new(3),
                 label: ValueLabel::new(1),
             }]),
         );
         pos.func.dfg.values_labels.as_mut().unwrap().insert(
             v3,
             crate::ir::ValueLabelAssignments::Starts(vec![ValueLabelStart {
-                from: SourceLoc::new(4),
+                from: RelSourceLoc::new(4),
                 label: ValueLabel::new(1),
             }]),
         );
         pos.func.dfg.values_labels.as_mut().unwrap().insert(
             v4,
             crate::ir::ValueLabelAssignments::Starts(vec![ValueLabelStart {
-                from: SourceLoc::new(5),
+                from: RelSourceLoc::new(5),
                 label: ValueLabel::new(1),
             }]),
         );
@@ -317,32 +339,36 @@ mod test {
             .unwrap();
         let code = result.buffer.data();
 
-        // 00000000  55                push rbp
-        // 00000001  4889E5            mov rbp,rsp
-        // 00000004  4889FE            mov rsi,rdi
-        // 00000007  81C634120000      add esi,0x1234
-        // 0000000D  85F6              test esi,esi
-        // 0000000F  0F841B000000      jz near 0x30
-        // 00000015  4889F7            mov rdi,rsi
-        // 00000018  4889F0            mov rax,rsi
-        // 0000001B  81E834120000      sub eax,0x1234
-        // 00000021  01F8              add eax,edi
-        // 00000023  85F6              test esi,esi
-        // 00000025  0F8505000000      jnz near 0x30
-        // 0000002B  4889EC            mov rsp,rbp
-        // 0000002E  5D                pop rbp
-        // 0000002F  C3                ret
-        // 00000030  4889F7            mov rdi,rsi    <--- cold block
-        // 00000033  81C734120000      add edi,0x1234
-        // 00000039  85FF              test edi,edi
-        // 0000003B  0F85EFFFFFFF      jnz near 0x30
-        // 00000041  E9D2FFFFFF        jmp 0x18
+        // To update this comment, write the golden bytes to a file, and run the following
+        // command on it:
+        // > objdump -b binary -D <file> -m i386:x86-64 -M intel
+        //
+        //  0:   55                      push   rbp
+        //  1:   48 89 e5                mov    rbp,rsp
+        //  4:   48 89 fe                mov    rsi,rdi
+        //  7:   81 c6 34 12 00 00       add    esi,0x1234
+        //  d:   85 f6                   test   esi,esi
+        //  f:   0f 84 1c 00 00 00       je     0x31
+        // 15:   49 89 f0                mov    r8,rsi
+        // 18:   48 89 f0                mov    rax,rsi
+        // 1b:   81 e8 34 12 00 00       sub    eax,0x1234
+        // 21:   44 01 c0                add    eax,r8d
+        // 24:   85 f6                   test   esi,esi
+        // 26:   0f 85 05 00 00 00       jne    0x31
+        // 2c:   48 89 ec                mov    rsp,rbp
+        // 2f:   5d                      pop    rbp
+        // 30:   c3                      ret
+        // 31:   49 89 f0                mov    r8,rsi
+        // 34:   41 81 c0 34 12 00 00    add    r8d,0x1234
+        // 3b:   45 85 c0                test   r8d,r8d
+        // 3e:   0f 85 ed ff ff ff       jne    0x31
+        // 44:   e9 cf ff ff ff          jmp    0x18
 
         let golden = vec![
-            85, 72, 137, 229, 72, 137, 254, 129, 198, 52, 18, 0, 0, 133, 246, 15, 132, 27, 0, 0, 0,
-            72, 137, 247, 72, 137, 240, 129, 232, 52, 18, 0, 0, 1, 248, 133, 246, 15, 133, 5, 0, 0,
-            0, 72, 137, 236, 93, 195, 72, 137, 247, 129, 199, 52, 18, 0, 0, 133, 255, 15, 133, 239,
-            255, 255, 255, 233, 210, 255, 255, 255,
+            85, 72, 137, 229, 72, 137, 254, 129, 198, 52, 18, 0, 0, 133, 246, 15, 132, 28, 0, 0, 0,
+            73, 137, 240, 72, 137, 240, 129, 232, 52, 18, 0, 0, 68, 1, 192, 133, 246, 15, 133, 5,
+            0, 0, 0, 72, 137, 236, 93, 195, 73, 137, 240, 65, 129, 192, 52, 18, 0, 0, 69, 133, 192,
+            15, 133, 237, 255, 255, 255, 233, 207, 255, 255, 255,
         ];
 
         assert_eq!(code, &golden[..]);
@@ -363,5 +389,100 @@ mod test {
             isa_builder.finish(shared_flags),
             Err(CodegenError::Unsupported(_)),
         ));
+    }
+
+    // Check that br_table lowers properly. We can't test this with an
+    // ordinary compile-test because the br_table pseudoinstruction
+    // expands during emission.
+    #[test]
+    fn br_table() {
+        let name = UserFuncName::testcase("test0");
+        let mut sig = Signature::new(CallConv::SystemV);
+        sig.params.push(AbiParam::new(I32));
+        sig.returns.push(AbiParam::new(I32));
+        let mut func = Function::with_name_signature(name, sig);
+
+        let bb0 = func.dfg.make_block();
+        let arg0 = func.dfg.append_block_param(bb0, I32);
+        let bb1 = func.dfg.make_block();
+        let bb2 = func.dfg.make_block();
+        let bb3 = func.dfg.make_block();
+
+        let mut pos = FuncCursor::new(&mut func);
+
+        pos.insert_block(bb0);
+        let mut jt_data = JumpTableData::new();
+        jt_data.push_entry(bb1);
+        jt_data.push_entry(bb2);
+        let jt = pos.func.create_jump_table(jt_data);
+        pos.ins().br_table(arg0, bb3, jt);
+
+        pos.insert_block(bb1);
+        let v1 = pos.ins().iconst(I32, 1);
+        pos.ins().return_(&[v1]);
+
+        pos.insert_block(bb2);
+        let v2 = pos.ins().iconst(I32, 2);
+        pos.ins().return_(&[v2]);
+
+        pos.insert_block(bb3);
+        let v3 = pos.ins().iconst(I32, 3);
+        pos.ins().return_(&[v3]);
+
+        let mut shared_flags_builder = settings::builder();
+        shared_flags_builder.set("opt_level", "none").unwrap();
+        shared_flags_builder.set("enable_verifier", "true").unwrap();
+        let shared_flags = settings::Flags::new(shared_flags_builder);
+        let isa_flags = x64_settings::Flags::new(&shared_flags, x64_settings::builder());
+        let backend = X64Backend::new_with_flags(
+            Triple::from_str("x86_64").unwrap(),
+            shared_flags,
+            isa_flags,
+        );
+        let result = backend
+            .compile_function(&mut func, /* want_disasm = */ false)
+            .unwrap();
+        let code = result.buffer.data();
+
+        // To update this comment, write the golden bytes to a file, and run the following
+        // command on it:
+        // > objdump -b binary -D <file> -m i386:x86-64 -M intel
+        //
+        //  0:   55                      push   rbp
+        //  1:   48 89 e5                mov    rbp,rsp
+        //  4:   83 ff 02                cmp    edi,0x2
+        //  7:   0f 83 27 00 00 00       jae    0x34
+        //  d:   44 8b d7                mov    r10d,edi
+        // 10:   41 b9 00 00 00 00       mov    r9d,0x0
+        // 16:   4d 0f 43 d1             cmovae r10,r9
+        // 1a:   4c 8d 0d 0b 00 00 00    lea    r9,[rip+0xb]        # 0x2c
+        // 21:   4f 63 54 91 00          movsxd r10,DWORD PTR [r9+r10*4+0x0]
+        // 26:   4d 01 d1                add    r9,r10
+        // 29:   41 ff e1                jmp    r9
+        // 2c:   12 00                   adc    al,BYTE PTR [rax]
+        // 2e:   00 00                   add    BYTE PTR [rax],al
+        // 30:   1c 00                   sbb    al,0x0
+        // 32:   00 00                   add    BYTE PTR [rax],al
+        // 34:   b8 03 00 00 00          mov    eax,0x3
+        // 39:   48 89 ec                mov    rsp,rbp
+        // 3c:   5d                      pop    rbp
+        // 3d:   c3                      ret
+        // 3e:   b8 01 00 00 00          mov    eax,0x1
+        // 43:   48 89 ec                mov    rsp,rbp
+        // 46:   5d                      pop    rbp
+        // 47:   c3                      ret
+        // 48:   b8 02 00 00 00          mov    eax,0x2
+        // 4d:   48 89 ec                mov    rsp,rbp
+        // 50:   5d                      pop    rbp
+        // 51:   c3                      ret
+
+        let golden = vec![
+            85, 72, 137, 229, 131, 255, 2, 15, 131, 39, 0, 0, 0, 68, 139, 215, 65, 185, 0, 0, 0, 0,
+            77, 15, 67, 209, 76, 141, 13, 11, 0, 0, 0, 79, 99, 84, 145, 0, 77, 1, 209, 65, 255,
+            225, 18, 0, 0, 0, 28, 0, 0, 0, 184, 3, 0, 0, 0, 72, 137, 236, 93, 195, 184, 1, 0, 0, 0,
+            72, 137, 236, 93, 195, 184, 2, 0, 0, 0, 72, 137, 236, 93, 195,
+        ];
+
+        assert_eq!(code, &golden[..]);
     }
 }

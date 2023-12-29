@@ -18,7 +18,7 @@ macro_rules! impls {
 
         #[inline]
         pub const fn clamp(self, min: Self, max: Self) -> Self {
-            assert!(min.le(max));
+            assert!(min.le(&max));
             if let Ordering::Less = self.cmp(&min) {
                 min
             } else if let Ordering::Greater = self.cmp(&max) {
@@ -29,7 +29,7 @@ macro_rules! impls {
         }
 
         #[inline]
-        pub const fn lt(self, other: Self) -> bool {
+        pub const fn lt(&self, other: &Self) -> bool {
             match self.cmp(&other) {
                 Ordering::Less => true,
                 _ => false,
@@ -37,7 +37,7 @@ macro_rules! impls {
         }
 
         #[inline]
-        pub const fn le(self, other: Self) -> bool {
+        pub const fn le(&self, other: &Self) -> bool {
             match self.cmp(&other) {
                 Ordering::Less | Ordering::Equal => true,
                 _ => false,
@@ -45,7 +45,7 @@ macro_rules! impls {
         }
 
         #[inline]
-        pub const fn gt(self, other: Self) -> bool {
+        pub const fn gt(&self, other: &Self) -> bool {
             match self.cmp(&other) {
                 Ordering::Greater => true,
                 _ => false,
@@ -53,7 +53,7 @@ macro_rules! impls {
         }
 
         #[inline]
-        pub const fn ge(self, other: Self) -> bool {
+        pub const fn ge(&self, other: &Self) -> bool {
             match self.cmp(&other) {
                 Ordering::Greater | Ordering::Equal => true,
                 _ => false,

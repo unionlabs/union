@@ -10,16 +10,18 @@ use std::{
 };
 
 use chain_utils::{
+    cosmos::Cosmos,
+    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
     evm::Evm,
-    union::{broadcast_tx_commit, BroadcastTxCommitError, CosmosSdkChain, Union},
+    union::Union,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use futures::{future::BoxFuture, FutureExt};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    encoding::Proto,
+    encoding::{Encode, Proto},
     ethereum::config::{Mainnet, Minimal},
-    google::protobuf::any::{mk_any, Any},
+    google::protobuf::any::{mk_any, Any, IntoAny},
     hash::H256,
     ibc::{core::client::height::IsHeight, lightclients::wasm},
     proof::{self},
@@ -35,7 +37,10 @@ use crate::{
     data::{AnyData, Data},
     event::{AnyEvent, Event},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
-    msg::{AnyMsg, Msg},
+    msg::{
+        AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
+        MsgUpdateClientData,
+    },
     wait::{AnyWait, Wait},
 };
 
@@ -85,6 +90,7 @@ pub trait TryFromRelayerMsg: Sized {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DeferPoint {
     Absolute,
     Relative,
@@ -92,6 +98,12 @@ pub enum DeferPoint {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
 pub enum RelayerMsg {
     Event(AnyLightClientIdentified<AnyEvent>),
     // data that has been read
@@ -114,7 +126,10 @@ pub enum RelayerMsg {
         msg: Box<RelayerMsg>,
     },
     Sequence(VecDeque<RelayerMsg>),
-    Retry(u8, Box<RelayerMsg>),
+    Retry {
+        remaining: u8,
+        msg: Box<RelayerMsg>,
+    },
     Aggregate {
         /// Messages that are expected to resolve to [`Data`].
         queue: VecDeque<RelayerMsg>,
@@ -137,7 +152,13 @@ impl RelayerMsg {
         depth: usize,
     ) -> BoxFuture<'_, Result<Vec<RelayerMsg>, Box<dyn std::error::Error>>>
     where
-        G: Send + Sync + GetChain<Evm<Mainnet>> + GetChain<Evm<Minimal>> + GetChain<Wasm<Union>>,
+        G: Send
+            + Sync
+            + GetChain<Evm<Mainnet>>
+            + GetChain<Evm<Minimal>>
+            + GetChain<Wasm<Union>>
+            + GetChain<Union>
+            + GetChain<Wasm<Cosmos>>,
     {
         tracing::info!(
             depth,
@@ -152,6 +173,8 @@ impl RelayerMsg {
                     AnyLightClientIdentified::UnionOnEvmMainnet($msg) => $expr,
                     AnyLightClientIdentified::EvmMinimalOnUnion($msg) => $expr,
                     AnyLightClientIdentified::UnionOnEvmMinimal($msg) => $expr,
+                    AnyLightClientIdentified::CosmosOnUnion($msg) => $expr,
+                    AnyLightClientIdentified::UnionOnCosmos($msg) => $expr,
                 }
             };
         }
@@ -159,7 +182,7 @@ impl RelayerMsg {
         async move {
             match self {
                 RelayerMsg::Event(event) => any_lc! {
-                    |event| Ok(event.data.handle(g.get_chain(&event.chain_id)))
+                    |event| Ok(event.t.handle(g.get_chain(&event.chain_id)))
                 },
                 RelayerMsg::Data(data) => {
                     tracing::error!(
@@ -170,22 +193,35 @@ impl RelayerMsg {
                     Ok([].into())
                 }
                 RelayerMsg::Fetch(fetch) => any_lc! {
-                    |fetch| Ok(fetch.data.handle(g.get_chain(&fetch.chain_id)).await)
+                    |fetch| Ok(fetch.t.handle(g.get_chain(&fetch.chain_id)).await)
                 },
                 RelayerMsg::Msg(msg) => {
                     // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
                     match msg {
-  AnyLightClientIdentified::EvmMainnetOnUnion(msg) => DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.data).await?,
-  AnyLightClientIdentified::EvmMinimalOnUnion(msg) => DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.data).await?,
-  AnyLightClientIdentified::UnionOnEvmMainnet(msg) => DoMsg::msg(&GetChain::<Evm<Mainnet>>::get_chain(g, &msg.chain_id),msg.data).await?,
-  AnyLightClientIdentified::UnionOnEvmMinimal(msg) => DoMsg::msg(&GetChain::<Evm<Minimal>>::get_chain(g, &msg.chain_id),msg.data).await?,
-
-  };
+                        AnyLightClientIdentified::EvmMainnetOnUnion(msg) => {
+                            DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.t).await?
+                        },
+                        AnyLightClientIdentified::EvmMinimalOnUnion(msg) => {
+                            DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.t).await?
+                        },
+                        AnyLightClientIdentified::UnionOnEvmMainnet(msg) => {
+                            DoMsg::msg(&GetChain::<Evm<Mainnet>>::get_chain(g, &msg.chain_id),msg.t).await?
+                        },
+                        AnyLightClientIdentified::UnionOnEvmMinimal(msg) => {
+                            DoMsg::msg(&GetChain::<Evm<Minimal>>::get_chain(g, &msg.chain_id),msg.t).await?
+                        },
+                        AnyLightClientIdentified::CosmosOnUnion(msg) => {
+                            DoMsg::msg(&GetChain::<Union>::get_chain(g, &msg.chain_id),msg.t).await?
+                        },
+                        AnyLightClientIdentified::UnionOnCosmos(msg) => {
+                            DoMsg::msg(&GetChain::<Wasm<Cosmos>>::get_chain(g, &msg.chain_id),msg.t).await?
+                        },
+                    };
 
                     Ok([].into())
                 },
                 RelayerMsg::Wait(wait) => any_lc! {
-                    |wait| Ok(wait.data.handle(g.get_chain(&wait.chain_id)).await)
+                    |wait| Ok(wait.t.handle(g.get_chain(&wait.chain_id)).await)
                 },
 
                 RelayerMsg::DeferUntil { point: DeferPoint::Relative, seconds } =>
@@ -216,26 +252,26 @@ impl RelayerMsg {
                         msg.handle(g, depth + 1).await
                     }
                 }
-                RelayerMsg::Sequence(mut s) => {
-                    let msgs = match s.pop_front() {
+                RelayerMsg::Sequence(mut queue) => {
+                    let msgs = match queue.pop_front() {
                         Some(msg) => msg.handle(g, depth + 1).await?,
                         None => return Ok(vec![]),
                     };
 
                     for msg in msgs.into_iter().rev() {
-                        s.push_front(msg);
+                        queue.push_front(msg);
                     }
 
-                    Ok([flatten_seq(seq(s))].into())
+                    Ok([flatten_seq(seq(queue))].into())
                 }
 
-                RelayerMsg::Retry(count, msg) =>  {
+                RelayerMsg::Retry { remaining, msg } =>  {
                     const RETRY_DELAY_SECONDS: u64 = 3;
 
                     match msg.clone().handle(g, depth + 1).await {
                         Ok(ok) => Ok(ok),
-                        Err(err) => if count > 0 {
-                            let retries_left = count - 1;
+                        Err(err) => if remaining > 0 {
+                            let retries_left = remaining - 1;
                             tracing::warn!(
                                 %msg,
                                 retries_left,
@@ -293,6 +329,8 @@ impl RelayerMsg {
                             AnyLightClientIdentified::UnionOnEvmMinimal(msg) => {
                                 msg.handle(data)
                             }
+                            AnyLightClientIdentified::CosmosOnUnion(msg) => msg.handle(data),
+                            AnyLightClientIdentified::UnionOnCosmos(msg) => msg.handle(data),
                         };
 
                         Ok(res)
@@ -346,10 +384,10 @@ impl std::fmt::Display for RelayerMsg {
                 timeout_timestamp,
                 msg,
             } => write!(f, "Timeout({timeout_timestamp}, {msg})"),
-            RelayerMsg::Sequence(seq) => {
+            RelayerMsg::Sequence(queue) => {
                 write!(f, "Sequence [")?;
-                let len = seq.len();
-                for (idx, msg) in seq.iter().enumerate() {
+                let len = queue.len();
+                for (idx, msg) in queue.iter().enumerate() {
                     write!(f, "{msg}")?;
                     if idx != len - 1 {
                         write!(f, ", ")?;
@@ -357,7 +395,7 @@ impl std::fmt::Display for RelayerMsg {
                 }
                 write!(f, "]")
             }
-            RelayerMsg::Retry(remaining, msg) => write!(f, "Retry({remaining}, {msg})"),
+            RelayerMsg::Retry { remaining, msg } => write!(f, "Retry({remaining}, {msg})"),
             RelayerMsg::Aggregate {
                 queue,
                 data,
@@ -399,6 +437,7 @@ macro_rules! any_enum {
         pub enum $Enum:ident<Hc: ChainExt, Tr: ChainExt> {
             $(
                 $(#[doc = $doc:literal])*
+                $(#[serde($untagged:ident)])*
                 $Variant:ident$((
                     $(#[$variant_inner_meta:meta])*
                     $VariantInner:ty
@@ -407,12 +446,13 @@ macro_rules! any_enum {
         }
     ) => {
         #[derive(frame_support_procedural::DebugNoBound, frame_support_procedural::CloneNoBound, frame_support_procedural::PartialEqNoBound, serde::Serialize, serde::Deserialize)]
-        #[serde(bound(serialize = "", deserialize = ""))]
+        #[serde(bound(serialize = "", deserialize = ""), tag = "@type", content = "@value", rename_all = "snake_case")]
         $(#[doc = $outer_doc])*
         #[allow(clippy::large_enum_variant)]
         pub enum $Enum<Hc: ChainExt, Tr: ChainExt> {
             $(
                 $(#[doc = $doc])*
+                $(#[serde($untagged)])*
                 $Variant$((
                     $(#[$variant_inner_meta])*
                     $VariantInner
@@ -472,22 +512,115 @@ pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
     derive_more::Display,
     enumorph::Enumorph,
 )]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    from = "AnyLightClientIdentifiedSerde<T>",
+    into = "AnyLightClientIdentifiedSerde<T>",
+    bound(serialize = "", deserialize = "")
+)]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyLightClientIdentified<T: AnyLightClient> {
     // The 08-wasm client tracking the state of Evm<Mainnet>.
-    #[display(fmt = "EvmMainnetOnUnion({}, {})", "_0.chain_id", "_0.data")]
+    #[display(fmt = "EvmMainnetOnUnion({}, {})", "_0.chain_id", "_0.t")]
     EvmMainnetOnUnion(Identified<Wasm<Union>, Evm<Mainnet>, InnerOf<T, Wasm<Union>, Evm<Mainnet>>>),
     // The solidity client on Evm<Mainnet> tracking the state of Wasm<Union>.
-    #[display(fmt = "UnionOnEvmMainnet({}, {})", "_0.chain_id", "_0.data")]
+    #[display(fmt = "UnionOnEvmMainnet({}, {})", "_0.chain_id", "_0.t")]
     UnionOnEvmMainnet(Identified<Evm<Mainnet>, Wasm<Union>, InnerOf<T, Evm<Mainnet>, Wasm<Union>>>),
 
     // The 08-wasm client tracking the state of Evm<Minimal>.
-    #[display(fmt = "EvmMinimalOnUnion({}, {})", "_0.chain_id", "_0.data")]
+    #[display(fmt = "EvmMinimalOnUnion({}, {})", "_0.chain_id", "_0.t")]
     EvmMinimalOnUnion(Identified<Wasm<Union>, Evm<Minimal>, InnerOf<T, Wasm<Union>, Evm<Minimal>>>),
     // The solidity client on Evm<Minimal> tracking the state of Wasm<Union>.
-    #[display(fmt = "UnionOnEvmMinimal({}, {})", "_0.chain_id", "_0.data")]
+    #[display(fmt = "UnionOnEvmMinimal({}, {})", "_0.chain_id", "_0.t")]
     UnionOnEvmMinimal(Identified<Evm<Minimal>, Wasm<Union>, InnerOf<T, Evm<Minimal>, Wasm<Union>>>),
+
+    #[display(fmt = "CosmosOnUnion({}, {})", "_0.chain_id", "_0.t")]
+    CosmosOnUnion(Identified<Union, Wasm<Cosmos>, InnerOf<T, Union, Wasm<Cosmos>>>),
+    #[display(fmt = "UnionOnCosmos({}, {})", "_0.chain_id", "_0.t")]
+    UnionOnCosmos(Identified<Wasm<Cosmos>, Union, InnerOf<T, Wasm<Cosmos>, Union>>),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""), untagged, deny_unknown_fields)]
+#[allow(clippy::large_enum_variant)]
+enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
+    EvmMainnetOnUnion(
+        Inner<
+            Wasm<Union>,
+            Evm<Mainnet>,
+            Identified<Wasm<Union>, Evm<Mainnet>, InnerOf<T, Wasm<Union>, Evm<Mainnet>>>,
+        >,
+    ),
+    UnionOnEvmMainnet(
+        Inner<
+            Evm<Mainnet>,
+            Wasm<Union>,
+            Identified<Evm<Mainnet>, Wasm<Union>, InnerOf<T, Evm<Mainnet>, Wasm<Union>>>,
+        >,
+    ),
+
+    EvmMinimalOnUnion(
+        Inner<
+            Wasm<Union>,
+            Evm<Minimal>,
+            Identified<Wasm<Union>, Evm<Minimal>, InnerOf<T, Wasm<Union>, Evm<Minimal>>>,
+        >,
+    ),
+    UnionOnEvmMinimal(
+        Inner<
+            Evm<Minimal>,
+            Wasm<Union>,
+            Identified<Evm<Minimal>, Wasm<Union>, InnerOf<T, Evm<Minimal>, Wasm<Union>>>,
+        >,
+    ),
+
+    CosmosOnUnion(
+        Inner<
+            Union,
+            Wasm<Cosmos>,
+            Identified<Union, Wasm<Cosmos>, InnerOf<T, Union, Wasm<Cosmos>>>,
+        >,
+    ),
+    UnionOnCosmos(
+        Inner<
+            Wasm<Cosmos>,
+            Union,
+            Identified<Wasm<Cosmos>, Union, InnerOf<T, Wasm<Cosmos>, Union>>,
+        >,
+    ),
+}
+
+impl<T: AnyLightClient> From<AnyLightClientIdentified<T>> for AnyLightClientIdentifiedSerde<T> {
+    fn from(value: AnyLightClientIdentified<T>) -> Self {
+        match value {
+            AnyLightClientIdentified::EvmMainnetOnUnion(t) => {
+                Self::EvmMainnetOnUnion(Inner::new(t))
+            }
+            AnyLightClientIdentified::UnionOnEvmMainnet(t) => {
+                Self::UnionOnEvmMainnet(Inner::new(t))
+            }
+            AnyLightClientIdentified::EvmMinimalOnUnion(t) => {
+                Self::EvmMinimalOnUnion(Inner::new(t))
+            }
+            AnyLightClientIdentified::UnionOnEvmMinimal(t) => {
+                Self::UnionOnEvmMinimal(Inner::new(t))
+            }
+            AnyLightClientIdentified::CosmosOnUnion(t) => Self::CosmosOnUnion(Inner::new(t)),
+            AnyLightClientIdentified::UnionOnCosmos(t) => Self::UnionOnCosmos(Inner::new(t)),
+        }
+    }
+}
+
+impl<T: AnyLightClient> From<AnyLightClientIdentifiedSerde<T>> for AnyLightClientIdentified<T> {
+    fn from(value: AnyLightClientIdentifiedSerde<T>) -> Self {
+        match value {
+            AnyLightClientIdentifiedSerde::EvmMainnetOnUnion(t) => Self::EvmMainnetOnUnion(t.inner),
+            AnyLightClientIdentifiedSerde::UnionOnEvmMainnet(t) => Self::UnionOnEvmMainnet(t.inner),
+            AnyLightClientIdentifiedSerde::EvmMinimalOnUnion(t) => Self::EvmMinimalOnUnion(t.inner),
+            AnyLightClientIdentifiedSerde::UnionOnEvmMinimal(t) => Self::UnionOnEvmMinimal(t.inner),
+            AnyLightClientIdentifiedSerde::CosmosOnUnion(t) => Self::CosmosOnUnion(t.inner),
+            AnyLightClientIdentifiedSerde::UnionOnCosmos(t) => Self::UnionOnCosmos(t.inner),
+        }
+    }
 }
 
 #[macro_export]
@@ -546,22 +679,26 @@ pub enum LcError<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(bound(
-    serialize = "Data: ::serde::Serialize",
-    deserialize = "Data: for<'d> Deserialize<'d>"
-))]
-// TODO: `Data: AnyLightClient`
+#[serde(
+    bound(
+        serialize = "T: ::serde::Serialize",
+        deserialize = "T: for<'d> Deserialize<'d>"
+    ),
+    deny_unknown_fields
+)]
+// TODO: `T: AnyLightClient`
 // prerequisites: derive macro for AnyLightClient
-pub struct Identified<Hc: Chain, Tr, Data> {
+pub struct Identified<Hc: Chain, Tr, T> {
+    // #[serde(rename = "@chain_id")]
     pub chain_id: ChainIdOf<Hc>,
-    pub data: Data,
+    pub t: T,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 impl<Hc: Chain, Tr, Data: PartialEq> PartialEq for Identified<Hc, Tr, Data> {
     fn eq(&self, other: &Self) -> bool {
-        self.chain_id == other.chain_id && self.data == other.data
+        self.chain_id == other.chain_id && self.t == other.t
     }
 }
 
@@ -574,7 +711,7 @@ impl<Hc: Chain, Tr, Data: std::fmt::Display + Debug + Clone + PartialEq> std::fm
     for Identified<Hc, Tr, Data>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "(chain id `{}`): {}", self.chain_id, self.data)
+        write!(f, "(chain id `{}`): {}", self.chain_id, self.t)
     }
 }
 
@@ -582,7 +719,7 @@ impl<Hc: Chain, Tr, Data: Debug> Debug for Identified<Hc, Tr, Data> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Identified")
             .field("chain_id", &self.chain_id)
-            .field("data", &self.data)
+            .field("t", &self.t)
             .finish()
     }
 }
@@ -591,7 +728,7 @@ impl<Hc: Chain, Tr, Data: Clone> Clone for Identified<Hc, Tr, Data> {
     fn clone(&self) -> Self {
         Self {
             chain_id: self.chain_id.clone(),
-            data: self.data.clone(),
+            t: self.t.clone(),
             __marker: PhantomData,
         }
     }
@@ -601,7 +738,7 @@ impl<Hc: Chain, Tr, Data: Debug + Clone + PartialEq> Identified<Hc, Tr, Data> {
     pub fn new(chain_id: ChainIdOf<Hc>, data: Data) -> Self {
         Self {
             chain_id,
-            data,
+            t: data,
             __marker: PhantomData,
         }
     }
@@ -637,7 +774,10 @@ pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
 // helper fns
 
 pub fn retry(count: u8, t: impl Into<RelayerMsg>) -> RelayerMsg {
-    RelayerMsg::Retry(count, Box::new(t.into()))
+    RelayerMsg::Retry {
+        remaining: count,
+        msg: Box::new(t.into()),
+    }
 }
 
 pub fn seq(ts: impl IntoIterator<Item = RelayerMsg>) -> RelayerMsg {
@@ -785,7 +925,7 @@ mod tests {
 
     use std::{collections::VecDeque, fmt::Debug, marker::PhantomData};
 
-    use chain_utils::{evm::Evm, union::Union};
+    use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union};
     use hex_literal::hex;
     use serde::{de::DeserializeOwned, Serialize};
     use unionlabs::{
@@ -802,7 +942,7 @@ mod tests {
                 msg_connection_open_try::MsgConnectionOpenTry, version::Version,
             },
         },
-        proof::ConnectionPath,
+        proof::{self, ConnectionPath},
         uint::U256,
         validated::ValidateT,
         EmptyString, QueryHeight, DELAY_PERIOD,
@@ -811,12 +951,18 @@ mod tests {
     use crate::{
         aggregate,
         aggregate::{Aggregate, AggregateCreateClient, AnyAggregate},
-        chain_impls::evm::EvmConfig,
+        chain_impls::{
+            evm::EvmConfig,
+            union::{AbciQueryType, FetchAbciQuery, UnionFetch},
+        },
         data::Data,
         defer_relative, event,
         event::{Event, IbcEvent},
         fetch,
-        fetch::{AnyFetch, Fetch, FetchSelfClientState, FetchSelfConsensusState, FetchState},
+        fetch::{
+            AnyFetch, Fetch, FetchSelfClientState, FetchSelfConsensusState, FetchState,
+            LightClientSpecificFetch,
+        },
         msg,
         msg::{
             AnyMsg, Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData,
@@ -835,26 +981,36 @@ mod tests {
     fn msg_serde() {
         let union_chain_id: String = parse!("union-devnet-1");
         let eth_chain_id: U256 = parse!("32382");
+        let cosmos_chain_id: String = parse!("simd-devnet-1");
 
         print_json(msg::<Wasm<Union>, Evm<Minimal>>(
             union_chain_id.clone(),
-            MsgConnectionOpenInitData {
-                msg: MsgConnectionOpenInit {
-                    client_id: parse!("08-wasm-2"),
-                    counterparty: connection::counterparty::Counterparty {
-                        client_id: parse!("cometbls-0"),
-                        connection_id: parse!(""),
-                        prefix: MerklePrefix {
-                            key_prefix: b"ibc".to_vec(),
-                        },
+            MsgConnectionOpenInitData(MsgConnectionOpenInit {
+                client_id: parse!("08-wasm-2"),
+                counterparty: connection::counterparty::Counterparty {
+                    client_id: parse!("cometbls-0"),
+                    connection_id: parse!(""),
+                    prefix: MerklePrefix {
+                        key_prefix: b"ibc".to_vec(),
                     },
-                    version: Version {
-                        identifier: "1".into(),
-                        features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                    },
-                    delay_period: DELAY_PERIOD,
                 },
-            },
+                version: Version {
+                    identifier: "1".into(),
+                    features: [Order::Ordered, Order::Unordered].into_iter().collect(),
+                },
+                delay_period: DELAY_PERIOD,
+            }),
+        ));
+
+        print_json(fetch::<Wasm<Union>, Evm<Minimal>>(
+            union_chain_id.clone(),
+            LightClientSpecificFetch(UnionFetch::AbciQuery(FetchAbciQuery {
+                path: proof::Path::ClientStatePath(proof::ClientStatePath {
+                    client_id: parse!("client-id"),
+                }),
+                height: parse!("123-456"),
+                ty: AbciQueryType::State,
+            })),
         ));
 
         print_json(msg::<Wasm<Union>, Evm<Minimal>>(
@@ -867,7 +1023,7 @@ mod tests {
                         ordering: channel::order::Order::Unordered,
                         counterparty: channel::counterparty::Counterparty {
                             port_id: parse!("WASM_PORT_ID"),
-                            channel_id: parse!(""),
+                            channel_id: parse!("channel-0"),
                         },
                         connection_hops: vec![parse!("connection-8")],
                         version: "ucs00-pingpong-1".to_string(),
@@ -887,7 +1043,7 @@ mod tests {
                         ordering: channel::order::Order::Ordered,
                         counterparty: channel::counterparty::Counterparty {
                             port_id: parse!("ucs01-relay"),
-                            channel_id: parse!(""),
+                            channel_id: parse!("channel-0"),
                         },
                         connection_hops: vec![parse!("connection-8")],
                         version: "ucs001-pingpong".to_string(),
@@ -899,23 +1055,21 @@ mod tests {
 
         print_json(msg::<Evm<Minimal>, Wasm<Union>>(
             eth_chain_id,
-            MsgConnectionOpenInitData {
-                msg: MsgConnectionOpenInit {
-                    client_id: parse!("cometbls-0"),
-                    counterparty: connection::counterparty::Counterparty {
-                        client_id: parse!("08-wasm-0"),
-                        connection_id: parse!(""),
-                        prefix: MerklePrefix {
-                            key_prefix: b"ibc".to_vec(),
-                        },
+            MsgConnectionOpenInitData(MsgConnectionOpenInit {
+                client_id: parse!("cometbls-0"),
+                counterparty: connection::counterparty::Counterparty {
+                    client_id: parse!("08-wasm-0"),
+                    connection_id: parse!(""),
+                    prefix: MerklePrefix {
+                        key_prefix: b"ibc".to_vec(),
                     },
-                    version: Version {
-                        identifier: "1".into(),
-                        features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                    },
-                    delay_period: DELAY_PERIOD,
                 },
-            },
+                version: Version {
+                    identifier: "1".into(),
+                    features: [Order::Ordered, Order::Unordered].into_iter().collect(),
+                },
+                delay_period: DELAY_PERIOD,
+            }),
         ));
 
         print_json(event::<Evm<Minimal>, Wasm<Union>>(
@@ -962,74 +1116,130 @@ mod tests {
 
         println!("\ncreate client msgs\n");
 
-        print_json(RelayerMsg::Sequence(
-            [
-                RelayerMsg::Aggregate {
-                    queue: [
-                        fetch::<Wasm<Union>, Evm<Minimal>>(
-                            union_chain_id.clone(),
-                            FetchSelfClientState {
-                                at: QueryHeight::Latest,
-                                __marker: PhantomData,
-                            },
-                        ),
-                        fetch::<Wasm<Union>, Evm<Minimal>>(
-                            union_chain_id.clone(),
-                            FetchSelfConsensusState {
-                                at: QueryHeight::Latest,
-                                __marker: PhantomData,
-                            },
-                        ),
-                    ]
-                    .into(),
-                    data: [].into_iter().collect(),
-                    receiver: aggregate::<Evm<Minimal>, Wasm<Union>>(
-                        eth_chain_id,
-                        AggregateCreateClient {
-                            config: EvmConfig {
-                                client_type: "cometbls".to_string(),
-                                client_address: H160(hex!(
-                                    "83428c7db9815f482a39a1715684dcf755021997"
-                                )),
-                            },
-                            __marker: PhantomData,
-                        },
-                    ),
-                },
-                RelayerMsg::Aggregate {
-                    queue: [
-                        fetch::<Evm<Minimal>, Wasm<Union>>(
-                            eth_chain_id,
-                            FetchSelfClientState {
-                                at: QueryHeight::Latest,
-                                __marker: PhantomData,
-                            },
-                        ),
-                        fetch::<Evm<Minimal>, Wasm<Union>>(
-                            eth_chain_id,
-                            FetchSelfConsensusState {
-                                at: QueryHeight::Latest,
-                                __marker: PhantomData,
-                            },
-                        ),
-                    ]
-                    .into(),
-                    data: [].into_iter().collect(),
-                    receiver: aggregate::<Wasm<Union>, Evm<Minimal>>(
+        print_json(seq([
+            RelayerMsg::Aggregate {
+                queue: [
+                    fetch::<Wasm<Union>, Evm<Minimal>>(
                         union_chain_id.clone(),
-                        AggregateCreateClient {
-                            config: WasmConfig {
-                                checksum: H256(hex!(
-                                    "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
-                                )),
-                            },
+                        FetchSelfClientState {
+                            at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
                     ),
-                },
-            ]
-            .into(),
-        ));
+                    fetch::<Wasm<Union>, Evm<Minimal>>(
+                        union_chain_id.clone(),
+                        FetchSelfConsensusState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ]
+                .into(),
+                data: [].into_iter().collect(),
+                receiver: aggregate::<Evm<Minimal>, Wasm<Union>>(
+                    eth_chain_id,
+                    AggregateCreateClient {
+                        config: EvmConfig {
+                            client_type: "cometbls".to_string(),
+                            client_address: H160(hex!("83428c7db9815f482a39a1715684dcf755021997")),
+                        },
+                        __marker: PhantomData,
+                    },
+                ),
+            },
+            RelayerMsg::Aggregate {
+                queue: [
+                    fetch::<Evm<Minimal>, Wasm<Union>>(
+                        eth_chain_id,
+                        FetchSelfClientState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                    fetch::<Evm<Minimal>, Wasm<Union>>(
+                        eth_chain_id,
+                        FetchSelfConsensusState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ]
+                .into(),
+                data: [].into_iter().collect(),
+                receiver: aggregate::<Wasm<Union>, Evm<Minimal>>(
+                    union_chain_id.clone(),
+                    AggregateCreateClient {
+                        config: WasmConfig {
+                            checksum: H256(hex!(
+                                "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
+                            )),
+                        },
+                        __marker: PhantomData,
+                    },
+                ),
+            },
+        ]));
+
+        print_json(seq([
+            RelayerMsg::Aggregate {
+                queue: [
+                    fetch::<Wasm<Cosmos>, Union>(
+                        cosmos_chain_id.clone(),
+                        FetchSelfClientState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                    fetch::<Wasm<Cosmos>, Union>(
+                        cosmos_chain_id.clone(),
+                        FetchSelfConsensusState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ]
+                .into(),
+                data: [].into_iter().collect(),
+                receiver: aggregate::<Union, Wasm<Cosmos>>(
+                    union_chain_id.clone(),
+                    AggregateCreateClient {
+                        config: (),
+                        __marker: PhantomData,
+                    },
+                ),
+            },
+            RelayerMsg::Aggregate {
+                queue: [
+                    fetch::<Union, Wasm<Cosmos>>(
+                        union_chain_id.clone(),
+                        FetchSelfClientState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                    fetch::<Union, Wasm<Cosmos>>(
+                        union_chain_id.clone(),
+                        FetchSelfConsensusState {
+                            at: QueryHeight::Latest,
+                            __marker: PhantomData,
+                        },
+                    ),
+                ]
+                .into(),
+                data: [].into_iter().collect(),
+                receiver: aggregate::<Wasm<Cosmos>, Union>(
+                    cosmos_chain_id,
+                    AggregateCreateClient {
+                        config: WasmConfig {
+                            checksum: H256(hex!(
+                                "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
+                            )),
+                        },
+                        __marker: PhantomData,
+                    },
+                ),
+            },
+        ]));
 
         // print_json(RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Event(
         //     Identified {
@@ -1089,8 +1299,12 @@ impl<T: CosmosSdkChain> CosmosSdkChain for Wasm<T> {
         self.0.tm_client()
     }
 
-    fn signers(&self) -> &chain_utils::Pool<unionlabs::CosmosAccountId> {
+    fn signers(&self) -> &chain_utils::Pool<unionlabs::CosmosSigner> {
         self.0.signers()
+    }
+
+    fn checksum_cache(&self) -> &std::sync::Arc<dashmap::DashMap<H256, unionlabs::WasmClientType>> {
+        self.0.checksum_cache()
     }
 }
 
@@ -1110,12 +1324,15 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct WasmConfig {
     pub checksum: H256,
     // pub inner: T,
 }
 
 impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {
+    type ChainType = Hc::ChainType;
+
     type SelfClientState = Hc::SelfClientState;
     type SelfConsensusState = Hc::SelfConsensusState;
     type Header = Hc::Header;
@@ -1132,6 +1349,8 @@ impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {
     type Error = Hc::Error;
 
     type IbcStateEncoding = Proto;
+
+    type StateProof = Hc::StateProof;
 
     fn chain_id(&self) -> <Self::SelfClientState as unionlabs::traits::ClientState>::ChainId {
         self.0.chain_id()
@@ -1184,21 +1403,21 @@ impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
 #[display(fmt = "{_0}")]
 pub struct WasmDataMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Data<Tr>);
 
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
 #[display(fmt = "{_0}")]
 pub struct WasmFetchMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
 
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), transparent)]
 #[display(fmt = "{_0}")]
 pub struct WasmAggregateMsg<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
 
@@ -1210,7 +1429,7 @@ where
         <Identified<_, _, Hc::Aggregate<Tr>>>::do_aggregate(
             Identified {
                 chain_id: i.chain_id,
-                data: i.data.0,
+                t: i.t.0,
                 __marker: PhantomData,
             },
             v,
@@ -1249,82 +1468,65 @@ where
         Config = WasmConfig,
     >,
 
-    Tr::StoredClientState<Wasm<Hc>>: IntoProto,
+    Tr::StoredClientState<Wasm<Hc>>: IntoProto + IntoAny,
+    Tr::StateProof: Encode<Proto>,
 {
     async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
         self.0
             .signers()
             .with(|signer| async {
                 let msg_any = match msg {
-                    Msg::ConnectionOpenInit(data) => {
+                    Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
-                            client_id: data.msg.client_id.to_string(),
-                            counterparty: Some(data.msg.counterparty.into()),
-                            version: Some(data.msg.version.into()),
+                            client_id: data.client_id.to_string(),
+                            counterparty: Some(data.counterparty.into()),
+                            version: Some(data.version.into()),
                             signer: signer.to_string(),
-                            delay_period: data.msg.delay_period,
+                            delay_period: data.delay_period,
                         })
                     }
-                    Msg::ConnectionOpenTry(data) =>
+                    Msg::ConnectionOpenTry(MsgConnectionOpenTryData(data)) =>
                     {
                         #[allow(deprecated)]
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
-                            client_id: data.msg.client_id.to_string(),
+                            client_id: data.client_id.to_string(),
                             previous_connection_id: String::new(),
-                            client_state: Some(
-                                Any(wasm::client_state::ClientState {
-                                    latest_height: data.msg.client_state.height().into(),
-                                    data: data.msg.client_state,
-                                    checksum: H256::default(),
-                                })
-                                .into(),
-                            ),
-                            counterparty: Some(data.msg.counterparty.into()),
-                            delay_period: data.msg.delay_period,
+                            client_state: Some(data.client_state.into_any().into()),
+                            counterparty: Some(data.counterparty.into()),
+                            delay_period: data.delay_period,
                             counterparty_versions: data
-                                .msg
                                 .counterparty_versions
                                 .into_iter()
                                 .map(Into::into)
                                 .collect(),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            proof_init: data.msg.proof_init,
-                            proof_client: data.msg.proof_client,
-                            proof_consensus: data.msg.proof_consensus,
-                            consensus_height: Some(data.msg.consensus_height.into_height().into()),
+                            proof_height: Some(data.proof_height.into_height().into()),
+                            proof_init: data.proof_init.encode(),
+                            proof_client: data.proof_client.encode(),
+                            proof_consensus: data.proof_consensus.encode(),
+                            consensus_height: Some(data.consensus_height.into_height().into()),
                             signer: signer.to_string(),
                             host_consensus_state_proof: vec![],
                         })
                     }
-                    Msg::ConnectionOpenAck(data) => {
+                    Msg::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
-                            client_state: Some(
-                                Any(wasm::client_state::ClientState {
-                                    latest_height: data.msg.client_state.height().into(),
-                                    data: data.msg.client_state,
-                                    checksum: H256::default(),
-                                })
-                                .into(),
-                            ),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            proof_client: data.msg.proof_client,
-                            proof_consensus: data.msg.proof_consensus,
-                            consensus_height: Some(data.msg.consensus_height.into_height().into()),
+                            client_state: Some(data.client_state.into_any().into()),
+                            proof_height: Some(data.proof_height.into_height().into()),
+                            proof_client: data.proof_client.encode(),
+                            proof_consensus: data.proof_consensus.encode(),
+                            consensus_height: Some(data.consensus_height.into_height().into()),
                             signer: signer.to_string(),
                             host_consensus_state_proof: vec![],
-                            connection_id: data.msg.connection_id.to_string(),
-                            counterparty_connection_id: data
-                                .msg
-                                .counterparty_connection_id
-                                .to_string(),
-                            version: Some(data.msg.version.into()),
-                            proof_try: data.msg.proof_try,
+                            connection_id: data.connection_id.to_string(),
+                            counterparty_connection_id: data.counterparty_connection_id.to_string(),
+                            version: Some(data.version.into()),
+                            proof_try: data.proof_try.encode(),
                         })
                     }
                     Msg::ConnectionOpenConfirm(data) => mk_any(
                         &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
                             connection_id: data.msg.connection_id.to_string(),
-                            proof_ack: data.msg.proof_ack,
+                            proof_ack: data.msg.proof_ack.encode(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
                         },
@@ -1343,7 +1545,7 @@ where
                             port_id: data.msg.port_id.to_string(),
                             channel: Some(data.msg.channel.into()),
                             counterparty_version: data.msg.counterparty_version,
-                            proof_init: data.msg.proof_init,
+                            proof_init: data.msg.proof_init.encode(),
                             proof_height: Some(data.msg.proof_height.into()),
                             previous_channel_id: String::new(),
                             signer: signer.to_string(),
@@ -1355,7 +1557,7 @@ where
                             channel_id: data.msg.channel_id.to_string(),
                             counterparty_version: data.msg.counterparty_version,
                             counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
-                            proof_try: data.msg.proof_try,
+                            proof_try: data.msg.proof_try.encode(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
                         })
@@ -1366,23 +1568,23 @@ where
                             channel_id: data.msg.channel_id.to_string(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
-                            proof_ack: data.msg.proof_ack,
+                            proof_ack: data.msg.proof_ack.encode(),
                         })
                     }
                     Msg::RecvPacket(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
                             packet: Some(data.msg.packet.into()),
-                            proof_height: Some(data.msg.proof_height.into()),
+                            proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
-                            proof_commitment: data.msg.proof_commitment,
+                            proof_commitment: data.msg.proof_commitment.encode(),
                         })
                     }
                     Msg::AckPacket(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
                             packet: Some(data.msg.packet.into()),
                             acknowledgement: data.msg.acknowledgement,
-                            proof_acked: data.msg.proof_acked,
-                            proof_height: Some(data.msg.proof_height.into()),
+                            proof_acked: data.msg.proof_acked.encode(),
+                            proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
                         })
                     }
@@ -1405,13 +1607,13 @@ where
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::UpdateClient(data) => {
+                    Msg::UpdateClient(MsgUpdateClientData(data)) => {
                         mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
                             signer: signer.to_string(),
-                            client_id: data.msg.client_id.to_string(),
+                            client_id: data.client_id.to_string(),
                             client_message: Some(
                                 Any(wasm::client_message::ClientMessage {
-                                    data: data.msg.client_message,
+                                    data: data.client_message,
                                 })
                                 .into(),
                             ),
@@ -1419,7 +1621,8 @@ where
                     }
                 };
 
-                broadcast_tx_commit(&self.0, signer, [msg_any])
+                self.0
+                    .broadcast_tx_commit(signer, [msg_any])
                     .await
                     .map(|_| ())
             })
@@ -1476,3 +1679,33 @@ where
         )
     }
 }
+
+#[derive(Serialize, Deserialize)]
+#[serde(
+    bound(serialize = "S: Serialize", deserialize = "S: for<'d> Deserialize<'d>"),
+    deny_unknown_fields
+)]
+struct Inner<Hc: Chain, Tr: Chain, S> {
+    #[serde(rename = "@host_chain", with = "::unionlabs::traits::from_str_exact")]
+    host_chain: Hc::ChainType,
+    #[serde(rename = "@tracking", with = "::unionlabs::traits::from_str_exact")]
+    tracking: Tr::ChainType,
+    #[serde(rename = "@value")]
+    inner: S,
+}
+
+impl<Hc: Chain, Tr: Chain, S> Inner<Hc, Tr, S> {
+    fn new(s: S) -> Inner<Hc, Tr, S> {
+        Self {
+            host_chain: Hc::ChainType::default(),
+            tracking: Tr::ChainType::default(),
+            inner: s,
+        }
+    }
+}
+
+// #[test]
+// fn test_tester() {
+//     let json = serde_json::to_string_pretty(&Tester::AB(Struct { field: 1 })).unwrap();
+//     println!("{json}");
+// }

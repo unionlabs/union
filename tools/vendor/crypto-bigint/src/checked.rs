@@ -61,7 +61,6 @@ impl<T> From<Checked<T>> for Option<T> {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de, T: Default + Deserialize<'de>> Deserialize<'de> for Checked<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -74,8 +73,7 @@ impl<'de, T: Default + Deserialize<'de>> Deserialize<'de> for Checked<T> {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
-impl<'de, T: Copy + Serialize> Serialize for Checked<T> {
+impl<T: Copy + Serialize> Serialize for Checked<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

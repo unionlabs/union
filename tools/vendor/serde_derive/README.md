@@ -1,12 +1,12 @@
-# Serde &emsp; [![Build Status]][actions] [![Latest Version]][crates.io] [![serde: rustc 1.19+]][Rust 1.19] [![serde_derive: rustc 1.56+]][Rust 1.56]
+# Serde &emsp; [![Build Status]][actions] [![Latest Version]][crates.io] [![serde: rustc 1.31+]][Rust 1.31] [![serde_derive: rustc 1.56+]][Rust 1.56]
 
 [Build Status]: https://img.shields.io/github/actions/workflow/status/serde-rs/serde/ci.yml?branch=master
 [actions]: https://github.com/serde-rs/serde/actions?query=branch%3Amaster
 [Latest Version]: https://img.shields.io/crates/v/serde.svg
 [crates.io]: https://crates.io/crates/serde
-[serde: rustc 1.19+]: https://img.shields.io/badge/serde-rustc_1.19+-lightgray.svg
+[serde: rustc 1.31+]: https://img.shields.io/badge/serde-rustc_1.31+-lightgray.svg
 [serde_derive: rustc 1.56+]: https://img.shields.io/badge/serde_derive-rustc_1.56+-lightgray.svg
-[Rust 1.19]: https://blog.rust-lang.org/2017/07/20/Rust-1.19.html
+[Rust 1.31]: https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html
 [Rust 1.56]: https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html
 
 **Serde is a framework for *ser*ializing and *de*serializing Rust data structures efficiently and generically.**
@@ -48,7 +48,7 @@ serde_json = "1.0"
 <p></p>
 
 ```rust
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Point {

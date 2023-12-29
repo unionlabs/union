@@ -43,6 +43,12 @@ impl From<u64> for U256 {
     }
 }
 
+impl From<primitive_types::U256> for U256 {
+    fn from(value: primitive_types::U256) -> Self {
+        Self(value)
+    }
+}
+
 impl U256 {
     #[must_use]
     pub fn to_big_endian(&self) -> [u8; 32] {

@@ -8,6 +8,9 @@
 //! Compared to Cranelift and LLVM, Singlepass compiles much faster but has worse
 //! runtime performance.
 
+#![allow(clippy::unnecessary_cast)]
+#![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
+
 mod address_map;
 mod arm64_decl;
 mod codegen;

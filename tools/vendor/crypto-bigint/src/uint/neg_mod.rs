@@ -1,8 +1,8 @@
-//! [`UInt`] negation modulus operations.
+//! [`Uint`] negation modulus operations.
 
-use crate::{Limb, NegMod, UInt};
+use crate::{Limb, NegMod, Uint};
 
-impl<const LIMBS: usize> UInt<LIMBS> {
+impl<const LIMBS: usize> Uint<LIMBS> {
     /// Computes `-a mod p` in constant time.
     /// Assumes `self` is in `[0, p)`.
     pub const fn neg_mod(&self, p: &Self) -> Self {
@@ -12,7 +12,7 @@ impl<const LIMBS: usize> UInt<LIMBS> {
         while i < LIMBS {
             // Set ret to 0 if the original value was 0, in which
             // case ret would be p.
-            ret.limbs[i].0 &= z;
+            ret.limbs[i].0 = z.if_true(ret.limbs[i].0);
             i += 1;
         }
         ret
@@ -25,7 +25,7 @@ impl<const LIMBS: usize> UInt<LIMBS> {
     }
 }
 
-impl<const LIMBS: usize> NegMod for UInt<LIMBS> {
+impl<const LIMBS: usize> NegMod for Uint<LIMBS> {
     type Output = Self;
 
     fn neg_mod(&self, p: &Self) -> Self {

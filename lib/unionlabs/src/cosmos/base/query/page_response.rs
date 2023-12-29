@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PageResponse {
     /// next_key is the key to be passed to PageRequest.key to
     /// query the next page most efficiently. It will be empty if

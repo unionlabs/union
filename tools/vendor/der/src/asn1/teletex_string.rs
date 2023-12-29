@@ -95,8 +95,9 @@ mod allocation {
     use crate::{
         asn1::AnyRef,
         referenced::{OwnedToRef, RefToOwned},
-        BytesRef, FixedTag, Result, StrOwned, Tag,
+        BytesRef, Error, FixedTag, Result, StrOwned, Tag,
     };
+    use alloc::string::String;
     use core::{fmt, ops::Deref};
 
     /// ASN.1 `TeletexString` type.
@@ -177,6 +178,18 @@ mod allocation {
             TeletexStringRef {
                 inner: self.inner.owned_to_ref(),
             }
+        }
+    }
+
+    impl TryFrom<String> for TeletexString {
+        type Error = Error;
+
+        fn try_from(input: String) -> Result<Self> {
+            TeletexStringRef::new(&input)?;
+
+            StrOwned::new(input)
+                .map(|inner| Self { inner })
+                .map_err(|_| Self::TAG.value_error())
         }
     }
 }

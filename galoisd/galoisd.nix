@@ -1,11 +1,11 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, ... }: {
+  perSystem = { self', pkgs, proto, goPkgs, ... }: {
     packages =
       {
-        galoisd = pkgs.buildGoModule ({
+        galoisd = goPkgs.buildGoModule ({
           name = "galoisd";
           src = ./.;
-          vendorSha256 = null;
+          vendorHash = null;
           doCheck = false;
           meta = {
             mainProgram = "galoisd";

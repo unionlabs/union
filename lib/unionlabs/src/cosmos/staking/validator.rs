@@ -13,6 +13,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Validator {
     /// operator_address defines the address of the validator's operator; bech encoded in JSON.
     pub operator_address: String,

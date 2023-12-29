@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.56"
 name = "syn"
-version = "2.0.22"
+version = "2.0.29"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 include = [
     "/benches/**",
@@ -43,6 +43,7 @@ all-features = true
 rustdoc-args = [
     "--cfg",
     "doc_cfg",
+    "--generate-link-to-definition",
 ]
 targets = ["x86_64-unknown-linux-gnu"]
 

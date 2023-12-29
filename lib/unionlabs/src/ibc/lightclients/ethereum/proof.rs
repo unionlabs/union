@@ -6,6 +6,7 @@ use crate::{errors::InvalidLength, uint::U256};
 
 // REVIEW: H256 or actual arbitrary bytes?
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Proof {
     #[serde(with = "crate::uint::u256_big_endian_hex")]
     pub key: U256,

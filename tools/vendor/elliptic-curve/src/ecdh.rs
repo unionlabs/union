@@ -1,7 +1,7 @@
 //! Elliptic Curve Diffie-Hellman Support.
 //!
 //! This module contains a generic ECDH implementation which is usable with
-//! any elliptic curve which implements the [`ProjectiveArithmetic`] trait (presently
+//! any elliptic curve which implements the [`CurveArithmetic`] trait (presently
 //! the `k256` and `p256` crates)
 //!
 //! # ECDH Ephemeral (ECDHE) Usage
@@ -27,14 +27,14 @@
 //! [SIGMA]: https://webee.technion.ac.il/~hugo/sigma-pdf.pdf
 
 use crate::{
-    AffineArithmetic, AffinePoint, AffineXCoordinate, Curve, FieldBytes, NonZeroScalar,
-    ProjectiveArithmetic, ProjectivePoint, PublicKey,
+    point::AffineCoordinates, AffinePoint, Curve, CurveArithmetic, FieldBytes, NonZeroScalar,
+    ProjectivePoint, PublicKey,
 };
 use core::borrow::Borrow;
 use digest::{crypto_common::BlockSizeUser, Digest};
 use group::Curve as _;
 use hkdf::{hmac::SimpleHmac, Hkdf};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Low-level Elliptic Curve Diffie-Hellman (ECDH) function.
@@ -62,7 +62,7 @@ pub fn diffie_hellman<C>(
     public_key: impl Borrow<AffinePoint<C>>,
 ) -> SharedSecret<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
 {
     let public_point = ProjectivePoint::<C>::from(*public_key.borrow());
     let secret_point = (public_point * secret_key.borrow().as_ref()).to_affine();
@@ -92,17 +92,17 @@ where
 /// takes further steps to authenticate the peers in a key exchange.
 pub struct EphemeralSecret<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
 {
     scalar: NonZeroScalar<C>,
 }
 
 impl<C> EphemeralSecret<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
 {
     /// Generate a cryptographically random [`EphemeralSecret`].
-    pub fn random(rng: impl CryptoRng + RngCore) -> Self {
+    pub fn random(rng: &mut impl CryptoRngCore) -> Self {
         Self {
             scalar: NonZeroScalar::random(rng),
         }
@@ -118,13 +118,13 @@ where
     /// Compute a Diffie-Hellman shared secret from an ephemeral secret and the
     /// public key of the other participant in the exchange.
     pub fn diffie_hellman(&self, public_key: &PublicKey<C>) -> SharedSecret<C> {
-        diffie_hellman(&self.scalar, public_key.as_affine())
+        diffie_hellman(self.scalar, public_key.as_affine())
     }
 }
 
 impl<C> From<&EphemeralSecret<C>> for PublicKey<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
 {
     fn from(ephemeral_secret: &EphemeralSecret<C>) -> Self {
         ephemeral_secret.public_key()
@@ -133,18 +133,18 @@ where
 
 impl<C> Zeroize for EphemeralSecret<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
 {
     fn zeroize(&mut self) {
         self.scalar.zeroize()
     }
 }
 
-impl<C> ZeroizeOnDrop for EphemeralSecret<C> where C: Curve + ProjectiveArithmetic {}
+impl<C> ZeroizeOnDrop for EphemeralSecret<C> where C: CurveArithmetic {}
 
 impl<C> Drop for EphemeralSecret<C>
 where
-    C: Curve + ProjectiveArithmetic,
+    C: CurveArithmetic,
 {
     fn drop(&mut self) {
         self.zeroize();
@@ -162,7 +162,7 @@ impl<C: Curve> SharedSecret<C> {
     #[inline]
     fn new(point: AffinePoint<C>) -> Self
     where
-        C: AffineArithmetic,
+        C: CurveArithmetic,
     {
         Self {
             secret_bytes: point.x(),

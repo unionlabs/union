@@ -1,12 +1,12 @@
-use super::UInt;
+use super::Uint;
 
-impl<const LIMBS: usize> UInt<LIMBS> {
-    /// Construct a `UInt<T>` from the unsigned integer value,
+impl<const LIMBS: usize> Uint<LIMBS> {
+    /// Construct a `Uint<T>` from the unsigned integer value,
     /// truncating the upper bits if the value is too large to be
     /// represented.
     #[inline(always)]
-    pub const fn resize<const T: usize>(&self) -> UInt<T> {
-        let mut res = UInt::ZERO;
+    pub const fn resize<const T: usize>(&self) -> Uint<T> {
+        let mut res = Uint::ZERO;
         let mut i = 0;
         let dim = if T < LIMBS { T } else { LIMBS };
         while i < dim {

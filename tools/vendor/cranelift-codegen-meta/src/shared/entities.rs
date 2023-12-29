@@ -18,6 +18,9 @@ pub(crate) struct EntityRefs {
     /// A reference to a stack slot declared in the function preamble.
     pub(crate) stack_slot: OperandKind,
 
+    /// A reference to a dynamic_stack slot declared in the function preamble.
+    pub(crate) dynamic_stack_slot: OperandKind,
+
     /// A reference to a global value.
     pub(crate) global_value: OperandKind,
 
@@ -51,6 +54,12 @@ impl EntityRefs {
                 "a basic block in the same function.",
             ),
             stack_slot: new("stack_slot", "ir::StackSlot", "A stack slot"),
+
+            dynamic_stack_slot: new(
+                "dynamic_stack_slot",
+                "ir::DynamicStackSlot",
+                "A dynamic stack slot",
+            ),
 
             global_value: new("global_value", "ir::GlobalValue", "A global value."),
 

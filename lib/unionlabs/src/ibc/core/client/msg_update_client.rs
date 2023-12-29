@@ -3,10 +3,9 @@ use serde::{Deserialize, Serialize};
 use crate::TypeUrl;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MsgUpdateClient<ClientId, Header> {
-    /// client unique identifier
     pub client_id: ClientId,
-    /// client message to update the light client
     pub client_message: Header,
 }
 

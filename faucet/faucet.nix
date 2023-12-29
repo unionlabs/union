@@ -3,7 +3,7 @@
     let
       faucet = pkgs.buildGoModule {
         name = "faucet";
-        vendorSha256 = "sha256-LDu9GSgMsCHTk5K7hsEhLg36SatUpgQZrOdEvuPSM84=";
+        vendorHash = "sha256-LDu9GSgMsCHTk5K7hsEhLg36SatUpgQZrOdEvuPSM84=";
         meta.mainProgram = "cosmos-faucet";
         version = "2.0.0";
         src = pkgs.fetchFromGitHub {

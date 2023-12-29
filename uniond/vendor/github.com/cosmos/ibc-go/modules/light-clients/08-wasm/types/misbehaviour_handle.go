@@ -18,7 +18,7 @@ func (cs ClientState) CheckForMisbehaviour(ctx sdk.Context, _ codec.BinaryCodec,
 	}
 
 	payload := QueryMsg{
-		CheckForMisbehaviour: &CheckForMisbehaviourMsg{ClientMessage: clientMessage},
+		CheckForMisbehaviour: &CheckForMisbehaviourMsg{ClientMessage: clientMessage.Data},
 	}
 
 	result, err := wasmQuery[CheckForMisbehaviourResult](ctx, clientStore, &cs, payload)

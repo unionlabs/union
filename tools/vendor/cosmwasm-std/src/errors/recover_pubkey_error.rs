@@ -1,8 +1,8 @@
+use core::fmt::Debug;
 #[cfg(not(target_arch = "wasm32"))]
 use cosmwasm_crypto::CryptoError;
 #[cfg(feature = "backtraces")]
 use std::backtrace::Backtrace;
-use std::fmt::Debug;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

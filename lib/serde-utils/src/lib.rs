@@ -219,6 +219,35 @@ pub mod hex_string {
     }
 }
 
+pub mod hex_upper_unprefixed {
+    use std::fmt::Debug;
+
+    use serde::{de, Deserialize};
+
+    pub fn serialize<S, T: AsRef<[u8]>>(data: T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if data.as_ref().is_empty() {
+            serializer.serialize_str("0")
+        } else {
+            serializer.serialize_str(&hex::encode_upper(data))
+        }
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        T: TryFrom<Vec<u8>>,
+        <T as TryFrom<Vec<u8>>>::Error: Debug + 'static,
+    {
+        let s = String::deserialize(deserializer)?;
+        let bz = hex::decode(s).map_err(de::Error::custom)?;
+        bz.try_into()
+            .map_err(|y: <T as TryFrom<Vec<u8>>>::Error| de::Error::custom(format!("{y:?}")))
+    }
+}
+
 pub mod hex_string_list {
     use alloc::{string::String, vec::Vec};
     use std::fmt::Debug;

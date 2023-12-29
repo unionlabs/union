@@ -1,15 +1,15 @@
-//! [`UInt`] multiplication modulus operations.
+//! [`Uint`] multiplication modulus operations.
 
-use crate::{Limb, UInt, WideWord, Word};
+use crate::{Limb, Uint, WideWord, Word};
 
-impl<const LIMBS: usize> UInt<LIMBS> {
+impl<const LIMBS: usize> Uint<LIMBS> {
     /// Computes `self * rhs mod p` in constant time for the special modulus
     /// `p = MAX+1-c` where `c` is small enough to fit in a single [`Limb`].
     /// For the modulus reduction, this function implements Algorithm 14.47 from
     /// the "Handbook of Applied Cryptography", by A. Menezes, P. van Oorschot,
     /// and S. Vanstone, CRC Press, 1996.
     pub const fn mul_mod_special(&self, rhs: &Self, c: Limb) -> Self {
-        // We implicitly assume `LIMBS > 0`, because `UInt<0>` doesn't compile.
+        // We implicitly assume `LIMBS > 0`, because `Uint<0>` doesn't compile.
         // Still the case `LIMBS == 1` needs special handling.
         if LIMBS == 1 {
             let prod = self.limbs[0].0 as WideWord * rhs.limbs[0].0 as WideWord;
@@ -20,7 +20,7 @@ impl<const LIMBS: usize> UInt<LIMBS> {
         let (lo, hi) = self.mul_wide(rhs);
 
         // Now use Algorithm 14.47 for the reduction
-        let (lo, carry) = mac_by_limb(lo, hi, c, Limb::ZERO);
+        let (lo, carry) = mac_by_limb(&lo, &hi, c, Limb::ZERO);
 
         let (lo, carry) = {
             let rhs = (carry.0 + 1) as WideWord * c.0 as WideWord;
@@ -38,12 +38,14 @@ impl<const LIMBS: usize> UInt<LIMBS> {
 
 /// Computes `a + (b * c) + carry`, returning the result along with the new carry.
 const fn mac_by_limb<const LIMBS: usize>(
-    mut a: UInt<LIMBS>,
-    b: UInt<LIMBS>,
+    a: &Uint<LIMBS>,
+    b: &Uint<LIMBS>,
     c: Limb,
-    mut carry: Limb,
-) -> (UInt<LIMBS>, Limb) {
+    carry: Limb,
+) -> (Uint<LIMBS>, Limb) {
     let mut i = 0;
+    let mut a = *a;
+    let mut carry = carry;
 
     while i < LIMBS {
         let (n, c) = a.limbs[i].mac(b.limbs[i], c, carry);
@@ -57,7 +59,7 @@ const fn mac_by_limb<const LIMBS: usize>(
 
 #[cfg(all(test, feature = "rand"))]
 mod tests {
-    use crate::{Limb, NonZero, Random, RandomMod, UInt};
+    use crate::{Limb, NonZero, Random, RandomMod, Uint};
     use rand_core::SeedableRng;
 
     macro_rules! test_mul_mod_special {
@@ -71,19 +73,19 @@ mod tests {
                 ];
 
                 for special in &moduli {
-                    let p = &NonZero::new(UInt::ZERO.wrapping_sub(&UInt::from_word(special.0)))
+                    let p = &NonZero::new(Uint::ZERO.wrapping_sub(&Uint::from_word(special.0)))
                         .unwrap();
 
-                    let minus_one = p.wrapping_sub(&UInt::ONE);
+                    let minus_one = p.wrapping_sub(&Uint::ONE);
 
                     let base_cases = [
-                        (UInt::ZERO, UInt::ZERO, UInt::ZERO),
-                        (UInt::ONE, UInt::ZERO, UInt::ZERO),
-                        (UInt::ZERO, UInt::ONE, UInt::ZERO),
-                        (UInt::ONE, UInt::ONE, UInt::ONE),
-                        (minus_one, minus_one, UInt::ONE),
-                        (minus_one, UInt::ONE, minus_one),
-                        (UInt::ONE, minus_one, minus_one),
+                        (Uint::ZERO, Uint::ZERO, Uint::ZERO),
+                        (Uint::ONE, Uint::ZERO, Uint::ZERO),
+                        (Uint::ZERO, Uint::ONE, Uint::ZERO),
+                        (Uint::ONE, Uint::ONE, Uint::ONE),
+                        (minus_one, minus_one, Uint::ONE),
+                        (minus_one, Uint::ONE, minus_one),
+                        (Uint::ONE, minus_one, minus_one),
                     ];
                     for (a, b, c) in &base_cases {
                         let x = a.mul_mod_special(&b, *special.as_ref());
@@ -91,21 +93,21 @@ mod tests {
                     }
 
                     for _i in 0..100 {
-                        let a = UInt::<$size>::random_mod(&mut rng, p);
-                        let b = UInt::<$size>::random_mod(&mut rng, p);
+                        let a = Uint::<$size>::random_mod(&mut rng, p);
+                        let b = Uint::<$size>::random_mod(&mut rng, p);
 
                         let c = a.mul_mod_special(&b, *special.as_ref());
                         assert!(c < **p, "not reduced: {} >= {} ", c, p);
 
                         let expected = {
                             let (lo, hi) = a.mul_wide(&b);
-                            let mut prod = UInt::<{ 2 * $size }>::ZERO;
+                            let mut prod = Uint::<{ 2 * $size }>::ZERO;
                             prod.limbs[..$size].clone_from_slice(&lo.limbs);
                             prod.limbs[$size..].clone_from_slice(&hi.limbs);
-                            let mut modulus = UInt::ZERO;
+                            let mut modulus = Uint::ZERO;
                             modulus.limbs[..$size].clone_from_slice(&p.as_ref().limbs);
-                            let reduced = prod.reduce(&modulus).unwrap();
-                            let mut expected = UInt::ZERO;
+                            let reduced = prod.rem(&NonZero::new(modulus).unwrap());
+                            let mut expected = Uint::ZERO;
                             expected.limbs[..].clone_from_slice(&reduced.limbs[..$size]);
                             expected
                         };

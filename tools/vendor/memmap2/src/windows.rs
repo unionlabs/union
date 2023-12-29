@@ -132,9 +132,12 @@ extern "system" {
     fn GetSystemInfo(lpSystemInfo: LPSYSTEM_INFO);
 }
 
-/// Returns a fixed pointer that is valid for `slice::from_raw_parts::<u8>` with `len == 0`.
+/// Returns a fixed aligned pointer that is valid for `slice::from_raw_parts::<u8>` with `len == 0`.
+///
+/// This aligns the pointer to `allocation_granularity()` or 1 if unknown.
 fn empty_slice_ptr() -> *mut c_void {
-    std::ptr::NonNull::<u8>::dangling().cast().as_ptr()
+    let align = allocation_granularity().max(1);
+    unsafe { mem::transmute(align) }
 }
 
 pub struct MmapInner {

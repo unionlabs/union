@@ -8,7 +8,6 @@ use serde::Deserialize;
 // Crypto stuff
 use digest::Digest;
 use k256::ecdsa::SigningKey; // type alias
-use k256::elliptic_curve::sec1::ToEncodedPoint;
 use sha2::Sha256;
 
 use cosmwasm_crypto::{
@@ -18,7 +17,8 @@ use std::cmp::min;
 
 const COSMOS_SECP256K1_MSG_HEX: &str = "0a93010a90010a1c2f636f736d6f732e62616e6b2e763162657461312e4d736753656e6412700a2d636f736d6f7331706b707472653766646b6c366766727a6c65736a6a766878686c63337234676d6d6b38727336122d636f736d6f7331717970717870713971637273737a673270767871367273307a716733797963356c7a763778751a100a0575636f736d12073132333435363712650a4e0a460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a21034f04181eeba35391b858633a765c4a0c189697b40d216354d50890d350c7029012040a02080112130a0d0a0575636f736d12043230303010c09a0c1a0c73696d642d74657374696e672001";
 const COSMOS_SECP256K1_SIGNATURE_HEX: &str = "c9dd20e07464d3a688ff4b710b1fbc027e495e797cfa0b4804da2ed117959227772de059808f765aa29b8f92edf30f4c2c5a438e30d3fe6897daa7141e3ce6f9";
-const COSMOS_SECP256K1_PUBKEY_BASE64: &str = "A08EGB7ro1ORuFhjOnZcSgwYlpe0DSFjVNUIkNNQxwKQ";
+const COSMOS_SECP256K1_PUBKEY_HEX: &str =
+    "034f04181eeba35391b858633a765c4a0c189697b40d216354d50890d350c70290";
 
 // TEST 3 test vector from https://tools.ietf.org/html/rfc8032#section-7.1
 const COSMOS_ED25519_MSG_HEX: &str = "af82";
@@ -80,7 +80,7 @@ fn bench_crypto(c: &mut Criterion) {
         let message = hex::decode(COSMOS_SECP256K1_MSG_HEX).unwrap();
         let message_hash = Sha256::digest(message);
         let signature = hex::decode(COSMOS_SECP256K1_SIGNATURE_HEX).unwrap();
-        let public_key = base64::decode(COSMOS_SECP256K1_PUBKEY_BASE64).unwrap();
+        let public_key = hex::decode(COSMOS_SECP256K1_PUBKEY_HEX).unwrap();
         b.iter(|| {
             assert!(secp256k1_verify(&message_hash, &signature, &public_key).unwrap());
         });
@@ -94,7 +94,7 @@ fn bench_crypto(c: &mut Criterion) {
         let r_s = hex!("99e71a99cb2270b8cac5254f9e99b6210c6c10224a1579cf389ef88b20a1abe9129ff05af364204442bdb53ab6f18a99ab48acc9326fa689f228040429e3ca66");
         let recovery_param: u8 = 0;
 
-        let expected = SigningKey::from_bytes(&private_key)
+        let expected = SigningKey::from_bytes(&private_key.into())
             .unwrap()
             .verifying_key()
             .to_encoded_point(false)

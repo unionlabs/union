@@ -14,7 +14,7 @@ pub enum Multiplier {
     Height = 8,
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, clippy::upper_case_acronyms)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Location<R, S> {
     GPR(R),

@@ -55,13 +55,11 @@ macro_rules! saturating {
                 Self::saturate_up(self.overflowing_mul(rhs))
             }
 
-            crate::nightly::const_fn! {
-                #[doc = doc::saturating::saturating_div!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn saturating_div(self, rhs: Self) -> Self {
-                    self.div_euclid(rhs)
-                }
+            #[doc = doc::saturating::saturating_div!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn saturating_div(self, rhs: Self) -> Self {
+                self.div_euclid(rhs)
             }
 
             #[doc = doc::saturating::saturating_pow!(U)]

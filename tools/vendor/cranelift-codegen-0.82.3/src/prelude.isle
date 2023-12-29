@@ -1,0 +1,562 @@
+;; This is a prelude of standard definitions for ISLE, the instruction-selector
+;; DSL, as we use it bound to our interfaces.
+;;
+;; Note that all `extern` functions here are typically defined in the
+;; `isle_prelude_methods` macro defined in `src/isa/isle.rs`
+
+;;;; Primitive and External Types ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; `()`
+(type Unit (primitive Unit))
+
+;; `bool` is declared in `clif.isle`.
+(extern const $true bool)
+(extern const $false bool)
+
+(type u8 (primitive u8))
+(type u16 (primitive u16))
+(type u32 (primitive u32))
+(type u64 (primitive u64))
+(type u128 (primitive u128))
+(type usize (primitive usize))
+
+(type i8 (primitive i8))
+(type i16 (primitive i16))
+(type i32 (primitive i32))
+(type i64 (primitive i64))
+(type i128 (primitive i128))
+(type isize (primitive isize))
+
+;; `cranelift-entity`-based identifiers.
+(type Inst (primitive Inst))
+(type Type (primitive Type))
+(type Value (primitive Value))
+
+;; ISLE representation of `&[Value]`.
+(type ValueSlice (primitive ValueSlice))
+
+(type ValueList (primitive ValueList))
+(type ValueRegs (primitive ValueRegs))
+
+;; Instruction lowering result: a vector of `ValueRegs`.
+(type InstOutput (primitive InstOutput))
+;; (Mutable) builder to incrementally construct an `InstOutput`.
+(type InstOutputBuilder extern (enum))
+
+(decl u32_add (u32 u32) u32)
+(extern constructor u32_add u32_add)
+
+(decl u8_and (u8 u8) u8)
+(extern constructor u8_and u8_and)
+
+;;;; Registers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(type Reg (primitive Reg))
+(type WritableReg (primitive WritableReg))
+(type OptionWritableReg (primitive OptionWritableReg))
+(type VecReg extern (enum))
+(type VecWritableReg extern (enum))
+
+;; Construct a `ValueRegs` of one register.
+(decl value_reg (Reg) ValueRegs)
+(extern constructor value_reg value_reg)
+
+;; Construct a `ValueRegs` of two registers.
+(decl value_regs (Reg Reg) ValueRegs)
+(extern constructor value_regs value_regs)
+
+;; Construct an empty `ValueRegs` containing only invalid register sentinels.
+(decl value_regs_invalid () ValueRegs)
+(extern constructor value_regs_invalid value_regs_invalid)
+
+;; Construct an empty `InstOutput`.
+(decl output_none () InstOutput)
+(extern constructor output_none output_none)
+
+;; Construct a single-element `InstOutput`.
+(decl output (ValueRegs) InstOutput)
+(extern constructor output output)
+
+;; Construct a two-element `InstOutput`.
+(decl output_pair (ValueRegs ValueRegs) InstOutput)
+(extern constructor output_pair output_pair)
+
+;; Construct a single-element `InstOutput` from a single register.
+(decl output_reg (Reg) InstOutput)
+(rule (output_reg reg) (output (value_reg reg)))
+
+;; Construct a single-element `InstOutput` from a value.
+(decl output_value (Value) InstOutput)
+(rule (output_value val) (output (put_in_regs val)))
+
+;; Initially empty `InstOutput` builder.
+(decl output_builder_new () InstOutputBuilder)
+(extern constructor output_builder_new output_builder_new)
+
+;; Append a `ValueRegs` to an `InstOutput` under construction.
+(decl output_builder_push (InstOutputBuilder ValueRegs) Unit)
+(extern constructor output_builder_push output_builder_push)
+
+;; Finish building an `InstOutput` incrementally.
+(decl output_builder_finish (InstOutputBuilder) InstOutput)
+(extern constructor output_builder_finish output_builder_finish)
+
+;; Get a temporary register for writing.
+(decl temp_writable_reg (Type) WritableReg)
+(extern constructor temp_writable_reg temp_writable_reg)
+
+;; Get a temporary register for reading.
+(decl temp_reg (Type) Reg)
+(rule (temp_reg ty)
+      (writable_reg_to_reg (temp_writable_reg ty)))
+
+;; Get the invalid register.
+(decl invalid_reg () Reg)
+(extern constructor invalid_reg invalid_reg)
+
+;; Put the given value into a register.
+;;
+;; Asserts that the value fits into a single register, and doesn't require
+;; multiple registers for its representation (like `i128` on x64 for example).
+;;
+;; As a side effect, this marks the value as used.
+(decl put_in_reg (Value) Reg)
+(extern constructor put_in_reg put_in_reg)
+
+;; Put the given value into one or more registers.
+;;
+;; As a side effect, this marks the value as used.
+(decl put_in_regs (Value) ValueRegs)
+(extern constructor put_in_regs put_in_regs)
+
+;; Get the `n`th register inside a `ValueRegs`.
+(decl value_regs_get (ValueRegs usize) Reg)
+(extern constructor value_regs_get value_regs_get)
+
+;; Put the value into one or more registers and return the first register.
+;;
+;; Unlike `put_in_reg`, this does not assert that the value fits in a single
+;; register. This is useful for things like a `i128` shift amount, where we mask
+;; the shift amount to the bit width of the value being shifted, and so the high
+;; half of the `i128` won't ever be used.
+;;
+;; As a side efect, this marks that value as used.
+(decl lo_reg (Value) Reg)
+(rule (lo_reg val)
+      (let ((regs ValueRegs (put_in_regs val)))
+        (value_regs_get regs 0)))
+
+;;;; Common Mach Types ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(type MachLabel (primitive MachLabel))
+(type VecMachLabel extern (enum))
+(type ValueLabel (primitive ValueLabel))
+(type UnwindInst (primitive UnwindInst))
+(type ExternalName (primitive ExternalName))
+(type BoxExternalName (primitive BoxExternalName))
+(type RelocDistance (primitive RelocDistance))
+
+;;;; Primitive Type Conversions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(decl u8_as_u64 (u8) u64)
+(extern constructor u8_as_u64 u8_as_u64)
+
+(decl u16_as_u64 (u16) u64)
+(extern constructor u16_as_u64 u16_as_u64)
+
+(decl u32_as_u64 (u32) u64)
+(extern constructor u32_as_u64 u32_as_u64)
+
+(decl i64_as_u64 (i64) u64)
+(extern constructor i64_as_u64 i64_as_u64)
+
+;;;; Primitive Arithmetic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(decl u64_add (u64 u64) u64)
+(extern constructor u64_add u64_add)
+
+(decl u64_sub (u64 u64) u64)
+(extern constructor u64_sub u64_sub)
+
+(decl u64_and (u64 u64) u64)
+(extern constructor u64_and u64_and)
+
+;;;; `cranelift_codegen::ir::Type` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(extern const $B1 Type)
+(extern const $B8 Type)
+(extern const $B16 Type)
+(extern const $B32 Type)
+(extern const $B64 Type)
+(extern const $B128 Type)
+
+(extern const $I8 Type)
+(extern const $I16 Type)
+(extern const $I32 Type)
+(extern const $I64 Type)
+(extern const $I128 Type)
+
+(extern const $R32 Type)
+(extern const $R64 Type)
+
+(extern const $F32 Type)
+(extern const $F64 Type)
+
+(extern const $B8X16 Type)
+(extern const $B16X8 Type)
+(extern const $B32X4 Type)
+(extern const $B64X2 Type)
+
+(extern const $I8X16 Type)
+(extern const $I16X8 Type)
+(extern const $I32X4 Type)
+(extern const $I64X2 Type)
+
+(extern const $F32X4 Type)
+(extern const $F64X2 Type)
+
+;; Get the bit width of a given type.
+(decl ty_bits (Type) u8)
+(extern constructor ty_bits ty_bits)
+
+;; Get the bit width of a given type.
+(decl ty_bits_u16 (Type) u16)
+(extern constructor ty_bits_u16 ty_bits_u16)
+
+;; Get the bit width of a given type.
+(decl ty_bits_u64 (Type) u64)
+(extern constructor ty_bits_u64 ty_bits_u64)
+
+;; Get a mask for the width of a given type.
+(decl ty_mask (Type) u64)
+(extern constructor ty_mask ty_mask)
+
+;; Get the byte width of a given type.
+(decl ty_bytes (Type) u16)
+(extern constructor ty_bytes ty_bytes)
+
+;; Get the type of each lane in the given type.
+(decl lane_type (Type) Type)
+(extern constructor lane_type lane_type)
+
+;;;; Helper Clif Extractors ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; An extractor that only matches types that can fit in 16 bits.
+(decl fits_in_16 (Type) Type)
+(extern extractor fits_in_16 fits_in_16)
+
+;; An extractor that only matches types that can fit in 32 bits.
+(decl fits_in_32 (Type) Type)
+(extern extractor fits_in_32 fits_in_32)
+
+;; An extractor that only matches types that can fit in 64 bits.
+(decl fits_in_64 (Type) Type)
+(extern extractor fits_in_64 fits_in_64)
+
+;; An extractor that matches 32- and 64-bit types only.
+(decl ty_32_or_64 (Type) Type)
+(extern extractor ty_32_or_64 ty_32_or_64)
+
+;; An extractor that matches 8- and 16-bit types only.
+(decl ty_8_or_16 (Type) Type)
+(extern extractor ty_8_or_16 ty_8_or_16)
+
+;; An extractor that matches I64 or B64.
+(decl ty_int_bool_64 (Type) Type)
+(extern extractor ty_int_bool_64 ty_int_bool_64)
+
+;; An extractor that matches I128 or B128.
+(decl ty_int_bool_128 (Type) Type)
+(extern extractor ty_int_bool_128 ty_int_bool_128)
+
+;; An extractor that only matches 128-bit vector types.
+(decl vec128 (Type) Type)
+(extern extractor vec128 vec128)
+
+;; An extractor that matches everything except i64x2
+(decl not_i64x2 () Type)
+(extern extractor not_i64x2 not_i64x2)
+
+;; Extractor to get a `ValueSlice` out of a `ValueList`.
+(decl value_list_slice (ValueSlice) ValueList)
+(extern extractor infallible value_list_slice value_list_slice)
+
+;; Extractor to test whether a `ValueSlice` is empty.
+(decl value_slice_empty () ValueSlice)
+(extern extractor value_slice_empty value_slice_empty)
+
+;; Extractor to split a `ValueSlice` into its first element plus a tail.
+(decl value_slice_unwrap (Value ValueSlice) ValueSlice)
+(extern extractor value_slice_unwrap value_slice_unwrap)
+
+;; Return the length of a `ValueSlice`.
+(decl value_slice_len (ValueSlice) usize)
+(extern constructor value_slice_len value_slice_len)
+
+;; Return any element of a `ValueSlice`.
+(decl value_slice_get (ValueSlice usize) Value)
+(extern constructor value_slice_get value_slice_get)
+
+;; Extractor to get the first element from a value list, along with its tail as
+;; a `ValueSlice`.
+(decl unwrap_head_value_list_1 (Value ValueSlice) ValueList)
+(extractor (unwrap_head_value_list_1 head tail)
+           (value_list_slice (value_slice_unwrap head tail)))
+
+;; Extractor to get the first two elements from a value list, along with its
+;; tail as a `ValueSlice`.
+(decl unwrap_head_value_list_2 (Value Value ValueSlice) ValueList)
+(extractor (unwrap_head_value_list_2 head1 head2 tail)
+           (value_list_slice (value_slice_unwrap head1 (value_slice_unwrap head2 tail))))
+
+;; Turn a `Writable<Reg>` into a `Reg` via `Writable::to_reg`.
+(decl writable_reg_to_reg (WritableReg) Reg)
+(extern constructor writable_reg_to_reg writable_reg_to_reg)
+
+;; Extract a `u8` from an `Uimm8`.
+(decl u8_from_uimm8 (u8) Uimm8)
+(extern extractor infallible u8_from_uimm8 u8_from_uimm8)
+
+;; Extract a `u64` from an `Imm64`.
+(decl u64_from_imm64 (u64) Imm64)
+(extern extractor infallible u64_from_imm64 u64_from_imm64)
+
+;; Extract a `u64` from an `Imm64` which is not zero.
+(decl nonzero_u64_from_imm64 (u64) Imm64)
+(extern extractor nonzero_u64_from_imm64 nonzero_u64_from_imm64)
+
+;; Extract a `u64` from an `Ieee32`.
+(decl u64_from_ieee32 (u64) Ieee32)
+(extern extractor infallible u64_from_ieee32 u64_from_ieee32)
+
+;; Extract a `u64` from an `Ieee64`.
+(decl u64_from_ieee64 (u64) Ieee64)
+(extern extractor infallible u64_from_ieee64 u64_from_ieee64)
+
+;; Extract the result values for the given instruction.
+(decl inst_results (ValueSlice) Inst)
+(extern extractor infallible inst_results inst_results)
+
+;; Extract the first result value of the given instruction.
+(decl first_result (Value) Inst)
+(extern extractor first_result first_result)
+
+;; Extract the `InstructionData` for an `Inst`.
+(decl inst_data (InstructionData) Inst)
+(extern extractor infallible inst_data inst_data)
+
+;; Extract the type of a `Value`.
+(decl value_type (Type) Value)
+(extern extractor infallible value_type value_type)
+
+;; Extract the type of the instruction's first result.
+(decl result_type (Type) Inst)
+(extractor (result_type ty)
+           (first_result (value_type ty)))
+
+;; Extract the type of the instruction's first result and pass along the
+;; instruction as well.
+(decl has_type (Type Inst) Inst)
+(extractor (has_type ty inst)
+           (and (result_type ty)
+                inst))
+
+;; Match a multi-lane type, extracting (# bits per lane, # lanes) from the given
+;; type. Will only match when there is more than one lane.
+(decl multi_lane (u8 u16) Type)
+(extern extractor multi_lane multi_lane)
+
+;; Match the instruction that defines the given value, if any.
+(decl def_inst (Inst) Value)
+(extern extractor def_inst def_inst)
+
+;; Extract a constant `u64` from a value defined by an `iconst`.
+(decl u64_from_iconst (u64) Value)
+(extractor (u64_from_iconst x)
+           (def_inst (iconst (u64_from_imm64 x))))
+
+;; Instruction creation helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Emit an instruction.
+;;
+;; This is low-level and side-effectful; it should only be used as an
+;; implementation detail by helpers that preserve the SSA facade themselves.
+
+(decl emit (MInst) Unit)
+(extern constructor emit emit)
+
+(decl emit_safepoint (MInst) Unit)
+(extern constructor emit_safepoint emit_safepoint)
+
+;;;; Helpers for Side-Effectful Instructions Without Results ;;;;;;;;;;;;;;;;;;;
+
+(type SideEffectNoResult (enum (Inst (inst MInst))))
+
+;; Create an empty `InstOutput`, but do emit the given side-effectful
+;; instruction.
+(decl side_effect (SideEffectNoResult) InstOutput)
+(rule (side_effect (SideEffectNoResult.Inst inst))
+      (let ((_ Unit (emit inst)))
+        (output_none)))
+
+;; Similarly, but emit the side-effectful instruction as a safepoint.
+(decl safepoint (SideEffectNoResult) InstOutput)
+(rule (safepoint (SideEffectNoResult.Inst inst))
+      (let ((_ Unit (emit_safepoint inst)))
+        (output_none)))
+
+;;;; Helpers for Working with Flags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Newtype wrapper around `MInst` for instructions that are used for their
+;; effect on flags.
+;;
+;; Variant determines how result is given when combined with a
+;; ConsumesFlags. See `with_flags` below for more.
+(type ProducesFlags (enum
+                     (ProducesFlagsSideEffect (inst MInst))
+                     ;; Not directly combinable with a ConsumesFlags;
+                     ;; used in s390x and unwrapped directly by `trapif`.
+                     (ProducesFlagsReturnsReg (inst MInst) (result Reg))
+                     (ProducesFlagsReturnsResultWithConsumer (inst MInst) (result Reg))))
+
+;; Newtype wrapper around `MInst` for instructions that consume flags.
+;;
+;; Variant determines how result is given when combined with a
+;; ProducesFlags. See `with_flags` below for more.
+(type ConsumesFlags (enum
+                     (ConsumesFlagsReturnsResultWithProducer (inst MInst) (result Reg))
+                     (ConsumesFlagsReturnsReg (inst MInst) (result Reg))
+                     (ConsumesFlagsTwiceReturnsValueRegs (inst1 MInst)
+                                                         (inst2 MInst)
+                                                         (result ValueRegs))
+                     (ConsumesFlagsFourTimesReturnsValueRegs (inst1 MInst)
+                                                             (inst2 MInst)
+                                                             (inst3 MInst)
+                                                             (inst4 MInst)
+                                                             (result ValueRegs))))
+
+
+
+;; Get the produced register out of a ProducesFlags.
+(decl produces_flags_get_reg (ProducesFlags) Reg)
+(rule (produces_flags_get_reg (ProducesFlags.ProducesFlagsReturnsReg _ reg)) reg)
+
+;; Modify a ProducesFlags to use it only for its side-effect, ignoring
+;; its result.
+(decl produces_flags_ignore (ProducesFlags) ProducesFlags)
+(rule (produces_flags_ignore (ProducesFlags.ProducesFlagsReturnsReg inst _))
+                             (ProducesFlags.ProducesFlagsSideEffect inst))
+(rule (produces_flags_ignore (ProducesFlags.ProducesFlagsReturnsResultWithConsumer inst _))
+                             (ProducesFlags.ProducesFlagsSideEffect inst))
+
+;; Helper for combining two flags-consumer instructions that return a
+;; single Reg, giving a ConsumesFlags that returns both values in a
+;; ValueRegs.
+(decl consumes_flags_concat (ConsumesFlags ConsumesFlags) ConsumesFlags)
+(rule (consumes_flags_concat (ConsumesFlags.ConsumesFlagsReturnsReg inst1 reg1)
+                             (ConsumesFlags.ConsumesFlagsReturnsReg inst2 reg2))
+      (ConsumesFlags.ConsumesFlagsTwiceReturnsValueRegs
+       inst1
+       inst2
+       (value_regs reg1 reg2)))
+
+;; Combine flags-producing and -consuming instructions together, ensuring that
+;; they are emitted back-to-back and no other instructions can be emitted
+;; between them and potentially clobber the flags.
+;;
+;; Returns a `ValueRegs` according to the specific combination of ProducesFlags and ConsumesFlags modes:
+;; - SideEffect + ReturnsReg --> ValueReg with one Reg from consumer
+;; - SideEffect + ReturnsValueRegs --> ValueReg as given from consumer
+;; - ReturnsResultWithProducer + ReturnsResultWithConsumer --> ValueReg with low part from producer, high part from consumer
+;;
+;; See `with_flags_reg` below for a variant that extracts out just the lower Reg.
+(decl with_flags (ProducesFlags ConsumesFlags) ValueRegs)
+
+(rule (with_flags (ProducesFlags.ProducesFlagsReturnsResultWithConsumer producer_inst producer_result)
+                  (ConsumesFlags.ConsumesFlagsReturnsResultWithProducer consumer_inst consumer_result))
+      (let ((_x Unit (emit producer_inst))
+            (_y Unit (emit consumer_inst)))
+        (value_regs producer_result consumer_result)))
+
+(rule (with_flags (ProducesFlags.ProducesFlagsSideEffect producer_inst)
+                  (ConsumesFlags.ConsumesFlagsReturnsReg consumer_inst consumer_result))
+      (let ((_x Unit (emit producer_inst))
+            (_y Unit (emit consumer_inst)))
+        (value_reg consumer_result)))
+
+(rule (with_flags (ProducesFlags.ProducesFlagsSideEffect producer_inst)
+                  (ConsumesFlags.ConsumesFlagsTwiceReturnsValueRegs consumer_inst_1
+                                                                    consumer_inst_2
+                                                                    consumer_result))
+      ;; We must emit these instructions in order as the creator of
+      ;; the ConsumesFlags may be relying on dataflow dependencies
+      ;; amongst them.
+      (let ((_x Unit (emit producer_inst))
+            (_y Unit (emit consumer_inst_1))
+            (_z Unit (emit consumer_inst_2)))
+        consumer_result))
+
+(rule (with_flags (ProducesFlags.ProducesFlagsSideEffect producer_inst)
+                  (ConsumesFlags.ConsumesFlagsFourTimesReturnsValueRegs consumer_inst_1
+                                                                        consumer_inst_2
+                                                                        consumer_inst_3
+                                                                        consumer_inst_4
+                                                                        consumer_result))
+      ;; We must emit these instructions in order as the creator of
+      ;; the ConsumesFlags may be relying on dataflow dependencies
+      ;; amongst them.
+      (let ((_x Unit (emit producer_inst))
+            (_y Unit (emit consumer_inst_1))
+            (_z Unit (emit consumer_inst_2))
+            (_w Unit (emit consumer_inst_3))
+            (_v Unit (emit consumer_inst_4)))
+        consumer_result))
+
+(decl with_flags_reg (ProducesFlags ConsumesFlags) Reg)
+(rule (with_flags_reg p c)
+      (let ((v ValueRegs (with_flags p c)))
+        (value_regs_get v 0)))
+
+;;;; Helpers for Working with TrapCode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(decl trap_code_division_by_zero () TrapCode)
+(extern constructor trap_code_division_by_zero trap_code_division_by_zero)
+
+(decl trap_code_integer_overflow () TrapCode)
+(extern constructor trap_code_integer_overflow trap_code_integer_overflow)
+
+(decl trap_code_bad_conversion_to_integer () TrapCode)
+(extern constructor trap_code_bad_conversion_to_integer trap_code_bad_conversion_to_integer)
+
+;;;; Helpers for accessing compilation flags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(decl avoid_div_traps () Type)
+(extern extractor avoid_div_traps avoid_div_traps)
+
+;;;; Helpers for accessing instruction data ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Accessor for `FuncRef`.
+
+(decl func_ref_data (SigRef ExternalName RelocDistance) FuncRef)
+(extern extractor infallible func_ref_data func_ref_data)
+
+;; Accessor for `GobalValue`.
+
+(decl symbol_value_data (ExternalName RelocDistance i64) GlobalValue)
+(extern extractor symbol_value_data symbol_value_data)
+
+;; Accessor for `RelocDistance`.
+
+(decl reloc_distance_near () RelocDistance)
+(extern extractor reloc_distance_near reloc_distance_near)
+
+;;;; Automatic conversions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(convert Inst Value def_inst)
+(convert Reg ValueRegs value_reg)
+(convert Value Reg put_in_reg)
+(convert Value ValueRegs put_in_regs)
+(convert WritableReg Reg writable_reg_to_reg)
+(convert ValueRegs InstOutput output)
+(convert Reg InstOutput output_reg)
+(convert Value InstOutput output_value)

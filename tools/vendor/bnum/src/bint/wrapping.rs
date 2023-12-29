@@ -39,34 +39,32 @@ macro_rules! wrapping {
                 Self::from_bits(self.bits.wrapping_mul(rhs.bits))
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::wrapping::wrapping_div!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn wrapping_div(self, rhs: Self) -> Self {
-                    self.overflowing_div(rhs).0
-                }
+            #[doc = doc::wrapping::wrapping_div!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_div(self, rhs: Self) -> Self {
+                self.overflowing_div(rhs).0
+            }
 
-                #[doc = doc::wrapping::wrapping_div_euclid!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn wrapping_div_euclid(self, rhs: Self) -> Self {
-                    self.overflowing_div_euclid(rhs).0
-                }
+            #[doc = doc::wrapping::wrapping_div_euclid!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_div_euclid(self, rhs: Self) -> Self {
+                self.overflowing_div_euclid(rhs).0
+            }
 
-                #[doc = doc::wrapping::wrapping_rem!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn wrapping_rem(self, rhs: Self) -> Self {
-                    self.overflowing_rem(rhs).0
-                }
+            #[doc = doc::wrapping::wrapping_rem!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_rem(self, rhs: Self) -> Self {
+                self.overflowing_rem(rhs).0
+            }
 
-                #[doc = doc::wrapping::wrapping_rem_euclid!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn wrapping_rem_euclid(self, rhs: Self) -> Self {
-                    self.overflowing_rem_euclid(rhs).0
-                }
+            #[doc = doc::wrapping::wrapping_rem_euclid!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_rem_euclid(self, rhs: Self) -> Self {
+                self.overflowing_rem_euclid(rhs).0
             }
 
             #[doc = doc::wrapping::wrapping_neg!(I)]

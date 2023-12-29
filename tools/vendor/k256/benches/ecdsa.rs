@@ -44,14 +44,14 @@ fn bench_ecdsa(c: &mut Criterion) {
     let z = test_scalar_z();
 
     group.bench_function("try_sign_prehashed", |b| {
-        b.iter(|| d.try_sign_prehashed(k, z).unwrap())
+        b.iter(|| d.try_sign_prehashed(k, &z).unwrap())
     });
 
     let q = (AffinePoint::generator() * d).to_affine();
-    let s = d.try_sign_prehashed(k, z).unwrap().0;
+    let s = d.try_sign_prehashed(k, &z).unwrap().0;
 
     group.bench_function("verify_prehashed", |b| {
-        b.iter(|| q.verify_prehashed(z, &s).unwrap())
+        b.iter(|| q.verify_prehashed(&z, &s).unwrap())
     });
 
     group.finish();

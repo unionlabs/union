@@ -1,6 +1,6 @@
+use core::{fmt, str::FromStr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{fmt, str::FromStr};
 
 use crate::{errors::CoinFromStrError, math::Uint128};
 
@@ -120,7 +120,7 @@ mod tests {
             denom: "ucosm".to_string(),
         };
 
-        let embedded = format!("Amount: {}", a);
+        let embedded = format!("Amount: {a}");
         assert_eq!(embedded, "Amount: 123ucosm");
         assert_eq!(a.to_string(), "123ucosm");
     }
@@ -194,12 +194,6 @@ mod tests {
     }
 
     #[test]
-    fn debug_coin() {
-        let coin = Coin::new(123, "ucosm");
-        assert_eq!(format!("{:?}", coin), r#"Coin { 123 "ucosm" }"#);
-    }
-
-    #[test]
     fn parse_coin() {
         let expected = Coin::new(123, "ucosm");
         assert_eq!("123ucosm".parse::<Coin>().unwrap(), expected);
@@ -246,5 +240,11 @@ mod tests {
                 .to_string(),
             "Invalid amount: number too large to fit in target type"
         );
+    }
+
+    #[test]
+    fn debug_coin() {
+        let coin = Coin::new(123, "ucosm");
+        assert_eq!(format!("{coin:?}"), r#"Coin { 123 "ucosm" }"#);
     }
 }

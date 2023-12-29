@@ -34,34 +34,32 @@ macro_rules! wrapping {
                 self.overflowing_mul(rhs).0
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::wrapping::wrapping_div!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn wrapping_div(self, rhs: Self) -> Self {
-                    option_expect!(self.checked_div(rhs), errors::err_msg!("attempt to divide by zero"))
-                }
+            #[doc = doc::wrapping::wrapping_div!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_div(self, rhs: Self) -> Self {
+                option_expect!(self.checked_div(rhs), errors::err_msg!("attempt to divide by zero"))
+            }
 
-                #[doc = doc::wrapping::wrapping_div_euclid!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn wrapping_div_euclid(self, rhs: Self) -> Self {
-                    self.wrapping_div(rhs)
-                }
+            #[doc = doc::wrapping::wrapping_div_euclid!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_div_euclid(self, rhs: Self) -> Self {
+                self.wrapping_div(rhs)
+            }
 
-                #[doc = doc::wrapping::wrapping_rem!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn wrapping_rem(self, rhs: Self) -> Self {
-                    option_expect!(self.checked_rem(rhs), errors::err_msg!("attempt to calculate the remainder with a divisor of zero"))
-                }
+            #[doc = doc::wrapping::wrapping_rem!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_rem(self, rhs: Self) -> Self {
+                option_expect!(self.checked_rem(rhs), errors::err_msg!("attempt to calculate the remainder with a divisor of zero"))
+            }
 
-                #[doc = doc::wrapping::wrapping_rem_euclid!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn wrapping_rem_euclid(self, rhs: Self) -> Self {
-                    self.wrapping_rem(rhs)
-                }
+            #[doc = doc::wrapping::wrapping_rem_euclid!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_rem_euclid(self, rhs: Self) -> Self {
+                self.wrapping_rem(rhs)
             }
 
             #[doc = doc::wrapping::wrapping_neg!(U)]

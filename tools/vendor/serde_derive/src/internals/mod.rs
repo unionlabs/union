@@ -1,18 +1,17 @@
 pub mod ast;
 pub mod attr;
 
-mod ctxt;
-pub use self::ctxt::Ctxt;
-
-mod receiver;
-pub use self::receiver::replace_receiver;
-
 mod case;
 mod check;
+mod ctxt;
+mod receiver;
 mod respan;
 mod symbol;
 
 use syn::Type;
+
+pub use self::ctxt::Ctxt;
+pub use self::receiver::replace_receiver;
 
 #[derive(Copy, Clone)]
 pub enum Derive {

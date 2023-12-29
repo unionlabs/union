@@ -1,265 +1,101 @@
-use crate::sys::exports::{ExportError, Exportable};
-use crate::sys::externals::Extern;
-use crate::sys::store::{Store, StoreObject};
-use crate::sys::types::Val;
-use crate::sys::GlobalType;
-use crate::sys::Mutability;
-use crate::sys::RuntimeError;
-use loupe::MemoryUsage;
-use std::fmt;
-use std::sync::Arc;
-use wasmer_engine::Export;
-use wasmer_vm::{Global as RuntimeGlobal, VMGlobal};
+use crate::errors::RuntimeError;
+use crate::store::{AsStoreMut, AsStoreRef};
+use crate::value::Value;
+use crate::vm::VMExternGlobal;
+use crate::GlobalType;
+use crate::Mutability;
+use wasmer_vm::{StoreHandle, VMExtern, VMGlobal};
 
-/// A WebAssembly `global` instance.
-///
-/// A global instance is the runtime representation of a global variable.
-/// It consists of an individual value and a flag indicating whether it is mutable.
-///
-/// Spec: <https://webassembly.github.io/spec/core/exec/runtime.html#global-instances>
-#[derive(MemoryUsage)]
+#[derive(Debug, Clone)]
 pub struct Global {
-    store: Store,
-    vm_global: VMGlobal,
+    handle: StoreHandle<VMGlobal>,
 }
 
 impl Global {
-    /// Create a new `Global` with the initial value [`Val`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Global, Mutability, Store, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let g = Global::new(&store, Value::I32(1));
-    ///
-    /// assert_eq!(g.get(), Value::I32(1));
-    /// assert_eq!(g.ty().mutability, Mutability::Const);
-    /// ```
-    pub fn new(store: &Store, val: Val) -> Self {
-        Self::from_value(store, val, Mutability::Const).unwrap()
-    }
-
-    /// Create a mutable `Global` with the initial value [`Val`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Global, Mutability, Store, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let g = Global::new_mut(&store, Value::I32(1));
-    ///
-    /// assert_eq!(g.get(), Value::I32(1));
-    /// assert_eq!(g.ty().mutability, Mutability::Var);
-    /// ```
-    pub fn new_mut(store: &Store, val: Val) -> Self {
-        Self::from_value(store, val, Mutability::Var).unwrap()
-    }
-
-    /// Create a `Global` with the initial value [`Val`] and the provided [`Mutability`].
-    fn from_value(store: &Store, val: Val, mutability: Mutability) -> Result<Self, RuntimeError> {
-        if !val.comes_from_same_store(store) {
-            return Err(RuntimeError::new("cross-`Store` globals are not supported"));
+    /// Create a `Global` with the initial value [`Value`] and the provided [`Mutability`].
+    pub(crate) fn from_value(
+        store: &mut impl AsStoreMut,
+        val: Value,
+        mutability: Mutability,
+    ) -> Result<Self, RuntimeError> {
+        if !val.is_from_store(store) {
+            return Err(RuntimeError::new("cross-`Store` values are not supported"));
         }
-        let global = RuntimeGlobal::new(GlobalType {
+        let global = VMGlobal::new(GlobalType {
             mutability,
             ty: val.ty(),
         });
         unsafe {
-            global
-                .set_unchecked(val.clone())
-                .map_err(|e| RuntimeError::new(format!("create global for {:?}: {}", val, e)))?;
-        };
+            global.vmglobal().as_mut().val = val.as_raw(store);
+        }
 
         Ok(Self {
-            store: store.clone(),
-            vm_global: VMGlobal {
-                from: Arc::new(global),
-                instance_ref: None,
-            },
+            handle: StoreHandle::new(store.objects_mut(), global),
         })
     }
 
-    /// Returns the [`GlobalType`] of the `Global`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Global, Mutability, Store, Type, Value, GlobalType};
-    /// # let store = Store::default();
-    /// #
-    /// let c = Global::new(&store, Value::I32(1));
-    /// let v = Global::new_mut(&store, Value::I64(1));
-    ///
-    /// assert_eq!(c.ty(), &GlobalType::new(Type::I32, Mutability::Const));
-    /// assert_eq!(v.ty(), &GlobalType::new(Type::I64, Mutability::Var));
-    /// ```
-    pub fn ty(&self) -> &GlobalType {
-        self.vm_global.from.ty()
+    pub fn ty(&self, store: &impl AsStoreRef) -> GlobalType {
+        *self.handle.get(store.as_store_ref().objects()).ty()
     }
 
-    /// Returns the [`Store`] where the `Global` belongs.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Global, Store, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let g = Global::new(&store, Value::I32(1));
-    ///
-    /// assert_eq!(g.store(), &store);
-    /// ```
-    pub fn store(&self) -> &Store {
-        &self.store
+    pub fn get(&self, store: &mut impl AsStoreMut) -> Value {
+        unsafe {
+            let raw = self
+                .handle
+                .get(store.as_store_ref().objects())
+                .vmglobal()
+                .as_ref()
+                .val;
+            let ty = self.handle.get(store.as_store_ref().objects()).ty().ty;
+            Value::from_raw(store, ty, raw)
+        }
     }
 
-    /// Retrieves the current value [`Val`] that the Global has.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Global, Store, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let g = Global::new(&store, Value::I32(1));
-    ///
-    /// assert_eq!(g.get(), Value::I32(1));
-    /// ```
-    pub fn get(&self) -> Val {
-        self.vm_global.from.get(&self.store)
-    }
-
-    /// Sets a custom value [`Val`] to the runtime Global.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Global, Store, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let g = Global::new_mut(&store, Value::I32(1));
-    ///
-    /// assert_eq!(g.get(), Value::I32(1));
-    ///
-    /// g.set(Value::I32(2));
-    ///
-    /// assert_eq!(g.get(), Value::I32(2));
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Trying to mutate a immutable global will raise an error:
-    ///
-    /// ```should_panic
-    /// # use wasmer::{Global, Store, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let g = Global::new(&store, Value::I32(1));
-    ///
-    /// g.set(Value::I32(2)).unwrap();
-    /// ```
-    ///
-    /// Trying to set a value of a incompatible type will raise an error:
-    ///
-    /// ```should_panic
-    /// # use wasmer::{Global, Store, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let g = Global::new(&store, Value::I32(1));
-    ///
-    /// // This results in an error: `RuntimeError`.
-    /// g.set(Value::I64(2)).unwrap();
-    /// ```
-    pub fn set(&self, val: Val) -> Result<(), RuntimeError> {
-        if !val.comes_from_same_store(&self.store) {
+    pub fn set(&self, store: &mut impl AsStoreMut, val: Value) -> Result<(), RuntimeError> {
+        if !val.is_from_store(store) {
             return Err(RuntimeError::new("cross-`Store` values are not supported"));
         }
+        if self.ty(store).mutability != Mutability::Var {
+            return Err(RuntimeError::new("Attempted to set an immutable global"));
+        }
+        if val.ty() != self.ty(store).ty {
+            return Err(RuntimeError::new(format!(
+                "Attempted to operate on a global of type {expected} as a global of type {found}",
+                expected = self.ty(store).ty,
+                found = val.ty(),
+            )));
+        }
         unsafe {
-            self.vm_global
-                .from
-                .set(val)
-                .map_err(|e| RuntimeError::new(format!("{}", e)))?;
+            self.handle
+                .get_mut(store.objects_mut())
+                .vmglobal()
+                .as_mut()
+                .val = val.as_raw(store);
         }
         Ok(())
     }
 
-    pub(crate) fn from_vm_export(store: &Store, vm_global: VMGlobal) -> Self {
+    pub(crate) fn from_vm_extern(store: &mut impl AsStoreMut, vm_extern: VMExternGlobal) -> Self {
         Self {
-            store: store.clone(),
-            vm_global,
+            handle: unsafe {
+                StoreHandle::from_internal(store.as_store_ref().objects().id(), vm_extern)
+            },
         }
     }
 
-    /// Returns whether or not these two globals refer to the same data.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use wasmer::{Global, Store, Value};
-    /// # let store = Store::default();
-    /// #
-    /// let g = Global::new(&store, Value::I32(1));
-    ///
-    /// assert!(g.same(&g));
-    /// ```
-    pub fn same(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.vm_global.from, &other.vm_global.from)
+    pub fn is_from_store(&self, store: &impl AsStoreRef) -> bool {
+        self.handle.store_id() == store.as_store_ref().objects().id()
     }
 
-    /// Get access to the backing VM value for this extern. This function is for
-    /// tests it should not be called by users of the Wasmer API.
-    ///
-    /// # Safety
-    /// This function is unsafe to call outside of tests for the wasmer crate
-    /// because there is no stability guarantee for the returned type and we may
-    /// make breaking changes to it at any time or remove this method.
-    #[doc(hidden)]
-    pub unsafe fn get_vm_global(&self) -> &VMGlobal {
-        &self.vm_global
+    pub(crate) fn to_vm_extern(&self) -> VMExtern {
+        VMExtern::Global(self.handle.internal_handle())
     }
 }
 
-impl Clone for Global {
-    fn clone(&self) -> Self {
-        let mut vm_global = self.vm_global.clone();
-        vm_global.upgrade_instance_ref().unwrap();
-
-        Self {
-            store: self.store.clone(),
-            vm_global,
-        }
+impl std::cmp::PartialEq for Global {
+    fn eq(&self, other: &Self) -> bool {
+        self.handle == other.handle
     }
 }
 
-impl fmt::Debug for Global {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter
-            .debug_struct("Global")
-            .field("ty", &self.ty())
-            .field("value", &self.get())
-            .finish()
-    }
-}
-
-impl<'a> Exportable<'a> for Global {
-    fn to_export(&self) -> Export {
-        self.vm_global.clone().into()
-    }
-
-    fn get_self_from_extern(_extern: &'a Extern) -> Result<&'a Self, ExportError> {
-        match _extern {
-            Extern::Global(global) => Ok(global),
-            _ => Err(ExportError::IncompatibleType),
-        }
-    }
-
-    fn into_weak_instance_ref(&mut self) {
-        self.vm_global
-            .instance_ref
-            .as_mut()
-            .map(|v| *v = v.downgrade());
-    }
-}
+impl std::cmp::Eq for Global {}

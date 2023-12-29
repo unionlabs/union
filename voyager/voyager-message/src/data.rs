@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData};
+use std::marker::PhantomData;
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
@@ -38,6 +38,7 @@ any_enum! {
         Commitment(IbcState<Hc, Tr, CommitmentPath>),
         Acknowledgement(IbcState<Hc, Tr, AcknowledgementPath>),
 
+        #[serde(untagged)]
         LightClientSpecific(LightClientSpecificData<Hc, Tr>),
     }
 }
@@ -66,7 +67,7 @@ impl<Hc: ChainExt, Tr: ChainExt> std::fmt::Display for Data<Hc, Tr> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct SelfClientState<Hc: ChainExt, Tr: ChainExt> {
     pub self_client_state: ClientStateOf<Hc>,
     #[serde(skip)]
@@ -74,7 +75,7 @@ pub struct SelfClientState<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct SelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
     pub self_consensus_state: ConsensusStateOf<Hc>,
     #[serde(skip)]
@@ -82,7 +83,7 @@ pub struct SelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct Header<Hc: ChainExt, Tr: ChainExt> {
     pub header: HeaderOf<Hc>,
     #[serde(skip)]
@@ -90,43 +91,32 @@ pub struct Header<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct IbcState<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
     pub path: P,
     pub height: HeightOf<Hc>,
     pub state: P::Output,
 }
 
-#[derive(CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct IbcProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
     pub path: P,
     pub height: HeightOf<Hc>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof: Vec<u8>,
+    pub proof: Hc::StateProof,
     #[serde(skip)]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
-impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> Debug for IbcProof<Hc, Tr, P> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("IbcProof")
-            .field("path", &self.path)
-            .field("height", &self.height)
-            .field("proof", &serde_utils::to_hex(&self.proof))
-            .finish()
-    }
-}
-
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct PacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
     pub fetched_by: FetchPacketAcknowledgement<Hc, Tr>,
     pub ack: Vec<u8>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct LightClientSpecificData<Hc: ChainExt, Tr: ChainExt>(pub Hc::Data<Tr>);
 
 macro_rules! data_msg {
@@ -137,10 +127,10 @@ macro_rules! data_msg {
                 $Ty<Hc, Tr>: Into<Data<Hc, Tr>>,
                 crate::AnyLightClientIdentified<crate::data::AnyData>: From<identified!(Data<Hc, Tr>)>,
             {
-                fn from(crate::Identified { chain_id, data, __marker: _ }: identified!($Ty<Hc, Tr>)) -> Self {
+                fn from(crate::Identified { chain_id, t, __marker: _ }: identified!($Ty<Hc, Tr>)) -> Self {
                     Self::from(crate::Identified::new(
                         chain_id,
-                        Data::from(data),
+                        Data::from(t),
                     ))
                 }
             }
@@ -156,12 +146,12 @@ macro_rules! data_msg {
                 type Error = AnyLightClientIdentified<AnyData>;
 
                 fn try_from(value: crate::AnyLightClientIdentified<AnyData>) -> Result<Self, Self::Error> {
-                    let crate::Identified { chain_id, data, __marker: _ } =
+                    let crate::Identified { chain_id, t, __marker: _ } =
                         <crate::Identified<Hc, Tr, Data<Hc, Tr>>>::try_from(value)?;
 
                     Ok(crate::Identified::new(
                         chain_id.clone(),
-                        <$Ty<Hc, Tr>>::try_from(data).map_err(|x: Data<Hc, Tr>| {
+                        <$Ty<Hc, Tr>>::try_from(t).map_err(|x: Data<Hc, Tr>| {
                             Into::<AnyLightClientIdentified<_>>::into(crate::Identified::new(chain_id, x))
                         })?,
                     ))

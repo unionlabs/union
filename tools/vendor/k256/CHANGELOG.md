@@ -4,6 +4,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.1 (2023-04-09)
+### Fixed
+- Correct product definition for empty iterators ([#802])
+
+[#802]: https://github.com/RustCrypto/elliptic-curves/pull/802
+
+## 0.13.0 (2023-03-02)
+### Added
+- `FieldBytesEncoding` trait impls ([#732])
+- Fast `invert_vartime` using Stein's algorithm ([#743])
+- `serde` support for `schnorr` types ([#748])
+
+### Changed
+- `AffineCoordinates` trait ([#734])
+- Bump `elliptic-curve` dependency to v0.13 ([#770])
+- Bump `ecdsa` to v0.16 ([#770])
+
+[#732]: https://github.com/RustCrypto/elliptic-curves/pull/732
+[#734]: https://github.com/RustCrypto/elliptic-curves/pull/734
+[#743]: https://github.com/RustCrypto/elliptic-curves/pull/743
+[#748]: https://github.com/RustCrypto/elliptic-curves/pull/748
+[#770]: https://github.com/RustCrypto/elliptic-curves/pull/770
+
+## 0.12.0 (2023-01-16)
+### Added
+- `alloc` feature ([#670])
+- Impl `FromOkm` for `Scalar` ([#673])
+- Impl `Prehash*` and `KeypairRef` for Schnorr keys ([#689])
+- `schnorr::SigningKey::as_nonzero_scalar` ([#690])
+- Impl `From<NonZeroScalar>` for `schnorr::SigningKey` ([#703])
+- Impl `From<SecretKey>` for `schnorr::SigningKey` ([#704])
+- `precomputed-tables` feature ([#697], [#705], [#707])
+- Constructors for `Scalar` from `u128` ([#709])
+
+### Changed
+- Use weak feature activation; MSRV 1.60 ([#701])
+- Bump `ecdsa` dependency to v0.15 ([#713])
+
+### Removed
+- `ecdsa::recoverable` module; see documentation for replacements ([#675])
+
+[#670]: https://github.com/RustCrypto/elliptic-curves/pull/670
+[#673]: https://github.com/RustCrypto/elliptic-curves/pull/673
+[#675]: https://github.com/RustCrypto/elliptic-curves/pull/675
+[#689]: https://github.com/RustCrypto/elliptic-curves/pull/689
+[#690]: https://github.com/RustCrypto/elliptic-curves/pull/690
+[#697]: https://github.com/RustCrypto/elliptic-curves/pull/697
+[#701]: https://github.com/RustCrypto/elliptic-curves/pull/701
+[#703]: https://github.com/RustCrypto/elliptic-curves/pull/703
+[#704]: https://github.com/RustCrypto/elliptic-curves/pull/704
+[#705]: https://github.com/RustCrypto/elliptic-curves/pull/705
+[#707]: https://github.com/RustCrypto/elliptic-curves/pull/707
+[#709]: https://github.com/RustCrypto/elliptic-curves/pull/709
+[#713]: https://github.com/RustCrypto/elliptic-curves/pull/713
+
 ## 0.11.6 (2022-09-27)
 ### Added
 - `ecdsa::recoverable::Signature::from_digest_bytes_trial_recovery` ([#660])

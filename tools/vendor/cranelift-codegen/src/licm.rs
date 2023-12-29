@@ -147,9 +147,7 @@ fn trivially_unsafe_for_licm(opcode: Opcode) -> bool {
 
 fn is_unsafe_load(inst_data: &InstructionData) -> bool {
     match *inst_data {
-        InstructionData::Load { flags, .. } | InstructionData::LoadComplex { flags, .. } => {
-            !flags.readonly() || !flags.notrap()
-        }
+        InstructionData::Load { flags, .. } => !flags.readonly() || !flags.notrap(),
         _ => inst_data.opcode().can_load(),
     }
 }

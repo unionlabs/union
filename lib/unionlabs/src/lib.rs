@@ -18,8 +18,6 @@ use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
 use crate::{
-    errors::TryFromBranchError,
-    hash::H256,
     ibc::core::client::height::{HeightFromStrError, IsHeight},
     id::Bounded,
     validated::Validated,
@@ -71,8 +69,6 @@ pub(crate) mod macros;
 pub mod errors {
     use std::fmt::{Debug, Display};
 
-    use crate::hash::H256;
-
     #[derive(Debug, Clone)]
     pub struct UnknownEnumVariant<T>(pub T);
 
@@ -120,29 +116,12 @@ pub mod errors {
         Between(usize, usize),
     }
 
-    #[derive(Debug, PartialEq, Eq)]
-    pub enum TryFromBranchError<T>
-    where
-        T: TryFrom<Vec<H256>>,
-        <T as TryFrom<Vec<H256>>>::Error: Debug + PartialEq + Eq,
-    {
-        ExecutionBranch(<T as TryFrom<Vec<H256>>>::Error),
-        ExecutionBranchNode(InvalidLength),
+    #[derive(Debug, PartialEq, Eq, thiserror::Error)]
+    #[error("invalid value: expected {expected}, found {found}")]
+    pub struct InvalidValue<T> {
+        pub expected: T,
+        pub found: T,
     }
-}
-
-pub fn try_from_proto_branch<T>(proto: Vec<Vec<u8>>) -> Result<T, TryFromBranchError<T>>
-where
-    T: TryFrom<Vec<H256>>,
-    <T as TryFrom<Vec<H256>>>::Error: Debug + PartialEq + Eq,
-{
-    proto
-        .into_iter()
-        .map(H256::try_from)
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(TryFromBranchError::ExecutionBranchNode)?
-        .try_into()
-        .map_err(TryFromBranchError::ExecutionBranch)
 }
 
 // TODO: Move these traits into `ibc`
@@ -204,8 +183,16 @@ pub enum TryFromProtoBytesError<E> {
 
 pub type TryFromProtoErrorOf<T> = <T as TryFrom<<T as Proto>::Proto>>::Error;
 
-pub trait TypeUrl: Message {
+pub trait TypeUrl {
     const TYPE_URL: &'static str;
+}
+
+impl<T> TypeUrl for T
+where
+    T: Proto,
+    T::Proto: TypeUrl,
+{
+    const TYPE_URL: &'static str = T::Proto::TYPE_URL;
 }
 
 #[cfg(any(feature = "fuzzing", test))]
@@ -317,13 +304,6 @@ impl<T> TryFromEthAbi for T where T: EthAbi + TryFrom<T::EthAbi> {}
 pub struct InlineFields<T>(pub T);
 
 #[cfg(feature = "ethabi")]
-impl<T> From<T> for InlineFields<T> {
-    fn from(value: T) -> Self {
-        Self(value)
-    }
-}
-
-#[cfg(feature = "ethabi")]
 impl<T> ethers_core::abi::AbiEncode for InlineFields<T>
 where
     T: ethers_core::abi::AbiEncode,
@@ -358,12 +338,12 @@ where
 
 /// A simple wrapper around a cosmos account, easily representable as a bech32 string.
 #[derive(Debug, Clone)]
-pub struct CosmosAccountId {
+pub struct CosmosSigner {
     signing_key: k256::ecdsa::SigningKey,
     prefix: String,
 }
 
-impl CosmosAccountId {
+impl CosmosSigner {
     #[must_use]
     pub fn new(signing_key: k256::ecdsa::SigningKey, prefix: String) -> Self {
         Self {
@@ -387,7 +367,7 @@ impl CosmosAccountId {
     }
 }
 
-impl Display for CosmosAccountId {
+impl Display for CosmosSigner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // TODO: benchmark this, and consider caching it in the struct
         // bech32(prefix, ripemd(sha256(pubkey)))
@@ -416,10 +396,13 @@ pub mod id {
 
     pub type PortIdValidator = (Bounded<2, 128>, Ics024IdentifierCharacters);
     pub type PortId = Validated<String, PortIdValidator>;
+
     pub type ClientIdValidator = (Bounded<9, 64>, Ics024IdentifierCharacters);
     pub type ClientId = Validated<String, ClientIdValidator>;
+
     pub type ConnectionIdValidator = (Bounded<10, 64>, Ics024IdentifierCharacters);
     pub type ConnectionId = Validated<String, ConnectionIdValidator>;
+
     pub type ChannelIdValidator = (Bounded<8, 64>, Ics024IdentifierCharacters);
     pub type ChannelId = Validated<String, ChannelIdValidator>;
 
@@ -495,17 +478,18 @@ pub mod traits {
     use serde::{Deserialize, Serialize};
 
     use crate::{
-        encoding::{Decode, Encode, Encoding},
+        encoding::Encoding,
         ethereum::config::ChainSpec,
         google::protobuf::any::Any,
         hash::H256,
         ibc::{
             core::client::height::{Height, IsHeight},
-            lightclients::{cometbls, ethereum, wasm},
+            lightclients::{cometbls, ethereum, tendermint, wasm},
         },
         id::{ChannelId, PortId},
         uint::U256,
         validated::{Validate, Validated},
+        TypeUrl,
     };
 
     /// A convenience trait for a string id (`ChainId`, `ClientId`, `ConnectionId`, etc)
@@ -537,15 +521,51 @@ pub mod traits {
         type FromStrErr = <Self as FromStr>::Err;
     }
 
+    pub trait FromStrExact: Default + Sized {
+        const EXPECTING: &'static str;
+    }
+
+    pub mod from_str_exact {
+        use serde::{de, Deserialize, Deserializer};
+
+        use crate::traits::FromStrExact;
+
+        pub fn serialize<S, T: FromStrExact>(_: &T, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            serializer.serialize_str(T::EXPECTING)
+        }
+
+        pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+        where
+            D: Deserializer<'de>,
+            T: FromStrExact,
+        {
+            let s = <&str>::deserialize(deserializer)?;
+            if s == T::EXPECTING {
+                Ok(T::default())
+            } else {
+                Err(de::Error::invalid_value(
+                    de::Unexpected::Str(s),
+                    &T::EXPECTING,
+                ))
+            }
+        }
+    }
+
     /// Represents a chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
     /// various other [`Chain`]s, all sharing a common config.
     pub trait Chain: Sized + Send + Sync + 'static {
+        /// Expected to be unique across all implementations. Note that Wasm<_> implements this by passing through to the host chain, as Wasm<A> <-> Wasm<B> and A <-> B simultaneously is not currently supported.
+        type ChainType: FromStrExact;
         type SelfClientState: Debug
             + Clone
             + PartialEq
             + Serialize
             + for<'de> Deserialize<'de>
             + crate::IntoProto // hack
+            + TypeUrl // hack
             // TODO: Bound ChainId in the same way
             + ClientState<Height = Self::Height>;
         type SelfConsensusState: ConsensusState
@@ -553,6 +573,7 @@ pub mod traits {
             + Clone
             + PartialEq
             + crate::IntoProto // hack
+            + TypeUrl // hack
             + Serialize
             + for<'de> Deserialize<'de>;
 
@@ -561,17 +582,13 @@ pub mod traits {
             + PartialEq
             + Serialize
             + for<'de> Deserialize<'de>
-            // + StoredState<Self>
             + ClientState<ChainId = ChainIdOf<Tr>, Height = Tr::Height>
-            // + Encode<Self::IbcStateEncoding>
             + 'static;
         type StoredConsensusState<Tr: Chain>: Debug
             + Clone
             + PartialEq
             + Serialize
             + for<'de> Deserialize<'de>
-            // + Encode<Self::IbcStateEncoding>
-            // + StoredState<Self>
             + 'static;
 
         type Header: Header + Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
@@ -582,6 +599,8 @@ pub mod traits {
         type ClientId: Id;
 
         type IbcStateEncoding: Encoding;
+
+        type StateProof: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
         /// Available client types for this chain.
         type ClientType: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
@@ -621,12 +640,6 @@ pub mod traits {
             destination_port_id: PortId,
             sequence: u64,
         ) -> impl Future<Output = Vec<u8>> + '_;
-    }
-
-    pub trait StoredState<Hc: Chain> {}
-    impl<Hc: Chain, State: Encode<Hc::IbcStateEncoding> + Decode<Hc::IbcStateEncoding>>
-        StoredState<Hc> for State
-    {
     }
 
     pub trait ClientState {
@@ -687,6 +700,19 @@ pub mod traits {
         }
     }
 
+    impl ClientState for tendermint::client_state::ClientState {
+        type ChainId = String;
+        type Height = Height;
+
+        fn height(&self) -> Height {
+            self.latest_height
+        }
+
+        fn chain_id(&self) -> Self::ChainId {
+            self.chain_id.clone()
+        }
+    }
+
     impl<T> ClientState for Any<T>
     where
         T: ClientState,
@@ -725,6 +751,12 @@ pub mod traits {
         }
     }
 
+    impl Header for tendermint::header::Header {
+        fn trusted_height(&self) -> Height {
+            self.trusted_height
+        }
+    }
+
     pub trait ConsensusState {
         fn timestamp(&self) -> u64;
     }
@@ -747,6 +779,13 @@ pub mod traits {
         }
     }
 
+    impl ConsensusState for tendermint::consensus_state::ConsensusState {
+        fn timestamp(&self) -> u64 {
+            // REVIEW: Perhaps this fn should return Timestamp
+            self.timestamp.seconds.inner().try_into().unwrap()
+        }
+    }
+
     pub type ClientStateOf<C> = <C as Chain>::SelfClientState;
     pub type ConsensusStateOf<C> = <C as Chain>::SelfConsensusState;
     pub type HeaderOf<C> = <C as Chain>::Header;
@@ -765,8 +804,8 @@ pub use paste::paste;
 #[macro_export]
 macro_rules! export_wasm_client_type {
     ($type:ident) => {
-        const _: unionlabs::WasmClientType = unionlabs::WasmClientType::$type;
-        unionlabs::paste! {
+        const _: $crate::WasmClientType = $crate::WasmClientType::$type;
+        $crate::paste! {
             #[no_mangle]
             #[used]
             static [ <WASM_CLIENT_TYPE_ $type> ]: u8 = 0;

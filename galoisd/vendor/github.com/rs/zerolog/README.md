@@ -1,6 +1,6 @@
 # Zero Allocation JSON Logger
 
-[![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/rs/zerolog) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/rs/zerolog/master/LICENSE) [![Build Status](https://travis-ci.org/rs/zerolog.svg?branch=master)](https://travis-ci.org/rs/zerolog) [![Coverage](http://gocover.io/_badge/github.com/rs/zerolog)](http://gocover.io/github.com/rs/zerolog)
+[![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/rs/zerolog) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/rs/zerolog/master/LICENSE) [![Build Status](https://github.com/rs/zerolog/actions/workflows/test.yml/badge.svg)](https://github.com/rs/zerolog/actions/workflows/test.yml) [![Go Coverage](https://github.com/rs/zerolog/wiki/coverage.svg)](https://raw.githack.com/wiki/rs/zerolog/coverage.html)
 
 The zerolog package provides a fast and simple logger dedicated to JSON output.
 
@@ -499,7 +499,7 @@ log.Ctx(ctx).Info().Msg("hello world")
 ### Set as standard logger output
 
 ```go
-stdlog := zerolog.New(os.Stdout).With().
+log := zerolog.New(os.Stdout).With().
     Str("foo", "bar").
     Logger()
 
@@ -694,7 +694,7 @@ with zerolog library is [CSD](https://github.com/toravir/csd/).
 
 ## Benchmarks
 
-See [logbench](http://hackemist.com/logbench/) for more comprehensive and up-to-date benchmarks.
+See [logbench](http://bench.zerolog.io/) for more comprehensive and up-to-date benchmarks.
 
 All operations are allocation free (those numbers *include* JSON encoding):
 

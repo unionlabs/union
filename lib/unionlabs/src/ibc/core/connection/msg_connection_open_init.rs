@@ -6,16 +6,19 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(bound(
-    serialize = "
-        ClientId: Serialize,
-        CounterpartyClientId: Serialize,
-    ",
-    deserialize = "
-        ClientId: for<'d> Deserialize<'d>,
-        CounterpartyClientId: for<'d> Deserialize<'d>,
-    ",
-))]
+#[serde(
+    bound(
+        serialize = "
+            ClientId: Serialize,
+            CounterpartyClientId: Serialize,
+        ",
+        deserialize = "
+            ClientId: for<'d> Deserialize<'d>,
+            CounterpartyClientId: for<'d> Deserialize<'d>,
+        ",
+    ),
+    deny_unknown_fields
+)]
 pub struct MsgConnectionOpenInit<ClientId, CounterpartyClientId> {
     pub client_id: ClientId,
     pub counterparty: Counterparty<CounterpartyClientId, EmptyString>,

@@ -12,7 +12,7 @@ impl Limb {
         let b = rhs.0 as WideWord;
         let carry = carry.0 as WideWord;
         let ret = a + b + carry;
-        (Limb(ret as Word), Limb((ret >> Self::BIT_SIZE) as Word))
+        (Limb(ret as Word), Limb((ret >> Self::BITS) as Word))
     }
 
     /// Perform saturating addition.

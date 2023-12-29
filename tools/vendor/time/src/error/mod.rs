@@ -55,6 +55,10 @@ pub enum Error {
     ParseFromDescription(ParseFromDescription),
     #[cfg(feature = "parsing")]
     #[non_exhaustive]
+    #[deprecated(
+        since = "0.3.28",
+        note = "no longer output. moved to the `ParseFromDescription` variant"
+    )]
     UnexpectedTrailingCharacters,
     #[cfg(feature = "parsing")]
     TryFromParsed(TryFromParsed),
@@ -76,7 +80,8 @@ impl fmt::Display for Error {
             #[cfg(feature = "parsing")]
             Self::ParseFromDescription(e) => e.fmt(f),
             #[cfg(feature = "parsing")]
-            Self::UnexpectedTrailingCharacters => f.write_str("unexpected trailing characters"),
+            #[allow(deprecated)]
+            Self::UnexpectedTrailingCharacters => bug!("variant should not be used"),
             #[cfg(feature = "parsing")]
             Self::TryFromParsed(e) => e.fmt(f),
             #[cfg(all(any(feature = "formatting", feature = "parsing"), feature = "alloc"))]
@@ -100,7 +105,8 @@ impl std::error::Error for Error {
             #[cfg(feature = "parsing")]
             Self::ParseFromDescription(err) => Some(err),
             #[cfg(feature = "parsing")]
-            Self::UnexpectedTrailingCharacters => None,
+            #[allow(deprecated)]
+            Self::UnexpectedTrailingCharacters => bug!("variant should not be used"),
             #[cfg(feature = "parsing")]
             Self::TryFromParsed(err) => Some(err),
             #[cfg(all(any(feature = "formatting", feature = "parsing"), feature = "alloc"))]

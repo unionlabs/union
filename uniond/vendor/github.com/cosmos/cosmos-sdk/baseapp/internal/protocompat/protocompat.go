@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	gogoproto "github.com/cosmos/gogoproto/proto"
+	"github.com/golang/protobuf/proto" // nolint: staticcheck // needed because gogoproto.Merge does not work consistently. See NOTE: comments.
 	"google.golang.org/grpc"
 	proto2 "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -122,14 +123,18 @@ func makeGogoHybridHandler(prefMethod protoreflect.MethodDescriptor, cdc codec.B
 			}
 			resp, err := method.Handler(handler, ctx, func(msg any) error {
 				// merge! ref: https://github.com/cosmos/cosmos-sdk/issues/18003
-				gogoproto.Merge(msg.(gogoproto.Message), inReq)
+				// NOTE: using gogoproto.Merge will fail for some reason unknown to me, but
+				// using proto.Merge with gogo messages seems to work fine.
+				proto.Merge(msg.(gogoproto.Message), inReq)
 				return nil
 			}, nil)
 			if err != nil {
 				return err
 			}
 			// merge resp, ref: https://github.com/cosmos/cosmos-sdk/issues/18003
-			gogoproto.Merge(outResp.(gogoproto.Message), resp.(gogoproto.Message))
+			// NOTE: using gogoproto.Merge will fail for some reason unknown to me, but
+			// using proto.Merge with gogo messages seems to work fine.
+			proto.Merge(outResp.(gogoproto.Message), resp.(gogoproto.Message))
 			return nil
 		}, nil
 	}
@@ -162,14 +167,19 @@ func makeGogoHybridHandler(prefMethod protoreflect.MethodDescriptor, cdc codec.B
 			// we can just call the handler after making a copy of the message, for safety reasons.
 			resp, err := method.Handler(handler, ctx, func(msg any) error {
 				// ref: https://github.com/cosmos/cosmos-sdk/issues/18003
-				gogoproto.Merge(msg.(gogoproto.Message), m)
+				asGogoProto := msg.(gogoproto.Message)
+				// NOTE: using gogoproto.Merge will fail for some reason unknown to me, but
+				// using proto.Merge with gogo messages seems to work fine.
+				proto.Merge(asGogoProto, m)
 				return nil
 			}, nil)
 			if err != nil {
 				return err
 			}
 			// merge on the resp, ref: https://github.com/cosmos/cosmos-sdk/issues/18003
-			gogoproto.Merge(outResp.(gogoproto.Message), resp.(gogoproto.Message))
+			// NOTE: using gogoproto.Merge will fail for some reason unknown to me, but
+			// using proto.Merge with gogo messages seems to work fine.
+			proto.Merge(outResp.(gogoproto.Message), resp.(gogoproto.Message))
 			return nil
 		default:
 			panic("unreachable")

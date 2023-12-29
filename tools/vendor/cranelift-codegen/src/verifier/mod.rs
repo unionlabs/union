@@ -27,6 +27,7 @@
 //! - All predecessors in the CFG must be branches to the block.
 //! - All branches to a block must be present in the CFG.
 //! - A recomputed dominator tree is identical to the existing one.
+//! - The entry block must not be a cold block.
 //!
 //! Type checking
 //!
@@ -63,10 +64,11 @@ use crate::entity::SparseSet;
 use crate::flowgraph::{BlockPredecessor, ControlFlowGraph};
 use crate::ir;
 use crate::ir::entities::AnyEntity;
+use crate::ir::immediates::HeapImmData;
 use crate::ir::instructions::{BranchInfo, CallInfo, InstructionFormat, ResolvedConstraint};
 use crate::ir::{
-    types, ArgumentPurpose, Block, Constant, FuncRef, Function, GlobalValue, Inst, JumpTable,
-    Opcode, SigRef, StackSlot, Type, Value, ValueDef, ValueList,
+    types, ArgumentPurpose, Block, Constant, DynamicStackSlot, FuncRef, Function, GlobalValue,
+    Inst, JumpTable, MemFlags, Opcode, SigRef, StackSlot, Type, Value, ValueDef, ValueList,
 };
 use crate::isa::TargetIsa;
 use crate::iterators::IteratorExtras;
@@ -638,21 +640,6 @@ impl<'a> Verifier<'a> {
                 destination,
                 ref args,
                 ..
-            }
-            | BranchInt {
-                destination,
-                ref args,
-                ..
-            }
-            | BranchFloat {
-                destination,
-                ref args,
-                ..
-            }
-            | BranchIcmp {
-                destination,
-                ref args,
-                ..
             } => {
                 self.verify_block(inst, destination, errors)?;
                 self.verify_value_list(inst, args, errors)?;
@@ -681,8 +668,20 @@ impl<'a> Verifier<'a> {
             StackLoad { stack_slot, .. } | StackStore { stack_slot, .. } => {
                 self.verify_stack_slot(inst, stack_slot, errors)?;
             }
+            DynamicStackLoad {
+                dynamic_stack_slot, ..
+            }
+            | DynamicStackStore {
+                dynamic_stack_slot, ..
+            } => {
+                self.verify_dynamic_stack_slot(inst, dynamic_stack_slot, errors)?;
+            }
             UnaryGlobalValue { global_value, .. } => {
                 self.verify_global_value(inst, global_value, errors)?;
+            }
+            HeapLoad { heap_imm, .. } | HeapStore { heap_imm, .. } => {
+                let HeapImmData { heap, .. } = self.func.dfg.heap_imms[heap_imm];
+                self.verify_heap(inst, heap, errors)?;
             }
             HeapAddr { heap, .. } => {
                 self.verify_heap(inst, heap, errors)?;
@@ -690,13 +689,6 @@ impl<'a> Verifier<'a> {
             TableAddr { table, .. } => {
                 self.verify_table(inst, table, errors)?;
             }
-            LoadComplex { ref args, .. } => {
-                self.verify_value_list(inst, args, errors)?;
-            }
-            StoreComplex { ref args, .. } => {
-                self.verify_value_list(inst, args, errors)?;
-            }
-
             NullAry {
                 opcode: Opcode::GetPinnedReg,
             }
@@ -720,11 +712,34 @@ impl<'a> Verifier<'a> {
                     ));
                 }
             }
-            Unary {
+            NullAry {
+                opcode: Opcode::GetFramePointer | Opcode::GetReturnAddress,
+            } => {
+                if let Some(isa) = &self.isa {
+                    // Backends may already rely on this check implicitly, so do
+                    // not relax it without verifying that it is safe to do so.
+                    if !isa.flags().preserve_frame_pointers() {
+                        return errors.fatal((
+                            inst,
+                            self.context(inst),
+                            "`get_frame_pointer`/`get_return_address` cannot be used without \
+                             enabling `preserve_frame_pointers`",
+                        ));
+                    }
+                } else {
+                    return errors.fatal((
+                        inst,
+                        self.context(inst),
+                        "`get_frame_pointer`/`get_return_address` require an ISA!",
+                    ));
+                }
+            }
+            LoadNoOffset {
                 opcode: Opcode::Bitcast,
+                flags,
                 arg,
             } => {
-                self.verify_bitcast(inst, arg, errors)?;
+                self.verify_bitcast(inst, flags, arg, errors)?;
             }
             UnaryConst {
                 opcode: Opcode::Vconst,
@@ -744,25 +759,20 @@ impl<'a> Verifier<'a> {
             | UnaryImm { .. }
             | UnaryIeee32 { .. }
             | UnaryIeee64 { .. }
-            | UnaryBool { .. }
             | Binary { .. }
             | BinaryImm8 { .. }
             | BinaryImm64 { .. }
             | Ternary { .. }
             | TernaryImm8 { .. }
             | Shuffle { .. }
+            | IntAddTrap { .. }
             | IntCompare { .. }
             | IntCompareImm { .. }
-            | IntCond { .. }
             | FloatCompare { .. }
-            | FloatCond { .. }
-            | IntSelect { .. }
             | Load { .. }
             | Store { .. }
             | Trap { .. }
             | CondTrap { .. }
-            | IntCondTrap { .. }
-            | FloatCondTrap { .. }
             | NullAry { .. } => {}
         }
 
@@ -826,11 +836,28 @@ impl<'a> Verifier<'a> {
         ss: StackSlot,
         errors: &mut VerifierErrors,
     ) -> VerifierStepResult<()> {
-        if !self.func.stack_slots.is_valid(ss) {
+        if !self.func.sized_stack_slots.is_valid(ss) {
             errors.nonfatal((
                 inst,
                 self.context(inst),
                 format!("invalid stack slot {}", ss),
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
+    fn verify_dynamic_stack_slot(
+        &self,
+        inst: Inst,
+        ss: DynamicStackSlot,
+        errors: &mut VerifierErrors,
+    ) -> VerifierStepResult<()> {
+        if !self.func.dynamic_stack_slots.is_valid(ss) {
+            errors.nonfatal((
+                inst,
+                self.context(inst),
+                format!("invalid dynamic stack slot {}", ss),
             ))
         } else {
             Ok(())
@@ -1049,20 +1076,35 @@ impl<'a> Verifier<'a> {
     fn verify_bitcast(
         &self,
         inst: Inst,
+        flags: MemFlags,
         arg: Value,
         errors: &mut VerifierErrors,
     ) -> VerifierStepResult<()> {
         let typ = self.func.dfg.ctrl_typevar(inst);
         let value_type = self.func.dfg.value_type(arg);
 
-        if typ.lane_bits() < value_type.lane_bits() {
+        if typ.bits() != value_type.bits() {
             errors.fatal((
                 inst,
                 format!(
-                    "The bitcast argument {} doesn't fit in a type of {} bits",
+                    "The bitcast argument {} has a type of {} bits, which doesn't match an expected type of {} bits",
                     arg,
-                    typ.lane_bits()
+                    value_type.bits(),
+                    typ.bits()
                 ),
+            ))
+        } else if flags != MemFlags::new()
+            && flags != MemFlags::new().with_endianness(ir::Endianness::Little)
+            && flags != MemFlags::new().with_endianness(ir::Endianness::Big)
+        {
+            errors.fatal((
+                inst,
+                "The bitcast instruction only accepts the `big` or `little` memory flags",
+            ))
+        } else if flags == MemFlags::new() && typ.lane_count() != value_type.lane_count() {
+            errors.fatal((
+                inst,
+                "Byte order specifier required for bitcast instruction changing lane count",
             ))
         } else {
             Ok(())
@@ -1183,6 +1225,16 @@ impl<'a> Verifier<'a> {
             }
         }
 
+        errors.as_result()
+    }
+
+    fn check_entry_not_cold(&self, errors: &mut VerifierErrors) -> VerifierStepResult<()> {
+        if let Some(entry_block) = self.func.layout.entry_block() {
+            if self.func.layout.is_cold(entry_block) {
+                return errors
+                    .fatal((entry_block, format!("entry block cannot be marked as cold")));
+            }
+        }
         errors.as_result()
     }
 
@@ -1452,7 +1504,7 @@ impl<'a> Verifier<'a> {
             ir::InstructionData::Unary { opcode, arg } => {
                 let arg_type = self.func.dfg.value_type(arg);
                 match opcode {
-                    Opcode::Bextend | Opcode::Uextend | Opcode::Sextend | Opcode::Fpromote => {
+                    Opcode::Uextend | Opcode::Sextend | Opcode::Fpromote => {
                         if arg_type.lane_count() != ctrl_type.lane_count() {
                             return errors.nonfatal((
                                 inst,
@@ -1474,7 +1526,7 @@ impl<'a> Verifier<'a> {
                             ));
                         }
                     }
-                    Opcode::Breduce | Opcode::Ireduce | Opcode::Fdemote => {
+                    Opcode::Ireduce | Opcode::Fdemote => {
                         if arg_type.lane_count() != ctrl_type.lane_count() {
                             return errors.nonfatal((
                                 inst,
@@ -1627,8 +1679,7 @@ impl<'a> Verifier<'a> {
         let inst_data = &self.func.dfg[inst];
 
         match *inst_data {
-            ir::InstructionData::Store { flags, .. }
-            | ir::InstructionData::StoreComplex { flags, .. } => {
+            ir::InstructionData::Store { flags, .. } => {
                 if flags.readonly() {
                     errors.fatal((
                         inst,
@@ -1654,7 +1705,7 @@ impl<'a> Verifier<'a> {
                 // We must be specific about the opcodes above because other instructions are using
                 // the same formats.
                 let ty = self.func.dfg.value_type(arg);
-                if u16::from(lane) >= ty.lane_count() {
+                if lane as u32 >= ty.lane_count() {
                     errors.fatal((
                         inst,
                         self.context(inst),
@@ -1722,6 +1773,7 @@ impl<'a> Verifier<'a> {
         self.verify_tables(errors)?;
         self.verify_jump_tables(errors)?;
         self.typecheck_entry_block_params(errors)?;
+        self.check_entry_not_cold(errors)?;
         self.typecheck_function_signature(errors)?;
 
         for block in self.func.layout.blocks() {
@@ -1796,8 +1848,8 @@ mod tests {
             imm: 0.into(),
         });
         func.layout.append_inst(nullary_with_bad_opcode, block0);
-        func.layout.append_inst(
-            func.dfg.make_inst(InstructionData::Jump {
+        func.stencil.layout.append_inst(
+            func.stencil.dfg.make_inst(InstructionData::Jump {
                 opcode: Opcode::Jump,
                 destination: block0,
                 args: EntityList::default(),

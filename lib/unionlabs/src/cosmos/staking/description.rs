@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Description {
     /// moniker defines a human-readable name for the validator.
     pub moniker: String,

@@ -771,7 +771,7 @@ pub(crate) mod parsing {
             bound.paren_token = paren_token;
 
             if is_tilde_const {
-                Ok(TypeParamBound::Verbatim(verbatim::between(begin, input)))
+                Ok(TypeParamBound::Verbatim(verbatim::between(&begin, input)))
             } else {
                 Ok(TypeParamBound::Trait(bound))
             }

@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.65"
 name = "crypto-bigint"
-version = "0.4.9"
+version = "0.5.2"
 authors = ["RustCrypto Developers"]
 description = """
 Pure Rust implementation of a big integer library which has been designed from
@@ -46,8 +46,12 @@ rustdoc-args = [
     "docsrs",
 ]
 
+[[bench]]
+name = "bench"
+harness = false
+
 [dependencies.der]
-version = "0.6"
+version = "0.7"
 optional = true
 default-features = false
 
@@ -56,7 +60,7 @@ version = "0.14"
 optional = true
 
 [dependencies.rand_core]
-version = "0.6"
+version = "0.6.4"
 optional = true
 
 [dependencies.rlp]
@@ -65,7 +69,7 @@ optional = true
 default-features = false
 
 [dependencies.serdect]
-version = "0.1"
+version = "0.2"
 optional = true
 default-features = false
 
@@ -81,11 +85,18 @@ default-features = false
 [dev-dependencies.bincode]
 version = "1"
 
+[dev-dependencies.criterion]
+version = "0.4"
+features = ["html_reports"]
+
 [dev-dependencies.hex-literal]
-version = "0.3"
+version = "0.4"
 
 [dev-dependencies.num-bigint]
 version = "0.4"
+
+[dev-dependencies.num-integer]
+version = "0.1"
 
 [dev-dependencies.num-traits]
 version = "0.2"
@@ -104,4 +115,4 @@ features = ["std"]
 alloc = []
 default = ["rand"]
 rand = ["rand_core/std"]
-serde = ["serdect"]
+serde = ["dep:serdect"]

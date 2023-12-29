@@ -11,9 +11,9 @@
 
 [package]
 edition = "2021"
-rust-version = "1.62.0"
+rust-version = "1.67.0"
 name = "time-macros"
-version = "0.2.7"
+version = "0.2.14"
 authors = [
     "Jacob Pratt <open-source@jhpratt.dev>",
     "Time contributors",
@@ -32,11 +32,14 @@ categories = ["date-and-time"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/time-rs/time"
 
+[package.metadata.docs.rs]
+rustdoc-args = ["--generate-link-to-definition"]
+
 [lib]
 proc-macro = true
 
 [dependencies.time-core]
-version = "=0.1.0"
+version = "=0.1.1"
 
 [features]
 formatting = []

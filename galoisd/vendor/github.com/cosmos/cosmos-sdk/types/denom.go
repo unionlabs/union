@@ -2,18 +2,20 @@ package types
 
 import (
 	"fmt"
+
+	"cosmossdk.io/math"
 )
 
 // denomUnits contains a mapping of denomination mapped to their respective unit
 // multipliers (e.g. 1atom = 10^-6uatom).
-var denomUnits = map[string]Dec{}
+var denomUnits = map[string]math.LegacyDec{}
 
 // baseDenom is the denom of smallest unit registered
 var baseDenom string
 
 // RegisterDenom registers a denomination with a corresponding unit. If the
 // denomination is already registered, an error will be returned.
-func RegisterDenom(denom string, unit Dec) error {
+func RegisterDenom(denom string, unit math.LegacyDec) error {
 	if err := ValidateDenom(denom); err != nil {
 		return err
 	}
@@ -32,17 +34,28 @@ func RegisterDenom(denom string, unit Dec) error {
 
 // GetDenomUnit returns a unit for a given denomination if it exists. A boolean
 // is returned if the denomination is registered.
-func GetDenomUnit(denom string) (Dec, bool) {
+func GetDenomUnit(denom string) (math.LegacyDec, bool) {
 	if err := ValidateDenom(denom); err != nil {
-		return ZeroDec(), false
+		return math.LegacyZeroDec(), false
 	}
 
 	unit, ok := denomUnits[denom]
 	if !ok {
-		return ZeroDec(), false
+		return math.LegacyZeroDec(), false
 	}
 
 	return unit, true
+}
+
+// SetBaseDenom allow overwritting the base denom
+// if the denom has registered before, otherwise return error
+func SetBaseDenom(denom string) error {
+	_, ok := denomUnits[denom]
+	if !ok {
+		return fmt.Errorf("denom %s not registered", denom)
+	}
+	baseDenom = denom
+	return nil
 }
 
 // GetBaseDenom returns the denom of smallest unit registered
@@ -75,7 +88,7 @@ func ConvertCoin(coin Coin, denom string) (Coin, error) {
 		return NewCoin(denom, coin.Amount), nil
 	}
 
-	return NewCoin(denom, NewDecFromInt(coin.Amount).Mul(srcUnit).Quo(dstUnit).TruncateInt()), nil
+	return NewCoin(denom, math.LegacyNewDecFromInt(coin.Amount).Mul(srcUnit).Quo(dstUnit).TruncateInt()), nil
 }
 
 // ConvertDecCoin attempts to convert a decimal coin to a given denomination. If the given

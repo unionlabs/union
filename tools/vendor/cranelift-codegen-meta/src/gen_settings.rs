@@ -98,6 +98,26 @@ fn gen_iterator(group: &SettingGroup, fmt: &mut Formatter) {
     fmtln!(fmt, "}");
 }
 
+/// Generates a `all()` function with all options for this enum
+fn gen_enum_all(name: &str, values: &[&'static str], fmt: &mut Formatter) {
+    fmtln!(
+        fmt,
+        "/// Returns a slice with all possible [{}] values.",
+        name
+    );
+    fmtln!(fmt, "pub fn all() -> &'static [{}] {{", name);
+    fmt.indent(|fmt| {
+        fmtln!(fmt, "&[");
+        fmt.indent(|fmt| {
+            for v in values.iter() {
+                fmtln!(fmt, "Self::{},", camel_case(v));
+            }
+        });
+        fmtln!(fmt, "]");
+    });
+    fmtln!(fmt, "}");
+}
+
 /// Emit Display and FromStr implementations for enum settings.
 fn gen_to_and_from_str(name: &str, values: &[&'static str], fmt: &mut Formatter) {
     fmtln!(fmt, "impl fmt::Display for {} {{", name);
@@ -119,7 +139,7 @@ fn gen_to_and_from_str(name: &str, values: &[&'static str], fmt: &mut Formatter)
     });
     fmtln!(fmt, "}");
 
-    fmtln!(fmt, "impl str::FromStr for {} {{", name);
+    fmtln!(fmt, "impl core::str::FromStr for {} {{", name);
     fmt.indent(|fmt| {
         fmtln!(fmt, "type Err = ();");
         fmtln!(fmt, "fn from_str(s: &str) -> Result<Self, Self::Err> {");
@@ -155,6 +175,12 @@ fn gen_enum_types(group: &SettingGroup, fmt: &mut Formatter) {
                 fmt.doc_comment(format!("`{}`.", v));
                 fmtln!(fmt, "{},", camel_case(v));
             }
+        });
+        fmtln!(fmt, "}");
+
+        fmtln!(fmt, "impl {} {{", name);
+        fmt.indent(|fmt| {
+            gen_enum_all(&name, values, fmt);
         });
         fmtln!(fmt, "}");
 
@@ -370,7 +396,11 @@ fn gen_descriptors(group: &SettingGroup, fmt: &mut Formatter) {
     );
     fmt.indent(|fmt| {
         for preset in &group.presets {
-            fmt.comment(preset.name);
+            fmt.comment(format!(
+                "{}: {}",
+                preset.name,
+                preset.setting_names(&group).collect::<Vec<_>>().join(", ")
+            ));
             for (mask, value) in preset.layout(&group) {
                 fmtln!(fmt, "(0b{:08b}, 0b{:08b}),", mask, value);
             }

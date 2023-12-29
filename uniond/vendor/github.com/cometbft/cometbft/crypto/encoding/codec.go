@@ -67,11 +67,15 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		return pk, nil
 	case *pc.PublicKey_Bn254:
 		if len(k.Bn254) != bn254.PubKeySize {
-			return nil, fmt.Errorf("invalid size for PubKeyBN254. Got %d, expected %d",
+			return nil, fmt.Errorf("invalid size for PubKeyBn254. Got %d, expected %d",
 				len(k.Bn254), bn254.PubKeySize)
 		}
 		pk := make(bn254.PubKey, bn254.PubKeySize)
 		copy(pk, k.Bn254)
+		err := pk.EnsureValid()
+		if(err != nil) {
+			return nil, fmt.Errorf("invalid compression for PubKeyBn254, %v", err)
+		}
 		return pk, nil
 	default:
 		return nil, fmt.Errorf("fromproto: key type %v is not supported", k)

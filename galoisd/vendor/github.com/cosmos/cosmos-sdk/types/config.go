@@ -74,8 +74,8 @@ func GetSealedConfig(ctx context.Context) (*Config, error) {
 }
 
 func (config *Config) assertNotSealed() {
-	config.mtx.Lock()
-	defer config.mtx.Unlock()
+	config.mtx.RLock()
+	defer config.mtx.RUnlock()
 
 	if config.sealed {
 		panic("Config is sealed")

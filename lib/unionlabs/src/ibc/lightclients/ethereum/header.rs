@@ -12,7 +12,7 @@ use crate::{
 
 // trait alias would be nice
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct Header<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub trusted_sync_committee: TrustedSyncCommittee<C>,
     pub consensus_update: LightClientUpdate<C>,

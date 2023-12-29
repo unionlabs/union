@@ -2,17 +2,15 @@ use crate::compiler::CraneliftCompiler;
 use cranelift_codegen::isa::{lookup, TargetIsa};
 use cranelift_codegen::settings::{self, Configurable};
 use cranelift_codegen::CodegenResult;
-use loupe::MemoryUsage;
 use std::sync::Arc;
-use wasmer_compiler::{
-    Architecture, Compiler, CompilerConfig, CpuFeature, ModuleMiddleware, Target,
-};
+use wasmer_compiler::{Compiler, CompilerConfig, Engine, EngineBuilder, ModuleMiddleware};
+use wasmer_types::{Architecture, CpuFeature, Target};
 
 // Runtime Environment
 
 /// Possible optimization levels for the Cranelift codegen backend.
 #[non_exhaustive]
-#[derive(Clone, Debug, MemoryUsage)]
+#[derive(Clone, Debug)]
 pub enum CraneliftOptLevel {
     /// No optimizations performed, minimizes compilation time by disabling most
     /// optimizations.
@@ -29,7 +27,7 @@ pub enum CraneliftOptLevel {
 ///
 /// This structure exposes a builder-like interface and is primarily
 /// consumed by `wasmer_engine::Engine::new`.
-#[derive(Debug, Clone, MemoryUsage)]
+#[derive(Debug, Clone)]
 pub struct Cranelift {
     enable_nan_canonicalization: bool,
     enable_verifier: bool,
@@ -119,12 +117,25 @@ impl Cranelift {
             builder.enable("has_lzcnt").expect("should be valid flag");
         }
 
-        builder.finish(self.flags())
+        builder.finish(self.flags(target))
     }
 
     /// Generates the flags for the compiler
-    pub fn flags(&self) -> settings::Flags {
+    pub fn flags(&self, target: &Target) -> settings::Flags {
+        let is_riscv = matches!(target.triple().architecture, Architecture::Riscv64(_));
         let mut flags = settings::builder();
+
+        // Enable probestack
+        flags
+            .enable("enable_probestack")
+            .expect("should be valid flag");
+
+        // Only inline probestack is supported on AArch64
+        if matches!(target.triple().architecture, Architecture::Aarch64(_)) {
+            flags
+                .set("probestack_strategy", "inline")
+                .expect("should be valid flag");
+        }
 
         // There are two possible traps for division, and this way
         // we get the proper one if code traps.
@@ -136,7 +147,7 @@ impl Cranelift {
             flags.enable("is_pic").expect("should be a valid flag");
         }
 
-        // We set up libcall trampolines in engine-dylib and engine-universal.
+        // We set up libcall trampolines in engine-universal.
         // These trampolines are always reachable through short jumps.
         flags
             .enable("use_colocated_libcalls")
@@ -166,9 +177,15 @@ impl Cranelift {
             )
             .expect("should be valid flag");
 
-        flags
-            .set("enable_simd", "true")
-            .expect("should be valid flag");
+        if is_riscv {
+            flags
+                .set("enable_simd", "false")
+                .expect("should be valid flag");
+        } else {
+            flags
+                .set("enable_simd", "true")
+                .expect("should be valid flag");
+        }
 
         let enable_nan_canonicalization = if self.enable_nan_canonicalization {
             "true"
@@ -192,10 +209,6 @@ impl CompilerConfig for Cranelift {
         self.enable_verifier = true;
     }
 
-    fn enable_nan_canonicalization(&mut self) {
-        self.enable_nan_canonicalization = true;
-    }
-
     fn canonicalize_nans(&mut self, enable: bool) {
         self.enable_nan_canonicalization = enable;
     }
@@ -214,5 +227,11 @@ impl CompilerConfig for Cranelift {
 impl Default for Cranelift {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl From<Cranelift> for Engine {
+    fn from(config: Cranelift) -> Self {
+        EngineBuilder::new(config).engine()
     }
 }

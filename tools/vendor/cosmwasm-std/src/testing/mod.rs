@@ -8,6 +8,8 @@ mod mock;
 mod shuffle;
 
 pub use assertions::assert_approx_eq_impl;
+#[cfg(test)]
+pub use assertions::assert_hash_works_impl;
 
 #[cfg(feature = "cosmwasm_1_3")]
 pub use mock::DistributionQuerier;

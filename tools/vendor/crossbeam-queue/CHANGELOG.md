@@ -1,3 +1,17 @@
+# Version 0.3.8
+
+- Fix build script bug introduced in 0.3.7. (#932)
+
+# Version 0.3.7
+
+**Note:** This release has been yanked due to regression fixed in 0.3.8.
+
+- Improve support for custom targets. (#922)
+
+# Version 0.3.6
+
+- Bump the minimum supported Rust version to 1.38. (#877)
+
 # Version 0.3.5
 
 - Add `ArrayQueue::force_push`. (#789)

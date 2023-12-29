@@ -13,9 +13,15 @@ mod dev;
 
 pub use field::FieldElement;
 
-use affine::AffinePoint;
-use projective::ProjectivePoint;
-use scalar::Scalar;
+use self::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
+use crate::Secp256k1;
+use elliptic_curve::CurveArithmetic;
+
+impl CurveArithmetic for Secp256k1 {
+    type AffinePoint = AffinePoint;
+    type ProjectivePoint = ProjectivePoint;
+    type Scalar = Scalar;
+}
 
 const CURVE_EQUATION_B_SINGLE: u32 = 7u32;
 
@@ -47,6 +53,6 @@ mod tests {
         let key = SecretKey::random(&mut OsRng);
 
         // Sanity check
-        assert!(!key.to_be_bytes().iter().all(|b| *b == 0))
+        assert!(!key.to_bytes().iter().all(|b| *b == 0))
     }
 }

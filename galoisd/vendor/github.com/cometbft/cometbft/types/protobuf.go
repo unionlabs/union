@@ -101,13 +101,13 @@ var PB2TM = pb2tm{}
 type pb2tm struct{}
 
 func (pb2tm) ValidatorUpdates(vals []abci.ValidatorUpdate) ([]*Validator, error) {
-	tmVals := make([]*Validator, len(vals))
+	cmtVals := make([]*Validator, len(vals))
 	for i, v := range vals {
 		pub, err := cryptoenc.PubKeyFromProto(v.PubKey)
 		if err != nil {
 			return nil, err
 		}
-		tmVals[i] = NewValidator(pub, v.Power)
+		cmtVals[i] = NewValidator(pub, v.Power)
 	}
-	return tmVals, nil
+	return cmtVals, nil
 }

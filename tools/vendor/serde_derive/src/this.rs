@@ -1,4 +1,4 @@
-use internals::ast::Container;
+use crate::internals::ast::Container;
 use syn::{Path, PathArguments, Token};
 
 pub fn this_type(cont: &Container) -> Path {

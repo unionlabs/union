@@ -2,6 +2,8 @@
 
 use alloc::boxed::Box;
 use alloc::string::String;
+use core::num::NonZeroU16;
+use core::str::{self, FromStr};
 
 use super::{ast, unused, Error, Span, Spanned};
 
@@ -150,7 +152,7 @@ impl<'a> From<Box<[Item<'a>]>> for crate::format_description::OwnedFormatItem {
             if let Ok([item]) = <[_; 1]>::try_from(items) {
                 item.into()
             } else {
-                unreachable!("the length was just checked to be 1")
+                bug!("the length was just checked to be 1")
             }
         } else {
             Self::Compound(items.into_iter().map(Self::from).collect())
@@ -160,11 +162,18 @@ impl<'a> From<Box<[Item<'a>]>> for crate::format_description::OwnedFormatItem {
 
 /// Declare the `Component` struct.
 macro_rules! component_definition {
+    (@if_required required then { $($then:tt)* } $(else { $($else:tt)* })?) => { $($then)* };
+    (@if_required then { $($then:tt)* } $(else { $($else:tt)* })?) => { $($($else)*)? };
+    (@if_from_str from_str then { $($then:tt)* } $(else { $($else:tt)* })?) => { $($then)* };
+    (@if_from_str then { $($then:tt)* } $(else { $($else:tt)* })?) => { $($($else)*)? };
+
     ($vis:vis enum $name:ident {
-        $($variant:ident = $parse_variant:literal {
-            $($field:ident = $parse_field:literal:
-                Option<$field_type:ty> => $target_field:ident),* $(,)?
-        }),* $(,)?
+        $($variant:ident = $parse_variant:literal {$(
+            $(#[$required:tt])?
+            $field:ident = $parse_field:literal:
+            Option<$(#[$from_str:tt])? $field_type:ty>
+            => $target_field:ident
+        ),* $(,)?}),* $(,)?
     }) => {
         $vis enum $name {
             $($variant($variant),)*
@@ -176,14 +185,26 @@ macro_rules! component_definition {
 
         $(impl $variant {
             /// Parse the component from the AST, given its modifiers.
-            fn with_modifiers(modifiers: &[ast::Modifier<'_>]) -> Result<Self, Error> {
+            fn with_modifiers(
+                modifiers: &[ast::Modifier<'_>],
+                _component_span: Span,
+            ) -> Result<Self, Error>
+            {
+                // rustc will complain if the modifier is empty.
+                #[allow(unused_mut)]
                 let mut this = Self {
                     $($field: None),*
                 };
 
                 for modifier in modifiers {
-                    $(if modifier.key.eq_ignore_ascii_case($parse_field) {
-                        this.$field = <$field_type>::from_modifier_value(&modifier.value)?;
+                    $(#[allow(clippy::string_lit_as_bytes)]
+                    if modifier.key.eq_ignore_ascii_case($parse_field.as_bytes()) {
+                        this.$field = component_definition!(@if_from_str $($from_str)?
+                            then {
+                                parse_from_modifier_value::<$field_type>(&modifier.value)?
+                            } else {
+                                <$field_type>::from_modifier_value(&modifier.value)?
+                            });
                         continue;
                     })*
                     return Err(Error {
@@ -195,6 +216,19 @@ macro_rules! component_definition {
                     });
                 }
 
+                $(component_definition! { @if_required $($required)? then {
+                    if this.$field.is_none() {
+                        return Err(Error {
+                            _inner: unused(_component_span.error("missing required modifier")),
+                            public:
+                                crate::error::InvalidFormatDescription::MissingRequiredModifier {
+                                    name: $parse_field,
+                                    index: _component_span.start.byte as _,
+                                }
+                        });
+                    }
+                }})*
+
                 Ok(this)
             }
         })*
@@ -205,7 +239,16 @@ macro_rules! component_definition {
                     $name::$variant($variant { $($field),* }) => {
                         $crate::format_description::component::Component::$variant(
                             $crate::format_description::modifier::$variant {$(
-                                $target_field: $field.unwrap_or_default().into()
+                                $target_field: component_definition! { @if_required $($required)?
+                                    then {
+                                        match $field {
+                                            Some(value) => value.into(),
+                                            None => bug!("required modifier was not set"),
+                                        }
+                                    } else {
+                                        $field.unwrap_or_default().into()
+                                    }
+                                }
                             ),*}
                         )
                     }
@@ -218,8 +261,9 @@ macro_rules! component_definition {
             name: &Spanned<&[u8]>,
             modifiers: &[ast::Modifier<'_>],
         ) -> Result<Component, Error> {
-            $(if name.eq_ignore_ascii_case($parse_variant) {
-                return Ok(Component::$variant($variant::with_modifiers(&modifiers)?));
+            $(#[allow(clippy::string_lit_as_bytes)]
+            if name.eq_ignore_ascii_case($parse_variant.as_bytes()) {
+                return Ok(Component::$variant($variant::with_modifiers(&modifiers, name.span)?,));
             })*
             Err(Error {
                 _inner: unused(name.span.error("invalid component")),
@@ -235,58 +279,67 @@ macro_rules! component_definition {
 // Keep in alphabetical order.
 component_definition! {
     pub(super) enum Component {
-        Day = b"day" {
-            padding = b"padding": Option<Padding> => padding,
+        Day = "day" {
+            padding = "padding": Option<Padding> => padding,
         },
-        Hour = b"hour" {
-            padding = b"padding": Option<Padding> => padding,
-            base = b"repr": Option<HourBase> => is_12_hour_clock,
+        End = "end" {},
+        Hour = "hour" {
+            padding = "padding": Option<Padding> => padding,
+            base = "repr": Option<HourBase> => is_12_hour_clock,
         },
-        Minute = b"minute" {
-            padding = b"padding": Option<Padding> => padding,
+        Ignore = "ignore" {
+            #[required]
+            count = "count": Option<#[from_str] NonZeroU16> => count,
         },
-        Month = b"month" {
-            padding = b"padding": Option<Padding> => padding,
-            repr = b"repr": Option<MonthRepr> => repr,
-            case_sensitive = b"case_sensitive": Option<MonthCaseSensitive> => case_sensitive,
+        Minute = "minute" {
+            padding = "padding": Option<Padding> => padding,
         },
-        OffsetHour = b"offset_hour" {
-            sign_behavior = b"sign": Option<SignBehavior> => sign_is_mandatory,
-            padding = b"padding": Option<Padding> => padding,
+        Month = "month" {
+            padding = "padding": Option<Padding> => padding,
+            repr = "repr": Option<MonthRepr> => repr,
+            case_sensitive = "case_sensitive": Option<MonthCaseSensitive> => case_sensitive,
         },
-        OffsetMinute = b"offset_minute" {
-            padding = b"padding": Option<Padding> => padding,
+        OffsetHour = "offset_hour" {
+            sign_behavior = "sign": Option<SignBehavior> => sign_is_mandatory,
+            padding = "padding": Option<Padding> => padding,
         },
-        OffsetSecond = b"offset_second" {
-            padding = b"padding": Option<Padding> => padding,
+        OffsetMinute = "offset_minute" {
+            padding = "padding": Option<Padding> => padding,
         },
-        Ordinal = b"ordinal" {
-            padding = b"padding": Option<Padding> => padding,
+        OffsetSecond = "offset_second" {
+            padding = "padding": Option<Padding> => padding,
         },
-        Period = b"period" {
-            case = b"case": Option<PeriodCase> => is_uppercase,
-            case_sensitive = b"case_sensitive": Option<PeriodCaseSensitive> => case_sensitive,
+        Ordinal = "ordinal" {
+            padding = "padding": Option<Padding> => padding,
         },
-        Second = b"second" {
-            padding = b"padding": Option<Padding> => padding,
+        Period = "period" {
+            case = "case": Option<PeriodCase> => is_uppercase,
+            case_sensitive = "case_sensitive": Option<PeriodCaseSensitive> => case_sensitive,
         },
-        Subsecond = b"subsecond" {
-            digits = b"digits": Option<SubsecondDigits> => digits,
+        Second = "second" {
+            padding = "padding": Option<Padding> => padding,
         },
-        Weekday = b"weekday" {
-            repr = b"repr": Option<WeekdayRepr> => repr,
-            one_indexed = b"one_indexed": Option<WeekdayOneIndexed> => one_indexed,
-            case_sensitive = b"case_sensitive": Option<WeekdayCaseSensitive> => case_sensitive,
+        Subsecond = "subsecond" {
+            digits = "digits": Option<SubsecondDigits> => digits,
         },
-        WeekNumber = b"week_number" {
-            padding = b"padding": Option<Padding> => padding,
-            repr = b"repr": Option<WeekNumberRepr> => repr,
+        UnixTimestamp = "unix_timestamp" {
+            precision = "precision": Option<UnixTimestampPrecision> => precision,
+            sign_behavior = "sign": Option<SignBehavior> => sign_is_mandatory,
         },
-        Year = b"year" {
-            padding = b"padding": Option<Padding> => padding,
-            repr = b"repr": Option<YearRepr> => repr,
-            base = b"base": Option<YearBase> => iso_week_based,
-            sign_behavior = b"sign": Option<SignBehavior> => sign_is_mandatory,
+        Weekday = "weekday" {
+            repr = "repr": Option<WeekdayRepr> => repr,
+            one_indexed = "one_indexed": Option<WeekdayOneIndexed> => one_indexed,
+            case_sensitive = "case_sensitive": Option<WeekdayCaseSensitive> => case_sensitive,
+        },
+        WeekNumber = "week_number" {
+            padding = "padding": Option<Padding> => padding,
+            repr = "repr": Option<WeekNumberRepr> => repr,
+        },
+        Year = "year" {
+            padding = "padding": Option<Padding> => padding,
+            repr = "repr": Option<YearRepr> => repr,
+            base = "base": Option<YearBase> => iso_week_based,
+            sign_behavior = "sign": Option<SignBehavior> => sign_is_mandatory,
         },
     }
 }
@@ -428,6 +481,14 @@ modifier! {
         OneOrMore = b"1+",
     }
 
+    enum UnixTimestampPrecision {
+        #[default]
+        Second = b"second",
+        Millisecond = b"millisecond",
+        Microsecond = b"microsecond",
+        Nanosecond = b"nanosecond",
+    }
+
     enum WeekNumberRepr {
         #[default]
         Iso = b"iso",
@@ -466,4 +527,19 @@ modifier! {
         Full = b"full",
         LastTwo = b"last_two",
     }
+}
+
+/// Parse a modifier value using `FromStr`. Requires the modifier value to be valid UTF-8.
+fn parse_from_modifier_value<T: FromStr>(value: &Spanned<&[u8]>) -> Result<Option<T>, Error> {
+    str::from_utf8(value)
+        .ok()
+        .and_then(|val| val.parse::<T>().ok())
+        .map(|val| Some(val))
+        .ok_or_else(|| Error {
+            _inner: unused(value.span.error("invalid modifier value")),
+            public: crate::error::InvalidFormatDescription::InvalidModifier {
+                value: String::from_utf8_lossy(value).into_owned(),
+                index: value.span.start.byte as _,
+            },
+        })
 }

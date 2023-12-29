@@ -1,0 +1,3 @@
+- Added casting between integers of different digit sizes
+- Fixed incorrect implementation of some formatting traits
+- The following methods are now `const` on stable for signed and unsigned integers: `checked_div`, `checked_div_euclid`, `checked_rem`, `checked_rem_euclid`, `checked_next_multiple_of`, `checked_ilog10`, `checked_ilog`, `div`, `rem`, `overflowing_div`, `overflowing_div_euclid`, `overflowing_rem`, `overflowing_rem_euclid`, `saturating_div`, `wrapping_div`, `wrapping_div_euclid`, `wrapping_rem`, `wrapping_rem_euclid`, `div_euclid`, `rem_euclid`, `ilog10`, `ilog`, `next_multiple_of`, `div_floor`, `div_ceil`

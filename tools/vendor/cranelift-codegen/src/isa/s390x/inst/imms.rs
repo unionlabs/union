@@ -1,6 +1,6 @@
 //! S390x ISA definitions: immediate constants.
 
-use regalloc::{PrettyPrint, RealRegUniverse};
+use crate::machinst::{AllocationConsumer, PrettyPrint};
 use std::string::String;
 
 /// An unsigned 12-bit immediate.
@@ -54,11 +54,6 @@ impl SImm20 {
         SImm20 {
             value: value.bits() as i32,
         }
-    }
-
-    /// Create a zero immediate of this format.
-    pub fn zero() -> SImm20 {
-        SImm20 { value: 0 }
     }
 
     /// Bits for encoding.
@@ -130,11 +125,6 @@ impl UImm16Shifted {
             shift: self.shift,
         }
     }
-
-    /// Returns the value that this constant represents.
-    pub fn value(&self) -> u64 {
-        (self.bits as u64) << (16 * self.shift)
-    }
 }
 
 /// A 32-bit immediate with a {0,32}-bit shift.
@@ -179,53 +169,34 @@ impl UImm32Shifted {
         }
     }
 
-    pub fn from_uimm16shifted(value: UImm16Shifted) -> UImm32Shifted {
-        if value.shift % 2 == 0 {
-            UImm32Shifted {
-                bits: value.bits as u32,
-                shift: value.shift / 2,
-            }
-        } else {
-            UImm32Shifted {
-                bits: (value.bits as u32) << 16,
-                shift: value.shift / 2,
-            }
-        }
-    }
-
     pub fn negate_bits(&self) -> UImm32Shifted {
         UImm32Shifted {
             bits: !self.bits,
             shift: self.shift,
         }
     }
-
-    /// Returns the value that this constant represents.
-    pub fn value(&self) -> u64 {
-        (self.bits as u64) << (32 * self.shift)
-    }
 }
 
 impl PrettyPrint for UImm12 {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("{}", self.value)
     }
 }
 
 impl PrettyPrint for SImm20 {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("{}", self.value)
     }
 }
 
 impl PrettyPrint for UImm16Shifted {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("{}", self.bits)
     }
 }
 
 impl PrettyPrint for UImm32Shifted {
-    fn show_rru(&self, _mb_rru: Option<&RealRegUniverse>) -> String {
+    fn pretty_print(&self, _: u8, _: &mut AllocationConsumer<'_>) -> String {
         format!("{}", self.bits)
     }
 }

@@ -4,6 +4,9 @@ use crate::Zero;
 use core::fmt;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
+#[cfg(feature = "rand_core")]
+use {crate::Random, rand_core::CryptoRngCore};
+
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -60,8 +63,14 @@ impl<T: ConstantTimeEq> ConstantTimeEq for Wrapping<T> {
     }
 }
 
+#[cfg(feature = "rand_core")]
+impl<T: Random> Random for Wrapping<T> {
+    fn random(rng: &mut impl CryptoRngCore) -> Self {
+        Wrapping(Random::random(rng))
+    }
+}
+
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for Wrapping<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -72,8 +81,7 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Wrapping<T> {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
-impl<'de, T: Serialize> Serialize for Wrapping<T> {
+impl<T: Serialize> Serialize for Wrapping<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

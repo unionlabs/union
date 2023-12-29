@@ -1,39 +1,26 @@
 //! S390x ISA definitions: registers.
 
+use alloc::string::String;
+use regalloc2::MachineEnv;
+use regalloc2::PReg;
+use regalloc2::VReg;
+
+use crate::isa::s390x::inst::{RegPair, WritableRegPair};
+use crate::machinst::*;
 use crate::settings;
-use regalloc::{RealRegUniverse, Reg, RegClass, RegClassInfo, Writable, NUM_REG_CLASSES};
 
 //=============================================================================
 // Registers, the Universe thereof, and printing
 
-#[rustfmt::skip]
-const GPR_INDICES: [u8; 16] = [
-    // r0 and r1 reserved
-    30, 31,
-    // r2 - r5 call-clobbered
-    16, 17, 18, 19,
-    // r6 - r14 call-saved (order reversed)
-    28, 27, 26, 25, 24, 23, 22, 21, 20,
-    // r15 (SP)
-    29,
-];
-
-#[rustfmt::skip]
-const FPR_INDICES: [u8; 16] = [
-    // f0 - f7 as pairs
-    0, 4, 1, 5, 2, 6, 3, 7,
-    // f8 - f15 as pairs
-    8, 12, 9, 13, 10, 14, 11, 15,
-];
-
 /// Get a reference to a GPR (integer register).
 pub fn gpr(num: u8) -> Reg {
+    let preg = gpr_preg(num);
+    Reg::from(VReg::new(preg.index(), RegClass::Int))
+}
+
+pub(crate) const fn gpr_preg(num: u8) -> PReg {
     assert!(num < 16);
-    Reg::new_real(
-        RegClass::I64,
-        /* enc = */ num,
-        /* index = */ GPR_INDICES[num as usize],
-    )
+    PReg::new(num as usize, RegClass::Int)
 }
 
 /// Get a writable reference to a GPR.
@@ -41,19 +28,28 @@ pub fn writable_gpr(num: u8) -> Writable<Reg> {
     Writable::from_reg(gpr(num))
 }
 
-/// Get a reference to a FPR (floating-point register).
-pub fn fpr(num: u8) -> Reg {
-    assert!(num < 16);
-    Reg::new_real(
-        RegClass::F64,
-        /* enc = */ num,
-        /* index = */ FPR_INDICES[num as usize],
-    )
+/// Get a reference to a VR (vector register).
+pub fn vr(num: u8) -> Reg {
+    let preg = vr_preg(num);
+    Reg::from(VReg::new(preg.index(), RegClass::Float))
 }
 
-/// Get a writable reference to a V-register.
-pub fn writable_fpr(num: u8) -> Writable<Reg> {
-    Writable::from_reg(fpr(num))
+pub(crate) const fn vr_preg(num: u8) -> PReg {
+    assert!(num < 32);
+    PReg::new(num as usize, RegClass::Float)
+}
+
+/// Get a writable reference to a VR.
+#[allow(dead_code)] // used by tests.
+pub fn writable_vr(num: u8) -> Writable<Reg> {
+    Writable::from_reg(vr(num))
+}
+
+/// Test whether a vector register is overlapping an FPR.
+pub fn is_fpr(r: Reg) -> bool {
+    let r = r.to_real_reg().unwrap();
+    assert!(r.class() == RegClass::Float);
+    return r.hw_enc() < 16;
 }
 
 /// Get a reference to the stack-pointer register.
@@ -88,81 +84,176 @@ pub fn zero_reg() -> Reg {
 }
 
 /// Create the register universe for AArch64.
-pub fn create_reg_universe(_flags: &settings::Flags) -> RealRegUniverse {
-    let mut regs = vec![];
-    let mut allocable_by_class = [None; NUM_REG_CLASSES];
-
-    // Numbering Scheme: we put FPRs first, then GPRs. The GPRs exclude several registers:
-    // r0 (we cannot use this for addressing // FIXME regalloc)
-    // r1 (spilltmp)
-    // r15 (stack pointer)
-
-    // FPRs.
-    let mut base = regs.len();
-    regs.push((fpr(0).to_real_reg(), "%f0".into()));
-    regs.push((fpr(2).to_real_reg(), "%f2".into()));
-    regs.push((fpr(4).to_real_reg(), "%f4".into()));
-    regs.push((fpr(6).to_real_reg(), "%f6".into()));
-    regs.push((fpr(1).to_real_reg(), "%f1".into()));
-    regs.push((fpr(3).to_real_reg(), "%f3".into()));
-    regs.push((fpr(5).to_real_reg(), "%f5".into()));
-    regs.push((fpr(7).to_real_reg(), "%f7".into()));
-    regs.push((fpr(8).to_real_reg(), "%f8".into()));
-    regs.push((fpr(10).to_real_reg(), "%f10".into()));
-    regs.push((fpr(12).to_real_reg(), "%f12".into()));
-    regs.push((fpr(14).to_real_reg(), "%f14".into()));
-    regs.push((fpr(9).to_real_reg(), "%f9".into()));
-    regs.push((fpr(11).to_real_reg(), "%f11".into()));
-    regs.push((fpr(13).to_real_reg(), "%f13".into()));
-    regs.push((fpr(15).to_real_reg(), "%f15".into()));
-
-    allocable_by_class[RegClass::F64.rc_to_usize()] = Some(RegClassInfo {
-        first: base,
-        last: regs.len() - 1,
-        suggested_scratch: Some(fpr(1).get_index()),
-    });
-
-    // Caller-saved GPRs in the SystemV s390x ABI.
-    base = regs.len();
-    regs.push((gpr(2).to_real_reg(), "%r2".into()));
-    regs.push((gpr(3).to_real_reg(), "%r3".into()));
-    regs.push((gpr(4).to_real_reg(), "%r4".into()));
-    regs.push((gpr(5).to_real_reg(), "%r5".into()));
-
-    // Callee-saved GPRs in the SystemV s390x ABI.
-    // We start from r14 downwards in an attempt to allow the
-    // prolog to use as short a STMG as possible.
-    regs.push((gpr(14).to_real_reg(), "%r14".into()));
-    regs.push((gpr(13).to_real_reg(), "%r13".into()));
-    regs.push((gpr(12).to_real_reg(), "%r12".into()));
-    regs.push((gpr(11).to_real_reg(), "%r11".into()));
-    regs.push((gpr(10).to_real_reg(), "%r10".into()));
-    regs.push((gpr(9).to_real_reg(), "%r9".into()));
-    regs.push((gpr(8).to_real_reg(), "%r8".into()));
-    regs.push((gpr(7).to_real_reg(), "%r7".into()));
-    regs.push((gpr(6).to_real_reg(), "%r6".into()));
-
-    allocable_by_class[RegClass::I64.rc_to_usize()] = Some(RegClassInfo {
-        first: base,
-        last: regs.len() - 1,
-        suggested_scratch: Some(gpr(13).get_index()),
-    });
-
-    // Other regs, not available to the allocator.
-    let allocable = regs.len();
-    regs.push((gpr(15).to_real_reg(), "%r15".into()));
-    regs.push((gpr(0).to_real_reg(), "%r0".into()));
-    regs.push((gpr(1).to_real_reg(), "%r1".into()));
-
-    // Assert sanity: the indices in the register structs must match their
-    // actual indices in the array.
-    for (i, reg) in regs.iter().enumerate() {
-        assert_eq!(i, reg.0.get_index());
+pub fn create_machine_env(_flags: &settings::Flags) -> MachineEnv {
+    fn preg(r: Reg) -> PReg {
+        r.to_real_reg().unwrap().into()
     }
 
-    RealRegUniverse {
-        regs,
-        allocable,
-        allocable_by_class,
+    MachineEnv {
+        preferred_regs_by_class: [
+            vec![
+                // no r0; can't use for addressing?
+                // no r1; it is our spilltmp.
+                preg(gpr(2)),
+                preg(gpr(3)),
+                preg(gpr(4)),
+                preg(gpr(5)),
+            ],
+            vec![
+                preg(vr(0)),
+                preg(vr(1)),
+                preg(vr(2)),
+                preg(vr(3)),
+                preg(vr(4)),
+                preg(vr(5)),
+                preg(vr(6)),
+                preg(vr(7)),
+                preg(vr(16)),
+                preg(vr(17)),
+                preg(vr(18)),
+                preg(vr(19)),
+                preg(vr(20)),
+                preg(vr(21)),
+                preg(vr(22)),
+                preg(vr(23)),
+                preg(vr(24)),
+                preg(vr(25)),
+                preg(vr(26)),
+                preg(vr(27)),
+                preg(vr(28)),
+                preg(vr(29)),
+                preg(vr(30)),
+                preg(vr(31)),
+            ],
+        ],
+        non_preferred_regs_by_class: [
+            vec![
+                preg(gpr(6)),
+                preg(gpr(7)),
+                preg(gpr(8)),
+                preg(gpr(9)),
+                preg(gpr(10)),
+                preg(gpr(11)),
+                preg(gpr(12)),
+                preg(gpr(13)),
+                preg(gpr(14)),
+                // no r15; it is the stack pointer.
+            ],
+            vec![
+                preg(vr(8)),
+                preg(vr(9)),
+                preg(vr(10)),
+                preg(vr(11)),
+                preg(vr(12)),
+                preg(vr(13)),
+                preg(vr(14)),
+                preg(vr(15)),
+            ],
+        ],
+        fixed_stack_slots: vec![],
     }
+}
+
+pub fn show_reg(reg: Reg) -> String {
+    if let Some(rreg) = reg.to_real_reg() {
+        match rreg.class() {
+            RegClass::Int => format!("%r{}", rreg.hw_enc()),
+            RegClass::Float => format!("%v{}", rreg.hw_enc()),
+        }
+    } else {
+        format!("%{:?}", reg)
+    }
+}
+
+pub fn maybe_show_fpr(reg: Reg) -> Option<String> {
+    if let Some(rreg) = reg.to_real_reg() {
+        if is_fpr(reg) {
+            return Some(format!("%f{}", rreg.hw_enc()));
+        }
+    }
+    None
+}
+
+pub fn pretty_print_reg(reg: Reg, allocs: &mut AllocationConsumer<'_>) -> String {
+    let reg = allocs.next(reg);
+    show_reg(reg)
+}
+
+pub fn pretty_print_regpair(pair: RegPair, allocs: &mut AllocationConsumer<'_>) -> String {
+    let hi = allocs.next(pair.hi);
+    let lo = allocs.next(pair.lo);
+    if let Some(hi_reg) = hi.to_real_reg() {
+        if let Some(lo_reg) = lo.to_real_reg() {
+            assert!(
+                hi_reg.hw_enc() + 1 == lo_reg.hw_enc(),
+                "Invalid regpair: {} {}",
+                show_reg(hi),
+                show_reg(lo)
+            );
+            return show_reg(hi);
+        }
+    }
+
+    format!("{}/{}", show_reg(hi), show_reg(lo))
+}
+
+pub fn pretty_print_reg_mod(
+    rd: Writable<Reg>,
+    ri: Reg,
+    allocs: &mut AllocationConsumer<'_>,
+) -> String {
+    let output = allocs.next_writable(rd).to_reg();
+    let input = allocs.next(ri);
+    if output == input {
+        show_reg(output)
+    } else {
+        format!("{}<-{}", show_reg(output), show_reg(input))
+    }
+}
+
+pub fn pretty_print_regpair_mod(
+    rd: WritableRegPair,
+    ri: RegPair,
+    allocs: &mut AllocationConsumer<'_>,
+) -> String {
+    let rd_hi = allocs.next(rd.hi.to_reg());
+    let rd_lo = allocs.next(rd.lo.to_reg());
+    let ri_hi = allocs.next(ri.hi);
+    let ri_lo = allocs.next(ri.lo);
+    if rd_hi == ri_hi {
+        show_reg(rd_hi)
+    } else {
+        format!(
+            "{}/{}<-{}/{}",
+            show_reg(rd_hi),
+            show_reg(rd_lo),
+            show_reg(ri_hi),
+            show_reg(ri_lo)
+        )
+    }
+}
+
+pub fn pretty_print_regpair_mod_lo(
+    rd: WritableRegPair,
+    ri: Reg,
+    allocs: &mut AllocationConsumer<'_>,
+) -> String {
+    let rd_hi = allocs.next(rd.hi.to_reg());
+    let rd_lo = allocs.next(rd.lo.to_reg());
+    let ri = allocs.next(ri);
+    if rd_lo == ri {
+        show_reg(rd_hi)
+    } else {
+        format!(
+            "{}/{}<-_/{}",
+            show_reg(rd_hi),
+            show_reg(rd_lo),
+            show_reg(ri),
+        )
+    }
+}
+
+pub fn pretty_print_fpr(reg: Reg, allocs: &mut AllocationConsumer<'_>) -> (String, Option<String>) {
+    let reg = allocs.next(reg);
+    (show_reg(reg), maybe_show_fpr(reg))
 }

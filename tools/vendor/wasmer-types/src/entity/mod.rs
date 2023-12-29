@@ -91,5 +91,5 @@ pub use crate::entity_impl;
 pub use boxed_slice::BoxedSlice;
 pub use iter::{Iter, IterMut};
 pub use keys::Keys;
-pub use primary_map::PrimaryMap;
+pub use primary_map::{ArchivedPrimaryMap, PrimaryMap};
 pub use secondary_map::SecondaryMap;

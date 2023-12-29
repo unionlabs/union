@@ -2,7 +2,7 @@
 // Attributions: https://github.com/wasmerio/wasmer/blob/master/ATTRIBUTIONS.md
 
 //! All the runtime support necessary for the wasm to cranelift translation is formalized by the
-//! traits `FunctionEnvironment`.
+//! traits `FunctionEnvMutironment`.
 
 use super::func_state::FuncTranslationState;
 use super::translation_utils::reference_type;
@@ -12,11 +12,10 @@ use cranelift_codegen::ir::immediates::Offset32;
 use cranelift_codegen::ir::{self, InstBuilder};
 use cranelift_codegen::isa::TargetFrontendConfig;
 use cranelift_frontend::FunctionBuilder;
-use wasmer_compiler::wasmparser::{Operator, Type};
-use wasmer_compiler::WasmResult;
+use wasmer_compiler::wasmparser::{Operator, ValType};
 use wasmer_types::{
     FunctionIndex, FunctionType, GlobalIndex, LocalFunctionIndex, MemoryIndex, SignatureIndex,
-    TableIndex, Type as WasmerType,
+    TableIndex, Type as WasmerType, WasmResult,
 };
 
 /// The value of a WebAssembly global variable.
@@ -47,8 +46,6 @@ pub enum GlobalVariable {
 pub enum ReturnMode {
     /// Use normal return instructions as needed.
     NormalReturns,
-    /// Use a single fallthrough return at the end of the function.
-    FallthroughReturn,
 }
 
 /// Environment affecting the translation of a WebAssembly.
@@ -229,6 +226,7 @@ pub trait FuncEnvironment: TargetEnvironment {
     ///
     /// The `index` provided identifies the linear memory to query, and `heap` is the heap reference
     /// returned by `make_heap` for the same index.
+    #[allow(clippy::too_many_arguments)]
     fn translate_memory_copy(
         &mut self,
         pos: FuncCursor,
@@ -336,20 +334,6 @@ pub trait FuncEnvironment: TargetEnvironment {
         len: ir::Value,
     ) -> WasmResult<()>;
 
-    /// Translates an externref ref count increment.
-    fn translate_externref_inc(
-        &mut self,
-        pos: cranelift_codegen::cursor::FuncCursor<'_>,
-        externref: ir::Value,
-    ) -> WasmResult<()>;
-
-    /// Translates an externref ref count decrement.
-    fn translate_externref_dec(
-        &mut self,
-        pos: cranelift_codegen::cursor::FuncCursor<'_>,
-        externref: ir::Value,
-    ) -> WasmResult<()>;
-
     /// Translate a `table.init` WebAssembly instruction.
     #[allow(clippy::too_many_arguments)]
     fn translate_table_init(
@@ -375,7 +359,7 @@ pub trait FuncEnvironment: TargetEnvironment {
     /// null sentinel is not a null reference type pointer for your type. If you
     /// override this method, then you should also override
     /// `translate_ref_is_null` as well.
-    fn translate_ref_null(&mut self, pos: FuncCursor, ty: Type) -> WasmResult<ir::Value>;
+    fn translate_ref_null(&mut self, pos: FuncCursor, ty: ValType) -> WasmResult<ir::Value>;
     // {
     //     let _ = ty;
     //     Ok(pos.ins().null(self.reference_type(ty)))
@@ -395,7 +379,7 @@ pub trait FuncEnvironment: TargetEnvironment {
         value: ir::Value,
     ) -> WasmResult<ir::Value> {
         let is_null = pos.ins().is_null(value);
-        Ok(pos.ins().bint(ir::types::I64, is_null))
+        Ok(pos.ins().uextend(ir::types::I64, is_null))
     }
 
     /// Translate a `ref.func` WebAssembly instruction.
@@ -463,7 +447,7 @@ pub trait FuncEnvironment: TargetEnvironment {
         Ok(())
     }
 
-    /// Optional callback for the `FunctionEnvironment` performing this translation to maintain
+    /// Optional callback for the `FunctionEnvMutironment` performing this translation to maintain
     /// internal state or prepare custom state for the operator to translate
     fn before_translate_operator(
         &mut self,
@@ -474,7 +458,7 @@ pub trait FuncEnvironment: TargetEnvironment {
         Ok(())
     }
 
-    /// Optional callback for the `FunctionEnvironment` performing this translation to maintain
+    /// Optional callback for the `FunctionEnvMutironment` performing this translation to maintain
     /// internal state or finalize custom state for the operator that was translated
     fn after_translate_operator(
         &mut self,
@@ -505,7 +489,4 @@ pub trait FuncEnvironment: TargetEnvironment {
 
     /// Get the type of a function with the given signature index.
     fn get_function_sig(&self, sig_index: SignatureIndex) -> Option<&FunctionType>;
-
-    /// Drops all locals that need to be dropped. Useful for returning from functions.
-    fn translate_drop_locals(&mut self, builder: &mut FunctionBuilder) -> WasmResult<()>;
 }

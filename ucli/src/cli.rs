@@ -100,7 +100,7 @@ pub enum UnionQuery {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct Config {
     pub evm: EvmChainConfig,
     pub union: UnionChainConfig,

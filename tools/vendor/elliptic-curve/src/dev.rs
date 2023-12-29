@@ -6,26 +6,27 @@
 use crate::{
     bigint::{Limb, U256},
     error::{Error, Result},
-    ops::{LinearCombination, Reduce},
+    generic_array::typenum::U32,
+    ops::{Invert, LinearCombination, MulByGenerator, Reduce, ShrAssign},
     pkcs8,
+    point::AffineCoordinates,
     rand_core::RngCore,
-    sec1::{FromEncodedPoint, ToEncodedPoint},
+    scalar::{FromUintUnchecked, IsHigh},
+    sec1::{CompressedPoint, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineArithmetic, AffineXCoordinate, Curve, IsHigh, PrimeCurve, ProjectiveArithmetic,
-    ScalarArithmetic,
+    Curve, CurveArithmetic, FieldBytesEncoding, PrimeCurve,
 };
 use core::{
-    iter::Sum,
+    iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use ff::{Field, PrimeField};
-use generic_array::arr;
 use hex_literal::hex;
 use pkcs8::AssociatedOid;
 
 #[cfg(feature = "bits")]
-use crate::group::ff::PrimeFieldBits;
+use ff::PrimeFieldBits;
 
 #[cfg(feature = "jwk")]
 use crate::JwkParameters;
@@ -49,13 +50,13 @@ pub type PublicKey = crate::PublicKey<MockCurve>;
 /// Secret key.
 pub type SecretKey = crate::SecretKey<MockCurve>;
 
-/// Scalar core.
-// TODO(tarcieri): make this the scalar type
-pub type ScalarCore = crate::ScalarCore<MockCurve>;
+/// Scalar primitive type.
+// TODO(tarcieri): make this the scalar type when it's more capable
+pub type ScalarPrimitive = crate::ScalarPrimitive<MockCurve>;
 
 /// Scalar bits.
 #[cfg(feature = "bits")]
-pub type ScalarBits = crate::ScalarBits<MockCurve>;
+pub type ScalarBits = crate::scalar::ScalarBits<MockCurve>;
 
 /// Mock elliptic curve type useful for writing tests which require a concrete
 /// curve type.
@@ -66,7 +67,8 @@ pub type ScalarBits = crate::ScalarBits<MockCurve>;
 pub struct MockCurve;
 
 impl Curve for MockCurve {
-    type UInt = U256;
+    type FieldBytesSize = U32;
+    type Uint = U256;
 
     const ORDER: U256 =
         U256::from_be_hex("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
@@ -74,15 +76,9 @@ impl Curve for MockCurve {
 
 impl PrimeCurve for MockCurve {}
 
-impl AffineArithmetic for MockCurve {
+impl CurveArithmetic for MockCurve {
     type AffinePoint = AffinePoint;
-}
-
-impl ProjectiveArithmetic for MockCurve {
     type ProjectivePoint = ProjectivePoint;
-}
-
-impl ScalarArithmetic for MockCurve {
     type Scalar = Scalar;
 }
 
@@ -92,16 +88,18 @@ impl AssociatedOid for MockCurve {
 }
 
 #[cfg(feature = "jwk")]
-#[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
 impl JwkParameters for MockCurve {
     const CRV: &'static str = "P-256";
 }
 
 /// Example scalar type
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct Scalar(ScalarCore);
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
+pub struct Scalar(ScalarPrimitive);
 
 impl Field for Scalar {
+    const ZERO: Self = Self(ScalarPrimitive::ZERO);
+    const ONE: Self = Self(ScalarPrimitive::ONE);
+
     fn random(mut rng: impl RngCore) -> Self {
         let mut bytes = FieldBytes::default();
 
@@ -111,14 +109,6 @@ impl Field for Scalar {
                 return scalar;
             }
         }
-    }
-
-    fn zero() -> Self {
-        Self(ScalarCore::ZERO)
-    }
-
-    fn one() -> Self {
-        Self(ScalarCore::ONE)
     }
 
     fn is_zero(&self) -> Choice {
@@ -142,38 +132,36 @@ impl Field for Scalar {
     fn sqrt(&self) -> CtOption<Self> {
         unimplemented!();
     }
+
+    fn sqrt_ratio(_num: &Self, _div: &Self) -> (Choice, Self) {
+        unimplemented!();
+    }
 }
 
 impl PrimeField for Scalar {
     type Repr = FieldBytes;
 
+    const MODULUS: &'static str =
+        "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff";
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
+    const TWO_INV: Self = Self::ZERO; // BOGUS!
+    const MULTIPLICATIVE_GENERATOR: Self = Self::ZERO; // BOGUS! Should be 7
     const S: u32 = 4;
+    const ROOT_OF_UNITY: Self = Self::ZERO; // BOGUS! Should be 0xffc97f062a770992ba807ace842a3dfc1546cad004378daf0592d7fbb41e6602
+    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // BOGUS!
+    const DELTA: Self = Self::ZERO; // BOGUS!
 
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        ScalarCore::from_be_bytes(bytes).map(Self)
+        ScalarPrimitive::from_bytes(&bytes).map(Self)
     }
 
     fn to_repr(&self) -> FieldBytes {
-        self.0.to_be_bytes()
+        self.0.to_bytes()
     }
 
     fn is_odd(&self) -> Choice {
         self.0.is_odd()
-    }
-
-    fn multiplicative_generator() -> Self {
-        7u64.into()
-    }
-
-    fn root_of_unity() -> Self {
-        Self::from_repr(arr![u8;
-            0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
-            0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
-            0xb4, 0x1e, 0x66, 0x02,
-        ])
-        .unwrap()
     }
 }
 
@@ -194,23 +182,15 @@ impl PrimeFieldBits for Scalar {
     }
 }
 
-impl TryFrom<U256> for Scalar {
-    type Error = Error;
-
-    fn try_from(w: U256) -> Result<Self> {
-        Option::from(ScalarCore::new(w)).map(Self).ok_or(Error)
-    }
-}
-
-impl From<Scalar> for U256 {
-    fn from(scalar: Scalar) -> U256 {
-        *scalar.0.as_uint()
+impl AsRef<Scalar> for Scalar {
+    fn as_ref(&self) -> &Scalar {
+        self
     }
 }
 
 impl ConditionallySelectable for Scalar {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self(ScalarCore::conditional_select(&a.0, &b.0, choice))
+        Self(ScalarPrimitive::conditional_select(&a.0, &b.0, choice))
     }
 }
 
@@ -314,14 +294,61 @@ impl Neg for Scalar {
     }
 }
 
-impl Reduce<U256> for Scalar {
-    fn from_uint_reduced(w: U256) -> Self {
-        let (r, underflow) = w.sbb(&MockCurve::ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
-        let reduced = U256::conditional_select(&w, &r, !underflow);
-        Self(ScalarCore::new(reduced).unwrap())
+impl ShrAssign<usize> for Scalar {
+    fn shr_assign(&mut self, rhs: usize) {
+        self.0 >>= rhs;
     }
 }
+
+impl Sum for Scalar {
+    fn sum<I: Iterator<Item = Self>>(_iter: I) -> Self {
+        unimplemented!();
+    }
+}
+
+impl<'a> Sum<&'a Scalar> for Scalar {
+    fn sum<I: Iterator<Item = &'a Scalar>>(_iter: I) -> Self {
+        unimplemented!();
+    }
+}
+
+impl Product for Scalar {
+    fn product<I: Iterator<Item = Self>>(_iter: I) -> Self {
+        unimplemented!();
+    }
+}
+
+impl<'a> Product<&'a Scalar> for Scalar {
+    fn product<I: Iterator<Item = &'a Scalar>>(_iter: I) -> Self {
+        unimplemented!();
+    }
+}
+
+impl Invert for Scalar {
+    type Output = CtOption<Scalar>;
+
+    fn invert(&self) -> CtOption<Scalar> {
+        unimplemented!();
+    }
+}
+
+impl Reduce<U256> for Scalar {
+    type Bytes = FieldBytes;
+
+    #[allow(clippy::integer_arithmetic)]
+    fn reduce(w: U256) -> Self {
+        let (r, underflow) = w.sbb(&MockCurve::ORDER, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
+        let reduced = U256::conditional_select(&w, &r, !underflow);
+        Self(ScalarPrimitive::new(reduced).unwrap())
+    }
+
+    fn reduce_bytes(_: &FieldBytes) -> Self {
+        todo!()
+    }
+}
+
+impl FieldBytesEncoding<MockCurve> for U256 {}
 
 impl From<u64> for Scalar {
     fn from(n: u64) -> Scalar {
@@ -329,9 +356,37 @@ impl From<u64> for Scalar {
     }
 }
 
-impl From<ScalarCore> for Scalar {
-    fn from(scalar: ScalarCore) -> Scalar {
+impl From<ScalarPrimitive> for Scalar {
+    fn from(scalar: ScalarPrimitive) -> Scalar {
         Self(scalar)
+    }
+}
+
+impl From<Scalar> for ScalarPrimitive {
+    fn from(scalar: Scalar) -> ScalarPrimitive {
+        scalar.0
+    }
+}
+
+impl From<Scalar> for U256 {
+    fn from(scalar: Scalar) -> U256 {
+        scalar.0.to_uint()
+    }
+}
+
+impl TryFrom<U256> for Scalar {
+    type Error = Error;
+
+    fn try_from(w: U256) -> Result<Self> {
+        Option::from(ScalarPrimitive::new(w)).map(Self).ok_or(Error)
+    }
+}
+
+impl FromUintUnchecked for Scalar {
+    type Uint = U256;
+
+    fn from_uint_unchecked(uint: U256) -> Self {
+        Self(ScalarPrimitive::from_uint_unchecked(uint))
     }
 }
 
@@ -369,15 +424,28 @@ pub enum AffinePoint {
     Other(EncodedPoint),
 }
 
-impl AffineXCoordinate<MockCurve> for AffinePoint {
+impl AffineCoordinates for AffinePoint {
+    type FieldRepr = FieldBytes;
+
     fn x(&self) -> FieldBytes {
+        unimplemented!();
+    }
+
+    fn y_is_odd(&self) -> Choice {
         unimplemented!();
     }
 }
 
 impl ConstantTimeEq for AffinePoint {
-    fn ct_eq(&self, _other: &Self) -> Choice {
-        unimplemented!();
+    fn ct_eq(&self, other: &Self) -> Choice {
+        match (self, other) {
+            (Self::FixedBaseOutput(scalar), Self::FixedBaseOutput(other_scalar)) => {
+                scalar.ct_eq(other_scalar)
+            }
+            (Self::Identity, Self::Identity) | (Self::Generator, Self::Generator) => 1.into(),
+            (Self::Other(point), Self::Other(other_point)) => u8::from(point == other_point).into(),
+            _ => 0.into(),
+        }
     }
 }
 
@@ -457,14 +525,25 @@ pub enum ProjectivePoint {
 }
 
 impl ConstantTimeEq for ProjectivePoint {
-    fn ct_eq(&self, _other: &Self) -> Choice {
-        unimplemented!();
+    fn ct_eq(&self, other: &Self) -> Choice {
+        match (self, other) {
+            (Self::FixedBaseOutput(scalar), Self::FixedBaseOutput(other_scalar)) => {
+                scalar.ct_eq(other_scalar)
+            }
+            (Self::Identity, Self::Identity) | (Self::Generator, Self::Generator) => 1.into(),
+            (Self::Other(point), Self::Other(other_point)) => point.ct_eq(other_point),
+            _ => 0.into(),
+        }
     }
 }
 
 impl ConditionallySelectable for ProjectivePoint {
-    fn conditional_select(_a: &Self, _b: &Self, _choice: Choice) -> Self {
-        unimplemented!();
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        if choice.into() {
+            *b
+        } else {
+            *a
+        }
     }
 }
 
@@ -521,12 +600,53 @@ impl group::Group for ProjectivePoint {
     }
 
     fn is_identity(&self) -> Choice {
-        Choice::from((self == &Self::Identity) as u8)
+        Choice::from(u8::from(self == &Self::Identity))
     }
 
     #[must_use]
     fn double(&self) -> Self {
         unimplemented!();
+    }
+}
+
+impl group::GroupEncoding for AffinePoint {
+    type Repr = CompressedPoint<MockCurve>;
+
+    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+        EncodedPoint::from_bytes(bytes)
+            .map(|point| CtOption::new(point, Choice::from(1)))
+            .unwrap_or_else(|_| {
+                let is_identity = bytes.ct_eq(&Self::Repr::default());
+                CtOption::new(EncodedPoint::identity(), is_identity)
+            })
+            .and_then(|point| Self::from_encoded_point(&point))
+    }
+
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+        Self::from_bytes(bytes)
+    }
+
+    fn to_bytes(&self) -> Self::Repr {
+        let encoded = self.to_encoded_point(true);
+        let mut result = CompressedPoint::<MockCurve>::default();
+        result[..encoded.len()].copy_from_slice(encoded.as_bytes());
+        result
+    }
+}
+
+impl group::GroupEncoding for ProjectivePoint {
+    type Repr = CompressedPoint<MockCurve>;
+
+    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+        <AffinePoint as group::GroupEncoding>::from_bytes(bytes).map(Into::into)
+    }
+
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+        Self::from_bytes(bytes)
+    }
+
+    fn to_bytes(&self) -> Self::Repr {
+        group::Curve::to_affine(self).to_bytes()
     }
 }
 
@@ -699,84 +819,14 @@ impl MulAssign<&Scalar> for ProjectivePoint {
     }
 }
 
+impl MulByGenerator for ProjectivePoint {}
+
 impl Neg for ProjectivePoint {
     type Output = ProjectivePoint;
 
     fn neg(self) -> ProjectivePoint {
         unimplemented!();
     }
-}
-
-/// Constant representing the base field modulus
-/// p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
-pub const MODULUS: U256 =
-    U256::from_be_hex("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff");
-
-/// Example base field element.
-#[derive(Clone, Copy, Debug)]
-pub struct FieldElement(pub(crate) U256);
-
-/// Internal field element representation.
-#[cfg(target_pointer_width = "32")]
-type FeWords = [u32; 8];
-
-/// Internal field element representation.
-#[cfg(target_pointer_width = "64")]
-type FeWords = [u64; 4];
-
-impl_field_element!(
-    FieldElement,
-    FieldBytes,
-    U256,
-    MODULUS,
-    FeWords,
-    p256_from_montgomery,
-    p256_to_montgomery,
-    p256_add,
-    p256_sub,
-    p256_mul,
-    p256_opp,
-    p256_square
-);
-
-impl FieldElement {
-    /// Returns the multiplicative inverse of self, if self is non-zero.
-    pub fn invert(&self) -> CtOption<Self> {
-        unimplemented!()
-    }
-
-    /// Returns the square root of self mod p, or `None` if no square root exists.
-    pub fn sqrt(&self) -> CtOption<Self> {
-        unimplemented!()
-    }
-}
-
-const fn p256_from_montgomery(_: &FeWords) -> FeWords {
-    unimplemented!()
-}
-
-const fn p256_to_montgomery(w: &FeWords) -> FeWords {
-    *w
-}
-
-const fn p256_add(_: &FeWords, _: &FeWords) -> FeWords {
-    unimplemented!()
-}
-
-const fn p256_sub(_: &FeWords, _: &FeWords) -> FeWords {
-    unimplemented!()
-}
-
-const fn p256_mul(_: &FeWords, _: &FeWords) -> FeWords {
-    unimplemented!()
-}
-
-const fn p256_opp(_: &FeWords) -> FeWords {
-    unimplemented!()
-}
-
-const fn p256_square(_: &FeWords) -> FeWords {
-    unimplemented!()
 }
 
 #[cfg(test)]

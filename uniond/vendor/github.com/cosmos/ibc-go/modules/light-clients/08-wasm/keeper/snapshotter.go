@@ -10,7 +10,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm"
 	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
@@ -65,7 +65,7 @@ func (ws *WasmSnapshotter) SnapshotExtension(height uint64, payloadWriter snapsh
 		return err
 	}
 
-	ctx := sdk.NewContext(cacheMS, cmtproto.Header{}, false, nil)
+	ctx := sdk.NewContext(cacheMS, tmproto.Header{}, false, nil)
 
 	checksums, err := types.GetAllChecksums(ctx)
 	if err != nil {
@@ -112,7 +112,7 @@ func restoreV1(ctx sdk.Context, k *Keeper, compressedCode []byte) error {
 		return errorsmod.Wrap(err, "failed to uncompress wasm code")
 	}
 
-	checksum, err := ibcwasm.GetVM().StoreCode(wasmCode)
+	checksum, err := ibcwasm.GetVM().StoreCodeUnchecked(wasmCode)
 	if err != nil {
 		return errorsmod.Wrap(err, "failed to store wasm code")
 	}
@@ -129,7 +129,7 @@ func (ws *WasmSnapshotter) processAllItems(
 	payloadReader snapshot.ExtensionPayloadReader,
 	cb func(sdk.Context, *Keeper, []byte) error,
 ) error {
-	ctx := sdk.NewContext(ws.cms, cmtproto.Header{Height: int64(height)}, false, nil)
+	ctx := sdk.NewContext(ws.cms, tmproto.Header{Height: int64(height)}, false, nil)
 	for {
 		payload, err := payloadReader()
 		if err == io.EOF {

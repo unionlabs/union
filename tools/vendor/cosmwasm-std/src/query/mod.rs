@@ -31,23 +31,11 @@ mod query_response;
 mod staking;
 mod wasm;
 
-#[cfg(feature = "cosmwasm_1_1")]
-pub use bank::SupplyResponse;
-pub use bank::{AllBalanceResponse, BalanceResponse, BankQuery};
-#[cfg(feature = "cosmwasm_1_3")]
-pub use bank::{AllDenomMetadataResponse, DenomMetadataResponse};
-#[cfg(feature = "cosmwasm_1_3")]
-pub use distribution::{DelegatorWithdrawAddressResponse, DistributionQuery};
-#[cfg(feature = "stargate")]
-pub use ibc::{ChannelResponse, IbcQuery, ListChannelsResponse, PortIdResponse};
-#[cfg(feature = "staking")]
-pub use staking::{
-    AllDelegationsResponse, AllValidatorsResponse, BondedDenomResponse, Delegation,
-    DelegationResponse, FullDelegation, StakingQuery, Validator, ValidatorResponse,
-};
-#[cfg(feature = "cosmwasm_1_2")]
-pub use wasm::CodeInfoResponse;
-pub use wasm::{ContractInfoResponse, WasmQuery};
+pub use bank::*;
+pub use distribution::*;
+pub use ibc::*;
+pub use staking::*;
+pub use wasm::*;
 
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]

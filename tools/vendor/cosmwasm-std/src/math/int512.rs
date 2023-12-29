@@ -1,19 +1,22 @@
-use forward_ref::{forward_ref_binop, forward_ref_op_assign};
-use schemars::JsonSchema;
-use serde::{de, ser, Deserialize, Deserializer, Serialize};
-use std::fmt;
-use std::ops::{
+use core::fmt;
+use core::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr,
     ShrAssign, Sub, SubAssign,
 };
-use std::str::FromStr;
+use core::str::FromStr;
+use forward_ref::{forward_ref_binop, forward_ref_op_assign};
+use schemars::JsonSchema;
+use serde::{de, ser, Deserialize, Deserializer, Serialize};
 
 use crate::errors::{DivideByZeroError, DivisionError, OverflowError, OverflowOperation, StdError};
-use crate::{forward_ref_partial_eq, Uint128, Uint256, Uint512, Uint64};
+use crate::{forward_ref_partial_eq, Int128, Int256, Int64, Uint128, Uint256, Uint512, Uint64};
 
 /// Used internally - we don't want to leak this type since we might change
 /// the implementation in the future.
 use bnum::types::{I512, U512};
+
+use super::conversion::{grow_be_int, try_from_uint_to_int};
+use super::num_consts::NumConsts;
 
 /// An implementation of i512 that is using strings for JSON encoding/decoding,
 /// such that the full i512 range can be used for clients that convert JSON numbers to floats,
@@ -40,7 +43,7 @@ use bnum::types::{I512, U512};
 /// assert_eq!(a, b);
 /// ```
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, JsonSchema)]
-pub struct Int512(#[schemars(with = "String")] I512);
+pub struct Int512(#[schemars(with = "String")] pub(crate) I512);
 
 forward_ref_partial_eq!(Int512, Int512);
 
@@ -144,7 +147,7 @@ impl Int512 {
             words[1].to_be_bytes(),
             words[0].to_be_bytes(),
         ];
-        unsafe { std::mem::transmute::<[[u8; 8]; 8], [u8; 64]>(words) }
+        unsafe { core::mem::transmute::<[[u8; 8]; 8], [u8; 64]>(words) }
     }
 
     /// Returns a copy of the number as little endian bytes.
@@ -162,12 +165,17 @@ impl Int512 {
             words[6].to_le_bytes(),
             words[7].to_le_bytes(),
         ];
-        unsafe { std::mem::transmute::<[[u8; 8]; 8], [u8; 64]>(words) }
+        unsafe { core::mem::transmute::<[[u8; 8]; 8], [u8; 64]>(words) }
     }
 
     #[must_use]
     pub const fn is_zero(&self) -> bool {
         self.0.is_zero()
+    }
+
+    #[must_use]
+    pub const fn is_negative(&self) -> bool {
+        self.0.is_negative()
     }
 
     #[must_use = "this returns the result of the operation, without modifying the original"]
@@ -291,10 +299,30 @@ impl Int512 {
     }
 
     #[must_use = "this returns the result of the operation, without modifying the original"]
-    pub fn abs_diff(self, other: Self) -> Uint512 {
+    pub const fn abs_diff(self, other: Self) -> Uint512 {
         Uint512(self.0.abs_diff(other.0))
     }
+
+    #[must_use = "this returns the result of the operation, without modifying the original"]
+    pub const fn abs(self) -> Self {
+        Self(self.0.abs())
+    }
+
+    #[must_use = "this returns the result of the operation, without modifying the original"]
+    pub const fn unsigned_abs(self) -> Uint512 {
+        Uint512(self.0.unsigned_abs())
+    }
 }
+
+impl NumConsts for Int512 {
+    const ZERO: Self = Self::zero();
+    const ONE: Self = Self::one();
+    const MAX: Self = Self::MAX;
+    const MIN: Self = Self::MIN;
+}
+
+// Uint to Int
+try_from_uint_to_int!(Uint512, Int512);
 
 impl From<Uint256> for Int512 {
     fn from(val: Uint256) -> Self {
@@ -317,6 +345,7 @@ impl From<Uint64> for Int512 {
     }
 }
 
+// uint to Int
 impl From<u128> for Int512 {
     fn from(val: u128) -> Self {
         Int512(val.into())
@@ -347,6 +376,7 @@ impl From<u8> for Int512 {
     }
 }
 
+// int to Int
 impl From<i128> for Int512 {
     fn from(val: i128) -> Self {
         Int512(val.into())
@@ -377,6 +407,25 @@ impl From<i8> for Int512 {
     }
 }
 
+// Int to Int
+impl From<Int64> for Int512 {
+    fn from(val: Int64) -> Self {
+        Int512(val.i64().into())
+    }
+}
+
+impl From<Int128> for Int512 {
+    fn from(val: Int128) -> Self {
+        Int512(val.i128().into())
+    }
+}
+
+impl From<Int256> for Int512 {
+    fn from(val: Int256) -> Self {
+        Self::from_be_bytes(grow_be_int(val.to_be_bytes()))
+    }
+}
+
 impl TryFrom<&str> for Int512 {
     type Error = StdError;
 
@@ -391,7 +440,7 @@ impl FromStr for Int512 {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match I512::from_str_radix(s, 10) {
             Ok(u) => Ok(Self(u)),
-            Err(e) => Err(StdError::generic_err(format!("Parsing Int512: {}", e))),
+            Err(e) => Err(StdError::generic_err(format!("Parsing Int512: {e}"))),
         }
     }
 }
@@ -404,12 +453,7 @@ impl From<Int512> for String {
 
 impl fmt::Display for Int512 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // The inner type doesn't work as expected with padding, so we
-        // work around that. Remove this code when the upstream padding is fixed.
-        let unpadded = self.0.to_string();
-        let numeric = unpadded.strip_prefix('-').unwrap_or(&unpadded);
-
-        f.pad_integral(self >= &Self::zero(), "", numeric)
+        self.0.fmt(f)
     }
 }
 
@@ -504,10 +548,7 @@ impl Shr<u32> for Int512 {
 
     fn shr(self, rhs: u32) -> Self::Output {
         self.checked_shr(rhs).unwrap_or_else(|_| {
-            panic!(
-                "right shift error: {} is larger or equal than the number of bits in Int512",
-                rhs,
-            )
+            panic!("right shift error: {rhs} is larger or equal than the number of bits in Int512",)
         })
     }
 }
@@ -518,10 +559,7 @@ impl Shl<u32> for Int512 {
 
     fn shl(self, rhs: u32) -> Self::Output {
         self.checked_shl(rhs).unwrap_or_else(|_| {
-            panic!(
-                "left shift error: {} is larger or equal than the number of bits in Int512",
-                rhs,
-            )
+            panic!("left shift error: {rhs} is larger or equal than the number of bits in Int512",)
         })
     }
 }
@@ -588,11 +626,11 @@ impl<'de> de::Visitor<'de> for Int512Visitor {
     where
         E: de::Error,
     {
-        Int512::try_from(v).map_err(|e| E::custom(format!("invalid Int512 '{}' - {}", v, e)))
+        Int512::try_from(v).map_err(|e| E::custom(format!("invalid Int512 '{v}' - {e}")))
     }
 }
 
-impl<A> std::iter::Sum<A> for Int512
+impl<A> core::iter::Sum<A> for Int512
 where
     Self: Add<A, Output = Self>,
 {
@@ -604,11 +642,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{from_slice, to_vec};
+    use crate::{from_json, math::conversion::test_try_from_uint_to_int, to_json_vec};
 
     #[test]
     fn size_of_works() {
-        assert_eq!(std::mem::size_of::<Int512>(), 64);
+        assert_eq!(core::mem::size_of::<Int512>(), 64);
     }
 
     #[test]
@@ -626,6 +664,18 @@ mod tests {
         let num = Int512::new(be_bytes);
         let resulting_bytes: [u8; 64] = num.to_be_bytes();
         assert_eq!(be_bytes, resulting_bytes);
+    }
+
+    #[test]
+    fn int512_not_works() {
+        let num = Int512::new([1; 64]);
+        let a = (!num).to_be_bytes();
+        assert_eq!(a, [254; 64]);
+
+        assert_eq!(!Int512::from(-1234806i128), Int512::from(!-1234806i128));
+
+        assert_eq!(!Int512::MAX, Int512::MIN);
+        assert_eq!(!Int512::MIN, Int512::MAX);
     }
 
     #[test]
@@ -699,6 +749,40 @@ mod tests {
         let a = Int512::from(-5i8);
         assert_eq!(a.0, I512::from(-5i32));
 
+        // other big signed integers
+        let values = [
+            Int64::MAX,
+            Int64::MIN,
+            Int64::one(),
+            -Int64::one(),
+            Int64::zero(),
+        ];
+        for v in values {
+            assert_eq!(Int512::from(v).to_string(), v.to_string());
+        }
+
+        let values = [
+            Int128::MAX,
+            Int128::MIN,
+            Int128::one(),
+            -Int128::one(),
+            Int128::zero(),
+        ];
+        for v in values {
+            assert_eq!(Int512::from(v).to_string(), v.to_string());
+        }
+
+        let values = [
+            Int256::MAX,
+            Int256::MIN,
+            Int256::one(),
+            -Int256::one(),
+            Int256::zero(),
+        ];
+        for v in values {
+            assert_eq!(Int512::from(v).to_string(), v.to_string());
+        }
+
         let result = Int512::try_from("34567");
         assert_eq!(
             result.unwrap().0,
@@ -710,27 +794,39 @@ mod tests {
     }
 
     #[test]
+    fn int512_try_from_unsigned_works() {
+        test_try_from_uint_to_int::<Uint256, Int256>("Uint256", "Int256");
+        test_try_from_uint_to_int::<Uint512, Int256>("Uint512", "Int256");
+    }
+
+    #[test]
     fn int512_implements_display() {
         let a = Int512::from(12345u32);
-        assert_eq!(format!("Embedded: {}", a), "Embedded: 12345");
+        assert_eq!(format!("Embedded: {a}"), "Embedded: 12345");
         assert_eq!(a.to_string(), "12345");
 
         let a = Int512::from(-12345i32);
-        assert_eq!(format!("Embedded: {}", a), "Embedded: -12345");
+        assert_eq!(format!("Embedded: {a}"), "Embedded: -12345");
         assert_eq!(a.to_string(), "-12345");
 
         let a = Int512::zero();
-        assert_eq!(format!("Embedded: {}", a), "Embedded: 0");
+        assert_eq!(format!("Embedded: {a}"), "Embedded: 0");
         assert_eq!(a.to_string(), "0");
     }
 
     #[test]
     fn int512_display_padding_works() {
+        // width > natural representation
         let a = Int512::from(123u64);
-        assert_eq!(format!("Embedded: {:05}", a), "Embedded: 00123");
-
+        assert_eq!(format!("Embedded: {a:05}"), "Embedded: 00123");
         let a = Int512::from(-123i64);
-        assert_eq!(format!("Embedded: {:05}", a), "Embedded: -0123");
+        assert_eq!(format!("Embedded: {a:05}"), "Embedded: -0123");
+
+        // width < natural representation
+        let a = Int512::from(123u64);
+        assert_eq!(format!("Embedded: {a:02}"), "Embedded: 123");
+        let a = Int512::from(-123i64);
+        assert_eq!(format!("Embedded: {a:02}"), "Embedded: -123");
     }
 
     #[test]
@@ -818,6 +914,16 @@ mod tests {
     }
 
     #[test]
+    fn int512_is_negative_works() {
+        assert!(Int512::MIN.is_negative());
+        assert!(Int512::from(-123i32).is_negative());
+
+        assert!(!Int512::MAX.is_negative());
+        assert!(!Int512::zero().is_negative());
+        assert!(!Int512::from(123u32).is_negative());
+    }
+
+    #[test]
     fn int512_wrapping_methods() {
         // wrapping_add
         assert_eq!(
@@ -851,9 +957,9 @@ mod tests {
     #[test]
     fn int512_json() {
         let orig = Int512::from(1234567890987654321u128);
-        let serialized = to_vec(&orig).unwrap();
+        let serialized = to_json_vec(&orig).unwrap();
         assert_eq!(serialized.as_slice(), b"\"1234567890987654321\"");
-        let parsed: Int512 = from_slice(&serialized).unwrap();
+        let parsed: Int512 = from_json(serialized).unwrap();
         assert_eq!(parsed, orig);
     }
 
@@ -1180,7 +1286,7 @@ mod tests {
         );
         // right shift of MIN value by the maximum shift value should result in -1 (filled with 1s)
         assert_eq!(
-            Int512::MIN >> (std::mem::size_of::<Int512>() as u32 * 8 - 1),
+            Int512::MIN >> (core::mem::size_of::<Int512>() as u32 * 8 - 1),
             -Int512::one()
         );
     }
@@ -1199,7 +1305,7 @@ mod tests {
         );
         // left shift by by the maximum shift value should result in MIN
         assert_eq!(
-            Int512::one() << (std::mem::size_of::<Int512>() as u32 * 8 - 1),
+            Int512::one() << (core::mem::size_of::<Int512>() as u32 * 8 - 1),
             Int512::MIN
         );
     }
@@ -1215,6 +1321,37 @@ mod tests {
         let c = Int512::from(-5i32);
         assert_eq!(b.abs_diff(c), Uint512::from(10u32));
         assert_eq!(c.abs_diff(b), Uint512::from(10u32));
+    }
+
+    #[test]
+    fn int512_abs_works() {
+        let a = Int512::from(42i32);
+        assert_eq!(a.abs(), a);
+
+        let b = Int512::from(-42i32);
+        assert_eq!(b.abs(), a);
+
+        assert_eq!(Int512::zero().abs(), Int512::zero());
+        assert_eq!((Int512::MIN + Int512::one()).abs(), Int512::MAX);
+    }
+
+    #[test]
+    fn int512_unsigned_abs_works() {
+        assert_eq!(Int512::zero().unsigned_abs(), Uint512::zero());
+        assert_eq!(Int512::one().unsigned_abs(), Uint512::one());
+        assert_eq!(
+            Int512::MIN.unsigned_abs(),
+            Uint512::from_be_bytes(Int512::MAX.to_be_bytes()) + Uint512::one()
+        );
+
+        let v = Int512::from(-42i32);
+        assert_eq!(v.unsigned_abs(), v.abs_diff(Int512::zero()));
+    }
+
+    #[test]
+    #[should_panic = "attempt to negate with overflow"]
+    fn int512_abs_min_panics() {
+        _ = Int512::MIN.abs();
     }
 
     #[test]

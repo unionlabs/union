@@ -62,7 +62,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// The index stored in an `EntityList` points to part 2, the list elements. The value 0 is
 /// reserved for the empty list which isn't allocated in the vector.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "enable-serde", derive(Serialize, Deserialize))]
 pub struct EntityList<T: EntityRef + ReservedValue> {
     index: u32,
@@ -88,6 +88,26 @@ pub struct ListPool<T: EntityRef + ReservedValue> {
 
     // Heads of the free lists, one for each size class.
     free: Vec<usize>,
+}
+
+impl<T: EntityRef + ReservedValue> PartialEq for ListPool<T> {
+    fn eq(&self, other: &Self) -> bool {
+        // ignore the free list
+        self.data == other.data
+    }
+}
+
+impl<T: core::hash::Hash + EntityRef + ReservedValue> core::hash::Hash for ListPool<T> {
+    fn hash<H: __core::hash::Hasher>(&self, state: &mut H) {
+        // ignore the free list
+        self.data.hash(state);
+    }
+}
+
+impl<T: EntityRef + ReservedValue> Default for ListPool<T> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Lists are allocated in sizes that are powers of two, starting from 4.
@@ -121,6 +141,24 @@ impl<T: EntityRef + ReservedValue> ListPool<T> {
             data: Vec::new(),
             free: Vec::new(),
         }
+    }
+
+    /// Create a new list pool with the given capacity for data pre-allocated.
+    pub fn with_capacity(len: usize) -> Self {
+        Self {
+            data: Vec::with_capacity(len),
+            free: Vec::new(),
+        }
+    }
+
+    /// Get the capacity of this pool. This will be somewhat higher
+    /// than the total length of lists that can be stored without
+    /// reallocating, because of internal metadata overheads. It is
+    /// mostly useful to allow another pool to be allocated that is
+    /// likely to hold data transferred from this one without the need
+    /// to grow.
+    pub fn capacity(&self) -> usize {
+        self.data.capacity()
     }
 
     /// Clear the pool, forgetting about all lists that use it.

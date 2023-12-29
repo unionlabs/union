@@ -18,13 +18,13 @@ fn main() -> Result<()> {
             Payload::ExportSection(s) => {
                 for export in s {
                     let export = export?;
-                    println!("  Export {} {:?}", export.field, export.kind);
+                    println!("  Export {} {:?}", export.name, export.kind);
                 }
             }
             Payload::ImportSection(s) => {
                 for import in s {
                     let import = import?;
-                    println!("  Import {}::{}", import.module, import.field.unwrap());
+                    println!("  Import {}::{}", import.module, import.name);
                 }
             }
             _other => {

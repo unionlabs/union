@@ -7,12 +7,12 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MsgChannelOpenTry {
+#[serde(deny_unknown_fields)]
+pub struct MsgChannelOpenTry<ProofInit> {
     pub port_id: PortId,
     pub channel: Channel,
     pub counterparty_version: String,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub proof_init: Vec<u8>,
+    pub proof_init: ProofInit,
     pub proof_height: Height,
 }
 

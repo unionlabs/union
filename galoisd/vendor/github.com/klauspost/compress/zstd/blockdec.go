@@ -592,7 +592,7 @@ func (b *blockDec) prepareSequences(in []byte, hist *history) (err error) {
 				}
 				seq.fse.setRLE(symb)
 				if debugDecoder {
-					printf("RLE set to %+v, code: %v", symb, v)
+					printf("RLE set to 0x%x, code: %v", symb, v)
 				}
 			case compModeFSE:
 				println("Reading table for", tableIndex(i))

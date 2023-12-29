@@ -1,10 +1,9 @@
-#![cfg(feature = "stargate")]
 // The CosmosMsg variants are defined in results/cosmos_msg.rs
 // The rest of the IBC related functionality is defined here
 
+use core::cmp::{Ord, Ordering, PartialOrd};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::cmp::{Ord, Ordering, PartialOrd};
 
 #[cfg(feature = "ibc3")]
 use crate::addresses::Addr;
@@ -12,7 +11,7 @@ use crate::binary::Binary;
 use crate::coin::Coin;
 use crate::errors::StdResult;
 use crate::results::{Attribute, CosmosMsg, Empty, Event, SubMsg};
-use crate::serde::to_binary;
+use crate::serde::to_json_binary;
 use crate::timestamp::Timestamp;
 
 /// These are messages in the IBC lifecycle. Only usable by IBC-enabled contracts
@@ -27,7 +26,7 @@ pub enum IbcMsg {
     /// We cannot select the port_id, this is whatever the local chain has bound the ibctransfer
     /// module to.
     Transfer {
-        /// exisiting channel to send the tokens over
+        /// existing channel to send the tokens over
         channel_id: String,
         /// address on the remote chain to receive these tokens
         to_address: String,
@@ -165,7 +164,7 @@ pub enum IbcOrder {
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct IbcTimeoutBlock {
     /// the version that the client is currently on
-    /// (eg. after reseting the chain this could increment 1 as height drops to 0)
+    /// (e.g. after resetting the chain this could increment 1 as height drops to 0)
     pub revision: u64,
     /// block height after which the packet times out.
     /// the height within the given revision
@@ -241,7 +240,7 @@ impl IbcAcknowledgement {
 
     pub fn encode_json(data: &impl Serialize) -> StdResult<Self> {
         Ok(IbcAcknowledgement {
-            data: to_binary(data)?,
+            data: to_json_binary(data)?,
         })
     }
 }
@@ -493,18 +492,18 @@ pub struct IbcBasicResponse<T = Empty> {
     ///
     /// More info about events (and their attributes) can be found in [*Cosmos SDK* docs].
     ///
-    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/v0.42/core/events.html
+    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/main/learn/advanced/events
     pub attributes: Vec<Attribute>,
     /// Extra, custom events separate from the main `wasm` one. These will have
     /// `wasm-` prepended to the type.
     ///
     /// More info about events can be found in [*Cosmos SDK* docs].
     ///
-    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/v0.42/core/events.html
+    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/main/learn/advanced/events
     pub events: Vec<Event>,
 }
 
-// Custom imlementation in order to implement it for all `T`, even if `T` is not `Default`.
+// Custom implementation in order to implement it for all `T`, even if `T` is not `Default`.
 impl<T> Default for IbcBasicResponse<T> {
     fn default() -> Self {
         IbcBasicResponse {
@@ -533,7 +532,7 @@ impl<T> IbcBasicResponse<T> {
         self
     }
 
-    /// This takes an explicit SubMsg (creates via eg. `reply_on_error`)
+    /// This takes an explicit SubMsg (creates via e.g. `reply_on_error`)
     /// and adds it to the list of messages to process.
     pub fn add_submessage(mut self, msg: SubMsg<T>) -> Self {
         self.messages.push(msg);
@@ -603,7 +602,7 @@ impl<T> IbcBasicResponse<T> {
     /// }
     /// ```
     pub fn add_submessages(mut self, msgs: impl IntoIterator<Item = SubMsg<T>>) -> Self {
-        self.messages.extend(msgs.into_iter());
+        self.messages.extend(msgs);
         self
     }
 
@@ -613,21 +612,21 @@ impl<T> IbcBasicResponse<T> {
     /// The `wasm-` prefix will be appended by the runtime to the provided types
     /// of events.
     pub fn add_events(mut self, events: impl IntoIterator<Item = Event>) -> Self {
-        self.events.extend(events.into_iter());
+        self.events.extend(events);
         self
     }
 }
 
-// This defines the return value on packet response processing.
-// This "success" case should be returned even in application-level errors,
-// Where the acknowledgement bytes contain an encoded error message to be returned to
-// the calling chain. (Returning ContractResult::Err will abort processing of this packet
-// and not inform the calling chain).
+/// This defines the return value on packet response processing.
+/// This "success" case should be returned even in application-level errors,
+/// Where the acknowledgement bytes contain an encoded error message to be returned to
+/// the calling chain. (Returning ContractResult::Err will abort processing of this packet
+/// and not inform the calling chain).
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[non_exhaustive]
 pub struct IbcReceiveResponse<T = Empty> {
     /// The bytes we return to the contract that sent the packet.
-    /// This may represent a success or error of exection
+    /// This may represent a success or error of execution
     pub acknowledgement: Binary,
     /// Optional list of messages to pass. These will be executed in order.
     /// If the ReplyOn member is set, they will invoke this contract's `reply` entry point
@@ -638,18 +637,18 @@ pub struct IbcReceiveResponse<T = Empty> {
     ///
     /// More info about events (and their attributes) can be found in [*Cosmos SDK* docs].
     ///
-    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/v0.42/core/events.html
+    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/main/learn/advanced/events
     pub attributes: Vec<Attribute>,
     /// Extra, custom events separate from the main `wasm` one. These will have
     /// `wasm-` prepended to the type.
     ///
     /// More info about events can be found in [*Cosmos SDK* docs].
     ///
-    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/v0.42/core/events.html
+    /// [*Cosmos SDK* docs]: https://docs.cosmos.network/main/learn/advanced/events
     pub events: Vec<Event>,
 }
 
-// Custom imlementation in order to implement it for all `T`, even if `T` is not `Default`.
+// Custom implementation in order to implement it for all `T`, even if `T` is not `Default`.
 impl<T> Default for IbcReceiveResponse<T> {
     fn default() -> Self {
         IbcReceiveResponse {
@@ -667,6 +666,17 @@ impl<T> IbcReceiveResponse<T> {
     }
 
     /// Set the acknowledgement for this response.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// use cosmwasm_std::{StdAck, IbcReceiveResponse};
+    ///
+    /// fn make_response_with_ack() -> IbcReceiveResponse {
+    ///     let ack = StdAck::success(b"\x01"); // 0x01 is a FungibleTokenPacketSuccess from ICS-20.
+    ///     IbcReceiveResponse::new().set_ack(ack)
+    /// }
+    /// ```
     pub fn set_ack(mut self, ack: impl Into<Binary>) -> Self {
         self.acknowledgement = ack.into();
         self
@@ -685,7 +695,7 @@ impl<T> IbcReceiveResponse<T> {
         self
     }
 
-    /// This takes an explicit SubMsg (creates via eg. `reply_on_error`)
+    /// This takes an explicit SubMsg (creates via e.g. `reply_on_error`)
     /// and adds it to the list of messages to process.
     pub fn add_submessage(mut self, msg: SubMsg<T>) -> Self {
         self.messages.push(msg);
@@ -755,7 +765,7 @@ impl<T> IbcReceiveResponse<T> {
     /// }
     /// ```
     pub fn add_submessages(mut self, msgs: impl IntoIterator<Item = SubMsg<T>>) -> Self {
-        self.messages.extend(msgs.into_iter());
+        self.messages.extend(msgs);
         self
     }
 
@@ -765,7 +775,7 @@ impl<T> IbcReceiveResponse<T> {
     /// The `wasm-` prefix will be appended by the runtime to the provided types
     /// of events.
     pub fn add_events(mut self, events: impl IntoIterator<Item = Event>) -> Self {
-        self.events.extend(events.into_iter());
+        self.events.extend(events);
         self
     }
 }
@@ -834,7 +844,7 @@ mod tests {
         };
 
         // basic checks
-        assert!(epoch1a == epoch1a);
+        assert_eq!(epoch1a, epoch1a);
         assert!(epoch1a < epoch1b);
         assert!(epoch1b > epoch1a);
         assert!(epoch2a > epoch1a);

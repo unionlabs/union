@@ -112,7 +112,7 @@ mod allocating {
     #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
     pub struct OctetString {
         /// Bitstring represented as a slice of bytes.
-        inner: Vec<u8>,
+        pub(super) inner: Vec<u8>,
     }
 
     impl OctetString {
@@ -211,6 +211,33 @@ mod allocating {
         fn size_hint(depth: usize) -> (usize, Option<usize>) {
             arbitrary::size_hint::and(u8::size_hint(depth), Vec::<u8>::size_hint(depth))
         }
+    }
+}
+
+#[cfg(feature = "bytes")]
+mod bytes {
+    use super::OctetString;
+    use crate::{DecodeValue, EncodeValue, FixedTag, Header, Length, Reader, Result, Tag, Writer};
+    use bytes::Bytes;
+
+    impl<'a> DecodeValue<'a> for Bytes {
+        fn decode_value<R: Reader<'a>>(reader: &mut R, header: Header) -> Result<Self> {
+            OctetString::decode_value(reader, header).map(|octet_string| octet_string.inner.into())
+        }
+    }
+
+    impl EncodeValue for Bytes {
+        fn value_len(&self) -> Result<Length> {
+            self.len().try_into()
+        }
+
+        fn encode_value(&self, writer: &mut impl Writer) -> Result<()> {
+            writer.write(self.as_ref())
+        }
+    }
+
+    impl FixedTag for Bytes {
+        const TAG: Tag = Tag::OctetString;
     }
 }
 

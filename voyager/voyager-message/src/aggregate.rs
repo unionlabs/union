@@ -91,6 +91,7 @@ any_enum! {
 
         AggregateMsgAfterUpdate(AggregateMsgAfterUpdate<Hc, Tr>),
 
+        #[serde(untagged)]
         LightClientSpecific(LightClientSpecificAggregate<Hc, Tr>),
     }
 }
@@ -135,7 +136,7 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
     {
         let chain_id = self.chain_id;
 
-        match self.data {
+        match self.t {
             Aggregate::ConnectionOpenTry(init) => {
                 [do_aggregate(Identified::new(chain_id, init), data)].into()
             }
@@ -270,28 +271,28 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Aggregate<Hc, Tr> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateConnectionOpenTry<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ConnectionOpenInit<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateConnectionOpenAck<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ConnectionOpenTry<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateConnectionOpenConfirm<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ConnectionOpenAck<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateChannelOpenTry<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ChannelOpenInit,
@@ -300,7 +301,7 @@ pub struct AggregateChannelOpenTry<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateChannelOpenAck<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ChannelOpenTry,
@@ -309,7 +310,7 @@ pub struct AggregateChannelOpenAck<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateChannelOpenConfirm<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: ChannelOpenAck,
@@ -318,7 +319,7 @@ pub struct AggregateChannelOpenConfirm<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateRecvPacket<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: SendPacket,
@@ -327,7 +328,7 @@ pub struct AggregateRecvPacket<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateAckPacket<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: RecvPacket,
@@ -337,7 +338,7 @@ pub struct AggregateAckPacket<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateConnectionFetchFromChannelEnd<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
     #[serde(skip)]
@@ -345,7 +346,7 @@ pub struct AggregateConnectionFetchFromChannelEnd<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateChannelHandshakeUpdateClient<Hc: ChainExt, Tr: ChainExt> {
     // Will be threaded through to the update msg
     pub update_to: HeightOf<Hc>,
@@ -356,7 +357,13 @@ pub struct AggregateChannelHandshakeUpdateClient<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
+)]
 pub enum ChannelHandshakeEvent {
     Init(ChannelOpenInit),
     Try(ChannelOpenTry),
@@ -364,7 +371,7 @@ pub enum ChannelHandshakeEvent {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregatePacketUpdateClient<Hc: ChainExt, Tr: ChainExt> {
     // Will be threaded through to the update msg
     pub update_to: HeightOf<Hc>,
@@ -376,28 +383,34 @@ pub struct AggregatePacketUpdateClient<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
+)]
 pub enum PacketEvent {
     Send(SendPacket),
     Recv(RecvPacket),
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateFetchCounterpartyStateProof<Hc: ChainExt, Tr: ChainExt> {
     pub counterparty_client_id: ClientIdOf<Tr>,
     pub fetch: FetchProof<Tr, Hc>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateUpdateClientFromClientId<Hc: ChainExt, Tr: ChainExt> {
     pub client_id: ClientIdOf<Hc>,
     pub counterparty_client_id: ClientIdOf<Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateUpdateClient<Hc: ChainExt, Tr: ChainExt> {
     pub update_to: HeightOf<Hc>,
     pub client_id: ClientIdOf<Hc>,
@@ -405,7 +418,7 @@ pub struct AggregateUpdateClient<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateWaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
     pub wait_for: HeightOf<Hc>,
     pub client_id: ClientIdOf<Hc>,
@@ -413,7 +426,7 @@ pub struct AggregateWaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateUpdateClientWithCounterpartyChainId<Hc: ChainExt, Tr: ChainExt> {
     pub update_to: HeightOf<Hc>,
     pub client_id: ClientIdOf<Hc>,
@@ -422,7 +435,7 @@ pub struct AggregateUpdateClientWithCounterpartyChainId<Hc: ChainExt, Tr: ChainE
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateMsgUpdateClient<Hc: ChainExt, Tr: ChainExt> {
     pub update_to: HeightOf<Hc>,
     pub client_id: ClientIdOf<Hc>,
@@ -431,7 +444,7 @@ pub struct AggregateMsgUpdateClient<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateCreateClient<Hc: ChainExt, Tr: ChainExt> {
     pub config: <Hc as ChainExt>::Config,
     #[serde(skip)]
@@ -439,12 +452,18 @@ pub struct AggregateCreateClient<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct LightClientSpecificAggregate<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
 
 /// Messages that will be re-queued after an update.
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
+)]
 pub enum AggregateMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
     ConnectionOpenTry(AggregateConnectionOpenTry<Hc, Tr>),
     ConnectionOpenAck(AggregateConnectionOpenAck<Hc, Tr>),
@@ -469,7 +488,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateChannelHandshakeUpdateClient {
                     update_to,
                     channel_handshake_event,
@@ -480,7 +499,7 @@ where
         }: Self,
         hlist_pat![Identified {
             chain_id: self_chain_id,
-            data: IbcState {
+            t: IbcState {
                 path: _,
                 height: _,
                 state: connection,
@@ -575,7 +594,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregatePacketUpdateClient {
                     update_to,
                     event_height,
@@ -587,7 +606,7 @@ where
         }: Self,
         hlist_pat![Identified {
             chain_id: self_chain_id,
-            data: IbcState {
+            t: IbcState {
                 path: _,
                 height: _,
                 state: connection,
@@ -655,12 +674,12 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data: AggregateConnectionFetchFromChannelEnd { at, __marker: _ },
+            t: AggregateConnectionFetchFromChannelEnd { at, __marker: _ },
             __marker: _,
         }: Self,
         hlist_pat![Identified {
             chain_id: self_chain_id,
-            data: IbcState {
+            t: IbcState {
                 path: _,
                 height: _,
                 state: channel,
@@ -695,7 +714,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateUpdateClientFromClientId {
                     client_id,
                     counterparty_client_id,
@@ -704,7 +723,7 @@ where
         }: Self,
         hlist_pat![Identified {
             chain_id: self_chain_id,
-            data: IbcState {
+            t: IbcState {
                 path: ClientStatePath {
                     client_id: trusted_client_state_client_id
                 },
@@ -770,7 +789,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateUpdateClient {
                     update_to,
                     client_id: update_client_id,
@@ -780,7 +799,7 @@ where
         }: Self,
         hlist_pat![Identified {
             chain_id: self_chain_id,
-            data: IbcState {
+            t: IbcState {
                 path: ClientStatePath {
                     client_id: trusted_client_state_client_id
                 },
@@ -834,7 +853,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateUpdateClientWithCounterpartyChainId {
                     update_to,
                     client_id: update_client_id,
@@ -845,7 +864,7 @@ where
         }: Self,
         hlist_pat![Identified {
             chain_id: counterparty_chain_id,
-            data: IbcState {
+            t: IbcState {
                 path: ClientStatePath {
                     client_id: trusted_client_state_client_id
                 },
@@ -889,7 +908,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateWaitForTrustedHeight {
                     wait_for,
                     client_id,
@@ -899,7 +918,7 @@ where
         }: Self,
         hlist_pat![Identified {
             chain_id: trusted_client_state_chain_id,
-            data: IbcState {
+            t: IbcState {
                 path: ClientStatePath {
                     client_id: trusted_client_state_client_id
                 },
@@ -943,12 +962,12 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data: msg_to_aggregate,
+            t: msg_to_aggregate,
             __marker: _,
         }: Self,
         hlist_pat![Identified {
             chain_id: self_chain_id,
-            data: IbcState {
+            t: IbcState {
                 path: ClientStatePath {
                     client_id: trusted_client_state_client_id
                 },
@@ -1536,7 +1555,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateConnectionOpenTry {
                     event_height: trusted_height,
                     event,
@@ -1546,7 +1565,7 @@ where
         hlist_pat![
             Identified {
                 chain_id: trusted_client_state_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: ClientStatePath {
                         client_id: _trusted_client_state_client_id
                     },
@@ -1557,7 +1576,7 @@ where
             },
             Identified {
                 chain_id: client_state_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     height: client_state_proof_height,
                     proof: client_state_proof,
                     path: _,
@@ -1567,7 +1586,7 @@ where
             },
             Identified {
                 chain_id: consensus_state_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     height: consensus_state_proof_height,
                     proof: consensus_state_proof,
                     path: _,
@@ -1577,7 +1596,7 @@ where
             },
             Identified {
                 chain_id: connection_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     height: connection_proof_height,
                     proof: connection_proof,
                     path: _,
@@ -1587,7 +1606,7 @@ where
             },
             Identified {
                 chain_id: connection_end_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: _,
                     height: _,
                     state: connection_end
@@ -1612,26 +1631,24 @@ where
 
         msg::<Tr, Hc>(
             counterparty_chain_id,
-            MsgConnectionOpenTryData {
-                msg: MsgConnectionOpenTry {
-                    client_id: event.counterparty_client_id,
-                    client_state: trusted_client_state,
-                    counterparty: connection::counterparty::Counterparty {
-                        client_id: event.client_id,
-                        connection_id: event.connection_id,
-                        prefix: MerklePrefix {
-                            key_prefix: b"ibc".to_vec(),
-                        },
+            MsgConnectionOpenTryData(MsgConnectionOpenTry {
+                client_id: event.counterparty_client_id,
+                client_state: trusted_client_state,
+                counterparty: connection::counterparty::Counterparty {
+                    client_id: event.client_id,
+                    connection_id: event.connection_id,
+                    prefix: MerklePrefix {
+                        key_prefix: b"ibc".to_vec(),
                     },
-                    delay_period: DELAY_PERIOD,
-                    counterparty_versions: connection_end.versions,
-                    proof_height: connection_proof_height,
-                    proof_init: connection_proof,
-                    proof_client: client_state_proof,
-                    proof_consensus: consensus_state_proof,
-                    consensus_height,
                 },
-            },
+                delay_period: DELAY_PERIOD,
+                counterparty_versions: connection_end.versions,
+                proof_height: connection_proof_height,
+                proof_init: connection_proof,
+                proof_client: client_state_proof,
+                proof_consensus: consensus_state_proof,
+                consensus_height,
+            }),
         )
     }
 }
@@ -1657,7 +1674,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateConnectionOpenAck {
                     event_height: trusted_height,
                     event,
@@ -1667,7 +1684,7 @@ where
         hlist_pat![
             Identified {
                 chain_id: trusted_client_state_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: ClientStatePath {
                         client_id: _trusted_client_state_client_id
                     },
@@ -1678,7 +1695,7 @@ where
             },
             Identified {
                 chain_id: client_state_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     height: client_state_proof_height,
                     proof: client_state_proof,
                     path: _,
@@ -1688,7 +1705,7 @@ where
             },
             Identified {
                 chain_id: consensus_state_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     height: consensus_state_proof_height,
                     proof: consensus_state_proof,
                     path: _,
@@ -1698,7 +1715,7 @@ where
             },
             Identified {
                 chain_id: connection_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     height: connection_proof_height,
                     proof: connection_proof,
                     path: _,
@@ -1708,7 +1725,7 @@ where
             },
             Identified {
                 chain_id: connection_end_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: _,
                     height: _,
                     state: connection_end
@@ -1732,21 +1749,18 @@ where
 
         msg::<Tr, Hc>(
             counterparty_chain_id,
-            MsgConnectionOpenAckData {
-                msg: MsgConnectionOpenAck {
-                    connection_id: event.counterparty_connection_id,
-                    counterparty_connection_id: event.connection_id,
-                    // TODO: Figure out a way to not panic here, likely by encoding this invariant into the type somehow
-                    version: connection_end.versions[0].clone(),
-                    client_state: trusted_client_state,
-                    proof_height: connection_proof_height.into(),
-                    proof_try: connection_proof,
-                    proof_client: client_state_proof,
-                    proof_consensus: consensus_state_proof,
-                    consensus_height: consensus_height.into(),
-                },
-                __marker: PhantomData,
-            },
+            MsgConnectionOpenAckData(MsgConnectionOpenAck {
+                connection_id: event.counterparty_connection_id,
+                counterparty_connection_id: event.connection_id,
+                // TODO: Figure out a way to not panic here, likely by encoding this invariant into the type somehow
+                version: connection_end.versions[0].clone(),
+                client_state: trusted_client_state,
+                proof_height: connection_proof_height.into(),
+                proof_try: connection_proof,
+                proof_client: client_state_proof,
+                proof_consensus: consensus_state_proof,
+                consensus_height: consensus_height.into(),
+            }),
         )
     }
 }
@@ -1768,7 +1782,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateConnectionOpenConfirm {
                     event_height: _,
                     event,
@@ -1778,7 +1792,7 @@ where
         hlist_pat![
             Identified {
                 chain_id: trusted_client_state_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: ClientStatePath {
                         client_id: _trusted_client_state_client_id
                     },
@@ -1789,7 +1803,7 @@ where
             },
             Identified {
                 chain_id: connection_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     height: connection_proof_height,
                     proof: connection_proof,
                     path: _,
@@ -1836,7 +1850,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateChannelOpenTry {
                     event_height: _,
                     event,
@@ -1847,7 +1861,7 @@ where
         hlist_pat![
             Identified {
                 chain_id: trusted_client_state_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: ClientStatePath {
                         client_id: _trusted_client_state_client_id
                     },
@@ -1858,7 +1872,7 @@ where
             },
             Identified {
                 chain_id: channel_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     proof: channel_proof,
                     height: channel_proof_height,
                     path: _,
@@ -1868,7 +1882,7 @@ where
             },
             Identified {
                 chain_id: _connection_end_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: _,
                     height: _,
                     state: connection,
@@ -1878,7 +1892,7 @@ where
             },
             Identified {
                 chain_id: _channel_end_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: _,
                     height: _,
                     state: channel,
@@ -1903,7 +1917,7 @@ where
                         ordering: channel.ordering,
                         counterparty: channel::counterparty::Counterparty {
                             port_id: event.port_id.clone(),
-                            channel_id: event.channel_id.clone().to_string(),
+                            channel_id: event.channel_id.clone(),
                         },
                         connection_hops: vec![connection
                             .counterparty
@@ -1939,7 +1953,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateChannelOpenAck {
                     event_height: _,
                     event,
@@ -1950,7 +1964,7 @@ where
         hlist_pat![
             Identified {
                 chain_id: trusted_client_state_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: ClientStatePath {
                         client_id: _trusted_client_state_client_id
                     },
@@ -1961,7 +1975,7 @@ where
             },
             Identified {
                 chain_id: channel_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     height: channel_proof_height,
                     proof: channel_proof,
                     path: _,
@@ -1971,7 +1985,7 @@ where
             },
             Identified {
                 chain_id: channel_end_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: _,
                     height: _,
                     state: channel,
@@ -1995,7 +2009,7 @@ where
                     counterparty_channel_id: event.channel_id,
                     counterparty_version: event.version,
                     proof_try: channel_proof,
-                    proof_height: channel_proof_height.into(),
+                    proof_height: channel_proof_height,
                 },
                 __marker: PhantomData,
             },
@@ -2020,7 +2034,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateChannelOpenConfirm {
                     event_height: _,
                     event,
@@ -2031,7 +2045,7 @@ where
         hlist_pat![
             Identified {
                 chain_id: trusted_client_state_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: ClientStatePath {
                         client_id: _trusted_client_state_client_id
                     },
@@ -2042,7 +2056,7 @@ where
             },
             Identified {
                 chain_id: channel_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     height: channel_proof_height,
                     proof: channel_proof,
                     path: _,
@@ -2052,7 +2066,7 @@ where
             },
             Identified {
                 chain_id: channel_end_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: _,
                     height: _,
                     state: channel,
@@ -2097,7 +2111,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateRecvPacket {
                     event_height: _,
                     event,
@@ -2108,7 +2122,7 @@ where
         hlist_pat![
             Identified {
                 chain_id: trusted_client_state_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: ClientStatePath {
                         client_id: _trusted_client_state_client_id
                     },
@@ -2119,7 +2133,7 @@ where
             },
             Identified {
                 chain_id: commitment_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     height: commitment_proof_height,
                     proof: commitment_proof,
                     path: _,
@@ -2149,7 +2163,7 @@ where
                         timeout_timestamp: event.packet_timeout_timestamp,
                     },
                     proof_commitment: commitment_proof,
-                    proof_height: commitment_proof_height.into(),
+                    proof_height: commitment_proof_height,
                 },
                 __marker: PhantomData,
             },
@@ -2176,7 +2190,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateAckPacket {
                     event_height: _,
                     event,
@@ -2188,7 +2202,7 @@ where
         hlist_pat![
             Identified {
                 chain_id: trusted_client_state_chain_id,
-                data: IbcState {
+                t: IbcState {
                     path: ClientStatePath {
                         client_id: _trusted_client_state_client_id
                     },
@@ -2199,12 +2213,12 @@ where
             },
             Identified {
                 chain_id: packet_acknowledgement_chain_id,
-                data: PacketAcknowledgement { fetched_by: _, ack },
+                t: PacketAcknowledgement { fetched_by: _, ack },
                 __marker: _,
             },
             Identified {
                 chain_id: commitment_proof_chain_id,
-                data: IbcProof {
+                t: IbcProof {
                     proof: acknowledgement_proof,
                     height: acknowledgement_proof_height,
                     path: _,
@@ -2224,7 +2238,7 @@ where
             counterparty_chain_id,
             MsgAckPacketData {
                 msg: MsgAcknowledgement {
-                    proof_height: acknowledgement_proof_height.into(),
+                    proof_height: acknowledgement_proof_height,
                     packet: Packet {
                         sequence: event.packet_sequence,
                         source_port: event.packet_src_port,
@@ -2255,7 +2269,7 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data:
+            t:
                 AggregateFetchCounterpartyStateProof {
                     counterparty_client_id: _,
                     fetch: fetch_,
@@ -2264,7 +2278,7 @@ where
         }: Self,
         hlist_pat![Identified {
             chain_id: trusted_client_state_chain_id,
-            data: IbcState {
+            t: IbcState {
                 height: _,
                 path: _,
                 state: trusted_client_state,
@@ -2294,13 +2308,13 @@ where
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
-            data: this,
+            t: this,
             __marker: _,
         }: Self,
         hlist_pat![
             Identified {
                 chain_id: self_client_state_chain_id,
-                data: SelfClientState {
+                t: SelfClientState {
                     self_client_state,
                     __marker: _,
                 },
@@ -2308,7 +2322,7 @@ where
             },
             Identified {
                 chain_id: self_consensus_state_chain_id,
-                data: SelfConsensusState {
+                t: SelfConsensusState {
                     self_consensus_state,
                     __marker: _,
                 },

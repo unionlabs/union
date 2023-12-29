@@ -4,7 +4,10 @@ use std::{
     marker::PhantomData,
 };
 
-use chain_utils::union::{broadcast_tx_commit, BroadcastTxCommitError, CosmosSdkChain, Union};
+use chain_utils::{
+    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
+    union::Union,
+};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use num_bigint::BigUint;
@@ -18,17 +21,19 @@ use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
 use unionlabs::{
     bounded::BoundedI64,
-    cosmos::ics23::proof::MerkleProof,
-    encoding::Decode,
+    encoding::{Decode, Encode},
     google::protobuf::{
         any::{mk_any, Any},
         timestamp::Timestamp,
     },
-    hash::{H160, H256, H512},
+    hash::H256,
     ibc::{
-        core::client::{
-            height::{Height, IsHeight},
-            msg_update_client::MsgUpdateClient,
+        core::{
+            client::{
+                height::{Height, IsHeight},
+                msg_update_client::MsgUpdateClient,
+            },
+            commitment::merkle_proof::MerkleProof,
         },
         lightclients::cometbls,
     },
@@ -36,10 +41,9 @@ use unionlabs::{
     tendermint::{
         crypto::public_key::PublicKey,
         types::{
-            block_id::BlockId, block_id_flag::BlockIdFlag,
-            canonical_block_header::CanonicalPartSetHeader, canonical_block_id::CanonicalBlockId,
-            canonical_vote::CanonicalVote, commit::Commit, commit_sig::CommitSig,
-            part_set_header::PartSetHeader, signed_header::SignedHeader,
+            block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
+            canonical_block_id::CanonicalBlockId, canonical_vote::CanonicalVote, commit::Commit,
+            commit_sig::CommitSig, part_set_header::PartSetHeader, signed_header::SignedHeader,
             signed_msg_type::SignedMsgType, simple_validator::SimpleValidator,
         },
     },
@@ -51,7 +55,7 @@ use unionlabs::{
         prove_response,
         validator_set_commit::ValidatorSetCommit,
     },
-    IntoEthAbi, IntoProto, Proto, TryFromProto, TypeUrl,
+    IntoProto, Proto, TryFromProto, TypeUrl,
 };
 
 use crate::{
@@ -62,7 +66,10 @@ use crate::{
     defer_relative, fetch,
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
     identified, msg,
-    msg::{AnyMsg, Msg, MsgUpdateClientData},
+    msg::{
+        AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
+        MsgUpdateClientData,
+    },
     seq,
     use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
     wait,
@@ -109,66 +116,64 @@ where
     <ClientStateOf<Hc> as Proto>::Proto: TypeUrl,
     // HeaderOf<Hc>: IntoProto,
     // <HeaderOf<Hc> as Proto>::Proto: TypeUrl,
-    Tr::StoredClientState<Hc>: IntoProto,
-    <Tr::StoredClientState<Hc> as Proto>::Proto: TypeUrl,
+    Tr::StoredClientState<Hc>: IntoProto<Proto = protos::google::protobuf::Any>,
+    Tr::StateProof: Encode<unionlabs::encoding::Proto>,
 {
     async fn msg(&self, msg: Msg<Hc, Tr>) -> Result<(), BroadcastTxCommitError> {
         self.signers
             .with(|signer| async {
                 let msg_any = match msg {
-                    Msg::ConnectionOpenInit(data) => mk_any(&MsgConnectionOpenInit {
-                        client_id: data.msg.client_id.to_string(),
-                        counterparty: Some(data.msg.counterparty.into()),
-                        version: Some(data.msg.version.into()),
-                        signer: signer.to_string(),
-                        delay_period: data.msg.delay_period,
-                    }),
-                    Msg::ConnectionOpenTry(data) =>
+                    Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
+                        mk_any(&MsgConnectionOpenInit {
+                            client_id: data.client_id.to_string(),
+                            counterparty: Some(data.counterparty.into()),
+                            version: Some(data.version.into()),
+                            signer: signer.to_string(),
+                            delay_period: data.delay_period,
+                        })
+                    }
+                    Msg::ConnectionOpenTry(MsgConnectionOpenTryData(data)) =>
                     {
                         #[allow(deprecated)]
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
-                            client_id: data.msg.client_id.to_string(),
+                            client_id: data.client_id.to_string(),
                             previous_connection_id: String::new(),
-                            client_state: Some(Any(data.msg.client_state).into_proto()),
-                            counterparty: Some(data.msg.counterparty.into()),
-                            delay_period: data.msg.delay_period,
+                            client_state: Some(data.client_state.into_proto()),
+                            counterparty: Some(data.counterparty.into()),
+                            delay_period: data.delay_period,
                             counterparty_versions: data
-                                .msg
                                 .counterparty_versions
                                 .into_iter()
                                 .map(Into::into)
                                 .collect(),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            proof_init: data.msg.proof_init,
-                            proof_client: data.msg.proof_client,
-                            proof_consensus: data.msg.proof_consensus,
-                            consensus_height: Some(data.msg.consensus_height.into_height().into()),
+                            proof_height: Some(data.proof_height.into_height().into()),
+                            proof_init: data.proof_init.encode(),
+                            proof_client: data.proof_client.encode(),
+                            proof_consensus: data.proof_consensus.encode(),
+                            consensus_height: Some(data.consensus_height.into_height().into()),
                             signer: signer.to_string(),
                             host_consensus_state_proof: vec![],
                         })
                     }
-                    Msg::ConnectionOpenAck(data) => {
+                    Msg::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
-                            client_state: Some(Any(data.msg.client_state).into()),
-                            proof_height: Some(data.msg.proof_height.into_height().into()),
-                            proof_client: data.msg.proof_client,
-                            proof_consensus: data.msg.proof_consensus,
-                            consensus_height: Some(data.msg.consensus_height.into_height().into()),
+                            client_state: Some(data.client_state.into()),
+                            proof_height: Some(data.proof_height.into_height().into()),
+                            proof_client: data.proof_client.encode(),
+                            proof_consensus: data.proof_consensus.encode(),
+                            consensus_height: Some(data.consensus_height.into_height().into()),
                             signer: signer.to_string(),
                             host_consensus_state_proof: vec![],
-                            connection_id: data.msg.connection_id.to_string(),
-                            counterparty_connection_id: data
-                                .msg
-                                .counterparty_connection_id
-                                .to_string(),
-                            version: Some(data.msg.version.into()),
-                            proof_try: data.msg.proof_try,
+                            connection_id: data.connection_id.to_string(),
+                            counterparty_connection_id: data.counterparty_connection_id.to_string(),
+                            version: Some(data.version.into()),
+                            proof_try: data.proof_try.encode(),
                         })
                     }
                     Msg::ConnectionOpenConfirm(data) => mk_any(
                         &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
                             connection_id: data.msg.connection_id.to_string(),
-                            proof_ack: data.msg.proof_ack,
+                            proof_ack: data.msg.proof_ack.encode(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
                         },
@@ -187,7 +192,7 @@ where
                             port_id: data.msg.port_id.to_string(),
                             channel: Some(data.msg.channel.into()),
                             counterparty_version: data.msg.counterparty_version,
-                            proof_init: data.msg.proof_init,
+                            proof_init: data.msg.proof_init.encode(),
                             proof_height: Some(data.msg.proof_height.into()),
                             previous_channel_id: String::new(),
                             signer: signer.to_string(),
@@ -199,7 +204,7 @@ where
                             channel_id: data.msg.channel_id.to_string(),
                             counterparty_version: data.msg.counterparty_version,
                             counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
-                            proof_try: data.msg.proof_try,
+                            proof_try: data.msg.proof_try.encode(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
                         })
@@ -210,23 +215,23 @@ where
                             channel_id: data.msg.channel_id.to_string(),
                             proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
-                            proof_ack: data.msg.proof_ack,
+                            proof_ack: data.msg.proof_ack.encode(),
                         })
                     }
                     Msg::RecvPacket(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
                             packet: Some(data.msg.packet.into()),
-                            proof_height: Some(data.msg.proof_height.into()),
+                            proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
-                            proof_commitment: data.msg.proof_commitment,
+                            proof_commitment: data.msg.proof_commitment.encode(),
                         })
                     }
                     Msg::AckPacket(data) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
                             packet: Some(data.msg.packet.into()),
                             acknowledgement: data.msg.acknowledgement,
-                            proof_acked: data.msg.proof_acked,
-                            proof_height: Some(data.msg.proof_height.into()),
+                            proof_acked: data.msg.proof_acked.encode(),
+                            proof_height: Some(data.msg.proof_height.into_height().into()),
                             signer: signer.to_string(),
                         })
                     }
@@ -237,16 +242,16 @@ where
                             signer: signer.to_string(),
                         })
                     }
-                    Msg::UpdateClient(data) => {
+                    Msg::UpdateClient(MsgUpdateClientData(data)) => {
                         mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
                             signer: signer.to_string(),
-                            client_id: data.msg.client_id.to_string(),
-                            client_message: Some(Any(data.msg.client_message).into()),
+                            client_id: data.client_id.to_string(),
+                            client_message: Some(Any(data.client_message).into()),
                         })
                     }
                 };
 
-                broadcast_tx_commit(self, signer, [msg_any])
+                self.broadcast_tx_commit(signer, [msg_any])
                     .await
                     .map(|_| ())
             })
@@ -254,7 +259,7 @@ where
     }
 }
 
-impl<Tr: ChainExt, Hc: Wraps<Self, Fetch<Tr> = UnionFetch<Hc, Tr>>> DoFetchState<Hc, Tr> for Union
+impl<Tr: ChainExt, Hc: Wraps<Self, StateProof = MerkleProof, Fetch<Tr> = UnionFetch<Hc, Tr>>> DoFetchState<Hc, Tr> for Union
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -311,7 +316,7 @@ where
 
         Identified::<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>::try_from(relayer_msg)
             .unwrap()
-            .data
+            .t
             .state
     }
 }
@@ -401,7 +406,13 @@ where
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    bound(serialize = "", deserialize = ""),
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
 #[allow(clippy::large_enum_variant)]
 pub enum UnionDataMsg<Tr: ChainExt> {
     // NOTE: Not used currently?
@@ -419,7 +430,13 @@ pub enum UnionDataMsg<Tr: ChainExt> {
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    bound(serialize = "", deserialize = ""),
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
 #[allow(clippy::large_enum_variant)]
 pub enum UnionFetch<Hc: ChainExt, Tr: ChainExt> {
     // FetchTrustedCommit { height: Height },
@@ -437,7 +454,7 @@ impl<Hc, Tr> DoFetch<Hc> for UnionFetch<Hc, Tr>
 where
     Hc: Wraps<Union>
         + CosmosSdkChain
-        + ChainExt<Data<Tr> = UnionDataMsg<Tr>, Fetch<Tr> = UnionFetch<Hc, Tr>>,
+        + ChainExt<StateProof = MerkleProof, Data<Tr> = UnionDataMsg<Tr>, Fetch<Tr> = UnionFetch<Hc, Tr>>,
     Tr: ChainExt,
 
     // Tr::SelfClientState: Decode<unionlabs::encoding::Proto>,
@@ -568,21 +585,12 @@ where
                             .signatures
                             .into_iter()
                             .map(|sig| match sig {
-                                tendermint::block::CommitSig::BlockIdFlagAbsent => CommitSig {
-                                    block_id_flag: BlockIdFlag::Absent,
-                                    validator_address: H160([0; 20]),
-                                    timestamp: unionlabs::google::protobuf::timestamp::Timestamp {
-                                        seconds: 0.try_into().unwrap(),
-                                        nanos: 0.try_into().unwrap(),
-                                    },
-                                    signature: H512([0; 64]),
-                                },
+                                tendermint::block::CommitSig::BlockIdFlagAbsent => CommitSig::Absent,
                                 tendermint::block::CommitSig::BlockIdFlagCommit {
                                     validator_address,
                                     timestamp,
                                     signature,
-                                } => CommitSig {
-                                    block_id_flag: BlockIdFlag::Commit,
+                                } => CommitSig::Commit {
                                     validator_address: Vec::from(validator_address)
                                         .try_into()
                                         .unwrap(),
@@ -603,8 +611,7 @@ where
                                     validator_address,
                                     timestamp,
                                     signature,
-                                } => CommitSig {
-                                    block_id_flag: BlockIdFlag::Nil,
+                                } => CommitSig::Nil {
                                     validator_address: Vec::from(validator_address)
                                         .try_into()
                                         .unwrap(),
@@ -668,11 +675,9 @@ where
                     .into_proto(),
                 )
                 .await
-                .map(|x| x.into_inner().try_into().unwrap())
-                .unwrap();
+                .map(|x| x.into_inner().try_into().unwrap());
 
-                match response {
-                    PollResponse::Pending => [seq([
+                let retry = || [seq([
                         // REVIEW: How long should we wait between polls?
                         defer_relative(3),
                         fetch::<Hc, Tr>(
@@ -682,12 +687,17 @@ where
                             )),
                         ),
                     ])]
-                    .into(),
-                    PollResponse::Failed(ProveRequestFailed { message }) => {
+                    .into();
+
+                match response {
+                    Ok(PollResponse::Pending) => retry(),
+                    Err(status) if status.message() == "busy_building" => retry(),
+                    Err(err)  => panic!("prove request failed: {:?}", err),
+                    Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
                         tracing::error!(%message, "prove request failed");
                         panic!()
                     }
-                    PollResponse::Done(ProveRequestDone { response }) => [data::<Hc, Tr>(
+                    Ok(PollResponse::Done(ProveRequestDone { response })) => [data::<Hc, Tr>(
                         hc.chain_id(),
                         LightClientSpecificData(UnionDataMsg::ProveResponse(ProveResponse {
                             prove_response: response,
@@ -704,13 +714,15 @@ where
     }
 }
 
-async fn fetch_abci_query<Hc: CosmosSdkChain + ChainExt, Tr: ChainExt>(
+async fn fetch_abci_query<Hc, Tr>(
     c: &Hc,
     path: Path<Hc::ClientId, Tr::Height>,
     height: HeightOf<Hc>,
     ty: AbciQueryType,
 ) -> RelayerMsg
 where
+    Hc: CosmosSdkChain + ChainExt<StateProof = MerkleProof>,
+    Tr: ChainExt,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
 
@@ -813,8 +825,7 @@ where
                     })
                     .collect::<Vec<_>>(),
             })
-            .unwrap()
-            .into_eth_abi_bytes();
+            .unwrap();
 
             match path {
                 Path::ClientStatePath(path) => data::<Hc, Tr>(
@@ -879,7 +890,12 @@ where
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(
+    bound(serialize = "", deserialize = ""),
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case"
+)]
 #[allow(clippy::large_enum_variant)]
 pub enum UnionAggregateMsg<Hc: ChainExt, Tr: ChainExt> {
     #[display(fmt = "AggregateProveRequest")]
@@ -887,65 +903,6 @@ pub enum UnionAggregateMsg<Hc: ChainExt, Tr: ChainExt> {
     #[display(fmt = "AggregateHeader")]
     AggregateHeader(AggregateHeader<Hc, Tr>),
 }
-
-// impl<C, L> From<UntrustedCommit> for Data<L> {
-//     fn from(value: UntrustedCommit) -> Self {
-//         Data::LightClientSpecific(LightClientSpecificData(UnionDataMsg::UntrustedCommit(
-//             value,
-//         )))
-//     }
-// }
-
-// impl<C, L> TryFrom<Data<L>> for UntrustedCommit {
-//     type Error = Data<L>;
-
-//     fn try_from(value: Data<L>) -> Result<Self, Self::Error> {
-//         let LightClientSpecificData(value) = LightClientSpecificData::try_from(value)?;
-
-//         match value {
-//             UnionDataMsg::UntrustedCommit(ok) => Ok(ok),
-//             _ => Err(LightClientSpecificData(value).into()),
-//         }
-//     }
-// }
-
-// impl<C, L> From<Validators> for Data<L> {
-//     fn from(value: Validators) -> Self {
-//         Data::LightClientSpecific(LightClientSpecificData(UnionDataMsg::Validators(value)))
-//     }
-// }
-
-// impl<C, L> TryFrom<Data<L>> for Validators {
-//     type Error = Data<L>;
-
-//     fn try_from(value: Data<L>) -> Result<Self, Self::Error> {
-//         let LightClientSpecificData(value) = LightClientSpecificData::try_from(value)?;
-
-//         match value {
-//             UnionDataMsg::Validators(ok) => Ok(ok),
-//             _ => Err(LightClientSpecificData(value).into()),
-//         }
-//     }
-// }
-
-// impl<C, L> From<ProveResponse> for Data<L> {
-//     fn from(value: ProveResponse) -> Self {
-//         Data::LightClientSpecific(LightClientSpecificData(UnionDataMsg::ProveResponse(value)))
-//     }
-// }
-
-// impl<C, L> TryFrom<Data<L>> for ProveResponse {
-//     type Error = Data<L>;
-
-//     fn try_from(value: Data<L>) -> Result<Self, Self::Error> {
-//         let LightClientSpecificData(value) = LightClientSpecificData::try_from(value)?;
-
-//         match value {
-//             UnionDataMsg::ProveResponse(ok) => Ok(ok),
-//             _ => Err(LightClientSpecificData(value).into()),
-//         }
-//     }
-// }
 
 impl<Hc, Tr> DoAggregate for Identified<Hc, Tr, UnionAggregateMsg<Hc, Tr>>
 where
@@ -964,7 +921,7 @@ where
     fn do_aggregate(
         Identified {
             chain_id,
-            data,
+            t: data,
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
@@ -1006,7 +963,7 @@ const _: () = {
 };
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct UntrustedCommit<Tr: ChainExt> {
     pub height: Height,
     pub signed_header: SignedHeader,
@@ -1015,7 +972,7 @@ pub struct UntrustedCommit<Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct Validators<Tr: ChainExt> {
     pub height: Height,
     // TODO: Use non-`tendermint-rs` type here
@@ -1025,7 +982,7 @@ pub struct Validators<Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct ProveResponse<Tr: ChainExt> {
     pub prove_response: prove_response::ProveResponse,
     #[serde(skip)]
@@ -1033,48 +990,49 @@ pub struct ProveResponse<Tr: ChainExt> {
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchUntrustedCommit {
     pub height: Height,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 // TODO: Add Height param
 pub struct FetchValidators {
     pub height: Height,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchProveRequest {
     pub request: ProveRequest,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchAbciQuery<Hc: ChainExt, Tr: ChainExt> {
-    path: PathOf<Hc, Tr>,
-    height: HeightOf<Hc>,
-    ty: AbciQueryType,
+    pub path: PathOf<Hc, Tr>,
+    pub height: HeightOf<Hc>,
+    pub ty: AbciQueryType,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[serde(rename_all = "snake_case")]
 pub enum AbciQueryType {
     State,
     Proof,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub signed_header: SignedHeader,
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct AggregateProveRequest<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
@@ -1112,13 +1070,13 @@ where
     fn aggregate(
         Identified {
             chain_id,
-            data: AggregateProveRequest { req },
+            t: AggregateProveRequest { req },
             __marker: _,
         }: Self,
         hlist_pat![
             Identified {
                 chain_id: untrusted_commit_chain_id,
-                data: UntrustedCommit {
+                t: UntrustedCommit {
                     height: untrusted_commit_height,
                     signed_header,
                     __marker: _,
@@ -1127,7 +1085,7 @@ where
             },
             Identified {
                 chain_id: trusted_validators_chain_id,
-                data: Validators {
+                t: Validators {
                     height: trusted_validators_height,
                     validators: trusted_validators,
                     __marker: _,
@@ -1136,7 +1094,7 @@ where
             },
             Identified {
                 chain_id: untrusted_validators_chain_id,
-                data: Validators {
+                t: Validators {
                     height: untrusted_validators_height,
                     validators: untrusted_validators,
                     __marker: _,
@@ -1192,30 +1150,31 @@ where
             // don't find a validator for a given signature as the validator set
             // may have drifted (trusted validator set).
             for sig in signed_header.commit.signatures.iter() {
-                match sig.block_id_flag {
-                    BlockIdFlag::Absent => {
+                match sig {
+                    CommitSig::Absent => {
                         tracing::debug!("Validator did not sign: {:?}", sig);
                     }
-                    BlockIdFlag::Commit => {
-                        if let Some(validator_index) = validators_map
-                            .get(&sig.validator_address.0.to_vec().try_into().unwrap())
+                    CommitSig::Commit {
+                        validator_address,
+                        timestamp: _,
+                        signature,
+                    } => {
+                        if let Some(validator_index) =
+                            validators_map.get(&validator_address.0.to_vec().try_into().unwrap())
                         {
                             bitmap.set_bit(*validator_index as u64, true);
-                            signatures.push(sig.signature.clone().into());
+                            signatures.push(signature.clone().into());
                             tracing::debug!(
                                 "Validator {:?} at index {} signed",
-                                sig.validator_address,
+                                validator_address,
                                 validator_index
                             );
                         } else {
-                            tracing::warn!("Validator set drifted? Could not find validator for signature {:?}", sig.validator_address);
+                            tracing::warn!("Validator set drifted? Could not find validator for signature {:?}", validator_address);
                         }
                     }
-                    BlockIdFlag::Nil { .. } => {
+                    CommitSig::Nil { .. } => {
                         tracing::warn!("Validator commit is nil: {:?}", sig);
-                    }
-                    BlockIdFlag::Unknown => {
-                        tracing::warn!("Validator commit is unknown, wtf: {:?}", sig);
                     }
                 }
             }
@@ -1301,12 +1260,12 @@ where
     fn aggregate(
         Identified {
             chain_id,
-            data: AggregateHeader { signed_header, req },
+            t: AggregateHeader { signed_header, req },
             __marker: _,
         }: Self,
         hlist_pat![Identified {
             chain_id: untrusted_commit_chain_id,
-            data: ProveResponse {
+            t: ProveResponse {
                 prove_response: response,
                 __marker: _
             },
@@ -1317,17 +1276,14 @@ where
 
         msg::<Tr, Hc>(
             req.counterparty_chain_id,
-            MsgUpdateClientData {
-                msg: MsgUpdateClient {
-                    client_id: req.counterparty_client_id.clone(),
-                    client_message: cometbls::header::Header {
-                        signed_header,
-                        trusted_height: req.update_from.into(),
-                        zero_knowledge_proof: response.proof.evm_proof,
-                    },
+            MsgUpdateClientData(MsgUpdateClient {
+                client_id: req.counterparty_client_id.clone(),
+                client_message: cometbls::header::Header {
+                    signed_header,
+                    trusted_height: req.update_from.into(),
+                    zero_knowledge_proof: response.proof.evm_proof,
                 },
-                update_from: req.update_from,
-            },
+            }),
         )
     }
 }

@@ -8,6 +8,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BlockId {
     pub hash: H256,
     pub part_set_header: PartSetHeader,

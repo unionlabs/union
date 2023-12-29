@@ -10,7 +10,7 @@
 
 use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCode};
 
-use chain_utils::{evm::Evm, union::Union};
+use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union};
 use clap::Parser;
 use sqlx::PgPool;
 use tikv_jemallocator::Jemalloc;
@@ -187,8 +187,14 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             cli::SetupCmd::Transfer { .. } => {}
             _ => panic!("not supported"),
         },
-        Command::Query { on, at, cmd } => {
+        Command::Query {
+            on,
+            at,
+            cmd,
+            tracking,
+        } => {
             let on = voyager_config.get_chain(&on).await?;
+            let tracking = voyager_config.get_chain(&tracking).await?;
 
             let voyager = Voyager::new(crate::config::Config {
                 chain: voyager_config.chain,
@@ -202,21 +208,13 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
             match cmd {
                 QueryCmd::IbcPath(path) => {
-                    let json = match on {
-                        AnyChain::EvmMainnet(evm) => {
-                            any_state_proof_to_json::<Evm<Mainnet>, Wasm<Union>>(
-                                voyager, path, evm, at,
-                            )
-                            .await
-                        }
-                        AnyChain::EvmMinimal(evm) => {
-                            any_state_proof_to_json::<Evm<Minimal>, Wasm<Union>>(
-                                voyager, path, evm, at,
-                            )
-                            .await
-                        }
-                        AnyChain::Union(union) => {
+                    let json = match (on, tracking) {
+                        (AnyChain::Union(union), AnyChain::Cosmos(_)) => {
                             // NOTE: ChainSpec is arbitrary
+                            any_state_proof_to_json::<Union, Wasm<Cosmos>>(voyager, path, union, at)
+                                .await
+                        }
+                        (AnyChain::Union(union), AnyChain::EvmMainnet(_)) => {
                             any_state_proof_to_json::<Wasm<Union>, Evm<Mainnet>>(
                                 voyager,
                                 path,
@@ -225,6 +223,40 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                             )
                             .await
                         }
+                        (AnyChain::Union(union), AnyChain::EvmMinimal(_)) => {
+                            any_state_proof_to_json::<Wasm<Union>, Evm<Minimal>>(
+                                voyager,
+                                path,
+                                Wasm(union),
+                                at,
+                            )
+                            .await
+                        }
+                        (AnyChain::Cosmos(cosmos), AnyChain::Union(_)) => {
+                            // NOTE: ChainSpec is arbitrary
+                            any_state_proof_to_json::<Wasm<Cosmos>, Union>(
+                                voyager,
+                                path,
+                                Wasm(cosmos),
+                                at,
+                            )
+                            .await
+                        }
+                        (AnyChain::EvmMainnet(evm), AnyChain::Union(_)) => {
+                            any_state_proof_to_json::<Evm<Mainnet>, Wasm<Union>>(
+                                voyager, path, evm, at,
+                            )
+                            .await
+                        }
+
+                        (AnyChain::EvmMinimal(evm), AnyChain::Union(_)) => {
+                            any_state_proof_to_json::<Evm<Minimal>, Wasm<Union>>(
+                                voyager, path, evm, at,
+                            )
+                            .await
+                        }
+
+                        _ => panic!("unsupported"),
                     };
 
                     println!("{json}");

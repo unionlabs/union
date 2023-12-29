@@ -90,34 +90,32 @@ macro_rules! overflowing {
                 self.long_mul(rhs)
             }
 
-            crate::nightly::const_fns! {
-                #[doc = doc::overflowing::overflowing_div!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
-                    (self.wrapping_div(rhs), false)
-                }
+            #[doc = doc::overflowing::overflowing_div!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
+                (self.wrapping_div(rhs), false)
+            }
 
-                #[doc = doc::overflowing::overflowing_div_euclid!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
-                    self.overflowing_div(rhs)
-                }
+            #[doc = doc::overflowing::overflowing_div_euclid!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
+                self.overflowing_div(rhs)
+            }
 
-                #[doc = doc::overflowing::overflowing_rem!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
-                    (self.wrapping_rem(rhs), false)
-                }
+            #[doc = doc::overflowing::overflowing_rem!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
+                (self.wrapping_rem(rhs), false)
+            }
 
-                #[doc = doc::overflowing::overflowing_rem_euclid!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
-                    self.overflowing_rem(rhs)
-                }
+            #[doc = doc::overflowing::overflowing_rem_euclid!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
+                self.overflowing_rem(rhs)
             }
 
             #[doc = doc::overflowing::overflowing_neg!(U)]
@@ -134,7 +132,10 @@ macro_rules! overflowing {
             pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
                 unsafe {
                     if rhs >= Self::BITS {
-                        (Self::unchecked_shl_internal(self, rhs & (Self::BITS - 1)), true)
+                        (
+                            Self::unchecked_shl_internal(self, rhs & (Self::BITS - 1)),
+                            true,
+                        )
                     } else {
                         (Self::unchecked_shl_internal(self, rhs), false)
                     }
@@ -147,7 +148,10 @@ macro_rules! overflowing {
             pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
                 unsafe {
                     if rhs >= Self::BITS {
-                        (Self::unchecked_shr_internal(self, rhs & (Self::BITS - 1)), true)
+                        (
+                            Self::unchecked_shr_internal(self, rhs & (Self::BITS - 1)),
+                            true,
+                        )
                     } else {
                         (Self::unchecked_shr_internal(self, rhs), false)
                     }

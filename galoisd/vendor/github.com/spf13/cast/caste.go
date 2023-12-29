@@ -98,10 +98,31 @@ func ToBoolE(i interface{}) (bool, error) {
 	case nil:
 		return false, nil
 	case int:
-		if i.(int) != 0 {
-			return true, nil
-		}
-		return false, nil
+		return b != 0, nil
+	case int64:
+		return b != 0, nil
+	case int32:
+		return b != 0, nil
+	case int16:
+		return b != 0, nil
+	case int8:
+		return b != 0, nil
+	case uint:
+		return b != 0, nil
+	case uint64:
+		return b != 0, nil
+	case uint32:
+		return b != 0, nil
+	case uint16:
+		return b != 0, nil
+	case uint8:
+		return b != 0, nil
+	case float64:
+		return b != 0, nil
+	case float32:
+		return b != 0, nil
+	case time.Duration:
+		return b != 0, nil
 	case string:
 		return strconv.ParseBool(i.(string))
 	case json.Number:
@@ -1385,6 +1406,8 @@ func (f timeFormat) hasTimezone() bool {
 
 var (
 	timeFormats = []timeFormat{
+		// Keep common formats at the top.
+		{"2006-01-02", timeFormatNoTimezone},
 		{time.RFC3339, timeFormatNumericTimezone},
 		{"2006-01-02T15:04:05", timeFormatNoTimezone}, // iso8601 without timezone
 		{time.RFC1123Z, timeFormatNumericTimezone},
@@ -1400,7 +1423,6 @@ var (
 		{time.UnixDate, timeFormatNamedTimezone},
 		{time.RubyDate, timeFormatNumericTimezone},
 		{"2006-01-02 15:04:05Z07:00", timeFormatNumericTimezone},
-		{"2006-01-02", timeFormatNoTimezone},
 		{"02 Jan 2006", timeFormatNoTimezone},
 		{"2006-01-02 15:04:05 -07:00", timeFormatNumericTimezone},
 		{"2006-01-02 15:04:05 -0700", timeFormatNumericTimezone},

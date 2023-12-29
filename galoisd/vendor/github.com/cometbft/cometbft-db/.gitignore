@@ -13,3 +13,6 @@
 
 .idea
 vendor/*
+
+# Code coverage
+coverage.txt

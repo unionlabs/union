@@ -15,6 +15,7 @@ message ConsensusParams {
   EvidenceParams  evidence  = 2;
   ValidatorParams validator = 3;
   VersionParams   version   = 4;
+  ABCIParams      abci      = 5;
 }
 
 // BlockParams contains limits on the block size.
@@ -26,7 +27,7 @@ message BlockParams {
   // Note: must be greater or equal to -1
   int64 max_gas = 2;
 
-  reserved 3;  // was TimeIotaMs see https://github.com/cometbft/cometbft/pull/5792
+  reserved 3;  // was TimeIotaMs see https://github.com/tendermint/tendermint/pull/5792
 }
 
 // EvidenceParams determine how we handle evidence of malfeasance.
@@ -74,4 +75,18 @@ message VersionParams {
 message HashedParams {
   int64 block_max_bytes = 1;
   int64 block_max_gas   = 2;
+}
+
+// ABCIParams configure functionality specific to the Application Blockchain Interface.
+message ABCIParams {
+  // vote_extensions_enable_height configures the first height during which
+  // vote extensions will be enabled. During this specified height, and for all
+  // subsequent heights, precommit messages that do not contain valid extension data
+  // will be considered invalid. Prior to this height, vote extensions will not
+  // be used or accepted by validators on the network.
+  //
+  // Once enabled, vote extensions will be created by the application in ExtendVote,
+  // passed to the application for validation in VerifyVoteExtension and given
+  // to the application to use when proposing a block during PrepareProposal.
+  int64 vote_extensions_enable_height = 1;
 }

@@ -10,22 +10,15 @@
 # See Cargo.toml.orig for the original contents.
 
 [package]
-rust-version = "1.19"
+edition = "2018"
+rust-version = "1.31"
 name = "serde"
-version = "1.0.164"
+version = "1.0.188"
 authors = [
     "Erick Tryzelaar <erick.tryzelaar@gmail.com>",
     "David Tolnay <dtolnay@gmail.com>",
 ]
 build = "build.rs"
-include = [
-    "build.rs",
-    "src/**/*.rs",
-    "crates-io.md",
-    "README.md",
-    "LICENSE-APACHE",
-    "LICENSE-MIT",
-]
 description = "A generic serialization/deserialization framework"
 homepage = "https://serde.rs"
 documentation = "https://docs.rs/serde"
@@ -38,12 +31,14 @@ keywords = [
 categories = [
     "encoding",
     "no-std",
+    "no-std::no-alloc",
 ]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/serde-rs/serde"
 
 [package.metadata.docs.rs]
 features = ["derive"]
+rustdoc-args = ["--generate-link-to-definition"]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [package.metadata.playground]
@@ -56,11 +51,11 @@ features = [
 doc-scrape-examples = false
 
 [dependencies.serde_derive]
-version = "=1.0.164"
+version = "1"
 optional = true
 
 [dev-dependencies.serde_derive]
-version = "1.0"
+version = "1"
 
 [features]
 alloc = []
@@ -69,3 +64,6 @@ derive = ["serde_derive"]
 rc = []
 std = []
 unstable = []
+
+[target."cfg(any())".dependencies.serde_derive]
+version = "=1.0.188"

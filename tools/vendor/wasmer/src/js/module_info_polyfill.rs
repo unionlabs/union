@@ -14,10 +14,10 @@ use wasmer_types::{
 };
 
 use wasmparser::{
-    self, BinaryReaderError, Export, ExportSectionReader, ExternalKind, FuncType as WPFunctionType,
-    FunctionSectionReader, GlobalSectionReader, GlobalType as WPGlobalType, ImportSectionEntryType,
-    ImportSectionReader, MemorySectionReader, MemoryType as WPMemoryType, NameSectionReader,
-    Parser, Payload, TableSectionReader, TypeDef, TypeSectionReader,
+    self, BinaryReaderError, Export, ExportSectionReader, ExternalKind, FunctionSectionReader,
+    GlobalSectionReader, GlobalType as WPGlobalType, ImportSectionReader, MemorySectionReader,
+    MemoryType as WPMemoryType, NameSectionReader, Parser, Payload, TableSectionReader, TypeRef,
+    TypeSectionReader,
 };
 
 pub type WasmResult<T> = Result<T, String>;
@@ -40,11 +40,11 @@ impl ModuleInfoPolyfill {
         field: &str,
     ) -> WasmResult<()> {
         self.info.imports.insert(
-            (
-                String::from(module),
-                String::from(field),
-                self.info.imports.len() as u32,
-            ),
+            wasmer_types::ImportKey {
+                module: String::from(module),
+                field: String::from(field),
+                import_idx: self.info.imports.len() as u32,
+            },
             import,
         );
         Ok(())
@@ -283,15 +283,17 @@ pub fn translate_module<'data>(data: &'data [u8]) -> WasmResult<ModuleInfoPolyfi
                 parse_export_section(exports, &mut module_info)?;
             }
 
-            Payload::CustomSection {
-                name: "name",
-                data,
-                data_offset,
-                ..
-            } => parse_name_section(
-                NameSectionReader::new(data, data_offset).map_err(transform_err)?,
-                &mut module_info,
-            )?,
+            Payload::CustomSection(sectionreader) => {
+                // We still add the custom section data, but also read it as name section reader
+                let name = sectionreader.name();
+                if name == "name" {
+                    parse_name_section(
+                        NameSectionReader::new(sectionreader.data(), sectionreader.data_offset())
+                            .map_err(transform_err)?,
+                        &mut module_info,
+                    )?;
+                }
+            }
 
             _ => {}
         }
@@ -301,16 +303,15 @@ pub fn translate_module<'data>(data: &'data [u8]) -> WasmResult<ModuleInfoPolyfi
 }
 
 /// Helper function translating wasmparser types to Wasm Type.
-pub fn wptype_to_type(ty: wasmparser::Type) -> WasmResult<Type> {
+pub fn wptype_to_type(ty: wasmparser::ValType) -> WasmResult<Type> {
     match ty {
-        wasmparser::Type::I32 => Ok(Type::I32),
-        wasmparser::Type::I64 => Ok(Type::I64),
-        wasmparser::Type::F32 => Ok(Type::F32),
-        wasmparser::Type::F64 => Ok(Type::F64),
-        wasmparser::Type::V128 => Ok(Type::V128),
-        wasmparser::Type::ExternRef => Ok(Type::ExternRef),
-        wasmparser::Type::FuncRef => Ok(Type::FuncRef),
-        ty => Err(format!("wptype_to_type: wasmparser type {:?}", ty)),
+        wasmparser::ValType::I32 => Ok(Type::I32),
+        wasmparser::ValType::I64 => Ok(Type::I64),
+        wasmparser::ValType::F32 => Ok(Type::F32),
+        wasmparser::ValType::F64 => Ok(Type::F64),
+        wasmparser::ValType::V128 => Ok(Type::V128),
+        wasmparser::ValType::ExternRef => Ok(Type::ExternRef),
+        wasmparser::ValType::FuncRef => Ok(Type::FuncRef),
     }
 }
 
@@ -323,7 +324,9 @@ pub fn parse_type_section(
     module_info.reserve_signatures(count)?;
 
     for entry in types {
-        if let Ok(TypeDef::Func(WPFunctionType { params, returns })) = entry {
+        if let Ok(wasmparser::Type::Func(functype)) = entry {
+            let params = functype.params();
+            let returns = functype.results();
             let sig_params: Vec<Type> = params
                 .iter()
                 .map(|ty| {
@@ -358,23 +361,20 @@ pub fn parse_import_section<'data>(
     for entry in imports {
         let import = entry.map_err(transform_err)?;
         let module_name = import.module;
-        let field_name = import.field;
+        let field_name = import.name;
 
         match import.ty {
-            ImportSectionEntryType::Function(sig) => {
+            TypeRef::Func(sig) => {
                 module_info.declare_func_import(
                     SignatureIndex::from_u32(sig),
                     module_name,
-                    field_name.unwrap_or_default(),
+                    field_name,
                 )?;
             }
-            ImportSectionEntryType::Module(_) | ImportSectionEntryType::Instance(_) => {
-                unimplemented!("module linking not implemented yet")
-            }
-            ImportSectionEntryType::Tag(_) => {
+            TypeRef::Tag(_) => {
                 unimplemented!("exception handling not implemented yet")
             }
-            ImportSectionEntryType::Memory(WPMemoryType {
+            TypeRef::Memory(WPMemoryType {
                 shared,
                 memory64,
                 initial,
@@ -390,20 +390,20 @@ pub fn parse_import_section<'data>(
                         shared,
                     },
                     module_name,
-                    field_name.unwrap_or_default(),
+                    field_name,
                 )?;
             }
-            ImportSectionEntryType::Global(ref ty) => {
+            TypeRef::Global(ref ty) => {
                 module_info.declare_global_import(
                     GlobalType {
                         ty: wptype_to_type(ty.content_type).unwrap(),
                         mutability: ty.mutable.into(),
                     },
                     module_name,
-                    field_name.unwrap_or_default(),
+                    field_name,
                 )?;
             }
-            ImportSectionEntryType::Table(ref tab) => {
+            TypeRef::Table(ref tab) => {
                 module_info.declare_table_import(
                     TableType {
                         ty: wptype_to_type(tab.element_type).unwrap(),
@@ -411,7 +411,7 @@ pub fn parse_import_section<'data>(
                         maximum: tab.maximum,
                     },
                     module_name,
-                    field_name.unwrap_or_default(),
+                    field_name,
                 )?;
             }
         }
@@ -512,7 +512,7 @@ pub fn parse_export_section<'data>(
 
     for entry in exports {
         let Export {
-            field,
+            name,
             ref kind,
             index,
         } = entry.map_err(transform_err)?;
@@ -522,20 +522,17 @@ pub fn parse_export_section<'data>(
         // becomes a concern here.
         let index = index as usize;
         match *kind {
-            ExternalKind::Function => {
-                module_info.declare_func_export(FunctionIndex::new(index), field)?
+            ExternalKind::Func => {
+                module_info.declare_func_export(FunctionIndex::new(index), name)?
             }
             ExternalKind::Table => {
-                module_info.declare_table_export(TableIndex::new(index), field)?
+                module_info.declare_table_export(TableIndex::new(index), name)?
             }
             ExternalKind::Memory => {
-                module_info.declare_memory_export(MemoryIndex::new(index), field)?
+                module_info.declare_memory_export(MemoryIndex::new(index), name)?
             }
             ExternalKind::Global => {
-                module_info.declare_global_export(GlobalIndex::new(index), field)?
-            }
-            ExternalKind::Type | ExternalKind::Module | ExternalKind::Instance => {
-                unimplemented!("module linking not implemented yet")
+                module_info.declare_global_export(GlobalIndex::new(index), name)?
             }
             ExternalKind::Tag => {
                 unimplemented!("exception handling not implemented yet")
@@ -559,20 +556,20 @@ pub fn parse_name_section<'data>(
     while let Ok(subsection) = names.read() {
         match subsection {
             wasmparser::Name::Function(_function_subsection) => {
-                // if let Some(function_names) = function_subsection
-                //     .get_map()
-                //     .ok()
-                //     .and_then(parse_function_name_subsection)
-                // {
-                //     for (index, name) in function_names {
-                //         module_info.declare_function_name(index, name)?;
-                //     }
-                // }
+                //for naming in function_subsection.into_iter().flatten() {
+                //    if naming.index != std::u32::MAX {
+                //        environ.declare_function_name(
+                //            FunctionIndex::from_u32(naming.index),
+                //            naming.name,
+                //        )?;
+                //    }
+                //}
             }
-            wasmparser::Name::Module(module) => {
-                if let Ok(name) = module.get_name() {
-                    module_info.declare_module_name(name)?;
-                }
+            wasmparser::Name::Module {
+                name,
+                name_range: _,
+            } => {
+                module_info.declare_module_name(name)?;
             }
             wasmparser::Name::Local(_) => {}
             wasmparser::Name::Label(_)

@@ -88,6 +88,7 @@ fn from_long_slice(b: &mut Bencher) {
 #[bench]
 fn slice_empty(b: &mut Bencher) {
     b.iter(|| {
+        // `clone` is to convert to ARC
         let b = Bytes::from(vec![17; 1024]).clone();
         for i in 0..1000 {
             test::black_box(b.slice(i % 100..i % 100));

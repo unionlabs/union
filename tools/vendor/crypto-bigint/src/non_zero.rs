@@ -1,6 +1,6 @@
 //! Wrapper type for non-zero integers.
 
-use crate::{Encoding, Integer, Limb, UInt, Zero};
+use crate::{Encoding, Integer, Limb, Uint, Zero};
 use core::{
     fmt,
     num::{NonZeroU128, NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8},
@@ -12,10 +12,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 use crate::{ArrayEncoding, ByteArray};
 
 #[cfg(feature = "rand_core")]
-use {
-    crate::Random,
-    rand_core::{CryptoRng, RngCore},
-};
+use {crate::Random, rand_core::CryptoRngCore};
 
 #[cfg(feature = "serde")]
 use serdect::serde::{
@@ -65,7 +62,6 @@ where
 }
 
 #[cfg(feature = "generic-array")]
-#[cfg_attr(docsrs, doc(cfg(feature = "generic-array")))]
 impl<T> NonZero<T>
 where
     T: ArrayEncoding + Zero,
@@ -120,16 +116,15 @@ where
 }
 
 #[cfg(feature = "rand_core")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 impl<T> Random for NonZero<T>
 where
     T: Random + Zero,
 {
     /// Generate a random `NonZero<T>`.
-    fn random(mut rng: impl CryptoRng + RngCore) -> Self {
+    fn random(mut rng: &mut impl CryptoRngCore) -> Self {
         // Use rejection sampling to eliminate zero values.
         // While this method isn't constant-time, the attacker shouldn't learn
-        // anything about unrelated outputs so long as `rng` is a secure `CryptoRng`.
+        // anything about unrelated outputs so long as `rng` is a CSRNG.
         loop {
             if let Some(result) = Self::new(T::random(&mut rng)).into() {
                 break result;
@@ -205,7 +200,6 @@ impl NonZero<Limb> {
     /// Create a [`NonZero<Limb>`] from a [`NonZeroU64`] (const-friendly)
     // TODO(tarcieri): replace with `const impl From<NonZeroU64>` when stable
     #[cfg(target_pointer_width = "64")]
-    #[cfg_attr(docsrs, doc(cfg(target_pointer_width = "64")))]
     pub const fn from_u64(n: NonZeroU64) -> Self {
         Self(Limb::from_u64(n.get()))
     }
@@ -230,20 +224,19 @@ impl From<NonZeroU32> for NonZero<Limb> {
 }
 
 #[cfg(target_pointer_width = "64")]
-#[cfg_attr(docsrs, doc(cfg(target_pointer_width = "64")))]
 impl From<NonZeroU64> for NonZero<Limb> {
     fn from(integer: NonZeroU64) -> Self {
         Self::from_u64(integer)
     }
 }
 
-impl<const LIMBS: usize> NonZero<UInt<LIMBS>> {
-    /// Create a [`NonZero<UInt>`] from a [`UInt`] (const-friendly)
-    pub const fn from_uint(n: UInt<LIMBS>) -> Self {
+impl<const LIMBS: usize> NonZero<Uint<LIMBS>> {
+    /// Create a [`NonZero<Uint>`] from a [`Uint`] (const-friendly)
+    pub const fn from_uint(n: Uint<LIMBS>) -> Self {
         let mut i = 0;
         let mut found_non_zero = false;
         while i < LIMBS {
-            if n.limbs()[i].0 != 0 {
+            if n.as_limbs()[i].0 != 0 {
                 found_non_zero = true;
             }
             i += 1;
@@ -252,69 +245,68 @@ impl<const LIMBS: usize> NonZero<UInt<LIMBS>> {
         Self(n)
     }
 
-    /// Create a [`NonZero<UInt>`] from a [`NonZeroU8`] (const-friendly)
+    /// Create a [`NonZero<Uint>`] from a [`NonZeroU8`] (const-friendly)
     // TODO(tarcieri): replace with `const impl From<NonZeroU8>` when stable
     pub const fn from_u8(n: NonZeroU8) -> Self {
-        Self(UInt::from_u8(n.get()))
+        Self(Uint::from_u8(n.get()))
     }
 
-    /// Create a [`NonZero<UInt>`] from a [`NonZeroU16`] (const-friendly)
+    /// Create a [`NonZero<Uint>`] from a [`NonZeroU16`] (const-friendly)
     // TODO(tarcieri): replace with `const impl From<NonZeroU16>` when stable
     pub const fn from_u16(n: NonZeroU16) -> Self {
-        Self(UInt::from_u16(n.get()))
+        Self(Uint::from_u16(n.get()))
     }
 
-    /// Create a [`NonZero<UInt>`] from a [`NonZeroU32`] (const-friendly)
+    /// Create a [`NonZero<Uint>`] from a [`NonZeroU32`] (const-friendly)
     // TODO(tarcieri): replace with `const impl From<NonZeroU32>` when stable
     pub const fn from_u32(n: NonZeroU32) -> Self {
-        Self(UInt::from_u32(n.get()))
+        Self(Uint::from_u32(n.get()))
     }
 
-    /// Create a [`NonZero<UInt>`] from a [`NonZeroU64`] (const-friendly)
+    /// Create a [`NonZero<Uint>`] from a [`NonZeroU64`] (const-friendly)
     // TODO(tarcieri): replace with `const impl From<NonZeroU64>` when stable
     pub const fn from_u64(n: NonZeroU64) -> Self {
-        Self(UInt::from_u64(n.get()))
+        Self(Uint::from_u64(n.get()))
     }
 
-    /// Create a [`NonZero<UInt>`] from a [`NonZeroU128`] (const-friendly)
+    /// Create a [`NonZero<Uint>`] from a [`NonZeroU128`] (const-friendly)
     // TODO(tarcieri): replace with `const impl From<NonZeroU128>` when stable
     pub const fn from_u128(n: NonZeroU128) -> Self {
-        Self(UInt::from_u128(n.get()))
+        Self(Uint::from_u128(n.get()))
     }
 }
 
-impl<const LIMBS: usize> From<NonZeroU8> for NonZero<UInt<LIMBS>> {
+impl<const LIMBS: usize> From<NonZeroU8> for NonZero<Uint<LIMBS>> {
     fn from(integer: NonZeroU8) -> Self {
         Self::from_u8(integer)
     }
 }
 
-impl<const LIMBS: usize> From<NonZeroU16> for NonZero<UInt<LIMBS>> {
+impl<const LIMBS: usize> From<NonZeroU16> for NonZero<Uint<LIMBS>> {
     fn from(integer: NonZeroU16) -> Self {
         Self::from_u16(integer)
     }
 }
 
-impl<const LIMBS: usize> From<NonZeroU32> for NonZero<UInt<LIMBS>> {
+impl<const LIMBS: usize> From<NonZeroU32> for NonZero<Uint<LIMBS>> {
     fn from(integer: NonZeroU32) -> Self {
         Self::from_u32(integer)
     }
 }
 
-impl<const LIMBS: usize> From<NonZeroU64> for NonZero<UInt<LIMBS>> {
+impl<const LIMBS: usize> From<NonZeroU64> for NonZero<Uint<LIMBS>> {
     fn from(integer: NonZeroU64) -> Self {
         Self::from_u64(integer)
     }
 }
 
-impl<const LIMBS: usize> From<NonZeroU128> for NonZero<UInt<LIMBS>> {
+impl<const LIMBS: usize> From<NonZeroU128> for NonZero<Uint<LIMBS>> {
     fn from(integer: NonZeroU128) -> Self {
         Self::from_u128(integer)
     }
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de, T: Deserialize<'de> + Zero> Deserialize<'de> for NonZero<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -334,8 +326,7 @@ impl<'de, T: Deserialize<'de> + Zero> Deserialize<'de> for NonZero<T> {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
-impl<'de, T: Serialize + Zero> Serialize for NonZero<T> {
+impl<T: Serialize + Zero> Serialize for NonZero<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
