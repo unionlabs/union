@@ -432,45 +432,6 @@ fn do_verify_membership(
     }
 }
 
-fn verify_existence_proof(
-    existence_proof: ExistenceProof,
-    spec: ProofSpec,
-    root: &[u8],
-    key: &[u8],
-    value: &[u8],
-) -> Result<(), VerifyMembershipError> {
-    existence_proof
-        .check_against_spec(&spec, &iavl_spec())
-        .map_err(VerifyMembershipError::SpecMismatch)?;
-
-    if key != existence_proof.key {
-        return Err(VerifyMembershipError::KeyAndExistenceProofKeyMismatch {
-            key: key.into(),
-            existence_proof_key: existence_proof.key,
-        });
-    }
-
-    if value != existence_proof.value {
-        return Err(VerifyMembershipError::ValueAndExistenceProofValueMismatch {
-            value: value.into(),
-            existence_proof_value: existence_proof.value,
-        });
-    }
-
-    let calc = existence_proof
-        .calculate_root(Some(spec))
-        .map_err(VerifyMembershipError::RootCalculation)?;
-
-    if root != calc {
-        return Err(VerifyMembershipError::CalculatedAndGivenRootMismatch {
-            calculated_root: calc,
-            given_root: root.into(),
-        });
-    }
-
-    Ok(())
-}
-
 fn get_exist_proof_for_key(proof: CommitmentProof, key: &[u8]) -> Option<ExistenceProof> {
     match proof {
         CommitmentProof::Exist(exist) => {
@@ -495,49 +456,5 @@ fn get_exist_proof_for_key(proof: CommitmentProof, key: &[u8]) -> Option<Existen
             None
         }
         _ => None,
-    }
-}
-
-fn iavl_spec() -> ProofSpec {
-    ProofSpec {
-        leaf_spec: LeafOp {
-            hash: HashOp::Sha256,
-            prehash_key: HashOp::NoHash,
-            prehash_value: HashOp::Sha256,
-            length: LengthOp::VarProto,
-            prefix: vec![0],
-        },
-        inner_spec: InnerSpec {
-            child_order: vec![0, 1],
-            child_size: 33,
-            min_prefix_length: 4,
-            max_prefix_length: 12,
-            empty_child: vec![],
-            hash: HashOp::Sha256,
-        },
-        max_depth: 0,
-        min_depth: 0,
-    }
-}
-
-fn tendermint_proof_spec() -> ProofSpec {
-    ProofSpec {
-        leaf_spec: LeafOp {
-            hash: HashOp::Sha256,
-            prehash_key: HashOp::NoHash,
-            prehash_value: HashOp::Sha256,
-            length: LengthOp::VarProto,
-            prefix: [0].into(),
-        },
-        inner_spec: InnerSpec {
-            child_order: [0, 1].into(),
-            child_size: 32,
-            min_prefix_length: 1,
-            max_prefix_length: 1,
-            empty_child: [].into(),
-            hash: HashOp::Sha256,
-        },
-        max_depth: 0,
-        min_depth: 0,
     }
 }
