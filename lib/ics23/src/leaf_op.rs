@@ -59,8 +59,8 @@ pub fn check_against_spec(
 
     if !leaf_op.prefix.starts_with(&lspec.prefix) {
         return Err(SpecMismatchError::PrefixMismatch {
-            full: leaf_op.prefix.clone(),
-            prefix: lspec.prefix.clone(),
+            full: leaf_op.prefix.clone().into_owned(),
+            prefix: lspec.prefix.clone().into_owned(),
         });
     }
 
@@ -81,7 +81,7 @@ pub fn apply(leaf_op: &LeafOp, key: &[u8], value: &[u8]) -> Result<Vec<u8>, Appl
 
     let pvalue = prepare_data(leaf_op, leaf_op.prehash_value, value)?;
 
-    let mut data = leaf_op.prefix.clone();
+    let mut data = leaf_op.prefix.clone().into_owned();
     data.extend_from_slice(&pkey);
     data.extend_from_slice(&pvalue);
 

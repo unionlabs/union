@@ -1,6 +1,6 @@
 use unionlabs::cosmos::ics23::{existence_proof::ExistenceProof, proof_spec::ProofSpec};
 
-use crate::{iavl_spec, inner_op, leaf_op};
+use crate::{inner_op, leaf_op, proof_specs::IAVL_PROOF_SPEC};
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum SpecMismatchError {
@@ -87,7 +87,7 @@ pub fn calculate_root(existence_proof: &ExistenceProof) -> Result<Vec<u8>, Calcu
 
 fn calculate(
     existence_proof: &ExistenceProof,
-    spec: Option<ProofSpec>,
+    spec: Option<&ProofSpec>,
 ) -> Result<Vec<u8>, CalculateRootError> {
     let mut res = leaf_op::apply(
         &existence_proof.leaf,
@@ -99,7 +99,7 @@ fn calculate(
     for step in &existence_proof.path {
         res = inner_op::apply(step, res).map_err(CalculateRootError::InnerOpHash)?;
 
-        if let Some(ref proof_spec) = spec {
+        if let Some(proof_spec) = spec {
             if res.len() > proof_spec.inner_spec.child_size as usize
                 && proof_spec.inner_spec.child_size >= 32
             {
@@ -115,12 +115,13 @@ fn calculate(
 /// and matches the spec.
 pub fn verify(
     existence_proof: &ExistenceProof,
-    spec: ProofSpec,
+    spec: &ProofSpec,
     root: &[u8],
     key: &[u8],
     value: &[u8],
 ) -> Result<(), VerifyError> {
-    check_against_spec(existence_proof, &spec, &iavl_spec()).map_err(VerifyError::SpecMismatch)?;
+    check_against_spec(existence_proof, spec, &IAVL_PROOF_SPEC)
+        .map_err(VerifyError::SpecMismatch)?;
 
     if key != existence_proof.key {
         return Err(VerifyError::KeyAndExistenceProofKeyMismatch {

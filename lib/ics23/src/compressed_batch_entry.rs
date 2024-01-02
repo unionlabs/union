@@ -6,7 +6,7 @@ use crate::{compressed_existence_proof, compressed_nonexistence_proof};
 
 pub fn decompress(
     compressed_batch_entry: CompressedBatchEntry,
-    lookup: Vec<InnerOp>,
+    lookup: &Vec<InnerOp>,
 ) -> BatchEntry {
     match compressed_batch_entry {
         CompressedBatchEntry::Exist(exist) => {

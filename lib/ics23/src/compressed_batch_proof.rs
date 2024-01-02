@@ -11,7 +11,7 @@ pub fn decompress(compressed_batch_proof: CompressedBatchProof) -> BatchProof {
         entries: compressed_batch_proof
             .entries
             .into_iter()
-            .map(|entry| compressed_batch_entry::decompress(entry, lookup.clone()))
+            .map(|entry| compressed_batch_entry::decompress(entry, &lookup))
             .collect(),
     }
 }

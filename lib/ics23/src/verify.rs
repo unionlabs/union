@@ -14,7 +14,7 @@ pub enum VerifyMembershipError {
 }
 
 pub fn verify_membership(
-    spec: ProofSpec,
+    spec: &ProofSpec,
     root: &[u8],
     proof: CommitmentProof,
     key: &[u8],

@@ -39,7 +39,7 @@ pub fn check_against_spec(
     if inner_op.prefix.starts_with(&spec.leaf_spec.prefix) {
         return Err(SpecMismatchError::PrefixMismatch {
             full: inner_op.prefix.clone(),
-            prefix: spec.leaf_spec.prefix.clone(),
+            prefix: spec.leaf_spec.prefix.clone().into_owned(),
         });
     }
 

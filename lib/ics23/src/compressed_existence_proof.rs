@@ -8,7 +8,7 @@ use unionlabs::cosmos::ics23::{
 // Is this a correct assumption?
 pub fn decompress(
     compressed_existence_proof: CompressedExistenceProof,
-    lookup: Vec<InnerOp>,
+    lookup: &Vec<InnerOp>,
 ) -> ExistenceProof {
     ExistenceProof {
         key: compressed_existence_proof.key,

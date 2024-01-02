@@ -7,17 +7,11 @@ use super::compressed_existence_proof;
 
 pub fn decompress(
     compressed_nonexistence_proof: CompressedNonExistenceProof,
-    lookup: Vec<InnerOp>,
+    lookup: &Vec<InnerOp>,
 ) -> NonExistenceProof {
     NonExistenceProof {
         key: compressed_nonexistence_proof.key,
-        left: compressed_existence_proof::decompress(
-            compressed_nonexistence_proof.left,
-            lookup.clone(),
-        ),
-        right: compressed_existence_proof::decompress(
-            compressed_nonexistence_proof.right,
-            lookup.clone(),
-        ),
+        left: compressed_existence_proof::decompress(compressed_nonexistence_proof.left, lookup),
+        right: compressed_existence_proof::decompress(compressed_nonexistence_proof.right, lookup),
     }
 }
