@@ -16,7 +16,7 @@ use unionlabs::{
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
-        core::client::height::Height,
+        core::{client::height::Height, commitment::merkle_path::MerklePath},
         lightclients::{
             cometbls,
             ethereum::{
@@ -66,7 +66,7 @@ impl IbcClient for EthereumLightClient {
         _delay_time_period: u64,
         _delay_block_period: u64,
         proof: Binary,
-        mut path: ics008_wasm_client::MerklePath,
+        mut path: MerklePath,
         value: ics008_wasm_client::StorageState,
     ) -> Result<(), Self::Error> {
         let consensus_state: WasmConsensusState =

@@ -4,16 +4,15 @@ use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, StdError};
 use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
     ibc::{
-        core::client::height::Height,
+        core::{client::height::Height, commitment::merkle_path::MerklePath},
         lightclients::wasm::{client_state::ClientState, consensus_state::ConsensusState},
     },
     Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf,
 };
 
 use crate::{
-    msg::{MerklePath, QueryMsg},
-    CheckForMisbehaviourResult, EmptyResult, Error, ExportMetadataResult, Status, StatusResult,
-    SudoMsg, TimestampAtHeightResult, UpdateStateResult,
+    msg::QueryMsg, CheckForMisbehaviourResult, EmptyResult, Error, ExportMetadataResult, Status,
+    StatusResult, SudoMsg, TimestampAtHeightResult, UpdateStateResult,
 };
 
 pub enum StorageState {

@@ -8,7 +8,7 @@ use protos::ibc::{
     },
 };
 use serde::{Deserialize, Serialize};
-use unionlabs::ibc::core::client::height::Height;
+use unionlabs::ibc::core::{client::height::Height, commitment::merkle_path::MerklePath};
 
 // TODO(aeryz): Handle all these properly
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,11 +21,6 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientMessage {
     pub data: Binary,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct MerklePath {
-    pub key_path: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

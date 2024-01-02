@@ -3,7 +3,7 @@ use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
     },
-    IbcClient, MerklePath, Status, StorageState,
+    IbcClient, Status, StorageState,
 };
 use ics23::{iavl_spec, tendermint_proof_spec};
 use prost::Message;
@@ -13,7 +13,9 @@ use unionlabs::{
     ibc::{
         core::{
             client::height::Height,
-            commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
+            commitment::{
+                merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
+            },
         },
         lightclients::cometbls::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
@@ -335,82 +337,4 @@ fn canonical_vote(
         }),
         chain_id,
     }
-}
-
-#[derive(Debug, PartialEq, thiserror::Error)]
-pub enum VerifyMembershipError {
-    #[error("root calculation ({0})")]
-    RootCalculation(ics23::existence_proof::CalculateRootError),
-    #[error("{0}")]
-    Ics23(ics23::VerifyMembershipError),
-    #[error("invalid root top level")] // TODO(aeryz): beautify
-    InvalidRoot,
-}
-
-fn verify_membership(
-    proof: MerkleProof,
-    consensus_root: &MerkleRoot,
-    path: MerklePath,
-    value: &[u8],
-) -> Result<(), VerifyMembershipError> {
-    // TODO(aeryz): check if this supposed to be embedded or configurable
-    if proof.proofs.len() != 2 {
-        panic!("Proof length needs to match the spec");
-    }
-
-    // TODO(aeryz): Make this spec a global constant if it's going to be embedded
-    if path.key_path.len() != 2 {
-        panic!("Path length needs to match the spec");
-    }
-
-    verify_chained_membership_proof(consensus_root.hash.as_ref(), &proof.proofs, path, value, 0)
-}
-
-fn verify_chained_membership_proof(
-    root: &[u8],
-    proofs: &[CommitmentProof],
-    keys: MerklePath,
-    value: &[u8],
-    mut index: usize,
-) -> Result<(), VerifyMembershipError> {
-    let specs = [iavl_spec(), tendermint_proof_spec()];
-
-    let mut tmp_value = value.to_vec();
-
-    while index < proofs.len() {
-        match &proofs[index] {
-            CommitmentProof::Exist(proof) => {
-                let subroot = ics23::existence_proof::calculate_root(proof)
-                    .map_err(VerifyMembershipError::RootCalculation)?;
-                if let Some(key) = keys.key_path.get(keys.key_path.len() - 1 - index) {
-                    ics23::verify_membership(
-                        specs[index].clone(), // TODO(aeryz): I'm about to throw up
-                        &subroot,
-                        CommitmentProof::Exist(proof.clone()), // TODO(aeryz): disgusting
-                        key.as_bytes(), // TODO(aeryz): weird? is this really like this?
-                        &tmp_value,
-                    )
-                    .map_err(VerifyMembershipError::Ics23)?;
-                } else {
-                    panic!("could not retrieve key bytes for key");
-                };
-
-                tmp_value = subroot;
-            }
-            CommitmentProof::Nonexist(_) => {
-                panic!("chained membership proof contains nonexistence proof at index %d");
-            }
-            _ => {
-                panic!("invalid proof type");
-            }
-        }
-
-        index += 1;
-    }
-
-    if tmp_value.as_slice() != root {
-        return Err(VerifyMembershipError::InvalidRoot);
-    }
-
-    Ok(())
 }
