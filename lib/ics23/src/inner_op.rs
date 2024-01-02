@@ -52,9 +52,10 @@ pub fn check_against_spec(
     }
 
     // TODO(aeryz): check if max_prefix_length > 0
-    let max_prefix_length = (spec.inner_spec.min_prefix_length as usize
+    let max_prefix_length = (spec.inner_spec.max_prefix_length as usize
         + (spec.inner_spec.child_order.len() - 1) * spec.inner_spec.child_size as usize)
         as usize;
+
     if inner_op.prefix.len() > max_prefix_length {
         return Err(SpecMismatchError::InnerOpPrefixTooLong {
             prefix_len: inner_op.prefix.len(),
@@ -71,13 +72,13 @@ pub fn check_against_spec(
     Ok(())
 }
 
-pub fn apply(inner_op: &InnerOp, child: &[u8]) -> Result<Vec<u8>, ApplyError> {
+pub fn apply(inner_op: &InnerOp, child: Vec<u8>) -> Result<Vec<u8>, ApplyError> {
     if child.is_empty() {
         return Err(ApplyError::InnerOpNeedsChildValue);
     }
 
     let mut preimage = inner_op.prefix.clone();
-    preimage.extend_from_slice(child);
+    preimage.extend_from_slice(&child);
     preimage.extend_from_slice(&inner_op.suffix);
 
     Ok(hash_op::do_hash(inner_op.hash, &preimage))

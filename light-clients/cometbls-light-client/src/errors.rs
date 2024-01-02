@@ -105,6 +105,9 @@ pub enum Error {
 
     #[error("Wasm client error: {0}")]
     Wasm(String),
+
+    #[error("verify membership error: {0}")]
+    VerifyMembership(crate::client::VerifyMembershipError),
 }
 
 impl Error {

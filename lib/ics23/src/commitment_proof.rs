@@ -1,6 +1,6 @@
 use unionlabs::cosmos::ics23::commitment_proof::CommitmentProof;
 
-use super::compressed_batch_proof;
+use crate::compressed_batch_proof;
 
 pub fn decompress(commitment_proof: CommitmentProof) -> CommitmentProof {
     match commitment_proof {

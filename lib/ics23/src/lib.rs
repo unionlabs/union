@@ -15,6 +15,9 @@ pub mod hash_op;
 pub mod inner_op;
 pub mod leaf_op;
 pub mod length_op;
+mod verify;
+
+pub use verify::*;
 
 pub fn iavl_spec() -> ProofSpec {
     ProofSpec {

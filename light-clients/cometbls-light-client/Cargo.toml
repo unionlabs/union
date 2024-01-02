@@ -26,6 +26,7 @@ cometbls-groth16-verifier = { workspace = true, default-features = false }
 
 ics008-wasm-client.workspace = true
 unionlabs = { workspace = true, default-features = false }
+ics23.workspace = true
 
 [dev-dependencies]
 base64 = "0.21"

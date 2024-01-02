@@ -32,7 +32,7 @@ pub fn apply(length_op: &LengthOp, data: &[u8]) -> Result<Vec<u8>, ApplyError> {
             Ok(data.into())
         }
         LengthOp::Fixed32Little => {
-            let mut d = data.len().to_le_bytes().to_vec();
+            let mut d = (data.len() as u32).to_le_bytes().to_vec();
             d.extend_from_slice(data);
             Ok(d)
         }

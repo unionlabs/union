@@ -5,21 +5,11 @@ use ics008_wasm_client::{
     },
     IbcClient, MerklePath, Status, StorageState,
 };
+use ics23::{iavl_spec, tendermint_proof_spec};
 use prost::Message;
 use protos::ibc::core::client::v1::GenesisMetadata;
-use sha2::Digest;
 use unionlabs::{
-    cosmos::ics23::{
-        batch_proof::BatchProof,
-        commitment_proof::CommitmentProof,
-        existence_proof::{ExistenceProof, SpecMismatchError},
-        hash_op::HashOp,
-        inner_op::InnerOp,
-        inner_spec::InnerSpec,
-        leaf_op::LeafOp,
-        length_op::LengthOp,
-        proof_spec::ProofSpec,
-    },
+    cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::{
         core::{
             client::height::Height,
@@ -30,6 +20,7 @@ use unionlabs::{
         },
     },
     tendermint::types::commit::Commit,
+    TryFromProto,
 };
 
 use crate::{errors::Error, zkp_verifier::verify_zkp_v2};
@@ -55,15 +46,30 @@ impl IbcClient for CometblsLightClient {
     type ConsensusState = ConsensusState;
 
     fn verify_membership(
-        _deps: Deps<Self::CustomQuery>,
-        _height: Height,
+        deps: Deps<Self::CustomQuery>,
+        height: Height,
         _delay_time_period: u64,
         _delay_block_period: u64,
-        _proof: Binary,
-        _path: MerklePath,
-        _value: StorageState,
+        proof: Binary,
+        path: MerklePath,
+        value: StorageState,
     ) -> Result<(), Self::Error> {
-        Ok(())
+        let consensus_state: WasmConsensusState =
+            read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
+
+        let merkle_proof = MerkleProof::try_from_proto_bytes(proof.as_ref()).map_err(|e| {
+            Error::DecodeFromProto {
+                reason: format!("{:?}", e),
+            }
+        })?;
+
+        match value {
+            StorageState::Occupied(value) => {
+                verify_membership(merkle_proof, &consensus_state.data.root, path, &value)
+                    .map_err(Error::VerifyMembership)
+            }
+            StorageState::Empty => Ok(()),
+        }
     }
 
     fn verify_header(
@@ -331,23 +337,14 @@ fn canonical_vote(
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum VerifyMembershipError {
-    SpecMismatch(SpecMismatchError),
-    KeyAndExistenceProofKeyMismatch {
-        key: Vec<u8>,
-        existence_proof_key: Vec<u8>,
-    },
-    ValueAndExistenceProofValueMismatch {
-        value: Vec<u8>,
-        existence_proof_value: Vec<u8>,
-    },
-    RootCalculation(unionlabs::cosmos::ics23::existence_proof::CalculateRootError),
-    CalculatedAndGivenRootMismatch {
-        calculated_root: Vec<u8>,
-        given_root: Vec<u8>,
-    },
-    ProofDoesNotExist,
+    #[error("root calculation ({0})")]
+    RootCalculation(ics23::existence_proof::CalculateRootError),
+    #[error("{0}")]
+    Ics23(ics23::VerifyMembershipError),
+    #[error("invalid root top level")] // TODO(aeryz): beautify
+    InvalidRoot,
 }
 
 fn verify_membership(
@@ -378,24 +375,22 @@ fn verify_chained_membership_proof(
 ) -> Result<(), VerifyMembershipError> {
     let specs = [iavl_spec(), tendermint_proof_spec()];
 
-    // FIXME(aeryz): ugly change
     let mut tmp_value = value.to_vec();
 
     while index < proofs.len() {
         match &proofs[index] {
             CommitmentProof::Exist(proof) => {
-                let subroot = proof
-                    .calculate_root(None)
+                let subroot = ics23::existence_proof::calculate_root(proof)
                     .map_err(VerifyMembershipError::RootCalculation)?;
-
                 if let Some(key) = keys.key_path.get(keys.key_path.len() - 1 - index) {
-                    do_verify_membership(
+                    ics23::verify_membership(
                         specs[index].clone(), // TODO(aeryz): I'm about to throw up
                         &subroot,
                         CommitmentProof::Exist(proof.clone()), // TODO(aeryz): disgusting
                         key.as_bytes(), // TODO(aeryz): weird? is this really like this?
                         &tmp_value,
-                    )?;
+                    )
+                    .map_err(VerifyMembershipError::Ics23)?;
                 } else {
                     panic!("could not retrieve key bytes for key");
                 };
@@ -413,48 +408,9 @@ fn verify_chained_membership_proof(
         index += 1;
     }
 
+    if tmp_value.as_slice() != root {
+        return Err(VerifyMembershipError::InvalidRoot);
+    }
+
     Ok(())
-}
-
-fn do_verify_membership(
-    spec: ProofSpec,
-    root: &[u8],
-    proof: CommitmentProof,
-    key: &[u8],
-    value: &[u8],
-) -> Result<(), VerifyMembershipError> {
-    let proof = proof.decompress();
-
-    if let Some(ep) = get_exist_proof_for_key(proof, key) {
-        verify_existence_proof(ep, spec, root, key, value)
-    } else {
-        Err(VerifyMembershipError::ProofDoesNotExist)
-    }
-}
-
-fn get_exist_proof_for_key(proof: CommitmentProof, key: &[u8]) -> Option<ExistenceProof> {
-    match proof {
-        CommitmentProof::Exist(exist) => {
-            if exist.key.as_slice() == key {
-                return Some(exist);
-            }
-
-            None
-        }
-        CommitmentProof::Batch(batch) => {
-            for sub in batch.entries {
-                match sub {
-                    unionlabs::cosmos::ics23::batch_entry::BatchEntry::Exist(exist) => {
-                        if exist.key.as_slice() == key {
-                            return Some(exist);
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            None
-        }
-        _ => None,
-    }
 }

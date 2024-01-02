@@ -984,6 +984,7 @@ dependencies = [
  "cosmwasm-std",
  "hex",
  "ics008-wasm-client",
+ "ics23",
  "prost 0.11.9",
  "protos",
  "ripemd",

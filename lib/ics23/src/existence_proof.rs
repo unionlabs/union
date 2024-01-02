@@ -89,7 +89,7 @@ fn calculate(
     existence_proof: &ExistenceProof,
     spec: Option<ProofSpec>,
 ) -> Result<Vec<u8>, CalculateRootError> {
-    let res = leaf_op::apply(
+    let mut res = leaf_op::apply(
         &existence_proof.leaf,
         &existence_proof.key,
         &existence_proof.value,
@@ -97,7 +97,7 @@ fn calculate(
     .map_err(CalculateRootError::LeafOpHash)?;
 
     for step in &existence_proof.path {
-        let res = inner_op::apply(step, &res).map_err(CalculateRootError::InnerOpHash)?;
+        res = inner_op::apply(step, res).map_err(CalculateRootError::InnerOpHash)?;
 
         if let Some(ref proof_spec) = spec {
             if res.len() > proof_spec.inner_spec.child_size as usize
