@@ -125,25 +125,19 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
                         .await?;
                         tx.commit().await?;
                     }
-                    ProcessFlow::Success(new_msgs) => {
-                        if !new_msgs.is_empty() {
-                            let new_ids = query!(
+                    ProcessFlow::Success(maybe_new_msg) => {
+                        if let Some(new_msg) = maybe_new_msg {
+                            let new_row = query!(
                                 "INSERT INTO queue (item)
-                                SELECT * FROM UNNEST($1::JSONB[])
+                                VALUES ($1::JSONB)
                                 RETURNING id",
-                                &*new_msgs
-                                    .into_iter()
-                                    .map(|t| serde_json::to_value(t).expect(
-                                        "queue message should have infallible serialization"
-                                    ))
-                                    .collect::<Vec<_>>(),
+                                serde_json::to_value(new_msg)
+                                    .expect("queue message should have infallible serialization")
                             )
-                            .fetch_all(tx.as_mut())
+                            .fetch_one(tx.as_mut())
                             .await?;
 
-                            for row in new_ids {
-                                tracing::debug!(id = row.id, "inserted new messages");
-                            }
+                            tracing::debug!(id = new_row.id, "inserted new message");
                         }
 
                         tx.commit().await?;
@@ -164,7 +158,7 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
 }
 
 pub enum ProcessFlow<T> {
-    Success(Vec<T>),
+    Success(Option<T>),
     Requeue,
     Fail(String),
 }

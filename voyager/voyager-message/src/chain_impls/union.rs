@@ -11,9 +11,7 @@ use chain_utils::{
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use num_bigint::BigUint;
-use prost::Message;
 use protos::{
-    cosmos::base::tendermint::v1beta1::AbciQueryRequest,
     ibc::core::connection::v1::MsgConnectionOpenInit,
     union::galois::api::v1::union_prover_api_client,
 };
@@ -37,7 +35,7 @@ use unionlabs::{
         },
         lightclients::cometbls,
     },
-    proof::{ClientStatePath, Path},
+    proof::ClientStatePath,
     tendermint::{
         crypto::public_key::PublicKey,
         types::{
@@ -55,24 +53,25 @@ use unionlabs::{
         prove_response,
         validator_set_commit::ValidatorSetCommit,
     },
-    IntoProto, Proto, TryFromProto, TypeUrl,
+    IntoProto, Proto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
 };
 
 use crate::{
-    aggregate,
     aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
-    data,
-    data::{AnyData, Data, IbcProof, IbcState, LightClientSpecificData},
-    defer_relative, fetch,
+    chain_impls::cosmos_sdk::{
+        fetch::{AbciQueryType, FetchAbciQuery},
+        fetch_abci_query,
+    },
+    ctors::{aggregate, data, defer_relative, fetch, msg, wait},
+    data::{AnyData, Data, IbcState, LightClientSpecificData},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
-    identified, msg,
+    identified,
     msg::{
         AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
         MsgUpdateClientData,
     },
     seq,
     use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
-    wait,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
     DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, Wasm, WasmConfig, Wraps,
@@ -259,7 +258,8 @@ where
     }
 }
 
-impl<Tr: ChainExt, Hc: Wraps<Self, StateProof = MerkleProof, Fetch<Tr> = UnionFetch<Hc, Tr>>> DoFetchState<Hc, Tr> for Union
+impl<Tr: ChainExt, Hc: Wraps<Self, StateProof = MerkleProof, Fetch<Tr> = UnionFetch<Hc, Tr>>>
+    DoFetchState<Hc, Tr> for Union
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -270,31 +270,29 @@ where
 
     Hc::StoredClientState<Tr>: TryFromProto,
     Hc::StoredConsensusState<Tr>: TryFromProto,
-    <Hc::StoredClientState<Tr> as TryFrom<<Hc::StoredClientState<Tr> as Proto>::Proto>>::Error:
-        Debug,
-    <Hc::StoredConsensusState<Tr> as TryFrom<<Hc::StoredConsensusState<Tr> as Proto>::Proto>>::Error:
-        Debug,
+    TryFromProtoErrorOf<Hc::StoredClientState<Tr>>: Debug,
+    TryFromProtoErrorOf<Hc::StoredConsensusState<Tr>>: Debug,
 
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
 {
     fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> RelayerMsg {
         seq([
-            wait::<Hc, Tr>(
+            wait(Identified::new(
                 hc.chain_id(),
                 WaitForBlock {
                     // height: at.increment(),
                     height: at,
                     __marker: PhantomData,
                 },
-            ),
-            fetch::<Hc, Tr>(
+            )),
+            fetch(Identified::<Hc, Tr, _>::new(
                 hc.chain_id(),
                 LightClientSpecificFetch(UnionFetch::AbciQuery(FetchAbciQuery {
                     path,
                     height: at,
                     ty: AbciQueryType::State,
                 })),
-            ),
+            )),
         ])
     }
 
@@ -328,22 +326,23 @@ where
 {
     fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> RelayerMsg {
         seq([
-            wait::<Hc, Tr>(
+            wait(Identified::new(
                 hc.chain_id(),
                 WaitForBlock {
                     // height: at.increment(),
                     height: at,
                     __marker: PhantomData,
                 },
-            ),
-            fetch::<Hc, Tr>(
+            )),
+            fetch(Identified::<Hc, Tr, _>::new(
                 hc.chain_id(),
                 LightClientSpecificFetch(UnionFetch::AbciQuery(FetchAbciQuery::<Hc, Tr> {
                     path,
                     height: at,
                     ty: AbciQueryType::Proof,
-                })),
-            ),
+                }))
+                .into(),
+            )),
         ])
     }
 }
@@ -359,46 +358,47 @@ where
 {
     fn fetch_update_headers(hc: &Hc, update_info: FetchUpdateHeaders<Hc, Tr>) -> RelayerMsg {
         seq([
-            wait::<Hc, Tr>(
+            wait(Identified::new(
                 hc.chain_id(),
-                // NOTE: There was previously an increment here, but we were unsure why - if there are issues with the updates, it may need to be added back. Please leave a comment explaining why if so!
                 WaitForBlock {
                     height: update_info.update_to,
                     __marker: PhantomData,
                 },
-            ),
-            RelayerMsg::Aggregate {
-                queue: [
-                    fetch::<Hc, Tr>(
+            )),
+            aggregate(
+                [
+                    fetch(Identified::<Hc, Tr, _>::new(
                         hc.chain_id(),
                         LightClientSpecificFetch(UnionFetch::FetchUntrustedCommit(
                             FetchUntrustedCommit {
                                 height: update_info.update_to.into(),
                             },
-                        )),
-                    ),
-                    fetch::<Hc, Tr>(
+                        ))
+                        .into(),
+                    )),
+                    fetch(Identified::<Hc, Tr, _>::new(
                         hc.chain_id(),
                         LightClientSpecificFetch(UnionFetch::FetchValidators(FetchValidators {
                             height: update_info.update_from.into(),
-                        })),
-                    ),
-                    fetch::<Hc, Tr>(
+                        }))
+                        .into(),
+                    )),
+                    fetch(Identified::<Hc, Tr, _>::new(
                         hc.chain_id(),
                         LightClientSpecificFetch(UnionFetch::FetchValidators(FetchValidators {
                             height: update_info.update_to.into(),
-                        })),
-                    ),
-                ]
-                .into(),
-                data: [].into(),
-                receiver: aggregate::<Hc, Tr>(
+                        }))
+                        .into(),
+                    )),
+                ],
+                [],
+                Identified::new(
                     hc.chain_id(),
                     LightClientSpecificAggregate(UnionAggregateMsg::AggregateProveRequest(
                         AggregateProveRequest { req: update_info },
                     )),
                 ),
-            },
+            ),
         ])
     }
 }
@@ -454,17 +454,17 @@ impl<Hc, Tr> DoFetch<Hc> for UnionFetch<Hc, Tr>
 where
     Hc: Wraps<Union>
         + CosmosSdkChain
-        + ChainExt<StateProof = MerkleProof, Data<Tr> = UnionDataMsg<Tr>, Fetch<Tr> = UnionFetch<Hc, Tr>>,
+        + ChainExt<
+            StateProof = MerkleProof,
+            Data<Tr> = UnionDataMsg<Tr>,
+            Fetch<Tr> = UnionFetch<Hc, Tr>,
+        >,
     Tr: ChainExt,
 
-    // Tr::SelfClientState: Decode<unionlabs::encoding::Proto>,
-    // Tr::SelfConsensusState: Decode<unionlabs::encoding::Proto>,
     Hc::StoredClientState<Tr>: TryFromProto,
     Hc::StoredConsensusState<Tr>: TryFromProto,
-    <Hc::StoredClientState<Tr> as TryFrom<<Hc::StoredClientState<Tr> as Proto>::Proto>>::Error:
-        Debug,
-    <Hc::StoredConsensusState<Tr> as TryFrom<<Hc::StoredConsensusState<Tr> as Proto>::Proto>>::Error:
-        Debug,
+    TryFromProtoErrorOf<Hc::StoredClientState<Tr>>: Debug,
+    TryFromProtoErrorOf<Hc::StoredConsensusState<Tr>>: Debug,
 
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -472,7 +472,7 @@ where
 
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> Vec<RelayerMsg> {
+    async fn do_fetch(hc: &Hc, msg: Self) -> RelayerMsg {
         match msg {
             UnionFetch::FetchUntrustedCommit(FetchUntrustedCommit { height }) => {
                 let commit = hc
@@ -585,7 +585,9 @@ where
                             .signatures
                             .into_iter()
                             .map(|sig| match sig {
-                                tendermint::block::CommitSig::BlockIdFlagAbsent => CommitSig::Absent,
+                                tendermint::block::CommitSig::BlockIdFlagAbsent => {
+                                    CommitSig::Absent
+                                }
                                 tendermint::block::CommitSig::BlockIdFlagCommit {
                                     validator_address,
                                     timestamp,
@@ -640,7 +642,10 @@ where
                     __marker: PhantomData,
                 });
 
-                [data::<Hc, Tr>(hc.chain_id(), LightClientSpecificData(msg))].into()
+                data(Identified::<Hc, Tr, _>::new(
+                    hc.chain_id(),
+                    LightClientSpecificData(msg),
+                ))
             }
             UnionFetch::FetchValidators(FetchValidators { height }) => {
                 let validators = hc
@@ -660,7 +665,10 @@ where
                     __marker: PhantomData,
                 });
 
-                [data::<Hc, Tr>(hc.chain_id(), LightClientSpecificData(msg))].into()
+                data(Identified::<Hc, Tr, _>::new(
+                    hc.chain_id(),
+                    LightClientSpecificData(msg),
+                ))
             }
             UnionFetch::FetchProveRequest(FetchProveRequest { request }) => {
                 let response = union_prover_api_client::UnionProverApiClient::connect(
@@ -677,211 +685,40 @@ where
                 .await
                 .map(|x| x.into_inner().try_into().unwrap());
 
-                let retry = || [seq([
+                let retry = || {
+                    seq([
                         // REVIEW: How long should we wait between polls?
                         defer_relative(3),
-                        fetch::<Hc, Tr>(
+                        fetch(Identified::<Hc, Tr, _>::new(
                             hc.chain_id(),
                             LightClientSpecificFetch(UnionFetch::FetchProveRequest(
                                 FetchProveRequest { request },
                             )),
-                        ),
-                    ])]
-                    .into();
+                        )),
+                    ])
+                };
 
                 match response {
                     Ok(PollResponse::Pending) => retry(),
                     Err(status) if status.message() == "busy_building" => retry(),
-                    Err(err)  => panic!("prove request failed: {:?}", err),
+                    Err(err) => panic!("prove request failed: {:?}", err),
                     Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
                         tracing::error!(%message, "prove request failed");
                         panic!()
                     }
-                    Ok(PollResponse::Done(ProveRequestDone { response })) => [data::<Hc, Tr>(
-                        hc.chain_id(),
-                        LightClientSpecificData(UnionDataMsg::ProveResponse(ProveResponse {
-                            prove_response: response,
-                            __marker: PhantomData,
-                        })),
-                    )]
-                    .into(),
+                    Ok(PollResponse::Done(ProveRequestDone { response })) => {
+                        data(Identified::<Hc, Tr, _>::new(
+                            hc.chain_id(),
+                            LightClientSpecificData(UnionDataMsg::ProveResponse(ProveResponse {
+                                prove_response: response,
+                                __marker: PhantomData,
+                            })),
+                        ))
+                    }
                 }
             }
             UnionFetch::AbciQuery(FetchAbciQuery { path, height, ty }) => {
-                [fetch_abci_query::<Hc, Tr>(hc, path, height, ty).await].into()
-            }
-        }
-    }
-}
-
-async fn fetch_abci_query<Hc, Tr>(
-    c: &Hc,
-    path: Path<Hc::ClientId, Tr::Height>,
-    height: HeightOf<Hc>,
-    ty: AbciQueryType,
-) -> RelayerMsg
-where
-    Hc: CosmosSdkChain + ChainExt<StateProof = MerkleProof>,
-    Tr: ChainExt,
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
-    Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
-
-    Hc::StoredClientState<Tr>: TryFromProto,
-    Hc::StoredConsensusState<Tr>: TryFromProto,
-    <Hc::StoredClientState<Tr> as TryFrom<<Hc::StoredClientState<Tr> as Proto>::Proto>>::Error:
-        Debug,
-    <Hc::StoredConsensusState<Tr> as TryFrom<<Hc::StoredConsensusState<Tr> as Proto>::Proto>>::Error:
-        Debug,
-{
-    let mut client =
-        protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
-            c.grpc_url().clone(),
-        )
-        .await
-        .unwrap();
-
-    // let height = height.increment();
-
-    let query_result = client
-        .abci_query(AbciQueryRequest {
-            data: path.to_string().into_bytes(),
-            path: "store/ibc/key".to_string(),
-            height: i64::try_from(height.revision_height()).unwrap() - 1_i64,
-            prove: matches!(ty, AbciQueryType::Proof),
-        })
-        .await
-        .unwrap()
-        .into_inner();
-
-    dbg!(hex::encode(&query_result.value));
-
-    match ty {
-        AbciQueryType::State => match path {
-            Path::ClientStatePath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState::<Hc, Tr, ClientStatePath<Hc::ClientId>> {
-                    height,
-                    state: Hc::StoredClientState::<Tr>::try_from_proto_bytes(&query_result.value)
-                        .unwrap(),
-                    path,
-                },
-            ),
-            Path::ClientConsensusStatePath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState {
-                    height,
-                    state: Hc::StoredConsensusState::<Tr>::try_from_proto_bytes(
-                        &query_result.value,
-                    )
-                    .unwrap(),
-                    path,
-                },
-            ),
-            Path::ConnectionPath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState {
-                    height,
-                    state: Decode::<unionlabs::encoding::Proto>::decode(&query_result.value)
-                        .unwrap(),
-                    path,
-                },
-            ),
-            Path::ChannelEndPath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState {
-                    height,
-                    state: Decode::<unionlabs::encoding::Proto>::decode(&query_result.value)
-                        .unwrap(),
-                    path,
-                },
-            ),
-            Path::CommitmentPath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState {
-                    height,
-                    state: query_result.value.try_into().unwrap(),
-                    path,
-                },
-            ),
-            Path::AcknowledgementPath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState {
-                    height,
-                    state: query_result.value.try_into().unwrap(),
-                    path,
-                },
-            ),
-        },
-        AbciQueryType::Proof => {
-            let proof = MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
-                proofs: query_result
-                    .proof_ops
-                    .unwrap()
-                    .ops
-                    .into_iter()
-                    .map(|op| {
-                        protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
-                            .unwrap()
-                    })
-                    .collect::<Vec<_>>(),
-            })
-            .unwrap();
-
-            match path {
-                Path::ClientStatePath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-                Path::ClientConsensusStatePath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-                Path::ConnectionPath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-                Path::ChannelEndPath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-                Path::CommitmentPath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-                Path::AcknowledgementPath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
+                fetch_abci_query::<Hc, Tr>(hc, path, height, ty).await
             }
         }
     }
@@ -925,16 +762,15 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> Vec<RelayerMsg> {
-        [match data {
+    ) -> RelayerMsg {
+        match data {
             UnionAggregateMsg::AggregateProveRequest(data) => {
                 do_aggregate(Identified::new(chain_id, data), aggregate_data)
             }
             UnionAggregateMsg::AggregateHeader(data) => {
                 do_aggregate(Identified::new(chain_id, data), aggregate_data)
             }
-        }]
-        .into()
+        }
     }
 }
 
@@ -1006,22 +842,6 @@ pub struct FetchValidators {
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchProveRequest {
     pub request: ProveRequest,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub struct FetchAbciQuery<Hc: ChainExt, Tr: ChainExt> {
-    pub path: PathOf<Hc, Tr>,
-    pub height: HeightOf<Hc>,
-    pub ty: AbciQueryType,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[serde(rename_all = "snake_case")]
-pub enum AbciQueryType {
-    State,
-    Proof,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -1202,46 +1022,48 @@ where
         let trusted_validators_commit = make_validators_commit(trusted_validators);
         let untrusted_validators_commit = make_validators_commit(untrusted_validators);
 
-        RelayerMsg::Aggregate {
-            queue: [fetch(
-                chain_id.clone(),
-                LightClientSpecificFetch(UnionFetch::FetchProveRequest(FetchProveRequest {
-                    request: ProveRequest {
-                        vote: CanonicalVote {
-                            // REVIEW: Should this be hardcoded to precommit?
-                            ty: SignedMsgType::Precommit,
-                            height: signed_header.commit.height,
-                            round: BoundedI64::new(signed_header.commit.round.inner().into())
-                                .expect("0..=i32::MAX can be converted to 0..=i64::MAX safely"),
-                            block_id: CanonicalBlockId {
-                                hash: signed_header.commit.block_id.hash.clone(),
-                                part_set_header: CanonicalPartSetHeader {
-                                    total: signed_header.commit.block_id.part_set_header.total,
-                                    hash: signed_header
-                                        .commit
-                                        .block_id
-                                        .part_set_header
-                                        .hash
-                                        .clone(),
+        aggregate(
+            [{
+                fetch(Identified::<Hc, Tr, _>::new(
+                    chain_id.clone(),
+                    LightClientSpecificFetch(UnionFetch::FetchProveRequest(FetchProveRequest {
+                        request: ProveRequest {
+                            vote: CanonicalVote {
+                                // REVIEW: Should this be hardcoded to precommit?
+                                ty: SignedMsgType::Precommit,
+                                height: signed_header.commit.height,
+                                round: BoundedI64::new(signed_header.commit.round.inner().into())
+                                    .expect("0..=i32::MAX can be converted to 0..=i64::MAX safely"),
+                                block_id: CanonicalBlockId {
+                                    hash: signed_header.commit.block_id.hash.clone(),
+                                    part_set_header: CanonicalPartSetHeader {
+                                        total: signed_header.commit.block_id.part_set_header.total,
+                                        hash: signed_header
+                                            .commit
+                                            .block_id
+                                            .part_set_header
+                                            .hash
+                                            .clone(),
+                                    },
                                 },
+                                chain_id: signed_header.header.chain_id.clone(),
                             },
-                            chain_id: signed_header.header.chain_id.clone(),
+                            trusted_commit: trusted_validators_commit,
+                            untrusted_commit: untrusted_validators_commit,
                         },
-                        trusted_commit: trusted_validators_commit,
-                        untrusted_commit: untrusted_validators_commit,
-                    },
-                })),
-            )]
-            .into(),
-            data: [].into(),
-            receiver: aggregate(
+                    }))
+                    .into(),
+                ))
+            }],
+            [],
+            Identified::new(
                 chain_id,
                 LightClientSpecificAggregate(UnionAggregateMsg::AggregateHeader(AggregateHeader {
                     signed_header,
                     req,
                 })),
             ),
-        }
+        )
     }
 }
 
@@ -1274,7 +1096,7 @@ where
     ) -> RelayerMsg {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
-        msg::<Tr, Hc>(
+        msg(Identified::<Tr, Hc, _>::new(
             req.counterparty_chain_id,
             MsgUpdateClientData(MsgUpdateClient {
                 client_id: req.counterparty_client_id.clone(),
@@ -1284,6 +1106,6 @@ where
                     zero_knowledge_proof: response.proof.evm_proof,
                 },
             }),
-        )
+        ))
     }
 }

@@ -9,18 +9,33 @@ use unionlabs::{
 };
 
 use crate::{
-    any_enum, defer, fetch,
+    any_enum,
+    ctors::{fetch, wait},
+    defer,
     fetch::{AnyFetch, Fetch, FetchState},
-    identified, now, seq, wait, AnyLightClientIdentified, ChainExt, DoFetchState, RelayerMsg,
+    identified, now, seq, AnyLightClientIdentified, ChainExt, DoFetchState, GetChain, HandleWait,
+    Identified, QueueMsg, QueueMsgTypes, RelayerMsg, RelayerMsgTypes,
 };
 
 any_enum! {
-    /// Defines messages that are sent *to* the lightclient `L`.
     #[any = AnyWait]
     pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
         Block(WaitForBlock<Hc, Tr>),
         Timestamp(WaitForTimestamp<Hc, Tr>),
         TrustedHeight(WaitForTrustedHeight<Hc, Tr>),
+    }
+}
+
+impl HandleWait<RelayerMsgTypes> for AnyLightClientIdentified<AnyWait> {
+    async fn handle(
+        self,
+        store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
+    ) -> QueueMsg<RelayerMsgTypes> {
+        let wait = self;
+
+        crate::any_lc! {
+            |wait| wait.t.handle(store.get_chain(&wait.chain_id)).await
+        }
     }
 }
 
@@ -31,7 +46,7 @@ where
     Hc: ChainExt + DoFetchState<Hc, Tr>,
     Tr: ChainExt,
 {
-    pub async fn handle(self, c: Hc) -> Vec<RelayerMsg> {
+    pub async fn handle(self, c: Hc) -> RelayerMsg {
         match self {
             Wait::Block(WaitForBlock { height, __marker }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
@@ -43,14 +58,16 @@ where
                 );
 
                 if chain_height.revision_height() >= height.revision_height() {
-                    [].into()
+                    RelayerMsg::Noop
                 } else {
-                    [seq([
+                    seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
                         defer(now() + 1),
-                        wait::<Hc, Tr>(c.chain_id(), WaitForBlock { height, __marker }),
-                    ])]
-                    .into()
+                        wait(Identified::<Hc, Tr, _>::new(
+                            c.chain_id(),
+                            WaitForBlock { height, __marker }.into(),
+                        )),
+                    ])
                 }
             }
             Wait::Timestamp(WaitForTimestamp {
@@ -60,20 +77,20 @@ where
                 let chain_ts = c.query_latest_timestamp().await.unwrap();
 
                 if chain_ts >= timestamp {
-                    [].into()
+                    RelayerMsg::Noop
                 } else {
-                    [seq([
+                    seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
                         defer(now() + 1),
-                        wait::<Hc, Tr>(
+                        wait(Identified::<Hc, Tr, _>::new(
                             c.chain_id(),
                             WaitForTimestamp {
                                 timestamp,
                                 __marker,
-                            },
-                        ),
-                    ])]
-                    .into()
+                            }
+                            .into(),
+                        )),
+                    ])
                 }
             }
             Wait::TrustedHeight(WaitForTrustedHeight {
@@ -94,7 +111,7 @@ where
                         height
                     );
 
-                    [fetch::<Tr, Hc>(
+                    fetch(Identified::<Tr, Hc, _>::new(
                         counterparty_chain_id,
                         FetchState {
                             at: trusted_client_state.height(),
@@ -103,13 +120,12 @@ where
                             }
                             .into(),
                         },
-                    )]
-                    .into()
+                    ))
                 } else {
-                    [seq([
+                    seq([
                         // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would require a new method on chain
                         defer(now() + 1),
-                        wait::<Hc, Tr>(
+                        wait(Identified::new(
                             c.chain_id(),
                             Wait::TrustedHeight(WaitForTrustedHeight {
                                 client_id,
@@ -117,9 +133,8 @@ where
                                 counterparty_client_id,
                                 counterparty_chain_id,
                             }),
-                        ),
-                    ])]
-                    .into()
+                        )),
+                    ])
                 }
             }
         }

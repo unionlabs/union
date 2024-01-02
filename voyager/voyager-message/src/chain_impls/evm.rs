@@ -45,20 +45,17 @@ use unionlabs::{
 };
 
 use crate::{
-    aggregate,
     aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
-    data,
+    ctors::{aggregate, data, fetch, msg, wait},
     data::{AnyData, Data, IbcProof, IbcState, LightClientSpecificData},
-    fetch,
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
-    identified, msg,
+    identified,
     msg::{
         AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
         MsgUpdateClientData,
     },
     seq,
     use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
-    wait,
     wait::{AnyWait, Wait, WaitForTimestamp},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
     DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg,
@@ -301,13 +298,14 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
 {
     fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> RelayerMsg {
-        fetch::<Self, Tr>(
+        fetch(Identified::<Self, Tr, _>::new(
             c.chain_id(),
             LightClientSpecificFetch::<Self, Tr>(EvmFetchMsg::FetchGetProof(GetProof {
                 path,
                 height: at,
-            })),
-        )
+            }))
+            .into(),
+        ))
     }
 }
 
@@ -322,13 +320,14 @@ where
     <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
     fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> RelayerMsg {
-        fetch::<Self, Tr>(
+        fetch(Identified::<Self, Tr, _>::new(
             hc.chain_id(),
             LightClientSpecificFetch::<Self, Tr>(EvmFetchMsg::FetchIbcState(FetchIbcState {
                 path,
                 height: at,
-            })),
-        )
+            }))
+            .into(),
+        ))
     }
 
     async fn query_client_state(
@@ -348,20 +347,19 @@ where
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
 {
     fn fetch_update_headers(c: &Self, update_info: FetchUpdateHeaders<Self, Tr>) -> RelayerMsg {
-        RelayerMsg::Aggregate {
-            queue: [seq([fetch::<Evm<C>, Tr>(
+        aggregate(
+            [fetch(Identified::<Evm<C>, Tr, _>::new(
                 c.chain_id,
-                LightClientSpecificFetch(EvmFetchMsg::FetchFinalityUpdate(PhantomData)),
-            )])]
-            .into(),
-            data: [].into(),
-            receiver: aggregate::<Evm<C>, Tr>(
+                LightClientSpecificFetch(EvmFetchMsg::FetchFinalityUpdate(PhantomData)).into(),
+            ))],
+            [],
+            Identified::new(
                 c.chain_id,
                 LightClientSpecificAggregate(EvmAggregateMsg::MakeCreateUpdates(
                     MakeCreateUpdatesData { req: update_info },
                 )),
             ),
-        }
+        )
     }
 }
 
@@ -375,7 +373,7 @@ where
     Tr::SelfClientState: unionlabs::EthAbi,
     <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
-    async fn do_fetch(c: &Evm<C>, msg: Self) -> Vec<RelayerMsg> {
+    async fn do_fetch(c: &Evm<C>, msg: Self) -> RelayerMsg {
         let msg: EvmFetchMsg<C, Tr> = msg;
         let msg = match msg {
             EvmFetchMsg::FetchFinalityUpdate(PhantomData {}) => {
@@ -552,8 +550,8 @@ where
                     .to_vec(),
                 };
 
-                return [match get_proof.path {
-                    Path::ClientStatePath(path) => data::<Evm<C>, Tr>(
+                return match get_proof.path {
+                    Path::ClientStatePath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcProof::<Evm<C>, Tr, _> {
                             proof,
@@ -561,8 +559,8 @@ where
                             path,
                             __marker: PhantomData,
                         },
-                    ),
-                    Path::ClientConsensusStatePath(path) => data::<Evm<C>, Tr>(
+                    )),
+                    Path::ClientConsensusStatePath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcProof::<Evm<C>, Tr, _> {
                             proof,
@@ -570,8 +568,8 @@ where
                             path,
                             __marker: PhantomData,
                         },
-                    ),
-                    Path::ConnectionPath(path) => data::<Evm<C>, Tr>(
+                    )),
+                    Path::ConnectionPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcProof::<Evm<C>, Tr, _> {
                             proof,
@@ -579,8 +577,8 @@ where
                             path,
                             __marker: PhantomData,
                         },
-                    ),
-                    Path::ChannelEndPath(path) => data::<Evm<C>, Tr>(
+                    )),
+                    Path::ChannelEndPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcProof::<Evm<C>, Tr, _> {
                             proof,
@@ -588,8 +586,8 @@ where
                             path,
                             __marker: PhantomData,
                         },
-                    ),
-                    Path::CommitmentPath(path) => data::<Evm<C>, Tr>(
+                    )),
+                    Path::CommitmentPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcProof::<Evm<C>, Tr, _> {
                             proof,
@@ -597,8 +595,8 @@ where
                             path,
                             __marker: PhantomData,
                         },
-                    ),
-                    Path::AcknowledgementPath(path) => data::<Evm<C>, Tr>(
+                    )),
+                    Path::AcknowledgementPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcProof::<Evm<C>, Tr, _> {
                             proof,
@@ -606,13 +604,12 @@ where
                             path,
                             __marker: PhantomData,
                         },
-                    ),
-                }]
-                .into();
+                    )),
+                };
             }
             EvmFetchMsg::FetchIbcState(get_storage_at) => {
-                return [match get_storage_at.path {
-                    Path::ClientStatePath(path) => data::<Evm<C>, Tr>(
+                return match get_storage_at.path {
+                    Path::ClientStatePath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -622,8 +619,8 @@ where
                             height: get_storage_at.height,
                             path,
                         },
-                    ),
-                    Path::ClientConsensusStatePath(path) => data::<Evm<C>, Tr>(
+                    )),
+                    Path::ClientConsensusStatePath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -633,8 +630,8 @@ where
                             height: get_storage_at.height,
                             path,
                         },
-                    ),
-                    Path::ConnectionPath(path) => data::<Evm<C>, Tr>(
+                    )),
+                    Path::ConnectionPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -644,8 +641,8 @@ where
                             height: get_storage_at.height,
                             path,
                         },
-                    ),
-                    Path::ChannelEndPath(path) => data::<Evm<C>, Tr>(
+                    )),
+                    Path::ChannelEndPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -655,8 +652,8 @@ where
                             height: get_storage_at.height,
                             path,
                         },
-                    ),
-                    Path::CommitmentPath(path) => data::<Evm<C>, Tr>(
+                    )),
+                    Path::CommitmentPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -666,8 +663,8 @@ where
                             height: get_storage_at.height,
                             path,
                         },
-                    ),
-                    Path::AcknowledgementPath(path) => data::<Evm<C>, Tr>(
+                    )),
+                    Path::AcknowledgementPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -677,13 +674,15 @@ where
                             height: get_storage_at.height,
                             path,
                         },
-                    ),
-                }]
-                .into();
+                    )),
+                };
             }
         };
 
-        [data::<Evm<C>, Tr>(c.chain_id, LightClientSpecificData(msg))].into()
+        data(Identified::<Evm<C>, Tr, _>::new(
+            c.chain_id,
+            LightClientSpecificData(msg),
+        ))
     }
 }
 
@@ -915,8 +914,8 @@ where
             __marker: _,
         }: Self,
         aggregated_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> Vec<RelayerMsg> {
-        [match data {
+    ) -> RelayerMsg {
+        match data {
             EvmAggregateMsg::CreateUpdate(msg) => {
                 do_aggregate(Identified::new(chain_id, msg), aggregated_data)
             }
@@ -926,8 +925,7 @@ where
             EvmAggregateMsg::MakeCreateUpdatesFromLightClientUpdates(msg) => {
                 do_aggregate(Identified::new(chain_id, msg), aggregated_data)
             }
-        }]
-        .into()
+        }
     }
 }
 
@@ -951,9 +949,10 @@ where
         light_client_update.attested_header.beacon.slot
             / (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64),
     ) - 1;
-    RelayerMsg::Aggregate {
-        queue: [
-            fetch::<Evm<C>, Tr>(
+
+    aggregate(
+        [
+            fetch(Identified::<Evm<C>, Tr, _>::new(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::FetchLightClientUpdate(
                     FetchLightClientUpdate {
@@ -961,24 +960,23 @@ where
                         __marker: PhantomData,
                     },
                 )),
-            ),
-            fetch::<Evm<C>, Tr>(
+            )),
+            fetch(Identified::<Evm<C>, Tr, _>::new(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::FetchAccountUpdate(FetchAccountUpdate {
                     slot: light_client_update.attested_header.beacon.slot,
                     __marker: PhantomData,
                 })),
-            ),
-            fetch::<Evm<C>, Tr>(
+            )),
+            fetch(Identified::<Evm<C>, Tr, _>::new(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::FetchBeaconGenesis(FetchBeaconGenesis {
                     __marker: PhantomData,
                 })),
-            ),
-        ]
-        .into(),
-        data: [].into(),
-        receiver: aggregate(
+            )),
+        ],
+        [],
+        Identified::new(
             chain_id,
             LightClientSpecificAggregate(EvmAggregateMsg::CreateUpdate(CreateUpdateData {
                 req,
@@ -987,7 +985,7 @@ where
                 is_next,
             })),
         ),
-    }
+    )
 }
 
 fn sync_committee_period<H: Into<u64>, C: ChainSpec>(height: H) -> u64 {
@@ -1127,7 +1125,7 @@ where
         };
 
         seq([
-            wait::<Tr, Evm<C>>(
+            wait(Identified::new(
                 req.counterparty_chain_id.clone(),
                 WaitForTimestamp {
                     timestamp: (genesis.genesis_time
@@ -1136,14 +1134,14 @@ where
                         .unwrap(),
                     __marker: PhantomData,
                 },
-            ),
-            msg::<Tr, Evm<C>>(
+            )),
+            msg(Identified::<Tr, Evm<C>, _>::new(
                 req.counterparty_chain_id,
                 MsgUpdateClientData(MsgUpdateClient {
                     client_id: req.counterparty_client_id,
                     client_message: header,
                 }),
-            ),
+            )),
         ])
     }
 }
@@ -1190,8 +1188,8 @@ where
 
         // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
         // updates until we reach the `target_period - 1`.
-        RelayerMsg::Aggregate {
-            queue: [fetch::<Evm<C>, Tr>(
+        aggregate(
+            [fetch(Identified::<Evm<C>, Tr, _>::new(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::FetchLightClientUpdates(
                     FetchLightClientUpdates {
@@ -1200,10 +1198,9 @@ where
                         __marker: PhantomData,
                     },
                 )),
-            )]
-            .into(),
-            data: [].into(),
-            receiver: aggregate(
+            ))],
+            [],
+            Identified::new(
                 chain_id,
                 LightClientSpecificAggregate(
                     EvmAggregateMsg::MakeCreateUpdatesFromLightClientUpdates(
@@ -1215,7 +1212,7 @@ where
                     ),
                 ),
             ),
-        }
+        )
     }
 }
 

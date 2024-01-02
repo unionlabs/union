@@ -30,11 +30,12 @@ use unionlabs::{
         TimeoutPacket, UpdateClient, WriteAcknowledgement,
     },
     id::ClientId,
-    traits::{Chain, ChainIdOf, ClientIdOf, ClientState},
+    traits::{Chain, ClientIdOf, ClientState},
     WasmClientType,
 };
 use voyager_message::{
-    data::AnyData, event, AnyLightClientIdentified, ChainExt, GetChain, RelayerMsg, Wasm,
+    ctors::event, data::AnyData, AnyLightClientIdentified, ChainExt, Chains, Identified,
+    RelayerMsg, Wasm,
 };
 
 use crate::{
@@ -57,47 +58,6 @@ pub struct Voyager<Q> {
 pub struct Worker {
     pub id: u16,
     pub chains: Arc<Chains>,
-}
-
-impl GetChain<Wasm<Union>> for Worker {
-    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Union>>) -> Wasm<Union> {
-        Wasm(self.chains.union.get(chain_id).unwrap().clone())
-    }
-}
-
-impl GetChain<Wasm<Cosmos>> for Worker {
-    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Cosmos>>) -> Wasm<Cosmos> {
-        Wasm(self.chains.cosmos.get(chain_id).unwrap().clone())
-    }
-}
-
-impl GetChain<Union> for Worker {
-    fn get_chain(&self, chain_id: &ChainIdOf<Union>) -> Union {
-        self.chains.union.get(chain_id).unwrap().clone()
-    }
-}
-
-impl GetChain<Evm<Minimal>> for Worker {
-    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Minimal>>) -> Evm<Minimal> {
-        self.chains.evm_minimal.get(chain_id).unwrap().clone()
-    }
-}
-
-impl GetChain<Evm<Mainnet>> for Worker {
-    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Mainnet>>) -> Evm<Mainnet> {
-        self.chains.evm_mainnet.get(chain_id).unwrap().clone()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Chains {
-    // TODO: Use some sort of typemap here instead of individual fields
-    evm_minimal:
-        HashMap<<<Evm<Minimal> as Chain>::SelfClientState as ClientState>::ChainId, Evm<Minimal>>,
-    evm_mainnet:
-        HashMap<<<Evm<Mainnet> as Chain>::SelfClientState as ClientState>::ChainId, Evm<Mainnet>>,
-    union: HashMap<<<Union as Chain>::SelfClientState as ClientState>::ChainId, Union>,
-    cosmos: HashMap<<<Cosmos as Chain>::SelfClientState as ClientState>::ChainId, Cosmos>,
 }
 
 pub trait Queue: Clone + Send + Sync + Sized + 'static {
@@ -400,74 +360,6 @@ impl<Q: Queue> Voyager<Q> {
         let union_events = stream::iter(self.chains.union.clone())
             .map(|(chain_id, chain)| {
                 chain
-                        .clone()
-                        .events(())
-                        .and_then(move |chain_event| {
-                            let c = chain.clone();
-                            let expected_chain_id = chain_id.clone();
-
-                            async move {
-                                if expected_chain_id != chain_event.chain_id {
-                                    tracing::warn!(
-                                        "chain {expected_chain_id} produced an event from chain {}",
-                                        chain_event.chain_id.clone()
-                                    );
-                                }
-
-                                Ok(
-                                    match client_type_from_ibc_event(&c, &chain_event.event).await {
-                                        ClientType::Wasm(WasmClientType::EthereumMinimal) => {
-                                            event::<Wasm<Union>, Evm<Minimal>>(
-                                                chain_event.chain_id,
-                                                voyager_message::event::IbcEvent {
-                                                    block_hash: chain_event.block_hash,
-                                                    height: chain_event.height,
-                                                    event: chain_event_to_lc_event::<
-                                                        Union,
-                                                        Evm<Minimal>,
-                                                    >(
-                                                        chain_event.event
-                                                    ),
-                                                },
-                                            )
-                                        }
-                                        ClientType::Wasm(WasmClientType::EthereumMainnet) => {
-                                            event::<Wasm<Union>, Evm<Mainnet>>(
-                                                chain_event.chain_id,
-                                                voyager_message::event::IbcEvent {
-                                                    block_hash: chain_event.block_hash,
-                                                    height: chain_event.height,
-                                                    event: chain_event_to_lc_event::<
-                                                        Wasm<Union>,
-                                                        Evm<Mainnet>,
-                                                    >(
-                                                        chain_event.event
-                                                    ),
-                                                },
-                                            )
-                                        }
-                                        ClientType::Tendermint => event::<Union, Wasm<Cosmos>>(
-                                            chain_event.chain_id,
-                                            voyager_message::event::IbcEvent {
-                                                block_hash: chain_event.block_hash,
-                                                height: chain_event.height,
-                                                event: chain_event_to_lc_event::<Union, Wasm<Cosmos>>(
-                                                    chain_event.event,
-                                                ),
-                                            },
-                                        ),
-                                        _ => unimplemented!(),
-                                    },
-                                )
-                            }
-                        })
-                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
-            })
-            .flatten()
-            .boxed();
-        let cosmos_events = stream::iter(self.chains.cosmos.clone())
-            .map(|(chain_id, chain)| {
-                chain
                     .clone()
                     .events(())
                     .and_then(move |chain_event| {
@@ -484,22 +376,103 @@ impl<Q: Queue> Voyager<Q> {
 
                             Ok(
                                 match client_type_from_ibc_event(&c, &chain_event.event).await {
-                                    ClientType::Wasm(WasmClientType::Cometbls) => event::<Wasm<Cosmos>, Union>(
+                                    ClientType::Wasm(WasmClientType::EthereumMinimal) => {
+                                        event(
+                                            Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+                                                chain_event.chain_id,
+                                                voyager_message::event::IbcEvent {
+                                                    block_hash: chain_event.block_hash,
+                                                    height: chain_event.height,
+                                                    event: chain_event_to_lc_event::<
+                                                        Union,
+                                                        Evm<Minimal>,
+                                                    >(
+                                                        chain_event.event
+                                                    ),
+                                                },
+                                            ),
+                                        )
+                                    }
+                                    ClientType::Wasm(WasmClientType::EthereumMainnet) => {
+                                        event(
+                                            Identified::<Wasm<Union>, Evm<Mainnet>, _>::new(
+                                                chain_event.chain_id,
+                                                voyager_message::event::IbcEvent {
+                                                    block_hash: chain_event.block_hash,
+                                                    height: chain_event.height,
+                                                    event: chain_event_to_lc_event::<
+                                                        Union,
+                                                        Evm<Mainnet>,
+                                                    >(
+                                                        chain_event.event
+                                                    ),
+                                                },
+                                            ),
+                                        )
+                                    }
+                                    ClientType::Tendermint => event(Identified::<
+                                        Union,
+                                        Wasm<Cosmos>,
+                                        _,
+                                    >::new(
                                         chain_event.chain_id,
                                         voyager_message::event::IbcEvent {
                                             block_hash: chain_event.block_hash,
                                             height: chain_event.height,
-                                            event: chain_event_to_lc_event::<Wasm<Cosmos>, Union>(
+                                            event: chain_event_to_lc_event::<Union, Wasm<Cosmos>>(
                                                 chain_event.event,
                                             ),
                                         },
-                                    ),
+                                    )),
                                     _ => unimplemented!(),
                                 },
                             )
                         }
                     })
                     .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
+            })
+            .flatten()
+            .boxed();
+        let cosmos_events = stream::iter(self.chains.cosmos.clone())
+            .map(|(chain_id, chain)| {
+                chain
+                        .clone()
+                        .events(())
+                        .and_then(move |chain_event| {
+                            let c = chain.clone();
+                            let expected_chain_id = chain_id.clone();
+
+                            async move {
+                                if expected_chain_id != chain_event.chain_id {
+                                    tracing::warn!(
+                                        "chain {expected_chain_id} produced an event from chain {}",
+                                        chain_event.chain_id.clone()
+                                    );
+                                }
+
+                                Ok(
+                                    match client_type_from_ibc_event(&c, &chain_event.event).await {
+                                        ClientType::Wasm(WasmClientType::Cometbls) => {
+                                            event(Identified::<Wasm<Cosmos>, Union, _>::new(
+                                                chain_event.chain_id,
+                                                voyager_message::event::IbcEvent {
+                                                    block_hash: chain_event.block_hash,
+                                                    height: chain_event.height,
+                                                    event: chain_event_to_lc_event::<
+                                                        Wasm<Cosmos>,
+                                                        Union,
+                                                    >(
+                                                        chain_event.event
+                                                    ),
+                                                },
+                                            ))
+                                        }
+                                        _ => unimplemented!(),
+                                    },
+                                )
+                            }
+                        })
+                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
             })
             .flatten()
             .boxed();
@@ -516,16 +489,16 @@ impl<Q: Queue> Voyager<Q> {
                                 );
                             }
 
-                            event::<Evm<Minimal>, Wasm<Union>>(
+                            event(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
                                 chain_event.chain_id,
                                 voyager_message::event::IbcEvent {
                                     block_hash: chain_event.block_hash,
                                     height: chain_event.height,
-                                    event: chain_event_to_lc_event::<Evm<Minimal>, Union>(
+                                    event: chain_event_to_lc_event::<Evm<Minimal>, Wasm<Union>>(
                                         chain_event.event,
                                     ),
                                 },
-                            )
+                            ))
                         })
                         .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
                 })
@@ -543,16 +516,16 @@ impl<Q: Queue> Voyager<Q> {
                                 );
                             }
 
-                            event::<Evm<Mainnet>, Wasm<Union>>(
+                            event(Identified::<Evm<Mainnet>, Wasm<Union>, _>::new(
                                 chain_event.chain_id,
                                 voyager_message::event::IbcEvent {
                                     block_hash: chain_event.block_hash,
                                     height: chain_event.height,
-                                    event: chain_event_to_lc_event::<Evm<Mainnet>, Union>(
+                                    event: chain_event_to_lc_event::<Evm<Mainnet>, Wasm<Union>>(
                                         chain_event.event,
                                     ),
                                 },
-                            )
+                            ))
                         })
                         .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
                 })
@@ -654,25 +627,19 @@ impl Worker {
 
                 q.process(move |msg| {
                     async move {
-                        let new_msgs = msg.handle(&worker, 0).await;
+                        let new_msgs = msg.handle(&*worker.chains, 0).await;
 
                         match new_msgs {
                             Ok(ok) => {
                                 let ok = if let Some(ref mut data_out_stream) = data_out_stream {
-                                    let mut vec = ok;
-
-                                    for data in vec
-                                        .extract_if(|x| matches!(x, RelayerMsg::Data(_)))
-                                        .map(|x| match x {
-                                            RelayerMsg::Data(data) => data,
-                                            _ => panic!(),
-                                        })
-                                    {
-                                        tracing::warn!(%data, "received data in worker");
-                                        data_out_stream.send(data).unwrap();
+                                    match ok {
+                                        Some(RelayerMsg::Data(data)) => {
+                                            tracing::warn!(%data, "received data in worker");
+                                            data_out_stream.send(data).unwrap();
+                                            None
+                                        }
+                                        _ => ok,
                                     }
-
-                                    vec
                                 } else {
                                     ok
                                 };

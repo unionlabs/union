@@ -19,17 +19,17 @@
           version = "0.7.1";
           nativeBuildInputs = [ pkgs.pkg-config ];
 
-          buildPhase = "cargo build --release --locked --offline -p ${name}";
+          buildPhase = "cargo build --release --locked --offline -p ${name} --bin cargo-sqlx";
           installPhase = ''
             mkdir -p $out/bin
-            mv target/release/sqlx $out/bin/sqlx
+            mv target/release/cargo-sqlx $out/bin/cargo-sqlx
           '';
 
           buildInputs = [ rust.toolchains.nightly pkgs.openssl ];
 
           src = srcWithVendoredSources { inherit name; originalSrc = "${sqlx}"; };
 
-          meta.mainProgram = "sqlx";
+          meta.mainProgram = "cargo-sqlx";
         };
     };
 }
