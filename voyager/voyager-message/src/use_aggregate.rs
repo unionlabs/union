@@ -102,21 +102,18 @@ pub(crate) mod tests {
     use frunk::HList;
 
     use super::*;
-    use crate::enum_variants_conversions;
 
     #[test]
     fn hlist_try_from_iter() {
-        enum_variants_conversions! {
-            #[derive(Debug, PartialEq, derive_more::Display)]
-            #[display(fmt = "{}")]
-            pub enum A {
-                #[display(fmt = "{_0}")]
-                B(B),
-                #[display(fmt = "{_0}")]
-                C(C),
-                #[display(fmt = "{_0}")]
-                D(D),
-            }
+        #[derive(Debug, PartialEq, derive_more::Display, enumorph::Enumorph)]
+        #[display(fmt = "{}")]
+        pub enum A {
+            #[display(fmt = "{_0}")]
+            B(B),
+            #[display(fmt = "{_0}")]
+            C(C),
+            #[display(fmt = "{_0}")]
+            D(D),
         }
 
         #[derive(Debug, PartialEq, derive_more::Display)]

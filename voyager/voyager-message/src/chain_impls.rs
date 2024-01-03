@@ -108,6 +108,10 @@ macro_rules! try_from_relayer_msg {
     };
 }
 
+// functionality common between all cosmos-sdk chains
+pub mod cosmos_sdk;
+
 pub mod cosmos;
-pub mod evm;
 pub mod union;
+
+pub mod evm;

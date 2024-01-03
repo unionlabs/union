@@ -1,5 +1,4 @@
-#![recursion_limit = "256"]
-#![feature(trait_alias, extract_if)]
+#![feature(trait_alias)]
 // #![warn(clippy::pedantic)]
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives

@@ -351,6 +351,10 @@
             nativeBuildInputs = [ config.treefmt.build.wrapper ]
               ++ lib.attrsets.attrValues config.treefmt.build.programs;
             GOPRIVATE = "github.com/unionlabs/*";
+
+            shellHook = ''
+              alias voy-send-msg='curl localhost:65534/msg -H "content-type: application/json" -d'
+            '';
           };
 
           treefmt =

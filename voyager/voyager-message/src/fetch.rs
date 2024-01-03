@@ -15,10 +15,12 @@ use unionlabs::{
 };
 
 use crate::{
-    any_enum, data,
+    any_enum,
+    ctors::{data, fetch},
     data::{AnyData, Data, PacketAcknowledgement, SelfClientState, SelfConsensusState},
-    fetch, identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, RelayerMsg,
+    identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
+    DoFetchUpdateHeaders, GetChain, HandleFetch, Identified, QueueMsg, QueueMsgTypes, RelayerMsg,
+    RelayerMsgTypes,
 };
 
 any_enum! {
@@ -42,8 +44,21 @@ any_enum! {
     }
 }
 
+impl HandleFetch<RelayerMsgTypes> for AnyLightClientIdentified<AnyFetch> {
+    async fn handle(
+        self,
+        store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
+    ) -> QueueMsg<RelayerMsgTypes> {
+        let fetch = self;
+
+        crate::any_lc! {
+            |fetch| fetch.t.handle(store.get_chain(&fetch.chain_id)).await
+        }
+    }
+}
+
 pub trait DoFetch<Hc: ChainExt>: Sized + Debug + Clone + PartialEq {
-    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = Vec<RelayerMsg>>;
+    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = RelayerMsg>;
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> Display for Fetch<Hc, Tr> {
@@ -142,10 +157,10 @@ where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
 {
-    pub async fn handle(self, c: Hc) -> Vec<RelayerMsg> {
+    pub async fn handle(self, c: Hc) -> RelayerMsg {
         match self {
-            Fetch::Proof(msg) => [Hc::proof(&c, msg.at, msg.path)].into(),
-            Fetch::State(msg) => [Hc::state(&c, msg.at, msg.path)].into(),
+            Fetch::Proof(msg) => Hc::proof(&c, msg.at, msg.path),
+            Fetch::State(msg) => Hc::state(&c, msg.at, msg.path),
             Fetch::SelfClientState(FetchSelfClientState {
                 at: height,
                 __marker: _,
@@ -156,14 +171,14 @@ where
                     QueryHeight::Specific(h) => h,
                 };
 
-                [data(
+                data(Identified::<Hc, Tr, Data<Hc, Tr>>::new(
                     c.chain_id(),
                     SelfClientState {
                         self_client_state: c.self_client_state(height).await,
                         __marker: PhantomData,
-                    },
-                )]
-                .into()
+                    }
+                    .into(),
+                ))
             }
             Fetch::SelfConsensusState(FetchSelfConsensusState {
                 at: height,
@@ -175,14 +190,13 @@ where
                     QueryHeight::Specific(h) => h,
                 };
 
-                [data(
+                data(Identified::<Hc, Tr, _>::new(
                     c.chain_id(),
                     SelfConsensusState {
                         self_consensus_state: c.self_consensus_state(height).await,
                         __marker: PhantomData,
                     },
-                )]
-                .into()
+                ))
             }
             Fetch::PacketAcknowledgement(FetchPacketAcknowledgement {
                 block_hash,
@@ -200,7 +214,7 @@ where
                     )
                     .await;
 
-                [data(
+                data(Identified::<Hc, Tr, _>::new(
                     c.chain_id(),
                     PacketAcknowledgement {
                         fetched_by: FetchPacketAcknowledgement {
@@ -212,22 +226,20 @@ where
                         },
                         ack,
                     },
-                )]
-                .into()
+                ))
             }
             Fetch::UpdateHeaders(fetch_update_headers) => {
-                [Hc::fetch_update_headers(&c, fetch_update_headers)].into()
+                Hc::fetch_update_headers(&c, fetch_update_headers)
             }
             Fetch::LightClientSpecific(LightClientSpecificFetch(fetch)) => c.do_fetch(fetch).await,
             Fetch::LatestClientState(FetchLatestClientState { path, __marker }) => {
-                [fetch::<Hc, Tr>(
+                fetch(Identified::<Hc, Tr, _>::new(
                     c.chain_id(),
                     FetchState {
                         at: c.query_latest_height().await.unwrap(),
                         path: path.into(),
                     },
-                )]
-                .into()
+                ))
             }
         }
     }

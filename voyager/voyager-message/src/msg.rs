@@ -1,8 +1,10 @@
 use std::{fmt::Display, marker::PhantomData};
 
+use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
+    ethereum::config::{Mainnet, Minimal},
     ibc::core::{
         channel::{
             msg_acknowledgement::MsgAcknowledgement, msg_channel_open_ack::MsgChannelOpenAck,
@@ -21,7 +23,10 @@ use unionlabs::{
     traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
-use crate::{any_enum, ChainExt};
+use crate::{
+    any_enum, AnyLightClientIdentified, ChainExt, DoMsg, GetChain, HandleMsg, QueueMsgTypes,
+    RelayerMsgTypes, Wasm,
+};
 
 any_enum! {
     /// Defines messages that are sent *to* the lightclient `L`.
@@ -42,6 +47,48 @@ any_enum! {
 
         CreateClient(MsgCreateClientData<Hc, Tr>),
         UpdateClient(MsgUpdateClientData<Hc, Tr>),
+    }
+}
+
+impl HandleMsg<RelayerMsgTypes> for AnyLightClientIdentified<AnyMsg> {
+    async fn handle(
+        self,
+        store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        match self {
+            AnyLightClientIdentified::EvmMainnetOnUnion(msg) => {
+                GetChain::<Wasm<Union>>::get_chain(store, &msg.chain_id)
+                    .msg(msg.t)
+                    .await?;
+            }
+            AnyLightClientIdentified::EvmMinimalOnUnion(msg) => {
+                GetChain::<Wasm<Union>>::get_chain(store, &msg.chain_id)
+                    .msg(msg.t)
+                    .await?;
+            }
+            AnyLightClientIdentified::UnionOnEvmMainnet(msg) => {
+                GetChain::<Evm<Mainnet>>::get_chain(store, &msg.chain_id)
+                    .msg(msg.t)
+                    .await?;
+            }
+            AnyLightClientIdentified::UnionOnEvmMinimal(msg) => {
+                GetChain::<Evm<Minimal>>::get_chain(store, &msg.chain_id)
+                    .msg(msg.t)
+                    .await?;
+            }
+            AnyLightClientIdentified::CosmosOnUnion(msg) => {
+                GetChain::<Union>::get_chain(store, &msg.chain_id)
+                    .msg(msg.t)
+                    .await?;
+            }
+            AnyLightClientIdentified::UnionOnCosmos(msg) => {
+                GetChain::<Wasm<Cosmos>>::get_chain(store, &msg.chain_id)
+                    .msg(msg.t)
+                    .await?;
+            }
+        }
+
+        Ok(())
     }
 }
 

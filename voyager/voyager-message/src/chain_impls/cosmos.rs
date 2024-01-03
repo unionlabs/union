@@ -6,11 +6,7 @@ use chain_utils::{
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
-use prost::Message;
-use protos::{
-    cosmos::base::tendermint::v1beta1::AbciQueryRequest,
-    ibc::core::connection::v1::MsgConnectionOpenInit,
-};
+use protos::ibc::core::connection::v1::MsgConnectionOpenInit;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
 use unionlabs::{
@@ -31,7 +27,7 @@ use unionlabs::{
         },
         lightclients::tendermint,
     },
-    proof::{ClientStatePath, Path},
+    proof::ClientStatePath,
     tendermint::{
         crypto::public_key::PublicKey,
         types::{
@@ -40,24 +36,25 @@ use unionlabs::{
         },
     },
     traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
-    IntoProto, Proto, TryFromProto, TypeUrl,
+    IntoProto, Proto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
 };
 
 use crate::{
-    aggregate,
     aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
-    data,
-    data::{AnyData, Data, IbcProof, IbcState, LightClientSpecificData},
-    fetch,
+    chain_impls::cosmos_sdk::{
+        fetch::{AbciQueryType, FetchAbciQuery},
+        fetch_abci_query,
+    },
+    ctors::{aggregate, data, fetch, msg, wait},
+    data::{AnyData, Data, IbcState, LightClientSpecificData},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
-    identified, msg,
+    identified,
     msg::{
         AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
         MsgUpdateClientData,
     },
     seq,
     use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
-    wait,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
     DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, Wasm, WasmConfig, Wraps,
@@ -244,7 +241,8 @@ where
     }
 }
 
-impl<Tr: ChainExt, Hc: Wraps<Self, StateProof = MerkleProof, Fetch<Tr> = CosmosFetch<Hc, Tr>>> DoFetchState<Hc, Tr> for Cosmos
+impl<Tr: ChainExt, Hc: Wraps<Self, StateProof = MerkleProof, Fetch<Tr> = CosmosFetch<Hc, Tr>>>
+    DoFetchState<Hc, Tr> for Cosmos
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -255,31 +253,27 @@ where
 
     Hc::StoredClientState<Tr>: TryFromProto,
     Hc::StoredConsensusState<Tr>: TryFromProto,
-    <Hc::StoredClientState<Tr> as TryFrom<<Hc::StoredClientState<Tr> as Proto>::Proto>>::Error:
-        Debug,
-    <Hc::StoredConsensusState<Tr> as TryFrom<<Hc::StoredConsensusState<Tr> as Proto>::Proto>>::Error:
-        Debug,
-
+    TryFromProtoErrorOf<Hc::StoredClientState<Tr>>: Debug,
+    TryFromProtoErrorOf<Hc::StoredConsensusState<Tr>>: Debug,
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
 {
     fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> RelayerMsg {
         seq([
-            wait::<Hc, Tr>(
+            wait(Identified::new(
                 hc.chain_id(),
                 WaitForBlock {
-                    // height: at.increment(),
                     height: at,
                     __marker: PhantomData,
                 },
-            ),
-            fetch::<Hc, Tr>(
+            )),
+            fetch(Identified::<Hc, Tr, _>::new(
                 hc.chain_id(),
                 LightClientSpecificFetch(CosmosFetch::AbciQuery(FetchAbciQuery {
                     path,
                     height: at,
                     ty: AbciQueryType::State,
                 })),
-            ),
+            )),
         ])
     }
 
@@ -313,22 +307,22 @@ where
 {
     fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> RelayerMsg {
         seq([
-            wait::<Hc, Tr>(
+            wait(Identified::new(
                 hc.chain_id(),
                 WaitForBlock {
-                    // height: at.increment(),
                     height: at,
                     __marker: PhantomData,
                 },
-            ),
-            fetch::<Hc, Tr>(
+            )),
+            fetch(Identified::<Hc, Tr, _>::new(
                 hc.chain_id(),
                 LightClientSpecificFetch(CosmosFetch::AbciQuery(FetchAbciQuery::<Hc, Tr> {
                     path,
                     height: at,
                     ty: AbciQueryType::Proof,
-                })),
-            ),
+                }))
+                .into(),
+            )),
         ])
     }
 }
@@ -344,58 +338,60 @@ where
 {
     fn fetch_update_headers(hc: &Hc, update_info: FetchUpdateHeaders<Hc, Tr>) -> RelayerMsg {
         seq([
-            wait::<Hc, Tr>(
+            wait(Identified::new(
                 hc.chain_id(),
-                // NOTE: There was previously an increment here, but we were unsure why - if there are issues with the updates, it may need to be added back. Please leave a comment explaining why if so!
                 WaitForBlock {
                     height: update_info.update_to,
                     __marker: PhantomData,
                 },
-            ),
-            RelayerMsg::Aggregate {
-                queue: [
-                    fetch::<Hc, Tr>(
+            )),
+            aggregate(
+                [
+                    fetch(Identified::<Hc, Tr, _>::new(
                         hc.chain_id(),
                         LightClientSpecificFetch(CosmosFetch::FetchTrustedCommit(
                             FetchTrustedCommit {
                                 height: Into::<Height>::into(update_info.update_from).increment(),
                             },
-                        )),
-                    ),
-                    fetch::<Hc, Tr>(
+                        ))
+                        .into(),
+                    )),
+                    fetch(Identified::<Hc, Tr, _>::new(
                         hc.chain_id(),
                         LightClientSpecificFetch(CosmosFetch::FetchUntrustedCommit(
                             FetchUntrustedCommit {
                                 height: update_info.update_to.into(),
                             },
-                        )),
-                    ),
-                    fetch::<Hc, Tr>(
+                        ))
+                        .into(),
+                    )),
+                    fetch(Identified::<Hc, Tr, _>::new(
                         hc.chain_id(),
                         LightClientSpecificFetch(CosmosFetch::FetchTrustedValidators(
                             FetchTrustedValidators {
                                 height: Into::<Height>::into(update_info.update_from).increment(),
                             },
-                        )),
-                    ),
-                    fetch::<Hc, Tr>(
+                        ))
+                        .into(),
+                    )),
+                    fetch(Identified::<Hc, Tr, _>::new(
                         hc.chain_id(),
                         LightClientSpecificFetch(CosmosFetch::FetchUntrustedValidators(
                             FetchUntrustedValidators {
                                 height: update_info.update_to.into(),
                             },
-                        )),
-                    ),
-                ]
-                .into(),
-                data: [].into(),
-                receiver: aggregate::<Hc, Tr>(
+                        ))
+                        .into(),
+                    )),
+                ],
+                [],
+                Identified::new(
                     hc.chain_id(),
                     LightClientSpecificAggregate(CosmosAggregateMsg::AggregateHeader(
                         AggregateHeader { req: update_info },
                     )),
                 ),
-            },
+            ),
         ])
     }
 }
@@ -484,17 +480,17 @@ impl<Hc, Tr> DoFetch<Hc> for CosmosFetch<Hc, Tr>
 where
     Hc: Wraps<Cosmos>
         + CosmosSdkChain
-        + ChainExt<StateProof = MerkleProof, Data<Tr> = CosmosDataMsg<Tr>, Fetch<Tr> = CosmosFetch<Hc, Tr>>,
+        + ChainExt<
+            StateProof = MerkleProof,
+            Data<Tr> = CosmosDataMsg<Tr>,
+            Fetch<Tr> = CosmosFetch<Hc, Tr>,
+        >,
     Tr: ChainExt,
 
-    // Tr::SelfClientState: Decode<unionlabs::encoding::Proto>,
-    // Tr::SelfConsensusState: Decode<unionlabs::encoding::Proto>,
     Hc::StoredClientState<Tr>: TryFromProto,
     Hc::StoredConsensusState<Tr>: TryFromProto,
-    <Hc::StoredClientState<Tr> as TryFrom<<Hc::StoredClientState<Tr> as Proto>::Proto>>::Error:
-        Debug,
-    <Hc::StoredConsensusState<Tr> as TryFrom<<Hc::StoredConsensusState<Tr> as Proto>::Proto>>::Error:
-        Debug,
+    TryFromProtoErrorOf<Hc::StoredClientState<Tr>>: Debug,
+    TryFromProtoErrorOf<Hc::StoredConsensusState<Tr>>: Debug,
 
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -502,7 +498,7 @@ where
 
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> Vec<RelayerMsg> {
+    async fn do_fetch(hc: &Hc, msg: Self) -> RelayerMsg {
         match msg {
             CosmosFetch::FetchTrustedCommit(FetchTrustedCommit { height }) => {
                 let commit = hc
@@ -523,7 +519,10 @@ where
                     __marker: PhantomData,
                 });
 
-                [data::<Hc, Tr>(hc.chain_id(), LightClientSpecificData(msg))].into()
+                data(Identified::<Hc, Tr, _>::new(
+                    hc.chain_id(),
+                    LightClientSpecificData(msg),
+                ))
             }
             CosmosFetch::FetchUntrustedCommit(FetchUntrustedCommit { height }) => {
                 let commit = hc
@@ -544,7 +543,10 @@ where
                     __marker: PhantomData,
                 });
 
-                [data::<Hc, Tr>(hc.chain_id(), LightClientSpecificData(msg))].into()
+                data(Identified::<Hc, Tr, _>::new(
+                    hc.chain_id(),
+                    LightClientSpecificData(msg),
+                ))
             }
             CosmosFetch::FetchTrustedValidators(FetchTrustedValidators { height }) => {
                 let validators = hc
@@ -567,7 +569,10 @@ where
                     __marker: PhantomData,
                 });
 
-                [data::<Hc, Tr>(hc.chain_id(), LightClientSpecificData(msg))].into()
+                data(Identified::<Hc, Tr, _>::new(
+                    hc.chain_id(),
+                    LightClientSpecificData(msg),
+                ))
             }
             CosmosFetch::FetchUntrustedValidators(FetchUntrustedValidators { height }) => {
                 let validators = hc
@@ -590,10 +595,13 @@ where
                     __marker: PhantomData,
                 });
 
-                [data::<Hc, Tr>(hc.chain_id(), LightClientSpecificData(msg))].into()
+                data(Identified::<Hc, Tr, _>::new(
+                    hc.chain_id(),
+                    LightClientSpecificData(msg),
+                ))
             }
             CosmosFetch::AbciQuery(FetchAbciQuery { path, height, ty }) => {
-                [fetch_abci_query::<Hc, Tr>(hc, path, height, ty).await].into()
+                fetch_abci_query::<Hc, Tr>(hc, path, height, ty).await
             }
         }
     }
@@ -729,180 +737,6 @@ fn tendermint_commit_to_signed_header(
     }
 }
 
-async fn fetch_abci_query<Hc, Tr>(
-    c: &Hc,
-    path: Path<Hc::ClientId, Tr::Height>,
-    height: HeightOf<Hc>,
-    ty: AbciQueryType,
-) -> RelayerMsg
-where
-    Hc: CosmosSdkChain + ChainExt<StateProof = MerkleProof>,
-    Tr: ChainExt,
-
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
-    Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
-
-    Hc::StoredClientState<Tr>: TryFromProto,
-    Hc::StoredConsensusState<Tr>: TryFromProto,
-    <Hc::StoredClientState<Tr> as TryFrom<<Hc::StoredClientState<Tr> as Proto>::Proto>>::Error:
-        Debug,
-    <Hc::StoredConsensusState<Tr> as TryFrom<<Hc::StoredConsensusState<Tr> as Proto>::Proto>>::Error:
-        Debug,
-{
-    let mut client =
-        protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
-            c.grpc_url().clone(),
-        )
-        .await
-        .unwrap();
-
-    // let height = height.increment();
-
-    let query_result = client
-        .abci_query(AbciQueryRequest {
-            data: path.to_string().into_bytes(),
-            path: "store/ibc/key".to_string(),
-            height: i64::try_from(height.revision_height()).unwrap() - 1_i64,
-            prove: matches!(ty, AbciQueryType::Proof),
-        })
-        .await
-        .unwrap()
-        .into_inner();
-
-    dbg!(hex::encode(&query_result.value));
-
-    match ty {
-        AbciQueryType::State => match path {
-            Path::ClientStatePath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState::<Hc, Tr, ClientStatePath<Hc::ClientId>> {
-                    height,
-                    state: Hc::StoredClientState::<Tr>::try_from_proto_bytes(&query_result.value)
-                        .unwrap(),
-                    path,
-                },
-            ),
-            Path::ClientConsensusStatePath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState {
-                    height,
-                    state: Hc::StoredConsensusState::<Tr>::try_from_proto_bytes(
-                        &query_result.value,
-                    )
-                    .unwrap(),
-                    path,
-                },
-            ),
-            Path::ConnectionPath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState {
-                    height,
-                    state: Decode::<unionlabs::encoding::Proto>::decode(&query_result.value)
-                        .unwrap(),
-                    path,
-                },
-            ),
-            Path::ChannelEndPath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState {
-                    height,
-                    state: Decode::<unionlabs::encoding::Proto>::decode(&query_result.value)
-                        .unwrap(),
-                    path,
-                },
-            ),
-            Path::CommitmentPath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState {
-                    height,
-                    state: query_result.value.try_into().unwrap(),
-                    path,
-                },
-            ),
-            Path::AcknowledgementPath(path) => data::<Hc, Tr>(
-                c.chain_id(),
-                IbcState {
-                    height,
-                    state: query_result.value.try_into().unwrap(),
-                    path,
-                },
-            ),
-        },
-        AbciQueryType::Proof => {
-            let proof = MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
-                proofs: query_result
-                    .proof_ops
-                    .unwrap()
-                    .ops
-                    .into_iter()
-                    .map(|op| {
-                        protos::cosmos::ics23::v1::CommitmentProof::decode(op.data.as_slice())
-                            .unwrap()
-                    })
-                    .collect::<Vec<_>>(),
-            })
-            .unwrap();
-
-            match path {
-                Path::ClientStatePath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-                Path::ClientConsensusStatePath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-                Path::ConnectionPath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-                Path::ChannelEndPath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-                Path::CommitmentPath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-                Path::AcknowledgementPath(path) => data::<Hc, Tr>(
-                    c.chain_id(),
-                    IbcProof::<Hc, Tr, _> {
-                        proof,
-                        height,
-                        path,
-                        __marker: PhantomData,
-                    },
-                ),
-            }
-        }
-    }
-}
-
 #[derive(
     DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
 )]
@@ -939,39 +773,38 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> Vec<RelayerMsg> {
-        [match data {
+    ) -> RelayerMsg {
+        match data {
             CosmosAggregateMsg::AggregateHeader(data) => {
                 do_aggregate(Identified::new(chain_id, data), aggregate_data)
             }
-        }]
-        .into()
+        }
     }
 }
 
 const _: () = {
     try_from_relayer_msg! {
-        chain = Cosmos,
-        generics = (Tr: ChainExt),
-        msgs = CosmosDataMsg(
-            TrustedCommit(TrustedCommit<Tr>),
-            UntrustedCommit(UntrustedCommit<Tr>),
-            TrustedValidators(TrustedValidators<Tr>),
-            UntrustedValidators(UntrustedValidators<Tr>),
-        ),
+    chain = Cosmos,
+    generics = (Tr: ChainExt),
+    msgs = CosmosDataMsg(
+    TrustedCommit(TrustedCommit<Tr>),
+    UntrustedCommit(UntrustedCommit<Tr>),
+    TrustedValidators(TrustedValidators<Tr>),
+    UntrustedValidators(UntrustedValidators<Tr>),
+    ),
     }
 };
 
 const _: () = {
     try_from_relayer_msg! {
-        chain = Wasm<Cosmos>,
-        generics = (Tr: ChainExt),
-        msgs = CosmosDataMsg(
-            TrustedCommit(TrustedCommit<Tr>),
-            UntrustedCommit(UntrustedCommit<Tr>),
-            TrustedValidators(TrustedValidators<Tr>),
-            UntrustedValidators(UntrustedValidators<Tr>),
-        ),
+    chain = Wasm<Cosmos>,
+    generics = (Tr: ChainExt),
+    msgs = CosmosDataMsg(
+    TrustedCommit(TrustedCommit<Tr>),
+    UntrustedCommit(UntrustedCommit<Tr>),
+    TrustedValidators(TrustedValidators<Tr>),
+    UntrustedValidators(UntrustedValidators<Tr>),
+    ),
     }
 };
 
@@ -997,22 +830,6 @@ pub struct FetchTrustedValidators {
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchUntrustedValidators {
     pub height: Height,
-}
-
-// TODO: Deduplicate this from union
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub struct FetchAbciQuery<Hc: ChainExt, Tr: ChainExt> {
-    path: PathOf<Hc, Tr>,
-    height: HeightOf<Hc>,
-    ty: AbciQueryType,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub enum AbciQueryType {
-    State,
-    Proof,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -1047,10 +864,10 @@ where
     AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Hc>)>,
 {
     type AggregatedData = HList![
-        Identified<Hc, Tr, TrustedCommit<Tr>>,
-        Identified<Hc, Tr, UntrustedCommit<Tr>>,
-        Identified<Hc, Tr, TrustedValidators<Tr>>,
-        Identified<Hc, Tr, UntrustedValidators<Tr>>,
+    Identified<Hc, Tr, TrustedCommit<Tr>>,
+    Identified<Hc, Tr, UntrustedCommit<Tr>>,
+    Identified<Hc, Tr, TrustedValidators<Tr>>,
+    Identified<Hc, Tr, UntrustedValidators<Tr>>,
     ];
 
     fn aggregate(
@@ -1110,7 +927,7 @@ where
             untrusted_signed_header.header.proposer_address.clone(),
         );
 
-        msg::<Tr, Hc>(
+        msg(Identified::<Tr, Hc, _>::new(
             req.counterparty_chain_id,
             MsgUpdateClientData(MsgUpdateClient {
                 client_id: req.counterparty_client_id.clone(),
@@ -1121,7 +938,7 @@ where
                     trusted_validators: trusted_valset,
                 },
             }),
-        )
+        ))
     }
 }
 

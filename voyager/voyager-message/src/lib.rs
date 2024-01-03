@@ -1,11 +1,11 @@
 #![feature(trait_alias)]
-#![allow(clippy::type_complexity)]
+#![allow(clippy::type_complexity, async_fn_in_trait)]
 
 use std::{
-    collections::VecDeque,
+    collections::{HashMap, VecDeque},
     fmt::{Debug, Display},
     future::Future,
-    marker::PhantomData,
+    marker::{PhantomData, Send},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -33,9 +33,10 @@ use unionlabs::{
 };
 
 use crate::{
-    aggregate::{Aggregate, AnyAggregate},
+    aggregate::AnyAggregate,
+    ctors::{aggregate, defer, retry, seq},
     data::{AnyData, Data},
-    event::{AnyEvent, Event},
+    event::AnyEvent,
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
     msg::{
         AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
@@ -70,23 +71,12 @@ pub trait ChainExt: Chain {
     /// The config required to construct this light client.
     type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
 
-    fn do_fetch<Tr: ChainExt>(
-        &self,
-        msg: Self::Fetch<Tr>,
-    ) -> impl Future<Output = Vec<RelayerMsg>> + '_
+    fn do_fetch<Tr: ChainExt>(&self, msg: Self::Fetch<Tr>) -> impl Future<Output = RelayerMsg> + '_
     where
         Self::Fetch<Tr>: DoFetch<Self>,
     {
         DoFetch::do_fetch(self, msg)
     }
-}
-
-pub trait IntoRelayerMsg {
-    fn into_relayer_msg(self) -> RelayerMsg;
-}
-
-pub trait TryFromRelayerMsg: Sized {
-    fn try_from_relayer_msg(msg: RelayerMsg) -> Result<Self, RelayerMsg>;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -96,150 +86,298 @@ pub enum DeferPoint {
     Relative,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 #[serde(
+    bound(serialize = "", deserialize = ""),
     tag = "@type",
     content = "@value",
     rename_all = "snake_case",
     deny_unknown_fields
 )]
-pub enum RelayerMsg {
-    Event(AnyLightClientIdentified<AnyEvent>),
+pub enum QueueMsg<T: QueueMsgTypes> {
+    Event(T::Event),
     // data that has been read
-    Data(AnyLightClientIdentified<AnyData>),
+    Data(T::Data),
     // read
-    Fetch(AnyLightClientIdentified<AnyFetch>),
+    Fetch(T::Fetch),
     // write
-    Msg(AnyLightClientIdentified<AnyMsg>),
-    Wait(AnyLightClientIdentified<AnyWait>),
+    Msg(T::Msg),
+    Wait(T::Wait),
     DeferUntil {
         point: DeferPoint,
         seconds: u64,
     },
     Repeat {
         times: u64,
-        msg: Box<RelayerMsg>,
+        msg: Box<Self>,
     },
     Timeout {
         timeout_timestamp: u64,
-        msg: Box<RelayerMsg>,
+        msg: Box<Self>,
     },
-    Sequence(VecDeque<RelayerMsg>),
+    Sequence(VecDeque<Self>),
     Retry {
         remaining: u8,
-        msg: Box<RelayerMsg>,
+        msg: Box<Self>,
     },
     Aggregate {
         /// Messages that are expected to resolve to [`Data`].
-        queue: VecDeque<RelayerMsg>,
+        queue: VecDeque<Self>,
         /// The resolved data messages.
-        data: VecDeque<AnyLightClientIdentified<AnyData>>,
+        data: VecDeque<T::Data>,
         /// The message that will utilize the aggregated data.
-        receiver: AnyLightClientIdentified<AnyAggregate>,
+        receiver: T::Aggregate,
     },
+    Noop,
 }
+
+pub mod ctors {
+    use crate::{DeferPoint, QueueMsg, QueueMsgTypes};
+
+    #[inline]
+    pub fn retry<T: QueueMsgTypes>(count: u8, t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
+        QueueMsg::Retry {
+            remaining: count,
+            msg: Box::new(t.into()),
+        }
+    }
+
+    #[inline]
+    pub fn repeat<T: QueueMsgTypes>(times: u64, t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
+        QueueMsg::Repeat {
+            times,
+            msg: Box::new(t.into()),
+        }
+    }
+
+    #[inline]
+    pub fn seq<T: QueueMsgTypes>(ts: impl IntoIterator<Item = QueueMsg<T>>) -> QueueMsg<T> {
+        QueueMsg::Sequence(ts.into_iter().collect())
+    }
+
+    #[inline]
+    pub fn defer<T: QueueMsgTypes>(timestamp: u64) -> QueueMsg<T> {
+        QueueMsg::DeferUntil {
+            point: DeferPoint::Absolute,
+            seconds: timestamp,
+        }
+    }
+
+    #[inline]
+    pub fn defer_relative<T: QueueMsgTypes>(seconds: u64) -> QueueMsg<T> {
+        QueueMsg::DeferUntil {
+            point: DeferPoint::Relative,
+            seconds,
+        }
+    }
+
+    #[inline]
+    pub fn fetch<T: QueueMsgTypes>(t: impl Into<T::Fetch>) -> QueueMsg<T> {
+        QueueMsg::Fetch(t.into())
+    }
+
+    #[inline]
+    pub fn msg<T: QueueMsgTypes>(t: impl Into<T::Msg>) -> QueueMsg<T> {
+        QueueMsg::Msg(t.into())
+    }
+
+    #[inline]
+    pub fn data<T: QueueMsgTypes>(t: impl Into<T::Data>) -> QueueMsg<T> {
+        QueueMsg::Data(t.into())
+    }
+
+    #[inline]
+    pub fn wait<T: QueueMsgTypes>(t: impl Into<T::Wait>) -> QueueMsg<T> {
+        QueueMsg::Wait(t.into())
+    }
+
+    #[inline]
+    pub fn event<T: QueueMsgTypes>(t: impl Into<T::Event>) -> QueueMsg<T> {
+        QueueMsg::Event(t.into())
+    }
+
+    #[inline]
+    pub fn aggregate<T: QueueMsgTypes>(
+        queue: impl IntoIterator<Item = QueueMsg<T>>,
+        data: impl IntoIterator<Item = T::Data>,
+        receiver: impl Into<T::Aggregate>,
+    ) -> QueueMsg<T> {
+        QueueMsg::Aggregate {
+            queue: queue.into_iter().collect(),
+            data: data.into_iter().collect(),
+            receiver: receiver.into(),
+        }
+    }
+}
+
+pub trait TryFromIntoQueueMsg<T: QueueMsgTypes> =
+    TryFrom<QueueMsg<T>, Error = QueueMsg<T>> + Into<QueueMsg<T>>;
+
+pub trait QueueMsgTypes: Sized + 'static {
+    type Event: HandleEvent<Self>
+        + Debug
+        + Display
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'a> Deserialize<'a>
+        + Send
+        + Sync;
+    type Data: Debug
+        + Display
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'a> Deserialize<'a>
+        + Send
+        + Sync;
+    type Fetch: HandleFetch<Self>
+        + Debug
+        + Display
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'a> Deserialize<'a>
+        + Send
+        + Sync;
+    type Msg: HandleMsg<Self>
+        + Debug
+        + Display
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'a> Deserialize<'a>
+        + Send
+        + Sync;
+    type Wait: HandleWait<Self>
+        + Debug
+        + Display
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'a> Deserialize<'a>
+        + Send
+        + Sync;
+    type Aggregate: HandleAggregate<Self>
+        + Debug
+        + Display
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'a> Deserialize<'a>
+        + Send
+        + Sync;
+
+    type Store: Send + Sync;
+}
+
+pub struct RelayerMsgTypes;
+
+impl QueueMsgTypes for RelayerMsgTypes {
+    type Event = AnyLightClientIdentified<AnyEvent>;
+    type Data = AnyLightClientIdentified<AnyData>;
+    type Fetch = AnyLightClientIdentified<AnyFetch>;
+    type Msg = AnyLightClientIdentified<AnyMsg>;
+    type Wait = AnyLightClientIdentified<AnyWait>;
+    type Aggregate = AnyLightClientIdentified<AnyAggregate>;
+
+    type Store = Chains;
+}
+
+pub type RelayerMsg = QueueMsg<RelayerMsgTypes>;
 
 pub trait GetChain<Hc: ChainExt> {
     fn get_chain(&self, chain_id: &ChainIdOf<Hc>) -> Hc;
 }
 
-impl RelayerMsg {
+#[derive(Debug, Clone)]
+pub struct Chains {
+    // TODO: Use some sort of typemap here instead of individual fields
+    pub evm_minimal: HashMap<ChainIdOf<Evm<Minimal>>, Evm<Minimal>>,
+    pub evm_mainnet: HashMap<ChainIdOf<Evm<Mainnet>>, Evm<Mainnet>>,
+    pub union: HashMap<ChainIdOf<Union>, Union>,
+    pub cosmos: HashMap<ChainIdOf<Cosmos>, Cosmos>,
+}
+
+impl GetChain<Wasm<Union>> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Union>>) -> Wasm<Union> {
+        Wasm(self.union.get(chain_id).unwrap().clone())
+    }
+}
+
+impl GetChain<Wasm<Cosmos>> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Cosmos>>) -> Wasm<Cosmos> {
+        Wasm(self.cosmos.get(chain_id).unwrap().clone())
+    }
+}
+
+impl GetChain<Union> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Union>) -> Union {
+        self.union.get(chain_id).unwrap().clone()
+    }
+}
+
+impl GetChain<Evm<Minimal>> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Minimal>>) -> Evm<Minimal> {
+        self.evm_minimal.get(chain_id).unwrap().clone()
+    }
+}
+
+impl GetChain<Evm<Mainnet>> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Mainnet>>) -> Evm<Mainnet> {
+        self.evm_mainnet.get(chain_id).unwrap().clone()
+    }
+}
+
+impl<T: QueueMsgTypes> QueueMsg<T> {
     // NOTE: Box is required bc recursion
-    pub fn handle<G>(
+    pub fn handle(
         self,
-        g: &G,
+        store: &T::Store,
         depth: usize,
-    ) -> BoxFuture<'_, Result<Vec<RelayerMsg>, Box<dyn std::error::Error>>>
-    where
-        G: Send
-            + Sync
-            + GetChain<Evm<Mainnet>>
-            + GetChain<Evm<Minimal>>
-            + GetChain<Wasm<Union>>
-            + GetChain<Union>
-            + GetChain<Wasm<Cosmos>>,
-    {
+    ) -> BoxFuture<'_, Result<Option<QueueMsg<T>>, Box<dyn std::error::Error>>> {
         tracing::info!(
             depth,
             %self,
             "handling message",
         );
 
-        macro_rules! any_lc {
-            (|$msg:ident| $expr:expr) => {
-                match $msg {
-                    AnyLightClientIdentified::EvmMainnetOnUnion($msg) => $expr,
-                    AnyLightClientIdentified::UnionOnEvmMainnet($msg) => $expr,
-                    AnyLightClientIdentified::EvmMinimalOnUnion($msg) => $expr,
-                    AnyLightClientIdentified::UnionOnEvmMinimal($msg) => $expr,
-                    AnyLightClientIdentified::CosmosOnUnion($msg) => $expr,
-                    AnyLightClientIdentified::UnionOnCosmos($msg) => $expr,
-                }
-            };
-        }
-
-        async move {
+        let fut = async move {
             match self {
-                RelayerMsg::Event(event) => any_lc! {
-                    |event| Ok(event.t.handle(g.get_chain(&event.chain_id)))
-                },
-                RelayerMsg::Data(data) => {
+                QueueMsg::Event(event) => Ok(Some(event.handle(store))),
+                QueueMsg::Data(data) => {
                     tracing::error!(
                         data = %serde_json::to_string(&data).unwrap(),
                         "received data outside of an aggregation"
                     );
 
-                    Ok([].into())
+                    Ok(None)
                 }
-                RelayerMsg::Fetch(fetch) => any_lc! {
-                    |fetch| Ok(fetch.t.handle(g.get_chain(&fetch.chain_id)).await)
-                },
-                RelayerMsg::Msg(msg) => {
-                    // NOTE: `Msg`s don't requeue any `RelayerMsg`s; they are side-effect only.
-                    match msg {
-                        AnyLightClientIdentified::EvmMainnetOnUnion(msg) => {
-                            DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.t).await?
-                        },
-                        AnyLightClientIdentified::EvmMinimalOnUnion(msg) => {
-                            DoMsg::msg(&GetChain::<Wasm<Union>>::get_chain(g, &msg.chain_id),msg.t).await?
-                        },
-                        AnyLightClientIdentified::UnionOnEvmMainnet(msg) => {
-                            DoMsg::msg(&GetChain::<Evm<Mainnet>>::get_chain(g, &msg.chain_id),msg.t).await?
-                        },
-                        AnyLightClientIdentified::UnionOnEvmMinimal(msg) => {
-                            DoMsg::msg(&GetChain::<Evm<Minimal>>::get_chain(g, &msg.chain_id),msg.t).await?
-                        },
-                        AnyLightClientIdentified::CosmosOnUnion(msg) => {
-                            DoMsg::msg(&GetChain::<Union>::get_chain(g, &msg.chain_id),msg.t).await?
-                        },
-                        AnyLightClientIdentified::UnionOnCosmos(msg) => {
-                            DoMsg::msg(&GetChain::<Wasm<Cosmos>>::get_chain(g, &msg.chain_id),msg.t).await?
-                        },
-                    };
+                QueueMsg::Fetch(fetch) => Ok(Some(fetch.handle(store).await)),
+                QueueMsg::Msg(msg) => {
+                    msg.handle(store).await?;
 
-                    Ok([].into())
-                },
-                RelayerMsg::Wait(wait) => any_lc! {
-                    |wait| Ok(wait.t.handle(g.get_chain(&wait.chain_id)).await)
-                },
+                    Ok(None)
+                }
+                QueueMsg::Wait(wait) => Ok(Some(wait.handle(store).await)),
 
-                RelayerMsg::DeferUntil { point: DeferPoint::Relative, seconds } =>
-                    Ok([RelayerMsg::DeferUntil { point: DeferPoint::Absolute, seconds: now() + seconds }].into()),
-
-                RelayerMsg::DeferUntil { seconds, .. } => {
+                QueueMsg::DeferUntil {
+                    point: DeferPoint::Relative,
+                    seconds,
+                } => Ok(Some(defer(now() + seconds))),
+                QueueMsg::DeferUntil { seconds, .. } => {
                     // if we haven't hit the time yet, requeue the defer msg
                     if now() < seconds {
                         // TODO: Make the time configurable?
                         tokio::time::sleep(Duration::from_secs(1)).await;
 
-                        Ok([defer(seconds)].into())
+                        Ok(Some(defer(seconds)))
                     } else {
-                        Ok(vec![])
+                        Ok(None)
                     }
                 }
-
-                RelayerMsg::Timeout {
+                QueueMsg::Timeout {
                     timeout_timestamp,
                     msg,
                 } => {
@@ -247,102 +385,87 @@ impl RelayerMsg {
                     if now() > timeout_timestamp {
                         tracing::warn!(json = %serde_json::to_string(&msg).unwrap(), "message expired");
 
-                        Ok([].into())
+                        Ok(None)
                     } else {
-                        msg.handle(g, depth + 1).await
+                        msg.handle(store, depth + 1).await
                     }
                 }
-                RelayerMsg::Sequence(mut queue) => {
-                    let msgs = match queue.pop_front() {
-                        Some(msg) => msg.handle(g, depth + 1).await?,
-                        None => return Ok(vec![]),
-                    };
+                QueueMsg::Sequence(mut queue) => match queue.pop_front() {
+                    Some(msg) => {
+                        let msg = msg.handle(store, depth + 1).await?;
 
-                    for msg in msgs.into_iter().rev() {
-                        queue.push_front(msg);
+                        if let Some(msg) = msg {
+                            queue.push_front(msg);
+                        }
+
+                        Ok(Some(flatten_seq(seq(queue))))
                     }
-
-                    Ok([flatten_seq(seq(queue))].into())
-                }
-
-                RelayerMsg::Retry { remaining, msg } =>  {
+                    None => Ok(None),
+                },
+                QueueMsg::Retry { remaining, msg } => {
                     const RETRY_DELAY_SECONDS: u64 = 3;
 
-                    match msg.clone().handle(g, depth + 1).await {
+                    match msg.clone().handle(store, depth + 1).await {
                         Ok(ok) => Ok(ok),
-                        Err(err) => if remaining > 0 {
-                            let retries_left = remaining - 1;
-                            tracing::warn!(
-                                %msg,
-                                retries_left,
-                                ?err,
-                                "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds"
-                            );
-                            Ok([seq([defer(now() + RETRY_DELAY_SECONDS), retry(retries_left, *msg)])].into())
-                        } else {
-                            tracing::error!(%msg, "msg failed after all retries");
-                            Err(err)
-                        },
-                    }
-                },
+                        Err(err) => {
+                            if remaining > 0 {
+                                let retries_left = remaining - 1;
 
-                RelayerMsg::Aggregate {
+                                tracing::warn!(
+                                    %msg,
+                                    retries_left,
+                                    ?err,
+                                    "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds"
+                                );
+
+                                Ok(Some(seq([
+                                    defer(now() + RETRY_DELAY_SECONDS),
+                                    retry(retries_left, *msg),
+                                ])))
+                            } else {
+                                tracing::error!(%msg, "msg failed after all retries");
+                                Err(err)
+                            }
+                        }
+                    }
+                }
+                QueueMsg::Aggregate {
                     mut queue,
                     mut data,
                     receiver,
                 } => {
                     if let Some(msg) = queue.pop_front() {
-                        let msgs = msg.handle(g, depth + 1).await?;
+                        let msg = msg.handle(store, depth + 1).await?;
 
-                        for m in msgs {
-                            match <AnyLightClientIdentified<AnyData>>::try_from(m) {
-                                Ok(d) => {
-                                    data.push_back(d);
-                                }
-                                Err(m) => {
-                                    queue.push_back(m);
-                                }
+                        match msg {
+                            Some(QueueMsg::Data(d)) => {
+                                data.push_back(d);
                             }
+                            Some(m) => {
+                                queue.push_back(m);
+                            }
+                            None => {}
                         }
 
-                        let res = [RelayerMsg::Aggregate {
-                            queue,
-                            data,
-                            receiver,
-                        }]
-                        .into();
-
-                        Ok(res)
+                        Ok(Some(aggregate(queue, data, receiver)))
                     } else {
                         // queue is empty, handle msg
-
-                        let res = match receiver {
-                            AnyLightClientIdentified::EvmMainnetOnUnion(msg) => {
-                                msg.handle(data)
-                            }
-                            AnyLightClientIdentified::EvmMinimalOnUnion(msg) => {
-                                msg.handle(data)
-                            }
-                            AnyLightClientIdentified::UnionOnEvmMainnet(msg) => {
-                                msg.handle(data)
-                            }
-                            AnyLightClientIdentified::UnionOnEvmMinimal(msg) => {
-                                msg.handle(data)
-                            }
-                            AnyLightClientIdentified::CosmosOnUnion(msg) => msg.handle(data),
-                            AnyLightClientIdentified::UnionOnCosmos(msg) => msg.handle(data),
-                        };
-
-                        Ok(res)
+                        Ok(Some(receiver.handle(data)))
                     }
                 }
-                RelayerMsg::Repeat { times: 0, .. } => Ok([].into()),
-                RelayerMsg::Repeat { times, msg } => {
-                    Ok([flatten_seq(seq([*msg.clone(), RelayerMsg::Repeat { times: times - 1, msg}]))].into())
-                },
+                QueueMsg::Repeat { times: 0, .. } => Ok(None),
+                QueueMsg::Repeat { times, msg } => Ok(Some(flatten_seq(seq([
+                    *msg.clone(),
+                    QueueMsg::Repeat {
+                        times: times - 1,
+                        msg,
+                    },
+                ])))),
+                QueueMsg::Noop => Ok(None),
             }
-        }
-        .boxed()
+        };
+
+        fut.boxed()
     }
 }
 
@@ -368,23 +491,23 @@ impl RelayerMsg {
 //     CometblsMinimal(identified!(LcError<Evm<Minimal>, Wasm<Union>>)),
 // }
 
-impl std::fmt::Display for RelayerMsg {
+impl<T: QueueMsgTypes> std::fmt::Display for QueueMsg<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RelayerMsg::Event(event) => write!(f, "Event({event})"),
-            RelayerMsg::Data(data) => write!(f, "Data({data})"),
-            RelayerMsg::Fetch(fetch) => write!(f, "Fetch({fetch})"),
-            RelayerMsg::Msg(msg) => write!(f, "Msg({msg})"),
-            RelayerMsg::Wait(wait) => write!(f, "Wait({wait})"),
-            RelayerMsg::DeferUntil { point, seconds } => {
+            QueueMsg::Event(event) => write!(f, "Event({event})"),
+            QueueMsg::Data(data) => write!(f, "Data({data})"),
+            QueueMsg::Fetch(fetch) => write!(f, "Fetch({fetch})"),
+            QueueMsg::Msg(msg) => write!(f, "Msg({msg})"),
+            QueueMsg::Wait(wait) => write!(f, "Wait({wait})"),
+            QueueMsg::DeferUntil { point, seconds } => {
                 write!(f, "DeferUntil({:?}, {seconds})", point)
             }
-            RelayerMsg::Repeat { times, msg } => write!(f, "Repeat({times}, {msg})"),
-            RelayerMsg::Timeout {
+            QueueMsg::Repeat { times, msg } => write!(f, "Repeat({times}, {msg})"),
+            QueueMsg::Timeout {
                 timeout_timestamp,
                 msg,
             } => write!(f, "Timeout({timeout_timestamp}, {msg})"),
-            RelayerMsg::Sequence(queue) => {
+            QueueMsg::Sequence(queue) => {
                 write!(f, "Sequence [")?;
                 let len = queue.len();
                 for (idx, msg) in queue.iter().enumerate() {
@@ -395,8 +518,8 @@ impl std::fmt::Display for RelayerMsg {
                 }
                 write!(f, "]")
             }
-            RelayerMsg::Retry { remaining, msg } => write!(f, "Retry({remaining}, {msg})"),
-            RelayerMsg::Aggregate {
+            QueueMsg::Retry { remaining, msg } => write!(f, "Retry({remaining}, {msg})"),
+            QueueMsg::Aggregate {
                 queue,
                 data,
                 receiver,
@@ -414,6 +537,9 @@ impl std::fmt::Display for RelayerMsg {
                     .join(", ");
 
                 write!(f, "Aggregate([{queue}] -> [{data}] -> {receiver})")
+            }
+            QueueMsg::Noop => {
+                write!(f, "Noop")
             }
         }
     }
@@ -438,25 +564,37 @@ macro_rules! any_enum {
             $(
                 $(#[doc = $doc:literal])*
                 $(#[serde($untagged:ident)])*
-                $Variant:ident$((
+                $Variant:ident(
                     $(#[$variant_inner_meta:meta])*
                     $VariantInner:ty
-                ))?,
+                ),
             )+
         }
     ) => {
-        #[derive(frame_support_procedural::DebugNoBound, frame_support_procedural::CloneNoBound, frame_support_procedural::PartialEqNoBound, serde::Serialize, serde::Deserialize)]
-        #[serde(bound(serialize = "", deserialize = ""), tag = "@type", content = "@value", rename_all = "snake_case")]
+        #[derive(
+            ::frame_support_procedural::DebugNoBound,
+            ::frame_support_procedural::CloneNoBound,
+            ::frame_support_procedural::PartialEqNoBound,
+            ::serde::Serialize,
+            ::serde::Deserialize,
+            ::enumorph::Enumorph,
+        )]
+        #[serde(
+            bound(serialize = "", deserialize = ""),
+            tag = "@type",
+            content = "@value",
+            rename_all = "snake_case"
+        )]
         $(#[doc = $outer_doc])*
         #[allow(clippy::large_enum_variant)]
         pub enum $Enum<Hc: ChainExt, Tr: ChainExt> {
             $(
                 $(#[doc = $doc])*
                 $(#[serde($untagged)])*
-                $Variant$((
+                $Variant(
                     $(#[$variant_inner_meta])*
                     $VariantInner
-                ))?,
+                ),
             )+
         }
 
@@ -465,29 +603,57 @@ macro_rules! any_enum {
             type Inner<Hc: ChainExt, Tr: ChainExt> = $Enum<Hc, Tr>;
         }
 
-        $(
+        const _: () = {
+            use crate::{AnyLightClientIdentified, Identified};
+
             $(
-                impl<Hc: ChainExt, Tr: ChainExt> TryFrom<$Enum<Hc, Tr>> for $VariantInner {
-                    type Error = $Enum<Hc, Tr>;
-
-                    fn try_from(value: $Enum<Hc, Tr>) -> Result<Self, Self::Error> {
-                        match value {
-                            $Enum::$Variant(t) => Ok(t),
-                            _ => Err(value),
-                        }
+                impl<Hc: ChainExt, Tr: ChainExt> From<Identified<Hc, Tr, $VariantInner>>
+                    for AnyLightClientIdentified<$Any>
+                where
+                    $VariantInner: Into<$Enum<Hc, Tr>>,
+                    AnyLightClientIdentified<$Any>: From<Identified<Hc, Tr, $Enum<Hc, Tr>>>,
+                {
+                    fn from(
+                        Identified {
+                            chain_id,
+                            t,
+                            __marker: _,
+                        }: Identified<Hc, Tr, $VariantInner>,
+                    ) -> Self {
+                        Self::from(Identified::new(
+                            chain_id,
+                            <$Enum<Hc, Tr>>::from(t),
+                        ))
                     }
                 }
 
-                impl<Hc: ChainExt, Tr: ChainExt> From<$VariantInner> for $Enum<Hc, Tr> {
-                    fn from(value: $VariantInner) -> Self {
-                        Self::$Variant(value)
+                impl<Hc: ChainExt, Tr: ChainExt>
+                    TryFrom<AnyLightClientIdentified<$Any>> for Identified<Hc, Tr, $VariantInner>
+                where
+                    Identified<Hc, Tr, $Enum<Hc, Tr>>: TryFrom<AnyLightClientIdentified<$Any>, Error = AnyLightClientIdentified<$Any>>
+                    + Into<AnyLightClientIdentified<$Any>>,
+                {
+                    type Error = AnyLightClientIdentified<$Any>;
+
+                    fn try_from(value: AnyLightClientIdentified<$Any>) -> Result<Self, Self::Error> {
+                        let Identified {
+                            chain_id,
+                            t,
+                            __marker: _,
+                        } = <Identified<Hc, Tr, $Enum<Hc, Tr>>>::try_from(value)?;
+
+                        Ok(Identified::new(
+                            chain_id.clone(),
+                            <$VariantInner>::try_from(t).map_err(|x: $Enum<Hc, Tr>| {
+                                Into::<AnyLightClientIdentified<_>>::into(Identified::new(chain_id, x))
+                            })?,
+                        ))
                     }
                 }
-            )?
-        )+
+            )+
+        };
     };
 }
-
 pub(crate) use any_enum;
 
 pub type PathOf<Hc, Tr> = proof::Path<ClientIdOf<Hc>, HeightOf<Tr>>;
@@ -624,47 +790,6 @@ impl<T: AnyLightClient> From<AnyLightClientIdentifiedSerde<T>> for AnyLightClien
 }
 
 #[macro_export]
-// TODO: Replace all uses of this with enumorph
-macro_rules! enum_variants_conversions {
-    (
-        $(#[$meta:meta])*
-        pub enum $Enum:ident {
-            $(
-                $(#[$inner_meta:meta])*
-                $Variant:ident($Inner:ty),
-            )+
-        }
-    ) => {
-        $(#[$meta])*
-        pub enum $Enum {
-            $(
-                $(#[$inner_meta])*
-                $Variant($Inner),
-            )+
-        }
-
-        $(
-            impl From<$Inner> for $Enum {
-                fn from(inner: $Inner) -> Self {
-                    Self::$Variant(inner)
-                }
-            }
-
-            impl TryFrom<$Enum> for $Inner {
-                type Error = $Enum;
-
-                fn try_from(value: $Enum) -> Result<Self, Self::Error> {
-                    match value {
-                        $Enum::$Variant(inner) => Ok(inner),
-                        _ => Err(value),
-                    }
-                }
-            }
-        )+
-    };
-}
-
-#[macro_export]
 macro_rules! identified {
     ($Ty:ident<$Hc:ty, $Tr:ty>) => {
         $crate::Identified<$Hc, $Tr, $Ty<$Hc, $Tr>>
@@ -745,7 +870,7 @@ impl<Hc: Chain, Tr, Data: Debug + Clone + PartialEq> Identified<Hc, Tr, Data> {
 }
 
 pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
-    fn do_aggregate(_: Self, _: VecDeque<AnyLightClientIdentified<AnyData>>) -> Vec<RelayerMsg>;
+    fn do_aggregate(_: Self, _: VecDeque<AnyLightClientIdentified<AnyData>>) -> RelayerMsg;
 }
 
 pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
@@ -771,108 +896,6 @@ pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
     fn msg(&self, msg: Msg<Hc, Tr>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
 }
 
-// helper fns
-
-pub fn retry(count: u8, t: impl Into<RelayerMsg>) -> RelayerMsg {
-    RelayerMsg::Retry {
-        remaining: count,
-        msg: Box::new(t.into()),
-    }
-}
-
-pub fn seq(ts: impl IntoIterator<Item = RelayerMsg>) -> RelayerMsg {
-    RelayerMsg::Sequence(ts.into_iter().collect())
-}
-
-pub fn defer(timestamp: u64) -> RelayerMsg {
-    RelayerMsg::DeferUntil {
-        point: DeferPoint::Absolute,
-        seconds: timestamp,
-    }
-}
-
-pub fn defer_relative(seconds: u64) -> RelayerMsg {
-    RelayerMsg::DeferUntil {
-        point: DeferPoint::Relative,
-        seconds,
-    }
-}
-
-pub fn fetch<Hc: ChainExt, Tr: ChainExt>(
-    chain_id: ChainIdOf<Hc>,
-    t: impl Into<Fetch<Hc, Tr>>,
-) -> RelayerMsg
-where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
-{
-    RelayerMsg::Fetch(AnyLightClientIdentified::from(Identified::new(
-        chain_id,
-        t.into(),
-    )))
-}
-
-pub fn msg<Hc: ChainExt, Tr: ChainExt>(
-    chain_id: ChainIdOf<Hc>,
-    t: impl Into<Msg<Hc, Tr>>,
-) -> RelayerMsg
-where
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Hc, Tr>)>,
-{
-    RelayerMsg::Msg(AnyLightClientIdentified::from(Identified::new(
-        chain_id,
-        t.into(),
-    )))
-}
-
-pub fn data<Hc: ChainExt, Tr: ChainExt>(
-    chain_id: ChainIdOf<Hc>,
-    t: impl Into<Data<Hc, Tr>>,
-) -> RelayerMsg
-where
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
-{
-    RelayerMsg::Data(AnyLightClientIdentified::from(Identified::new(
-        chain_id,
-        t.into(),
-    )))
-}
-
-pub fn wait<Hc: ChainExt, Tr: ChainExt>(
-    chain_id: ChainIdOf<Hc>,
-    t: impl Into<Wait<Hc, Tr>>,
-) -> RelayerMsg
-where
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
-{
-    RelayerMsg::Wait(AnyLightClientIdentified::from(Identified::new(
-        chain_id,
-        t.into(),
-    )))
-}
-
-pub fn event<Hc: ChainExt, Tr: ChainExt>(
-    chain_id: ChainIdOf<Hc>,
-    t: impl Into<Event<Hc, Tr>>,
-) -> RelayerMsg
-where
-    AnyLightClientIdentified<AnyEvent>: From<identified!(Event<Hc, Tr>)>,
-{
-    RelayerMsg::Event(AnyLightClientIdentified::from(Identified::new(
-        chain_id,
-        t.into(),
-    )))
-}
-
-pub fn aggregate<Hc: ChainExt, Tr: ChainExt>(
-    chain_id: ChainIdOf<Hc>,
-    t: impl Into<Aggregate<Hc, Tr>>,
-) -> AnyLightClientIdentified<AnyAggregate>
-where
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
-{
-    AnyLightClientIdentified::from(Identified::new(chain_id, t.into()))
-}
-
 /// Returns the current unix timestamp in seconds.
 pub fn now() -> u64 {
     SystemTime::now()
@@ -881,9 +904,9 @@ pub fn now() -> u64 {
         .as_secs()
 }
 
-fn flatten_seq(msg: RelayerMsg) -> RelayerMsg {
-    fn flatten(msg: RelayerMsg) -> VecDeque<RelayerMsg> {
-        if let RelayerMsg::Sequence(new_seq) = msg {
+fn flatten_seq<T: QueueMsgTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
+    fn flatten<T: QueueMsgTypes>(msg: QueueMsg<T>) -> VecDeque<QueueMsg<T>> {
+        if let QueueMsg::Sequence(new_seq) = msg {
             new_seq.into_iter().flat_map(flatten).collect()
         } else {
             [msg].into()
@@ -901,9 +924,53 @@ fn flatten_seq(msg: RelayerMsg) -> RelayerMsg {
 
 #[test]
 fn flatten() {
-    use crate::{defer, seq};
+    struct EmptyMsgTypes;
 
-    let msg = seq([
+    #[derive(Debug, derive_more::Display, Clone, PartialEq, Serialize, Deserialize)]
+    struct Unit;
+
+    impl HandleMsg<EmptyMsgTypes> for Unit {
+        async fn handle(self, _: &()) -> Result<(), Box<dyn std::error::Error>> {
+            todo!()
+        }
+    }
+
+    impl HandleEvent<EmptyMsgTypes> for Unit {
+        fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
+            todo!()
+        }
+    }
+
+    impl HandleFetch<EmptyMsgTypes> for Unit {
+        async fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
+            todo!()
+        }
+    }
+
+    impl HandleWait<EmptyMsgTypes> for Unit {
+        async fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
+            todo!()
+        }
+    }
+
+    impl HandleAggregate<EmptyMsgTypes> for Unit {
+        fn handle(self, _: VecDeque<Unit>) -> QueueMsg<EmptyMsgTypes> {
+            todo!()
+        }
+    }
+
+    impl QueueMsgTypes for EmptyMsgTypes {
+        type Event = Unit;
+        type Data = Unit;
+        type Fetch = Unit;
+        type Msg = Unit;
+        type Wait = Unit;
+        type Aggregate = Unit;
+
+        type Store = ();
+    }
+
+    let msg = seq::<EmptyMsgTypes>([
         defer(1),
         seq([defer(2), defer(3)]),
         seq([defer(4)]),
@@ -949,21 +1016,19 @@ mod tests {
     };
 
     use crate::{
-        aggregate,
         aggregate::{Aggregate, AggregateCreateClient, AnyAggregate},
         chain_impls::{
+            cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
             evm::EvmConfig,
-            union::{AbciQueryType, FetchAbciQuery, UnionFetch},
+            union::UnionFetch,
         },
+        ctors::{aggregate, defer_relative, event, fetch, msg, repeat},
         data::Data,
-        defer_relative, event,
         event::{Event, IbcEvent},
-        fetch,
         fetch::{
             AnyFetch, Fetch, FetchSelfClientState, FetchSelfConsensusState, FetchState,
             LightClientSpecificFetch,
         },
-        msg,
         msg::{
             AnyMsg, Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData,
             MsgConnectionOpenTryData,
@@ -983,7 +1048,7 @@ mod tests {
         let eth_chain_id: U256 = parse!("32382");
         let cosmos_chain_id: String = parse!("simd-devnet-1");
 
-        print_json(msg::<Wasm<Union>, Evm<Minimal>>(
+        print_json(msg(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
             union_chain_id.clone(),
             MsgConnectionOpenInitData(MsgConnectionOpenInit {
                 client_id: parse!("08-wasm-2"),
@@ -1000,9 +1065,9 @@ mod tests {
                 },
                 delay_period: DELAY_PERIOD,
             }),
-        ));
+        )));
 
-        print_json(fetch::<Wasm<Union>, Evm<Minimal>>(
+        print_json(fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
             union_chain_id.clone(),
             LightClientSpecificFetch(UnionFetch::AbciQuery(FetchAbciQuery {
                 path: proof::Path::ClientStatePath(proof::ClientStatePath {
@@ -1011,9 +1076,9 @@ mod tests {
                 height: parse!("123-456"),
                 ty: AbciQueryType::State,
             })),
-        ));
+        )));
 
-        print_json(msg::<Wasm<Union>, Evm<Minimal>>(
+        print_json(msg(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
             union_chain_id.clone(),
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
@@ -1031,9 +1096,9 @@ mod tests {
                 },
                 __marker: PhantomData,
             },
-        ));
+        )));
 
-        print_json(msg::<Evm<Minimal>, Wasm<Union>>(
+        print_json(msg(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
             eth_chain_id,
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
@@ -1051,9 +1116,9 @@ mod tests {
                 },
                 __marker: PhantomData,
             },
-        ));
+        )));
 
-        print_json(msg::<Evm<Minimal>, Wasm<Union>>(
+        print_json(msg(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
             eth_chain_id,
             MsgConnectionOpenInitData(MsgConnectionOpenInit {
                 client_id: parse!("cometbls-0"),
@@ -1070,9 +1135,9 @@ mod tests {
                 },
                 delay_period: DELAY_PERIOD,
             }),
-        ));
+        )));
 
-        print_json(event::<Evm<Minimal>, Wasm<Union>>(
+        print_json(event(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
             eth_chain_id,
             IbcEvent {
                 block_hash: H256([0; 32]),
@@ -1084,59 +1149,86 @@ mod tests {
                     counterparty_connection_id: parse!("connection-14"),
                 }),
             },
-        ));
+        )));
 
-        print_json(RelayerMsg::Repeat {
-            times: u64::MAX,
-            msg: Box::new(seq([
-                event::<Evm<Minimal>, Wasm<Union>>(
+        print_json(repeat(
+            u64::MAX,
+            seq([
+                event(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
                     eth_chain_id,
                     crate::event::Command::UpdateClient {
                         client_id: parse!("cometbls-0"),
                         counterparty_client_id: parse!("08-wasm-0"),
                     },
-                ),
+                )),
                 defer_relative(10),
-            ])),
-        });
+            ]),
+        ));
 
-        print_json(RelayerMsg::Repeat {
-            times: u64::MAX,
-            msg: Box::new(seq([
-                event::<Wasm<Union>, Evm<Minimal>>(
+        print_json(repeat(
+            u64::MAX,
+            seq([
+                event(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
                     union_chain_id.clone(),
                     crate::event::Command::UpdateClient {
                         client_id: parse!("08-wasm-0"),
                         counterparty_client_id: parse!("cometbls-0"),
                     },
-                ),
+                )),
                 defer_relative(10),
-            ])),
-        });
+            ]),
+        ));
+
+        print_json(repeat(
+            u64::MAX,
+            seq([
+                event(Identified::<Wasm<Cosmos>, Union, _>::new(
+                    cosmos_chain_id.clone(),
+                    crate::event::Command::UpdateClient {
+                        client_id: parse!("08-wasm-0"),
+                        counterparty_client_id: parse!("07-tendermint-0"),
+                    },
+                )),
+                defer_relative(10),
+            ]),
+        ));
+
+        print_json(repeat(
+            u64::MAX,
+            seq([
+                event(Identified::<Union, Wasm<Cosmos>, _>::new(
+                    union_chain_id.clone(),
+                    crate::event::Command::UpdateClient {
+                        client_id: parse!("07-tendermint-0"),
+                        counterparty_client_id: parse!("08-wasm-0"),
+                    },
+                )),
+                defer_relative(10),
+            ]),
+        ));
 
         println!("\ncreate client msgs\n");
 
         print_json(seq([
-            RelayerMsg::Aggregate {
-                queue: [
-                    fetch::<Wasm<Union>, Evm<Minimal>>(
+            aggregate(
+                [
+                    fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
                         union_chain_id.clone(),
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
-                    ),
-                    fetch::<Wasm<Union>, Evm<Minimal>>(
+                    )),
+                    fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
                         union_chain_id.clone(),
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
-                    ),
-                ]
-                .into(),
-                data: [].into_iter().collect(),
-                receiver: aggregate::<Evm<Minimal>, Wasm<Union>>(
+                    )),
+                ],
+                [],
+                Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
                     eth_chain_id,
                     AggregateCreateClient {
                         config: EvmConfig {
@@ -1146,27 +1238,26 @@ mod tests {
                         __marker: PhantomData,
                     },
                 ),
-            },
-            RelayerMsg::Aggregate {
-                queue: [
-                    fetch::<Evm<Minimal>, Wasm<Union>>(
+            ),
+            aggregate(
+                [
+                    fetch(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
                         eth_chain_id,
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
-                    ),
-                    fetch::<Evm<Minimal>, Wasm<Union>>(
+                    )),
+                    fetch(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
                         eth_chain_id,
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
-                    ),
-                ]
-                .into(),
-                data: [].into_iter().collect(),
-                receiver: aggregate::<Wasm<Union>, Evm<Minimal>>(
+                    )),
+                ],
+                [],
+                Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
                     union_chain_id.clone(),
                     AggregateCreateClient {
                         config: WasmConfig {
@@ -1177,57 +1268,55 @@ mod tests {
                         __marker: PhantomData,
                     },
                 ),
-            },
+            ),
         ]));
 
         print_json(seq([
-            RelayerMsg::Aggregate {
-                queue: [
-                    fetch::<Wasm<Cosmos>, Union>(
+            aggregate(
+                [
+                    fetch(Identified::<Wasm<Cosmos>, Union, _>::new(
                         cosmos_chain_id.clone(),
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
-                    ),
-                    fetch::<Wasm<Cosmos>, Union>(
+                    )),
+                    fetch(Identified::<Wasm<Cosmos>, Union, _>::new(
                         cosmos_chain_id.clone(),
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
-                    ),
-                ]
-                .into(),
-                data: [].into_iter().collect(),
-                receiver: aggregate::<Union, Wasm<Cosmos>>(
+                    )),
+                ],
+                [],
+                Identified::<Union, Wasm<Cosmos>, _>::new(
                     union_chain_id.clone(),
                     AggregateCreateClient {
                         config: (),
                         __marker: PhantomData,
                     },
                 ),
-            },
-            RelayerMsg::Aggregate {
-                queue: [
-                    fetch::<Union, Wasm<Cosmos>>(
+            ),
+            aggregate(
+                [
+                    fetch(Identified::<Union, Wasm<Cosmos>, _>::new(
                         union_chain_id.clone(),
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
-                    ),
-                    fetch::<Union, Wasm<Cosmos>>(
+                    )),
+                    fetch(Identified::<Union, Wasm<Cosmos>, _>::new(
                         union_chain_id.clone(),
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
-                    ),
-                ]
-                .into(),
-                data: [].into_iter().collect(),
-                receiver: aggregate::<Wasm<Cosmos>, Union>(
+                    )),
+                ],
+                [],
+                Identified::<Wasm<Cosmos>, Union, _>::new(
                     cosmos_chain_id,
                     AggregateCreateClient {
                         config: WasmConfig {
@@ -1238,7 +1327,7 @@ mod tests {
                         __marker: PhantomData,
                     },
                 ),
-            },
+            ),
         ]));
 
         // print_json(RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Event(
@@ -1256,7 +1345,7 @@ mod tests {
         //         },
         //     },
         // ))));
-        print_json(fetch::<Wasm<Union>, Evm<Minimal>>(
+        print_json(fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
             union_chain_id.clone(),
             FetchState {
                 at: parse!("1-103"),
@@ -1265,10 +1354,10 @@ mod tests {
                 }
                 .into(),
             },
-        ))
+        )))
     }
 
-    fn print_json<T: Serialize + DeserializeOwned + PartialEq + Debug>(msg: T) {
+    fn print_json(msg: RelayerMsg) {
         let json = serde_json::to_string(&msg).unwrap();
 
         println!("{json}\n");
@@ -1425,7 +1514,7 @@ impl<Hc: CosmosSdkChain + ChainExt, Tr: ChainExt> DoAggregate for identified!(Wa
 where
     Identified<Hc, Tr, Hc::Aggregate<Tr>>: DoAggregate,
 {
-    fn do_aggregate(i: Self, v: VecDeque<AnyLightClientIdentified<AnyData>>) -> Vec<RelayerMsg> {
+    fn do_aggregate(i: Self, v: VecDeque<AnyLightClientIdentified<AnyData>>) -> RelayerMsg {
         <Identified<_, _, Hc::Aggregate<Tr>>>::do_aggregate(
             Identified {
                 chain_id: i.chain_id,
@@ -1709,3 +1798,40 @@ impl<Hc: Chain, Tr: Chain, S> Inner<Hc, Tr, S> {
 //     let json = serde_json::to_string_pretty(&Tester::AB(Struct { field: 1 })).unwrap();
 //     println!("{json}");
 // }
+
+pub trait HandleFetch<T: QueueMsgTypes> {
+    fn handle(self, store: &T::Store) -> impl Future<Output = QueueMsg<T>> + Send;
+}
+
+pub trait HandleWait<T: QueueMsgTypes> {
+    fn handle(self, store: &T::Store) -> impl Future<Output = QueueMsg<T>> + Send;
+}
+
+pub trait HandleEvent<T: QueueMsgTypes> {
+    fn handle(self, store: &T::Store) -> QueueMsg<T>;
+}
+
+pub trait HandleMsg<T: QueueMsgTypes> {
+    fn handle(
+        self,
+        store: &T::Store,
+    ) -> impl Future<Output = Result<(), Box<dyn std::error::Error>>> + Send;
+}
+
+pub trait HandleAggregate<T: QueueMsgTypes> {
+    fn handle(self, data: VecDeque<T::Data>) -> QueueMsg<T>;
+}
+
+macro_rules! any_lc {
+    (|$msg:ident| $expr:expr) => {
+        match $msg {
+            AnyLightClientIdentified::EvmMainnetOnUnion($msg) => $expr,
+            AnyLightClientIdentified::UnionOnEvmMainnet($msg) => $expr,
+            AnyLightClientIdentified::EvmMinimalOnUnion($msg) => $expr,
+            AnyLightClientIdentified::UnionOnEvmMinimal($msg) => $expr,
+            AnyLightClientIdentified::CosmosOnUnion($msg) => $expr,
+            AnyLightClientIdentified::UnionOnCosmos($msg) => $expr,
+        }
+    };
+}
+pub(crate) use any_lc;

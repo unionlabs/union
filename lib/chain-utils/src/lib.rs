@@ -71,7 +71,7 @@ impl<T: Clone> Pool<T> {
                     const RETRY_SECONDS: u64 = 3;
 
                     tracing::warn!(
-                        "high traffic in queue of {}, ran out of items! trying again in {RETRY_SECONDS} seconds",
+                        "high traffic in pool of {}, ran out of items! trying again in {RETRY_SECONDS} seconds",
                         std::any::type_name::<T>()
                     );
 

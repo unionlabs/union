@@ -34,26 +34,26 @@ use unionlabs::{
 };
 
 use crate::{
-    any_enum,
+    any_enum, any_lc,
+    ctors::{aggregate, fetch, msg, wait},
     data::{
         AnyData, Data, IbcProof, IbcState, PacketAcknowledgement, SelfClientState,
         SelfConsensusState,
     },
-    fetch,
     fetch::{
         AnyFetch, Fetch, FetchLatestClientState, FetchPacketAcknowledgement, FetchProof,
         FetchState, FetchUpdateHeaders,
     },
-    identified, msg,
+    identified,
     msg::{
         AnyMsg, Msg, MsgAckPacketData, MsgChannelOpenAckData, MsgChannelOpenConfirmData,
         MsgChannelOpenTryData, MsgConnectionOpenAckData, MsgConnectionOpenConfirmData,
         MsgConnectionOpenTryData, MsgCreateClientData, MsgRecvPacketData,
     },
     use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
-    wait,
     wait::{AnyWait, Wait, WaitForTrustedHeight},
-    AnyLightClientIdentified, ChainExt, DoAggregate, Identified, RelayerMsg,
+    AnyLightClientIdentified, ChainExt, DoAggregate, HandleAggregate, Identified, QueueMsg,
+    QueueMsgTypes, RelayerMsg, RelayerMsgTypes,
 };
 
 any_enum! {
@@ -96,8 +96,21 @@ any_enum! {
     }
 }
 
+impl HandleAggregate<RelayerMsgTypes> for AnyLightClientIdentified<AnyAggregate> {
+    fn handle(
+        self,
+        data: VecDeque<<RelayerMsgTypes as QueueMsgTypes>::Data>,
+    ) -> QueueMsg<RelayerMsgTypes> {
+        let aggregate = self;
+
+        any_lc! {
+            |aggregate| aggregate.handle(data)
+        }
+    }
+}
+
 impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
-    pub fn handle(self, data: VecDeque<AnyLightClientIdentified<AnyData>>) -> Vec<RelayerMsg>
+    pub fn handle(self, data: VecDeque<AnyLightClientIdentified<AnyData>>) -> RelayerMsg
     where
         Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
         Identified<Tr, Hc, IbcState<Tr, Hc, ClientStatePath<Tr::ClientId>>>: IsAggregateData,
@@ -138,37 +151,31 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
 
         match self.t {
             Aggregate::ConnectionOpenTry(init) => {
-                [do_aggregate(Identified::new(chain_id, init), data)].into()
+                do_aggregate(Identified::new(chain_id, init), data)
             }
-            Aggregate::ConnectionOpenAck(ack) => {
-                [do_aggregate(Identified::new(chain_id, ack), data)].into()
-            }
+            Aggregate::ConnectionOpenAck(ack) => do_aggregate(Identified::new(chain_id, ack), data),
             Aggregate::ConnectionOpenConfirm(confirm) => {
-                [do_aggregate(Identified::new(chain_id, confirm), data)].into()
+                do_aggregate(Identified::new(chain_id, confirm), data)
             }
-            Aggregate::ChannelOpenTry(try_) => {
-                [do_aggregate(Identified::new(chain_id, try_), data)].into()
-            }
-            Aggregate::ChannelOpenAck(ack) => {
-                [do_aggregate(Identified::new(chain_id, ack), data)].into()
-            }
+            Aggregate::ChannelOpenTry(try_) => do_aggregate(Identified::new(chain_id, try_), data),
+            Aggregate::ChannelOpenAck(ack) => do_aggregate(Identified::new(chain_id, ack), data),
             Aggregate::ChannelOpenConfirm(confirm) => {
-                [do_aggregate(Identified::new(chain_id, confirm), data)].into()
+                do_aggregate(Identified::new(chain_id, confirm), data)
             }
             Aggregate::UpdateClientFromClientId(update_client) => {
-                [do_aggregate(Identified::new(chain_id, update_client), data)].into()
+                do_aggregate(Identified::new(chain_id, update_client), data)
             }
             Aggregate::UpdateClient(update_client) => {
-                [do_aggregate(Identified::new(chain_id, update_client), data)].into()
+                do_aggregate(Identified::new(chain_id, update_client), data)
             }
             Aggregate::UpdateClientWithCounterpartyChainIdData(aggregate) => {
-                [do_aggregate(Identified::new(chain_id, aggregate), data)].into()
+                do_aggregate(Identified::new(chain_id, aggregate), data)
             }
             Aggregate::CreateClient(create_client) => {
-                [do_aggregate(Identified::new(chain_id, create_client), data)].into()
+                do_aggregate(Identified::new(chain_id, create_client), data)
             }
             Aggregate::AggregateMsgAfterUpdate(aggregate) => {
-                [do_aggregate(Identified::new(chain_id, aggregate), data)].into()
+                do_aggregate(Identified::new(chain_id, aggregate), data)
             }
             Aggregate::LightClientSpecific(LightClientSpecificAggregate(aggregate)) => {
                 <Identified<_, _, Hc::Aggregate<Tr>> as DoAggregate>::do_aggregate(
@@ -177,31 +184,28 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
                 )
             }
             Aggregate::ConnectionFetchFromChannelEnd(aggregate) => {
-                [do_aggregate(Identified::new(chain_id, aggregate), data)].into()
+                do_aggregate(Identified::new(chain_id, aggregate), data)
             }
             Aggregate::ChannelHandshakeUpdateClient(channel_handshake_update_client) => {
-                [do_aggregate(
+                do_aggregate(
                     Identified::new(chain_id, channel_handshake_update_client),
                     data,
-                )]
-                .into()
+                )
             }
-            Aggregate::PacketUpdateClient(packet_update_client) => [do_aggregate(
-                Identified::new(chain_id, packet_update_client),
-                data,
-            )]
-            .into(),
+            Aggregate::PacketUpdateClient(packet_update_client) => {
+                do_aggregate(Identified::new(chain_id, packet_update_client), data)
+            }
             Aggregate::RecvPacket(recv_packet) => {
-                [do_aggregate(Identified::new(chain_id, recv_packet), data)].into()
+                do_aggregate(Identified::new(chain_id, recv_packet), data)
             }
             Aggregate::AckPacket(ack_packet) => {
-                [do_aggregate(Identified::new(chain_id, ack_packet), data)].into()
+                do_aggregate(Identified::new(chain_id, ack_packet), data)
             }
             Aggregate::WaitForTrustedHeight(agg) => {
-                [do_aggregate(Identified::new(chain_id, agg), data)].into()
+                do_aggregate(Identified::new(chain_id, agg), data)
             }
             Aggregate::FetchCounterpartyStateproof(agg) => {
-                [do_aggregate(Identified::new(chain_id, agg), data)].into()
+                do_aggregate(Identified::new(chain_id, agg), data)
             }
         }
     }
@@ -533,20 +537,16 @@ where
             }
         };
 
-        RelayerMsg::Aggregate {
-            data: [].into(),
-            queue: [mk_aggregate_wait_for_update(
+        aggregate(
+            [mk_aggregate_wait_for_update(
                 this_chain_id.clone(),
                 connection.client_id,
                 connection.counterparty.client_id,
                 update_to,
-            )]
-            .into(),
-            receiver: AnyLightClientIdentified::from(Identified::new(
-                this_chain_id,
-                Aggregate::AggregateMsgAfterUpdate(event_msg),
-            )),
-        }
+            )],
+            [],
+            Identified::new(this_chain_id, event_msg),
+        )
     }
 }
 
@@ -560,8 +560,8 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
-    RelayerMsg::Aggregate {
-        queue: [fetch::<Hc, Tr>(
+    aggregate(
+        [fetch(Identified::<Hc, Tr, _>::new(
             chain_id.clone(),
             FetchLatestClientState {
                 path: ClientStatePath {
@@ -569,18 +569,17 @@ where
                 },
                 __marker: PhantomData,
             },
-        )]
-        .into(),
-        data: [].into(),
-        receiver: AnyLightClientIdentified::from(Identified::new(
+        ))],
+        [],
+        Identified::new(
             chain_id,
-            Aggregate::<Hc, Tr>::WaitForTrustedHeight(AggregateWaitForTrustedHeight {
+            AggregateWaitForTrustedHeight::<Hc, Tr> {
                 wait_for,
                 client_id,
                 counterparty_client_id,
-            }),
-        )),
-    }
+            },
+        ),
+    )
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregatePacketUpdateClient<Hc, Tr>)
@@ -634,33 +633,30 @@ where
             ),
         };
 
-        let agg = RelayerMsg::Aggregate {
-            queue: [fetch::<Hc, Tr>(
-                this_chain_id.clone().clone(),
-                FetchLatestClientState {
-                    path: ClientStatePath {
-                        client_id: connection.client_id.clone(),
+        aggregate(
+            [aggregate(
+                [fetch(Identified::<Hc, Tr, _>::new(
+                    this_chain_id.clone().clone(),
+                    FetchLatestClientState {
+                        path: ClientStatePath {
+                            client_id: connection.client_id.clone(),
+                        },
+                        __marker: PhantomData,
                     },
-                    __marker: PhantomData,
-                },
-            )]
-            .into(),
-            data: [].into(),
-            receiver: AnyLightClientIdentified::from(Identified::new(
-                this_chain_id.clone(),
-                Aggregate::<Hc, Tr>::WaitForTrustedHeight(AggregateWaitForTrustedHeight {
-                    wait_for: update_to,
-                    client_id: connection.client_id.clone(),
-                    counterparty_client_id: connection.counterparty.client_id.clone(),
-                }),
-            )),
-        };
-
-        RelayerMsg::Aggregate {
-            data: [].into(),
-            queue: [agg].into(),
-            receiver: AnyLightClientIdentified::from(Identified::new(this_chain_id, event)),
-        }
+                ))],
+                [],
+                Identified::new(
+                    this_chain_id.clone(),
+                    AggregateWaitForTrustedHeight::<Hc, Tr> {
+                        wait_for: update_to,
+                        client_id: connection.client_id.clone(),
+                        counterparty_client_id: connection.counterparty.client_id.clone(),
+                    },
+                ),
+            )],
+            [],
+            Identified::new(this_chain_id, event),
+        )
     }
 }
 
@@ -689,7 +685,7 @@ where
     ) -> RelayerMsg {
         assert_eq!(this_chain_id, self_chain_id);
 
-        fetch(
+        fetch(Identified::<Hc, Tr, _>::new(
             this_chain_id,
             FetchState {
                 at,
@@ -698,7 +694,7 @@ where
                 }
                 .into(),
             },
-        )
+        ))
     }
 }
 
@@ -738,42 +734,27 @@ where
 
         let counterparty_chain_id = trusted_client_state.chain_id();
 
-        RelayerMsg::Aggregate {
-            queue: [fetch::<Tr, Hc>(
+        aggregate(
+            [fetch(Identified::new(
                 counterparty_chain_id.clone(),
-                // NOTE: Use latest here since on client creation, the counterparty may not yet exist at the latest height.
-                //
-                // - client created on chain A of chain B at height 1-10, trusting height 2-10 of B
-                // - client created on chain B of chain A at height 2-15, trusting height 1-15 of A
-                // - attempt to update chain A by updating from it's latest trusted height, which is 2-10 - but the client state of B on doesn't exist at height 2-10
-                //
-                // Note that updating chain B would work in this situation, since it was created after it's counterparty.
-                //
-                // Since this query is only to fetch the chain id of the counterparty, all that matters is that we get *a* client state, since it's expected that the chain id in a client state will never change.
-                //
-                // REVIEW: How will this work with chain upgrades? Since the revision number will change (on cosmos chains), so will the chain id - this will need to be handled
-                // at: QueryHeight::Specific(trusted_client_state.height()),
-                FetchLatestClientState {
+                FetchLatestClientState::<Tr, Hc> {
                     path: ClientStatePath {
                         client_id: counterparty_client_id.clone(),
                     },
                     __marker: PhantomData,
                 },
-            )]
-            .into(),
-            data: [].into(),
-            receiver: AnyLightClientIdentified::from(Identified::new(
+            ))],
+            [],
+            Identified::new(
                 this_chain_id,
-                Aggregate::UpdateClientWithCounterpartyChainIdData(
-                    AggregateUpdateClientWithCounterpartyChainId {
-                        update_to: trusted_client_state_fetched_at_height,
-                        client_id,
-                        counterparty_client_id,
-                        counterparty_chain_id,
-                    },
-                ),
-            )),
-        }
+                AggregateUpdateClientWithCounterpartyChainId {
+                    update_to: trusted_client_state_fetched_at_height,
+                    client_id,
+                    counterparty_client_id,
+                    counterparty_chain_id,
+                },
+            ),
+        )
     }
 }
 
@@ -814,8 +795,8 @@ where
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
-        RelayerMsg::Aggregate {
-            queue: [fetch::<Tr, Hc>(
+        aggregate(
+            [fetch(Identified::<Tr, Hc, _>::new(
                 counterparty_chain_id.clone(),
                 FetchLatestClientState {
                     path: ClientStatePath {
@@ -823,21 +804,18 @@ where
                     },
                     __marker: PhantomData,
                 },
-            )]
-            .into(),
-            data: [].into(),
-            receiver: AnyLightClientIdentified::from(Identified::new(
+            ))],
+            [],
+            Identified::new(
                 this_chain_id,
-                Aggregate::UpdateClientWithCounterpartyChainIdData(
-                    AggregateUpdateClientWithCounterpartyChainId {
-                        update_to,
-                        client_id: update_client_id,
-                        counterparty_client_id: update_counterparty_client_id,
-                        counterparty_chain_id,
-                    },
-                ),
-            )),
-        }
+                AggregateUpdateClientWithCounterpartyChainId {
+                    update_to,
+                    client_id: update_client_id,
+                    counterparty_client_id: update_counterparty_client_id,
+                    counterparty_chain_id,
+                },
+            ),
+        )
     }
 }
 
@@ -883,7 +861,7 @@ where
         );
         assert_eq!(counterparty_chain_id, update_counterparty_chain_id);
 
-        fetch::<Hc, Tr>(
+        fetch(Identified::<Hc, Tr, _>::new(
             this_chain_id,
             FetchUpdateHeaders {
                 client_id: update_client_id,
@@ -892,7 +870,7 @@ where
                 update_from: trusted_client_state.height(),
                 update_to,
             },
-        )
+        ))
     }
 }
 
@@ -933,9 +911,7 @@ where
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
-        tracing::debug!("building WaitForTrustedHeight");
-
-        wait::<Tr, Hc>(
+        wait(Identified::new(
             counterparty_chain_id,
             WaitForTrustedHeight {
                 height: wait_for,
@@ -943,7 +919,7 @@ where
                 counterparty_client_id: client_id,
                 counterparty_chain_id: this_chain_id,
             },
-        )
+        ))
     }
 }
 
@@ -1002,20 +978,9 @@ where
 
                 let trusted_client_state_height = trusted_client_state.height();
 
-                RelayerMsg::Aggregate {
-                    data: [AnyLightClientIdentified::from(Identified::new(
-                        this_chain_id.clone(),
-                        Data::ClientState(IbcState::<Hc, Tr, ClientStatePath<Hc::ClientId>> {
-                            path: ClientStatePath {
-                                client_id: trusted_client_state_client_id,
-                            },
-                            height: trusted_client_state_fetched_at_height,
-                            state: trusted_client_state,
-                        }),
-                    ))]
-                    .into(),
-                    queue: [
-                        fetch::<Hc, Tr>(
+                aggregate(
+                    [
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchProof {
                                 at: trusted_client_state_fetched_at_height,
@@ -1024,8 +989,8 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                        fetch::<Hc, Tr>(
+                        )),
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchProof {
                                 at: trusted_client_state_fetched_at_height,
@@ -1035,8 +1000,8 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                        fetch::<Hc, Tr>(
+                        )),
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchProof {
                                 at: trusted_client_state_fetched_at_height,
@@ -1045,8 +1010,8 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                        fetch::<Hc, Tr>(
+                        )),
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchState {
                                 at: trusted_client_state_fetched_at_height,
@@ -1055,17 +1020,27 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                    ]
-                    .into(),
-                    receiver: AnyLightClientIdentified::from(Identified::new(
+                        )),
+                    ],
+                    [Identified::new(
+                        this_chain_id.clone(),
+                        IbcState::<Hc, Tr, ClientStatePath<Hc::ClientId>> {
+                            path: ClientStatePath {
+                                client_id: trusted_client_state_client_id,
+                            },
+                            height: trusted_client_state_fetched_at_height,
+                            state: trusted_client_state,
+                        },
+                    )
+                    .into()],
+                    Identified::new(
                         this_chain_id,
-                        Aggregate::ConnectionOpenTry(AggregateConnectionOpenTry {
+                        AggregateConnectionOpenTry {
                             event_height,
                             event,
-                        }),
-                    )),
-                }
+                        },
+                    ),
+                )
             }
             AggregateMsgAfterUpdate::ConnectionOpenAck(AggregateConnectionOpenAck {
                 event_height,
@@ -1088,20 +1063,9 @@ where
 
                 let trusted_client_state_height = trusted_client_state.height();
 
-                RelayerMsg::Aggregate {
-                    data: [AnyLightClientIdentified::from(Identified::new(
-                        this_chain_id.clone(),
-                        Data::ClientState(IbcState {
-                            path: ClientStatePath {
-                                client_id: trusted_client_state_client_id,
-                            },
-                            height: trusted_client_state_fetched_at_height,
-                            state: trusted_client_state,
-                        }),
-                    ))]
-                    .into(),
-                    queue: [
-                        fetch::<Hc, Tr>(
+                aggregate(
+                    [
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchProof {
                                 at: trusted_client_state_fetched_at_height,
@@ -1110,8 +1074,8 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                        fetch::<Hc, Tr>(
+                        )),
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchProof {
                                 at: trusted_client_state_fetched_at_height,
@@ -1121,8 +1085,8 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                        fetch::<Hc, Tr>(
+                        )),
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchProof {
                                 at: trusted_client_state_fetched_at_height,
@@ -1131,8 +1095,8 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                        fetch::<Hc, Tr>(
+                        )),
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchState {
                                 at: trusted_client_state_fetched_at_height,
@@ -1141,17 +1105,27 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                    ]
-                    .into(),
-                    receiver: AnyLightClientIdentified::from(Identified::new(
+                        )),
+                    ],
+                    [Identified::new(
+                        this_chain_id.clone(),
+                        IbcState {
+                            path: ClientStatePath {
+                                client_id: trusted_client_state_client_id,
+                            },
+                            height: trusted_client_state_fetched_at_height,
+                            state: trusted_client_state,
+                        },
+                    )
+                    .into()],
+                    Identified::new(
                         this_chain_id,
-                        Aggregate::ConnectionOpenAck(AggregateConnectionOpenAck {
+                        AggregateConnectionOpenAck {
                             event_height,
                             event,
-                        }),
-                    )),
-                }
+                        },
+                    ),
+                )
             }
             AggregateMsgAfterUpdate::ConnectionOpenConfirm(AggregateConnectionOpenConfirm {
                 event_height,
@@ -1172,19 +1146,8 @@ where
                     event_height.revision_height()
                 );
 
-                RelayerMsg::Aggregate {
-                    data: [AnyLightClientIdentified::from(Identified::new(
-                        this_chain_id.clone(),
-                        Data::ClientState(IbcState {
-                            path: ClientStatePath {
-                                client_id: trusted_client_state_client_id,
-                            },
-                            height: trusted_client_state_fetched_at_height,
-                            state: trusted_client_state,
-                        }),
-                    ))]
-                    .into(),
-                    queue: [fetch::<Hc, Tr>(
+                aggregate(
+                    [fetch(Identified::<Hc, Tr, _>::new(
                         this_chain_id.clone(),
                         FetchProof {
                             at: trusted_client_state_fetched_at_height,
@@ -1193,16 +1156,26 @@ where
                             }
                             .into(),
                         },
-                    )]
-                    .into(),
-                    receiver: AnyLightClientIdentified::from(Identified::new(
+                    ))],
+                    [Identified::new(
+                        this_chain_id.clone(),
+                        IbcState {
+                            path: ClientStatePath {
+                                client_id: trusted_client_state_client_id,
+                            },
+                            height: trusted_client_state_fetched_at_height,
+                            state: trusted_client_state,
+                        },
+                    )
+                    .into()],
+                    Identified::new(
                         this_chain_id,
-                        Aggregate::ConnectionOpenConfirm(AggregateConnectionOpenConfirm {
+                        AggregateConnectionOpenConfirm {
                             event_height,
                             event,
-                        }),
-                    )),
-                }
+                        },
+                    ),
+                )
             }
             AggregateMsgAfterUpdate::ChannelOpenTry(AggregateChannelOpenTry {
                 event_height,
@@ -1224,22 +1197,10 @@ where
                     event_height.revision_height()
                 );
 
-                RelayerMsg::Aggregate {
-                    data: [AnyLightClientIdentified::from(Identified::new(
-                        this_chain_id.clone(),
-                        Data::ClientState(IbcState {
-                            path: ClientStatePath {
-                                client_id: trusted_client_state_client_id,
-                            },
-                            height: trusted_client_state_fetched_at_height,
-                            state: trusted_client_state,
-                        }),
-                    ))]
-                    .into(),
-                    queue: [
-                        RelayerMsg::Aggregate {
-                            data: [].into(),
-                            queue: [fetch::<Hc, Tr>(
+                aggregate(
+                    [
+                        aggregate(
+                            [fetch(Identified::<Hc, Tr, _>::new(
                                 this_chain_id.clone(),
                                 FetchState {
                                     at: trusted_client_state_fetched_at_height,
@@ -1249,19 +1210,17 @@ where
                                     }
                                     .into(),
                                 },
-                            )]
-                            .into(),
-                            receiver: AnyLightClientIdentified::from(Identified::new(
+                            ))],
+                            [],
+                            Identified::new(
                                 this_chain_id.clone(),
-                                Aggregate::ConnectionFetchFromChannelEnd(
-                                    AggregateConnectionFetchFromChannelEnd {
-                                        at: trusted_client_state_fetched_at_height,
-                                        __marker: PhantomData,
-                                    },
-                                ),
-                            )),
-                        },
-                        fetch::<Hc, Tr>(
+                                AggregateConnectionFetchFromChannelEnd {
+                                    at: trusted_client_state_fetched_at_height,
+                                    __marker: PhantomData,
+                                },
+                            ),
+                        ),
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchProof {
                                 at: trusted_client_state_fetched_at_height,
@@ -1271,8 +1230,8 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                        fetch::<Hc, Tr>(
+                        )),
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchState {
                                 at: trusted_client_state_fetched_at_height,
@@ -1282,18 +1241,28 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                    ]
-                    .into(),
-                    receiver: AnyLightClientIdentified::from(Identified::new(
+                        )),
+                    ],
+                    [Identified::new(
+                        this_chain_id.clone(),
+                        IbcState {
+                            path: ClientStatePath {
+                                client_id: trusted_client_state_client_id,
+                            },
+                            height: trusted_client_state_fetched_at_height,
+                            state: trusted_client_state,
+                        },
+                    )
+                    .into()],
+                    Identified::new(
                         this_chain_id,
-                        Aggregate::ChannelOpenTry(AggregateChannelOpenTry {
+                        AggregateChannelOpenTry {
                             event_height,
                             event,
                             __marker: PhantomData,
-                        }),
-                    )),
-                }
+                        },
+                    ),
+                )
             }
             AggregateMsgAfterUpdate::ChannelOpenAck(AggregateChannelOpenAck {
                 event_height,
@@ -1315,21 +1284,9 @@ where
                     event_height.revision_height()
                 );
 
-                // RelayerMsg::Sequence([].into());
-                RelayerMsg::Aggregate {
-                    data: [AnyLightClientIdentified::from(Identified::new(
-                        this_chain_id.clone(),
-                        Data::ClientState(IbcState {
-                            path: ClientStatePath {
-                                client_id: trusted_client_state_client_id,
-                            },
-                            height: trusted_client_state_fetched_at_height,
-                            state: trusted_client_state,
-                        }),
-                    ))]
-                    .into(),
-                    queue: [
-                        fetch::<Hc, Tr>(
+                aggregate(
+                    [
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchProof {
                                 at: trusted_client_state_fetched_at_height,
@@ -1339,8 +1296,8 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                        fetch::<Hc, Tr>(
+                        )),
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchState {
                                 at: trusted_client_state_fetched_at_height,
@@ -1350,18 +1307,28 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                    ]
-                    .into(),
-                    receiver: AnyLightClientIdentified::from(Identified::new(
+                        )),
+                    ],
+                    [Identified::new(
+                        this_chain_id.clone(),
+                        Data::ClientState(IbcState {
+                            path: ClientStatePath {
+                                client_id: trusted_client_state_client_id,
+                            },
+                            height: trusted_client_state_fetched_at_height,
+                            state: trusted_client_state,
+                        }),
+                    )
+                    .into()],
+                    Identified::new(
                         this_chain_id,
-                        Aggregate::ChannelOpenAck(AggregateChannelOpenAck {
+                        AggregateChannelOpenAck {
                             event_height,
                             event,
                             __marker: PhantomData,
-                        }),
-                    )),
-                }
+                        },
+                    ),
+                )
             }
             AggregateMsgAfterUpdate::ChannelOpenConfirm(AggregateChannelOpenConfirm {
                 event_height,
@@ -1383,20 +1350,9 @@ where
                     event_height.revision_height()
                 );
 
-                RelayerMsg::Aggregate {
-                    data: [AnyLightClientIdentified::from(Identified::new(
-                        this_chain_id.clone(),
-                        Data::ClientState(IbcState {
-                            path: ClientStatePath {
-                                client_id: trusted_client_state_client_id,
-                            },
-                            height: trusted_client_state_fetched_at_height,
-                            state: trusted_client_state,
-                        }),
-                    ))]
-                    .into(),
-                    queue: [
-                        fetch::<Hc, Tr>(
+                aggregate(
+                    [
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchProof {
                                 at: trusted_client_state_fetched_at_height,
@@ -1406,8 +1362,8 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                        fetch::<Hc, Tr>(
+                        )),
+                        fetch(Identified::<Hc, Tr, _>::new(
                             this_chain_id.clone(),
                             FetchState {
                                 at: trusted_client_state_fetched_at_height,
@@ -1417,81 +1373,74 @@ where
                                 }
                                 .into(),
                             },
-                        ),
-                    ]
-                    .into(),
-                    receiver: AnyLightClientIdentified::from(Identified::new(
-                        this_chain_id,
-                        Aggregate::ChannelOpenConfirm(AggregateChannelOpenConfirm {
-                            event_height,
-                            event,
-                            __marker: PhantomData,
-                        }),
-                    )),
-                }
-            }
-            AggregateMsgAfterUpdate::RecvPacket(AggregateRecvPacket {
-                event_height,
-                event,
-                __marker: _,
-            }) => {
-                //
-                tracing::debug!("building aggregate for RecvPacket");
-
-                RelayerMsg::Aggregate {
-                    data: [AnyLightClientIdentified::from(Identified::new(
+                        )),
+                    ],
+                    [Identified::new(
                         this_chain_id.clone(),
-                        Data::ClientState(IbcState {
+                        IbcState {
                             path: ClientStatePath {
                                 client_id: trusted_client_state_client_id,
                             },
                             height: trusted_client_state_fetched_at_height,
                             state: trusted_client_state,
-                        }),
-                    ))]
-                    .into(),
-                    queue: [fetch::<Hc, Tr>(
-                        this_chain_id.clone(),
-                        FetchProof {
-                            at: trusted_client_state_fetched_at_height,
-                            path: CommitmentPath {
-                                port_id: event.packet_src_port.clone(),
-                                channel_id: event.packet_src_channel.clone(),
-                                sequence: event.packet_sequence,
-                            }
-                            .into(),
                         },
-                    )]
-                    .into(),
-                    receiver: AnyLightClientIdentified::from(Identified::new(
+                    )
+                    .into()],
+                    Identified::new(
                         this_chain_id,
-                        Aggregate::RecvPacket(AggregateRecvPacket {
+                        AggregateChannelOpenConfirm {
                             event_height,
                             event,
                             __marker: PhantomData,
-                        }),
-                    )),
-                }
+                        },
+                    ),
+                )
             }
-            AggregateMsgAfterUpdate::AckPacket(AggregateAckPacket {
+            AggregateMsgAfterUpdate::RecvPacket(AggregateRecvPacket {
                 event_height,
                 event,
-                block_hash,
-                counterparty_client_id,
-            }) => RelayerMsg::Aggregate {
-                data: [AnyLightClientIdentified::from(Identified::new(
+                __marker: _,
+            }) => aggregate(
+                [fetch(Identified::<Hc, Tr, _>::new(
                     this_chain_id.clone(),
-                    Data::ClientState(IbcState {
+                    FetchProof {
+                        at: trusted_client_state_fetched_at_height,
+                        path: CommitmentPath {
+                            port_id: event.packet_src_port.clone(),
+                            channel_id: event.packet_src_channel.clone(),
+                            sequence: event.packet_sequence,
+                        }
+                        .into(),
+                    },
+                ))],
+                [Identified::new(
+                    this_chain_id.clone(),
+                    IbcState {
                         path: ClientStatePath {
                             client_id: trusted_client_state_client_id,
                         },
                         height: trusted_client_state_fetched_at_height,
                         state: trusted_client_state,
-                    }),
-                ))]
-                .into(),
-                queue: [
-                    fetch::<Hc, Tr>(
+                    },
+                )
+                .into()],
+                Identified::new(
+                    this_chain_id,
+                    AggregateRecvPacket {
+                        event_height,
+                        event,
+                        __marker: PhantomData,
+                    },
+                ),
+            ),
+            AggregateMsgAfterUpdate::AckPacket(AggregateAckPacket {
+                event_height,
+                event,
+                block_hash,
+                counterparty_client_id,
+            }) => aggregate(
+                [
+                    fetch(Identified::<Hc, Tr, _>::new(
                         this_chain_id.clone(),
                         FetchPacketAcknowledgement {
                             block_hash: block_hash.clone(),
@@ -1500,8 +1449,8 @@ where
                             sequence: event.packet_sequence,
                             __marker: PhantomData,
                         },
-                    ),
-                    fetch::<Hc, Tr>(
+                    )),
+                    fetch(Identified::<Hc, Tr, _>::new(
                         this_chain_id.clone(),
                         FetchProof {
                             at: trusted_client_state_fetched_at_height,
@@ -1512,19 +1461,29 @@ where
                             }
                             .into(),
                         },
-                    ),
-                ]
-                .into(),
-                receiver: AnyLightClientIdentified::from(Identified::new(
+                    )),
+                ],
+                [Identified::new(
+                    this_chain_id.clone(),
+                    IbcState {
+                        path: ClientStatePath {
+                            client_id: trusted_client_state_client_id,
+                        },
+                        height: trusted_client_state_fetched_at_height,
+                        state: trusted_client_state,
+                    },
+                )
+                .into()],
+                Identified::new(
                     this_chain_id,
-                    Aggregate::AckPacket(AggregateAckPacket {
+                    AggregateAckPacket {
                         event_height,
                         event,
                         block_hash,
                         counterparty_client_id,
-                    }),
-                )),
-            },
+                    },
+                ),
+            ),
         }
     }
 }
@@ -1629,7 +1588,7 @@ where
 
         let consensus_height = trusted_client_state.height();
 
-        msg::<Tr, Hc>(
+        msg(Identified::<Tr, Hc, _>::new(
             counterparty_chain_id,
             MsgConnectionOpenTryData(MsgConnectionOpenTry {
                 client_id: event.counterparty_client_id,
@@ -1649,7 +1608,7 @@ where
                 proof_consensus: consensus_state_proof,
                 consensus_height,
             }),
-        )
+        ))
     }
 }
 
@@ -1747,7 +1706,7 @@ where
 
         let consensus_height = trusted_client_state.height();
 
-        msg::<Tr, Hc>(
+        msg(Identified::<Tr, Hc, _>::new(
             counterparty_chain_id,
             MsgConnectionOpenAckData(MsgConnectionOpenAck {
                 connection_id: event.counterparty_connection_id,
@@ -1761,7 +1720,7 @@ where
                 proof_consensus: consensus_state_proof,
                 consensus_height: consensus_height.into(),
             }),
-        )
+        ))
     }
 }
 
@@ -1818,7 +1777,7 @@ where
         assert_eq!(trusted_client_state_chain_id, this_chain_id);
         assert_eq!(connection_proof_chain_id, this_chain_id);
 
-        msg::<Tr, Hc>(
+        msg(Identified::<Tr, Hc, _>::new(
             counterparty_chain_id,
             MsgConnectionOpenConfirmData {
                 msg: MsgConnectionOpenConfirm {
@@ -1828,7 +1787,7 @@ where
                 },
                 __marker: PhantomData,
             },
-        )
+        ))
     }
 }
 
@@ -1907,7 +1866,7 @@ where
 
         assert_eq!(channel_proof_chain_id, this_chain_id);
 
-        msg::<Tr, Hc>(
+        msg(Identified::<Tr, Hc, _>::new(
             counterparty_chain_id,
             MsgChannelOpenTryData {
                 msg: MsgChannelOpenTry {
@@ -1933,7 +1892,7 @@ where
                 },
                 __marker: PhantomData,
             },
-        )
+        ))
     }
 }
 
@@ -2000,7 +1959,7 @@ where
         assert_eq!(channel_proof_chain_id, this_chain_id);
         assert_eq!(channel_end_chain_id, this_chain_id);
 
-        msg::<Tr, Hc>(
+        msg(Identified::<Tr, Hc, _>::new(
             counterparty_chain_id,
             MsgChannelOpenAckData {
                 msg: MsgChannelOpenAck {
@@ -2013,7 +1972,7 @@ where
                 },
                 __marker: PhantomData,
             },
-        )
+        ))
     }
 }
 
@@ -2081,7 +2040,7 @@ where
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
-        msg::<Tr, Hc>(
+        msg(Identified::<Tr, Hc, _>::new(
             counterparty_chain_id,
             MsgChannelOpenConfirmData {
                 msg: MsgChannelOpenConfirm {
@@ -2092,7 +2051,7 @@ where
                 },
                 __marker: PhantomData,
             },
-        )
+        ))
     }
 }
 
@@ -2148,7 +2107,7 @@ where
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
-        msg::<Tr, Hc>(
+        msg(Identified::<Tr, Hc, _>::new(
             counterparty_chain_id,
             MsgRecvPacketData {
                 msg: MsgRecvPacket {
@@ -2167,7 +2126,7 @@ where
                 },
                 __marker: PhantomData,
             },
-        )
+        ))
     }
 }
 
@@ -2234,7 +2193,7 @@ where
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
-        msg::<Tr, Hc>(
+        msg(Identified::<Tr, Hc, _>::new(
             counterparty_chain_id,
             MsgAckPacketData {
                 msg: MsgAcknowledgement {
@@ -2254,7 +2213,7 @@ where
                 },
                 __marker: PhantomData,
             },
-        )
+        ))
     }
 }
 
@@ -2290,7 +2249,10 @@ where
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
-        fetch::<Tr, Hc>(counterparty_chain_id, fetch_)
+        fetch(Identified::<Tr, Hc, _>::new(
+            counterparty_chain_id,
+            fetch_.into(),
+        ))
     }
 }
 
@@ -2332,9 +2294,7 @@ where
     ) -> RelayerMsg {
         assert_eq!(self_client_state_chain_id, self_consensus_state_chain_id);
 
-        // let counterparty_chain_id = self_client_state_chain_id;
-
-        msg::<Hc, Tr>(
+        msg(Identified::<Hc, Tr, _>::new(
             this_chain_id,
             MsgCreateClientData {
                 config: this.config,
@@ -2343,6 +2303,6 @@ where
                     consensus_state: self_consensus_state,
                 },
             },
-        )
+        ))
     }
 }
