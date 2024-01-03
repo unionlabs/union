@@ -1,5 +1,29 @@
 {
   "chain": {
+    "ethereum-devnet": {
+      "chain_type": "evm",
+      "preset_base": "minimal",
+      "ibc_handler_address": "0x774667629726ec1FaBEbCEc0D9139bD1C8f72a23",
+      "signers": [
+        {
+          "raw": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+        },
+        {
+          "raw": "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
+        },
+        {
+          "raw": "0x0a917066d306f09670e47729bfd4384f4afcac98493c65b9733870a434d71f29"
+        },
+        {
+          "raw": "0xff45ae2a6c4899294e898a171e15de8a4d2557852378364f8684c6a1520ccd7d"
+        },
+        {
+          "raw": "0x27ae0c7b8d7c698e41b173265490a4c64b4e39ae78599166e003f868f12140fd"
+        }
+      ],
+      "eth_rpc_api": "ws://localhost:8546",
+      "eth_beacon_rpc_api": "http://localhost:9596"
+    },
     "union-devnet": {
       "chain_type": "union",
       "signers": [
