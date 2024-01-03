@@ -24,31 +24,6 @@ pub enum CalculateRootError {
     InnerOpHashAndSpecMismatch,
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
-pub enum VerifyError {
-    #[error("spec mismatch ({0})")]
-    SpecMismatch(SpecMismatchError),
-    #[error("key and existence proof value doesn't match ({key:?}, {existence_proof_key:?})")]
-    KeyAndExistenceProofKeyMismatch {
-        key: Vec<u8>,
-        existence_proof_key: Vec<u8>,
-    },
-    #[error(
-        "value and existence proof value doesn't match ({value:?}, {existence_proof_value:?})"
-    )]
-    ValueAndExistenceProofValueMismatch {
-        value: Vec<u8>,
-        existence_proof_value: Vec<u8>,
-    },
-    #[error("root calculation ({0})")]
-    RootCalculation(CalculateRootError),
-    #[error("calculated and given root doesn't match ({calculated_root:?}, {given_root:?})")]
-    CalculatedAndGivenRootMismatch {
-        calculated_root: Vec<u8>,
-        given_root: Vec<u8>,
-    },
-}
-
 pub fn check_against_spec(
     existence_proof: &ExistenceProof,
     spec: &ProofSpec,
@@ -84,7 +59,7 @@ pub fn calculate_root(existence_proof: &ExistenceProof) -> Result<Vec<u8>, Calcu
     calculate(existence_proof, None)
 }
 
-fn calculate(
+pub(crate) fn calculate(
     existence_proof: &ExistenceProof,
     spec: Option<&ProofSpec>,
 ) -> Result<Vec<u8>, CalculateRootError> {
@@ -108,41 +83,4 @@ fn calculate(
     }
 
     Ok(res)
-}
-
-/// Verify does all checks to ensure this proof proves this key, value -> root
-/// and matches the spec.
-pub fn verify(
-    existence_proof: &ExistenceProof,
-    spec: &ProofSpec,
-    root: &[u8],
-    key: &[u8],
-    value: &[u8],
-) -> Result<(), VerifyError> {
-    check_against_spec(existence_proof, spec).map_err(VerifyError::SpecMismatch)?;
-
-    if key != existence_proof.key {
-        return Err(VerifyError::KeyAndExistenceProofKeyMismatch {
-            key: key.into(),
-            existence_proof_key: existence_proof.key.clone(),
-        });
-    }
-
-    if value != existence_proof.value {
-        return Err(VerifyError::ValueAndExistenceProofValueMismatch {
-            value: value.into(),
-            existence_proof_value: existence_proof.value.clone(),
-        });
-    }
-
-    let calc = calculate(existence_proof, Some(spec)).map_err(VerifyError::RootCalculation)?;
-
-    if root != calc {
-        return Err(VerifyError::CalculatedAndGivenRootMismatch {
-            calculated_root: calc,
-            given_root: root.into(),
-        });
-    }
-
-    Ok(())
 }

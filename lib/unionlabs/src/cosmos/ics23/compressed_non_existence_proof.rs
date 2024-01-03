@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cosmos::ics23::compressed_existence_proof::CompressedExistenceProof,
-    errors::{required, MissingField},
+    cosmos::ics23::compressed_existence_proof::CompressedExistenceProof, errors::MissingField,
     TryFromProtoErrorOf,
 };
 
@@ -11,8 +10,8 @@ use crate::{
 pub struct CompressedNonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     pub key: Vec<u8>,
-    pub left: CompressedExistenceProof,
-    pub right: CompressedExistenceProof,
+    pub left: Option<CompressedExistenceProof>,
+    pub right: Option<CompressedExistenceProof>,
 }
 
 impl crate::Proto for CompressedNonExistenceProof {
@@ -36,11 +35,15 @@ impl TryFrom<protos::cosmos::ics23::v1::CompressedNonExistenceProof>
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             key: value.key,
-            left: required!(value.left)?
-                .try_into()
+            left: value
+                .left
+                .map(|proof| proof.try_into())
+                .transpose()
                 .map_err(TryFromCompressedNonExistenceProofError::Left)?,
-            right: required!(value.right)?
-                .try_into()
+            right: value
+                .right
+                .map(|proof| proof.try_into())
+                .transpose()
                 .map_err(TryFromCompressedNonExistenceProofError::Right)?,
         })
     }
@@ -53,8 +56,8 @@ impl From<CompressedNonExistenceProof>
     fn from(value: CompressedNonExistenceProof) -> Self {
         Self {
             key: value.key.into(),
-            left: value.left.into(),
-            right: value.right.into(),
+            left: value.left.map(Into::into).unwrap_or_default(),
+            right: value.right.map(Into::into).unwrap_or_default(),
         }
     }
 }
@@ -63,8 +66,8 @@ impl From<CompressedNonExistenceProof> for protos::cosmos::ics23::v1::Compressed
     fn from(value: CompressedNonExistenceProof) -> Self {
         Self {
             key: value.key,
-            left: Some(value.left.into()),
-            right: Some(value.right.into()),
+            left: value.left.map(Into::into),
+            right: value.right.map(Into::into),
         }
     }
 }

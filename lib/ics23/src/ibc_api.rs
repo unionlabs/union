@@ -26,6 +26,8 @@ pub enum VerifyMembershipError {
     InvalidProofType,
     #[error("could not retrieve the key due to invalid indexing")]
     InvalidIndexing,
+    #[error("nonexistence proof has empty left and right proof")]
+    EmptyNonExistenceProof,
 }
 
 pub fn verify_membership(
@@ -59,6 +61,57 @@ pub fn verify_membership(
     )
 }
 
+pub fn verify_non_membership(
+    proof: MerkleProof,
+    specs: &[&ProofSpec],
+    consensus_root: &MerkleRoot,
+    path: MerklePath,
+) -> Result<(), VerifyMembershipError> {
+    if proof.proofs.len() != specs.len() {
+        return Err(VerifyMembershipError::InvalidProofsLength {
+            expected: specs.len(),
+            got: proof.proofs.len(),
+        });
+    }
+
+    if path.key_path.len() != specs.len() {
+        return Err(VerifyMembershipError::InvalidKeyPathLength {
+            expected: specs.len(),
+            got: path.key_path.len(),
+        });
+    }
+
+    let CommitmentProof::Nonexist(nonexist) = &proof.proofs[0] else {
+        return Err(VerifyMembershipError::InvalidProofType);
+    };
+
+    let subroot = if let Some(ep) = &nonexist.left {
+        existence_proof::calculate_root(ep)
+    } else if let Some(ep) = &nonexist.right {
+        existence_proof::calculate_root(ep)
+    } else {
+        return Err(VerifyMembershipError::EmptyNonExistenceProof);
+    }
+    .map_err(VerifyMembershipError::RootCalculation)?;
+
+    let key = path
+        .key_path
+        .get(path.key_path.len() - 1)
+        .ok_or(VerifyMembershipError::InvalidIndexing)?;
+
+    verify::verify_non_membership(specs[0], &subroot, &nonexist, key.as_bytes())
+        .map_err(VerifyMembershipError::InnerVerification)?;
+
+    verify_chained_membership_proof(
+        consensus_root.hash.as_ref(),
+        specs,
+        proof.proofs,
+        path,
+        subroot,
+        1,
+    )
+}
+
 fn verify_chained_membership_proof(
     root: &[u8],
     specs: &[&ProofSpec],
@@ -84,8 +137,14 @@ fn verify_chained_membership_proof(
                 .get(keys.key_path.len() - 1 - i)
                 .ok_or(VerifyMembershipError::InvalidIndexing)?;
 
-            verify::verify_membership(specs[index], &subroot, proof, key.as_bytes(), &value)
-                .map_err(VerifyMembershipError::InnerVerification)?;
+            verify::verify_membership(
+                specs[index],
+                &subroot,
+                existence_proof,
+                key.as_bytes(),
+                &value,
+            )
+            .map_err(VerifyMembershipError::InnerVerification)?;
 
             Ok(subroot)
         })

@@ -11,7 +11,11 @@ pub fn decompress(
 ) -> NonExistenceProof {
     NonExistenceProof {
         key: compressed_nonexistence_proof.key,
-        left: compressed_existence_proof::decompress(compressed_nonexistence_proof.left, lookup),
-        right: compressed_existence_proof::decompress(compressed_nonexistence_proof.right, lookup),
+        left: compressed_nonexistence_proof
+            .left
+            .map(|proof| compressed_existence_proof::decompress(proof, lookup)),
+        right: compressed_nonexistence_proof
+            .right
+            .map(|proof| compressed_existence_proof::decompress(proof, lookup)),
     }
 }
