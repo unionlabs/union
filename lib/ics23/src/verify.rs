@@ -332,30 +332,3 @@ fn verify_existence_proof(
 
     Ok(())
 }
-
-// fn get_exist_proof_for_key(proof: CommitmentProof, key: &[u8]) -> Option<ExistenceProof> {
-//     match proof {
-//         CommitmentProof::Exist(exist) => {
-//             if exist.key.as_slice() == key {
-//                 return Some(exist);
-//             }
-
-//             None
-//         }
-//         CommitmentProof::Batch(batch) => {
-//             for sub in batch.entries {
-//                 match sub {
-//                     BatchEntry::Exist(exist) => {
-//                         if exist.key.as_slice() == key {
-//                             return Some(exist);
-//                         }
-//                     }
-//                     _ => {}
-//                 }
-//             }
-
-//             None
-//         }
-//         _ => None,
-//     }
-// }
