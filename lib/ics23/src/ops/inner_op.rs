@@ -1,6 +1,7 @@
 use unionlabs::cosmos::ics23::{hash_op::HashOp, inner_op::InnerOp, proof_spec::ProofSpec};
 
-use crate::hash_op;
+use super::{hash_op, validate_iavl_ops};
+use crate::proof_specs::IAVL_PROOF_SPEC;
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum SpecMismatchError {
@@ -14,6 +15,10 @@ pub enum SpecMismatchError {
     InnerOpPrefixTooLong { prefix_len: usize, max_len: i32 },
     #[error("malformed inner op suffix ({0:?})")]
     InnerOpSuffixMalformed(usize),
+    #[error("validate iavl ops ({0})")]
+    ValidateIavlOps(super::ValidateIavlOpsError),
+    #[error("bad prefix remaining {0} bytes after reading")]
+    BadPrefix(usize),
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -26,14 +31,24 @@ pub fn check_against_spec(
     inner_op: &InnerOp,
     spec: &ProofSpec,
     b: i32,
-    iavl_spec: &ProofSpec,
 ) -> Result<(), SpecMismatchError> {
     if inner_op.hash != spec.inner_spec.hash {
         return Err(SpecMismatchError::UnexpectedHashOp(inner_op.hash));
     }
 
-    if spec.compatible(iavl_spec) {
-        // TODO(aeryz): validateIavlOps
+    if spec.compatible(&IAVL_PROOF_SPEC) {
+        match validate_iavl_ops(&inner_op.prefix, b) {
+            Ok(remaining) => {
+                if remaining != 1 && remaining != 34 {
+                    return Err(SpecMismatchError::BadPrefix(remaining));
+                }
+
+                if inner_op.hash != HashOp::Sha256 {
+                    return Err(SpecMismatchError::UnexpectedHashOp(inner_op.hash));
+                }
+            }
+            Err(e) => return Err(SpecMismatchError::ValidateIavlOps(e)),
+        }
     }
 
     if inner_op.prefix.starts_with(&spec.leaf_spec.prefix) {
@@ -51,7 +66,6 @@ pub fn check_against_spec(
         });
     }
 
-    // TODO(aeryz): check if max_prefix_length > 0
     let max_prefix_length = (spec.inner_spec.max_prefix_length as usize
         + (spec.inner_spec.child_order.len() - 1) * spec.inner_spec.child_size as usize)
         as usize;

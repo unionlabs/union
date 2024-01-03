@@ -2,7 +2,8 @@ use unionlabs::cosmos::ics23::{
     hash_op::HashOp, leaf_op::LeafOp, length_op::LengthOp, proof_spec::ProofSpec,
 };
 
-use super::{hash_op, length_op};
+use super::{hash_op, length_op, validate_iavl_ops};
+use crate::{proof_specs::IAVL_PROOF_SPEC, ValidateIavlOpsError};
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum SpecMismatchError {
@@ -14,8 +15,12 @@ pub enum SpecMismatchError {
     UnexpectedPrehashValue(HashOp),
     #[error("unexpected length op ({0:?})")]
     UnexpectedLengthOp(LengthOp),
+    #[error("bad prefix remaining {0} bytes after reading")]
+    BadPrefix(usize),
     #[error("prefix ({prefix:?}) is not the prefix of ({full:?})")]
     PrefixMismatch { full: Vec<u8>, prefix: Vec<u8> },
+    #[error("validate iavl ops ({0})")]
+    ValidateIavlOps(ValidateIavlOpsError),
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -28,15 +33,18 @@ pub enum ApplyError {
     LeafData(super::length_op::ApplyError),
 }
 
-pub fn check_against_spec(
-    leaf_op: &LeafOp,
-    spec: &ProofSpec,
-    iavl_spec: &ProofSpec,
-) -> Result<(), SpecMismatchError> {
+pub fn check_against_spec(leaf_op: &LeafOp, spec: &ProofSpec) -> Result<(), SpecMismatchError> {
     let lspec = &spec.leaf_spec;
 
-    if spec.compatible(iavl_spec) {
-        // TODO(aeryz): validate iavl opts
+    if spec.compatible(&IAVL_PROOF_SPEC) {
+        match validate_iavl_ops(&leaf_op.prefix, 0) {
+            Ok(remaining) => {
+                if remaining > 0 {
+                    return Err(SpecMismatchError::BadPrefix(remaining));
+                }
+            }
+            Err(e) => return Err(SpecMismatchError::ValidateIavlOps(e)),
+        }
     }
 
     if leaf_op.hash != lspec.hash {

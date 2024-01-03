@@ -1,6 +1,6 @@
 use unionlabs::cosmos::ics23::{existence_proof::ExistenceProof, proof_spec::ProofSpec};
 
-use crate::{inner_op, leaf_op, proof_specs::IAVL_PROOF_SPEC};
+use crate::{inner_op, leaf_op};
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum SpecMismatchError {
@@ -52,9 +52,8 @@ pub enum VerifyError {
 pub fn check_against_spec(
     existence_proof: &ExistenceProof,
     spec: &ProofSpec,
-    iavl_spec: &ProofSpec,
 ) -> Result<(), SpecMismatchError> {
-    leaf_op::check_against_spec(&existence_proof.leaf, spec, iavl_spec)
+    leaf_op::check_against_spec(&existence_proof.leaf, spec)
         .map_err(SpecMismatchError::LeafSpecMismatch)?;
 
     if spec.min_depth > 0 && existence_proof.path.len() < spec.min_depth as usize {
@@ -71,7 +70,7 @@ pub fn check_against_spec(
     }
 
     for (index, inner) in existence_proof.path.iter().enumerate() {
-        inner_op::check_against_spec(inner, spec, index as i32 + 1, iavl_spec)
+        inner_op::check_against_spec(inner, spec, index as i32 + 1)
             .map_err(SpecMismatchError::InnerOpSpecMismatch)?;
     }
 
@@ -120,8 +119,7 @@ pub fn verify(
     key: &[u8],
     value: &[u8],
 ) -> Result<(), VerifyError> {
-    check_against_spec(existence_proof, spec, &IAVL_PROOF_SPEC)
-        .map_err(VerifyError::SpecMismatch)?;
+    check_against_spec(existence_proof, spec).map_err(VerifyError::SpecMismatch)?;
 
     if key != existence_proof.key {
         return Err(VerifyError::KeyAndExistenceProofKeyMismatch {

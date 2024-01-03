@@ -1,7 +1,6 @@
 use sha2::Digest;
 use unionlabs::cosmos::ics23::hash_op::HashOp;
 
-// TODO(aeryz): move these to `HashOp`
 pub fn do_hash_or_noop(hash_op: HashOp, preimage: &[u8]) -> Vec<u8> {
     if hash_op == HashOp::NoHash {
         return preimage.into();

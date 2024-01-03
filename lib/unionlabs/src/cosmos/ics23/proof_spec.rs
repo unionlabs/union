@@ -18,7 +18,7 @@ pub struct ProofSpec {
 }
 
 impl ProofSpec {
-    // TODO(aeryz): what the hell is this
+    // TODO(aeryz): move this to ics23
     pub fn compatible(&self, spec: &ProofSpec) -> bool {
         self.leaf_spec.hash == spec.leaf_spec.hash
             && self.leaf_spec.prehash_key == spec.leaf_spec.prehash_key
