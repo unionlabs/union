@@ -68,7 +68,6 @@ pub fn verify_membership(
     key: &[u8],
     value: &[u8],
 ) -> Result<(), VerifyMembershipError> {
-    // TODO(aeryz): push proof.key and proof.value checks to here
     verify_existence_proof(proof, spec, root, key, value)
         .map_err(VerifyMembershipError::ExistenceProofVerify)
 }

@@ -16,8 +16,9 @@ pub enum VerifyMembershipError {
     RootCalculation(existence_proof::CalculateRootError),
     #[error("{0}")]
     InnerVerification(verify::VerifyMembershipError),
-    #[error("invalid root top level")] // TODO(aeryz): beautify
-    InvalidRoot,
+    // TODO(aeryz): print hex
+    #[error("calculated root ({calculated:?}) does not match the given ({given:?}) value")]
+    InvalidRoot { given: Vec<u8>, calculated: Vec<u8> },
     #[error("expected the size of proofs to be ({expected}), got ({got})")]
     InvalidProofsLength { expected: usize, got: usize },
     #[error("expected the size of key path to be ({expected}), got ({got})")]
@@ -152,7 +153,10 @@ fn verify_chained_membership_proof(
             if value.as_slice() == root {
                 Ok(())
             } else {
-                Err(VerifyMembershipError::InvalidRoot)
+                Err(VerifyMembershipError::InvalidRoot {
+                    given: value,
+                    calculated: root.into(),
+                })
             }
         })
 }

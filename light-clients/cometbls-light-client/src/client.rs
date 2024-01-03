@@ -5,11 +5,10 @@ use ics008_wasm_client::{
     },
     IbcClient, Status, StorageState,
 };
-use ics23::{iavl_spec, tendermint_proof_spec};
+use ics23::ibc_api::SDK_SPECS;
 use prost::Message;
 use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
-    cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::{
         core::{
             client::height::Height,
@@ -66,12 +65,21 @@ impl IbcClient for CometblsLightClient {
         })?;
 
         match value {
-            StorageState::Occupied(value) => {
-                verify_membership(merkle_proof, &consensus_state.data.root, path, &value)
-                    .map_err(Error::VerifyMembership)
-            }
-            StorageState::Empty => Ok(()),
+            StorageState::Occupied(value) => ics23::ibc_api::verify_membership(
+                merkle_proof,
+                &SDK_SPECS,
+                &consensus_state.data.root,
+                path,
+                value,
+            ),
+            StorageState::Empty => ics23::ibc_api::verify_non_membership(
+                merkle_proof,
+                &SDK_SPECS,
+                &consensus_state.data.root,
+                path,
+            ),
         }
+        .map_err(Error::VerifyMembership)
     }
 
     fn verify_header(
