@@ -99,28 +99,22 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         ),
                     ),
                 ]),
-                unionlabs::events::IbcEvent::ConnectionOpenTry(try_) => {
-                    seq([
-                        aggregate(
-                            [mk_aggregate_wait_for_update(
-                                hc.chain_id(),
-                                try_.client_id.clone(),
-                                try_.counterparty_client_id.clone(),
-                                ibc_event.height,
-                            )],
-                            [],
-                            Identified::new(
-                                hc.chain_id(),
-                                AggregateMsgAfterUpdate::ConnectionOpenAck(
-                                    AggregateConnectionOpenAck {
-                                        event_height: ibc_event.height,
-                                        event: try_,
-                                    },
-                                ),
-                            ),
-                        ), // AnyLightClientIdentified::from(Identified::new(chain_id, t.into()))
-                    ])
-                }
+                unionlabs::events::IbcEvent::ConnectionOpenTry(try_) => seq([aggregate(
+                    [mk_aggregate_wait_for_update(
+                        hc.chain_id(),
+                        try_.client_id.clone(),
+                        try_.counterparty_client_id.clone(),
+                        ibc_event.height,
+                    )],
+                    [],
+                    Identified::new(
+                        hc.chain_id(),
+                        AggregateMsgAfterUpdate::ConnectionOpenAck(AggregateConnectionOpenAck {
+                            event_height: ibc_event.height,
+                            event: try_,
+                        }),
+                    ),
+                )]),
                 unionlabs::events::IbcEvent::ConnectionOpenAck(ack) => aggregate(
                     [mk_aggregate_wait_for_update(
                         hc.chain_id(),
@@ -179,31 +173,29 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     ),
                 ),
                 unionlabs::events::IbcEvent::ChannelOpenTry(try_) => aggregate(
-                    [
-                        aggregate(
-                            [fetch(Identified::<Hc, Tr, _>::new(
-                                hc.chain_id(),
-                                FetchState {
+                    [aggregate(
+                        [fetch(Identified::<Hc, Tr, _>::new(
+                            hc.chain_id(),
+                            FetchState {
+                                at: ibc_event.height,
+                                path: ChannelEndPath {
+                                    port_id: try_.port_id.clone(),
+                                    channel_id: try_.channel_id.clone(),
+                                }
+                                .into(),
+                            },
+                        ))],
+                        [],
+                        Identified::new(
+                            hc.chain_id(),
+                            Aggregate::ConnectionFetchFromChannelEnd(
+                                AggregateConnectionFetchFromChannelEnd {
                                     at: ibc_event.height,
-                                    path: ChannelEndPath {
-                                        port_id: try_.port_id.clone(),
-                                        channel_id: try_.channel_id.clone(),
-                                    }
-                                    .into(),
+                                    __marker: PhantomData,
                                 },
-                            ))],
-                            [],
-                            Identified::new(
-                                hc.chain_id(),
-                                Aggregate::ConnectionFetchFromChannelEnd(
-                                    AggregateConnectionFetchFromChannelEnd {
-                                        at: ibc_event.height,
-                                        __marker: PhantomData,
-                                    },
-                                ),
                             ),
-                        ), // AnyLightClientIdentified::from(Identified::new(chain_id, t.into()))
-                    ],
+                        ),
+                    )],
                     [],
                     Identified::new(
                         hc.chain_id(),
