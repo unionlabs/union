@@ -17,13 +17,13 @@ pub enum ValidateIavlOpsError {
     Decode(prost::DecodeError),
 }
 
-pub(crate) fn read_varint(mut buffer: &[u8]) -> Result<i64, prost::DecodeError> {
+pub(crate) fn read_varint<'a>(mut buffer: &'a [u8]) -> Result<(&'a [u8], i64), prost::DecodeError> {
     let ux = prost::encoding::decode_varint(&mut buffer)?;
     let mut x = (ux >> 1) as i64;
     if ux & 1 != 0 {
         x = !x;
     }
-    Ok(x)
+    Ok((buffer, x))
 }
 
 pub(crate) fn validate_iavl_ops(
@@ -36,20 +36,20 @@ pub(crate) fn validate_iavl_ops(
         return Err(ValidateIavlOpsError::NegativeMinHeight(min_height));
     }
 
-    let height = read_varint(&mut prefix).map_err(ValidateIavlOpsError::Decode)?;
+    let (mut buffer, height) = read_varint(&mut prefix).map_err(ValidateIavlOpsError::Decode)?;
     if height < min_height as i64 {
         return Err(ValidateIavlOpsError::HeightTooShort { height, min_height });
     }
 
-    let size = read_varint(&mut prefix).map_err(ValidateIavlOpsError::Decode)?;
+    let (mut buffer, size) = read_varint(&mut buffer).map_err(ValidateIavlOpsError::Decode)?;
     if size < 0 {
         return Err(ValidateIavlOpsError::NegativeSize(size));
     }
 
-    let version = read_varint(&mut prefix).map_err(ValidateIavlOpsError::Decode)?;
+    let (buffer, version) = read_varint(&mut buffer).map_err(ValidateIavlOpsError::Decode)?;
     if version < 0 {
         return Err(ValidateIavlOpsError::NegativeVersion(size));
     }
 
-    Ok(prefix.len())
+    Ok(buffer.len())
 }

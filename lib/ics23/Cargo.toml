@@ -11,3 +11,6 @@ thiserror = { version = "1.0", package = "thiserror-core", default-features = fa
 prost = { version = "0.11.9", default-features = false, features = ["std"] }
 sha2 = { version = "0.10.7", default-features = false }
 ripemd = { version = "0.1.3", default-features = false }
+
+[dev-dependencies]
+hex-literal = "0.4.1"
