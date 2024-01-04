@@ -1,4 +1,4 @@
-import { BrowserProvider, Eip1193Provider } from "ethers/types/providers";
+import { BrowserProvider, Eip1193Provider } from 'ethers/types/providers'
 
 /**
  * @see https://kit.svelte.dev/docs/types#app
@@ -6,8 +6,7 @@ import { BrowserProvider, Eip1193Provider } from "ethers/types/providers";
 declare global {
   namespace App {}
   interface Window {
-    ethereum: undefined | (Eip1193Provider & BrowserProvider);
+    ethereum: undefined | (Eip1193Provider & BrowserProvider)
   }
 }
-
-export {};
+export {}
