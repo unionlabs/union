@@ -154,15 +154,15 @@ fn is_left_neighbor(
     left: &[InnerOp],
     right: &[InnerOp],
 ) -> Result<bool, NeighborSearchError> {
-    let (mut topleft, mut left) = left.split_last().ok_or(NeighborSearchError::InvalidPath)?;
-    let (mut topright, mut right) = right.split_last().ok_or(NeighborSearchError::InvalidPath)?;
+    let (mut top_left, mut left) = left.split_last().ok_or(NeighborSearchError::InvalidPath)?;
+    let (mut top_right, mut right) = right.split_last().ok_or(NeighborSearchError::InvalidPath)?;
 
-    while topleft.prefix == topright.prefix && topleft.suffix == topright.suffix {
-        (topleft, left) = left.split_last().ok_or(NeighborSearchError::InvalidPath)?;
-        (topright, right) = right.split_last().ok_or(NeighborSearchError::InvalidPath)?;
+    while top_left.prefix == top_right.prefix && top_left.suffix == top_right.suffix {
+        (top_left, left) = left.split_last().ok_or(NeighborSearchError::InvalidPath)?;
+        (top_right, right) = right.split_last().ok_or(NeighborSearchError::InvalidPath)?;
     }
 
-    if !is_left_step(spec, topleft, topright)?
+    if !is_left_step(spec, top_left, top_right)?
         || !is_right_most(spec, left)?
         || !is_left_most(spec, right)?
     {
@@ -179,11 +179,11 @@ fn is_left_step(
     left: &InnerOp,
     right: &InnerOp,
 ) -> Result<bool, NeighborSearchError> {
-    let leftidx = order_from_padding(spec, left)?;
+    let left_idx = order_from_padding(spec, left)?;
 
-    let rightidx = order_from_padding(spec, right)?;
+    let right_idx = order_from_padding(spec, right)?;
 
-    Ok(rightidx == leftidx + 1)
+    Ok(right_idx == left_idx + 1)
 }
 
 /// returns true if this is the right-most path in the tree, excluding placeholder (empty child) nodes
@@ -367,7 +367,7 @@ mod tests {
     use super::*;
     use crate::proof_specs::TENDERMINT_PROOF_SPEC;
 
-    fn ensure_existant(
+    fn ensure_existent(
         proof: &[u8],
         root: &[u8],
         key: &[u8],
@@ -388,7 +388,7 @@ mod tests {
         )
     }
 
-    fn ensure_nonexistant(
+    fn ensure_non_existent(
         proof: &[u8],
         root: &[u8],
         key: &[u8],
@@ -409,7 +409,7 @@ mod tests {
         let key = hex!("303142424373615a55715146735259436c6a5767");
         let value = hex!("76616c75655f666f725f303142424373615a55715146735259436c6a5767");
 
-        assert_eq!(ensure_existant(&proof, &root, &key, &value), Ok(()));
+        assert_eq!(ensure_existent(&proof, &root, &key, &value), Ok(()));
     }
 
     #[test]
@@ -419,7 +419,7 @@ mod tests {
         let key = hex!("513334656d766f39447145585735325257523835");
         let value = hex!("76616c75655f666f725f513334656d766f39447145585735325257523835");
 
-        assert_eq!(ensure_existant(&proof, &root, &key, &value), Ok(()));
+        assert_eq!(ensure_existent(&proof, &root, &key, &value), Ok(()));
     }
 
     #[test]
@@ -429,7 +429,7 @@ mod tests {
         let key = hex!("7a785a4e6b534c64634d655657526c7658456644");
         let value = hex!("76616c75655f666f725f7a785a4e6b534c64634d655657526c7658456644");
 
-        assert_eq!(ensure_existant(&proof, &root, &key, &value), Ok(()));
+        assert_eq!(ensure_existent(&proof, &root, &key, &value), Ok(()));
     }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/nonexist_left.json
@@ -439,7 +439,7 @@ mod tests {
         let root = hex!("4e2e78d2da505b7d0b00fda55a4b048eed9a23a7f7fc3d801f20ce4851b442aa");
         let key = hex!("01010101");
 
-        assert_eq!(ensure_nonexistant(&proof, &root, &key), Ok(()))
+        assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()))
     }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/nonexist_middle.json
@@ -449,7 +449,7 @@ mod tests {
         let root = hex!("4bf28d948566078c5ebfa86db7471c1541eab834f539037075b9f9e3b1c72cfc");
         let key = hex!("544f31483668784a4b667136547a56767649ffff");
 
-        assert_eq!(ensure_nonexistant(&proof, &root, &key), Ok(()))
+        assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()))
     }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/nonexist_right.json
@@ -459,6 +459,6 @@ mod tests {
         let root = hex!("83952b0b17e64c862628bcc1277e7f8847589af794ed5a855339281d395ec04f");
         let key = hex!("ffffffff");
 
-        assert_eq!(ensure_nonexistant(&proof, &root, &key), Ok(()))
+        assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()))
     }
 }

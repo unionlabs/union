@@ -21,7 +21,7 @@ milagro_bls = { workspace = true, default-features = false }
 primitive-types = { version = "0.12.1", default-features = false, features = ["rlp"] }
 rlp = { version = "0.5.2", default-features = false, features = ["derive"] }
 serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
-sha2 = { version = "0.10", default-features = false }
+sha2.workspace = true
 sha3 = { version = "0.10", default-features = false }
 trie-db = { version = "0.27.1", default-features = false }
 typenum = { version = "1.16.0", features = ["const-generics", "no_std"] }

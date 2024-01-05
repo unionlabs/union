@@ -77,6 +77,7 @@ ethers = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core
 ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-core = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
+sha2 = { version = "0.10.7", default-features = false }
 
 # ethers = { path = "/home/ben/projects/union/ethers-rs/ethers", default-features = false }
 # ethers-contract-derive = { path = "/home/ben/projects/union/ethers-rs/ethers-contract/ethers-contract-derive", default-features = false }

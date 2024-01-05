@@ -21,7 +21,7 @@ pub enum SpecMismatchError {
     #[error("bad prefix remaining {0} bytes after reading")]
     BadPrefix(usize),
     #[error("prefix ({prefix:?}) is not the prefix of ({full:?})")]
-    PrefixMismatch { full: Vec<u8>, prefix: Vec<u8> },
+    PrefixMismatch { full: String, prefix: String },
     #[error("validate iavl ops ({0})")]
     ValidateIavlOps(ValidateIavlOpsError),
 }
@@ -70,8 +70,8 @@ pub fn check_against_spec(leaf_op: &LeafOp, spec: &ProofSpec) -> Result<(), Spec
 
     if !leaf_op.prefix.starts_with(&lspec.prefix) {
         return Err(SpecMismatchError::PrefixMismatch {
-            full: leaf_op.prefix.clone().into_owned(),
-            prefix: lspec.prefix.clone().into_owned(),
+            full: hex::encode(&leaf_op.prefix),
+            prefix: hex::encode(&lspec.prefix),
         });
     }
 

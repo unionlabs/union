@@ -2926,6 +2926,7 @@ dependencies = [
 name = "ics23"
 version = "0.1.0"
 dependencies = [
+ "hex",
  "hex-literal",
  "prost 0.11.9",
  "ripemd",

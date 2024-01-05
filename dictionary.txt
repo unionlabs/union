@@ -325,6 +325,7 @@ groupkeeper
 groupmodule
 hasher
 hasura
+hdata
 healthcheck
 healthz
 heredocs
@@ -420,9 +421,11 @@ lockb
 logformat
 logline
 logtostderr
+lspec
 lzrndrpkvsjqgk
 mapstructure
 maxdome
+maxp
 maxpeers
 mdsvex
 merkle
@@ -433,6 +436,7 @@ milagro
 mimc
 miminum
 miniserve
+minp
 mintkeeper
 minttypes
 miri
@@ -531,6 +535,7 @@ pubkey
 pubkey's
 pubkeys
 publint
+pvalue
 pxplusqx
 pxqx
 pxrx
@@ -620,6 +625,7 @@ subdetail
 submessage
 submessages
 submsg
+subroot
 subsec
 substituters
 substores
@@ -730,6 +736,7 @@ valnode
 valoper
 valoperpub
 valset
+varint
 vercel
 verison
 verkle

@@ -22,7 +22,7 @@ schemars = "0.8"
 semver = "1"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
-sha2 = { version = "0.10", default-features = false }
+sha2.workspace = true
 hex = { version = "0.4", default-features = false }
 token-factory-api = { workspace = true }
 ucs01-relay-api = { workspace = true }

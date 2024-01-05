@@ -58,7 +58,6 @@ pub fn check_against_spec(
         });
     }
 
-    // TODO(aeryz): check if min_prefix_length > 0
     if inner_op.prefix.len() < spec.inner_spec.min_prefix_length as usize {
         return Err(SpecMismatchError::InnerOpPrefixTooShort {
             prefix_len: inner_op.prefix.len(),
