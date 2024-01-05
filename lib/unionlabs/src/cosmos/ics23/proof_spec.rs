@@ -15,21 +15,7 @@ pub struct ProofSpec {
     pub max_depth: i32,
     // REVIEW: > 0?
     pub min_depth: i32,
-}
-
-impl ProofSpec {
-    // TODO(aeryz): move this to ics23
-    pub fn compatible(&self, spec: &ProofSpec) -> bool {
-        self.leaf_spec.hash == spec.leaf_spec.hash
-            && self.leaf_spec.prehash_key == spec.leaf_spec.prehash_key
-            && self.leaf_spec.prehash_value == spec.leaf_spec.prehash_value
-            && self.leaf_spec.length == spec.leaf_spec.length
-            && self.inner_spec.hash == spec.inner_spec.hash
-            && self.inner_spec.min_prefix_length == spec.inner_spec.min_prefix_length
-            && self.inner_spec.max_prefix_length == spec.inner_spec.max_prefix_length
-            && self.inner_spec.child_size == spec.inner_spec.child_size
-            && self.inner_spec.child_order.len() == spec.inner_spec.child_order.len()
-    }
+    pub prehash_key_before_comparison: bool,
 }
 
 impl TypeUrl for protos::cosmos::ics23::v1::ProofSpec {
@@ -47,6 +33,7 @@ impl From<ProofSpec> for protos::cosmos::ics23::v1::ProofSpec {
             inner_spec: Some(value.inner_spec.into()),
             max_depth: value.max_depth,
             min_depth: value.min_depth,
+            prehash_key_before_comparison: value.prehash_key_before_comparison,
         }
     }
 }
@@ -71,6 +58,7 @@ impl TryFrom<protos::cosmos::ics23::v1::ProofSpec> for ProofSpec {
                 .map_err(TryFromProofSpecError::InnerSpec)?,
             max_depth: value.max_depth,
             min_depth: value.min_depth,
+            prehash_key_before_comparison: value.prehash_key_before_comparison,
         })
     }
 }

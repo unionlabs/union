@@ -785,6 +785,7 @@ dependencies = [
  "ethers",
  "futures",
  "hex",
+ "ics23",
  "num_enum",
  "prost 0.11.9",
  "protos",

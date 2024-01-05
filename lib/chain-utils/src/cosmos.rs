@@ -6,10 +6,6 @@ use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
     bounded::{BoundedI32, BoundedI64},
-    cosmos::ics23::{
-        hash_op::HashOp, inner_spec::InnerSpec, leaf_op::LeafOp, length_op::LengthOp,
-        proof_spec::ProofSpec,
-    },
     encoding::Proto,
     events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
     google::protobuf::{any::Any, duration::NANOS_PER_SECOND},
@@ -209,44 +205,8 @@ impl Chain for Cosmos {
                     revision_height: height.value(),
                 },
                 proof_specs: [
-                    ProofSpec {
-                        leaf_spec: LeafOp {
-                            hash: HashOp::Sha256,
-                            prehash_key: HashOp::NoHash,
-                            prehash_value: HashOp::Sha256,
-                            length: LengthOp::VarProto,
-                            prefix: vec![0],
-                        },
-                        inner_spec: InnerSpec {
-                            child_order: vec![0, 1],
-                            child_size: 33,
-                            min_prefix_length: 4,
-                            max_prefix_length: 12,
-                            empty_child: vec![],
-                            hash: HashOp::Sha256,
-                        },
-                        max_depth: 0,
-                        min_depth: 0,
-                    },
-                    ProofSpec {
-                        leaf_spec: LeafOp {
-                            hash: HashOp::Sha256,
-                            prehash_key: HashOp::NoHash,
-                            prehash_value: HashOp::Sha256,
-                            length: LengthOp::VarProto,
-                            prefix: [0].into(),
-                        },
-                        inner_spec: InnerSpec {
-                            child_order: [0, 1].into(),
-                            child_size: 32,
-                            min_prefix_length: 1,
-                            max_prefix_length: 1,
-                            empty_child: [].into(),
-                            hash: HashOp::Sha256,
-                        },
-                        max_depth: 0,
-                        min_depth: 0,
-                    },
+                    ics23::ibc_api::IAVL_PROOF_SPEC,
+                    ics23::ibc_api::TENDERMINT_PROOF_SPEC,
                 ]
                 .into(),
                 upgrade_path: vec!["upgrade".into(), "upgradedIBCState".into()],

@@ -11,7 +11,6 @@ pub fn do_hash_or_noop(hash_op: HashOp, preimage: &[u8]) -> Vec<u8> {
 
 pub fn do_hash(hash_op: HashOp, preimage: &[u8]) -> Vec<u8> {
     match hash_op {
-        // TODO(aeryz): why not keccak
         HashOp::Sha256 => sha2::Sha256::new()
             .chain_update(preimage)
             .finalize()

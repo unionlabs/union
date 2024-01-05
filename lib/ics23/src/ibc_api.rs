@@ -3,7 +3,6 @@ use unionlabs::{
     ibc::core::commitment::{
         merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
     },
-    TryFromProto,
 };
 
 pub use crate::proof_specs::{IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC};
@@ -170,10 +169,8 @@ mod tests {
         TryFromProto,
     };
 
-    use super::{
-        verify_chained_membership_proof, verify_membership, VerifyMembershipError, SDK_SPECS,
-    };
-    use crate::{ibc_api::verify_non_membership, verify};
+    use super::{verify_membership, verify_non_membership, VerifyMembershipError, SDK_SPECS};
+    use crate::verify;
 
     fn chained_membership(
         proof: &[u8],

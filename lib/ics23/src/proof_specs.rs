@@ -23,6 +23,7 @@ pub const IAVL_PROOF_SPEC: ProofSpec = ProofSpec {
     },
     max_depth: 0,
     min_depth: 0,
+    prehash_key_before_comparison: false,
 };
 
 pub const TENDERMINT_PROOF_SPEC: ProofSpec = ProofSpec {
@@ -43,4 +44,17 @@ pub const TENDERMINT_PROOF_SPEC: ProofSpec = ProofSpec {
     },
     max_depth: 0,
     min_depth: 0,
+    prehash_key_before_comparison: false,
 };
+
+pub fn compatible(lhs: &ProofSpec, rhs: &ProofSpec) -> bool {
+    lhs.leaf_spec.hash == rhs.leaf_spec.hash
+        && lhs.leaf_spec.prehash_key == rhs.leaf_spec.prehash_key
+        && lhs.leaf_spec.prehash_value == rhs.leaf_spec.prehash_value
+        && lhs.leaf_spec.length == rhs.leaf_spec.length
+        && lhs.inner_spec.hash == rhs.inner_spec.hash
+        && lhs.inner_spec.min_prefix_length == rhs.inner_spec.min_prefix_length
+        && lhs.inner_spec.max_prefix_length == rhs.inner_spec.max_prefix_length
+        && lhs.inner_spec.child_size == rhs.inner_spec.child_size
+        && lhs.inner_spec.child_order.len() == rhs.inner_spec.child_order.len()
+}

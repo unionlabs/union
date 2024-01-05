@@ -3,7 +3,10 @@ use unionlabs::cosmos::ics23::{
 };
 
 use super::{hash_op, length_op, validate_iavl_ops};
-use crate::{proof_specs::IAVL_PROOF_SPEC, ValidateIavlOpsError};
+use crate::{
+    proof_specs::{self, IAVL_PROOF_SPEC},
+    ValidateIavlOpsError,
+};
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum SpecMismatchError {
@@ -36,7 +39,7 @@ pub enum ApplyError {
 pub fn check_against_spec(leaf_op: &LeafOp, spec: &ProofSpec) -> Result<(), SpecMismatchError> {
     let lspec = &spec.leaf_spec;
 
-    if spec.compatible(&IAVL_PROOF_SPEC) {
+    if proof_specs::compatible(spec, &IAVL_PROOF_SPEC) {
         match validate_iavl_ops(&leaf_op.prefix, 0) {
             Ok(remaining) => {
                 if remaining > 0 {

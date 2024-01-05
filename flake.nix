@@ -45,7 +45,7 @@
       flake = false;
     };
     ics23 = {
-      url = "github:cosmos/ics23?rev=b1abd8678aab07165efd453c96796a179eb3131f";
+      url = "github:cosmos/ics23?rev=74ce807b7be39a7e0afb4e2efb8e28a57965f57b";
       flake = false;
     };
     cosmosproto = {

@@ -190,6 +190,11 @@ pub struct ProofSpec {
     #[prost(int32, tag = "4")]
     #[cfg_attr(feature = "serde", serde(default))]
     pub min_depth: i32,
+    /// prehash_key_before_comparison is a flag that indicates whether to use the
+    /// prehash_key specified by LeafOp to compare lexical ordering of keys for
+    /// non-existence proofs.
+    #[prost(bool, tag = "5")]
+    pub prehash_key_before_comparison: bool,
 }
 /// InnerSpec contains all store-specific structure info to determine if two proofs from a
 /// given store are neighbors.

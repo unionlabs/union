@@ -1,7 +1,7 @@
 use unionlabs::cosmos::ics23::{hash_op::HashOp, inner_op::InnerOp, proof_spec::ProofSpec};
 
 use super::{hash_op, validate_iavl_ops};
-use crate::proof_specs::IAVL_PROOF_SPEC;
+use crate::proof_specs::{self, IAVL_PROOF_SPEC};
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum SpecMismatchError {
@@ -36,7 +36,7 @@ pub fn check_against_spec(
         return Err(SpecMismatchError::UnexpectedHashOp(inner_op.hash));
     }
 
-    if spec.compatible(&IAVL_PROOF_SPEC) {
+    if proof_specs::compatible(spec, &IAVL_PROOF_SPEC) {
         match validate_iavl_ops(&inner_op.prefix, b) {
             Ok(remaining) => {
                 if remaining != 1 && remaining != 34 {

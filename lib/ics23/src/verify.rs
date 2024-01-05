@@ -41,6 +41,8 @@ pub enum VerifyError {
     RightProofMissing,
     #[error("both left and right proofs are missing")]
     BothProofsMissing,
+    #[error("neighbor search failure ({0})")]
+    NeighborSearch(NeighborSearchError),
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -49,6 +51,18 @@ pub enum VerifyMembershipError {
     ExistenceProofVerify(VerifyError),
     #[error("proof does not exist")]
     ProofDoesNotExist,
+}
+
+#[derive(Debug, PartialEq, thiserror::Error)]
+pub enum NeighborSearchError {
+    #[error("")]
+    InvalidBranch { branch: i32, order_len: usize },
+    #[error("branch ({branch}) not found in ({order:?})")]
+    BranchNotFoundInOrder { branch: i32, order: Vec<i32> },
+    #[error("cannot find any valid spacing for this node")]
+    CannotFindValidSpacing,
+    #[error("invalid path provided for proof")]
+    InvalidPath,
 }
 
 pub fn verify_non_membership(
@@ -79,18 +93,20 @@ fn verify_non_existence(
     key: &[u8],
 ) -> Result<(), VerifyError> {
     let key_for_comparison = |spec: &ProofSpec, key: &[u8]| -> Vec<u8> {
-        // TODO(aeryz): we don't have prehash_key_before_comparison, why?
+        if !spec.prehash_key_before_comparison {
+            return key.to_vec();
+        }
         do_hash_or_noop(spec.leaf_spec.prehash_key, key)
     };
 
     let left_ops = |left: &ExistenceProof| -> Result<(), VerifyError> {
         verify_existence_proof(&left, spec, root, &left.key, &left.value)?;
 
-        if key_for_comparison(spec, key) == key_for_comparison(spec, &left.key) {
+        if key_for_comparison(spec, key) <= key_for_comparison(spec, &left.key) {
             return Err(VerifyError::KeyIsNotRightOfLeftProof);
         }
 
-        if !is_right_most(&spec.inner_spec, &left.path) {
+        if !is_right_most(&spec.inner_spec, &left.path).map_err(VerifyError::NeighborSearch)? {
             return Err(VerifyError::RightProofMissing);
         }
 
@@ -100,11 +116,11 @@ fn verify_non_existence(
     let right_ops = |right: &ExistenceProof| -> Result<(), VerifyError> {
         verify_existence_proof(&right, spec, root, &right.key, &right.value)?;
 
-        if key_for_comparison(spec, key) == key_for_comparison(spec, &right.key) {
+        if key_for_comparison(spec, key) >= key_for_comparison(spec, &right.key) {
             return Err(VerifyError::KeyIsNotLeftOfRightProof);
         }
 
-        if !is_left_most(&spec.inner_spec, &right.path) {
+        if !is_left_most(&spec.inner_spec, &right.path).map_err(VerifyError::NeighborSearch)? {
             return Err(VerifyError::LeftProofMissing);
         }
 
@@ -115,7 +131,9 @@ fn verify_non_existence(
         (None, Some(right)) => right_ops(right)?,
         (Some(left), None) => left_ops(left)?,
         (Some(left), Some(right)) => {
-            if !is_left_neighbor(&spec.inner_spec, &left.path, &right.path) {
+            if !is_left_neighbor(&spec.inner_spec, &left.path, &right.path)
+                .map_err(VerifyError::NeighborSearch)?
+            {
                 return Err(VerifyError::RightProofMissing);
             }
         }
@@ -125,142 +143,143 @@ fn verify_non_existence(
     Ok(())
 }
 
-fn is_left_neighbor(spec: &InnerSpec, left: &[InnerOp], right: &[InnerOp]) -> bool {
-    let Some((mut topleft, mut left)) = left.split_last() else {
-        return false;
-    };
-
-    let Some((mut topright, mut right)) = right.split_last() else {
-        return false;
-    };
+/// returns true if `right` is the next possible path right of `left`
+///
+///	Find the common suffix from the Left.Path and Right.Path and remove it. We have LPath and RPath now, which must be neighbors.
+///	Validate that LPath[len-1] is the left neighbor of RPath[len-1]
+///	For step in LPath[0..len-1], validate step is right-most node
+///	For step in RPath[0..len-1], validate step is left-most node
+fn is_left_neighbor(
+    spec: &InnerSpec,
+    left: &[InnerOp],
+    right: &[InnerOp],
+) -> Result<bool, NeighborSearchError> {
+    let (mut topleft, mut left) = left.split_last().ok_or(NeighborSearchError::InvalidPath)?;
+    let (mut topright, mut right) = right.split_last().ok_or(NeighborSearchError::InvalidPath)?;
 
     while topleft.prefix == topright.prefix && topleft.suffix == topright.suffix {
-        (topleft, left) = if let Some(l) = left.split_last() {
-            l
-        } else {
-            return false;
-        };
-
-        (topright, right) = if let Some(r) = right.split_last() {
-            r
-        } else {
-            return false;
-        };
+        (topleft, left) = left.split_last().ok_or(NeighborSearchError::InvalidPath)?;
+        (topright, right) = right.split_last().ok_or(NeighborSearchError::InvalidPath)?;
     }
 
-    if !is_left_step(spec, topleft, topright)
-        || !is_right_most(spec, left)
-        || !is_left_most(spec, right)
+    if !is_left_step(spec, topleft, topright)?
+        || !is_right_most(spec, left)?
+        || !is_left_most(spec, right)?
     {
-        return false;
+        return Ok(false);
     }
 
-    true
+    Ok(true)
 }
 
-fn is_left_step(spec: &InnerSpec, left: &InnerOp, right: &InnerOp) -> bool {
-    let Ok(leftidx) = order_from_padding(spec, left) else {
-        // TODO(aeryz)
-        panic!("err")
-    };
+/// assumes left and right have common parents
+/// checks if left is exactly one slot to the left of right
+fn is_left_step(
+    spec: &InnerSpec,
+    left: &InnerOp,
+    right: &InnerOp,
+) -> Result<bool, NeighborSearchError> {
+    let leftidx = order_from_padding(spec, left)?;
 
-    let Ok(rightidx) = order_from_padding(spec, right) else {
-        // TODO(aeryz)
-        panic!("err")
-    };
+    let rightidx = order_from_padding(spec, right)?;
 
-    return rightidx == leftidx + 1;
+    Ok(rightidx == leftidx + 1)
 }
 
-fn is_right_most(spec: &InnerSpec, path: &[InnerOp]) -> bool {
-    let (min_prefix, max_prefix, suffix) = get_padding(spec, (spec.child_order.len() - 1) as i32);
+/// returns true if this is the right-most path in the tree, excluding placeholder (empty child) nodes
+fn is_right_most(spec: &InnerSpec, path: &[InnerOp]) -> Result<bool, NeighborSearchError> {
+    let (min_prefix, max_prefix, suffix) = get_padding(spec, (spec.child_order.len() - 1) as i32)?;
 
     for step in path {
         if !has_padding(step, min_prefix, max_prefix, suffix)
-            && !right_branches_are_empty(spec, step)
+            && !right_branches_are_empty(spec, step)?
         {
-            return false;
+            return Ok(false);
         }
     }
 
-    true
+    Ok(true)
 }
 
-fn is_left_most(spec: &InnerSpec, path: &[InnerOp]) -> bool {
-    let (min_prefix, max_prefix, suffix) = get_padding(spec, 0);
+/// returns true if this is the left-most path in the tree, excluding placeholder (empty child) nodes
+fn is_left_most(spec: &InnerSpec, path: &[InnerOp]) -> Result<bool, NeighborSearchError> {
+    let (min_prefix, max_prefix, suffix) = get_padding(spec, 0)?;
 
     for step in path {
         if !has_padding(step, min_prefix, max_prefix, suffix)
-            && !left_branches_are_empty(spec, step)
+            && !left_branches_are_empty(spec, step)?
         {
-            return false;
+            return Ok(false);
         }
     }
 
-    true
+    Ok(true)
 }
 
-fn right_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> bool {
-    let Ok(idx) = order_from_padding(spec, op) else {
-        return false;
-    };
+/// returns true if the padding bytes correspond to all empty siblings
+/// on the right side of a branch, ie. it's a valid placeholder on a rightmost path
+fn right_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, NeighborSearchError> {
+    let idx = order_from_padding(spec, op)?;
 
     let right_branches = (spec.child_order.len() as i32) - 1 - idx;
     if right_branches == 0 {
-        return false;
+        return Ok(false);
     }
 
     if (op.suffix.len() as i32) != right_branches * spec.child_size {
-        return false;
+        return Ok(false);
     }
 
     for i in 0..right_branches {
-        let idx = get_position(&spec.child_order, i);
+        let idx = get_position(&spec.child_order, i)?;
         let from = (idx * spec.child_size) as usize;
         if spec.empty_child != &op.suffix[from..from + (spec.child_size as usize)] {
-            return false;
+            return Ok(false);
         }
     }
 
-    true
+    Ok(true)
 }
 
-fn left_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> bool {
-    let Ok(left_branches) = order_from_padding(spec, op) else {
-        return false;
-    };
+/// returns true if the padding bytes correspond to all empty siblings
+/// on the left side of a branch, ie. it's a valid placeholder on a leftmost path
+fn left_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, NeighborSearchError> {
+    let left_branches = order_from_padding(spec, op)?;
 
     if left_branches == 0 {
-        return false;
+        return Ok(false);
     }
 
     let actual_prefix = (op.prefix.len() as i32) - left_branches * spec.child_size;
     if actual_prefix < 0 {
-        return false;
+        return Ok(false);
     }
 
     for i in 0..left_branches {
-        let idx = get_position(&spec.child_order, i);
+        let idx = get_position(&spec.child_order, i)?;
         let from = (actual_prefix + idx * spec.child_size) as usize;
         if spec.empty_child != &op.prefix[from..from + (spec.child_size as usize)] {
-            return false;
+            return Ok(false);
         }
     }
 
-    true
+    Ok(true)
 }
 
-fn order_from_padding(spec: &InnerSpec, inner: &InnerOp) -> Result<i32, ()> {
-    let branch = (0..spec.child_order.len())
-        .find(|&branch| {
-            let (minp, maxp, suffix) = get_padding(spec, branch as i32);
-            has_padding(inner, minp, maxp, suffix)
-        })
-        .map(|branch| branch as i32);
+/// will look at the proof and determine which order it is...
+/// So we can see if it is branch 0, 1, 2 etc... to determine neighbors
+fn order_from_padding(spec: &InnerSpec, inner: &InnerOp) -> Result<i32, NeighborSearchError> {
+    for branch in 0..spec.child_order.len() {
+        let (minp, maxp, suffix) = get_padding(spec, branch as i32)?;
+        if has_padding(inner, minp, maxp, suffix) {
+            return Ok(branch as i32);
+        }
+    }
 
-    branch.ok_or(())
+    Err(NeighborSearchError::CannotFindValidSpacing)
 }
 
+/// checks if an op has the expected padding
 fn has_padding(op: &InnerOp, min_prefix: i32, max_prefix: i32, suffix: i32) -> bool {
     if (op.prefix.len() as i32) < min_prefix || (op.prefix.len() as i32) > max_prefix {
         return false;
@@ -269,8 +288,9 @@ fn has_padding(op: &InnerOp, min_prefix: i32, max_prefix: i32, suffix: i32) -> b
     (op.suffix.len() as i32) == suffix
 }
 
-fn get_padding(spec: &InnerSpec, branch: i32) -> (i32, i32, i32) {
-    let idx = get_position(&spec.child_order, branch);
+/// determines prefix and suffix with the given spec and position in the tree
+fn get_padding(spec: &InnerSpec, branch: i32) -> Result<(i32, i32, i32), NeighborSearchError> {
+    let idx = get_position(&spec.child_order, branch)?;
 
     let prefix = idx * spec.child_size;
     let min_prefix = prefix + spec.min_prefix_length;
@@ -278,18 +298,25 @@ fn get_padding(spec: &InnerSpec, branch: i32) -> (i32, i32, i32) {
 
     let suffix = (spec.child_order.len() as i32 - 1 - idx) * spec.child_size;
 
-    (min_prefix, max_prefix, suffix)
+    Ok((min_prefix, max_prefix, suffix))
 }
 
-fn get_position(order: &[i32], branch: i32) -> i32 {
+/// checks where the branch is in the order and returns
+/// the index of this branch
+fn get_position(order: &[i32], branch: i32) -> Result<i32, NeighborSearchError> {
     if branch < 0 || branch as usize >= order.len() {
-        // TODO(aeryz):
-        panic!("invalid branch")
+        return Err(NeighborSearchError::InvalidBranch {
+            branch,
+            order_len: order.len(),
+        });
     }
 
     match order.iter().enumerate().find(|(_, &elem)| elem == branch) {
-        Some((i, _)) => i as i32,
-        None => panic!("branch not found"), // TODO(aeryz)
+        Some((i, _)) => Ok(i as i32),
+        None => Err(NeighborSearchError::BranchNotFoundInOrder {
+            branch,
+            order: order.to_vec(),
+        }),
     }
 }
 
