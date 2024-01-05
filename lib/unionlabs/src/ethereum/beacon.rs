@@ -113,7 +113,7 @@ pub struct BeaconBlockBody<
     pub deposits: VariableList<Deposit<C>, C::MAX_DEPOSITS>,
     pub voluntary_exits: VariableList<SignedVoluntaryExit, C::MAX_VOLUNTARY_EXITS>,
     pub sync_aggregate: SyncAggregate<C>,
-    pub execution_payload: ExecutionPayloadHeader<C>,
+    pub execution_payload: ExecutionPayload<C>,
     pub bls_to_execution_changes:
         VariableList<SignedBlsToExecutionChange, C::MAX_BLS_TO_EXECUTION_CHANGES>,
 }
@@ -145,6 +145,7 @@ pub struct ExecutionPayload<
     pub fee_recipient: H160,
     pub state_root: H256,
     pub receipts_root: H256,
+    #[serde(with = "::serde_utils::hex_string")]
     pub logs_bloom: FixedVector<u8, C::BYTES_PER_LOGS_BLOOM>,
     /// 'difficulty' in the yellow paper
     pub prev_randao: H256,
@@ -153,11 +154,13 @@ pub struct ExecutionPayload<
     pub gas_limit: u64,
     pub gas_used: u64,
     pub timestamp: u64,
+    #[serde(with = "::serde_utils::hex_string")]
     pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
     pub base_fee_per_gas: U256,
     /// Extra payload fields
     /// Hash of execution block
     pub block_hash: H256,
+    #[serde(with = "::serde_utils::hex_string_list")]
     pub transactions: VariableList<
         VariableList<u8, C::MAX_BYTES_PER_TRANSACTION>,
         C::MAX_TRANSACTIONS_PER_PAYLOAD,
