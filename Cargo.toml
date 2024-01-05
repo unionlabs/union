@@ -30,6 +30,7 @@ members = [
   "zerg",
   "tools/cargo-workspace-dependencies",
   "tools/keygen",
+  "lib/queue-msg",
 ]
 
 resolver = "2"
@@ -53,6 +54,7 @@ ics008-wasm-client        = { path = "lib/ics-008-wasm-client", default-features
 ics23                     = { path = "lib/ics23", default-features = false }
 pg-queue                  = { path = "lib/pg-queue", default-features = false }
 protos                    = { path = "generated/rust/protos", default-features = false }
+queue-msg                 = { path = "lib/queue-msg", default-features = false }
 serde-utils               = { path = "lib/serde-utils", default-features = false }
 tendermint-verifier       = { path = "lib/tendermint-verifier", default-features = false }
 token-factory-api         = { path = "cosmwasm/token-factory-api", default-features = false }

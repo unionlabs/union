@@ -9,6 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys   = "0.4"
+queue-msg       = { workspace = true, features = ["arbitrary"] }
 unionlabs       = { workspace = true, features = ["fuzzing"] }
 voyager-message = { workspace = true, features = ["arbitrary"] }
 

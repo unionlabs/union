@@ -5,6 +5,7 @@ use std::{
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use futures::Future;
+use queue_msg::{data, fetch, HandleFetch, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
@@ -16,11 +17,9 @@ use unionlabs::{
 
 use crate::{
     any_enum,
-    ctors::{data, fetch},
     data::{AnyData, Data, PacketAcknowledgement, SelfClientState, SelfConsensusState},
     identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, GetChain, HandleFetch, Identified, QueueMsg, QueueMsgTypes, RelayerMsg,
-    RelayerMsgTypes,
+    DoFetchUpdateHeaders, GetChain, Identified, RelayerMsg, RelayerMsgTypes,
 };
 
 any_enum! {

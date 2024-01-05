@@ -408,7 +408,7 @@
             ]) ++ (if pkgs.stdenv.isLinux then [
               pkgs.solc
               pkgs.foundry-bin
-              pkgs.sqlx-cli
+              goPkgs.sqlx-cli
               self'.packages.hasura-cli
             ] else [ ]));
             nativeBuildInputs = [ config.treefmt.build.wrapper ]

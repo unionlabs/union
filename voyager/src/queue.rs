@@ -16,9 +16,10 @@ use chain_utils::{
     union::Union,
     EventSource,
 };
+use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{stream, Future, FutureExt, StreamExt, TryStreamExt};
-use pg_queue::ProcessFlow;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use queue_msg::{event, Queue, QueueMsg, QueueMsgTypes};
+use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
 use unionlabs::{
@@ -33,10 +34,7 @@ use unionlabs::{
     traits::{Chain, ClientIdOf, ClientState, FromStrExact},
     WasmClientType,
 };
-use voyager_message::{
-    ctors::event, data::AnyData, AnyLightClientIdentified, ChainExt, Chains, Identified,
-    RelayerMsg, Wasm,
-};
+use voyager_message::{ChainExt, Chains, Identified, RelayerMsgTypes, Wasm};
 
 use crate::{
     chain::{AnyChain, AnyChainTryFromConfigError},
@@ -51,77 +49,72 @@ pub struct Voyager<Q> {
     num_workers: u16,
     msg_server: msg_server::MsgServer,
     // NOTE: pub temporarily
-    pub queue: Q,
+    pub relay_queue: Q,
 }
 
-#[derive(Debug, Clone)]
-pub struct Worker {
+#[derive(DebugNoBound, CloneNoBound)]
+pub struct Worker<T: QueueMsgTypes> {
     pub id: u16,
-    pub chains: Arc<Chains>,
+    pub store: Arc<T::Store>,
 }
 
-pub trait Queue: Clone + Send + Sync + Sized + 'static {
-    /// Error type returned by this queue, representing errors that are out of control of the consumer (i.e. unable to connect to database, can't insert into row, can't deserialize row, etc)
-    type Error: Debug + Display + Error + Send + Sync + 'static;
-    type Config: Debug + Clone + Serialize + DeserializeOwned;
-
-    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>>;
-
-    fn enqueue(
-        &mut self,
-        item: RelayerMsg,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_;
-
-    fn process<F, Fut>(
-        &mut self,
-        f: F,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
-    where
-        F: (FnOnce(RelayerMsg) -> Fut) + Send + 'static,
-        Fut: Future<Output = ProcessFlow<RelayerMsg>> + Send + 'static;
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case", tag = "type")]
-pub enum AnyQueueConfig {
+#[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
+#[serde(
+    rename_all = "kebab-case",
+    tag = "type",
+    bound(serialize = "", deserialize = "")
+)]
+pub enum AnyQueueConfig<T: QueueMsgTypes> {
     InMemory,
-    PgQueue(<PgQueue as Queue>::Config),
+    PgQueue(<PgQueue<T> as Queue<T>>::Config),
 }
 
-#[derive(Debug, Clone)]
-pub enum AnyQueue {
-    InMemory(InMemoryQueue),
-    PgQueue(PgQueue),
+#[derive(DebugNoBound, CloneNoBound)]
+pub enum AnyQueue<T: QueueMsgTypes> {
+    InMemory(InMemoryQueue<T>),
+    PgQueue(PgQueue<T>),
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(DebugNoBound, thiserror::Error)]
 #[error(transparent)]
-pub enum AnyQueueError {
-    InMemory(#[from] <InMemoryQueue as Queue>::Error),
-    PgQueue(#[from] <PgQueue as Queue>::Error),
+pub enum AnyQueueError<T: QueueMsgTypes> {
+    InMemory(<InMemoryQueue<T> as Queue<T>>::Error),
+    PgQueue(<PgQueue<T> as Queue<T>>::Error),
 }
 
-impl Queue for AnyQueue {
-    type Error = AnyQueueError;
-    type Config = AnyQueueConfig;
+impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
+    type Error = AnyQueueError<T>;
+    type Config = AnyQueueConfig<T>;
 
-    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
+    fn new(cfg: Self::Config, topic: String) -> impl Future<Output = Result<Self, Self::Error>> {
         async move {
             Ok(match cfg {
-                AnyQueueConfig::InMemory => Self::InMemory(InMemoryQueue::new(()).await?),
-                AnyQueueConfig::PgQueue(cfg) => Self::PgQueue(PgQueue::new(cfg).await?),
+                AnyQueueConfig::InMemory => Self::InMemory(
+                    InMemoryQueue::new((), topic)
+                        .await
+                        .map_err(AnyQueueError::InMemory)?,
+                ),
+                AnyQueueConfig::PgQueue(cfg) => Self::PgQueue(
+                    PgQueue::new(cfg, topic)
+                        .await
+                        .map_err(AnyQueueError::PgQueue)?,
+                ),
             })
         }
     }
 
     fn enqueue(
         &mut self,
-        item: RelayerMsg,
+        item: QueueMsg<T>,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
         async move {
             match self {
-                AnyQueue::InMemory(queue) => queue.enqueue(item).await?,
-                AnyQueue::PgQueue(queue) => queue.enqueue(item).await?,
+                AnyQueue::InMemory(queue) => {
+                    queue.enqueue(item).await.map_err(AnyQueueError::InMemory)?
+                }
+                AnyQueue::PgQueue(queue) => {
+                    queue.enqueue(item).await.map_err(AnyQueueError::PgQueue)?
+                }
             };
 
             Ok(())
@@ -130,13 +123,17 @@ impl Queue for AnyQueue {
 
     fn process<F, Fut>(&mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
     where
-        F: (FnOnce(RelayerMsg) -> Fut) + Send + 'static,
-        Fut: Future<Output = ProcessFlow<RelayerMsg>> + Send + 'static,
+        F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
+        Fut: Future<Output = Result<Option<QueueMsg<T>>, String>> + Send + 'static,
     {
         async move {
             match self {
-                AnyQueue::InMemory(queue) => queue.process(f).await?,
-                AnyQueue::PgQueue(queue) => queue.process(f).await?,
+                AnyQueue::InMemory(queue) => {
+                    queue.process(f).await.map_err(AnyQueueError::InMemory)?
+                }
+                AnyQueue::PgQueue(queue) => {
+                    queue.process(f).await.map_err(AnyQueueError::PgQueue)?
+                }
             };
 
             Ok(())
@@ -144,20 +141,20 @@ impl Queue for AnyQueue {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct InMemoryQueue(Arc<Mutex<VecDeque<RelayerMsg>>>);
+#[derive(DebugNoBound, CloneNoBound)]
+pub struct InMemoryQueue<T: QueueMsgTypes>(Arc<Mutex<VecDeque<QueueMsg<T>>>>);
 
-impl Queue for InMemoryQueue {
+impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
     type Error = std::convert::Infallible;
     type Config = ();
 
-    fn new(_cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
+    fn new(_cfg: Self::Config, _topic: String) -> impl Future<Output = Result<Self, Self::Error>> {
         futures::future::ok(Self(Arc::new(Mutex::new(VecDeque::default()))))
     }
 
     fn enqueue(
         &mut self,
-        item: RelayerMsg,
+        item: QueueMsg<T>,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
         tracing::warn!(%item, "enqueueing new item");
         self.0.lock().expect("mutex is poisoned").push_back(item);
@@ -166,8 +163,8 @@ impl Queue for InMemoryQueue {
 
     fn process<F, Fut>(&mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
     where
-        F: (FnOnce(RelayerMsg) -> Fut) + Send + 'static,
-        Fut: Future<Output = ProcessFlow<RelayerMsg>> + Send + 'static,
+        F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
+        Fut: Future<Output = Result<Option<QueueMsg<T>>, String>> + Send + 'static,
     {
         async move {
             let msg = {
@@ -186,17 +183,19 @@ impl Queue for InMemoryQueue {
                     );
 
                     match f(msg.clone()).await {
-                        ProcessFlow::Success(new_msgs) => {
-                            let mut queue = self.0.lock().expect("mutex is poisoned");
-                            queue.extend(new_msgs);
+                        Ok(new_msg) => {
+                            if let Some(new_msg) = new_msg {
+                                let mut queue = self.0.lock().expect("mutex is poisoned");
+                                queue.push_back(new_msg);
+                            }
                             Ok(())
                         }
-                        ProcessFlow::Requeue => {
-                            let mut queue = self.0.lock().expect("mutex is poisoned");
-                            queue.push_front(msg);
-                            Ok(())
-                        }
-                        ProcessFlow::Fail(why) => panic!("{why}"),
+                        // ProcessFlow::Requeue => {
+                        //     let mut queue = self.0.lock().expect("mutex is poisoned");
+                        //     queue.push_front(msg);
+                        //     Ok(())
+                        // }
+                        Err(why) => panic!("{why}"),
                     }
                 }
                 None => Ok(()),
@@ -205,8 +204,8 @@ impl Queue for InMemoryQueue {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct PgQueue(pg_queue::Queue<RelayerMsg>, sqlx::PgPool);
+#[derive(DebugNoBound, CloneNoBound)]
+pub struct PgQueue<T: QueueMsgTypes>(pg_queue::Queue<QueueMsg<T>>, sqlx::PgPool);
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct PgQueueConfig {
@@ -217,15 +216,15 @@ pub struct PgQueueConfig {
     pub max_lifetime: Option<Duration>,
 }
 
-impl Queue for PgQueue {
+impl<T: QueueMsgTypes> Queue<T> for PgQueue<T> {
     type Error = sqlx::Error;
 
     type Config = PgQueueConfig;
 
-    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
+    fn new(cfg: Self::Config, topic: String) -> impl Future<Output = Result<Self, Self::Error>> {
         async move {
             Ok(Self(
-                pg_queue::Queue::new(),
+                pg_queue::Queue::new(topic),
                 // 10 is the default
                 PgPoolOptions::new()
                     .max_connections(cfg.max_connections.unwrap_or(10))
@@ -240,22 +239,22 @@ impl Queue for PgQueue {
 
     fn enqueue(
         &mut self,
-        item: RelayerMsg,
+        item: QueueMsg<T>,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
         self.0.enqueue(&self.1, item)
     }
 
     fn process<F, Fut>(&mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
     where
-        F: (FnOnce(RelayerMsg) -> Fut) + Send + 'static,
-        Fut: Future<Output = ProcessFlow<RelayerMsg>> + Send + 'static,
+        F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
+        Fut: Future<Output = Result<Option<QueueMsg<T>>, String>> + Send + 'static,
     {
         self.0.process(&self.1, f)
     }
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum VoyagerInitError<Q: Queue> {
+pub enum VoyagerInitError<Q: Queue<RelayerMsgTypes>> {
     #[error("multiple configured chains have the same chain id `{chain_id}`")]
     DuplicateChainId { chain_id: String },
     #[error("error initializing chain")]
@@ -264,11 +263,11 @@ pub enum VoyagerInitError<Q: Queue> {
     QueueInit(#[source] Q::Error),
 }
 
-impl<Q: Queue> Voyager<Q> {
-    pub fn worker(&self, id: u16) -> Worker {
+impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
+    pub fn worker(&self, id: u16) -> Worker<RelayerMsgTypes> {
         Worker {
             id,
-            chains: self.chains.clone(),
+            store: self.chains.clone(),
         }
     }
 
@@ -278,7 +277,7 @@ impl<Q: Queue> Voyager<Q> {
         let mut evm_minimal = HashMap::new();
         let mut evm_mainnet = HashMap::new();
 
-        fn insert_into_chain_map<C: Chain, Q: Queue>(
+        fn insert_into_chain_map<C: Chain, Q: Queue<RelayerMsgTypes>>(
             map: &mut HashMap<<<C as Chain>::SelfClientState as ClientState>::ChainId, C>,
             chain: C,
         ) -> Result<(), VoyagerInitError<Q>> {
@@ -306,7 +305,7 @@ impl<Q: Queue> Voyager<Q> {
                 continue;
             }
 
-            let chain = AnyChain::try_from_config::<Q>(chain_config.ty).await?;
+            let chain = AnyChain::try_from_config(chain_config.ty).await?;
 
             match chain {
                 AnyChain::Union(c) => {
@@ -324,7 +323,7 @@ impl<Q: Queue> Voyager<Q> {
             }
         }
 
-        let queue = Q::new(config.voyager.queue)
+        let queue = Q::new(config.voyager.queue, "relay".to_owned())
             .await
             .map_err(VoyagerInitError::QueueInit)?;
 
@@ -337,7 +336,7 @@ impl<Q: Queue> Voyager<Q> {
             }),
             msg_server: msg_server::MsgServer,
             num_workers: config.voyager.num_workers,
-            queue,
+            relay_queue: queue,
         })
     }
 
@@ -527,7 +526,7 @@ impl<Q: Queue> Voyager<Q> {
 
         let mut join_set = JoinSet::new();
 
-        let mut q = self.queue.clone();
+        let mut q = self.relay_queue.clone();
         join_set.spawn({
             async move {
                 tracing::debug!("checking for new messages");
@@ -552,7 +551,7 @@ impl<Q: Queue> Voyager<Q> {
 
             let worker = self.worker(i);
 
-            join_set.spawn(worker.run(self.queue.clone(), None));
+            join_set.spawn(worker.run(self.relay_queue.clone(), None));
         }
 
         let mut errs = vec![];
@@ -592,15 +591,14 @@ impl Display for RunError {
     }
 }
 
-impl Worker {
+impl<T: QueueMsgTypes> Worker<T> {
     pub fn run<Q>(
         self,
         mut q: Q,
-        data_out_stream: Option<mpsc::Sender<AnyLightClientIdentified<AnyData>>>,
+        data_out_stream: Option<mpsc::Sender<T::Data>>,
     ) -> impl Future<Output = Result<(), Box<dyn Error + Send + Sync>>> + Send + 'static
     where
-        Q: Queue,
-        // S: SinkExt<AnyLightClientIdentified<AnyData>> + Clone + Sized + Send + Unpin + 'static,
+        Q: Queue<T>,
     {
         async move {
             loop {
@@ -612,13 +610,13 @@ impl Worker {
 
                 q.process(move |msg| {
                     async move {
-                        let new_msgs = msg.handle(&*worker.chains, 0).await;
+                        let new_msgs = msg.handle(&*worker.store, 0).await;
 
                         match new_msgs {
                             Ok(ok) => {
                                 let ok = if let Some(ref mut data_out_stream) = data_out_stream {
                                     match ok {
-                                        Some(RelayerMsg::Data(data)) => {
+                                        Some(QueueMsg::Data(data)) => {
                                             tracing::warn!(%data, "received data in worker");
                                             data_out_stream.send(data).unwrap();
                                             None
@@ -629,7 +627,7 @@ impl Worker {
                                     ok
                                 };
 
-                                ProcessFlow::Success(ok)
+                                Ok(ok)
                             }
                             // REVIEW: Check if this error is recoverable or not - i.e. if this is an IO error,
                             // the msg can likely be retried

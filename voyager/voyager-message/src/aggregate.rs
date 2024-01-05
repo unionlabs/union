@@ -2,6 +2,11 @@ use std::{collections::VecDeque, fmt::Display, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
+use queue_msg::{
+    aggregate,
+    aggregation::{do_aggregate, UseAggregate},
+    fetch, msg, wait, HandleAggregate, QueueMsg, QueueMsgTypes,
+};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     events::{
@@ -35,7 +40,6 @@ use unionlabs::{
 
 use crate::{
     any_enum, any_lc,
-    ctors::{aggregate, fetch, msg, wait},
     data::{
         AnyData, Data, IbcProof, IbcState, PacketAcknowledgement, SelfClientState,
         SelfConsensusState,
@@ -50,10 +54,9 @@ use crate::{
         MsgChannelOpenTryData, MsgConnectionOpenAckData, MsgConnectionOpenConfirmData,
         MsgConnectionOpenTryData, MsgCreateClientData, MsgRecvPacketData,
     },
-    use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
+    use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForTrustedHeight},
-    AnyLightClientIdentified, ChainExt, DoAggregate, HandleAggregate, Identified, QueueMsg,
-    QueueMsgTypes, RelayerMsg, RelayerMsgTypes,
+    AnyLightClientIdentified, ChainExt, DoAggregate, Identified, RelayerMsg, RelayerMsgTypes,
 };
 
 any_enum! {
@@ -591,7 +594,7 @@ pub enum AggregateMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
     AckPacket(AggregateAckPacket<Hc, Tr>),
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateChannelHandshakeUpdateClient<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateChannelHandshakeUpdateClient<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ConnectionPath>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -692,7 +695,7 @@ where
     )
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregatePacketUpdateClient<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregatePacketUpdateClient<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ConnectionPath>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -770,7 +773,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateConnectionFetchFromChannelEnd<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateConnectionFetchFromChannelEnd<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ChannelEndPath>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -808,7 +811,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateUpdateClientFromClientId<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateUpdateClientFromClientId<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
@@ -868,7 +871,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateUpdateClient<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateUpdateClient<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
@@ -929,7 +932,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateUpdateClientWithCounterpartyChainId<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateUpdateClientWithCounterpartyChainId<Hc, Tr>)
 where
     Identified<Tr, Hc, IbcState<Tr, Hc, ClientStatePath<Tr::ClientId>>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -984,7 +987,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateWaitForTrustedHeight<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateWaitForTrustedHeight<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Hc>)>,
@@ -1033,7 +1036,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateMsgAfterUpdate<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateMsgAfterUpdate<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
@@ -1598,7 +1601,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateConnectionOpenTry<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateConnectionOpenTry<Hc, Tr>)
 where
     // state
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
@@ -1722,7 +1725,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateConnectionOpenAck<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateConnectionOpenAck<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
@@ -1834,7 +1837,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateConnectionOpenConfirm<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateConnectionOpenConfirm<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
@@ -1901,7 +1904,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateChannelOpenTry<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateChannelOpenTry<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<Hc, Tr, ChannelEndPath>>: IsAggregateData,
@@ -2006,7 +2009,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateChannelOpenAck<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateChannelOpenAck<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<Hc, Tr, ChannelEndPath>>: IsAggregateData,
@@ -2086,7 +2089,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateChannelOpenConfirm<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateChannelOpenConfirm<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<Hc, Tr, ChannelEndPath>>: IsAggregateData,
@@ -2165,7 +2168,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateRecvPacket<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateRecvPacket<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<Hc, Tr, CommitmentPath>>: IsAggregateData,
@@ -2240,7 +2243,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateAckPacket<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateAckPacket<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     Identified<Hc, Tr, IbcProof<Hc, Tr, AcknowledgementPath>>: IsAggregateData,
@@ -2327,7 +2330,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateFetchCounterpartyStateProof<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateFetchCounterpartyStateProof<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
@@ -2366,7 +2369,7 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate for identified!(AggregateCreateClient<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateCreateClient<Hc, Tr>)
 where
     identified!(SelfClientState<Tr, Hc>): IsAggregateData,
     identified!(SelfConsensusState<Tr, Hc>): IsAggregateData,

@@ -15,6 +15,11 @@ use ethers::{
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
+use queue_msg::{
+    aggregate,
+    aggregation::{do_aggregate, UseAggregate},
+    data, fetch, msg, wait,
+};
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
@@ -45,7 +50,6 @@ use unionlabs::{
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
-    ctors::{aggregate, data, fetch, msg, wait},
     data::{AnyData, Data, IbcProof, IbcState, LightClientSpecificData},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
     identified,
@@ -54,10 +58,10 @@ use crate::{
         MsgUpdateClientData,
     },
     seq,
-    use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
+    use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForTimestamp},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, RelayerMsgTypes,
 };
 
 pub const EVM_REVISION_NUMBER: u64 = 0;
@@ -1156,7 +1160,7 @@ pub struct FetchIbcState<C: ChainSpec, Tr: ChainExt> {
     height: HeightOf<Evm<C>>,
 }
 
-impl<C, Tr> UseAggregate for Identified<Evm<C>, Tr, CreateUpdateData<C, Tr>>
+impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Evm<C>, Tr, CreateUpdateData<C, Tr>>
 where
     C: ChainSpec,
     Tr: ChainExt,
@@ -1260,7 +1264,7 @@ where
     }
 }
 
-impl<C, Tr> UseAggregate for Identified<Evm<C>, Tr, MakeCreateUpdatesData<C, Tr>>
+impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Evm<C>, Tr, MakeCreateUpdatesData<C, Tr>>
 where
     C: ChainSpec,
 
@@ -1330,7 +1334,7 @@ where
     }
 }
 
-impl<C, Tr> UseAggregate
+impl<C, Tr> UseAggregate<RelayerMsgTypes>
     for Identified<Evm<C>, Tr, MakeCreateUpdatesFromLightClientUpdatesData<C, Tr>>
 where
     C: ChainSpec,

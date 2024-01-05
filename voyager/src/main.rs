@@ -14,7 +14,7 @@ use clap::Parser;
 use sqlx::PgPool;
 use tikv_jemallocator::Jemalloc;
 use unionlabs::ethereum::config::{Mainnet, Minimal};
-use voyager_message::Wasm;
+use voyager_message::{RelayerMsgTypes, Wasm};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -76,7 +76,7 @@ pub enum VoyagerError {
     #[error("error retrieving a chain from the config")]
     GetChain(#[from] GetChainError),
     #[error("error initializing voyager")]
-    Init(#[from] VoyagerInitError<AnyQueue>),
+    Init(#[from] VoyagerInitError<AnyQueue<RelayerMsgTypes>>),
     #[error("error while running migrations")]
     Migrations(#[from] MigrationsError),
     #[error("fatal error encountered")]
@@ -102,7 +102,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             source: err,
         })
         .and_then(|s| {
-            serde_json::from_str::<Config<AnyQueue>>(&s).map_err(|err| {
+            serde_json::from_str::<Config<AnyQueue<RelayerMsgTypes>>>(&s).map_err(|err| {
                 VoyagerError::ConfigFileParse {
                     path: args.config_file_path,
                     source: err,

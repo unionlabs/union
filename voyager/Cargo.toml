@@ -28,6 +28,7 @@ pg-queue                 = { workspace = true }
 pin-utils                = "0.1.0"
 prost                    = { workspace = true }
 protos                   = { workspace = true, features = ["proto_full", "client"] }
+queue-msg.workspace      = true
 reqwest                  = { workspace = true, features = ["tokio-rustls"] }
 ripemd                   = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }

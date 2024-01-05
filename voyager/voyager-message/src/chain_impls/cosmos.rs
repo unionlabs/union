@@ -7,6 +7,11 @@ use chain_utils::{
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use protos::ibc::core::connection::v1::MsgConnectionOpenInit;
+use queue_msg::{
+    aggregate,
+    aggregation::{do_aggregate, UseAggregate},
+    data, fetch, msg, wait,
+};
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
 use unionlabs::{
@@ -45,7 +50,6 @@ use crate::{
         fetch::{AbciQueryType, FetchAbciQuery},
         fetch_abci_query,
     },
-    ctors::{aggregate, data, fetch, msg, wait},
     data::{AnyData, Data, IbcState, LightClientSpecificData},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
     identified,
@@ -54,10 +58,11 @@ use crate::{
         MsgUpdateClientData,
     },
     seq,
-    use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
+    use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, Wasm, WasmConfig, Wraps,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, RelayerMsgTypes, Wasm, WasmConfig,
+    Wraps,
 };
 
 impl ChainExt for Cosmos {
@@ -801,7 +806,7 @@ where
     Identified<Hc, Tr, TrustedValidators<Tr>>: IsAggregateData,
     Identified<Hc, Tr, UntrustedValidators<Tr>>: IsAggregateData,
 
-    Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate,
+    Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate<RelayerMsgTypes>,
 
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
@@ -899,7 +904,7 @@ fn tendermint_height_to_bounded_i64(
     i64::from(height).try_into().unwrap()
 }
 
-impl<Hc, Tr> UseAggregate for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
+impl<Hc, Tr> UseAggregate<RelayerMsgTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
 where
     Hc: ChainExt<Header = <Cosmos as Chain>::Header>,
     Tr: ChainExt,

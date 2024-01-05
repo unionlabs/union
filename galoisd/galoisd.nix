@@ -78,7 +78,7 @@
         in
         mkCi false (pkgs.writeShellApplication {
           name = "download-circuit";
-          runtimeInputs = [ pkgs.rclone pkgs.zip ];
+          runtimeInputs = [ pkgs.rclone pkgs.zip pkgs.unzip ];
           text = ''
             if [[ "$#" -ne 1 ]]; then
             echo "Invalid arguments, must be: download-circuit [path]"

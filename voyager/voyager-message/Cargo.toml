@@ -23,6 +23,7 @@ hex                      = { workspace = true }
 num-bigint               = { workspace = true }
 prost                    = { workspace = true }
 protos                   = { workspace = true, features = ["proto_full", "client"] }
+queue-msg                = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
 serde_json               = { workspace = true }
@@ -41,7 +42,7 @@ hex-literal = { workspace = true }
 serde_json  = { workspace = true }
 
 [features]
-default = ["arbitrary"]
+default = []
 
 arbitrary = [
   "dep:arbitrary",

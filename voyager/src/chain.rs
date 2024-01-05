@@ -5,7 +5,7 @@ use chain_utils::{
 };
 use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
 
-use crate::{config::ChainConfigType, queue::Queue};
+use crate::config::ChainConfigType;
 
 pub enum AnyChain {
     Union(Union),
@@ -25,7 +25,7 @@ pub enum AnyChainTryFromConfigError {
 }
 
 impl AnyChain {
-    pub async fn try_from_config<Q: Queue>(
+    pub async fn try_from_config(
         config: ChainConfigType,
     ) -> Result<Self, AnyChainTryFromConfigError> {
         Ok(match config {

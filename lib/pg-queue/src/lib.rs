@@ -24,14 +24,16 @@ pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
 /// ```
 #[derive(Debug, Clone)]
 pub struct Queue<T> {
+    topic: String,
     lock: Arc<AtomicBool>,
     __marker: PhantomData<fn() -> T>,
 }
 
 impl<T> Queue<T> {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+    pub fn new(topic: String) -> Self {
         Self {
+            topic,
             lock: Arc::new(AtomicBool::new(false)),
             __marker: PhantomData,
         }
@@ -48,7 +50,8 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
         let mut tx = conn.begin().await?;
 
         let row = query!(
-            "INSERT INTO queue (item) VALUES ($1) RETURNING id",
+            "INSERT INTO queue (topic, item) VALUES ($1, $2) RETURNING id",
+            &self.topic,
             Json(item) as _
         )
         .fetch_one(tx.as_mut())
@@ -65,9 +68,9 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
 
     /// Processes the next value from the queue, calling `f` on the value. Dequeueing has the following properties:
     /// - if `f` returns an error, the item is requeued.
-    /// - if `f` returns Ok(ProcessFlow::Fail), the item is permanently marked as failed.
-    /// - if `f` returns Ok(ProcessFlow::Continue), the item is requeued, but process returns with Ok(()).
-    /// - if `f` returns Ok(ProcessFlow::Success), the item is marked as processed.
+    /// - if `f` returns Err(why), the item is permanently marked as failed with `why`.
+    /// - if `f` returns Ok(Some(msg)), the item is marked as processed and `msg` is queued.
+    /// - if `f` returns Ok(None), the item is marked as processed.
     ///
     /// Database atomicity is used to ensure that the queue is always in a consistent state, meaning that an item
     /// process will always be retried until it reaches ProcessFlow::Fail or ProcessFlow::Success. `f` is responsible for
@@ -75,7 +78,7 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
     pub async fn process<'a, F, Fut, A>(&self, conn: A, f: F) -> Result<(), sqlx::Error>
     where
         F: (FnOnce(T) -> Fut) + 'a,
-        Fut: Future<Output = ProcessFlow<T>> + 'a,
+        Fut: Future<Output = Result<Option<T>, String>> + 'a,
         A: Acquire<'a, Database = Postgres>,
     {
         if self.lock.swap(false, Ordering::SeqCst) {
@@ -100,11 +103,13 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
               SELECT id
               FROM queue
               WHERE status = 'ready'::status
+              AND topic = $1
               ORDER BY id ASC
               FOR UPDATE SKIP LOCKED
               LIMIT 1
             )
             RETURNING id, item as \"item: Json<T>\"",
+            &self.topic
         )
         .fetch_optional(tx.as_mut())
         .await?;
@@ -114,7 +119,7 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
                 tracing::info!(id = row.id, "processing item");
 
                 match f(row.item.0).await {
-                    ProcessFlow::Fail(error) => {
+                    Err(error) => {
                         // Insert error message in the queue
                         query!(
                             "UPDATE queue
@@ -127,12 +132,13 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
                         .await?;
                         tx.commit().await?;
                     }
-                    ProcessFlow::Success(maybe_new_msg) => {
+                    Ok(maybe_new_msg) => {
                         if let Some(new_msg) = maybe_new_msg {
                             let new_row = query!(
-                                "INSERT INTO queue (item)
-                                VALUES ($1::JSONB)
+                                "INSERT INTO queue (topic, item)
+                                VALUES ($1, $2::JSONB)
                                 RETURNING id",
+                                &self.topic,
                                 serde_json::to_value(new_msg)
                                     .expect("queue message should have infallible serialization")
                             )
@@ -144,9 +150,6 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
 
                         tx.commit().await?;
                     }
-                    ProcessFlow::Requeue => {
-                        tx.rollback().await?;
-                    }
                 }
             }
             None => {
@@ -157,10 +160,4 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
         }
         Ok(())
     }
-}
-
-pub enum ProcessFlow<T> {
-    Success(Option<T>),
-    Requeue,
-    Fail(String),
 }
