@@ -33,26 +33,26 @@
     "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
-    "@cosmjs/cosmwasm-stargate": "^0.32.1",
-    "@cosmjs/encoding": "^0.32.1",
-    "@cosmjs/stargate": "^0.32.1",
-    "@cosmjs/tendermint-rpc": "^0.32.1",
-    "viem": "2.0.0-beta.16"
+    "@cosmjs/cosmwasm-stargate": "^0.32.2",
+    "@cosmjs/encoding": "^0.32.2",
+    "@cosmjs/stargate": "^0.32.2",
+    "@cosmjs/tendermint-rpc": "^0.32.2",
+    "viem": "^2.0.0"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.13.4",
+    "@arethetypeswrong/cli": "^0.13.5",
     "@biomejs/biome": "^1.4.1",
-    "@cosmjs/amino": "^0.32.1",
-    "@cosmjs/proto-signing": "^0.32.1",
+    "@cosmjs/amino": "^0.32.2",
+    "@cosmjs/proto-signing": "^0.32.2",
     "@leapwallet/cosmos-snap-provider": "^0.1.25",
     "@total-typescript/ts-reset": "^0.5.1",
-    "@types/node": "^20.10.5",
-    "bun-types": "^1.0.18-1",
-    "publint": "^0.2.6",
+    "@types/node": "^20.10.6",
+    "@types/bun": "^1.0.0",
+    "publint": "^0.2.7",
     "tsup": "^8.0.1",
-    "tsx": "^4.6.2",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.0.4"
+    "vitest": "^1.1.3"
   },
   "repository": {
     "type": "git",
@@ -60,7 +60,7 @@
     "directory": "lib/typescript"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=18"
   },
   "engineStrict": true,
   "publishConfig": {

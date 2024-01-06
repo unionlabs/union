@@ -28,7 +28,7 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "forceConsistentCasingInFileNames": true,
     "noPropertyAccessFromIndexSignature": true,
-    "types": ["node", "bun-types"],
+    "types": ["node", "bun"],
     "paths": {
       "#/*": ["src/*"]
     }
