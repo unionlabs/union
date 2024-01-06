@@ -2,6 +2,7 @@ use std::{num::ParseIntError, sync::Arc};
 
 use bip32::secp256k1::ecdsa;
 use futures::{stream, Future, FutureExt, Stream, StreamExt};
+use ics23::ibc_api::SDK_SPECS;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
@@ -204,11 +205,7 @@ impl Chain for Cosmos {
                     revision_number: self.chain_revision,
                     revision_height: height.value(),
                 },
-                proof_specs: [
-                    ics23::ibc_api::IAVL_PROOF_SPEC,
-                    ics23::ibc_api::TENDERMINT_PROOF_SPEC,
-                ]
-                .into(),
+                proof_specs: SDK_SPECS.into(),
                 upgrade_path: vec!["upgrade".into(), "upgradedIBCState".into()],
                 allow_update_after_expiry: false,
                 allow_update_after_misbehavior: false,

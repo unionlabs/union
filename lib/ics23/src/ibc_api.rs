@@ -11,7 +11,7 @@ use crate::{
     verify::{self},
 };
 
-pub const SDK_SPECS: [&'static ProofSpec; 2] = [&IAVL_PROOF_SPEC, &TENDERMINT_PROOF_SPEC];
+pub const SDK_SPECS: [ProofSpec; 2] = [IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC];
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum VerifyMembershipError {
@@ -19,23 +19,25 @@ pub enum VerifyMembershipError {
     RootCalculation(existence_proof::CalculateRootError),
     #[error("{0}")]
     InnerVerification(verify::VerifyMembershipError),
-    #[error("calculated root ({calculated}) does not match the given ({given}) value")]
-    InvalidRoot { given: String, calculated: String },
-    #[error("expected the size of proofs to be ({expected}), got ({got})")]
-    InvalidProofsLength { expected: usize, got: usize },
-    #[error("expected the size of key path to be ({expected}), got ({got})")]
-    InvalidKeyPathLength { expected: usize, got: usize },
+    #[error("calculated root ({calculated}) does not match the given ({given}) value", calculated = serde_utils::to_hex(calculated), given = serde_utils::to_hex(found))]
+    InvalidRoot { found: Vec<u8>, calculated: Vec<u8> },
+    #[error("expected the size of proofs to be ({expected}), found ({found})")]
+    InvalidProofsLength { expected: usize, found: usize },
+    #[error("expected the size of key path to be ({expected}), found ({found})")]
+    InvalidKeyPathLength { expected: usize, found: usize },
     #[error("proof type is expected to be `Exist`")]
     InvalidProofType,
     #[error("could not retrieve the key due to invalid indexing")]
     InvalidIndexing,
     #[error("nonexistence proof has empty left and right proof")]
     EmptyNonExistenceProof,
+    #[error("given proof is empty")]
+    EmptyProof,
 }
 
 pub fn verify_membership(
-    proof: MerkleProof,
-    specs: &[&ProofSpec],
+    proof: &MerkleProof,
+    specs: &[ProofSpec],
     consensus_root: &MerkleRoot,
     path: MerklePath,
     value: Vec<u8>,
@@ -43,21 +45,21 @@ pub fn verify_membership(
     if proof.proofs.len() != specs.len() {
         return Err(VerifyMembershipError::InvalidProofsLength {
             expected: specs.len(),
-            got: proof.proofs.len(),
+            found: proof.proofs.len(),
         });
     }
 
     if path.key_path.len() != specs.len() {
         return Err(VerifyMembershipError::InvalidKeyPathLength {
             expected: specs.len(),
-            got: path.key_path.len(),
+            found: path.key_path.len(),
         });
     }
 
     verify_chained_membership_proof(
         consensus_root.hash.as_ref(),
         specs,
-        proof.proofs,
+        &proof.proofs,
         path,
         value,
         0,
@@ -65,22 +67,27 @@ pub fn verify_membership(
 }
 
 pub fn verify_non_membership(
-    proof: MerkleProof,
-    specs: &[&ProofSpec],
+    proof: &MerkleProof,
+    specs: &[ProofSpec],
     consensus_root: &MerkleRoot,
     path: MerklePath,
 ) -> Result<(), VerifyMembershipError> {
+    // this will also assert `specs` and `path.key_path` is not empty
+    if proof.proofs.is_empty() {
+        return Err(VerifyMembershipError::EmptyProof);
+    }
+
     if proof.proofs.len() != specs.len() {
         return Err(VerifyMembershipError::InvalidProofsLength {
             expected: specs.len(),
-            got: proof.proofs.len(),
+            found: proof.proofs.len(),
         });
     }
 
     if path.key_path.len() != specs.len() {
         return Err(VerifyMembershipError::InvalidKeyPathLength {
             expected: specs.len(),
-            got: path.key_path.len(),
+            found: path.key_path.len(),
         });
     }
 
@@ -88,27 +95,22 @@ pub fn verify_non_membership(
         return Err(VerifyMembershipError::InvalidProofType);
     };
 
-    let subroot = if let Some(ep) = &nonexist.left {
-        existence_proof::calculate_root(ep)
-    } else if let Some(ep) = &nonexist.right {
-        existence_proof::calculate_root(ep)
-    } else {
-        return Err(VerifyMembershipError::EmptyNonExistenceProof);
-    }
-    .map_err(VerifyMembershipError::RootCalculation)?;
+    // Even both are `Some`, still calculate the left branch
+    let subroot = match (&nonexist.left, &nonexist.right) {
+        (Some(ep), None) | (None, Some(ep)) | (Some(ep), Some(_)) => {
+            existence_proof::calculate_root(ep).map_err(VerifyMembershipError::RootCalculation)?
+        }
+        _ => return Err(VerifyMembershipError::EmptyNonExistenceProof),
+    };
 
-    let key = path
-        .key_path
-        .get(path.key_path.len() - 1)
-        .ok_or(VerifyMembershipError::InvalidIndexing)?;
-
-    verify::verify_non_membership(specs[0], &subroot, &nonexist, key.as_bytes())
+    let key = path.key_path[path.key_path.len() - 1].as_bytes();
+    verify::verify_non_membership(&specs[0], &subroot, nonexist, key)
         .map_err(VerifyMembershipError::InnerVerification)?;
 
     verify_chained_membership_proof(
         consensus_root.hash.as_ref(),
         specs,
-        proof.proofs,
+        &proof.proofs,
         path,
         subroot,
         1,
@@ -117,14 +119,14 @@ pub fn verify_non_membership(
 
 fn verify_chained_membership_proof(
     root: &[u8],
-    specs: &[&ProofSpec],
-    proofs: Vec<CommitmentProof>,
+    specs: &[ProofSpec],
+    proofs: &[CommitmentProof],
     keys: MerklePath,
     value: Vec<u8>,
     index: usize,
 ) -> Result<(), VerifyMembershipError> {
     proofs
-        .into_iter()
+        .iter()
         .enumerate()
         .skip(index)
         .try_fold(value, |value, (i, proof)| {
@@ -140,7 +142,7 @@ fn verify_chained_membership_proof(
                 .get(keys.key_path.len() - 1 - i)
                 .ok_or(VerifyMembershipError::InvalidIndexing)?;
 
-            verify::verify_membership(specs[i], &subroot, existence_proof, key.as_bytes(), &value)
+            verify::verify_membership(&specs[i], &subroot, existence_proof, key.as_bytes(), &value)
                 .map_err(VerifyMembershipError::InnerVerification)?;
 
             Ok(subroot)
@@ -150,8 +152,8 @@ fn verify_chained_membership_proof(
                 Ok(())
             } else {
                 Err(VerifyMembershipError::InvalidRoot {
-                    given: hex::encode(&value),
-                    calculated: hex::encode(root),
+                    found: value,
+                    calculated: root.to_vec(),
                 })
             }
         })
@@ -182,7 +184,7 @@ mod tests {
         };
         let proofs = MerkleProof::try_from_proto_bytes(&proof).unwrap();
         verify_membership(
-            proofs,
+            &proofs,
             &SDK_SPECS,
             &MerkleRoot {
                 hash: H256::try_from(root).unwrap(),
@@ -321,7 +323,7 @@ mod tests {
 
         assert_eq!(
             verify_non_membership(
-                proof,
+                &proof,
                 &SDK_SPECS,
                 &root,
                 MerklePath {

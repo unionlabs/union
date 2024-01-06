@@ -37,12 +37,12 @@ impl TryFrom<protos::cosmos::ics23::v1::CompressedNonExistenceProof>
             key: value.key,
             left: value
                 .left
-                .map(|proof| proof.try_into())
+                .map(TryInto::try_into)
                 .transpose()
                 .map_err(TryFromCompressedNonExistenceProofError::Left)?,
             right: value
                 .right
-                .map(|proof| proof.try_into())
+                .map(TryInto::try_into)
                 .transpose()
                 .map_err(TryFromCompressedNonExistenceProofError::Right)?,
         })

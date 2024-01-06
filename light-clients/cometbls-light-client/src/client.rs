@@ -66,14 +66,14 @@ impl IbcClient for CometblsLightClient {
 
         match value {
             StorageState::Occupied(value) => ics23::ibc_api::verify_membership(
-                merkle_proof,
+                &merkle_proof,
                 &SDK_SPECS,
                 &consensus_state.data.root,
                 path,
                 value,
             ),
             StorageState::Empty => ics23::ibc_api::verify_non_membership(
-                merkle_proof,
+                &merkle_proof,
                 &SDK_SPECS,
                 &consensus_state.data.root,
                 path,

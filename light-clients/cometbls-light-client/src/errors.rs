@@ -107,7 +107,7 @@ pub enum Error {
     Wasm(String),
 
     #[error("verify membership error: {0}")]
-    VerifyMembership(crate::client::VerifyMembershipError),
+    VerifyMembership(#[from] ics23::ibc_api::VerifyMembershipError),
 }
 
 impl Error {

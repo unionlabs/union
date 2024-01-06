@@ -1,19 +1,22 @@
 use unionlabs::cosmos::ics23::{hash_op::HashOp, inner_op::InnerOp, proof_spec::ProofSpec};
 
 use super::{hash_op, validate_iavl_ops};
-use crate::proof_specs::{self, IAVL_PROOF_SPEC};
+use crate::{
+    hash_op::HashError,
+    proof_specs::{self, IAVL_PROOF_SPEC},
+};
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum SpecMismatchError {
     #[error("unexpected hash op ({0:?})")]
     UnexpectedHashOp(HashOp),
-    #[error("prefix ({prefix:?}) is not the prefix of ({full:?})")]
+    #[error("prefix ({prefix}) is not the prefix of ({full})", prefix = serde_utils::to_hex(prefix), full = serde_utils::to_hex(full))]
     PrefixMismatch { full: Vec<u8>, prefix: Vec<u8> },
     #[error("inner prefix too short, got ({prefix_len}) while the min length is ({min_len})")]
     InnerOpPrefixTooShort { prefix_len: usize, min_len: i32 },
     #[error("inner prefix too long, got ({prefix_len}) while the max length is ({max_len})")]
     InnerOpPrefixTooLong { prefix_len: usize, max_len: i32 },
-    #[error("malformed inner op suffix ({0:?})")]
+    #[error("malformed inner op suffix ({0})")]
     InnerOpSuffixMalformed(usize),
     #[error("validate iavl ops ({0})")]
     ValidateIavlOps(super::ValidateIavlOpsError),
@@ -25,6 +28,8 @@ pub enum SpecMismatchError {
 pub enum ApplyError {
     #[error("inner op needs a child value")]
     InnerOpNeedsChildValue,
+    #[error(transparent)]
+    Hash(#[from] HashError),
 }
 
 pub fn check_against_spec(
@@ -65,9 +70,8 @@ pub fn check_against_spec(
         });
     }
 
-    let max_prefix_length = (spec.inner_spec.max_prefix_length as usize
-        + (spec.inner_spec.child_order.len() - 1) * spec.inner_spec.child_size as usize)
-        as usize;
+    let max_prefix_length = spec.inner_spec.max_prefix_length as usize
+        + (spec.inner_spec.child_order.len() - 1) * spec.inner_spec.child_size as usize;
 
     if inner_op.prefix.len() > max_prefix_length {
         return Err(SpecMismatchError::InnerOpPrefixTooLong {
@@ -94,5 +98,5 @@ pub fn apply(inner_op: &InnerOp, child: Vec<u8>) -> Result<Vec<u8>, ApplyError> 
     preimage.extend_from_slice(&child);
     preimage.extend_from_slice(&inner_op.suffix);
 
-    Ok(hash_op::do_hash(inner_op.hash, &preimage))
+    Ok(hash_op::do_hash(inner_op.hash, &preimage)?)
 }

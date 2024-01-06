@@ -1,11 +1,13 @@
+use std::borrow::Cow;
+
 use unionlabs::cosmos::ics23::{
-    existence_proof::ExistenceProof, inner_op::InnerOp, inner_spec::InnerSpec,
+    existence_proof::ExistenceProof, hash_op::HashOp, inner_op::InnerOp, inner_spec::InnerSpec,
     non_existence_proof::NonExistenceProof, proof_spec::ProofSpec,
 };
 
 use crate::{
     existence_proof::{self, CalculateRootError, SpecMismatchError},
-    hash_op::do_hash_or_noop,
+    hash_op::{do_hash, HashError},
 };
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -26,7 +28,7 @@ pub enum VerifyError {
     },
     #[error("root calculation ({0})")]
     RootCalculation(CalculateRootError),
-    #[error("calculated and given root doesn't match ({calculated_root:?}, {given_root:?})")]
+    #[error("calculated and given root doesn't match ({calculated_root}, {given_root})", calculated_root = serde_utils::to_hex(calculated_root), given_root = serde_utils::to_hex(given_root))]
     CalculatedAndGivenRootMismatch {
         calculated_root: Vec<u8>,
         given_root: Vec<u8>,
@@ -43,6 +45,8 @@ pub enum VerifyError {
     BothProofsMissing,
     #[error("neighbor search failure ({0})")]
     NeighborSearch(NeighborSearchError),
+    #[error(transparent)]
+    Hash(#[from] HashError),
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -71,7 +75,7 @@ pub fn verify_non_membership(
     proof: &NonExistenceProof,
     key: &[u8],
 ) -> Result<(), VerifyMembershipError> {
-    verify_non_existence(&proof, spec, root, key)
+    verify_non_existence(proof, spec, root, key)
         .map_err(VerifyMembershipError::ExistenceProofVerify)
 }
 
@@ -92,17 +96,10 @@ fn verify_non_existence(
     root: &[u8],
     key: &[u8],
 ) -> Result<(), VerifyError> {
-    let key_for_comparison = |spec: &ProofSpec, key: &[u8]| -> Vec<u8> {
-        if !spec.prehash_key_before_comparison {
-            return key.to_vec();
-        }
-        do_hash_or_noop(spec.leaf_spec.prehash_key, key)
-    };
-
     let left_ops = |left: &ExistenceProof| -> Result<(), VerifyError> {
-        verify_existence_proof(&left, spec, root, &left.key, &left.value)?;
+        verify_existence_proof(left, spec, root, &left.key, &left.value)?;
 
-        if key_for_comparison(spec, key) <= key_for_comparison(spec, &left.key) {
+        if key_for_comparison(spec, key)? <= key_for_comparison(spec, &left.key)? {
             return Err(VerifyError::KeyIsNotRightOfLeftProof);
         }
 
@@ -114,9 +111,9 @@ fn verify_non_existence(
     };
 
     let right_ops = |right: &ExistenceProof| -> Result<(), VerifyError> {
-        verify_existence_proof(&right, spec, root, &right.key, &right.value)?;
+        verify_existence_proof(right, spec, root, &right.key, &right.value)?;
 
-        if key_for_comparison(spec, key) >= key_for_comparison(spec, &right.key) {
+        if key_for_comparison(spec, key)? >= key_for_comparison(spec, &right.key)? {
             return Err(VerifyError::KeyIsNotLeftOfRightProof);
         }
 
@@ -143,12 +140,23 @@ fn verify_non_existence(
     Ok(())
 }
 
+fn key_for_comparison<'a>(spec: &ProofSpec, key: &'a [u8]) -> Result<Cow<'a, [u8]>, HashError> {
+    if !spec.prehash_key_before_comparison {
+        return Ok(Cow::Borrowed(key));
+    }
+    if spec.leaf_spec.prehash_key == HashOp::NoHash {
+        Ok(Cow::Borrowed(key))
+    } else {
+        Ok(Cow::Owned(do_hash(spec.leaf_spec.prehash_key, key)?))
+    }
+}
+
 /// returns true if `right` is the next possible path right of `left`
 ///
-///	Find the common suffix from the Left.Path and Right.Path and remove it. We have LPath and RPath now, which must be neighbors.
-///	Validate that LPath[len-1] is the left neighbor of RPath[len-1]
-///	For step in LPath[0..len-1], validate step is right-most node
-///	For step in RPath[0..len-1], validate step is left-most node
+/// Find the common suffix from the Left.Path and Right.Path and remove it. We have LPath and RPath now, which must be neighbors.
+/// Validate that LPath[len-1] is the left neighbor of RPath[len-1]
+/// For step in LPath[0..len-1], validate step is right-most node
+/// For step in RPath[0..len-1], validate step is left-most node
 fn is_left_neighbor(
     spec: &InnerSpec,
     left: &[InnerOp],
@@ -233,7 +241,12 @@ fn right_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, Neig
     for i in 0..right_branches {
         let idx = get_position(&spec.child_order, i)?;
         let from = (idx * spec.child_size) as usize;
-        if spec.empty_child != &op.suffix[from..from + (spec.child_size as usize)] {
+
+        let Some(suffix) = op.suffix.get(from..from + (spec.child_size as usize)) else {
+            return Ok(false);
+        };
+
+        if spec.empty_child != suffix {
             return Ok(false);
         }
     }
@@ -258,7 +271,9 @@ fn left_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, Neigh
     for i in 0..left_branches {
         let idx = get_position(&spec.child_order, i)?;
         let from = (actual_prefix + idx * spec.child_size) as usize;
-        if spec.empty_child != &op.prefix[from..from + (spec.child_size as usize)] {
+        if from + (spec.child_size as usize) >= op.suffix.len()
+            || spec.empty_child != &op.prefix[from..from + (spec.child_size as usize)]
+        {
             return Ok(false);
         }
     }

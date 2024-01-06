@@ -1,9 +1,12 @@
+use std::borrow::Cow;
+
 use unionlabs::cosmos::ics23::{
     hash_op::HashOp, leaf_op::LeafOp, length_op::LengthOp, proof_spec::ProofSpec,
 };
 
 use super::{hash_op, length_op, validate_iavl_ops};
 use crate::{
+    hash_op::HashError,
     proof_specs::{self, IAVL_PROOF_SPEC},
     ValidateIavlOpsError,
 };
@@ -20,8 +23,12 @@ pub enum SpecMismatchError {
     UnexpectedLengthOp(LengthOp),
     #[error("bad prefix remaining {0} bytes after reading")]
     BadPrefix(usize),
-    #[error("prefix ({prefix:?}) is not the prefix of ({full:?})")]
-    PrefixMismatch { full: String, prefix: String },
+    #[error(
+        "prefix ({prefix}) is not the prefix of ({full})",
+        prefix = serde_utils::to_hex(prefix),
+        full = serde_utils::to_hex(full)
+    )]
+    PrefixMismatch { full: Vec<u8>, prefix: Vec<u8> },
     #[error("validate iavl ops ({0})")]
     ValidateIavlOps(ValidateIavlOpsError),
 }
@@ -34,6 +41,8 @@ pub enum ApplyError {
     ValueNeeded,
     #[error("apply leaf ({0:?})")]
     LeafData(super::length_op::ApplyError),
+    #[error(transparent)]
+    Hash(#[from] HashError),
 }
 
 pub fn check_against_spec(leaf_op: &LeafOp, spec: &ProofSpec) -> Result<(), SpecMismatchError> {
@@ -70,8 +79,8 @@ pub fn check_against_spec(leaf_op: &LeafOp, spec: &ProofSpec) -> Result<(), Spec
 
     if !leaf_op.prefix.starts_with(&lspec.prefix) {
         return Err(SpecMismatchError::PrefixMismatch {
-            full: hex::encode(&leaf_op.prefix),
-            prefix: hex::encode(&lspec.prefix),
+            full: leaf_op.prefix.to_vec(),
+            prefix: lspec.prefix.to_vec(),
         });
     }
 
@@ -96,10 +105,18 @@ pub fn apply(leaf_op: &LeafOp, key: &[u8], value: &[u8]) -> Result<Vec<u8>, Appl
     data.extend_from_slice(&pkey);
     data.extend_from_slice(&pvalue);
 
-    Ok(hash_op::do_hash(leaf_op.hash, &data))
+    Ok(hash_op::do_hash(leaf_op.hash, &data)?)
 }
 
-fn prepare_data(leaf_op: &LeafOp, hash_op: HashOp, data: &[u8]) -> Result<Vec<u8>, ApplyError> {
-    let hdata = hash_op::do_hash_or_noop(hash_op, data);
-    length_op::apply(&leaf_op.length, &hdata).map_err(ApplyError::LeafData)
+fn prepare_data<'a>(
+    leaf_op: &LeafOp,
+    hash_op: HashOp,
+    data: &'a [u8],
+) -> Result<Cow<'a, [u8]>, ApplyError> {
+    let hashed_data = if hash_op == HashOp::NoHash {
+        Cow::Borrowed(data)
+    } else {
+        Cow::Owned(hash_op::do_hash(hash_op, data)?)
+    };
+    length_op::apply(&leaf_op.length, hashed_data).map_err(ApplyError::LeafData)
 }
