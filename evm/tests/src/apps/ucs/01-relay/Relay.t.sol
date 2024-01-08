@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 import "solidity-stringutils/strings.sol";

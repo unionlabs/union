@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import {IbcCoreChannelV1Packet as Packet, IbcCoreChannelV1GlobalEnums as ChannelEnums, IbcCoreChannelV1Counterparty as ChannelCounterparty} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
 import {IIBCModule} from "../../../contracts/core/05-port/IIBCModule.sol";

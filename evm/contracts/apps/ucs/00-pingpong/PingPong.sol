@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "../../Base.sol";
 import "../../../core/25-handler/IBCHandler.sol";

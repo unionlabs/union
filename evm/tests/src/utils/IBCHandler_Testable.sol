@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
 import {IbcCoreConnectionV1ConnectionEnd} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";

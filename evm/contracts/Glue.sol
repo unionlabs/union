@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "./core/02-client/ILightClient.sol";
 import "./core/02-client/IBCHeight.sol";

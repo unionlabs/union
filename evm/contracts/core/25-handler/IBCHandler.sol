@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "../24-host/IBCHost.sol";
 import "./IBCClientHandler.sol";
