@@ -85,11 +85,11 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 			leaf := h.Sum()
 
 			shiftedX := Unpack(lc.api, validator.HashableX, 256, 1)
-			shiftedX[254] = validator.HashableXMSB
+			shiftedX[253] = validator.HashableXMSB
 			unshiftedX := Repack(lc.api, shiftedX, 256, 64)
 
 			shiftedY := Unpack(lc.api, validator.HashableY, 256, 1)
-			shiftedY[254] = validator.HashableYMSB
+			shiftedY[253] = validator.HashableYMSB
 			unshiftedY := Repack(lc.api, shiftedY, 256, 64)
 
 			var rebuiltPublicKey gadget.G1Affine

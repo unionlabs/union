@@ -358,7 +358,10 @@ func (vals *ValidatorSet) Hash() []byte {
 		if err != nil {
 			panic(fmt.Errorf("ValidatorSet.Hash(): impossible merkle leaf creation: %v", err))
 		}
-		bzs[i] = leaf.Hash()
+		bzs[i], err = leaf.Hash()
+		if err != nil {
+			panic(fmt.Errorf("ValidatorSet.Hash(): impossible merkle leaf hash: %v", err))
+		}
 	}
 	return merkle.MimcHashFromByteSlices(bzs)
 }
