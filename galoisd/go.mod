@@ -5,6 +5,7 @@ go 1.21
 toolchain go1.21.4
 
 require (
+	cosmossdk.io/math v1.2.0
 	github.com/cometbft/cometbft v0.38.2
 	github.com/consensys/gnark v0.7.2-0.20230418172633-f83323bdf138
 	github.com/consensys/gnark-crypto v0.12.2-0.20231012161402-206544105834
@@ -12,6 +13,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/cobra v1.7.0
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/net v0.19.0
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0
@@ -24,7 +26,6 @@ require (
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
 	cosmossdk.io/errors v1.0.0 // indirect
 	cosmossdk.io/log v1.2.1 // indirect
-	cosmossdk.io/math v1.2.0 // indirect
 	cosmossdk.io/store v1.0.1 // indirect
 	cosmossdk.io/x/tx v0.12.0 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
@@ -91,7 +92,6 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
@@ -111,10 +111,10 @@ require (
 )
 
 replace (
-	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20231225001748-d638e57b7566
+	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240108104619-5ed53d0e59b9
 	github.com/consensys/gnark => github.com/consensys/gnark v0.9.1-0.20231013131835-4ebcccd9c0a8
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
-	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20231206211859-a69e5866af6b
+	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240108104904-d7de88f54965
 	github.com/cosmos/gogoproto => github.com/cosmos/gogoproto v1.4.11
 )

@@ -341,7 +341,10 @@ func ExampleVerifyCmd() *cobra.Command {
 				if err != nil {
 					log.Fatal(err)
 				}
-				trustedValidatorBytes[i] = leaf.Hash()
+				trustedValidatorBytes[i], err = leaf.Hash()
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			untrustedValidatorBytes := make([][]byte, len(untrustedValidators))
@@ -355,7 +358,10 @@ func ExampleVerifyCmd() *cobra.Command {
 				if err != nil {
 					log.Fatal(err)
 				}
-				untrustedValidatorBytes[i] = leaf.Hash()
+				untrustedValidatorBytes[i], err = leaf.Hash()
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			trustedValidatorSetRoot := merkle.MimcHashFromByteSlices(trustedValidatorBytes)

@@ -1,0 +1,63 @@
+[package]
+name = "blst"
+version = "0.3.7"
+authors = ["sean-sn <sean@supranational.net>"]
+edition = "2018"
+license = "Apache-2.0"
+description = "Bindings for blst BLS12-381 library"
+repository = "https://github.com/supranational/blst"
+readme = "README.md"
+include = [
+    "**/*.rs",
+    "/Cargo.toml",
+    "/README.md",
+    "/rustfmt.toml",
+    "/blst/src/*.c",
+    "/blst/src/*.h",
+    "/blst/build/**",
+    "/blst/bindings/blst.h",
+    "/blst/bindings/blst_aux.h",
+    "/blst/bindings/blst.hpp",
+]
+links = "blst"
+
+[features]
+# By default, compile with ADX extension if the host supports it.
+# Binary can be executed on systems similar to the host.
+default = []
+# Compile in portable mode, without ISA extensions.
+# Binary can be executed on all systems.
+portable = []
+# Enable ADX even if the host CPU doesn't support it.
+# Binary can be executed on Broadwell+ and Ryzen+ systems.
+force-adx = []
+# Suppress multi-threading.
+# Engaged on wasm32 target architecture automatically.
+no-threads = []
+
+[build-dependencies]
+cc = "1.0"
+[target.'cfg(target_env = "msvc")'.build-dependencies]
+which = "^4.0"
+glob = "0.3"
+
+[dependencies]
+zeroize = { version = "^1.1", features = ["zeroize_derive"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+threadpool = "^1.8.1"
+
+[dev-dependencies]
+rand = "0.7"
+rand_chacha = "0.2"
+criterion = "0.3"
+
+[[bench]]
+name = "blst_benches"
+harness = false
+
+[profile.release]
+#opt-level = 3
+
+[badges]
+maintenance = { status = "actively-developed" }

@@ -1,0 +1,66 @@
+--- src/bls/ffi/go/bls/bls.go	2021-04-28 18:15:29.408595698 +0900
++++ bls/bls.go	2021-04-28 18:14:19.268844171 +0900
+@@ -1,17 +1,10 @@
+ package bls
+ 
+ /*
+-#cgo bn256 CFLAGS:-DMCLBN_FP_UNIT_SIZE=4
+-#cgo bn256 LDFLAGS:-lbls256
+-#cgo bn384 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6
+-#cgo bn384 LDFLAGS:-lbls384
+-#cgo bn384_256 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6 -DMCLBN_FR_UNIT_SIZE=4
+-#cgo bn384_256 LDFLAGS:-lbls384_256
+-#cgo LDFLAGS:-lcrypto -lgmp -lgmpxx -lstdc++
+-
+-#cgo LDFLAGS:-lcrypto -lgmp -lgmpxx -lstdc++
++#cgo CFLAGS:-I${SRCDIR}./include -DBLS_ETH
+ typedef unsigned int (*ReadRandFunc)(void *, void *, unsigned int);
+ int wrapReadRandCgo(void *self, void *buf, unsigned int n);
++#include <mcl/bn_c384_256.h>
+ #include <bls/bls.h>
+ */
+ import "C"
+@@ -40,10 +33,16 @@ func hex2byte(s string) ([]byte, error)
+ // call this function before calling all the other operations
+ // this function is not thread safe
+ func Init(curve int) error {
++	if curve != C.MCL_BLS12_381 {
++		return fmt.Errorf("ERR only BLS12-381")
++	}
+ 	err := C.blsInit(C.int(curve), C.MCLBN_COMPILED_TIME_VAR)
+ 	if err != 0 {
+ 		return fmt.Errorf("ERR Init curve=%d", curve)
+ 	}
++	if err := SetETHmode(EthModeDraft07); err != nil {
++		return fmt.Errorf("ERR SetETHmode")
++	}
+ 	return nil
+ }
+ 
+@@ -161,7 +160,7 @@ type SecretKey struct {
+ 
+ // Serialize --
+ func (sec *SecretKey) Serialize() []byte {
+-	buf := make([]byte, 48)
++	buf := make([]byte, 32)
+ 	// #nosec
+ 	n := C.blsSecretKeySerialize(unsafe.Pointer(&buf[0]), C.mclSize(len(buf)), &sec.v)
+ 	if n == 0 {
+@@ -373,7 +372,7 @@ func (keys PublicKeys) JSON() string {
+ 
+ // Serialize --
+ func (pub *PublicKey) Serialize() []byte {
+-	buf := make([]byte, 96)
++	buf := make([]byte, 48)
+ 	// #nosec
+ 	n := C.blsPublicKeySerialize(unsafe.Pointer(&buf[0]), C.mclSize(len(buf)), &pub.v)
+ 	if n == 0 {
+@@ -483,7 +482,7 @@ type Sign struct {
+ 
+ // Serialize --
+ func (sig *Sign) Serialize() []byte {
+-	buf := make([]byte, 48)
++	buf := make([]byte, 96)
+ 	// #nosec
+ 	n := C.blsSignatureSerialize(unsafe.Pointer(&buf[0]), C.mclSize(len(buf)), &sig.v)
+ 	if n == 0 {

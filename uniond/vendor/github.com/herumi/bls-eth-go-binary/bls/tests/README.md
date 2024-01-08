@@ -1,0 +1,1 @@
+Test vectors are copied from [zkcrypto/bls12_381](https://github.com/zkcrypto/bls12_381) @  _afe30519f862abfba3ab26ae1ed406dd779db22e_

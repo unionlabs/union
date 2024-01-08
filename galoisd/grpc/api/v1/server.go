@@ -88,7 +88,10 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *PollRequest) (*PollRes
 				lcValidators[i].HashableYMSB = leaf.MsbY
 				lcValidators[i].Power = leaf.VotingPower
 
-				merkleTree[i] = leaf.Hash()
+				merkleTree[i], err = leaf.Hash()
+				if err != nil {
+					return lcValidators, nil, fmt.Errorf("Could not create merkle hash %s", err)
+				}
 			}
 			return lcValidators, merkle.MimcHashFromByteSlices(merkleTree), nil
 		}
