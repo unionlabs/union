@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
 
 use super::{hash_op::HashOp, length_op::LengthOp};
@@ -11,7 +13,7 @@ pub struct LeafOp {
     pub prehash_value: HashOp,
     pub length: LengthOp,
     #[serde(with = "::serde_utils::hex_string")]
-    pub prefix: Vec<u8>,
+    pub prefix: Cow<'static, [u8]>,
 }
 
 impl TypeUrl for protos::cosmos::ics23::v1::LeafOp {
@@ -29,7 +31,7 @@ impl From<LeafOp> for protos::cosmos::ics23::v1::LeafOp {
             prehash_key: value.prehash_key.into(),
             prehash_value: value.prehash_value.into(),
             length: value.length.into(),
-            prefix: value.prefix,
+            prefix: value.prefix.into(),
         }
     }
 }
@@ -60,7 +62,7 @@ impl TryFrom<protos::cosmos::ics23::v1::LeafOp> for LeafOp {
                 .length
                 .try_into()
                 .map_err(TryFromLeafOpError::Length)?,
-            prefix: value.prefix,
+            prefix: value.prefix.into(),
         })
     }
 }
@@ -73,7 +75,7 @@ impl From<LeafOp> for contracts::glue::CosmosIcs23V1LeafOpData {
             prehash_key: value.prehash_key.into(),
             prehash_value: value.prehash_value.into(),
             length: value.length.into(),
-            prefix: value.prefix.into(),
+            prefix: value.prefix.into_owned().into(),
         }
     }
 }

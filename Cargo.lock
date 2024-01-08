@@ -785,6 +785,7 @@ dependencies = [
  "ethers",
  "futures",
  "hex",
+ "ics23",
  "num_enum",
  "prost 0.11.9",
  "protos",
@@ -984,12 +985,15 @@ dependencies = [
  "cosmwasm-std",
  "hex",
  "ics008-wasm-client",
+ "ics23",
  "prost 0.11.9",
  "protos",
+ "ripemd",
  "schemars",
  "serde",
  "serde-json-wasm 1.0.0",
  "serde_json",
+ "sha2 0.10.8",
  "sha3",
  "thiserror",
  "unionlabs",
@@ -2915,6 +2919,19 @@ dependencies = [
  "protos",
  "serde",
  "serde_json",
+ "unionlabs",
+]
+
+[[package]]
+name = "ics23"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "prost 0.11.9",
+ "ripemd",
+ "serde-utils",
+ "sha2 0.10.8",
+ "thiserror-core",
  "unionlabs",
 ]
 

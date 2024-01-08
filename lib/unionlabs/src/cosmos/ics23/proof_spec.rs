@@ -15,6 +15,7 @@ pub struct ProofSpec {
     pub max_depth: i32,
     // REVIEW: > 0?
     pub min_depth: i32,
+    pub prehash_key_before_comparison: bool,
 }
 
 impl TypeUrl for protos::cosmos::ics23::v1::ProofSpec {
@@ -32,6 +33,7 @@ impl From<ProofSpec> for protos::cosmos::ics23::v1::ProofSpec {
             inner_spec: Some(value.inner_spec.into()),
             max_depth: value.max_depth,
             min_depth: value.min_depth,
+            prehash_key_before_comparison: value.prehash_key_before_comparison,
         }
     }
 }
@@ -56,6 +58,7 @@ impl TryFrom<protos::cosmos::ics23::v1::ProofSpec> for ProofSpec {
                 .map_err(TryFromProofSpecError::InnerSpec)?,
             max_depth: value.max_depth,
             min_depth: value.min_depth,
+            prehash_key_before_comparison: value.prehash_key_before_comparison,
         })
     }
 }

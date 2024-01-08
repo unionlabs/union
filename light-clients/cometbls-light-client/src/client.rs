@@ -3,18 +3,25 @@ use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
     },
-    IbcClient, MerklePath, Status, StorageState,
+    IbcClient, Status, StorageState,
 };
+use ics23::ibc_api::SDK_SPECS;
 use prost::Message;
 use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
     ibc::{
-        core::{client::height::Height, commitment::merkle_root::MerkleRoot},
+        core::{
+            client::height::Height,
+            commitment::{
+                merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
+            },
+        },
         lightclients::cometbls::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
         },
     },
     tendermint::types::commit::Commit,
+    TryFromProto,
 };
 
 use crate::{errors::Error, zkp_verifier::verify_zkp_v2};
@@ -40,15 +47,39 @@ impl IbcClient for CometblsLightClient {
     type ConsensusState = ConsensusState;
 
     fn verify_membership(
-        _deps: Deps<Self::CustomQuery>,
-        _height: Height,
+        deps: Deps<Self::CustomQuery>,
+        height: Height,
         _delay_time_period: u64,
         _delay_block_period: u64,
-        _proof: Binary,
-        _path: MerklePath,
-        _value: StorageState,
+        proof: Binary,
+        path: MerklePath,
+        value: StorageState,
     ) -> Result<(), Self::Error> {
-        Ok(())
+        let consensus_state: WasmConsensusState =
+            read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
+
+        let merkle_proof = MerkleProof::try_from_proto_bytes(proof.as_ref()).map_err(|e| {
+            Error::DecodeFromProto {
+                reason: format!("{:?}", e),
+            }
+        })?;
+
+        match value {
+            StorageState::Occupied(value) => ics23::ibc_api::verify_membership(
+                &merkle_proof,
+                &SDK_SPECS,
+                &consensus_state.data.root,
+                path,
+                value,
+            ),
+            StorageState::Empty => ics23::ibc_api::verify_non_membership(
+                &merkle_proof,
+                &SDK_SPECS,
+                &consensus_state.data.root,
+                path,
+            ),
+        }
+        .map_err(Error::VerifyMembership)
     }
 
     fn verify_header(

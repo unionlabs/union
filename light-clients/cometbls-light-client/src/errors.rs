@@ -105,6 +105,9 @@ pub enum Error {
 
     #[error("Wasm client error: {0}")]
     Wasm(String),
+
+    #[error("verify membership error: {0}")]
+    VerifyMembership(#[from] ics23::ibc_api::VerifyMembershipError),
 }
 
 impl Error {

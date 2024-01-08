@@ -1,9 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cosmos::ics23::existence_proof::ExistenceProof,
-    errors::{required, MissingField},
-    TryFromProtoErrorOf,
+    cosmos::ics23::existence_proof::ExistenceProof, errors::MissingField, TryFromProtoErrorOf,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -11,8 +9,8 @@ use crate::{
 pub struct NonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     pub key: Vec<u8>,
-    pub left: ExistenceProof,
-    pub right: ExistenceProof,
+    pub left: Option<ExistenceProof>,
+    pub right: Option<ExistenceProof>,
 }
 
 impl crate::Proto for NonExistenceProof {
@@ -32,11 +30,15 @@ impl TryFrom<protos::cosmos::ics23::v1::NonExistenceProof> for NonExistenceProof
     fn try_from(value: protos::cosmos::ics23::v1::NonExistenceProof) -> Result<Self, Self::Error> {
         Ok(Self {
             key: value.key,
-            left: required!(value.left)?
-                .try_into()
+            left: value
+                .left
+                .map(TryInto::try_into)
+                .transpose()
                 .map_err(TryFromNonExistenceProofError::Left)?,
-            right: required!(value.right)?
-                .try_into()
+            right: value
+                .right
+                .map(TryInto::try_into)
+                .transpose()
                 .map_err(TryFromNonExistenceProofError::Right)?,
         })
     }
@@ -47,8 +49,8 @@ impl From<NonExistenceProof> for contracts::glue::CosmosIcs23V1NonExistenceProof
     fn from(value: NonExistenceProof) -> Self {
         Self {
             key: value.key.into(),
-            left: value.left.into(),
-            right: value.right.into(),
+            left: value.left.map(Into::into).unwrap_or_default(),
+            right: value.right.map(Into::into).unwrap_or_default(),
         }
     }
 }
@@ -57,8 +59,8 @@ impl From<NonExistenceProof> for protos::cosmos::ics23::v1::NonExistenceProof {
     fn from(value: NonExistenceProof) -> Self {
         Self {
             key: value.key,
-            left: Some(value.left.into()),
-            right: Some(value.right.into()),
+            left: value.left.map(Into::into),
+            right: value.right.map(Into::into),
         }
     }
 }
