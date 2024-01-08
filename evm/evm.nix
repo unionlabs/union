@@ -313,12 +313,12 @@
         };
 
         evm-coverage =
-          pkgs.runCommand "evm-coverage.log"
+          pkgs.runCommand "evm-coverage"
             {
               buildInputs = [ wrappedForge pkgs.lcov ];
             } ''
             forge coverage --ir-minimum --report lcov && \
-            genhtml lcov.info -o $out --branch-coverag
+            genhtml lcov.info -o $out --branch-coverag && mv lcov.info $out
           '';
 
         forge = wrappedForge;
