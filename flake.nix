@@ -320,6 +320,8 @@
             buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
               bacon
               cargo-nextest
+              # cargo-llvm-cov
+              cargo-fuzz
               foundry-bin
               jq
               go-ethereum

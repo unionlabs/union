@@ -1,17 +1,17 @@
 { ... }: {
   perSystem = { pkgs, self', crane, rust, system, ensureAtRepositoryRoot, ... }:
     let
-      cargo-fuzz = crane.lib.buildPackage {
-        name = "cargo-fuzz";
-        version = "0.11.2";
-        doCheck = false;
-        src = pkgs.fetchFromGitHub {
-          owner = "rust-fuzz";
-          repo = "cargo-fuzz";
-          rev = "a860fd92bc183f1fed45583aa78691b684e80576";
-          hash = "sha256-vnOqImf3GWbDP6uM9tINGHliVDRdXnSPX1OMeT4N5qU=";
-        };
-      };
+      # cargo-fuzz = crane.lib.buildPackage {
+      #   name = "cargo-fuzz";
+      #   version = "0.11.2";
+      #   doCheck = false;
+      #   src = pkgs.fetchFromGitHub {
+      #     owner = "rust-fuzz";
+      #     repo = "cargo-fuzz";
+      #     rev = "a860fd92bc183f1fed45583aa78691b684e80576";
+      #     hash = "sha256-vnOqImf3GWbDP6uM9tINGHliVDRdXnSPX1OMeT4N5qU=";
+      #   };
+      # };
 
       rustfilt = crane.lib.buildPackage {
         name = "rustfilt";
@@ -34,7 +34,7 @@
       # https://github.com/google/fuzzing/blob/master/tutorial/libFuzzerTutorial.md#continuous-fuzzing
       runFuzzTargets = targets: pkgs.writeShellApplication {
         name = "fuzz";
-        runtimeInputs = [ cargo-fuzz rust.toolchains.dev ];
+        runtimeInputs = [ pkgs.cargo-fuzz rust.toolchains.dev ];
         text = ''
           ${ensureAtRepositoryRoot}
 
