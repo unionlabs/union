@@ -1,8 +1,9 @@
 #![feature(error_in_core)]
+// #![warn(clippy::pedantic)]
+#![allow(clippy::missing_errors_doc)]
 
 pub mod existence_proof;
 pub mod ibc_api;
-mod ops;
+pub mod ops;
 pub mod proof_specs;
 pub mod verify;
-pub use ops::*;

@@ -167,6 +167,10 @@ bounded_int! {
     pub BoundedU64(u64);
     #[non_zero(std::num::NonZeroU128)]
     pub BoundedU128(u128);
+
+    pub BoundedIsize(isize);
+    #[non_zero(std::num::NonZeroUsize)]
+    pub BoundedUsize(usize);
 }
 
 #[cfg(test)]

@@ -73,14 +73,14 @@ impl IbcClient for CometblsLightClient {
                 &merkle_proof,
                 &SDK_SPECS,
                 &consensus_state.data.root,
-                path,
+                &path,
                 value,
             ),
             StorageState::Empty => ics23::ibc_api::verify_non_membership(
                 &merkle_proof,
                 &SDK_SPECS,
                 &consensus_state.data.root,
-                path,
+                &path,
             ),
         }
         .map_err(Error::VerifyMembership)

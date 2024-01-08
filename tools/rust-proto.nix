@@ -156,7 +156,6 @@
         in
         with attrs; {
           type_attribute = {
-            # "." = [ eth_abi ];
             ".google.protobuf.Any" = [ serde eq ];
             ".google.protobuf.Timestamp" = [ serde ];
             ".google.protobuf.Duration" = [ serde eq ];
@@ -194,17 +193,25 @@
 
           field_attribute = {
             ".ibc.core.client.v1.Height" = [ serde_default ];
+
             ".ibc.core.commitment.v1.MerkleRoot.hash" = [ jsonschema_str serde_base64 ];
+
             ".ibc.core.commitment.v1.MerklePrefix.key_prefix" = [ jsonschema_str serde_base64 ];
+
             ".ibc.lightclients.wasm.v1.ClientState.data" = [ serde_base64 ];
             ".ibc.lightclients.wasm.v1.ClientState.checksum" = [ serde_base64 ];
+
             ".ibc.lightclients.wasm.v1.ConsensusState.data" = [ serde_base64 ];
+
             ".ibc.lightclients.wasm.v1.Header.data" = [ serde_base64 ];
+
             ".union.ibc.lightclients.ethereum.v1.SyncCommittee.aggregate_pubkey" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.SyncCommittee.pubkeys" = [ serde_inner_base64 ];
+
             ".union.ibc.lightclients.ethereum.v1.BeaconBlockHeader.parent_root" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.BeaconBlockHeader.state_root" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.BeaconBlockHeader.body_root" = [ serde_base64 ];
+
             ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.parent_hash" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.fee_recipient" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.state_root" = [ serde_base64 ];
@@ -216,21 +223,40 @@
             ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.block_hash" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.transactions_root" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.withdrawals_root" = [ serde_base64 ];
+
             ".union.ibc.lightclients.ethereum.v1.LightClientHeader.execution_branch" = [ serde_inner_base64 ];
+
             ".union.ibc.lightclients.ethereum.v1.LightClientUpdate.next_sync_committee_branch" = [ serde_inner_base64 ];
             ".union.ibc.lightclients.ethereum.v1.LightClientUpdate.finality_branch" = [ serde_inner_base64 ];
+
             ".union.ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_bits" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_signature" = [ serde_base64 ];
+
             ".union.ibc.lightclients.ethereum.v1.Proof.key" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.Proof.value" = [ serde_base64 ];
             ".union.ibc.lightclients.ethereum.v1.Proof.proof" = [ serde_inner_base64 ];
+
+            ".cosmos.ics23.v1.LeafOp.hash" = [ serde_default ];
             ".cosmos.ics23.v1.LeafOp.prehash_key" = [ serde_default ];
-            ".cosmos.ics23.v1.LeafOp.prefix" = [ jsonschema_str serde_base64 ];
-            ".cosmos.ics23.v1.InnerOp.prefix" = [ serde_base64 jsonschema_str ];
-            ".cosmos.ics23.v1.InnerOp.suffix" = [ serde_base64 jsonschema_str ];
+            ".cosmos.ics23.v1.LeafOp.prehash_value" = [ serde_default ];
+            ".cosmos.ics23.v1.LeafOp.length" = [ serde_default ];
+            ".cosmos.ics23.v1.LeafOp.prefix" = [ jsonschema_str serde_default serde_base64 ];
+
+            ".cosmos.ics23.v1.InnerOp.prefix" = [ serde_base64 serde_default jsonschema_str ];
+            ".cosmos.ics23.v1.InnerOp.suffix" = [ serde_base64 serde_default jsonschema_str ];
+
             ".cosmos.ics23.v1.ProofSpec.max_depth" = [ serde_default ];
             ".cosmos.ics23.v1.ProofSpec.min_depth" = [ serde_default ];
+            ".cosmos.ics23.v1.ProofSpec.prehash_key_before_comparison" = [ serde_default ];
+
             ".cosmos.ics23.v1.InnerSpec.empty_child" = [ serde_default jsonschema_str serde_base64 ];
+
+            ".cosmos.ics23.v1.ExistenceProof.key" = [ serde_base64 ];
+            ".cosmos.ics23.v1.ExistenceProof.value" = [ serde_base64 ];
+            ".cosmos.ics23.v1.ExistenceProof.path" = [ serde_default ];
+            ".cosmos.ics23.v1.ExistenceProof.leaf" = [ serde_default ];
+
+            ".cosmos.ics23.v1.NonExistenceProof.value" = [ serde_base64 ];
           };
         };
 

@@ -10,6 +10,8 @@ pub enum ApplyError {
     Required64Bytes(usize),
     #[error("unsupported op ({0})")]
     UnsupportedOp(LengthOp),
+    #[error("too many data items (0)")]
+    TooManyDataItems(usize),
 }
 
 pub fn apply<'a>(length_op: &LengthOp, data: Cow<'a, [u8]>) -> Result<Cow<'a, [u8]>, ApplyError> {
@@ -33,11 +35,38 @@ pub fn apply<'a>(length_op: &LengthOp, data: Cow<'a, [u8]>) -> Result<Cow<'a, [u
             }
             Ok(data)
         }
-        LengthOp::Fixed32Little => {
-            let mut d = (data.len() as u32).to_le_bytes().to_vec();
+        LengthOp::Fixed32Big => {
+            let mut d = u32::try_from(data.len())
+                .map_err(|_| ApplyError::TooManyDataItems(data.len()))?
+                .to_be_bytes()
+                .to_vec();
             d.extend_from_slice(&data);
             Ok(d.into())
         }
-        op => Err(ApplyError::UnsupportedOp(*op)),
+        LengthOp::Fixed32Little => {
+            let mut d = u32::try_from(data.len())
+                .map_err(|_| ApplyError::TooManyDataItems(data.len()))?
+                .to_le_bytes()
+                .to_vec();
+            d.extend_from_slice(&data);
+            Ok(d.into())
+        }
+        LengthOp::Fixed64Big => {
+            let mut d = u64::try_from(data.len())
+                .map_err(|_| ApplyError::TooManyDataItems(data.len()))?
+                .to_be_bytes()
+                .to_vec();
+            d.extend_from_slice(&data);
+            Ok(d.into())
+        }
+        LengthOp::Fixed64Little => {
+            let mut d = u64::try_from(data.len())
+                .map_err(|_| ApplyError::TooManyDataItems(data.len()))?
+                .to_le_bytes()
+                .to_vec();
+            d.extend_from_slice(&data);
+            Ok(d.into())
+        }
+        op @ LengthOp::VarRlp => Err(ApplyError::UnsupportedOp(*op)),
     }
 }

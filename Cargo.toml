@@ -9,6 +9,7 @@ members = [
   "lib/serde-utils",
   "lib/unionlabs",
   "lib/ics23",
+  "lib/ics23/test-suite",
   "lib/*/fuzz",
   "tools/generate-rust-sol-bindings",
   "light-clients/*",
