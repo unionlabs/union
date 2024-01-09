@@ -26,6 +26,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions: write-all
+    env:
+      npm_config_yes: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,18 +46,22 @@ jobs:
       - name: Build Docs
         run: nix build .#docs
 
-      - name: '🔶 Publish to Cloudflare Pages'
-        id: deploy-output
+      - name: '[production] 🔶 Publish to Cloudflare Pages'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
-          npm_config_yes: true
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: |
-          CLOUDFLARE_API_TOKEN="${{ env.CLOUDFLARE_API_TOKEN }}" \
-          CLOUDFLARE_ACCOUNT_ID="${{ env.CLOUDFLARE_ACCOUNT_ID }}" \
-          npx --yes wrangler@latest pages --project-name="docs" --commit-dirty=true deploy result >> /tmp/deploy.txt
+        run: npx --yes wrangler@latest pages --project-name="docs" --branch="main" deploy result
+
+      - name: '[preview] 🔶 Publish to Cloudflare Pages'
+        if: github.event_name == 'pull_request'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="docs" deploy result >> /tmp/deploy.txt
 
       - name: Set Deploy Output
+        if: github.event_name == 'pull_request'
         run: |
           {
             echo 'DEPLOY_OUTPUT<<EOF'
@@ -69,9 +75,23 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.issues.createComment({
+            const prComments = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
+            })
+            const [botDeploymentComment] = prComments.data.filter(comment => comment.user?.login === 'github-actions[bot]')
+            if (!botDeploymentComment) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: process.env.DEPLOY_OUTPUT
+              })
+            }
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botDeploymentComment.id,
               body: process.env.DEPLOY_OUTPUT
             })
