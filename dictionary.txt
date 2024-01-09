@@ -280,9 +280,11 @@ feegrant
 feegrantkeeper
 feegrantmodule
 fetchurl
+fetchzip
 fkey
 fksmg
 floorlog
+fmtlib
 foldl
 frunk
 fubar
@@ -385,6 +387,7 @@ jemalloc
 jemallocator
 jetbrains
 journalctl
+jsoncpp
 jsonschema
 jwtsecret
 karel
