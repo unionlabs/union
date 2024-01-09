@@ -54,8 +54,13 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID="${{ env.CLOUDFLARE_ACCOUNT_ID }}" \
           npx --yes wrangler@latest pages --project-name="docs" --commit-dirty=true deploy result >> /tmp/deploy.txt
 
-          DEPLOY_OUTPUT=$(tail -n 2 /tmp/deploy.txt)
-          echo "DEPLOY_OUTPUT=${DEPLOY_OUTPUT}" >> $GITHUB_ENV
+      - name: Set Deploy Output
+        run: |
+          {
+            echo 'DEPLOY_OUTPUT<<EOF'
+            cat /tmp/deploy.txt
+            echo 'EOF'
+          } >> $GITHUB_ENV
 
       - name: Comment on Pull Request
         if: github.event_name == 'pull_request'
