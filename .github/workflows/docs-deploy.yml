@@ -4,25 +4,34 @@ on:
   push:
     branches:
       - main
-
-env:
-  NIX_VERSION: nix-2.13.2
-  NIXPKGS_CHANNEL: nixos-22.11
+    paths:
+      - 'docs/**'
+  pull_request:
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
+env:
+  NIX_VERSION: nix-2.13.2
+  NIXPKGS_CHANNEL: nixos-22.11
+  NODE_OPTIONS: '--no-warnings'
+  ACTIONS_RUNNER_DEBUG: true
+
 jobs:
   deploy:
-    # temporarily disable
-    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           lfs: true
-      - uses: cachix/install-nix-action@v24
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
         with:
           nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
           github_access_token: ${{ github.token }}

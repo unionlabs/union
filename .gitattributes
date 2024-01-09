@@ -11,3 +11,4 @@
 **/generated/** linguist-generated
 evm/contracts/proto/** linguist-generated
 wrangler.json  linguist-generated=JSON-with-Comments
+strict.json  linguist-generated=JSON-with-Comments
