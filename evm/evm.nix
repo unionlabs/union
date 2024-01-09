@@ -80,9 +80,9 @@
         hash = "sha256-9D9Mxuk/5bzX3tZjRAnWk7LP/GMOe0NRsrMuvOfKy78=";
       };
       foundryEnv = {
-        FOUNDRY_OPTIMIZER = "true";
+        FOUNDRY_OPTIMIZER = "false";
         FOUNDRY_VIA_IR = "true";
-        FOUNDRY_OPTIMIZER_RUNS = "10000";
+        FOUNDRY_OPTIMIZER_RUNS = "0";
         FOUNDRY_SRC = "${evmSources}/contracts";
         FOUNDRY_TEST = "${evmSources}/tests/src";
         FOUNDRY_LIBS = ''["${libraries}"]'';
