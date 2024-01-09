@@ -73,6 +73,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
+          debug: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const prComments = await github.rest.issues.listComments({
@@ -88,10 +89,11 @@ jobs:
                 issue_number: context.issue.number,
                 body: process.env.DEPLOY_OUTPUT
               })
+            } else {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botDeploymentComment.id,
+                body: process.env.DEPLOY_OUTPUT
+              })
             }
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: botDeploymentComment.id,
-              body: process.env.DEPLOY_OUTPUT
-            })
