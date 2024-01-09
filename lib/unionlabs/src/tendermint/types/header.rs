@@ -53,7 +53,7 @@ pub struct Header {
 impl Header {
     #[must_use]
     #[allow(clippy::too_many_lines)]
-    pub fn calculate_merkle_root(&self) -> Option<[u8; 32]> {
+    pub fn calculate_merkle_root(&self) -> Option<H256> {
         const LEAF_PREFIX: u8 = 0;
         const INNER_PREFIX: u8 = 1;
 
@@ -164,7 +164,7 @@ impl Header {
 
         let root = inner_hash(&leaves[0], &leaves[1]);
 
-        Some(root)
+        Some(H256(root))
     }
 }
 

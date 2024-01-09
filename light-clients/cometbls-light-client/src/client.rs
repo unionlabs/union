@@ -9,6 +9,7 @@ use ics23::ibc_api::SDK_SPECS;
 use prost::Message;
 use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
+    hash::H256,
     ibc::{
         core::{
             client::height::Height,
@@ -24,7 +25,10 @@ use unionlabs::{
     TryFromProto,
 };
 
-use crate::{errors::Error, zkp_verifier::verify_zkp_v2};
+use crate::{
+    errors::{Error, InvalidHeaderError},
+    zkp_verifier::verify_zkp_v2,
+};
 
 type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
 type WasmConsensusState =
@@ -84,7 +88,7 @@ impl IbcClient for CometblsLightClient {
 
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
-        _env: Env,
+        env: Env,
         header: Self::Header,
     ) -> Result<(), Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
@@ -96,42 +100,45 @@ impl IbcClient for CometblsLightClient {
         let trusted_height_number = header.trusted_height.revision_number;
 
         if untrusted_height_number <= trusted_height_number {
-            return Err(Error::InvalidHeader(
-                "header height <= consensus state height".into(),
-            ));
+            return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
+                signed_height: untrusted_height_number,
+                trusted_height: trusted_height_number,
+            }
+            .into());
         }
 
         let trusted_timestamp = consensus_state.data.timestamp;
-        let untrusted_timestamp = header.signed_header.header.time.seconds.inner() as u64;
+        let untrusted_timestamp = {
+            let header_timestamp = header.signed_header.header.time.seconds.inner();
+            header_timestamp
+                .try_into()
+                .map_err(|_| InvalidHeaderError::NegativeTimestamp(header_timestamp))?
+        };
 
         if untrusted_timestamp <= trusted_timestamp {
-            return Err(Error::InvalidHeader(
-                "header time <= consensus state time".into(),
-            ));
+            return Err(InvalidHeaderError::SignedHeaderTimestampMustBeMoreRecent {
+                signed_timestamp: untrusted_timestamp,
+                trusted_timestamp,
+            }
+            .into());
         }
 
-        // let current_time: Timestamp = env
-        //     .block
-        //     .time
-        //     .try_into()
-        //     .map_err(|_| Error::InvalidHeader("timestamp conversion failed".into()))?;
+        if is_client_expired(
+            untrusted_timestamp,
+            client_state.data.trusting_period,
+            env.block.time.seconds(),
+        ) {
+            return Err(InvalidHeaderError::HeaderExpired(consensus_state.data.timestamp).into());
+        }
 
-        // if current_time
-        //     .duration_since(&header.signed_header.header.time)
-        //     .ok_or(Error::DurationAdditionOverflow)?
-        //     .seconds()
-        //     .inner() as u64
-        //     > client_state.data.trusting_period
-        // {
-        //     return Err(Error::InvalidHeader("header expired".into()));
-        // }
-
-        // let max_clock_drift =
-        //     current_time.seconds.inner() as u64 + client_state.data.max_clock_drift;
-
-        // if untrusted_timestamp >= max_clock_drift {
-        //     return Err(Error::InvalidHeader("header back to the future".into()));
-        // }
+        let max_clock_drift = env.block.time.seconds() + client_state.data.max_clock_drift;
+        if untrusted_timestamp >= max_clock_drift {
+            return Err(InvalidHeaderError::SignerHeaderCannotExceedMaxClockDrift {
+                signed_timestamp: untrusted_timestamp,
+                max_clock_drift,
+            }
+            .into());
+        }
 
         let trusted_validators_hash = consensus_state.data.next_validators_hash;
 
@@ -147,17 +154,12 @@ impl IbcClient for CometblsLightClient {
             .calculate_merkle_root()
             .ok_or(Error::UnableToCalculateMerkleRoot)?;
 
-        if header.signed_header.commit.block_id.hash.0.as_slice() != expected_block_hash {
-            return Err(Error::InvalidHeader(
-                "commit.block_id.hash != header.root()".into(),
-            ));
-        }
-
-        if client_state.data.chain_id != header.signed_header.header.chain_id {
-            return Err(Error::InvalidHeader(format!(
-                "chain ids dont match: {} {}",
-                client_state.data.chain_id, header.signed_header.header.chain_id
-            )));
+        if header.signed_header.commit.block_id.hash != expected_block_hash {
+            return Err(InvalidHeaderError::SignedHeaderMismatchWithCommitHash {
+                commit_hash: header.signed_header.commit.block_id.hash,
+                signed_header_root: expected_block_hash,
+            }
+            .into());
         }
 
         let signed_vote = canonical_vote(
@@ -329,7 +331,7 @@ fn is_client_expired(
 fn canonical_vote(
     commit: &Commit,
     chain_id: String,
-    expected_block_hash: [u8; 32],
+    expected_block_hash: H256,
 ) -> protos::tendermint::types::CanonicalVote {
     protos::tendermint::types::CanonicalVote {
         r#type: protos::tendermint::types::SignedMsgType::Precommit as i32,
@@ -337,7 +339,7 @@ fn canonical_vote(
         round: commit.round.inner() as i64,
         // TODO(aeryz): Implement BlockId to proto::CanonicalBlockId
         block_id: Some(protos::tendermint::types::CanonicalBlockId {
-            hash: expected_block_hash.to_vec(),
+            hash: expected_block_hash.into(),
             part_set_header: Some(protos::tendermint::types::CanonicalPartSetHeader {
                 total: commit.block_id.part_set_header.total,
                 hash: commit.block_id.part_set_header.hash.0.to_vec(),
