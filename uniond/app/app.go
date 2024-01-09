@@ -134,9 +134,6 @@ import (
 	wasmvm "github.com/CosmWasm/wasmvm"
 
 	unioncustomquery "union/app/custom_query"
-	unionmodule "union/x/union"
-	unionmodulekeeper "union/x/union/keeper"
-	unionmoduletypes "union/x/union/types"
 
 	ibccometblsclient "union/app/ibc/cometbls/02-client/keeper"
 
@@ -248,8 +245,6 @@ type UnionApp struct {
 	ScopedIBCFeeKeeper   capabilitykeeper.ScopedKeeper
 	ScopedWasmKeeper     capabilitykeeper.ScopedKeeper
 
-	UnionKeeper unionmodulekeeper.Keeper
-
 	ModuleManager      *module.Manager
 	BasicModuleManager module.BasicManager
 
@@ -303,7 +298,7 @@ func NewUnionApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey,
 		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcwasmtypes.StoreKey, icahosttypes.StoreKey,
 		capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey, consensusparamtypes.StoreKey,
-		unionmoduletypes.StoreKey, ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey,
+		ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 
@@ -668,14 +663,6 @@ func NewUnionApp(
 		),
 	)
 
-	app.UnionKeeper = *unionmodulekeeper.NewKeeper(
-		appCodec,
-		keys[unionmoduletypes.StoreKey],
-		keys[unionmoduletypes.MemStoreKey],
-		app.GetSubspace(unionmoduletypes.ModuleName),
-	)
-	unionModule := unionmodule.NewAppModule(appCodec, app.UnionKeeper, app.AccountKeeper, app.BankKeeper)
-
 	/**** IBC Routing ****/
 
 	// Sealing prevents other modules from creating scoped sub-keepers
@@ -745,7 +732,6 @@ func NewUnionApp(
 		ibcwasm.NewAppModule(app.WasmClientKeeper),
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
 		icaModule,
-		unionModule,
 		tfModule,
 		ibctm.NewAppModule(),
 		solomachine.NewAppModule(),
@@ -800,7 +786,6 @@ func NewUnionApp(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		unionmoduletypes.ModuleName,
 		wasmtypes.ModuleName,
 		tftypes.ModuleName,
 	)
@@ -828,7 +813,6 @@ func NewUnionApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		unionmoduletypes.ModuleName,
 		wasmtypes.ModuleName,
 		tftypes.ModuleName,
 	)
@@ -861,7 +845,6 @@ func NewUnionApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		unionmoduletypes.ModuleName,
 		wasmtypes.ModuleName,
 		tftypes.ModuleName,
 	}
@@ -1150,7 +1133,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName)
 	paramsKeeper.Subspace(crisistypes.ModuleName)
-	paramsKeeper.Subspace(unionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
 	paramsKeeper.Subspace(tftypes.ModuleName)
 
