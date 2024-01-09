@@ -17,22 +17,14 @@ To get the `uniond` image, you can visit our container on the GitHub Container R
 - For versions v0.15.0 and earlier
 
   ```sh
-<<<<<<<< HEAD:docs/src/content/docs/docs/joining-testnet/obtaining-uniond.mdx
   export UNIOND_VERSION='v0.15.0'
-========
-  export UNIOND_VERSION='v0.14.0'
->>>>>>>> 1f10a808b (feat(docs): start moving to astro starlight):docs/src/content/docs/joining-testnet/obtaining-uniond.mdx
   docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION
   ```
 
 - For versions v0.17.0 and later
 
   ```sh
-<<<<<<<< HEAD:docs/src/content/docs/docs/joining-testnet/obtaining-uniond.mdx
   export UNIOND_VERSION='v0.17.0'
-========
-  export UNIOND_VERSION='v0.16.0'
->>>>>>>> 1f10a808b (feat(docs): start moving to astro starlight):docs/src/content/docs/joining-testnet/obtaining-uniond.mdx
   docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
   ```
 
@@ -100,11 +92,7 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
 ```sh
-<<<<<<<< HEAD:docs/src/content/docs/docs/joining-testnet/obtaining-uniond.mdx
 export UNIOND_VERSION='v0.17.0'
-========
-export UNIOND_VERSION='v0.14.0'
->>>>>>>> 1f10a808b (feat(docs): start moving to astro starlight):docs/src/content/docs/joining-testnet/obtaining-uniond.mdx
 alias uniond='docker run -v ~/.union:/.union --network host -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION --home /.union'
 ```
 

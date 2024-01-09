@@ -28,11 +28,7 @@ Under CometBLS, the Union network can scale to over a hundred validators without
 
 We can scale the validator set using [distributed validator tech](https://figment.io/distributed-validator-technology-and-infrastructure-resilience/) (DVT) even more, allowing the Union network to effectively support thousands of validators. The foundation for this scaling is once again BLS signatures, which allows us to aggregate signed votes in smaller steps:
 
-<<<<<<<< HEAD:docs/src/content/docs/docs/architecture/cometbls.mdx
 ![cometbls mermaid](../../../../assets/cometbls.svg)
-========
-![cometbls mermaid](../../../assets/cometbls.svg)
->>>>>>>> 1f10a808b (feat(docs): start moving to astro starlight):docs/src/content/docs/architecture/cometbls.mdx
 
 The network can handle a hybrid set of regular and distributed validators, and recursively expand the DVT set without incurring any extra cost on the consensus or prover.
 

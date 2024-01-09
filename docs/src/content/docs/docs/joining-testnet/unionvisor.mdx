@@ -13,12 +13,8 @@ We release container images of Unionvisor called bundles. Each bundle contains e
 Alternatively, you can run the following command:
 
 ```sh
-<<<<<<<< HEAD:docs/src/content/docs/docs/joining-testnet/unionvisor.mdx
 export UNIONVISOR_VERSION='v0.17.0'
 docker pull ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION
-========
-docker pull ghcr.io/unionlabs/bundle-testnet-4:$UNIOND_VERSION
->>>>>>>> 1f10a808b (feat(docs): start moving to astro starlight):docs/src/content/docs/joining-testnet/unionvisor.mdx
 ```
 
 ## Running Unionvisor
@@ -126,7 +122,7 @@ A minimal Docker Compose file for Unionvisor looks like this:
 ```yaml
 services:
   node:
-    image: ghcr.io/unionlabs/bundle-testnet-4:$UNIOND_VERSION
+    image: ghcr.io/unionlabs/bundle-testnet-4:$UNIONVISOR_VERSION
     volumes:
       - ~/.unionvisor:/.unionvisor
       - /tmp:/tmp

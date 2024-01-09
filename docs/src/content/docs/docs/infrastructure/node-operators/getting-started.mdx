@@ -64,11 +64,7 @@ mv ./uniond /usr/bin/
 We also provide containers in our [package registry](https://github.com/unionlabs/union/pkgs/container/uniond).
 
 ```sh
-<<<<<<<< HEAD:docs/src/content/docs/docs/infrastructure/node-operators/getting-started.mdx
 docker pull ghcr.io/unionlabs/uniond:v0.17.0
-========
-docker pull ghcr.io/unionlabs/uniond:v0.14.0
->>>>>>>> 1f10a808b (feat(docs): start moving to astro starlight):docs/src/content/docs/infrastructure/node-operators/getting-started.mdx
 ```
 
 When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](../docker-compose) section is more suited for docker users.
