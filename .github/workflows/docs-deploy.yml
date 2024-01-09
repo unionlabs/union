@@ -21,7 +21,6 @@ env:
   NODE_OPTIONS: '--no-warnings'
   ACTIONS_RUNNER_DEBUG: true
   ASTRO_TELEMETRY_DISABLED: true
-  
 
 jobs:
   deploy:
@@ -49,4 +48,7 @@ jobs:
           npm_config_yes: true
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages deploy result
+        run: |
+          CLOUDFLARE_API_TOKEN="${{ env.CLOUDFLARE_API_TOKEN }}" \
+          CLOUDFLARE_ACCOUNT_ID="${{ env.CLOUDFLARE_ACCOUNT_ID }}" \
+          npx --yes wrangler@latest pages --project-name="docs" deploy result
