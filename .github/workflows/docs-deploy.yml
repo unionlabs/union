@@ -46,9 +46,7 @@ jobs:
 
       - name: '🔶 Publish to Cloudflare Pages'
         env:
+          npm_config_yes: true
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: |
-          CLOUDFLARE_ACCOUNT_ID="${{ env.CLOUDFLARE_ACCOUNT_ID }}"
-          CLOUDFLARE_API_TOKEN="${{ env.CLOUDFLARE_API_TOKEN }}"
-          npm_config_yes npx wrangler@latest pages deploy result
+        run: npx --yes wrangler@latest pages deploy result
