@@ -34,7 +34,6 @@
     "@astrojs/tailwind": "^5.1.0",
     "@astrojs/ts-plugin": "^1.3.1",
     "@cloudflare/workers-types": "^4.20231218.0",
-    "@sentry/astro": "^7.91.0",
     "@spotlightjs/astro": "^1.0.9",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/container-queries": "^0.1.1",

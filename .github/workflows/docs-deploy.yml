@@ -20,6 +20,8 @@ env:
   NIXPKGS_CHANNEL: nixos-22.11
   NODE_OPTIONS: '--no-warnings'
   ACTIONS_RUNNER_DEBUG: true
+  ASTRO_TELEMETRY_DISABLED: true
+  
 
 jobs:
   deploy:
