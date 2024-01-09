@@ -1,9 +1,38 @@
 use cosmwasm_std::StdError;
 use thiserror::Error as ThisError;
 use unionlabs::{
+    hash::H256,
     ibc::{core::client::height::Height, lightclients::cometbls::header::Header},
     TryFromProtoBytesError, TryFromProtoErrorOf,
 };
+
+#[derive(ThisError, Debug, PartialEq)]
+pub enum InvalidHeaderError {
+    #[error("signed header's height ({signed_height}) must be greater than trusted height ({trusted_height})")]
+    SignedHeaderHeightMustBeMoreRecent {
+        signed_height: u64,
+        trusted_height: u64,
+    },
+    #[error("signed header's timestamp ({signed_timestamp}) must be greater than trusted timestamp ({trusted_timestamp})")]
+    SignedHeaderTimestampMustBeMoreRecent {
+        signed_timestamp: u64,
+        trusted_timestamp: u64,
+    },
+    #[error("header with timestamp ({0}) is expired")]
+    HeaderExpired(u64),
+    #[error("negative header timestamp ({0})")]
+    NegativeTimestamp(i64),
+    #[error("signed header timestamp ({signed_timestamp}) cannot exceed the max clock drift ({max_clock_drift})")]
+    SignerHeaderCannotExceedMaxClockDrift {
+        signed_timestamp: u64,
+        max_clock_drift: u64,
+    },
+    #[error("commit hash ({commit_hash}) does not match with the signed header root ({signed_header_root})")]
+    SignedHeaderMismatchWithCommitHash {
+        commit_hash: H256,
+        signed_header_root: H256,
+    },
+}
 
 #[derive(ThisError, Debug, PartialEq)]
 pub enum Error {
@@ -37,8 +66,8 @@ pub enum Error {
     #[error("Invalid height")]
     InvalidHeight,
 
-    #[error("Invalid header: {0}")]
-    InvalidHeader(String),
+    #[error(transparent)]
+    InvalidHeader(#[from] InvalidHeaderError),
 
     #[error("Invalid ZKP")]
     InvalidZKP,
