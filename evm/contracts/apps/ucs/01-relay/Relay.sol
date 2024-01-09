@@ -51,6 +51,13 @@ library RelayLib {
         address token,
         uint256 amount
     );
+    event Timeout(
+        address sender,
+        string receiver,
+        string denom,
+        address token,
+        uint256 amount
+    );
 
     function isValidVersion(
         string memory version
@@ -87,7 +94,7 @@ library RelayLib {
     function hexToAddress(
         string memory _a
     ) internal pure returns (address _parsedAddress) {
-        require(bytes(_a).length == 42, "ucs01-relay: invalid address");
+        require(bytes(_a).length == 42, "ucs01-relay: invalid hex address");
         bytes memory tmp = bytes(_a);
         uint160 iaddr = 0;
         uint160 b1;
@@ -116,7 +123,7 @@ library RelayLib {
     }
 
     function bytesToAddress(bytes memory b) internal pure returns (address) {
-        require(b.length == 20, "ucs01-relay: invalid address");
+        require(b.length == 20, "ucs01-relay: invalid bytes address");
         return address(uint160(bytes20(b)));
     }
 }
@@ -170,16 +177,23 @@ contract UCS01Relay is IBCAppBase {
         return denomToAddress[denom];
     }
 
-    function getAddressDenom(address addr) public view returns (string memory) {
-        return addressToDenom[addr];
-    }
-
     function getOutstanding(
         string memory sourcePort,
         string memory sourceChannel,
         address token
     ) public view returns (uint256) {
+        require(
+            token != address(0),
+            "ucs01-relay: getOutstanding: address is zero"
+        );
         return outstanding[sourcePort][sourceChannel][token];
+    }
+
+    function getCounterpartyEndpoint(
+        string memory portId,
+        string memory channelId
+    ) public view returns (IbcCoreChannelV1Counterparty.Data memory) {
+        return counterpartyEndpoints[portId][channelId];
     }
 
     function increaseOutstanding(
@@ -298,15 +312,16 @@ contract UCS01Relay is IBCAppBase {
         string memory channelId,
         RelayPacket memory packet
     ) internal {
+        string memory receiver = packet.receiver.toHexString();
         // We're going to refund, the receiver will be the sender.
-        address receiver = RelayLib.bytesToAddress(packet.sender);
+        address userToRefund = RelayLib.bytesToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
             // Either we tried to send back a remote native token
             // which we burnt, or a locally native token that we escrowed.
             address denomAddress = denomToAddress[token.denom];
             if (denomAddress != address(0)) {
-                IERC20Denom(denomAddress).mint(receiver, token.amount);
+                IERC20Denom(denomAddress).mint(userToRefund, token.amount);
             } else {
                 // It must be in the form 0x...
                 denomAddress = RelayLib.hexToAddress(token.denom);
@@ -316,16 +331,17 @@ contract UCS01Relay is IBCAppBase {
                     denomAddress,
                     token.amount
                 );
-                IERC20(denomAddress).transfer(receiver, token.amount);
+                IERC20(denomAddress).transfer(userToRefund, token.amount);
             }
+            emit RelayLib.Timeout(
+                userToRefund,
+                receiver,
+                token.denom,
+                denomAddress,
+                token.amount
+            );
         }
     }
-
-    function tokensLanded(
-        string memory portId,
-        string memory channelId,
-        RelayPacket memory packet
-    ) internal {}
 
     function onRecvPacketProcessing(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
@@ -415,13 +431,7 @@ contract UCS01Relay is IBCAppBase {
             "ucs01-relay: single byte ack"
         );
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
-        if (acknowledgement[0] == RelayLib.ACK_SUCCESS) {
-            tokensLanded(
-                ibcPacket.source_port,
-                ibcPacket.source_channel,
-                packet
-            );
-        } else {
+        if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
                 ibcPacket.source_port,
                 ibcPacket.source_channel,
