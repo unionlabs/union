@@ -25,6 +25,8 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,7 +60,7 @@ jobs:
         run: |
           {
             echo 'DEPLOY_OUTPUT<<EOF'
-            cat /tmp/deploy.txt
+            tail -n 2 /tmp/deploy.txt
             echo 'EOF'
           } >> $GITHUB_ENV
 
