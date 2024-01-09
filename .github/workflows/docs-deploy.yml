@@ -44,6 +44,7 @@ jobs:
         run: nix build .#docs
 
       - name: '🔶 Publish to Cloudflare Pages'
+        id: deploy-output
         env:
           npm_config_yes: true
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -51,4 +52,20 @@ jobs:
         run: |
           CLOUDFLARE_API_TOKEN="${{ env.CLOUDFLARE_API_TOKEN }}" \
           CLOUDFLARE_ACCOUNT_ID="${{ env.CLOUDFLARE_ACCOUNT_ID }}" \
-          npx --yes wrangler@latest pages --project-name="docs" deploy result
+          npx --yes wrangler@latest pages --project-name="docs" --commit-dirty=true deploy result >> /tmp/deploy.txt
+
+          DEPLOY_OUTPUT=$(tail -n 2 /tmp/deploy.txt)
+          echo "DEPLOY_OUTPUT=${DEPLOY_OUTPUT}" >> $GITHUB_ENV
+
+      - name: Comment on Pull Request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: process.env.DEPLOY_OUTPUT
+            })
