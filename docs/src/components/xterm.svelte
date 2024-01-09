@@ -6,6 +6,8 @@
 
   const FETCH_INTERVAL = 2_000
 
+  let terminalElement: HTMLDivElement
+
   type Network = 'union' | 'sepolia'
   type Action = 'fetching' | 'observed event' | 'sending message'
   type LogLine = {
@@ -37,31 +39,31 @@
   function formatLogLine(queryResult: any): LogLine | undefined {
     if (!queryResult.data.demo_txes_by_pk) return
     const result = queryResult.data.demo_txes_by_pk.data
-    let [network, action, data] = ['', '', ''] as unknown as [Network, Action, string]
+    let [network, action, data] = ['', '', result] as unknown as [Network, Action, any]
 
-    if ('EthereumMinimal' in result) {
+    if ('EthereumMinimal' in data) {
       network = 'union'
-      data = result['EthereumMinimal']
+      data = data['EthereumMinimal']
     }
 
-    if ('CometblsMinimal' in result) {
+    if ('CometblsMinimal' in data) {
       network = 'sepolia'
-      data = result['CometblsMinimal']
+      data = data['CometblsMinimal']
     }
 
-    if ('Fetch' in result) {
+    if ('Fetch' in data) {
       action = 'fetching'
-      data = result['Fetch']
+      data = data['Fetch']['data']
     }
 
-    if ('Event' in result) {
+    if ('Event' in data) {
       action = 'observed event'
-      data = result['Event']['data']
+      data = data['Event']['data']
     }
 
-    if ('Msg' in result) {
+    if ('Msg' in data) {
       action = 'sending message'
-      data = result['Msg']['data']
+      data = data['Msg']['data']
     }
 
     return { network, action, logLine: JSON.stringify(data) }
@@ -79,7 +81,7 @@
       await sleep(FETCH_INTERVAL)
       const response = await client.query(FETCH_EVENT, { id: index }).toPromise()
       const newLine = formatLogLine(response)
-      if (newLine) logLines = [...logLines, newLine]
+      if (newLine) logLines = [newLine, ...logLines]
       if (index > latestIdWorker - 10) index = startHeight
     }
   }
@@ -95,10 +97,11 @@
 </script>
 
 <section
-  class="font-mono h-[332px] md:h-[432px] max-h-[432px] my-8 mx-auto w-5xl min-w-4xl bg-black"
+  class="font-mono h-[332px] md:h-[432px] max-h-[432px] my-8 mx-auto w-6xl min-w-4xl bg-black"
 >
   <div
-    class="max-w-4xl p-4 md:shadow-2xl md:right-[16px] bg-black text-xs sm:text-sm font-jetbrains overflow-auto max-h-[432px] mx-auto"
+    class="flex max-w-4xl p-4 md:shadow-2xl md:right-[16px] bg-black text-xs sm:text-sm font-jetbrains overflow-auto max-h-[432px] mx-auto flex-col-reverse"
+    bind:this={terminalElement}
   >
     {#each logLines as { network, action, logLine }}
       <div class="p-0 break-words">
