@@ -31,6 +31,8 @@ struct RelayPacket {
 library RelayLib {
     using LibString for *;
 
+    IbcCoreChannelV1GlobalEnums.Order public constant ORDER =
+        IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED;
     string public constant VERSION = "ucs01-0";
     bytes1 public constant ACK_SUCCESS = 0x01;
     bytes1 public constant ACK_FAILURE = 0x00;
@@ -202,9 +204,9 @@ contract UCS01Relay is IBCAppBase {
         address token,
         uint256 amount
     ) internal {
-        outstanding[sourcePort][sourceChannel][token] = outstanding[portId][channelId][
-            token
-        ].add(amount);
+        outstanding[sourcePort][sourceChannel][token] = outstanding[sourcePort][
+            sourceChannel
+        ][token].add(amount);
     }
 
     function decreaseOutstanding(
@@ -213,9 +215,9 @@ contract UCS01Relay is IBCAppBase {
         address token,
         uint256 amount
     ) internal {
-        outstanding[sourcePort][sourceChannel][token] = outstanding[portId][channelId][
-            token
-        ].sub(amount);
+        outstanding[sourcePort][sourceChannel][token] = outstanding[sourcePort][
+            sourceChannel
+        ][token].sub(amount);
     }
 
     function sendToken(
@@ -263,7 +265,9 @@ contract UCS01Relay is IBCAppBase {
         uint64 counterpartyTimeoutRevisionHeight
     ) public {
         IbcCoreChannelV1Counterparty.Data
-            memory counterparty = counterpartyEndpoints[sourcePort][sourceChannel];
+            memory counterparty = counterpartyEndpoints[sourcePort][
+                sourceChannel
+            ];
         Token[] memory normalizedTokens = new Token[](tokens.length);
         // For each token, we transfer them locally then:
         // - if the token is locally native, keep it escrowed
@@ -452,7 +456,7 @@ contract UCS01Relay is IBCAppBase {
     }
 
     function onChanOpenInit(
-        IbcCoreChannelV1GlobalEnums.Order _order,
+        IbcCoreChannelV1GlobalEnums.Order order,
         string[] calldata _connectionHops,
         string calldata portId,
         string calldata channelId,
@@ -463,11 +467,15 @@ contract UCS01Relay is IBCAppBase {
             RelayLib.isValidVersion(version),
             "ucs01-relay: invalid version"
         );
+        require(
+            order == RelayLib.ORDER,
+            "ucs01-relay: invalid channel ordering"
+        );
         counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
     }
 
     function onChanOpenTry(
-        IbcCoreChannelV1GlobalEnums.Order _order,
+        IbcCoreChannelV1GlobalEnums.Order order,
         string[] calldata _connectionHops,
         string calldata portId,
         string calldata channelId,
@@ -482,6 +490,10 @@ contract UCS01Relay is IBCAppBase {
         require(
             RelayLib.isValidVersion(counterpartyVersion),
             "ucs01-relay: invalid counterparty version"
+        );
+        require(
+            order == RelayLib.ORDER,
+            "ucs01-relay: invalid channel ordering"
         );
         counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
     }

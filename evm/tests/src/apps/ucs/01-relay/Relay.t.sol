@@ -76,7 +76,7 @@ contract RelayTests is Test {
     ) public {
         vm.prank(address(ibcHandler));
         relay.onChanOpenTry(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
             destinationChannel,
@@ -263,7 +263,7 @@ contract RelayTests is Test {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
         vm.expectRevert();
         relay.onChanOpenInit(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
             destinationChannel,
@@ -285,7 +285,7 @@ contract RelayTests is Test {
         vm.expectRevert();
         vm.prank(address(ibcHandler));
         relay.onChanOpenInit(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
             destinationChannel,
@@ -294,6 +294,28 @@ contract RelayTests is Test {
                 channel_id: sourceChannel
             }),
             "blabla"
+        );
+    }
+
+    function testRelay_openInit_wrongOrdering(
+        string memory sourcePort,
+        string memory sourceChannel,
+        string memory destinationPort,
+        string memory destinationChannel
+    ) public {
+        UCS01Relay relay = new UCS01Relay(ibcHandler);
+        vm.expectRevert();
+        vm.prank(address(ibcHandler));
+        relay.onChanOpenInit(
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            new string[](0),
+            destinationPort,
+            destinationChannel,
+            IbcCoreChannelV1Counterparty.Data({
+                port_id: sourcePort,
+                channel_id: sourceChannel
+            }),
+            RelayLib.VERSION
         );
     }
 
@@ -306,7 +328,7 @@ contract RelayTests is Test {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
         vm.prank(address(ibcHandler));
         relay.onChanOpenInit(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
             destinationChannel,
@@ -331,7 +353,7 @@ contract RelayTests is Test {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
         vm.expectRevert();
         relay.onChanOpenTry(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
             destinationChannel,
@@ -353,7 +375,7 @@ contract RelayTests is Test {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
         vm.prank(address(ibcHandler));
         relay.onChanOpenTry(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
             destinationChannel,
@@ -380,7 +402,7 @@ contract RelayTests is Test {
         vm.expectRevert();
         vm.prank(address(ibcHandler));
         relay.onChanOpenTry(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
             destinationChannel,
@@ -389,6 +411,29 @@ contract RelayTests is Test {
                 channel_id: sourceChannel
             }),
             "0xDEADC0DE",
+            RelayLib.VERSION
+        );
+    }
+
+    function testRelay_openTry_wrongOrdering(
+        string memory sourcePort,
+        string memory sourceChannel,
+        string memory destinationPort,
+        string memory destinationChannel
+    ) public {
+        UCS01Relay relay = new UCS01Relay(ibcHandler);
+        vm.expectRevert();
+        vm.prank(address(ibcHandler));
+        relay.onChanOpenTry(
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            new string[](0),
+            destinationPort,
+            destinationChannel,
+            IbcCoreChannelV1Counterparty.Data({
+                port_id: sourcePort,
+                channel_id: sourceChannel
+            }),
+            RelayLib.VERSION,
             RelayLib.VERSION
         );
     }
@@ -403,7 +448,7 @@ contract RelayTests is Test {
         vm.expectRevert();
         vm.prank(address(ibcHandler));
         relay.onChanOpenTry(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
             destinationChannel,
@@ -456,7 +501,7 @@ contract RelayTests is Test {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
         vm.prank(address(ibcHandler));
         relay.onChanOpenInit(
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
+            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
             destinationPort,
             destinationChannel,
