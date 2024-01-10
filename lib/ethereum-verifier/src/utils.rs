@@ -7,7 +7,9 @@ use unionlabs::{
         Domain, DomainType, ForkData, SigningData, Version,
     },
     hash::H256,
-    ibc::lightclients::ethereum::fork_parameters::ForkParameters,
+    ibc::lightclients::ethereum::{
+        beacon_block_header::BeaconBlockHeader, fork_parameters::ForkParameters,
+    },
 };
 
 use crate::{primitives::GENESIS_SLOT, Error, InvalidMerkleBranch};
@@ -106,6 +108,100 @@ pub fn compute_signing_root<T: TreeHash>(ssz_object: &T, domain: Domain) -> prim
         domain,
     }
     .tree_hash_root()
+}
+
+/*
+ leaf:
+    H256(0x95a70d24f0a388301cf1659d9e59583b045d65fa1465c51314719609e115d40c),
+
+branch: [
+    H256(0x0400000000000000000000000000000000000000000000000000000000000000),
+    H256(0x86220a2d72000ffb901cf75bf2918181ffea3c6567a573566d8c826e9e567493),
+    H256(0x5bd50ecad03f16305866677a772260ea3275922a98d389a566be479549c6ada8),
+    H256(0x3836bf436572e4493691f3f7c531a1a1fc7ad4a817c9dc6565b9c75cf7a09784),
+    H256(0x56fb6ae1e15a48b0f9e534a60ffc8a176589ddf1063e63f112417831a05f25d8),
+    H256(0x46b19a7a9d2c6c071d157555008d46336542841760103342cfb5df284319b1f1)],
+
+depth: 6,
+
+index: 39,
+
+root: H256(0x6f6b3f64a5d4ffad6471af8042cae34a4b0c521a9c5d7a43932ceea648c8e5c2) }
+*/
+
+#[test]
+fn hello() {
+    let finalized_beacon = BeaconBlockHeader {
+        slot: 16,
+        proposer_index: 1,
+        parent_root: H256(hex_literal::hex!(
+            "0ca4610c4306e90bc21f42b10064e9fdeca5f7cbcf7a6fc0fb02ec26c1c09459"
+        )),
+        state_root: H256(hex_literal::hex!(
+            "5f083d9e0c9199837b0343b55de0a3334f03bed6608173cf8f983f457b77077d"
+        )),
+        body_root: H256(hex_literal::hex!(
+            "799fa16009926af2c7180bdfec121ca91df6626a349e1a478be116ce2cf45cfc"
+        )),
+    };
+
+    let leaf = finalized_beacon.tree_hash_root();
+
+    // let leaf = H256(hex_literal::hex!(
+    //     "b483b79911a026cca1fcbe98ac6e4854391534e94950f0eac034bee1a6d2831c"
+    // ));
+    let branch = [
+        &H256(hex_literal::hex!(
+            "0200000000000000000000000000000000000000000000000000000000000000"
+        )),
+        &H256(hex_literal::hex!(
+            "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"
+        )),
+        &H256(hex_literal::hex!(
+            "f469b98c708f31794d25050805cc0d836085a75378ccf77fd692c93e2d596247"
+        )),
+        &H256(hex_literal::hex!(
+            "d393050d80ba6b8d66a7680f0a3f9e1fd29e21464645c6cc59ad23b57b400ee4"
+        )),
+        &H256(hex_literal::hex!(
+            "0d67602c387b095c6d5e333459d1fd0dff74b7a02159dc630589a834f1b99a09"
+        )),
+        &H256(hex_literal::hex!(
+            "b9e54fc7d4f4da163aceb5b40461c4946e1646e5560bfd07eed8af8a112ea55a"
+        )),
+    ];
+
+    let depth = 6;
+    let index = 39;
+
+    let root = H256(hex_literal::hex!(
+        "cbc3893f0c54cb36df81812125387cef6a6c387a7f912bfe02f2611977f51868"
+    ));
+
+    validate_merkle_branch(&leaf.into(), branch, depth, index, &root).unwrap();
+
+    // for i in 1..100 {
+    //     for j in 1..10 {
+    //         if validate_merkle_branch(&leaf.into(), branch, j, i, &root).is_ok() {
+    //             panic!("FOUND AT: {}", i)
+    //         }
+    //     }
+    // }
+
+    /*
+    // (InvalidMerkleBranch { leaf:
+    H256(0x73365fd766ee2242d0c545b5746c227892a3a02af4f27c7f82f4afe8daf3c22c),
+
+    branch: [
+    H256(0x5700000000000000000000000000000000000000000000000000000000000000),
+    H256(0x86220a2d72000ffb901cf75bf2918181ffea3c6567a573566d8c826e9e567493),
+    H256(0x81e0a0e65af09080b943564f20d0e412a3de3a5b15b470295045033cd8875d85),
+    H256(0xb59a711c0b74397ff5a8e4260b73fc1490b859b9b99ffc5fd0c3dc7389129770),
+    H256(0x8d94c4d59b64af48d88df52bd8fb0d1f4bfe69efa6a5d52b2a3729dda94fe1ee),
+    H256(0x70130aa70d38170b19005f2e0fa4a59fe7408fa9805941e83e6583a0a8b6d2f6)],
+
+    depth: 6, index: 39, root: H256(0xe97ebb82b9994112033b12f8e33586ba490104a337e2a6b8205f89b442a40529)
+     */
 }
 
 /// Check if `leaf` at `index` verifies against the Merkle `root` and `branch`.

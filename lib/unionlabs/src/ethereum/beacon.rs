@@ -150,9 +150,13 @@ pub struct ExecutionPayload<
     /// 'difficulty' in the yellow paper
     pub prev_randao: H256,
     /// 'number' in the yellow paper
+    #[serde(with = "::serde_utils::string")]
     pub block_number: u64,
+    #[serde(with = "::serde_utils::string")]
     pub gas_limit: u64,
+    #[serde(with = "::serde_utils::string")]
     pub gas_used: u64,
+    #[serde(with = "::serde_utils::string")]
     pub timestamp: u64,
     #[serde(with = "::serde_utils::hex_string")]
     pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
@@ -167,6 +171,13 @@ pub struct ExecutionPayload<
     >,
     pub withdrawals: VariableList<Withdrawal, C::MAX_WITHDRAWALS_PER_PAYLOAD>,
 }
+
+// #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+// #[serde(transparent)]
+// pub struct Transaction<C: MAX_BYTES_PER_TRANSACTION> {
+//     #[serde(with = "::serde_utils::hex_string")]
+//     data: VariableList<u8, C::MAX_BYTES_PER_TRANSACTION>,
+// }
 
 impl<
         C: BYTES_PER_LOGS_BLOOM

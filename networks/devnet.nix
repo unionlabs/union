@@ -53,11 +53,11 @@
           inherit pkgs;
           config = self'.packages.devnet-eth-config;
         };
-        lodestar = import ./services/lodestar.nix {
-          inherit pkgs;
-          config = self'.packages.devnet-eth-config;
-          validatorCount = devnetConfig.ethereum.beacon.validatorCount;
-        };
+        # lodestar = import ./services/lodestar.nix {
+        #   inherit pkgs;
+        #   config = self'.packages.devnet-eth-config;
+        #   validatorCount = devnetConfig.ethereum.beacon.validatorCount;
+        # };
       };
 
       postgres-services = {

@@ -8,8 +8,8 @@ use unionlabs::{
     ethereum::{
         config::{
             consts::{
-                floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
-                NEXT_SYNC_COMMITTEE_INDEX,
+                floorlog2, get_subtree_index, CURRENT_JUSTIFIED_ROOT_INDEX,
+                EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX,
             },
             ChainSpec, MIN_SYNC_COMMITTEE_PARTICIPANTS,
         },
@@ -122,8 +122,8 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     validate_merkle_branch(
         &finalized_root.into(),
         &update.finality_branch,
-        floorlog2(FINALIZED_ROOT_INDEX),
-        get_subtree_index(FINALIZED_ROOT_INDEX),
+        floorlog2(CURRENT_JUSTIFIED_ROOT_INDEX),
+        get_subtree_index(CURRENT_JUSTIFIED_ROOT_INDEX),
         &update.attested_header.beacon.state_root,
     )?;
 
