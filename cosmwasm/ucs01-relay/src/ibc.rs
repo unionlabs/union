@@ -108,8 +108,7 @@ pub fn ibc_channel_close(
     _env: Env,
     _channel: IbcChannelCloseMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
-    // Not allowed.
-    unimplemented!();
+    Err(ContractError::Unauthorized)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
