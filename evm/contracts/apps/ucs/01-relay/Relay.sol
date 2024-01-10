@@ -190,37 +190,37 @@ contract UCS01Relay is IBCAppBase {
     }
 
     function getCounterpartyEndpoint(
-        string memory portId,
-        string memory channelId
+        string memory sourcePort,
+        string memory sourceChannel
     ) public view returns (IbcCoreChannelV1Counterparty.Data memory) {
-        return counterpartyEndpoints[portId][channelId];
+        return counterpartyEndpoints[sourcePort][sourceChannel];
     }
 
     function increaseOutstanding(
-        string memory portId,
-        string memory channelId,
+        string memory sourcePort,
+        string memory sourceChannel,
         address token,
         uint256 amount
     ) internal {
-        outstanding[portId][channelId][token] = outstanding[portId][channelId][
+        outstanding[sourcePort][sourceChannel][token] = outstanding[portId][channelId][
             token
         ].add(amount);
     }
 
     function decreaseOutstanding(
-        string memory portId,
-        string memory channelId,
+        string memory sourcePort,
+        string memory sourceChannel,
         address token,
         uint256 amount
     ) internal {
-        outstanding[portId][channelId][token] = outstanding[portId][channelId][
+        outstanding[sourcePort][sourceChannel][token] = outstanding[portId][channelId][
             token
         ].sub(amount);
     }
 
     function sendToken(
-        string calldata portId,
-        string calldata channelId,
+        string calldata sourcePort,
+        string calldata sourceChannel,
         string memory counterpartyPortId,
         string memory counterpartyChannelId,
         LocalToken calldata localToken
@@ -245,8 +245,8 @@ contract UCS01Relay is IBCAppBase {
             );
         } else {
             increaseOutstanding(
-                portId,
-                channelId,
+                sourcePort,
+                sourceChannel,
                 localToken.denom,
                 localToken.amount
             );
@@ -255,15 +255,15 @@ contract UCS01Relay is IBCAppBase {
     }
 
     function send(
-        string calldata portId,
-        string calldata channelId,
+        string calldata sourcePort,
+        string calldata sourceChannel,
         bytes calldata receiver,
         LocalToken[] calldata tokens,
         uint64 counterpartyTimeoutRevisionNumber,
         uint64 counterpartyTimeoutRevisionHeight
     ) public {
         IbcCoreChannelV1Counterparty.Data
-            memory counterparty = counterpartyEndpoints[portId][channelId];
+            memory counterparty = counterpartyEndpoints[sourcePort][sourceChannel];
         Token[] memory normalizedTokens = new Token[](tokens.length);
         // For each token, we transfer them locally then:
         // - if the token is locally native, keep it escrowed
@@ -271,8 +271,8 @@ contract UCS01Relay is IBCAppBase {
         for (uint256 i = 0; i < tokens.length; i++) {
             LocalToken calldata localToken = tokens[i];
             string memory addressDenom = sendToken(
-                portId,
-                channelId,
+                sourcePort,
+                sourceChannel,
                 counterparty.port_id,
                 counterparty.channel_id,
                 localToken
@@ -299,8 +299,8 @@ contract UCS01Relay is IBCAppBase {
                 revision_height: counterpartyTimeoutRevisionHeight
             });
         ibcHandler.sendPacket(
-            portId,
-            channelId,
+            sourcePort,
+            sourceChannel,
             timeoutHeight,
             0,
             packet.encode()
