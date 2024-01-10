@@ -1,13 +1,17 @@
 use std::borrow::Cow;
 
 use unionlabs::cosmos::ics23::{
-    existence_proof::ExistenceProof, hash_op::HashOp, inner_op::InnerOp, inner_spec::InnerSpec,
-    non_existence_proof::NonExistenceProof, proof_spec::ProofSpec,
+    existence_proof::ExistenceProof,
+    hash_op::HashOp,
+    inner_op::InnerOp,
+    inner_spec::{InnerSpec, PositiveI32AsUsize},
+    non_existence_proof::NonExistenceProof,
+    proof_spec::ProofSpec,
 };
 
 use crate::{
     existence_proof::{self, CalculateRootError, SpecMismatchError},
-    hash_op::{do_hash, HashError},
+    ops::hash_op::{do_hash, HashError},
 };
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -59,10 +63,13 @@ pub enum VerifyMembershipError {
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum NeighborSearchError {
-    #[error("")]
-    InvalidBranch { branch: i32, order_len: usize },
+    #[error("invalid branch {branch} (order length: {order_len})")]
+    InvalidBranch { branch: usize, order_len: usize },
     #[error("branch ({branch}) not found in ({order:?})")]
-    BranchNotFoundInOrder { branch: i32, order: Vec<i32> },
+    BranchNotFoundInOrder {
+        branch: usize,
+        order: Vec<PositiveI32AsUsize>,
+    },
     #[error("cannot find any valid spacing for this node")]
     CannotFindValidSpacing,
     #[error("invalid path provided for proof")]
@@ -196,7 +203,7 @@ fn is_left_step(
 
 /// returns true if this is the right-most path in the tree, excluding placeholder (empty child) nodes
 fn is_right_most(spec: &InnerSpec, path: &[InnerOp]) -> Result<bool, NeighborSearchError> {
-    let (min_prefix, max_prefix, suffix) = get_padding(spec, (spec.child_order.len() - 1) as i32)?;
+    let (min_prefix, max_prefix, suffix) = get_padding(spec, spec.child_order.len() - 1)?;
 
     for step in path {
         if !has_padding(step, min_prefix, max_prefix, suffix)
@@ -229,20 +236,20 @@ fn is_left_most(spec: &InnerSpec, path: &[InnerOp]) -> Result<bool, NeighborSear
 fn right_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, NeighborSearchError> {
     let idx = order_from_padding(spec, op)?;
 
-    let right_branches = (spec.child_order.len() as i32) - 1 - idx;
+    let right_branches = spec.child_order.len() - 1 - idx;
     if right_branches == 0 {
         return Ok(false);
     }
 
-    if (op.suffix.len() as i32) != right_branches * spec.child_size {
+    if op.suffix.len() != right_branches * spec.child_size.inner() {
         return Ok(false);
     }
 
     for i in 0..right_branches {
         let idx = get_position(&spec.child_order, i)?;
-        let from = (idx * spec.child_size) as usize;
+        let from = (idx * spec.child_size.inner()) as usize;
 
-        let Some(suffix) = op.suffix.get(from..from + (spec.child_size as usize)) else {
+        let Some(suffix) = op.suffix.get(from..(from + spec.child_size.inner())) else {
             return Ok(false);
         };
 
@@ -263,16 +270,20 @@ fn left_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, Neigh
         return Ok(false);
     }
 
-    let actual_prefix = (op.prefix.len() as i32) - left_branches * spec.child_size;
-    if actual_prefix < 0 {
+    // NOTE: Reference implementation checks `actual_prefix < 0` with signed integers
+    let Some(actual_prefix) = op
+        .prefix
+        .len()
+        .checked_sub(left_branches * spec.child_size.inner())
+    else {
         return Ok(false);
-    }
+    };
 
     for i in 0..left_branches {
         let idx = get_position(&spec.child_order, i)?;
-        let from = (actual_prefix + idx * spec.child_size) as usize;
-        if from + (spec.child_size as usize) >= op.suffix.len()
-            || spec.empty_child != &op.prefix[from..from + (spec.child_size as usize)]
+        let from = actual_prefix + idx * spec.child_size.inner();
+        if from + spec.child_size.inner() >= op.suffix.len()
+            || spec.empty_child != &op.prefix[from..from + spec.child_size.inner()]
         {
             return Ok(false);
         }
@@ -283,11 +294,11 @@ fn left_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, Neigh
 
 /// will look at the proof and determine which order it is...
 /// So we can see if it is branch 0, 1, 2 etc... to determine neighbors
-fn order_from_padding(spec: &InnerSpec, inner: &InnerOp) -> Result<i32, NeighborSearchError> {
+fn order_from_padding(spec: &InnerSpec, inner: &InnerOp) -> Result<usize, NeighborSearchError> {
     for branch in 0..spec.child_order.len() {
-        let (minp, maxp, suffix) = get_padding(spec, branch as i32)?;
+        let (minp, maxp, suffix) = get_padding(spec, branch)?;
         if has_padding(inner, minp, maxp, suffix) {
-            return Ok(branch as i32);
+            return Ok(branch);
         }
     }
 
@@ -295,39 +306,47 @@ fn order_from_padding(spec: &InnerSpec, inner: &InnerOp) -> Result<i32, Neighbor
 }
 
 /// checks if an op has the expected padding
-fn has_padding(op: &InnerOp, min_prefix: i32, max_prefix: i32, suffix: i32) -> bool {
-    if (op.prefix.len() as i32) < min_prefix || (op.prefix.len() as i32) > max_prefix {
+fn has_padding(op: &InnerOp, min_prefix: usize, max_prefix: usize, suffix: usize) -> bool {
+    if op.prefix.len() < min_prefix || op.prefix.len() > max_prefix {
         return false;
     }
 
-    (op.suffix.len() as i32) == suffix
+    op.suffix.len() == suffix
 }
 
 /// determines prefix and suffix with the given spec and position in the tree
-fn get_padding(spec: &InnerSpec, branch: i32) -> Result<(i32, i32, i32), NeighborSearchError> {
+fn get_padding(
+    spec: &InnerSpec,
+    branch: usize,
+) -> Result<(usize, usize, usize), NeighborSearchError> {
     let idx = get_position(&spec.child_order, branch)?;
 
-    let prefix = idx * spec.child_size;
-    let min_prefix = prefix + spec.min_prefix_length;
-    let max_prefix = prefix + spec.max_prefix_length;
+    let prefix = idx * spec.child_size.inner();
+    let min_prefix = prefix + spec.min_prefix_length.inner();
+    let max_prefix = prefix + spec.max_prefix_length.inner();
 
-    let suffix = (spec.child_order.len() as i32 - 1 - idx) * spec.child_size;
+    let suffix = (spec.child_order.len() - 1 - idx) * spec.child_size.inner();
 
     Ok((min_prefix, max_prefix, suffix))
 }
 
 /// checks where the branch is in the order and returns
 /// the index of this branch
-fn get_position(order: &[i32], branch: i32) -> Result<i32, NeighborSearchError> {
-    if branch < 0 || branch as usize >= order.len() {
+fn get_position(order: &[PositiveI32AsUsize], branch: usize) -> Result<usize, NeighborSearchError> {
+    // NOTE: Reference implementation checks `branch < 0` as well as it uses signed integers
+    if branch >= order.len() {
         return Err(NeighborSearchError::InvalidBranch {
             branch,
             order_len: order.len(),
         });
     }
 
-    match order.iter().enumerate().find(|(_, &elem)| elem == branch) {
-        Some((i, _)) => Ok(i as i32),
+    match order
+        .iter()
+        .enumerate()
+        .find(|(_, &elem)| elem.inner() == branch)
+    {
+        Some((i, _)) => Ok(i),
         None => Err(NeighborSearchError::BranchNotFoundInOrder {
             branch,
             order: order.to_vec(),
@@ -389,18 +408,12 @@ mod tests {
         value: &[u8],
     ) -> Result<(), VerifyMembershipError> {
         let CommitmentProof::Exist(commitment_proof) =
-            CommitmentProof::try_from_proto_bytes(&proof).unwrap()
+            CommitmentProof::try_from_proto_bytes(proof).unwrap()
         else {
             panic!("unexpected proof type");
         };
 
-        super::verify_membership(
-            &TENDERMINT_PROOF_SPEC,
-            &root,
-            &commitment_proof,
-            &key,
-            &value,
-        )
+        super::verify_membership(&TENDERMINT_PROOF_SPEC, root, &commitment_proof, key, value)
     }
 
     fn ensure_non_existent(
@@ -409,12 +422,12 @@ mod tests {
         key: &[u8],
     ) -> Result<(), VerifyMembershipError> {
         let CommitmentProof::Nonexist(commitment_proof) =
-            CommitmentProof::try_from_proto_bytes(&proof).unwrap()
+            CommitmentProof::try_from_proto_bytes(proof).unwrap()
         else {
             panic!("unexpected proof type");
         };
 
-        verify_non_membership(&TENDERMINT_PROOF_SPEC, &root, &commitment_proof, &key)
+        verify_non_membership(&TENDERMINT_PROOF_SPEC, root, &commitment_proof, key)
     }
 
     #[test]
@@ -454,7 +467,7 @@ mod tests {
         let root = hex!("4e2e78d2da505b7d0b00fda55a4b048eed9a23a7f7fc3d801f20ce4851b442aa");
         let key = hex!("01010101");
 
-        assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()))
+        assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()));
     }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/nonexist_middle.json
@@ -464,7 +477,7 @@ mod tests {
         let root = hex!("4bf28d948566078c5ebfa86db7471c1541eab834f539037075b9f9e3b1c72cfc");
         let key = hex!("544f31483668784a4b667136547a56767649ffff");
 
-        assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()))
+        assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()));
     }
 
     // https://github.com/cosmos/ics23/blob/b1abd8678aab07165efd453c96796a179eb3131f/testdata/tendermint/nonexist_right.json
@@ -474,6 +487,6 @@ mod tests {
         let root = hex!("83952b0b17e64c862628bcc1277e7f8847589af794ed5a855339281d395ec04f");
         let key = hex!("ffffffff");
 
-        assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()))
+        assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()));
     }
 }

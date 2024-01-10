@@ -4,11 +4,9 @@ use unionlabs::cosmos::ics23::{
     hash_op::HashOp, leaf_op::LeafOp, length_op::LengthOp, proof_spec::ProofSpec,
 };
 
-use super::{hash_op, length_op, validate_iavl_ops};
 use crate::{
-    hash_op::HashError,
+    ops::{hash_op, hash_op::HashError, length_op, validate_iavl_ops, ValidateIavlOpsError},
     proof_specs::{self, IAVL_PROOF_SPEC},
-    ValidateIavlOpsError,
 };
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -39,48 +37,50 @@ pub enum ApplyError {
     KeyNeeded,
     #[error("value needed")]
     ValueNeeded,
-    #[error("apply leaf ({0:?})")]
-    LeafData(super::length_op::ApplyError),
+    #[error("apply leaf ({0})")]
+    LeafData(length_op::ApplyError),
     #[error(transparent)]
     Hash(#[from] HashError),
 }
 
 pub fn check_against_spec(leaf_op: &LeafOp, spec: &ProofSpec) -> Result<(), SpecMismatchError> {
-    let lspec = &spec.leaf_spec;
+    let leaf_spec = &spec.leaf_spec;
 
     if proof_specs::compatible(spec, &IAVL_PROOF_SPEC) {
         match validate_iavl_ops(&leaf_op.prefix, 0) {
-            Ok(remaining) => {
-                if remaining > 0 {
-                    return Err(SpecMismatchError::BadPrefix(remaining));
+            Ok(remaining_bytes) => {
+                if remaining_bytes > 0 {
+                    return Err(SpecMismatchError::BadPrefix(remaining_bytes));
                 }
             }
             Err(e) => return Err(SpecMismatchError::ValidateIavlOps(e)),
         }
     }
 
-    if leaf_op.hash != lspec.hash {
-        return Err(SpecMismatchError::UnexpectedHashOp(lspec.hash));
+    if leaf_op.hash != leaf_spec.hash {
+        return Err(SpecMismatchError::UnexpectedHashOp(leaf_spec.hash));
     }
 
-    if leaf_op.prehash_key != lspec.prehash_key {
-        return Err(SpecMismatchError::UnexpectedPrehashKey(lspec.prehash_key));
-    }
-
-    if leaf_op.prehash_value != lspec.prehash_value {
-        return Err(SpecMismatchError::UnexpectedPrehashValue(
-            lspec.prehash_value,
+    if leaf_op.prehash_key != leaf_spec.prehash_key {
+        return Err(SpecMismatchError::UnexpectedPrehashKey(
+            leaf_spec.prehash_key,
         ));
     }
 
-    if leaf_op.length != lspec.length {
-        return Err(SpecMismatchError::UnexpectedLengthOp(lspec.length));
+    if leaf_op.prehash_value != leaf_spec.prehash_value {
+        return Err(SpecMismatchError::UnexpectedPrehashValue(
+            leaf_spec.prehash_value,
+        ));
     }
 
-    if !leaf_op.prefix.starts_with(&lspec.prefix) {
+    if leaf_op.length != leaf_spec.length {
+        return Err(SpecMismatchError::UnexpectedLengthOp(leaf_spec.length));
+    }
+
+    if !leaf_op.prefix.starts_with(&leaf_spec.prefix) {
         return Err(SpecMismatchError::PrefixMismatch {
             full: leaf_op.prefix.to_vec(),
-            prefix: lspec.prefix.to_vec(),
+            prefix: leaf_spec.prefix.to_vec(),
         });
     }
 
@@ -97,13 +97,16 @@ pub fn apply(leaf_op: &LeafOp, key: &[u8], value: &[u8]) -> Result<Vec<u8>, Appl
         return Err(ApplyError::ValueNeeded);
     }
 
-    let pkey = prepare_data(leaf_op, leaf_op.prehash_key, key)?;
+    let p_key = prepare_data(leaf_op, leaf_op.prehash_key, key)?;
+    let p_value = prepare_data(leaf_op, leaf_op.prehash_value, value)?;
 
-    let pvalue = prepare_data(leaf_op, leaf_op.prehash_value, value)?;
-
-    let mut data = leaf_op.prefix.clone().into_owned();
-    data.extend_from_slice(&pkey);
-    data.extend_from_slice(&pvalue);
+    let data = leaf_op
+        .prefix
+        .iter()
+        .chain(p_key.iter())
+        .chain(p_value.iter())
+        .copied()
+        .collect::<Vec<_>>();
 
     Ok(hash_op::do_hash(leaf_op.hash, &data)?)
 }

@@ -132,6 +132,32 @@ pub mod inner_base64 {
     }
 }
 
+pub mod base64_opt {
+    use alloc::{string::String, vec::Vec};
+
+    use base64::prelude::*;
+    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(
+        #[allow(clippy::ptr_arg)] // required by serde
+        bytes: &Option<Vec<u8>>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        bytes
+            .as_ref()
+            .map(|b| BASE64_STANDARD.encode(b))
+            .serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Option<Vec<u8>>, D::Error> {
+        Option::<String>::deserialize(deserializer)?
+            .map(|x| BASE64_STANDARD.decode(x).map_err(de::Error::custom))
+            .transpose()
+    }
+}
+
 // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=8b514073821e558a5ce862f64361492e
 // will optimize this later
 pub mod fixed_size_array {

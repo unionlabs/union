@@ -24,12 +24,16 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExistenceProof {
     #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub key: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub leaf: ::core::option::Option<LeafOp>,
     #[prost(message, repeated, tag = "4")]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub path: ::prost::alloc::vec::Vec<InnerOp>,
 }
 /// NonExistenceProof takes a proof of two neighbors, one left of the desired key,
@@ -96,13 +100,16 @@ pub mod commitment_proof {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LeafOp {
     #[prost(enumeration = "HashOp", tag = "1")]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub hash: i32,
     #[prost(enumeration = "HashOp", tag = "2")]
     #[cfg_attr(feature = "serde", serde(default))]
     pub prehash_key: i32,
     #[prost(enumeration = "HashOp", tag = "3")]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub prehash_value: i32,
     #[prost(enumeration = "LengthOp", tag = "4")]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub length: i32,
     /// prefix is a fixed bytes that may optionally be included at the beginning to differentiate
     /// a leaf node from an inner node.
@@ -111,6 +118,7 @@ pub struct LeafOp {
         all(feature = "json-schema", feature = "std"),
         schemars(with = "String")
     )]
+    #[cfg_attr(feature = "serde", serde(default))]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub prefix: ::prost::alloc::vec::Vec<u8>,
 }
@@ -143,6 +151,7 @@ pub struct InnerOp {
     pub hash: i32,
     #[prost(bytes = "vec", tag = "2")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(default))]
     #[cfg_attr(
         all(feature = "json-schema", feature = "std"),
         schemars(with = "String")
@@ -150,6 +159,7 @@ pub struct InnerOp {
     pub prefix: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "3")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(default))]
     #[cfg_attr(
         all(feature = "json-schema", feature = "std"),
         schemars(with = "String")
@@ -194,6 +204,7 @@ pub struct ProofSpec {
     /// prehash_key specified by LeafOp to compare lexical ordering of keys for
     /// non-existence proofs.
     #[prost(bool, tag = "5")]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub prehash_key_before_comparison: bool,
 }
 /// InnerSpec contains all store-specific structure info to determine if two proofs from a
@@ -328,11 +339,14 @@ pub enum HashOp {
     NoHash = 0,
     Sha256 = 1,
     Sha512 = 2,
-    Keccak = 3,
+    Keccak256 = 3,
     Ripemd160 = 4,
     /// ripemd160(sha256(x))
     Bitcoin = 5,
     Sha512256 = 6,
+    Blake2b512 = 7,
+    Blake2s256 = 8,
+    Blake3 = 9,
 }
 impl HashOp {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -344,10 +358,13 @@ impl HashOp {
             HashOp::NoHash => "NO_HASH",
             HashOp::Sha256 => "SHA256",
             HashOp::Sha512 => "SHA512",
-            HashOp::Keccak => "KECCAK",
+            HashOp::Keccak256 => "KECCAK256",
             HashOp::Ripemd160 => "RIPEMD160",
             HashOp::Bitcoin => "BITCOIN",
             HashOp::Sha512256 => "SHA512_256",
+            HashOp::Blake2b512 => "BLAKE2B_512",
+            HashOp::Blake2s256 => "BLAKE2S_256",
+            HashOp::Blake3 => "BLAKE3",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -356,10 +373,13 @@ impl HashOp {
             "NO_HASH" => Some(Self::NoHash),
             "SHA256" => Some(Self::Sha256),
             "SHA512" => Some(Self::Sha512),
-            "KECCAK" => Some(Self::Keccak),
+            "KECCAK256" => Some(Self::Keccak256),
             "RIPEMD160" => Some(Self::Ripemd160),
             "BITCOIN" => Some(Self::Bitcoin),
             "SHA512_256" => Some(Self::Sha512256),
+            "BLAKE2B_512" => Some(Self::Blake2b512),
+            "BLAKE2S_256" => Some(Self::Blake2s256),
+            "BLAKE3" => Some(Self::Blake3),
             _ => None,
         }
     }

@@ -294,17 +294,17 @@
     "ics23": {
       "flake": false,
       "locked": {
-        "lastModified": 1681373664,
-        "narHash": "sha256-vxlzs69D6Jscal9bSBeuVcX0Xibp69pcclWt5NldLtM=",
+        "lastModified": 1703190832,
+        "narHash": "sha256-B0gPOZe1UOtM5RE6RqBoQ5Z6dQViNzs72zyELX+QAxk=",
         "owner": "cosmos",
         "repo": "ics23",
-        "rev": "74ce807b7be39a7e0afb4e2efb8e28a57965f57b",
+        "rev": "bf89d957b019bb9a2f381edb1f24d06957807690",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
         "repo": "ics23",
-        "rev": "74ce807b7be39a7e0afb4e2efb8e28a57965f57b",
+        "rev": "bf89d957b019bb9a2f381edb1f24d06957807690",
         "type": "github"
       }
     },

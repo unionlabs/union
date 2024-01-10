@@ -45,7 +45,7 @@
       flake = false;
     };
     ics23 = {
-      url = "github:cosmos/ics23?rev=74ce807b7be39a7e0afb4e2efb8e28a57965f57b";
+      url = "github:cosmos/ics23?rev=bf89d957b019bb9a2f381edb1f24d06957807690";
       flake = false;
     };
     cosmosproto = {
@@ -117,6 +117,7 @@
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
+        ./lib/ics23/ics23.nix
         ./hubble/hubble.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./uniond/proto.nix

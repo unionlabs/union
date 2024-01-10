@@ -219,19 +219,21 @@ pub(crate) use hex_string_array_wrapper;
 macro_rules! wrapper_enum {
     (
         #[proto($Proto:ty)]
+        $(#[$meta:meta])*
         // NOTE: Currently there are no ethabi generated enums; use this if/when there are any.
         // $(#[ethabi($EthAbi:ty)])?
         pub enum $Enum:ident {
             $(
-                $(#[doc = $doc:literal])*
+                $(#[$inner_meta:meta])*
                 $Variant:ident = $discriminant:literal,
             )+
         }
     ) => {
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+        $(#[$meta])*
         pub enum $Enum {
             $(
-                $(#[doc = $doc])*
+                $(#[$inner_meta])*
                 $Variant = $discriminant,
             )+
         }
@@ -360,19 +362,27 @@ macro_rules! result_try {
 pub(crate) use result_try;
 
 // Useful in const contexts in place of `.unwrap()`. Uncomment if you need it!
-// macro_rules! result_unwrap {
-//     ($expr:expr) => {{
-//         // assign to a const here so this can't be called in non-const contexts
-//         const _: () = match $expr {
-//             Ok(_) => {}
-//             Err(_) => panic!("called `Result::unwrap()` on an `Err` value"),
-//         };
+#[macro_export]
+macro_rules! result_unwrap {
+    ($expr:expr) => {{
+        // assign to a const here so this can't be called in non-const contexts
+        const _: () = match $expr {
+            Ok(_) => {}
+            Err(_) => panic!("called `Result::unwrap()` on an `Err` value"),
+        };
 
-//         match $expr {
-//             Ok(ok) => ok,
-//             Err(err) => panic!("called `Result::unwrap()` on an `Err` value: {err:?}"),
-//         }
-//     }};
-// }
+        match $expr {
+            Ok(ok) => ok,
+            Err(err) => panic!("called `Result::unwrap()` on an `Err` value"),
+        }
+    }};
+}
 
-// pub(crate) use result_unwrap;
+// Useful in const contexts to promote a value to a const when const promotion fails with "temporary value dropped while borrowed"
+#[macro_export]
+macro_rules! promote {
+    ($ty:ty: $expr:expr) => {{
+        const PROMOTED: $ty = $expr;
+        PROMOTED
+    }};
+}
