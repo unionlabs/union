@@ -27,7 +27,7 @@ use unionlabs::{
 
 use crate::{
     errors::{Error, InvalidHeaderError},
-    zkp_verifier::verify_zkp_v2,
+    zkp_verifier::verify_zkp,
 };
 
 type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
@@ -169,7 +169,7 @@ impl IbcClient for CometblsLightClient {
         )
         .encode_length_delimited_to_vec();
 
-        if !verify_zkp_v2(
+        if !verify_zkp(
             &trusted_validators_hash.0,
             &untrusted_validators_hash.0,
             &signed_vote,
