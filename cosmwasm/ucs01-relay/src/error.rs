@@ -53,6 +53,13 @@ pub enum ContractError {
         protocol_version: String,
     },
 
+    #[error("Channel {channel_id} protocol version {protocol_version} mismatch counterparty protocol version {counterparty_protocol_version}")]
+    ProtocolMismatch {
+        channel_id: String,
+        protocol_version: String,
+        counterparty_protocol_version: String,
+    },
+
     #[error("Only myself is able to trigger this message")]
     Unauthorized,
 }

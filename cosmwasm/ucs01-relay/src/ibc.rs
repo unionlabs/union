@@ -92,6 +92,13 @@ pub(crate) fn enforce_order_and_version(
                 protocol_version: version.to_string(),
             });
         }
+        if version != channel.version {
+            return Err(ContractError::ProtocolMismatch {
+                channel_id: channel.endpoint.channel_id.clone(),
+                protocol_version: channel.version.to_string(),
+                counterparty_protocol_version: version.to_string()
+            });
+        }
     }
     if channel.order != channel_ordering {
         return Err(ContractError::InvalidChannelOrdering {
