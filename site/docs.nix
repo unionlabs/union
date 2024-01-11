@@ -33,7 +33,7 @@
             runtimeInputs = pkgsDeps;
             text = ''
               ${ensureAtRepositoryRoot}
-              cd docs/
+              cd site/
 
               npm install
               npm run dev

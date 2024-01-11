@@ -5,10 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'docs/**'
+      - 'site/**'
   pull_request:
     paths:
-      - 'docs/**'
+      - 'site/**'
   workflow_dispatch:
 
 concurrency:

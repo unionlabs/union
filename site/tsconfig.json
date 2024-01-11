@@ -1,17 +1,32 @@
 {
-  "extends": "./.svelte-kit/tsconfig.json",
+  "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
+    "verbatimModuleSyntax": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "sourceMap": true,
-    "strict": true
-  }
-  // Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
-  //
-  // If you want to overwrite includes/excludes, make sure to copy over the relevant includes/excludes
-  // from the referenced tsconfig.json - TypeScript does not merge them in
+    "baseUrl": ".",
+    "paths": {
+      "#/*": ["./src/*"]
+    },
+    "plugins": [
+      {
+        "name": "@astrojs/ts-plugin"
+      }
+    ],
+    "types": ["node", "@cloudflare/workers-types", "typed-query-selector/strict"]
+  },
+  "include": ["src/**/*", "public/**/*"],
+  "files": [
+    ".eslintrc.cjs",
+    ".prettierrc.mjs",
+    "astro.config.ts",
+    "tailwind.config.ts",
+    "markdown.config.ts"
+  ],
+  "exclude": ["dist", "node_modules", "_"]
 }

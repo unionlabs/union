@@ -2,7 +2,7 @@
   description =
     "Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security and usage in decentralized finance.";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -113,7 +113,6 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         ./uniond/uniond.nix
-        ./site/site.nix
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
@@ -121,7 +120,7 @@
         ./hubble/hubble.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./uniond/proto.nix
-        ./docs/docs.nix
+        ./site/docs.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./lib/cometbls-groth16-verifier/default.nix
