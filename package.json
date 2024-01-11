@@ -1,7 +1,0 @@
-{
-  "private": true,
-  "name": "union",
-  "workspaces": [
-    "docs"
-  ]
-}

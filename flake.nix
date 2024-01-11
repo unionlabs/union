@@ -2,7 +2,7 @@
   description =
     "Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security and usage in decentralized finance.";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -113,7 +113,6 @@
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
         ./uniond/uniond.nix
-        ./site/site.nix
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
@@ -121,7 +120,7 @@
         ./hubble/hubble.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./uniond/proto.nix
-        ./docs/docs.nix
+        ./site/docs.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./lib/cometbls-groth16-verifier/default.nix
@@ -363,13 +362,12 @@
               nil
               nixfmt
               nix-tree
-              nodejs
+              nodejs_20
               openssl
               pkg-config
               protobuf
               self'.packages.tdc
               solc
-              yarn
               yq
               nodePackages.graphqurl
               nodePackages.svelte-language-server
@@ -393,23 +391,24 @@
             '';
           };
 
+
           treefmt =
-            let
-              prettier-solidity = pkgs.buildNpmPackage {
-                name = "prettier-plugin-solidity";
-                version = "1.1.3";
-                nativeBuildInputs = [ pkgs.pkg-config pkgs.python3 ];
-                src = pkgs.fetchFromGitHub {
-                  owner = "prettier-solidity";
-                  repo = "prettier-plugin-solidity";
-                  rev = "0f0b31bd1d76626cad4ce576d89088ef23ad87f3";
-                  hash = "sha256-zodOB5hARb7Jrb6d4gqmBKEFKUg0ZNZKbTN7H4vJk2w=";
-                };
-                npmInstallFlags = "--include=dev";
-                npmDepsHash =
-                  "sha256-Hzc4j9icNxTJNNaZ3PrmLKcUVR26nu4KqLireP4WmZM=";
-              };
-            in
+            # let
+            #   prettier-solidity = pkgs.buildNpmPackage {
+            #     name = "prettier-plugin-solidity";
+            #     version = "1.1.3";
+            #     nativeBuildInputs = [ pkgs.pkg-config pkgs.python3 ];
+            #     src = pkgs.fetchFromGitHub {
+            #       owner = "prettier-solidity";
+            #       repo = "prettier-plugin-solidity";
+            #       rev = "0f0b31bd1d76626cad4ce576d89088ef23ad87f3";
+            #       hash = "sha256-zodOB5hARb7Jrb6d4gqmBKEFKUg0ZNZKbTN7H4vJk2w=";
+            #     };
+            #     npmInstallFlags = "--include=dev";
+            #     npmDepsHash =
+            #       "sha256-Hzc4j9icNxTJNNaZ3PrmLKcUVR26nu4KqLireP4WmZM=";
+            #   };
+            # in
             {
               projectRootFile = "flake.nix";
               programs.nixpkgs-fmt.enable = true;
@@ -429,7 +428,7 @@
               programs.prettier.enable = true;
               settings.formatter.prettier = {
                 # TODO: Use settings.pluginSearchDirs
-                options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
+                # options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
                 includes = [
                   "*.css"
                   "*.html"
@@ -446,7 +445,6 @@
                   "*.d.ts"
                   "*.yaml"
                   "*.yml"
-                  "*.sol"
                 ];
               };
             };

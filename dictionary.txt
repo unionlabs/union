@@ -26,6 +26,7 @@ Devconnect
 Disket
 Feegrant
 Feiock
+Frontmatter
 GOARCH
 GOPATH
 GOPRIVATE
@@ -54,6 +55,7 @@ Merkle
 Mgoogle
 Mimc
 Misbehaviour
+Monaspace
 NIXBUILDNET
 Neue
 Nonexist
@@ -128,6 +130,8 @@ appparams
 arethetypeswrong
 arion
 arkworks
+astro
+astrojs
 attrsets
 attw
 authcmd
@@ -275,6 +279,7 @@ etherbase
 evidencekeeper
 evidencetypes
 extldflags
+extralight
 fastnode
 feegrant
 feegrantkeeper
@@ -286,6 +291,7 @@ fksmg
 floorlog
 fmtlib
 foldl
+fontsource
 frunk
 fubar
 fucynrfkrt
@@ -396,6 +402,7 @@ katexremark
 keccak
 keepertest
 keybase
+keyframes
 keypair
 keypairs
 kwallet
@@ -430,6 +437,7 @@ mapstructure
 maxdome
 maxp
 maxpeers
+mdast
 mdsvex
 merkle
 metadatas
@@ -472,6 +480,8 @@ nodiscover
 noexecstack
 nolint
 nonexist
+noopener
+noreferrer
 notrunc
 numtide
 omit
@@ -512,6 +522,7 @@ pname
 poisonphang
 polkachu
 polkadot
+postcss
 postgrespassword
 posthandler
 precommit
@@ -562,6 +573,7 @@ rehype
 repr
 reqwest
 restaking
+rgba
 ripemd
 rlib
 roadmap
@@ -601,7 +613,9 @@ snapshottypes
 solomachine
 spents
 splitn
+spotlightjs
 sqlx
+squoosh
 srcs
 sslmode
 stakeflow
@@ -677,6 +691,7 @@ treefmt
 treeshake
 trustlessly
 tryopen
+tsconfigs
 tsdb
 tsdbadmin
 tsup
@@ -723,6 +738,7 @@ upgradability
 upgradeclient
 upgradekeeper
 upgradetypes
+urql
 ursi
 utilised
 utilising

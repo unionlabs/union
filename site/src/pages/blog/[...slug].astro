@@ -1,0 +1,78 @@
+---
+import Layout from '#/layouts/layout.astro'
+import { getCollection } from 'astro:content'
+
+export async function getStaticPaths() {
+  const blogEntries = await getCollection('blog')
+  return blogEntries.map(entry => ({
+    params: { slug: entry.slug },
+    props: { entry }
+  }))
+}
+
+const { entry } = Astro.props
+const { Content, headings } = await entry.render()
+---
+
+<Layout>
+  <main
+    class='blog-post-container sm:text-xl px-4 sm:mt-0 mt-2 pb-24 justify-center max-w-3xl self-center'
+  >
+    <p class='text-3xl sm:text-5xl font-extrabold my-0'>
+      {entry.data.title}
+    </p>
+
+    <div class='font-argon mt-3 sm:text-lg uppercase tracking-widest'>
+      <time datetime={entry.data.date.toISOString()}>
+        {
+          entry.data.date.toLocaleDateString('fr-CA', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric'
+          })
+        }
+      </time>
+      <a
+        class='text-[rgb(255,135,195)] font-normal'
+        href={`https://x.com/${entry.data.author}`}
+        target='_blank'
+        rel='noopener noreferrer'
+      >
+        @{entry.data.author}
+      </a>
+    </div>
+
+    <ul class="list-['#']">
+      {
+        headings.map(heading => (
+          <li>
+            <a
+              class='text-[rgb(255,135,195)] font-normal ml-2'
+              href={`#${heading.slug}`}
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <Content />
+  </main>
+</Layout>
+
+<style>
+  h2 {
+    margin-bottom: 0;
+    margin-top: 1rem;
+    font-size: 5rem;
+    line-height: 2rem;
+    font-weight: 700;
+
+    @media (min-width: 640px) {
+      margin-top: 2rem;
+      font-size: 1.875rem;
+      line-height: 2.25rem;
+    }
+  }
+</style>

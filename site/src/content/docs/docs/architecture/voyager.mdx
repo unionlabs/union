@@ -1,0 +1,13 @@
+---
+title: "Voyager"
+---
+
+IBC relays on off-chain actors transferring packets and proofs between chains. Voyager is our in-house relayer, allowing us to support new networks without waiting for up-stream support.
+
+## Architecture
+
+We have opted for an event driven architecture, where the application uses an internal memory queue for observed events and I/O.
+
+![voyager mermaid](../../../../assets/voyager.svg)
+
+Voyager integrates over [gRPC](https://grpc.io/) with Galois to offload computation to dedicated hardware, with pending support for proving markets.

@@ -1,11 +1,24 @@
-.DS_Store
-node_modules
-/build
-/.svelte-kit
-/package
+# build output
+dist/
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
 .env
-.env.*
-!.env.example
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
+.env.production
+
+# macOS-specific files
+.DS_Store
 .vercel
+''
+.wrangler

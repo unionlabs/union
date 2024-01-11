@@ -1,0 +1,108 @@
+---
+import '@fontsource/inter/500.css'
+import '@fontsource/inter/600.css'
+import '@fontsource/inter/700.css'
+import '@fontsource/inter/800.css'
+import '@fontsource/inter/900.css'
+import '@fontsource/ibm-plex-mono'
+import '@fontsource/jetbrains-mono'
+import '#/styles/index.css'
+import '#/styles/tailwind.css'
+import XLogo from '#/assets/x.svg'
+---
+
+<html lang='en'>
+  <head>
+    <meta charset='UTF8' />
+    <meta
+      name='viewport'
+      content='width=device-width, initial-scale=1.0'
+    />
+    <title>Union</title>
+  </head>
+  <body
+    class='font-sans flex flex-col min-h-screen grid-effect-bg flex-1 gap-8 shadow-effect-bg px-4 pb-12'
+  >
+    <header class='flex justify-around mt-22'>
+      <div class='max-w-7xl flex flex-1 items-center md:px-4 gap-4 -mt-5'>
+        <a
+          class='flex items-center gap-3 decoration-transparent visited:text-white'
+          href='/'
+        >
+          <img
+            class='h-[40px] md:h-[48px]'
+            src='/logo.svg'
+            alt='Union Logo'
+          />
+          <p class='min-[420px]:block font-extrabold text-5xl'>Union</p>
+        </a>
+        <nav class='flex flex-1 justify-end'>
+          <ul class='flex gap-4 text-xl md:text-2xl font-extrabold list-none align-middle my-auto'>
+            <li class='my-auto'>
+              <a href='/blog'>Blog</a>
+            </li>
+            <li class='my-auto'>
+              <a href='/docs'>Docs</a>
+            </li>
+            <li class='my-auto mt-1'>
+              <a
+                href='https://x.com/union_build'
+                rel='noopener noreferrer'
+                target='_blank'
+              >
+                <span class='sr-only'>X</span>
+                <img
+                  src={XLogo.src}
+                  alt='x.com logo'
+                  class='w-6 h-6'
+                />
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <slot />
+    <footer
+      class='flex items-center p-4 gap-4 justify-center text-lg font-extrabold text-gray-200 fixed bottom-0 mx-auto w-full'
+    >
+      <p>&copy; Union.fi Labs, Inc.</p>
+    </footer>
+  </body>
+</html>
+
+<style>
+  *::-webkit-scrollbar {
+    height: 0.3rem;
+    width: 0rem;
+  }
+
+  :global(body) {
+    background-color: theme(colors.black);
+    color: #ffffff;
+  }
+
+  :global(a),
+  :global(a:visited) {
+    color: white;
+    text-decoration: none;
+  }
+
+  .grid-effect-bg {
+    --grid-size: 4rem;
+    @media (min-width: 1024px) {
+      --grid-size: 6rem;
+    }
+    --grid-line-color: rgba(20, 20, 20, 1);
+
+    background: black;
+    background-image: radial-gradient(rgba(255, 135, 195, 0.02), rgba(0, 0, 0, 1)),
+      linear-gradient(var(--grid-line-color) 0.1em, transparent 0.1em),
+      linear-gradient(90deg, var(--grid-line-color) 0.1em, transparent 0.1em);
+    background-position: center center;
+    background-size:
+      cover,
+      var(--grid-size) var(--grid-size),
+      var(--grid-size) var(--grid-size);
+  }
+</style>
