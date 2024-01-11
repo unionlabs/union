@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "../../proto/ibc/core/connection/v1/connection.sol";
 import "../../proto/ibc/core/channel/v1/channel.sol";

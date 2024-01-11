@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 import "../../../../../ProtoBufRuntime.sol";
 import "../../../../../GoogleProtobufAny.sol";
 import "../../../../../tendermint/types/types.sol";

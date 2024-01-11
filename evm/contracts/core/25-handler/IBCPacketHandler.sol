@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/utils/Context.sol";
 import "../25-handler/IBCMsgs.sol";
@@ -50,7 +50,7 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
-    ) external {
+    ) external virtual {
         require(
             authenticateCapability(
                 channelCapabilityPath(sourcePort, sourceChannel)

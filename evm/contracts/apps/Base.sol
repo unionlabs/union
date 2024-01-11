@@ -26,7 +26,7 @@ abstract contract IBCAppBase is Context, IIBCModule {
     function _checkIBC() internal view virtual {
         require(
             ibcAddress() == _msgSender(),
-            "_checkIBC: caller is not the IBC contract"
+            "IBCAppBase: caller is not the IBC contract"
         );
     }
 
@@ -125,6 +125,11 @@ abstract contract IBCAppBase is Context, IIBCModule {
     function onAcknowledgementPacket(
         IbcCoreChannelV1Packet.Data calldata packet,
         bytes calldata acknowledgement,
+        address relayer
+    ) external virtual override onlyIBC {}
+
+    function onTimeoutPacket(
+        IbcCoreChannelV1Packet.Data calldata packet,
         address relayer
     ) external virtual override onlyIBC {}
 }

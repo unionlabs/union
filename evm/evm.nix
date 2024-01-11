@@ -80,9 +80,9 @@
         hash = "sha256-9D9Mxuk/5bzX3tZjRAnWk7LP/GMOe0NRsrMuvOfKy78=";
       };
       foundryEnv = {
-        FOUNDRY_OPTIMIZER = "true";
+        FOUNDRY_OPTIMIZER = "false";
         FOUNDRY_VIA_IR = "true";
-        FOUNDRY_OPTIMIZER_RUNS = "10000";
+        FOUNDRY_OPTIMIZER_RUNS = "0";
         FOUNDRY_SRC = "${evmSources}/contracts";
         FOUNDRY_TEST = "${evmSources}/tests/src";
         FOUNDRY_LIBS = ''["${libraries}"]'';
@@ -313,12 +313,12 @@
         };
 
         evm-coverage =
-          pkgs.runCommand "evm-coverage.log"
+          pkgs.runCommand "evm-coverage"
             {
               buildInputs = [ wrappedForge pkgs.lcov ];
             } ''
             forge coverage --ir-minimum --report lcov && \
-            genhtml lcov.info -o $out --branch-coverag
+            genhtml lcov.info -o $out --branch-coverag && mv lcov.info $out
           '';
 
         forge = wrappedForge;

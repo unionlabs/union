@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -31,6 +31,42 @@ struct RelayPacket {
 library RelayLib {
     using LibString for *;
 
+    IbcCoreChannelV1GlobalEnums.Order public constant ORDER =
+        IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED;
+    string public constant VERSION = "ucs01-0";
+    bytes1 public constant ACK_SUCCESS = 0x01;
+    bytes1 public constant ACK_FAILURE = 0x00;
+    uint256 public constant ACK_LENGTH = 1;
+
+    event DenomCreated(string denom, address token);
+    event Received(
+        string sender,
+        address receiver,
+        string denom,
+        address token,
+        uint256 amount
+    );
+    event Sent(
+        address sender,
+        string receiver,
+        string denom,
+        address token,
+        uint256 amount
+    );
+    event Timeout(
+        address sender,
+        string receiver,
+        string denom,
+        address token,
+        uint256 amount
+    );
+
+    function isValidVersion(
+        string memory version
+    ) internal pure returns (bool) {
+        return version.eq(VERSION);
+    }
+
     function isRemote(
         string memory portId,
         string memory channelId,
@@ -57,10 +93,10 @@ library RelayLib {
             string(abi.encodePacked(makeDenomPrefix(portId, channelId), denom));
     }
 
-    // It expect 0x.. prefix
     function hexToAddress(
         string memory _a
     ) internal pure returns (address _parsedAddress) {
+        require(bytes(_a).length == 42, "ucs01-relay: invalid hex address");
         bytes memory tmp = bytes(_a);
         uint160 iaddr = 0;
         uint160 b1;
@@ -89,9 +125,7 @@ library RelayLib {
     }
 
     function bytesToAddress(bytes memory b) internal pure returns (address) {
-        if (b.length != 20) {
-            revert("Invalid address.");
-        }
+        require(b.length == 20, "ucs01-relay: invalid bytes address");
         return address(uint160(bytes20(b)));
     }
 }
@@ -122,10 +156,6 @@ contract UCS01Relay is IBCAppBase {
     using strings for *;
     using SafeMath for uint256;
 
-    bytes1 constant ACK_SUCCESS = 0x01;
-    bytes1 constant ACK_FAILURE = 0x00;
-    uint256 constant ACK_LENGTH = 1;
-
     IBCHandler private immutable ibcHandler;
 
     mapping(string => address) public denomToAddress;
@@ -135,22 +165,6 @@ contract UCS01Relay is IBCAppBase {
     mapping(string => mapping(string => mapping(address => uint256)))
         public outstanding;
 
-    event DenomCreated(string denom, address token);
-    event Received(
-        string sender,
-        address receiver,
-        string denom,
-        address token,
-        uint256 amount
-    );
-    event Sent(
-        address sender,
-        string receiver,
-        string denom,
-        address token,
-        uint256 amount
-    );
-
     constructor(IBCHandler _ibcHandler) {
         ibcHandler = _ibcHandler;
     }
@@ -159,31 +173,56 @@ contract UCS01Relay is IBCAppBase {
         return address(ibcHandler);
     }
 
+    function getDenomAddress(
+        string memory denom
+    ) public view returns (address) {
+        return denomToAddress[denom];
+    }
+
+    function getOutstanding(
+        string memory sourcePort,
+        string memory sourceChannel,
+        address token
+    ) public view returns (uint256) {
+        require(
+            token != address(0),
+            "ucs01-relay: getOutstanding: address is zero"
+        );
+        return outstanding[sourcePort][sourceChannel][token];
+    }
+
+    function getCounterpartyEndpoint(
+        string memory sourcePort,
+        string memory sourceChannel
+    ) public view returns (IbcCoreChannelV1Counterparty.Data memory) {
+        return counterpartyEndpoints[sourcePort][sourceChannel];
+    }
+
     function increaseOutstanding(
-        string memory portId,
-        string memory channelId,
+        string memory sourcePort,
+        string memory sourceChannel,
         address token,
         uint256 amount
     ) internal {
-        outstanding[portId][channelId][token] = outstanding[portId][channelId][
-            token
-        ].add(amount);
+        outstanding[sourcePort][sourceChannel][token] = outstanding[sourcePort][
+            sourceChannel
+        ][token].add(amount);
     }
 
     function decreaseOutstanding(
-        string memory portId,
-        string memory channelId,
+        string memory sourcePort,
+        string memory sourceChannel,
         address token,
         uint256 amount
     ) internal {
-        outstanding[portId][channelId][token] = outstanding[portId][channelId][
-            token
-        ].sub(amount);
+        outstanding[sourcePort][sourceChannel][token] = outstanding[sourcePort][
+            sourceChannel
+        ][token].sub(amount);
     }
 
     function sendToken(
-        string calldata portId,
-        string calldata channelId,
+        string calldata sourcePort,
+        string calldata sourceChannel,
         string memory counterpartyPortId,
         string memory counterpartyChannelId,
         LocalToken calldata localToken
@@ -208,8 +247,8 @@ contract UCS01Relay is IBCAppBase {
             );
         } else {
             increaseOutstanding(
-                portId,
-                channelId,
+                sourcePort,
+                sourceChannel,
                 localToken.denom,
                 localToken.amount
             );
@@ -218,15 +257,17 @@ contract UCS01Relay is IBCAppBase {
     }
 
     function send(
-        string calldata portId,
-        string calldata channelId,
+        string calldata sourcePort,
+        string calldata sourceChannel,
         bytes calldata receiver,
         LocalToken[] calldata tokens,
         uint64 counterpartyTimeoutRevisionNumber,
         uint64 counterpartyTimeoutRevisionHeight
     ) public {
         IbcCoreChannelV1Counterparty.Data
-            memory counterparty = counterpartyEndpoints[portId][channelId];
+            memory counterparty = counterpartyEndpoints[sourcePort][
+                sourceChannel
+            ];
         Token[] memory normalizedTokens = new Token[](tokens.length);
         // For each token, we transfer them locally then:
         // - if the token is locally native, keep it escrowed
@@ -234,15 +275,15 @@ contract UCS01Relay is IBCAppBase {
         for (uint256 i = 0; i < tokens.length; i++) {
             LocalToken calldata localToken = tokens[i];
             string memory addressDenom = sendToken(
-                portId,
-                channelId,
+                sourcePort,
+                sourceChannel,
                 counterparty.port_id,
                 counterparty.channel_id,
                 localToken
             );
             normalizedTokens[i].denom = addressDenom;
             normalizedTokens[i].amount = uint256(localToken.amount);
-            emit Sent(
+            emit RelayLib.Sent(
                 msg.sender,
                 receiver.toHexString(),
                 addressDenom,
@@ -262,8 +303,8 @@ contract UCS01Relay is IBCAppBase {
                 revision_height: counterpartyTimeoutRevisionHeight
             });
         ibcHandler.sendPacket(
-            portId,
-            channelId,
+            sourcePort,
+            sourceChannel,
             timeoutHeight,
             0,
             packet.encode()
@@ -275,15 +316,16 @@ contract UCS01Relay is IBCAppBase {
         string memory channelId,
         RelayPacket memory packet
     ) internal {
+        string memory receiver = packet.receiver.toHexString();
         // We're going to refund, the receiver will be the sender.
-        address receiver = RelayLib.bytesToAddress(packet.sender);
+        address userToRefund = RelayLib.bytesToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
             // Either we tried to send back a remote native token
             // which we burnt, or a locally native token that we escrowed.
             address denomAddress = denomToAddress[token.denom];
             if (denomAddress != address(0)) {
-                IERC20Denom(denomAddress).mint(receiver, token.amount);
+                IERC20Denom(denomAddress).mint(userToRefund, token.amount);
             } else {
                 // It must be in the form 0x...
                 denomAddress = RelayLib.hexToAddress(token.denom);
@@ -293,22 +335,26 @@ contract UCS01Relay is IBCAppBase {
                     denomAddress,
                     token.amount
                 );
-                IERC20(denomAddress).transfer(receiver, token.amount);
+                IERC20(denomAddress).transfer(userToRefund, token.amount);
             }
+            emit RelayLib.Timeout(
+                userToRefund,
+                receiver,
+                token.denom,
+                denomAddress,
+                token.amount
+            );
         }
     }
-
-    function tokensLanded(
-        string memory portId,
-        string memory channelId,
-        RelayPacket memory packet
-    ) internal {}
 
     function onRecvPacketProcessing(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address relayer
     ) public {
-        require(msg.sender == address(this));
+        require(
+            msg.sender == address(this),
+            "ucs01-relay: sender must be self"
+        );
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = RelayLib.makeDenomPrefix(
             ibcPacket.destination_port,
@@ -346,11 +392,11 @@ contract UCS01Relay is IBCAppBase {
                     denomAddress = address(new ERC20Denom(denom));
                     denomToAddress[denom] = denomAddress;
                     addressToDenom[denomAddress] = denom;
-                    emit DenomCreated(denom, denomAddress);
+                    emit RelayLib.DenomCreated(denom, denomAddress);
                 }
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
             }
-            emit Received(
+            emit RelayLib.Received(
                 packet.sender.toHexString(),
                 receiver,
                 denom,
@@ -373,9 +419,9 @@ contract UCS01Relay is IBCAppBase {
             )
         );
         if (success) {
-            return abi.encodePacked(ACK_SUCCESS);
+            return abi.encodePacked(RelayLib.ACK_SUCCESS);
         } else {
-            return abi.encodePacked(ACK_FAILURE);
+            return abi.encodePacked(RelayLib.ACK_FAILURE);
         }
     }
 
@@ -385,17 +431,11 @@ contract UCS01Relay is IBCAppBase {
         address _relayer
     ) external virtual override onlyIBC {
         require(
-            acknowledgement.length == ACK_LENGTH,
+            acknowledgement.length == RelayLib.ACK_LENGTH,
             "ucs01-relay: single byte ack"
         );
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
-        if (acknowledgement[0] == ACK_SUCCESS) {
-            tokensLanded(
-                ibcPacket.source_port,
-                ibcPacket.source_channel,
-                packet
-            );
-        } else {
+        if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
                 ibcPacket.source_port,
                 ibcPacket.source_channel,
@@ -416,25 +456,45 @@ contract UCS01Relay is IBCAppBase {
     }
 
     function onChanOpenInit(
-        IbcCoreChannelV1GlobalEnums.Order _order,
+        IbcCoreChannelV1GlobalEnums.Order order,
         string[] calldata _connectionHops,
         string calldata portId,
         string calldata channelId,
         IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
-        string calldata _version
+        string calldata version
     ) external virtual override onlyIBC {
+        require(
+            RelayLib.isValidVersion(version),
+            "ucs01-relay: invalid version"
+        );
+        require(
+            order == RelayLib.ORDER,
+            "ucs01-relay: invalid channel ordering"
+        );
         counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
     }
 
     function onChanOpenTry(
-        IbcCoreChannelV1GlobalEnums.Order _order,
+        IbcCoreChannelV1GlobalEnums.Order order,
         string[] calldata _connectionHops,
         string calldata portId,
         string calldata channelId,
         IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
-        string calldata _version,
-        string calldata _counterpartyVersion
+        string calldata version,
+        string calldata counterpartyVersion
     ) external virtual override onlyIBC {
+        require(
+            RelayLib.isValidVersion(version),
+            "ucs01-relay: invalid version"
+        );
+        require(
+            RelayLib.isValidVersion(counterpartyVersion),
+            "ucs01-relay: invalid counterparty version"
+        );
+        require(
+            order == RelayLib.ORDER,
+            "ucs01-relay: invalid channel ordering"
+        );
         counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
     }
 
@@ -442,8 +502,12 @@ contract UCS01Relay is IBCAppBase {
         string calldata portId,
         string calldata channelId,
         string calldata counterpartyChannelId,
-        string calldata _counterpartyVersion
+        string calldata counterpartyVersion
     ) external virtual override onlyIBC {
+        require(
+            RelayLib.isValidVersion(counterpartyVersion),
+            "ucs01-relay: invalid counterparty version"
+        );
         // Counterparty channel was empty.
         counterpartyEndpoints[portId][channelId]
             .channel_id = counterpartyChannelId;

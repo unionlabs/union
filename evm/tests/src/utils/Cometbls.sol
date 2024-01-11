@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";

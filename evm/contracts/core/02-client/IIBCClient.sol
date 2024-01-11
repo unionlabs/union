@@ -1,4 +1,4 @@
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "./ILightClient.sol";
 import "../25-handler/IBCMsgs.sol";
