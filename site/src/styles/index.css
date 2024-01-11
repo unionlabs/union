@@ -14,6 +14,10 @@
   font-display: swap;
 }
 
+ul > li > a {
+  font-size: 0.9rem;
+}
+
 :root {
   --sl-text-h1: 3.5rem;
 }
