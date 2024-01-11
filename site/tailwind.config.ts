@@ -92,8 +92,8 @@ const extendTheme = {
   },
   fontFamily: {
     mono: ['"IBM Plex Mono"', ...defaultTheme.fontFamily.mono],
-    sans: ["InterVariable", "Inter", ...defaultTheme.fontFamily.sans],
-    serif: ["InterVariable", "Inter", ...defaultTheme.fontFamily.serif],
+    sans: ["Inter"],
+    serif: ["Inter"],
     argon: ['"Monospace Argon"'],
   },
 };
