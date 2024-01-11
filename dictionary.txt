@@ -12,6 +12,7 @@ Boneh
 CCTP
 CFLAGS
 CMOV
+Celestia
 Chainer
 Coeff
 Cofactor
@@ -24,6 +25,7 @@ DYLD
 Denoms
 Devconnect
 Disket
+Djuric
 Feegrant
 Feiock
 Frontmatter
@@ -41,6 +43,7 @@ IAVL
 IIBC
 Infima
 Interchain
+Jelena
 Jemalloc
 Joye
 KEYPAIR
@@ -77,6 +80,7 @@ Redelegation
 Redelegations
 Repr
 Roboto
+Rushi
 Rustup
 SIGINT
 Secp
@@ -395,6 +399,7 @@ jetbrains
 journalctl
 jsoncpp
 jsonschema
+jumpstart
 jwtsecret
 karel
 katex
@@ -457,6 +462,7 @@ mktemp
 monitonically
 monniker
 moreutils
+multisigs
 multistep
 muno
 muslc
@@ -618,6 +624,7 @@ sqlx
 squoosh
 srcs
 sslmode
+stablecoins
 stakeflow
 stakingkeeper
 stakingtypes
