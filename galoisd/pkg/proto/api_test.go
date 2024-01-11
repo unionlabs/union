@@ -1,9 +1,9 @@
 package proto
 
 import (
+	"crypto/rand"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc"
