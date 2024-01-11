@@ -1,7 +1,7 @@
 { ... }: {
   perSystem = { pkgs, system, dbg, ensureAtRepositoryRoot, ... }:
     let
-      nightlyVersion = "2023-11-02";
+      nightlyVersion = "2024-01-08";
       channel = "nightly-${nightlyVersion}";
 
       # # hopefully if we ever use wasi this issue will be resolved: https://github.com/NixOS/nixpkgs/pull/146274
@@ -72,7 +72,9 @@
           components = with availableComponents; [ rustc cargo rust-std clippy ];
         };
     in
-    {
+    rec {
+      packages.rust-home = _module.args.rust.toolchains.dev;
+
       packages.fetchRustStdCargoLock = pkgs.writeShellApplication {
         name = "fetchRustStdCargoLock";
         runtimeInputs = [ pkgs.xz ];
