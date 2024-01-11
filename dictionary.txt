@@ -402,6 +402,7 @@ katexremark
 keccak
 keepertest
 keybase
+keyframes
 keypair
 keypairs
 kwallet

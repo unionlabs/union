@@ -19,7 +19,7 @@ export async function fetcher<T>(url: string, options?: RequestInit) {
     raise(
       `\n ${response.status} - Failed to fetch from ${url}:\n ${
         response.statusText
-      }\n ${await response.text()}\n`,
+      }\n ${await response.text()}\n`
     );
   }
   const data = (await response.json()) as T;

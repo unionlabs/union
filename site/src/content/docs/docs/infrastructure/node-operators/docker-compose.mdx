@@ -1,5 +1,5 @@
 ---
-title: 'Docker Compose'
+title: "Docker Compose"
 sidebar:
   order: 2
 ---
@@ -15,10 +15,10 @@ Our base `compose.yml` is fairly simple:
 ```yaml
 services:
   node:
-    image: 'ghcr.io/unionlabs/uniond:${UNIOND_VERSION}'
+    image: "ghcr.io/unionlabs/uniond:${UNIOND_VERSION}"
     volumes:
       - ~/.union:/.union
-    network_mode: 'host'
+    network_mode: "host"
     restart: unless-stopped
     command: start --home /.union
 ```

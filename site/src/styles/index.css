@@ -1,14 +1,14 @@
 @font-face {
-  font-family: 'Monospace Argon';
-  src: url('/fonts/MonaspaceArgon-Regular.woff') format('woff');
+  font-family: "Monospace Argon";
+  src: url("/fonts/MonaspaceArgon-Regular.woff") format("woff");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Monospace Argon';
-  src: url('/fonts/MonaspaceArgon-Bold.woff') format('woff');
+  font-family: "Monospace Argon";
+  src: url("/fonts/MonaspaceArgon-Bold.woff") format("woff");
   font-weight: bold;
   font-style: normal;
   font-display: swap;

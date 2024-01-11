@@ -38,7 +38,7 @@ export async function approveAsset(
     amount,
     spender = UCS01_EVM_ADDRESS,
     simulate = true,
-  }: ApproveAssetParameters,
+  }: ApproveAssetParameters
 ): Promise<Hash> {
   try {
     const writeContractParameters = {
@@ -61,7 +61,7 @@ export async function approveAsset(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : error;
     raise(
-      `[approveAsset] error while approving ${amount} muno to ${spender}: ${errorMessage}`,
+      `[approveAsset] error while approving ${amount} muno to ${spender}: ${errorMessage}`
     );
   }
 }
@@ -76,9 +76,7 @@ export type SendAssetParameters<
     : undefined,
   TTransportConfigType extends
     | TransportConfig["type"]
-    | undefined = TChainId extends "32382"
-    ? TransportConfig["type"]
-    : undefined,
+    | undefined = TChainId extends "32382" ? TransportConfig["type"] : undefined
 > =
   | ({ chainId: "32382" } & SendAssetFromUnionToEthereum<
       TDenom,
@@ -91,10 +89,10 @@ export async function sendAsset<
   TChainId extends ChainId,
   TDenom extends string | undefined,
   TGas extends `${string}${TDenom}` | undefined,
-  TTransportConfigType extends TransportConfig["type"] | undefined,
+  TTransportConfigType extends TransportConfig["type"] | undefined
 >(
   client: UnionClient,
-  args: SendAssetParameters<TChainId, TDenom, TGas, TTransportConfigType>,
+  args: SendAssetParameters<TChainId, TDenom, TGas, TTransportConfigType>
 ) {
   if (!chainIds.includes(args.chainId))
     throw new Error(`Invalid chainId: ${args.chainId}`);
@@ -133,7 +131,7 @@ async function sendAssetFromEthereumToUnion(
     portId = chain.ethereum.sepolia.portId,
     channelId = chain.ethereum.sepolia.channelId,
     simulate = true,
-  }: SendAssetFromEthereumToUnion,
+  }: SendAssetFromEthereumToUnion
 ): Promise<Hash> {
   // TODO: make dynamic?
   const counterpartyTimeoutRevisionNumber = 4n;
@@ -168,23 +166,23 @@ async function sendAssetFromEthereumToUnion(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : error;
     raise(
-      `[sendAssetFromEthereumToUnion] error while sending ${amount} muno to ${receiver}: ${errorMessage}`,
+      `[sendAssetFromEthereumToUnion] error while sending ${amount} muno to ${receiver}: ${errorMessage}`
     );
   }
 }
 
 type OfflineSignerType<
-  TransportConfigType extends TransportConfig["type"] | undefined,
+  TransportConfigType extends TransportConfig["type"] | undefined
 > = TransportConfigType extends "custom"
   ? CosmjsOfflineSigner
   : TransportConfigType extends "http"
-    ? DirectSecp256k1HdWallet
-    : never;
+  ? DirectSecp256k1HdWallet
+  : never;
 
 type SendAssetFromUnionToEthereum<
   TDenom extends string | undefined,
   TGas extends `${string}${TDenom}` | undefined,
-  TransportConfigType extends TransportConfig["type"] | undefined,
+  TransportConfigType extends TransportConfig["type"] | undefined
 > = {
   assetId: string;
   receiver: string;
@@ -199,7 +197,7 @@ type SendAssetFromUnionToEthereum<
 async function sendAssetFromUnionToEthereum<
   TDenom extends string | undefined,
   TGas extends `${string}${TDenom}` | undefined,
-  TransportConfigType extends TransportConfig["type"] | undefined,
+  TransportConfigType extends TransportConfig["type"] | undefined
 >(
   _client: UnionClient,
   {
@@ -211,7 +209,7 @@ async function sendAssetFromUnionToEthereum<
     gasPrice,
     rpcUrl = UNION_RPC_URL,
     memo = "random more than four characters I'm transferring.",
-  }: SendAssetFromUnionToEthereum<TDenom, TGas, TransportConfigType>,
+  }: SendAssetFromUnionToEthereum<TDenom, TGas, TransportConfigType>
 ): Promise<ExecuteResult> {
   const tendermintClient = await Tendermint37Client.connect(rpcUrl);
 
@@ -220,7 +218,7 @@ async function sendAssetFromUnionToEthereum<
     signer,
     {
       gasPrice: GasPrice.fromString(gasPrice ?? `0.001${denom}`),
-    },
+    }
   );
 
   const [account] = await signer.getAccounts();
@@ -239,7 +237,7 @@ async function sendAssetFromUnionToEthereum<
     },
     "auto",
     undefined,
-    [{ denom: chain.union.testnet.token.denom, amount }],
+    [{ denom: chain.union.testnet.token.denom, amount }]
   );
 
   return result;
