@@ -2,11 +2,10 @@ package cmd
 
 import (
 	"context"
-	"encoding/hex"
+	"crypto/rand"
 	"fmt"
 	provergrpc "galois/grpc/api/v1"
 	"math/big"
-	"math/rand"
 	"strconv"
 
 	"cosmossdk.io/math"
@@ -37,18 +36,24 @@ func ExampleProveCmd() *cobra.Command {
 				if err != nil {
 					return &types.SimpleValidator{}, err
 				}
+				power, err := rand.Int(rand.Reader, big.NewInt(9223372036854775807/8))
+				if err != nil {
+					return &types.SimpleValidator{}, err
+				}
 				return &types.SimpleValidator{
 					PubKey:      &protoPK,
-					VotingPower: sdk.TokensToConsensusPower(math.NewInt(rand.Int63n(9223372036854775807/8)), sdk.DefaultPowerReduction),
+					VotingPower: sdk.TokensToConsensusPower(math.NewInt(power.Int64()), sdk.DefaultPowerReduction),
 				}, nil
 			}
 
-			blockHash, err := hex.DecodeString("7022627E60ED78120D2FE8DC7ACDB58A2321B0304F8912D2DFB86CE038E23CA8")
+			blockHash := make([]byte, 32)
+			_, err = rand.Read(blockHash)
 			if err != nil {
 				return err
 			}
 
-			partSetHeaderHash, err := hex.DecodeString("41B8793236EE0980E2EAF1A2FAD268C4A3D8979A0C432F06E284EEC5E74DD69C")
+			partSetHeaderHash := make([]byte, 32)
+			_, err = rand.Read(partSetHeaderHash)
 			if err != nil {
 				return err
 			}
@@ -93,11 +98,15 @@ func ExampleProveCmd() *cobra.Command {
 				if votingPower >= int(totalPower)/3*2 {
 					break
 				}
-				index := rand.Int31n(int32(nbOfValidators))
-				if bitmap.Bit(int(index)) == 0 {
-					votingPower += int(validators[index].VotingPower)
-					bitmap.SetBit(&bitmap, int(index), 1)
-					sig, err := privKeys[index].Sign(signedBytes)
+				index, err := rand.Int(rand.Reader, big.NewInt(int64(nbOfValidators)))
+				if err != nil {
+					return err
+				}
+				i := index.Int64()
+				if bitmap.Bit(int(i)) == 0 {
+					votingPower += int(validators[i].VotingPower)
+					bitmap.SetBit(&bitmap, int(i), 1)
+					sig, err := privKeys[i].Sign(signedBytes)
 					if err != nil {
 						return err
 					}

@@ -155,7 +155,7 @@ github.com/cockroachdb/redact/internal/rfmt/fmtsort
 # github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06
 ## explicit; go 1.19
 github.com/cockroachdb/tokenbucket
-# github.com/cometbft/cometbft v0.38.2 => github.com/unionlabs/cometbls v0.0.0-20240108104619-5ed53d0e59b9
+# github.com/cometbft/cometbft v0.38.2 => github.com/unionlabs/cometbls v0.0.0-20240111183309-e159e964fa07
 ## explicit; go 1.21
 github.com/cometbft/cometbft/abci/types
 github.com/cometbft/cometbft/config
@@ -265,19 +265,14 @@ github.com/consensys/gnark/profile
 github.com/consensys/gnark/profile/internal/graph
 github.com/consensys/gnark/profile/internal/measurement
 github.com/consensys/gnark/profile/internal/report
-github.com/consensys/gnark/std/accumulator/merkle
 github.com/consensys/gnark/std/algebra/emulated/fields_bn254
 github.com/consensys/gnark/std/algebra/emulated/sw_bn254
 github.com/consensys/gnark/std/algebra/emulated/sw_emulated
-github.com/consensys/gnark/std/hash
 github.com/consensys/gnark/std/hash/mimc
 github.com/consensys/gnark/std/internal/logderivarg
-github.com/consensys/gnark/std/internal/logderivprecomp
 github.com/consensys/gnark/std/math/bits
-github.com/consensys/gnark/std/math/bitslice
 github.com/consensys/gnark/std/math/emulated
 github.com/consensys/gnark/std/math/emulated/emparams
-github.com/consensys/gnark/std/math/uints
 github.com/consensys/gnark/std/multicommit
 github.com/consensys/gnark/std/rangecheck
 github.com/consensys/gnark/std/utils/algo_utils
@@ -413,7 +408,7 @@ github.com/cosmos/cosmos-db
 github.com/cosmos/cosmos-proto
 github.com/cosmos/cosmos-proto/anyutil
 github.com/cosmos/cosmos-proto/runtime
-# github.com/cosmos/cosmos-sdk v0.50.2 => github.com/unionlabs/cosmos-sdk v0.0.0-20240108104904-d7de88f54965
+# github.com/cosmos/cosmos-sdk v0.50.2 => github.com/unionlabs/cosmos-sdk v0.0.0-20240111183419-b58f90f260ce
 ## explicit; go 1.21
 github.com/cosmos/cosmos-sdk/codec
 github.com/cosmos/cosmos-sdk/codec/types
@@ -855,8 +850,8 @@ rsc.io/tmplfunc/internal/parse
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240108104619-5ed53d0e59b9
+# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240111183309-e159e964fa07
 # github.com/consensys/gnark => github.com/consensys/gnark v0.9.1-0.20231013131835-4ebcccd9c0a8
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
-# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240108104904-d7de88f54965
+# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240111183419-b58f90f260ce
 # github.com/cosmos/gogoproto => github.com/cosmos/gogoproto v1.4.11

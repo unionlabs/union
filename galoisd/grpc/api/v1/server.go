@@ -510,6 +510,21 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 					return cs, pk, vk, err
 				}
 
+				log.Printf("VK Alpha X: %v", vk.G1.Alpha.X.String())
+				log.Printf("VK Alpha Y: %v", vk.G1.Alpha.Y.String())
+				log.Printf("VK Beta X0: %v", vk.G2.Beta.X.A0.String())
+				log.Printf("VK Beta X1: %v", vk.G2.Beta.X.A1.String())
+				log.Printf("VK Beta Y0: %v", vk.G2.Beta.Y.A0.String())
+				log.Printf("VK Beta Y1: %v", vk.G2.Beta.Y.A1.String())
+				log.Printf("VK Gamma X0: %v", vk.G2.Gamma.X.A0.String())
+				log.Printf("VK Gamma X1: %v", vk.G2.Gamma.X.A1.String())
+				log.Printf("VK Gamma Y0: %v", vk.G2.Gamma.Y.A0.String())
+				log.Printf("VK Gamma Y1: %v", vk.G2.Gamma.Y.A1.String())
+				log.Printf("VK Delta X0: %v", vk.G2.Delta.X.A0.String())
+				log.Printf("VK Delta X1: %v", vk.G2.Delta.X.A1.String())
+				log.Printf("VK Delta Y0: %v", vk.G2.Delta.Y.A0.String())
+				log.Printf("VK Delta Y1: %v", vk.G2.Delta.Y.A1.String())
+
 				return cs, pk, vk, nil
 			}
 		}

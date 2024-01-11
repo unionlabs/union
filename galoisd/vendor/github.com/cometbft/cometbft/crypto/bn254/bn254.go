@@ -100,7 +100,7 @@ var _ crypto.PubKey = PubKey{}
 
 type PubKey []byte
 
-func(pubKey PubKey) EnsureValid() error {
+func (pubKey PubKey) EnsureValid() error {
 	var public bn254.G1Affine
 	_, err := public.SetBytes(pubKey)
 	if err != nil {
@@ -224,17 +224,11 @@ func HashToField2(msg []byte) (fr.Element, fr.Element) {
 // TODO: link union whitepaper 4.1.1, M
 func HashToG2(msg []byte) bn254.G2Affine {
 	x, y := HashToField2(msg)
-	point := nativeNaiveScalarMul(bn254.MapToCurve2(&bn254.E2{
+	point := bn254.MapToG2(bn254.E2{
 		A0: *new(fp.Element).SetBigInt(x.BigInt(new(big.Int))),
 		A1: *new(fp.Element).SetBigInt(y.BigInt(new(big.Int))),
-	}), &G2Cofactor)
-	// Any of the following case are impossible and should break consensus
-	if !point.IsOnCurve() {
-		panic("Point is not on the curve")
-	}
-	if !point.IsInSubGroup() {
-		panic("Point is not in subgroup")
-	}
+	})
+	// Must not be zero
 	if point.IsInfinity() {
 		panic("Point is zero")
 	}
@@ -283,29 +277,29 @@ func (l MerkleLeaf) Hash() ([]byte, error) {
 	frYBytes := l.ShiftedY.Bytes()
 	mimc := mimc.NewMiMC()
 	_, err := mimc.Write(frXBytes[:])
-	if(err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	_, err = mimc.Write(frYBytes[:])
-	if(err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	var padded [32]byte
 	big.NewInt(int64(l.MsbX)).FillBytes(padded[:])
 	_, err = mimc.Write(padded[:])
-	if(err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	big.NewInt(int64(l.MsbY)).FillBytes(padded[:])
 	_, err = mimc.Write(padded[:])
-	if(err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	var powerBytes big.Int
 	powerBytes.SetUint64(uint64(l.VotingPower))
 	powerBytes.FillBytes(padded[:])
 	_, err = mimc.Write(padded[:])
-	if(err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	return mimc.Sum(nil), nil

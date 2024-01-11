@@ -1079,10 +1079,10 @@ github.com/ugorji/go/codec v1.2.11/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZ
 github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=
 github.com/ulikunitz/xz v0.5.11/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/unionlabs/cometbls v0.0.0-20240108104619-5ed53d0e59b9 h1:geQswI0cfu5sD3wprwn8SkIfnNkAmRoDyuEt7JU7p/4=
-github.com/unionlabs/cometbls v0.0.0-20240108104619-5ed53d0e59b9/go.mod h1:3H1gcLEVOQZbPwdH8gyv4UzwHtEawNgcnytglkCQVOQ=
-github.com/unionlabs/cosmos-sdk v0.0.0-20240108104904-d7de88f54965 h1:pwK3MTnhxialeoEMpU632IjzY8gu53dFoDHya6sY3A8=
-github.com/unionlabs/cosmos-sdk v0.0.0-20240108104904-d7de88f54965/go.mod h1:9QHZ3nex7R4cnZuGd/jmzk5nzsQ+7zxblS5MwshytQw=
+github.com/unionlabs/cometbls v0.0.0-20240111183309-e159e964fa07 h1:y2q9sWscXNgo0w/iDdnRID3Fd2s4Mbdcn4poDwwSfpI=
+github.com/unionlabs/cometbls v0.0.0-20240111183309-e159e964fa07/go.mod h1:3H1gcLEVOQZbPwdH8gyv4UzwHtEawNgcnytglkCQVOQ=
+github.com/unionlabs/cosmos-sdk v0.0.0-20240111183419-b58f90f260ce h1:XsA/6QgQixsGW6CBOFYaK6D/viGcRBXF4THJhhBP2LM=
+github.com/unionlabs/cosmos-sdk v0.0.0-20240111183419-b58f90f260ce/go.mod h1:l6W0x49uOfoq2JVMJGE6OqmYtBcUssRCNXlPXEzp3cY=
 github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578 h1:Owzup0XvshGNHgS1s0xUI/mZM+fPvTT7dLg7P0cT2vQ=
 github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578/go.mod h1:v2Gy7L/4ZRosZ7Ivs+9SfUDr0f5UlG+EM5t7MPHiLuY=
 github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231219091832-0947f2e3d1aa h1:pzXp42whoLAzvNkdJHPnWPzWAN2iDtqAFoN/BksxmAE=
