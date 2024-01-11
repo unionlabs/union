@@ -159,6 +159,10 @@ func (pubKey *PubKey) UnmarshalAmino(bz []byte) error {
 	if len(bz) != PubKeySize {
 		return errorsmod.Wrap(errors.ErrInvalidPubKey, "invalid pubkey size")
 	}
+	var pKey bn254.PubKey = bz
+	if err := pKey.EnsureValid(); err != nil {
+		panic(err)
+	}
 	pubKey.Key = bz
 
 	return nil
@@ -173,9 +177,5 @@ func (pubKey PubKey) MarshalAminoJSON() ([]byte, error) {
 
 // UnmarshalAminoJSON overrides Amino JSON marshalling.
 func (pubKey *PubKey) UnmarshalAminoJSON(bz []byte) error {
-	var pKey bn254.PubKey = pubKey.Bytes()
-	if err := pKey.EnsureValid(); err != nil {
-		return errorsmod.Wrap(err, "invalid compression for PubKeyBn254")
-	}
 	return pubKey.UnmarshalAmino(bz)
 }

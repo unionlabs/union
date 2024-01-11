@@ -223,6 +223,9 @@ github.com/CosmWasm/wasmvm
 github.com/CosmWasm/wasmvm/internal/api
 github.com/CosmWasm/wasmvm/internal/api/testdb
 github.com/CosmWasm/wasmvm/types
+# github.com/DataDog/datadog-go v3.2.0+incompatible
+## explicit
+github.com/DataDog/datadog-go/statsd
 # github.com/DataDog/zstd v1.5.5
 ## explicit; go 1.14
 github.com/DataDog/zstd
@@ -516,7 +519,7 @@ github.com/cosmos/cosmos-db
 github.com/cosmos/cosmos-proto
 github.com/cosmos/cosmos-proto/anyutil
 github.com/cosmos/cosmos-proto/runtime
-# github.com/cosmos/cosmos-sdk v0.50.2 => github.com/unionlabs/cosmos-sdk v0.0.0-20240111183419-b58f90f260ce
+# github.com/cosmos/cosmos-sdk v0.50.2 => github.com/unionlabs/cosmos-sdk v0.0.0-20240111212621-d8e5bd6e5f86
 ## explicit; go 1.21
 github.com/cosmos/cosmos-sdk/baseapp
 github.com/cosmos/cosmos-sdk/baseapp/internal/protocompat
@@ -642,6 +645,7 @@ github.com/cosmos/cosmos-sdk/x/consensus/exported
 github.com/cosmos/cosmos-sdk/x/consensus/keeper
 github.com/cosmos/cosmos-sdk/x/consensus/types
 github.com/cosmos/cosmos-sdk/x/crisis
+github.com/cosmos/cosmos-sdk/x/crisis/client/cli
 github.com/cosmos/cosmos-sdk/x/crisis/exported
 github.com/cosmos/cosmos-sdk/x/crisis/keeper
 github.com/cosmos/cosmos-sdk/x/crisis/migrations/v2
@@ -701,6 +705,7 @@ github.com/cosmos/cosmos-sdk/x/params/types/proposal
 github.com/cosmos/cosmos-sdk/x/simulation
 github.com/cosmos/cosmos-sdk/x/simulation/client/cli
 github.com/cosmos/cosmos-sdk/x/slashing
+github.com/cosmos/cosmos-sdk/x/slashing/client/cli
 github.com/cosmos/cosmos-sdk/x/slashing/exported
 github.com/cosmos/cosmos-sdk/x/slashing/keeper
 github.com/cosmos/cosmos-sdk/x/slashing/migrations/v1
@@ -1103,6 +1108,7 @@ github.com/hashicorp/go-immutable-radix
 # github.com/hashicorp/go-metrics v0.5.2
 ## explicit; go 1.12
 github.com/hashicorp/go-metrics
+github.com/hashicorp/go-metrics/datadog
 github.com/hashicorp/go-metrics/prometheus
 # github.com/hashicorp/go-plugin v1.5.2
 ## explicit; go 1.17
@@ -1749,7 +1755,7 @@ sigs.k8s.io/yaml/goyaml.v2
 # github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240111183309-e159e964fa07
 # github.com/consensys/gnark => github.com/consensys/gnark v0.9.1-0.20231013131835-4ebcccd9c0a8
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
-# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240111183419-b58f90f260ce
+# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240111212621-d8e5bd6e5f86
 # github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231219091832-0947f2e3d1aa
 # github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20231219091832-0947f2e3d1aa
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
