@@ -58,7 +58,6 @@ impl Context {
     pub async fn new(zerg_config: Config, output: String, is_rush: bool) -> Context {
         let writer = OpenOptions::new()
             .create(true)
-            .write(true)
             .append(true)
             .open(output.clone())
             .unwrap();
@@ -297,7 +296,9 @@ impl Context {
                     let send: SendPacketFilter = tx
                         .logs
                         .into_iter()
-                        .find_map(|log| SendPacketFilter::decode_log(&log.into()).ok())
+                        .find_map(|log| {
+                            <SendPacketFilter as EthLogDecode>::decode_log(&log.into()).ok()
+                        })
                         .unwrap();
 
                     let mut evm_txs = self.evm_txs.lock().await;

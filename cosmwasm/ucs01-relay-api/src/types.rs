@@ -444,30 +444,30 @@ mod tests {
     #[test]
     fn denom_origin_parse_local() {
         assert_eq!(
-            DenomOrigin::try_from((
+            DenomOrigin::from((
                 "port-1433/channel-44/token-k",
                 &IbcEndpoint {
                     port_id: "port-1433".into(),
                     channel_id: "channel-44".into(),
                 }
             )),
-            Ok(DenomOrigin::Local { denom: "token-k" })
+            DenomOrigin::Local { denom: "token-k" }
         );
     }
 
     #[test]
     fn denom_origin_parse_remote() {
         assert_eq!(
-            DenomOrigin::try_from((
+            DenomOrigin::from((
                 "blabla/ok/-k",
                 &IbcEndpoint {
                     port_id: "port-1433".into(),
                     channel_id: "channel-44".into(),
                 }
             )),
-            Ok(DenomOrigin::Remote {
+            DenomOrigin::Remote {
                 denom: "blabla/ok/-k"
-            })
+            }
         );
     }
 }
