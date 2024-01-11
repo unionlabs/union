@@ -14,6 +14,12 @@
   font-display: swap;
 }
 
+p > a {
+  color: #f9a8d4 !important;
+  text-decoration: none;
+  border-bottom: 1px solid #f9a8d4;
+}
+
 ul > li > a {
   font-size: 0.9rem;
 }
