@@ -6,7 +6,7 @@
     {
       packages = {
         docs = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-XV9Qj5kt7flySJRfbjTIqLqQp/thBGQzW5+udv80p6g=";
+          npmDepsHash = "sha256-ehQzmf24fbLpB/m3vSvJoJiXL0HUEtCDI2xZGP1MUbU=";
           src = ./.;
           pname = "docs";
           version = "0.0.1";

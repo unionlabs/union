@@ -1,4 +1,4 @@
-name: Deploy Docs
+name: Deploy Site
 
 on:
   push:
