@@ -119,8 +119,10 @@ type API interface {
 	// AssertIsDifferent fails if i1 == i2
 	AssertIsDifferent(i1, i2 Variable)
 
-	// AssertIsBoolean fails if v != 0 ∥ v != 1
+	// AssertIsBoolean fails if v != 0 and v != 1
 	AssertIsBoolean(i1 Variable)
+	// AssertIsCrumb fails if v ∉ {0,1,2,3} (crumb is a 2-bit variable; see https://en.wikipedia.org/wiki/Units_of_information)
+	AssertIsCrumb(i1 Variable)
 
 	// AssertIsLessOrEqual fails if v > bound.
 	//
@@ -153,4 +155,9 @@ type BatchInverter interface {
 	// BatchInvert returns a slice of variables containing the inverse of each element in i1
 	// This is a temporary API, do not use it in your circuit
 	BatchInvert(i1 []Variable) []Variable
+}
+
+type PlonkAPI interface {
+	// EvaluatePlonkExpression returns res = qL.a + qR.b + qM.ab + qC
+	EvaluatePlonkExpression(a, b Variable, qL, qR, qM, qC int) Variable
 }

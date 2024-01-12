@@ -128,6 +128,30 @@ func (builder *builder) AssertIsBoolean(i1 frontend.Variable) {
 
 }
 
+func (builder *builder) AssertIsCrumb(i1 frontend.Variable) {
+	const errorMsg = "AssertIsCrumb: input is not a crumb"
+	if c, ok := builder.constantValue(i1); ok {
+		if i, ok := builder.cs.Uint64(c); ok && i < 4 {
+			return
+		}
+		panic(errorMsg)
+	}
+
+	// i1 (i1-1) (i1-2) (i1-3) = (i1² - 3i1) (i1² - 3i1 + 2)
+	// take X := i1² - 3i1 and we get X (X+2) = 0
+
+	x := builder.MulAcc(builder.Mul(-3, i1), i1, i1).(expr.Term)
+
+	// TODO @Tabaie Ideally this entire function would live in std/math/bits as it is quite specialized;
+	// however using two generic MulAccs and an AssertIsEqual results in three constraints rather than two.
+	builder.addPlonkConstraint(sparseR1C{
+		xa: x.VID,
+		xb: x.VID,
+		qL: builder.cs.FromInterface(2),
+		qM: builder.tOne,
+	})
+}
+
 // AssertIsLessOrEqual fails if  v > bound
 func (builder *builder) AssertIsLessOrEqual(v frontend.Variable, bound frontend.Variable) {
 	cv, vConst := builder.constantValue(v)

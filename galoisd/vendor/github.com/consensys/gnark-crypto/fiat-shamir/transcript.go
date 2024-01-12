@@ -16,6 +16,7 @@ package fiatshamir
 
 import (
 	"errors"
+	"fmt"
 	"hash"
 )
 
@@ -45,17 +46,15 @@ type challenge struct {
 // NewTranscript returns a new transcript.
 // h is the hash function that is used to compute the challenges.
 // challenges are the name of the challenges. The order of the challenges IDs matters.
-func NewTranscript(h hash.Hash, challengesID ...string) Transcript {
-	n := len(challengesID)
-	t := Transcript{
-		challenges: make(map[string]challenge, n),
+func NewTranscript(h hash.Hash, challengesID ...string) *Transcript {
+	challenges := make(map[string]challenge)
+	for i := range challengesID {
+		challenges[challengesID[i]] = challenge{position: i}
+	}
+	t := &Transcript{
+		challenges: challenges,
 		h:          h,
 	}
-
-	for i := 0; i < n; i++ {
-		t.challenges[challengesID[i]] = challenge{position: i}
-	}
-
 	return t
 }
 
@@ -65,19 +64,19 @@ func NewTranscript(h hash.Hash, challengesID ...string) Transcript {
 // binded to other values.
 func (t *Transcript) Bind(challengeID string, bValue []byte) error {
 
-	challenge, ok := t.challenges[challengeID]
+	currentChallenge, ok := t.challenges[challengeID]
 	if !ok {
 		return errChallengeNotFound
 	}
 
-	if challenge.isComputed {
+	if currentChallenge.isComputed {
 		return errChallengeAlreadyComputed
 	}
 
 	bCopy := make([]byte, len(bValue))
 	copy(bCopy, bValue)
-	challenge.bindings = append(challenge.bindings, bCopy)
-	t.challenges[challengeID] = challenge
+	currentChallenge.bindings = append(currentChallenge.bindings, bCopy)
+	t.challenges[challengeID] = currentChallenge
 
 	return nil
 
@@ -103,15 +102,8 @@ func (t *Transcript) ComputeChallenge(challengeID string) ([]byte, error) {
 	t.h.Reset()
 	defer t.h.Reset()
 
-	// write the challenge name, the purpose is to have a domain separator
-	if hashToField, ok := t.h.(interface {
-		WriteString(rawBytes []byte)
-	}); ok {
-		hashToField.WriteString([]byte(challengeID)) // TODO: Replace with a function returning field identifier, whence we can find the correct hash to field function. Better than confusingly embedding hash to field into another hash
-	} else {
-		if _, err := t.h.Write([]byte(challengeID)); err != nil {
-			return nil, err
-		}
+	if _, err := t.h.Write([]byte(challengeID)); err != nil {
+		return nil, fmt.Errorf("write: %w", err)
 	}
 
 	// write the previous challenge if it's not the first challenge

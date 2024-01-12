@@ -33,7 +33,7 @@ func NewCoeffTable() CoeffTable {
 	return st
 }
 
-// CoeffID tries to fetch the entry where b is if it exits, otherwise appends b to
+// CoeffID tries to fetch the entry where b is if it exists, otherwise appends b to
 // the list of Coeffs and returns the corresponding entry
 func (t *CoeffTable) CoeffID(v *big.Int) int {
 

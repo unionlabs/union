@@ -66,6 +66,28 @@ func (z *E12) MulBy014(c0, c1, c4 *E2) *E12 {
 	return z
 }
 
+// MulBy01 multiplication by sparse element (c0, c1, 0, 0, 1)
+func (z *E12) MulBy01(c0, c1 *E2) *E12 {
+
+	var a, b E6
+	var d E2
+
+	a.Set(&z.C0)
+	a.MulBy01(c0, c1)
+
+	b.MulByNonResidue(&z.C1)
+	d.SetOne().Add(c1, &d)
+
+	z.C1.Add(&z.C1, &z.C0)
+	z.C1.MulBy01(c0, &d)
+	z.C1.Sub(&z.C1, &a)
+	z.C1.Sub(&z.C1, &b)
+	z.C0.MulByNonResidue(&b)
+	z.C0.Add(&z.C0, &a)
+
+	return z
+}
+
 // Mul014By014 multiplication of sparse element (c0,c1,0,0,c4,0) by sparse element (d0,d1,0,0,d4,0)
 func Mul014By014(d0, d1, d4, c0, c1, c4 *E2) [5]E2 {
 	var z00, tmp, x0, x1, x4, x04, x01, x14 E2
@@ -87,6 +109,26 @@ func Mul014By014(d0, d1, d4, c0, c1, c4 *E2) [5]E2 {
 		Mul(&x14, &tmp).
 		Sub(&x14, &x1).
 		Sub(&x14, &x4)
+
+	z00.MulByNonResidue(&x4).
+		Add(&z00, &x0)
+
+	return [5]E2{z00, x01, x1, x04, x14}
+}
+
+// Mul01By01 multiplication of sparse element (c0,c1,0,0,1,0) by sparse element (d0,d1,0,0,1,0)
+func Mul01By01(d0, d1, c0, c1 *E2) [5]E2 {
+	var z00, tmp, x0, x1, x4, x04, x01, x14 E2
+	x0.Mul(c0, d0)
+	x1.Mul(c1, d1)
+	x4.SetOne()
+	x04.Add(d0, c0)
+	tmp.Add(c0, c1)
+	x01.Add(d0, d1).
+		Mul(&x01, &tmp).
+		Sub(&x01, &x0).
+		Sub(&x01, &x1)
+	x14.Add(d1, c1)
 
 	z00.MulByNonResidue(&x4).
 		Add(&z00, &x0)

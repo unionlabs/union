@@ -16,7 +16,11 @@
 
 package fft
 
-import "runtime"
+import (
+	"runtime"
+
+	"github.com/consensys/gnark-crypto/ecc/bls24-317/fr"
+)
 
 // Option defines option for altering the behavior of FFT methods.
 // See the descriptions of functions returning instances of this type for
@@ -48,11 +52,49 @@ func WithNbTasks(nbTasks int) Option {
 }
 
 // default options
-func options(opts ...Option) fftConfig {
+func fftOptions(opts ...Option) fftConfig {
 	// apply options
 	opt := fftConfig{
 		coset:   false,
 		nbTasks: runtime.NumCPU(),
+	}
+	for _, option := range opts {
+		option(&opt)
+	}
+	return opt
+}
+
+// DomainOption defines option for altering the definition of the FFT domain
+// See the descriptions of functions returning instances of this type for
+// particular options.
+type DomainOption func(*domainConfig)
+
+type domainConfig struct {
+	shift          *fr.Element
+	withPrecompute bool
+}
+
+// WithShift sets the FrMultiplicativeGen of the domain.
+// Default is generator of the largest 2-adic subgroup.
+func WithShift(shift fr.Element) DomainOption {
+	return func(opt *domainConfig) {
+		opt.shift = new(fr.Element).Set(&shift)
+	}
+}
+
+// WithoutPrecompute disables precomputation of twiddles in the domain.
+// When this option is set, FFTs will be slower, but will use less memory.
+func WithoutPrecompute() DomainOption {
+	return func(opt *domainConfig) {
+		opt.withPrecompute = false
+	}
+}
+
+// default options
+func domainOptions(opts ...DomainOption) domainConfig {
+	// apply options
+	opt := domainConfig{
+		withPrecompute: true,
 	}
 	for _, option := range opts {
 		option(&opt)

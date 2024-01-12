@@ -67,7 +67,7 @@ func setupTranscript(claimsNum int, varsNum int, settings *fiatshamir.Settings) 
 	}
 	if settings.Transcript == nil {
 		transcript := fiatshamir.NewTranscript(settings.Hash, challengeNames...)
-		settings.Transcript = &transcript
+		settings.Transcript = transcript
 	}
 
 	for i := range settings.BaseChallenges {

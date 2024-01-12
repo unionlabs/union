@@ -35,7 +35,7 @@ type MiMC struct {
 	api    frontend.API        // underlying constraint system
 }
 
-// NewMiMC returns a MiMC instance, than can be used in a gnark circuit
+// NewMiMC returns a MiMC instance, that can be used in a gnark circuit
 func NewMiMC(api frontend.API) (MiMC, error) {
 	// TODO @gbotrel use field
 	if constructor, ok := newMimc[utils.FieldToCurve(api.Compiler().Field())]; ok {

@@ -16,9 +16,10 @@ type TestingOption func(*testingConfig) error
 
 type testingConfig struct {
 	profile
-	solverOpts  []solver.Option
-	proverOpts  []backend.ProverOption
-	compileOpts []frontend.CompileOption
+	solverOpts   []solver.Option
+	proverOpts   []backend.ProverOption
+	verifierOpts []backend.VerifierOption
+	compileOpts  []frontend.CompileOption
 
 	validAssignments   []frontend.Circuit
 	invalidAssignments []frontend.Circuit
@@ -163,6 +164,15 @@ func WithSolverOpts(solverOpts ...solver.Option) TestingOption {
 func WithCompileOpts(compileOpts ...frontend.CompileOption) TestingOption {
 	return func(opt *testingConfig) error {
 		opt.compileOpts = compileOpts
+		return nil
+	}
+}
+
+// WithVerifierOpts is a testing option which uses the given verifierOpts when
+// calling backend.Verify method.
+func WithVerifierOpts(verifierOpts ...backend.VerifierOption) TestingOption {
+	return func(tc *testingConfig) error {
+		tc.verifierOpts = append(tc.verifierOpts, verifierOpts...)
 		return nil
 	}
 }

@@ -18,9 +18,10 @@ type Blueprint interface {
 	// NbOutputs return the number of output wires this blueprint creates.
 	NbOutputs(inst Instruction) int
 
-	// WireWalker returns a function that walks the wires appearing in the blueprint.
-	// This is used by the level builder to build a dependency graph between instructions.
-	WireWalker(inst Instruction) func(cb func(wire uint32))
+	// UpdateInstructionTree updates the instruction tree;
+	// since the blue print knows which wires it references, it updates
+	// the instruction tree with the level of the (new) wires.
+	UpdateInstructionTree(inst Instruction, tree InstructionTree) Level
 }
 
 // Solver represents the state of a constraint system solver at runtime. Blueprint can interact
@@ -64,6 +65,14 @@ type BlueprintHint interface {
 	Blueprint
 	CompressHint(h HintMapping, to *[]uint32)
 	DecompressHint(h *HintMapping, instruction Instruction)
+}
+
+// BlueprintStateful indicates that the blueprint can be reset to its initial state.
+type BlueprintStateful interface {
+	BlueprintSolvable
+
+	// Reset is called by the solver between invocation of Solve.
+	Reset()
 }
 
 // Compressible represent an object that knows how to encode itself as a []uint32.

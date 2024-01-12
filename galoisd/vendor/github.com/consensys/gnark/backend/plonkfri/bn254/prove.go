@@ -17,7 +17,6 @@
 package plonkfri
 
 import (
-	"crypto/sha256"
 	"math/big"
 	"math/bits"
 	"runtime"
@@ -76,11 +75,8 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 
 	var proof Proof
 
-	// pick a hash function that will be used to derive the challenges
-	hFunc := sha256.New()
-
 	// 0 - Fiat Shamir
-	fs := fiatshamir.NewTranscript(hFunc, "gamma", "beta", "alpha", "zeta")
+	fs := fiatshamir.NewTranscript(opt.ChallengeHash, "gamma", "beta", "alpha", "zeta")
 
 	// 1 - solve the system
 	_solution, err := spr.Solve(fullWitness, opt.SolverOpts...)
@@ -128,12 +124,12 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 	copy(dataFiatShamir[len(spr.Public)+1][:], proof.LROpp[1].ID)
 	copy(dataFiatShamir[len(spr.Public)+2][:], proof.LROpp[2].ID)
 
-	beta, err := deriveRandomnessFixedSize(&fs, "gamma", dataFiatShamir...)
+	beta, err := deriveRandomnessFixedSize(fs, "gamma", dataFiatShamir...)
 	if err != nil {
 		return nil, err
 	}
 
-	gamma, err := deriveRandomness(&fs, "beta", nil)
+	gamma, err := deriveRandomness(fs, "beta", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +154,7 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 
 	// 5 - compute H
 	// var alpha fr.Element
-	alpha, err := deriveRandomness(&fs, "alpha", proof.Zpp.ID)
+	alpha, err := deriveRandomness(fs, "alpha", proof.Zpp.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +218,7 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 	friSize := 2 * rho * pk.Vk.Size
 	var bFriSize big.Int
 	bFriSize.SetInt64(int64(friSize))
-	frOpeningPosition, err := deriveRandomness(&fs, "zeta", proof.Hpp[0].ID, proof.Hpp[1].ID, proof.Hpp[2].ID)
+	frOpeningPosition, err := deriveRandomness(fs, "zeta", proof.Hpp[0].ID, proof.Hpp[1].ID, proof.Hpp[2].ID)
 	if err != nil {
 		return nil, err
 	}
@@ -432,9 +428,13 @@ func fftBigCosetWOBitReverse(poly []fr.Element, domainBig *fft.Domain) []fr.Elem
 
 	// we copy poly in res and scale by coset here
 	// to avoid FFT scaling on domainBig.Cardinality (res is very sparse)
+	cosetTable, err := domainBig.CosetTable()
+	if err != nil {
+		panic(err)
+	}
 	utils.Parallelize(len(poly), func(start, end int) {
 		for i := start; i < end; i++ {
-			res[i].Mul(&poly[i], &domainBig.CosetTable[i])
+			res[i].Mul(&poly[i], &cosetTable[i])
 		}
 	}, runtime.NumCPU()/2)
 	domainBig.FFT(res, fft.DIF)

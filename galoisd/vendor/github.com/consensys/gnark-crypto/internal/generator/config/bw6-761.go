@@ -13,7 +13,6 @@ var BW6_761 = Curve{
 		GLV:              true,
 		CofactorCleaning: true,
 		CRange:           []int{4, 5, 8, 16},
-		Projective:       true,
 	},
 	G2: Point{
 		CoordType:        "fp.Element",
@@ -22,6 +21,7 @@ var BW6_761 = Curve{
 		GLV:              true,
 		CofactorCleaning: true,
 		CRange:           []int{4, 5, 8, 16},
+		Projective:       true,
 	},
 	// 2-isogeny
 	HashE1: &HashSuiteSswu{

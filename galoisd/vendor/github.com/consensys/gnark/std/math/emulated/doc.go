@@ -86,52 +86,29 @@ then the overflow value f' for the sum is computed as
 
 The complexity of native limb-wise multiplication is k^2. This translates
 directly to the complexity in the number of constraints in the constraint
-system. However, alternatively, when instead computing the limb values
-off-circuit and constructing a system of k linear equations, we can ensure that
-the product was computed correctly.
+system.
 
-Let the factors be
+For multiplication, we would instead use polynomial representation of the elements:
 
 	x = ∑_{i=0}^k x_i 2^{w i}
-
-and
-
 	y = ∑_{i=0}^k y_i 2^{w i}.
 
-For computing the product, we compute off-circuit the limbs
+as
 
-	z_i = ∑_{j, j'>0, j+j'=i, j+j'≤2k-2} x_{j} y_{j'}, // in MultiplicationHint()
+	x(X) = ∑_{i=0}^k x_i X^i
+	y(X) = ∑_{i=0}^k y_i X^i.
 
-and assert in-circuit
+If the multiplication result modulo r is c, then the following holds:
 
-	∑_{i=0}^{2k-2} z_i c^i = (∑_{i=0}^k x_i) (∑_{i=0}^k y_i), ∀ c ∈ {1, ..., 2k-1}.
+	x * y = c + z*r.
 
-Computing the overflow for the multiplication result is slightly more
-complicated. The overflow for
+We can check the correctness of the multiplication by checking the following
+identity at a random point:
 
-	x_{j} y_{j'}
+	x(X) * y(X) = c(X) + z(X) * r(X) + (2^w' - X) e(X),
 
-is
-
-	w+f+f'+1.
-
-Naively, as the limbs of the result are summed over all 0 ≤ i ≤ 2k-2, then the
-overflow of the limbs should be
-
-	w+f+f'+2k-1.
-
-For computing the number of bits and thus in the overflow, we can instead look
-at the maximal possible value. This can be computed by
-
-	(2^{2w+f+f'+2}-1)*(2k-1).
-
-Its bitlength is
-
-	2w+f+f'+1+log_2(2k-1),
-
-which leads to maximal overflow of
-
-	w+f+f'+1+log_2(2k-1).
+where e(X) is a polynomial used for carrying the overflows of the left- and
+right-hand side of the above equation.
 
 # Subtraction
 

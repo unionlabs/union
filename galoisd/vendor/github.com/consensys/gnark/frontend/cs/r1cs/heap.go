@@ -79,7 +79,7 @@ func (h *minHeap) down(i0, n int) bool {
 	return i > i0
 }
 
-// linMeta stores meta data to iterate over a linear expression
+// linMeta stores metadata to iterate over a linear expression
 type linMeta struct {
 	lID int // argument ID to retrieve the position of the list in the argument
 	tID int // termID current iteration position (starts at 0)

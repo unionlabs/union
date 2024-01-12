@@ -7,6 +7,7 @@
           src = ./.;
           vendorHash = null;
           doCheck = false;
+          tags = [ "icicle" ];
           meta = {
             mainProgram = "galoisd";
           };

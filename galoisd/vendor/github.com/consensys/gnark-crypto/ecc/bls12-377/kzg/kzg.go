@@ -49,8 +49,9 @@ type ProvingKey struct {
 
 // VerifyingKey used to verify opening proofs
 type VerifyingKey struct {
-	G2 [2]bls12377.G2Affine // [G₂, [α]G₂ ]
-	G1 bls12377.G1Affine
+	G2    [2]bls12377.G2Affine // [G₂, [α]G₂ ]
+	G1    bls12377.G1Affine
+	Lines [2][2][len(bls12377.LoopCounter) - 1]bls12377.LineEvaluationAff // precomputed pairing lines corresponding to G₂, [α]G₂
 }
 
 // SRS must be computed through MPC and comprises the ProvingKey and the VerifyingKey
@@ -120,12 +121,16 @@ func NewSRS(size uint64, bAlpha *big.Int) (*SRS, error) {
 		srs.Vk.G1 = gen1Aff
 		srs.Vk.G2[0] = gen2Aff
 		srs.Vk.G2[1].ScalarMultiplication(&srs.Vk.G2[0], &bt)
+		srs.Vk.Lines[0] = bls12377.PrecomputeLines(srs.Vk.G2[0])
+		srs.Vk.Lines[1] = bls12377.PrecomputeLines(srs.Vk.G2[1])
 		return &srs, nil
 	}
 	srs.Pk.G1[0] = gen1Aff
 	srs.Vk.G1 = gen1Aff
 	srs.Vk.G2[0] = gen2Aff
 	srs.Vk.G2[1].ScalarMultiplication(&gen2Aff, bAlpha)
+	srs.Vk.Lines[0] = bls12377.PrecomputeLines(srs.Vk.G2[0])
+	srs.Vk.Lines[1] = bls12377.PrecomputeLines(srs.Vk.G2[1])
 
 	alphas := make([]fr.Element, size-1)
 	alphas[0] = alpha
@@ -237,9 +242,9 @@ func Verify(commitment *Digest, proof *OpeningProof, point fr.Element, vk Verify
 	totalG1Aff.FromJacobian(&totalG1)
 
 	// e([f(α)-f(a)+aH(α)]G₁], G₂).e([-H(α)]G₁, [α]G₂) == 1
-	check, err := bls12377.PairingCheck(
+	check, err := bls12377.PairingCheckFixedQ(
 		[]bls12377.G1Affine{totalG1Aff, negH},
-		[]bls12377.G2Affine{vk.G2[0], vk.G2[1]},
+		vk.Lines[:],
 	)
 	if err != nil {
 		return err
@@ -496,9 +501,9 @@ func BatchVerifyMultiPoints(digests []Digest, proofs []OpeningProof, points []fr
 
 	// pairing check
 	// e([∑ᵢλᵢ(fᵢ(α) - fᵢ(pᵢ) + pᵢHᵢ(α))]G₁, G₂).e([-∑ᵢλᵢ[Hᵢ(α)]G₁), [α]G₂)
-	check, err := bls12377.PairingCheck(
+	check, err := bls12377.PairingCheckFixedQ(
 		[]bls12377.G1Affine{foldedDigests, foldedQuotients},
-		[]bls12377.G2Affine{vk.G2[0], vk.G2[1]},
+		vk.Lines[:],
 	)
 	if err != nil {
 		return err

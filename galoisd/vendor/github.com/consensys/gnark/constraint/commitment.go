@@ -1,7 +1,6 @@
 package constraint
 
 import (
-	"github.com/consensys/gnark/constraint/solver"
 	"math/big"
 )
 
@@ -11,14 +10,12 @@ type Groth16Commitment struct {
 	PublicAndCommitmentCommitted []int // PublicAndCommitmentCommitted sorted list of id's of public and commitment committed wires
 	PrivateCommitted             []int // PrivateCommitted sorted list of id's of private/internal committed wires
 	CommitmentIndex              int   // CommitmentIndex the wire index of the commitment
-	HintID                       solver.HintID
 	NbPublicCommitted            int
 }
 
 type PlonkCommitment struct {
 	Committed       []int // sorted list of id's of committed variables in groth16. in plonk, list of indexes of constraints defining committed values
 	CommitmentIndex int   // CommitmentIndex index of the constraint defining the commitment
-	HintID          solver.HintID
 }
 
 type Commitment interface{}

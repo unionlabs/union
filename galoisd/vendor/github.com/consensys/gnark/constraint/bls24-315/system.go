@@ -43,10 +43,14 @@ type system struct {
 	field
 }
 
+// NewR1CS is a constructor for R1CS. It is meant to be use by gnark frontend only,
+// and should not be used by gnark users. See groth16.NewCS(...) instead.
 func NewR1CS(capacity int) *R1CS {
 	return newSystem(capacity, constraint.SystemR1CS)
 }
 
+// NewSparseR1CS is a constructor for SparseR1CS. It is meant to be use by gnark frontend only,
+// and should not be used by gnark users. See plonk.NewCS(...) instead.
 func NewSparseR1CS(capacity int) *SparseR1CS {
 	return newSystem(capacity, constraint.SystemSparseR1CS)
 }
@@ -72,6 +76,13 @@ func (cs *system) Solve(witness witness.Witness, opts ...csolver.Option) (any, e
 	if err != nil {
 		log.Err(err).Send()
 		return nil, err
+	}
+
+	// reset the stateful blueprints
+	for i := range cs.Blueprints {
+		if b, ok := cs.Blueprints[i].(constraint.BlueprintStateful); ok {
+			b.Reset()
+		}
 	}
 
 	// defer log printing once all solver.values are computed

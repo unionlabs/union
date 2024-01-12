@@ -31,6 +31,9 @@ type Element[T FieldParams] struct {
 	// ensure that the limbs are width-constrained. We do not store the
 	// enforcement info in the Element to prevent modifying the witness.
 	internal bool
+
+	isEvaluated bool
+	evaluation  frontend.Variable `gnark:"-"`
 }
 
 // ValueOf returns an Element[T] from a constant value.

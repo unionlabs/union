@@ -28,6 +28,7 @@ import (
 	"github.com/consensys/gnark/std/utils/algo_utils"
 	"hash"
 	"math/big"
+	"sync"
 )
 
 type GkrSolvingData struct {
@@ -164,9 +165,12 @@ func GkrProveHint(hashName string, data *GkrSolvingData) hint.Hint {
 			return b[:]
 		})
 
-		hsh := HashBuilderRegistry[hashName]()
+		hsh, err := GetHashBuilder(hashName)
+		if err != nil {
+			return err
+		}
 
-		proof, err := gkr.Prove(data.circuit, data.assignments, fiatshamir.WithHash(hsh, insBytes...), gkr.WithPool(&data.memoryPool), gkr.WithWorkers(data.workers))
+		proof, err := gkr.Prove(data.circuit, data.assignments, fiatshamir.WithHash(hsh(), insBytes...), gkr.WithPool(&data.memoryPool), gkr.WithWorkers(data.workers))
 		if err != nil {
 			return err
 		}
@@ -193,4 +197,23 @@ func GkrProveHint(hashName string, data *GkrSolvingData) hint.Hint {
 }
 
 // TODO: Move to gnark-crypto
-var HashBuilderRegistry = make(map[string]func() hash.Hash)
+var (
+	hashBuilderRegistry = make(map[string]func() hash.Hash)
+	hasBuilderLock      sync.RWMutex
+)
+
+func RegisterHashBuilder(name string, builder func() hash.Hash) {
+	hasBuilderLock.Lock()
+	defer hasBuilderLock.Unlock()
+	hashBuilderRegistry[name] = builder
+}
+
+func GetHashBuilder(name string) (func() hash.Hash, error) {
+	hasBuilderLock.RLock()
+	defer hasBuilderLock.RUnlock()
+	builder, ok := hashBuilderRegistry[name]
+	if !ok {
+		return nil, fmt.Errorf("hash function not found")
+	}
+	return builder, nil
+}

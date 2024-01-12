@@ -10,6 +10,8 @@
 //	(Eₜ/𝔽p): Y² = X³+4 (M-type twist)
 //	r ∣ #E(Fp) and r ∣ #Eₜ(𝔽p)
 //
+// case t % r % x₀ = 3
+//
 // Extension fields tower:
 //
 //	𝔽p³[u] = 𝔽p/u³+4
@@ -30,8 +32,9 @@
 package bw6761
 
 import (
-	"github.com/consensys/gnark-crypto/ecc/bw6-761/internal/fptower"
 	"math/big"
+
+	"github.com/consensys/gnark-crypto/ecc/bw6-761/internal/fptower"
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bw6-761/fp"
@@ -60,8 +63,8 @@ var g1Infinity G1Jac
 var g2Infinity G2Jac
 
 // optimal Ate loop counters
-var loopCounter0 [190]int8
-var loopCounter1 [190]int8
+var LoopCounter [190]int8
+var LoopCounter1 [190]int8
 
 // Parameters useful for the GLV scalar multiplication. The third roots define the
 // endomorphisms ϕ₁ and ϕ₂ for <G1Affine> and <G2Affine>. lambda is such that <r, ϕ-λ> lies above
@@ -103,11 +106,11 @@ func init() {
 	g2GenAff.FromJacobian(&g2Gen)
 
 	// x₀+1
-	loopCounter0 = [190]int8{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	LoopCounter = [190]int8{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 	// x₀³-x₀²-x₀
 	T, _ := new(big.Int).SetString("880904806456922042166256752416502360955572640081583800319", 10)
-	ecc.NafDecomposition(T, loopCounter1[:])
+	ecc.NafDecomposition(T, LoopCounter1[:])
 
 	// (X,Y,Z) = (1,1,0)
 	g1Infinity.X.SetOne()

@@ -58,23 +58,39 @@ func (b *BlueprintGenericR1C) DecompressR1C(c *R1C, inst Instruction) {
 	copySlice(&c.O, lenO, offset+2*(lenL+lenR))
 }
 
-func (b *BlueprintGenericR1C) WireWalker(inst Instruction) func(cb func(wire uint32)) {
-	return func(cb func(wire uint32)) {
-		lenL := int(inst.Calldata[1])
-		lenR := int(inst.Calldata[2])
-		lenO := int(inst.Calldata[3])
+func (b *BlueprintGenericR1C) UpdateInstructionTree(inst Instruction, tree InstructionTree) Level {
+	// a R1C doesn't know which wires are input and which are outputs
+	lenL := int(inst.Calldata[1])
+	lenR := int(inst.Calldata[2])
+	lenO := int(inst.Calldata[3])
 
-		appendWires := func(expectedLen, idx int) {
-			for k := 0; k < expectedLen; k++ {
-				idx++
-				cb(inst.Calldata[idx])
-				idx++
+	outputWires := make([]uint32, 0)
+	maxLevel := LevelUnset
+	walkWires := func(n, idx int) {
+		for k := 0; k < n; k++ {
+			wireID := inst.Calldata[idx+1]
+			idx += 2 // advance the offset (coeffID + wireID)
+			if !tree.HasWire(wireID) {
+				continue
+			}
+			if level := tree.GetWireLevel(wireID); level == LevelUnset {
+				outputWires = append(outputWires, wireID)
+			} else if level > maxLevel {
+				maxLevel = level
 			}
 		}
-
-		const offset = 4
-		appendWires(lenL, offset)
-		appendWires(lenR, offset+2*lenL)
-		appendWires(lenO, offset+2*(lenL+lenR))
 	}
+
+	const offset = 4
+	walkWires(lenL, offset)
+	walkWires(lenR, offset+2*lenL)
+	walkWires(lenO, offset+2*(lenL+lenR))
+
+	// insert the new wires.
+	maxLevel++
+	for _, wireID := range outputWires {
+		tree.InsertWire(wireID, maxLevel)
+	}
+
+	return maxLevel
 }

@@ -81,6 +81,12 @@ func (builder *builder) AssertIsBoolean(i1 frontend.Variable) {
 	}
 }
 
+func (builder *builder) AssertIsCrumb(i1 frontend.Variable) {
+	i1 = builder.MulAcc(builder.Mul(-3, i1), i1, i1)
+	i1 = builder.MulAcc(builder.Mul(2, i1), i1, i1)
+	builder.AssertIsEqual(i1, 0)
+}
+
 // AssertIsLessOrEqual adds assertion in constraint builder  (v ⩽ bound)
 //
 // bound can be a constant or a Variable
