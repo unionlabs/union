@@ -5,10 +5,10 @@
     in
     {
       packages = {
-        docs = pkgs.buildNpmPackage {
+        site = pkgs.buildNpmPackage {
           npmDepsHash = "sha256-XV9Qj5kt7flySJRfbjTIqLqQp/thBGQzW5+udv80p6g=";
           src = ./.;
-          pname = "docs";
+          pname = "site";
           version = "0.0.1";
           PUPPETEER_SKIP_DOWNLOAD = true;
 
@@ -26,10 +26,10 @@
       };
 
       apps = {
-        docs-dev-server = {
+        site-dev-server = {
           type = "app";
           program = pkgs.writeShellApplication {
-            name = "docs-dev-server";
+            name = "site-dev-server";
             runtimeInputs = pkgsDeps;
             text = ''
               ${ensureAtRepositoryRoot}
