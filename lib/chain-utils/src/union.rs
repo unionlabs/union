@@ -449,7 +449,7 @@ impl EventSource for Union {
                                                 .unwrap(),
                                             height: Height {
                                                 revision_number: chain_revision,
-                                                revision_height: height.try_into().unwrap(),
+                                                revision_height: height.into(),
                                             }.increment(),
                                             event,
                                         }),

@@ -1,4 +1,3 @@
-#![feature(result_option_inspect)]
 #![feature(more_qualified_paths)]
 
 use axum::{routing::get, Router};
