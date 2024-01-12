@@ -11,7 +11,10 @@ type Markdown = AstroUserConfig["markdown"];
 
 export const markdownConfiguration = {
   gfm: true,
-  remarkPlugins: [remarkMathPlugin, [remarkToc, { heading: "contents" }]],
+  remarkPlugins: [
+    remarkMathPlugin,
+    [remarkToc, { heading: "contents", prefix: "toc-" }],
+  ],
   rehypePlugins: [rehypeHeadingIds, rehypeKatexPlugin],
 } satisfies Markdown;
 

@@ -37,12 +37,12 @@ import XLogo from '#/assets/x.svg'
           <p class='min-[420px]:block font-extrabold text-5xl'>Union</p>
         </a>
         <nav class='flex flex-1 justify-end'>
-          <ul class='flex gap-4 text-xl md:text-2xl font-extrabold list-none align-middle my-auto'>
+          <ul class='flex gap-4 !text-xl! !md:text-2xl font-extrabold list-none align-middle my-auto'>
             <li class='my-auto'>
-              <a href='/blog'>Blog</a>
+              <a href='/blog' class="!text-xl !md:text-2xl">Blog</a>
             </li>
             <li class='my-auto'>
-              <a href='/docs'>Docs</a>
+              <a href='/docs' class="!text-xl !md:text-2xl">Docs</a>
             </li>
             <li class='my-auto mt-1'>
               <a
@@ -64,7 +64,7 @@ import XLogo from '#/assets/x.svg'
     </header>
     <slot />
     <footer
-      class='flex items-center p-4 gap-4 justify-center text-lg font-extrabold text-gray-200 fixed bottom-0 mx-auto w-full'
+      class='flex items-center p-4 gap-4 justify-center text-lg font-extrabold text-gray-200 bottom-0 mx-auto w-full'
     >
       <p>&copy; Union.fi Labs, Inc.</p>
     </footer>
