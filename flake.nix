@@ -120,7 +120,7 @@
         ./hubble/hubble.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./uniond/proto.nix
-        ./site/docs.nix
+        ./site/site.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./lib/cometbls-groth16-verifier/default.nix

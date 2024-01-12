@@ -1,4 +1,4 @@
-name: Deploy Docs
+name: Deploy Site
 
 on:
   push:
@@ -43,22 +43,22 @@ jobs:
           nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
           nix-channel --update
 
-      - name: Build Docs
-        run: nix build .#docs
+      - name: Build Site
+        run: nix build .#site
 
       - name: '[production] 🔶 Publish to Cloudflare Pages'
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="docs" --branch="main" deploy result
+        run: npx --yes wrangler@latest pages --project-name="site" --branch="main" deploy result
 
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         if: github.event_name == 'pull_request'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="docs" deploy result >> /tmp/deploy.txt
+        run: npx --yes wrangler@latest pages --project-name="site" deploy result >> /tmp/deploy.txt
 
       - name: Set Deploy Output
         if: github.event_name == 'pull_request'
