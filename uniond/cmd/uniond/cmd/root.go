@@ -93,7 +93,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// panic if there is no home flag
 			if !cmd.Flags().Changed(flags.FlagHome) {
-				return errors.New("before running a uniond subcommand, set the `--home` flag.")
+				return errors.New("before running a uniond subcommand, set the `--home` flag")
 			}
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
