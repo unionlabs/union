@@ -71,11 +71,11 @@
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
 
-        bundle-testnet-4-image = mkUnionvisorImage self'.packages.bundle-testnet-4;
+        bundle-testnet-5-image = mkUnionvisorImage self'.packages.bundle-testnet-5;
 
-        bundle-testnet-4 =
+        bundle-testnet-5 =
           mkBundle {
-            name = "testnet-4";
+            name = "testnet-5";
             versions = uniondBundleVersions.complete;
             genesis = ../networks/genesis/union-testnet-4/genesis.json;
             meta = {
@@ -87,9 +87,9 @@
 
         bundle-testnet-next =
           mkBundle {
-            name = "testnet-4";
+            name = "testnet-5";
             versions = uniondBundleVersions.complete;
-            nextVersion = "v0.17.0";
+            nextVersion = "v0.18.0";
             genesis = ../networks/genesis/union-testnet-4/genesis.json;
             meta = {
               binary_name = "uniond";
@@ -125,12 +125,12 @@
         enable = mkEnableOption "Unionvisor service";
         bundle = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.bundle-testnet-4;
+          default = self.packages.${pkgs.system}.bundle-testnet-5;
         };
         moniker = mkOption { type = types.str; };
         network = mkOption {
           type = types.str;
-          default = "union-testnet-4";
+          default = "union-testnet-5";
         };
         seeds = mkOption {
           type = types.str;
