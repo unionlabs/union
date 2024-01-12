@@ -434,6 +434,7 @@
         "v0_15_0": "v0_15_0",
         "v0_16_0": "v0_16_0",
         "v0_17_0": "v0_17_0",
+        "v0_18_0": "v0_18_0",
         "wasmd": "wasmd"
       }
     },
@@ -631,6 +632,23 @@
       "original": {
         "owner": "unionlabs",
         "ref": "release-v0.17.0",
+        "repo": "union",
+        "type": "github"
+      }
+    },
+    "v0_18_0": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1705022003,
+        "narHash": "sha256-6K/GIR990ywGKDQYhHjcrJQoctgS6HRrWBv7qC/mcNc=",
+        "owner": "unionlabs",
+        "repo": "union",
+        "rev": "5288b40aa1892dcaa05be32da671b99d027f46e4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "unionlabs",
+        "ref": "release-v0.18.0",
         "repo": "union",
         "type": "github"
       }
