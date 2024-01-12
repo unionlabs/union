@@ -12,21 +12,12 @@ This guide assumes you have [Docker](https://www.docker.com/get-started/) correc
 
 ## Getting the Docker Image
 
-To get the `uniond` image, you can visit our container on the GitHub Container Registry ([`uniond` for v0.15.0 and earlier](https://github.com/orgs/unionlabs/packages/container/package/uniond), [`uniond-release` for v0.16.0 and later](https://github.com/orgs/unionlabs/packages/container/package/uniond-release)), or run the following command:
+To get the `uniond` image, you can visit [our container](https://github.com/orgs/unionlabs/packages/container/package/uniond-release) on the GitHub Container Registry, or run the following command:
 
-- For versions v0.15.0 and earlier
-
-  ```sh
-  export UNIOND_VERSION='v0.15.0'
-  docker pull ghcr.io/unionlabs/uniond:$UNIOND_VERSION
-  ```
-
-- For versions v0.17.0 and later
-
-  ```sh
-  export UNIOND_VERSION='v0.17.0'
-  docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
-  ```
+```sh
+export UNIOND_VERSION='v0.18.0'
+docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
+```
 
 ## Running uniond
 
@@ -55,7 +46,7 @@ Now, using the `uniond` image and the folder we just created, we can initialize 
 To do this, we'll be using Docker volumes.
 
 ```sh
-docker run -u $(id -u):$(id -g) -v ~/.union:/.union -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION init $MONIKER bn254 --home /.union
+docker run -u $(id -u):$(id -g) -v ~/.union:/.union -v /tmp:/tmp -it ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION init $MONIKER bn254 --home /.union
 ```
 
 _Where `MONIKER` is the preferred moniker you'd like to use on this node._
@@ -92,8 +83,8 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
 ```sh
-export UNIOND_VERSION='v0.17.0'
-alias uniond='docker run -v ~/.union:/.union --network host -it ghcr.io/unionlabs/uniond:$UNIOND_VERSION --home /.union'
+export UNIOND_VERSION='v0.18.0'
+alias uniond='docker run -v ~/.union:/.union -v /tmp:/tmp --network host -it ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION --home /.union'
 ```
 
 This will enable you to issue `uniond` sub-commands with such as `uniond keys add` with ease.
@@ -107,7 +98,7 @@ A minimal Docker Compose file for `uniond` looks like this:
 ```yaml
 services:
   node:
-    image: ghcr.io/unionlabs/uniond:${UNIOND_VERSION}
+    image: ghcr.io/unionlabs/uniond-release:${UNIOND_VERSION}
     volumes:
       - ~/.union:/.union
       - /tmp:/tmp
