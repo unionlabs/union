@@ -1,24 +1,24 @@
 [package]
-name = "ucli"
-version = "0.1.0"
-edition = "2021"
+edition    = { workspace = true }
+name       = "ucli"
+repository = { workspace = true }
+version    = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.3.0", features = ["derive", "env", "error-context"] }
-ethers = { workspace = true, features = ["rustls", "ws"] }
-hex = { version = "0.4.3", features = [ "serde" ] }
-serde = { version = "1.0.173", features = ["derive"] }
-serde_json = "1.0.96"
-tokio = { version = "1.27.0", features = ["macros"] }
+clap       = { workspace = true, features = ["derive", "env", "error-context"] }
+ethers     = { workspace = true, features = ["rustls", "ws"] }
+hex        = { workspace = true }
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tokio      = { workspace = true, features = ["macros"] }
 
-unionlabs = { workspace = true, features = ["ethabi"] }
-contracts.workspace = true
-chain-utils.workspace = true
+beacon-api     = { workspace = true, default-features = false }
+chain-utils    = { workspace = true }
+contracts      = { workspace = true }
 tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }
-beacon-api = { workspace = true, default-features = false }
+unionlabs      = { workspace = true, features = ["ethabi"] }
 
 [features]
 eth-minimal = []
-

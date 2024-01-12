@@ -1,20 +1,23 @@
 [package]
-name = "cometbls-groth16-verifier"
-version = "0.1.0"
-edition = "2021"
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "cometbls-groth16-verifier"
+publish      = false
+repository   = { workspace = true }
+version      = "0.1.0"
 
 [dependencies]
-ark-groth16 =  { version = "0.4", default-features = false }
-ark-relations =  { version = "0.4", default-features = false }
-ark-ec = { version = "0.4", default-features = false }
-ark-ff = { version = "0.4", default-features = false }
-ark-bn254 = { version = "0.4", default-features = false, features = [ "curve" ] }
+ark-bn254     = { version = "0.4", default-features = false, features = ["curve"] }
+ark-ec        = { version = "0.4", default-features = false }
+ark-ff        = { version = "0.4", default-features = false }
+ark-groth16   = { version = "0.4", default-features = false }
+ark-relations = { version = "0.4", default-features = false }
 ark-serialize = { version = "0.4", default-features = false }
-ethabi = { version = "18.0", default-features = false }
-sha3 = { version = "0.10", default-features = false }
-hex-literal = { version = "0.4", default-features = false }
-byteorder = { version = "1.4", default-features = false }
+byteorder     = { version = "1.4", default-features = false }
+ethabi        = { workspace = true }
+hex-literal   = { workspace = true }
+sha3          = { workspace = true }
 
 [features]
 default = []
-std = [ "ark-groth16/std" ]
+std     = ["ark-groth16/std"]

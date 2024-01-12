@@ -42,5 +42,5 @@ link-style = "github"
 # from-latest-tag = true
 
 [sections]
-CI = ["CI", "ci"]
+CI   = ["CI", "ci"]
 Docs = ["docs", "doc"]

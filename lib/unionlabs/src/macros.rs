@@ -308,8 +308,8 @@ macro_rules! wrapper_enum {
             type Error = crate::errors::UnknownEnumVariant<i32>;
 
             fn try_from(value: i32) -> Result<Self, Self::Error> {
-                <$Proto>::from_i32(value)
-                    .ok_or(crate::errors::UnknownEnumVariant(value))
+                <$Proto>::try_from(value)
+                    .map_err(|_| crate::errors::UnknownEnumVariant(value))
                     .map(Into::into)
             }
         }

@@ -1,10 +1,13 @@
 [package]
-name = "generate-rust-sol-bindings"
-version = "0.1.0"
-edition = "2021"
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "generate-rust-sol-bindings"
+publish      = false
+repository   = { workspace = true }
+version      = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.3.0", features = ["derive"] }
-ethers-contract-abigen = { workspace = true, default-features = true, features = [ "fs" ] }
+clap                   = { workspace = true, features = ["derive", "default"] }
+ethers-contract-abigen = { workspace = true, default-features = true, features = ["fs"] }

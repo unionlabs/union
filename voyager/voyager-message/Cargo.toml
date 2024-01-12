@@ -1,38 +1,40 @@
 [package]
-name = "voyager-message"
-version = "0.1.0"
-edition = "2021"
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "voyager-message"
+repository   = { workspace = true }
+version      = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0.173", features = ["derive"] }
-frame-support-procedural = "18.0.0"
-unionlabs = { workspace = true, features = ["ethabi"] }
-serde-utils.workspace = true
-chain-utils.workspace = true
-frunk = "0.4.2"
-futures = "0.3.28"
-num-bigint = "0.4"
-prost = "0.11.0"
-protos = { workspace = true, features = ["proto_full", "client"] }
-tendermint = { workspace = true }
-tendermint-proto = { workspace = true }
-tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }
-tonic = { version = "0.9", features = ["transport","tls","tls-roots","tls-webpki-roots"] }
-tracing = "0.1.40"
-beacon-api = { workspace = true, default-features = false }
-contracts = { workspace = true, features = ["providers"] }
-typenum = "1.16.0"
-ethers = { workspace = true, features = ["rustls", "ws"] }
-thiserror = "1.0.50"
-serde_json = "1.0.108"
-tokio = { version = "1.33.0", default-features = false, features = ["time"] }
-derive_more = { workspace = true, features = ["display"] }
-enumorph = "0.1.2"
-hex = { version = "0.4.3", features = [ "serde" ] }
-dashmap = "5.5.3"
+beacon-api               = { workspace = true, default-features = false }
+chain-utils              = { workspace = true }
+contracts                = { workspace = true, features = ["providers"] }
+dashmap                  = { workspace = true }
+derive_more              = { workspace = true, features = ["display"] }
+enumorph                 = { workspace = true }
+ethers                   = { workspace = true, features = ["rustls", "ws"] }
+frame-support-procedural = { workspace = true }
+frunk                    = { workspace = true }
+futures                  = { workspace = true }
+hex                      = { workspace = true }
+num-bigint               = { workspace = true }
+prost                    = { workspace = true }
+protos                   = { workspace = true, features = ["proto_full", "client"] }
+serde                    = { workspace = true, features = ["derive"] }
+serde-utils              = { workspace = true }
+serde_json               = { workspace = true }
+tendermint               = { workspace = true }
+tendermint-proto         = { workspace = true }
+tendermint-rpc           = { workspace = true, features = ["http-client", "websocket-client"] }
+thiserror                = { workspace = true }
+tokio                    = { workspace = true, features = ["time"] }
+tonic                    = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
+tracing                  = { workspace = true }
+typenum                  = { workspace = true }
+unionlabs                = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
-hex-literal = "0.4.1"
-serde_json = "1.0.108"
+hex-literal = { workspace = true }
+serde_json  = { workspace = true }

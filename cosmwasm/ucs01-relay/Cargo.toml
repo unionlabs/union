@@ -1,9 +1,11 @@
 [package]
-name = "ucs01-relay"
-version = "1.0.1"
-authors = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
-edition = "2021"
-repository = "https://github.com/unionlabs/union"
+authors      = ["Hussein Ait Lahcen <hussein.aitlahcen@gmail.com>"]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "ucs01-relay"
+publish      = false
+repository   = { workspace = true }
+version      = "1.0.1"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -12,17 +14,17 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-ethabi = { version = "18.0.0", default-features = false }
-cosmwasm-schema = { version = "1.3" }
-cw2 = { version = "1.1" }
-cw-controllers = { version = "1.1" }
-cw-storage-plus = { version = "1.1" }
-cosmwasm-std = { version = "1.3", features = ["stargate", "ibc3", "cosmwasm_1_3"] }
-schemars = "0.8"
-semver = "1"
-serde = { version = "1.0", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0" }
-sha2.workspace = true
-hex = { version = "0.4", default-features = false }
+cosmwasm-schema   = { workspace = true }
+cosmwasm-std      = { workspace = true, features = ["stargate", "ibc3", "cosmwasm_1_3"] }
+cw-controllers    = { version = "1.1" }
+cw-storage-plus   = { workspace = true }
+cw2               = { version = "1.1" }
+ethabi            = { workspace = true }
+hex               = { workspace = true }
+schemars          = { workspace = true }
+semver            = "1"
+serde             = { workspace = true, features = ["derive"] }
+sha2              = { workspace = true }
+thiserror         = { workspace = true }
 token-factory-api = { workspace = true }
-ucs01-relay-api = { workspace = true }
+ucs01-relay-api   = { workspace = true }

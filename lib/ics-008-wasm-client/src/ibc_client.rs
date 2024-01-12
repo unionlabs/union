@@ -1,6 +1,6 @@
 use core::fmt::{Debug, Display};
 
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, StdError};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, StdError};
 use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
     ibc::{
@@ -50,7 +50,7 @@ pub trait IbcClient {
                 proof,
                 path,
                 value,
-            } => to_binary(&Self::verify_membership(
+            } => to_json_binary(&Self::verify_membership(
                 deps.as_ref(),
                 height,
                 delay_time_period,
@@ -65,7 +65,7 @@ pub trait IbcClient {
                 delay_block_period,
                 proof,
                 path,
-            } => to_binary(&Self::verify_membership(
+            } => to_json_binary(&Self::verify_membership(
                 deps.as_ref(),
                 height,
                 delay_time_period,
@@ -78,7 +78,7 @@ pub trait IbcClient {
                 if let Ok(header) =
                     <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.0)
                 {
-                    to_binary(&Self::update_state(deps, env, header)?)
+                    to_json_binary(&Self::update_state(deps, env, header)?)
                 } else {
                     Err(Error::UnexpectedCallDataFromHostModule(
                         "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
@@ -87,7 +87,7 @@ pub trait IbcClient {
             }
             SudoMsg::UpdateStateOnMisbehaviour { client_message } => {
                 Self::update_state_on_misbehaviour(deps, env, client_message.0)?;
-                to_binary(&EmptyResult {})
+                to_json_binary(&EmptyResult {})
             }
             SudoMsg::VerifyUpgradeAndUpdateState {
                 upgrade_client_state,
@@ -105,11 +105,11 @@ pub trait IbcClient {
                     proof_upgrade_consensus_state,
                 )?;
 
-                to_binary(&EmptyResult {})
+                to_json_binary(&EmptyResult {})
             }
             SudoMsg::MigrateClientStore {} => {
                 Self::migrate_client_store(deps.as_ref())?;
-                to_binary(&EmptyResult {})
+                to_json_binary(&EmptyResult {})
             }
         }
         .map_err(Into::into)
@@ -122,16 +122,16 @@ pub trait IbcClient {
     ) -> Result<Binary, Self::Error> {
         match msg {
             QueryMsg::Status {} => {
-                to_binary(&Into::<StatusResult>::into(Self::status(deps, &env)?))
+                to_json_binary(&Into::<StatusResult>::into(Self::status(deps, &env)?))
             }
-            QueryMsg::ExportMetadata {} => to_binary(&ExportMetadataResult {
+            QueryMsg::ExportMetadata {} => to_json_binary(&ExportMetadataResult {
                 genesis_metadata: Self::export_metadata(deps, &env)?,
             }),
             QueryMsg::VerifyClientMessage { client_message } => {
                 if let Ok(header) =
                     <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.0)
                 {
-                    to_binary(&Self::verify_header(deps, env, header)?)
+                    to_json_binary(&Self::verify_header(deps, env, header)?)
                 } else {
                     Err(Error::UnexpectedCallDataFromHostModule(
                         "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
@@ -142,14 +142,14 @@ pub trait IbcClient {
                 if let Ok(header) =
                     <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.0)
                 {
-                    to_binary(&Self::verify_header(deps, env, header)?)
+                    to_json_binary(&Self::verify_header(deps, env, header)?)
                 } else {
                     Err(Error::UnexpectedCallDataFromHostModule(
                         "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
                     ))?
                 }
             }
-            QueryMsg::TimestampAtHeight { height } => to_binary(&TimestampAtHeightResult {
+            QueryMsg::TimestampAtHeight { height } => to_json_binary(&TimestampAtHeightResult {
                 timestamp: Self::timestamp_at_height(deps, height)?,
             }),
         }
