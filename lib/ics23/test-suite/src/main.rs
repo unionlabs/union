@@ -1,21 +1,18 @@
-use std::{borrow::Cow, collections::HashMap, fmt::Display, fs, path::PathBuf};
+use std::{collections::HashMap, fmt::Display, fs, path::PathBuf};
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use clap::Parser;
 use ics23::{
     existence_proof::{self, calculate_root},
     ops::{hash_op, inner_op, leaf_op},
+    proof_specs::{IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC},
     verify::{verify_membership, verify_non_membership},
 };
 use protos::cosmos::ics23::v1::InnerSpec;
 use serde::{de::DeserializeOwned, Deserialize};
 use unionlabs::{
-    bounded::BoundedUsize,
-    cosmos::ics23::{
-        commitment_proof::CommitmentProof, hash_op::HashOp, inner_spec::PositiveI32AsUsize,
-        leaf_op::LeafOp, proof_spec::ProofSpec,
-    },
-    promote, result_unwrap, TryFromProto,
+    cosmos::ics23::{commitment_proof::CommitmentProof, hash_op::HashOp, proof_spec::ProofSpec},
+    TryFromProto,
 };
 
 #[derive(Parser)]
@@ -330,184 +327,6 @@ impl TestCase for TestCheckAgainstSpecData {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct TestVectors {
-    proof: protos::cosmos::ics23::v1::ExistenceProof,
-    spec: protos::cosmos::ics23::v1::ProofSpec,
-    is_err: bool,
-}
-
-impl TestCase for TestVectors {
-    fn run(self) -> anyhow::Result<()> {
-        match (self.proof.try_into(), self.spec.try_into()) {
-            (Ok(leaf), Ok(spec)) => match existence_proof::check_against_spec(&leaf, &spec) {
-                Ok(()) => {
-                    if self.is_err {
-                        bail!("Expected error")
-                    }
-                }
-                Err(err) => {
-                    if !self.is_err {
-                        bail!("Unexpected error: {err}")
-                    }
-                }
-            },
-            (Ok(_), Err(err)) => {
-                if !self.is_err {
-                    bail!("Unexpected error (ProofSpec): {err:?}")
-                }
-            }
-            (Err(err), Ok(_)) => {
-                if !self.is_err {
-                    bail!("Unexpected error: {err:?}")
-                }
-            }
-            (Err(err1), Err(err2)) => {
-                if !self.is_err {
-                    bail!("Unexpected errors: {err1:?}, {err2:?}")
-                }
-            }
-        }
-
-        Ok(())
-    }
-}
-
-const IAVL_SPEC: unionlabs::cosmos::ics23::proof_spec::ProofSpec = ProofSpec {
-    leaf_spec: LeafOp {
-        hash: HashOp::Sha256,
-        prehash_key: HashOp::NoHash,
-        prehash_value: HashOp::Sha256,
-        length: unionlabs::cosmos::ics23::length_op::LengthOp::VarProto,
-        prefix: std::borrow::Cow::Borrowed(&[0]),
-    },
-    inner_spec: unionlabs::cosmos::ics23::inner_spec::InnerSpec {
-        child_order: Cow::Borrowed(promote!(&[PositiveI32AsUsize]: &[
-            result_unwrap!(PositiveI32AsUsize::new(0)),
-            result_unwrap!(PositiveI32AsUsize::new(1)),
-        ])),
-        child_size: result_unwrap!(PositiveI32AsUsize::new(33)),
-        min_prefix_length: result_unwrap!(PositiveI32AsUsize::new(4)),
-        max_prefix_length: result_unwrap!(PositiveI32AsUsize::new(12)),
-        empty_child: Cow::Borrowed(&[0; 0]),
-        hash: HashOp::Sha256,
-    },
-    min_depth: None,
-    max_depth: None,
-    prehash_key_before_comparison: false,
-};
-
-// from: proof.go
-// IavlSpec constrains the format from proofs-iavl (iavl merkle proofs)
-// var IavlSpec = &ProofSpec{
-// 	LeafSpec: &LeafOp{
-// 		Prefix:       []byte{0},
-// 		PrehashKey:   HashOp_NO_HASH,
-// 		Hash:         HashOp_SHA256,
-// 		PrehashValue: HashOp_SHA256,
-// 		Length:       LengthOp_VAR_PROTO,
-// 	},
-// 	InnerSpec: &InnerSpec{
-// 		ChildOrder:      []int32{0, 1},
-// 		MinPrefixLength: 4,
-// 		MaxPrefixLength: 12,
-// 		ChildSize:       33, // (with length byte)
-// 		EmptyChild:      nil,
-// 		Hash:            HashOp_SHA256,
-// 	},
-// }
-
-const TENDERMINT_SPEC: unionlabs::cosmos::ics23::proof_spec::ProofSpec = ProofSpec {
-    leaf_spec: LeafOp {
-        hash: HashOp::Sha256,
-        prehash_key: HashOp::NoHash,
-        prehash_value: HashOp::Sha256,
-        length: unionlabs::cosmos::ics23::length_op::LengthOp::VarProto,
-        prefix: std::borrow::Cow::Borrowed(&[0]),
-    },
-    inner_spec: unionlabs::cosmos::ics23::inner_spec::InnerSpec {
-        child_order: Cow::Borrowed(promote!(&[PositiveI32AsUsize]: &[
-            result_unwrap!(PositiveI32AsUsize::new(0)),
-            result_unwrap!(PositiveI32AsUsize::new(1)),
-        ])),
-        child_size: result_unwrap!(PositiveI32AsUsize::new(32)),
-        min_prefix_length: result_unwrap!(PositiveI32AsUsize::new(1)),
-        max_prefix_length: result_unwrap!(PositiveI32AsUsize::new(1)),
-        empty_child: Cow::Borrowed(&[0; 0]),
-        hash: HashOp::Sha256,
-    },
-    min_depth: None,
-    max_depth: None,
-    prehash_key_before_comparison: false,
-};
-
-// from: proof.go
-// TendermintSpec constrains the format from proofs-tendermint (crypto/merkle SimpleProof)
-// var TendermintSpec = &ProofSpec{
-// 	LeafSpec: &LeafOp{
-// 		Prefix:       []byte{0},
-// 		PrehashKey:   HashOp_NO_HASH,
-// 		Hash:         HashOp_SHA256,
-// 		PrehashValue: HashOp_SHA256,
-// 		Length:       LengthOp_VAR_PROTO,
-// 	},
-// 	InnerSpec: &InnerSpec{
-// 		ChildOrder:      []int32{0, 1},
-// 		MinPrefixLength: 1,
-// 		MaxPrefixLength: 1,
-// 		ChildSize:       32, // (no length byte)
-// 		Hash:            HashOp_SHA256,
-// 	},
-// }
-
-type PositiveNonZeroI32AsUsize = BoundedUsize<1, { i32::MAX as usize }>;
-
-const SMT_SPEC: unionlabs::cosmos::ics23::proof_spec::ProofSpec = ProofSpec {
-    leaf_spec: LeafOp {
-        hash: HashOp::Sha256,
-        prehash_key: HashOp::Sha256,
-        prehash_value: HashOp::Sha256,
-        length: unionlabs::cosmos::ics23::length_op::LengthOp::NoPrefix,
-        prefix: std::borrow::Cow::Borrowed(&[0]),
-    },
-    inner_spec: unionlabs::cosmos::ics23::inner_spec::InnerSpec {
-        child_order: Cow::Borrowed(promote!(&[PositiveI32AsUsize]: &[
-            result_unwrap!(PositiveI32AsUsize::new(0)),
-            result_unwrap!(PositiveI32AsUsize::new(1)),
-        ])),
-        child_size: result_unwrap!(PositiveI32AsUsize::new(32)),
-        min_prefix_length: result_unwrap!(PositiveI32AsUsize::new(1)),
-        max_prefix_length: result_unwrap!(PositiveI32AsUsize::new(1)),
-        empty_child: Cow::Borrowed(&[0; 32]),
-        hash: HashOp::Sha256,
-    },
-    min_depth: None,
-    max_depth: Some(result_unwrap!(PositiveNonZeroI32AsUsize::new(256))),
-    prehash_key_before_comparison: true,
-};
-
-//  from: proof.go
-//  var SmtSpec = &ProofSpec{
-//	LeafSpec: &LeafOp{
-//		Hash:         HashOp_SHA256,
-//		PrehashKey:   HashOp_SHA256,
-//		PrehashValue: HashOp_SHA256,
-//		Length:       LengthOp_NO_PREFIX,
-//		Prefix:       []byte{0},
-//	},
-//	InnerSpec: &InnerSpec{
-//		ChildOrder:      []int32{0, 1},
-//		ChildSize:       32,
-//		MinPrefixLength: 1,
-//		MaxPrefixLength: 1,
-//		EmptyChild:      make([]byte, 32),
-//		Hash:            HashOp_SHA256,
-//	},
-//	MaxDepth:                   256,
-//	PrehashKeyBeforeComparison: true,
-//}
-
 const FILENAMES: [&str; 6] = [
     "exist_left.json",
     "exist_right.json",
@@ -521,19 +340,17 @@ const FILENAMES: [&str; 6] = [
 enum SpecType {
     Iavl,
     Tendermint,
-    Smt,
 }
 
 impl SpecType {
-    fn all() -> [SpecType; 3] {
-        [SpecType::Iavl, SpecType::Tendermint, SpecType::Smt]
+    fn all() -> Vec<SpecType> {
+        vec![SpecType::Iavl, SpecType::Tendermint]
     }
 
     fn name(&self) -> &str {
         match self {
             SpecType::Iavl => "IAVL",
             SpecType::Tendermint => "Tendermint",
-            SpecType::Smt => "SMT",
         }
     }
 
@@ -541,15 +358,13 @@ impl SpecType {
         match self {
             SpecType::Iavl => "iavl",
             SpecType::Tendermint => "tendermint",
-            SpecType::Smt => "smt",
         }
     }
 
     fn proof_spec(&self) -> ProofSpec {
         match self {
-            SpecType::Iavl => IAVL_SPEC,
-            SpecType::Tendermint => TENDERMINT_SPEC,
-            SpecType::Smt => SMT_SPEC,
+            SpecType::Iavl => IAVL_PROOF_SPEC,
+            SpecType::Tendermint => TENDERMINT_PROOF_SPEC,
         }
     }
 }
@@ -612,32 +427,22 @@ impl TestCase for VectorTest {
                 match CommitmentProof::try_from_proto_bytes(proof.as_slice()) {
                     Ok(proof) => match proof {
                         CommitmentProof::Exist(existence_proof) => {
-                            match calculate_root(&existence_proof) {
-                                Ok(root) => {
-                                    assert_eq!(&root, expected_root);
+                            let root =
+                                calculate_root(&existence_proof).context("calculating root")?;
 
-                                    match (&self.data.value, &self.data.key) {
-                                        (Some(value), Some(key)) => {
-                                            match verify_membership(
-                                                &self.spec,
-                                                root.as_slice(),
-                                                &existence_proof,
-                                                key.as_slice(),
-                                                value.as_slice(),
-                                            ) {
-                                                Ok(_) => Ok(()),
-                                                Err(e) => {
-                                                    bail!("Failed: no membership - {}", e)
-                                                }
-                                            }
-                                        }
-                                        (_, _) => {
-                                            bail!("Expected value and key in test data file");
-                                        }
-                                    }
-                                }
-                                Err(e) => {
-                                    bail!("Cannot calculate root: {}", e)
+                            assert_eq!(&root, expected_root);
+
+                            match (&self.data.value, &self.data.key) {
+                                (Some(value), Some(key)) => verify_membership(
+                                    &self.spec,
+                                    root.as_slice(),
+                                    &existence_proof,
+                                    key.as_slice(),
+                                    value.as_slice(),
+                                )
+                                .context("test"),
+                                (_, _) => {
+                                    bail!("Expected value and key in test data file");
                                 }
                             }
                         }
@@ -646,17 +451,13 @@ impl TestCase for VectorTest {
                                 (Some(root), Some(key)) => {
                                     // TODO: Original self calculates root and assert it's the same, but I can't find a `calculate_root(Nonexist)` function
 
-                                    match verify_non_membership(
+                                    verify_non_membership(
                                         &self.spec,
                                         root.as_slice(),
                                         &non_existence_proof,
                                         key.as_slice(),
-                                    ) {
-                                        Ok(_) => Ok(()),
-                                        Err(e) => {
-                                            bail!("Failed: no no-membership - {}", e)
-                                        }
-                                    }
+                                    )
+                                    .context("no no-membership")
                                 }
                                 (_, _) => {
                                     bail!("Expected root and key in test data file");
