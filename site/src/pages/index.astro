@@ -1,25 +1,35 @@
 ---
 import Layout from '#/layouts/layout.svelte'
 import Graph from '#/components/graph.svelte'
+import XLogo from '#/assets/x.svg';
+import DiscordLogo from '#/assets/discord.svg';
+import CalendarIcon from '#/assets/calendar.svg';
+
+let socialLinks = [
+	{ href: "https://x.com/union_build", iconSrc: XLogo.src, cta: "Join us on X" },
+	{ href: "https://discord.com", iconSrc: DiscordLogo.src, cta: "Join our Discord" },
+	{ href: "https://x.com/union_build", iconSrc: CalendarIcon.src, cta: "Join our Events" }
+]
+
 ---
 
 <Layout>
-  <main class='flex flex-col flex-1 my-[50px] md:my-[100px]'>
-    <div class='flex flex-col items-center'>
-      <div class="text-6xl text-white text-center">The Sovereign<br/>Interoperability Layer</div>
-      <div class='mt-8 text-lg max-w-lg font-normal text-center'>
+  <main class='flex flex-col flex-1'>
+    <section class='flex flex-col items-center my-32 gap-6'>
+      <div class="text-7xl text-white text-center">The Sovereign<br/>Interoperability Layer</div>
+      <div class='text-xl max-w-lg font-normal text-center'>
 		By using consensus verification, Union builds unstoppable and decentralized connections to enable anyone to transfer assets and data.
       </div>
-      <div class="mt-8 uppercase">
+      <div>
         <a
-          class='mt-16 '
+          class='mt-16 border-b-2 uppercase'
           href='/docs'
         >
           Join the community -&gt;
         </a>
       </div>
-    </div>
-	<section class="bg-white text-black flex flex-col items-center py-16 mt-24">
+    </section>
+	<section class="bg-white text-black flex flex-col items-center py-16">
 		<h2 class="text-4xl mb-4 font-normal">Redesigned from the ground up.</h2>
 		<div class="flex gap-16 max-w-4xl">
 			<div class="flex-1 flex items-center justify-center content mb-0 gap-2">
@@ -28,8 +38,9 @@ import Graph from '#/components/graph.svelte'
 				<div class="bg-black h-20 w-20 rounded-full"></div>
 			</div>
 			<div class="flex-1 p-4">
-				<p class="text-3xl font-normal mb-0">Trustless, decentralized, and permissionless interoperability is now possible.</p>
-				<p class="text-sm" >Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge cryptography.</p>
+
+				<p class="text-3xl font-normal mb-0">Trustless, decentralized, and permissionless interoperability is now possible. Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge cryptography.</p>
+				<p class="text-lg" >Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge cryptography.</p>
 			</div>
 		</div>
 	</section>
@@ -46,7 +57,7 @@ import Graph from '#/components/graph.svelte'
 		</div>
 
 	</section>
-	<section class="flex flex-col items-center justif-center">
+	<section class="flex flex-col items-center justif-center py-32">
 		<div class="flex-1 flex flex-col max-w-4xl ">
 			<div class="flex gap-16">
 				<div class="flex-1 gap-4 flex overflow-none">
@@ -108,49 +119,35 @@ import Graph from '#/components/graph.svelte'
 		</div>
 	</section>
 
-<section>
-	<!-- <div>
-		<h2>ntegrate your Smart contract</h2>
-		<div>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Ut illo earum vero aliquam. Vitae velit modi illo! Cupiditate qui impedit quasi ducimus aut, voluptates numquam ex eaque reiciendis. Voluptate, dolore!</div>
-	</div> -->
 
-</section>
-
-	<!-- <section class="flex justify-center my-24">
-		<div class="flex-1 flex gap-12 max-w-6xl mx-16">
-			<div class="flex-1 px-4 bg-white text-black">
-				<h2>Union chain</h2>
-				<p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Numquam hic odio, blanditiis sapiente molestiae nulla voluptatem, vel necessitatibus iusto quos, voluptatibus accusantium. Temporibus corrupti corporis, cupiditate nulla facilis aut ducimus?</p>
-			</div>
-			<div class="flex-1 px-4 bg-white text-black">
-				<h2>Union SDK</h2>
-				<p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Numquam hic odio, blanditiis sapiente molestiae nulla voluptatem, vel necessitatibus iusto quos, voluptatibus accusantium. Temporibus corrupti corporis, cupiditate nulla facilis aut ducimus?</p>
-			</div>
-			<div class="flex-1 px-4 bg-white text-black">
-				<h2>Union Prover</h2>
-				<p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Numquam hic odio, blanditiis sapiente molestiae nulla voluptatem, vel necessitatibus iusto quos, voluptatibus accusantium. Temporibus corrupti corporis, cupiditate nulla facilis aut ducimus?</p>
-			</div>
-		</div>
-		
-	</section> -->
-
-	<section class="flex justify-center bg-white text-black mt-16">
-		<div class="flex-1 max-w-2xl">
-			<h2>Join the Union</h2>
-			<p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Eligendi amet quos in perspiciatis, voluptatum ducimus eum consectetur corrupti sit officia suscipit quidem molestiae aspernatur eaque recusandae aliquam. Facere, doloremque nesciunt?</p>
+	<section class="flex justify-center bg-white text-black py-32">
+		<div class="flex-1 max-w-4xl">
+			<h2 class="text-4xl mb-4 font-normal text-center">Join the Union</h2>
+			<!-- <p>Together, we </p> -->
 			<div class="flex">
-				<div class="flex-1">
+				{socialLinks.map((socialLink) => (
+					<a href={socialLink.href} class="flex-1 p-8 text-center">
+						<img src={socialLink.iconSrc} class="h-10"/>
+						<div class="mt-4">
+							<span class='mt-16 border-b-2 uppercase text-black border-black text-semibold undelrine'>{socialLink.cta} -&gt;</span>
+						</div>
+					</a>
+				))}
 
-					<h3>X</h3>
-				</div>
-				<div class="flex-1">
+				<!-- <div class="flex-1 p-8 text-center">
+					<img src={DiscordLogo.src} class="h-10"/>
 
-					<h3 >Discord</h3>
+					<div class="mt-4">
+						<a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Discord -&gt;</a>
+					</div>
 				</div>
-				<div class="flex-1">
+				<div class="flex-1 p-8 text-center">
+					<img src={CalendarIcon.src} class="h-10"/>
 
-					<h3>Events</h3>
-				</div>
+					<div class="mt-4">
+						<a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Events -&gt;</a>
+					</div>
+				</div> -->
 			</div>
 		</div>
 	</section>

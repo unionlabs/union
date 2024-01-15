@@ -3,6 +3,7 @@
   import '@fontsource/jetbrains-mono'
   import '#/styles/index.css'
   import '#/styles/tailwind.css'
+  import Header from '#/components/header.svelte'
   import XLogo from '#/assets/x.svg'
 </script>
 
@@ -16,53 +17,9 @@
     <title>Union</title>
   </head>
   <body
-    class='font-sans flex flex-col min-h-screen grid-effect-bg flex-1 gap-8 shadow-effect-bg pb-12'
+    class='font-sans flex flex-col min-h-screen grid-effect-bg flex-1 shadow-effect-bg pb-12'
   >
-    <header class='flex justify-around'>
-      <div class='max-w-7xl flex flex-1 items-center md:px-4 gap-4'>
-        <a
-          class='flex items-center gap-3 decoration-transparent visited:text-white'
-          href='/'
-        >
-          <img
-            class='h-[40px] md:h-[48px]'
-            src='/logo.svg'
-            alt='Union Logo'
-          />
-          <p class='min-[420px]:block font-semibold text-3xl sm:text-5xl'>Union</p>
-        </a>
-        <nav class='flex flex-1 justify-end'>
-          <ul class='flex gap-4 !text-xl! !md:text-2xl font-extrabold list-none align-middle my-auto'>
-            <li>
-              <a href='/blog' class="text-xl !md:text-2xl">Build</a>
-            </li>
-            <li>
-              <a href='/docs' class="text-xl !md:text-2xl">Discover</a>
-            </li>
-            <li>
-              <a href='/docs' class="text-xl !md:text-2xl">Research</a>
-            </li>
-            <li>
-              <a href='/docs' class="text-xl !md:text-2xl">Contribute</a>
-            </li>
-            <!-- <li class='my-auto mt-1'>
-              <a
-                href='https://x.com/union_build'
-                rel='noopener noreferrer'
-                target='_blank'
-              >
-                <span class='sr-only'>X</span>
-                <img
-                  src={XLogo.src}
-                  alt='x.com logo'
-                  class='w-6 h-6'
-                />
-              </a>
-            </li> -->
-          </ul>
-        </nav>
-      </div>
-    </header>
+    <Header/>
     <slot />
     <footer
       class='flex items-center p-4 gap-4 justify-center text-lg font-extrabold text-gray-200 bottom-0 mx-auto w-full'
