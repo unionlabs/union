@@ -286,32 +286,26 @@ func (e *EmulatedAPI) MapToCurve(u *fields_bn254.E2) *gadget.G2Affine {
 	// 35.   y = CMOV(-y, y, e3)       # Select correct sign of y
 	y = e.ext2.Select(e3, y, e.ext2.Neg(y))
 	// 36. return (x, y)
-	return &gadget.G2Affine{
-		P: gadget.G2AffP{
-			X: *x,
-			Y: *y,
-		},
-	}
+	point := gadget.NewG2AffineFixedPlaceholder()
+	point.P.X = *x
+	point.P.Y = *y
+	return &point
 }
 
 func (e *EmulatedAPI) Neg(p *gadget.G2Affine) *gadget.G2Affine {
-	return &gadget.G2Affine{
-		P: gadget.G2AffP{
-			X: p.P.X,
-			Y: *e.ext2.Neg(&p.P.Y),
-		},
-	}
+	point := gadget.NewG2AffineFixedPlaceholder()
+	point.P.X = p.P.X
+	point.P.Y = *e.ext2.Neg(&p.P.Y)
+	return &point
 }
 
 func (e *EmulatedAPI) Select(b frontend.Variable, p, q *gadget.G2Affine) *gadget.G2Affine {
 	x := e.ext2.Select(b, &p.P.X, &q.P.X)
 	y := e.ext2.Select(b, &p.P.Y, &q.P.Y)
-	return &gadget.G2Affine{
-		P: gadget.G2AffP{
-			X: *x,
-			Y: *y,
-		},
-	}
+	point := gadget.NewG2AffineFixedPlaceholder()
+	point.P.X = *x
+	point.P.Y = *y
+	return &point
 }
 
 func (e *EmulatedAPI) Add(p, q *gadget.G2Affine) *gadget.G2Affine {
@@ -330,12 +324,10 @@ func (e *EmulatedAPI) Add(p, q *gadget.G2Affine) *gadget.G2Affine {
 	λpxrx := e.ext2.Mul(λ, pxrx)
 	yr := e.ext2.Sub(λpxrx, &p.P.Y)
 
-	return &gadget.G2Affine{
-		P: gadget.G2AffP{
-			X: *xr,
-			Y: *yr,
-		},
-	}
+	point := gadget.NewG2AffineFixedPlaceholder()
+	point.P.X = *xr
+	point.P.Y = *yr
+	return &point
 }
 
 // DoubleAndAdd computes 2p+q as (p+q)+p. It follows [ELM03] (Section 3.1)
@@ -377,13 +369,10 @@ func (e *EmulatedAPI) DoubleAndAdd(p, q *gadget.G2Affine) *gadget.G2Affine {
 	y3 = e.ext2.Mul(λ2, y3)
 	y3 = e.ext2.Sub(y3, &p.P.Y)
 
-	return &gadget.G2Affine{
-		P: gadget.G2AffP{
-			X: *x3,
-			Y: *y3,
-		},
-	}
-
+	point := gadget.NewG2AffineFixedPlaceholder()
+	point.P.X = *x3
+	point.P.Y = *y3
+	return &point
 }
 
 // Double doubles p and return it. It doesn't modify p.
@@ -405,12 +394,10 @@ func (e *EmulatedAPI) Double(p *gadget.G2Affine) *gadget.G2Affine {
 	λpxrx := e.ext2.Mul(λ, pxrx)
 	yr := e.ext2.Sub(λpxrx, &p.P.Y)
 
-	return &gadget.G2Affine{
-		P: gadget.G2AffP{
-			X: *xr,
-			Y: *yr,
-		},
-	}
+	point := gadget.NewG2AffineFixedPlaceholder()
+	point.P.X = *xr
+	point.P.Y = *yr
+	return &point
 }
 
 func (e *EmulatedAPI) DoubleN(p *gadget.G2Affine, n int) *gadget.G2Affine {
@@ -426,12 +413,10 @@ func (e *EmulatedAPI) Psi(q *gadget.G2Affine) *gadget.G2Affine {
 	x = e.ext2.Mul(x, e.u)
 	y := e.ext2.Conjugate(&q.P.Y)
 	y = e.ext2.Mul(y, e.v)
-	return &gadget.G2Affine{
-		P: gadget.G2AffP{
-			X: *x,
-			Y: *y,
-		},
-	}
+	point := gadget.NewG2AffineFixedPlaceholder()
+	point.P.X = *x
+	point.P.Y = *y
+	return &point
 }
 
 func (e *EmulatedAPI) ScalarMulBySeed(q *gadget.G2Affine) *gadget.G2Affine {

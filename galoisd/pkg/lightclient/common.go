@@ -2,8 +2,9 @@ package lightclient
 
 import (
 	"fmt"
+	"galois/pkg/bls"
 	"galois/pkg/merkle"
-	curve "github.com/consensys/gnark-crypto/ecc/bn254"
+
 	"github.com/consensys/gnark/frontend"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
@@ -110,109 +111,46 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 		return nil
 	}
 
-	nonnative, _ := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](lc.api, sw_emulated.GetBN254Params())
-
 	totalVotingPower := frontend.Variable(0)
 	currentVotingPower := frontend.Variable(0)
-	aggregatedKeys := frontend.Variable(0)
-
-	zero := gadget.NewG1Affine(curve.G1Affine{})
-	trash := nonnative.Generator()
-	aggregatedPublicKey := &zero
 
 	leafHashes := make([]frontend.Variable, MaxVal)
 
 	merkle := merkle.NewMerkleTreeAPI(lc.api)
 
-	if err := forEachVal(func(i int, signed frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error {
-		// Aggregate voting power and current power
-		/*
-		   totalVotingPower = totalVotingPower + power
-		*/
-		totalVotingPower = lc.api.Add(totalVotingPower, power)
-
-		// Optionally aggregated public voting power if validator at index signed
-		/*
-		   currentVotingPower = currentVotingPower + if signed then power else 0
-		*/
-		currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(signed, power, 0))
-
-		// Optionally aggregated public key if validator at index signed
-		// Trivial version would be this, at the expense of ~1.5M constraints:
-		// aggregatedPublicKey = curveArithmetic.AddUnified(aggregatedPublicKey, curveArithmetic.Select(signed, publicKey, &G1Zero))
-
-		/*
-				   aggPK =
-		                     if signed {
-		                       if firstPK and null(aggPK) {
-		                         PK
-				       } else {
-				         # the `if null(aggPK)` branch here is impossible and only present because we use the partial `+` that don't handle point at infinity
-		                         aggPK' = if null(aggPK) then trash else aggPK
-				         aggPK' + PK
-				       }
-				     } else {
-		                       aggPK
-				     }
-		*/
-		nullPK := lc.api.IsZero(aggregatedKeys)
-		firstPK := lc.api.And(signed, nullPK)
-		aggregatedPublicKey = nonnative.Select(
-			signed,
-			nonnative.Select(
-				firstPK,
-				publicKey,
-				nonnative.Add(
-					nonnative.Select(nullPK, trash, aggregatedPublicKey),
-					publicKey,
-				),
-			),
-			aggregatedPublicKey)
-
-		/*
-		   aggregatedKeys = aggregatedKeys + signed
-		*/
-		aggregatedKeys = lc.api.Add(aggregatedKeys, signed)
-
-		leafHashes[i] = merkle.LeafHash([]frontend.Variable{leaf})
-		return nil
-	}); err != nil {
-		return err
+	bls, err := bls.NewBlsAPI(lc.api)
+	if err != nil {
+		return fmt.Errorf("new bls: %w", err)
 	}
 
-	// Compute validator set merkle root
-	rootHash := merkle.RootHash(leafHashes, lc.input.NbOfVal)
-
-	// Verify that the merkle root is equal to the given root (public input)
-	lc.api.AssertIsEqual(expectedValRoot, rootHash)
+	aggregatedPublicKey, nbOfKeys, err := bls.WithAggregation(
+		func(aggregate func(selector frontend.Variable, publicKey *sw_emulated.AffinePoint[emulated.BN254Fp])) error {
+			if err := forEachVal(func(i int, signed frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error {
+				// totalVotingPower = totalVotingPower + power
+				totalVotingPower = lc.api.Add(totalVotingPower, power)
+				// currentVotingPower = currentVotingPower + if signed then power else 0
+				currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(signed, power, 0))
+				// Optionally aggregated public key if validator at index signed
+				aggregate(signed, publicKey)
+				leafHashes[i] = merkle.LeafHash([]frontend.Variable{leaf})
+				return nil
+			}); err != nil {
+				return err
+			}
+			return nil
+		})
 
 	// Ensure that we actually aggregated the correct number of signatures
-	lc.api.AssertIsEqual(aggregatedKeys, lc.input.NbOfSignature)
+	lc.api.AssertIsEqual(nbOfKeys, lc.input.NbOfSignature)
 
 	// Ensure that the current sum of voting power exceed the expected threshold
 	votingPowerNeeded := lc.api.Mul(totalVotingPower, powerNumerator)
 	currentVotingPowerScaled := lc.api.Mul(currentVotingPower, powerDenominator)
 	lc.api.AssertIsLessOrEqual(votingPowerNeeded, currentVotingPowerScaled)
 
-	pairing, err := gadget.NewPairing(lc.api)
-	if err != nil {
-		return fmt.Errorf("new pairing: %w", err)
-	}
+	// Verify that the merkle root is equal to the given root (public input)
+	rootHash := merkle.RootHash(leafHashes, lc.input.NbOfVal)
+	lc.api.AssertIsEqual(expectedValRoot, rootHash)
 
-	_, _, g1AffGen, _ := curve.Generators()
-
-	// Verify that the aggregated signature is correct
-	var g1AffGenNeg curve.G1Affine
-	g1AffGenNeg.Neg(&g1AffGen)
-	negG1 := gadget.NewG1Affine(g1AffGenNeg)
-
-	err = pairing.PairingCheck(
-		[]*gadget.G1Affine{&negG1, aggregatedPublicKey},
-		[]*gadget.G2Affine{&lc.input.Sig, message},
-	)
-	if err != nil {
-		return fmt.Errorf("pairing check: %w", err)
-	}
-
-	return nil
+	return bls.VerifySignature(aggregatedPublicKey, message, &lc.input.Sig)
 }
