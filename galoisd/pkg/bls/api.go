@@ -76,7 +76,6 @@ func (b *BlsAPI) VerifySignature(publicKey *gadget.G1Affine, message *gadget.G2A
 	if err != nil {
 		return fmt.Errorf("new pairing: %w", err)
 	}
-
 	// Verify that the aggregated signature is correct
 	err = pairing.PairingCheck(
 		[]*gadget.G1Affine{&b.negG1Gen, publicKey},
@@ -85,6 +84,5 @@ func (b *BlsAPI) VerifySignature(publicKey *gadget.G1Affine, message *gadget.G2A
 	if err != nil {
 		return fmt.Errorf("pairing check: %w", err)
 	}
-
 	return nil
 }

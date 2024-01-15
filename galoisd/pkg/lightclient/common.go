@@ -139,6 +139,9 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 			}
 			return nil
 		})
+	if err != nil {
+		return err
+	}
 
 	// Ensure that we actually aggregated the correct number of signatures
 	lc.api.AssertIsEqual(nbOfKeys, lc.input.NbOfSignature)

@@ -9,7 +9,6 @@ import (
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/test"
 	"github.com/stretchr/testify/assert"
@@ -51,17 +50,16 @@ func TestMerkleRoot(t *testing.T) {
 			for j := k; j < MaxLeaves; j++ {
 				circuitLeaves[j] = 0
 			}
-			test.NewAssert(t).CheckCircuit(
+			err := test.IsSolved(
 				&MerkleRoot{},
-				test.WithValidAssignment(&MerkleRoot{
+				&MerkleRoot{
 					Root:       merkle.MimcHashFromByteSlices(leaves[:k]),
 					LeavesData: circuitLeaves,
 					NbOfLeaves: k,
-				}),
-				test.WithCurves(ecc.BN254),
-				test.NoFuzzing(),
-				test.WithBackends(backend.GROTH16),
+				},
+				ecc.BN254.ScalarField(),
 			)
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -85,16 +83,15 @@ func FuzzMerkleRoot(f *testing.F) {
 		for j := k; j < MaxLeaves; j++ {
 			circuitLeaves[j] = 0
 		}
-		test.NewAssert(t).CheckCircuit(
+		err := test.IsSolved(
 			&MerkleRoot{},
-			test.WithValidAssignment(&MerkleRoot{
+			&MerkleRoot{
 				Root:       merkle.MimcHashFromByteSlices(leaves[:k]),
 				LeavesData: circuitLeaves,
 				NbOfLeaves: k,
-			}),
-			test.WithCurves(ecc.BN254),
-			test.NoFuzzing(),
-			test.WithBackends(backend.GROTH16),
+			},
+			ecc.BN254.ScalarField(),
 		)
+		assert.NoError(t, err)
 	})
 }

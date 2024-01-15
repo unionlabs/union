@@ -9,7 +9,6 @@ import (
 	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	"github.com/consensys/gnark-crypto/ecc"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
-	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/algebra/emulated/fields_bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
@@ -44,16 +43,16 @@ func TestMapToCurve(t *testing.T) {
 			var messagePoint curve.E2
 			messagePoint.A0.SetBigInt(messageX.BigInt(new(big.Int)))
 			messagePoint.A1.SetBigInt(messageY.BigInt(new(big.Int)))
-			test.NewAssert(t).CheckCircuit(
+
+			err = test.IsSolved(
 				&MapToCurve{},
-				test.WithValidAssignment(&MapToCurve{
+				&MapToCurve{
 					Preimage: fields_bn254.FromE2(&messagePoint),
 					Image:    gadget.NewG2Affine(curve.MapToCurve2(&messagePoint)),
-				}),
-				test.WithCurves(ecc.BN254),
-				test.NoFuzzing(),
-				test.WithBackends(backend.GROTH16),
+				},
+				ecc.BN254.ScalarField(),
 			)
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -65,16 +64,15 @@ func FuzzMapToCurve(f *testing.F) {
 		var messagePoint curve.E2
 		messagePoint.A0.SetBigInt(messageX.BigInt(new(big.Int)))
 		messagePoint.A1.SetBigInt(messageY.BigInt(new(big.Int)))
-		test.NewAssert(t).CheckCircuit(
+		err := test.IsSolved(
 			&MapToCurve{},
-			test.WithValidAssignment(&MapToCurve{
+			&MapToCurve{
 				Preimage: fields_bn254.FromE2(&messagePoint),
 				Image:    gadget.NewG2Affine(curve.MapToCurve2(&messagePoint)),
-			}),
-			test.WithCurves(ecc.BN254),
-			test.NoFuzzing(),
-			test.WithBackends(backend.GROTH16),
+			},
+			ecc.BN254.ScalarField(),
 		)
+		assert.NoError(t, err)
 	})
 }
 
@@ -105,16 +103,15 @@ func TestMapToG2(t *testing.T) {
 			var messagePoint curve.E2
 			messagePoint.A0.SetBigInt(messageX.BigInt(new(big.Int)))
 			messagePoint.A1.SetBigInt(messageY.BigInt(new(big.Int)))
-			test.NewAssert(t).CheckCircuit(
+			err = test.IsSolved(
 				&MapToG2{},
-				test.WithValidAssignment(&MapToG2{
+				&MapToG2{
 					Preimage: fields_bn254.FromE2(&messagePoint),
 					Image:    gadget.NewG2Affine(curve.MapToG2(messagePoint)),
-				}),
-				test.WithCurves(ecc.BN254),
-				test.NoFuzzing(),
-				test.WithBackends(backend.GROTH16),
+				},
+				ecc.BN254.ScalarField(),
 			)
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -126,15 +123,14 @@ func FuzzMapToG2(f *testing.F) {
 		var messagePoint curve.E2
 		messagePoint.A0.SetBigInt(messageX.BigInt(new(big.Int)))
 		messagePoint.A1.SetBigInt(messageY.BigInt(new(big.Int)))
-		test.NewAssert(t).CheckCircuit(
+		err := test.IsSolved(
 			&MapToG2{},
-			test.WithValidAssignment(&MapToG2{
+			&MapToG2{
 				Preimage: fields_bn254.FromE2(&messagePoint),
 				Image:    gadget.NewG2Affine(curve.MapToG2(messagePoint)),
-			}),
-			test.WithCurves(ecc.BN254),
-			test.NoFuzzing(),
-			test.WithBackends(backend.GROTH16),
+			},
+			ecc.BN254.ScalarField(),
 		)
+		assert.NoError(t, err)
 	})
 }

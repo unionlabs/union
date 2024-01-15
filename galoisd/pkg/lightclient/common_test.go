@@ -6,7 +6,6 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/test"
 	"github.com/stretchr/testify/assert"
@@ -30,16 +29,14 @@ func TestUnpackRepackISO(t *testing.T) {
 			var value fr.Element
 			_, err := value.SetRandom()
 			assert.NoError(t, err)
-			test.NewAssert(t).CheckCircuit(
+			err = test.IsSolved(
 				&UnpackRepackISO{},
-				test.WithValidAssignment(&UnpackRepackISO{
+				&UnpackRepackISO{
 					Value: value,
-				}),
-				test.WithCurves(ecc.BN254),
-				test.NoFuzzing(),
-				test.WithCurves(ecc.BN254),
-				test.WithBackends(backend.GROTH16),
+				},
+				ecc.BN254.ScalarField(),
 			)
+			assert.NoError(t, err)
 		})
 	}
 }

@@ -9,7 +9,6 @@ import (
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	"github.com/consensys/gnark-crypto/ecc"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
-	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
@@ -71,17 +70,16 @@ func TestBlsAdd(t *testing.T) {
 				pks[j] = gadget.NewG1Affine(curve.G1Affine{})
 				bitmap[j] = 0
 			}
-			test.NewAssert(t).CheckCircuit(
+			err := test.IsSolved(
 				&BlsAgg{},
-				test.WithValidAssignment(&BlsAgg{
+				&BlsAgg{
 					PublicKeys:          pks,
 					Bitmap:              bitmap,
 					AggregatedPublicKey: gadget.NewG1Affine(expectedAggPK),
-				}),
-				test.WithCurves(ecc.BN254),
-				test.NoFuzzing(),
-				test.WithBackends(backend.GROTH16),
+				},
+				ecc.BN254.ScalarField(),
 			)
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -118,15 +116,14 @@ func TestBlsSig(t *testing.T) {
 	var sig curve.G2Affine
 	_, err = sig.SetBytes(rawSig)
 	assert.NoError(t, err)
-	test.NewAssert(t).CheckCircuit(
+	err = test.IsSolved(
 		&BlsSig{},
-		test.WithValidAssignment(&BlsSig{
+		&BlsSig{
 			PublicKey: gadget.NewG1Affine(pk),
-			Signature: gadget.NewG2AffineFixed(sig),
-			Message:   gadget.NewG2AffineFixed(hashed),
-		}),
-		test.WithCurves(ecc.BN254),
-		test.NoFuzzing(),
-		test.WithBackends(backend.GROTH16),
+			Signature: gadget.NewG2Affine(sig),
+			Message:   gadget.NewG2Affine(hashed),
+		},
+		ecc.BN254.ScalarField(),
 	)
+	assert.NoError(t, err)
 }

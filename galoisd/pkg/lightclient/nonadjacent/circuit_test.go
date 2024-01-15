@@ -9,6 +9,7 @@ import (
 	"cosmossdk.io/math"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/consensys/gnark-crypto/ecc"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
-	back "github.com/consensys/gnark/backend"
 
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 
@@ -240,7 +240,7 @@ func Test(t *testing.T) {
 		&Circuit{},
 		test.WithValidAssignment(&circuit),
 		test.WithCurves(ecc.BN254),
-		test.WithBackends(back.GROTH16),
+		test.WithBackends(backend.GROTH16),
 		test.NoFuzzing(),
 	)
 }
