@@ -11,6 +11,7 @@ import (
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/algebra/emulated/fields_bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
 	"github.com/consensys/gnark/std/math/emulated"
@@ -23,7 +24,7 @@ const MaxKeys = 128
 type BlsAgg struct {
 	PublicKeys          [MaxKeys]gadget.G1Affine
 	Bitmap              [MaxKeys]frontend.Variable
-	AggregatedPublicKey gadget.G1Affine `gnark:",public"`
+	AggregatedPublicKey gadget.G1Affine
 }
 
 func (c *BlsAgg) Define(api frontend.API) error {
@@ -87,9 +88,12 @@ func TestBlsAdd(t *testing.T) {
 }
 
 type BlsSig struct {
-	PublicKey gadget.G1Affine `gnark:",public"`
-	Signature gadget.G2Affine
-	Message   gadget.G2Affine `gnark:",public"`
+	PublicKey gadget.G1Affine
+	// Bug in gnark? Using gadget.G2Affine yield non deterministic, there is a `line` field in the struct that is dynamically compiled
+	// Signature gadget.G2Affine
+	// Message   gadget.G2Affine
+	Signature gadget.G2AffP
+	Message   gadget.G2AffP
 }
 
 func (c *BlsSig) Define(api frontend.API) error {
@@ -97,7 +101,16 @@ func (c *BlsSig) Define(api frontend.API) error {
 	if err != nil {
 		return err
 	}
-	bls.VerifySignature(&c.PublicKey, &c.Message, &c.Signature)
+	signature := gadget.G2Affine{
+		P: c.Signature,
+	}
+	message := gadget.G2Affine{
+		P: c.Message,
+	}
+	err = bls.VerifySignature(&c.PublicKey, &message, &signature)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -119,8 +132,14 @@ func TestBlsSig(t *testing.T) {
 		&BlsSig{},
 		test.WithValidAssignment(&BlsSig{
 			PublicKey: gadget.NewG1Affine(pk),
-			Signature: gadget.NewG2Affine(sig),
-			Message:   gadget.NewG2Affine(hashed),
+			Signature: gadget.G2AffP{
+				X: fields_bn254.FromE2(&sig.X),
+				Y: fields_bn254.FromE2(&sig.Y),
+			},
+			Message: gadget.G2AffP{
+				X: fields_bn254.FromE2(&hashed.X),
+				Y: fields_bn254.FromE2(&hashed.Y),
+			},
 		}),
 		test.WithCurves(ecc.BN254),
 		test.NoFuzzing(),

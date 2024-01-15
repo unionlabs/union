@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"galois/pkg/lightclient"
-	"log"
 	"math/big"
 
 	"cosmossdk.io/math"
@@ -190,32 +189,25 @@ func Test(t *testing.T) {
 		return aggregatedSignature, nil
 	}
 
-	log.Println("Marshalling trusted validators...")
 	trustedValidatorsInput, trustedValidatorsRoot, err := marshalValidators(trustedValidators)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	log.Println("Aggregating trusted signature...")
 	trustedAggregatedSignature, err := aggregateSignatures(trustedSignatures)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	log.Println("Marshalling untrusted validators...")
 	untrustedValidatorsInput, untrustedValidatorsRoot, err := marshalValidators(untrustedValidators)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	log.Println("Aggregating untrusted signature...")
 	untrustedAggregatedSignature, err := aggregateSignatures(untrustedSignatures)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	t.Logf("Nb of validators: %d", len(trustedValidators))
-	t.Logf("Nb of signatures: %d", len(trustedSignatures))
 
 	trustedInput := TendermintNonAdjacentLightClientInput{
 		Sig:           gadget.NewG2Affine(trustedAggregatedSignature),
@@ -244,5 +236,11 @@ func Test(t *testing.T) {
 	}
 
 	assert := test.NewAssert(t)
-	assert.CheckCircuit(&Circuit{}, test.WithValidAssignment(&circuit), test.WithCurves(ecc.BN254), test.WithBackends(back.GROTH16), test.NoFuzzing())
+	assert.CheckCircuit(
+		&Circuit{},
+		test.WithValidAssignment(&circuit),
+		test.WithCurves(ecc.BN254),
+		test.WithBackends(back.GROTH16),
+		test.NoFuzzing(),
+	)
 }
