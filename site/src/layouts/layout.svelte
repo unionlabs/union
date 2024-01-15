@@ -29,7 +29,7 @@
             src='/logo.svg'
             alt='Union Logo'
           />
-          <p class='min-[420px]:block font-extrabold text-3xl sm:text-5xl'>Union</p>
+          <p class='min-[420px]:block font-semibold text-3xl sm:text-5xl'>Union</p>
         </a>
         <nav class='flex flex-1 justify-end'>
           <ul class='flex gap-4 !text-xl! !md:text-2xl font-extrabold list-none align-middle my-auto'>
