@@ -5,8 +5,8 @@ import Layout from '#/layouts/layout.astro'
 <Layout>
   <main class='flex flex-col flex-1 gap-[100px] md:gap-[200px] my-[50px] md:my-[100px]'>
     <div class='flex flex-col items-center'>
-      <div class='main-text'>Infrastructure for the</div>
-      <div class='next-century-text animate-character'>next century</div>
+      <div class='main-text leading-3'>Infrastructure for the</div>
+      <div class='next-century-text animate-character my-[0.5px]'>next century</div>
       <div class='tagline'>
         Union is a hyper-efficient, zero-knowledge interoperability layer<br />
         that connects Appchains, Layer 1, and Layer 2 networks.
@@ -93,9 +93,8 @@ import Layout from '#/layouts/layout.astro'
 	.main-text {
 		max-width: 72rem; 
 		font-size: 26px;
-		line-height: 2.5rem; 
 		font-weight: 900; 
-		text-align: center; 
+		text-align: center;
 
 		@media (min-width: 340px) {
 			font-size: 29px;
