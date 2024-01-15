@@ -397,22 +397,22 @@
 
 
           treefmt =
-            # let
-            #   prettier-solidity = pkgs.buildNpmPackage {
-            #     name = "prettier-plugin-solidity";
-            #     version = "1.1.3";
-            #     nativeBuildInputs = [ pkgs.pkg-config pkgs.python3 ];
-            #     src = pkgs.fetchFromGitHub {
-            #       owner = "prettier-solidity";
-            #       repo = "prettier-plugin-solidity";
-            #       rev = "0f0b31bd1d76626cad4ce576d89088ef23ad87f3";
-            #       hash = "sha256-zodOB5hARb7Jrb6d4gqmBKEFKUg0ZNZKbTN7H4vJk2w=";
-            #     };
-            #     npmInstallFlags = "--include=dev";
-            #     npmDepsHash =
-            #       "sha256-Hzc4j9icNxTJNNaZ3PrmLKcUVR26nu4KqLireP4WmZM=";
-            #   };
-            # in
+            let
+              prettier-solidity = pkgs.buildNpmPackage {
+                name = "prettier-plugin-solidity";
+                version = "1.1.3";
+                nativeBuildInputs = [ pkgs.pkg-config pkgs.python3 ];
+                src = pkgs.fetchFromGitHub {
+                  owner = "prettier-solidity";
+                  repo = "prettier-plugin-solidity";
+                  rev = "0f0b31bd1d76626cad4ce576d89088ef23ad87f3";
+                  hash = "sha256-zodOB5hARb7Jrb6d4gqmBKEFKUg0ZNZKbTN7H4vJk2w=";
+                };
+                npmInstallFlags = "--include=dev";
+                npmDepsHash =
+                  "sha256-Hzc4j9icNxTJNNaZ3PrmLKcUVR26nu4KqLireP4WmZM=";
+              };
+            in
             {
               projectRootFile = "flake.nix";
               programs = {
@@ -438,7 +438,7 @@
                 global.excludes = [ "**/vendor/**" ];
                 formatter.prettier = {
                   # TODO: Use settings.pluginSearchDirs
-                  # options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
+                  options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
                   includes = [
                     "*.css"
                     "*.html"
@@ -455,6 +455,7 @@
                     "*.d.ts"
                     "*.yaml"
                     "*.yml"
+                    "*.sol"
                   ];
                 };
               };
