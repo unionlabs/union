@@ -1,5 +1,6 @@
 ---
 import Layout from '#/layouts/layout.svelte'
+import Graph from '#/components/graph.svelte'
 ---
 
 <Layout>
@@ -39,33 +40,8 @@ import Layout from '#/layouts/layout.svelte'
 				<p class="text-3xl font-normal mb-0 text-gray-400">Galois is the first interoperability proving layer that is so efficient that it allows anyone to <span class="text-white">generate proofs on your phone.</span> Gone is the era of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.</p>
 
 			</div>
-			<div class="flex-1 flex items-center justify-center">
-				<div class="flex-1 ">
-				<div class="flex gap-4 flex-1">
-					<div>
-						<div class="bg-white h-10 w-10 mb-4"></div>
-						<div class="bg-white h-10 w-10"></div>
-					</div>
-					<div>
-						<div class="bg-white h-10 w-10 mb-4"></div>
-						<div class="bg-white h-10 w-10"></div>
-					</div>
-					<div>
-						<div class="bg-white h-10 w-10 mb-4"></div>
-						<div class="bg-white h-10 w-10"></div>
-					</div>
-					<div>
-						<div class="bg-white h-10 w-10 mb-4"></div>
-						<div class="bg-white h-10 w-10"></div>
-					</div>
-				</div>
-				<div class="text-4xl mt-4">
-					<div>750x faster.</div>
-					<div>350x cheaper.</div>
-					<div>ZK. Decentralized.</div>
-				</div>
-				</div>
-			</div>
+			<Graph/>
+			
 
 		</div>
 
