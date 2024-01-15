@@ -16,7 +16,6 @@
   "dependencies": {
     "@astrojs/svelte": "^5.0.3",
     "@fontsource/ibm-plex-mono": "^5.0.8",
-    "@fontsource/inter": "^5.0.16",
     "@fontsource/jetbrains-mono": "^5.0.18",
     "@urql/svelte": "^4.0.4",
     "graphql": "^16.8.1",
