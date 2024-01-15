@@ -357,6 +357,7 @@
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
             buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
+              cargo-llvm-cov
               bacon
               cargo-nextest
               foundry-bin

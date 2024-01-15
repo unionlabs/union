@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { pkgs, rust, system, lib, dbg, inputs', ... }:
+  perSystem = { self', pkgs, rust, system, lib, dbg, inputs', ... }:
     let
       # crane = builtins.trace (pkgs.lib.generators.toPretty { } inputs.crane ) inputs.crane;
       inherit (inputs) crane;
@@ -38,6 +38,34 @@
         #    sourcePath = some/dir         true
         #    sourcePath = some/dir/sub/dir false
         || lib.hasPrefix path' pathToInclude;
+
+      # removes the root store path from the given path, facilitating easier source filtering.
+      removeRootStorePath = path:
+        let
+          root' = (toString root) + "/";
+          path' = toString path;
+        in
+        lib.throwIfNot
+          (lib.hasPrefix root' path')
+          "path ${path'} does not have the prefix ${root'}"
+          (lib.removePrefix root' path');
+
+      mkCleanSrc =
+        { srcFilter, name }: lib.cleanSourceWith {
+          name = "${name}-source";
+          src = root;
+          filter = path: type:
+            let
+              path' = removeRootStorePath path;
+            in
+            # first filter down to just the cargo source, and any additional files as specified by
+              # additional[Test]SrcFilter
+            ((craneLib.filterCargoSources path type)
+              || (srcFilter path' type));
+        };
+
+      workspaceCargoToml = lib.trivial.importTOML (root + "/Cargo.toml");
+      workspaceCargoLockPath = root + "/Cargo.lock";
 
       buildWorkspaceMember =
         {
@@ -98,20 +126,6 @@
 
           cargoBuild = craneLib.overrideToolchain cargoBuildRustToolchain';
 
-          workspaceCargoToml = lib.trivial.importTOML (root + "/Cargo.toml");
-          workspaceCargoLockPath = root + "/Cargo.lock";
-
-          # removes the root store path from the given path, facilitating easier source filtering.
-          removeRootStorePath = path:
-            let
-              root' = (toString root) + "/";
-              path' = toString path;
-            in
-            lib.throwIfNot
-              (lib.hasPrefix root' path')
-              "path ${path'} does not have the prefix ${root'}"
-              (lib.removePrefix root' path');
-
           # gets all the local (i.e. path) dependencies for a crate, recursively.
           #
           # note that to make this easier, we define all local dependencies as workspace dependencies.
@@ -140,37 +154,29 @@
             "expected crateDirFromRoot to be a string, but it was a ${builtins.typeOf crateDirFromRoot}: ${crateDirFromRoot}"
             crateDirFromRoot);
 
-          crateSrc = lib.cleanSourceWith {
-            name = "${cratePname}-source";
-            src = root;
-            filter = path: type:
-              let
-                path' = removeRootStorePath path;
-              in
-              # first filter down to just the cargo source, and any additional files as specified by
-                # additional[Test]SrcFilter
-              ((craneLib.filterCargoSources path type)
-              || (additionalSrcFilter path' type)
+          crateSrc = mkCleanSrc {
+            name = cratePname;
+            srcFilter = path': type: ((additionalSrcFilter path' type)
               # TODO: only include this filter for tests; maybe by adding to preConfigureHooks?
               || (additionalTestSrcFilter path' type))
-              && (
-                path' == "Cargo.toml"
+            && (
+              path' == "Cargo.toml"
                 || path' == "Cargo.lock"
                 || (
-                  builtins.any
-                    (depPath: ensureDirectoryIncluded {
-                      inherit path';
-                      pathToInclude = depPath;
-                    })
-                    workspaceDepsForCrate
-                )
+                builtins.any
+                  (depPath: ensureDirectoryIncluded {
+                    inherit path';
+                    pathToInclude = depPath;
+                  })
+                  workspaceDepsForCrate
+              )
                 # Yes, this does need to be filtered twice - once in the original filter so it's included
                 # in the cargo sources, and once again so it's included when filtering down to workspace
                 # dependencies
                 || (additionalSrcFilter path' type)
                 # TODO: Only include this filter for tests; maybe by adding to preConfigureHooks?
                 || (additionalTestSrcFilter path' type)
-              );
+            );
           };
 
           # patch the workspace Cargo.toml to only contain the local dependencies required to build this crate.
@@ -178,7 +184,9 @@
             let
               patchedCargoToml = (pkgs.formats.toml { }).generate
                 "Cargo.toml"
-                (lib.recursiveUpdate workspaceCargoToml { workspace.members = workspaceDepsForCrate; });
+                (lib.recursiveUpdate workspaceCargoToml {
+                  workspace. members = workspaceDepsForCrate;
+                });
             in
             # REVIEW: This can maybe be a runCommand?
               # I'm not touching it though
@@ -291,6 +299,12 @@
             tests = craneLib.cargoNextest cargoNextestAttrs;
           };
         };
+
+
+      cargoWorkspaceSrc = mkCleanSrc {
+        name = "cargo-workspace-src";
+        srcFilter = path: type: true;
+      };
     in
     {
       _module.args = {
@@ -302,5 +316,36 @@
           };
         };
       };
+
+      packages.rust-coverage =
+        let
+          craneLib = crane.lib.${system}.overrideToolchain rust.toolchains.dev;
+        in
+        craneLib.cargoLlvmCov {
+          pname = "workspace-cargo-llvm-cov";
+          version = "0.0.0";
+          cargoLlvmCovExtraArgs = "--workspace --html --output-dir $out --ignore-filename-regex 'nix/store/.+'";
+          SQLX_OFFLINE = true;
+          cargoArtifacts = craneLib.buildDepsOnly {
+            pname = "workspace-build-deps-only";
+            version = "0.0.0";
+            cargoExtraArgs = "--locked";
+            doCheck = false;
+
+            buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
+              lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
+            );
+            src = cargoWorkspaceSrc;
+          };
+          preBuild = ''
+            cp --no-preserve=mode ${self'.packages.uniond}/bin/uniond $(pwd)/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis
+            echo 'patching testdata'
+            patchShebangs $(pwd)/unionvisor/src/testdata
+          '';
+          buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
+            lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
+          );
+          src = cargoWorkspaceSrc;
+        };
     };
 }
