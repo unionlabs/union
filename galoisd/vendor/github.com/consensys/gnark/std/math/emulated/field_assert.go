@@ -95,7 +95,7 @@ func (f *Field[T]) AssertLimbsEquality(a, b *Element[T]) {
 // (defined by the field parameter).
 func (f *Field[T]) enforceWidth(a *Element[T], modWidth bool) {
 	if _, aConst := f.constantValue(a); aConst {
-		if len(a.Limbs) != int(f.fParams.NbLimbs()) {
+		if modWidth && len(a.Limbs) != int(f.fParams.NbLimbs()) {
 			panic("constant limb width doesn't match parametrized field")
 		}
 	}
@@ -198,7 +198,7 @@ func (f *Field[T]) IsZero(a *Element[T]) frontend.Variable {
 	f.AssertIsInRange(ca)
 	res := f.api.IsZero(ca.Limbs[0])
 	for i := 1; i < len(ca.Limbs); i++ {
-		f.api.Mul(res, f.api.IsZero(ca.Limbs[i]))
+		res = f.api.Mul(res, f.api.IsZero(ca.Limbs[i]))
 	}
 	return res
 }

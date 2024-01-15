@@ -329,16 +329,22 @@ func buildDomain(n int, domain *fft.Domain) (*fft.Domain, error) {
 // nbCopies is the number of cosets of the roots of unity that are needed, including the set of
 // roots of unity itself.
 func getSupportIdentityPermutation(nbCopies int, domain *fft.Domain) []fr.Element {
+	if nbCopies <= 0 {
+		panic("getSupportIdentityPermutation: nbCopies must be positive")
+	}
 
 	res := make([]fr.Element, uint64(nbCopies)*domain.Cardinality)
 	sizePoly := int(domain.Cardinality)
 
-	// len(domain.Twiddle) == sizePoly / 2
-	copy(res, domain.Twiddles[0])
-	// remaining ones.
-	for i := (sizePoly / 2) - 1; i < sizePoly-1; i++ {
-		res[i+1].Mul(&res[i], &domain.Generator)
+	// TODO @gbotrel check if we can reuse the pre-computed twiddles from the domain.
+	res[0].SetOne()
+	if len(res) > 1 {
+		res[1].Set(&domain.Generator)
+		for i := 2; i < len(res); i++ {
+			res[i].Mul(&res[i-1], &domain.Generator)
+		}
 	}
+
 	if nbCopies <= 1 {
 		return res
 	}
@@ -348,15 +354,7 @@ func getSupportIdentityPermutation(nbCopies int, domain *fft.Domain) []fr.Elemen
 		i := i
 
 		var coset fr.Element
-		if i == 1 {
-			coset = domain.FrMultiplicativeGen
-		} else {
-			if len(domain.CosetTable) > i {
-				coset = domain.CosetTable[i]
-			} else {
-				coset.Exp(domain.FrMultiplicativeGen, big.NewInt(int64(i)))
-			}
-		}
+		coset.Exp(domain.FrMultiplicativeGen, big.NewInt(int64(i)))
 
 		go func() {
 			parallel.Execute(sizePoly, func(start, end int) {

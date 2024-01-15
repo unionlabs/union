@@ -17,6 +17,7 @@
 package fft
 
 import (
+	"errors"
 	"io"
 	"math/big"
 	"math/bits"
@@ -41,28 +42,33 @@ type Domain struct {
 	FrMultiplicativeGen    fr.Element // generator of Fr*
 	FrMultiplicativeGenInv fr.Element
 
+	// this is set with the WithoutPrecompute option;
+	// if true, the domain does some pre-computation and stores it.
+	// if false, the FFT will compute the twiddles on the fly (this is less CPU efficient, but uses less memory)
+	withPrecompute bool
+
 	// the following slices are not serialized and are (re)computed through domain.preComputeTwiddles()
 
-	// Twiddles factor for the FFT using Generator for each stage of the recursive FFT
-	Twiddles [][]fr.Element
+	// twiddles factor for the FFT using Generator for each stage of the recursive FFT
+	twiddles [][]fr.Element
 
-	// Twiddles factor for the FFT using GeneratorInv for each stage of the recursive FFT
-	TwiddlesInv [][]fr.Element
+	// twiddles factor for the FFT using GeneratorInv for each stage of the recursive FFT
+	twiddlesInv [][]fr.Element
 
 	// we precompute these mostly to avoid the memory intensive bit reverse permutation in the groth16.Prover
 
-	// CosetTable u*<1,g,..,g^(n-1)>
-	CosetTable []fr.Element
+	// cosetTable u*<1,g,..,g^(n-1)>
+	cosetTable []fr.Element
 
-	// CosetTable[i][j] = domain.Generator(i-th)SqrtInv ^ j
-	CosetTableInv []fr.Element
+	// cosetTable[i][j] = domain.Generator(i-th)SqrtInv ^ j
+	cosetTableInv []fr.Element
 }
 
 // NewDomain returns a subgroup with a power of 2 cardinality
 // cardinality >= m
 // shift: when specified, it's the element by which the set of root of unity is shifted.
-func NewDomain(m uint64, shift ...fr.Element) *Domain {
-
+func NewDomain(m uint64, opts ...DomainOption) *Domain {
+	opt := domainOptions(opts...)
 	domain := &Domain{}
 	x := ecc.NextPowerOfTwo(m)
 	domain.Cardinality = uint64(x)
@@ -71,8 +77,8 @@ func NewDomain(m uint64, shift ...fr.Element) *Domain {
 
 	domain.FrMultiplicativeGen.SetUint64(5)
 
-	if len(shift) != 0 {
-		domain.FrMultiplicativeGen.Set(&shift[0])
+	if opt.shift != nil {
+		domain.FrMultiplicativeGen.Set(opt.shift)
 	}
 	domain.FrMultiplicativeGenInv.Inverse(&domain.FrMultiplicativeGen)
 
@@ -85,7 +91,10 @@ func NewDomain(m uint64, shift ...fr.Element) *Domain {
 	domain.CardinalityInv.SetUint64(uint64(x)).Inverse(&domain.CardinalityInv)
 
 	// twiddle factors
-	domain.preComputeTwiddles()
+	domain.withPrecompute = opt.withPrecompute
+	if domain.withPrecompute {
+		domain.preComputeTwiddles()
+	}
 
 	return domain
 }
@@ -96,54 +105,104 @@ func Generator(m uint64) (fr.Element, error) {
 	return fr.Generator(m)
 }
 
+// Twiddles returns the twiddles factor for the FFT using Generator for each stage of the recursive FFT
+// or an error if the domain was created with the WithoutPrecompute option
+func (d *Domain) Twiddles() ([][]fr.Element, error) {
+	if d.twiddles == nil {
+		return nil, errors.New("twiddles not precomputed")
+	}
+	return d.twiddles, nil
+}
+
+// TwiddlesInv returns the twiddles factor for the FFT using GeneratorInv for each stage of the recursive FFT
+// or an error if the domain was created with the WithoutPrecompute option
+func (d *Domain) TwiddlesInv() ([][]fr.Element, error) {
+	if d.twiddlesInv == nil {
+		return nil, errors.New("twiddles not precomputed")
+	}
+	return d.twiddlesInv, nil
+}
+
+// CosetTable returns the cosetTable u*<1,g,..,g^(n-1)>
+// or an error if the domain was created with the WithoutPrecompute option
+func (d *Domain) CosetTable() ([]fr.Element, error) {
+	if d.cosetTable == nil {
+		return nil, errors.New("cosetTable not precomputed")
+	}
+	return d.cosetTable, nil
+}
+
+// CosetTableInv returns the cosetTableInv u*<1,g,..,g^(n-1)>
+// or an error if the domain was created with the WithoutPrecompute option
+func (d *Domain) CosetTableInv() ([]fr.Element, error) {
+	if d.cosetTableInv == nil {
+		return nil, errors.New("cosetTableInv not precomputed")
+	}
+	return d.cosetTableInv, nil
+}
+
 func (d *Domain) preComputeTwiddles() {
 
 	// nb fft stages
 	nbStages := uint64(bits.TrailingZeros64(d.Cardinality))
 
-	d.Twiddles = make([][]fr.Element, nbStages)
-	d.TwiddlesInv = make([][]fr.Element, nbStages)
-	d.CosetTable = make([]fr.Element, d.Cardinality)
-	d.CosetTableInv = make([]fr.Element, d.Cardinality)
+	d.twiddles = make([][]fr.Element, nbStages)
+	d.twiddlesInv = make([][]fr.Element, nbStages)
+	d.cosetTable = make([]fr.Element, d.Cardinality)
+	d.cosetTableInv = make([]fr.Element, d.Cardinality)
 
 	var wg sync.WaitGroup
 
-	// for each fft stage, we pre compute the twiddle factors
-	twiddles := func(t [][]fr.Element, omega fr.Element) {
-		for i := uint64(0); i < nbStages; i++ {
-			t[i] = make([]fr.Element, 1+(1<<(nbStages-i-1)))
-			var w fr.Element
-			if i == 0 {
-				w = omega
-			} else {
-				w = t[i-1][2]
-			}
-			t[i][0] = fr.One()
-			t[i][1] = w
-			for j := 2; j < len(t[i]); j++ {
-				t[i][j].Mul(&t[i][j-1], &w)
-			}
-		}
-		wg.Done()
-	}
-
 	expTable := func(sqrt fr.Element, t []fr.Element) {
-		t[0] = fr.One()
-		precomputeExpTable(sqrt, t)
+		BuildExpTable(sqrt, t)
 		wg.Done()
 	}
 
 	wg.Add(4)
-	go twiddles(d.Twiddles, d.Generator)
-	go twiddles(d.TwiddlesInv, d.GeneratorInv)
-	go expTable(d.FrMultiplicativeGen, d.CosetTable)
-	go expTable(d.FrMultiplicativeGenInv, d.CosetTableInv)
+	go func() {
+		buildTwiddles(d.twiddles, d.Generator, nbStages)
+		wg.Done()
+	}()
+	go func() {
+		buildTwiddles(d.twiddlesInv, d.GeneratorInv, nbStages)
+		wg.Done()
+	}()
+	go expTable(d.FrMultiplicativeGen, d.cosetTable)
+	go expTable(d.FrMultiplicativeGenInv, d.cosetTableInv)
 
 	wg.Wait()
 
 }
 
-func precomputeExpTable(w fr.Element, table []fr.Element) {
+func buildTwiddles(t [][]fr.Element, omega fr.Element, nbStages uint64) {
+	if nbStages == 0 {
+		return
+	}
+	if len(t) != int(nbStages) {
+		panic("invalid twiddle table")
+	}
+	// we just compute the first stage
+	t[0] = make([]fr.Element, 1+(1<<(nbStages-1)))
+	BuildExpTable(omega, t[0])
+
+	// for the next stages, we just iterate on the first stage with larger stride
+	for i := uint64(1); i < nbStages; i++ {
+		t[i] = make([]fr.Element, 1+(1<<(nbStages-i-1)))
+		k := 0
+		for j := 0; j < len(t[i]); j++ {
+			t[i][j] = t[0][k]
+			k += 1 << i
+		}
+	}
+
+}
+
+// BuildExpTable precomputes the first n powers of w in parallel
+// table[0] = w^0
+// table[1] = w^1
+// ...
+func BuildExpTable(w fr.Element, table []fr.Element) {
+	table[0].SetOne()
 	n := len(table)
 
 	// see if it makes sense to parallelize exp tables pre-computation
@@ -153,6 +212,7 @@ func precomputeExpTable(w fr.Element, table []fr.Element) {
 	}
 
 	// this ratio roughly correspond to the number of multiplication one can do in place of a Exp operation
+	// TODO @gbotrel revisit this; Exps in this context will be by a "small power of 2" so faster than this ref ratio.
 	const ratioExpMul = 6000 / 17
 
 	if interval < ratioExpMul {
@@ -194,7 +254,7 @@ func (d *Domain) WriteTo(w io.Writer) (int64, error) {
 
 	enc := curve.NewEncoder(w)
 
-	toEncode := []interface{}{d.Cardinality, &d.CardinalityInv, &d.Generator, &d.GeneratorInv, &d.FrMultiplicativeGen, &d.FrMultiplicativeGenInv}
+	toEncode := []interface{}{d.Cardinality, &d.CardinalityInv, &d.Generator, &d.GeneratorInv, &d.FrMultiplicativeGen, &d.FrMultiplicativeGenInv, &d.withPrecompute}
 
 	for _, v := range toEncode {
 		if err := enc.Encode(v); err != nil {
@@ -210,7 +270,7 @@ func (d *Domain) ReadFrom(r io.Reader) (int64, error) {
 
 	dec := curve.NewDecoder(r)
 
-	toDecode := []interface{}{&d.Cardinality, &d.CardinalityInv, &d.Generator, &d.GeneratorInv, &d.FrMultiplicativeGen, &d.FrMultiplicativeGenInv}
+	toDecode := []interface{}{&d.Cardinality, &d.CardinalityInv, &d.Generator, &d.GeneratorInv, &d.FrMultiplicativeGen, &d.FrMultiplicativeGenInv, &d.withPrecompute}
 
 	for _, v := range toDecode {
 		if err := dec.Decode(v); err != nil {
@@ -218,34 +278,9 @@ func (d *Domain) ReadFrom(r io.Reader) (int64, error) {
 		}
 	}
 
-	// twiddle factors
-	d.preComputeTwiddles()
-
-	return dec.BytesRead(), nil
-}
-
-// AsyncReadFrom attempts to decode a domain from Reader. It returns a channel that will be closed
-// when the precomputation is done.
-func (d *Domain) AsyncReadFrom(r io.Reader) (int64, error, chan struct{}) {
-
-	dec := curve.NewDecoder(r)
-
-	toDecode := []interface{}{&d.Cardinality, &d.CardinalityInv, &d.Generator, &d.GeneratorInv, &d.FrMultiplicativeGen, &d.FrMultiplicativeGenInv}
-
-	for _, v := range toDecode {
-		if err := dec.Decode(v); err != nil {
-			return dec.BytesRead(), err, nil
-		}
+	if d.withPrecompute {
+		d.preComputeTwiddles()
 	}
 
-	chDone := make(chan struct{})
-
-	go func() {
-		// twiddle factors
-		d.preComputeTwiddles()
-
-		close(chDone)
-	}()
-
-	return dec.BytesRead(), nil, chDone
+	return dec.BytesRead(), nil
 }

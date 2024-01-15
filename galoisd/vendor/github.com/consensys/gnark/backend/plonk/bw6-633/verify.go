@@ -17,54 +17,64 @@
 package plonk
 
 import (
-	"crypto/sha256"
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
+
 	"time"
 
-	"github.com/consensys/gnark-crypto/ecc/bw6-633/fr"
-
-	"github.com/consensys/gnark-crypto/ecc/bw6-633/kzg"
+	"github.com/consensys/gnark-crypto/ecc"
 
 	curve "github.com/consensys/gnark-crypto/ecc/bw6-633"
 
-	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark-crypto/fiat-shamir"
+	"github.com/consensys/gnark-crypto/ecc/bw6-633/fr"
+
+	"github.com/consensys/gnark-crypto/ecc/bw6-633/fr/hash_to_field"
+
+	"github.com/consensys/gnark-crypto/ecc/bw6-633/kzg"
+	fiatshamir "github.com/consensys/gnark-crypto/fiat-shamir"
+	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/logger"
 )
 
 var (
 	errWrongClaimedQuotient = errors.New("claimed quotient is not as expected")
+	errInvalidWitness       = errors.New("witness length is invalid")
 )
 
-func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector) error {
+func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector, opts ...backend.VerifierOption) error {
 	log := logger.Logger().With().Str("curve", "bw6-633").Str("backend", "plonk").Logger()
 	start := time.Now()
+	cfg, err := backend.NewVerifierConfig(opts...)
+	if err != nil {
+		return fmt.Errorf("create backend config: %w", err)
+	}
 
 	if len(proof.Bsb22Commitments) != len(vk.Qcp) {
 		return errors.New("BSB22 Commitment number mismatch")
 	}
 
-	// pick a hash function to derive the challenge (the same as in the prover)
-	hFunc := sha256.New()
+	if len(publicWitness) != int(vk.NbPublicVariables) {
+		return errInvalidWitness
+	}
 
 	// transcript to derive the challenge
-	fs := fiatshamir.NewTranscript(hFunc, "gamma", "beta", "alpha", "zeta")
+	fs := fiatshamir.NewTranscript(cfg.ChallengeHash, "gamma", "beta", "alpha", "zeta")
 
 	// The first challenge is derived using the public data: the commitments to the permutation,
 	// the coefficients of the circuit, and the public inputs.
 	// derive gamma from the Comm(blinded cl), Comm(blinded cr), Comm(blinded co)
-	if err := bindPublicData(&fs, "gamma", vk, publicWitness); err != nil {
+	if err := bindPublicData(fs, "gamma", vk, publicWitness); err != nil {
 		return err
 	}
-	gamma, err := deriveRandomness(&fs, "gamma", &proof.LRO[0], &proof.LRO[1], &proof.LRO[2])
+	gamma, err := deriveRandomness(fs, "gamma", &proof.LRO[0], &proof.LRO[1], &proof.LRO[2])
 	if err != nil {
 		return err
 	}
 
 	// derive beta from Comm(l), Comm(r), Comm(o)
-	beta, err := deriveRandomness(&fs, "beta")
+	beta, err := deriveRandomness(fs, "beta")
 	if err != nil {
 		return err
 	}
@@ -75,13 +85,13 @@ func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector) error {
 		alphaDeps[i] = &proof.Bsb22Commitments[i]
 	}
 	alphaDeps[len(alphaDeps)-1] = &proof.Z
-	alpha, err := deriveRandomness(&fs, "alpha", alphaDeps...)
+	alpha, err := deriveRandomness(fs, "alpha", alphaDeps...)
 	if err != nil {
 		return err
 	}
 
 	// derive zeta, the point of evaluation
-	zeta, err := deriveRandomness(&fs, "zeta", &proof.H[0], &proof.H[1], &proof.H[2])
+	zeta, err := deriveRandomness(fs, "zeta", &proof.H[0], &proof.H[1], &proof.H[2])
 	if err != nil {
 		return err
 	}
@@ -119,11 +129,19 @@ func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector) error {
 			}
 		}
 
+		if cfg.HashToFieldFn == nil {
+			cfg.HashToFieldFn = hash_to_field.New([]byte("BSB22-Plonk"))
+		}
+		var hashedCmt fr.Element
+		nbBuf := fr.Bytes
+		if cfg.HashToFieldFn.Size() < fr.Bytes {
+			nbBuf = cfg.HashToFieldFn.Size()
+		}
 		for i := range vk.CommitmentConstraintIndexes {
-			var hashRes []fr.Element
-			if hashRes, err = fr.Hash(proof.Bsb22Commitments[i].Marshal(), []byte("BSB22-Plonk"), 1); err != nil {
-				return err
-			}
+			cfg.HashToFieldFn.Write(proof.Bsb22Commitments[i].Marshal())
+			hashBts := cfg.HashToFieldFn.Sum(nil)
+			cfg.HashToFieldFn.Reset()
+			hashedCmt.SetBytes(hashBts[:nbBuf])
 
 			// Computing L_{CommitmentIndex}
 
@@ -136,7 +154,7 @@ func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector) error {
 				Div(&lagrange, &den).        // wⁱ(ζ-1)/(ζ-wⁱ)
 				Mul(&lagrange, &lagrangeOne) // wⁱ/n (ζⁿ-1)/(ζ-wⁱ)
 
-			xiLi.Mul(&lagrange, &hashRes[0])
+			xiLi.Mul(&lagrange, &hashedCmt)
 			pi.Add(&pi, &xiLi)
 		}
 	}
@@ -250,7 +268,8 @@ func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector) error {
 		digestsToFold,
 		&proof.BatchedProof,
 		zeta,
-		hFunc,
+		cfg.KZGFoldingHash,
+		zu.Marshal(),
 	)
 	if err != nil {
 		return err

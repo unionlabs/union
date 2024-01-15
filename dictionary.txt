@@ -233,6 +233,9 @@ cosmrs
 cosmwasm
 cosmwasmclient
 counterparty
+cover
+coverpkg
+coverprofile
 cpufeatures
 cratedir
 crisiskeeper

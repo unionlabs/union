@@ -19,16 +19,19 @@ package groth16
 import (
 	"errors"
 	"fmt"
-	"github.com/consensys/gnark-crypto/ecc"
-	curve "github.com/consensys/gnark-crypto/ecc/bn254"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/pedersen"
-	"github.com/consensys/gnark-crypto/utils"
-	"github.com/consensys/gnark/constraint"
-	"github.com/consensys/gnark/logger"
 	"io"
 	"text/template"
 	"time"
+
+	"github.com/consensys/gnark-crypto/ecc"
+	curve "github.com/consensys/gnark-crypto/ecc/bn254"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/hash_to_field"
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr/pedersen"
+	"github.com/consensys/gnark-crypto/utils"
+	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/constraint"
+	"github.com/consensys/gnark/logger"
 )
 
 var (
@@ -37,7 +40,14 @@ var (
 )
 
 // Verify verifies a proof with given VerifyingKey and publicWitness
-func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector) error {
+func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector, opts ...backend.VerifierOption) error {
+	opt, err := backend.NewVerifierConfig(opts...)
+	if err != nil {
+		return fmt.Errorf("new verifier config: %w", err)
+	}
+	if opt.HashToFieldFn == nil {
+		opt.HashToFieldFn = hash_to_field.New([]byte(constraint.CommitmentDst))
+	}
 
 	nbPublicVars := len(vk.G1.K) - len(vk.PublicAndCommitmentCommitted)
 
@@ -76,12 +86,17 @@ func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector) error {
 			copy(commitmentPrehashSerialized[offset:], publicWitness[vk.PublicAndCommitmentCommitted[i][j]-1].Marshal())
 			offset += fr.Bytes
 		}
-		if res, err := fr.Hash(commitmentPrehashSerialized[:offset], []byte(constraint.CommitmentDst), 1); err != nil {
-			return err
-		} else {
-			publicWitness = append(publicWitness, res[0])
-			copy(commitmentsSerialized[i*fr.Bytes:], res[0].Marshal())
+		opt.HashToFieldFn.Write(commitmentPrehashSerialized[:offset])
+		hashBts := opt.HashToFieldFn.Sum(nil)
+		opt.HashToFieldFn.Reset()
+		nbBuf := fr.Bytes
+		if opt.HashToFieldFn.Size() < fr.Bytes {
+			nbBuf = opt.HashToFieldFn.Size()
 		}
+		var res fr.Element
+		res.SetBytes(hashBts[:nbBuf])
+		publicWitness = append(publicWitness, res)
+		copy(commitmentsSerialized[i*fr.Bytes:], res.Marshal())
 	}
 
 	if folded, err := pedersen.FoldCommitments(proof.Commitments, commitmentsSerialized); err != nil {

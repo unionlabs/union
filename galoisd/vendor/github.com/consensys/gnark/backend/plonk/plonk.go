@@ -96,23 +96,26 @@ type VerifyingKey interface {
 }
 
 // Setup prepares the public data associated to a circuit + public inputs.
-func Setup(ccs constraint.ConstraintSystem, kzgSrs kzg.SRS) (ProvingKey, VerifyingKey, error) {
+// The kzg SRS must be provided in canonical and lagrange form.
+// For test purposes, see test/unsafekzg package. With an existing SRS generated through MPC in canonical form,
+// gnark-crypto offers the ToLagrangeG1 method to convert it to lagrange form.
+func Setup(ccs constraint.ConstraintSystem, srs, srsLagrange kzg.SRS) (ProvingKey, VerifyingKey, error) {
 
 	switch tccs := ccs.(type) {
 	case *cs_bn254.SparseR1CS:
-		return plonk_bn254.Setup(tccs, *kzgSrs.(*kzg_bn254.SRS))
+		return plonk_bn254.Setup(tccs, *srs.(*kzg_bn254.SRS), *srsLagrange.(*kzg_bn254.SRS))
 	case *cs_bls12381.SparseR1CS:
-		return plonk_bls12381.Setup(tccs, *kzgSrs.(*kzg_bls12381.SRS))
+		return plonk_bls12381.Setup(tccs, *srs.(*kzg_bls12381.SRS), *srsLagrange.(*kzg_bls12381.SRS))
 	case *cs_bls12377.SparseR1CS:
-		return plonk_bls12377.Setup(tccs, *kzgSrs.(*kzg_bls12377.SRS))
+		return plonk_bls12377.Setup(tccs, *srs.(*kzg_bls12377.SRS), *srsLagrange.(*kzg_bls12377.SRS))
 	case *cs_bw6761.SparseR1CS:
-		return plonk_bw6761.Setup(tccs, *kzgSrs.(*kzg_bw6761.SRS))
+		return plonk_bw6761.Setup(tccs, *srs.(*kzg_bw6761.SRS), *srsLagrange.(*kzg_bw6761.SRS))
 	case *cs_bls24317.SparseR1CS:
-		return plonk_bls24317.Setup(tccs, *kzgSrs.(*kzg_bls24317.SRS))
+		return plonk_bls24317.Setup(tccs, *srs.(*kzg_bls24317.SRS), *srsLagrange.(*kzg_bls24317.SRS))
 	case *cs_bls24315.SparseR1CS:
-		return plonk_bls24315.Setup(tccs, *kzgSrs.(*kzg_bls24315.SRS))
+		return plonk_bls24315.Setup(tccs, *srs.(*kzg_bls24315.SRS), *srsLagrange.(*kzg_bls24315.SRS))
 	case *cs_bw6633.SparseR1CS:
-		return plonk_bw6633.Setup(tccs, *kzgSrs.(*kzg_bw6633.SRS))
+		return plonk_bw6633.Setup(tccs, *srs.(*kzg_bw6633.SRS), *srsLagrange.(*kzg_bw6633.SRS))
 	default:
 		panic("unrecognized SparseR1CS curve type")
 	}
@@ -155,7 +158,7 @@ func Prove(ccs constraint.ConstraintSystem, pk ProvingKey, fullWitness witness.W
 }
 
 // Verify verifies a PLONK proof, from the proof, preprocessed public data, and public witness.
-func Verify(proof Proof, vk VerifyingKey, publicWitness witness.Witness) error {
+func Verify(proof Proof, vk VerifyingKey, publicWitness witness.Witness, opts ...backend.VerifierOption) error {
 
 	switch _proof := proof.(type) {
 
@@ -164,49 +167,49 @@ func Verify(proof Proof, vk VerifyingKey, publicWitness witness.Witness) error {
 		if !ok {
 			return witness.ErrInvalidWitness
 		}
-		return plonk_bn254.Verify(_proof, vk.(*plonk_bn254.VerifyingKey), w)
+		return plonk_bn254.Verify(_proof, vk.(*plonk_bn254.VerifyingKey), w, opts...)
 
 	case *plonk_bls12381.Proof:
 		w, ok := publicWitness.Vector().(fr_bls12381.Vector)
 		if !ok {
 			return witness.ErrInvalidWitness
 		}
-		return plonk_bls12381.Verify(_proof, vk.(*plonk_bls12381.VerifyingKey), w)
+		return plonk_bls12381.Verify(_proof, vk.(*plonk_bls12381.VerifyingKey), w, opts...)
 
 	case *plonk_bls12377.Proof:
 		w, ok := publicWitness.Vector().(fr_bls12377.Vector)
 		if !ok {
 			return witness.ErrInvalidWitness
 		}
-		return plonk_bls12377.Verify(_proof, vk.(*plonk_bls12377.VerifyingKey), w)
+		return plonk_bls12377.Verify(_proof, vk.(*plonk_bls12377.VerifyingKey), w, opts...)
 
 	case *plonk_bw6761.Proof:
 		w, ok := publicWitness.Vector().(fr_bw6761.Vector)
 		if !ok {
 			return witness.ErrInvalidWitness
 		}
-		return plonk_bw6761.Verify(_proof, vk.(*plonk_bw6761.VerifyingKey), w)
+		return plonk_bw6761.Verify(_proof, vk.(*plonk_bw6761.VerifyingKey), w, opts...)
 
 	case *plonk_bw6633.Proof:
 		w, ok := publicWitness.Vector().(fr_bw6633.Vector)
 		if !ok {
 			return witness.ErrInvalidWitness
 		}
-		return plonk_bw6633.Verify(_proof, vk.(*plonk_bw6633.VerifyingKey), w)
+		return plonk_bw6633.Verify(_proof, vk.(*plonk_bw6633.VerifyingKey), w, opts...)
 
 	case *plonk_bls24317.Proof:
 		w, ok := publicWitness.Vector().(fr_bls24317.Vector)
 		if !ok {
 			return witness.ErrInvalidWitness
 		}
-		return plonk_bls24317.Verify(_proof, vk.(*plonk_bls24317.VerifyingKey), w)
+		return plonk_bls24317.Verify(_proof, vk.(*plonk_bls24317.VerifyingKey), w, opts...)
 
 	case *plonk_bls24315.Proof:
 		w, ok := publicWitness.Vector().(fr_bls24315.Vector)
 		if !ok {
 			return witness.ErrInvalidWitness
 		}
-		return plonk_bls24315.Verify(_proof, vk.(*plonk_bls24315.VerifyingKey), w)
+		return plonk_bls24315.Verify(_proof, vk.(*plonk_bls24315.VerifyingKey), w, opts...)
 
 	default:
 		panic("unrecognized proof type")

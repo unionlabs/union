@@ -121,8 +121,7 @@ type System struct {
 	bitLen int      `cbor:"-"`
 
 	// level builder
-	lbWireLevel []int    `cbor:"-"` // at which level we solve a wire. init at -1.
-	lbOutputs   []uint32 `cbor:"-"` // wire outputs for current constraint.
+	lbWireLevel []Level `cbor:"-"` // at which level we solve a wire. init at -1.
 
 	CommitmentInfo Commitments
 	GkrInfo        GkrInfo
@@ -143,8 +142,7 @@ func NewSystem(scalarField *big.Int, capacity int, t SystemType) System {
 		bitLen:             scalarField.BitLen(),
 		Instructions:       make([]PackedInstruction, 0, capacity),
 		CallData:           make([]uint32, 0, capacity*8),
-		lbOutputs:          make([]uint32, 0, 256),
-		lbWireLevel:        make([]int, 0, capacity),
+		lbWireLevel:        make([]Level, 0, capacity),
 		Levels:             make([][]int, 0, capacity/2),
 		CommitmentInfo:     NewCommitments(t),
 	}
@@ -229,6 +227,11 @@ func (system *System) FieldBitLen() int {
 func (system *System) AddInternalVariable() (idx int) {
 	idx = system.NbInternalVariables + system.GetNbPublicVariables() + system.GetNbSecretVariables()
 	system.NbInternalVariables++
+	// also grow the level slice
+	system.lbWireLevel = append(system.lbWireLevel, LevelUnset)
+	if debug.Debug && len(system.lbWireLevel) != system.NbInternalVariables {
+		panic("internal error")
+	}
 	return idx
 }
 
@@ -405,7 +408,15 @@ func (cs *System) AddInstruction(bID BlueprintID, calldata []uint32) []uint32 {
 	cs.Instructions = append(cs.Instructions, pi)
 
 	// update the instruction dependency tree
-	cs.updateLevel(len(cs.Instructions)-1, blueprint.WireWalker(inst))
+	level := blueprint.UpdateInstructionTree(inst, cs)
+	iID := len(cs.Instructions) - 1
+
+	// we can't skip levels, so appending is fine.
+	if int(level) >= len(cs.Levels) {
+		cs.Levels = append(cs.Levels, []int{iID})
+	} else {
+		cs.Levels[level] = append(cs.Levels[level], iID)
+	}
 
 	return wires
 }

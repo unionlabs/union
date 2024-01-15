@@ -74,6 +74,11 @@ func (p *G1Jac) ScalarMultiplicationAffine(a *G1Affine, s *big.Int) *G1Jac {
 }
 
 // ScalarMultiplicationBase computes and returns p = g ⋅ s where g is the prime subgroup generator
+func (p *G1Jac) ScalarMultiplicationBase(s *big.Int) *G1Jac {
+	return p.mulGLV(&g1Gen, s)
+}
+
+// ScalarMultiplicationBase computes and returns p = g ⋅ s where g is the prime subgroup generator
 func (p *G1Affine) ScalarMultiplicationBase(s *big.Int) *G1Affine {
 	var _p G1Jac
 	_p.mulGLV(&g1Gen, s)

@@ -82,7 +82,7 @@ func (e *Ext12) Square034(x *E12) *E12 {
 		B2: *e.Ext2.Zero(),
 	}
 
-	c3 := E6{
+	c3 := &E6{
 		B0: x.C0.B0,
 		B1: *e.Ext2.Neg(&x.C1.B0),
 		B2: *e.Ext2.Neg(&x.C1.B1),
@@ -93,8 +93,8 @@ func (e *Ext12) Square034(x *E12) *E12 {
 		B1: x.C1.B1,
 		B2: *e.Ext2.Zero(),
 	}
-	c3 = *e.MulBy01(&c3, &c0.B0, &c0.B1)
-	c3 = *e.Ext6.Add(&c3, &c2)
+	c3 = e.MulBy01(c3, &c0.B0, &c0.B1)
+	c3 = e.Ext6.Add(c3, &c2)
 
 	var z E12
 	z.C1.B0 = *e.Ext2.Add(&c2.B0, &c2.B0)
@@ -116,16 +116,15 @@ func (e *Ext12) Square034(x *E12) *E12 {
 func (e *Ext12) MulBy034(z *E12, c3, c4 *E2) *E12 {
 
 	a := z.C0
-	b := z.C1
-	b = *e.MulBy01(&b, c3, c4)
+	b := e.MulBy01(&z.C1, c3, c4)
 	c3 = e.Ext2.Add(e.Ext2.One(), c3)
 	d := e.Ext6.Add(&z.C0, &z.C1)
 	d = e.MulBy01(d, c3, c4)
 
-	zC1 := e.Ext6.Add(&a, &b)
+	zC1 := e.Ext6.Add(&a, b)
 	zC1 = e.Ext6.Neg(zC1)
 	zC1 = e.Ext6.Add(zC1, d)
-	zC0 := e.Ext6.MulByNonResidue(&b)
+	zC0 := e.Ext6.MulByNonResidue(b)
 	zC0 = e.Ext6.Add(zC0, &a)
 
 	return &E12{
@@ -147,7 +146,7 @@ func (e *Ext12) MulBy034(z *E12, c3, c4 *E2) *E12 {
 //		C0: E6{B0: 1, B1: 0, B2: 0},
 //		C1: E6{B0: d3, B1: d4, B2: 0},
 //	}
-func (e *Ext12) Mul034By034(d3, d4, c3, c4 *E2) *[5]E2 {
+func (e *Ext12) Mul034By034(d3, d4, c3, c4 *E2) [5]*E2 {
 	x3 := e.Ext2.Mul(c3, d3)
 	x4 := e.Ext2.Mul(c4, d4)
 	x04 := e.Ext2.Add(c4, d4)
@@ -165,7 +164,7 @@ func (e *Ext12) Mul034By034(d3, d4, c3, c4 *E2) *[5]E2 {
 	zC1B0 := x03
 	zC1B1 := x04
 
-	return &[5]E2{*zC0B0, *zC0B1, *zC0B2, *zC1B0, *zC1B1}
+	return [5]*E2{zC0B0, zC0B1, zC0B2, zC1B0, zC1B1}
 }
 
 // MulBy01234 multiplies z by an E12 sparse element of the form
@@ -174,14 +173,14 @@ func (e *Ext12) Mul034By034(d3, d4, c3, c4 *E2) *[5]E2 {
 //		C0: E6{B0: c0, B1: c1, B2: c2},
 //		C1: E6{B0: c3, B1: c4, B2: 0},
 //	}
-func (e *Ext12) MulBy01234(z *E12, x *[5]E2) *E12 {
-	c0 := &E6{B0: x[0], B1: x[1], B2: x[2]}
-	c1 := &E6{B0: x[3], B1: x[4], B2: *e.Ext2.Zero()}
+func (e *Ext12) MulBy01234(z *E12, x [5]*E2) *E12 {
+	c0 := &E6{B0: *x[0], B1: *x[1], B2: *x[2]}
+	c1 := &E6{B0: *x[3], B1: *x[4], B2: *e.Ext2.Zero()}
 	a := e.Ext6.Add(&z.C0, &z.C1)
 	b := e.Ext6.Add(c0, c1)
 	a = e.Ext6.Mul(a, b)
 	b = e.Ext6.Mul(&z.C0, c0)
-	c := e.Ext6.MulBy01(&z.C1, &x[3], &x[4])
+	c := e.Ext6.MulBy01(&z.C1, x[3], x[4])
 	z1 := e.Ext6.Sub(a, b)
 	z1 = e.Ext6.Sub(z1, c)
 	z0 := e.Ext6.MulByNonResidue(c)
@@ -205,13 +204,13 @@ func (e *Ext12) MulBy01234(z *E12, x *[5]E2) *E12 {
 //		C0: E6{B0: 1, B1: 0, B2: 0},
 //		C1: E6{B0: z3, B1: z4, B2: 0},
 //	}
-func (e *Ext12) Mul01234By034(x *[5]E2, z3, z4 *E2) *E12 {
-	c0 := &E6{B0: x[0], B1: x[1], B2: x[2]}
-	c1 := &E6{B0: x[3], B1: x[4], B2: *e.Ext2.Zero()}
+func (e *Ext12) Mul01234By034(x [5]*E2, z3, z4 *E2) *E12 {
+	c0 := &E6{B0: *x[0], B1: *x[1], B2: *x[2]}
+	c1 := &E6{B0: *x[3], B1: *x[4], B2: *e.Ext2.Zero()}
 	a := e.Ext6.Add(e.Ext6.One(), &E6{B0: *z3, B1: *z4, B2: *e.Ext2.Zero()})
 	b := e.Ext6.Add(c0, c1)
 	a = e.Ext6.Mul(a, b)
-	c := e.Ext6.Mul01By01(z3, z4, &x[3], &x[4])
+	c := e.Ext6.Mul01By01(z3, z4, x[3], x[4])
 	z1 := e.Ext6.Sub(a, c0)
 	z1 = e.Ext6.Sub(z1, c)
 	z0 := e.Ext6.MulByNonResidue(c)
@@ -263,7 +262,11 @@ func (e Ext12) DecompressTorus(y *E6) *E12 {
 // N.B.: we use MulTorus in the final exponentiation throughout y1 ≠ -y2 always.
 func (e Ext12) MulTorus(y1, y2 *E6) *E6 {
 	n := e.Ext6.Mul(y1, y2)
-	n.B1 = *e.Ext2.Add(&n.B1, e.Ext2.One())
+	n = &E6{
+		B0: n.B0,
+		B1: *e.Ext2.Add(&n.B1, e.Ext2.One()),
+		B2: n.B2,
+	}
 	d := e.Ext6.Add(y1, y2)
 	y3 := e.Ext6.DivUnchecked(n, d)
 	return y3

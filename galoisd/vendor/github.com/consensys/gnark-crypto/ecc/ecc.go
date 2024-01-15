@@ -27,6 +27,7 @@ limitations under the License.
 package ecc
 
 import (
+	"errors"
 	"math/big"
 	"strings"
 
@@ -55,6 +56,15 @@ const (
 // Implemented return the list of curves fully implemented in gnark-crypto
 func Implemented() []ID {
 	return []ID{BN254, BLS12_377, BLS12_381, BW6_761, BLS24_315, BW6_633, BLS12_378, BW6_756, BLS24_317, STARK_CURVE, SECP256K1}
+}
+
+func IDFromString(s string) (ID, error) {
+	for _, id := range Implemented() {
+		if strings.ToLower(s) == id.String() {
+			return id, nil
+		}
+	}
+	return UNKNOWN, errors.New("unknown curve ID")
 }
 
 func (id ID) String() string {

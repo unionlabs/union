@@ -63,7 +63,7 @@ var g1Infinity G1Jac
 var g2Infinity G2Jac
 
 // optimal Ate loop counter
-var loopCounter [33]int8
+var LoopCounter [33]int8
 
 // Parameters useful for the GLV scalar multiplication. The third roots define the
 // endomorphisms ϕ₁ and ϕ₂ for <G1Affine> and <G2Affine>. lambda is such that <r, ϕ-λ> lies above
@@ -147,7 +147,7 @@ func init() {
 
 	// 2-NAF decomposition of -x₀ little endian
 	optimaAteLoop, _ := new(big.Int).SetString("3218079743", 10)
-	ecc.NafDecomposition(optimaAteLoop, loopCounter[:])
+	ecc.NafDecomposition(optimaAteLoop, LoopCounter[:])
 
 	// -x₀
 	xGen.SetString("3218079743", 10)

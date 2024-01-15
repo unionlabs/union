@@ -70,6 +70,14 @@ func (p *G2Affine) ScalarMultiplication(a *G2Affine, s *big.Int) *G2Affine {
 	return p
 }
 
+// ScalarMultiplicationBase computes and returns p = g ⋅ s where g is the prime subgroup generator
+func (p *G2Affine) ScalarMultiplicationBase(s *big.Int) *G2Affine {
+	var _p G2Jac
+	_p.mulGLV(&g2Gen, s)
+	p.FromJacobian(&_p)
+	return p
+}
+
 // Add adds two point in affine coordinates.
 // This should rarely be used as it is very inefficient compared to Jacobian
 func (p *G2Affine) Add(a, b *G2Affine) *G2Affine {

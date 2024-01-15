@@ -1,32 +1,11 @@
 package test
 
 import (
-	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/frontend"
 	"reflect"
 	"strings"
-	"testing"
+
+	"github.com/consensys/gnark/frontend"
 )
-
-func makeOpts(opt TestingOption, curves []ecc.ID) []TestingOption {
-	if len(curves) > 0 {
-		return []TestingOption{opt, WithCurves(curves[0], curves[1:]...)}
-	}
-	return []TestingOption{opt}
-}
-
-func testPlonk(t *testing.T, assignment frontend.Circuit, curves ...ecc.ID) {
-	NewAssert(t).ProverSucceeded(hollow(assignment), assignment, makeOpts(WithBackends(backend.PLONK), curves)...)
-}
-
-func testGroth16(t *testing.T, assignment frontend.Circuit, curves ...ecc.ID) {
-	NewAssert(t).ProverSucceeded(hollow(assignment), assignment, makeOpts(WithBackends(backend.GROTH16), curves)...)
-}
-
-func testAll(t *testing.T, assignment frontend.Circuit) {
-	NewAssert(t).ProverSucceeded(hollow(assignment), assignment, WithBackends(backend.GROTH16, backend.PLONK))
-}
 
 // hollow takes a gnark circuit and removes all the witness data. The resulting circuit can be used for compilation purposes
 // Its purpose is to make testing more convenient. For example, as opposed to SolvingSucceeded(circuit, assignment),

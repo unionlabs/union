@@ -62,7 +62,7 @@ var g1Infinity G1Jac
 var g2Infinity G2Jac
 
 // optimal Ate loop counter
-var loopCounter [64]int8
+var LoopCounter [64]int8
 
 // Parameters useful for the GLV scalar multiplication. The third roots define the
 // endomorphisms ϕ₁ and ϕ₂ for <G1Affine> and <G2Affine>. lambda is such that <r, ϕ-λ> lies above
@@ -134,7 +134,7 @@ func init() {
 	endo.v.A0.SetString("216465761340224619389371505802605247630151569547285782856803747159100223055385581585702401816380679166954762214499")
 
 	// binary decomposition of x₀ little endian
-	loopCounter = [64]int8{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1}
+	LoopCounter = [64]int8{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1}
 
 	// x₀
 	xGen.SetString("9586122913090633729", 10)

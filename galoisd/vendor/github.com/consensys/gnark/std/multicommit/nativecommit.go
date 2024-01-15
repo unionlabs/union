@@ -20,7 +20,6 @@ import (
 
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/internal/kvstore"
-	"github.com/consensys/gnark/std/hash/mimc"
 )
 
 type multicommitter struct {
@@ -94,22 +93,13 @@ func (mct *multicommitter) commitAndCall(api frontend.API) error {
 	if err != nil {
 		return fmt.Errorf("commit: %w", err)
 	}
-	if len(mct.cbs) == 1 {
-		if err = mct.cbs[0](api, cmt); err != nil {
-			return fmt.Errorf("single callback: %w", err)
-		}
-	} else {
-		hasher, err := mimc.NewMiMC(api)
-		if err != nil {
-			return fmt.Errorf("new hasher: %w", err)
-		}
-		for i, cb := range mct.cbs {
-			hasher.Reset()
-			hasher.Write(i+1, cmt)
-			localcmt := hasher.Sum()
-			if err = cb(api, localcmt); err != nil {
-				return fmt.Errorf("with commitment callback %d: %w", i, err)
-			}
+	if err = mct.cbs[0](api, cmt); err != nil {
+		return fmt.Errorf("callback 0: %w", err)
+	}
+	for i := 1; i < len(mct.cbs); i++ {
+		cmt = api.Mul(cmt, cmt)
+		if err := mct.cbs[i](api, cmt); err != nil {
+			return fmt.Errorf("callback %d: %w", i, err)
 		}
 	}
 	return nil

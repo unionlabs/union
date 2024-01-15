@@ -34,6 +34,8 @@ func RegisterHint(hintFns ...Hint) {
 }
 
 func GetRegisteredHint(key HintID) Hint {
+	registryM.Lock()
+	defer registryM.Unlock()
 	return registry[key]
 }
 

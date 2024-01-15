@@ -2,6 +2,7 @@ package constraint
 
 import (
 	"github.com/consensys/gnark/constraint/solver"
+	"github.com/consensys/gnark/debug"
 )
 
 type BlueprintGenericHint struct{}
@@ -71,24 +72,36 @@ func (b *BlueprintGenericHint) NbOutputs(inst Instruction) int {
 	return 0
 }
 
-func (b *BlueprintGenericHint) WireWalker(inst Instruction) func(cb func(wire uint32)) {
-	return func(cb func(wire uint32)) {
-		lenInputs := int(inst.Calldata[2])
-		j := 3
-		for i := 0; i < lenInputs; i++ {
-			n := int(inst.Calldata[j]) // len of linear expr
-			j++
+func (b *BlueprintGenericHint) UpdateInstructionTree(inst Instruction, tree InstructionTree) Level {
+	// BlueprintGenericHint knows the input and output to the instruction
+	maxLevel := LevelUnset
 
-			for k := 0; k < n; k++ {
-				t := Term{CID: inst.Calldata[j], VID: inst.Calldata[j+1]}
-				if !t.IsConstant() {
-					cb(t.VID)
-				}
-				j += 2
+	// iterate over the inputs and find the max level
+	lenInputs := int(inst.Calldata[2])
+	j := 3
+	for i := 0; i < lenInputs; i++ {
+		n := int(inst.Calldata[j]) // len of linear expr
+		j++
+
+		for k := 0; k < n; k++ {
+			wireID := inst.Calldata[j+1]
+			j += 2
+			if !tree.HasWire(wireID) {
+				continue
+			}
+			if level := tree.GetWireLevel(wireID); level > maxLevel {
+				maxLevel = level
+			}
+			if debug.Debug && tree.GetWireLevel(wireID) == LevelUnset {
+				panic("wire we depend on is not in the instruction tree")
 			}
 		}
-		for k := inst.Calldata[j]; k < inst.Calldata[j+1]; k++ {
-			cb(k)
-		}
 	}
+
+	// iterate over the outputs and insert them at maxLevel + 1
+	outputLevel := maxLevel + 1
+	for k := inst.Calldata[j]; k < inst.Calldata[j+1]; k++ {
+		tree.InsertWire(k, outputLevel)
+	}
+	return outputLevel
 }

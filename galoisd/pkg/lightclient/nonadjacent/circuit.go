@@ -41,7 +41,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	var message fields_bn254.E2
 	message.A0.Limbs = lightclient.Unpack(api, circuit.Message[0], 256, 64)
 	message.A1.Limbs = lightclient.Unpack(api, circuit.Message[1], 256, 64)
-	messagePoint := emulatedAPI.HashToG2(&message)
+	messagePoint := emulatedAPI.MapToG2(&message)
 	lc := lightclient.NewTendermintLightClientAPI(api, &lightclient.TendermintLightClientInput{
 		Sig:           circuit.TrustedInput.Sig,
 		Validators:    circuit.TrustedInput.Validators,

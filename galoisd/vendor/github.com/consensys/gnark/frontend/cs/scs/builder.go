@@ -56,7 +56,7 @@ type builder struct {
 	// map for recording boolean constrained variables (to not constrain them twice)
 	mtBooleans map[expr.Term]struct{}
 
-	// records multiplications constraint to avoid duplicate.
+	// records multiplications constraint to avoid duplicates.
 	// see mulConstraintExist(...)
 	mMulInstructions map[uint64]int
 
@@ -343,10 +343,6 @@ func (builder *builder) hintBuffer(size int) []constraint.LinearExpression {
 // manually in the circuit. Failing to do so leads to solver failure.
 func (builder *builder) NewHint(f solver.Hint, nbOutputs int, inputs ...frontend.Variable) ([]frontend.Variable, error) {
 	return builder.newHint(f, solver.GetHintID(f), nbOutputs, inputs...)
-}
-
-func (builder *builder) NewHintForId(id solver.HintID, nbOutputs int, inputs ...frontend.Variable) ([]frontend.Variable, error) {
-	return builder.newHint(nil, id, nbOutputs, inputs...)
 }
 
 func (builder *builder) newHint(f solver.Hint, id solver.HintID, nbOutputs int, inputs ...frontend.Variable) ([]frontend.Variable, error) {

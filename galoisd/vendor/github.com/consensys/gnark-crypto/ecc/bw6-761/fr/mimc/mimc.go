@@ -100,6 +100,14 @@ func (d *digest) BlockSize() int {
 //
 // To hash arbitrary data ([]byte not representing canonical field elements) use fr.Hash first
 func (d *digest) Write(p []byte) (int, error) {
+	// we usually expect multiple of block size. But sometimes we hash short
+	// values (FS transcript). Instead of forcing to hash to field, we left-pad the
+	// input here.
+	if len(p) > 0 && len(p) < BlockSize {
+		pp := make([]byte, BlockSize)
+		copy(pp[len(pp)-len(p):], p)
+		p = pp
+	}
 
 	var start int
 	for start = 0; start < len(p); start += BlockSize {
@@ -183,10 +191,11 @@ func initConstants() {
 }
 
 // WriteString writes a string that doesn't necessarily consist of field elements
-func (d *digest) WriteString(rawBytes []byte) {
+func (d *digest) WriteString(rawBytes []byte) error {
 	if elems, err := fr.Hash(rawBytes, []byte("string:"), 1); err != nil {
-		panic(err)
+		return err
 	} else {
 		d.data = append(d.data, elems[0])
 	}
+	return nil
 }

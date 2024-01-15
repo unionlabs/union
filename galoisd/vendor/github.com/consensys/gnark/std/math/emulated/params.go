@@ -37,4 +37,6 @@ type (
 	P256Fr      = emparams.P256Fr
 	P384Fp      = emparams.P384Fp
 	P384Fr      = emparams.P384Fr
+	BW6761Fp    = emparams.BW6761Fp
+	BW6761Fr    = emparams.BW6761Fr
 )

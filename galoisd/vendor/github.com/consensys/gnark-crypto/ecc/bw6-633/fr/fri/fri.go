@@ -365,18 +365,6 @@ func foldPolynomialLagrangeBasis(pSorted []fr.Element, gInv, x fr.Element) []fr.
 	return res
 }
 
-// paddNaming takes s = 0xA1.... and turns
-// it into s' = 0xA1.. || 0..0 of size frSize bytes.
-// Using this, when writing the domain separator in FiatShamir, it takes
-// the same size as a snark variable (=number of byte in the block of a snark compliant
-// hash function like mimc), so it is compliant with snark circuit.
-func paddNaming(s string, size int) string {
-	a := make([]byte, size)
-	b := []byte(s)
-	copy(a, b)
-	return string(a)
-}
-
 // buildProofOfProximitySingleRound generates a proof that a function, given as an oracle from
 // the verifier point of view, is in fact δ-close to a polynomial.
 // * salt is a variable for multi rounds, it allows to generate different challenges using Fiat Shamir
@@ -395,9 +383,9 @@ func (s radixTwoFri) buildProofOfProximitySingleRound(salt fr.Element, p []fr.El
 	// by replacing x by xᵢ.
 	xis := make([]string, s.nbSteps+1)
 	for i := 0; i < s.nbSteps; i++ {
-		xis[i] = paddNaming(fmt.Sprintf("x%d", i), fr.Bytes)
+		xis[i] = fmt.Sprintf("x%d", i)
 	}
-	xis[s.nbSteps] = paddNaming("s0", fr.Bytes)
+	xis[s.nbSteps] = "s0"
 	fs := fiatshamir.NewTranscript(s.h, xis...)
 
 	// the salt is binded to the first challenge, to ensure the challenges
@@ -549,9 +537,9 @@ func (s radixTwoFri) verifyProofOfProximitySingleRound(salt fr.Element, proof Ro
 	// Fiat Shamir transcript to derive the challenges
 	xis := make([]string, s.nbSteps+1)
 	for i := 0; i < s.nbSteps; i++ {
-		xis[i] = paddNaming(fmt.Sprintf("x%d", i), fr.Bytes)
+		xis[i] = fmt.Sprintf("x%d", i)
 	}
-	xis[s.nbSteps] = paddNaming("s0", fr.Bytes)
+	xis[s.nbSteps] = "s0"
 	fs := fiatshamir.NewTranscript(s.h, xis...)
 
 	xi := make([]fr.Element, s.nbSteps)

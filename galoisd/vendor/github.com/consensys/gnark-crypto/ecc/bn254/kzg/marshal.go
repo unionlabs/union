@@ -53,11 +53,18 @@ func (vk *VerifyingKey) WriteTo(w io.Writer) (int64, error) {
 func (vk *VerifyingKey) writeTo(w io.Writer, options ...func(*bn254.Encoder)) (int64, error) {
 	// encode the VerifyingKey
 	enc := bn254.NewEncoder(w, options...)
-
-	toEncode := []interface{}{
-		&vk.G2[0],
-		&vk.G2[1],
-		&vk.G1,
+	nLines := 66
+	toEncode := make([]interface{}, 0, 4*nLines+3)
+	toEncode = append(toEncode, &vk.G2[0])
+	toEncode = append(toEncode, &vk.G2[1])
+	toEncode = append(toEncode, &vk.G1)
+	for k := 0; k < 2; k++ {
+		for j := 0; j < 2; j++ {
+			for i := nLines - 1; i >= 0; i-- {
+				toEncode = append(toEncode, &vk.Lines[k][j][i].R0)
+				toEncode = append(toEncode, &vk.Lines[k][j][i].R1)
+			}
+		}
 	}
 
 	for _, v := range toEncode {
@@ -78,6 +85,18 @@ func (srs *SRS) WriteTo(w io.Writer) (int64, error) {
 		return pn, err
 	}
 	vn, err = srs.Vk.WriteTo(w)
+	return pn + vn, err
+}
+
+// WriteRawTo writes binary encoding of the entire SRS without point compression
+func (srs *SRS) WriteRawTo(w io.Writer) (int64, error) {
+	// encode the SRS
+	var pn, vn int64
+	var err error
+	if pn, err = srs.Pk.WriteRawTo(w); err != nil {
+		return pn, err
+	}
+	vn, err = srs.Vk.WriteRawTo(w)
 	return pn + vn, err
 }
 
@@ -106,11 +125,18 @@ func (pk *ProvingKey) UnsafeReadFrom(r io.Reader) (int64, error) {
 func (vk *VerifyingKey) ReadFrom(r io.Reader) (int64, error) {
 	// decode the VerifyingKey
 	dec := bn254.NewDecoder(r)
-
-	toDecode := []interface{}{
-		&vk.G2[0],
-		&vk.G2[1],
-		&vk.G1,
+	nLines := 66
+	toDecode := make([]interface{}, 0, 4*nLines+3)
+	toDecode = append(toDecode, &vk.G2[0])
+	toDecode = append(toDecode, &vk.G2[1])
+	toDecode = append(toDecode, &vk.G1)
+	for k := 0; k < 2; k++ {
+		for j := 0; j < 2; j++ {
+			for i := nLines - 1; i >= 0; i-- {
+				toDecode = append(toDecode, &vk.Lines[k][j][i].R0)
+				toDecode = append(toDecode, &vk.Lines[k][j][i].R1)
+			}
+		}
 	}
 
 	for _, v := range toDecode {
@@ -128,6 +154,18 @@ func (srs *SRS) ReadFrom(r io.Reader) (int64, error) {
 	var pn, vn int64
 	var err error
 	if pn, err = srs.Pk.ReadFrom(r); err != nil {
+		return pn, err
+	}
+	vn, err = srs.Vk.ReadFrom(r)
+	return pn + vn, err
+}
+
+// UnsafeReadFrom decodes SRS data from reader without sub group checks
+func (srs *SRS) UnsafeReadFrom(r io.Reader) (int64, error) {
+	// decode the VerifyingKey
+	var pn, vn int64
+	var err error
+	if pn, err = srs.Pk.UnsafeReadFrom(r); err != nil {
 		return pn, err
 	}
 	vn, err = srs.Vk.ReadFrom(r)

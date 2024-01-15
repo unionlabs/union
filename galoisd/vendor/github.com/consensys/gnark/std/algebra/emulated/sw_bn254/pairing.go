@@ -15,11 +15,11 @@ import (
 type Pairing struct {
 	api frontend.API
 	*fields_bn254.Ext12
-	curveF *emulated.Field[emulated.BN254Fp]
-	curve  *sw_emulated.Curve[emulated.BN254Fp, emulated.BN254Fr]
+	curveF *emulated.Field[BaseField]
+	curve  *sw_emulated.Curve[BaseField, ScalarField]
 	g2     *G2
 	bTwist *fields_bn254.E2
-	lines  [4][67]fields_bn254.E2
+	g2gen  *G2Affine
 }
 
 type GTEl = fields_bn254.E12
@@ -28,47 +28,47 @@ func NewGTEl(v bn254.GT) GTEl {
 	return GTEl{
 		C0: fields_bn254.E6{
 			B0: fields_bn254.E2{
-				A0: emulated.ValueOf[emulated.BN254Fp](v.C0.B0.A0),
-				A1: emulated.ValueOf[emulated.BN254Fp](v.C0.B0.A1),
+				A0: emulated.ValueOf[BaseField](v.C0.B0.A0),
+				A1: emulated.ValueOf[BaseField](v.C0.B0.A1),
 			},
 			B1: fields_bn254.E2{
-				A0: emulated.ValueOf[emulated.BN254Fp](v.C0.B1.A0),
-				A1: emulated.ValueOf[emulated.BN254Fp](v.C0.B1.A1),
+				A0: emulated.ValueOf[BaseField](v.C0.B1.A0),
+				A1: emulated.ValueOf[BaseField](v.C0.B1.A1),
 			},
 			B2: fields_bn254.E2{
-				A0: emulated.ValueOf[emulated.BN254Fp](v.C0.B2.A0),
-				A1: emulated.ValueOf[emulated.BN254Fp](v.C0.B2.A1),
+				A0: emulated.ValueOf[BaseField](v.C0.B2.A0),
+				A1: emulated.ValueOf[BaseField](v.C0.B2.A1),
 			},
 		},
 		C1: fields_bn254.E6{
 			B0: fields_bn254.E2{
-				A0: emulated.ValueOf[emulated.BN254Fp](v.C1.B0.A0),
-				A1: emulated.ValueOf[emulated.BN254Fp](v.C1.B0.A1),
+				A0: emulated.ValueOf[BaseField](v.C1.B0.A0),
+				A1: emulated.ValueOf[BaseField](v.C1.B0.A1),
 			},
 			B1: fields_bn254.E2{
-				A0: emulated.ValueOf[emulated.BN254Fp](v.C1.B1.A0),
-				A1: emulated.ValueOf[emulated.BN254Fp](v.C1.B1.A1),
+				A0: emulated.ValueOf[BaseField](v.C1.B1.A0),
+				A1: emulated.ValueOf[BaseField](v.C1.B1.A1),
 			},
 			B2: fields_bn254.E2{
-				A0: emulated.ValueOf[emulated.BN254Fp](v.C1.B2.A0),
-				A1: emulated.ValueOf[emulated.BN254Fp](v.C1.B2.A1),
+				A0: emulated.ValueOf[BaseField](v.C1.B2.A0),
+				A1: emulated.ValueOf[BaseField](v.C1.B2.A1),
 			},
 		},
 	}
 }
 
 func NewPairing(api frontend.API) (*Pairing, error) {
-	ba, err := emulated.NewField[emulated.BN254Fp](api)
+	ba, err := emulated.NewField[BaseField](api)
 	if err != nil {
 		return nil, fmt.Errorf("new base api: %w", err)
 	}
-	curve, err := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](api, sw_emulated.GetBN254Params())
+	curve, err := sw_emulated.New[BaseField, ScalarField](api, sw_emulated.GetBN254Params())
 	if err != nil {
 		return nil, fmt.Errorf("new curve: %w", err)
 	}
 	bTwist := fields_bn254.E2{
-		A0: emulated.ValueOf[emulated.BN254Fp]("19485874751759354771024239261021720505790618469301721065564631296452457478373"),
-		A1: emulated.ValueOf[emulated.BN254Fp]("266929791119991161246907387137283842545076965332900288569378510910307636690"),
+		A0: emulated.ValueOf[BaseField]("19485874751759354771024239261021720505790618469301721065564631296452457478373"),
+		A1: emulated.ValueOf[BaseField]("266929791119991161246907387137283842545076965332900288569378510910307636690"),
 	}
 	return &Pairing{
 		api:    api,
@@ -77,8 +77,16 @@ func NewPairing(api frontend.API) (*Pairing, error) {
 		curve:  curve,
 		g2:     NewG2(api),
 		bTwist: &bTwist,
-		lines:  getPrecomputeLines(),
 	}, nil
+}
+
+func (pr Pairing) generators() *G2Affine {
+	if pr.g2gen == nil {
+		_, _, _, g2gen := bn254.Generators()
+		cg2gen := NewG2AffineFixed(g2gen)
+		pr.g2gen = &cg2gen
+	}
+	return pr.g2gen
 }
 
 // FinalExponentiation computes the exponentiation eᵈ where
@@ -151,7 +159,10 @@ func (pr Pairing) finalExponentiation(e *GTEl, unsafe bool) *GTEl {
 		// the case, the result is 1 in the torus. We assign a dummy value (1) to e.C1
 		// and proceed further.
 		selector1 = pr.Ext6.IsZero(&e.C1)
-		e.C1 = *pr.Ext6.Select(selector1, _dummy, &e.C1)
+		e = &fields_bn254.E12{
+			C0: e.C0,
+			C1: *pr.Ext6.Select(selector1, _dummy, &e.C1),
+		}
 	}
 
 	// Torus compression absorbed:
@@ -258,12 +269,12 @@ func (pr Pairing) AssertIsOnTwist(Q *G2Affine) {
 	// (X,Y) ∈ {Y² == X³ + aX + b} U (0,0)
 
 	// if Q=(0,0) we assign b=0 otherwise 3/(9+u), and continue
-	selector := pr.api.And(pr.Ext2.IsZero(&Q.X), pr.Ext2.IsZero(&Q.Y))
+	selector := pr.api.And(pr.Ext2.IsZero(&Q.P.X), pr.Ext2.IsZero(&Q.P.Y))
 	b := pr.Ext2.Select(selector, pr.Ext2.Zero(), pr.bTwist)
 
-	left := pr.Ext2.Square(&Q.Y)
-	right := pr.Ext2.Square(&Q.X)
-	right = pr.Ext2.Mul(right, &Q.X)
+	left := pr.Ext2.Square(&Q.P.Y)
+	right := pr.Ext2.Square(&Q.P.X)
+	right = pr.Ext2.Mul(right, &Q.P.X)
 	right = pr.Ext2.Add(right, b)
 	pr.Ext2.AssertIsEqual(left, right)
 }
@@ -311,251 +322,174 @@ var loopCounter = [66]int8{
 	-1, 0, -1, 0, 0, 0, 1, 0, -1, 0, 1,
 }
 
-// lineEvaluation represents a sparse Fp12 Elmt (result of the line evaluation)
-// line: 1 + R0(x/y) + R1(1/y) = 0 instead of R0'*y + R1'*x + R2' = 0 This
-// makes the multiplication by lines (MulBy034) and between lines (Mul034By034)
-// circuit-efficient.
-type lineEvaluation struct {
-	R0, R1 fields_bn254.E2
-}
-
 // MillerLoop computes the multi-Miller loop
 // ∏ᵢ { fᵢ_{6x₀+2,Q}(P) · ℓᵢ_{[6x₀+2]Q,π(Q)}(P) · ℓᵢ_{[6x₀+2]Q+π(Q),-π²(Q)}(P) }
 func (pr Pairing) MillerLoop(P []*G1Affine, Q []*G2Affine) (*GTEl, error) {
+
 	// check input size match
 	n := len(P)
 	if n == 0 || n != len(Q) {
 		return nil, errors.New("invalid inputs sizes")
 	}
+	lines := make([]lineEvaluations, len(Q))
+	for i := range Q {
+		if Q[i].Lines == nil {
+			Qlines := pr.computeLines(&Q[i].P)
+			Q[i].Lines = &Qlines
+		}
+		lines[i] = *Q[i].Lines
+	}
+	return pr.millerLoopLines(P, lines)
 
-	res := pr.Ext12.One()
-	var prodLines [5]fields_bn254.E2
+}
 
-	var l1, l2 *lineEvaluation
-	Qacc := make([]*G2Affine, n)
-	QNeg := make([]*G2Affine, n)
-	yInv := make([]*emulated.Element[emulated.BN254Fp], n)
-	xNegOverY := make([]*emulated.Element[emulated.BN254Fp], n)
+// millerLoopLines computes the multi-Miller loop from points in G1 and precomputed lines in G2
+func (pr Pairing) millerLoopLines(P []*G1Affine, lines []lineEvaluations) (*GTEl, error) {
+
+	// check input size match
+	n := len(P)
+	if n == 0 || n != len(lines) {
+		return nil, errors.New("invalid inputs sizes")
+	}
+
+	// precomputations
+	yInv := make([]*emulated.Element[BaseField], n)
+	xNegOverY := make([]*emulated.Element[BaseField], n)
 
 	for k := 0; k < n; k++ {
-		Qacc[k] = Q[k]
-		QNeg[k] = &G2Affine{X: Q[k].X, Y: *pr.Ext2.Neg(&Q[k].Y)}
-		// P and Q are supposed to be on G1 and G2 respectively of prime order r.
+		// P are supposed to be on G1 respectively of prime order r.
 		// The point (x,0) is of order 2. But this function does not check
 		// subgroup membership.
-		// Anyway (x,0) cannot be on BN254 because -3 is a cubic non-residue in Fp.
-		// So, 1/y is well defined for all points P's.
 		yInv[k] = pr.curveF.Inverse(&P[k].Y)
 		xNegOverY[k] = pr.curveF.MulMod(&P[k].X, yInv[k])
 		xNegOverY[k] = pr.curveF.Neg(xNegOverY[k])
 	}
 
-	// Compute ∏ᵢ { fᵢ_{6x₀+2,Q}(P) }
+	// f_{x₀+1+λ(x₀³-x₀²-x₀),Q}(P), Q is known in advance
+	var prodLines [5]*fields_bn254.E2
+	res := pr.Ext12.One()
+
+	// Compute f_{6x₀+2,Q}(P)
 	// i = 64, separately to avoid an E12 Square
 	// (Square(res) = 1² = 1)
 
 	// k = 0, separately to avoid MulBy034 (res × ℓ)
 	// (assign line to res)
-	Qacc[0], l1 = pr.doubleStep(Qacc[0])
 	// line evaluation at P[0]
-	res.C1.B0 = *pr.MulByElement(&l1.R0, xNegOverY[0])
-	res.C1.B1 = *pr.MulByElement(&l1.R1, yInv[0])
+	res = &fields_bn254.E12{
+		C0: res.C0,
+		C1: fields_bn254.E6{
+			B0: *pr.MulByElement(&lines[0][0][64].R0, xNegOverY[0]),
+			B1: *pr.MulByElement(&lines[0][0][64].R1, yInv[0]),
+			B2: res.C1.B2,
+		},
+	}
 
 	if n >= 2 {
 		// k = 1, separately to avoid MulBy034 (res × ℓ)
 		// (res is also a line at this point, so we use Mul034By034 ℓ × ℓ)
-		Qacc[1], l1 = pr.doubleStep(Qacc[1])
-
 		// line evaluation at P[1]
-		l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY[1])
-		l1.R1 = *pr.MulByElement(&l1.R1, yInv[1])
-
 		// ℓ × res
-		prodLines = *pr.Mul034By034(&l1.R0, &l1.R1, &res.C1.B0, &res.C1.B1)
-		res.C0.B0 = prodLines[0]
-		res.C0.B1 = prodLines[1]
-		res.C0.B2 = prodLines[2]
-		res.C1.B0 = prodLines[3]
-		res.C1.B1 = prodLines[4]
+		prodLines = pr.Mul034By034(
+			pr.MulByElement(&lines[1][0][64].R0, xNegOverY[1]),
+			pr.MulByElement(&lines[1][0][64].R1, yInv[1]),
+			&res.C1.B0,
+			&res.C1.B1,
+		)
+		res = &fields_bn254.E12{
+			C0: fields_bn254.E6{
+				B0: *prodLines[0],
+				B1: *prodLines[1],
+				B2: *prodLines[2],
+			},
+			C1: fields_bn254.E6{
+				B0: *prodLines[3],
+				B1: *prodLines[4],
+				B2: res.C1.B2,
+			},
+		}
 	}
 
 	if n >= 3 {
 		// k = 2, separately to avoid MulBy034 (res × ℓ)
 		// (res has a zero E2 element, so we use Mul01234By034)
-		Qacc[2], l1 = pr.doubleStep(Qacc[2])
-
 		// line evaluation at P[1]
-		l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY[2])
-		l1.R1 = *pr.MulByElement(&l1.R1, yInv[2])
-
 		// ℓ × res
-		res = pr.Mul01234By034(&prodLines, &l1.R0, &l1.R1)
+		res = pr.Mul01234By034(
+			prodLines,
+			pr.MulByElement(&lines[2][0][64].R0, xNegOverY[2]),
+			pr.MulByElement(&lines[2][0][64].R1, yInv[2]),
+		)
 
 		// k >= 3
 		for k := 3; k < n; k++ {
-			// Qacc[k] ← 2Qacc[k] and l1 the tangent ℓ passing 2Qacc[k]
-			Qacc[k], l1 = pr.doubleStep(Qacc[k])
-
 			// line evaluation at P[k]
-			l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY[k])
-			l1.R1 = *pr.MulByElement(&l1.R1, yInv[k])
-
 			// ℓ × res
-			res = pr.MulBy034(res, &l1.R0, &l1.R1)
+			res = pr.MulBy034(
+				res,
+				pr.MulByElement(&lines[k][0][64].R0, xNegOverY[k]),
+				pr.MulByElement(&lines[k][0][64].R1, yInv[k]),
+			)
 		}
 	}
 
-	// i = 63, separately to avoid a doubleStep
-	// (at this point Qacc = 2Q, so 2Qacc-Q=3Q is equivalent to Qacc+Q=3Q
-	// this means doubleAndAddStep is equivalent to addStep here)
-	if n == 1 {
-		res = pr.Square034(res)
-
-	} else {
+	for i := 63; i >= 0; i-- {
 		res = pr.Square(res)
 
-	}
-	for k := 0; k < n; k++ {
-		// l2 the line passing Qacc[k] and -Q
-		l2 = pr.lineCompute(Qacc[k], QNeg[k])
-
-		// line evaluation at P[k]
-		l2.R0 = *pr.MulByElement(&l2.R0, xNegOverY[k])
-		l2.R1 = *pr.MulByElement(&l2.R1, yInv[k])
-
-		// Qacc[k] ← Qacc[k]+Q[k] and
-		// l1 the line ℓ passing Qacc[k] and Q[k]
-		Qacc[k], l1 = pr.addStep(Qacc[k], Q[k])
-
-		// line evaluation at P[k]
-		l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY[k])
-		l1.R1 = *pr.MulByElement(&l1.R1, yInv[k])
-
-		// ℓ × ℓ
-		prodLines = *pr.Mul034By034(&l1.R0, &l1.R1, &l2.R0, &l2.R1)
-		// (ℓ × ℓ) × res
-		res = pr.MulBy01234(res, &prodLines)
-	}
-
-	l1s := make([]*lineEvaluation, n)
-	for i := 62; i >= 0; i-- {
-		// mutualize the square among n Miller loops
-		// (∏ᵢfᵢ)²
-		res = pr.Square(res)
-
-		switch loopCounter[i] {
-
-		case 0:
-			// precompute lines
-			for k := 0; k < n; k++ {
-				// Qacc[k] ← 2Qacc[k] and l1 the tangent ℓ passing 2Qacc[k]
-				Qacc[k], l1s[k] = pr.doubleStep(Qacc[k])
-
-				// line evaluation at P[k]
-				l1s[k].R0 = *pr.MulByElement(&l1s[k].R0, xNegOverY[k])
-				l1s[k].R1 = *pr.MulByElement(&l1s[k].R1, yInv[k])
-
-			}
-
+		if loopCounter[i] == 0 {
 			// if number of lines is odd, mul last line by res
 			// works for n=1 as well
 			if n%2 != 0 {
 				// ℓ × res
-				res = pr.MulBy034(res, &l1s[n-1].R0, &l1s[n-1].R1)
-
+				res = pr.MulBy034(
+					res,
+					pr.MulByElement(&lines[n-1][0][i].R0, xNegOverY[n-1]),
+					pr.MulByElement(&lines[n-1][0][i].R1, yInv[n-1]),
+				)
 			}
 
 			// mul lines 2-by-2
 			for k := 1; k < n; k += 2 {
 				// ℓ × ℓ
-				prodLines = *pr.Mul034By034(&l1s[k].R0, &l1s[k].R1, &l1s[k-1].R0, &l1s[k-1].R1)
+				prodLines = pr.Mul034By034(
+					pr.MulByElement(&lines[k][0][i].R0, xNegOverY[k]),
+					pr.MulByElement(&lines[k][0][i].R1, yInv[k]),
+					pr.MulByElement(&lines[k-1][0][i].R0, xNegOverY[k-1]),
+					pr.MulByElement(&lines[k-1][0][i].R1, yInv[k-1]),
+				)
 				// (ℓ × ℓ) × res
-				res = pr.MulBy01234(res, &prodLines)
-
+				res = pr.MulBy01234(res, prodLines)
 			}
 
-		case 1:
+		} else {
 			for k := 0; k < n; k++ {
-				// Qacc[k] ← 2Qacc[k]+Q[k],
-				// l1 the line ℓ passing Qacc[k] and Q[k]
-				// l2 the line ℓ passing (Qacc[k]+Q[k]) and Qacc[k]
-				Qacc[k], l1, l2 = pr.doubleAndAddStep(Qacc[k], Q[k])
-
-				// line evaluation at P[k]
-				l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY[k])
-				l1.R1 = *pr.MulByElement(&l1.R1, yInv[k])
-
-				// line evaluation at P[k]
-				l2.R0 = *pr.MulByElement(&l2.R0, xNegOverY[k])
-				l2.R1 = *pr.MulByElement(&l2.R1, yInv[k])
-
-				// ℓ × ℓ
-				prodLines = *pr.Mul034By034(&l1.R0, &l1.R1, &l2.R0, &l2.R1)
+				// lines evaluations at P
+				// and ℓ × ℓ
+				prodLines := pr.Mul034By034(
+					pr.MulByElement(&lines[k][0][i].R0, xNegOverY[k]),
+					pr.MulByElement(&lines[k][0][i].R1, yInv[k]),
+					pr.MulByElement(&lines[k][1][i].R0, xNegOverY[k]),
+					pr.MulByElement(&lines[k][1][i].R1, yInv[k]),
+				)
 				// (ℓ × ℓ) × res
-				res = pr.MulBy01234(res, &prodLines)
+				res = pr.MulBy01234(res, prodLines)
 
 			}
-
-		case -1:
-			for k := 0; k < n; k++ {
-				// Qacc[k] ← 2Qacc[k]-Q[k],
-				// l1 the line ℓ passing Qacc[k] and -Q[k]
-				// l2 the line ℓ passing (Qacc[k]-Q[k]) and Qacc[k]
-				Qacc[k], l1, l2 = pr.doubleAndAddStep(Qacc[k], QNeg[k])
-
-				// line evaluation at P[k]
-				l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY[k])
-				l1.R1 = *pr.MulByElement(&l1.R1, yInv[k])
-
-				// line evaluation at P[k]
-				l2.R0 = *pr.MulByElement(&l2.R0, xNegOverY[k])
-				l2.R1 = *pr.MulByElement(&l2.R1, yInv[k])
-
-				// ℓ × ℓ
-				prodLines = *pr.Mul034By034(&l1.R0, &l1.R1, &l2.R0, &l2.R1)
-				// (ℓ × ℓ) × res
-				res = pr.MulBy01234(res, &prodLines)
-
-			}
-
-		default:
-			return nil, errors.New("invalid loopCounter")
 		}
 	}
 
-	// Compute  ∏ᵢ { ℓᵢ_{[6x₀+2]Q,π(Q)}(P) · ℓᵢ_{[6x₀+2]Q+π(Q),-π²(Q)}(P) }
-	Q1, Q2 := new(G2Affine), new(G2Affine)
+	// Compute  ℓ_{[6x₀+2]Q,π(Q)}(P) · ℓ_{[6x₀+2]Q+π(Q),-π²(Q)}(P)
+	// lines evaluations at P
+	// and ℓ × ℓ
 	for k := 0; k < n; k++ {
-		//Q1 = π(Q)
-		Q1.X = *pr.Ext2.Conjugate(&Q[k].X)
-		Q1.X = *pr.Ext2.MulByNonResidue1Power2(&Q1.X)
-		Q1.Y = *pr.Ext2.Conjugate(&Q[k].Y)
-		Q1.Y = *pr.Ext2.MulByNonResidue1Power3(&Q1.Y)
-
-		// Q2 = -π²(Q)
-		Q2.X = *pr.Ext2.MulByNonResidue2Power2(&Q[k].X)
-		Q2.Y = *pr.Ext2.MulByNonResidue2Power3(&Q[k].Y)
-		Q2.Y = *pr.Ext2.Neg(&Q2.Y)
-
-		// Qacc[k] ← Qacc[k]+π(Q) and
-		// l1 the line passing Qacc[k] and π(Q)
-		Qacc[k], l1 = pr.addStep(Qacc[k], Q1)
-
-		// line evaluation at P[k]
-		l1.R0 = *pr.Ext2.MulByElement(&l1.R0, xNegOverY[k])
-		l1.R1 = *pr.Ext2.MulByElement(&l1.R1, yInv[k])
-
-		// l2 the line passing Qacc[k] and -π²(Q)
-		l2 = pr.lineCompute(Qacc[k], Q2)
-		// line evaluation at P[k]
-		l2.R0 = *pr.MulByElement(&l2.R0, xNegOverY[k])
-		l2.R1 = *pr.MulByElement(&l2.R1, yInv[k])
-
-		// ℓ × ℓ
-		prodLines = *pr.Mul034By034(&l1.R0, &l1.R1, &l2.R0, &l2.R1)
+		prodLines := pr.Mul034By034(
+			pr.MulByElement(&lines[k][0][65].R0, xNegOverY[k]),
+			pr.MulByElement(&lines[k][0][65].R1, yInv[k]),
+			pr.MulByElement(&lines[k][1][65].R0, xNegOverY[k]),
+			pr.MulByElement(&lines[k][1][65].R1, yInv[k]),
+		)
 		// (ℓ × ℓ) × res
-		res = pr.MulBy01234(res, &prodLines)
-
+		res = pr.MulBy01234(res, prodLines)
 	}
 
 	return res, nil
@@ -563,10 +497,10 @@ func (pr Pairing) MillerLoop(P []*G1Affine, Q []*G2Affine) (*GTEl, error) {
 
 // doubleAndAddStep doubles p1 and adds p2 to the result in affine coordinates, and evaluates the line in Miller loop
 // https://eprint.iacr.org/2022/1162 (Section 6.1)
-func (pr Pairing) doubleAndAddStep(p1, p2 *G2Affine) (*G2Affine, *lineEvaluation, *lineEvaluation) {
+func (pr Pairing) doubleAndAddStep(p1, p2 *g2AffP) (*g2AffP, *lineEvaluation, *lineEvaluation) {
 
 	var line1, line2 lineEvaluation
-	var p G2Affine
+	var p g2AffP
 
 	// compute λ1 = (y2-y1)/(x2-x1)
 	n := pr.Ext2.Sub(&p1.Y, &p2.Y)
@@ -615,9 +549,9 @@ func (pr Pairing) doubleAndAddStep(p1, p2 *G2Affine) (*G2Affine, *lineEvaluation
 
 // doubleStep doubles a point in affine coordinates, and evaluates the line in Miller loop
 // https://eprint.iacr.org/2022/1162 (Section 6.1)
-func (pr Pairing) doubleStep(p1 *G2Affine) (*G2Affine, *lineEvaluation) {
+func (pr Pairing) doubleStep(p1 *g2AffP) (*g2AffP, *lineEvaluation) {
 
-	var p G2Affine
+	var p g2AffP
 	var line lineEvaluation
 
 	// λ = 3x²/2y
@@ -650,7 +584,7 @@ func (pr Pairing) doubleStep(p1 *G2Affine) (*G2Affine, *lineEvaluation) {
 
 // addStep adds two points in affine coordinates, and evaluates the line in Miller loop
 // https://eprint.iacr.org/2022/1162 (Section 6.1)
-func (pr Pairing) addStep(p1, p2 *G2Affine) (*G2Affine, *lineEvaluation) {
+func (pr Pairing) addStep(p1, p2 *g2AffP) (*g2AffP, *lineEvaluation) {
 
 	// compute λ = (y2-y1)/(x2-x1)
 	p2ypy := pr.Ext2.Sub(&p2.Y, &p1.Y)
@@ -667,7 +601,7 @@ func (pr Pairing) addStep(p1, p2 *G2Affine) (*G2Affine, *lineEvaluation) {
 	λpxrx := pr.Ext2.Mul(λ, pxrx)
 	yr := pr.Ext2.Sub(λpxrx, &p1.Y)
 
-	var res G2Affine
+	var res g2AffP
 	res.X = *xr
 	res.Y = *yr
 
@@ -681,7 +615,7 @@ func (pr Pairing) addStep(p1, p2 *G2Affine) (*G2Affine, *lineEvaluation) {
 }
 
 // lineCompute computes the line that goes through p1 and p2 but does not compute p1+p2
-func (pr Pairing) lineCompute(p1, p2 *G2Affine) *lineEvaluation {
+func (pr Pairing) lineCompute(p1, p2 *g2AffP) *lineEvaluation {
 
 	// compute λ = (y2-y1)/(x2-x1)
 	qypy := pr.Ext2.Sub(&p2.Y, &p1.Y)
@@ -718,318 +652,4 @@ func (pr Pairing) FinalExponentiationIsOne(e *GTEl) {
 	res := pr.finalExponentiation(e, false)
 	one := pr.One()
 	pr.AssertIsEqual(res, one)
-}
-
-// ----------------------------
-//	  Fixed-argument pairing
-// ----------------------------
-//
-// The second argument Q is the fixed canonical generator of G2.
-//
-// Q.X.A0 = 0x1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed
-// Q.X.A1 = 0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2
-// Q.Y.A0 = 0x12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa
-// Q.Y.A1 = 0x90689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b
-
-// MillerLoopFixed computes the single Miller loop
-// fᵢ_{u,g2}(P), where g2 is fixed.
-func (pr Pairing) MillerLoopFixedQ(P *G1Affine) (*GTEl, error) {
-
-	yInv := pr.curveF.Inverse(&P.Y)
-	xOverY := pr.curveF.MulMod(&P.X, yInv)
-	res := pr.Ext12.One()
-
-	// Compute f_{6x₀+2,Q}(P)
-	// i = 64, separately to avoid an E12 Square
-	// (Square(res) = 1² = 1)
-
-	// k = 0, separately to avoid MulBy034 (res × ℓ)
-	// (assign line(P) to res)
-	res.C1.B0 = *pr.MulByElement(&pr.lines[0][64], xOverY)
-	res.C1.B1 = *pr.MulByElement(&pr.lines[1][64], yInv)
-
-	// i = 63
-	res = pr.Square034(res)
-	// lines evaluations at P
-	// and ℓ × ℓ
-	prodLines := *pr.Mul034By034(
-		pr.MulByElement(&pr.lines[0][63], xOverY),
-		pr.MulByElement(&pr.lines[1][63], yInv),
-		pr.MulByElement(&pr.lines[2][63], xOverY),
-		pr.MulByElement(&pr.lines[3][63], yInv),
-	)
-	// (ℓ × ℓ) × res
-	res = pr.MulBy01234(res, &prodLines)
-
-	for i := 62; i >= 0; i-- {
-		res = pr.Square(res)
-
-		if loopCounter[i] == 0 {
-
-			// line evaluation at P and ℓ × res
-			res = pr.MulBy034(res,
-				pr.MulByElement(&pr.lines[0][i], xOverY),
-				pr.MulByElement(&pr.lines[1][i], yInv),
-			)
-
-		} else {
-			// lines evaluations at P
-			// and ℓ × ℓ
-			prodLines := *pr.Mul034By034(
-				pr.MulByElement(&pr.lines[0][i], xOverY),
-				pr.MulByElement(&pr.lines[1][i], yInv),
-				pr.MulByElement(&pr.lines[2][i], xOverY),
-				pr.MulByElement(&pr.lines[3][i], yInv),
-			)
-			// (ℓ × ℓ) × res
-			res = pr.MulBy01234(res, &prodLines)
-
-		}
-	}
-
-	// Compute  ℓ_{[6x₀+2]Q,π(Q)}(P) · ℓ_{[6x₀+2]Q+π(Q),-π²(Q)}(P)
-	// lines evaluations at P
-	// and ℓ × ℓ
-	prodLines = *pr.Mul034By034(
-		pr.MulByElement(&pr.lines[0][65], xOverY),
-		pr.MulByElement(&pr.lines[1][65], yInv),
-		pr.MulByElement(&pr.lines[0][66], xOverY),
-		pr.MulByElement(&pr.lines[1][66], yInv),
-	)
-	// (ℓ × ℓ) × res
-	res = pr.MulBy01234(res, &prodLines)
-
-	return res, nil
-}
-
-// DoubleMillerLoopFixedQ computes the double Miller loop
-// fᵢ_{u,g2}(T) * fᵢ_{u,Q}(P), where g2 is fixed.
-func (pr Pairing) DoubleMillerLoopFixedQ(P, T *G1Affine, Q *G2Affine) (*GTEl, error) {
-	res := pr.Ext12.One()
-
-	var prodLines [5]fields_bn254.E2
-	var l1, l2 *lineEvaluation
-	var Qacc, QNeg *G2Affine
-	Qacc = Q
-	QNeg = &G2Affine{X: Q.X, Y: *pr.Ext2.Neg(&Q.Y)}
-	var yInv, xNegOverY, y2Inv, x2OverY2 *emulated.Element[emulated.BN254Fp]
-	yInv = pr.curveF.Inverse(&P.Y)
-	xNegOverY = pr.curveF.MulMod(&P.X, yInv)
-	xNegOverY = pr.curveF.Neg(xNegOverY)
-	y2Inv = pr.curveF.Inverse(&T.Y)
-	x2OverY2 = pr.curveF.MulMod(&T.X, y2Inv)
-
-	// Compute ∏ᵢ { fᵢ_{6x₀+2,Q}(P) }
-	// i = 64, separately to avoid an E12 Square
-	// (Square(res) = 1² = 1)
-
-	// Qacc ← 2Qacc and l1 the tangent ℓ passing 2Qacc
-	Qacc, l1 = pr.doubleStep(Qacc)
-
-	// line evaluation at P
-	l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY)
-	l1.R1 = *pr.MulByElement(&l1.R1, yInv)
-
-	// precomputed-ℓ × ℓ
-	prodLines = *pr.Mul034By034(
-		&l1.R0,
-		&l1.R1,
-		pr.MulByElement(&pr.lines[0][64], x2OverY2),
-		pr.MulByElement(&pr.lines[1][64], y2Inv),
-	)
-	// (precomputed-ℓ × ℓ) × res
-	res = pr.MulBy01234(res, &prodLines)
-
-	// i = 63, separately to avoid a doubleStep
-	// (at this point Qacc = 2Q, so 2Qacc-Q=3Q is equivalent to Qacc+Q=3Q
-	// this means doubleAndAddStep is equivalent to addStep here)
-	res = pr.Square(res)
-	// l2 the line passing Qacc and -Q
-	l2 = pr.lineCompute(Qacc, QNeg)
-
-	// line evaluation at P
-	l2.R0 = *pr.MulByElement(&l2.R0, xNegOverY)
-	l2.R1 = *pr.MulByElement(&l2.R1, yInv)
-
-	// Qacc ← Qacc+Q and
-	// l1 the line ℓ passing Qacc and Q
-	Qacc, l1 = pr.addStep(Qacc, Q)
-
-	// line evaluation at P
-	l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY)
-	l1.R1 = *pr.MulByElement(&l1.R1, yInv)
-
-	// ℓ × ℓ
-	prodLines = *pr.Mul034By034(&l1.R0, &l1.R1, &l2.R0, &l2.R1)
-	// (ℓ × ℓ) × res
-	res = pr.MulBy01234(res, &prodLines)
-
-	// precomputed-ℓ × precomputed-ℓ
-	prodLines = *pr.Mul034By034(
-		pr.MulByElement(&pr.lines[0][63], x2OverY2),
-		pr.MulByElement(&pr.lines[1][63], y2Inv),
-		pr.MulByElement(&pr.lines[2][63], x2OverY2),
-		pr.MulByElement(&pr.lines[3][63], y2Inv),
-	)
-	// (precomputed-ℓ × precomputed-ℓ) × res
-	res = pr.MulBy01234(res, &prodLines)
-
-	// Compute ∏ᵢ { fᵢ_{6x₀+2,Q}(P) }
-	for i := 62; i >= 0; i-- {
-		// mutualize the square among n Miller loops
-		// (∏ᵢfᵢ)²
-		res = pr.Square(res)
-
-		switch loopCounter[i] {
-		case 0:
-
-			// Qacc ← 2Qacc and l1 the tangent ℓ passing 2Qacc
-			Qacc, l1 = pr.doubleStep(Qacc)
-
-			// line evaluation at P
-			l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY)
-			l1.R1 = *pr.MulByElement(&l1.R1, yInv)
-
-			// precomputed-ℓ × ℓ
-			prodLines = *pr.Mul034By034(
-				&l1.R0,
-				&l1.R1,
-				pr.MulByElement(&pr.lines[0][i], x2OverY2),
-				pr.MulByElement(&pr.lines[1][i], y2Inv),
-			)
-			// (precomputed-ℓ × ℓ) × res
-			res = pr.MulBy01234(res, &prodLines)
-
-		case 1:
-			// precomputed-ℓ × precomputed-ℓ
-			prodLines = *pr.Mul034By034(
-				pr.MulByElement(&pr.lines[0][i], x2OverY2),
-				pr.MulByElement(&pr.lines[1][i], y2Inv),
-				pr.MulByElement(&pr.lines[2][i], x2OverY2),
-				pr.MulByElement(&pr.lines[3][i], y2Inv),
-			)
-			// (precomputed-ℓ × precomputed-ℓ) × res
-			res = pr.MulBy01234(res, &prodLines)
-
-			// Qacc ← 2Qacc+Q,
-			// l1 the line ℓ passing Qacc and Q
-			// l2 the line ℓ passing (Qacc+Q) and Qacc
-			Qacc, l1, l2 = pr.doubleAndAddStep(Qacc, Q)
-
-			// line evaluation at P
-			l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY)
-			l1.R1 = *pr.MulByElement(&l1.R1, yInv)
-
-			// line evaluation at P
-			l2.R0 = *pr.MulByElement(&l2.R0, xNegOverY)
-			l2.R1 = *pr.MulByElement(&l2.R1, yInv)
-
-			// ℓ × ℓ
-			prodLines = *pr.Mul034By034(&l1.R0, &l1.R1, &l2.R0, &l2.R1)
-			// (ℓ × ℓ) × res
-			res = pr.MulBy01234(res, &prodLines)
-
-		case -1:
-			// precomputed-ℓ × precomputed-ℓ
-			prodLines = *pr.Mul034By034(
-				pr.MulByElement(&pr.lines[0][i], x2OverY2),
-				pr.MulByElement(&pr.lines[1][i], y2Inv),
-				pr.MulByElement(&pr.lines[2][i], x2OverY2),
-				pr.MulByElement(&pr.lines[3][i], y2Inv),
-			)
-			// (precomputed-ℓ × precomputed-ℓ) × res
-			res = pr.MulBy01234(res, &prodLines)
-
-			// Qacc ← 2Qacc-Q,
-			// l1 the line ℓ passing Qacc and -Q
-			// l2 the line ℓ passing (Qacc-Q) and Qacc
-			Qacc, l1, l2 = pr.doubleAndAddStep(Qacc, QNeg)
-
-			// line evaluation at P
-			l1.R0 = *pr.MulByElement(&l1.R0, xNegOverY)
-			l1.R1 = *pr.MulByElement(&l1.R1, yInv)
-
-			// line evaluation at P
-			l2.R0 = *pr.MulByElement(&l2.R0, xNegOverY)
-			l2.R1 = *pr.MulByElement(&l2.R1, yInv)
-
-			// ℓ × ℓ
-			prodLines = *pr.Mul034By034(&l1.R0, &l1.R1, &l2.R0, &l2.R1)
-			// (ℓ × ℓ) × res
-			res = pr.MulBy01234(res, &prodLines)
-
-		default:
-			return nil, errors.New("invalid loopCounter")
-		}
-	}
-
-	// Compute  ∏ᵢ { ℓᵢ_{[6x₀+2]Q,π(Q)}(P) · ℓᵢ_{[6x₀+2]Q+π(Q),-π²(Q)}(P) }
-	Q1, Q2 := new(G2Affine), new(G2Affine)
-	//Q1 = π(Q)
-	Q1.X = *pr.Ext2.Conjugate(&Q.X)
-	Q1.X = *pr.Ext2.MulByNonResidue1Power2(&Q1.X)
-	Q1.Y = *pr.Ext2.Conjugate(&Q.Y)
-	Q1.Y = *pr.Ext2.MulByNonResidue1Power3(&Q1.Y)
-
-	// Q2 = -π²(Q)
-	Q2.X = *pr.Ext2.MulByNonResidue2Power2(&Q.X)
-	Q2.Y = *pr.Ext2.MulByNonResidue2Power3(&Q.Y)
-	Q2.Y = *pr.Ext2.Neg(&Q2.Y)
-
-	// Qacc ← Qacc+π(Q) and
-	// l1 the line passing Qacc and π(Q)
-	Qacc, l1 = pr.addStep(Qacc, Q1)
-
-	// line evaluation at P
-	l1.R0 = *pr.Ext2.MulByElement(&l1.R0, xNegOverY)
-	l1.R1 = *pr.Ext2.MulByElement(&l1.R1, yInv)
-
-	// l2 the line passing Qacc and -π²(Q)
-	l2 = pr.lineCompute(Qacc, Q2)
-	// line evaluation at P
-	l2.R0 = *pr.MulByElement(&l2.R0, xNegOverY)
-	l2.R1 = *pr.MulByElement(&l2.R1, yInv)
-
-	// ℓ × ℓ
-	prodLines = *pr.Mul034By034(&l1.R0, &l1.R1, &l2.R0, &l2.R1)
-	// (ℓ × ℓ) × res
-	res = pr.MulBy01234(res, &prodLines)
-
-	// precomputed-ℓ × precomputed-ℓ
-	prodLines = *pr.Mul034By034(
-		pr.MulByElement(&pr.lines[0][65], x2OverY2),
-		pr.MulByElement(&pr.lines[1][65], y2Inv),
-		pr.MulByElement(&pr.lines[0][66], x2OverY2),
-		pr.MulByElement(&pr.lines[1][66], y2Inv),
-	)
-	// (precomputed-ℓ × precomputed-ℓ) × res
-	res = pr.MulBy01234(res, &prodLines)
-
-	return res, nil
-}
-
-// PairFixedQ calculates the reduced pairing for a set of points
-// e(P, g2), where g2 is fixed.
-//
-// This function doesn't check that the inputs are in the correct subgroups.
-func (pr Pairing) PairFixedQ(P *G1Affine) (*GTEl, error) {
-	res, err := pr.MillerLoopFixedQ(P)
-	if err != nil {
-		return nil, fmt.Errorf("miller loop: %w", err)
-	}
-	res = pr.finalExponentiation(res, true)
-	return res, nil
-}
-
-// DoublePairFixedQ calculates the reduced pairing for a set of points
-// e(P, Q) * e(T, g2), where g2 is fixed.
-//
-// This function doesn't check that the inputs are in the correct subgroups.
-func (pr Pairing) DoublePairFixedQ(P, T *G1Affine, Q *G2Affine) (*GTEl, error) {
-	res, err := pr.DoubleMillerLoopFixedQ(P, T, Q)
-	if err != nil {
-		return nil, fmt.Errorf("double miller loop: %w", err)
-	}
-	res = pr.finalExponentiation(res, false)
-	return res, nil
 }

@@ -28,12 +28,8 @@ func (b *BlueprintGenericSparseR1C) NbOutputs(inst Instruction) int {
 	return 0
 }
 
-func (b *BlueprintGenericSparseR1C) WireWalker(inst Instruction) func(cb func(wire uint32)) {
-	return func(cb func(wire uint32)) {
-		cb(inst.Calldata[0]) // xa
-		cb(inst.Calldata[1]) // xb
-		cb(inst.Calldata[2]) // xc
-	}
+func (b *BlueprintGenericSparseR1C) UpdateInstructionTree(inst Instruction, tree InstructionTree) Level {
+	return updateInstructionTree(inst.Calldata[0:3], tree)
 }
 
 func (b *BlueprintGenericSparseR1C) CompressSparseR1C(c *SparseR1C, to *[]uint32) {
@@ -172,12 +168,8 @@ func (b *BlueprintSparseR1CMul) NbOutputs(inst Instruction) int {
 	return 0
 }
 
-func (b *BlueprintSparseR1CMul) WireWalker(inst Instruction) func(cb func(wire uint32)) {
-	return func(cb func(wire uint32)) {
-		cb(inst.Calldata[0]) // xa
-		cb(inst.Calldata[1]) // xb
-		cb(inst.Calldata[2]) // xc
-	}
+func (b *BlueprintSparseR1CMul) UpdateInstructionTree(inst Instruction, tree InstructionTree) Level {
+	return updateInstructionTree(inst.Calldata[0:3], tree)
 }
 
 func (b *BlueprintSparseR1CMul) CompressSparseR1C(c *SparseR1C, to *[]uint32) {
@@ -220,12 +212,8 @@ func (b *BlueprintSparseR1CAdd) NbOutputs(inst Instruction) int {
 	return 0
 }
 
-func (b *BlueprintSparseR1CAdd) WireWalker(inst Instruction) func(cb func(wire uint32)) {
-	return func(cb func(wire uint32)) {
-		cb(inst.Calldata[0]) // xa
-		cb(inst.Calldata[1]) // xb
-		cb(inst.Calldata[2]) // xc
-	}
+func (b *BlueprintSparseR1CAdd) UpdateInstructionTree(inst Instruction, tree InstructionTree) Level {
+	return updateInstructionTree(inst.Calldata[0:3], tree)
 }
 
 func (b *BlueprintSparseR1CAdd) CompressSparseR1C(c *SparseR1C, to *[]uint32) {
@@ -273,10 +261,8 @@ func (b *BlueprintSparseR1CBool) NbOutputs(inst Instruction) int {
 	return 0
 }
 
-func (b *BlueprintSparseR1CBool) WireWalker(inst Instruction) func(cb func(wire uint32)) {
-	return func(cb func(wire uint32)) {
-		cb(inst.Calldata[0]) // xa
-	}
+func (b *BlueprintSparseR1CBool) UpdateInstructionTree(inst Instruction, tree InstructionTree) Level {
+	return updateInstructionTree(inst.Calldata[0:1], tree)
 }
 
 func (b *BlueprintSparseR1CBool) CompressSparseR1C(c *SparseR1C, to *[]uint32) {
@@ -302,4 +288,29 @@ func (b *BlueprintSparseR1CBool) DecompressSparseR1C(c *SparseR1C, inst Instruct
 	c.XB = c.XA
 	c.QL = inst.Calldata[1]
 	c.QM = inst.Calldata[2]
+}
+
+func updateInstructionTree(wires []uint32, tree InstructionTree) Level {
+	// constraint has at most one unsolved wire.
+	var outputWire uint32
+	found := false
+	maxLevel := LevelUnset
+	for _, wireID := range wires {
+		if !tree.HasWire(wireID) {
+			continue
+		}
+		if level := tree.GetWireLevel(wireID); level == LevelUnset {
+			outputWire = wireID
+			found = true
+		} else if level > maxLevel {
+			maxLevel = level
+		}
+	}
+
+	maxLevel++
+	if found {
+		tree.InsertWire(outputWire, maxLevel)
+	}
+
+	return maxLevel
 }

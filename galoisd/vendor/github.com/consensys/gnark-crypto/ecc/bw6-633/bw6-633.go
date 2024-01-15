@@ -15,6 +15,8 @@
 //	𝔽p³[u] = 𝔽p/u³-2
 //	𝔽p⁶[v] = 𝔽p²/v²-u
 //
+// case t % r % u = 0
+//
 // optimal Ate loops:
 //
 //	x₀+1, x₀^5-x₀^4-x₀
@@ -57,8 +59,8 @@ var g1Infinity G1Jac
 var g2Infinity G2Jac
 
 // optimal Ate loop counters
-var loopCounter0 [159]int8
-var loopCounter1 [159]int8
+var LoopCounter [159]int8
+var LoopCounter1 [159]int8
 
 // Parameters useful for the GLV scalar multiplication. The third roots define the
 // endomorphisms ϕ₁ and ϕ₂ for <G1Affine> and <G2Affine>. lambda is such that <r, ϕ-λ> lies above
@@ -95,11 +97,11 @@ func init() {
 	g2GenAff.FromJacobian(&g2Gen)
 
 	// binary decomposition of x₀+1 (negative)
-	loopCounter0 = [159]int8{0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	LoopCounter = [159]int8{0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 	// x₀⁵-x₀⁴-x₀ (negative)
 	T, _ := new(big.Int).SetString("345131030376204096837580131803633448876874137601", 10)
-	ecc.NafDecomposition(T, loopCounter1[:])
+	ecc.NafDecomposition(T, LoopCounter1[:])
 
 	// (X,Y,Z) = (1,1,0)
 	g1Infinity.X.SetOne()

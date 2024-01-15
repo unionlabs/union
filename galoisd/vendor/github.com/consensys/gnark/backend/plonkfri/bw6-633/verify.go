@@ -17,22 +17,25 @@
 package plonkfri
 
 import (
-	"crypto/sha256"
 	"errors"
+	"fmt"
 	"github.com/consensys/gnark-crypto/ecc/bw6-633/fr"
 	"github.com/consensys/gnark-crypto/ecc/bw6-633/fr/fri"
-	"math/big"
-
 	fiatshamir "github.com/consensys/gnark-crypto/fiat-shamir"
+	"github.com/consensys/gnark/backend"
+	"math/big"
 )
 
 var ErrInvalidAlgebraicRelation = errors.New("algebraic relation does not hold")
 
-func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector) error {
+func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector, opts ...backend.VerifierOption) error {
+	cfg, err := backend.NewVerifierConfig(opts...)
+	if err != nil {
+		return fmt.Errorf("create backend config: %w", err)
+	}
 
 	// 0 - derive the challenges with Fiat Shamir
-	hFunc := sha256.New()
-	fs := fiatshamir.NewTranscript(hFunc, "gamma", "beta", "alpha", "zeta")
+	fs := fiatshamir.NewTranscript(cfg.ChallengeHash, "gamma", "beta", "alpha", "zeta")
 
 	dataFiatShamir := make([][fr.Bytes]byte, len(publicWitness)+3)
 	for i := 0; i < len(publicWitness); i++ {
@@ -42,17 +45,17 @@ func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector) error {
 	copy(dataFiatShamir[len(publicWitness)+1][:], proof.LROpp[1].ID)
 	copy(dataFiatShamir[len(publicWitness)+2][:], proof.LROpp[2].ID)
 
-	beta, err := deriveRandomnessFixedSize(&fs, "gamma", dataFiatShamir...)
+	beta, err := deriveRandomnessFixedSize(fs, "gamma", dataFiatShamir...)
 	if err != nil {
 		return err
 	}
 
-	gamma, err := deriveRandomness(&fs, "beta", nil)
+	gamma, err := deriveRandomness(fs, "beta", nil)
 	if err != nil {
 		return err
 	}
 
-	alpha, err := deriveRandomness(&fs, "alpha", proof.Zpp.ID)
+	alpha, err := deriveRandomness(fs, "alpha", proof.Zpp.ID)
 	if err != nil {
 		return err
 	}
@@ -64,7 +67,7 @@ func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector) error {
 	friSize := 2 * rho * vk.Size
 	var bFriSize big.Int
 	bFriSize.SetInt64(int64(friSize))
-	frOpeningPosition, err := deriveRandomness(&fs, "zeta", proof.Hpp[0].ID, proof.Hpp[1].ID, proof.Hpp[2].ID)
+	frOpeningPosition, err := deriveRandomness(fs, "zeta", proof.Hpp[0].ID, proof.Hpp[1].ID, proof.Hpp[2].ID)
 	if err != nil {
 		return err
 	}
