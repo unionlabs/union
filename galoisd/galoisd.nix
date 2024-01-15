@@ -1,6 +1,16 @@
 { ... }: {
   perSystem = { self', pkgs, proto, goPkgs, ... }: {
     packages = {
+      galoisd-coverage =
+        pkgs.runCommand
+          "galoids-coverage"
+          { buildInputs = [ goPkgs.go ]; }
+          ''
+            HOME="$(mktemp -d)"
+            cd ${./.}
+            go test -v -coverpkg=./... -coverprofile=$out ./...
+          '';
+
       galoisd = goPkgs.buildGoModule ({
         name = "galoisd";
         src = ./.;
