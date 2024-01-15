@@ -100,11 +100,6 @@ export default defineConfig({
       customCss: [
         "./src/styles/index.css",
         "./src/styles/tailwind.css",
-        "@fontsource/inter/400.css",
-        "@fontsource/inter/600.css",
-        "@fontsource/inter/700.css",
-        "@fontsource/inter/800.css",
-        "@fontsource/inter/900.css",
         "@fontsource/ibm-plex-mono/400.css",
         "@fontsource/ibm-plex-mono/600.css",
       ],
