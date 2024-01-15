@@ -198,7 +198,7 @@ func (f *Field[T]) IsZero(a *Element[T]) frontend.Variable {
 	f.AssertIsInRange(ca)
 	res := f.api.IsZero(ca.Limbs[0])
 	for i := 1; i < len(ca.Limbs); i++ {
-		f.api.Mul(res, f.api.IsZero(ca.Limbs[i]))
+		res = f.api.Mul(res, f.api.IsZero(ca.Limbs[i]))
 	}
 	return res
 }

@@ -114,7 +114,7 @@ require (
 
 replace (
 	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240111183309-e159e964fa07
-	github.com/consensys/gnark => github.com/consensys/gnark v0.9.2-0.20240110234118-5f1643d98071
+	github.com/consensys/gnark => github.com/consensys/gnark v0.9.2-0.20240115131420-34fdb0391653
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6
 	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240111183419-b58f90f260ce
