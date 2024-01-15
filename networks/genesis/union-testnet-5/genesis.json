@@ -418,6 +418,13 @@
           "address": "union1pasu7pjmzqlhgpcxgz7ru9yetc63rrw8ykg5w0",
           "pub_key": null,
           "sequence": "0"
+        },
+        {
+          "@type": "/cosmos.auth.v1beta1.BaseAccount",
+          "account_number": "60",
+          "address": "union1wv7yh86t0s4lw5lp9wdn59c22us75thmy5233q",
+          "pub_key": null,
+          "sequence": "0"
         }
       ]
     },
@@ -939,6 +946,15 @@
           "coins": [
             {
               "amount": "3000000000000",
+              "denom": "muno"
+            }
+          ]
+        },
+        {
+          "address": "union1wv7yh86t0s4lw5lp9wdn59c22us75thmy5233q",
+          "coins": [
+            {
+              "amount": "128000000000000",
               "denom": "muno"
             }
           ]
