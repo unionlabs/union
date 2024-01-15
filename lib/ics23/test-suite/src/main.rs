@@ -439,7 +439,15 @@ impl TestCase for VectorTest {
                     .context("verify membership")
                 }
                 (CommitmentProof::Nonexist(non_existence_proof), 0) => {
-                    // TODO: Original self calculates root and assert it's the same, but I can't find a `calculate_root(Nonexist)` function
+                    // Even both are `Some`, still calculate the left branch
+                    let root = match (&non_existence_proof.left, &non_existence_proof.right) {
+                        (Some(existence_proof), _) | (None, Some(existence_proof)) => {
+                            calculate_root(existence_proof).context("calculating root")?
+                        }
+                        _ => bail!("can't find root"),
+                    };
+
+                    assert_eq!(&root, &self.data.root);
 
                     verify_non_membership(
                         &self.spec,
