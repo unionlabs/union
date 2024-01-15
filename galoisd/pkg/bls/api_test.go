@@ -123,7 +123,7 @@ func TestBlsSig(t *testing.T) {
 		test.WithValidAssignment(&BlsSig{
 			PublicKey: gadget.NewG1Affine(pk),
 			Signature: gadget.NewG2AffineFixed(sig),
-			Message: gadget.NewG2AffineFixed(hashed),
+			Message:   gadget.NewG2AffineFixed(hashed),
 		}),
 		test.WithCurves(ecc.BN254),
 		test.NoFuzzing(),
