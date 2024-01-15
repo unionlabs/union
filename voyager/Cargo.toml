@@ -1,55 +1,53 @@
 [package]
-name = "voyager"
-version = "0.1.0"
-edition = "2021"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "voyager"
+publish      = false
+repository   = { workspace = true }
+version      = "0.1.0"
 
 [dependencies]
-base64 = "0.21.0"
-bech32 = "0.9.1"
-bip32 = { version = "0.5.0", features = ["secp256k1"] }
-ethers = { workspace = true, features = ["rustls", "ws"] }
-futures = "0.3.28"
-hex-literal = "0.4.1"
-num-bigint = "0.4"
-prost = "0.11.0"
-reqwest = { version = "0.11.17", default-features = false, features = ["tokio-rustls"] }
-ripemd = "0.1.3"
-serde_json = "1.0.96"
-sha2.workspace = true
-subtle-encoding = { version = "0.5.1", features = ["bech32-preview"] }
-tendermint = { workspace = true }
-tendermint-proto = { workspace = true }
-tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }
-tokio = { version = "1.27.0", features = ["macros"] }
-tonic = { version = "0.9", features = ["transport","tls","tls-roots","tls-webpki-roots"] }
-tower = { version = "*", features = ["log"] }
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-clap = { version = "4.3.0", features = ["derive", "env", "error-context"] }
-tracing = "0.1.37"
-typenum = "1.16.0"
-serde = { version = "1.0.173", features = ["derive"] }
-hex = { version = "0.4.3", features = [ "serde" ] }
-pin-utils = "0.1.0"
-tokio-stream = { version = "0.1.14" }
-either = { version = "1.9.0", features = ["serde"] }
-pg-queue.workspace = true
-
-beacon-api = { workspace = true, default-features = false }
-contracts.workspace = true
-protos = { workspace = true, features = ["proto_full", "client"] }
-unionlabs = { workspace = true, features = ["ethabi"] }
-serde-utils.workspace = true
-chain-utils.workspace = true
-axum = { version = "0.6.20", features = ["macros"] }
-frunk = "0.4.2"
-bitvec = "1.0.1"
-frame-support-procedural = "18.0.0"
-sqlx = { version = "0.7.2", features = ["postgres", "tls-rustls"] }
-thiserror = "1.0.49"
-crossbeam-queue = "0.3.8"
-
-tikv-jemallocator = "0.5"
-tokio-util = "0.7.9"
-
-voyager-message.workspace = true
+axum                     = { workspace = true, features = ["macros", "tokio", "json"] }
+beacon-api               = { workspace = true, default-features = false }
+bech32                   = "0.9.1"
+bip32                    = { workspace = true, features = ["secp256k1"] }
+bitvec                   = { workspace = true }
+chain-utils              = { workspace = true }
+clap                     = { workspace = true, features = ["default", "derive", "env", "error-context"] }
+contracts                = { workspace = true }
+crossbeam-queue          = { workspace = true, features = ["std"] }
+either                   = { workspace = true, features = ["serde"] }
+ethers                   = { workspace = true, features = ["rustls", "ws"] }
+frame-support-procedural = { workspace = true }
+frunk                    = { workspace = true }
+futures                  = { workspace = true }
+hex                      = { workspace = true }
+hex-literal              = { workspace = true }
+num-bigint               = { workspace = true }
+pg-queue                 = { workspace = true }
+pin-utils                = "0.1.0"
+prost                    = { workspace = true }
+protos                   = { workspace = true, features = ["proto_full", "client"] }
+reqwest                  = { workspace = true, features = ["tokio-rustls"] }
+ripemd                   = { workspace = true }
+serde                    = { workspace = true, features = ["derive"] }
+serde-utils              = { workspace = true }
+serde_json               = { workspace = true }
+sha2                     = { workspace = true }
+sqlx                     = { workspace = true, features = ["postgres", "migrate", "tls-rustls"] }
+subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
+tendermint               = { workspace = true }
+tendermint-proto         = { workspace = true }
+tendermint-rpc           = { workspace = true, features = ["http-client", "websocket-client"] }
+thiserror                = { workspace = true }
+tikv-jemallocator        = "0.5"
+tokio                    = { workspace = true, features = ["macros"] }
+tokio-stream             = { workspace = true }
+tokio-util               = "0.7.9"
+tonic                    = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
+tower                    = { version = "*", features = ["log"] }
+tracing                  = { workspace = true }
+tracing-subscriber       = { workspace = true, features = ["env-filter"] }
+typenum                  = { workspace = true }
+unionlabs                = { workspace = true, features = ["ethabi"] }
+voyager-message          = { workspace = true }

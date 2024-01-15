@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Coins, Deps, DepsMut, Env, IbcQuery, MessageInfo, Order,
+    to_json_binary, Addr, Binary, Coins, Deps, DepsMut, Env, IbcQuery, MessageInfo, Order,
     PortIdResponse, Response, StdError, StdResult,
 };
 use cw2::set_contract_version;
@@ -158,11 +158,11 @@ pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> Result<Response, ContractEr
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Port {} => to_binary(&query_port(deps)?),
-        QueryMsg::ListChannels {} => to_binary(&query_list(deps)?),
-        QueryMsg::Channel { id } => to_binary(&query_channel(deps, id)?),
-        QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::Admin {} => to_binary(&ADMIN.query_admin(deps)?),
+        QueryMsg::Port {} => to_json_binary(&query_port(deps)?),
+        QueryMsg::ListChannels {} => to_json_binary(&query_list(deps)?),
+        QueryMsg::Channel { id } => to_json_binary(&query_channel(deps, id)?),
+        QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::Admin {} => to_json_binary(&ADMIN.query_admin(deps)?),
     }
 }
 

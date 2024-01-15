@@ -1,33 +1,33 @@
 [package]
-name = "chain-utils"
-version = "0.1.0"
 edition = "2021"
+name    = "chain-utils"
+version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-unionlabs = { workspace = true, default-features = true }
-beacon-api = { workspace = true, default-features = false }
-contracts = { workspace = true, features = ["providers"] }
-serde-utils.workspace = true
-protos = { workspace = true, default-features = true, features = [ "client" ] }
+beacon-api  = { workspace = true, default-features = false }
+contracts   = { workspace = true, features = ["providers"] }
+protos      = { workspace = true, default-features = true, features = ["client"] }
+serde-utils = { workspace = true }
+unionlabs   = { workspace = true, default-features = true }
 
-futures = "0.3.28"
-ethers = { workspace = true, features = ["rustls", "ws"] }
-tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client", "default"] }
-serde = { version = "1.0.173", features = ["derive"] }
-hex = { version = "0.4.3", features = [ "serde" ] }
-bip32 = { version = "0.5.0", features = ["secp256k1"] }
-tracing = "0.1.37"
-tokio = { version = "1.32.0", default-features = false }
-typenum = { version = "1.16.0", default-features = false, features = ["const-generics", "no_std"] }
-prost = "0.11.0"
-sha2.workspace = true
-chrono = { version = "0.4.26", default-features = false, features = ["alloc"] }
-reqwest = "0.11.20"
-serde_json = "1.0.107"
-thiserror = "1.0.49"
-crossbeam-queue = "0.3.8"
-num_enum = "0.7.0"
-dashmap = "5.5.3"
-ics23.workspace = true
+bip32           = { workspace = true, features = ["secp256k1"] }
+chrono          = { workspace = true, features = ["alloc"] }
+crossbeam-queue = { workspace = true, features = ["std"] }
+dashmap         = { workspace = true }
+ethers          = { workspace = true, features = ["rustls", "ws"] }
+futures         = { workspace = true }
+hex             = { workspace = true }
+ics23           = { workspace = true }
+num_enum        = "0.7.0"
+prost           = { workspace = true }
+reqwest         = { workspace = true }
+serde           = { workspace = true, features = ["derive"] }
+serde_json      = { workspace = true }
+sha2            = { workspace = true }
+tendermint-rpc  = { workspace = true, features = ["http-client", "websocket-client", "default"] }
+thiserror       = { workspace = true }
+tokio           = { workspace = true }
+tracing         = { workspace = true }
+typenum         = { workspace = true, features = ["const-generics", "no_std"] }

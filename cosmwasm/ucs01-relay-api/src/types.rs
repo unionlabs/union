@@ -152,7 +152,7 @@ pub struct Ics20Packet {
 impl TryFrom<Ics20Packet> for Binary {
     type Error = EncodingError;
     fn try_from(value: Ics20Packet) -> Result<Binary, Self::Error> {
-        cosmwasm_std::to_vec(&value)
+        cosmwasm_std::to_json_vec(&value)
             .map_err(|_| EncodingError::InvalidEncoding)
             .map(Into::into)
     }
@@ -161,7 +161,7 @@ impl TryFrom<Ics20Packet> for Binary {
 impl TryFrom<Binary> for Ics20Packet {
     type Error = EncodingError;
     fn try_from(value: Binary) -> Result<Self, Self::Error> {
-        cosmwasm_std::from_slice(&value).map_err(|_| EncodingError::InvalidEncoding)
+        cosmwasm_std::from_json(value).map_err(|_| EncodingError::InvalidEncoding)
     }
 }
 
@@ -282,7 +282,7 @@ pub enum Ics20Ack {
 impl TryFrom<Ics20Ack> for Binary {
     type Error = EncodingError;
     fn try_from(value: Ics20Ack) -> Result<Self, Self::Error> {
-        Ok(cosmwasm_std::to_vec(&value)
+        Ok(cosmwasm_std::to_json_vec(&value)
             .map_err(|_| EncodingError::InvalidEncoding)?
             .into())
     }
@@ -292,7 +292,7 @@ impl TryFrom<Binary> for Ics20Ack {
     type Error = EncodingError;
     // Interesting, the Error variant of the enum clash with the AT in the return type, https://github.com/rust-lang/rust/issues/57644
     fn try_from(value: Binary) -> Result<Self, <Self as TryFrom<Binary>>::Error> {
-        cosmwasm_std::from_slice::<Ics20Ack>(&value).map_err(|_| EncodingError::InvalidEncoding)
+        cosmwasm_std::from_json::<Ics20Ack>(&value).map_err(|_| EncodingError::InvalidEncoding)
     }
 }
 

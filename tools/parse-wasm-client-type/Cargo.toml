@@ -1,10 +1,11 @@
 [package]
-name = "parse-wasm-client-type"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "parse-wasm-client-type"
+publish      = false
+repository   = { workspace = true }
+version      = "0.1.0"
 
 [dependencies]
-clap = { version = "4.4.7", features = ["derive", "std", "help"], default-features = false }
+clap      = { workspace = true, features = ["derive", "help"] }
 unionlabs = { workspace = true }

@@ -1,9 +1,8 @@
 [alias]
-wasm = "build --release --lib --target wasm32-unknown-unknown"
-wasm-debug = "build --lib --target wasm32-unknown-unknown"
-unit-test = "test --lib"
 integration-test = "test --test integration"
-schema = "run --bin schema"
+schema           = "run --bin schema"
+unit-test        = "test --lib"
+wasm             = "build --release --lib --target wasm32-unknown-unknown"
+wasm-debug       = "build --lib --target wasm32-unknown-unknown"
 
 rustflags = ["-C target-feature=-sign-ext", "-C link-arg=-s", "-C target-cpu=mvp"]
-

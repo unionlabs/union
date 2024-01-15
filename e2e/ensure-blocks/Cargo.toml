@@ -1,14 +1,16 @@
 [package]
-name = "ensure-blocks"
-version = "0.0.0"
 description = "A small command line utility to ensure that blocks are produced on both sepolia and union."
-edition = "2021"
+edition     = "2021"
+name        = "ensure-blocks"
+publish     = false
+repository  = { workspace = true }
+version     = "0.0.0"
 
 [dependencies]
-clap = { version = "4.3.12", features = ["derive"] }
-ethers = { workspace = true, features = ["ws", "providers"] }
-reqwest = "0.11.18"
-tendermint-rpc = {  workspace = true, features = ["http-client", "websocket-client"] }
-tokio = { version = "1.29.1", features = ["full"] }
-tracing = "0.1.37"
-tracing-subscriber = "0.3.17"
+clap               = { workspace = true, features = ["default", "derive"] }
+ethers             = { workspace = true, features = ["ws", "providers"] }
+reqwest            = { workspace = true }
+tendermint-rpc     = { workspace = true, features = ["http-client", "websocket-client"] }
+tokio              = { workspace = true, features = ["full"] }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }

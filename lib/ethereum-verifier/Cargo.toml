@@ -1,33 +1,33 @@
 [package]
-name = "ethereum-verifier"
-version = "0.1.0"
 edition = "2021"
+name    = "ethereum-verifier"
+version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ssz = { workspace = true }
+ssz       = { workspace = true }
 ssz_types = { workspace = true }
 tree_hash = { workspace = true }
 
-serde-utils.workspace = true
-unionlabs = { workspace = true, default-features = false }
+serde-utils = { workspace = true }
+unionlabs   = { workspace = true, default-features = false }
 
-bytes = { version = "1.4.0", default-features = false }
-hash-db = { version = "0.16.0", default-features = false }
+bytes              = { workspace = true }
+hash-db            = { version = "0.16.0", default-features = false }
 hash256-std-hasher = { version = "0.15.2", default-features = false }
-hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
-memory-db = { version = "0.32.0", default-features = false }
-milagro_bls = { workspace = true, default-features = false }
-primitive-types = { version = "0.12.1", default-features = false, features = ["rlp"] }
-rlp = { version = "0.5.2", default-features = false, features = ["derive"] }
-serde = { version = "1.0.103", default-features = false, features = ["derive", "alloc"] }
-sha2.workspace = true
-sha3 = { version = "0.10", default-features = false }
-trie-db = { version = "0.27.1", default-features = false }
-typenum = { version = "1.16.0", features = ["const-generics", "no_std"] }
-lazy_static = "1.4.0"
-thiserror = { version = "1.0", package = "thiserror-core", default-features = false }
+hex                = { workspace = true, features = ["alloc"] }
+lazy_static        = { workspace = true }
+memory-db          = { version = "0.32.0", default-features = false }
+milagro_bls        = { workspace = true, default-features = false }
+primitive-types    = { workspace = true, features = ["rlp"] }
+rlp                = { workspace = true, features = ["derive"] }
+serde              = { workspace = true, features = ["derive"] }
+sha2               = { workspace = true }
+sha3               = { workspace = true }
+thiserror          = { workspace = true }
+trie-db            = { version = "0.27.1", default-features = false }
+typenum            = { workspace = true, features = ["const-generics", "no_std"] }
 
 [dev-dependencies]
-serde_json = "1.0"
-hex-literal = "0.4.1"
+hex-literal = { workspace = true }
+serde_json  = { workspace = true }

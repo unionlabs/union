@@ -1,7 +1,11 @@
 [package]
-name = "hubble"
-version = "0.1.0"
-edition = "2021"
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "hubble"
+publish      = false
+repository   = { workspace = true }
+version      = "0.1.0"
+
 [lib]
 name = "hubble"
 path = "src/lib.rs"
@@ -11,21 +15,21 @@ name = "hubble"
 path = "src/main.rs"
 
 [dependencies]
-graphql_client = { version = "0.13.0",  features = ["reqwest-rustls", "reqwest", "reqwest-blocking"] }
-tendermint-rpc = { workspace = true, features = ["http-client", "tokio"] }
-tendermint = { workspace = true, features = ["std"] }
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-reqwest = { version = "^0.11", features = ["json", "blocking"] }
-serde_json = { version = "1.0" }
-color-eyre = "0.6.2"
-clap = { version = "4.4.0", features = ["derive", "env"] }
-url = { version = "2.4.1", features = ["serde"] }
-tracing = "0.1.37"
-tracing-subscriber = "0.3.17"
-futures = "0.3.28"
-prometheus = { version = "0.13.3", features = ["process"] }
-lazy_static = "1.4.0"
-axum = { version = "0.6.20", features = ["macros"] }
-sqlx = { version = "0.7.2", features = ["postgres", "runtime-tokio", "tls-rustls", "time" ] }
-time = { version = "0.3.30", features = ["serde"] }
+axum               = { workspace = true, features = ["macros", "tokio"] }
+clap               = { workspace = true, features = ["derive", "env"] }
+color-eyre         = { workspace = true, features = ["default"] }
+futures            = { workspace = true }
+graphql_client     = { version = "0.13.0", features = ["reqwest-rustls", "reqwest", "reqwest-blocking"] }
+lazy_static        = { workspace = true }
+prometheus         = { version = "0.13.3", features = ["process"] }
+reqwest            = { workspace = true, features = ["json", "blocking"] }
+serde              = { workspace = true, features = ["derive"] }
+serde_json         = { workspace = true }
+sqlx               = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json"] }
+tendermint         = { workspace = true, features = ["std"] }
+tendermint-rpc     = { workspace = true, features = ["http-client", "tokio"] }
+time               = { version = "0.3.30", features = ["serde"] }
+tokio              = { workspace = true, features = ["full"] }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+url                = { version = "2.4.1", features = ["serde"] }

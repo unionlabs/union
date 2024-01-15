@@ -1,17 +1,17 @@
 [package]
-name = "ics23-test-suite"
-version = "0.1.0"
 edition = "2021"
+name    = "ics23-test-suite"
+version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.4.14", default-features = false, features = ["derive"] }
-ics23.workspace = true
-unionlabs = { workspace = true }
-serde = { version = "1.0.173", features = ["derive"] }
-serde-utils.workspace = true
-serde_json = "1.0.96"
-protos = { workspace = true, features = ["cosmos+ics23+v1"] }
-anyhow = { version = "1.0.79", features = ["backtrace"] }
-hex = { version = "0.4.3", features = [ "serde" ] }
+anyhow      = { version = "1.0.79", features = ["backtrace"] }
+clap        = { workspace = true, default-features = false, features = ["derive"] }
+hex         = { workspace = true, features = ["serde"] }
+ics23       = { workspace = true }
+protos      = { workspace = true, features = ["cosmos+ics23+v1"] }
+serde       = { workspace = true, features = ["derive"] }
+serde-utils = { workspace = true }
+serde_json  = { workspace = true }
+unionlabs   = { workspace = true }

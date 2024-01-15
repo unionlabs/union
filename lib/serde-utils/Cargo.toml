@@ -1,16 +1,12 @@
 [package]
-name = "serde-utils"
-version = "0.1.0"
 edition = "2021"
+name    = "serde-utils"
+version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-base64 = { version = "0.21", default-features = false, features = ["alloc"] }
-serde = { version = "1.0", default-features = false }
-hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
-primitive-types = { version = "0.12.1", default-features = false, features = ["serde_no_std"] }
-bitvec = "1.0.1"
-
-[dev-dependencies]
-hex = { version = "0.4.3" }
-
+base64          = { workspace = true, features = ["alloc"] }
+bitvec          = { workspace = true, features = ["alloc"] }
+hex             = { workspace = true, features = ["alloc", "std"] }
+primitive-types = { workspace = true, features = ["serde_no_std"] }
+serde           = { workspace = true, features = ["derive"] }

@@ -1,17 +1,17 @@
 [package]
-name = "ics23"
-version = "0.1.0"
 edition = "2021"
+name    = "ics23"
+version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-unionlabs = { workspace = true, default-features = false }
-thiserror = { version = "1.0", package = "thiserror-core", default-features = false }
-prost = { version = "0.11.9", default-features = false, features = ["std"] }
-sha2.workspace = true
-ripemd = { version = "0.1.3", default-features = false }
-serde-utils.workspace = true
+prost       = { workspace = true, features = ["std"] }
+ripemd      = { workspace = true }
+serde-utils = { workspace = true }
+sha2        = { workspace = true }
+thiserror   = { workspace = true }
+unionlabs   = { workspace = true, default-features = false }
 
 [dev-dependencies]
-hex-literal = "0.4.1"
+hex-literal = { workspace = true }

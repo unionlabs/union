@@ -415,41 +415,48 @@
             # in
             {
               projectRootFile = "flake.nix";
-              programs.nixpkgs-fmt.enable = true;
-              programs.gofmt = {
-                enable = true;
-                package = goPkgs.go;
+              programs = {
+                nixpkgs-fmt.enable = true;
+                gofmt = {
+                  enable = true;
+                  package = goPkgs.go;
+                };
+                rustfmt = {
+                  enable = true;
+                  package = rust.toolchains.dev;
+                };
+                sort = {
+                  enable = true;
+                  file = "dictionary.txt";
+                };
+                prettier.enable = true;
+                taplo = {
+                  enable = true;
+                };
               };
-              programs.rustfmt = {
-                enable = true;
-                package = rust.toolchains.dev;
-              };
-              programs.sort = {
-                enable = true;
-                file = "dictionary.txt";
-              };
-              settings.global.excludes = [ "**/vendor/**" ];
-              programs.prettier.enable = true;
-              settings.formatter.prettier = {
-                # TODO: Use settings.pluginSearchDirs
-                # options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
-                includes = [
-                  "*.css"
-                  "*.html"
-                  "*.js"
-                  "*.cjs"
-                  "*.mjs"
-                  "*.json"
-                  "*.jsx"
-                  "*.md"
-                  "*.mdx"
-                  "*.scss"
-                  "*.ts"
-                  "*.tsx"
-                  "*.d.ts"
-                  "*.yaml"
-                  "*.yml"
-                ];
+              settings = {
+                global.excludes = [ "**/vendor/**" ];
+                formatter.prettier = {
+                  # TODO: Use settings.pluginSearchDirs
+                  # options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
+                  includes = [
+                    "*.css"
+                    "*.html"
+                    "*.js"
+                    "*.cjs"
+                    "*.mjs"
+                    "*.json"
+                    "*.jsx"
+                    "*.md"
+                    "*.mdx"
+                    "*.scss"
+                    "*.ts"
+                    "*.tsx"
+                    "*.d.ts"
+                    "*.yaml"
+                    "*.yml"
+                  ];
+                };
               };
             };
         };
