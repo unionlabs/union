@@ -22,13 +22,10 @@
           "@type": "/cosmos.crypto.bn254.PubKey",
           "key": "4TKKb2m5gx08GmeGgNM7ArnH2+ZYtVZaKOlkTSZNoZc="
         },
-        "value": {
-          "denom": "muno",
-          "amount": "1200000000000"
-        }
+        "value": { "denom": "muno", "amount": "2000000000000" }
       }
     ],
-    "memo": "1b25b068b82156d37873f9ba4613ed8a557ec736@198.19.249.66:26656",
+    "memo": "8acc64034c3805a09581c4359f0c1e8b28c73873@198.19.249.66:26656",
     "timeout_height": "0",
     "extension_options": [],
     "non_critical_extension_options": []
@@ -40,23 +37,14 @@
           "@type": "/cosmos.crypto.secp256k1.PubKey",
           "key": "A9v4EiCzKQluwJJjGUNw9ygxzh+77D24d1LdigmF0ok6"
         },
-        "mode_info": {
-          "single": {
-            "mode": "SIGN_MODE_DIRECT"
-          }
-        },
+        "mode_info": { "single": { "mode": "SIGN_MODE_DIRECT" } },
         "sequence": "0"
       }
     ],
-    "fee": {
-      "amount": [],
-      "gas_limit": "200000",
-      "payer": "",
-      "granter": ""
-    },
+    "fee": { "amount": [], "gas_limit": "200000", "payer": "", "granter": "" },
     "tip": null
   },
   "signatures": [
-    "RiwRTdI8XYyYGoaIcLYniPy9vo7YbD9gXgovVVsq5eQns4nvFi3VWp2hWZKrOQre95CzzVKJIy+MsoiU4ulpWQ=="
+    "y4Wc62ZjDAIca4qfFjGgvBowvXsMD8UTEOwwr1a4Aw931lHgf8g2Zkm2u/kFTQGWMhM5c6ylvaxTFD+wgKuJkg=="
   ]
 }
