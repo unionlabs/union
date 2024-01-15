@@ -31,6 +31,7 @@
     "networks/genesis/union-testnet-2/**",
     "networks/genesis/union-testnet-3/**",
     "networks/genesis/union-testnet-4/**",
+    "networks/genesis/union-testnet-5/**",
     "hubble/hasura/**",
     "site/src/lib/abi/**",
     "e2e/upgrades.nix",
