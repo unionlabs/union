@@ -3,7 +3,7 @@
     packages = {
       galoisd-coverage =
         pkgs.runCommand
-          "galoids-coverage"
+          "galoisd-coverage"
           { buildInputs = [ goPkgs.go ]; }
           ''
             HOME="$(mktemp -d)"
