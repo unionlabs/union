@@ -30,10 +30,6 @@
   font-display: swap;
 }
 
-p {
-  text-wrap: pretty;
-}
-
 p > a {
   color: #f9a8d4 !important;
   text-decoration: none;
