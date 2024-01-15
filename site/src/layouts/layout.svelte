@@ -1,10 +1,10 @@
----
-import '@fontsource/ibm-plex-mono'
-import '@fontsource/jetbrains-mono'
-import '#/styles/index.css'
-import '#/styles/tailwind.css'
-import XLogo from '#/assets/x.svg'
----
+<script lang="ts">
+  import '@fontsource/ibm-plex-mono'
+  import '@fontsource/jetbrains-mono'
+  import '#/styles/index.css'
+  import '#/styles/tailwind.css'
+  import XLogo from '#/assets/x.svg'
+</script>
 
 <html lang='en'>
   <head>
