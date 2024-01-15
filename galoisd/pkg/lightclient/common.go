@@ -67,6 +67,9 @@ func Repack(api frontend.API, unpacked []frontend.Variable, sizeOfInput int, siz
 func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedValRoot frontend.Variable, powerNumerator frontend.Variable, powerDenominator frontend.Variable) error {
 	lc.api.AssertIsLessOrEqual(lc.input.NbOfVal, MaxVal)
 	lc.api.AssertIsLessOrEqual(lc.input.NbOfSignature, lc.input.NbOfVal)
+
+	// Note that the maximum bitmap size is currently 252, we would need to
+	// split it into multiple public inputs if we wanted to push this limit
 	bitmap := lc.api.ToBinary(lc.input.Bitmap, MaxVal)
 
 	// Facility to iterate over the validators in the lc, this function will
@@ -79,11 +82,15 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 			validator := lc.input.Validators[i]
 			h, err := mimc.NewMiMC(lc.api)
 			if err != nil {
-				return err
+				return fmt.Errorf("new mimc: %w", err)
 			}
 			h.Write(validator.HashableX, validator.HashableY, validator.HashableXMSB, validator.HashableYMSB, validator.Power)
 			leaf := h.Sum()
 
+			// Reconstruct the public key from the merkle leaf
+			/*
+			   pk = (val.pk.X | (val.pk.XMSB << 253), val.pk.Y | (val.pk.YMSB << 253))
+			*/
 			shiftedX := Unpack(lc.api, validator.HashableX, 256, 1)
 			shiftedX[253] = validator.HashableXMSB
 			unshiftedX := Repack(lc.api, shiftedX, 256, 64)
@@ -103,16 +110,15 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 		return nil
 	}
 
-	curveArithmetic, _ := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](lc.api, sw_emulated.GetBN254Params())
+	nonnative, _ := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](lc.api, sw_emulated.GetBN254Params())
 
 	totalVotingPower := frontend.Variable(0)
 	currentVotingPower := frontend.Variable(0)
 	aggregatedKeys := frontend.Variable(0)
-	var g1Zero curve.G1Affine
-	g1Zero.X.SetZero()
-	g1Zero.Y.SetZero()
-	emulatedG1Zero := gadget.NewG1Affine(g1Zero)
-	aggregatedPublicKey := emulatedG1Zero
+
+	zero := gadget.NewG1Affine(curve.G1Affine{})
+	trash := nonnative.Generator()
+	aggregatedPublicKey := &zero
 
 	leafHashes := make([]frontend.Variable, MaxVal)
 
@@ -120,16 +126,54 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 
 	if err := forEachVal(func(i int, signed frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error {
 		// Aggregate voting power and current power
+		/*
+		   totalVotingPower = totalVotingPower + power
+		*/
 		totalVotingPower = lc.api.Add(totalVotingPower, power)
-		// Optionally aggregated public key/voting power if validator at index signed
+
+		// Optionally aggregated public voting power if validator at index signed
+		/*
+		   currentVotingPower = currentVotingPower + if signed then power else 0
+		*/
 		currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(signed, power, 0))
+
 		// Optionally aggregated public key if validator at index signed
-		firstPK := lc.api.And(signed, lc.api.IsZero(aggregatedKeys))
-		aggregated := curveArithmetic.AddUnified(&aggregatedPublicKey, curveArithmetic.Select(signed, publicKey, &emulatedG1Zero))
-		aggregateNext := curveArithmetic.Select(firstPK, publicKey, aggregated)
-		aggregatedPublicKey =
-			*curveArithmetic.Select(signed, aggregateNext, &aggregatedPublicKey)
-		aggregatedKeys = lc.api.Add(aggregatedKeys, lc.api.Select(signed, 1, 0))
+		// Trivial version would be this, at the expense of ~1.5M constraints:
+		// aggregatedPublicKey = curveArithmetic.AddUnified(aggregatedPublicKey, curveArithmetic.Select(signed, publicKey, &G1Zero))
+
+		/*
+				   aggPK =
+		                     if signed {
+		                       if firstPK and null(aggPK) {
+		                         PK
+				       } else {
+				         # the `if null(aggPK)` branch here is impossible and only present because we use the partial `+` that don't handle point at infinity
+		                         aggPK' = if null(aggPK) then trash else aggPK
+				         aggPK' + PK
+				       }
+				     } else {
+		                       aggPK
+				     }
+		*/
+		nullPK := lc.api.IsZero(aggregatedKeys)
+		firstPK := lc.api.And(signed, nullPK)
+		aggregatedPublicKey = nonnative.Select(
+			signed,
+			nonnative.Select(
+				firstPK,
+				publicKey,
+				nonnative.Add(
+					nonnative.Select(nullPK, trash, aggregatedPublicKey),
+					publicKey,
+				),
+			),
+			aggregatedPublicKey)
+
+		/*
+		   aggregatedKeys = aggregatedKeys + signed
+		*/
+		aggregatedKeys = lc.api.Add(aggregatedKeys, signed)
+
 		leafHashes[i] = merkle.LeafHash([]frontend.Variable{leaf})
 		return nil
 	}); err != nil {
@@ -146,7 +190,6 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	lc.api.AssertIsEqual(aggregatedKeys, lc.input.NbOfSignature)
 
 	// Ensure that the current sum of voting power exceed the expected threshold
-	// x > ay/b <=> ay < bx
 	votingPowerNeeded := lc.api.Mul(totalVotingPower, powerNumerator)
 	currentVotingPowerScaled := lc.api.Mul(currentVotingPower, powerDenominator)
 	lc.api.AssertIsLessOrEqual(votingPowerNeeded, currentVotingPowerScaled)
@@ -164,11 +207,11 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	negG1 := gadget.NewG1Affine(g1AffGenNeg)
 
 	err = pairing.PairingCheck(
-		[]*gadget.G1Affine{&negG1, &aggregatedPublicKey},
+		[]*gadget.G1Affine{&negG1, aggregatedPublicKey},
 		[]*gadget.G2Affine{&lc.input.Sig, message},
 	)
 	if err != nil {
-		return fmt.Errorf("pair: %w", err)
+		return fmt.Errorf("pairing check: %w", err)
 	}
 
 	return nil

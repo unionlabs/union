@@ -1,9 +1,9 @@
 package sha256
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
-	"math/rand"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc"

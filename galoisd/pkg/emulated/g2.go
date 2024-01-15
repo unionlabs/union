@@ -33,7 +33,6 @@ func init() {
 
 	solver.RegisterHint(hintSqrt)
 	solver.RegisterHint(hintLegendre)
-
 }
 
 // Caller must ensure the root exists by calling legendre
@@ -113,8 +112,8 @@ func NewEmulatedAPI(api frontend.API) (*EmulatedAPI, error) {
 
 // AssertIsEqual asserts that p and q are the same point.
 func (e *EmulatedAPI) AssertIsEqual(p, q *gadget.G2Affine) {
-	e.ext2.AssertIsEqual(&p.X, &q.X)
-	e.ext2.AssertIsEqual(&p.Y, &q.Y)
+	e.ext2.AssertIsEqual(&p.P.X, &q.P.X)
+	e.ext2.AssertIsEqual(&p.P.Y, &q.P.Y)
 }
 
 // https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#name-the-sgn0-function
@@ -179,7 +178,6 @@ func (e *EmulatedAPI) MapToCurve(u *fields_bn254.E2) *gadget.G2Affine {
 		e.api.AssertIsBoolean(legendre)
 		// Ensure valid branch
 		e.ext2.AssertIsEqual(x, e.ext2.Select(legendre, e.ext2.Square(root), x))
-		// TODO assert root^2 != x if legendre == 0
 		return legendre, root
 	}
 
@@ -288,104 +286,56 @@ func (e *EmulatedAPI) MapToCurve(u *fields_bn254.E2) *gadget.G2Affine {
 	// 35.   y = CMOV(-y, y, e3)       # Select correct sign of y
 	y = e.ext2.Select(e3, y, e.ext2.Neg(y))
 	// 36. return (x, y)
-	return &gadget.G2Affine{X: *x, Y: *y}
+	return &gadget.G2Affine{
+		P: gadget.G2AffP{
+			X: *x,
+			Y: *y,
+		},
+	}
 }
 
 func (e *EmulatedAPI) Neg(p *gadget.G2Affine) *gadget.G2Affine {
 	return &gadget.G2Affine{
-		X: p.X,
-		Y: *e.ext2.Neg(&p.Y),
+		P: gadget.G2AffP{
+			X: p.P.X,
+			Y: *e.ext2.Neg(&p.P.Y),
+		},
 	}
 }
 
 func (e *EmulatedAPI) Select(b frontend.Variable, p, q *gadget.G2Affine) *gadget.G2Affine {
-	x := e.ext2.Select(b, &p.X, &q.X)
-	y := e.ext2.Select(b, &p.Y, &q.Y)
+	x := e.ext2.Select(b, &p.P.X, &q.P.X)
+	y := e.ext2.Select(b, &p.P.Y, &q.P.Y)
 	return &gadget.G2Affine{
-		X: *x,
-		Y: *y,
+		P: gadget.G2AffP{
+			X: *x,
+			Y: *y,
+		},
 	}
 }
 
 func (e *EmulatedAPI) Add(p, q *gadget.G2Affine) *gadget.G2Affine {
 	// compute λ = (q.y-p.y)/(q.x-p.x)
-	qypy := e.ext2.Sub(&q.Y, &p.Y)
-	qxpx := e.ext2.Sub(&q.X, &p.X)
+	qypy := e.ext2.Sub(&q.P.Y, &p.P.Y)
+	qxpx := e.ext2.Sub(&q.P.X, &p.P.X)
 	λ := e.ext2.DivUnchecked(qypy, qxpx)
 
 	// xr = λ²-p.x-q.x
 	λλ := e.ext2.Square(λ)
-	qxpx = e.ext2.Add(&p.X, &q.X)
+	qxpx = e.ext2.Add(&p.P.X, &q.P.X)
 	xr := e.ext2.Sub(λλ, qxpx)
 
 	// p.y = λ(p.x-r.x) - p.y
-	pxrx := e.ext2.Sub(&p.X, xr)
+	pxrx := e.ext2.Sub(&p.P.X, xr)
 	λpxrx := e.ext2.Mul(λ, pxrx)
-	yr := e.ext2.Sub(λpxrx, &p.Y)
+	yr := e.ext2.Sub(λpxrx, &p.P.Y)
 
 	return &gadget.G2Affine{
-		X: *xr,
-		Y: *yr,
+		P: gadget.G2AffP{
+			X: *xr,
+			Y: *yr,
+		},
 	}
-}
-
-// AddUnified adds p and q and returns it. It doesn't modify p nor q.
-//
-// ✅ p can be equal to q, and either or both can be (0,0).
-// (0,0) is not on the curve but we conventionally take it as the
-// neutral/infinity point as per the [EVM].
-//
-// It uses the unified formulas of Brier and Joye ([[BriJoy02]] (Corollary 1)).
-//
-// [BriJoy02]: https://link.springer.com/content/pdf/10.1007/3-540-45664-3_24.pdf
-// [EVM]: https://ethereum.github.io/yellowpaper/paper.pdf
-func (e *EmulatedAPI) AddUnified(p, q *gadget.G2Affine) *gadget.G2Affine {
-
-	// selector1 = 1 when p is (0,0) and 0 otherwise
-	selector1 := e.api.And(e.ext2.IsZero(&p.X), e.ext2.IsZero(&p.Y))
-	// selector2 = 1 when q is (0,0) and 0 otherwise
-	selector2 := e.api.And(e.ext2.IsZero(&q.X), e.ext2.IsZero(&q.Y))
-
-	// λ = ((p.x+q.x)² - p.x*q.x + a)/(p.y + q.y)
-	pxqx := e.ext2.Mul(&p.X, &q.X)
-	pxplusqx := e.ext2.Add(&p.X, &q.X)
-	num := e.ext2.Mul(pxplusqx, pxplusqx)
-	num = e.ext2.Sub(num, pxqx)
-
-	// BN254 specialization
-	// if c.addA {
-	// 	num = e.ext2.Add(num, &c.a)
-	// }
-
-	denum := e.ext2.Add(&p.Y, &q.Y)
-	// if p.y + q.y = 0, assign dummy 1 to denum and continue
-	selector3 := e.ext2.IsZero(denum)
-	denum = e.ext2.Select(selector3, e.ext2.One(), denum)
-	λ := e.ext2.DivUnchecked(num, denum)
-
-	// x = λ^2 - p.x - q.x
-	xr := e.ext2.Mul(λ, λ)
-	xr = e.ext2.Sub(xr, pxplusqx)
-
-	// y = λ(p.x - xr) - p.y
-	yr := e.ext2.Sub(&p.X, xr)
-	yr = e.ext2.Mul(yr, λ)
-	yr = e.ext2.Sub(yr, &p.Y)
-	result := gadget.G2Affine{
-		X: *xr,
-		Y: *yr,
-	}
-
-	zero := e.ext2.Zero()
-	infinity := gadget.G2Affine{X: *zero, Y: *zero}
-	// if p=(0,0)
-	result = *e.Select(selector1, q, &result)
-	// if q=(0,0) return p
-	result = *e.Select(selector2, p, &result)
-	// if p.y + q.y = 0, return (0, 0)
-	result = *e.Select(selector3, &infinity, &result)
-
-	return &result
 }
 
 // DoubleAndAdd computes 2p+q as (p+q)+p. It follows [ELM03] (Section 3.1)
@@ -400,36 +350,38 @@ func (e *EmulatedAPI) AddUnified(p, q *gadget.G2Affine) *gadget.G2Affine {
 func (e *EmulatedAPI) DoubleAndAdd(p, q *gadget.G2Affine) *gadget.G2Affine {
 
 	// compute λ1 = (q.y-p.y)/(q.x-p.x)
-	yqyp := e.ext2.Sub(&q.Y, &p.Y)
-	xqxp := e.ext2.Sub(&q.X, &p.X)
+	yqyp := e.ext2.Sub(&q.P.Y, &p.P.Y)
+	xqxp := e.ext2.Sub(&q.P.X, &p.P.X)
 	λ1 := e.ext2.DivUnchecked(yqyp, xqxp)
 
 	// compute x2 = λ1²-p.x-q.x
 	λ1λ1 := e.ext2.Square(λ1)
-	xqxp = e.ext2.Add(&p.X, &q.X)
+	xqxp = e.ext2.Add(&p.P.X, &q.P.X)
 	x2 := e.ext2.Sub(λ1λ1, xqxp)
 
 	// omit y2 computation
 	// compute λ2 = -λ1-2*p.y/(x2-p.x)
-	ypyp := e.ext2.Double(&p.Y)
-	x2xp := e.ext2.Sub(x2, &p.X)
+	ypyp := e.ext2.Double(&p.P.Y)
+	x2xp := e.ext2.Sub(x2, &p.P.X)
 	λ2 := e.ext2.DivUnchecked(ypyp, x2xp)
 	λ2 = e.ext2.Add(λ1, λ2)
 	λ2 = e.ext2.Neg(λ2)
 
 	// compute x3 =λ2²-p.x-x3
 	λ2λ2 := e.ext2.Square(λ2)
-	x3 := e.ext2.Sub(λ2λ2, &p.X)
+	x3 := e.ext2.Sub(λ2λ2, &p.P.X)
 	x3 = e.ext2.Sub(x3, x2)
 
 	// compute y3 = λ2*(p.x - x3)-p.y
-	y3 := e.ext2.Sub(&p.X, x3)
+	y3 := e.ext2.Sub(&p.P.X, x3)
 	y3 = e.ext2.Mul(λ2, y3)
-	y3 = e.ext2.Sub(y3, &p.Y)
+	y3 = e.ext2.Sub(y3, &p.P.Y)
 
 	return &gadget.G2Affine{
-		X: *x3,
-		Y: *y3,
+		P: gadget.G2AffP{
+			X: *x3,
+			Y: *y3,
+		},
 	}
 
 }
@@ -438,59 +390,26 @@ func (e *EmulatedAPI) DoubleAndAdd(p, q *gadget.G2Affine) *gadget.G2Affine {
 // It uses affine coordinates.
 func (e *EmulatedAPI) Double(p *gadget.G2Affine) *gadget.G2Affine {
 	// compute λ = (3p.x²+a)/2*p.y, here we assume a=0 (j invariant 0 curve)
-	xx3a := e.ext2.Square(&p.X)
+	xx3a := e.ext2.Square(&p.P.X)
 	xx3a = e.ext2.MulByConstElement(xx3a, big.NewInt(3))
-	y2 := e.ext2.MulByConstElement(&p.Y, big.NewInt(2))
+	y2 := e.ext2.MulByConstElement(&p.P.Y, big.NewInt(2))
 	λ := e.ext2.DivUnchecked(xx3a, y2)
 
 	// xr = λ²-2p.x
-	x2 := e.ext2.MulByConstElement(&p.X, big.NewInt(2))
+	x2 := e.ext2.MulByConstElement(&p.P.X, big.NewInt(2))
 	λλ := e.ext2.Square(λ)
 	xr := e.ext2.Sub(λλ, x2)
 
 	// yr = λ(p-xr) - p.y
-	pxrx := e.ext2.Sub(&p.X, xr)
+	pxrx := e.ext2.Sub(&p.P.X, xr)
 	λpxrx := e.ext2.Mul(λ, pxrx)
-	yr := e.ext2.Sub(λpxrx, &p.Y)
+	yr := e.ext2.Sub(λpxrx, &p.P.Y)
 
 	return &gadget.G2Affine{
-		X: *xr,
-		Y: *yr,
-	}
-}
-
-func (e *EmulatedAPI) Triple(p *gadget.G2Affine) *gadget.G2Affine {
-
-	// compute λ1 = (3p.x²+a)/2p.y, here we assume a=0 (j invariant 0 curve)
-	xx := e.ext2.Square(&p.X)
-	xx = e.ext2.MulByConstElement(xx, big.NewInt(3))
-	y2 := e.ext2.Double(&p.Y)
-	λ1 := e.ext2.DivUnchecked(xx, y2)
-
-	// xr = λ1²-2p.x
-	x2 := e.ext2.Double(&p.X)
-	λ1λ1 := e.ext2.Mul(λ1, λ1)
-	x2 = e.ext2.Sub(λ1λ1, x2)
-
-	// omit y2 computation, and
-	// compute λ2 = 2p.y/(x2 − p.x) − λ1.
-	x1x2 := e.ext2.Sub(&p.X, x2)
-	λ2 := e.ext2.DivUnchecked(y2, x1x2)
-	λ2 = e.ext2.Sub(λ2, λ1)
-
-	// xr = λ²-p.x-x2
-	λ2λ2 := e.ext2.Mul(λ2, λ2)
-	qxrx := e.ext2.Add(x2, &p.X)
-	xr := e.ext2.Sub(λ2λ2, qxrx)
-
-	// yr = λ(p.x-xr) - p.y
-	pxrx := e.ext2.Sub(&p.X, xr)
-	λ2pxrx := e.ext2.Mul(λ2, pxrx)
-	yr := e.ext2.Sub(λ2pxrx, &p.Y)
-
-	return &gadget.G2Affine{
-		X: *xr,
-		Y: *yr,
+		P: gadget.G2AffP{
+			X: *xr,
+			Y: *yr,
+		},
 	}
 }
 
@@ -503,13 +422,15 @@ func (e *EmulatedAPI) DoubleN(p *gadget.G2Affine, n int) *gadget.G2Affine {
 }
 
 func (e *EmulatedAPI) Psi(q *gadget.G2Affine) *gadget.G2Affine {
-	x := e.ext2.Conjugate(&q.X)
+	x := e.ext2.Conjugate(&q.P.X)
 	x = e.ext2.Mul(x, e.u)
-	y := e.ext2.Conjugate(&q.Y)
+	y := e.ext2.Conjugate(&q.P.Y)
 	y = e.ext2.Mul(y, e.v)
 	return &gadget.G2Affine{
-		X: *x,
-		Y: *y,
+		P: gadget.G2AffP{
+			X: *x,
+			Y: *y,
+		},
 	}
 }
 
@@ -556,6 +477,6 @@ func (e *EmulatedAPI) ClearCofactor(p *gadget.G2Affine) *gadget.G2Affine {
 	return e.Add(e.Add(e.Add(p0, p1), p2), p3)
 }
 
-func (e *EmulatedAPI) HashToG2(u *fields_bn254.E2) *gadget.G2Affine {
+func (e *EmulatedAPI) MapToG2(u *fields_bn254.E2) *gadget.G2Affine {
 	return e.ClearCofactor(e.MapToCurve(u))
 }
