@@ -40,13 +40,17 @@ ul > li > a {
   font-size: 0.9rem;
 }
 
+a, a:visited {
+  color: white;
+  text-decoration: none;
+}
+
 :root {
   --sl-text-h1: 3.5rem;
 }
 
 .sl-container {
   width: 100%;
-  /* margin-inline: unset; */
 }
 
 pre,

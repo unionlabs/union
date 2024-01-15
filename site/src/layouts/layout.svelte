@@ -17,7 +17,7 @@
     <title>Union</title>
   </head>
   <body
-    class='font-sans flex flex-col min-h-screen grid-effect-bg flex-1 shadow-effect-bg pb-12'
+    class='font-sans flex flex-col min-h-screen grid-effect-bg flex-1 shadow-effect-bg pb-12 bg-black text-white'
   >
     <Header/>
     <slot />
@@ -33,17 +33,6 @@
   *::-webkit-scrollbar {
     height: 0.3rem;
     width: 0rem;
-  }
-
-  :global(body) {
-    background-color: theme(colors.black);
-    color: #ffffff;
-  }
-
-  :global(a),
-  :global(a:visited) {
-    color: white;
-    text-decoration: none;
   }
 
   .grid-effect-bg {
