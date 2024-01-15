@@ -5,21 +5,22 @@ import Layout from '#/layouts/layout.svelte'
 <Layout>
   <main class='flex flex-col flex-1 gap-[100px] md:gap-[200px] my-[50px] md:my-[100px]'>
     <div class='flex flex-col items-center'>
-      <div class="text-6xl text-white">The Sovereign Transport Layer</div>
-      <div class='tagline'>
+      <div class="text-6xl text-white text-center">The Sovereign<br/>interoperability Layer</div>
+      <div class='mt-8 text-lg'>
         Union is a hyper-efficient, zero-knowledge interoperability layer<br />
         that connects Appchains, Layer 1, and Layer 2 networks.
       </div>
-      <div>
+      <div class="mt-8">
         <a
-          class='text-black skew-button'
+          class='mt-16 '
           href='/docs'
         >
-          <span>EXPLORE THE DOCS -&gt;</span>
+          EXPLORE THE DOCS -&gt;
         </a>
       </div>
     </div>
 
+	<!--
     <section>
       <img
         class='w-[300px] md:w-[500px] absolute left-[50%] -ml-[150px] md:-ml-[250px] z-10 -mt-[50px] md:-mt-[100px] eth-logo'
@@ -42,7 +43,7 @@ import Layout from '#/layouts/layout.svelte'
         <p class='text-center md:text-2xl'>Live between Union's Testnet and Ethereum's Testnet.</p>
       </div>
     </section>
-
+ -->
     <section class='flex flex-col items-center pb-56'>
       <h2 class='text-xl md:text-3xl font-bold'>Backed by industry experts</h2>
 
@@ -76,12 +77,13 @@ import Layout from '#/layouts/layout.svelte'
           alt='Lightshift'
         />
       </div>
-      <div class='mt-4'>
+	  <div class="mt-8">
         <a
-          class='skew-button text-black'
+          class='mt-16 uppercase'
           href='/blog/seed-raise'
-          ><span>READ THE ANNOUNCEMENT -&gt;</span></a
         >
+          Read the announcement -&gt;
+        </a>
       </div>
     </section>
   </main>

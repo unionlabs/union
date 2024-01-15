@@ -33,13 +33,19 @@
         </a>
         <nav class='flex flex-1 justify-end'>
           <ul class='flex gap-4 !text-xl! !md:text-2xl font-extrabold list-none align-middle my-auto'>
-            <li class='my-auto'>
-              <a href='/blog' class="!text-xl !md:text-2xl">Blog</a>
+            <li>
+              <a href='/blog' class="text-xl !md:text-2xl">Build</a>
             </li>
-            <li class='my-auto'>
-              <a href='/docs' class="!text-xl !md:text-2xl">Docs</a>
+            <li>
+              <a href='/docs' class="text-xl !md:text-2xl">Discover</a>
             </li>
-            <li class='my-auto mt-1'>
+            <li>
+              <a href='/docs' class="text-xl !md:text-2xl">Research</a>
+            </li>
+            <li>
+              <a href='/docs' class="text-xl !md:text-2xl">Contribute</a>
+            </li>
+            <!-- <li class='my-auto mt-1'>
               <a
                 href='https://x.com/union_build'
                 rel='noopener noreferrer'
@@ -52,7 +58,7 @@
                   class='w-6 h-6'
                 />
               </a>
-            </li>
+            </li> -->
           </ul>
         </nav>
       </div>

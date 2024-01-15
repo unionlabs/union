@@ -1,8 +1,8 @@
 ---
-import Layout from '#/layouts/layout.astro'
+import Layout from '#/layouts/layout.svelte'
 import { getCollection } from 'astro:content'
 
-const isProduction = import.meta.env.PROD
+const isProduction = import.meta.env.PROD;
 
 let blogEntries = await getCollection('blog', ({ data }) =>
   // filter out unpublished posts in production
