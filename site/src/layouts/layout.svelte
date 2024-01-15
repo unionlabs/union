@@ -16,7 +16,7 @@
     <title>Union</title>
   </head>
   <body
-    class='font-sans flex flex-col min-h-screen grid-effect-bg flex-1 gap-8 shadow-effect-bg px-4 pb-12'
+    class='font-sans flex flex-col min-h-screen grid-effect-bg flex-1 gap-8 shadow-effect-bg pb-12'
   >
     <header class='flex justify-around'>
       <div class='max-w-7xl flex flex-1 items-center md:px-4 gap-4'>
