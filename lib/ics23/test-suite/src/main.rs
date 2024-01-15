@@ -405,13 +405,13 @@ struct VectorTest {
 #[serde(rename_all = "lowercase")]
 struct VectorTestData {
     #[serde(with = "::serde_utils::hex_upper_unprefixed")]
-    key: Option<Vec<u8>>,
+    key: Vec<u8>,
     #[serde(with = "::serde_utils::hex_upper_unprefixed")]
-    proof: Option<Vec<u8>>,
+    proof: Vec<u8>,
     #[serde(with = "::serde_utils::hex_upper_unprefixed")]
-    root: Option<Vec<u8>>,
+    root: Vec<u8>,
     #[serde(with = "::serde_utils::hex_upper_unprefixed")]
-    value: Option<Vec<u8>>,
+    value: Vec<u8>,
 }
 
 impl Display for VectorTest {
@@ -422,59 +422,43 @@ impl Display for VectorTest {
 
 impl TestCase for VectorTest {
     fn run(self) -> anyhow::Result<()> {
-        match (&self.data.proof, &self.data.root) {
-            (Some(proof), Some(expected_root)) => {
-                match CommitmentProof::try_from_proto_bytes(proof.as_slice()) {
-                    Ok(proof) => match proof {
-                        CommitmentProof::Exist(existence_proof) => {
-                            let root =
-                                calculate_root(&existence_proof).context("calculating root")?;
+        match CommitmentProof::try_from_proto_bytes(self.data.proof.as_slice()) {
+            Ok(proof) => match (&proof, &self.data.value.len()) {
+                (CommitmentProof::Exist(existence_proof), 1..) => {
+                    let root = calculate_root(existence_proof).context("calculating root")?;
 
-                            assert_eq!(&root, expected_root);
+                    assert_eq!(&root, &self.data.root);
 
-                            match (&self.data.value, &self.data.key) {
-                                (Some(value), Some(key)) => verify_membership(
-                                    &self.spec,
-                                    root.as_slice(),
-                                    &existence_proof,
-                                    key.as_slice(),
-                                    value.as_slice(),
-                                )
-                                .context("test"),
-                                (_, _) => {
-                                    bail!("Expected value and key in test data file");
-                                }
-                            }
-                        }
-                        CommitmentProof::Nonexist(non_existence_proof) => {
-                            match (&self.data.root, &self.data.key) {
-                                (Some(root), Some(key)) => {
-                                    // TODO: Original self calculates root and assert it's the same, but I can't find a `calculate_root(Nonexist)` function
-
-                                    verify_non_membership(
-                                        &self.spec,
-                                        root.as_slice(),
-                                        &non_existence_proof,
-                                        key.as_slice(),
-                                    )
-                                    .context("no no-membership")
-                                }
-                                (_, _) => {
-                                    bail!("Expected root and key in test data file");
-                                }
-                            }
-                        }
-                        _ => {
-                            bail!("unexpected proof: {:?}", proof)
-                        }
-                    },
-                    Err(e) => {
-                        bail!("Failed: cannot parse proof - {:?}", e)
-                    }
+                    verify_membership(
+                        &self.spec,
+                        root.as_slice(),
+                        existence_proof,
+                        self.data.key.as_slice(),
+                        self.data.value.as_slice(),
+                    )
+                    .context("verify membership")
                 }
-            }
-            (_, _) => {
-                bail!("Expected proof and root in test data file")
+                (CommitmentProof::Nonexist(non_existence_proof), 0) => {
+                    // TODO: Original self calculates root and assert it's the same, but I can't find a `calculate_root(Nonexist)` function
+
+                    verify_non_membership(
+                        &self.spec,
+                        self.data.root.as_slice(),
+                        non_existence_proof,
+                        self.data.key.as_slice(),
+                    )
+                    .context("verify non membership")
+                }
+                _ => {
+                    bail!(
+                        "unexpected proof: {:?} / value.len: {:?}",
+                        &proof,
+                        &self.data.value.len()
+                    )
+                }
+            },
+            Err(e) => {
+                bail!("Failed: cannot parse proof - {:?}", e)
             }
         }
     }
