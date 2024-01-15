@@ -11,7 +11,6 @@ import (
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/algebra/emulated/fields_bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
 	"github.com/consensys/gnark/std/math/emulated"
@@ -89,11 +88,8 @@ func TestBlsAdd(t *testing.T) {
 
 type BlsSig struct {
 	PublicKey gadget.G1Affine
-	// Bug in gnark? Using gadget.G2Affine yield non deterministic, there is a `line` field in the struct that is dynamically compiled
-	// Signature gadget.G2Affine
-	// Message   gadget.G2Affine
-	Signature gadget.G2AffP
-	Message   gadget.G2AffP
+	Signature gadget.G2Affine
+	Message   gadget.G2Affine
 }
 
 func (c *BlsSig) Define(api frontend.API) error {
@@ -101,13 +97,7 @@ func (c *BlsSig) Define(api frontend.API) error {
 	if err != nil {
 		return err
 	}
-	signature := gadget.G2Affine{
-		P: c.Signature,
-	}
-	message := gadget.G2Affine{
-		P: c.Message,
-	}
-	err = bls.VerifySignature(&c.PublicKey, &message, &signature)
+	err = bls.VerifySignature(&c.PublicKey, &c.Message, &c.Signature)
 	if err != nil {
 		return err
 	}
@@ -132,14 +122,8 @@ func TestBlsSig(t *testing.T) {
 		&BlsSig{},
 		test.WithValidAssignment(&BlsSig{
 			PublicKey: gadget.NewG1Affine(pk),
-			Signature: gadget.G2AffP{
-				X: fields_bn254.FromE2(&sig.X),
-				Y: fields_bn254.FromE2(&sig.Y),
-			},
-			Message: gadget.G2AffP{
-				X: fields_bn254.FromE2(&hashed.X),
-				Y: fields_bn254.FromE2(&hashed.Y),
-			},
+			Signature: gadget.NewG2AffineFixed(sig),
+			Message: gadget.NewG2AffineFixed(hashed),
 		}),
 		test.WithCurves(ecc.BN254),
 		test.NoFuzzing(),
