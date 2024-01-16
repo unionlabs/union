@@ -25,7 +25,7 @@ jobs:
           application_id: ${{ vars.GOLEM_APPLICATION_ID }}
           application_private_key: ${{ secrets.GOLEM_PRIVATE_KEY }}
           organization: unionlabs
-      - uses: LouisBrunner/checks-action@v1.6.1
+      - uses: LouisBrunner/checks-action@v1.6.2
         with:
           token: ${{ steps.get_workflow_token.outputs.token }}
           name: e2e
@@ -58,7 +58,7 @@ jobs:
       - uses: technote-space/workflow-conclusion-action@v3
         with:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
-      - uses: LouisBrunner/checks-action@v1.6.1
+      - uses: LouisBrunner/checks-action@v1.6.2
         with:
           token: ${{ steps.get_workflow_token.outputs.token }}
           name: e2e
