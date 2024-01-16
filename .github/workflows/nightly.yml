@@ -21,7 +21,7 @@ jobs:
     # only create an issue if it failed in a scheduled run
     if: github.event_name == 'schedule' && failure()
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

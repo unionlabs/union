@@ -22,17 +22,17 @@ jobs:
         package: [ uniond-release, galoisd, bundle-testnet-5 ]
         system: [ aarch64-linux, x86_64-linux ]
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: packages.${{ matrix.system }}.${{ matrix.package }}-image
-      - uses: nixbuild/nix-quick-install-action@v22
+      - uses: nixbuild/nix-quick-install-action@v26
       - uses: nixbuild/nixbuild-action@master
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir ${{ matrix.system }}
       - run: nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}-image".outputs.out'` --extra-experimental-features nix-command
       - run: cat ${{ matrix.system }}/nar/*.nar.xz | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}-image
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.system }}.${{ matrix.package }}-image
           path: ${{ matrix.system }}.${{ matrix.package }}-image
@@ -46,10 +46,10 @@ jobs:
         system: [ aarch64-linux, x86_64-linux ]
         package: [ uniond-release, galoisd ]
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: packages.${{ matrix.system }}.${{ matrix.package }}
-      - uses: nixbuild/nix-quick-install-action@v22
+      - uses: nixbuild/nix-quick-install-action@v26
       - uses: nixbuild/nixbuild-action@master
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
@@ -76,7 +76,7 @@ jobs:
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
           fi
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}-${{ matrix.system }}
           path: ${{ matrix.package }}-${{ matrix.system }}
@@ -102,11 +102,11 @@ jobs:
 
       # Download Images
       - name: Download aarch64-linux.${{ matrix.package }}-image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: aarch64-linux.${{ matrix.package }}-image
       - name: Download x86_64-linux.${{ matrix.package }}-image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: x86_64-linux.${{ matrix.package }}-image
 
@@ -144,7 +144,7 @@ jobs:
           --amend localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}-x86_64-linux \
       - name: Push Manifest to Local Registry
         run: docker manifest push localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           lfs: true
           fetch-depth: 0
@@ -197,7 +197,7 @@ jobs:
     needs: [ docker-manifest, dl-bins ]
     permissions: write-all
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           lfs: true
           fetch-depth: 0
@@ -217,7 +217,7 @@ jobs:
           chmod +x clog && sudo cp ./clog /usr/bin
 
           clog -s ${{github.ref_name}} --from $previous_semantic_version --to ${{github.ref_name}} > ${{github.ref_name}}-CHANGELOG.md
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
       # NOTE: please ensure that the following two steps remain in sync, other than the
       # if condition, the `prerelease` value, and the name.
       - if: "contains(github.ref_name, 'rc')"

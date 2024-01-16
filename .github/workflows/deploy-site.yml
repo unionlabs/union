@@ -35,7 +35,7 @@ jobs:
           lfs: true
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v24
+        uses: cachix/install-nix-action@v25
         with:
           nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
           github_access_token: ${{ github.token }}
