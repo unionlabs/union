@@ -40,7 +40,8 @@ ul > li > a {
   font-size: 0.9rem;
 }
 
-a, a:visited {
+a,
+a:visited {
   color: white;
   text-decoration: none;
 }

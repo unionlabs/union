@@ -1,24 +1,30 @@
 ---
 import Layout from '#/layouts/layout.svelte'
 import Graph from '#/components/graph.svelte'
-import XLogo from '#/assets/x.svg';
-import DiscordLogo from '#/assets/discord.svg';
-import CalendarIcon from '#/assets/calendar.svg';
+import XLogo from '#/assets/x.svg'
+import DiscordLogo from '#/assets/discord.svg'
+import CalendarIcon from '#/assets/calendar.svg'
 
 let socialLinks = [
-	{ href: "https://x.com/union_build", iconSrc: XLogo.src, cta: "Join us on X" },
-	{ href: "https://discord.com/invite/union-build", iconSrc: DiscordLogo.src, cta: "Join our Discord" },
-	{ href: "https://x.com/union_build", iconSrc: CalendarIcon.src, cta: "Join our Events" }
+  { href: 'https://x.com/union_build', iconSrc: XLogo.src, cta: 'Join us on X' },
+  {
+    href: 'https://discord.com/invite/union-build',
+    iconSrc: DiscordLogo.src,
+    cta: 'Join our Discord'
+  },
+  { href: 'https://x.com/union_build', iconSrc: CalendarIcon.src, cta: 'Join our Events' }
 ]
 
+const arraySizeN = (n: number) => Array.from(Array(n).keys())
 ---
 
 <Layout>
   <main class='flex flex-col flex-1'>
     <section class='flex flex-col items-center my-32 gap-6'>
-      <div class="text-7xl text-white text-center">The Sovereign<br/>Interoperability Layer</div>
+      <div class='text-7xl text-white text-center'>The Sovereign<br />Interoperability Layer</div>
       <div class='text-xl max-w-lg font-normal text-center'>
-		By using consensus verification, Union builds unstoppable and decentralized connections to enable anyone to transfer assets and data.
+        By using consensus verification, Union builds unstoppable and decentralized connections to
+        enable anyone to transfer assets and data.
       </div>
       <div>
         <a
@@ -29,112 +35,92 @@ let socialLinks = [
         </a>
       </div>
     </section>
-	<section class="bg-white text-black flex flex-col items-center py-16">
-		<h2 class="text-4xl mb-4 font-normal">Redesigned from the ground up.</h2>
-		<div class="flex gap-16 max-w-4xl">
-			<div class="flex-1 flex items-center justify-center content mb-0 gap-2">
-				<div class="bg-black h-20 w-20 rounded-full"></div>
-				<div class="bg-black h-40 w-40 rounded-full"></div>
-				<div class="bg-black h-20 w-20 rounded-full"></div>
-			</div>
-			<div class="flex-1 p-4">
+    <section class='bg-white text-black flex flex-col items-center py-16'>
+      <h2 class='text-4xl mb-4 font-normal'>Redesigned from the ground up.</h2>
+      <div class='flex gap-16 max-w-4xl'>
+        <div class='flex-1 flex items-center justify-center content mb-0 gap-2'>
+          <div class='bg-black h-20 w-20 rounded-full'></div>
+          <div class='bg-black h-40 w-40 rounded-full'></div>
+          <div class='bg-black h-20 w-20 rounded-full'></div>
+        </div>
+        <div class='flex-1 p-4'>
+          <p class='text-3xl font-normal mb-0'>
+            Trustless, decentralized, and permissionless interoperability is now possible. Union is
+            the only protocol that provides all three, using state-of-the art Zero-Knowledge
+            cryptography.
+          </p>
+          <p class='text-lg'>
+            Union is the only protocol that provides all three, using state-of-the art
+            Zero-Knowledge cryptography.
+          </p>
+        </div>
+      </div>
+    </section>
+    <section class='bg-black text-white flex flex-col items-center py-16'>
+      <h2 class='text-4xl mb-4 font-normal'>Prove anywhere, verify on chain.</h2>
+      <div class='flex gap-4 max-w-4xl'>
+        <div class='flex-1 p-4 w-1/2'>
+          <p class='text-3xl font-normal mb-0 text-gray-400'>
+            Galois is the first interoperability proving layer that is so efficient that it allows
+            anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
+            of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
+          </p>
+        </div>
+        <div class='w-1/2 p-4 mt-3'>
+          <Graph client:load />
+        </div>
+      </div>
+    </section>
+    <section class='flex flex-col items-center justif-center py-32'>
+      <div class='flex-1 flex flex-col max-w-4xl'>
+        <div class='flex gap-16'>
+          <div class='flex-1 gap-4 flex overflow-none'>
+            {arraySizeN(21).map(() => <div class='bg-white h-[300px] w-2' />)}
+          </div>
+          <div class='flex-1 text-lg flex justify-center items-center'>
+            Lorem ipsum dolor sit, amet consectetur adipisicing elit. Distinctio iure, doloribus
+            nisi fugit ducimus nostrum accusantium nemo, quasi, aliquid harum dolorum? Fuga iure
+            necessitatibus beatae, mollitia sequi eligendi voluptas repellendus!
+          </div>
+        </div>
+        <div class='flex gap-16'>
+          <div class='flex-1 text-lg flex justify-center items-center'>
+            Lorem ipsum dolor sit, amet consectetur adipisicing elit. Distinctio iure, doloribus
+            nisi fugit ducimus nostrum accusantium nemo, quasi, aliquid harum dolorum? Fuga iure
+            necessitatibus beatae, mollitia sequi eligendi voluptas repellendus!
+          </div>
+          <div class='flex-1 gap-4 flex overflow-none'>
+            {arraySizeN(21).map(() => <div class='bg-white h-[300px] w-2' />)}
+          </div>
+        </div>
+      </div>
+    </section>
 
-				<p class="text-3xl font-normal mb-0">Trustless, decentralized, and permissionless interoperability is now possible. Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge cryptography.</p>
-				<p class="text-lg" >Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge cryptography.</p>
-			</div>
-		</div>
-	</section>
-	<section class="bg-black text-white flex flex-col items-center py-16">
-		<h2 class="text-4xl mb-4 font-normal ">Prove anywhere, verify on chain.</h2>
-		<div class="flex gap-4 max-w-4xl">
-			<div class="flex-1 p-4">
-				<p class="text-3xl font-normal mb-0 text-gray-400">Galois is the first interoperability proving layer that is so efficient that it allows anyone to <span class="text-white">generate proofs on your phone.</span> Gone is the era of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.</p>
+    <section class='flex justify-center bg-white text-black py-32'>
+      <div class='flex-1 max-w-4xl'>
+        <h2 class='text-4xl mb-4 font-normal text-center'>Join the Union</h2>
+        <!-- <p>Together, we </p> -->
+        <div class='flex'>
+          {
+            socialLinks.map(socialLink => (
+              <a
+                href={socialLink.href}
+                class='flex-1 p-8 text-center'
+              >
+                <img
+                  src={socialLink.iconSrc}
+                  class='h-10'
+                />
+                <div class='mt-4'>
+                  <span class='mt-16 border-b-2 uppercase text-black border-black text-semibold undelrine'>
+                    {socialLink.cta} -&gt;
+                  </span>
+                </div>
+              </a>
+            ))
+          }
 
-			</div>
-			<Graph/>
-			
-
-		</div>
-
-	</section>
-	<section class="flex flex-col items-center justif-center py-32">
-		<div class="flex-1 flex flex-col max-w-4xl ">
-			<div class="flex gap-16">
-				<div class="flex-1 gap-4 flex overflow-none">
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-				</div>
-				<div class="flex-1 text-lg flex justify-center items-center">
-					Lorem ipsum dolor sit, amet consectetur adipisicing elit. Distinctio iure, doloribus nisi fugit ducimus nostrum accusantium nemo, quasi, aliquid harum dolorum? Fuga iure necessitatibus beatae, mollitia sequi eligendi voluptas repellendus!
-				</div>
-			</div>
-			<div class="flex gap-16">
-		
-				<div class="flex-1 text-lg flex justify-center items-center">
-					Lorem ipsum dolor sit, amet consectetur adipisicing elit. Distinctio iure, doloribus nisi fugit ducimus nostrum accusantium nemo, quasi, aliquid harum dolorum? Fuga iure necessitatibus beatae, mollitia sequi eligendi voluptas repellendus!
-				</div>
-				<div class="flex-1 gap-4 flex overflow-none">
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-					<div class="bg-white h-[300px] w-2"></div>
-				</div>
-			</div>
-		</div>
-	</section>
-
-
-	<section class="flex justify-center bg-white text-black py-32">
-		<div class="flex-1 max-w-4xl">
-			<h2 class="text-4xl mb-4 font-normal text-center">Join the Union</h2>
-			<!-- <p>Together, we </p> -->
-			<div class="flex">
-				{socialLinks.map((socialLink) => (
-					<a href={socialLink.href} class="flex-1 p-8 text-center">
-						<img src={socialLink.iconSrc} class="h-10"/>
-						<div class="mt-4">
-							<span class='mt-16 border-b-2 uppercase text-black border-black text-semibold undelrine'>{socialLink.cta} -&gt;</span>
-						</div>
-					</a>
-				))}
-
-				<!-- <div class="flex-1 p-8 text-center">
+          <!-- <div class="flex-1 p-8 text-center">
 					<img src={DiscordLogo.src} class="h-10"/>
 
 					<div class="mt-4">
@@ -148,11 +134,11 @@ let socialLinks = [
 						<a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Events -&gt;</a>
 					</div>
 				</div> -->
-			</div>
-		</div>
-	</section>
+        </div>
+      </div>
+    </section>
 
-	<!--
+    <!--
     <section>
       <img
         class='w-[300px] md:w-[500px] absolute left-[50%] -ml-[150px] md:-ml-[250px] z-10 -mt-[50px] md:-mt-[100px] eth-logo'

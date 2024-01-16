@@ -4,7 +4,6 @@
   import '#/styles/index.css'
   import '#/styles/tailwind.css'
   import Header from '#/components/header.svelte'
-  import XLogo from '#/assets/x.svg'
 </script>
 
 <html lang='en'>
