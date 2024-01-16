@@ -1,6 +1,5 @@
 pragma solidity ^0.8.23;
 
-import "../lib/Pairing.sol";
 import "../core/IZKVerifierV2.sol";
 
 /// @title Groth16 verifier template.

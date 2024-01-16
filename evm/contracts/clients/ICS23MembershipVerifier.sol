@@ -12,7 +12,7 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         bytes memory prefix,
         bytes calldata path,
         bytes calldata value
-    ) external view override returns (bool) {
+    ) external override returns (bool) {
         bytes[] memory fullPath = new bytes[](2);
         fullPath[0] = prefix;
         fullPath[1] = path;
@@ -30,7 +30,7 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path
-    ) external view override returns (bool) {
+    ) public override returns (bool) {
         bytes[] memory fullPath = new bytes[](2);
         fullPath[0] = prefix;
         fullPath[1] = path;
