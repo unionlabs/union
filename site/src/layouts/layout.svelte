@@ -21,7 +21,7 @@
     <Header/>
     <slot />
     <footer
-      class='flex items-center p-4 gap-4 justify-center text-lg font-extrabold text-gray-200 bottom-0 mx-auto w-full'
+      class='bg-white text-black flex items-center p-4 gap-4 justify-center text-lg font-normal bottom-0 mx-auto w-full'
     >
       <p>&copy; Union.fi Labs, Inc.</p>
     </footer>
