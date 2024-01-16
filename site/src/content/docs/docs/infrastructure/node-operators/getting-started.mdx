@@ -36,7 +36,7 @@ Double-check the version and architecture in the link before downloading.
     curl --output uniond --location https://github.com/unionlabs/union/releases/download/$UNIOND_VERSION/uniond-release-x86_64-linux
 
     ```
-    *Where `UNIOND_VERSION` is {Version('union-testnet-5', false)}*
+    *Where `UNIOND_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>*
 
 
   </TabItem>
@@ -46,7 +46,7 @@ Double-check the version and architecture in the link before downloading.
     curl --output uniond --location https://github.com/unionlabs/union/releases/download/$UNIOND_VERSION/uniond-release-aarch64-linux
 
     ```
-    *Where `UNIOND_VERSION` is {Version('union-testnet-5', false)}*
+    *Where `UNIOND_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>*
 
   </TabItem>
 </Tabs>
@@ -70,7 +70,7 @@ We also provide containers in our [package registry](https://github.com/unionlab
 ```sh
 docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 ```
-*Where `UNIOND_VERSION` is {Version('union-testnet-5', false)}*
+*Where `UNIOND_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>*
 
 When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](../docker-compose) section is more suited for docker users.
 
