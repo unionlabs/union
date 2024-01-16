@@ -5,6 +5,7 @@ sidebar:
 ---
 
 import genesis from "../../../../../../networks/genesis/union-testnet-5/genesis.json"
+import Version from "#/lib/chain-versions.ts"
 
 
 Currently, we are only officially supporting running the Union Testnet binary (`uniond`) as a Docker container.
@@ -18,9 +19,9 @@ This guide assumes you have [Docker](https://www.docker.com/get-started/) correc
 To get the `uniond` image, you can visit [our container](https://github.com/orgs/unionlabs/packages/container/package/uniond-release) on the GitHub Container Registry, or run the following command:
 
 ```sh
-export UNIOND_VERSION='v0.18.0'
 docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 ```
+*Where `UNIOND_VERSION` is {Version('union-testnet-5', false)}*
 
 ## Running uniond
 
@@ -86,9 +87,9 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
 ```sh
-export UNIOND_VERSION='v0.18.0'
 alias uniond='docker run -v ~/.union:/.union -v /tmp:/tmp --network host -it ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION --home /.union'
 ```
+*Where `UNIOND_VERSION` is {Version('union-testnet-5', false)}*
 
 This will enable you to issue `uniond` sub-commands with such as `uniond keys add` with ease.
 

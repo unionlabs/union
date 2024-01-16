@@ -3,6 +3,7 @@ title: "Running Unionvisor"
 sidebar:
   order: 2
 ---
+import Version from "#/lib/chain-versions.ts"
 
 Unionvisor is a utility for managing `uniond` deployments. It manages running, upgrading, and interacting with the node.
 
@@ -13,9 +14,9 @@ We release container images of Unionvisor called bundles. Each bundle contains e
 Alternatively, you can run the following command:
 
 ```sh
-export UNIONVISOR_VERSION='v0.18.0'
 docker pull ghcr.io/unionlabs/bundle-testnet-5:$UNIONVISOR_VERSION
 ```
+*Where `UNIONVISOR_VERSION` is {Version('union-testnet-5', false)}*
 
 ## Running Unionvisor
 
@@ -100,9 +101,9 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
 ```sh
-export UNIONVISOR_VERSION='v0.18.0'
 alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-5:$UNIONVISOR_VERSION --log-level off call'
 ```
+*Where `UNIONVISOR_VERSION` is {Version('union-testnet-5', false)}*
 
 :::note
 
