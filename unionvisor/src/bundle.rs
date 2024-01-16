@@ -131,7 +131,7 @@ impl Bundle {
 
         // Read `bundle/meta.json` and deserialize into `BundleMeta`
         let meta = path.join("meta.json");
-        let meta = fs::read_to_string(dbg!(meta))?;
+        let meta = fs::read_to_string(meta)?;
         let meta = serde_json::from_str(&meta)?;
 
         // Check if bundle contains genesis.json
