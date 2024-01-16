@@ -426,7 +426,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 ),
                 "timeoutPacket: failed to verify packet timeout next recv proof"
             );
-            // TODO: trigger instant change to STATE_CLOSED for the channel?
+            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED;
         } else if (isUnordered) {
             require(
                 verifyAbsentCommitment(

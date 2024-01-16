@@ -22,8 +22,8 @@
       forge-std = pkgs.fetchFromGitHub {
         owner = "foundry-rs";
         repo = "forge-std";
-        rev = "20872c5b1900526579159bdc6967f6b48c22e50e";
-        hash = "sha256-dMfYen5EOUwjD6W1FY/vcNq2aN493rf7OfNlMfKnpwI=";
+        rev = "36c303b7ffdd842d06b1ec2744c9b9b5fb3083f3";
+        hash = "sha256-m2i738jsKdjQLDer8WU/ga5GY/5idbpbfnhIyiyEW2w=";
         fetchSubmodules = true;
       };
       openzeppelin = pkgs.fetchFromGitHub {
@@ -312,8 +312,8 @@
           '';
         };
 
-        evm-coverage =
-          pkgs.runCommand "evm-coverage"
+        solidity-coverage =
+          pkgs.runCommand "solidity-coverage"
             {
               buildInputs = [ wrappedForge pkgs.lcov ];
             } ''

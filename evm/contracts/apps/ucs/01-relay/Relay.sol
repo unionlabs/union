@@ -93,35 +93,159 @@ library RelayLib {
             string(abi.encodePacked(makeDenomPrefix(portId, channelId), denom));
     }
 
-    function hexToAddress(
-        string memory _a
-    ) internal pure returns (address _parsedAddress) {
-        require(bytes(_a).length == 42, "ucs01-relay: invalid hex address");
-        bytes memory tmp = bytes(_a);
-        uint160 iaddr = 0;
-        uint160 b1;
-        uint160 b2;
-        for (uint256 i = 2; i < 2 + 2 * 20; i += 2) {
-            iaddr *= 256;
-            b1 = uint160(uint8(tmp[i]));
-            b2 = uint160(uint8(tmp[i + 1]));
-            if ((b1 >= 97) && (b1 <= 102)) {
-                b1 -= 87;
-            } else if ((b1 >= 65) && (b1 <= 70)) {
-                b1 -= 55;
-            } else if ((b1 >= 48) && (b1 <= 57)) {
-                b1 -= 48;
-            }
-            if ((b2 >= 97) && (b2 <= 102)) {
-                b2 -= 87;
-            } else if ((b2 >= 65) && (b2 <= 70)) {
-                b2 -= 55;
-            } else if ((b2 >= 48) && (b2 <= 57)) {
-                b2 -= 48;
-            }
-            iaddr += (b1 * 16 + b2);
+    // Convert 32 hexadecimal digits into 16 bytes.
+    function hexToBytes16(bytes32 h) internal pure returns (bytes16 b) {
+        unchecked {
+            // Ensure all chars below 128
+            require(
+                h &
+                    0x8080808080808080808080808080808080808080808080808080808080808080 ==
+                    0
+            );
+
+            // Subtract '0' from every char
+            h = bytes32(
+                uint256(h) -
+                    0x3030303030303030303030303030303030303030303030303030303030303030
+            );
+
+            // Ensure all chars still below 128, i.e. no underflow in the previous line
+            require(
+                h &
+                    0x8080808080808080808080808080808080808080808080808080808080808080 ==
+                    0
+            );
+
+            // Calculate mask for chars that originally were above '9'
+            bytes32 ndm = bytes32(
+                (((uint256(h) +
+                    0x7676767676767676767676767676767676767676767676767676767676767676) &
+                    0x8080808080808080808080808080808080808080808080808080808080808080) >>
+                    7) * 0xFF
+            );
+
+            // Subtract 7 ('A' - '0') from every char that originally was above '9'
+            h = bytes32(
+                uint256(h) -
+                    uint256(
+                        ndm &
+                            0x0707070707070707070707070707070707070707070707070707070707070707
+                    )
+            );
+
+            // Ensure all chars still below 128, i.e. no underflow in the previous line
+            require(
+                h &
+                    0x8080808080808080808080808080808080808080808080808080808080808080 ==
+                    0
+            );
+
+            // Ensure chars that originally were above '9' are now above 9
+            require(
+                (uint256(h) -
+                    uint256(
+                        ndm &
+                            0x0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A
+                    )) &
+                    0x8080808080808080808080808080808080808080808080808080808080808080 ==
+                    0
+            );
+
+            // Calculate Mask for chars that originally were above 'F'
+            bytes32 lcm = bytes32(
+                (((uint256(h) +
+                    0x7070707070707070707070707070707070707070707070707070707070707070) &
+                    0x8080808080808080808080808080808080808080808080808080808080808080) >>
+                    7) * 0xFF
+            );
+
+            // Subtract 32 ('a' - 'A') from all chars that oroginally were above 'F'
+            h = bytes32(
+                uint256(h) -
+                    uint256(
+                        lcm &
+                            0x2020202020202020202020202020202020202020202020202020202020202020
+                    )
+            );
+
+            // Ensure chars that originally were above 'F' are now above 9
+            require(
+                (uint256(h) -
+                    uint256(
+                        lcm &
+                            0x0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A
+                    )) &
+                    0x8080808080808080808080808080808080808080808080808080808080808080 ==
+                    0
+            );
+
+            // Ensure all chars are below 16
+            require(
+                h &
+                    0xF0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0 ==
+                    0
+            );
+
+            // 0x0A0B0C0D... -> 0xAB00CD00...
+            h =
+                ((h &
+                    0x0F000F000F000F000F000F000F000F000F000F000F000F000F000F000F000F00) <<
+                    4) |
+                ((h &
+                    0x000F000F000F000F000F000F000F000F000F000F000F000F000F000F000F000F) <<
+                    8);
+
+            // 0xAA00BB00CC00DD00... -> 0xAABB0000CCDD0000...
+            h =
+                (h &
+                    0xFF000000FF000000FF000000FF000000FF000000FF000000FF000000FF000000) |
+                ((h &
+                    0x0000FF000000FF000000FF000000FF000000FF000000FF000000FF000000FF00) <<
+                    8);
+
+            // 0xAAAA0000BBBB0000CCCC0000DDDD0000... -> 0xAAAABBBB00000000CCCCDDDD00000000...
+            h =
+                (h &
+                    0xFFFF000000000000FFFF000000000000FFFF000000000000FFFF000000000000) |
+                ((h &
+                    0x00000000FFFF000000000000FFFF000000000000FFFF000000000000FFFF0000) <<
+                    16);
+
+            // 0xAAAAAAAA00000000BBBBBBBB00000000CCCCCCCC00000000DDDDDDDD00000000 -> 0xAAAAAAAABBBBBBBB0000000000000000CCCCCCCCDDDDDDDD0000000000000000
+            h =
+                (h &
+                    0xFFFFFFFF000000000000000000000000FFFFFFFF000000000000000000000000) |
+                ((h &
+                    0x0000000000000000FFFFFFFF000000000000000000000000FFFFFFFF00000000) <<
+                    32);
+
+            // 0xAAAAAAAAAAAAAAAA0000000000000000BBBBBBBBBBBBBBBB0000000000000000 -> 0xAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBB00000000000000000000000000000000
+            h =
+                (h &
+                    0xFFFFFFFFFFFFFFFF000000000000000000000000000000000000000000000000) |
+                ((h &
+                    0x00000000000000000000000000000000FFFFFFFFFFFFFFFF0000000000000000) <<
+                    64);
+
+            // Trim to 16 bytes
+            b = bytes16(h);
         }
-        return address(iaddr);
+    }
+
+    function hexToAddress(string memory s) public pure returns (address) {
+        require(bytes(s).length == 42, "ucs01-relay: invalid hex address");
+        bytes2 prefix;
+        bytes32 leftHex;
+        bytes32 rightHex;
+        assembly {
+            prefix := mload(add(s, 0x20))
+            leftHex := mload(add(s, 0x22))
+            rightHex := mload(add(s, 0x2A))
+        }
+        require(prefix == "0x");
+        bytes16 left = hexToBytes16(leftHex);
+        bytes16 right = hexToBytes16(rightHex);
+        return address(bytes20(left) | (bytes20(right) >> 32));
     }
 
     function bytesToAddress(bytes memory b) internal pure returns (address) {

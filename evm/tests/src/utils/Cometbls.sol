@@ -33,17 +33,12 @@ library Cometbls {
      */
     uint64 constant TRUSTING_PERIOD = WEEK;
 
-    function createClient(
-        string memory clientType,
+    function createClientState(
         string memory chainId,
-        uint64 revisionHeight,
-        bytes32 appHash,
-        bytes32 nextValidatorsHash,
-        uint64 timestamp
-    ) internal view returns (IBCMsgs.MsgCreateClient memory m) {
-        m.clientType = clientType;
-        m.clientStateBytes = CometblsClientState
-            .Data({
+        uint64 latestHeight
+    ) internal view returns (CometblsClientState.Data memory) {
+        return
+            CometblsClientState.Data({
                 chain_id: chainId,
                 // TODO: all this could be fuzzed
                 trusting_period: TRUSTING_PERIOD,
@@ -55,23 +50,40 @@ library Cometbls {
                 }),
                 latest_height: ClientHeight.Data({
                     revision_number: 0,
-                    revision_height: revisionHeight
+                    revision_height: latestHeight
                 })
-            })
-            .marshalToProto(
-                ClientHeight.Data({
-                    revision_number: 0,
-                    revision_height: revisionHeight
-                }),
-                // NOTE: Cometbls wasm code_id from union, this data is required as per the IBC wasm-08 spec but unused in the counterparty side (our side)
-                hex"CAFEBABE"
-            );
+            });
+    }
 
-        m.consensusStateBytes = CometblsConsensusState({
-            root: appHash,
-            nextValidatorsHash: nextValidatorsHash,
-            timestamp: timestamp
-        }).marshalToProto();
+    function createConsensusState(
+        bytes32 appHash,
+        bytes32 nextValidatorsHash,
+        uint64 timestamp
+    ) internal view returns (CometblsConsensusState memory) {
+        return
+            CometblsConsensusState({
+                root: appHash,
+                nextValidatorsHash: nextValidatorsHash,
+                timestamp: timestamp
+            });
+    }
+
+    function createClient(
+        string memory clientType,
+        string memory chainId,
+        uint64 latestHeight,
+        bytes32 appHash,
+        bytes32 nextValidatorsHash,
+        uint64 timestamp
+    ) internal view returns (IBCMsgs.MsgCreateClient memory m) {
+        m.clientType = clientType;
+        m.clientStateBytes = createClientState(chainId, latestHeight)
+            .marshalEthABI();
+        m.consensusStateBytes = createConsensusState(
+            appHash,
+            nextValidatorsHash,
+            timestamp
+        ).marshalEthABI();
     }
 
     function updateClient(

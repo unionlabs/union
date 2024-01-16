@@ -123,7 +123,7 @@ library CometblsHelp {
         bytes32 untrustedValidatorsHash,
         bytes memory message,
         bytes memory zkp
-    ) internal view returns (bool) {
+    ) internal returns (bool) {
         (uint256 messageX, uint256 messageY) = hashToField2(message);
 
         (

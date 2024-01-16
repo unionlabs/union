@@ -9,12 +9,12 @@ interface IMembershipVerifier {
         bytes memory prefix,
         bytes calldata path,
         bytes calldata value
-    ) external view returns (bool);
+    ) external returns (bool);
 
     function verifyNonMembership(
         bytes memory root,
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path
-    ) external view returns (bool);
+    ) external returns (bool);
 }
