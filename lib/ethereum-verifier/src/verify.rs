@@ -293,9 +293,11 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 
 #[cfg(test)]
 mod tests {
+    use std::{cmp::Ordering, fs};
+
     use hex_literal::hex;
     use unionlabs::{
-        ethereum::config::{Minimal, MINIMAL},
+        ethereum::config::{Mainnet, Minimal, MINIMAL, SEPOLIA},
         ibc::lightclients::ethereum::{
             header::Header, sync_committee::SyncCommittee,
             trusted_sync_committee::ActiveSyncCommittee,
@@ -304,8 +306,9 @@ mod tests {
 
     use super::*;
 
+    // curl "https://sepolia.cryptware.io/eth/v1/beacon/genesis"
     const GENESIS_VALIDATORS_ROOT: H256 = H256(hex!(
-        "270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69"
+        "d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078"
     ));
 
     // These are copied from ethereum light client's tests.
@@ -318,6 +321,47 @@ mod tests {
         static ref ABSENT_PROOF: Vec<Vec<u8>> = [
             hex::decode("f838a120df6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c79594be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap(),
         ].into();
+
+
+        static ref UPDATES: Vec<(Context, LightClientUpdate<Mainnet>)> = {
+            let mut updates = vec![];
+            fs::read_dir("src/test/updates/").unwrap().into_iter().for_each(|f| {
+                let entry = f.unwrap();
+                if entry.path().file_name().is_some() {
+                    let update: LightClientUpdate<Mainnet> = serde_json::from_str(&fs::read_to_string(entry.path()).unwrap()).unwrap();
+                    updates.push(update);
+                }
+            });
+
+            updates.sort_by(|lhs, rhs| {
+                if lhs.attested_header.beacon.slot > rhs.attested_header.beacon.slot {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
+            });
+
+            let mut current_sync_committee: ActiveSyncCommittee<Mainnet> = serde_json::from_str(&fs::read_to_string("src/test/initial_current_sync_committee.json").unwrap()).unwrap();
+            let mut next_sync_committee: ActiveSyncCommittee<Mainnet> = serde_json::from_str(&fs::read_to_string("src/test/initial_next_sync_committee.json").unwrap()).unwrap();
+            let mut update_data = vec![];
+            updates.iter().enumerate().skip(1).for_each(|(i, update)|
+                {
+                    let current_update = &updates[i - 1];
+                    let context = Context {
+                        finalized_slot: current_update.attested_header.beacon.slot,
+                        current_sync_committee: current_sync_committee.clone(),
+                        next_sync_committee: next_sync_committee.clone(),
+                    };
+                    update_data.push((context, update.clone()));
+
+                    if let Some(ref nsc) = update.next_sync_committee {
+                        current_sync_committee = ActiveSyncCommittee::Current(next_sync_committee.get().clone());
+                        next_sync_committee = ActiveSyncCommittee::Next(nsc.clone());
+                    }
+                });
+
+            update_data
+        };
     }
 
     const VALID_STORAGE_ROOT: H256 = H256(hex!(
@@ -340,18 +384,19 @@ mod tests {
 
     struct Context {
         finalized_slot: u64,
-        sync_committee: ActiveSyncCommittee<Minimal>,
+        current_sync_committee: ActiveSyncCommittee<Mainnet>,
+        next_sync_committee: ActiveSyncCommittee<Mainnet>,
     }
 
     impl LightClientContext for Context {
-        type ChainSpec = Minimal;
+        type ChainSpec = Mainnet;
 
         fn finalized_slot(&self) -> u64 {
             self.finalized_slot
         }
 
         fn current_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
-            if let ActiveSyncCommittee::Current(committee) = &self.sync_committee {
+            if let ActiveSyncCommittee::Current(committee) = &self.current_sync_committee {
                 Some(committee)
             } else {
                 None
@@ -359,7 +404,7 @@ mod tests {
         }
 
         fn next_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
-            if let ActiveSyncCommittee::Next(committee) = &self.sync_committee {
+            if let ActiveSyncCommittee::Next(committee) = &self.next_sync_committee {
                 Some(committee)
             } else {
                 None
@@ -367,7 +412,7 @@ mod tests {
         }
 
         fn fork_parameters(&self) -> &ForkParameters {
-            &MINIMAL.fork_parameters
+            &SEPOLIA.fork_parameters
         }
     }
 
@@ -380,7 +425,7 @@ mod tests {
             msg: Vec<u8>,
             signature: BlsSignature,
         ) -> Result<(), Error> {
-            let res = crate::crypto::fast_aggregate_verify(
+            let res = crate::crypto::fast_aggregate_verify_unchecked(
                 public_keys.into_iter().collect::<Vec<_>>().as_slice(),
                 msg.as_slice(),
                 &signature,
@@ -395,72 +440,20 @@ mod tests {
         }
     }
 
-    // fn read_valid_header_data() -> Vec<&'static str> {
-    //     // TODO(aeryz): move test data to ibc types
-    //     [
-    //         include_str!(
-    //             "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_1.json"
-    //         ),
-    //         include_str!(
-    //             "../../../light-clients/ethereum-light-client/src/test/finality_update_1.json"
-    //         ),
-    //         include_str!(
-    //             "../../../light-clients/ethereum-light-client/src/test/sync_committee_update_2.json"
-    //         ),
-    //         include_str!(
-    //             "../../../light-clients/ethereum-light-client/src/test/finality_update_2.json"
-    //         ),
-    //         include_str!(
-    //             "../../../light-clients/ethereum-light-client/src/test/finality_update_3.json"
-    //         ),
-    //         include_str!(
-    //             "../../../light-clients/ethereum-light-client/src/test/finality_update_4.json"
-    //         ),
-    //     ]
-    //     .into()
-    // }
-
-    #[allow(dead_code)] // will thisbe used anywhere?
-    fn do_validate_light_client_update(
-        header: Header<Minimal>,
-    ) -> Result<(), ValidateLightClientError> {
-        let genesis_validators_root: H256 = hex::decode(GENESIS_VALIDATORS_ROOT)
-            .unwrap()
-            .try_into()
+    #[test]
+    fn validate_light_client_update_works() {
+        UPDATES.iter().for_each(|(ctx, update)| {
+            println!("Worked");
+            validate_light_client_update(
+                ctx,
+                update.clone(),
+                update.attested_header.beacon.slot + 32,
+                GENESIS_VALIDATORS_ROOT,
+                BlsVerifier,
+            )
             .unwrap();
-
-        let sync_committee = header.trusted_sync_committee.sync_committee;
-        let finalized_slot = header.trusted_sync_committee.trusted_height.revision_height;
-        let ctx = Context {
-            finalized_slot,
-            sync_committee,
-        };
-
-        validate_light_client_update(
-            &ctx,
-            header.consensus_update.clone(),
-            header
-                .consensus_update
-                .attested_header
-                .execution
-                .block_number
-                + 32,
-            genesis_validators_root,
-            BlsVerifier,
-        )
+        });
     }
-
-    // #[test]
-    // fn validate_light_client_update_works() {
-    //     let valid_header_data = read_valid_header_data();
-
-    //     for header in valid_header_data {
-    //         let header =
-    //             <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
-
-    //         assert_eq!(do_validate_light_client_update(header), Ok(()));
-    //     }
-    // }
 
     // #[test]
     // fn validate_light_client_update_fails_when_insufficient_sync_committee_participants() {
