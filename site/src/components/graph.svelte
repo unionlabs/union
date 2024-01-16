@@ -1,6 +1,6 @@
 <script lang="ts">
-  import * as Plot from '@observablehq/plot'
   import * as d3 from 'd3'
+  import * as Plot from '@observablehq/plot'
 
   let div: HTMLDivElement
   let data = d3.ticks(-2, 2, 200).map(Math.sin)
