@@ -4,6 +4,9 @@ sidebar:
   order: 1
 ---
 
+import genesis from "../../../../../../networks/genesis/union-testnet-5/genesis.json"
+
+
 Currently, we are only officially supporting running the Union Testnet binary (`uniond`) as a Docker container.
 
 It is possible to run the `uniond` binary outside of containers, however, we aren't directly supplying bare-metal binaries at this time.
@@ -117,11 +120,9 @@ Before starting your Union node for the first time, you should configure your no
 
 For some configuration recommendations see our [Node Configuration](/infrastructure/node-operators/node-configuration) page.
 
-You can obtain the testnet genesis from https://rpc.cryptware.io/genesis or by running this command:
+You can download the genesis here:
 
-```sh
-curl https://rpc.cryptware.io/genesis | jq '.result.genesis' > ~/.union/config/genesis.json
-```
+<button><a href={"data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(genesis,undefined,2))} download="genesis.json">Download Genesis</a></button>
 
 :::
 
