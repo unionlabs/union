@@ -1,5 +1,5 @@
 ---
-title: "Obtaining the Client Binary"
+title: "Running the Client Binary"
 sidebar:
   order: 1
 ---
@@ -107,17 +107,11 @@ services:
     command: start --home /.union
 ```
 
-:::note
-
-You only need to mount `/tmp` if you intend to use [State Sync](../state-sync) to join the network
-
-:::
-
 This will mount our chain configuration and settings folder while also exposing ports `26657`, `1317`, and `9093`.
 
 After creating a `compose.yml` file with the contents above, you'll be able to start your Union node with `docker compose`.
 
-:::warning
+:::caution
 
 Before starting your Union node for the first time, you should configure your node correctly and obtain the genesis file.
 
