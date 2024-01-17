@@ -42,13 +42,17 @@ Find the `statesync` TOML table, and using the information from the last step, s
 ```toml
 [statesync]
 enable = true
-rpc_servers = "<STAKE_SYNC_NODE_1>,<STAKE_SYNC_NODE_2>"
+rpc_servers = "<STATE_SYNC_NODE_1>,<STATE_SYNC_NODE_2>"
 trust_height = <trusted_height>
 trust_hash = "<trusted_hash>"
 trust_period = "400s"
 ```
 
-_Where `STAKE_SYNC_NODE_1` & `STAKE_SYNC_NODE_2` can be the same node. The node(s) must support state sync._
+:::note
+
+Two nodes are required here, however, the nodes do not need to be unique. You can have the same node listed twice.
+
+:::
 
 ### Start Your Node
 
