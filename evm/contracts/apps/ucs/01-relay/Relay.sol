@@ -242,7 +242,7 @@ library RelayLib {
             leftHex := mload(add(s, 0x22))
             rightHex := mload(add(s, 0x2A))
         }
-        require(prefix == "0x");
+        require(prefix == "0x", "ucs01-relay: invalid hex prefix");
         bytes16 left = hexToBytes16(leftHex);
         bytes16 right = hexToBytes16(rightHex);
         return address(bytes20(left) | (bytes20(right) >> 32));

@@ -315,8 +315,18 @@
             {
               buildInputs = [ wrappedForge pkgs.lcov ];
             } ''
-            forge coverage --ir-minimum --report lcov && \
-            genhtml lcov.info -o $out --branch-coverag && mv lcov.info $out
+            forge coverage --ir-minimum --report lcov
+            lcov --remove ./lcov.info -o ./lcov.info.pruned \
+              '${evmSources}/contracts/proto/*' \
+              '${evmSources}/contracts/clients/MockClient.sol' \
+              '${evmSources}/contracts/clients/Verifier.sol' \
+              '${evmSources}/contracts/apps/ucs/00-pingpong/*' \
+              '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
+              '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
+              '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
+              '${evmSources}/tests/*'
+            genhtml lcov.info.pruned -o $out --branch-coverage
+            mv lcov.info.pruned $out/lcov.info
           '';
 
         solidity-build-tests = pkgs.writeShellApplication {
