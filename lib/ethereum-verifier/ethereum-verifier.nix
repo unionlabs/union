@@ -1,12 +1,11 @@
 { ... }: {
-  perSystem = { self', pkgs, system, config, crane, stdenv, dbg, ... }:
+  perSystem = { self', pkgs, system, config, crane, stdenv, dbg, lib, ... }:
     let
       ethereum-verifier-all = (crane.buildWorkspaceMember {
         crateDirFromRoot = "lib/ethereum-verifier";
-        additionalTestSrcFilter = path: _: crane.ensureDirectoryIncluded {
-          path' = path;
-          pathToInclude = "light-clients/ethereum-light-client/src/test";
-        };
+        additionalTestSrcFilter = path: _:
+          (lib.hasPrefix "lib/ethereum-verifier/src/test" path)
+          && (lib.strings.hasSuffix ".json" path);
       });
     in
     {
