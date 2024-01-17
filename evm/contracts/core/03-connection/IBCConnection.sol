@@ -1,5 +1,6 @@
 pragma solidity ^0.8.23;
 
+import "solady/utils/LibString.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../../proto/ibc/core/client/v1/client.sol";
 import "../../proto/ibc/core/connection/v1/connection.sol";
@@ -12,6 +13,8 @@ import "../03-connection/IIBCConnection.sol";
  * @dev IBCConnection is a contract that implements [ICS-3](https://github.com/cosmos/ibc/tree/main/spec/core/ics-003-connection-semantics).
  */
 contract IBCConnection is IBCStore, IIBCConnectionHandshake {
+    using LibString for *;
+
     string private constant COMMITMENT_PREFIX = "ibc";
 
     /* Handshake functions */
@@ -113,7 +116,6 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             ),
             "connectionOpenTry: failed to verify clientState"
         );
-        // TODO we should also verify a consensus state
 
         updateConnectionCommitment(connectionId);
         return connectionId;
@@ -185,7 +187,6 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             ),
             "connectionOpenAck: failed to verify clientState"
         );
-        // TODO we should also verify a consensus state
 
         connection.state = IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN;
         copyVersions(expectedConnection.versions, connection.versions);
@@ -272,30 +273,6 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             );
     }
 
-    function verifyClientConsensusState(
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection,
-        IbcCoreClientV1Height.Data memory height,
-        IbcCoreClientV1Height.Data memory consensusHeight,
-        bytes memory proof,
-        bytes memory consensusStateBytes
-    ) private returns (bool) {
-        return
-            getClient(connection.client_id).verifyMembership(
-                connection.client_id,
-                height,
-                0,
-                0,
-                proof,
-                connection.counterparty.prefix.key_prefix,
-                IBCCommitment.consensusStatePath(
-                    connection.counterparty.client_id,
-                    consensusHeight.revision_number,
-                    consensusHeight.revision_height
-                ),
-                consensusStateBytes
-            );
-    }
-
     function verifyConnectionState(
         IbcCoreConnectionV1ConnectionEnd.Data storage connection,
         IbcCoreClientV1Height.Data memory height,
@@ -337,7 +314,6 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     function validateSelfClient(
         bytes memory
     ) internal view virtual returns (bool) {
-        this; // this is a trick that suppresses "Warning: Function state mutability can be restricted to pure"
         return true;
     }
 
@@ -349,7 +325,10 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     function setSupportedVersions(
         IbcCoreConnectionV1Version.Data[] storage versions
     ) internal {
-        assert(versions.length == 0);
+        require(
+            versions.length == 0,
+            "setSupportedVersions: versions must be empty"
+        );
         versions.push(
             IbcCoreConnectionV1Version.Data({
                 identifier: "1",
@@ -361,11 +340,17 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         version.features[1] = "ORDER_UNORDERED";
     }
 
-    // TODO implements
     function isSupportedVersion(
-        IbcCoreConnectionV1Version.Data memory
+        IbcCoreConnectionV1Version.Data memory version
     ) internal pure returns (bool) {
-        return true;
+        IbcCoreConnectionV1Version.Data
+            memory expectedVersion = IbcCoreConnectionV1Version.Data({
+                identifier: "1",
+                features: new string[](2)
+            });
+        expectedVersion.features[0] = "ORDER_ORDERED";
+        expectedVersion.features[1] = "ORDER_UNORDERED";
+        return isEqualVersion(version, expectedVersion);
     }
 
     function isEqualVersion(
