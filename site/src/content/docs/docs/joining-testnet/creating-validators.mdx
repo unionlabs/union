@@ -55,8 +55,17 @@ Replacing:
 Then you can submit this file using the `create-validator` sub-command:
 
 ```sh
-uniond tx staking create-validator --from $KEY_NAME --chain-id union-testnet-5
+uniond tx staking create-validator $VALIDATOR_JSON_PATH --from $KEY_NAME --chain-id union-testnet-5
 ```
+*Where `VALIDATOR_JSON_PATH` is the path to your `validator.json`
+
+:::caution
+
+If you're running a node with a Docker container, your `validator.json` will need to be in a folder accessible by your Docker container. 
+
+If you've followed our instructions for setting up either of our Docker images, you should be able to place this file under `.unionvisor` (for Unionvisor containers) or under `.union` (for union-release containers).
+
+:::
 
 :::note
 
