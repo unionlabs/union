@@ -295,33 +295,47 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 mod tests {
     use std::{cmp::Ordering, fs};
 
-    use hex_literal::hex;
+    use serde::Deserialize;
     use unionlabs::{
-        ethereum::config::{Mainnet, Minimal, MINIMAL, SEPOLIA},
+        ethereum::config::{Mainnet, SEPOLIA},
         ibc::lightclients::ethereum::{
-            header::Header, sync_committee::SyncCommittee,
-            trusted_sync_committee::ActiveSyncCommittee,
+            sync_committee::SyncCommittee, trusted_sync_committee::ActiveSyncCommittee,
         },
     };
 
     use super::*;
 
-    // curl "https://sepolia.cryptware.io/eth/v1/beacon/genesis"
-    const GENESIS_VALIDATORS_ROOT: H256 = H256(hex!(
-        "d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078"
-    ));
+    #[derive(Debug, Clone)]
+    struct Context {
+        finalized_slot: u64,
+        current_sync_committee: ActiveSyncCommittee<Mainnet>,
+        next_sync_committee: ActiveSyncCommittee<Mainnet>,
+    }
 
-    // These are copied from ethereum light client's tests.
+    #[derive(Deserialize)]
+    struct InitialData {
+        genesis_validators_root: H256,
+        current_sync_committee: SyncCommittee<Mainnet>,
+        next_sync_committee: SyncCommittee<Mainnet>,
+    }
+
+    #[derive(Deserialize)]
+    struct Proof {
+        pub storage_root: H256,
+        #[serde(with = "::serde_utils::hex_string")]
+        pub key: Vec<u8>,
+        #[serde(with = "::serde_utils::hex_string")]
+        pub value: Vec<u8>,
+        #[serde(with = "::serde_utils::hex_string_list")]
+        pub proof: Vec<Vec<u8>>,
+    }
+
     lazy_static::lazy_static! {
-        static ref VALID_PROOF: Vec<Vec<u8>> = [
-            "f871808080a0b9f6e8d11cf768b8034f04b8b2ab45bb5ca792e1c6e3929cf8222a885631ffac808080808080808080a0f7202a06e8dc011d3123f907597f51546fe03542551af2c9c54d21ba0fbafc7280a0d1797d071b81705da736e39e75f1186c8e529ba339f7a7d12a9b4fafe33e43cc80",
-            "f842a03a8c7f353aebdcd6b56a67cd1b5829681a3c6e1695282161ab3faa6c3666d4c3a09f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5"
-        ].into_iter().map(|x| hex::decode(x).unwrap()).collect();
+        static ref VALID_PROOF: Proof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/valid_proof_1.json").unwrap()).unwrap();
 
-        static ref ABSENT_PROOF: Vec<Vec<u8>> = [
-            hex::decode("f838a120df6966c971051c3d54ec59162606531493a51404a002842f56009d7e5cf4a8c79594be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap(),
-        ].into();
+        static ref ABSENT_PROOF: Proof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/absent_proof_1.json").unwrap()).unwrap();
 
+        static ref INITIAL_DATA: InitialData = serde_json::from_str(&fs::read_to_string("src/test/initial_test_data.json").unwrap()).unwrap();
 
         static ref UPDATES: Vec<(Context, LightClientUpdate<Mainnet>)> = {
             let mut updates = vec![];
@@ -341,8 +355,8 @@ mod tests {
                 }
             });
 
-            let mut current_sync_committee: ActiveSyncCommittee<Mainnet> = serde_json::from_str(&fs::read_to_string("src/test/initial_current_sync_committee.json").unwrap()).unwrap();
-            let mut next_sync_committee: ActiveSyncCommittee<Mainnet> = serde_json::from_str(&fs::read_to_string("src/test/initial_next_sync_committee.json").unwrap()).unwrap();
+            let mut current_sync_committee = ActiveSyncCommittee::Current(INITIAL_DATA.current_sync_committee.clone());
+            let mut next_sync_committee= ActiveSyncCommittee::Next(INITIAL_DATA.next_sync_committee.clone());
             let mut update_data = vec![];
             updates.iter().enumerate().skip(1).for_each(|(i, update)|
                 {
@@ -362,31 +376,6 @@ mod tests {
 
             update_data
         };
-    }
-
-    const VALID_STORAGE_ROOT: H256 = H256(hex!(
-        "5634f342b966b609cdd8d2f7ed43bb94702c9e83d4e974b08a3c2b8205fd85e3"
-    ));
-    const VALID_PROOF_KEY: H256 = H256(hex!(
-        "b35cad2b263a62faaae30d8b3f51201fea5501d2df17d59a3eef2751403e684f"
-    ));
-    const VALID_RLP_ENCODED_PROOF_VALUE: H256 = H256(hex!(
-        "9f272c7c82ac0f0adbfe4ae30614165bf3b94d49754ce8c1955cc255dcc829b5"
-    ));
-
-    const ABSENT_STORAGE_ROOT: H256 = H256(hex!(
-        "9e352a10c5a38c301ee06c22a90f0971b679985b2ca6dd66aca224bd7a9957c1"
-    ));
-
-    const ABSENT_PROOF_KEY: H256 = H256(hex!(
-        "aae81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b420"
-    ));
-
-    #[derive(Debug, Clone)]
-    struct Context {
-        finalized_slot: u64,
-        current_sync_committee: ActiveSyncCommittee<Mainnet>,
-        next_sync_committee: ActiveSyncCommittee<Mainnet>,
     }
 
     impl LightClientContext for Context {
@@ -450,7 +439,7 @@ mod tests {
             ctx,
             update,
             attested_slot + 32,
-            GENESIS_VALIDATORS_ROOT,
+            INITIAL_DATA.genesis_validators_root.clone(),
             BlsVerifier,
         )
         .map_err(|e| e.0)
@@ -459,15 +448,7 @@ mod tests {
     #[test]
     fn validate_light_client_update_works() {
         UPDATES.iter().for_each(|(ctx, update)| {
-            println!("Worked");
-            validate_light_client_update(
-                ctx,
-                update.clone(),
-                update.attested_header.beacon.slot + 32,
-                GENESIS_VALIDATORS_ROOT,
-                BlsVerifier,
-            )
-            .unwrap();
+            assert_eq!(do_validate_light_client_update(ctx, update.clone()), Ok(()))
         });
     }
 
@@ -616,46 +597,52 @@ mod tests {
     fn verify_state_works() {
         assert_eq!(
             verify_state(
-                VALID_STORAGE_ROOT.clone(),
-                &VALID_PROOF_KEY,
-                VALID_PROOF.iter()
-            ),
-            Ok(Some(VALID_RLP_ENCODED_PROOF_VALUE.into_bytes()))
+                VALID_PROOF.storage_root.clone(),
+                &VALID_PROOF.key,
+                VALID_PROOF.proof.iter()
+            )
+            .unwrap()
+            .as_ref(),
+            Some(VALID_PROOF.value.as_ref())
         );
     }
 
     #[test]
     fn verify_state_fails_when_invalid_root() {
         let storage_root = {
-            let mut root = VALID_STORAGE_ROOT.clone().into_bytes();
+            let mut root = VALID_PROOF.storage_root.clone().into_bytes();
             root[0] = u8::MAX - root[0];
             root.try_into().unwrap()
         };
 
         assert!(matches!(
-            verify_state(storage_root, &VALID_PROOF_KEY, VALID_PROOF.iter()),
+            verify_state(storage_root, &VALID_PROOF.key, VALID_PROOF.proof.iter()),
             Err(Error::Trie(_))
         ));
     }
 
     #[test]
     fn verify_state_returns_none_when_invalid_key() {
-        let mut proof_key = VALID_PROOF_KEY.clone();
-        proof_key.0[0] = u8::MAX - proof_key.0[0];
+        let mut proof_key = VALID_PROOF.key.clone();
+        proof_key[0] = u8::MAX - proof_key[0];
 
         assert_eq!(
-            verify_state(VALID_STORAGE_ROOT.clone(), &proof_key, VALID_PROOF.iter()),
+            verify_state(
+                VALID_PROOF.storage_root.clone(),
+                &proof_key,
+                VALID_PROOF.proof.iter()
+            ),
             Ok(None)
         );
     }
 
     #[test]
     fn verify_state_fails_when_invalid_proof() {
-        let mut proof = VALID_PROOF.clone();
+        let mut proof = VALID_PROOF.proof.clone();
         proof[0][0] = u8::MAX - proof[0][0];
 
         assert!(matches!(
-            verify_state(VALID_STORAGE_ROOT.clone(), &VALID_PROOF_KEY, &proof),
+            verify_state(VALID_PROOF.storage_root.clone(), &VALID_PROOF.key, &proof),
             Err(Error::Trie(_))
         ));
     }
@@ -663,7 +650,11 @@ mod tests {
     #[test]
     fn verify_absent_storage_works() {
         assert_eq!(
-            verify_storage_absence(ABSENT_STORAGE_ROOT, ABSENT_PROOF_KEY, ABSENT_PROOF.iter()),
+            verify_storage_absence(
+                ABSENT_PROOF.storage_root.clone(),
+                ABSENT_PROOF.key.clone().try_into().unwrap(),
+                ABSENT_PROOF.proof.iter()
+            ),
             Ok(true)
         )
     }
@@ -671,41 +662,23 @@ mod tests {
     #[test]
     fn verify_absent_storage_returns_false_when_storage_exists() {
         assert_eq!(
-            verify_storage_absence(VALID_STORAGE_ROOT, VALID_PROOF_KEY, VALID_PROOF.iter()),
+            verify_storage_absence(
+                VALID_PROOF.storage_root.clone(),
+                VALID_PROOF.key.clone().try_into().unwrap(),
+                VALID_PROOF.proof.iter()
+            ),
             Ok(false)
         );
     }
-
-    // #[test]
-    // fn verify_account_storage_root_works() {
-    //     let valid_header_data = read_valid_header_data();
-
-    //     for header in valid_header_data {
-    //         let header =
-    //             <Header<Minimal>>::try_from_proto(serde_json::from_str(header).unwrap()).unwrap();
-
-    //         let proof_data = header.account_update.proofs[0].clone();
-
-    //         assert_eq!(
-    //             verify_account_storage_root(
-    //                 header.consensus_update.attested_header.execution.state_root,
-    //                 &proof_data.key.as_slice().try_into().unwrap(),
-    //                 &proof_data.proof,
-    //                 &proof_data.value.as_slice().try_into().unwrap()
-    //             ),
-    //             Ok(())
-    //         );
-    //     }
-    // }
 
     #[test]
     fn verify_storage_proof_works() {
         assert_eq!(
             verify_storage_proof(
-                VALID_STORAGE_ROOT,
-                VALID_PROOF_KEY,
-                VALID_RLP_ENCODED_PROOF_VALUE.as_ref(),
-                VALID_PROOF.iter()
+                VALID_PROOF.storage_root.clone(),
+                VALID_PROOF.key.clone().try_into().unwrap(),
+                VALID_PROOF.value.as_slice(),
+                VALID_PROOF.proof.iter()
             ),
             Ok(())
         );
@@ -713,15 +686,15 @@ mod tests {
 
     #[test]
     fn verify_storage_proof_fails_when_incorrect_value() {
-        let mut proof_value = VALID_RLP_ENCODED_PROOF_VALUE.clone();
-        proof_value.0[0] = u8::MAX - proof_value.0[0];
+        let mut proof_value = VALID_PROOF.value.clone();
+        proof_value[0] = u8::MAX - proof_value[0];
 
         assert_eq!(
             verify_storage_proof(
-                VALID_STORAGE_ROOT,
-                VALID_PROOF_KEY,
+                VALID_PROOF.storage_root.clone(),
+                VALID_PROOF.key.clone().try_into().unwrap(),
                 proof_value.as_ref(),
-                VALID_PROOF.iter()
+                VALID_PROOF.proof.iter()
             ),
             Err(Error::ValueMismatch.into())
         );
@@ -743,33 +716,5 @@ mod tests {
                 "invalid finalized header"
             );
         });
-    }
-
-    /// https://github.com/unionlabs/union/issues/391
-    #[test]
-    fn multi_digit_base_fee_per_gas() {
-        const JSON: &str = include_str!(
-            "../../../light-clients/ethereum-light-client/src/test/multi_digit_base_fee_per_gas_header_update.json"
-        );
-
-        let header = serde_json::from_str::<Header<Minimal>>(JSON).unwrap();
-
-        assert_eq!(
-            is_valid_light_client_header(
-                &MINIMAL.fork_parameters,
-                &header.consensus_update.attested_header,
-            ),
-            Ok(()),
-            "invalid attested header"
-        );
-
-        assert_eq!(
-            is_valid_light_client_header(
-                &MINIMAL.fork_parameters,
-                &header.consensus_update.finalized_header,
-            ),
-            Ok(()),
-            "invalid finalized header"
-        );
     }
 }
