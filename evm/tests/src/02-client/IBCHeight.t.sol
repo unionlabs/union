@@ -4,8 +4,6 @@ import {IBCHeight} from "../../../contracts/core/02-client/IBCHeight.sol";
 import {IbcCoreClientV1Height} from "../../../contracts/proto/ibc/core/client/v1/client.sol";
 
 import "../TestPlus.sol";
-import "solady/utils/LibString.sol";
-import "solidity-bytes-utils/BytesLib.sol";
 
 contract IBCHeightTests is TestPlus {
     using IBCHeight for *;
