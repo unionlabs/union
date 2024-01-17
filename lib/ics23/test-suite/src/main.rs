@@ -1,14 +1,19 @@
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{collections::HashMap, fmt::Display, fs, path::PathBuf};
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use clap::Parser;
 use ics23::{
-    existence_proof,
+    existence_proof::{self, calculate_root},
     ops::{hash_op, inner_op, leaf_op},
+    proof_specs::{IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC},
+    verify::{verify_membership, verify_non_membership},
 };
 use protos::cosmos::ics23::v1::InnerSpec;
 use serde::{de::DeserializeOwned, Deserialize};
-use unionlabs::cosmos::ics23::{hash_op::HashOp, proof_spec::ProofSpec};
+use unionlabs::{
+    cosmos::ics23::{commitment_proof::CommitmentProof, hash_op::HashOp, proof_spec::ProofSpec},
+    TryFromProto,
+};
 
 #[derive(Parser)]
 struct App {
@@ -27,6 +32,8 @@ fn main() -> anyhow::Result<()> {
     // run_test_cases::<TestCheckAgainstSpecData>(
     //     app.testdata_dir.join("TestCheckAgainstSpecData.json"),
     // )?;
+
+    run_vector_tests(app)?;
 
     Ok(())
 }
@@ -317,5 +324,150 @@ impl TestCase for TestCheckAgainstSpecData {
         }
 
         Ok(())
+    }
+}
+
+const FILENAMES: [&str; 6] = [
+    "exist_left.json",
+    "exist_right.json",
+    "exist_middle.json",
+    "nonexist_left.json",
+    "nonexist_right.json",
+    "nonexist_middle.json",
+];
+
+#[derive(Debug)]
+enum SpecType {
+    Iavl,
+    Tendermint,
+}
+
+impl SpecType {
+    fn all() -> Vec<SpecType> {
+        vec![SpecType::Iavl, SpecType::Tendermint]
+    }
+
+    fn name(&self) -> &str {
+        match self {
+            SpecType::Iavl => "IAVL",
+            SpecType::Tendermint => "Tendermint",
+        }
+    }
+
+    fn path(&self) -> &str {
+        match self {
+            SpecType::Iavl => "iavl",
+            SpecType::Tendermint => "tendermint",
+        }
+    }
+
+    fn proof_spec(&self) -> ProofSpec {
+        match self {
+            SpecType::Iavl => IAVL_PROOF_SPEC,
+            SpecType::Tendermint => TENDERMINT_PROOF_SPEC,
+        }
+    }
+}
+
+fn run_vector_tests(app: App) -> anyhow::Result<()> {
+    let tests: Vec<VectorTest> = SpecType::all()
+        .iter()
+        .flat_map(|spec_type| {
+            FILENAMES.iter().map(|file_name| {
+                let name = format!("{} - {}", spec_type.name(), file_name);
+                let spec = spec_type.proof_spec();
+
+                let path = app.testdata_dir.join(spec_type.path()).join(file_name);
+                let data = read_json::<VectorTestData>(path);
+
+                VectorTest { name, data, spec }
+            })
+        })
+        .collect();
+
+    for test in tests {
+        eprint!("test vectors: {}...", &test);
+        test.run()?;
+        eprintln!("OK");
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+struct VectorTest {
+    name: String,
+    data: VectorTestData,
+    spec: ProofSpec,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+struct VectorTestData {
+    #[serde(with = "::serde_utils::hex_upper_unprefixed")]
+    key: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_upper_unprefixed")]
+    proof: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_upper_unprefixed")]
+    root: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_upper_unprefixed")]
+    value: Vec<u8>,
+}
+
+impl Display for VectorTest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.name.as_str())
+    }
+}
+
+impl TestCase for VectorTest {
+    fn run(self) -> anyhow::Result<()> {
+        match CommitmentProof::try_from_proto_bytes(self.data.proof.as_slice()) {
+            Ok(proof) => match (&proof, &self.data.value.len()) {
+                (CommitmentProof::Exist(existence_proof), 1..) => {
+                    let root = calculate_root(existence_proof).context("calculating root")?;
+
+                    assert_eq!(&root, &self.data.root);
+
+                    verify_membership(
+                        &self.spec,
+                        root.as_slice(),
+                        existence_proof,
+                        self.data.key.as_slice(),
+                        self.data.value.as_slice(),
+                    )
+                    .context("verify membership")
+                }
+                (CommitmentProof::Nonexist(non_existence_proof), 0) => {
+                    // Even both are `Some`, still calculate the left branch
+                    let root = match (&non_existence_proof.left, &non_existence_proof.right) {
+                        (Some(existence_proof), _) | (None, Some(existence_proof)) => {
+                            calculate_root(existence_proof).context("calculating root")?
+                        }
+                        _ => bail!("can't find root"),
+                    };
+
+                    assert_eq!(&root, &self.data.root);
+
+                    verify_non_membership(
+                        &self.spec,
+                        self.data.root.as_slice(),
+                        non_existence_proof,
+                        self.data.key.as_slice(),
+                    )
+                    .context("verify non membership")
+                }
+                _ => {
+                    bail!(
+                        "unexpected proof: {:?} / value.len: {:?}",
+                        &proof,
+                        &self.data.value.len()
+                    )
+                }
+            },
+            Err(e) => {
+                bail!("Failed: cannot parse proof - {:?}", e)
+            }
+        }
     }
 }
