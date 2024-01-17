@@ -5,7 +5,7 @@ sidebar:
 ---
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
-import Version from "#/components/chain-versions.svelte"
+import Version from "#/components/chain-versions.svelte";
 
 This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](../nixos) and the [Kubernetes](../kubernetes) guide for more production-ready deployments.
 
@@ -38,7 +38,6 @@ Double-check the version and architecture in the link before downloading.
     ```
     *Where `UNIOND_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>*
 
-
   </TabItem>
   <TabItem label='aarch64-linux'>
     ```sh frame='none'
@@ -70,7 +69,8 @@ We also provide containers in our [package registry](https://github.com/unionlab
 ```sh
 docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 ```
-*Where `UNIOND_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>*
+
+_Where `UNIOND_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>_
 
 When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](../docker-compose) section is more suited for docker users.
 

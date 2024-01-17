@@ -24,33 +24,35 @@ As we get closer to a mainnet release, we will update staking and slashing param
 
 Now that you're ready to create your validator, you can follow the steps below:
 
-1) Create a `validator.json`
+1. Create a `validator.json`
 
-  Create a file with the following content:
-  ```json
-  {
-  	"pubkey": <PUBKEY>,
-  	"amount": "1000000muno",
-  	"moniker": "<MONIKER>",
-  	"identity": "optional identity signature (ex. UPort or Keybase)",
-  	"website": "validator's (optional) website",
-  	"security": "validator's (optional) security contact email",
-  	"details": "validator's (optional) details",
-  	"commission-rate": "0.1",
-  	"commission-max-rate": "0.2",
-  	"commission-max-change-rate": "0.01",
-  	"min-self-delegation": "1"
-  }
-  ```
+Create a file with the following content:
 
-  Replacing:
-  - `<PUBKEY>` with the result of running `uniond comet show-validator`
-  - `<MONIKER>` with your moniker
-  - And the optional content with your preferred details
+```json
+{
+	"pubkey": <PUBKEY>,
+	"amount": "1000000muno",
+	"moniker": "<MONIKER>",
+	"identity": "optional identity signature (ex. UPort or Keybase)",
+	"website": "validator's (optional) website",
+	"security": "validator's (optional) security contact email",
+	"details": "validator's (optional) details",
+	"commission-rate": "0.1",
+	"commission-max-rate": "0.2",
+	"commission-max-change-rate": "0.01",
+	"min-self-delegation": "1"
+}
+```
 
-2) Run the `create-validator` command
+Replacing:
 
-  Then you can submit this file using the `create-validator` sub-command:
+- `<PUBKEY>` with the result of running `uniond comet show-validator`
+- `<MONIKER>` with your moniker
+- And the optional content with your preferred details
+
+2. Run the `create-validator` command
+
+Then you can submit this file using the `create-validator` sub-command:
 
 ```sh
 uniond tx staking create-validator --from $KEY_NAME --chain-id union-testnet-5

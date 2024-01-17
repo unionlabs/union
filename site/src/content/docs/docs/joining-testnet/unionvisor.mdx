@@ -3,7 +3,8 @@ title: "Running Unionvisor"
 sidebar:
   order: 2
 ---
-import Version from "#/components/chain-versions.svelte"
+
+import Version from "#/components/chain-versions.svelte";
 
 Unionvisor is a utility for managing `uniond` deployments. It manages running, upgrading, and interacting with the node.
 
@@ -16,7 +17,8 @@ Alternatively, you can run the following command:
 ```sh
 docker pull ghcr.io/unionlabs/bundle-testnet-5:$UNIONVISOR_VERSION
 ```
-*Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>*
+
+_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>_
 
 ## Running Unionvisor
 
@@ -103,7 +105,8 @@ For example, in `zsh`, you can add the following alias to your `.zshrc`:
 ```sh
 alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-5:$UNIONVISOR_VERSION --log-level off call'
 ```
-*Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>*
+
+_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>_
 
 :::note
 
