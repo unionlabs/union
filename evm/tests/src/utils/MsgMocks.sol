@@ -116,8 +116,10 @@ library MsgMocks {
         m.connectionId = connId;
         m.version = ConnectionVersion.Data({
             identifier: "1",
-            features: new string[](0)
+            features: new string[](2)
         });
+        m.version.features[0] = "ORDER_ORDERED";
+        m.version.features[1] = "ORDER_UNORDERED";
         m.counterpartyConnectionID = "counterparty-conn-id";
 
         // mocking connection data
