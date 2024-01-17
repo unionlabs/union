@@ -76,8 +76,10 @@ library MsgMocks {
         m.counterpartyVersions = new ConnectionVersion.Data[](1);
         m.counterpartyVersions[0] = ConnectionVersion.Data({
             identifier: "1",
-            features: new string[](0)
+            features: new string[](2)
         });
+        m.counterpartyVersions[0].features[0] = "ORDER_ORDERED";
+        m.counterpartyVersions[0].features[1] = "ORDER_UNORDERED";
 
         // mocking connection data
         ConnectionEnd.Data memory connection = ConnectionEnd.Data({

@@ -6,6 +6,7 @@ import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
 import {IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
+import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
 import {MockClient} from "../../../contracts/clients/MockClient.sol";
 import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
 import {IBCHandler_Testable} from "../utils/IBCHandler_Testable.sol";
@@ -233,6 +234,11 @@ contract IBCConnectionTests is TestPlus {
         assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
         assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
 
+        assertEq(
+            handler.commitments(IBCCommitment.connectionCommitmentKey(connId)),
+            keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
+        );
+
         // 3. ConnOpenAck
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
             .connectionOpenAck(clientId, connId, proofHeight);
@@ -262,6 +268,98 @@ contract IBCConnectionTests is TestPlus {
         assertEq(connection.versions[0].identifier, "1");
         assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
         assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
+
+        assertEq(
+            handler.commitments(IBCCommitment.connectionCommitmentKey(connId)),
+            keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
+        );
+    }
+
+    function test_openingHandshake_ack_noInit(uint64 proofHeight) public {
+        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
+        vm.assume(
+            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
+        );
+
+        // 1. createClient
+        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
+            CLIENT_TYPE,
+            signedHeader.header.chain_id,
+            proofHeight,
+            ARBITRARY_INITIAL_APP_HASH,
+            signedHeader.header.validators_hash.toBytes32(0),
+            uint64(signedHeader.header.time.secs - 10)
+        );
+        string memory clientId = handler.createClient(m);
+
+        // 3. ConnOpenAck
+        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
+            .connectionOpenAck(clientId, "", proofHeight);
+        preAckValidProofs();
+        vm.expectRevert("connectionOpenAck: connection state is not INIT");
+        handler.connectionOpenAck(msg_ack);
+    }
+
+    function test_openingHandshake_init_ack_unsupportedVersion(
+        uint64 proofHeight
+    ) public {
+        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
+        vm.assume(
+            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
+        );
+
+        // 1. createClient
+        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
+            CLIENT_TYPE,
+            signedHeader.header.chain_id,
+            proofHeight,
+            ARBITRARY_INITIAL_APP_HASH,
+            signedHeader.header.validators_hash.toBytes32(0),
+            uint64(signedHeader.header.time.secs - 10)
+        );
+        string memory clientId = handler.createClient(m);
+
+        // 2. ConnOpenInit
+        IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
+            .connectionOpenInit(clientId);
+        preInitOk();
+        string memory connId = handler.connectionOpenInit(msg_init);
+
+        (ConnectionEnd.Data memory connection, ) = handler.getConnection(
+            connId
+        );
+        assertEq(connection.client_id, clientId, "clientId mismatch");
+        assertEq(
+            connection.delay_period,
+            msg_init.delayPeriod,
+            "delayPeriod mismatch"
+        );
+        assertEq(
+            connection.counterparty.encode(),
+            msg_init.counterparty.encode(),
+            "counterparty mismatch"
+        );
+        assert(connection.state == ConnectionEnums.State.STATE_INIT);
+        assertEq(connection.versions.length, 1);
+        assertEq(connection.versions[0].features.length, 2);
+        assertEq(connection.versions[0].identifier, "1");
+        assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
+        assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
+
+        assertEq(
+            handler.commitments(IBCCommitment.connectionCommitmentKey(connId)),
+            keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
+        );
+
+        // 3. ConnOpenAck
+        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
+            .connectionOpenAck(clientId, connId, proofHeight);
+        msg_ack.version.identifier = "2";
+        preAckValidProofs();
+        vm.expectRevert(
+            "connectionOpenAck: the counterparty selected version is not supported by versions selected on INIT"
+        );
+        handler.connectionOpenAck(msg_ack);
     }
 
     function test_openingHandshake_init_ack_invalidConnectionStateProof(
@@ -309,6 +407,11 @@ contract IBCConnectionTests is TestPlus {
         assertEq(connection.versions[0].identifier, "1");
         assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
         assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
+
+        assertEq(
+            handler.commitments(IBCCommitment.connectionCommitmentKey(connId)),
+            keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
+        );
 
         // 3. ConnOpenAck
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
@@ -363,6 +466,11 @@ contract IBCConnectionTests is TestPlus {
         assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
         assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
 
+        assertEq(
+            handler.commitments(IBCCommitment.connectionCommitmentKey(connId)),
+            keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
+        );
+
         // 3. ConnOpenAck
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
             .connectionOpenAck(clientId, connId, proofHeight);
@@ -414,6 +522,11 @@ contract IBCConnectionTests is TestPlus {
         assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
         assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
 
+        assertEq(
+            handler.commitments(IBCCommitment.connectionCommitmentKey(connId)),
+            keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
+        );
+
         // 2. ConnOpenConfirm
         IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
             .connectionOpenConfirm(clientId, connId, proofHeight);
@@ -438,6 +551,41 @@ contract IBCConnectionTests is TestPlus {
         assertEq(connection.versions[0].identifier, "1");
         assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
         assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
+
+        assertEq(
+            handler.commitments(IBCCommitment.connectionCommitmentKey(connId)),
+            keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
+        );
+    }
+
+    function test_openingHandshake_try_unsupportedVersion(
+        uint64 proofHeight
+    ) public {
+        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
+        vm.assume(
+            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
+        );
+
+        // 1. createClient
+        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
+            CLIENT_TYPE,
+            signedHeader.header.chain_id,
+            proofHeight,
+            ARBITRARY_INITIAL_APP_HASH,
+            signedHeader.header.validators_hash.toBytes32(0),
+            uint64(signedHeader.header.time.secs - 10)
+        );
+        string memory clientId = handler.createClient(m);
+
+        // 1. ConnOpenTry
+        IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
+            .connectionOpenTry(clientId, proofHeight);
+        msg_try.counterpartyVersions[0].identifier = "4";
+        preTryValidProofs();
+        vm.expectRevert(
+            "connectionOpenTry: the counterparty selected version is not supported by versions selected on INIT"
+        );
+        handler.connectionOpenTry(msg_try);
     }
 
     function test_openingHandshake_try_invalidConnectionStateProof(
@@ -538,10 +686,44 @@ contract IBCConnectionTests is TestPlus {
         assertEq(connection.versions[0].features[0], "ORDER_ORDERED");
         assertEq(connection.versions[0].features[1], "ORDER_UNORDERED");
 
+        assertEq(
+            handler.commitments(IBCCommitment.connectionCommitmentKey(connId)),
+            keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
+        );
+
         // 2. ConnOpenConfirm
         IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
             .connectionOpenConfirm(clientId, connId, proofHeight);
         preConfirmInvalidConnectionState();
+        handler.connectionOpenConfirm(msg_confirm);
+    }
+
+    function test_openingHandshake_confirm_notTryOpen(
+        uint64 proofHeight
+    ) public {
+        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
+        vm.assume(
+            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
+        );
+
+        // 1. createClient
+        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
+            CLIENT_TYPE,
+            signedHeader.header.chain_id,
+            proofHeight,
+            ARBITRARY_INITIAL_APP_HASH,
+            signedHeader.header.validators_hash.toBytes32(0),
+            uint64(signedHeader.header.time.secs - 10)
+        );
+        string memory clientId = handler.createClient(m);
+
+        // 2. ConnOpenConfirm
+        IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
+            .connectionOpenConfirm(clientId, "", proofHeight);
+        preConfirmValidProofs();
+        vm.expectRevert(
+            "connectionOpenConfirm: connection state is not TRYOPEN"
+        );
         handler.connectionOpenConfirm(msg_confirm);
     }
 
