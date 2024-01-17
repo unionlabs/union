@@ -1,7 +1,6 @@
 pragma solidity ^0.8.23;
 
 import {ILightClient, ConsensusStateUpdate} from "../../../contracts/core/02-client/ILightClient.sol";
-import {MockClient} from "../../../contracts/clients/MockClient.sol";
 import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
@@ -10,12 +9,12 @@ import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
 import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
 import {IbcCoreClientV1Height} from "../../../contracts/proto/ibc/core/client/v1/client.sol";
 
-import "../TestPlus.sol";
 import {IBCHandler_Testable} from "../utils/IBCHandler_Testable.sol";
 
 import {TendermintTypesSignedHeader} from "../../../contracts/proto/tendermint/types/canonical.sol";
 import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeader, TendermintVersionConsensus, TendermintTypesCommitSig, TendermintTypesBlockID, TendermintTypesPartSetHeader} from "../../../contracts/proto/tendermint/types/types.sol";
 
+import "../TestPlus.sol";
 import "solady/utils/LibString.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 
@@ -74,14 +73,13 @@ contract TestMembershipVerifier is IMembershipVerifier {
     }
 }
 
-contract IBCClientTest is TestPlus {
+contract IBCClientTests is TestPlus {
     using BytesLib for bytes;
     using CometblsHelp for *;
 
     IBCHandler_Testable handler;
 
     string constant CLIENT_TYPE = "mock";
-    ILightClient mockClient;
     ILightClient client;
     ILightClient client2;
 
@@ -95,8 +93,6 @@ contract IBCClientTest is TestPlus {
         handler = new IBCHandler_Testable();
         membershipVerifier = new TestMembershipVerifier();
         verifier = new TestVerifier();
-
-        mockClient = new MockClient(address(handler));
 
         client = new CometblsClient(
             address(handler),
