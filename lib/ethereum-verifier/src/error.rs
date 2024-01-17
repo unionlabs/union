@@ -75,19 +75,19 @@ pub enum Error {
 
 #[derive(Debug, thiserror::Error, PartialEq)]
 #[error("verify storage absence error: {0}")]
-pub struct VerifyStorageAbsenceError(#[from] Error);
+pub struct VerifyStorageAbsenceError(#[from] pub Error);
 
 #[derive(Debug, thiserror::Error, PartialEq)]
 #[error("validate light client error: {0}")]
-pub struct ValidateLightClientError(#[from] Error);
+pub struct ValidateLightClientError(#[from] pub Error);
 
 #[derive(Debug, thiserror::Error, PartialEq)]
 #[error("verify account storage root error: {0}")]
-pub struct VerifyAccountStorageRootError(#[from] Error);
+pub struct VerifyAccountStorageRootError(#[from] pub Error);
 
 #[derive(Debug, thiserror::Error, PartialEq)]
 #[error("verify storage proof error: {0}")]
-pub struct VerifyStorageProofError(#[from] Error);
+pub struct VerifyStorageProofError(#[from] pub Error);
 
 impl From<AmclError> for Error {
     fn from(e: AmclError) -> Self {
