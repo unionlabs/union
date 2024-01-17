@@ -64,6 +64,8 @@ module.exports = {
     'unicorn/no-keyword-prefix': ['error', { disallowedPrefixes: ['new', 'for'] }],
     'unicorn/filename-case': ['off'],
     'unicorn/prefer-module': ['off'],
+    'unicorn/prefer-includes': ['off'],
+    'unicorn/no-null': ['off'],
     'unicorn/no-array-reduce': ['off'],
     'unicorn/consistent-function-scoping': ['off', { checkArrowFunctions: false }],
     'unicorn/prefer-top-level-await': ['off'],

@@ -341,6 +341,7 @@ groth
 groupkeeper
 groupmodule
 hasher
+hastscript
 hasura
 hdata
 healthcheck
@@ -495,6 +496,7 @@ nonexist
 noopener
 noreferrer
 notrunc
+nowrap
 numtide
 omit
 omnichain
@@ -508,6 +510,7 @@ outdir
 outfile
 overrrides
 oxalica
+pagefind
 paramaters
 paramproposal
 paramsclient

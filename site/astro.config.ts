@@ -1,4 +1,6 @@
 import "dotenv/config";
+Object.assign(process.env, { ASTRO_TELEMETRY_DISABLED: 1 });
+
 import svelte from "@astrojs/svelte";
 import tailwind from "@astrojs/tailwind";
 import starlight from "@astrojs/starlight";
@@ -7,15 +9,14 @@ import { defineConfig, squooshImageService } from "astro/config";
 
 const SITE_URL = "https://union.build";
 
-const PORT = Number(process.env.PORT || import.meta.env.PORT || 4321);
-
 // https://astro.build/config
 export default defineConfig({
   site: SITE_URL,
+  prefetch: true,
   output: "static",
   trailingSlash: "ignore",
   server: (_options) => ({
-    port: PORT,
+    port: Number(process.env.PORT || import.meta.env.PORT || 4321),
   }),
   markdown: markdownConfiguration,
   integrations: [
@@ -28,6 +29,7 @@ export default defineConfig({
       lastUpdated: true,
       social: {
         github: "https://github.com/unionlabs",
+        discord: "https://discord.union.build",
         "x.com": "https://x.com/union_build",
       },
       expressiveCode: {
@@ -58,10 +60,10 @@ export default defineConfig({
       defaultLocale: "en",
       logo: {
         alt: "Union Logo",
-        src: "./public/images/union-logo.svg",
+        src: "./public/images/logo.png",
       },
       editLink: {
-        baseUrl: "https://github.com/unionlabs/union/edit/main/docs",
+        baseUrl: "https://github.com/unionlabs/union/edit/main/site",
       },
       sidebar: [
         {
@@ -108,8 +110,8 @@ export default defineConfig({
       customCss: [
         "./src/styles/index.css",
         "./src/styles/tailwind.css",
-        "@fontsource/ibm-plex-mono/400.css",
-        "@fontsource/ibm-plex-mono/600.css",
+        "@fontsource/jetbrains-mono/400.css",
+        "@fontsource/jetbrains-mono/600.css",
       ],
     }),
     tailwind({

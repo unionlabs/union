@@ -38,6 +38,7 @@
     "e2e/upgrades.nix",
     "yarn.lock",
     "bun.lockb",
-    "package-lock.json"
+    "package-lock.json",
+    "file-tree-icons.ts"
   ]
 }
