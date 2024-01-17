@@ -379,6 +379,6 @@ mod tests {
         )
         .unwrap_err();
 
-        assert!(matches!(dbg!(err), RuntimeError::UniondExit { .. }));
+        assert!(matches!(err, RuntimeError::UniondExit { .. }));
     }
 }
