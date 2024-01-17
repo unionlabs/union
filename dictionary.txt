@@ -24,6 +24,7 @@ DATADIR
 DYLD
 Denoms
 Devconnect
+Devs
 Disket
 Djuric
 Feegrant
@@ -53,6 +54,7 @@ Kubat
 Lahcen
 Layerzero
 Lightshift
+Mathjax
 Maxblocks
 Merkle
 Mgoogle
@@ -442,6 +444,7 @@ logtostderr
 lspec
 lzrndrpkvsjqgk
 mapstructure
+mathjax
 maxdome
 maxp
 maxpeers

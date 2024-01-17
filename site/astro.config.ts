@@ -40,7 +40,15 @@ export default defineConfig({
         useStarlightDarkModeSwitch: true,
         useStarlightUiThemeColors: true,
       },
-      head: [],
+      head: [
+        {
+          tag: "link",
+          attrs: {
+            rel: "stylesheet",
+            href: "https://www.unpkg.com/katex@0.16.9/dist/katex.min.css",
+          },
+        },
+      ],
       locales: {
         root: {
           label: "English",

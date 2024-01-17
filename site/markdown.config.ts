@@ -4,6 +4,7 @@ import { toHtml } from "hast-util-to-html";
 import remarkMathPlugin from "remark-math";
 import { toHast } from "mdast-util-to-hast";
 import rehypeKatexPlugin from "rehype-katex";
+import rehypeMathjaxPlugin from "rehype-mathjax";
 import { type AstroUserConfig } from "astro/config";
 import { rehypeHeadingIds } from "@astrojs/markdown-remark";
 
@@ -15,7 +16,7 @@ export const markdownConfiguration = {
     remarkMathPlugin,
     [remarkToc, { heading: "contents", prefix: "toc-" }],
   ],
-  rehypePlugins: [rehypeHeadingIds, rehypeKatexPlugin],
+  rehypePlugins: [rehypeHeadingIds, rehypeKatexPlugin, rehypeMathjaxPlugin],
 } satisfies Markdown;
 
 function remarkMermaidToHtml() {
