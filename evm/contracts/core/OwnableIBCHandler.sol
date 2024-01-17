@@ -40,13 +40,4 @@ contract OwnableIBCHandler is IBCHandler, Ownable {
     ) public override onlyOwner {
         super.bindPort(portId, moduleAddress);
     }
-
-    /**
-     * @dev setExpectedTimePerBlock sets expected time per block.
-     */
-    function setExpectedTimePerBlock(
-        uint64 expectedTimePerBlock_
-    ) public override onlyOwner {
-        super.setExpectedTimePerBlock(expectedTimePerBlock_);
-    }
 }

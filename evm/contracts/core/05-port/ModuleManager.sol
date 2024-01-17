@@ -1,11 +1,13 @@
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts/utils/Context.sol";
 import "./IIBCModule.sol";
+import "../24-host/IBCStore.sol";
 
 /**
  * @dev ModuleManager is an abstract contract that provides the functions defined in [ICS 5](https://github.com/cosmos/ibc/tree/main/spec/core/ics-005-port-allocation) and [ICS 26](https://github.com/cosmos/ibc/blob/main/spec/core/ics-005-port-module/README.md).
  */
-abstract contract ModuleManager {
+abstract contract ModuleManager is IBCStore, Context {
     /**
      * @dev bindPort binds to an unallocated port, failing if the port has already been allocated.
      */
@@ -23,11 +25,9 @@ abstract contract ModuleManager {
     function lookupModuleByPort(
         string memory portId
     ) internal view virtual returns (IIBCModule) {
-        (address[] storage modules, bool found) = lookupModules(
-            portCapabilityPath(portId)
-        );
-        require(found, "lookupModuleByPort: module not found");
-        return IIBCModule(modules[0]);
+        address module = lookupModule(portCapabilityPath(portId));
+        require(module != address(0), "lookupModuleByPort: module not found");
+        return IIBCModule(module);
     }
 
     /**
@@ -37,11 +37,12 @@ abstract contract ModuleManager {
         string memory portId,
         string memory channelId
     ) internal view virtual returns (IIBCModule) {
-        (address[] storage modules, bool found) = lookupModules(
-            channelCapabilityPath(portId, channelId)
+        address module = lookupModule(channelCapabilityPath(portId, channelId));
+        require(
+            module != address(0),
+            "lookupModuleByChannel: module not found"
         );
-        require(found, "lookupModuleByChannel: module not found");
-        return IIBCModule(modules[0]);
+        return IIBCModule(module);
     }
 
     /**
@@ -49,8 +50,8 @@ abstract contract ModuleManager {
      */
     function portCapabilityPath(
         string memory portId
-    ) public pure returns (bytes memory) {
-        return abi.encodePacked(portId);
+    ) public pure returns (string memory) {
+        return portId;
     }
 
     /**
@@ -59,28 +60,35 @@ abstract contract ModuleManager {
     function channelCapabilityPath(
         string memory portId,
         string memory channelId
-    ) public pure returns (bytes memory) {
-        return abi.encodePacked(portId, "/", channelId);
+    ) public pure returns (string memory) {
+        return string.concat(portId, "/", channelId);
     }
 
     /**
      * @dev claimCapability allows the IBC app module to claim a capability that core IBC passes to it
      */
-    function claimCapability(bytes memory name, address addr) internal virtual;
+    function claimCapability(string memory name, address addr) internal {
+        require(
+            capabilities[name] == address(0),
+            "claimCapability: capability already claimed"
+        );
+        capabilities[name] = addr;
+    }
 
     /**
      * @dev authenticateCapability attempts to authenticate a given name from a caller.
      * It allows for a caller to check that a capability does in fact correspond to a particular name.
      */
     function authenticateCapability(
-        bytes memory name
-    ) internal view virtual returns (bool);
+        string memory name
+    ) internal view returns (bool) {
+        return _msgSender() == capabilities[name];
+    }
 
     /**
      * @dev lookupModule will return the IBCModule address bound to a given name.
-     * Currently, the function returns only one module.
      */
-    function lookupModules(
-        bytes memory name
-    ) internal view virtual returns (address[] storage, bool);
+    function lookupModule(string memory name) internal view returns (address) {
+        return capabilities[name];
+    }
 }

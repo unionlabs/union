@@ -14,7 +14,6 @@ library MsgMocks {
     //
 
     /// Builds a MsgCreateClient
-    /// TODO: should we fuzz over height.revision_number?
     function createClient(
         string memory clientType,
         uint64 revisionHeight
@@ -34,7 +33,6 @@ library MsgMocks {
     }
 
     /// Builds a MsgUpdateClient
-    /// TODO: should we fuzz over height.revision_number?
     function updateClient(
         string memory clientId,
         uint64 nextRevisionHeight
@@ -65,7 +63,6 @@ library MsgMocks {
     }
 
     /// Builds a MsgConnectionOpenTry
-    /// TODO: should we fuzz over version.identifier?
     function connectionOpenTry(
         string memory clientId,
         uint64 proofHeight
@@ -76,8 +73,10 @@ library MsgMocks {
         m.counterpartyVersions = new ConnectionVersion.Data[](1);
         m.counterpartyVersions[0] = ConnectionVersion.Data({
             identifier: "1",
-            features: new string[](0)
+            features: new string[](2)
         });
+        m.counterpartyVersions[0].features[0] = "ORDER_ORDERED";
+        m.counterpartyVersions[0].features[1] = "ORDER_UNORDERED";
 
         // mocking connection data
         ConnectionEnd.Data memory connection = ConnectionEnd.Data({
@@ -97,7 +96,6 @@ library MsgMocks {
         bytes memory encodedConnection = ConnectionEnd.encode(connection);
         m.proofInit = abi.encodePacked(sha256(encodedConnection));
 
-        // for MockClient, it seems this value doesn't matter
         // it just checks sha256(clientStateBytes) == proofClient
         m.clientStateBytes = abi.encodePacked(bytes32(uint256(0x1)));
         m.proofClient = abi.encodePacked(sha256(m.clientStateBytes));
@@ -105,9 +103,6 @@ library MsgMocks {
     }
 
     /// Builds a MsgConnectionOpenAck
-    /// TODO: what should msg.clientStateBytes be?
-    //. TODO: msg.counterpartyConnectionId is ignored by MockClient. but probably should be set for CometblsClient
-    /// TODO: what other fields should we fill here?
     function connectionOpenAck(
         string memory clientId,
         string memory connId,
@@ -140,7 +135,6 @@ library MsgMocks {
 
         bytes memory encodedConnection = ConnectionEnd.encode(connection);
 
-        // for MockClient, it seems this value doesn't matter
         // it just checks sha256(clientStateBytes) == proofClient
         m.clientStateBytes = abi.encodePacked(bytes32(uint256(0x1)));
         m.proofClient = abi.encodePacked(sha256(m.clientStateBytes));
@@ -189,15 +183,13 @@ library MsgMocks {
     ) internal view returns (IBCMsgs.MsgChannelOpenInit memory m) {
         ChannelCounterparty.Data memory counterparty;
         counterparty.port_id = "counterparty-port-id";
-        counterparty.channel_id = "counterparty-channel-id";
+        counterparty.channel_id = "";
         string[] memory hops = new string[](1);
         hops[0] = connId;
 
         m.channel.state = ChannelEnums.State.STATE_INIT;
         m.channel.counterparty = counterparty;
         m.channel.connection_hops = hops;
-        // TODO: apparently channel creation works without setting this field, but later recvPacket fails because channel ordering is unspecified (IBCPacket.sol:138)
-        // is this a bug or some behaviour I'm not understanding?
         m.channel.ordering = ChannelEnums.Order.ORDER_ORDERED;
         m.portId = portId;
     }
@@ -243,7 +235,7 @@ library MsgMocks {
         m.counterpartyVersion = "counterparty-version";
         m.channel = Channel.Data({
             state: ChannelEnums.State.STATE_TRYOPEN,
-            ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
+            ordering: ChannelEnums.Order.ORDER_ORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: ""
@@ -256,7 +248,7 @@ library MsgMocks {
         // expected channel
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_INIT,
-            ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
+            ordering: ChannelEnums.Order.ORDER_ORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: ""
@@ -281,7 +273,7 @@ library MsgMocks {
 
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_OPEN,
-            ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
+            ordering: ChannelEnums.Order.ORDER_ORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: channelId
@@ -293,6 +285,40 @@ library MsgMocks {
 
         bytes memory encodedChannel = Channel.encode(expectedChannel);
         m.proofAck = abi.encodePacked(sha256(encodedChannel));
+        m.proofHeight.revision_height = proofHeight;
+    }
+
+    function channelCloseInit(
+        string memory portId,
+        string memory channelId
+    ) internal view returns (IBCMsgs.MsgChannelCloseInit memory m) {
+        m.portId = portId;
+        m.channelId = channelId;
+    }
+
+    function channelCloseConfirm(
+        string memory portId,
+        string memory channelId,
+        uint64 proofHeight
+    ) internal view returns (IBCMsgs.MsgChannelCloseConfirm memory m) {
+        m.portId = portId;
+        m.channelId = channelId;
+
+        Channel.Data memory expectedChannel = Channel.Data({
+            state: ChannelEnums.State.STATE_CLOSED,
+            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            counterparty: ChannelCounterparty.Data({
+                port_id: portId,
+                channel_id: channelId
+            }),
+            connection_hops: new string[](1),
+            version: "counterparty-version"
+        });
+
+        expectedChannel.connection_hops[0] = "counterparty-conn-id";
+
+        bytes memory encodedChannel = Channel.encode(expectedChannel);
+        m.proofInit = abi.encodePacked(sha256(encodedChannel));
         m.proofHeight.revision_height = proofHeight;
     }
 

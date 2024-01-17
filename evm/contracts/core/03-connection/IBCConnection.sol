@@ -15,8 +15,6 @@ import "../03-connection/IIBCConnection.sol";
 contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     using LibString for *;
 
-    string private constant COMMITMENT_PREFIX = "ibc";
-
     /* Handshake functions */
 
     /**
@@ -60,6 +58,10 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         require(
             msg_.counterpartyVersions.length > 0,
             "connectionOpenTry: counterpartyVersions length must be greater than 0"
+        );
+        require(
+            isSupportedVersion(msg_.counterpartyVersions[0]),
+            "connectionOpenTry: the counterparty selected version is not supported by versions selected on INIT"
         );
 
         string memory connectionId = generateConnectionIdentifier();
@@ -131,17 +133,14 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
             msg_.connectionId
         ];
-        if (
-            connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_INIT
-        ) {
-            revert("connectionOpenAck: connection state is not INIT");
-        }
-        if (!isSupportedVersion(msg_.version)) {
-            revert(
-                "connectionOpenAck: the counterparty selected version is not supported by versions selected on INIT"
-            );
-        }
-
+        require(
+            connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_INIT,
+            "connectionOpenAck: connection state is not INIT"
+        );
+        require(
+            isSupportedVersion(msg_.version),
+            "connectionOpenAck: the counterparty selected version is not supported by versions selected on INIT"
+        );
         require(
             validateSelfClient(msg_.clientStateBytes),
             "connectionOpenAck: failed to validate self client state"

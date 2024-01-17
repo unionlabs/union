@@ -7,11 +7,12 @@ import "../02-client/IBCHeight.sol";
 import "../24-host/IBCStore.sol";
 import "../24-host/IBCCommitment.sol";
 import "../04-channel/IIBCChannel.sol";
+import "../05-port/ModuleManager.sol";
 
 /**
  * @dev IBCPacket is a contract that implements [ICS-4](https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics).
  */
-contract IBCPacket is IBCStore, IIBCPacket {
+contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     using IBCHeight for IbcCoreClientV1Height.Data;
 
     /* Packet handlers */
@@ -28,6 +29,13 @@ contract IBCPacket is IBCStore, IIBCPacket {
         uint64 timeoutTimestamp,
         bytes calldata data
     ) external returns (uint64) {
+        require(
+            authenticateCapability(
+                channelCapabilityPath(sourcePort, sourceChannel)
+            ),
+            "sendPacket: unauthorized"
+        );
+
         IbcCoreChannelV1Channel.Data storage channel = channels[sourcePort][
             sourceChannel
         ];
@@ -192,6 +200,12 @@ contract IBCPacket is IBCStore, IIBCPacket {
         uint64 sequence,
         bytes calldata acknowledgement
     ) external {
+        require(
+            authenticateCapability(
+                channelCapabilityPath(destinationPortId, destinationChannel)
+            ),
+            "writeAcknowledgement: unauthorized"
+        );
         require(
             acknowledgement.length > 0,
             "writeAcknowlegement: acknowledgement cannot be empty"
@@ -458,7 +472,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 connection.client_id,
                 height,
                 connection.delay_period,
-                calcBlockDelay(connection.delay_period),
+                0,
                 proof,
                 connection.counterparty.prefix.key_prefix,
                 path,
@@ -477,20 +491,10 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 connection.client_id,
                 height,
                 connection.delay_period,
-                calcBlockDelay(connection.delay_period),
+                0,
                 proof,
                 connection.counterparty.prefix.key_prefix,
                 path
             );
-    }
-
-    function calcBlockDelay(uint64 timeDelay) private view returns (uint64) {
-        uint64 blockDelay = 0;
-        if (expectedTimePerBlock != 0) {
-            blockDelay =
-                (timeDelay + expectedTimePerBlock - 1) /
-                expectedTimePerBlock;
-        }
-        return blockDelay;
     }
 }

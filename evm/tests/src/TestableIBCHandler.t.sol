@@ -87,12 +87,9 @@ contract TestableIBCHandler is OwnableIBCHandler {
     }
 
     function claimCapabilityDirectly(
-        bytes calldata name,
+        string calldata name,
         address addr
     ) external {
-        for (uint32 i = 0; i < capabilities[name].length; i++) {
-            require(capabilities[name][i] != addr);
-        }
-        capabilities[name].push(addr);
+        capabilities[name] = addr;
     }
 }

@@ -99,8 +99,4 @@ abstract contract IBCQuerier is IBCStore {
     ) external view returns (uint64) {
         return nextSequenceSends[portId][channelId];
     }
-
-    function getExpectedTimePerBlock() external view returns (uint64) {
-        return expectedTimePerBlock;
-    }
 }
