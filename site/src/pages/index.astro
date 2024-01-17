@@ -1,9 +1,10 @@
 ---
 import Layout from '#/layouts/layout.svelte'
-import Graph from '#/components/graph.svelte'
+// import Graph from '#/components/graph.svelte'
 import XLogo from '#/assets/x.svg'
 import DiscordLogo from '#/assets/discord.svg'
 import CalendarIcon from '#/assets/calendar.svg'
+import Graph from '#/components/graph/index.svelte'
 
 let socialLinks = [
   { href: 'https://x.com/union_build', iconSrc: XLogo.src, cta: 'Join us on X' },
@@ -20,6 +21,9 @@ const arraySizeN = (n: number) => Array.from(Array(n).keys())
 
 <Layout>
   <main class='flex flex-col flex-1'>
+    <!-- <div class='mx-auto'>
+      <Graph client:load />
+    </div> -->
     <section class='flex flex-col items-center my-32 gap-6'>
       <div class='text-7xl text-white text-center'>The Sovereign<br />Interoperability Layer</div>
       <div class='text-xl max-w-lg font-normal text-center'>
@@ -45,8 +49,9 @@ const arraySizeN = (n: number) => Array.from(Array(n).keys())
         </div>
         <div class='flex-1 p-4'>
           <p class='text-3xl text-gray-500 font-normal mb-0'>
-            <span class="text-white">Trustless, decentralized, and permissionless interoperability is now possible.</span> Union is
-            the only protocol that provides all three, using state-of-the art Zero-Knowledge
+            <span class='text-white'
+              >Trustless, decentralized, and permissionless interoperability is now possible.</span
+            > Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge
             cryptography.
           </p>
           <p class='text-lg'>
@@ -72,148 +77,136 @@ const arraySizeN = (n: number) => Array.from(Array(n).keys())
       </div>
     </section>
     <section class='flex flex-col items-center justif-center py-32'>
-		<h2 class='text-4xl mb-4 font-normal'>Build for any stack.</h2>
+      <h2 class='text-4xl mb-4 font-normal'>Build for any stack.</h2>
       <div class='flex-1 flex flex-col max-w-4xl overflow-none flex-grow-0'>
         <div class='flex gap-16'>
           <!-- <div class='flex-1 gap-4 flex overflow-none'>
             {arraySizeN(21).map(() => <div class='bg-white h-[300px] w-2' />)}
           </div> -->
-		  <div class="font-mono	">
-			pragma solidity ^0.8.20;
-			pragma solidity ^0.8.20;
-			pragma solidity ^0.8.20;
-			pragma solidity ^0.8.20;
-			pragma solidity ^0.8.20;
-			pragma solidity ^0.8.20;
-			pragma solidity ^0.8.20;
-			pragma solidity ^0.8.20;
-			pragma solidity ^0.8.20;
-			pragma solidity ^0.8.20;
-		  </div>
+          <div class='font-mono'>
+            pragma solidity ^0.8.20; pragma solidity ^0.8.20; pragma solidity ^0.8.20; pragma
+            solidity ^0.8.20; pragma solidity ^0.8.20; pragma solidity ^0.8.20; pragma solidity
+            ^0.8.20; pragma solidity ^0.8.20; pragma solidity ^0.8.20; pragma solidity ^0.8.20;
+          </div>
           <div class='flex-1 p-4 w-1/2'>
-			<p class='text-2xl font-normal mb-0 text-gray-400'>
-			  Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-			  by advancing IBC connectivity. Solidity. Smart Contracts. Wasm. 
-			</p>
-		  </div>
+            <p class='text-2xl font-normal mb-0 text-gray-400'>
+              Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
+              by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
+            </p>
+          </div>
         </div>
         <div class='flex gap-16'>
-			<div class='flex-1 p-4 w-1/2'>
-				<p class='text-2xl font-normal mb-0 text-gray-400'>
-				  Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-				  by advancing IBC connectivity. Solidity. Smart Contracts. Wasm. 
-				</p>
-			  </div>
+          <div class='flex-1 p-4 w-1/2'>
+            <p class='text-2xl font-normal mb-0 text-gray-400'>
+              Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
+              by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
+            </p>
+          </div>
           <div class='flex-1 gap-4 flex overflow-none'>
             {arraySizeN(21).map(() => <div class='bg-white h-[300px] w-2' />)}
           </div>
         </div>
       </div>
     </section>
-	<section class='flex flex-col items-center justif-center py-32'>
-		<h2 class='text-4xl mb-4 font-normal'>The leading interoperability layer.</h2>
-		<p>Apple Graph here</p>
-		<div class="grid grid-cols-3 gap-4">
-			<div>
-				<h3>Galois</h3>
-				<p>Decentralized Proving, for everyone.</p>
-			</div>
-			<div>
-				<h3>CometBLS</h3>
-				<p>ZK-aligned Consensus engine</p>
-			</div>
-			<div>
-				<h3>Voyager</h3>
-				<p></p>
-			</div>
-		</div>
-      	
+    <section class='flex flex-col items-center justif-center py-32'>
+      <h2 class='text-4xl mb-4 font-normal'>The leading interoperability layer.</h2>
+      <p>Apple Graph here</p>
+      <div class='grid grid-cols-3 gap-4'>
+        <div>
+          <h3>Galois</h3>
+          <p>Decentralized Proving, for everyone.</p>
+        </div>
+        <div>
+          <h3>CometBLS</h3>
+          <p>ZK-aligned Consensus engine</p>
+        </div>
+        <div>
+          <h3>Voyager</h3>
+          <p></p>
+        </div>
+      </div>
     </section>
 
-	<section class='flex flex-col items-center justif-center py-32'>
-		<h2 class='text-4xl mb-4 font-normal'>The ZK toolchain for the next century.</h2>
-		<div class="grid grid-cols-3 gap-4">
-			<div>
-				<h3>Galois</h3>
-				<p>Decentralized Proving, for everyone.</p>
-			</div>
-			<div>
-				<h3>CometBLS</h3>
-				<p>ZK-aligned Consensus engine</p>
-			</div>
-			<div>
-				<h3>Voyager</h3>
-				<p></p>
-			</div>
-		</div>
-      	
+    <section class='flex flex-col items-center justif-center py-32'>
+      <h2 class='text-4xl mb-4 font-normal'>The ZK toolchain for the next century.</h2>
+      <div class='grid grid-cols-3 gap-4'>
+        <div>
+          <h3>Galois</h3>
+          <p>Decentralized Proving, for everyone.</p>
+        </div>
+        <div>
+          <h3>CometBLS</h3>
+          <p>ZK-aligned Consensus engine</p>
+        </div>
+        <div>
+          <h3>Voyager</h3>
+          <p></p>
+        </div>
+      </div>
     </section>
 
-	<section class='flex flex-col items-center justif-center py-32'>
-		<h2 class='text-4xl mb-4 font-normal'>The ZK toolchain for the next century.</h2>
-		<div class="grid grid-cols-3 gap-4">
-			<div>
-				<h3>Galois</h3>
-				<p>Decentralized Proving, for everyone.</p>
-			</div>
-			<div>
-				<h3>CometBLS</h3>
-				<p>ZK-aligned Consensus engine</p>
-			</div>
-			<div>
-				<h3>Voyager</h3>
-				<p></p>
-			</div>
-		</div>
-      	
+    <section class='flex flex-col items-center justif-center py-32'>
+      <h2 class='text-4xl mb-4 font-normal'>The ZK toolchain for the next century.</h2>
+      <div class='grid grid-cols-3 gap-4'>
+        <div>
+          <h3>Galois</h3>
+          <p>Decentralized Proving, for everyone.</p>
+        </div>
+        <div>
+          <h3>CometBLS</h3>
+          <p>ZK-aligned Consensus engine</p>
+        </div>
+        <div>
+          <h3>Voyager</h3>
+          <p></p>
+        </div>
+      </div>
     </section>
 
-
-	<section class='flex flex-col items-center justif-center py-32'>
-		<h2 class='text-4xl mb-4 font-normal'>Qualities of the product.</h2>
-		<p>Six vercel-styel boxes with features</p>
-		<div class="grid grid-cols-3 gap-4">
-			<div>
-				<h3>Sovereign interoperability</h3>
-				<p>Decentralized Proving, for everyone.</p>
-			</div>
-			<div>
-				<h3>CometBLS</h3>
-				<p>ZK-aligned Consensus engine</p>
-			</div>
-			<div>
-				<h3>Voyager</h3>
-				<p></p>
-			</div>
-		</div>
-      	
+    <section class='flex flex-col items-center justif-center py-32'>
+      <h2 class='text-4xl mb-4 font-normal'>Qualities of the product.</h2>
+      <p>Six vercel-styel boxes with features</p>
+      <div class='grid grid-cols-3 gap-4'>
+        <div>
+          <h3>Sovereign interoperability</h3>
+          <p>Decentralized Proving, for everyone.</p>
+        </div>
+        <div>
+          <h3>CometBLS</h3>
+          <p>ZK-aligned Consensus engine</p>
+        </div>
+        <div>
+          <h3>Voyager</h3>
+          <p></p>
+        </div>
+      </div>
     </section>
 
-	<section class='flex justify-center bg-white text-black py-32'>
-		<div class='flex-1 max-w-4xl'>
-		  <h2 class='text-4xl mb-4 font-normal text-center'>Blog</h2>
-		  <!-- <p>Together, we </p> -->
-		  <div class='flex'>
-			{
-			  socialLinks.map(socialLink => (
-				<a
-				  href={socialLink.href}
-				  class='flex-1 p-8 text-center'
-				>
-				  <img
-					src={socialLink.iconSrc}
-					class='h-10'
-				  />
-				  <div class='mt-4'>
-					<span class='mt-16 border-b-2 uppercase text-black border-black text-semibold undelrine'>
-					  {socialLink.cta} -&gt;
-					</span>
-				  </div>
-				</a>
-			  ))
-			}
-  
-			<!-- <div class="flex-1 p-8 text-center">
+    <section class='flex justify-center bg-white text-black py-32'>
+      <div class='flex-1 max-w-4xl'>
+        <h2 class='text-4xl mb-4 font-normal text-center'>Blog</h2>
+        <!-- <p>Together, we </p> -->
+        <div class='flex'>
+          {
+            socialLinks.map(socialLink => (
+              <a
+                href={socialLink.href}
+                class='flex-1 p-8 text-center'
+              >
+                <img
+                  src={socialLink.iconSrc}
+                  class='h-10'
+                />
+                <div class='mt-4'>
+                  <span class='mt-16 border-b-2 uppercase text-black border-black text-semibold undelrine'>
+                    {socialLink.cta} -&gt;
+                  </span>
+                </div>
+              </a>
+            ))
+          }
+
+          <!-- <div class="flex-1 p-8 text-center">
 					  <img src={DiscordLogo.src} class="h-10"/>
   
 					  <div class="mt-4">
@@ -227,9 +220,9 @@ const arraySizeN = (n: number) => Array.from(Array(n).keys())
 						  <a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Events -&gt;</a>
 					  </div>
 				  </div> -->
-		  </div>
-		</div>
-	  </section>
+        </div>
+      </div>
+    </section>
     <section class='flex justify-center bg-white text-black py-32'>
       <div class='flex-1 max-w-4xl'>
         <h2 class='text-4xl mb-4 font-normal text-center'>Join the Union</h2>

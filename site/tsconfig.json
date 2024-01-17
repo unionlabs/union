@@ -2,7 +2,11 @@
   "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     "verbatimModuleSyntax": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -11,7 +15,9 @@
     "checkJs": true,
     "baseUrl": ".",
     "paths": {
-      "#/*": ["./src/*"]
+      "#/*": [
+        "./src/*"
+      ]
     },
     "plugins": [
       {
@@ -24,13 +30,21 @@
       "typed-query-selector/strict"
     ]
   },
-  "include": ["src/**/*", "public/**/*"],
+  "include": [
+    "src/**/*",
+    "public/**/*"
+  ],
   "files": [
     ".eslintrc.cjs",
     ".prettierrc.mjs",
     "astro.config.ts",
+    "svelte.config.js",
     "tailwind.config.ts",
     "markdown.config.ts"
   ],
-  "exclude": ["dist", "node_modules", "_"]
+  "exclude": [
+    "dist",
+    "node_modules",
+    "_"
+  ]
 }

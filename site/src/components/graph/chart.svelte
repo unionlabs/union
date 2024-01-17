@@ -14,19 +14,6 @@
   let div: HTMLDivElement
   let visible = false
   let loading = true
-  let options = {
-    root: document.querySelector('#scrollArea'),
-    rootMargin: '0px',
-    threshold: 0.5
-  } satisfies IntersectionObserverInit
-  let observer = new IntersectionObserver((entries, observer) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        visible = true
-        observer.unobserve(entry.target)
-      }
-    })
-  }, options)
 
   const pointsCount = 50
 
@@ -83,19 +70,38 @@
   onMount(() => {
     console.log('onMount')
 
-    visible = true
+    // const intersectionObserver = new IntersectionObserver(
+    //   (entries, _observer) => {
+    //     entries.forEach(entry =>
+    //       entry.target.dispatchEvent(new CustomEvent('intersect', { detail: entry }))
+    //     )
+    //   },
+    //   {
+    //     root: document.querySelector('hmtl'),
+    //     rootMargin: '0px',
+    //     threshold: 0
+    //   }
+    // )
+
+    // const node = document.querySelector('div[data-graph-intersect]') as HTMLElement
+    // intersectionObserver.observe(node)
+    // node.dataset.intersectInitialized = 'true'
+
+    // return () => {
+    //   intersectionObserver.unobserve(node)
+    // }
   })
 </script>
-
-{#if visible}
+<!--  -->
+<!-- {#if visible} -->
   <div
     role="img"
     class="visible"
     bind:this={div}
-    transition:fade
+    transition:fade={{ duration: 1200 }}
     on:intersect={event => {
       console.log(event)
       visible = event.detail.isIntersecting
     }}
   ></div>
-{/if}
+<!-- {/if} -->
