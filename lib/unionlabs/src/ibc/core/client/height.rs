@@ -16,6 +16,7 @@ use tree_hash::TreeHash;
     )
 )]
 #[derive(Clone, Copy, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(deny_unknown_fields)]
 pub struct Height {
     // REVIEW: Why default?

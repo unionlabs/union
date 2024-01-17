@@ -19,9 +19,10 @@ use unionlabs::{
         lightclients::tendermint::{self, fraction::Fraction},
     },
     id::ClientId,
+    signer::CosmosSigner,
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
     traits::{Chain, ClientState, FromStrExact},
-    CosmosSigner, WasmClientType,
+    WasmClientType,
 };
 
 use crate::{

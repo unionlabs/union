@@ -10,9 +10,10 @@ use unionlabs::{
     ibc::core::client::height::IsHeight,
     id::{ClientId, ConnectionId},
     parse_wasm_client_type,
+    signer::CosmosSigner,
     traits::Chain,
     validated::ValidateT,
-    CosmosSigner, MaybeRecoverableError, TypeUrl, WasmClientType,
+    MaybeRecoverableError, TypeUrl, WasmClientType,
 };
 
 use crate::{

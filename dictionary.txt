@@ -133,6 +133,7 @@ appchain
 appchains
 appmodule
 appparams
+arbtest
 arethetypeswrong
 arion
 arkworks

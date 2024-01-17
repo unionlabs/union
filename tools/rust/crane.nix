@@ -303,7 +303,18 @@
 
       cargoWorkspaceSrc = mkCleanSrc {
         name = "cargo-workspace-src";
-        srcFilter = path: type: true;
+        srcFilter =
+          path: _type: (pkgs.lib.hasPrefix "hubble/src/graphql/" path || pkgs.lib.hasPrefix ".sqlx" path) ||
+            (pkgs.lib.hasPrefix "unionvisor/src/testdata/" path) ||
+            (pkgs.lib.hasPrefix ".sqlx" path) ||
+            ((pkgs.lib.hasPrefix "lib/pg-queue/.sqlx" path)) ||
+            (pkgs.lib.hasPrefix "hubble/src/graphql" path) ||
+            ((lib.hasPrefix "lib/ethereum-verifier/src/test" path)
+              && (lib.strings.hasSuffix ".json" path)) ||
+            (ensureDirectoryIncluded {
+              path' = path;
+              pathToInclude = "light-clients/ethereum-light-client/src/test";
+            });
       };
     in
     {

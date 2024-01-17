@@ -22,9 +22,10 @@ use unionlabs::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath,
     },
+    signer::CosmosSigner,
     tendermint::abci::{event::Event, event_attribute::EventAttribute},
     traits::{Chain, ClientState, FromStrExact},
-    CosmosSigner, TryFromProto, WasmClientType,
+    TryFromProto, WasmClientType,
 };
 
 use crate::{cosmos_sdk::CosmosSdkChain, private_key::PrivateKey, ChainEvent, EventSource, Pool};

@@ -1388,7 +1388,7 @@ impl<T: CosmosSdkChain> CosmosSdkChain for Wasm<T> {
         self.0.tm_client()
     }
 
-    fn signers(&self) -> &chain_utils::Pool<unionlabs::CosmosSigner> {
+    fn signers(&self) -> &chain_utils::Pool<unionlabs::signer::CosmosSigner> {
         self.0.signers()
     }
 

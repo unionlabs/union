@@ -361,7 +361,7 @@ macro_rules! result_try {
 
 pub(crate) use result_try;
 
-// Useful in const contexts in place of `.unwrap()`. Uncomment if you need it!
+// Useful in const contexts in place of `.unwrap()`
 #[macro_export]
 macro_rules! result_unwrap {
     ($expr:expr) => {{
@@ -384,5 +384,37 @@ macro_rules! promote {
     ($ty:ty: $expr:expr) => {{
         const PROMOTED: $ty = $expr;
         PROMOTED
+    }};
+}
+
+/// Assert some expression with the provided const variables.
+///
+/// Note that if this is called within a function, then the function must be called in order for the
+/// generated constant to be evaluated to cause a compilation error.
+///
+/// # Example
+///
+/// ```rust
+/// # use unionlabs::const_assert;
+///
+/// struct Bounded<const MIN: u8, const MAX: u8>(u8);
+///
+/// impl<const MIN: u8, const MAX: u8> Bounded<MIN, MAX> {
+///     fn new(n: u8) -> Option<Self> {
+///         const_assert!(MIN: u8, MAX: u8 => MIN < MAX);
+///         (MIN..=MAX).contains(&n).then_some(Self(n))
+///     }
+/// }
+///
+/// // anywhere that `Bounded::new` is called will fail to compile if MIN >= MAX.
+/// ```
+#[macro_export]
+macro_rules! const_assert {
+    ($($list:ident: $ty:ty),* => $expr:expr) => {{
+        struct Assert<$(const $list: $ty,)*>;
+        impl<$(const $list: $ty,)*> Assert<$($list,)*> {
+            const OK: () = assert!($expr);
+        }
+        let _t = Assert::<$($list,)*>::OK;
     }};
 }

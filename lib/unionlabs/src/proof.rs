@@ -82,6 +82,7 @@ pub trait IbcPath<Hc: Chain, Tr: Chain>:
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(bound(
     serialize = "ClientId: Serialize",
     deserialize = "ClientId: for<'d> Deserialize<'d>",
@@ -118,6 +119,7 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ClientStatePath<Hc::ClientId> {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(bound(
     serialize = "ClientId: Serialize",
     deserialize = "ClientId: for<'d> Deserialize<'d>",
@@ -158,6 +160,7 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ClientConsensusStatePath<Hc::Clie
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[display(fmt = "connections/{connection_id}")]
 pub struct ConnectionPath {
     pub connection_id: ConnectionId,
@@ -182,6 +185,7 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ConnectionPath {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[display(fmt = "channelEnds/ports/{port_id}/channels/{channel_id}")]
 pub struct ChannelEndPath {
     pub port_id: PortId,
@@ -213,6 +217,7 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ChannelEndPath {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[display(fmt = "commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
 pub struct CommitmentPath {
     pub port_id: PortId,
@@ -248,6 +253,7 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for CommitmentPath {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[display(fmt = "acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
 pub struct AcknowledgementPath {
     pub port_id: PortId,
@@ -292,6 +298,7 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for AcknowledgementPath {
     clap::Subcommand,
     enumorph::Enumorph,
 )]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(
     bound(
         serialize = "ClientId: Serialize",
@@ -333,8 +340,10 @@ impl<ClientId: traits::Id, Height: IsHeight> FromStr for Path<ClientId, Height> 
 
 #[cfg(test)]
 mod tests {
+    use arbitrary::Arbitrary;
+
     use super::*;
-    use crate::{ibc::core::client::height::Height, validated::ValidateT};
+    use crate::{ibc::core::client::height::Height, id::ClientId, validated::ValidateT};
 
     #[test]
     fn parse_ibc_paths_from_str() {
@@ -393,4 +402,62 @@ mod tests {
             })
         );
     }
+
+    mod arbtest {
+        use arbitrary::Arbitrary;
+
+        use crate::{
+            ibc::core::client::height::Height,
+            id::ClientId,
+            proof::Path,
+            test_utils::{assert_json_roundtrip, assert_string_roundtrip},
+        };
+
+        #[test]
+        pub(crate) fn parse() {
+            arbtest::builder().budget_ms(4000).minimize().run(|u| {
+                // we don't care if it succeeds (it probably won't), we just want to ensure it doesn't panic
+                let _ = String::arbitrary(u)?.parse::<Path<ClientId, Height>>();
+                Ok(())
+            });
+        }
+
+        #[test]
+        pub(crate) fn roundtrip() {
+            let mut oks = 0;
+            let mut errs = 0;
+            arbtest::builder().budget_ms(4000).minimize().run(|u| {
+                dbg!(u.len());
+                let mut tries = 0;
+                loop {
+                    if u.is_empty() {
+                        eprintln!("exhausted buffer");
+                        break;
+                    }
+
+                    if let Ok(ok) = <Path<ClientId, Height>>::arbitrary(u) {
+                        oks += 1;
+                        assert_json_roundtrip(&ok);
+                        assert_string_roundtrip(&ok);
+                        break;
+                    }
+
+                    tries += 1;
+                    if tries >= 1024 {
+                        errs += 1;
+                        break;
+                    };
+                }
+                Ok(())
+            });
+
+            dbg!(oks, errs);
+        }
+    }
+
+    const _: fn() = || {
+        fn assert_impl_all<T: for<'a> Arbitrary<'a>>() {}
+
+        assert_impl_all::<Path<ClientId, Height>>();
+    };
 }
