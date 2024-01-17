@@ -4,14 +4,14 @@
       interchaintest = goPkgs.buildGoModule {
         pname = "interchaintest";
         version = "v8.0.0";
-        src = pkgs.fetchFromGitHub {
-          owner = "unionlabs";
-          repo = "interchaintest";
-          rev = "acf6294ec4e3eddecabb18816b8c2ded6d444dd9";
-          sha256 = "sha256-UG61FoJsu2XSttI4yeKYNX4EMMAiWOm5yHTs8bvkORw=";
+        src = builtins.fetchGit {
+          name = "interchaintest";
+          url = "git@github.com:unionlabs/interchaintest";
+          rev = "67c5183e17094ecff6a75b81ce750f10cbd70f34";
+          allRefs = true;
         };
-        vendorHash = "sha256-hJZ6klBzD6sbh6G7nwX+rEkh2e7Tq/3nLlOD4dlAvXk=";
-        buildInputs = [ pkgs.git ];
+        # src = inputs'.interchaintest;
+        vendorHash = null;
         buildPhase = ''
           runHook preBuild
           runHook renameImports
@@ -22,6 +22,8 @@
           echo "pwd: $(pwd)"
           echo "ls: $(ls -a)"
           echo "ls nixbuildtop/go/bin: $(ls $NIX_BUILD_TOP/go/bin)"
+
+          go clean -modcache
 
         	go test -c -o $out/bin/interchaintest ./cmd/interchaintest
 
@@ -43,7 +45,7 @@
               Images = [
                 {
                   Repository = "uniond";
-                  Version = "REPLACE_IMAGE_TAG";
+                  Version = imageReplaceString;
                   UidGid = "1025:1025";
                 }
               ];
