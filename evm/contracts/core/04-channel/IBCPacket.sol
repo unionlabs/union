@@ -458,7 +458,7 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 connection.client_id,
                 height,
                 connection.delay_period,
-                calcBlockDelay(connection.delay_period),
+                0,
                 proof,
                 connection.counterparty.prefix.key_prefix,
                 path,
@@ -477,20 +477,10 @@ contract IBCPacket is IBCStore, IIBCPacket {
                 connection.client_id,
                 height,
                 connection.delay_period,
-                calcBlockDelay(connection.delay_period),
+                0,
                 proof,
                 connection.counterparty.prefix.key_prefix,
                 path
             );
-    }
-
-    function calcBlockDelay(uint64 timeDelay) private view returns (uint64) {
-        uint64 blockDelay = 0;
-        if (expectedTimePerBlock != 0) {
-            blockDelay =
-                (timeDelay + expectedTimePerBlock - 1) /
-                expectedTimePerBlock;
-        }
-        return blockDelay;
     }
 }
