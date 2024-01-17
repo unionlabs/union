@@ -298,9 +298,7 @@ mod tests {
     use serde::Deserialize;
     use unionlabs::{
         ethereum::config::{Mainnet, SEPOLIA},
-        ibc::lightclients::ethereum::{
-            sync_committee::SyncCommittee, trusted_sync_committee::ActiveSyncCommittee,
-        },
+        ibc::lightclients::ethereum::sync_committee::SyncCommittee,
     };
 
     use super::*;
@@ -308,8 +306,8 @@ mod tests {
     #[derive(Debug, Clone)]
     struct Context {
         finalized_slot: u64,
-        current_sync_committee: ActiveSyncCommittee<Mainnet>,
-        next_sync_committee: ActiveSyncCommittee<Mainnet>,
+        current_sync_committee: Option<SyncCommittee<Mainnet>>,
+        next_sync_committee: Option<SyncCommittee<Mainnet>>,
     }
 
     #[derive(Deserialize)]
@@ -338,15 +336,14 @@ mod tests {
         static ref INITIAL_DATA: InitialData = serde_json::from_str(&fs::read_to_string("src/test/initial_test_data.json").unwrap()).unwrap();
 
         static ref UPDATES: Vec<(Context, LightClientUpdate<Mainnet>)> = {
-            let mut updates = vec![];
-            fs::read_dir("src/test/updates/").unwrap().into_iter().for_each(|f| {
-                let entry = f.unwrap();
-                if entry.path().file_name().is_some() {
-                    let update: LightClientUpdate<Mainnet> = serde_json::from_str(&fs::read_to_string(entry.path()).unwrap()).unwrap();
-                    updates.push(update);
-                }
-            });
+            // Read all the updates, only process files
+            let mut updates: Vec<LightClientUpdate<Mainnet>> = fs::read_dir("src/test/updates/").unwrap().into_iter().filter(|f|
+                f.as_ref().unwrap().path().is_file()
+            ).map(|f| {
+                serde_json::from_str(&fs::read_to_string(f.unwrap().path()).unwrap()).unwrap()
+            }).collect();
 
+            // Sort the updates from oldest to most recent for us to do updates by iterating over
             updates.sort_by(|lhs, rhs| {
                 if lhs.attested_header.beacon.slot > rhs.attested_header.beacon.slot {
                     Ordering::Greater
@@ -355,8 +352,10 @@ mod tests {
                 }
             });
 
-            let mut current_sync_committee = ActiveSyncCommittee::Current(INITIAL_DATA.current_sync_committee.clone());
-            let mut next_sync_committee= ActiveSyncCommittee::Next(INITIAL_DATA.next_sync_committee.clone());
+            // Since this verification library is stateless and it does not update any context after verifying an update,
+            // we are manually doing it here.
+            let mut current_sync_committee = Some(INITIAL_DATA.current_sync_committee.clone());
+            let mut next_sync_committee= Some(INITIAL_DATA.next_sync_committee.clone());
             let mut update_data = vec![];
             updates.iter().enumerate().skip(1).for_each(|(i, update)|
                 {
@@ -368,9 +367,11 @@ mod tests {
                     };
                     update_data.push((context, update.clone()));
 
+                    // If the update contains a next sync committee, it means that we are moving to the next sync committee period
+                    // and updating the next sync committee.
                     if let Some(ref nsc) = update.next_sync_committee {
-                        current_sync_committee = ActiveSyncCommittee::Current(next_sync_committee.get().clone());
-                        next_sync_committee = ActiveSyncCommittee::Next(nsc.clone());
+                        current_sync_committee = next_sync_committee.take();
+                        next_sync_committee = Some(nsc.clone());
                     }
                 });
 
@@ -386,19 +387,11 @@ mod tests {
         }
 
         fn current_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
-            if let ActiveSyncCommittee::Current(committee) = &self.current_sync_committee {
-                Some(committee)
-            } else {
-                None
-            }
+            self.current_sync_committee.as_ref()
         }
 
         fn next_sync_committee(&self) -> Option<&SyncCommittee<Self::ChainSpec>> {
-            if let ActiveSyncCommittee::Next(committee) = &self.next_sync_committee {
-                Some(committee)
-            } else {
-                None
-            }
+            self.next_sync_committee.as_ref()
         }
 
         fn fork_parameters(&self) -> &ForkParameters {
@@ -530,8 +523,7 @@ mod tests {
         ));
 
         // This should fail for both when the next sync committee exist and don't exist
-        ctx.next_sync_committee =
-            ActiveSyncCommittee::Current(ctx.next_sync_committee.get().clone());
+        ctx.next_sync_committee = None;
         assert!(matches!(
             do_validate_light_client_update(&ctx, update),
             Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist { .. })
