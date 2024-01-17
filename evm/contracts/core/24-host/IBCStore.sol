@@ -21,10 +21,7 @@ abstract contract IBCStore {
     mapping(string => mapping(string => uint64)) public nextSequenceAcks;
     mapping(string => mapping(string => mapping(uint64 => uint8)))
         public packetReceipts;
-    mapping(bytes => address[]) public capabilities;
-
-    // Host parameters
-    uint64 public expectedTimePerBlock;
+    mapping(string => address) public capabilities;
 
     // Sequences for identifier
     uint64 public nextClientSequence;

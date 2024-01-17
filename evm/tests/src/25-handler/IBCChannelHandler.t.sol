@@ -63,7 +63,7 @@ contract IBCChannelHandlerTest is TestPlus {
         string memory channelId = handler.channelOpenInit(msg_init);
 
         assertEq(
-            handler.capabilities(abi.encodePacked(portId, "/", channelId), 0),
+            handler.capabilities(string.concat(portId, "/", channelId)),
             address(app)
         );
 
@@ -102,7 +102,7 @@ contract IBCChannelHandlerTest is TestPlus {
         string memory channelId = handler.channelOpenTry(msg_try);
 
         assertEq(
-            handler.capabilities(abi.encodePacked(portId, "/", channelId), 0),
+            handler.capabilities(string.concat(portId, "/", channelId)),
             address(app)
         );
 
