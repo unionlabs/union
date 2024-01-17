@@ -1,11 +1,13 @@
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts/utils/Context.sol";
 import "./IIBCModule.sol";
+import "../24-host/IBCStore.sol";
 
 /**
  * @dev ModuleManager is an abstract contract that provides the functions defined in [ICS 5](https://github.com/cosmos/ibc/tree/main/spec/core/ics-005-port-allocation) and [ICS 26](https://github.com/cosmos/ibc/blob/main/spec/core/ics-005-port-module/README.md).
  */
-abstract contract ModuleManager {
+abstract contract ModuleManager is IBCStore, Context {
     /**
      * @dev bindPort binds to an unallocated port, failing if the port has already been allocated.
      */
@@ -24,10 +26,7 @@ abstract contract ModuleManager {
         string memory portId
     ) internal view virtual returns (IIBCModule) {
         address module = lookupModule(portCapabilityPath(portId));
-        require(
-            module != address(0),
-            "ModuleManager: lookupModuleByPort: module not found"
-        );
+        require(module != address(0), "lookupModuleByPort: module not found");
         return IIBCModule(module);
     }
 
@@ -41,7 +40,7 @@ abstract contract ModuleManager {
         address module = lookupModule(channelCapabilityPath(portId, channelId));
         require(
             module != address(0),
-            "ModuleManager: lookupModuleByPort: module not found"
+            "lookupModuleByChannel: module not found"
         );
         return IIBCModule(module);
     }
@@ -68,7 +67,13 @@ abstract contract ModuleManager {
     /**
      * @dev claimCapability allows the IBC app module to claim a capability that core IBC passes to it
      */
-    function claimCapability(string memory name, address addr) internal virtual;
+    function claimCapability(string memory name, address addr) internal {
+        require(
+            capabilities[name] == address(0),
+            "claimCapability: capability already claimed"
+        );
+        capabilities[name] = addr;
+    }
 
     /**
      * @dev authenticateCapability attempts to authenticate a given name from a caller.
@@ -76,13 +81,14 @@ abstract contract ModuleManager {
      */
     function authenticateCapability(
         string memory name
-    ) internal view virtual returns (bool);
+    ) internal view returns (bool) {
+        return _msgSender() == capabilities[name];
+    }
 
     /**
      * @dev lookupModule will return the IBCModule address bound to a given name.
-     * Currently, the function returns only one module.
      */
-    function lookupModule(
-        string memory name
-    ) internal view virtual returns (address);
+    function lookupModule(string memory name) internal view returns (address) {
+        return capabilities[name];
+    }
 }

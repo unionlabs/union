@@ -16,37 +16,4 @@ function _getRevertMsg(bytes memory _returnData) pure returns (string memory) {
     return abi.decode(_returnData, (string)); // All that remains is the revert string
 }
 
-abstract contract IBCHost is IBCStore, Context, ModuleManager {
-    /**
-     * @dev claimCapability allows the IBC app module to claim a capability that core IBC passes to it
-     */
-    function claimCapability(
-        string memory name,
-        address addr
-    ) internal override {
-        require(
-            capabilities[name] == address(0),
-            "IBCHost: capability already claimed"
-        );
-        capabilities[name] = addr;
-    }
-
-    /**
-     * @dev authenticateCapability attempts to authenticate a given name from a caller.
-     * It allows for a caller to check that a capability does in fact correspond to a particular name.
-     */
-    function authenticateCapability(
-        string memory name
-    ) internal view override returns (bool) {
-        return _msgSender() == capabilities[name];
-    }
-
-    /**
-     * @dev lookupModule will return the IBCModule address bound to a given name.
-     */
-    function lookupModule(
-        string memory name
-    ) internal view override returns (address) {
-        return capabilities[name];
-    }
-}
+abstract contract IBCHost is ModuleManager {}
