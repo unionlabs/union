@@ -191,15 +191,13 @@ library MsgMocks {
     ) internal view returns (IBCMsgs.MsgChannelOpenInit memory m) {
         ChannelCounterparty.Data memory counterparty;
         counterparty.port_id = "counterparty-port-id";
-        counterparty.channel_id = "counterparty-channel-id";
+        counterparty.channel_id = "";
         string[] memory hops = new string[](1);
         hops[0] = connId;
 
         m.channel.state = ChannelEnums.State.STATE_INIT;
         m.channel.counterparty = counterparty;
         m.channel.connection_hops = hops;
-        // TODO: apparently channel creation works without setting this field, but later recvPacket fails because channel ordering is unspecified (IBCPacket.sol:138)
-        // is this a bug or some behaviour I'm not understanding?
         m.channel.ordering = ChannelEnums.Order.ORDER_ORDERED;
         m.portId = portId;
     }
@@ -245,7 +243,7 @@ library MsgMocks {
         m.counterpartyVersion = "counterparty-version";
         m.channel = Channel.Data({
             state: ChannelEnums.State.STATE_TRYOPEN,
-            ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
+            ordering: ChannelEnums.Order.ORDER_ORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: ""
@@ -258,7 +256,7 @@ library MsgMocks {
         // expected channel
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_INIT,
-            ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
+            ordering: ChannelEnums.Order.ORDER_ORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: ""
@@ -283,7 +281,7 @@ library MsgMocks {
 
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_OPEN,
-            ordering: ChannelEnums.Order.ORDER_NONE_UNSPECIFIED,
+            ordering: ChannelEnums.Order.ORDER_ORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: channelId
