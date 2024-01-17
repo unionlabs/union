@@ -4,6 +4,7 @@ sidebar:
   order: 2
 ---
 
+import FileTree from "#/components/file-tree.astro";
 import Version from "#/components/chain-versions.svelte";
 
 Unionvisor is a utility for managing `uniond` deployments. It manages running, upgrading, and interacting with the node.
@@ -61,20 +62,22 @@ Note the usage of the flags and arguments we pass to `docker run` run here:
 
 After the `uniond init` command is done running, you should have a `.union` folder with the following contents:
 
-```
-~/.unionvisor
-├── home
-│  ├── config
-│  │  ├── app.toml
-│  │  ├── client.toml
-│  │  ├── config.toml
-│  │  ├── genesis.json
-│  │  ├── node_key.json
-│  │  └── priv_validator_key.json
-│  └── data
-│      └── priv_validator_state.json
-└── uniond -> /versions/v0.14.0/uniond
-```
+<FileTree>
+
+- ~/.unionvisor
+- home/
+  - config/
+    - app.toml
+    - client.toml
+    - config.toml
+    - genesis.json
+    - node_key.json
+    - priv_validator_key.json
+  - data/
+    - priv_validator_state.json
+- uniond # versions/v0.18.0/uniond
+
+</FileTree>
 
 ### Migrating an Existing Node (Optional)
 

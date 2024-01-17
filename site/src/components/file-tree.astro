@@ -1,0 +1,152 @@
+---
+import { fileTreeProcessor } from '#/lib/rehype-file-tree.ts'
+
+const content = await Astro.slots.render('default')
+if (!/^\s*<ul>/.test(content)) {
+  throw new Error(
+    `<FileTree> component expects its content to be an unordered list but found HTML starting with “${content.slice(
+      0,
+      20
+    )}...”`
+  )
+}
+
+const processedContent = await fileTreeProcessor.process({
+  value: content,
+  data: { directoryLabel: 'Directory' }
+})
+---
+
+<file-tree
+  set:html={processedContent}
+  class='not-content'
+  data-pagefind-ignore
+/>
+
+<style is:global>
+  file-tree {
+    --x-space: 1.5rem;
+    --y-space: 0.125rem;
+    --y-pad: 0;
+
+    display: block;
+    border: 1px solid var(--sl-color-gray-5);
+    padding: 1rem;
+    background-color: var(--sl-color-gray-6);
+    font-size: var(--sl-text-xs);
+    font-family: var(--__sl-font-mono);
+    overflow-x: auto;
+  }
+
+  file-tree .directory > details,
+  file-tree .directory > details:hover,
+  file-tree .directory > details[open] {
+    border: 0;
+    padding: 0;
+    padding-inline-start: var(--x-space);
+    background: transparent;
+  }
+
+  file-tree .directory > details > summary,
+  file-tree .directory > details[open] > summary {
+    margin-inline-start: calc(-1 * var(--x-space));
+    border: 0;
+    padding: var(--y-pad) 0.625rem;
+    font-weight: normal;
+    color: var(--sl-color-white);
+    max-width: 100%;
+  }
+
+  file-tree .directory > details > summary::marker,
+  file-tree .directory > details > summary::-webkit-details-marker {
+    color: var(--sl-color-gray-3);
+  }
+
+  file-tree .directory > details > summary:hover .tree-icon,
+  file-tree .directory > details > summary:hover {
+    cursor: pointer;
+    color: var(--sl-color-text-accent);
+    fill: var(--sl-color-text-accent);
+  }
+
+  file-tree ul,
+  file-tree .directory > details ul {
+    margin-inline-start: 0.6875rem;
+    border-inline-start: 1px solid var(--sl-color-gray-5);
+    padding: 0;
+    padding-inline-start: 0.125rem;
+    list-style: none;
+  }
+
+  file-tree .directory > details > summary:hover ~ ul {
+    border-color: var(--sl-color-gray-4);
+  }
+
+  file-tree .directory > details > summary:hover .highlight .tree-icon {
+    fill: var(--sl-color-text-invert);
+  }
+
+  file-tree > ul {
+    margin: 0;
+    border: 0;
+    padding: 0;
+  }
+
+  file-tree li {
+    margin: var(--y-space) 0;
+    padding: var(--y-pad) 0;
+  }
+
+  file-tree .file {
+    margin-inline-start: calc(var(--x-space) - 0.125rem);
+    color: var(--sl-color-white);
+  }
+
+  file-tree .tree-entry {
+    display: inline-flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    max-width: calc(100% - 1rem);
+  }
+  @media (min-width: 30em) {
+    file-tree .tree-entry {
+      flex-wrap: nowrap;
+    }
+  }
+
+  file-tree .tree-entry > :first-child {
+    flex-shrink: 0;
+  }
+
+  file-tree .empty {
+    color: var(--sl-color-gray-3);
+    padding-inline-start: 0.375rem;
+  }
+
+  file-tree .comment {
+    color: var(--sl-color-gray-3);
+    padding-inline-start: 1.625rem;
+    max-width: 24rem;
+    min-width: 12rem;
+  }
+
+  file-tree .highlight {
+    display: inline-block;
+    border-radius: 0.25rem;
+    padding-inline-end: 0.5rem;
+    color: var(--sl-color-text-invert);
+    background-color: var(--sl-color-text-accent);
+  }
+
+  file-tree svg.tree-icon {
+    display: inline;
+    fill: var(--sl-color-gray-3);
+    vertical-align: middle;
+    margin-inline: 0.125rem;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  file-tree .highlight svg.tree-icon {
+    fill: var(--sl-color-text-invert);
+  }
+</style>

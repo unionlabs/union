@@ -37,7 +37,7 @@ export default {
         gray: colors.zinc,
       },
       fontFamily: {
-        mono: ['"IBM Plex Mono"', ...defaultTheme.fontFamily.mono],
+        mono: ["JetBrainsMono", ...defaultTheme.fontFamily.mono],
         sans: [
           '"Inter var", sans-serif',
           {

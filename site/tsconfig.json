@@ -11,7 +11,8 @@
     "checkJs": true,
     "baseUrl": ".",
     "paths": {
-      "#/*": ["./src/*"]
+      "#/*": ["./src/*"],
+      "~public": ["./public/*"]
     },
     "plugins": [
       {
@@ -29,6 +30,7 @@
     ".eslintrc.cjs",
     ".prettierrc.mjs",
     "astro.config.ts",
+    "svelte.config.js",
     "tailwind.config.ts",
     "markdown.config.ts"
   ],

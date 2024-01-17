@@ -4,8 +4,9 @@ sidebar:
   order: 1
 ---
 
-import DownloadGenesis from "#/components/genesis.svelte";
+import FileTree from "#/components/file-tree.astro";
 import Version from "#/components/chain-versions.svelte";
+import DownloadGenesis from "#/components/genesis.svelte";
 
 Currently, we are only officially supporting running the Union Testnet binary (`uniond`) as a Docker container.
 
@@ -67,18 +68,20 @@ Note the usage of the flags and arguments we pass to `docker run` run here:
 
 After the `uniond init` command is done running, you should have a `.union` folder with the following contents:
 
-```
-.union
-├── config
-│  ├── app.toml
-│  ├── client.toml
-│  ├── config.toml
-│  ├── genesis.json
-│  ├── node_key.json
-│  └── priv_validator_key.json
-└── data
-    └── priv_validator_state.json
-```
+<FileTree>
+
+- union/
+  - config/
+    - app.toml
+    - client.toml
+    - config.toml
+    - genesis.json
+    - node_key.json
+    - priv_validator_key.json
+  - data/
+    - priv_validator_state.json
+
+</FileTree>
 
 ### Issuing Sub-Commands to uniond
 

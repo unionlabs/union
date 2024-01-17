@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import diagram from '#/assets/consensus-verification/drawio.svg'
+
+  export let src: string
 
   const htmlElement = document.querySelector('html')
   const currentTheme = htmlElement?.getAttribute('data-theme')
@@ -23,8 +24,8 @@
 </script>
 
 <img
-  id="diagram"
-  src={diagram.src}
-  alt="drawio diagram"
+  {src}
   style:filter
+  class="mt-8"
+  alt="diagram"
 />
