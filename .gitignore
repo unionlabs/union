@@ -46,3 +46,5 @@ bun.lockb
 ._*
 .wrangler
 .nfs*
+
+cache

@@ -225,13 +225,13 @@ contract RelayTests is Test {
     }
 
     function testRelay_isRemote_ok() public {
-        assertEq(RelayLib.isRemote("a", "b", "a/b/X"), true);
-        assertEq(RelayLib.isRemote("aa.bb", "c", "aa.bb/c/X"), true);
+        assertEq(RelayLib.isFromChannel("a", "b", "a/b/X"), true);
+        assertEq(RelayLib.isFromChannel("aa.bb", "c", "aa.bb/c/X"), true);
     }
 
     function testRelay_isRemote_ko() public {
-        assertEq(RelayLib.isRemote("a", "b", "b/b/X"), false);
-        assertEq(RelayLib.isRemote("aa.bb", "c", "aa.b/c/X"), false);
+        assertEq(RelayLib.isFromChannel("a", "b", "b/b/X"), false);
+        assertEq(RelayLib.isFromChannel("aa.bb", "c", "aa.b/c/X"), false);
     }
 
     function testRelay_makeForeignDenom() public {
@@ -1045,6 +1045,13 @@ contract RelayTests is Test {
         string memory denomName,
         uint128 amount
     ) public {
+        vm.assume(
+            !RelayLib.isFromChannel(
+                destinationPort,
+                destinationChannel,
+                denomName
+            )
+        );
         vm.assume(receiver != address(0));
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
@@ -1197,6 +1204,13 @@ contract RelayTests is Test {
         string memory denomName,
         uint128 amount
     ) public {
+        vm.assume(
+            !RelayLib.isFromChannel(
+                destinationPort,
+                destinationChannel,
+                denomName
+            )
+        );
         vm.assume(receiver != address(0));
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);

@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, nix-filter, ... }:
+  perSystem = { self', pkgs, proto, nix-filter, ensureAtRepositoryRoot, ... }:
     let
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
@@ -211,8 +211,6 @@
     in
     {
       packages = {
-        wrapped-forge = wrappedForge;
-
         # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
         generate-sol-proto = pkgs.writeShellApplication {
           name = "generate-sol-proto";
@@ -320,6 +318,15 @@
             forge coverage --ir-minimum --report lcov && \
             genhtml lcov.info -o $out --branch-coverag && mv lcov.info $out
           '';
+
+        solidity-build-tests = pkgs.writeShellApplication {
+          name = "run-solidity-build-tests";
+          runtimeInputs = [ self'.packages.forge ];
+          text = ''
+            ${ensureAtRepositoryRoot}
+            FOUNDRY_FUZZ_RUNS=512 FOUNDRY_SRC="evm/contracts" FOUNDRY_TEST="evm/tests/src" forge test --revert-strings debug -vvv --gas-report
+          '';
+        };
 
         forge = wrappedForge;
       } //
