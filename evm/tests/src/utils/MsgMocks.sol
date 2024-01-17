@@ -288,6 +288,40 @@ library MsgMocks {
         m.proofHeight.revision_height = proofHeight;
     }
 
+    function channelCloseInit(
+        string memory portId,
+        string memory channelId
+    ) internal view returns (IBCMsgs.MsgChannelCloseInit memory m) {
+        m.portId = portId;
+        m.channelId = channelId;
+    }
+
+    function channelCloseConfirm(
+        string memory portId,
+        string memory channelId,
+        uint64 proofHeight
+    ) internal view returns (IBCMsgs.MsgChannelCloseConfirm memory m) {
+        m.portId = portId;
+        m.channelId = channelId;
+
+        Channel.Data memory expectedChannel = Channel.Data({
+            state: ChannelEnums.State.STATE_CLOSED,
+            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            counterparty: ChannelCounterparty.Data({
+                port_id: portId,
+                channel_id: channelId
+            }),
+            connection_hops: new string[](1),
+            version: "counterparty-version"
+        });
+
+        expectedChannel.connection_hops[0] = "counterparty-conn-id";
+
+        bytes memory encodedChannel = Channel.encode(expectedChannel);
+        m.proofInit = abi.encodePacked(sha256(encodedChannel));
+        m.proofHeight.revision_height = proofHeight;
+    }
+
     function packetRecv(
         string memory portId,
         string memory channelId,

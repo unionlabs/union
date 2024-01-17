@@ -11,6 +11,7 @@ import "../04-channel/IIBCChannel.sol";
 library IBCChannelLib {
     string public constant ORDER_ORDERED = "ORDER_ORDERED";
     string public constant ORDER_UNORDERED = "ORDER_UNORDERED";
+    string public constant ORDER_INVALID = "ORDER_INVALID";
 
     function verifySupportedFeature(
         IbcCoreConnectionV1Version.Data memory version,
@@ -33,7 +34,7 @@ library IBCChannelLib {
         } else if (order == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED) {
             return ORDER_ORDERED;
         } else {
-            revert("toString: unknown channel ordering");
+            return ORDER_INVALID;
         }
     }
 }
@@ -273,7 +274,7 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
             msg_.channelId
         ];
         require(
-            channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED,
+            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
             "channelCloseInit: channel state is already CLOSED"
         );
 
@@ -300,11 +301,14 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
             msg_.channelId
         ];
         require(
-            channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED,
-            "channelCloseConfirm: channel state is already CLOSED"
+            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
+            "channelCloseConfirm: channel state is not open"
         );
 
-        require(channel.connection_hops.length == 1);
+        require(
+            channel.connection_hops.length == 1,
+            "channelCloseConfirm: connection must exist"
+        );
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
             channel.connection_hops[0]
         ];
