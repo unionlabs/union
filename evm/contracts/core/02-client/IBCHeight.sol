@@ -11,6 +11,16 @@ library IBCHeight {
             uint128(self.revision_height);
     }
 
+    function fromUint128(
+        uint128 index
+    ) internal pure returns (IbcCoreClientV1Height.Data memory) {
+        return
+            IbcCoreClientV1Height.Data({
+                revision_number: uint64(index >> 64),
+                revision_height: uint64(index)
+            });
+    }
+
     function isZero(
         IbcCoreClientV1Height.Data memory self
     ) internal pure returns (bool) {
