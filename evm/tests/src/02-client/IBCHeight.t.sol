@@ -1,12 +1,71 @@
 pragma solidity ^0.8.23;
 
+import "forge-std/Test.sol";
 import {IBCHeight} from "../../../contracts/core/02-client/IBCHeight.sol";
 import {IbcCoreClientV1Height} from "../../../contracts/proto/ibc/core/client/v1/client.sol";
 
-import "../TestPlus.sol";
+// Required to have coverage counted.
+contract IBCHeightProxy {
+    function toUint128(
+        IbcCoreClientV1Height.Data memory self
+    ) public pure returns (uint128) {
+        return IBCHeight.toUint128(self);
+    }
 
-contract IBCHeightTests is TestPlus {
-    using IBCHeight for *;
+    function fromUint128(
+        uint128 composite
+    ) public pure returns (IbcCoreClientV1Height.Data memory) {
+        return IBCHeight.fromUint128(composite);
+    }
+
+    function isZero(
+        IbcCoreClientV1Height.Data memory self
+    ) public pure returns (bool) {
+        return IBCHeight.isZero(self);
+    }
+
+    function lt(
+        IbcCoreClientV1Height.Data memory self,
+        IbcCoreClientV1Height.Data memory other
+    ) public pure returns (bool) {
+        return IBCHeight.lt(self, other);
+    }
+
+    function lte(
+        IbcCoreClientV1Height.Data memory self,
+        IbcCoreClientV1Height.Data memory other
+    ) public pure returns (bool) {
+        return IBCHeight.lte(self, other);
+    }
+
+    function eq(
+        IbcCoreClientV1Height.Data memory self,
+        IbcCoreClientV1Height.Data memory other
+    ) public pure returns (bool) {
+        return IBCHeight.eq(self, other);
+    }
+
+    function gt(
+        IbcCoreClientV1Height.Data memory self,
+        IbcCoreClientV1Height.Data memory other
+    ) public pure returns (bool) {
+        return IBCHeight.gt(self, other);
+    }
+
+    function gte(
+        IbcCoreClientV1Height.Data memory self,
+        IbcCoreClientV1Height.Data memory other
+    ) public pure returns (bool) {
+        return IBCHeight.gte(self, other);
+    }
+}
+
+contract IBCHeightTests is Test {
+    IBCHeightProxy proxy;
+
+    constructor() {
+        proxy = new IBCHeightProxy();
+    }
 
     function test_ibcHeight_toUint128_fromUint128_iso(
         uint64 revisionNumber,
@@ -16,14 +75,19 @@ contract IBCHeightTests is TestPlus {
             revision_number: revisionNumber,
             revision_height: revisionHeight
         });
-        height.toUint128().fromUint128().eq(height);
+        assertTrue(
+            proxy.eq(height, proxy.fromUint128(proxy.toUint128(height)))
+        );
     }
 
     function test_ibcHeight_isZero() public {
         assertTrue(
-            IbcCoreClientV1Height
-                .Data({revision_number: 0, revision_height: 0})
-                .isZero()
+            proxy.isZero(
+                IbcCoreClientV1Height.Data({
+                    revision_number: 0,
+                    revision_height: 0
+                })
+            )
         );
     }
 
@@ -32,17 +96,16 @@ contract IBCHeightTests is TestPlus {
         uint64 revisionHeight
     ) public {
         assertTrue(
-            IbcCoreClientV1Height
-                .Data({
+            proxy.eq(
+                IbcCoreClientV1Height.Data({
+                    revision_number: revisionNumber,
+                    revision_height: revisionHeight
+                }),
+                IbcCoreClientV1Height.Data({
                     revision_number: revisionNumber,
                     revision_height: revisionHeight
                 })
-                .eq(
-                    IbcCoreClientV1Height.Data({
-                        revision_number: revisionNumber,
-                        revision_height: revisionHeight
-                    })
-                )
+            )
         );
     }
 
@@ -55,17 +118,16 @@ contract IBCHeightTests is TestPlus {
         vm.assume(revisionNumberB <= revisionNumberA);
         vm.assume(revisionHeightB < revisionHeightA);
         assertTrue(
-            IbcCoreClientV1Height
-                .Data({
+            proxy.lt(
+                IbcCoreClientV1Height.Data({
                     revision_number: revisionNumberB,
                     revision_height: revisionHeightB
+                }),
+                IbcCoreClientV1Height.Data({
+                    revision_number: revisionNumberA,
+                    revision_height: revisionHeightA
                 })
-                .lt(
-                    IbcCoreClientV1Height.Data({
-                        revision_number: revisionNumberA,
-                        revision_height: revisionHeightA
-                    })
-                )
+            )
         );
     }
 
@@ -78,17 +140,16 @@ contract IBCHeightTests is TestPlus {
         vm.assume(revisionNumberB <= revisionNumberA);
         vm.assume(revisionHeightB <= revisionHeightA);
         assertTrue(
-            IbcCoreClientV1Height
-                .Data({
+            proxy.lte(
+                IbcCoreClientV1Height.Data({
                     revision_number: revisionNumberB,
                     revision_height: revisionHeightB
+                }),
+                IbcCoreClientV1Height.Data({
+                    revision_number: revisionNumberA,
+                    revision_height: revisionHeightA
                 })
-                .lte(
-                    IbcCoreClientV1Height.Data({
-                        revision_number: revisionNumberA,
-                        revision_height: revisionHeightA
-                    })
-                )
+            )
         );
     }
 
@@ -101,17 +162,16 @@ contract IBCHeightTests is TestPlus {
         vm.assume(revisionNumberB >= revisionNumberA);
         vm.assume(revisionHeightB > revisionHeightA);
         assertTrue(
-            IbcCoreClientV1Height
-                .Data({
+            proxy.gt(
+                IbcCoreClientV1Height.Data({
                     revision_number: revisionNumberB,
                     revision_height: revisionHeightB
+                }),
+                IbcCoreClientV1Height.Data({
+                    revision_number: revisionNumberA,
+                    revision_height: revisionHeightA
                 })
-                .gt(
-                    IbcCoreClientV1Height.Data({
-                        revision_number: revisionNumberA,
-                        revision_height: revisionHeightA
-                    })
-                )
+            )
         );
     }
 
@@ -124,17 +184,16 @@ contract IBCHeightTests is TestPlus {
         vm.assume(revisionNumberB >= revisionNumberA);
         vm.assume(revisionHeightB >= revisionHeightA);
         assertTrue(
-            IbcCoreClientV1Height
-                .Data({
+            proxy.gte(
+                IbcCoreClientV1Height.Data({
                     revision_number: revisionNumberB,
                     revision_height: revisionHeightB
+                }),
+                IbcCoreClientV1Height.Data({
+                    revision_number: revisionNumberA,
+                    revision_height: revisionHeightA
                 })
-                .gte(
-                    IbcCoreClientV1Height.Data({
-                        revision_number: revisionNumberA,
-                        revision_height: revisionHeightA
-                    })
-                )
+            )
         );
     }
 }

@@ -3,7 +3,28 @@ pragma solidity ^0.8.23;
 import "forge-std/Test.sol";
 import {MerkleTree} from "../../contracts/lib/MerkleTree.sol";
 
+// Required to have coverage counted.
+contract MerkleProxy is Test {
+    function hashFromByteSlices(
+        bytes[] memory data
+    ) public pure returns (bytes32) {
+        return MerkleTree.hashFromByteSlices(data);
+    }
+
+    function optimizedBlockRoot(
+        bytes32[14] memory data
+    ) public pure returns (bytes32) {
+        return MerkleTree.optimizedBlockRoot(data);
+    }
+}
+
 contract MerkleTreeTests is Test {
+    MerkleProxy proxy;
+
+    constructor() {
+        proxy = new MerkleProxy();
+    }
+
     function getOptimizedRoot(
         bytes memory a,
         bytes memory b,
@@ -21,7 +42,7 @@ contract MerkleTreeTests is Test {
         bytes memory n
     ) public view returns (bytes32) {
         return
-            MerkleTree.optimizedBlockRoot(
+            proxy.optimizedBlockRoot(
                 [
                     MerkleTree.leafHash(a),
                     MerkleTree.leafHash(b),
@@ -72,7 +93,7 @@ contract MerkleTreeTests is Test {
         inputs[11] = l;
         inputs[12] = m;
         inputs[13] = n;
-        return MerkleTree.hashFromByteSlices(inputs);
+        return proxy.hashFromByteSlices(inputs);
     }
 
     function testOptimized_nonOptimized_eq(
