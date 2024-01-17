@@ -12,12 +12,12 @@ library IBCHeight {
     }
 
     function fromUint128(
-        uint128 index
+        uint128 composite
     ) internal pure returns (IbcCoreClientV1Height.Data memory) {
         return
             IbcCoreClientV1Height.Data({
-                revision_number: uint64(index >> 64),
-                revision_height: uint64(index)
+                revision_number: uint64(composite >> 64),
+                revision_height: uint64(composite)
             });
     }
 
