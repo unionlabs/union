@@ -14,7 +14,6 @@ library MsgMocks {
     //
 
     /// Builds a MsgCreateClient
-    /// TODO: should we fuzz over height.revision_number?
     function createClient(
         string memory clientType,
         uint64 revisionHeight
@@ -34,7 +33,6 @@ library MsgMocks {
     }
 
     /// Builds a MsgUpdateClient
-    /// TODO: should we fuzz over height.revision_number?
     function updateClient(
         string memory clientId,
         uint64 nextRevisionHeight
@@ -65,7 +63,6 @@ library MsgMocks {
     }
 
     /// Builds a MsgConnectionOpenTry
-    /// TODO: should we fuzz over version.identifier?
     function connectionOpenTry(
         string memory clientId,
         uint64 proofHeight
@@ -99,7 +96,6 @@ library MsgMocks {
         bytes memory encodedConnection = ConnectionEnd.encode(connection);
         m.proofInit = abi.encodePacked(sha256(encodedConnection));
 
-        // for MockClient, it seems this value doesn't matter
         // it just checks sha256(clientStateBytes) == proofClient
         m.clientStateBytes = abi.encodePacked(bytes32(uint256(0x1)));
         m.proofClient = abi.encodePacked(sha256(m.clientStateBytes));
@@ -107,9 +103,6 @@ library MsgMocks {
     }
 
     /// Builds a MsgConnectionOpenAck
-    /// TODO: what should msg.clientStateBytes be?
-    //. TODO: msg.counterpartyConnectionId is ignored by MockClient. but probably should be set for CometblsClient
-    /// TODO: what other fields should we fill here?
     function connectionOpenAck(
         string memory clientId,
         string memory connId,
@@ -142,7 +135,6 @@ library MsgMocks {
 
         bytes memory encodedConnection = ConnectionEnd.encode(connection);
 
-        // for MockClient, it seems this value doesn't matter
         // it just checks sha256(clientStateBytes) == proofClient
         m.clientStateBytes = abi.encodePacked(bytes32(uint256(0x1)));
         m.proofClient = abi.encodePacked(sha256(m.clientStateBytes));

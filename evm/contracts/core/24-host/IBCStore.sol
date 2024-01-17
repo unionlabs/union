@@ -10,9 +10,9 @@ abstract contract IBCStore {
     mapping(bytes32 => bytes32) public commitments;
 
     // Store
-    mapping(string => address) public clientRegistry; // clientType => clientImpl
-    mapping(string => string) public clientTypes; // clientID => clientType
-    mapping(string => address) public clientImpls; // clientID => clientImpl
+    mapping(string => address) public clientRegistry;
+    mapping(string => string) public clientTypes;
+    mapping(string => address) public clientImpls;
     mapping(string => IbcCoreConnectionV1ConnectionEnd.Data) public connections;
     mapping(string => mapping(string => IbcCoreChannelV1Channel.Data))
         public channels;
@@ -35,7 +35,7 @@ abstract contract IBCStore {
         string memory clientId
     ) public view returns (ILightClient) {
         address clientImpl = clientImpls[clientId];
-        require(clientImpl != address(0), "IBCStore: client not found");
+        require(clientImpl != address(0), "getClient: not found");
         return ILightClient(clientImpl);
     }
 }
