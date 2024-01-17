@@ -15,7 +15,7 @@ Our base `compose.yml` is fairly simple:
 ```yaml
 services:
   node:
-    image: "ghcr.io/unionlabs/uniond:${UNIOND_VERSION}"
+    image: "ghcr.io/unionlabs/uniond-release:${UNIOND_VERSION}"
     volumes:
       - ~/.union:/.union
     network_mode: "host"

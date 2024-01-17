@@ -32,6 +32,7 @@
     "networks/genesis/union-testnet-3/**",
     "networks/genesis/union-testnet-4/**",
     "networks/genesis/union-testnet-5/**",
+    "site/src/components/genesis.svelte",
     "hubble/hasura/**",
     "site/src/lib/abi/**",
     "e2e/upgrades.nix",
