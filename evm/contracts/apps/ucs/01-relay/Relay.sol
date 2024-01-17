@@ -67,7 +67,7 @@ library RelayLib {
         return version.eq(VERSION);
     }
 
-    function isRemote(
+    function isFromChannel(
         string memory portId,
         string memory channelId,
         string memory denom
@@ -359,7 +359,7 @@ contract UCS01Relay is IBCAppBase {
         );
         addressDenom = addressToDenom[localToken.denom];
         if (
-            RelayLib.isRemote(
+            RelayLib.isFromChannel(
                 counterpartyPortId,
                 counterpartyChannelId,
                 addressDenom
