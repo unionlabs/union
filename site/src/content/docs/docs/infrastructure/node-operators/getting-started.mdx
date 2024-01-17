@@ -90,7 +90,7 @@ First, set some environment variables, which are used throughout initialization.
 export CHAIN_ID=union-testnet-5 # or union-1
 export MONIKER="Unionized Goblin"
 export KEY_NAME=alice
-export GENESIS_URL="https://rpc.cryptware.io/genesis"
+export GENESIS_URL="union.testnet.4.seed.poisonphang.com:26657/genesis"
 ```
 
 Then we'll have `uniond` initialize our data and configuration directories. By default, `/User/{USER}/.uniond` is used.
@@ -116,7 +116,7 @@ seeds = "daa56ac6573c6427ecef438d4c248d72b206597b@union.testnet.4.seed.poisonpha
 Download the `genesis.json` and copy it to your `uniond` home directory.
 
 ```sh
-curl $GENESIS_URL > ~/.union/config/genesis.json
+curl $GENESIS_URL | jq '.result.genesis' > ~/.union/config/genesis.json
 ```
 
 ### Registration
