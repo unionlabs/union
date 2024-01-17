@@ -29,11 +29,6 @@ struct ProcessedMoment {
 library CometblsHelp {
     using BytesLib for bytes;
 
-    string constant WASM_CLIENT_STATE_URL =
-        "/ibc.lightclients.wasm.v1.ClientState";
-    string constant WASM_CONSENSUS_STATE_URL =
-        "/ibc.lightclients.wasm.v1.ConsensusState";
-
     uint256 constant PRIME_R =
         21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 constant PRIME_R_MINUS_ONE = PRIME_R - 1;
@@ -71,50 +66,6 @@ library CometblsHelp {
             hashToField(abi.encodePacked(ZERO, message)),
             hashToField(abi.encodePacked(ONE, message))
         );
-    }
-
-    function verifyZKP(
-        IZKVerifier verifier,
-        bytes32 trustedValidatorsHash,
-        bytes32 untrustedValidatorsHash,
-        bytes memory message,
-        bytes memory zkp
-    ) internal view returns (bool) {
-        (uint256 messageX, uint256 messageY) = hashToField2(message);
-
-        (
-            uint256[2] memory a,
-            uint256[2][2] memory b,
-            uint256[2] memory c,
-            uint256 commitmentHash,
-            uint256[2] memory proofCommitment
-        ) = abi.decode(
-                zkp,
-                (uint256[2], uint256[2][2], uint256[2], uint256, uint256[2])
-            );
-
-        bytes memory packedTrustedValidatorsHash = abi.encodePacked(
-            trustedValidatorsHash
-        );
-        bytes memory packedUntrustedValidatorsHash = abi.encodePacked(
-            untrustedValidatorsHash
-        );
-
-        uint256[9] memory inputs = [
-            uint256(packedTrustedValidatorsHash.toUint128(0)),
-            uint256(packedTrustedValidatorsHash.toUint128(16)),
-            uint256(packedUntrustedValidatorsHash.toUint128(0)),
-            uint256(packedUntrustedValidatorsHash.toUint128(16)),
-            messageX,
-            messageY,
-            // Gnark commitment API extend internal inputs with the following commitment hash and proof commitment
-            // See https://github.com/ConsenSys/gnark/issues/652
-            commitmentHash,
-            proofCommitment[0],
-            proofCommitment[1]
-        ];
-
-        return verifier.verifyProof(a, b, c, inputs);
     }
 
     function verifyZKP(
@@ -249,131 +200,6 @@ library CometblsHelp {
         UnionIbcLightclientsCometblsV1Header.Data memory header
     ) internal pure returns (bytes memory) {
         return abi.encode(header);
-    }
-
-    function unmarshalClientStateFromProto(
-        bytes memory bz
-    )
-        internal
-        pure
-        returns (
-            UnionIbcLightclientsCometblsV1ClientState.Data memory,
-            IbcCoreClientV1Height.Data memory,
-            bytes memory
-        )
-    {
-        Any.Data memory any = Any.decode(bz);
-        require(
-            keccak256(bytes(any.type_url)) ==
-                keccak256(bytes(WASM_CLIENT_STATE_URL)),
-            "invalid client state url"
-        );
-        IbcLightclientsWasmV1ClientState.Data
-            memory wasmClientState = IbcLightclientsWasmV1ClientState.decode(
-                any.value
-            );
-        return (
-            UnionIbcLightclientsCometblsV1ClientState.decode(
-                wasmClientState.data
-            ),
-            wasmClientState.latest_height,
-            wasmClientState.code_id
-        );
-    }
-
-    function unmarshalConsensusStateFromProto(
-        bytes memory bz
-    )
-        internal
-        pure
-        returns (
-            UnionIbcLightclientsCometblsV1ConsensusState.Data memory,
-            uint64
-        )
-    {
-        Any.Data memory any = Any.decode(bz);
-        require(
-            keccak256(bytes(any.type_url)) ==
-                keccak256(bytes(WASM_CONSENSUS_STATE_URL)),
-            "invalid consensus state url"
-        );
-        IbcLightclientsWasmV1ConsensusState.Data
-            memory wasmConsensusState = IbcLightclientsWasmV1ConsensusState
-                .decode(any.value);
-        return (
-            UnionIbcLightclientsCometblsV1ConsensusState.decode(
-                wasmConsensusState.data
-            ),
-            wasmConsensusState.timestamp
-        );
-    }
-
-    function marshalToProto(
-        OptimizedConsensusState memory consensusState
-    ) internal pure returns (bytes memory) {
-        IbcLightclientsWasmV1ConsensusState.Data
-            memory wasmConsensusState = IbcLightclientsWasmV1ConsensusState
-                .Data({
-                    timestamp: consensusState.timestamp,
-                    data: UnionIbcLightclientsCometblsV1ConsensusState.encode(
-                        UnionIbcLightclientsCometblsV1ConsensusState.Data({
-                            timestamp: consensusState.timestamp,
-                            root: IbcCoreCommitmentV1MerkleRoot.Data({
-                                hash: abi.encodePacked(consensusState.root)
-                            }),
-                            next_validators_hash: abi.encodePacked(
-                                consensusState.nextValidatorsHash
-                            )
-                        })
-                    )
-                });
-        return
-            Any.encode(
-                Any.Data({
-                    type_url: WASM_CONSENSUS_STATE_URL,
-                    value: IbcLightclientsWasmV1ConsensusState.encode(
-                        wasmConsensusState
-                    )
-                })
-            );
-    }
-
-    function marshalToProto(
-        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState,
-        IbcCoreClientV1Height.Data memory latestHeight,
-        bytes memory codeId
-    ) internal pure returns (bytes memory) {
-        IbcLightclientsWasmV1ClientState.Data
-            memory wasmClientState = IbcLightclientsWasmV1ClientState.Data({
-                data: UnionIbcLightclientsCometblsV1ClientState.encode(
-                    clientState
-                ),
-                code_id: codeId,
-                latest_height: latestHeight
-            });
-        return
-            Any.encode(
-                Any.Data({
-                    type_url: WASM_CLIENT_STATE_URL,
-                    value: IbcLightclientsWasmV1ClientState.encode(
-                        wasmClientState
-                    )
-                })
-            );
-    }
-
-    function marshalToCommitment(
-        OptimizedConsensusState memory consensusState
-    ) internal pure returns (bytes32) {
-        return keccak256(marshalToProto(consensusState));
-    }
-
-    function marshalToCommitment(
-        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState,
-        IbcCoreClientV1Height.Data memory latestHeight,
-        bytes memory codeId
-    ) internal pure returns (bytes32) {
-        return keccak256(marshalToProto(clientState, latestHeight, codeId));
     }
 
     function marshalEthABI(
