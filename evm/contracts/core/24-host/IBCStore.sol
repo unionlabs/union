@@ -28,6 +28,8 @@ abstract contract IBCStore {
     uint64 public nextConnectionSequence;
     uint64 public nextChannelSequence;
 
+    string public constant COMMITMENT_PREFIX = "ibc";
+
     // Storage accessors
     function getClient(
         string memory clientId

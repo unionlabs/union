@@ -15,8 +15,6 @@ import "../03-connection/IIBCConnection.sol";
 contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     using LibString for *;
 
-    string private constant COMMITMENT_PREFIX = "ibc";
-
     /* Handshake functions */
 
     /**
