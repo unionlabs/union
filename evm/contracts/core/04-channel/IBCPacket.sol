@@ -29,13 +29,6 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         uint64 timeoutTimestamp,
         bytes calldata data
     ) external returns (uint64) {
-        require(
-            authenticateCapability(
-                channelCapabilityPath(sourcePort, sourceChannel)
-            ),
-            "sendPacket: unauthorized"
-        );
-
         IbcCoreChannelV1Channel.Data storage channel = channels[sourcePort][
             sourceChannel
         ];
@@ -63,7 +56,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                 connection.client_id,
                 latestHeight
             );
-            require(found, "sendPacket: consensusState not found");
+            require(found, "sendPacket: timestamp not found");
             require(
                 timeoutTimestamp == 0 || latestTimestamp < timeoutTimestamp,
                 "sendPacket: receiving chain block timestamp >= packet timeout timestamp"
@@ -127,12 +120,12 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
 
         require(
             msg_.packet.timeout_height.revision_height == 0 ||
-                block.number < msg_.packet.timeout_height.revision_height,
+                (block.number < msg_.packet.timeout_height.revision_height),
             "recvPacket: block height >= packet timeout height"
         );
         require(
             msg_.packet.timeout_timestamp == 0 ||
-                block.timestamp < msg_.packet.timeout_timestamp,
+                (block.timestamp < msg_.packet.timeout_timestamp),
             "recvPacket: block timestamp >= packet timeout timestamp"
         );
 
@@ -200,12 +193,6 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         uint64 sequence,
         bytes calldata acknowledgement
     ) external {
-        require(
-            authenticateCapability(
-                channelCapabilityPath(destinationPortId, destinationChannel)
-            ),
-            "writeAcknowledgement: unauthorized"
-        );
         require(
             acknowledgement.length > 0,
             "writeAcknowlegement: acknowledgement cannot be empty"
