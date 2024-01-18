@@ -533,7 +533,7 @@ contract UCS01Relay is IBCAppBase {
     function onRecvPacket(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address relayer
-    ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
+    ) external virtual override onlyIBC returns (bytes memory) {
         // TODO: maybe consider threading _res in the failure ack
         (bool success, bytes memory _res) = address(this).call(
             abi.encodeWithSelector(
@@ -555,8 +555,10 @@ contract UCS01Relay is IBCAppBase {
         address _relayer
     ) external virtual override onlyIBC {
         require(
-            acknowledgement.length == RelayLib.ACK_LENGTH,
-            "ucs01-relay: single byte ack"
+            acknowledgement.length == RelayLib.ACK_LENGTH &&
+                (acknowledgement[0] == RelayLib.ACK_FAILURE ||
+                    acknowledgement[0] == RelayLib.ACK_SUCCESS),
+            "ucs01-relay: ack must be bool"
         );
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
