@@ -324,6 +324,8 @@
               '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
               '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
               '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
+              '${evmSources}/contracts/core/25-handler/IBCQuerier.sol' \
+              '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
               '${evmSources}/tests/*'
             genhtml lcov.info.pruned -o $out --branch-coverage
             mv lcov.info.pruned $out/lcov.info
