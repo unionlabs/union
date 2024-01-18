@@ -29,7 +29,7 @@ func NewBlsAPI(api frontend.API) (*BlsAPI, error) {
 	}, nil
 }
 
-// Trivial version (handling infinity points) would be this, at the expense of ~1.5M constraints:
+// Trivial version (handling infinity points) would be this, at the expense of extra constraints:
 // aggregatedPublicKey = curveArithmetic.AddUnified(aggregatedPublicKey, curveArithmetic.Select(signed, publicKey, &G1Zero))
 /*
    # we start with G1Gen because we use a partial, cheap `+` that don't handle infinity point

@@ -1,6 +1,18 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, goPkgs, ... }: {
+  perSystem = { self', pkgs, proto, goPkgs, ensureAtRepositoryRoot, ... }: {
     packages = {
+      galoisd-coverage-show =
+        pkgs.writeShellApplication {
+          name = "galoisd-coverage-show";
+          runtimeInputs = [ goPkgs.go ];
+          text = ''
+            ${ensureAtRepositoryRoot}
+            pushd galoisd
+            go tool cover -html=${self'.packages.galoisd-coverage}
+            popd
+          '';
+        };
+
       galoisd-coverage =
         pkgs.runCommand
           "galoisd-coverage"

@@ -142,8 +142,8 @@ func (e *EmulatedAPI) g2Sgn0Circuit(z *fields_bn254.E2) frontend.Variable {
 	return sign
 }
 
-// Shallue-van de Woestijne method
 // https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#name-shallue-van-de-woestijne-met
+// F.1. Shallue-van de Woestijne method
 func (e *EmulatedAPI) MapToCurve(u *fields_bn254.E2) *gadget.G2Affine {
 	// Legendre must be called before calling sqrt
 	sqrt := func(x *fields_bn254.E2) *fields_bn254.E2 {
@@ -454,6 +454,8 @@ func (e *EmulatedAPI) ScalarMulBySeed(q *gadget.G2Affine) *gadget.G2Affine {
 	return z
 }
 
+// http://cacr.uwaterloo.ca/techreports/2011/cacr2011-26.pdf, 6.1
+// Q -> xQ + psi(3xQ) + psi^2(xQ) + psi^3(Q)
 func (e *EmulatedAPI) ClearCofactor(p *gadget.G2Affine) *gadget.G2Affine {
 	p0 := e.ScalarMulBySeed(p)
 	p1 := e.Psi(e.Add(e.Double(p0), p0))
