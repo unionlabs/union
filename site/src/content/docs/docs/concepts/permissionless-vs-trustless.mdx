@@ -22,11 +22,14 @@ Most infrastructure providers require permission to deploy on a new chain or rol
 
 ### Permissionless but Trusted
 
-An odd one out in the bunch is [Hyperlane](https://www.hyperlane.xyz/), which is permissionless but trusted. In their model, teams/parties run the centralized party themselves but are allowed to use Hyperlane contracts, relayers, and services. In this case, there is no risk of being shut down, but there are significant limitations:
+An odd one out in the bunch is [Hyperlane](https://www.hyperlane.xyz/), which is permissionless but trusted. In their model, teams/parties run the centralized party themselves but are allowed to use Hyperlane contracts, relayers, and services. In this case, there is less risk of being shut down, but there are significant limitations:
 
-- Not all assets are transferable.
-- The bridge is still very susceptible to attacks.
-- One party can still censor transactions.
+- Not all assets are transferable across all networks.
+- The bridge is still susceptible to attacks.
+
+:::info
+As of 18-01-2024, only multisig and Wormhole security modules are supported by Hyperlane.
+:::
 
 ## IBC and Union
 
