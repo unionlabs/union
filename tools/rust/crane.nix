@@ -324,7 +324,7 @@
         craneLib.cargoLlvmCov {
           pname = "workspace-cargo-llvm-cov";
           version = "0.0.0";
-          cargoLlvmCovExtraArgs = "--workspace --html --output-dir $out --ignore-filename-regex 'nix/store/.+'";
+          cargoLlvmCovExtraArgs = "--workspace --html --output-dir $out --ignore-filename-regex 'nix/store/.+,tools/generate-rust-sol-bindings/*,tools/cargo-workspace-dependencies/,zerg/*,e2e/ensure-blocks/*'";
           SQLX_OFFLINE = true;
           cargoArtifacts = craneLib.buildDepsOnly {
             pname = "workspace-build-deps-only";
