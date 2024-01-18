@@ -16,10 +16,12 @@ pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
 ///
 /// The queue assumes the following database schema:
 ///
-///     id SERIAL AUTO INCREMENT
-///     status 0..2
-///     item JSONB
-///     error TEXT
+/// ```ignore
+/// id SERIAL AUTO INCREMENT
+/// status 0..2
+/// item JSONB
+/// error TEXT
+/// ```
 #[derive(Debug, Clone)]
 pub struct Queue<T> {
     lock: Arc<AtomicBool>,

@@ -3,13 +3,13 @@
     let
       cargo-fuzz = crane.lib.buildPackage {
         name = "cargo-fuzz";
-        version = "0.11.2";
+        version = "0.11.3";
         doCheck = false;
         src = pkgs.fetchFromGitHub {
           owner = "rust-fuzz";
           repo = "cargo-fuzz";
-          rev = "a860fd92bc183f1fed45583aa78691b684e80576";
-          hash = "sha256-vnOqImf3GWbDP6uM9tINGHliVDRdXnSPX1OMeT4N5qU=";
+          rev = "56bcbcfcb6f3d5140993b5efb867008c36179897";
+          hash = "sha256-CZuLLUHExIZh/z4WCUzxrbLCcbc/wRggu7pBEkXpg2c=";
         };
       };
 
