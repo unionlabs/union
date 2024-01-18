@@ -86,7 +86,7 @@ contract IBCClientHandlerTests is TestPlus {
     bytes32 constant ARBITRARY_INITIAL_APP_HASH =
         hex"A8158610DD6858F3D26149CC0DB3339ABD580EA217DE0A151C9C451DED418E35";
 
-    constructor() {
+    function setUp() public {
         handler = new IBCHandler_Testable();
         membershipVerifier = new TestMembershipVerifier();
         verifier = new TestVerifier();
