@@ -629,6 +629,8 @@ servertypes
 shacham
 shallue
 shazow
+shiki
+shikiji
 sigint
 sigtypes
 simapp

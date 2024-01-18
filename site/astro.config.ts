@@ -97,6 +97,7 @@ export default defineConfig({
           },
         },
       ],
+      plugins: [],
       customCss: [
         "./src/styles/index.css",
         "./src/styles/tailwind.css",

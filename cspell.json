@@ -36,6 +36,7 @@
     "e2e/upgrades.nix",
     "yarn.lock",
     "bun.lockb",
-    "package-lock.json"
+    "package-lock.json",
+    "moonlight-ii.json"
   ]
 }

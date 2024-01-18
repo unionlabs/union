@@ -1,5 +1,5 @@
-import 'dotenv/config'
-import { vitePreprocess } from '@astrojs/svelte'
+import "dotenv/config";
+import { vitePreprocess } from "@astrojs/svelte";
 
 /** @type {import('@sveltejs/vite-plugin-svelte').Options} */
 export default {
@@ -7,6 +7,6 @@ export default {
   preprocess: vitePreprocess(),
   compilerOptions: {
     hydratable: true,
-    dev: process.env.NODE_ENV !== 'production'
-  }
-}
+    dev: process.env.NODE_ENV !== "production",
+  },
+};

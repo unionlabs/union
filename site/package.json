@@ -1,5 +1,5 @@
 {
-  "name": "docs",
+  "name": "site",
   "version": "0.0.1",
   "type": "module",
   "scripts": {
@@ -24,7 +24,9 @@
     "graphql": "^16.8.1",
     "rehype-katex": "^7.0.0",
     "rehype-mermaid": "^2.1.0",
+    "rehype-pretty-code": "^0.12.5",
     "remark-math": "^6.0.0",
+    "shikiji": "^0.9.19",
     "slugify": "^1.6.6",
     "svelte": "^4.2.8"
   },
