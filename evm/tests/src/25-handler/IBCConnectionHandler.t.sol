@@ -190,13 +190,16 @@ contract IBCConnectionHandlerTests is TestPlus {
         );
     }
 
-    function test_openingHandshake_init_ack_ok(uint64 proofHeight) public {
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
+    function assumeValidProofHeight(uint64 proofHeight) internal {
         vm.assume(
-            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
+            0 < proofHeight &&
+                proofHeight < uint64(getValidHeader().header.height)
         );
+    }
 
-        // 1. createClient
+    function createClient(uint64 proofHeight) internal returns (string memory) {
+        assumeValidProofHeight(proofHeight);
+        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
         IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
             CLIENT_TYPE,
             signedHeader.header.chain_id,
@@ -205,9 +208,12 @@ contract IBCConnectionHandlerTests is TestPlus {
             signedHeader.header.validators_hash.toBytes32(0),
             uint64(signedHeader.header.time.secs - 10)
         );
-        string memory clientId = handler.createClient(m);
+        return handler.createClient(m);
+    }
 
-        // 2. ConnOpenInit
+    function test_handshake_init_ack_ok(uint64 proofHeight) public {
+        string memory clientId = createClient(proofHeight);
+
         IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
             .connectionOpenInit(clientId);
         preInitOk();
@@ -239,13 +245,11 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        // 3. ConnOpenAck
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
             .connectionOpenAck(clientId, connId, proofHeight);
         preAckValidProofs();
         handler.connectionOpenAck(msg_ack);
 
-        // compute the expected counterparty after ack
         ConnectionCounterparty.Data memory expectedCounterparty = msg_init
             .counterparty;
         expectedCounterparty.connection_id = msg_ack.counterpartyConnectionID;
@@ -275,24 +279,9 @@ contract IBCConnectionHandlerTests is TestPlus {
         );
     }
 
-    function test_openingHandshake_ack_noInit(uint64 proofHeight) public {
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
-        vm.assume(
-            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
-        );
+    function test_handshake_ack_noInit(uint64 proofHeight) public {
+        string memory clientId = createClient(proofHeight);
 
-        // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
-            CLIENT_TYPE,
-            signedHeader.header.chain_id,
-            proofHeight,
-            ARBITRARY_INITIAL_APP_HASH,
-            signedHeader.header.validators_hash.toBytes32(0),
-            uint64(signedHeader.header.time.secs - 10)
-        );
-        string memory clientId = handler.createClient(m);
-
-        // 3. ConnOpenAck
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
             .connectionOpenAck(clientId, "", proofHeight);
         preAckValidProofs();
@@ -303,23 +292,8 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_init_ack_unsupportedVersion(
         uint64 proofHeight
     ) public {
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
-        vm.assume(
-            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
-        );
+        string memory clientId = createClient(proofHeight);
 
-        // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
-            CLIENT_TYPE,
-            signedHeader.header.chain_id,
-            proofHeight,
-            ARBITRARY_INITIAL_APP_HASH,
-            signedHeader.header.validators_hash.toBytes32(0),
-            uint64(signedHeader.header.time.secs - 10)
-        );
-        string memory clientId = handler.createClient(m);
-
-        // 2. ConnOpenInit
         IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
             .connectionOpenInit(clientId);
         preInitOk();
@@ -351,7 +325,6 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        // 3. ConnOpenAck
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
             .connectionOpenAck(clientId, connId, proofHeight);
         msg_ack.version.identifier = "2";
@@ -365,23 +338,8 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_init_ack_invalidConnectionStateProof(
         uint64 proofHeight
     ) public {
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
-        vm.assume(
-            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
-        );
+        string memory clientId = createClient(proofHeight);
 
-        // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
-            CLIENT_TYPE,
-            signedHeader.header.chain_id,
-            proofHeight,
-            ARBITRARY_INITIAL_APP_HASH,
-            signedHeader.header.validators_hash.toBytes32(0),
-            uint64(signedHeader.header.time.secs - 10)
-        );
-        string memory clientId = handler.createClient(m);
-
-        // 2. ConnOpenInit
         IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
             .connectionOpenInit(clientId);
         preInitOk();
@@ -413,7 +371,6 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        // 3. ConnOpenAck
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
             .connectionOpenAck(clientId, connId, proofHeight);
         preAckInvalidConnectionStateProof();
@@ -423,23 +380,8 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_init_ack_invalidClientStateProof(
         uint64 proofHeight
     ) public {
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
-        vm.assume(
-            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
-        );
+        string memory clientId = createClient(proofHeight);
 
-        // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
-            CLIENT_TYPE,
-            signedHeader.header.chain_id,
-            proofHeight,
-            ARBITRARY_INITIAL_APP_HASH,
-            signedHeader.header.validators_hash.toBytes32(0),
-            uint64(signedHeader.header.time.secs - 10)
-        );
-        string memory clientId = handler.createClient(m);
-
-        // 2. ConnOpenInit
         IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
             .connectionOpenInit(clientId);
         preInitOk();
@@ -471,31 +413,15 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        // 3. ConnOpenAck
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
             .connectionOpenAck(clientId, connId, proofHeight);
         preAckInvalidClientStateProof();
         handler.connectionOpenAck(msg_ack);
     }
 
-    function test_openingHandshake_try_confirm_ok(uint64 proofHeight) public {
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
-        vm.assume(
-            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
-        );
+    function test_handshake_try_confirm_ok(uint64 proofHeight) public {
+        string memory clientId = createClient(proofHeight);
 
-        // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
-            CLIENT_TYPE,
-            signedHeader.header.chain_id,
-            proofHeight,
-            ARBITRARY_INITIAL_APP_HASH,
-            signedHeader.header.validators_hash.toBytes32(0),
-            uint64(signedHeader.header.time.secs - 10)
-        );
-        string memory clientId = handler.createClient(m);
-
-        // 1. ConnOpenTry
         IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
             .connectionOpenTry(clientId, proofHeight);
         preTryValidProofs();
@@ -527,7 +453,6 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        // 2. ConnOpenConfirm
         IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
             .connectionOpenConfirm(clientId, connId, proofHeight);
         preConfirmValidProofs();
@@ -561,23 +486,8 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_try_unsupportedVersion(
         uint64 proofHeight
     ) public {
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
-        vm.assume(
-            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
-        );
+        string memory clientId = createClient(proofHeight);
 
-        // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
-            CLIENT_TYPE,
-            signedHeader.header.chain_id,
-            proofHeight,
-            ARBITRARY_INITIAL_APP_HASH,
-            signedHeader.header.validators_hash.toBytes32(0),
-            uint64(signedHeader.header.time.secs - 10)
-        );
-        string memory clientId = handler.createClient(m);
-
-        // 1. ConnOpenTry
         IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
             .connectionOpenTry(clientId, proofHeight);
         msg_try.counterpartyVersions[0].identifier = "4";
@@ -596,7 +506,6 @@ contract IBCConnectionHandlerTests is TestPlus {
             0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
         );
 
-        // 1. createClient
         IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
             CLIENT_TYPE,
             signedHeader.header.chain_id,
@@ -607,33 +516,17 @@ contract IBCConnectionHandlerTests is TestPlus {
         );
         string memory clientId = handler.createClient(m);
 
-        // 1. ConnOpenTry
         IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
             .connectionOpenTry(clientId, proofHeight);
         preTryInvalidConnectionStateProof();
         handler.connectionOpenTry(msg_try);
     }
 
-    function test_openingHandshake_try_invalidClientStateProof(
+    function test_handshake_try_invalidClientStateProof(
         uint64 proofHeight
     ) public {
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
-        vm.assume(
-            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
-        );
+        string memory clientId = createClient(proofHeight);
 
-        // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
-            CLIENT_TYPE,
-            signedHeader.header.chain_id,
-            proofHeight,
-            ARBITRARY_INITIAL_APP_HASH,
-            signedHeader.header.validators_hash.toBytes32(0),
-            uint64(signedHeader.header.time.secs - 10)
-        );
-        string memory clientId = handler.createClient(m);
-
-        // 1. ConnOpenTry
         IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
             .connectionOpenTry(clientId, proofHeight);
         preTryInvalidClientStateProof();
@@ -643,23 +536,8 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_try_confirm_invalidClientStateProof(
         uint64 proofHeight
     ) public {
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
-        vm.assume(
-            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
-        );
+        string memory clientId = createClient(proofHeight);
 
-        // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
-            CLIENT_TYPE,
-            signedHeader.header.chain_id,
-            proofHeight,
-            ARBITRARY_INITIAL_APP_HASH,
-            signedHeader.header.validators_hash.toBytes32(0),
-            uint64(signedHeader.header.time.secs - 10)
-        );
-        string memory clientId = handler.createClient(m);
-
-        // 1. ConnOpenTry
         IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
             .connectionOpenTry(clientId, proofHeight);
         preTryValidProofs();
@@ -691,7 +569,6 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        // 2. ConnOpenConfirm
         IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
             .connectionOpenConfirm(clientId, connId, proofHeight);
         preConfirmInvalidConnectionState();
@@ -701,23 +578,8 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_confirm_notTryOpen(
         uint64 proofHeight
     ) public {
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
-        vm.assume(
-            0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
-        );
+        string memory clientId = createClient(proofHeight);
 
-        // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
-            CLIENT_TYPE,
-            signedHeader.header.chain_id,
-            proofHeight,
-            ARBITRARY_INITIAL_APP_HASH,
-            signedHeader.header.validators_hash.toBytes32(0),
-            uint64(signedHeader.header.time.secs - 10)
-        );
-        string memory clientId = handler.createClient(m);
-
-        // 2. ConnOpenConfirm
         IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
             .connectionOpenConfirm(clientId, "", proofHeight);
         preConfirmValidProofs();
