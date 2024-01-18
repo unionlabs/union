@@ -538,6 +538,7 @@ pname
 poisonphang
 polkachu
 polkadot
+popd
 postcss
 postgrespassword
 posthandler
@@ -565,6 +566,7 @@ pubkey
 pubkey's
 pubkeys
 publint
+pushd
 pvalue
 pxplusqx
 pxqx
