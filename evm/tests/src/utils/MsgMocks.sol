@@ -313,25 +313,20 @@ library MsgMocks {
     function packetRecv(
         string memory portId,
         string memory channelId,
-        uint64 proofHeight
+        uint64 proofHeight,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload
     ) internal view returns (IBCMsgs.MsgPacketRecv memory m) {
         m.packet.destination_port = portId;
         m.packet.destination_channel = channelId;
         m.packet.source_port = "counterparty-port-id";
         m.packet.source_channel = "counterparty-channel-id";
-        m.packet.data = hex"12345678";
+        m.packet.data = payload;
         m.packet.sequence = 1;
-
+        m.packet.timeout_height.revision_height = timeoutHeight;
+        m.packet.timeout_timestamp = timeoutTimestamp;
         m.proofHeight.revision_height = proofHeight;
-        bytes32 commitmentBytes = sha256(
-            abi.encodePacked(
-                m.packet.timeout_timestamp,
-                m.packet.timeout_height.revision_number,
-                m.packet.timeout_height.revision_height,
-                sha256(m.packet.data)
-            )
-        );
-        m.proof = abi.encodePacked(sha256(abi.encodePacked(commitmentBytes)));
     }
 }
 
