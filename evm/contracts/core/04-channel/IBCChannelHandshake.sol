@@ -143,7 +143,7 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
                 msg_.channel.counterparty.channel_id,
                 IbcCoreChannelV1Channel.encode(expectedChannel)
             ),
-            "failed to verify channel state"
+            "channelOpenTry: failed to verify channel state"
         );
 
         string memory channelId = generateChannelIdentifier();
