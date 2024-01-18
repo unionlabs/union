@@ -190,7 +190,7 @@ library MsgMocks {
         m.channel.state = ChannelEnums.State.STATE_INIT;
         m.channel.counterparty = counterparty;
         m.channel.connection_hops = hops;
-        m.channel.ordering = ChannelEnums.Order.ORDER_ORDERED;
+        m.channel.ordering = ChannelEnums.Order.ORDER_UNORDERED;
         m.portId = portId;
     }
 
@@ -207,7 +207,7 @@ library MsgMocks {
         // mocking channel data
         Channel.Data memory channel = Channel.Data({
             state: ChannelEnums.State.STATE_TRYOPEN,
-            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: channelId
@@ -235,7 +235,7 @@ library MsgMocks {
         m.counterpartyVersion = "counterparty-version";
         m.channel = Channel.Data({
             state: ChannelEnums.State.STATE_TRYOPEN,
-            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: ""
@@ -248,7 +248,7 @@ library MsgMocks {
         // expected channel
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_INIT,
-            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: ""
@@ -273,7 +273,7 @@ library MsgMocks {
 
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_OPEN,
-            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: channelId
@@ -306,7 +306,7 @@ library MsgMocks {
 
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_CLOSED,
-            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: channelId
