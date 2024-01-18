@@ -326,8 +326,8 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
 
     function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_) external {
         IbcCoreChannelV1Channel.Data storage channel = channels[
-            msg_.packet.destination_port
-        ][msg_.packet.destination_channel];
+            msg_.packet.source_port
+        ][msg_.packet.source_channel];
         require(
             channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
             "timeoutPacket: channel state must be OPEN"
@@ -445,6 +445,8 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         } else {
             revert("timeoutPacket: unknown ordering type");
         }
+
+        delete commitments[packetCommitmentKey];
     }
 
     function verifyCommitment(

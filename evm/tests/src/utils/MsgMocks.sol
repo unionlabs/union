@@ -349,6 +349,25 @@ library MsgMocks {
         m.proofHeight.revision_height = proofHeight;
         m.acknowledgement = acknowledgement;
     }
+
+    function packetTimeout(
+        string memory portId,
+        string memory channelId,
+        uint64 proofHeight,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload
+    ) internal view returns (IBCMsgs.MsgPacketTimeout memory m) {
+        m.packet.source_port = portId;
+        m.packet.source_channel = channelId;
+        m.packet.destination_port = "counterparty-port-id";
+        m.packet.destination_channel = "counterparty-channel-id";
+        m.packet.data = payload;
+        m.packet.sequence = 1;
+        m.packet.timeout_height.revision_height = timeoutHeight;
+        m.packet.timeout_timestamp = timeoutTimestamp;
+        m.proofHeight.revision_height = proofHeight;
+    }
 }
 
 function wrapAnyMockHeader(

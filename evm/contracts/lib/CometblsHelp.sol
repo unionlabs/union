@@ -131,7 +131,7 @@ library CometblsHelp {
 
     function merkleRoot(
         TendermintTypesHeader.Data memory h
-    ) internal view returns (bytes32) {
+    ) internal pure returns (bytes32) {
         return
             MerkleTree.optimizedBlockRoot(
                 [
