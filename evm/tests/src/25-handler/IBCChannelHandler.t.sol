@@ -137,7 +137,7 @@ contract IBCChannelHandlerTest is TestPlus {
             portId
         );
         msg_init.channel.state = ChannelEnums.State.STATE_OPEN;
-        vm.expectRevert("channelOpenInit: channel state must STATE_INIT");
+        vm.expectRevert("channelOpenInit: channel state is not INIT");
         handler.channelOpenInit(msg_init);
     }
 

@@ -73,7 +73,7 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
         );
         require(
             msg_.channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_INIT,
-            "channelOpenInit: channel state must STATE_INIT"
+            "channelOpenInit: channel state is not INIT"
         );
         require(
             bytes(msg_.channel.counterparty.channel_id).length == 0,
@@ -116,7 +116,7 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
         require(
             msg_.channel.state ==
                 IbcCoreChannelV1GlobalEnums.State.STATE_TRYOPEN,
-            "channelOpenTry: channel state must be STATE_TRYOPEN"
+            "channelOpenTry: channel state is not TRYOPEN"
         );
 
         IbcCoreChannelV1Counterparty.Data
@@ -164,7 +164,7 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
         ];
         require(
             channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_INIT,
-            "channelOpenAck: channel.state != STATE_INIT"
+            "channelOpenAck: channel state is not INIT"
         );
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
@@ -270,7 +270,7 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
         ];
         require(
             channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
-            "channelCloseInit: channel state is already CLOSED"
+            "channelCloseInit: channel state is not OPEN"
         );
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
@@ -297,7 +297,7 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
         ];
         require(
             channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
-            "channelCloseConfirm: channel state is not open"
+            "channelCloseConfirm: channel state is not OPEN"
         );
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
