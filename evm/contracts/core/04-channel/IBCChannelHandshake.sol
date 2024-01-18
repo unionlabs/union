@@ -174,10 +174,6 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
             connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN,
             "channelOpenAck: connection state is not OPEN"
         );
-        require(
-            channel.connection_hops.length == 1,
-            "channelOpenAck: channel must have a single hop"
-        );
 
         IbcCoreChannelV1Counterparty.Data
             memory expectedCounterparty = IbcCoreChannelV1Counterparty.Data({
@@ -232,7 +228,6 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
             connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN,
             "channelOpenConfirm: connection state is not OPEN"
         );
-        require(channel.connection_hops.length == 1);
 
         IbcCoreChannelV1Counterparty.Data
             memory expectedCounterparty = IbcCoreChannelV1Counterparty.Data({
@@ -305,10 +300,6 @@ contract IBCChannelHandshake is IBCStore, IIBCChannelHandshake {
             "channelCloseConfirm: channel state is not open"
         );
 
-        require(
-            channel.connection_hops.length == 1,
-            "channelCloseConfirm: connection must exist"
-        );
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
             channel.connection_hops[0]
         ];
