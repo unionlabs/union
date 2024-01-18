@@ -264,6 +264,27 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenConfirm(msg_confirm);
     }
 
+    function test_openingHandshake_try_notTryOpen(
+        uint64 proofHeight,
+        string memory portId
+    ) public {
+        vm.assume(proofHeight > 0);
+        (
+            string memory clientId,
+            string memory connId
+        ) = setupConnection_try_confirm(proofHeight);
+        handler.bindPort(portId, address(app));
+
+        IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
+            connId,
+            portId,
+            proofHeight
+        );
+        msg_try.channel.state = ChannelEnums.State.STATE_INIT;
+        vm.expectRevert("channelOpenTry: channel state is not TRYOPEN");
+        handler.channelOpenTry(msg_try);
+    }
+
     function test_openingHandshake_try_confirm_close_init_ok(
         uint64 proofHeight,
         string memory portId
