@@ -139,6 +139,27 @@ contract IBCConnectionHandlerTests is TestPlus {
             });
     }
 
+    function assumeValidProofHeight(uint64 proofHeight) internal {
+        vm.assume(
+            0 < proofHeight &&
+                proofHeight < uint64(getValidHeader().header.height)
+        );
+    }
+
+    function createClient(uint64 proofHeight) internal returns (string memory) {
+        assumeValidProofHeight(proofHeight);
+        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
+        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
+            CLIENT_TYPE,
+            signedHeader.header.chain_id,
+            proofHeight,
+            ARBITRARY_INITIAL_APP_HASH,
+            signedHeader.header.validators_hash.toBytes32(0),
+            uint64(signedHeader.header.time.secs - 10)
+        );
+        return handler.createClient(m);
+    }
+
     function preInitOk() public {
         membershipVerifier.reset();
     }
@@ -186,27 +207,6 @@ contract IBCConnectionHandlerTests is TestPlus {
         vm.expectRevert(
             "connectionOpenConfirm: failed to verify connection state"
         );
-    }
-
-    function assumeValidProofHeight(uint64 proofHeight) internal {
-        vm.assume(
-            0 < proofHeight &&
-                proofHeight < uint64(getValidHeader().header.height)
-        );
-    }
-
-    function createClient(uint64 proofHeight) internal returns (string memory) {
-        assumeValidProofHeight(proofHeight);
-        TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
-        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
-            CLIENT_TYPE,
-            signedHeader.header.chain_id,
-            proofHeight,
-            ARBITRARY_INITIAL_APP_HASH,
-            signedHeader.header.validators_hash.toBytes32(0),
-            uint64(signedHeader.header.time.secs - 10)
-        );
-        return handler.createClient(m);
     }
 
     function test_handshake_init_ack_ok(uint64 proofHeight) public {
@@ -481,9 +481,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         );
     }
 
-    function test_handshake_try_unsupportedVersion(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_try_unsupportedVersion(uint64 proofHeight) public {
         string memory clientId = createClient(proofHeight);
 
         IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
@@ -573,9 +571,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         handler.connectionOpenConfirm(msg_confirm);
     }
 
-    function test_handshake_confirm_notTryOpen(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_confirm_notTryOpen(uint64 proofHeight) public {
         string memory clientId = createClient(proofHeight);
 
         IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks

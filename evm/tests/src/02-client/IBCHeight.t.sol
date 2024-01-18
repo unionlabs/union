@@ -92,10 +92,7 @@ contract IBCHeightTests is Test {
         );
     }
 
-    function test_eq(
-        uint64 revisionNumber,
-        uint64 revisionHeight
-    ) public {
+    function test_eq(uint64 revisionNumber, uint64 revisionHeight) public {
         assertTrue(
             proxy.eq(
                 IbcCoreClientV1Height.Data({
