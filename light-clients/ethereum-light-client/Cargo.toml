@@ -38,6 +38,6 @@ serde_json  = { workspace = true }
 unionlabs   = { workspace = true, features = ["std"] }
 
 [features]
-default = ["minimal"]
+default = ["mainnet"]
 mainnet = []
 minimal = []
