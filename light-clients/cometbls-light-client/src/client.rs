@@ -143,9 +143,9 @@ impl IbcClient for CometblsLightClient {
         let trusted_validators_hash = consensus_state.data.next_validators_hash;
 
         let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
-            trusted_validators_hash.clone()
+            &trusted_validators_hash
         } else {
-            header.signed_header.header.validators_hash.clone()
+            &header.signed_header.header.validators_hash
         };
 
         let expected_block_hash = header
@@ -325,7 +325,13 @@ fn is_client_expired(
     trusting_period: u64,
     current_block_time: u64,
 ) -> bool {
-    consensus_state_timestamp + trusting_period < current_block_time
+    if let Some(sum) = consensus_state_timestamp.checked_add(trusting_period) {
+        sum < current_block_time
+    } else {
+        // TODO(aeryz): This is really an unexpected error and this should return
+        // a nice error message.
+        true
+    }
 }
 
 fn canonical_vote(
@@ -347,4 +353,110 @@ fn canonical_vote(
         }),
         chain_id,
     }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use cosmwasm_std::{testing::mock_dependencies, Timestamp};
+
+    use super::*;
+
+    const UPDATES_DIR_PATH: &str = "src/test/updates/";
+
+    #[test]
+    fn is_client_expired_works() {
+        // expires when a + b < c
+        assert_eq!(is_client_expired(1, 1, 10), true);
+        assert_eq!(is_client_expired(1, 10, 10), false);
+        assert_eq!(is_client_expired(10, 1, 10), false);
+        // expires when a + b = c
+        assert_eq!(is_client_expired(5, 5, 10), false);
+        // expires when a + b overflows
+        assert_eq!(is_client_expired(u64::MAX, 5, 10), true);
+    }
+
+    // #[test]
+    // fn query_status_returns_active() {
+    //     let deps = mock_dependencies();
+
+    //     let wasm_client_state: WasmClientState =
+    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+
+    //     let wasm_consensus_state: WasmConsensusState =
+    //         serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+
+    //     save_client_state(deps.as_mut(), wasm_client_state);
+
+    //     save_consensus_state(
+    //         deps.as_mut(),
+    //         wasm_consensus_state,
+    //         &INITIAL_CONSENSUS_STATE_HEIGHT,
+    //     );
+
+    //     let mut env = mock_env();
+    //     env.block.time = Timestamp::from_seconds(0);
+
+    //     assert_eq!(
+    //         CometblsLightClient::status(deps.as_ref(), &env),
+    //         Ok(Status::Active.into())
+    //     );
+    // }
+
+    // #[test]
+    // fn query_status_expired_when_consensus_state_missing() {
+    //     let deps = mock_dependencies();
+
+    //     let wasm_client_state: WasmClientState =
+    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+
+    //     save_client_state(deps.as_mut(), wasm_client_state);
+
+    //     assert_eq!(
+    //         CometblsLightClient::status(deps.as_ref(), &env),
+    //         Ok(Status::Expired.into())
+    //     );
+    // }
+
+    // #[test]
+    // fn query_status_expired_when_client_expired() {
+    //     let deps = mock_dependencies();
+
+    //     let wasm_client_state: WasmClientState =
+    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+
+    //     let wasm_consensus_state: WasmConsensusState =
+    //         serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+
+    //     save_client_state(deps.as_mut(), wasm_client_state);
+
+    //     save_consensus_state(
+    //         deps.as_mut(),
+    //         wasm_consensus_state,
+    //         &INITIAL_CONSENSUS_STATE_HEIGHT,
+    //     );
+
+    //     let mut env = mock_env();
+    //     env.block.time = Timestamp::from_seconds(u64::MAX);
+
+    //     assert_eq!(
+    //         CometblsLightClient::status(deps.as_ref(), &env),
+    //         Ok(Status::Active.into())
+    //     );
+    // }
+
+    // #[test]
+    // fn query_status_frozen() {
+    //     let deps = mock_dependencies();
+
+    //     let mut wasm_client_state: WasmClientState =
+    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+
+    //     wasm_client_state.data.frozen_height.revision_height = 1;
+
+    //     assert_eq!(
+    //         CometblsLightClient::status(deps.as_ref(), &env),
+    //         Ok(Status::Frozen.into()),
+    //     );
+    // }
 }
