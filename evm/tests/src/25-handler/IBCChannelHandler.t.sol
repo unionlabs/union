@@ -1,12 +1,17 @@
 pragma solidity ^0.8.23;
 
+import "solidity-bytes-utils/BytesLib.sol";
+
+import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
+import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
+import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
+import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
-import {MockClient} from "../../../contracts/clients/MockClient.sol";
 import {IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
 import {IbcCoreChannelV1Channel as Channel, IbcCoreChannelV1GlobalEnums as ChannelEnums} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
-import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
-import {MockClient} from "../../../contracts/clients/MockClient.sol";
 import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {TendermintTypesSignedHeader} from "../../../contracts/proto/tendermint/types/canonical.sol";
+import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeader, TendermintVersionConsensus, TendermintTypesCommitSig, TendermintTypesBlockID, TendermintTypesPartSetHeader} from "../../../contracts/proto/tendermint/types/types.sol";
 
 import "../TestPlus.sol";
 
