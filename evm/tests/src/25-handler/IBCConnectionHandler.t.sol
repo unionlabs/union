@@ -77,7 +77,7 @@ contract IBCConnectionHandlerTests is TestPlus {
     TestVerifier verifier;
     TestMembershipVerifier membershipVerifier;
 
-    constructor() {
+    function setUp() public {
         handler = new IBCHandler_Testable();
         membershipVerifier = new TestMembershipVerifier();
         verifier = new TestVerifier();

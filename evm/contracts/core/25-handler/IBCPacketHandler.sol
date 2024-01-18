@@ -54,8 +54,10 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
         require(
             authenticateCapability(
                 channelCapabilityPath(sourcePort, sourceChannel)
-            )
+            ),
+            "sendPacket: unauthorized"
         );
+
         (bool success, bytes memory res) = ibcPacket.delegatecall(
             abi.encodeWithSelector(
                 IIBCPacket.sendPacket.selector,
@@ -126,7 +128,8 @@ abstract contract IBCPacketHandler is Context, ModuleManager {
         require(
             authenticateCapability(
                 channelCapabilityPath(destinationPortId, destinationChannel)
-            )
+            ),
+            "writeAcknowledgement: unauthorized"
         );
         (bool success, bytes memory res) = ibcPacket.delegatecall(
             abi.encodeWithSelector(

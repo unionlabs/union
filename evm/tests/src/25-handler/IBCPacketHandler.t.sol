@@ -1,110 +1,1312 @@
 pragma solidity ^0.8.23;
 
+import "solidity-bytes-utils/BytesLib.sol";
+
+import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
+import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
+import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
+import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
+import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
+import {IBCConnection} from "../../../contracts/core/03-connection/IBCConnection.sol";
+import {IBCClient} from "../../../contracts/core/02-client/IBCClient.sol";
+import {IBCChannelHandshake} from "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
+import {IIBCPacket} from "../../../contracts/core/04-channel/IIBCChannel.sol";
+import {IBCPacket} from "../../../contracts/core/04-channel/IBCPacket.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IbcCoreClientV1Height as ClientHeight} from "../../../contracts/proto/MockClient.sol";
-import {MockClient} from "../../../contracts/clients/MockClient.sol";
 import {IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
-import {IbcCoreChannelV1Channel as Channel} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
+import {IbcCoreChannelV1Packet} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
-import {MockClient} from "../../../contracts/clients/MockClient.sol";
-import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
+import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {IbcCoreClientV1Height} from "../../../contracts/proto/ibc/core/client/v1/client.sol";
+import {TendermintTypesSignedHeader} from "../../../contracts/proto/tendermint/types/canonical.sol";
+import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeader, TendermintVersionConsensus, TendermintTypesCommitSig, TendermintTypesBlockID, TendermintTypesPartSetHeader} from "../../../contracts/proto/tendermint/types/types.sol";
 
 import "../TestPlus.sol";
 
+contract IBCHandlerFake is IBCHandler {
+    constructor()
+        IBCHandler(
+            address(new IBCClient()),
+            address(new IBCConnection()),
+            address(new IBCChannelHandshake()),
+            address(new IBCPacket())
+        )
+    {}
+}
+
+contract TestVerifier is IZKVerifierV2 {
+    uint256 valid = 0;
+
+    function pushValid() public {
+        valid += 1;
+    }
+
+    function verifyProof(
+        uint256[8] memory proof,
+        uint256[2] memory proofCommitment,
+        uint256[5] calldata input
+    ) external returns (bool) {
+        bool ok = valid > 0;
+        if (valid > 0) {
+            valid -= 1;
+        }
+        return ok;
+    }
+}
+
+contract TestMembershipVerifier is IMembershipVerifier {
+    uint256 valid = 0;
+
+    function pushValid() public {
+        valid += 1;
+    }
+
+    function verifyMembership(
+        bytes memory root,
+        bytes calldata proof,
+        bytes memory prefix,
+        bytes calldata path,
+        bytes calldata value
+    ) external returns (bool) {
+        bool ok = valid > 0;
+        if (valid > 0) {
+            valid -= 1;
+        }
+        return ok;
+    }
+
+    function verifyNonMembership(
+        bytes memory root,
+        bytes calldata proof,
+        bytes calldata prefix,
+        bytes calldata path
+    ) external returns (bool) {
+        bool ok = valid > 0;
+        if (valid > 0) {
+            valid -= 1;
+        }
+        return ok;
+    }
+}
+
 contract IBCPacketHandlerTest is TestPlus {
+    using CometblsHelp for *;
+    using BytesLib for bytes;
     using ConnectionCounterparty for ConnectionCounterparty.Data;
 
-    IBCHandler_Testable handler;
-    ILightClient client;
-    MockApp app;
     string constant CLIENT_TYPE = "mock";
+    string constant PORT_ID = "app";
 
-    uint64 proofHeight = 1;
+    bytes32 constant ARBITRARY_INITIAL_NEXT_VALIDATORS =
+        hex"F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60";
+    bytes32 constant ARBITRARY_INITIAL_APP_HASH =
+        hex"A8158610DD6858F3D26149CC0DB3339ABD580EA217DE0A151C9C451DED418E35";
+    string constant CHAIN_ID = "testnet-1337";
+    uint64 constant LATEST_HEIGHT = 0x1337;
+    uint64 constant LATEST_TIMESTAMP = 0xCAFEBABE;
+
+    uint64 constant LOCAL_HEIGHT = 0xC0DEC0DEC0DEC0DE;
+    uint64 constant LOCAL_TIMESTAMP = 0xDEADBEEFDEADBEEF;
+
+    bytes constant ARBITRARY_ZKP =
+        hex"21D80AACFCA03DC2B84881E3EF1A73C25D2D088E48AA35764A6B4485A78354F021C90A4CBAAB731658D13CE5152F147DF1734F0196031DAF918BF06DAEA1A4E9082959B87795E28482B4FE13AD4B777F9A2D4BFBC8C3FF2640A5DB5619A8F2DA04D6037DAEA584F0C93EDC769859BE695493F48813E491540C37587C2C3214490AE2C9DC087D8039CAF2BD181E289D60EA9AC8B4BF3411A9F9888DC9250525DD055143FE81924CF683CF8381167431A8CB0C984C9DB2BA13D6C9B2374FFD7323052586453C7C06E234B861E9E212EB4A8DF470BD9ADCDB759FED40E62004ECB8210E3A53A0D1F570552C5118521943BC2CC4BB1DA8A5877667A2800D4DF62665304E914F6631B3CE27C88F21E1E8FFAC6C0512D62AE00BEEA79F649BD6E139BD254011571644878C8A72D167D82B5F409360209E1B8E146457C1893769383F4F2F9C0E2EF22885F92672277AF244840CA6EB5298D74E73334BD88360D6B33681";
+
+    IBCHandlerFake handler;
+    ILightClient client;
+    TestVerifier verifier;
+    TestMembershipVerifier membershipVerifier;
+    MockApp app;
+
     string clientId;
-    string connId;
-    string portId;
+    string connectionId;
     string channelId;
 
-    event SendPacket(
-        uint64 sequence,
-        string sourcePort,
-        string sourceChannel,
-        ClientHeight.Data timeoutHeight,
-        uint64 timeoutTimestamp,
-        bytes data
-    );
-
-    constructor() {
-        handler = new IBCHandler_Testable();
-        client = new MockClient(address(handler));
-        app = new MockApp();
+    function setUp() public {
+        handler = new IBCHandlerFake();
+        membershipVerifier = new TestMembershipVerifier();
+        verifier = new TestVerifier();
+        client = new CometblsClient(
+            address(handler),
+            verifier,
+            membershipVerifier
+        );
         handler.registerClient(CLIENT_TYPE, client);
+        app = new MockApp();
+        createClient();
         setupConnection();
         setupChannel();
+
+        vm.warp(LOCAL_TIMESTAMP);
+        vm.roll(LOCAL_HEIGHT);
     }
 
-    function test_sendPacket() public {
-        ClientHeight.Data memory timeoutHeight = ClientHeight.Data({
-            revision_number: 0,
-            revision_height: type(uint64).max
-        });
-        uint64 timeoutTimestamp = type(uint64).max;
-
-        vm.prank(address(app));
-        vm.expectEmit(false, false, false, false);
-        emit SendPacket(0, "", "", timeoutHeight, 0, hex"");
-        handler.sendPacket(
-            portId,
-            channelId,
-            timeoutHeight,
-            timeoutTimestamp,
-            hex"12345678"
-        );
-    }
-
-    function test_recvPacket() public {
-        // TODO: read the TODO notes on IBCPacket.t.sol
-    }
-
-    /// sets up an IBC Connection from the perspective of chain A
-    function setupConnection() internal {
-        // 1. createClient
-        IBCMsgs.MsgCreateClient memory m = MsgMocks.createClient(
+    function createClient() internal {
+        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
             CLIENT_TYPE,
-            proofHeight
+            CHAIN_ID,
+            LATEST_HEIGHT,
+            ARBITRARY_INITIAL_APP_HASH,
+            ARBITRARY_INITIAL_NEXT_VALIDATORS,
+            LATEST_TIMESTAMP
         );
         clientId = handler.createClient(m);
+    }
 
-        // 2. ConnOpenInit
+    function setupConnection() internal {
         IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
             .connectionOpenInit(clientId);
-        connId = handler.connectionOpenInit(msg_init);
-
-        // 3. ConnOpenAck
+        connectionId = handler.connectionOpenInit(msg_init);
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
-            .connectionOpenAck(clientId, connId, proofHeight);
+            .connectionOpenAck(clientId, connectionId, LATEST_HEIGHT);
+        membershipVerifier.pushValid();
+        membershipVerifier.pushValid();
         handler.connectionOpenAck(msg_ack);
     }
 
-    /// sets up an IBC Connection from the perspective of chain B
     function setupChannel() internal {
-        // 1. bindPort
-        handler.bindPort(portId, address(app));
-
-        // 2. channelOpenInit
+        handler.bindPort(PORT_ID, address(app));
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connId,
-            portId
+            connectionId,
+            PORT_ID
         );
         channelId = handler.channelOpenInit(msg_init);
-
-        // 3. channelOpenAck
         IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(
-            portId,
+            PORT_ID,
             channelId,
-            proofHeight
+            LATEST_HEIGHT
         );
+        membershipVerifier.pushValid();
         handler.channelOpenAck(msg_ack);
+    }
+
+    function makeHeader(
+        uint64 height,
+        uint64 timestamp
+    ) internal pure returns (TendermintTypesSignedHeader.Data memory) {
+        TendermintTypesHeader.Data memory header = TendermintTypesHeader.Data({
+            version: TendermintVersionConsensus.Data({block: 11, app: 0}),
+            chain_id: "union-devnet-1",
+            height: int64(height),
+            time: Timestamp.Data({secs: int64(timestamp), nanos: 0}),
+            last_block_id: TendermintTypesBlockID.Data({
+                hash: hex"80DF3A892BF2586E3B22201D2AC5A65EDAB66ECE7BB6F51077F3B50CCE7526E1",
+                part_set_header: TendermintTypesPartSetHeader.Data({
+                    total: 1,
+                    hash: hex"0468D541CAD891D571E2AD1DD9F43480993BDF18A1016F4C956555A417EFE681"
+                })
+            }),
+            last_commit_hash: hex"DA6FCBD48131808D58B54E8B44737AB2B6F3A3DD1AFF946D0F6CEFD25306FD48",
+            data_hash: hex"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            validators_hash: hex"F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60",
+            next_validators_hash: hex"F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60",
+            consensus_hash: hex"048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+            app_hash: hex"983EF85676937CEC783601B5B50865733A72C3DF88E4CC0B3F11C108C9688459",
+            last_results_hash: hex"357B78587B9CD4469F1F63C29B96EAC1D7F643520B97D396B20A20505122AA01",
+            evidence_hash: hex"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            proposer_address: hex"4CE57693C82B50F830731DAB14FA759327762456"
+        });
+        return
+            TendermintTypesSignedHeader.Data({
+                header: header,
+                commit: TendermintTypesCommit.Data({
+                    height: header.height,
+                    round: 0,
+                    block_id: TendermintTypesBlockID.Data({
+                        hash: abi.encodePacked(header.merkleRoot()),
+                        part_set_header: TendermintTypesPartSetHeader.Data({
+                            total: 1,
+                            hash: hex"153E8B1F5B189A140FE5DA85DAB72FBD4A1DFA7E69C6FE5CE1FD66F0CCB5F6A1"
+                        })
+                    }),
+                    signatures: new TendermintTypesCommitSig.Data[](0)
+                })
+            });
+    }
+
+    function test_sendPacket_ok(
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+    }
+
+    function test_sendPacket_newCommitment(
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        assertEq(
+            handler.commitments(
+                IBCCommitment.packetCommitmentKey(PORT_ID, channelId, 1)
+            ),
+            keccak256(
+                abi.encodePacked(
+                    sha256(
+                        abi.encodePacked(
+                            timeoutTimestamp,
+                            uint64(0),
+                            timeoutHeight,
+                            sha256(payload)
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    function test_sendPacket_unauthorized(
+        address malicious,
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(malicious != address(0) && malicious != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.expectRevert("sendPacket: unauthorized");
+        vm.prank(malicious);
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+    }
+
+    function test_sendPacket_incrementSequence(
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        uint64 sequenceBefore = handler.nextSequenceSends(PORT_ID, channelId);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        uint64 sequenceAfter = handler.nextSequenceSends(PORT_ID, channelId);
+        assertEq(sequenceAfter, sequenceBefore + 1);
+    }
+
+    function test_sendPacket_invalidTimeoutHeight(
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(0 < timeoutHeight && timeoutHeight <= LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        vm.expectRevert(
+            "sendPacket: receiving chain block height >= packet timeout height"
+        );
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+    }
+
+    function test_sendPacket_invalidTimeoutTimestamp(
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(0 < timeoutTimestamp && timeoutTimestamp <= LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        vm.expectRevert(
+            "sendPacket: receiving chain block timestamp >= packet timeout timestamp"
+        );
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+    }
+
+    function test_recvPacket_ok(
+        address relayer,
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > vm.getBlockNumber());
+        vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        handler.recvPacket(
+            MsgMocks.packetRecv(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload
+            )
+        );
+    }
+
+    function test_recvPacket_receiptSet(
+        address relayer,
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > vm.getBlockNumber());
+        vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        IBCMsgs.MsgPacketRecv memory msg_ = MsgMocks.packetRecv(
+            PORT_ID,
+            channelId,
+            LATEST_HEIGHT,
+            timeoutHeight,
+            timeoutTimestamp,
+            payload
+        );
+        assertEq(
+            handler.packetReceipts(
+                msg_.packet.destination_port,
+                msg_.packet.destination_channel,
+                msg_.packet.sequence
+            ),
+            0
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        handler.recvPacket(msg_);
+        assertEq(
+            handler.packetReceipts(
+                msg_.packet.destination_port,
+                msg_.packet.destination_channel,
+                msg_.packet.sequence
+            ),
+            1
+        );
+    }
+
+    function test_recvPacket_alreadyReceived(
+        address relayer,
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > vm.getBlockNumber());
+        vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        membershipVerifier.pushValid();
+        IBCMsgs.MsgPacketRecv memory msg_ = MsgMocks.packetRecv(
+            PORT_ID,
+            channelId,
+            LATEST_HEIGHT,
+            timeoutHeight,
+            timeoutTimestamp,
+            payload
+        );
+        vm.prank(relayer);
+        handler.recvPacket(msg_);
+        membershipVerifier.pushValid();
+        vm.expectRevert(
+            "recvPacket: packet sequence already has been received"
+        );
+        vm.prank(relayer);
+        handler.recvPacket(msg_);
+    }
+
+    function test_recvPacket_invalidTimeoutHeight(
+        address relayer,
+        bytes memory payload,
+        uint32 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(
+            0 < timeoutTimestamp && timeoutTimestamp > vm.getBlockTimestamp()
+        );
+        vm.assume(timeoutHeight > 0);
+        membershipVerifier.pushValid();
+        vm.expectRevert("recvPacket: block height >= packet timeout height");
+        vm.prank(relayer);
+        handler.recvPacket(
+            MsgMocks.packetRecv(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                LOCAL_HEIGHT - timeoutHeight,
+                timeoutTimestamp,
+                payload
+            )
+        );
+    }
+
+    function test_recvPacket_invalidTimeoutTimestamp(
+        address relayer,
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint32 timeoutTimestamp
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(0 < timeoutHeight && timeoutHeight > vm.getBlockNumber());
+        vm.assume(timeoutTimestamp > 0);
+        membershipVerifier.pushValid();
+        vm.expectRevert(
+            "recvPacket: block timestamp >= packet timeout timestamp"
+        );
+        vm.prank(relayer);
+        handler.recvPacket(
+            MsgMocks.packetRecv(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                LOCAL_TIMESTAMP - timeoutTimestamp,
+                payload
+            )
+        );
+    }
+
+    function test_recvPacket_invalidProof(
+        address relayer,
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > vm.getBlockNumber());
+        vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        vm.expectRevert("recvPacket: failed to verify packet commitment");
+        vm.prank(relayer);
+        handler.recvPacket(
+            MsgMocks.packetRecv(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload
+            )
+        );
+    }
+
+    function test_recvPacket_invalidOriginPort(
+        address relayer,
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(relayer != address(0));
+        vm.assume(timeoutHeight > vm.getBlockNumber());
+        vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        IBCMsgs.MsgPacketRecv memory msg_ = MsgMocks.packetRecv(
+            PORT_ID,
+            channelId,
+            LATEST_HEIGHT,
+            timeoutHeight,
+            timeoutTimestamp,
+            payload
+        );
+        msg_.packet.source_port = "invalid";
+        membershipVerifier.pushValid();
+        vm.expectRevert(
+            "recvPacket: packet source port doesn't match the counterparty's port"
+        );
+        vm.prank(relayer);
+        handler.recvPacket(msg_);
+    }
+
+    function test_recvPacket_invalidOriginChannel(
+        address relayer,
+        bytes memory payload,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > vm.getBlockNumber());
+        vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
+        IBCMsgs.MsgPacketRecv memory msg_ = MsgMocks.packetRecv(
+            PORT_ID,
+            channelId,
+            LATEST_HEIGHT,
+            timeoutHeight,
+            timeoutTimestamp,
+            payload
+        );
+        msg_.packet.source_channel = "invalid";
+        membershipVerifier.pushValid();
+        vm.expectRevert(
+            "recvPacket: packet source channel doesn't match the counterparty's channel"
+        );
+        vm.prank(relayer);
+        handler.recvPacket(msg_);
+    }
+
+    function test_writeAcknowledgement_ok(
+        uint64 sequence,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(acknowledgement.length > 0);
+        vm.prank(address(app));
+        handler.writeAcknowledgement(
+            PORT_ID,
+            channelId,
+            sequence,
+            acknowledgement
+        );
+    }
+
+    function test_writeAcknowledgement_alreadyExist(
+        uint64 sequence,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(acknowledgement.length > 0);
+        membershipVerifier.pushValid();
+        vm.prank(address(app));
+        handler.writeAcknowledgement(
+            PORT_ID,
+            channelId,
+            sequence,
+            acknowledgement
+        );
+        vm.prank(address(app));
+        vm.expectRevert(
+            "writeAcknowlegement: acknowledgement for packet already exists"
+        );
+        handler.writeAcknowledgement(
+            PORT_ID,
+            channelId,
+            sequence,
+            acknowledgement
+        );
+    }
+
+    function test_writeAcknowledgement_emptyAcknowledgement(
+        uint64 sequence
+    ) public {
+        vm.prank(address(app));
+        vm.expectRevert("writeAcknowlegement: acknowledgement cannot be empty");
+        handler.writeAcknowledgement(PORT_ID, channelId, sequence, bytes(""));
+    }
+
+    function test_writeAcknowledgement_unauthorized(
+        address malicious,
+        uint64 sequence,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(malicious != address(0) && malicious != address(app));
+        vm.assume(acknowledgement.length > 0);
+        vm.prank(address(malicious));
+        vm.expectRevert("writeAcknowledgement: unauthorized");
+        handler.writeAcknowledgement(
+            PORT_ID,
+            channelId,
+            sequence,
+            acknowledgement
+        );
+    }
+
+    function test_acknowledgePacket_ok(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload,
+                acknowledgement
+            )
+        );
+    }
+
+    function test_acknowledgePacket_alreadyAcknowledged(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload,
+                acknowledgement
+            )
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        vm.expectRevert("acknowledgePacket: packet commitment not found");
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload,
+                acknowledgement
+            )
+        );
+    }
+
+    function test_acknowledgePacket_invalidProof(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        vm.prank(relayer);
+        vm.expectRevert(
+            "acknowledgePacket: failed to verify packet acknowledgement commitment"
+        );
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload,
+                acknowledgement
+            )
+        );
+    }
+
+    function test_acknowledgePacket_notSent(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(relayer);
+        vm.expectRevert("acknowledgePacket: packet commitment not found");
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload,
+                acknowledgement
+            )
+        );
+    }
+
+    function test_acknowledgePacket_payloadTampered(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        vm.prank(relayer);
+        vm.expectRevert("acknowledgePacket: commitment bytes are not equal");
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                abi.encodePacked(payload, hex"00"),
+                acknowledgement
+            )
+        );
+    }
+
+    function test_acknowledgePacket_invalidDestinationPort(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        membershipVerifier.pushValid();
+        IBCMsgs.MsgPacketAcknowledgement memory msg_ = MsgMocks.packetAck(
+            PORT_ID,
+            channelId,
+            LATEST_HEIGHT,
+            timeoutHeight,
+            timeoutTimestamp,
+            payload,
+            acknowledgement
+        );
+        msg_.packet.destination_port = "invalid";
+        vm.prank(relayer);
+        vm.expectRevert(
+            "acknowledgePacket: packet destination port doesn't match the counterparty's port"
+        );
+        handler.acknowledgePacket(msg_);
+    }
+
+    function test_acknowledgePacket_invalidDestinationChannel(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        membershipVerifier.pushValid();
+        IBCMsgs.MsgPacketAcknowledgement memory msg_ = MsgMocks.packetAck(
+            PORT_ID,
+            channelId,
+            LATEST_HEIGHT,
+            timeoutHeight,
+            timeoutTimestamp,
+            payload,
+            acknowledgement
+        );
+        msg_.packet.destination_channel = "invalid";
+        vm.prank(relayer);
+        vm.expectRevert(
+            "acknowledgePacket: packet destination channel doesn't match the counterparty's channel"
+        );
+        handler.acknowledgePacket(msg_);
+    }
+
+    // TODO: acknowledgePacket tests against ORDERED channel
+
+    function test_timeoutPacket_payloadTampered(
+        address relayer,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({revision_number: 0, revision_height: 0}),
+            0,
+            payload
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        vm.expectRevert("timeoutPacket: commitment bytes are not equal");
+        handler.timeoutPacket(
+            MsgMocks.packetTimeout(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                0,
+                0,
+                abi.encodePacked(payload, hex"00")
+            )
+        );
+    }
+
+    function test_timeoutPacket_notSent(
+        address relayer,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        vm.expectRevert("timeoutPacket: packet commitment not found");
+        handler.timeoutPacket(
+            MsgMocks.packetTimeout(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                0,
+                0,
+                payload
+            )
+        );
+    }
+
+    function test_timeoutPacket_invalidDestinationPort(
+        address relayer,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        IBCMsgs.MsgPacketTimeout memory msg_ = MsgMocks.packetTimeout(
+            PORT_ID,
+            channelId,
+            LATEST_HEIGHT,
+            0,
+            0,
+            payload
+        );
+        msg_.packet.destination_port = "invalid";
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        vm.expectRevert(
+            "timeoutPacket: packet destination port doesn't match the counterparty's port"
+        );
+        handler.timeoutPacket(msg_);
+    }
+
+    function test_timeoutPacket_invalidDestinationChannel(
+        address relayer,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        IBCMsgs.MsgPacketTimeout memory msg_ = MsgMocks.packetTimeout(
+            PORT_ID,
+            channelId,
+            LATEST_HEIGHT,
+            0,
+            0,
+            payload
+        );
+        msg_.packet.destination_channel = "invalid";
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        vm.expectRevert(
+            "timeoutPacket: packet destination channel doesn't match the counterparty's channel"
+        );
+        handler.timeoutPacket(msg_);
+    }
+
+    function test_timeoutPacket_noTimeout(
+        address relayer,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({revision_number: 0, revision_height: 0}),
+            0,
+            payload
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        vm.expectRevert(
+            "timeoutPacket: packet has no timestamp/height timeout"
+        );
+        handler.timeoutPacket(
+            MsgMocks.packetTimeout(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                0,
+                0,
+                payload
+            )
+        );
+    }
+
+    function test_timeoutPacket_height_ok(
+        address relayer,
+        uint64 timeoutHeight,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT + 1);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight - 1
+            }),
+            0,
+            payload
+        );
+        verifier.pushValid();
+        vm.prank(relayer);
+        handler.updateClient(
+            Cometbls.updateClient(
+                clientId,
+                makeHeader(timeoutHeight, LATEST_TIMESTAMP + 1),
+                LATEST_HEIGHT,
+                ARBITRARY_ZKP
+            )
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        handler.timeoutPacket(
+            MsgMocks.packetTimeout(
+                PORT_ID,
+                channelId,
+                timeoutHeight,
+                timeoutHeight - 1,
+                0,
+                payload
+            )
+        );
+    }
+
+    function test_timeoutPacket_alreadyTimedout(
+        address relayer,
+        uint64 timeoutHeight,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT + 1);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight - 1
+            }),
+            0,
+            payload
+        );
+        verifier.pushValid();
+        vm.prank(relayer);
+        handler.updateClient(
+            Cometbls.updateClient(
+                clientId,
+                makeHeader(timeoutHeight, LATEST_TIMESTAMP + 1),
+                LATEST_HEIGHT,
+                ARBITRARY_ZKP
+            )
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        handler.timeoutPacket(
+            MsgMocks.packetTimeout(
+                PORT_ID,
+                channelId,
+                timeoutHeight,
+                timeoutHeight - 1,
+                0,
+                payload
+            )
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        vm.expectRevert("timeoutPacket: packet commitment not found");
+        handler.timeoutPacket(
+            MsgMocks.packetTimeout(
+                PORT_ID,
+                channelId,
+                timeoutHeight,
+                timeoutHeight - 1,
+                0,
+                payload
+            )
+        );
+    }
+
+    function test_timeoutPacket_invalidProof(
+        address relayer,
+        uint64 timeoutHeight,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT + 1);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight - 1
+            }),
+            0,
+            payload
+        );
+        verifier.pushValid();
+        vm.prank(relayer);
+        handler.updateClient(
+            Cometbls.updateClient(
+                clientId,
+                makeHeader(timeoutHeight, LATEST_TIMESTAMP + 1),
+                LATEST_HEIGHT,
+                ARBITRARY_ZKP
+            )
+        );
+        vm.prank(relayer);
+        vm.expectRevert(
+            "timeoutPacket: failed to verify packet timeout absence proof"
+        );
+        handler.timeoutPacket(
+            MsgMocks.packetTimeout(
+                PORT_ID,
+                channelId,
+                timeoutHeight,
+                timeoutHeight - 1,
+                0,
+                payload
+            )
+        );
+    }
+
+    function test_timeoutPacket_height_notReached(
+        address relayer,
+        uint64 timeoutHeight,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT + 1);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight - 1
+            }),
+            0,
+            payload
+        );
+        verifier.pushValid();
+        vm.prank(relayer);
+        handler.updateClient(
+            Cometbls.updateClient(
+                clientId,
+                makeHeader(timeoutHeight - 1, LATEST_TIMESTAMP + 1),
+                LATEST_HEIGHT,
+                ARBITRARY_ZKP
+            )
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        vm.expectRevert(
+            "timeoutPacket: height timeout not reached for the given proof height"
+        );
+        handler.timeoutPacket(
+            MsgMocks.packetTimeout(
+                PORT_ID,
+                channelId,
+                timeoutHeight - 1,
+                timeoutHeight - 1,
+                0,
+                payload
+            )
+        );
+    }
+
+    function test_timeoutPacket_timestamp_ok(
+        address relayer,
+        // avoid overflowing uint64.max
+        uint32 timeoutTimestamp,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(LATEST_TIMESTAMP + 1 < timeoutTimestamp);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({revision_number: 0, revision_height: 0}),
+            timeoutTimestamp - 1,
+            payload
+        );
+        verifier.pushValid();
+        vm.prank(relayer);
+        handler.updateClient(
+            Cometbls.updateClient(
+                clientId,
+                makeHeader(LATEST_HEIGHT + 1, timeoutTimestamp),
+                LATEST_HEIGHT,
+                ARBITRARY_ZKP
+            )
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        handler.timeoutPacket(
+            MsgMocks.packetTimeout(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT + 1,
+                0,
+                timeoutTimestamp - 1,
+                payload
+            )
+        );
+    }
+
+    function test_timeoutPacket_timestamp_notReached(
+        address relayer,
+        // avoid overflowing uint64.max
+        uint32 timeoutTimestamp,
+        bytes memory payload
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(LATEST_TIMESTAMP + 1 < timeoutTimestamp);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({revision_number: 0, revision_height: 0}),
+            timeoutTimestamp - 1,
+            payload
+        );
+        verifier.pushValid();
+        vm.prank(relayer);
+        handler.updateClient(
+            Cometbls.updateClient(
+                clientId,
+                makeHeader(LATEST_HEIGHT + 1, timeoutTimestamp - 1),
+                LATEST_HEIGHT,
+                ARBITRARY_ZKP
+            )
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        vm.expectRevert(
+            "timeoutPacket: timestamp timeout not reached for the given proof height"
+        );
+        handler.timeoutPacket(
+            MsgMocks.packetTimeout(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT + 1,
+                0,
+                timeoutTimestamp - 1,
+                payload
+            )
+        );
     }
 }

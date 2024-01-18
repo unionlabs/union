@@ -190,7 +190,7 @@ library MsgMocks {
         m.channel.state = ChannelEnums.State.STATE_INIT;
         m.channel.counterparty = counterparty;
         m.channel.connection_hops = hops;
-        m.channel.ordering = ChannelEnums.Order.ORDER_ORDERED;
+        m.channel.ordering = ChannelEnums.Order.ORDER_UNORDERED;
         m.portId = portId;
     }
 
@@ -207,7 +207,7 @@ library MsgMocks {
         // mocking channel data
         Channel.Data memory channel = Channel.Data({
             state: ChannelEnums.State.STATE_TRYOPEN,
-            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: channelId
@@ -216,9 +216,6 @@ library MsgMocks {
             version: m.counterpartyVersion
         });
         channel.connection_hops[0] = "counterparty-conn-id";
-
-        bytes memory encodedChannel = Channel.encode(channel);
-        m.proofTry = abi.encodePacked(sha256(encodedChannel));
         m.proofHeight.revision_height = proofHeight;
     }
 
@@ -235,7 +232,7 @@ library MsgMocks {
         m.counterpartyVersion = "counterparty-version";
         m.channel = Channel.Data({
             state: ChannelEnums.State.STATE_TRYOPEN,
-            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: ""
@@ -248,7 +245,7 @@ library MsgMocks {
         // expected channel
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_INIT,
-            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: ""
@@ -257,9 +254,6 @@ library MsgMocks {
             version: m.counterpartyVersion
         });
         expectedChannel.connection_hops[0] = "counterparty-conn-id";
-
-        bytes memory encodedChannel = Channel.encode(expectedChannel);
-        m.proofInit = abi.encodePacked(sha256(encodedChannel));
         m.proofHeight.revision_height = proofHeight;
     }
 
@@ -273,7 +267,7 @@ library MsgMocks {
 
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_OPEN,
-            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: channelId
@@ -282,9 +276,6 @@ library MsgMocks {
             version: "counterparty-version"
         });
         expectedChannel.connection_hops[0] = "counterparty-conn-id";
-
-        bytes memory encodedChannel = Channel.encode(expectedChannel);
-        m.proofAck = abi.encodePacked(sha256(encodedChannel));
         m.proofHeight.revision_height = proofHeight;
     }
 
@@ -306,7 +297,7 @@ library MsgMocks {
 
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_CLOSED,
-            ordering: ChannelEnums.Order.ORDER_ORDERED,
+            ordering: ChannelEnums.Order.ORDER_UNORDERED,
             counterparty: ChannelCounterparty.Data({
                 port_id: portId,
                 channel_id: channelId
@@ -316,34 +307,66 @@ library MsgMocks {
         });
 
         expectedChannel.connection_hops[0] = "counterparty-conn-id";
-
-        bytes memory encodedChannel = Channel.encode(expectedChannel);
-        m.proofInit = abi.encodePacked(sha256(encodedChannel));
         m.proofHeight.revision_height = proofHeight;
     }
 
     function packetRecv(
         string memory portId,
         string memory channelId,
-        uint64 proofHeight
+        uint64 proofHeight,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload
     ) internal view returns (IBCMsgs.MsgPacketRecv memory m) {
         m.packet.destination_port = portId;
         m.packet.destination_channel = channelId;
         m.packet.source_port = "counterparty-port-id";
         m.packet.source_channel = "counterparty-channel-id";
-        m.packet.data = hex"12345678";
+        m.packet.data = payload;
         m.packet.sequence = 1;
-
+        m.packet.timeout_height.revision_height = timeoutHeight;
+        m.packet.timeout_timestamp = timeoutTimestamp;
         m.proofHeight.revision_height = proofHeight;
-        bytes32 commitmentBytes = sha256(
-            abi.encodePacked(
-                m.packet.timeout_timestamp,
-                m.packet.timeout_height.revision_number,
-                m.packet.timeout_height.revision_height,
-                sha256(m.packet.data)
-            )
-        );
-        m.proof = abi.encodePacked(sha256(abi.encodePacked(commitmentBytes)));
+    }
+
+    function packetAck(
+        string memory portId,
+        string memory channelId,
+        uint64 proofHeight,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) internal view returns (IBCMsgs.MsgPacketAcknowledgement memory m) {
+        m.packet.source_port = portId;
+        m.packet.source_channel = channelId;
+        m.packet.destination_port = "counterparty-port-id";
+        m.packet.destination_channel = "counterparty-channel-id";
+        m.packet.data = payload;
+        m.packet.sequence = 1;
+        m.packet.timeout_height.revision_height = timeoutHeight;
+        m.packet.timeout_timestamp = timeoutTimestamp;
+        m.proofHeight.revision_height = proofHeight;
+        m.acknowledgement = acknowledgement;
+    }
+
+    function packetTimeout(
+        string memory portId,
+        string memory channelId,
+        uint64 proofHeight,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload
+    ) internal view returns (IBCMsgs.MsgPacketTimeout memory m) {
+        m.packet.source_port = portId;
+        m.packet.source_channel = channelId;
+        m.packet.destination_port = "counterparty-port-id";
+        m.packet.destination_channel = "counterparty-channel-id";
+        m.packet.data = payload;
+        m.packet.sequence = 1;
+        m.packet.timeout_height.revision_height = timeoutHeight;
+        m.packet.timeout_timestamp = timeoutTimestamp;
+        m.proofHeight.revision_height = proofHeight;
     }
 }
 

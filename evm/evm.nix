@@ -324,10 +324,20 @@
               '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
               '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
               '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
+              '${evmSources}/contracts/core/25-handler/IBCQuerier.sol' \
+              '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
               '${evmSources}/tests/*'
             genhtml lcov.info.pruned -o $out --branch-coverage
             mv lcov.info.pruned $out/lcov.info
           '';
+
+        show-solidity-coverage = pkgs.writeShellApplication {
+          name = "show-solidity-coverage";
+          runtimeInputs = [ ];
+          text = ''
+            xdg-open ${self'.packages.solidity-coverage}/index.html
+          '';
+        };
 
         solidity-build-tests = pkgs.writeShellApplication {
           name = "run-solidity-build-tests";
