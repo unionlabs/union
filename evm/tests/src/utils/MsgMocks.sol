@@ -216,9 +216,6 @@ library MsgMocks {
             version: m.counterpartyVersion
         });
         channel.connection_hops[0] = "counterparty-conn-id";
-
-        bytes memory encodedChannel = Channel.encode(channel);
-        m.proofTry = abi.encodePacked(sha256(encodedChannel));
         m.proofHeight.revision_height = proofHeight;
     }
 
@@ -257,9 +254,6 @@ library MsgMocks {
             version: m.counterpartyVersion
         });
         expectedChannel.connection_hops[0] = "counterparty-conn-id";
-
-        bytes memory encodedChannel = Channel.encode(expectedChannel);
-        m.proofInit = abi.encodePacked(sha256(encodedChannel));
         m.proofHeight.revision_height = proofHeight;
     }
 
@@ -282,9 +276,6 @@ library MsgMocks {
             version: "counterparty-version"
         });
         expectedChannel.connection_hops[0] = "counterparty-conn-id";
-
-        bytes memory encodedChannel = Channel.encode(expectedChannel);
-        m.proofAck = abi.encodePacked(sha256(encodedChannel));
         m.proofHeight.revision_height = proofHeight;
     }
 
@@ -316,9 +307,6 @@ library MsgMocks {
         });
 
         expectedChannel.connection_hops[0] = "counterparty-conn-id";
-
-        bytes memory encodedChannel = Channel.encode(expectedChannel);
-        m.proofInit = abi.encodePacked(sha256(encodedChannel));
         m.proofHeight.revision_height = proofHeight;
     }
 
