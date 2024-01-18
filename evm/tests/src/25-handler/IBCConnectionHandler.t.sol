@@ -300,7 +300,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         handler.connectionOpenAck(msg_ack);
     }
 
-    function test_openingHandshake_init_ack_unsupportedVersion(
+    function test_handshake_init_ack_unsupportedVersion(
         uint64 proofHeight
     ) public {
         TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
@@ -362,7 +362,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         handler.connectionOpenAck(msg_ack);
     }
 
-    function test_openingHandshake_init_ack_invalidConnectionStateProof(
+    function test_handshake_init_ack_invalidConnectionStateProof(
         uint64 proofHeight
     ) public {
         TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
@@ -420,7 +420,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         handler.connectionOpenAck(msg_ack);
     }
 
-    function test_openingHandshake_init_ack_invalidClientStateProof(
+    function test_handshake_init_ack_invalidClientStateProof(
         uint64 proofHeight
     ) public {
         TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
@@ -558,7 +558,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         );
     }
 
-    function test_openingHandshake_try_unsupportedVersion(
+    function test_handshake_try_unsupportedVersion(
         uint64 proofHeight
     ) public {
         TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
@@ -588,7 +588,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         handler.connectionOpenTry(msg_try);
     }
 
-    function test_openingHandshake_try_invalidConnectionStateProof(
+    function test_handshake_try_invalidConnectionStateProof(
         uint64 proofHeight
     ) public {
         TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
@@ -640,7 +640,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         handler.connectionOpenTry(msg_try);
     }
 
-    function test_openingHandshake_try_confirm_invalidClientStateProof(
+    function test_handshake_try_confirm_invalidClientStateProof(
         uint64 proofHeight
     ) public {
         TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
@@ -698,7 +698,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         handler.connectionOpenConfirm(msg_confirm);
     }
 
-    function test_openingHandshake_confirm_notTryOpen(
+    function test_handshake_confirm_notTryOpen(
         uint64 proofHeight
     ) public {
         TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
@@ -727,7 +727,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         handler.connectionOpenConfirm(msg_confirm);
     }
 
-    function test_openingHandshake_init_uniqueId() public {
+    function test_handshake_init_uniqueId() public {
         IBCMsgs.MsgConnectionOpenInit memory m = MsgMocks.connectionOpenInit(
             "client-1"
         );

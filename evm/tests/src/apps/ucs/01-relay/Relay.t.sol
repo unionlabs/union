@@ -224,17 +224,17 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_isRemote_ok() public {
+    function test_isRemote_ok() public {
         assertEq(RelayLib.isFromChannel("a", "b", "a/b/X"), true);
         assertEq(RelayLib.isFromChannel("aa.bb", "c", "aa.bb/c/X"), true);
     }
 
-    function testRelay_isRemote_ko() public {
+    function test_isRemote_ko() public {
         assertEq(RelayLib.isFromChannel("a", "b", "b/b/X"), false);
         assertEq(RelayLib.isFromChannel("aa.bb", "c", "aa.b/c/X"), false);
     }
 
-    function testRelay_makeForeignDenom() public {
+    function test_makeForeignDenom() public {
         assertEq(RelayLib.makeForeignDenom("a", "b", "BLA"), "a/b/BLA");
         assertEq(
             RelayLib.makeForeignDenom("wasm.xyz", "channel-1", "muno"),
@@ -242,7 +242,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_makeDenomPrefix() public {
+    function test_makeDenomPrefix() public {
         assertEq(RelayLib.makeDenomPrefix("a", "b"), "a/b/");
         assertEq(
             RelayLib.makeDenomPrefix("wasm.xyz", "channel-99"),
@@ -250,11 +250,11 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_hexToAddress(address addr) public {
+    function test_hexToAddress(address addr) public {
         assertEq(RelayLib.hexToAddress(addr.toHexString()), addr);
     }
 
-    function testRelay_openInit_onlyIBC(
+    function test_openInit_onlyIBC(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -275,7 +275,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_openInit_wrongVersion(
+    function test_openInit_wrongVersion(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -297,7 +297,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_openInit_wrongOrdering(
+    function test_openInit_wrongOrdering(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -319,7 +319,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_openInit_setCounterparty(
+    function test_openInit_setCounterparty(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -344,7 +344,7 @@ contract RelayTests is Test {
         assertEq(counterparty.channel_id, sourceChannel);
     }
 
-    function testRelay_openTry_onlyIBC(
+    function test_openTry_onlyIBC(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -366,7 +366,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_openTry_setCounterparty(
+    function test_openTry_setCounterparty(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -392,7 +392,7 @@ contract RelayTests is Test {
         assertEq(counterparty.channel_id, sourceChannel);
     }
 
-    function testRelay_openTry_wrongVersion(
+    function test_openTry_wrongVersion(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -415,7 +415,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_openTry_wrongOrdering(
+    function test_openTry_wrongOrdering(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -438,7 +438,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_openTry_wrongCounterpartyVersion(
+    function test_openTry_wrongCounterpartyVersion(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -461,7 +461,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_openAck_onlyIBC(
+    function test_openAck_onlyIBC(
         string memory sourceChannel,
         string memory destinationPort,
         string memory destinationChannel
@@ -476,7 +476,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_openAck_wrongVersion(
+    function test_openAck_wrongVersion(
         string memory sourceChannel,
         string memory destinationPort,
         string memory destinationChannel
@@ -492,7 +492,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_openAck_setCounterpartyChannel(
+    function test_openAck_setCounterpartyChannel(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -530,7 +530,7 @@ contract RelayTests is Test {
         assertEq(counterparty.channel_id, sourceChannel);
     }
 
-    function testRelay_openConfirm_onlyIBC(
+    function test_openConfirm_onlyIBC(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
@@ -539,7 +539,7 @@ contract RelayTests is Test {
         relay.onChanOpenConfirm(destinationPort, destinationChannel);
     }
 
-    function testRelay_openConfirm(
+    function test_openConfirm(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
@@ -548,7 +548,7 @@ contract RelayTests is Test {
         relay.onChanOpenConfirm(destinationPort, destinationChannel);
     }
 
-    function testRelay_closeInit_onlyIBC(
+    function test_closeInit_onlyIBC(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
@@ -557,7 +557,7 @@ contract RelayTests is Test {
         relay.onChanCloseInit(destinationPort, destinationChannel);
     }
 
-    function testRelay_closeInit_impossible(
+    function test_closeInit_impossible(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
@@ -567,7 +567,7 @@ contract RelayTests is Test {
         relay.onChanCloseInit(destinationPort, destinationChannel);
     }
 
-    function testRelay_closeConfirm_onlyIBC(
+    function test_closeConfirm_onlyIBC(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
@@ -576,7 +576,7 @@ contract RelayTests is Test {
         relay.onChanCloseConfirm(destinationPort, destinationChannel);
     }
 
-    function testRelay_closeConfirm_impossible(
+    function test_closeConfirm_impossible(
         string memory destinationPort,
         string memory destinationChannel
     ) public {
@@ -586,7 +586,7 @@ contract RelayTests is Test {
         relay.onChanCloseConfirm(destinationPort, destinationChannel);
     }
 
-    function testRelay_onRecvPacketProcessing_onlySelf(
+    function test_onRecvPacketProcessing_onlySelf(
         uint64 sequence,
         string memory sourcePort,
         string memory sourceChannel,
@@ -618,7 +618,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_onRecvPacket_invalidIdentity(
+    function test_onRecvPacket_invalidIdentity(
         uint64 sequence,
         string memory sourcePort,
         string memory sourceChannel,
@@ -655,7 +655,7 @@ contract RelayTests is Test {
         assertEq(acknowledgement, abi.encodePacked(RelayLib.ACK_FAILURE));
     }
 
-    function testRelay_receive_localToken(
+    function test_receive_localToken(
         uint64 sequence,
         string memory sourcePort,
         string memory sourceChannel,
@@ -764,7 +764,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_receive_remoteToken(
+    function test_receive_remoteToken(
         uint64 sequence,
         string memory sourcePort,
         string memory sourceChannel,
@@ -808,7 +808,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_send_local(
+    function test_send_local(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -874,7 +874,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_send_remote(
+    function test_send_remote(
         uint64 sequence,
         string memory sourcePort,
         string memory sourceChannel,
@@ -967,7 +967,7 @@ contract RelayTests is Test {
         }
     }
 
-    function testRelay_timeout_refund_local(
+    function test_timeout_refund_local(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -1030,7 +1030,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_timeout_refund_remote(
+    function test_timeout_refund_remote(
         uint64 sequence,
         string memory sourcePort,
         string memory sourceChannel,
@@ -1122,7 +1122,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_ack_failure_refund_local(
+    function test_ack_failure_refund_local(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -1189,7 +1189,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_ack_failure_refund_remote(
+    function test_ack_failure_refund_remote(
         uint64 sequence,
         string memory sourcePort,
         string memory sourceChannel,
@@ -1285,7 +1285,7 @@ contract RelayTests is Test {
         );
     }
 
-    function testRelay_ack_success_noop_local(
+    function test_ack_success_noop_local(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
@@ -1334,7 +1334,7 @@ contract RelayTests is Test {
         assertEq(writes.length, 0);
     }
 
-    function testRelay_ack_success_noop_remote(
+    function test_ack_success_noop_remote(
         uint64 sequence,
         string memory sourcePort,
         string memory sourceChannel,

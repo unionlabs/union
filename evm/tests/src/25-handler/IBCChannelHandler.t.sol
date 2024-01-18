@@ -40,7 +40,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.registerClient(CLIENT_TYPE, client);
     }
 
-    function test_openingHandshake_init_ack_ok(
+    function test_handshake_init_ack_ok(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -73,7 +73,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenAck(msg_ack);
     }
 
-    function test_openingHandshake_init_noHop(
+    function test_handshake_init_noHop(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -90,7 +90,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenInit(msg_init);
     }
 
-    function test_openingHandshake_init_noConnection(
+    function test_handshake_init_noConnection(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -107,7 +107,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenInit(msg_init);
     }
 
-    function test_openingHandshake_init_unsupportedFeature(
+    function test_handshake_init_unsupportedFeature(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -124,7 +124,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenInit(msg_init);
     }
 
-    function test_openingHandshake_init_notInit(
+    function test_handshake_init_notInit(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -141,7 +141,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenInit(msg_init);
     }
 
-    function test_openingHandshake_init_nonEmptyCounterpartyChannel(
+    function test_handshake_init_nonEmptyCounterpartyChannel(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -160,7 +160,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenInit(msg_init);
     }
 
-    function test_openingHandshake_init_ack_close_init_ok(
+    function test_handshake_init_ack_close_init_ok(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -197,7 +197,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelCloseInit(msg_close);
     }
 
-    function test_openingHandshake_init_ack_close_confirm_ok(
+    function test_handshake_init_ack_close_confirm_ok(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -234,7 +234,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelCloseConfirm(msg_close);
     }
 
-    function test_openingHandshake_try_confirm_ok(
+    function test_handshake_try_confirm_ok(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -264,7 +264,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenConfirm(msg_confirm);
     }
 
-    function test_openingHandshake_try_notTryOpen(
+    function test_handshake_try_notTryOpen(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -285,7 +285,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenTry(msg_try);
     }
 
-    function test_openingHandshake_try_confirm_close_init_ok(
+    function test_handshake_try_confirm_close_init_ok(
         uint64 proofHeight,
         string memory portId
     ) public {
@@ -319,7 +319,7 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelCloseInit(msg_close);
     }
 
-    function test_openingHandshake_try_confirm_close_confirm_ok(
+    function test_handshake_try_confirm_close_confirm_ok(
         uint64 proofHeight,
         string memory portId
     ) public {

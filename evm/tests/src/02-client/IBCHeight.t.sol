@@ -67,7 +67,7 @@ contract IBCHeightTests is Test {
         proxy = new IBCHeightProxy();
     }
 
-    function test_ibcHeight_toUint128_fromUint128_iso(
+    function test_toUint128_fromUint128_iso(
         uint64 revisionNumber,
         uint64 revisionHeight
     ) public {
@@ -80,7 +80,7 @@ contract IBCHeightTests is Test {
         );
     }
 
-    function test_ibcHeight_isZero() public {
+    function test_isZero() public {
         assertTrue(
             proxy.isZero(
                 IbcCoreClientV1Height.Data({
@@ -91,7 +91,7 @@ contract IBCHeightTests is Test {
         );
     }
 
-    function test_ibcHeight_eq(
+    function test_eq(
         uint64 revisionNumber,
         uint64 revisionHeight
     ) public {
@@ -109,7 +109,7 @@ contract IBCHeightTests is Test {
         );
     }
 
-    function test_ibcHeight_lt(
+    function test_lt(
         uint64 revisionNumberA,
         uint64 revisionHeightA,
         uint64 revisionNumberB,
@@ -131,7 +131,7 @@ contract IBCHeightTests is Test {
         );
     }
 
-    function test_ibcHeight_lte(
+    function test_lte(
         uint64 revisionNumberA,
         uint64 revisionHeightA,
         uint64 revisionNumberB,
@@ -153,7 +153,7 @@ contract IBCHeightTests is Test {
         );
     }
 
-    function test_ibcHeight_gt(
+    function test_gt(
         uint64 revisionNumberA,
         uint64 revisionHeightA,
         uint64 revisionNumberB,
@@ -175,7 +175,7 @@ contract IBCHeightTests is Test {
         );
     }
 
-    function test_ibcHeight_gte(
+    function test_gte(
         uint64 revisionNumberA,
         uint64 revisionHeightA,
         uint64 revisionNumberB,
