@@ -358,11 +358,58 @@ fn canonical_vote(
 #[cfg(test)]
 mod tests {
 
-    use cosmwasm_std::{testing::mock_dependencies, Timestamp};
+    use std::{cmp::Ordering, fs};
+
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Timestamp,
+    };
+    use unionlabs::ibc::lightclients::cometbls;
 
     use super::*;
 
     const UPDATES_DIR_PATH: &str = "src/test/updates/";
+
+    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
+        revision_number: 0,
+        revision_height: 3577152,
+    };
+
+    lazy_static::lazy_static! {
+        static ref UPDATES: Vec<cometbls::header::Header> = {
+            let mut update_files = vec![];
+            for entry in fs::read_dir(UPDATES_DIR_PATH).unwrap() {
+                let entry = entry.unwrap();
+                let path = entry.path();
+                if path.file_name().is_some() {
+                    update_files.push(path);
+                }
+            }
+
+            update_files.sort_by(|lhs, rhs| {
+                let lhs = lhs.file_name().unwrap().to_string_lossy().strip_suffix(".json").unwrap().to_string().parse::<u32>().unwrap();
+                let rhs = rhs.file_name().unwrap().to_string_lossy().strip_suffix(".json").unwrap().to_string().parse().unwrap();
+                if lhs > rhs {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
+            });
+
+            let mut updates = vec![];
+            let mut prev_height = 0;
+            for f in update_files {
+                let mut data: cometbls::header::Header= serde_json::from_str(&fs::read_to_string(f).unwrap()).unwrap();
+                if prev_height != 0 {
+                    data.trusted_height.revision_height = prev_height;
+                }
+                prev_height = data.signed_header.header.height.inner().try_into().unwrap();
+                updates.push(data);
+            }
+
+            updates
+        };
+    }
 
     #[test]
     fn is_client_expired_works() {
@@ -374,6 +421,35 @@ mod tests {
         assert_eq!(is_client_expired(5, 5, 10), false);
         // expires when a + b overflows
         assert_eq!(is_client_expired(u64::MAX, 5, 10), true);
+    }
+
+    #[test]
+    fn verify_and_update_header_works_with_good_data() {
+        let deps = mock_dependencies();
+
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+
+        save_client_state(deps.as_mut(), wasm_client_state);
+        save_consensus_state(
+            deps.as_mut(),
+            wasm_consensus_state,
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
+        );
+
+        for update in &*UPDATES {
+            let mut env = mock_env();
+            env.block.time = cosmwasm_std::Timestamp::from_seconds(
+                update.consensus_update.attested_header.execution.timestamp + 60 * 5,
+            );
+            CometblsLightClient::check_for_misbehaviour_on_header(deps.as_ref(), update.clone())
+                .unwrap();
+            CometblsLightClient::verify_header(deps.as_ref(), env.clone(), update.clone()).unwrap();
+            CometblsLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
+        }
     }
 
     // #[test]

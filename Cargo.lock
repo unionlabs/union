@@ -1047,6 +1047,7 @@ dependencies = [
  "hex",
  "ics008-wasm-client",
  "ics23",
+ "lazy_static",
  "prost",
  "protos",
  "ripemd",
