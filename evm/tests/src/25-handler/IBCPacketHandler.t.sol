@@ -116,15 +116,6 @@ contract IBCPacketHandlerTest is TestPlus {
     string connectionId;
     string channelId;
 
-    event SendPacket(
-        uint64 sequence,
-        string sourcePort,
-        string sourceChannel,
-        ClientHeight.Data timeoutHeight,
-        uint64 timeoutTimestamp,
-        bytes data
-    );
-
     function setUp() public {
         handler = new IBCHandlerFake();
         membershipVerifier = new TestMembershipVerifier();
@@ -194,7 +185,10 @@ contract IBCPacketHandlerTest is TestPlus {
         handler.sendPacket(
             PORT_ID,
             channelId,
-            ClientHeight.Data({revision_number: 0, revision_height: 0}),
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
             timeoutTimestamp,
             payload
         );
@@ -608,4 +602,269 @@ contract IBCPacketHandlerTest is TestPlus {
             acknowledgement
         );
     }
+
+    function test_acknowledgePacket_ok(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload,
+                acknowledgement
+            )
+        );
+    }
+
+    function test_acknowledgePacket_alreadyAcknowledged(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload,
+                acknowledgement
+            )
+        );
+        membershipVerifier.pushValid();
+        vm.prank(relayer);
+        vm.expectRevert("acknowledgePacket: packet commitment not found");
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload,
+                acknowledgement
+            )
+        );
+    }
+
+    function test_acknowledgePacket_invalidProof(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        vm.prank(relayer);
+        vm.expectRevert(
+            "acknowledgePacket: failed to verify packet acknowledgement commitment"
+        );
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload,
+                acknowledgement
+            )
+        );
+    }
+
+    function test_acknowledgePacket_notSent(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(relayer);
+        vm.expectRevert("acknowledgePacket: packet commitment not found");
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                payload,
+                acknowledgement
+            )
+        );
+    }
+
+    function test_acknowledgePacket_payloadTampered(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        vm.prank(relayer);
+        vm.expectRevert("acknowledgePacket: commitment bytes are not equal");
+        handler.acknowledgePacket(
+            MsgMocks.packetAck(
+                PORT_ID,
+                channelId,
+                LATEST_HEIGHT,
+                timeoutHeight,
+                timeoutTimestamp,
+                abi.encodePacked(payload, hex"00"),
+                acknowledgement
+            )
+        );
+    }
+
+    function test_acknowledgePacket_invalidDestinationPort(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        membershipVerifier.pushValid();
+        IBCMsgs.MsgPacketAcknowledgement memory msg_ = MsgMocks.packetAck(
+            PORT_ID,
+            channelId,
+            LATEST_HEIGHT,
+            timeoutHeight,
+            timeoutTimestamp,
+            payload,
+            acknowledgement
+        );
+        msg_.packet.destination_port = "invalid";
+        vm.prank(relayer);
+        vm.expectRevert(
+            "acknowledgePacket: packet destination port doesn't match the counterparty's port"
+        );
+        handler.acknowledgePacket(msg_);
+    }
+
+    function test_acknowledgePacket_invalidDestinationChannel(
+        address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes memory payload,
+        bytes memory acknowledgement
+    ) public {
+        vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.prank(address(app));
+        handler.sendPacket(
+            PORT_ID,
+            channelId,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp,
+            payload
+        );
+        membershipVerifier.pushValid();
+        IBCMsgs.MsgPacketAcknowledgement memory msg_ = MsgMocks.packetAck(
+            PORT_ID,
+            channelId,
+            LATEST_HEIGHT,
+            timeoutHeight,
+            timeoutTimestamp,
+            payload,
+            acknowledgement
+        );
+        msg_.packet.destination_channel = "invalid";
+        vm.prank(relayer);
+        vm.expectRevert(
+            "acknowledgePacket: packet destination channel doesn't match the counterparty's channel"
+        );
+        handler.acknowledgePacket(msg_);
+    }
+
+    // TODO: acknowledgePacket tests against ORDERED channel
 }
