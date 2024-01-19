@@ -22,6 +22,12 @@ Yes, you can find them listed on the [Public Endpoints](../public-endpoints) pag
 
 Ensure you have exposed your host machine's network via the `--network` flag in docker.
 
+### My query commands aren't using values from my client config?
+
+Due to [an issue in the cosmos-sdk](https://github.com/cosmos/cosmos-sdk/issues/18868), commands using AutoCLI do not respect the `--home` flag and instead always try and read the default home. As a temporary fix, we've removed the behavior reading the default home, always require a `--home` flag, and moved all `tx` commands away from AutoCLI. However, `query` commands still use AutoCLI and won't read the `--home` flag.
+
+To get around this behavior, we suggest always supplying `--node` and `--chain-id` when using query commands.
+
 ### Other questions?
 
 Please [join our Discord](https://discord.union.build) and ask around in our community.
