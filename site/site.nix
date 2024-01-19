@@ -6,13 +6,13 @@
     {
       packages = {
         site = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-UzodvuD5BKxR52vZkhrI6gwE0DT82qo/zgQC57kECTg=";
+          npmDepsHash = "sha256-SLDtrlNEDZm26Lq0aoCUV+ofKF1jzCCmZsILmlRR1E4=";
           src = ./.;
           pname = "site";
           version = "0.0.1";
           PUPPETEER_SKIP_DOWNLOAD = true;
 
-          nodejs = pkgs.nodejs_20;
+          # nodejs = pkgs.nodejs_20;
           nativeBuildInputs = pkgsDeps;
           buildInputs = pkgsDeps;
 
