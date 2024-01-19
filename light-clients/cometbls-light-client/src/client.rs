@@ -371,8 +371,8 @@ mod tests {
     const UPDATES_DIR_PATH: &str = "src/test/updates/";
 
     const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 0,
-        revision_height: 3577152,
+        revision_number: 1,
+        revision_height: 1124,
     };
 
     lazy_static::lazy_static! {
@@ -425,7 +425,7 @@ mod tests {
 
     #[test]
     fn verify_and_update_header_works_with_good_data() {
-        let deps = mock_dependencies();
+        let mut deps = mock_dependencies();
 
         let wasm_client_state: WasmClientState =
             serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
@@ -442,8 +442,16 @@ mod tests {
 
         for update in &*UPDATES {
             let mut env = mock_env();
+            println!("UPDATE TO: {}", update.trusted_height.revision_height);
             env.block.time = cosmwasm_std::Timestamp::from_seconds(
-                update.consensus_update.attested_header.execution.timestamp + 60 * 5,
+                update
+                    .signed_header
+                    .header
+                    .time
+                    .seconds
+                    .inner()
+                    .try_into()
+                    .unwrap(),
             );
             CometblsLightClient::check_for_misbehaviour_on_header(deps.as_ref(), update.clone())
                 .unwrap();
@@ -452,87 +460,89 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn query_status_returns_active() {
-    //     let deps = mock_dependencies();
+    #[test]
+    fn query_status_returns_active() {
+        let mut deps = mock_dependencies();
 
-    //     let wasm_client_state: WasmClientState =
-    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-    //     let wasm_consensus_state: WasmConsensusState =
-    //         serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-    //     save_client_state(deps.as_mut(), wasm_client_state);
+        save_client_state(deps.as_mut(), wasm_client_state);
 
-    //     save_consensus_state(
-    //         deps.as_mut(),
-    //         wasm_consensus_state,
-    //         &INITIAL_CONSENSUS_STATE_HEIGHT,
-    //     );
+        save_consensus_state(
+            deps.as_mut(),
+            wasm_consensus_state,
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
+        );
 
-    //     let mut env = mock_env();
-    //     env.block.time = Timestamp::from_seconds(0);
+        let mut env = mock_env();
+        env.block.time = Timestamp::from_seconds(0);
 
-    //     assert_eq!(
-    //         CometblsLightClient::status(deps.as_ref(), &env),
-    //         Ok(Status::Active.into())
-    //     );
-    // }
+        assert_eq!(
+            CometblsLightClient::status(deps.as_ref(), &env),
+            Ok(Status::Active.into())
+        );
+    }
 
-    // #[test]
-    // fn query_status_expired_when_consensus_state_missing() {
-    //     let deps = mock_dependencies();
+    #[test]
+    fn query_status_expired_when_consensus_state_missing() {
+        let mut deps = mock_dependencies();
 
-    //     let wasm_client_state: WasmClientState =
-    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-    //     save_client_state(deps.as_mut(), wasm_client_state);
+        save_client_state(deps.as_mut(), wasm_client_state);
 
-    //     assert_eq!(
-    //         CometblsLightClient::status(deps.as_ref(), &env),
-    //         Ok(Status::Expired.into())
-    //     );
-    // }
+        assert_eq!(
+            CometblsLightClient::status(deps.as_ref(), &mock_env()),
+            Ok(Status::Expired.into())
+        );
+    }
 
-    // #[test]
-    // fn query_status_expired_when_client_expired() {
-    //     let deps = mock_dependencies();
+    #[test]
+    fn query_status_expired_when_client_expired() {
+        let mut deps = mock_dependencies();
 
-    //     let wasm_client_state: WasmClientState =
-    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-    //     let wasm_consensus_state: WasmConsensusState =
-    //         serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
 
-    //     save_client_state(deps.as_mut(), wasm_client_state);
+        save_client_state(deps.as_mut(), wasm_client_state);
 
-    //     save_consensus_state(
-    //         deps.as_mut(),
-    //         wasm_consensus_state,
-    //         &INITIAL_CONSENSUS_STATE_HEIGHT,
-    //     );
+        save_consensus_state(
+            deps.as_mut(),
+            wasm_consensus_state,
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
+        );
 
-    //     let mut env = mock_env();
-    //     env.block.time = Timestamp::from_seconds(u64::MAX);
+        let mut env = mock_env();
+        env.block.time = Timestamp::from_nanos(u64::MAX);
 
-    //     assert_eq!(
-    //         CometblsLightClient::status(deps.as_ref(), &env),
-    //         Ok(Status::Active.into())
-    //     );
-    // }
+        assert_eq!(
+            CometblsLightClient::status(deps.as_ref(), &env),
+            Ok(Status::Expired.into())
+        );
+    }
 
-    // #[test]
-    // fn query_status_frozen() {
-    //     let deps = mock_dependencies();
+    #[test]
+    fn query_status_frozen() {
+        let mut deps = mock_dependencies();
 
-    //     let mut wasm_client_state: WasmClientState =
-    //         serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+        let mut wasm_client_state: WasmClientState =
+            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-    //     wasm_client_state.data.frozen_height.revision_height = 1;
+        wasm_client_state.data.frozen_height.revision_height = 1;
 
-    //     assert_eq!(
-    //         CometblsLightClient::status(deps.as_ref(), &env),
-    //         Ok(Status::Frozen.into()),
-    //     );
-    // }
+        save_client_state(deps.as_mut(), wasm_client_state);
+
+        assert_eq!(
+            CometblsLightClient::status(deps.as_ref(), &mock_env()),
+            Ok(Status::Frozen.into()),
+        );
+    }
 }

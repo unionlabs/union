@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1262,
+      "block_id": {
+        "hash": "0x0e45b95d628d31e1007f7b9524e8a244f17e913b2de2799efac73f39896c6148",
+        "part_set_header": {
+          "hash": "0x8e84c616900c5232604536e54cb1a6b5dc17fa8e982c18612ef295e1f51086b4",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xae2c7b525fffe741a08c678185724238e582901a9f15057c63a77ec22934fd7f1ea560c5c9f3a2dc48679f7e738b03719d340ec5f93215ad85b3df2f812fd450",
+            "timestamp": "2024-01-18T16:26:58.654486707Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x80fa9377901cd3df06aafab4e5ad80d79d1b9aa763564d8f8b42622c388cdafb18014937b63355796dcdf5ef54376a88d56dcfdea1c55cf70f80dce709ae9871",
+            "timestamp": "2024-01-18T16:26:58.851628625Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x9c0695e33fe1122816f2796c12b5242c39caa44917750ab1dbf1e1fd21c9a7202b9c47a8d50f0c5dbabb0aa6c6078d8a1440b8b99d94da1c1c0510450fc1ebb6",
+            "timestamp": "2024-01-18T16:26:58.655056420Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x84c9210a84bbf097d6146277405462f915ddfd922e32bce2d7e17374f690c4e111359a82666fabd576c579deaacd10d29357c71b42034b4419d9c5dfddd7b535",
+            "timestamp": "2024-01-18T16:26:58.752711975Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:26:53.210626062Z",
+      "height": "1262",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0xa5ba215905c250ca432b46b03453f8c6f10b28f49d06ccebf581bcf33165049c",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0xed511260af1a0692fbbe2d3ee87eef31509ff6e19b6baf572304167ddb401991",
+        "part_set_header": {
+          "hash": "0xab828808140651b5b8b6393a8da064daa99113e157a276a5387c3102b0557913",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0xdbe7533e0c073a92231e9d102d02e1adfee85a35525eea47ba16a5bc8e37ed67",
+      "proposer_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1256,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x1ed3e24273de7ea1b47e5e8f013e9eabb7230402eae0fe2f49e1696204a8825d1b245071e5b1cfa579347a4dbb1ef1588936066fe4b04f183a43f597d1fb610a1e43d593c68054cae36b80b459561870d94bfb810af8f84d365a6142864172d32dda227522c407aa31cee44c81804bfb705385e289e8240980278a32f66c9638122fd00b1f28f8a5052c2868730784963e6a8694797b24296f4516e9f619ee1e173cb3d47a1bfcfb2ca023a16973dda1a632f6b7ab643de862f99a9f934192121eb9893035a114a07149062669eb79bb8526a67576ecfbea8df3609a979e88f909a0a1abc8fde2b22653573f753d9ef4719de406bc6939acfa20d9c3431ca63e230aa492f6e37e9a4f830fb2bed15886221a7c634a2214ac4a4b55856df6d2be22efe73482e60fa3d958519489f4f3f5d3bb6dc49e0cf00214d42e4a7ba750521141165b45988080e9508849a2cbd16434cdf95c7cc2c3e2deba61146d5960ce"
+}

@@ -1,0 +1,74 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1357,
+      "block_id": {
+        "hash": "0x591305847960a0e39f25174cc6715792bfcf3e9091eac1041a53b98e52cbc3f1",
+        "part_set_header": {
+          "hash": "0x7e64a0e72d3e5bb6f4b82ffbcd8eac3ed5891f43980c04b24494d16b072675db",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "absent"
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xc308217e38ef0be4572c8d480d777f2884391df1489099ce13858b66a72b5bef2a59fa2db7b080605617495d2dbade65e13997832ccc6b7b52fc88d31ba39718",
+            "timestamp": "2024-01-18T16:35:41.650804551Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xa4e5f033e94058f8ee7f88decc7d7aa5e2b7406787285477c1de71cdc4024df4270ea66f777ed24a91ebb4bf19c0b66857abc1235e5e539283b2a3c0c7c83f81",
+            "timestamp": "2024-01-18T16:35:41.658380680Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xda05524f8309a5a10d262cab2e21b7badaad50851e5aebac5860e470628242e91700b0392ed5973d65cbccb528de31b3927e5cb6978c5752027468ad6ebc89c2",
+            "timestamp": "2024-01-18T16:35:41.748323806Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:35:36.084140449Z",
+      "height": "1357",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0x3a5cdb219522113791501e06b442091848858f2223c29852c337f1bdb786a835",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0xe3cbe5ae79b5b1055397567e50e632a55a0f3a049531d0083489b1624157dea0",
+        "part_set_header": {
+          "hash": "0xf4678365965ead0da309e4ecefe0448ae7c167d4c611e411c6bd7d434712603e",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0x253c0a6a8071e126b10b9348e032b0cabbe3eff3d8dad4ba9799c60dbab62042",
+      "proposer_address": "0x196d6009588da28cf40039c957a53b08104723f9",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1350,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x25bcfef197fb7b619104471f5aee3c85939e285f72508340fe3423894649c7d62b43e74a92e85c770f2bc67b519b0775c3cba15f75109a3f0d77db96527736d41da92007e1c805b95cf1873a0fdf972cd754cda31ee9f95e455df2126096d9082e293532eb78d4c450b69062c7e498c3d4977768c4e9859d64ca20c3bfa0c2702bbf072b4570d7ddda4ff788220654746c2c6cd1aac291425b9be110c630aae6174ada6486f75c4cbad26fcc98e4cebfecd7018501e1a38de8f6ceea6f5294f120111341c93a24b81c5f9d14a3f5495f1ac00e3031d2b8116917536665f10e35292c97123266baccf3a5dcb11412b52b74a9621c0bf26a24f3fed0975ee9f5b62fbb5c33f7b72955166469a56c8743ed771f083254d06952dfca58f7e6ffaa3718c365fbbb7ae43644f5fa5d133838383f57b56722e28d45d45f8c0f7e2b7bc02a9b3c70116ba08c7f11f60cf04f36ee39a1851da9e0b53a1eaa8e3fbb45b3c0"
+}

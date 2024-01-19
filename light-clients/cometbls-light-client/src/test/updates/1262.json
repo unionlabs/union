@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1271,
+      "block_id": {
+        "hash": "0x2d330d3723f0f8377eb3fdb35729e6bd5a33d8347b3476343c2bf8a0ffc69bed",
+        "part_set_header": {
+          "hash": "0x16ebb08356bb067bbab54c7571008245854621f083ac330a8e4253c175f2609d",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xd24017e51c9c820e13ced5893b32084d603f39476f65e5c396dcb32ab3c5e3882f8d36c333d1ef69296bbce62da2457a08557f7a6aa6536c979491d37bd8a374",
+            "timestamp": "2024-01-18T16:27:48.442243936Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xd89a6f89a78e3205df65140b2887b43114e451aebe4fdf6d00ecf2bbe4659e790dbde977ab651dbca0cfd1e10c4817527b71c8a86b2347137e44c1ea3c6775b2",
+            "timestamp": "2024-01-18T16:27:48.441855058Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xc8cd1f3272f94b56e73f2be24a56aa57969dd58d02b330274172b06a59ed753326703297829af4130146721c5d6e8b3f10340a486072d035b866db3a82b0088c",
+            "timestamp": "2024-01-18T16:27:48.844122647Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x888865106fa3adf9143267390bf7a530024166b6bd73a52de6036dfb18a9fc11295f11a8374d73894fa8620cb05677830336b3dda8c50a40bd596b46bac6be2f",
+            "timestamp": "2024-01-18T16:27:48.548584541Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:27:42.913075925Z",
+      "height": "1271",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0x90fcb52bf4eca8c6fcda34b22c7ba64f0445ded9e03705119742afe6b77a4b9f",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0xf379b49a2256c31abd7479eacf814cbb7c40fa2854b4a724a0b09cc7174f9f5c",
+        "part_set_header": {
+          "hash": "0x34aa9bd30405219303eb982812a60123f0a9e7815a7a10aff7ca5009208b93c8",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0x8fcd896e89e3308655774152704871363f0c18f9f53db562e70039495231938c",
+      "proposer_address": "0x4ce57693c82b50f830731dab14fa759327762456",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1262,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x086de2e3c939f5f01423b91e405a4a3ca9ee1aedc10711e2d34e81e8aeaae3f01e8f979f695edec99afd4d2ae8d7f2440ef86bb65389d5aa7c07a88661970ae2263fba12b61a04a1ab689544a1475df8884b5c55f99104b45a5e0fa6b797f7f70df217287208545740c0bcfd3c35d57f42f04613daed526f24a1f8b8cc3c29d90d0d3530933d701c6a968fde70c03993bf581149655a89daf7bf721ee6dd3f671dda6299d4b1d73aed380272adff76a3e50253cb61e08a8bf2a16a707eb9467619f731e48cdb76a5d70a065237c86f0786a951e3ae51a59fe36d2db9819df8fb0ca32174da598c8475d1984a60d29daade27d778d9d28a9ec1a9880f916088cb2ae9eae5108583c2ea72bcb56a0a3f48bf199c5c05b8877cce8d2f72048cca102ea734530b59de1c0117ac7291b7da71f4accb91baa9aa469b2f53d0de6725712b3848963f361f6caca31fefeacef81fd6c48c949aa7851770121672e900aeab"
+}

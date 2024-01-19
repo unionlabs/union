@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1249,
+      "block_id": {
+        "hash": "0xaba48f2ff49fc821710debf2f71782e06e26ca0448361503d581a47fe90f4a96",
+        "part_set_header": {
+          "hash": "0x2b50131b22262a3f1214bb23c4d721e0d642c720c479af29a28592871540931d",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "nil",
+          "@value": {
+            "signature": "0xdeaf11f92e85fe86cfe924a6f56cc62e8c12cf62fa41b2a89b35f30ff53005e80ffa206b02e29d07974c88359e85772c4feb511f5ae2b6bc757400706b28b844",
+            "timestamp": "2024-01-18T16:25:47.468513762Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x989b605d2ee1fafc7c9aef7207bc3f9c72f48804b18c5d89528119c3d27b2fed1d6affadefafe2b090a8b87454ece7a87bfb2fa8616613c95d7895225a81b3df",
+            "timestamp": "2024-01-18T16:25:47.276784932Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xc9832156b9caf93897e9810dc7b041c4d119307294da201a4f0083918b7d055f187adc9720578bf36e92f67fdea602ed9e82fa7e8b826c4f2b54380c5f1a2fb9",
+            "timestamp": "2024-01-18T16:25:47.277809483Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xae211c714f1d998dd0a577f4b4679406211528ea9453bedd4495ed917f1252ab2322084b10d25f2dc5e853af43fd0d012a6f7af8c42e66f70a85c1efb32398f7",
+            "timestamp": "2024-01-18T16:25:47.369709738Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:25:41.842376620Z",
+      "height": "1249",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0x4ad54ca66acb28deedbc34e9f1723a26947c389cc029ffbcadf3436c5348ea36",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0x3f820758cc02a3feeb6d93315888471edb6d2ac5b424e0e94683a2800e3e94e2",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0x1eeac681d2b0712b2103162628b23f57a173412719b365e250937b917fca60f3",
+        "part_set_header": {
+          "hash": "0x60b10b51ec59a0911b2653803ea9b14335778713185a05f9da18e2b1f6d592cc",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0x92c6a92233668bb815a21768ba57dce5dce13db52c5a0285857c65b0fc6712cb",
+      "proposer_address": "0x196d6009588da28cf40039c957a53b08104723f9",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1242,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x0822f5cff5fea80697d40f5b89501a3404501c9dd8edd65ba9843ecdb9f724f70e874fe4825e6990cf548e9475e078a6eca47a38c920122ddbc53f6c43f8c6ed2f4f068caa2d4eb23ad498f3ceb68fc6d074656a3e8488e7b83b6c7f6f827eab00e8a1472711c11cd1de1b9ed0b4dcdfc207bdf3ecbe305e6450d0e3de66e2ef0dde5fd392f2464adb3e016038318de3c38b787306419a73e12507e2064139ae0e020484a4faf1ae4c8b1f0a9be8e2d7f0d137f2da4e7f773b5d74fa4878cd431334f94f25419d7bf253d952cf6e6b934702649ec9f61be44ae787a70ffc84ae0084aa628a231c80f55c48760640ab28a1977bb96bc2b2a44b1b4f1aabb19b4c168a3397ee3247513c45e34491c8967bdb36fa92f9e5b011102077b6f61c454a12edb9f76678ddbc68530b6ff431efca4158c9463ac6b3c71b2eb23fcc9ea28d2af65c99d3a078f609f4b967d3ac93fca5763ee372465ba484df31429370f2c1"
+}

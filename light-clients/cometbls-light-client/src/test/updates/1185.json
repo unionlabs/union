@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1193,
+      "block_id": {
+        "hash": "0x79b1249a0507d6eaa68aae8a924d37296f0de6666673c42e2647b9164aa0842c",
+        "part_set_header": {
+          "hash": "0xd28d070f7a01fa579f58561aeefa179193d045c100c3a4cf9b0d46150e8e53dc",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "nil",
+          "@value": {
+            "signature": "0xc5185d43df9b81b12815d60a2d7329770001e8bfd0c9b905d2d3034246c49eae0dbb2404e39a2ec3d0975d59513694284696f8fc500f66e4e615b8d09d46534a",
+            "timestamp": "2024-01-18T16:20:39.926691802Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xe20edf75eaca10172a221f6b3fc8d30c619075154dced8770fcc44555a0182070a8174a0912e7153c7febaa7953152889ec391517eef524a9ab751750a785fe0",
+            "timestamp": "2024-01-18T16:20:39.730118178Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xd2e2a48cba2c6e119d087668e6c29bb35da88605dc5cff255eaa8990dbcba577052a9d1eeafcae50d757625a15291a41c1883e92b922ec69c687f1725fe3742e",
+            "timestamp": "2024-01-18T16:20:39.729648716Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xef1b5c5df6c522ef78a584aa26c088a0cbe75122691917a314279a7f50a24a0a0bdc9de0106a59bdce8559f8d7dc8703dd4f2f4e69ec0610b7bdb924ad961e74",
+            "timestamp": "2024-01-18T16:20:39.826719894Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:20:34.277399554Z",
+      "height": "1193",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0x86ad2da2a4f6162241715a5d231ee98262eb5b65d545fe12908c7532d8d5d27f",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0x22040a8f041041c0904232e42ee7eec8d1af703763479937852a9fdca10e2280",
+        "part_set_header": {
+          "hash": "0x895cd67c96584f1a5d83cb10d540d0775275eaf9ca3da7ff643080cc35684193",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0xc0fbe3a0763f2d280c6f1eef102ac3b1ad8331dd4797254f0d64635922377362",
+      "proposer_address": "0x196d6009588da28cf40039c957a53b08104723f9",
+      "last_results_hash": "0x7d99dc80b4d7795f3d900b08d2cec77772e1b07ced5272e47bd49dca9c3b907c",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1185,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x0ae8a5d033657999e13d7d549d83f8c5d0d91bebbbc6df1aa42e3a8f752c62a617aa73e7bc2ab335a8c119180e875927cf5c9a458c0b9e904db4848c353b762c19acff23cf390a95f43d24b3a05a226c4f52fea48f3f27779fd616c931c43ec710cf642254710209d2f86c44d84fbb359c24f2f47f2b31118ff627b37bd136e711f20c3ec28c699c29941c07a321c815aee8c63261dea347aeaab42aa7fd2f2e0d8949bf20e6d0320a0c522918c31394e381cb4c5652c0ff7d5aa4650101669d2bcd4830d2f761e0a04ba53d582ca88a3e5c0f2eb08af4575847adae77d75ec02084d996834495d749be653323cb3cba9ff7df9c20dcbc1317841c58ad5e7b461d36496925acd14d580e7c431a214a224bc15fa3e63aafa27c61e751651afd820fe8961aaaa851d4dfb647a457fb40c8285772ddf7edd43b1f7e539448148c9b0e5fb7edcb948589a28fc461b6bef4b08b6347eefa10cf038f16b557e9a129a1"
+}
