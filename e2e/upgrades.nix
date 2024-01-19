@@ -50,7 +50,6 @@ in
     name = "upgrade-from-genesis";
 
     testScript = ''
-      import time
       union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
       ${forEachNode (id: "union.succeed('docker cp ${bundle} devnet-minimal-uniond-${id}-1:/bundle')")}
