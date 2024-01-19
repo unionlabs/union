@@ -6,7 +6,6 @@ import DiscordLogo from '#/assets/discord.svg'
 import CalendarIcon from '#/assets/calendar.svg'
 import Graph from '#/components/graph/index.svelte'
 import { ViewTransitions } from 'astro:transitions'
-import SearchBar from '@astrojs/starlight/components/Search.astro'
 
 let socialLinks = [
   { href: 'https://x.com/union_build', iconSrc: XLogo.src, cta: 'Join us on X' },
@@ -43,7 +42,6 @@ function onRecvPacket(
 ---
 
 <Layout>
-  <SearchBar labels={['']} />
   <main class='flex flex-col flex-1'>
     <section class='flex flex-col items-center my-32 gap-6'>
       <div class='text-7xl text-white text-center'>The Sovereign<br />Interoperability Layer</div>
