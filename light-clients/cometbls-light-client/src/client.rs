@@ -442,7 +442,6 @@ mod tests {
 
         for update in &*UPDATES {
             let mut env = mock_env();
-            println!("UPDATE TO: {}", update.trusted_height.revision_height);
             env.block.time = cosmwasm_std::Timestamp::from_seconds(
                 update
                     .signed_header

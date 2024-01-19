@@ -97,7 +97,8 @@
   },
   "trusted_sync_committee": {
     "sync_committee": {
-      "Current": {
+      "@type": "current",
+      "@value": {
         "pubkeys": [
           "0xb007aa051cbb3c96be3230c80afe7938a5d66d19c52ee4712bf30687807b331d8cb267354ef4a0e339e50df1fc9556a6",
           "0xa9b120a77d70c1cbc0178a12d97a78b2dd0b98d0584e8e780b937800ceb18c90eaa1f0a83c5b50e34cae1c20468f004f",
