@@ -14,4 +14,9 @@ thiserror   = { workspace = true }
 unionlabs   = { workspace = true, default-features = false }
 
 [dev-dependencies]
+anyhow      = "1.0.79"
+hex         = { workspace = true, features = ["serde"] }
 hex-literal = { workspace = true }
+protos      = { workspace = true, features = ["cosmos+ics23+v1"] }
+serde       = { workspace = true, features = ["derive"] }
+serde_json  = { workspace = true }

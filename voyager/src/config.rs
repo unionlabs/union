@@ -4,7 +4,7 @@ use chain_utils::private_key::PrivateKey;
 use ethers::prelude::k256::ecdsa;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
-use unionlabs::hash::H160;
+use unionlabs::{ethereum::config::PresetBaseKind, hash::H160};
 
 use crate::{
     chain::{AnyChain, AnyChainTryFromConfigError},
@@ -28,7 +28,7 @@ pub struct VoyagerConfig<Q: Queue> {
 impl<Q: Queue> Config<Q> {
     pub async fn get_chain(&self, name: &str) -> Result<AnyChain, GetChainError> {
         match self.chain.get(name) {
-            Some(config) => Ok(AnyChain::try_from_config::<Q>(config.clone()).await?),
+            Some(config) => Ok(AnyChain::try_from_config::<Q>(config.ty.clone()).await?),
             None => Err(GetChainError::ChainNotFound {
                 name: name.to_string(),
             }),
@@ -46,21 +46,24 @@ pub enum GetChainError {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "chain_type")]
-pub enum ChainConfig {
+pub enum ChainConfigType {
     Evm(EvmChainConfig),
     Union(UnionChainConfig),
     Cosmos(CosmosChainConfig),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "preset_base")]
-pub enum EvmChainConfig {
-    Mainnet(EvmChainConfigFields),
-    Minimal(EvmChainConfigFields),
+// #[serde(deny_unknown_fields)]
+pub struct ChainConfig {
+    pub enabled: bool,
+    #[serde(flatten)]
+    pub ty: ChainConfigType,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EvmChainConfigFields {
+pub struct EvmChainConfig {
+    pub preset_base: PresetBaseKind,
+
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 

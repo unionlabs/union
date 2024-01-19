@@ -3,12 +3,9 @@ use chain_utils::{
     evm::{Evm, EvmInitError},
     union::{Union, UnionInitError},
 };
-use unionlabs::ethereum::config::{Mainnet, Minimal};
+use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
 
-use crate::{
-    config::{ChainConfig, EvmChainConfig},
-    queue::Queue,
-};
+use crate::{config::ChainConfigType, queue::Queue};
 
 pub enum AnyChain {
     Union(Union),
@@ -29,28 +26,22 @@ pub enum AnyChainTryFromConfigError {
 
 impl AnyChain {
     pub async fn try_from_config<Q: Queue>(
-        config: ChainConfig,
+        config: ChainConfigType,
     ) -> Result<Self, AnyChainTryFromConfigError> {
         Ok(match config {
-            ChainConfig::Evm(EvmChainConfig::Mainnet(evm)) => Self::EvmMainnet(
-                Evm::<Mainnet>::new(chain_utils::evm::Config {
+            ChainConfigType::Evm(evm) => {
+                let config = chain_utils::evm::Config {
                     ibc_handler_address: evm.ibc_handler_address,
                     signers: evm.signers,
                     eth_rpc_api: evm.eth_rpc_api,
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
-                })
-                .await?,
-            ),
-            ChainConfig::Evm(EvmChainConfig::Minimal(evm)) => Self::EvmMinimal(
-                Evm::<Minimal>::new(chain_utils::evm::Config {
-                    ibc_handler_address: evm.ibc_handler_address,
-                    signers: evm.signers,
-                    eth_rpc_api: evm.eth_rpc_api,
-                    eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
-                })
-                .await?,
-            ),
-            ChainConfig::Union(union) => Self::Union(
+                };
+                match evm.preset_base {
+                    PresetBaseKind::Minimal => Self::EvmMinimal(Evm::<Minimal>::new(config).await?),
+                    PresetBaseKind::Mainnet => Self::EvmMainnet(Evm::<Mainnet>::new(config).await?),
+                }
+            }
+            ChainConfigType::Union(union) => Self::Union(
                 Union::new(chain_utils::union::Config {
                     signers: union.signers,
                     ws_url: union.ws_url,
@@ -60,7 +51,7 @@ impl AnyChain {
                 })
                 .await?,
             ),
-            ChainConfig::Cosmos(cosmos) => Self::Cosmos(
+            ChainConfigType::Cosmos(cosmos) => Self::Cosmos(
                 Cosmos::new(chain_utils::cosmos::Config {
                     signers: cosmos.signers,
                     ws_url: cosmos.ws_url,

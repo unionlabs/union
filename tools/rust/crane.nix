@@ -335,7 +335,21 @@
         craneLib.cargoLlvmCov {
           pname = "workspace-cargo-llvm-cov";
           version = "0.0.0";
-          cargoLlvmCovExtraArgs = "--workspace --html --output-dir $out --ignore-filename-regex 'nix/store/.+'";
+          cargoLlvmCovExtraArgs = pkgs.lib.concatStringsSep " " [
+            "--workspace"
+            "--html"
+            "--output-dir=$out"
+            "--ignore-filename-regex='((nix/store)|(generated))/.+'"
+            "--exclude=zerg"
+            "--exclude=parse-wasm-client-type"
+            "--exclude=protos"
+            "--exclude=contracts"
+            "--exclude=cargo-workspace-dependencies"
+            "--exclude=generate-rust-sol-bindings"
+            "--exclude=ensure-blocks"
+            "--exclude=ucli"
+            "--hide-instantiations"
+          ];
           SQLX_OFFLINE = true;
           cargoArtifacts = craneLib.buildDepsOnly {
             pname = "workspace-build-deps-only";
@@ -353,6 +367,7 @@
             echo 'patching testdata'
             patchShebangs $(pwd)/unionvisor/src/testdata
           '';
+          ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
           buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
             lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
           );
