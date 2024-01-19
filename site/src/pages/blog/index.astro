@@ -26,7 +26,7 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
             >
               {blogPostEntry.data.title}
             </a>
-            <div class='font-argon mt-1 sm:text-lg uppercase tracking-widest'>
+            <div class='font-mono mt-1 sm:text-lg uppercase tracking-widest'>
               <time datetime={blogPostEntry.data.date.toISOString()}>
                 {blogPostEntry.data.date.toLocaleDateString('fr-CA', {
                   year: 'numeric',
@@ -35,7 +35,7 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
                 })}
               </time>
               <a
-                class='text-[rgb(255,135,195)] font-normal'
+                class='text-accent font-normal'
                 href={`https://x.com/${blogPostEntry.data.author}`}
                 target='_blank'
                 rel='noopener noreferrer'
@@ -43,10 +43,10 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
                 @{blogPostEntry.data.author}
               </a>
             </div>
-            <p class='sm:text-xl font-extralight'>{blogPostEntry.data.description}</p>
+            <p class='sm:text-xl '>{blogPostEntry.data.description}</p>
             <a
               href={`/blog/${blogPostEntry.slug}`}
-              class='font-argon uppercase'
+              class='font-mono uppercase text-lg'
             >
               read full post ->
             </a>

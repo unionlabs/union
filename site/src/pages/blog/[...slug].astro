@@ -23,7 +23,7 @@ const { Content, headings } = await entry.render()
       {entry.data.title}
     </p>
 
-    <div class='font-argon mt-3 sm:text-lg uppercase tracking-widest'>
+    <div class='font-mono mt-3 sm:text-lg uppercase tracking-widest'>
       <time datetime={entry.data.date.toISOString()}>
         {
           entry.data.date.toLocaleDateString('fr-CA', {
@@ -34,7 +34,7 @@ const { Content, headings } = await entry.render()
         }
       </time>
       <a
-        class='text-[rgb(255,135,195)] font-normal'
+        class='text-accent font-normal'
         href={`https://x.com/${entry.data.author}`}
         target='_blank'
         rel='noopener noreferrer'
@@ -43,12 +43,13 @@ const { Content, headings } = await entry.render()
       </a>
     </div>
 
+<!--
     <ul class="list-['#']">
       {
         headings.map(heading => (
           <li>
             <a
-              class='text-[rgb(255,135,195)] font-normal ml-2'
+              class='text-accent font-normal ml-2'
               href={`#${heading.slug}`}
             >
               {heading.text}
@@ -57,6 +58,7 @@ const { Content, headings } = await entry.render()
         ))
       }
     </ul>
+    !-->
 
     <Content />
   </main>
