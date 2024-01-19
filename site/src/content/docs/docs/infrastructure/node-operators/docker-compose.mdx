@@ -18,6 +18,7 @@ services:
     image: "ghcr.io/unionlabs/uniond-release:${UNIOND_VERSION}"
     volumes:
       - ~/.union:/.union
+      - /tmp:/tmp
     network_mode: "host"
     restart: unless-stopped
     command: start --home /.union
