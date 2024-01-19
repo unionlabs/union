@@ -21,10 +21,6 @@ export default {
         xs: "320px",
       },
       colors: {
-        background: "#1b1b1d",
-        bgDark: "#242526",
-        sub: "#252525",
-        primary: "#fff",
         accent: {
           "50": "#fdf2f8",
           "100": "#fce7f3",
@@ -34,7 +30,6 @@ export default {
           "500": "#ec4899",
           "600": "#ff63c1",
         },
-        gray: colors.zinc,
       },
       fontFamily: {
         mono: ['"IBM Plex Mono"', ...defaultTheme.fontFamily.mono],

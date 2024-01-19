@@ -1,6 +1,7 @@
 ---
 import Layout from '#/layouts/layout.svelte'
 import { getCollection } from 'astro:content'
+import { ViewTransitions } from 'astro:transitions'
 
 export async function getStaticPaths() {
   const blogEntries = await getCollection('blog')
@@ -60,6 +61,8 @@ const { Content, headings } = await entry.render()
     <Content />
   </main>
 </Layout>
+
+<ViewTransitions />
 
 <style>
   h1 {

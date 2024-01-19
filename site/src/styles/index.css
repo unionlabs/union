@@ -215,13 +215,21 @@ pre [data-line] {
 }
 
 [data-chars-id="r"] {
-  @apply !text-red-300 bg-red-800/50 border-b-red-600 font-bold;
+  color: rgb(255, 201, 201);
+  background-color: rgb(153 27 27 / 0.5);
+  border-bottom-color: rgb(153 27 27);
+  font-weight: 700;
 }
 
 [data-rehype-pretty-code-title] {
-  @apply bg-zinc-700 text-zinc-200 rounded-t-lg py-2 px-3 font-semibold text-sm;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem 0.5rem 0.75rem;
+  background-color: rgb(8, 7, 12);
+  border-radius: 0.25rem 0.25rem 0 0;
+  font-family: "JetBrains Mono", monospace;
 }
 
 figcaption + pre {
-  @apply !rounded-t-none;
+  border-top-left-radius: 0px !important;
+  border-top-right-radius: 0px !important;
 }

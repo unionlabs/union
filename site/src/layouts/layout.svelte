@@ -1,8 +1,8 @@
 <script lang="ts">
-  import '@fontsource/ibm-plex-mono'
-  import '@fontsource/jetbrains-mono'
   import '#/styles/index.css'
   import '#/styles/tailwind.css'
+  import '@fontsource/ibm-plex-mono'
+  import '@fontsource/jetbrains-mono'
   import Header from '#/components/header.svelte'
 </script>
 

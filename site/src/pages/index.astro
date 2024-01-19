@@ -5,6 +5,8 @@ import Layout from '#/layouts/layout.svelte'
 import DiscordLogo from '#/assets/discord.svg'
 import CalendarIcon from '#/assets/calendar.svg'
 import Graph from '#/components/graph/index.svelte'
+import { ViewTransitions } from 'astro:transitions'
+import SearchBar from '@astrojs/starlight/components/Search.astro'
 
 let socialLinks = [
   { href: 'https://x.com/union_build', iconSrc: XLogo.src, cta: 'Join us on X' },
@@ -15,8 +17,6 @@ let socialLinks = [
   },
   { href: 'https://x.com/union_build', iconSrc: CalendarIcon.src, cta: 'Join our Events' }
 ]
-
-const arraySizeN = (n: number) => Array.from(Array(n).keys())
 
 const soliditySnippet = `
 \`\`\`solidity title="lorem.sol" /relayer/#i /ibcPacket/#s /ACK_SUCCESS/#g /ACK_FAILURE/#r
@@ -43,6 +43,7 @@ function onRecvPacket(
 ---
 
 <Layout>
+  <SearchBar labels={['']} />
   <main class='flex flex-col flex-1'>
     <section class='flex flex-col items-center my-32 gap-6'>
       <div class='text-7xl text-white text-center'>The Sovereign<br />Interoperability Layer</div>
@@ -59,19 +60,23 @@ function onRecvPacket(
         </a>
       </div>
     </section>
+
     <section class='bg-black text-white flex flex-col items-center py-16'>
       <h2 class='text-4xl mb-4 font-normal'>Redesigned from the ground up.</h2>
-      <div class='flex gap-16 max-w-4xl'>
+
+      <div class='flex md:flex-row flex-col gap-16 max-w-4xl'>
         <div class='flex-1 flex items-center justify-center content mb-0 gap-2'>
           <div class='bg-white h-20 w-20 rounded-full'></div>
           <div class='bg-white h-40 w-40 rounded-full'></div>
           <div class='bg-white h-20 w-20 rounded-full'></div>
         </div>
+
         <div class='flex-1 p-4'>
           <p class='text-3xl text-gray-500 font-normal mb-0'>
-            <span class='text-white'
-              >Trustless, decentralized, and permissionless interoperability is now possible.</span
-            > Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge
+            <span class='text-white'>
+              Trustless, decentralized, and permissionless interoperability is now possible.
+            </span>
+            Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge
             cryptography.
           </p>
           <p class='text-lg'>
@@ -355,6 +360,8 @@ function onRecvPacket(
     </section> -->
   </main>
 </Layout>
+
+<ViewTransitions />
 
 <style lang="postcss">
 
