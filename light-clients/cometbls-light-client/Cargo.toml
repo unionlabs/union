@@ -31,8 +31,8 @@ unionlabs          = { workspace = true, default-features = false }
 
 [dev-dependencies]
 base64      = "0.21"
-serde_json  = { workspace = true }
 lazy_static = "1.4.0"
+serde_json  = { workspace = true }
 
 
 [features]
