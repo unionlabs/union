@@ -814,10 +814,12 @@ mod test {
         };
 
         let wasm_client_state: WasmClientState =
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
 
         let wasm_consensus_state: WasmConsensusState =
-            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
 
         save_client_state(deps.as_mut(), wasm_client_state);
         save_consensus_state(

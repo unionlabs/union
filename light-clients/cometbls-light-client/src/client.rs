@@ -262,7 +262,6 @@ impl IbcClient for CometblsLightClient {
         _deps: Deps<Self::CustomQuery>,
         _header: Self::Header,
     ) -> Result<ics008_wasm_client::CheckForMisbehaviourResult, Self::Error> {
-        // TODO(aeryz): Leaving this as success for us to be able to update the client. See: #588.
         Ok(ics008_wasm_client::CheckForMisbehaviourResult {
             found_misbehaviour: false,
         })
@@ -439,10 +438,12 @@ mod tests {
         let mut deps = mock_dependencies();
 
         let wasm_client_state: WasmClientState =
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
 
         let wasm_consensus_state: WasmConsensusState =
-            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
 
         save_client_state(deps.as_mut(), wasm_client_state);
         save_consensus_state(
@@ -477,10 +478,12 @@ mod tests {
         let mut deps = mock_dependencies();
 
         let wasm_client_state: WasmClientState =
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
 
         let wasm_consensus_state: WasmConsensusState =
-            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
 
         let prev_consensus_height = INITIAL_CONSENSUS_STATE_HEIGHT;
 
@@ -715,10 +718,12 @@ mod tests {
         let mut deps = mock_dependencies();
 
         let wasm_client_state: WasmClientState =
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
 
         let wasm_consensus_state: WasmConsensusState =
-            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
 
         save_client_state(deps.as_mut(), wasm_client_state);
 
@@ -742,7 +747,8 @@ mod tests {
         let mut deps = mock_dependencies();
 
         let wasm_client_state: WasmClientState =
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
 
         save_client_state(deps.as_mut(), wasm_client_state);
 
@@ -757,10 +763,12 @@ mod tests {
         let mut deps = mock_dependencies();
 
         let wasm_client_state: WasmClientState =
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
 
         let wasm_consensus_state: WasmConsensusState =
-            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
 
         save_client_state(deps.as_mut(), wasm_client_state);
 
@@ -784,7 +792,8 @@ mod tests {
         let mut deps = mock_dependencies();
 
         let mut wasm_client_state: WasmClientState =
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
 
         wasm_client_state.data.frozen_height.revision_height = 1;
 
