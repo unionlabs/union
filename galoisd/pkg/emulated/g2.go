@@ -9,6 +9,7 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/algebra/emulated/fields_bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
+	"github.com/consensys/gnark/std/hash/mimc"
 	"github.com/consensys/gnark/std/math/emulated"
 )
 
@@ -54,6 +55,7 @@ func hintSqrt(nativeMod *big.Int, nativeInputs, nativeOutputs []*big.Int) error 
 }
 
 // Hint legendre, caller must check that the result is valid, i.e. sqrt and verify root or no root
+// Return 1 if square, 0 otherwise
 func hintLegendre(nativeMod *big.Int, nativeInputs, nativeOutputs []*big.Int) error {
 	return emulated.UnwrapHint(nativeInputs, nativeOutputs,
 		func(mod *big.Int, inputs, outputs []*big.Int) error {
@@ -455,15 +457,158 @@ func (e *EmulatedAPI) ScalarMulBySeed(q *gadget.G2Affine) *gadget.G2Affine {
 }
 
 // http://cacr.uwaterloo.ca/techreports/2011/cacr2011-26.pdf, 6.1
-// Q -> xQ + psi(3xQ) + psi^2(xQ) + psi^3(Q)
-func (e *EmulatedAPI) ClearCofactor(p *gadget.G2Affine) *gadget.G2Affine {
-	p0 := e.ScalarMulBySeed(p)
-	p1 := e.Psi(e.Add(e.Double(p0), p0))
-	p2 := e.Psi(e.Psi(p0))
-	p3 := e.Psi(e.Psi(e.Psi(p)))
-	return e.Add(e.Add(e.Add(p0, p1), p2), p3)
+func (e *EmulatedAPI) ClearCofactor(Q *gadget.G2Affine) *gadget.G2Affine {
+	// xQ
+	xQ := e.ScalarMulBySeed(Q)
+	// psi(3xQ)
+	psi_3xQ := e.Psi(e.Add(e.Double(xQ), xQ))
+	// psi^2(xQ)
+	psi2_xQ := e.Psi(e.Psi(xQ))
+	// psi^3(Q)
+	psi3_Q := e.Psi(e.Psi(e.Psi(Q)))
+	// xQ + psi(3xQ) + psi^2(xQ) + psi^3(Q)
+	return e.Add(e.Add(e.Add(xQ, psi_3xQ), psi2_xQ), psi3_Q)
 }
 
 func (e *EmulatedAPI) MapToG2(u *fields_bn254.E2) *gadget.G2Affine {
 	return e.ClearCofactor(e.MapToCurve(u))
+}
+
+func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable) (*gadget.G2Affine, error) {
+	u, err := e.HashToField(message, dst)
+	if err != nil {
+		return nil, err
+	}
+	Q0 := e.MapToCurve(&fields_bn254.E2{
+		A0: *u[0],
+		A1: *u[1],
+	})
+	Q1 := e.MapToCurve(&fields_bn254.E2{
+		A0: *u[2],
+		A1: *u[3],
+	})
+	return e.ClearCofactor(e.Add(Q0, Q1)), nil
+}
+
+// Hash msg to 4 prime field elements (actually scalar field).
+// https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-06#section-5.2
+func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variable) ([]*emulated.Element[emulated.BN254Fp], error) {
+	pseudoRandomBits, err := e.ExpandMsgXmd(message, dst)
+	if err != nil {
+		return nil, err
+	}
+	elements := make([]*emulated.Element[emulated.BN254Fp], 4)
+	for i := 0; i < 4; i++ {
+		elemBits := pseudoRandomBits[i*48*8 : (i+1)*48*8]
+		// sadly this result is >limbs than expected and looks like gnark don't like it
+		// elements[i] = e.field.FromBits(elemBits...)
+		l := e.field.FromBits(elemBits[:17*8]...)
+		r := e.field.FromBits(elemBits[17*8:]...)
+		c := emulated.ValueOf[emulated.BN254Fp](new(big.Int).Lsh(big.NewInt(1), 136))
+		elements[i] = e.field.Add(l, e.field.Mul(r, &c))
+	}
+	return elements, nil
+}
+
+// This is not a general implementation as the input/output length are fixed 192 bytes.
+// It is tailor-made for bn254_G2_XMD:MiMC_SSWU_RO_ hash_to_curve implementation.
+// Note: we use a 256 bit block
+// https://datatracker.ietf.org/doc/html/rfc9380#name-expand_message_xmd
+// https://datatracker.ietf.org/doc/html/rfc9380#name-utility-functions (I2OSP/O2ISP)
+// https://eprint.iacr.org/2016/492.pdf
+func (e *EmulatedAPI) ExpandMsgXmd(message frontend.Variable, dst frontend.Variable) ([]frontend.Variable, error) {
+	h, err := mimc.NewMiMC(e.api)
+	if err != nil {
+		return nil, err
+	}
+
+	block := []frontend.Variable{}
+	write := func(b ...frontend.Variable) {
+		block = append(block, b...)
+	}
+	repeat := func(b frontend.Variable, count int) {
+		bs := make([]frontend.Variable, count)
+		for i := 0; i < count; i++ {
+			bs[i] = b
+		}
+		write(bs...)
+	}
+	sum := func() []frontend.Variable {
+		// fill block
+		if len(block)%256 != 0 {
+			repeat(0, 256-len(block)%256)
+		}
+		for i := 0; i < len(block); i += 256 {
+			h.Write(e.api.FromBinary(block[i : i+256]...))
+		}
+		block = []frontend.Variable{}
+		s := h.Sum()
+		h.Reset()
+		return e.api.ToBinary(s, 256)
+	}
+
+	writeU8 := func(x frontend.Variable) {
+		write(e.api.ToBinary(x, 8)...)
+	}
+
+	write_message := func() {
+		write(e.api.ToBinary(message, 256)...)
+	}
+
+	// Z_pad = I2OSP(0, r_in_bytes)
+	write_Z_pad := func() {
+		repeat(0, 256)
+	}
+
+	// l_i_b_str = I2OSP(len_in_bytes, 2)
+	write_l_i_b_str := func() {
+		writeU8(192 >> 8)
+		writeU8(192)
+	}
+
+	// DST_prime =  DST ∥ I2OSP(len(DST), 1)
+	write_DST_prime := func() {
+		write(e.api.ToBinary(dst, 256)...)
+		writeU8(32)
+	}
+
+	// Z_pad = I2OSP(0, r_in_bytes)
+	// l_i_b_str = I2OSP(len_in_bytes, 2)
+	// DST_prime =  DST ∥ I2OSP(len(DST), 1)
+	// b₀ = H(Z_pad ∥ msg ∥ l_i_b_str ∥ I2OSP(0, 1) ∥ DST_prime)
+	write_Z_pad()
+	write_message()
+	write_l_i_b_str()
+	writeU8(0)
+	write_DST_prime()
+	b0 := sum()
+
+	// b₁ = H(b₀ ∥ I2OSP(1, 1) ∥ DST_prime)
+	write(b0...)
+	writeU8(1)
+	write_DST_prime()
+	b1 := sum()
+
+	res := make([]frontend.Variable, 192*8)
+	for i := 0; i < len(res); i++ {
+		res[i] = 0
+	}
+	copy(res, b1)
+
+	for i := 1; i <= 5; i++ {
+		strxor := make([]frontend.Variable, 256)
+		for j := 0; j < 256; j++ {
+			strxor[j] = e.api.Xor(b0[j], b1[j])
+		}
+
+		// b_i = H(strxor(b₀, b_(i - 1)) ∥ I2OSP(i, 1) ∥ DST_prime)
+		write(strxor...)
+		writeU8(i + 1)
+		write_DST_prime()
+		b1 = sum()
+
+		copy(res[i*256:(i+1)*256], b1)
+	}
+
+	return res, nil
 }

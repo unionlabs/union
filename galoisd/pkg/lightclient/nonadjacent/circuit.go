@@ -5,7 +5,6 @@ import (
 	"galois/pkg/lightclient"
 
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/std/algebra/emulated/fields_bn254"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 )
 
@@ -28,9 +27,9 @@ type TendermintNonAdjacentLightClientInput struct {
 type Circuit struct {
 	TrustedInput             TendermintNonAdjacentLightClientInput
 	UntrustedInput           TendermintNonAdjacentLightClientInput
-	ExpectedTrustedValRoot   frontend.Variable    `gnark:",public"`
-	ExpectedUntrustedValRoot frontend.Variable    `gnark:",public"`
-	Message                  [2]frontend.Variable `gnark:",public"`
+	ExpectedTrustedValRoot   frontend.Variable `gnark:",public"`
+	ExpectedUntrustedValRoot frontend.Variable `gnark:",public"`
+	Message                  frontend.Variable `gnark:",public"`
 }
 
 func (circuit *Circuit) Define(api frontend.API) error {
@@ -38,10 +37,10 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	if err != nil {
 		return err
 	}
-	var message fields_bn254.E2
-	message.A0.Limbs = lightclient.Unpack(api, circuit.Message[0], 256, 64)
-	message.A1.Limbs = lightclient.Unpack(api, circuit.Message[1], 256, 64)
-	messagePoint := emulatedAPI.MapToG2(&message)
+	messagePoint, err := emulatedAPI.HashToG2(circuit.Message, 0)
+	if err != nil {
+		return err
+	}
 	lc := lightclient.NewTendermintLightClientAPI(api, &lightclient.TendermintLightClientInput{
 		Sig:           circuit.TrustedInput.Sig,
 		Validators:    circuit.TrustedInput.Validators,
