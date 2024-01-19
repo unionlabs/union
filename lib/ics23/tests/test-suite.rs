@@ -1,7 +1,6 @@
 use std::{collections::HashMap, fmt::Display, fs, path::PathBuf};
 
 use anyhow::{bail, Context};
-use clap::Parser;
 use ics23::{
     existence_proof::{self, calculate_root},
     ops::{hash_op, inner_op, leaf_op},
@@ -15,25 +14,21 @@ use unionlabs::{
     TryFromProto,
 };
 
-#[derive(Parser)]
-struct App {
-    pub testdata_dir: PathBuf,
-}
+#[test]
+fn suite() -> anyhow::Result<()> {
+    let testdata_dir = PathBuf::from(std::env::var("ICS23_TEST_SUITE_DATA_DIR").unwrap());
 
-fn main() -> anyhow::Result<()> {
-    let app = App::parse();
-
-    run_test_cases::<TestLeafOpData>(app.testdata_dir.join("TestLeafOpData.json"))?;
-    run_test_cases::<TestInnerOpData>(app.testdata_dir.join("TestInnerOpData.json"))?;
-    run_test_cases::<TestDoHashData>(app.testdata_dir.join("TestDoHashData.json"))?;
-    run_test_cases::<TestExistenceProofData>(app.testdata_dir.join("TestExistenceProofData.json"))?;
-    run_test_cases::<TestCheckLeafData>(app.testdata_dir.join("TestCheckLeafData.json"))?;
+    run_test_cases::<TestLeafOpData>(testdata_dir.join("TestLeafOpData.json"))?;
+    run_test_cases::<TestInnerOpData>(testdata_dir.join("TestInnerOpData.json"))?;
+    run_test_cases::<TestDoHashData>(testdata_dir.join("TestDoHashData.json"))?;
+    run_test_cases::<TestExistenceProofData>(testdata_dir.join("TestExistenceProofData.json"))?;
+    run_test_cases::<TestCheckLeafData>(testdata_dir.join("TestCheckLeafData.json"))?;
     // these are currently skipped in the ics23 repo and don't pass anyways
     // run_test_cases::<TestCheckAgainstSpecData>(
-    //     app.testdata_dir.join("TestCheckAgainstSpecData.json"),
+    //     testdata_dir.join("TestCheckAgainstSpecData.json"),
     // )?;
 
-    run_vector_tests(app)?;
+    run_vector_tests(testdata_dir)?;
 
     Ok(())
 }
@@ -343,25 +338,25 @@ enum SpecType {
 }
 
 impl SpecType {
-    fn all() -> Vec<SpecType> {
-        vec![SpecType::Iavl, SpecType::Tendermint]
+    const fn all() -> [SpecType; 2] {
+        [SpecType::Iavl, SpecType::Tendermint]
     }
 
-    fn name(&self) -> &str {
+    const fn name(&self) -> &str {
         match self {
             SpecType::Iavl => "IAVL",
             SpecType::Tendermint => "Tendermint",
         }
     }
 
-    fn path(&self) -> &str {
+    const fn path(&self) -> &str {
         match self {
             SpecType::Iavl => "iavl",
             SpecType::Tendermint => "tendermint",
         }
     }
 
-    fn proof_spec(&self) -> ProofSpec {
+    const fn proof_spec(&self) -> ProofSpec {
         match self {
             SpecType::Iavl => IAVL_PROOF_SPEC,
             SpecType::Tendermint => TENDERMINT_PROOF_SPEC,
@@ -369,7 +364,7 @@ impl SpecType {
     }
 }
 
-fn run_vector_tests(app: App) -> anyhow::Result<()> {
+fn run_vector_tests(testdata_dir: PathBuf) -> anyhow::Result<()> {
     let tests: Vec<VectorTest> = SpecType::all()
         .iter()
         .flat_map(|spec_type| {
@@ -377,7 +372,7 @@ fn run_vector_tests(app: App) -> anyhow::Result<()> {
                 let name = format!("{} - {}", spec_type.name(), file_name);
                 let spec = spec_type.proof_spec();
 
-                let path = app.testdata_dir.join(spec_type.path()).join(file_name);
+                let path = testdata_dir.join(spec_type.path()).join(file_name);
                 let data = read_json::<VectorTestData>(path);
 
                 VectorTest { name, data, spec }

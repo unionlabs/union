@@ -135,9 +135,6 @@ name = "anyhow"
 version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "080e9890a082662b09c1ad45f567faeeb47f22b5fb23895fbe1e651e718e25ca"
-dependencies = [
- "backtrace",
-]
 
 [[package]]
 name = "arbitrary"
@@ -2997,27 +2994,17 @@ dependencies = [
 name = "ics23"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "hex",
  "hex-literal",
  "prost",
- "ripemd",
- "serde-utils",
- "sha2 0.10.8",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
-name = "ics23-test-suite"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "hex",
- "ics23",
  "protos",
+ "ripemd",
  "serde",
  "serde-utils",
  "serde_json",
+ "sha2 0.10.8",
+ "thiserror",
  "unionlabs",
 ]
 

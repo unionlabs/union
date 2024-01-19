@@ -30,7 +30,7 @@ use unionlabs::{
         TimeoutPacket, UpdateClient, WriteAcknowledgement,
     },
     id::ClientId,
-    traits::{Chain, ClientIdOf, ClientState},
+    traits::{Chain, ClientIdOf, ClientState, FromStrExact},
     WasmClientType,
 };
 use voyager_message::{
@@ -281,60 +281,45 @@ impl<Q: Queue> Voyager<Q> {
         fn insert_into_chain_map<C: Chain, Q: Queue>(
             map: &mut HashMap<<<C as Chain>::SelfClientState as ClientState>::ChainId, C>,
             chain: C,
-        ) -> Result<<<C as Chain>::SelfClientState as ClientState>::ChainId, VoyagerInitError<Q>>
-        {
+        ) -> Result<(), VoyagerInitError<Q>> {
             let chain_id = chain.chain_id();
-            map.insert(chain_id.clone(), chain)
+            let chain_id = map
+                .insert(chain_id.clone(), chain)
                 .map_or(Ok(chain_id), |prev| {
                     Err(VoyagerInitError::DuplicateChainId {
                         chain_id: prev.chain_id().to_string(),
                     })
-                })
+                })?;
+
+            tracing::info!(
+                %chain_id,
+                chain_type = <C::ChainType as FromStrExact>::EXPECTING,
+                "registered chain"
+            );
+
+            Ok(())
         }
 
         for (chain_name, chain_config) in config.chain {
-            let chain = AnyChain::try_from_config::<Q>(chain_config).await?;
+            if !chain_config.enabled {
+                tracing::info!(%chain_name, "chain not enabled, skipping");
+                continue;
+            }
+
+            let chain = AnyChain::try_from_config::<Q>(chain_config.ty).await?;
 
             match chain {
                 AnyChain::Union(c) => {
-                    let chain_id = insert_into_chain_map(&mut union, c)?;
-
-                    tracing::info!(
-                        chain_name,
-                        chain_id,
-                        chain_type = "Union",
-                        "registered chain"
-                    );
+                    insert_into_chain_map(&mut union, c)?;
                 }
                 AnyChain::Cosmos(c) => {
-                    let chain_id = insert_into_chain_map(&mut cosmos, c)?;
-
-                    tracing::info!(
-                        chain_name,
-                        chain_id,
-                        chain_type = "Cosmos",
-                        "registered chain"
-                    );
+                    insert_into_chain_map(&mut cosmos, c)?;
                 }
                 AnyChain::EvmMainnet(c) => {
-                    let chain_id = insert_into_chain_map(&mut evm_mainnet, c)?;
-
-                    tracing::info!(
-                        chain_name,
-                        %chain_id,
-                        chain_type = "EvmMainnet",
-                        "registered chain"
-                    );
+                    insert_into_chain_map(&mut evm_mainnet, c)?;
                 }
                 AnyChain::EvmMinimal(c) => {
-                    let chain_id = insert_into_chain_map(&mut evm_minimal, c)?;
-
-                    tracing::info!(
-                        chain_name,
-                        %chain_id,
-                        chain_type = "EvmMinimal",
-                        "registered chain"
-                    );
+                    insert_into_chain_map(&mut evm_minimal, c)?;
                 }
             }
         }
