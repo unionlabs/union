@@ -9,7 +9,6 @@ import "../proto/tendermint/types/validator.sol";
 import "../proto/tendermint/types/canonical.sol";
 import "./Encoder.sol";
 import "./MerkleTree.sol";
-import "../core/IZKVerifier.sol";
 import "../core/IZKVerifierV2.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
