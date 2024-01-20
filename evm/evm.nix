@@ -146,7 +146,7 @@
           text = ''
             OUT="$(mktemp -d)"
             cd "$OUT"
-            cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+            cp --no-preserve=mode -r ${self'.packages.evm-contracts-optimized}/* .
 
             ${deploy-contracts { inherit rpc-url private-key; } [
               { path = "core/02-client/IBCClient.sol"; name = "IBCClient"; }
@@ -285,6 +285,26 @@
           doCheck = true;
           checkPhase = ''
             forge test --revert-strings debug -vvv --gas-report
+          '';
+          installPhase = ''
+            mkdir -p $out
+            mv out $out
+            mv cache $out
+          '';
+        };
+
+        evm-contracts-optimized = pkgs.stdenv.mkDerivation {
+          name = "evm-contracts-optimized";
+          src = evmSources;
+          buildInputs = [ wrappedForge ];
+          buildPhase = ''
+            forge --version
+            cp ${foundryConfig}/foundry.toml .
+            forge build
+          '';
+          doCheck = false;
+          checkPhase = ''
+            forge test -vvv --gas-report
           '';
           installPhase = ''
             mkdir -p $out
