@@ -9,6 +9,20 @@ import "../24-host/IBCStore.sol";
 import "../24-host/IBCCommitment.sol";
 import "../03-connection/IIBCConnection.sol";
 
+contract IBCConnectionLib {
+    event ConnectionOpenInit(string connectionId);
+    event ConnectionOpenTry(string connectionId);
+    event ConnectionOpenAck(string connectionId);
+    event ConnectionOpenConfirm(string connectionId);
+
+    error ErrConnectionAlreadyExists();
+    error ErrValidateSelfClient();
+    error ErrNoCounterpartyVersion();
+    error ErrUnsupportedVersion();
+    error ErrInvalidProof();
+    error ErrInvalidConnectionState();
+}
+
 /**
  * @dev IBCConnection is a contract that implements [ICS-3](https://github.com/cosmos/ibc/tree/main/spec/core/ics-003-connection-semantics).
  */
@@ -28,19 +42,21 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
             connectionId
         ];
-        require(
-            connection.state ==
-                IbcCoreConnectionV1GlobalEnums
-                    .State
-                    .STATE_UNINITIALIZED_UNSPECIFIED,
-            "connectionOpenInit: connectionId already exists"
-        );
+        if (
+            connection.state !=
+            IbcCoreConnectionV1GlobalEnums.State.STATE_UNINITIALIZED_UNSPECIFIED
+        ) {
+            revert IBCConnectionLib.ErrConnectionAlreadyExists();
+        }
         connection.client_id = msg_.clientId;
         setSupportedVersions(connection.versions);
         connection.state = IbcCoreConnectionV1GlobalEnums.State.STATE_INIT;
         connection.delay_period = msg_.delayPeriod;
         connection.counterparty = msg_.counterparty;
         updateConnectionCommitment(connectionId);
+
+        emit IBCConnectionLib.ConnectionOpenInit(connectionId);
+
         return connectionId;
     }
 
@@ -51,30 +67,26 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     function connectionOpenTry(
         IBCMsgs.MsgConnectionOpenTry calldata msg_
     ) external override returns (string memory) {
-        require(
-            validateSelfClient(msg_.clientStateBytes),
-            "connectionOpenTry: failed to validate self client state"
-        );
-        require(
-            msg_.counterpartyVersions.length > 0,
-            "connectionOpenTry: counterpartyVersions length must be greater than 0"
-        );
-        require(
-            isSupportedVersion(msg_.counterpartyVersions[0]),
-            "connectionOpenTry: the counterparty selected version is not supported by versions selected on INIT"
-        );
+        if (!validateSelfClient(msg_.clientStateBytes)) {
+            revert IBCConnectionLib.ErrValidateSelfClient();
+        }
+        if (msg_.counterpartyVersions.length == 0) {
+            revert IBCConnectionLib.ErrNoCounterpartyVersion();
+        }
+        if (!isSupportedVersion(msg_.counterpartyVersions[0])) {
+            revert IBCConnectionLib.ErrUnsupportedVersion();
+        }
 
         string memory connectionId = generateConnectionIdentifier();
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
             connectionId
         ];
-        require(
-            connection.state ==
-                IbcCoreConnectionV1GlobalEnums
-                    .State
-                    .STATE_UNINITIALIZED_UNSPECIFIED,
-            "connectionOpenTry: connectionId already exists"
-        );
+        if (
+            connection.state !=
+            IbcCoreConnectionV1GlobalEnums.State.STATE_UNINITIALIZED_UNSPECIFIED
+        ) {
+            revert IBCConnectionLib.ErrConnectionAlreadyExists();
+        }
         connection.client_id = msg_.clientId;
         setSupportedVersions(connection.versions);
         connection.state = IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN;
@@ -96,18 +108,19 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 })
             });
 
-        require(
-            verifyConnectionState(
+        if (
+            !verifyConnectionState(
                 connection,
                 msg_.proofHeight,
                 msg_.proofInit,
                 msg_.counterparty.connection_id,
                 expectedConnection
-            ),
-            "connectionOpenTry: failed to verify connection state"
-        );
-        require(
-            verifyClientState(
+            )
+        ) {
+            revert IBCConnectionLib.ErrInvalidProof();
+        }
+        if (
+            !verifyClientState(
                 connection,
                 msg_.proofHeight,
                 IBCCommitment.clientStatePath(
@@ -115,11 +128,15 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 ),
                 msg_.proofClient,
                 msg_.clientStateBytes
-            ),
-            "connectionOpenTry: failed to verify clientState"
-        );
+            )
+        ) {
+            revert IBCConnectionLib.ErrInvalidProof();
+        }
 
         updateConnectionCommitment(connectionId);
+
+        emit IBCConnectionLib.ConnectionOpenTry(connectionId);
+
         return connectionId;
     }
 
@@ -133,18 +150,18 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
             msg_.connectionId
         ];
-        require(
-            connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_INIT,
-            "connectionOpenAck: connection state is not INIT"
-        );
-        require(
-            isSupportedVersion(msg_.version),
-            "connectionOpenAck: the counterparty selected version is not supported by versions selected on INIT"
-        );
-        require(
-            validateSelfClient(msg_.clientStateBytes),
-            "connectionOpenAck: failed to validate self client state"
-        );
+        if (
+            connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_INIT
+        ) {
+            revert IBCConnectionLib.ErrInvalidConnectionState();
+        }
+
+        if (!isSupportedVersion(msg_.version)) {
+            revert IBCConnectionLib.ErrUnsupportedVersion();
+        }
+        if (!validateSelfClient(msg_.clientStateBytes)) {
+            revert IBCConnectionLib.ErrValidateSelfClient();
+        }
 
         IbcCoreConnectionV1Counterparty.Data
             memory expectedCounterparty = IbcCoreConnectionV1Counterparty.Data({
@@ -164,18 +181,19 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 counterparty: expectedCounterparty
             });
 
-        require(
-            verifyConnectionState(
+        if (
+            !verifyConnectionState(
                 connection,
                 msg_.proofHeight,
                 msg_.proofTry,
                 msg_.counterpartyConnectionID,
                 expectedConnection
-            ),
-            "connectionOpenAck: failed to verify connection state"
-        );
-        require(
-            verifyClientState(
+            )
+        ) {
+            revert IBCConnectionLib.ErrInvalidProof();
+        }
+        if (
+            !verifyClientState(
                 connection,
                 msg_.proofHeight,
                 IBCCommitment.clientStatePath(
@@ -183,14 +201,17 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 ),
                 msg_.proofClient,
                 msg_.clientStateBytes
-            ),
-            "connectionOpenAck: failed to verify clientState"
-        );
+            )
+        ) {
+            revert IBCConnectionLib.ErrInvalidProof();
+        }
 
         connection.state = IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN;
         copyVersions(expectedConnection.versions, connection.versions);
         connection.counterparty.connection_id = msg_.counterpartyConnectionID;
         updateConnectionCommitment(msg_.connectionId);
+
+        emit IBCConnectionLib.ConnectionOpenAck(msg_.connectionId);
     }
 
     /**
@@ -203,11 +224,12 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
             msg_.connectionId
         ];
-        require(
-            connection.state ==
-                IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN,
-            "connectionOpenConfirm: connection state is not TRYOPEN"
-        );
+        if (
+            connection.state !=
+            IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN
+        ) {
+            revert IBCConnectionLib.ErrInvalidConnectionState();
+        }
 
         IbcCoreConnectionV1Counterparty.Data
             memory expectedCounterparty = IbcCoreConnectionV1Counterparty.Data({
@@ -227,19 +249,22 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 counterparty: expectedCounterparty
             });
 
-        require(
-            verifyConnectionState(
+        if (
+            !verifyConnectionState(
                 connection,
                 msg_.proofHeight,
                 msg_.proofAck,
                 connection.counterparty.connection_id,
                 expectedConnection
-            ),
-            "connectionOpenConfirm: failed to verify connection state"
-        );
+            )
+        ) {
+            revert IBCConnectionLib.ErrInvalidProof();
+        }
 
         connection.state = IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN;
         updateConnectionCommitment(msg_.connectionId);
+
+        emit IBCConnectionLib.ConnectionOpenConfirm(msg_.connectionId);
     }
 
     function updateConnectionCommitment(string memory connectionId) private {

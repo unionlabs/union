@@ -7,6 +7,10 @@ import "../24-host/IBCStore.sol";
 import "../24-host/IBCCommitment.sol";
 import "../02-client/IIBCClient.sol";
 
+library IBCClientLib {
+    event GeneratedClientIdentifier(string);
+}
+
 /**
  * @dev IBCClient is a contract that implements [ICS-2](https://github.com/cosmos/ibc/tree/main/spec/core/ics-002-client-semantics).
  */
@@ -65,6 +69,8 @@ contract IBCClient is IBCStore, IIBCClient {
                 update.height.revision_height
             )
         ] = update.consensusStateCommitment;
+
+        emit IBCClientLib.GeneratedClientIdentifier(clientId);
 
         return clientId;
     }

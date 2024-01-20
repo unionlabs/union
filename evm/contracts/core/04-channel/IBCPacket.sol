@@ -8,6 +8,34 @@ import "../24-host/IBCStore.sol";
 import "../24-host/IBCCommitment.sol";
 import "../04-channel/IIBCChannel.sol";
 import "../05-port/ModuleManager.sol";
+import "../05-port/IIBCModule.sol";
+
+library IBCPacketLib {
+    event SendPacket(
+        uint64 sequence,
+        string sourcePort,
+        string sourceChannel,
+        IbcCoreClientV1Height.Data timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes data
+    );
+
+    event RecvPacket(IbcCoreChannelV1Packet.Data packet);
+
+    event WriteAcknowledgement(
+        string destinationPortId,
+        string destinationChannel,
+        uint64 sequence,
+        bytes acknowledgement
+    );
+
+    event AcknowledgePacket(
+        IbcCoreChannelV1Packet.Data packet,
+        bytes acknowledgement
+    );
+
+    event TimeoutPacket(IbcCoreChannelV1Packet.Data packet);
+}
 
 /**
  * @dev IBCPacket is a contract that implements [ICS-4](https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics).
@@ -28,7 +56,13 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
-    ) external returns (uint64) {
+    ) external override {
+        require(
+            authenticateCapability(
+                channelCapabilityPath(sourcePort, sourceChannel)
+            ),
+            "sendPacket: unauthorized"
+        );
         IbcCoreChannelV1Channel.Data storage channel = channels[sourcePort][
             sourceChannel
         ];
@@ -83,14 +117,22 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                 )
             )
         );
-        return packetSequence;
+
+        emit IBCPacketLib.SendPacket(
+            packetSequence,
+            sourcePort,
+            sourceChannel,
+            timeoutHeight,
+            timeoutTimestamp,
+            data
+        );
     }
 
     /**
      * @dev recvPacket is called by a module in order to receive & process an IBC packet
      * sent on the corresponding channel end on the counterparty chain.
      */
-    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external {
+    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external override {
         IbcCoreChannelV1Channel.Data storage channel = channels[
             msg_.packet.destination_port
         ][msg_.packet.destination_channel];
@@ -181,18 +223,32 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         } else {
             revert("recvPacket: unknown ordering type");
         }
+
+        IIBCModule module = lookupModuleByChannel(
+            msg_.packet.destination_port,
+            msg_.packet.destination_channel
+        );
+        bytes memory acknowledgement = module.onRecvPacket(
+            msg_.packet,
+            _msgSender()
+        );
+        if (acknowledgement.length > 0) {
+            _writeAcknowledgement(
+                msg_.packet.destination_port,
+                msg_.packet.destination_channel,
+                msg_.packet.sequence,
+                acknowledgement
+            );
+        }
+        emit IBCPacketLib.RecvPacket(msg_.packet);
     }
 
-    /**
-     * @dev writeAcknowledgement writes the packet execution acknowledgement to the state,
-     * which will be verified by the counterparty chain using AcknowledgePacket.
-     */
-    function writeAcknowledgement(
+    function _writeAcknowledgement(
         string calldata destinationPortId,
         string calldata destinationChannel,
         uint64 sequence,
-        bytes calldata acknowledgement
-    ) external {
+        bytes memory acknowledgement
+    ) internal {
         require(
             acknowledgement.length > 0,
             "writeAcknowlegement: acknowledgement cannot be empty"
@@ -220,6 +276,37 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         commitments[ackCommitmentKey] = keccak256(
             abi.encodePacked(sha256(acknowledgement))
         );
+
+        emit IBCPacketLib.WriteAcknowledgement(
+            destinationPortId,
+            destinationChannel,
+            sequence,
+            acknowledgement
+        );
+    }
+
+    /**
+     * @dev writeAcknowledgement writes the packet execution acknowledgement to the state,
+     * which will be verified by the counterparty chain using AcknowledgePacket.
+     */
+    function writeAcknowledgement(
+        string calldata destinationPortId,
+        string calldata destinationChannel,
+        uint64 sequence,
+        bytes calldata acknowledgement
+    ) external override {
+        require(
+            authenticateCapability(
+                channelCapabilityPath(destinationPortId, destinationChannel)
+            ),
+            "writeAcknowledgement: unauthorized"
+        );
+        _writeAcknowledgement(
+            destinationPortId,
+            destinationChannel,
+            sequence,
+            acknowledgement
+        );
     }
 
     /**
@@ -232,7 +319,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
      */
     function acknowledgePacket(
         IBCMsgs.MsgPacketAcknowledgement calldata msg_
-    ) external {
+    ) external override {
         IbcCoreChannelV1Channel.Data storage channel = channels[
             msg_.packet.source_port
         ][msg_.packet.source_channel];
@@ -318,13 +405,28 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         }
 
         delete commitments[packetCommitmentKey];
+
+        IIBCModule module = lookupModuleByChannel(
+            msg_.packet.source_port,
+            msg_.packet.source_channel
+        );
+
+        module.onAcknowledgementPacket(
+            msg_.packet,
+            msg_.acknowledgement,
+            _msgSender()
+        );
+
+        emit IBCPacketLib.AcknowledgePacket(msg_.packet, msg_.acknowledgement);
     }
 
     function hashString(string memory s) private pure returns (bytes32) {
         return keccak256(abi.encodePacked(s));
     }
 
-    function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_) external {
+    function timeoutPacket(
+        IBCMsgs.MsgPacketTimeout calldata msg_
+    ) external override {
         IbcCoreChannelV1Channel.Data storage channel = channels[
             msg_.packet.source_port
         ][msg_.packet.source_channel];
@@ -447,6 +549,14 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         }
 
         delete commitments[packetCommitmentKey];
+
+        IIBCModule module = lookupModuleByChannel(
+            msg_.packet.source_port,
+            msg_.packet.source_channel
+        );
+        module.onTimeoutPacket(msg_.packet, _msgSender());
+
+        emit IBCPacketLib.TimeoutPacket(msg_.packet);
     }
 
     function verifyCommitment(

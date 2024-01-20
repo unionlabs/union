@@ -11,7 +11,7 @@ interface IIBCConnectionHandshake {
      */
     function connectionOpenInit(
         IBCMsgs.MsgConnectionOpenInit calldata msg_
-    ) external returns (string memory connectionId);
+    ) external returns (string memory);
 
     /**
      * @dev connectionOpenTry relays notice of a connection attempt on chain A to chain B (this

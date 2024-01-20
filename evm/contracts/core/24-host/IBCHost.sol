@@ -6,14 +6,23 @@ import "../02-client/ILightClient.sol";
 import "../24-host/IBCStore.sol";
 import "../05-port/ModuleManager.sol";
 
-function _getRevertMsg(bytes memory _returnData) pure returns (string memory) {
-    // If the _res length is less than 68, then the transaction failed silently (without a revert message)
-    if (_returnData.length < 68) return "Transaction reverted silently";
+function passthrough(address impl) {
     assembly {
-        // Slice the sighash.
-        _returnData := add(_returnData, 0x04)
+        // copy function selector and any arguments
+        calldatacopy(0, 0, calldatasize())
+        // execute function call using the facet
+        let result := delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+        // get any return value
+        returndatacopy(0, 0, returndatasize())
+        // return any return value or error back to the caller
+        switch result
+        case 0 {
+            revert(0, returndatasize())
+        }
+        default {
+            return(0, returndatasize())
+        }
     }
-    return abi.decode(_returnData, (string)); // All that remains is the revert string
 }
 
 abstract contract IBCHost is ModuleManager {}

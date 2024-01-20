@@ -34,19 +34,6 @@ contract DevnetOwnableIBCHandler is OwnableIBCHandler {
         IbcCoreChannelV1Channel.Data calldata channel,
         address moduleAddress
     ) public onlyOwner {
-        (bool success, bytes memory res) = ibcHandlerInit.delegatecall(
-            abi.encodeWithSelector(
-                DevnetIBCHandlerInit.setupInitialChannel.selector,
-                connectionId,
-                connection,
-                portId,
-                channelId,
-                channel,
-                moduleAddress
-            )
-        );
-        if (!success) {
-            revert(_getRevertMsg(res));
-        }
+        passthrough(ibcHandlerInit);
     }
 }
