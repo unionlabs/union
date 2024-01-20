@@ -21,6 +21,10 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Union",
+      logo: {
+        light: "",
+        dark: "",
+      },
       tagline: "Connecting blockchains trustlessly",
       description:
         "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks.",
@@ -37,8 +41,8 @@ export default defineConfig({
           removeCommentsWhenCopyingTerminalFrames: true,
         },
         themes: ["starlight-dark", "starlight-light"],
-        useStarlightDarkModeSwitch: true,
-        useStarlightUiThemeColors: true,
+        // useStarlightDarkModeSwitch: true,
+        // useStarlightUiThemeColors: true,
       },
       head: [],
       locales: {
