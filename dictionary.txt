@@ -456,6 +456,7 @@ logtostderr
 lspec
 lzrndrpkvsjqgk
 mapstructure
+mathjax
 maxdome
 maxp
 maxpeers

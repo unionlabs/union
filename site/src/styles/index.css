@@ -214,6 +214,10 @@ pre [data-line] {
   @apply !text-green-300 bg-green-800/50 border-b-green-600 font-bold;
 }
 
+[data-chars-id="w"] {
+  @apply !text-zinc-300 bg-zinc-400/50 border-b-zinc-300 font-bold;
+}
+
 [data-chars-id="r"] {
   color: rgb(255, 201, 201);
   background-color: rgb(153 27 27 / 0.5);

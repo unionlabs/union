@@ -18,7 +18,7 @@ let socialLinks = [
 ]
 
 const soliditySnippet = `
-\`\`\`solidity title="lorem.sol" /relayer/#i /ibcPacket/#s /ACK_SUCCESS/#g /ACK_FAILURE/#r
+\`\`\`solidity title="lorem.sol" showLineNumbers /onRecvPacket/0-1#w /relayer/#i /ibcPacket/#s /ACK_SUCCESS/#g /ACK_FAILURE/#r
 function onRecvPacket(
   IbcPacket calldata ibcPacket,
   address relayer
@@ -104,7 +104,7 @@ function onRecvPacket(
       <div
         class='flex flex-row max-w-6xl justify-between overflow-none mx-auto items-center content-start'
       >
-        <div class='w-2/3 max-w-[625px]'>
+        <div class='w-2/3 max-w-[640px]'>
           <Code
             client:load
             code={soliditySnippet}
