@@ -28,7 +28,7 @@ export default defineConfig({
       lastUpdated: true,
       social: {
         github: "https://github.com/unionlabs",
-        discord: "https:discord.union.build",
+        discord: "https://discord.union.build",
         "x.com": "https://x.com/union_build",
       },
       expressiveCode: {
