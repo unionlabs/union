@@ -4,6 +4,7 @@ import Layout from '#/layouts/layout.svelte'
 import { ViewTransitions } from 'astro:transitions'
 import PerformanceGraph from '#/components/performance-graph.astro'
 import AppleGraphContainer from '#/components/apple-graph-container.svelte'
+import ConnectedVisual from '#/components/ConnectedVisual.svelte'
 
 let socialLinks = [
   { href: 'https://x.com/union_build', iconSrc: '/images/x.svg', cta: 'Join us on X' },
@@ -115,18 +116,14 @@ function onRecvPacket(
             by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
           </p>
         </div>
-        <!-- <div class='w-1/2'>
-          <div class='flex-1 p-4'>
-            <p class='text-4xl font-normal mt-auto text-gray-400 self-start h-full'>
-              Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-              by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
-            </p>
-          </div>
-          <div class='flex-1 gap-4 flex overflow-none'>
-            {arraySizeN(21).map(() => <div class='bg-white h-[300px] w-2' />)}
-          </div>
-        </div> -->
       </div>
+    </section>
+    <section class="flex flex-col items-center justify-center">
+      <h2 class='text-4xl mb-4 font-normal'>Connecting L1s, L2s, AppChains and Rollups</h2>
+      <ConnectedVisual/>
+
+
+
     </section>
     <section class='flex flex-col items-center justif-center py-32'>
       <h2 class='text-4xl mb-4 font-normal'>The leading interoperability layer.</h2>
