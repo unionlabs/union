@@ -194,6 +194,7 @@ canonicalize
 capabilitykeeper
 capabilitytypes
 cargotoml
+catmull
 cctp
 cdctypes
 cdylib
@@ -527,6 +528,7 @@ noopener
 noreferrer
 notrunc
 nowrap
+nums
 numtide
 observablehq
 omit

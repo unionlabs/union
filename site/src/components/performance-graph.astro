@@ -1,10 +1,12 @@
 <article data-graph='performance'></article>
 
 <script>
+  import { roundNumber } from '#/lib/utilities.ts'
   /**
-   * TODO get answers to these questions:
-   * - should we animate each line same speed or different speed?
-   * - should we animate one then the other or both at the same time?
+   * TODO:
+   * red line: memory
+   * - x-axis numbers of validators: 0, 8, 16, 24, 32, 40, 48, 56, 64
+   * - y-axis seconds it takes to prove: 0, ..., 25s (0, 5, 10, 15, 20)
    */
   import * as Plot from '@observablehq/plot'
 
@@ -21,7 +23,7 @@
     )
     return pathElements
   }
-  
+
   /**
    * Intersection Observer
    */
@@ -58,45 +60,73 @@
   chartElement?.append(
     // @ts-expect-error
     Plot.plot({
-      grid: false,
+      marginRight: 0,
+      x: {
+        axis: 'bottom',
+        labelAnchor: 'center',
+        label: '# of validators',
+        ariaLabel: '#-validators',
+        tickFormat: (d: number) => d
+      },
+      y: {
+        tickSize: 0,
+        axis: 'left',
+        labelOffset: -220,
+        labelAnchor: 'top',
+        label: 'seconds to prove',
+        fontVariant: 'tabular-nums',
+        tickFormat: (_d: number) => '',
+        ariaDescription: 'seconds-to-prove'
+      },
       figure: true,
       caption: null,
       marks: [
-        Plot.ruleX([0], { strokeOpacity: 0 }),
-        Plot.ruleY([0], { strokeOpacity: 0 }),
-        Plot.lineY([{ x: 0, y: 2 }].concat(zkFastPlotLine), {
+        Plot.ruleY([0]),
+        Plot.line([{ x: 0, y: 2 }].concat(zkFastPlotLine), {
           x: 'x',
           y: 'y',
+          title: undefined,
           stroke: '#F9F9F9',
-          curve: 'bump-x'
+          curve: 'catmull-rom'
+        }),
+        Plot.gridY({
+          x: (y, _index) => zkFastPlotLine.find(({ y: yValue }) => yValue > y)?.x,
+          color: '#ffffff',
+          strokeWidth: 0.5,
+          strokeOpacity: 0.5
         }),
         Plot.tip(
           zkFastPlotLine,
-          Plot.pointer({
+          Plot.pointerX({
             x: 'x',
             y: 'y',
+            tip: 'xy',
+            fontSize: 12,
             fill: 'black',
+            fillOpacity: 1,
+            strokeWidth: 0,
+            monospace: true,
+            textPadding: 10,
+            facet: 'include',
+            textAnchor: 'start',
+            frameAnchor: 'middle',
             pointerEvents: 'none',
-            title: ({ x, y }) => `${x}, ${y}`
+            fontFamily: 'monospace',
+            fontVariant: 'tabular-nums',
+            title: ({ x, y }) => `↑ ${x}\n\n→ ${roundNumber(y, 2)}s`
           })
+        ),
+        Plot.dot(
+          zkFastPlotLine,
+          Plot.pointerX({ x: 'x', y: 'y', stroke: 'red', fill: 'red', r: 3 })
         ),
         Plot.lineY([{ x: 0, y: 1 }].concat(zkSlowPlotLine), {
           x: 'x',
           y: 'y',
           stroke: 'red',
-          curve: 'bump-y'
-        }),
-
-        Plot.tip(
-          zkSlowPlotLine,
-          Plot.pointer({
-            x: 'x',
-            y: 'y',
-            fill: 'black',
-            pointerEvents: 'none',
-            title: ({ x, y }) => `${x}, ${y}`
-          })
-        )
+          curve: 'bump-y',
+          marginBottom: 50
+        })
       ]
     })
   )
@@ -105,18 +135,32 @@
 <style is:global>
   /* animation: line-progress 2s linear infinite normal forwards running; */
   :root {
-    --animation-duration: 2s;
     --animation-direction: normal;
     --animation-play-state: running;
     --animation-timing-function: ease;
     --animation-iteration-count: infinite;
+    --axis-label-font-size: 14px;
+    --axis-label-font-family: 'monospace';
+  }
+  g[aria-label='y-axis label'] text {
+    font-size: var(--axis-label-font-size);
+    font-family: var(--axis-label-font-family);
+  }
+
+  g[aria-label='x-axis label'] {
+    margin-top: 25px;
+  }
+  g[aria-label='x-axis label'] text {
+    margin-top: 25px;
+    font-size: var(--axis-label-font-size);
+    font-family: var(--axis-label-font-family);
   }
 
   g[stroke='red'] path {
-    stroke-dasharray: 106%;
-    stroke-dashoffset: 95%;
+    stroke-dasharray: 105%;
+    stroke-dashoffset: 100%;
     animation-name: slow-line-progress;
-    animation-duration: var(--animation-duration);
+    animation-duration: 4.5s;
     animation-direction: var(--animation-direction);
     animation-play-state: var(--animation-play-state);
     animation-timing-function: var(--animation-timing-function);
@@ -126,7 +170,7 @@
   g[stroke='#F9F9F9'] path {
     stroke-dasharray: 180%;
     stroke-dashoffset: 180%;
-    animation-duration: 1s;
+    animation-duration: 2.5s;
     animation-name: fast-line-progress;
     animation-direction: var(--animation-direction);
     animation-play-state: var(--animation-play-state);
