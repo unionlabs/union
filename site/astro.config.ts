@@ -28,6 +28,7 @@ export default defineConfig({
       lastUpdated: true,
       social: {
         github: "https://github.com/unionlabs",
+        discord: "https:discord.union.build",
         "x.com": "https://x.com/union_build",
       },
       expressiveCode: {
@@ -40,7 +41,15 @@ export default defineConfig({
         useStarlightDarkModeSwitch: true,
         useStarlightUiThemeColors: true,
       },
-      head: [],
+      head: [
+        {
+          tag: "meta",
+          attrs: {
+            name: "description",
+            content: "The Sovereign Interoperability Layer",
+          },
+        },
+      ],
       locales: {
         root: {
           label: "English",
