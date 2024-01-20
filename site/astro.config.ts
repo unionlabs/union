@@ -1,4 +1,3 @@
-import "dotenv/config";
 import svelte from "@astrojs/svelte";
 import tailwind from "@astrojs/tailwind";
 import starlight from "@astrojs/starlight";
