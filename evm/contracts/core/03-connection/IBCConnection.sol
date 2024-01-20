@@ -1,7 +1,7 @@
 pragma solidity ^0.8.23;
 
 import "solady/utils/LibString.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/utils/Strings.sol";
 import "../../proto/ibc/core/client/v1/client.sol";
 import "../../proto/ibc/core/connection/v1/connection.sol";
 import "../25-handler/IBCMsgs.sol";

@@ -11,7 +11,7 @@ import "./Encoder.sol";
 import "./MerkleTree.sol";
 import "../core/IZKVerifierV2.sol";
 import "solidity-bytes-utils/BytesLib.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/utils/math/SafeCast.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 
 struct OptimizedConsensusState {

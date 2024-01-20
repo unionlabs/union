@@ -1,23 +1,54 @@
 { ... }: {
   perSystem = { self', pkgs, proto, nix-filter, ensureAtRepositoryRoot, ... }:
     let
+      # solidity-stringutils = pkgs.fetchFromGitHub {
+      #   owner = "Arachnid";
+      #   repo = "solidity-stringutils";
+      #   rev = "46983c6d9462a80229cf0d5bab8ea3b3ee31066c";
+      #   hash = "sha256-8LGScZp29zOnXG8tXv62RHr+fJCWs0WbMpsZo9S95TE=";
+      # };
+      # solidity-bytes-utils = pkgs.fetchFromGitHub {
+      #   owner = "GNSPS";
+      #   repo = "solidity-bytes-utils";
+      #   rev = "6458fb2780a3092bc756e737f246be1de6d3d362";
+      #   hash = "sha256-sJWoYag6hTIoS4Jr1XdqBKfrJaFQ1iMPy+UI5vVb7Lw=";
+      # };
+      # solady = pkgs.fetchFromGitHub {
+      #   owner = "vectorized";
+      #   repo = "solady";
+      #   rev = "e158762ba98db40a06411db7f80a54b93e951818";
+      #   hash = "sha256-a5hiMUFQvE76h98md11+ksmmYsxV1p6t/ACO/hE2Cws=";
+      # };
+      # forge-std = pkgs.fetchFromGitHub {
+      #   owner = "foundry-rs";
+      #   repo = "forge-std";
+      #   rev = "36c303b7ffdd842d06b1ec2744c9b9b5fb3083f3";
+      #   hash = "sha256-m2i738jsKdjQLDer8WU/ga5GY/5idbpbfnhIyiyEW2w=";
+      #   fetchSubmodules = true;
+      # };
+      # openzeppelin = pkgs.fetchFromGitHub {
+      #   owner = "OpenZeppelin";
+      #   repo = "openzeppelin-contracts";
+      #   rev = "v4.8.3";
+      #   hash = "sha256-Qt2qC7T0gx18ydvO/UULEJj/q7ioGpNxJkT5el8hv14=";
+      # };
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
         repo = "solidity-stringutils";
-        rev = "46983c6d9462a80229cf0d5bab8ea3b3ee31066c";
-        hash = "sha256-8LGScZp29zOnXG8tXv62RHr+fJCWs0WbMpsZo9S95TE=";
+        rev = "4b2fcc43fa0426e19ce88b1f1ec16f5903a2e461";
+        hash = "sha256-Hwc6akOane0feJw7xW+pbT4KsHVOb8JFMhc61F7sej4=";
       };
       solidity-bytes-utils = pkgs.fetchFromGitHub {
         owner = "GNSPS";
         repo = "solidity-bytes-utils";
-        rev = "6458fb2780a3092bc756e737f246be1de6d3d362";
+        rev = "v0.8.2";
         hash = "sha256-sJWoYag6hTIoS4Jr1XdqBKfrJaFQ1iMPy+UI5vVb7Lw=";
       };
       solady = pkgs.fetchFromGitHub {
         owner = "vectorized";
         repo = "solady";
-        rev = "e158762ba98db40a06411db7f80a54b93e951818";
-        hash = "sha256-a5hiMUFQvE76h98md11+ksmmYsxV1p6t/ACO/hE2Cws=";
+        rev = "v0.0.162";
+        hash = "sha256-9lgXwW2YQABfaklGdDYIXU8qFBapszoB4+mAatKV9bs=";
       };
       forge-std = pkgs.fetchFromGitHub {
         owner = "foundry-rs";
@@ -29,8 +60,8 @@
       openzeppelin = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts";
-        rev = "v4.8.3";
-        hash = "sha256-Qt2qC7T0gx18ydvO/UULEJj/q7ioGpNxJkT5el8hv14=";
+        rev = "v5.0.1";
+        hash = "sha256-R6drJeVBM4OvFd4CS8iiXIilDeymmd6fbU++LN+4u20=";
       };
       linkedLibs = pkgs.linkFarm "evm-libraries" [
         {
@@ -55,7 +86,7 @@
         }
         {
           name = "@openzeppelin";
-          path = "${openzeppelin}";
+          path = "${openzeppelin}/contracts";
         }
       ];
       libraries = pkgs.stdenv.mkDerivation {
@@ -280,11 +311,11 @@
           buildPhase = ''
             forge --version
             cp ${foundryConfig}/foundry.toml .
-            forge build --revert-strings debug
+            forge build
           '';
           doCheck = true;
           checkPhase = ''
-            forge test --revert-strings debug -vvv --gas-report
+            forge test -vvv --gas-report
           '';
           installPhase = ''
             mkdir -p $out
@@ -364,7 +395,7 @@
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            FOUNDRY_FUZZ_RUNS=512 FOUNDRY_SRC="evm/contracts" FOUNDRY_TEST="evm/tests/src" forge test --revert-strings debug -vvv --gas-report
+            FOUNDRY_FUZZ_RUNS=512 FOUNDRY_SRC="evm/contracts" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report
           '';
         };
 

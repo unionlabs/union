@@ -1,6 +1,6 @@
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/IERC20.sol";
 
 interface IERC20Denom is IERC20 {
     function mint(address to, uint256 amount) external;

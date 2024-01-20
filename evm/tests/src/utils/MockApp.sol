@@ -4,7 +4,7 @@ import {IbcCoreChannelV1Packet as Packet, IbcCoreChannelV1GlobalEnums as Channel
 import {IIBCModule} from "../../../contracts/core/05-port/IIBCModule.sol";
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
 import {IBCHost} from "../../../contracts/core/24-host/IBCHost.sol";
-import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {Context} from "@openzeppelin/utils/Context.sol";
 
 contract MockApp is IIBCModule {
     event MockPacketRecv();

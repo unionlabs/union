@@ -1,9 +1,8 @@
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/token/ERC20/ERC20.sol";
+import "@openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "solady/utils/LibString.sol";
 import "solidity-stringutils/strings.sol";
 import "../../../core/25-handler/IBCHandler.sol";
@@ -278,7 +277,6 @@ contract UCS01Relay is IBCAppBase {
     using RelayPacketLib for RelayPacket;
     using LibString for *;
     using strings for *;
-    using SafeMath for uint256;
 
     IBCHandler private immutable ibcHandler;
 
@@ -328,9 +326,7 @@ contract UCS01Relay is IBCAppBase {
         address token,
         uint256 amount
     ) internal {
-        outstanding[sourcePort][sourceChannel][token] = outstanding[sourcePort][
-            sourceChannel
-        ][token].add(amount);
+        outstanding[sourcePort][sourceChannel][token] += amount;
     }
 
     function decreaseOutstanding(
@@ -339,9 +335,7 @@ contract UCS01Relay is IBCAppBase {
         address token,
         uint256 amount
     ) internal {
-        outstanding[sourcePort][sourceChannel][token] = outstanding[sourcePort][
-            sourceChannel
-        ][token].sub(amount);
+        outstanding[sourcePort][sourceChannel][token] -= amount;
     }
 
     function sendToken(

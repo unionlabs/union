@@ -1,6 +1,6 @@
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/utils/Context.sol";
 import "../core/05-port/IIBCModule.sol";
 
 /**

@@ -1,9 +1,9 @@
 pragma solidity ^0.8.23;
 
 import {BytesLib} from "solidity-bytes-utils/BytesLib.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeCast} from "@openzeppelin/utils/math/SafeCast.sol";
 import {ProtoBufRuntime} from "../proto/ProtoBufRuntime.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Math} from "@openzeppelin/utils/math/Math.sol";
 import "../proto/ibc/core/commitment/v1/commitment.sol";
 import "../proto/cosmos/ics23/v1/proofs.sol";
 

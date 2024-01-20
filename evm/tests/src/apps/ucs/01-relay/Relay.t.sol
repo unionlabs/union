@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 import "forge-std/Test.sol";
 import "solidity-stringutils/strings.sol";
 import "solady/utils/LibString.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/IERC20.sol";
 import "../../../../../contracts/apps/ucs/01-relay/Relay.sol";
 import "../../../../../contracts/apps/ucs/01-relay/ERC20Denom.sol";
 import "../../../../../contracts/apps/ucs/01-relay/IERC20Denom.sol";
