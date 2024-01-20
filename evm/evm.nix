@@ -160,7 +160,6 @@
       deploy = { rpc-url, private-key, path, name, args ? "" }: ''
         echo "Deploying ${name}..."
         ${pkgs.lib.toUpper name}=$(forge create \
-                 --revert-strings debug \
                  --json \
                  --rpc-url ${rpc-url} \
                  --private-key ${private-key} \
@@ -177,7 +176,7 @@
           text = ''
             OUT="$(mktemp -d)"
             cd "$OUT"
-            cp --no-preserve=mode -r ${self'.packages.evm-contracts-optimized}/* .
+            cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
 
             ${deploy-contracts { inherit rpc-url private-key; } [
               { path = "core/02-client/IBCClient.sol"; name = "IBCClient"; }
@@ -314,26 +313,6 @@
             forge build
           '';
           doCheck = true;
-          checkPhase = ''
-            forge test -vvv --gas-report
-          '';
-          installPhase = ''
-            mkdir -p $out
-            mv out $out
-            mv cache $out
-          '';
-        };
-
-        evm-contracts-optimized = pkgs.stdenv.mkDerivation {
-          name = "evm-contracts-optimized";
-          src = evmSources;
-          buildInputs = [ wrappedForge ];
-          buildPhase = ''
-            forge --version
-            cp ${foundryConfig}/foundry.toml .
-            forge build
-          '';
-          doCheck = false;
           checkPhase = ''
             forge test -vvv --gas-report
           '';
