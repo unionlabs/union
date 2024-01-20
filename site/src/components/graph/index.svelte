@@ -70,9 +70,6 @@
 </div>
 
 <style>
-  :root {
-    scrollbar-gutter: stable;
-  }
 
   .easing-vis {
     display: flex;

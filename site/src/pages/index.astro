@@ -18,7 +18,7 @@ let socialLinks = [
 ]
 
 const soliditySnippet = `
-\`\`\`solidity title="lorem.sol" showLineNumbers /onRecvPacket/0-1#w /relayer/#i /ibcPacket/#s /ACK_SUCCESS/#g /ACK_FAILURE/#r
+\`\`\`solidity title="lorem.sol" /relayer/#i /ibcPacket/#s /ACK_SUCCESS/#g /ACK_FAILURE/#r
 function onRecvPacket(
   IbcPacket calldata ibcPacket,
   address relayer
@@ -43,7 +43,7 @@ function onRecvPacket(
 
 <Layout>
   <main class='flex flex-col flex-1'>
-    <section class='flex flex-col items-center my-32 gap-6'>
+    <section class='flex flex-col items-center py-32 gap-6 grid-effect-bg'>
       <div class='text-7xl text-white text-center'>The Sovereign<br />Interoperability Layer</div>
       <div class='text-xl max-w-lg font-normal text-center'>
         By using consensus verification, Union builds unstoppable and decentralized connections to
@@ -190,19 +190,30 @@ function onRecvPacket(
 
     <section class='flex flex-col items-center justif-center py-32'>
       <h2 class='text-4xl mb-4 font-normal'>Qualities of the product.</h2>
-      <p>Six vercel-style boxes with features</p>
-      <div class='grid grid-cols-3 gap-4'>
+      <div class='grid grid-cols-3 gap-4 max-w-4xl gap-8'>
         <div>
-          <h3>Sovereign interoperability</h3>
-          <p>Decentralized Proving, for everyone.</p>
+          <h3 class="text-gray-300 font-normal">Quality 1</h3>
+          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
         </div>
         <div>
-          <h3>CometBLS</h3>
-          <p>ZK-aligned Consensus engine</p>
+          <h3 class="text-gray-300 font-normal">Quality 2</h3>
+          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
         </div>
         <div>
-          <h3>Voyager</h3>
-          <p></p>
+          <h3 class="text-gray-300 font-normal">Quality 3</h3>
+          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
+        </div>
+        <div>
+          <h3 class="text-gray-300 font-normal">Quality 4</h3>
+          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
+        </div>
+        <div>
+          <h3 class="text-gray-300 font-normal">Quality 5</h3>
+          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
+        </div>
+        <div>
+          <h3 class="text-gray-300 font-normal">Quality 6</h3>
+          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
         </div>
       </div>
     </section>
