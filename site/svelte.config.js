@@ -8,4 +8,8 @@ export default {
     dev: process.env.NODE_ENV !== "production",
   },
   preprocess: vitePreprocess(),
+  compilerOptions: {
+    hydratable: true,
+    dev: process.env.NODE_ENV !== "production",
+  },
 };

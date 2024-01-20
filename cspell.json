@@ -40,5 +40,6 @@
     "bun.lockb",
     "package-lock.json",
     "file-tree-icons.ts"
+    "moonlight-ii.json"
   ]
 }

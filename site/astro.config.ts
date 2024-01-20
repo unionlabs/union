@@ -44,10 +44,10 @@ export default defineConfig({
       },
       head: [
         {
-          tag: "link",
+          tag: "meta",
           attrs: {
-            rel: "stylesheet",
-            href: "https://www.unpkg.com/katex@0.16.9/dist/katex.min.css",
+            name: "description",
+            content: "The Sovereign Interoperability Layer",
           },
         },
       ],
@@ -60,7 +60,9 @@ export default defineConfig({
       defaultLocale: "en",
       logo: {
         alt: "Union Logo",
-        src: "./public/images/logo.png",
+        dark: "./public/images/union-logo/union-logo-transparent.svg",
+        light: "./public/images/union-logo/union-logo-white-transparent.svg",
+        // replacesTitle: true,
       },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/site",
@@ -107,8 +109,9 @@ export default defineConfig({
           },
         },
       ],
+      plugins: [],
       customCss: [
-        "./src/styles/index.css",
+        "./src/styles/starlight.css",
         "./src/styles/tailwind.css",
         "@fontsource/jetbrains-mono/400.css",
         "@fontsource/jetbrains-mono/600.css",

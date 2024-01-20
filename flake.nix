@@ -360,7 +360,6 @@
               cargo-llvm-cov
               bacon
               cargo-nextest
-              foundry-bin
               jq
               go-ethereum
               marksman
@@ -372,7 +371,6 @@
               pkg-config
               protobuf
               self'.packages.tdc
-              solc
               yq
               nodePackages.graphqurl
               nodePackages.svelte-language-server
@@ -384,6 +382,8 @@
               go-tools
               gotools
             ]) ++ (if pkgs.stdenv.isLinux then [
+              pkgs.solc
+              pkgs.foundry-bin
               self'.packages.hasura-cli
               self'.packages.sqlx-cli
             ] else [ ]));

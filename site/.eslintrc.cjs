@@ -67,6 +67,7 @@ module.exports = {
     'unicorn/prefer-includes': ['off'],
     'unicorn/no-null': ['off'],
     'unicorn/no-array-reduce': ['off'],
+    'unicorn/new-for-builtins': ['off'],
     'unicorn/consistent-function-scoping': ['off', { checkArrowFunctions: false }],
     'unicorn/prefer-top-level-await': ['off'],
     'unicorn/prefer-event-target': ['off'],
