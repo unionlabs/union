@@ -39,7 +39,7 @@
     "yarn.lock",
     "bun.lockb",
     "package-lock.json",
-    "file-tree-icons.ts"
+    "file-tree-icons.ts",
     "moonlight-ii.json"
   ]
 }

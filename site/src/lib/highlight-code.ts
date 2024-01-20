@@ -3,7 +3,7 @@ import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
 import rehypePrettyCode from "rehype-pretty-code";
-import moonlightTheme from "../../public/images/moonlight-ii.json";
+import moonlightTheme from "#/assets/theme/moonlight-ii.json";
 
 export async function highlightCode(code: string) {
   const file = await unified()

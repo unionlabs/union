@@ -1,0 +1,153 @@
+<article data-graph='performance'></article>
+
+<script>
+  /**
+   * TODO get answers to these questions:
+   * - should we animate each line same speed or different speed?
+   * - should we animate one then the other or both at the same time?
+   */
+  import * as Plot from '@observablehq/plot'
+
+  const generateRandomNumber = (min: number, max: number) => Math.random() * (max - min) + min
+
+  const pauseAnimation = (element: SVGPathElement) => (element.style.animationPlayState = 'paused')
+  const resumeAnimation = (element: SVGPathElement) =>
+    (element.style.animationPlayState = 'running')
+
+  function getRelevantPathElements({ selector }: { selector: string }) {
+    const gElements = document.querySelectorAll(selector)
+    const pathElements = Array.from(gElements).map(
+      gElement => gElement.querySelector('path') as SVGPathElement
+    )
+    return pathElements
+  }
+  
+  /**
+   * Intersection Observer
+   */
+  const chartElement = document.querySelector('article[data-graph="performance"]') as HTMLElement
+  const observer = new IntersectionObserver(
+    entries => {
+      const pathElements = getRelevantPathElements({
+        selector: 'g[stroke="red"], g[stroke="#F9F9F9"]'
+      })
+      entries.forEach(entry => {
+        console.log('intersection observer', entry.isIntersecting, entry.intersectionRatio)
+        if (entry.isIntersecting) pathElements.forEach(resumeAnimation)
+        else pathElements.forEach(pauseAnimation)
+      })
+    },
+    { threshold: 0.5 }
+  )
+  observer.observe(chartElement)
+
+  /**
+   * Plot data
+   * TODO: replace with real data
+   */
+  const totalLength = 50
+  let zkSlowPlotLine = Array.from({ length: totalLength }, (_, index) => ({
+    x: index,
+    y: 1 + index * 0.1
+  }))
+  let zkFastPlotLine = Array.from({ length: totalLength }, (_, index) => ({
+    x: index,
+    y: index + generateRandomNumber(-2, 2)
+  }))
+
+  chartElement?.append(
+    // @ts-expect-error
+    Plot.plot({
+      grid: false,
+      figure: true,
+      caption: null,
+      marks: [
+        Plot.ruleX([0], { strokeOpacity: 0 }),
+        Plot.ruleY([0], { strokeOpacity: 0 }),
+        Plot.lineY([{ x: 0, y: 2 }].concat(zkFastPlotLine), {
+          x: 'x',
+          y: 'y',
+          stroke: '#F9F9F9',
+          curve: 'bump-x'
+        }),
+        Plot.tip(
+          zkFastPlotLine,
+          Plot.pointer({
+            x: 'x',
+            y: 'y',
+            fill: 'black',
+            pointerEvents: 'none',
+            title: ({ x, y }) => `${x}, ${y}`
+          })
+        ),
+        Plot.lineY([{ x: 0, y: 1 }].concat(zkSlowPlotLine), {
+          x: 'x',
+          y: 'y',
+          stroke: 'red',
+          curve: 'bump-y'
+        }),
+
+        Plot.tip(
+          zkSlowPlotLine,
+          Plot.pointer({
+            x: 'x',
+            y: 'y',
+            fill: 'black',
+            pointerEvents: 'none',
+            title: ({ x, y }) => `${x}, ${y}`
+          })
+        )
+      ]
+    })
+  )
+</script>
+
+<style is:global>
+  /* animation: line-progress 2s linear infinite normal forwards running; */
+  :root {
+    --animation-duration: 2s;
+    --animation-direction: normal;
+    --animation-play-state: running;
+    --animation-timing-function: ease;
+    --animation-iteration-count: infinite;
+  }
+
+  g[stroke='red'] path {
+    stroke-dasharray: 106%;
+    stroke-dashoffset: 95%;
+    animation-name: slow-line-progress;
+    animation-duration: var(--animation-duration);
+    animation-direction: var(--animation-direction);
+    animation-play-state: var(--animation-play-state);
+    animation-timing-function: var(--animation-timing-function);
+    animation-iteration-count: var(--animation-iteration-count);
+  }
+
+  g[stroke='#F9F9F9'] path {
+    stroke-dasharray: 160%;
+    stroke-dashoffset: 95%;
+    animation-name: fast-line-progress;
+    animation-duration: 1s;
+    animation-direction: var(--animation-direction);
+    animation-play-state: var(--animation-play-state);
+    animation-timing-function: var(--animation-timing-function);
+    animation-iteration-count: var(--animation-iteration-count);
+  }
+
+  @keyframes fast-line-progress {
+    100% {
+      stroke-dashoffset: 0%;
+    }
+    100% {
+      stroke-dashoffset: 0%;
+    }
+  }
+  @keyframes slow-line-progress {
+    100% {
+      stroke-dashoffset: 0%;
+    }
+    100% {
+      stroke-dashoffset: 0%;
+    }
+  }
+</style>

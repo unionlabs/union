@@ -1,21 +1,14 @@
 ---
-import XLogo from '../../public/images/x.svg'
 import Code from '#/components/code.svelte'
 import Layout from '#/layouts/layout.svelte'
-import DiscordLogo from '../../public/images/discord.svg'
-import CalendarIcon from '../../public/images/calendar.svg'
-import Graph from '#/components/graph/index.svelte'
-import AppleGraphContainer from '#/components/apple-graph-container.svelte'
 import { ViewTransitions } from 'astro:transitions'
+import PerformanceGraph from '#/components/performance-graph.astro'
+import AppleGraphContainer from '#/components/apple-graph-container.svelte'
 
 let socialLinks = [
-  { href: 'https://x.com/union_build', iconSrc: XLogo.src, cta: 'Join us on X' },
-  {
-    href: 'https://discord.com/invite/union-build',
-    iconSrc: DiscordLogo.src,
-    cta: 'Join our Discord'
-  },
-  { href: 'https://x.com/union_build', iconSrc: CalendarIcon.src, cta: 'Join our Events' }
+  { href: 'https://x.com/union_build', iconSrc: '/images/x.svg', cta: 'Join us on X' },
+  { href: 'https://discord.b', iconSrc: '/images/discord.svg', cta: 'Join our Discord' },
+  { href: 'https://x.com/union_build', iconSrc: '/images/calendar.svg', cta: 'Join our Events' }
 ]
 
 const soliditySnippet = `
@@ -95,8 +88,8 @@ function onRecvPacket(
             of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
           </p>
         </div>
-        <div class='w-1/2 p-4 mt-3'>
-          <Graph client:load />
+        <div class='w-1/2 py-4 mt-3'>
+          <PerformanceGraph />
         </div>
       </div>
     </section>
@@ -132,12 +125,12 @@ function onRecvPacket(
     </section>
     <section class='flex flex-col items-center justif-center py-32'>
       <h2 class='text-4xl mb-4 font-normal'>The leading interoperability layer.</h2>
-      <div class="w-2/3">
+      <div class='w-2/3'>
         <AppleGraphContainer
           bars={[
-            { width: 100, label: "union gud", primary: true },
-            { width: 50, label: "others bad" },
-            { width: 20, label: "others bad" }
+            { width: 100, label: 'union gud', primary: true },
+            { width: 50, label: 'others bad' },
+            { width: 20, label: 'others bad' }
           ]}
           client:load
         />
@@ -198,28 +191,46 @@ function onRecvPacket(
       <h2 class='text-4xl mb-4 font-normal'>Qualities of the product.</h2>
       <div class='grid grid-cols-3 gap-4 max-w-4xl gap-8'>
         <div>
-          <h3 class="text-gray-300 font-normal">Quality 1</h3>
-          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
+          <h3 class='text-gray-300 font-normal'>Quality 1</h3>
+          <p class='text-2xl font-semibold'>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
+            fermentum ac eget tellus.
+          </p>
         </div>
         <div>
-          <h3 class="text-gray-300 font-normal">Quality 2</h3>
-          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
+          <h3 class='text-gray-300 font-normal'>Quality 2</h3>
+          <p class='text-2xl font-semibold'>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
+            fermentum ac eget tellus.
+          </p>
         </div>
         <div>
-          <h3 class="text-gray-300 font-normal">Quality 3</h3>
-          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
+          <h3 class='text-gray-300 font-normal'>Quality 3</h3>
+          <p class='text-2xl font-semibold'>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
+            fermentum ac eget tellus.
+          </p>
         </div>
         <div>
-          <h3 class="text-gray-300 font-normal">Quality 4</h3>
-          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
+          <h3 class='text-gray-300 font-normal'>Quality 4</h3>
+          <p class='text-2xl font-semibold'>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
+            fermentum ac eget tellus.
+          </p>
         </div>
         <div>
-          <h3 class="text-gray-300 font-normal">Quality 5</h3>
-          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
+          <h3 class='text-gray-300 font-normal'>Quality 5</h3>
+          <p class='text-2xl font-semibold'>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
+            fermentum ac eget tellus.
+          </p>
         </div>
         <div>
-          <h3 class="text-gray-300 font-normal">Quality 6</h3>
-          <p class="text-2xl font-semibold">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p> 
+          <h3 class='text-gray-300 font-normal'>Quality 6</h3>
+          <p class='text-2xl font-semibold'>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
+            fermentum ac eget tellus.
+          </p>
         </div>
       </div>
     </section>

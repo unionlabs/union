@@ -259,7 +259,9 @@ crossorigin
 cryptware
 ctypes
 dasel
+dasharray
 dashmap
+dashoffset
 dataconnector
 datadir
 datagram
@@ -461,6 +463,7 @@ lifecycles
 lightclient
 lightclients
 linkmode
+lmfao
 loaderreact
 lockb
 logformat
