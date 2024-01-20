@@ -1,45 +1,3 @@
-@font-face {
-  font-family: "Inter var";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/InterVariable.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "Inter var";
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/InterVariable-Italic.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "Monospace Argon";
-  src: url("/fonts/MonaspaceArgon-Regular.woff") format("woff");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Monospace Argon";
-  src: url("/fonts/MonaspaceArgon-Bold.woff") format("woff");
-  font-weight: bold;
-  font-style: normal;
-  font-display: swap;
-}
-
-ul > li > a {
-  font-size: 0.9rem;
-}
-:root {
-  --sl-text-h1: 3.5rem;
-}
-
-.sl-container {
-  width: 100%;
-}
 
 pre,
 figure,
@@ -63,11 +21,6 @@ h1#_top {
   box-sizing: border-box;
 }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
 
 html {
   font-feature-settings: normal;

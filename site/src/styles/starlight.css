@@ -2,3 +2,7 @@
   gap: 4px;
   color: white;
 }
+
+:root {
+  --sl-text-h1: 3.5rem;
+}

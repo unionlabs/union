@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '#/styles/reset.css'
   import '#/styles/tailwind.css'
   import '@fontsource/ibm-plex-mono'
   import '@fontsource/jetbrains-mono'
