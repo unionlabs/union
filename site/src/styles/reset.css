@@ -4,6 +4,12 @@
 *, *::before, *::after {
   box-sizing: border-box;
 }
+
+a, a:visited {
+	text-decoration: none;
+	color: unset;
+}
+
 /*
   2. Remove default margin
 */

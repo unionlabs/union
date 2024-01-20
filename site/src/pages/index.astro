@@ -110,12 +110,8 @@ function onRecvPacket(
             code={soliditySnippet}
           />
         </div>
-        <div class='flex flex-col content-between justify-between p-4 w-full max-w-1/3'>
-          <p class='text-[40px] font-normal mt-0 text-gray-400'>
-            Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-            by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
-          </p>
-          <p class='text-4xl font-normal mb-0 text-gray-400 self-start h-full'>
+        <div class='flex flex-col content-between justify-between p-4 max-w-2xl'>
+          <p class='font-normal text-3xl mt-0 text-gray-400'>
             Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
             by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
           </p>
@@ -221,54 +217,19 @@ function onRecvPacket(
     <section class='flex justify-center bg-white text-black py-32'>
       <div class='flex-1 max-w-4xl'>
         <h2 class='text-4xl mb-4 font-normal text-center'>Blog</h2>
-        <!-- <p>Together, we </p> -->
-        <div class='flex'>
-          {
-            socialLinks.map(socialLink => (
-              <a
-                href={socialLink.href}
-                class='flex-1 p-8 text-center'
-              >
-                <img
-                  src={socialLink.iconSrc}
-                  class='h-10'
-                />
-                <div class='mt-4'>
-                  <span class='mt-16 border-b-2 uppercase text-black border-black text-semibold undelrine'>
-                    {socialLink.cta} -&gt;
-                  </span>
-                </div>
-              </a>
-            ))
-          }
-
-          <!-- <div class="flex-1 p-8 text-center">
-					  <img src={DiscordLogo.src} class="h-10"/>
-  
-					  <div class="mt-4">
-						  <a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Discord -&gt;</a>
-					  </div>
-				  </div>
-				  <div class="flex-1 p-8 text-center">
-					  <img src={CalendarIcon.src} class="h-10"/>
-  
-					  <div class="mt-4">
-						  <a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Events -&gt;</a>
-					  </div>
-				  </div> -->
-        </div>
+        <p>Insert blog content here</p>
       </div>
     </section>
     <section class='flex justify-center bg-white text-black py-32'>
       <div class='flex-1 max-w-4xl'>
         <h2 class='text-4xl mb-4 font-normal text-center'>Join the Union</h2>
         <!-- <p>Together, we </p> -->
-        <div class='flex'>
+        <div class='flex flex-col md:flex-row'>
           {
             socialLinks.map(socialLink => (
               <a
                 href={socialLink.href}
-                class='flex-1 p-8 text-center'
+                class='flex flex-col flex-1 p-8 text-center'
               >
                 <img
                   src={socialLink.iconSrc}
