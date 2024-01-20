@@ -37,8 +37,8 @@ export default defineConfig({
           removeCommentsWhenCopyingTerminalFrames: true,
         },
         themes: ["starlight-dark", "starlight-light"],
-        // useStarlightDarkModeSwitch: true,
-        // useStarlightUiThemeColors: true,
+        useStarlightDarkModeSwitch: true,
+        useStarlightUiThemeColors: true,
       },
       head: [],
       locales: {
@@ -52,6 +52,7 @@ export default defineConfig({
         alt: "Union Logo",
         dark: "./src/assets/union-logo/union-logo-transparent.svg",
         light: "./src/assets/union-logo/union-logo-white-transparent.svg",
+        // replacesTitle: true,
       },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs",
@@ -100,7 +101,7 @@ export default defineConfig({
       ],
       plugins: [],
       customCss: [
-        "./src/styles/index.css",
+        "./src/styles/starlight.css",
         "./src/styles/tailwind.css",
         "@fontsource/ibm-plex-mono/400.css",
         "@fontsource/ibm-plex-mono/600.css",
