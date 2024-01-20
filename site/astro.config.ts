@@ -21,10 +21,6 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Union",
-      logo: {
-        light: "",
-        dark: "",
-      },
       tagline: "Connecting blockchains trustlessly",
       description:
         "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks.",
@@ -54,7 +50,8 @@ export default defineConfig({
       defaultLocale: "en",
       logo: {
         alt: "Union Logo",
-        src: "./public/images/union-logo.svg",
+        dark: "./src/assets/union-logo/union-logo-transparent.svg",
+        light: "./src/assets/union-logo/union-logo-white-transparent.svg",
       },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs",
