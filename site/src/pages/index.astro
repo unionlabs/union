@@ -5,6 +5,7 @@ import Layout from '#/layouts/layout.svelte'
 import DiscordLogo from '../../public/images/discord.svg'
 import CalendarIcon from '../../public/images/calendar.svg'
 import Graph from '#/components/graph/index.svelte'
+import AppleGraphContainer from '#/components/apple-graph-container.svelte'
 import { ViewTransitions } from 'astro:transitions'
 
 let socialLinks = [
@@ -131,7 +132,16 @@ function onRecvPacket(
     </section>
     <section class='flex flex-col items-center justif-center py-32'>
       <h2 class='text-4xl mb-4 font-normal'>The leading interoperability layer.</h2>
-      <p>Apple Graph here</p>
+      <div class="w-2/3">
+        <AppleGraphContainer
+          bars={[
+            { width: 100, label: "union gud", primary: true },
+            { width: 50, label: "others bad" },
+            { width: 20, label: "others bad" }
+          ]}
+          client:load
+        />
+      </div>
       <div class='grid grid-cols-3 gap-4'>
         <div>
           <h3>Galois</h3>
