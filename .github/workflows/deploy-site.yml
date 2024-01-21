@@ -82,7 +82,7 @@ jobs:
       - name: 'Get Updated At Timestamp'
         run: |
           # format timestamp
-          TIMESTAMP=$(date -u -d "${{ github.event.repository.updated_at }}" +📆 %Y-%m-%d 🕒 %H:%M:%S)
+          TIMESTAMP=$(date -u -d "${{ github.event.repository.updated_at }}" '+📆 %Y-%m-%d 🕒 %H:%M:%S')
 
           # set environment variable
           echo "LAST_UPDATED_AT=${TIMESTAMP}" >> $GITHUB_ENV
