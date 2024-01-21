@@ -1,37 +1,6 @@
 { ... }: {
   perSystem = { self', pkgs, proto, nix-filter, ensureAtRepositoryRoot, ... }:
     let
-      # solidity-stringutils = pkgs.fetchFromGitHub {
-      #   owner = "Arachnid";
-      #   repo = "solidity-stringutils";
-      #   rev = "46983c6d9462a80229cf0d5bab8ea3b3ee31066c";
-      #   hash = "sha256-8LGScZp29zOnXG8tXv62RHr+fJCWs0WbMpsZo9S95TE=";
-      # };
-      # solidity-bytes-utils = pkgs.fetchFromGitHub {
-      #   owner = "GNSPS";
-      #   repo = "solidity-bytes-utils";
-      #   rev = "6458fb2780a3092bc756e737f246be1de6d3d362";
-      #   hash = "sha256-sJWoYag6hTIoS4Jr1XdqBKfrJaFQ1iMPy+UI5vVb7Lw=";
-      # };
-      # solady = pkgs.fetchFromGitHub {
-      #   owner = "vectorized";
-      #   repo = "solady";
-      #   rev = "e158762ba98db40a06411db7f80a54b93e951818";
-      #   hash = "sha256-a5hiMUFQvE76h98md11+ksmmYsxV1p6t/ACO/hE2Cws=";
-      # };
-      # forge-std = pkgs.fetchFromGitHub {
-      #   owner = "foundry-rs";
-      #   repo = "forge-std";
-      #   rev = "36c303b7ffdd842d06b1ec2744c9b9b5fb3083f3";
-      #   hash = "sha256-m2i738jsKdjQLDer8WU/ga5GY/5idbpbfnhIyiyEW2w=";
-      #   fetchSubmodules = true;
-      # };
-      # openzeppelin = pkgs.fetchFromGitHub {
-      #   owner = "OpenZeppelin";
-      #   repo = "openzeppelin-contracts";
-      #   rev = "v4.8.3";
-      #   hash = "sha256-Qt2qC7T0gx18ydvO/UULEJj/q7ioGpNxJkT5el8hv14=";
-      # };
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
         repo = "solidity-stringutils";
@@ -63,6 +32,12 @@
         rev = "v5.0.1";
         hash = "sha256-R6drJeVBM4OvFd4CS8iiXIilDeymmd6fbU++LN+4u20=";
       };
+      protobuf3 = pkgs.fetchFromGitHub {
+        owner = "celestiaorg";
+        repo = "protobuf3-solidity-lib";
+        rev = "bc4e75a0bf6e365e820929eb293ef9b6d6d69678";
+        hash = "sha256-+HHUYhWDNRgA7x7p3Z0l0lS1e6pkJh4ZOSCCS4jQZQk=";
+      };
       linkedLibs = pkgs.linkFarm "evm-libraries" [
         {
           name = "solidity-stringutils";
@@ -88,6 +63,10 @@
           name = "@openzeppelin";
           path = "${openzeppelin}/contracts";
         }
+        {
+          name = "@protobuf";
+          path = "${protobuf3}/contracts";
+        }
       ];
       libraries = pkgs.stdenv.mkDerivation {
         name = "libraries";
@@ -110,19 +89,22 @@
         rev = "793d92a3331538d126033cbacb1ee5b8a7d95adc";
         hash = "sha256-9D9Mxuk/5bzX3tZjRAnWk7LP/GMOe0NRsrMuvOfKy78=";
       };
-      foundryEnv = {
-        FOUNDRY_OPTIMIZER = "false";
-        FOUNDRY_VIA_IR = "true";
-        FOUNDRY_OPTIMIZER_RUNS = "0";
-        FOUNDRY_SRC = "${evmSources}/contracts";
-        FOUNDRY_TEST = "${evmSources}/tests/src";
-        FOUNDRY_LIBS = ''["${libraries}"]'';
-        FOUNDRY_GAS_REPORTS = ''["*"]'';
-      };
       # Foundry FS permissions must be explicitly set in the config file
       foundryConfig = pkgs.writeTextDir "/foundry.toml" ''
         [profile.default]
         fs_permissions = [{ access = "read", path = "./"}]
+        libs = ["${libraries}"]
+        gas_reports = ["*"]
+        via_ir = true
+
+        [profile.optimized]
+        src = "${evmSources}/contracts"
+        optimizer = true
+        optimizer_runs = 10_000_000
+
+        [profile.test]
+        test = "${evmSources}/tests/src"
+        optimizer = false
       '';
       wrappedForge = pkgs.symlinkJoin {
         name = "forge";
@@ -132,8 +114,7 @@
           wrapProgram $out/bin/forge \
             --append-flags "--offline --no-auto-detect" \
             --set PATH ${pkgs.lib.makeBinPath [ pkgs.solc ]} \
-            --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" \
-             ${pkgs.lib.foldlAttrs (acc: name: value: "${acc} --set-default ${name} '${value}'") "" foundryEnv}
+            --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
         '';
       };
       networks = [
@@ -310,11 +291,11 @@
           buildPhase = ''
             forge --version
             cp ${foundryConfig}/foundry.toml .
-            forge build
+            FOUNDRY_PROFILE=optimized forge build --sizes
           '';
           doCheck = true;
           checkPhase = ''
-            forge test -vvv --gas-report
+            FOUNDRY_PROFILE=test forge test -vvv --out=tests-out --cache-path=tests-cache
           '';
           installPhase = ''
             mkdir -p $out
@@ -330,7 +311,7 @@
           buildPhase = ''
             forge --version
             cp ${foundryConfig}/foundry.toml .
-            forge build --revert-strings debug
+            forge build
           '';
           doCheck = false;
           installPhase = ''
@@ -374,7 +355,10 @@
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            FOUNDRY_FUZZ_RUNS=512 FOUNDRY_SRC="evm/contracts" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report
+            FOUNDRY_CONFIG="${foundryConfig}/foundry.toml" \
+            FOUNDRY_PROFILE="test" \
+            FOUNDRY_TEST="evm/tests/src" \
+              forge test -vvv --gas-report
           '';
         };
 

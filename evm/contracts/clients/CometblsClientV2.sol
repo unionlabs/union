@@ -17,8 +17,6 @@ import "../core/IMembershipVerifier.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 
 library CometblsClientLib {
-    using DynamicBufferLib for *;
-
     error ErrUnauthorized();
     error ErrTrustedConsensusStateNotFound();
     error ErrUntrustedHeightLTETrustedHeight();
