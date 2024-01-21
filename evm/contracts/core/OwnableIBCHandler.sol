@@ -19,7 +19,10 @@ contract OwnableIBCHandler is IBCHandler, Ownable {
         address ibcConnection,
         address ibcChannel,
         address ibcPacket
-    ) IBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket) Ownable(_msgSender()) {}
+    )
+        IBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket)
+        Ownable(_msgSender())
+    {}
 
     /**
      * @dev registerClient registers a new client type into the client registry

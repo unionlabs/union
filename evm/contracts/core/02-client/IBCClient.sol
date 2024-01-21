@@ -9,6 +9,13 @@ import "../02-client/IIBCClient.sol";
 
 library IBCClientLib {
     event GeneratedClientIdentifier(string);
+
+    error ErrClientTypeAlreadyExists();
+    error ErrClientMustNotBeSelf();
+    error ErrClientTypeNotFound();
+    error ErrFailedToCreateClient();
+    error ErrFailedToUpdateClient();
+    error ErrClientNotFound();
 }
 
 /**
@@ -22,14 +29,12 @@ contract IBCClient is IBCStore, IIBCClient {
         string calldata clientType,
         ILightClient client
     ) external override {
-        require(
-            address(clientRegistry[clientType]) == address(0),
-            "registerClient: client type already exists"
-        );
-        require(
-            address(client) != address(this),
-            "registerClient: must not be self"
-        );
+        if (address(clientRegistry[clientType]) != address(0)) {
+            revert IBCClientLib.ErrClientTypeAlreadyExists();
+        }
+        if (address(client) == address(this)) {
+            revert IBCClientLib.ErrClientMustNotBeSelf();
+        }
         clientRegistry[clientType] = address(client);
     }
 
@@ -40,10 +45,9 @@ contract IBCClient is IBCStore, IIBCClient {
         IBCMsgs.MsgCreateClient calldata msg_
     ) external override returns (string memory clientId) {
         address clientImpl = clientRegistry[msg_.clientType];
-        require(
-            clientImpl != address(0),
-            "createClient: unregistered client type"
-        );
+        if (clientImpl == address(0)) {
+            revert IBCClientLib.ErrClientTypeNotFound();
+        }
         clientId = generateClientIdentifier(msg_.clientType);
         clientTypes[clientId] = msg_.clientType;
         clientImpls[clientId] = clientImpl;
@@ -56,7 +60,9 @@ contract IBCClient is IBCStore, IIBCClient {
                 msg_.clientStateBytes,
                 msg_.consensusStateBytes
             );
-        require(ok, "createClient: failed to create client");
+        if (!ok) {
+            revert IBCClientLib.ErrFailedToCreateClient();
+        }
 
         // update commitments
         commitments[
@@ -81,12 +87,13 @@ contract IBCClient is IBCStore, IIBCClient {
     function updateClient(
         IBCMsgs.MsgUpdateClient calldata msg_
     ) external override {
-        require(
+        if (
             commitments[
                 IBCCommitment.clientStateCommitmentKey(msg_.clientId)
-            ] != bytes32(0),
-            "updateClient: no state"
-        );
+            ] == bytes32(0)
+        ) {
+            revert IBCClientLib.ErrClientNotFound();
+        }
         (
             bytes32 clientStateCommitment,
             ConsensusStateUpdate[] memory updates,
@@ -95,7 +102,9 @@ contract IBCClient is IBCStore, IIBCClient {
                 msg_.clientId,
                 msg_.clientMessage
             );
-        require(ok, "updateClient: failed to update client");
+        if (!ok) {
+            revert IBCClientLib.ErrFailedToUpdateClient();
+        }
 
         // update commitments
         commitments[

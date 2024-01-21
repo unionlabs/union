@@ -19,22 +19,44 @@ library IBCPacketLib {
         uint64 timeoutTimestamp,
         bytes data
     );
-
     event RecvPacket(IbcCoreChannelV1Packet.Data packet);
-
     event WriteAcknowledgement(
-        string destinationPortId,
+        string destinationPort,
         string destinationChannel,
         uint64 sequence,
         bytes acknowledgement
     );
-
     event AcknowledgePacket(
         IbcCoreChannelV1Packet.Data packet,
         bytes acknowledgement
     );
-
     event TimeoutPacket(IbcCoreChannelV1Packet.Data packet);
+
+    error ErrUnauthorized();
+    error ErrInvalidChannelState();
+    error ErrLatestHeightNotFound();
+    error ErrLatestTimestampNotFound();
+    error ErrInvalidTimeoutHeight();
+    error ErrInvalidTimeoutTimestamp();
+    error ErrSourceAndCounterpartyPortMismatch();
+    error ErrSourceAndCounterpartyChannelMismatch();
+    error ErrDestinationAndCounterpartyPortMismatch();
+    error ErrDestinationAndCounterpartyChannelMismatch();
+    error ErrInvalidConnectionState();
+    error ErrHeightTimeout();
+    error ErrTimestampTimeout();
+    error ErrInvalidProof();
+    error ErrPacketAlreadyReceived();
+    error ErrPacketSequenceNextSequenceMismatch();
+    error ErrUnknownChannelOrdering();
+    error ErrAcknowledgementIsEmpty();
+    error ErrAcknowledgementAlreadyExists();
+    error ErrPacketCommitmentNotFound();
+    error ErrInvalidPacketCommitment();
+    error ErrPacketWithoutTimeout();
+    error ErrTimeoutHeightNotReached();
+    error ErrTimeoutTimestampNotReached();
+    error ErrNextSequenceMustBeGreaterThanTimeoutSequence();
 }
 
 /**
@@ -42,8 +64,6 @@ library IBCPacketLib {
  */
 contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     using IBCHeight for IbcCoreClientV1Height.Data;
-
-    /* Packet handlers */
 
     /**
      * @dev sendPacket is called by a module in order to send an IBC packet on a channel.
@@ -57,44 +77,42 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         uint64 timeoutTimestamp,
         bytes calldata data
     ) external override {
-        require(
-            authenticateCapability(
+        if (
+            !authenticateCapability(
                 channelCapabilityPath(sourcePort, sourceChannel)
-            ),
-            "sendPacket: unauthorized"
-        );
-        IbcCoreChannelV1Channel.Data storage channel = channels[sourcePort][
+            )
+        ) {
+            revert IBCPacketLib.ErrUnauthorized();
+        }
+
+        IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
+            sourcePort,
             sourceChannel
-        ];
-        require(
-            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
-            "sendPacket: channel state must be OPEN"
         );
 
-        {
-            IbcCoreConnectionV1ConnectionEnd.Data
-                storage connection = connections[channel.connection_hops[0]];
-            ILightClient client = getClient(connection.client_id);
+        string memory clientId = connections[channel.connection_hops[0]]
+            .client_id;
+        ILightClient client = getClient(clientId);
 
-            (
-                IbcCoreClientV1Height.Data memory latestHeight,
-                bool found
-            ) = client.getLatestHeight(connection.client_id);
-            require(found, "sendPacket: latest height not found");
-            require(
-                timeoutHeight.isZero() || latestHeight.lt(timeoutHeight),
-                "sendPacket: receiving chain block height >= packet timeout height"
-            );
-            uint64 latestTimestamp;
-            (latestTimestamp, found) = client.getTimestampAtHeight(
-                connection.client_id,
-                latestHeight
-            );
-            require(found, "sendPacket: timestamp not found");
-            require(
-                timeoutTimestamp == 0 || latestTimestamp < timeoutTimestamp,
-                "sendPacket: receiving chain block timestamp >= packet timeout timestamp"
-            );
+        (IbcCoreClientV1Height.Data memory latestHeight, bool found) = client
+            .getLatestHeight(clientId);
+        if (!found) {
+            revert IBCPacketLib.ErrLatestHeightNotFound();
+        }
+        if (!timeoutHeight.isZero() && latestHeight.gte(timeoutHeight)) {
+            revert IBCPacketLib.ErrInvalidTimeoutHeight();
+        }
+
+        uint64 latestTimestamp;
+        (latestTimestamp, found) = client.getTimestampAtHeight(
+            clientId,
+            latestHeight
+        );
+        if (!found) {
+            revert IBCPacketLib.ErrLatestTimestampNotFound();
+        }
+        if (timeoutTimestamp != 0 && latestTimestamp >= timeoutTimestamp) {
+            revert IBCPacketLib.ErrInvalidTimeoutTimestamp();
         }
 
         uint64 packetSequence = nextSequenceSends[sourcePort][sourceChannel];
@@ -133,46 +151,48 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
      * sent on the corresponding channel end on the counterparty chain.
      */
     function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external override {
-        IbcCoreChannelV1Channel.Data storage channel = channels[
-            msg_.packet.destination_port
-        ][msg_.packet.destination_channel];
-        require(
-            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
-            "recvPacket: channel state must be OPEN"
+        IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
+            msg_.packet.destination_port,
+            msg_.packet.destination_channel
         );
 
-        require(
-            hashString(msg_.packet.source_port) ==
-                hashString(channel.counterparty.port_id),
-            "recvPacket: packet source port doesn't match the counterparty's port"
-        );
-        require(
-            hashString(msg_.packet.source_channel) ==
-                hashString(channel.counterparty.channel_id),
-            "recvPacket: packet source channel doesn't match the counterparty's channel"
-        );
+        if (
+            hashString(msg_.packet.source_port) !=
+            hashString(channel.counterparty.port_id)
+        ) {
+            revert IBCPacketLib.ErrSourceAndCounterpartyPortMismatch();
+        }
+        if (
+            hashString(msg_.packet.source_channel) !=
+            hashString(channel.counterparty.channel_id)
+        ) {
+            revert IBCPacketLib.ErrSourceAndCounterpartyChannelMismatch();
+        }
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
             channel.connection_hops[0]
         ];
-        require(
-            connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN,
-            "recvPacket: connection state is not OPEN"
-        );
+        if (
+            connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN
+        ) {
+            revert IBCPacketLib.ErrInvalidConnectionState();
+        }
 
-        require(
-            msg_.packet.timeout_height.revision_height == 0 ||
-                (block.number < msg_.packet.timeout_height.revision_height),
-            "recvPacket: block height >= packet timeout height"
-        );
-        require(
-            msg_.packet.timeout_timestamp == 0 ||
-                (block.timestamp < msg_.packet.timeout_timestamp),
-            "recvPacket: block timestamp >= packet timeout timestamp"
-        );
+        if (
+            msg_.packet.timeout_height.revision_height != 0 &&
+            (block.number >= msg_.packet.timeout_height.revision_height)
+        ) {
+            revert IBCPacketLib.ErrHeightTimeout();
+        }
+        if (
+            msg_.packet.timeout_timestamp != 0 &&
+            (block.timestamp >= msg_.packet.timeout_timestamp)
+        ) {
+            revert IBCPacketLib.ErrTimestampTimeout();
+        }
 
-        require(
-            verifyCommitment(
+        if (
+            !verifyCommitment(
                 connection,
                 msg_.proofHeight,
                 msg_.proof,
@@ -191,37 +211,40 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                         )
                     )
                 )
-            ),
-            "recvPacket: failed to verify packet commitment"
-        );
+            )
+        ) {
+            revert IBCPacketLib.ErrInvalidProof();
+        }
 
         if (
             channel.ordering ==
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED
         ) {
-            require(
+            if (
                 packetReceipts[msg_.packet.destination_port][
                     msg_.packet.destination_channel
-                ][msg_.packet.sequence] == 0,
-                "recvPacket: packet sequence already has been received"
-            );
+                ][msg_.packet.sequence] != 0
+            ) {
+                revert IBCPacketLib.ErrPacketAlreadyReceived();
+            }
             packetReceipts[msg_.packet.destination_port][
                 msg_.packet.destination_channel
             ][msg_.packet.sequence] = 1;
         } else if (
             channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED
         ) {
-            require(
+            if (
                 nextSequenceRecvs[msg_.packet.destination_port][
                     msg_.packet.destination_channel
-                ] == msg_.packet.sequence,
-                "recvPacket: packet sequence != next receive sequence"
-            );
+                ] != msg_.packet.sequence
+            ) {
+                revert IBCPacketLib.ErrPacketSequenceNextSequenceMismatch();
+            }
             nextSequenceRecvs[msg_.packet.destination_port][
                 msg_.packet.destination_channel
             ]++;
         } else {
-            revert("recvPacket: unknown ordering type");
+            revert IBCPacketLib.ErrUnknownChannelOrdering();
         }
 
         IIBCModule module = lookupModuleByChannel(
@@ -244,41 +267,36 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     }
 
     function _writeAcknowledgement(
-        string calldata destinationPortId,
+        string calldata destinationPort,
         string calldata destinationChannel,
         uint64 sequence,
         bytes memory acknowledgement
     ) internal {
-        require(
-            acknowledgement.length > 0,
-            "writeAcknowlegement: acknowledgement cannot be empty"
-        );
+        if (acknowledgement.length == 0) {
+            revert IBCPacketLib.ErrAcknowledgementIsEmpty();
+        }
 
-        IbcCoreChannelV1Channel.Data storage channel = channels[
-            destinationPortId
-        ][destinationChannel];
-        require(
-            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
-            "writeAcknowlegement: channel state must be OPEN"
+        IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
+            destinationPort,
+            destinationChannel
         );
 
         bytes32 ackCommitmentKey = IBCCommitment
             .packetAcknowledgementCommitmentKey(
-                destinationPortId,
+                destinationPort,
                 destinationChannel,
                 sequence
             );
         bytes32 ackCommitment = commitments[ackCommitmentKey];
-        require(
-            ackCommitment == bytes32(0),
-            "writeAcknowlegement: acknowledgement for packet already exists"
-        );
+        if (ackCommitment != bytes32(0)) {
+            revert IBCPacketLib.ErrAcknowledgementAlreadyExists();
+        }
         commitments[ackCommitmentKey] = keccak256(
             abi.encodePacked(sha256(acknowledgement))
         );
 
         emit IBCPacketLib.WriteAcknowledgement(
-            destinationPortId,
+            destinationPort,
             destinationChannel,
             sequence,
             acknowledgement
@@ -290,19 +308,20 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
      * which will be verified by the counterparty chain using AcknowledgePacket.
      */
     function writeAcknowledgement(
-        string calldata destinationPortId,
+        string calldata destinationPort,
         string calldata destinationChannel,
         uint64 sequence,
         bytes calldata acknowledgement
     ) external override {
-        require(
-            authenticateCapability(
-                channelCapabilityPath(destinationPortId, destinationChannel)
-            ),
-            "writeAcknowledgement: unauthorized"
-        );
+        if (
+            !authenticateCapability(
+                channelCapabilityPath(destinationPort, destinationChannel)
+            )
+        ) {
+            revert IBCPacketLib.ErrUnauthorized();
+        }
         _writeAcknowledgement(
-            destinationPortId,
+            destinationPort,
             destinationChannel,
             sequence,
             acknowledgement
@@ -320,32 +339,32 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     function acknowledgePacket(
         IBCMsgs.MsgPacketAcknowledgement calldata msg_
     ) external override {
-        IbcCoreChannelV1Channel.Data storage channel = channels[
-            msg_.packet.source_port
-        ][msg_.packet.source_channel];
-        require(
-            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
-            "acknowledgePacket: channel state must be OPEN"
+        IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
+            msg_.packet.source_port,
+            msg_.packet.source_channel
         );
 
-        require(
-            hashString(msg_.packet.destination_port) ==
-                hashString(channel.counterparty.port_id),
-            "acknowledgePacket: packet destination port doesn't match the counterparty's port"
-        );
-        require(
-            hashString(msg_.packet.destination_channel) ==
-                hashString(channel.counterparty.channel_id),
-            "acknowledgePacket: packet destination channel doesn't match the counterparty's channel"
-        );
+        if (
+            hashString(msg_.packet.destination_port) !=
+            hashString(channel.counterparty.port_id)
+        ) {
+            revert IBCPacketLib.ErrDestinationAndCounterpartyPortMismatch();
+        }
+        if (
+            hashString(msg_.packet.destination_channel) !=
+            hashString(channel.counterparty.channel_id)
+        ) {
+            revert IBCPacketLib.ErrDestinationAndCounterpartyChannelMismatch();
+        }
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
             channel.connection_hops[0]
         ];
-        require(
-            connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN,
-            "acknowledgePacket: connection state is not OPEN"
-        );
+        if (
+            connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN
+        ) {
+            revert IBCPacketLib.ErrInvalidConnectionState();
+        }
 
         bytes32 packetCommitmentKey = IBCCommitment.packetCommitmentKey(
             msg_.packet.source_port,
@@ -353,29 +372,29 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             msg_.packet.sequence
         );
         bytes32 packetCommitment = commitments[packetCommitmentKey];
-        require(
-            packetCommitment != bytes32(0),
-            "acknowledgePacket: packet commitment not found"
-        );
-        require(
-            packetCommitment ==
-                keccak256(
-                    abi.encodePacked(
-                        sha256(
-                            abi.encodePacked(
-                                msg_.packet.timeout_timestamp,
-                                msg_.packet.timeout_height.revision_number,
-                                msg_.packet.timeout_height.revision_height,
-                                sha256(msg_.packet.data)
-                            )
+        if (packetCommitment == bytes32(0)) {
+            revert IBCPacketLib.ErrPacketCommitmentNotFound();
+        }
+        if (
+            packetCommitment !=
+            keccak256(
+                abi.encodePacked(
+                    sha256(
+                        abi.encodePacked(
+                            msg_.packet.timeout_timestamp,
+                            msg_.packet.timeout_height.revision_number,
+                            msg_.packet.timeout_height.revision_height,
+                            sha256(msg_.packet.data)
                         )
                     )
-                ),
-            "acknowledgePacket: commitment bytes are not equal"
-        );
+                )
+            )
+        ) {
+            revert IBCPacketLib.ErrInvalidPacketCommitment();
+        }
 
-        require(
-            verifyCommitment(
+        if (
+            !verifyCommitment(
                 connection,
                 msg_.proofHeight,
                 msg_.proof,
@@ -385,20 +404,22 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                     msg_.packet.sequence
                 ),
                 abi.encodePacked(sha256(msg_.acknowledgement))
-            ),
-            "acknowledgePacket: failed to verify packet acknowledgement commitment"
-        );
+            )
+        ) {
+            revert IBCPacketLib.ErrInvalidProof();
+        }
 
         if (
             channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED
         ) {
-            require(
-                msg_.packet.sequence ==
-                    nextSequenceAcks[msg_.packet.source_port][
-                        msg_.packet.source_channel
-                    ],
-                "acknowledgePacket: packet sequence != next ack sequence"
-            );
+            if (
+                msg_.packet.sequence !=
+                nextSequenceAcks[msg_.packet.source_port][
+                    msg_.packet.source_channel
+                ]
+            ) {
+                revert IBCPacketLib.ErrPacketSequenceNextSequenceMismatch();
+            }
             nextSequenceAcks[msg_.packet.source_port][
                 msg_.packet.source_channel
             ]++;
@@ -427,32 +448,32 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     function timeoutPacket(
         IBCMsgs.MsgPacketTimeout calldata msg_
     ) external override {
-        IbcCoreChannelV1Channel.Data storage channel = channels[
-            msg_.packet.source_port
-        ][msg_.packet.source_channel];
-        require(
-            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_OPEN,
-            "timeoutPacket: channel state must be OPEN"
+        IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
+            msg_.packet.source_port,
+            msg_.packet.source_channel
         );
 
-        require(
-            hashString(msg_.packet.destination_port) ==
-                hashString(channel.counterparty.port_id),
-            "timeoutPacket: packet destination port doesn't match the counterparty's port"
-        );
-        require(
-            hashString(msg_.packet.destination_channel) ==
-                hashString(channel.counterparty.channel_id),
-            "timeoutPacket: packet destination channel doesn't match the counterparty's channel"
-        );
+        if (
+            hashString(msg_.packet.destination_port) !=
+            hashString(channel.counterparty.port_id)
+        ) {
+            revert IBCPacketLib.ErrDestinationAndCounterpartyPortMismatch();
+        }
+        if (
+            hashString(msg_.packet.destination_channel) !=
+            hashString(channel.counterparty.channel_id)
+        ) {
+            revert IBCPacketLib.ErrDestinationAndCounterpartyChannelMismatch();
+        }
 
         IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
             channel.connection_hops[0]
         ];
-        require(
-            connection.state == IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN,
-            "timeoutPacket: connection state is not OPEN"
-        );
+        if (
+            connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN
+        ) {
+            revert IBCPacketLib.ErrInvalidConnectionState();
+        }
 
         bytes32 packetCommitmentKey = IBCCommitment.packetCommitmentKey(
             msg_.packet.source_port,
@@ -460,51 +481,54 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             msg_.packet.sequence
         );
         bytes32 packetCommitment = commitments[packetCommitmentKey];
-        require(
-            packetCommitment != bytes32(0),
-            "timeoutPacket: packet commitment not found"
-        );
-        require(
-            packetCommitment ==
-                keccak256(
-                    abi.encodePacked(
-                        sha256(
-                            abi.encodePacked(
-                                msg_.packet.timeout_timestamp,
-                                msg_.packet.timeout_height.revision_number,
-                                msg_.packet.timeout_height.revision_height,
-                                sha256(msg_.packet.data)
-                            )
+        if (packetCommitment == bytes32(0)) {
+            revert IBCPacketLib.ErrPacketCommitmentNotFound();
+        }
+
+        if (
+            packetCommitment !=
+            keccak256(
+                abi.encodePacked(
+                    sha256(
+                        abi.encodePacked(
+                            msg_.packet.timeout_timestamp,
+                            msg_.packet.timeout_height.revision_number,
+                            msg_.packet.timeout_height.revision_height,
+                            sha256(msg_.packet.data)
                         )
                     )
-                ),
-            "timeoutPacket: commitment bytes are not equal"
-        );
+                )
+            )
+        ) {
+            revert IBCPacketLib.ErrInvalidPacketCommitment();
+        }
 
         ILightClient client = getClient(connection.client_id);
         (uint64 proofTimestamp, bool found) = client.getTimestampAtHeight(
             connection.client_id,
             msg_.proofHeight
         );
-        require(found, "timeoutPacket: timestamp not found");
+        if (!found) {
+            revert IBCPacketLib.ErrLatestTimestampNotFound();
+        }
 
         if (
             msg_.packet.timeout_timestamp == 0 &&
             msg_.packet.timeout_height.isZero()
         ) {
-            revert("timeoutPacket: packet has no timestamp/height timeout");
+            revert IBCPacketLib.ErrPacketWithoutTimeout();
         }
-        if (msg_.packet.timeout_timestamp > 0) {
-            require(
-                msg_.packet.timeout_timestamp < proofTimestamp,
-                "timeoutPacket: timestamp timeout not reached for the given proof height"
-            );
+        if (
+            msg_.packet.timeout_timestamp > 0 &&
+            msg_.packet.timeout_timestamp >= proofTimestamp
+        ) {
+            revert IBCPacketLib.ErrTimeoutTimestampNotReached();
         }
-        if (!msg_.packet.timeout_height.isZero()) {
-            require(
-                msg_.packet.timeout_height.lt(msg_.proofHeight),
-                "timeoutPacket: height timeout not reached for the given proof height"
-            );
+        if (
+            !msg_.packet.timeout_height.isZero() &&
+            msg_.packet.timeout_height.gte(msg_.proofHeight)
+        ) {
+            revert IBCPacketLib.ErrTimeoutHeightNotReached();
         }
 
         bool isOrdered = channel.ordering ==
@@ -512,12 +536,12 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         bool isUnordered = channel.ordering ==
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED;
         if (isOrdered) {
-            require(
-                msg_.nextSequenceRecv > msg_.packet.sequence,
-                "timeoutPacket: nextSequenceRecv must be > packet to timeout"
-            );
-            require(
-                verifyCommitment(
+            if (msg_.nextSequenceRecv <= msg_.packet.sequence) {
+                revert IBCPacketLib
+                    .ErrNextSequenceMustBeGreaterThanTimeoutSequence();
+            }
+            if (
+                !verifyCommitment(
                     connection,
                     msg_.proofHeight,
                     msg_.proof,
@@ -526,13 +550,14 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                         msg_.packet.destination_channel
                     ),
                     abi.encodePacked(msg_.nextSequenceRecv)
-                ),
-                "timeoutPacket: failed to verify packet timeout next recv proof"
-            );
+                )
+            ) {
+                revert IBCPacketLib.ErrInvalidProof();
+            }
             channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED;
         } else if (isUnordered) {
-            require(
-                verifyAbsentCommitment(
+            if (
+                !verifyAbsentCommitment(
                     connection,
                     msg_.proofHeight,
                     msg_.proof,
@@ -541,11 +566,12 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                         msg_.packet.destination_channel,
                         msg_.packet.sequence
                     )
-                ),
-                "timeoutPacket: failed to verify packet timeout absence proof"
-            );
+                )
+            ) {
+                revert IBCPacketLib.ErrInvalidProof();
+            }
         } else {
-            revert("timeoutPacket: unknown ordering type");
+            revert IBCPacketLib.ErrUnknownChannelOrdering();
         }
 
         delete commitments[packetCommitmentKey];
@@ -595,5 +621,16 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
                 connection.counterparty.prefix.key_prefix,
                 path
             );
+    }
+
+    function ensureChannelState(
+        string calldata port,
+        string calldata channel
+    ) internal returns (IbcCoreChannelV1Channel.Data storage) {
+        IbcCoreChannelV1Channel.Data storage channel = channels[port][channel];
+        if (channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_OPEN) {
+            revert IBCPacketLib.ErrInvalidChannelState();
+        }
+        return channel;
     }
 }
