@@ -66,9 +66,8 @@ export default defineConfig({
       defaultLocale: "en",
       logo: {
         alt: "Union Logo",
-        dark: "./public/images/union-logo/union-logo-transparent.svg",
-        light: "./public/images/union-logo/union-logo-white-transparent.svg",
-        // replacesTitle: true,
+        dark: "./src/assets/union-logo/union-logo-transparent.svg",
+        light: "./src/assets/union-logo/union-logo-white-transparent.svg",
       },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/site",

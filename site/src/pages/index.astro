@@ -1,4 +1,5 @@
 ---
+import { fade } from 'astro:transitions'
 import Code from '#/components/Code.svelte'
 import Layout from '#/layouts/Layout.svelte'
 import { getCollection } from 'astro:content'
@@ -43,7 +44,10 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
 ---
 
 <Layout>
-  <main class='flex flex-col flex-1'>
+  <main
+    class='flex flex-col flex-1'
+    transition:animate={fade({ duration: '0.4s' })}
+  >
     <section class='flex flex-col items-center py-32 gap-6 grid-effect-bg'>
       <div class='text-7xl text-white text-center'>The Sovereign<br />Interoperability Layer</div>
       <div class='text-xl max-w-lg font-normal text-center'>
@@ -382,7 +386,7 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
   </main>
 </Layout>
 
-<ViewTransitions />
+<ViewTransitions transition:name='landing-transition' />
 
 <style lang="postcss">
 
