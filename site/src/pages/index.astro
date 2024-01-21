@@ -2,9 +2,10 @@
 import Code from '#/components/code.svelte'
 import Layout from '#/layouts/layout.svelte'
 import { ViewTransitions } from 'astro:transitions'
-import PerformanceGraph from '#/components/performance-graph.astro'
-import AppleGraphContainer from '#/components/apple-graph-container.svelte'
+import { getCollection, getEntries } from 'astro:content'
 import ConnectedVisual from '#/components/ConnectedVisual.svelte'
+import PerformanceGraph from '#/components/performance-graph.svelte'
+import AppleGraphContainer from '#/components/apple-graph-container.svelte'
 
 let socialLinks = [
   { href: 'https://x.com/union_build', iconSrc: '/images/x.svg', cta: 'Join us on X' },
@@ -34,6 +35,11 @@ function onRecvPacket(
 }
 \`\`\`
 `
+
+const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
+  if (data.hidden) return false
+  return { slug, ...data }
+})
 ---
 
 <Layout>
@@ -79,12 +85,12 @@ function onRecvPacket(
         </div>
       </div>
     </section>
-    <section class='mx-auto'>
-      <div class='bg-[#030303] px-2 py-4'>
-        <p class='-mb-20 mt-10 ml-3 -mr-1 text-xl font-semibold'>
+    <section class='max-w-4xl mx-auto h-[600px]'>
+      <div class='w-full h-full overflow-visible'>
+        <p class='-mb-20 mt-10 ml-16 -mr-1 text-xl font-semibold'>
           Prove anywhere, verify <span class='text-gray-400'> on chain.</span>
         </p>
-        <PerformanceGraph />
+        <PerformanceGraph client:load />
       </div>
     </section>
     <section class='bg-black text-white flex flex-col items-center py-16'>
@@ -116,14 +122,23 @@ function onRecvPacket(
             by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
           </p>
         </div>
+        <!-- <div class='w-1/2'>
+          <div class='flex-1 p-4'>
+            <p class='text-4xl font-normal mt-auto text-gray-400 self-start h-full'>
+              Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
+              by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
+            </p>
+          </div>
+          <div class='flex-1 gap-4 flex overflow-none'>
+            {arraySizeN(21).map(() => <div class='bg-white h-[300px] w-2' />)}
+          </div>
+        </div> -->
       </div>
     </section>
-    <section class="flex flex-col items-center justify-center">
+
+    <section class='flex flex-col items-center justify-center'>
       <h2 class='text-4xl mb-4 font-normal'>Connecting L1s, L2s, AppChains and Rollups</h2>
-      <ConnectedVisual/>
-
-
-
+      <ConnectedVisual />
     </section>
     <section class='flex flex-col items-center justif-center py-32'>
       <h2 class='text-4xl mb-4 font-normal'>The leading interoperability layer.</h2>
@@ -240,7 +255,20 @@ function onRecvPacket(
     <section class='flex justify-center bg-white text-black py-32'>
       <div class='flex-1 max-w-4xl'>
         <h2 class='text-4xl mb-4 font-normal text-center'>Blog</h2>
-        <p>Insert blog content here</p>
+        <ul>
+          {
+            publishedBlogPosts.map(post => (
+              <li id={post.slug}>
+                <a
+                  href={`/blog/${post.slug}`}
+                  class='flex flex-col md:flex-row p-8'
+                >
+                  {JSON.stringify(post.data, undefined, 2)}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
       </div>
     </section>
     <section class='flex justify-center bg-white text-black py-32'>

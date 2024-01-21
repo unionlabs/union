@@ -1,4 +1,8 @@
-<article data-graph='performance'></article>
+<article
+  data-graph='performance'
+  class=''
+>
+</article>
 
 <script>
   import '#/components/performance-graph.ts'
@@ -8,29 +12,27 @@
   /* animation: line-progress 2s linear infinite normal forwards running; */
   :root {
     --animation-direction: normal;
-    --animation-play-state: running;
+    --animation-play-state: paused;
     --animation-timing-function: ease;
-    --animation-iteration-count: infinite;
-    --axis-label-font-size: 14px;
-    --axis-label-font-family: 'monospace';
+    --animation-iteration-count: 1;
+    --axis-label-font-size: 20px;
   }
+
   g[aria-label='y-axis label'] text {
     font-size: var(--axis-label-font-size);
     font-family: var(--axis-label-font-family);
   }
 
-  g[aria-label='x-axis label'] {
-    margin-top: 25px;
-  }
   g[aria-label='x-axis label'] text {
-    margin-top: 25px;
+    text-align: center;
     font-size: var(--axis-label-font-size);
     font-family: var(--axis-label-font-family);
   }
 
-  g[stroke='red'] path {
+  g[stroke='#9DA3AE'] path {
     stroke-dasharray: 105%;
-    stroke-dashoffset: 100%;
+    /* stroke-dashoffset: 100%; */
+    stroke-width: 2.5px;
     animation-name: slow-line-progress;
     animation-duration: 4.5s;
     animation-direction: var(--animation-direction);
@@ -39,9 +41,10 @@
     animation-iteration-count: var(--animation-iteration-count);
   }
 
-  g[stroke='#F9F9F9'] path {
+  g[stroke='#1ED2FA'] path {
     stroke-dasharray: 180%;
-    stroke-dashoffset: 180%;
+    /* stroke-dashoffset: 180%; */
+    stroke-width: 2px;
     animation-duration: 2.5s;
     animation-name: fast-line-progress;
     animation-direction: var(--animation-direction);
@@ -51,16 +54,16 @@
   }
 
   @keyframes fast-line-progress {
-    100% {
-      stroke-dashoffset: 0%;
+    0% {
+      stroke-dashoffset: 100%;
     }
     100% {
       stroke-dashoffset: 0%;
     }
   }
   @keyframes slow-line-progress {
-    100% {
-      stroke-dashoffset: 0%;
+    0% {
+      stroke-dashoffset: 100%;
     }
     100% {
       stroke-dashoffset: 0%;
