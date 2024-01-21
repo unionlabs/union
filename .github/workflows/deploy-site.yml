@@ -85,12 +85,10 @@ jobs:
           TIMESTAMP=$(date -u -d "${{ github.event.repository.updated_at }}" +📆 %Y-%m-%d 🕒 %H:%M:%S)
 
           # set environment variable
-          echo "UPDATED_AT=${TIMESTAMP}" >> $GITHUB_ENV
+          echo "LAST_UPDATED_AT=${TIMESTAMP}" >> $GITHUB_ENV
 
       - name: Comment on Pull Request
         if: github.event_name == 'pull_request'
-        env:
-          TIMESTAMP: ${{ github.event.repository.updated_at }}
         uses: actions/github-script@v7
         with:
           debug: true
@@ -99,7 +97,7 @@ jobs:
             const commentBody = `
               ${process.env.DEPLOY_OUTPUT}
 
-              <h1>LAST UPDATED AT ${process.env.TIMESTAMP}</h1>
+              <h1>LAST UPDATED AT ${process.env.LAST_UPDATED_AT}</h1>
             `
             const prComments = await github.rest.issues.listComments({
               issue_number: context.issue.number,
