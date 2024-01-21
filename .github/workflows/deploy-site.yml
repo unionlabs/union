@@ -53,6 +53,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="site" --branch="main" deploy result
 
+      - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="site" --branch="main" deploy result
+
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         if: github.event_name == 'pull_request'
         env:
