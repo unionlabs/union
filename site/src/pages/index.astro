@@ -10,7 +10,7 @@ import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
 
 let socialLinks = [
   { href: 'https://x.com/union_build', iconSrc: '/images/x.svg', cta: 'Join us on X' },
-  { href: 'https://discord.b', iconSrc: '/images/discord.svg', cta: 'Join our Discord' },
+  { href: 'https://discord.union.build', iconSrc: '/images/discord.svg', cta: 'Join our Discord' },
   { href: 'https://x.com/union_build', iconSrc: '/images/calendar.svg', cta: 'Join our Events' }
 ]
 
@@ -210,7 +210,7 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
 
     <section class='flex flex-col items-center justif-center py-32'>
       <h2 class='text-4xl mb-4 font-normal'>Qualities of the product.</h2>
-      <div class='grid grid-cols-3 gap-4 max-w-4xl gap-8'>
+      <div class='grid grid-cols-3 max-w-4xl gap-8'>
         <div>
           <h3 class='text-gray-300 font-normal'>Quality 1</h3>
           <p class='text-2xl font-semibold'>
