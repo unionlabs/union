@@ -107,9 +107,11 @@ UNNEST
 Ucli
 Unbonding
 Undelegate
+Unintersect
 Unjail
 Unmarshal
 Verkle
+Viridis
 Woestijne
 Wrapf
 XMSB

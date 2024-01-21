@@ -40,6 +40,9 @@ export default defineConfig({
         useStarlightDarkModeSwitch: true,
         useStarlightUiThemeColors: true,
       },
+      components: {
+        Head: "./src/components/Head.astro",
+      },
       head: [
         {
           tag: "meta",
