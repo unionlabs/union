@@ -3,7 +3,7 @@
   import '#/styles/tailwind.css'
   import '@fontsource/ibm-plex-mono'
   import '@fontsource/jetbrains-mono'
-  import Header from '#/components/header.svelte'
+  import Header from '#/components/Header.svelte'
 </script>
 
 <html lang='en'>

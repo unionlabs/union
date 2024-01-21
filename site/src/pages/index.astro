@@ -1,11 +1,11 @@
 ---
-import Code from '#/components/code.svelte'
-import Layout from '#/layouts/layout.svelte'
+import Code from '#/components/Code.svelte'
+import Layout from '#/layouts/Layout.svelte'
+import { getCollection } from 'astro:content'
 import { ViewTransitions } from 'astro:transitions'
-import { getCollection, getEntries } from 'astro:content'
 import ConnectedVisual from '#/components/ConnectedVisual.svelte'
-import PerformanceGraph from '#/components/performance-graph.svelte'
-import AppleGraphContainer from '#/components/apple-graph-container.svelte'
+import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
+import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
 
 let socialLinks = [
   { href: 'https://x.com/union_build', iconSrc: '/images/x.svg', cta: 'Join us on X' },

@@ -5,50 +5,18 @@
 
   export const [zkFastLineColor, zkSlowLineColor] = ['#1ED2FA', '#9DA3AE']
 
-  export const generateRandomNumber = (min: number, max: number) =>
-    Math.random() * (max - min) + min
+  const generateRandomNumber = (min: number, max: number) => Math.random() * (max - min) + min
 
-  export const pauseAnimation = (element: SVGPathElement) =>
-    (element.style.animationPlayState = 'paused')
-  export const resumeAnimation = (element: SVGPathElement) =>
+  const pauseAnimation = (element: SVGPathElement) => (element.style.animationPlayState = 'paused')
+  const resumeAnimation = (element: SVGPathElement) =>
     (element.style.animationPlayState = 'running')
 
-  export function getRelevantPathElements({ selector }: { selector: string }) {
+  function getRelevantPathElements({ selector }: { selector: string }) {
     const gElements = document.querySelectorAll(selector)
     const pathElements = Array.from(gElements).map(
       gElement => gElement.querySelector('path') as SVGPathElement
     )
     return pathElements
-  }
-
-  /**
-   * Intersection Observer
-   */
-  export function intersectionObserver({
-    onIntersectCallback,
-    onUnintersectCallback
-  }: {
-    onIntersectCallback: () => void
-    onUnintersectCallback: () => void
-  }) {
-    const chartElement = document.querySelector('article[data-graph="performance"]') as HTMLElement
-    const observer = new IntersectionObserver(
-      entries => {
-        const pathElements = getRelevantPathElements({
-          selector: `g[stroke="${zkSlowLineColor}"], g[stroke="${zkFastLineColor}"]`
-        })
-        entries.forEach(entry => {
-          console.log('intersection observer', entry.isIntersecting, entry.intersectionRatio)
-          if (entry.isIntersecting) pathElements.forEach(resumeAnimation)
-          // else pathElements.forEach(pauseAnimation)
-        })
-      },
-      { threshold: 0.5 }
-    )
-    return {
-      observe: () => observer.observe(chartElement),
-      unobserve: () => observer.unobserve(chartElement)
-    }
   }
 
   let chartElement: HTMLElement
@@ -142,6 +110,7 @@
       })
     )
   }
+
   onMount(() => {
     const observer = new IntersectionObserver(
       entries => {
@@ -149,7 +118,6 @@
           selector: `g[stroke="${zkSlowLineColor}"], g[stroke="${zkFastLineColor}"]`
         })
         entries.forEach(entry => {
-          console.log('intersection observer', entry.isIntersecting, entry.intersectionRatio)
           if (entry.isIntersecting) pathElements.forEach(resumeAnimation)
           else pathElements.forEach(pauseAnimation)
         })

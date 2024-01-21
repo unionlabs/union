@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AppleGraph from '#/components/apple-graph.svelte'
+  import AppleGraph from '#/components/graphs/AppleGraph.svelte'
 
   type BarProps = {
   	primary?: boolean,
