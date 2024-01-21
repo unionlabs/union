@@ -16,7 +16,6 @@
 
   onMount(() => {
     selectThemeElement?.addEventListener('change', onThemeChange)
-
     return () => {
       selectThemeElement?.removeEventListener('change', onThemeChange)
     }

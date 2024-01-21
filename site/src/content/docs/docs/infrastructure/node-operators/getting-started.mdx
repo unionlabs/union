@@ -173,7 +173,7 @@ WantedBy=multi-user.target
 You should be able to view the node logs by executing
 
 ```sh
-sudo journalctl -f -u uniond
+sudo journalctl -f --user uniond
 ```
 
 It's then recommended to back up these files from `~/.union/config` in a secure location:

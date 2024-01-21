@@ -34,5 +34,5 @@
     "tailwind.config.ts",
     "markdown.config.ts"
   ],
-  "exclude": ["dist", "node_modules", "_"]
+  "exclude": ["_", "dist", "node_modules"]
 }

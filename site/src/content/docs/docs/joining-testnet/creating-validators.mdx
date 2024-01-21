@@ -24,9 +24,11 @@ As we get closer to a mainnet release, we will update staking and slashing param
 
 Now that you're ready to create your validator, you can follow the steps below:
 
-1. Create a `validator.json`
+```sh title="Create a validator.json file"
+touch validator.json
+```
 
-Create a file with the following content:
+Add the following content to the file:
 
 ```json
 {
@@ -50,12 +52,13 @@ Replacing:
 - `<MONIKER>` with your moniker
 - And the optional content with your preferred details
 
-2. Run the `create-validator` command
+Then, run the `create-validator` command.
 
 Then you can submit this file using the `create-validator` sub-command:
 
 ```sh
-uniond tx staking create-validator $VALIDATOR_JSON_PATH --from $KEY_NAME --chain-id union-testnet-5
+uniond tx staking create-validator $VALIDATOR_JSON_PATH \
+	--from $KEY_NAME --chain-id union-testnet-5
 ```
 
 _Where `VALIDATOR_JSON_PATH` is the path to your `validator.json`_

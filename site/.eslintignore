@@ -33,3 +33,4 @@ pnpm-lock.yaml
 .vercel
 README.md
 *.mdx
+./public/genesis.json
