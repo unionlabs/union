@@ -624,10 +624,12 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
     }
 
     function ensureChannelState(
-        string calldata port,
-        string calldata channel
+        string calldata portId,
+        string calldata channelId
     ) internal returns (IbcCoreChannelV1Channel.Data storage) {
-        IbcCoreChannelV1Channel.Data storage channel = channels[port][channel];
+        IbcCoreChannelV1Channel.Data storage channel = channels[portId][
+            channelId
+        ];
         if (channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_OPEN) {
             revert IBCPacketLib.ErrInvalidChannelState();
         }

@@ -62,7 +62,7 @@ library Cometbls {
     ) internal view returns (CometblsConsensusState memory) {
         return
             CometblsConsensusState({
-                root: appHash,
+                appHash: appHash,
                 nextValidatorsHash: nextValidatorsHash,
                 timestamp: timestamp
             });

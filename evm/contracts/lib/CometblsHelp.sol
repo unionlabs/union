@@ -16,13 +16,13 @@ import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 
 struct OptimizedConsensusState {
     uint64 timestamp;
-    bytes32 root;
+    bytes32 appHash;
     bytes32 nextValidatorsHash;
 }
 
 struct ProcessedMoment {
-    uint128 timestamp;
-    uint128 height;
+    uint256 timestamp;
+    uint256 height;
 }
 
 library CometblsHelp {
@@ -164,7 +164,7 @@ library CometblsHelp {
         return
             OptimizedConsensusState({
                 timestamp: consensusState.timestamp,
-                root: consensusState.root.hash.toBytes32(0),
+                appHash: consensusState.root.hash.toBytes32(0),
                 nextValidatorsHash: consensusState
                     .next_validators_hash
                     .toBytes32(0)
