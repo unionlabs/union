@@ -79,17 +79,11 @@ jobs:
             echo 'EOF'
           } >> $GITHUB_ENV
 
-      - name: 'Get Updated At Timestamp'
-        run: |
-          # format timestamp
-          TIMESTAMP=$(date -u -d "${{ github.event.repository.updated_at }}" +📆 %Y-%m-%d 🕒 %H:%M:%S)
-
-          # set environment variable
-          echo "LAST_UPDATED_AT=${TIMESTAMP}" >> $GITHUB_ENV
-
       - name: Comment on Pull Request
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
+        env:
+          LAST_UPDATED_AT: ${{ github.event.repository.updated_at }}
         with:
           debug: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
