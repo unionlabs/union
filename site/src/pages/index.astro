@@ -1,6 +1,6 @@
 ---
 import { fade } from 'astro:transitions'
-import Code from '#/components/Code.svelte'
+import Code from '#/components/CodeSnippet.svelte'
 import Layout from '#/layouts/Layout.svelte'
 import { getCollection } from 'astro:content'
 import { ViewTransitions } from 'astro:transitions'
@@ -15,7 +15,7 @@ let socialLinks = [
 ]
 
 const soliditySnippet = `
-\`\`\`solidity title="lorem.sol" /relayer/#i /ibcPacket/#s /ACK_SUCCESS/#g /ACK_FAILURE/#r
+\`\`\`solidity title="lorem.sol" showLineNumbers /onRecvPacket/1#w /relayer/#i /ibcPacket/#s /ACK_SUCCESS/#g /ACK_FAILURE/#r
 function onRecvPacket(
   IbcPacket calldata ibcPacket,
   address relayer
