@@ -1,8 +1,13 @@
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/utils/Context.sol";
 import "./IIBCModule.sol";
 import "../24-host/IBCStore.sol";
+
+library ModuleManagerLib {
+    error ErrModuleNotFound();
+    error ErrCapabilityAlreadyClaimed();
+}
 
 /**
  * @dev ModuleManager is an abstract contract that provides the functions defined in [ICS 5](https://github.com/cosmos/ibc/tree/main/spec/core/ics-005-port-allocation) and [ICS 26](https://github.com/cosmos/ibc/blob/main/spec/core/ics-005-port-module/README.md).
@@ -26,7 +31,9 @@ abstract contract ModuleManager is IBCStore, Context {
         string memory portId
     ) internal view virtual returns (IIBCModule) {
         address module = lookupModule(portCapabilityPath(portId));
-        require(module != address(0), "lookupModuleByPort: module not found");
+        if (module == address(0)) {
+            revert ModuleManagerLib.ErrModuleNotFound();
+        }
         return IIBCModule(module);
     }
 
@@ -38,10 +45,9 @@ abstract contract ModuleManager is IBCStore, Context {
         string memory channelId
     ) internal view virtual returns (IIBCModule) {
         address module = lookupModule(channelCapabilityPath(portId, channelId));
-        require(
-            module != address(0),
-            "lookupModuleByChannel: module not found"
-        );
+        if (module == address(0)) {
+            revert ModuleManagerLib.ErrModuleNotFound();
+        }
         return IIBCModule(module);
     }
 
@@ -68,10 +74,9 @@ abstract contract ModuleManager is IBCStore, Context {
      * @dev claimCapability allows the IBC app module to claim a capability that core IBC passes to it
      */
     function claimCapability(string memory name, address addr) internal {
-        require(
-            capabilities[name] == address(0),
-            "claimCapability: capability already claimed"
-        );
+        if (capabilities[name] != address(0)) {
+            revert ModuleManagerLib.ErrCapabilityAlreadyClaimed();
+        }
         capabilities[name] = addr;
     }
 

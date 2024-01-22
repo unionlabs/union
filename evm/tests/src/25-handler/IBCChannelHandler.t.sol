@@ -5,6 +5,8 @@ import "solidity-bytes-utils/BytesLib.sol";
 import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
 import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
+
+import {IBCChannelLib} from "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
@@ -240,7 +242,7 @@ contract IBCChannelHandlerTest is TestPlus {
             channelId,
             proofHeight
         );
-        vm.expectRevert("channelOpenAck: failed to verify channel state");
+        vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
         handler.channelOpenAck(msg_ack);
     }
 
@@ -256,7 +258,7 @@ contract IBCChannelHandlerTest is TestPlus {
             portId
         );
         msg_init.channel.connection_hops = new string[](0);
-        vm.expectRevert("channelOpenInit: connection must have a single hop");
+        vm.expectRevert(IBCChannelLib.ErrConnNotSingleHop.selector);
         handler.channelOpenInit(msg_init);
     }
 
@@ -271,9 +273,7 @@ contract IBCChannelHandlerTest is TestPlus {
             "invalid-connection",
             portId
         );
-        vm.expectRevert(
-            "channelOpenInit: single version must be negotiated on connection before opening channel"
-        );
+        vm.expectRevert(IBCChannelLib.ErrInvalidConnectionState.selector);
         handler.channelOpenInit(msg_init);
     }
 
@@ -289,7 +289,7 @@ contract IBCChannelHandlerTest is TestPlus {
             portId
         );
         msg_init.channel.ordering = ChannelEnums.Order.ORDER_NONE_UNSPECIFIED;
-        vm.expectRevert("channelOpenInit: feature not supported");
+        vm.expectRevert(IBCChannelLib.ErrUnsupportedFeature.selector);
         handler.channelOpenInit(msg_init);
     }
 
@@ -306,7 +306,7 @@ contract IBCChannelHandlerTest is TestPlus {
             portId
         );
         msg_init.channel.state = ChannelEnums.State.STATE_OPEN;
-        vm.expectRevert("channelOpenInit: channel state is not INIT");
+        vm.expectRevert(IBCChannelLib.ErrInvalidChannelState.selector);
         handler.channelOpenInit(msg_init);
     }
 
@@ -322,9 +322,7 @@ contract IBCChannelHandlerTest is TestPlus {
             portId
         );
         msg_init.channel.counterparty.channel_id = "invalid";
-        vm.expectRevert(
-            "channelOpenInit: counterparty channel_id must be empty"
-        );
+        vm.expectRevert(IBCChannelLib.ErrCounterpartyChannelNotEmpty.selector);
         handler.channelOpenInit(msg_init);
     }
 
@@ -428,7 +426,7 @@ contract IBCChannelHandlerTest is TestPlus {
 
         IBCMsgs.MsgChannelCloseConfirm memory msg_close = MsgMocks
             .channelCloseConfirm(portId, channelId, proofHeight);
-        vm.expectRevert("channelCloseConfirm: failed to verify channel state");
+        vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
         handler.channelCloseConfirm(msg_close);
     }
 
@@ -486,7 +484,7 @@ contract IBCChannelHandlerTest is TestPlus {
 
         IBCMsgs.MsgChannelOpenConfirm memory msg_confirm = MsgMocks
             .channelOpenConfirm(portId, channelId, proofHeight);
-        vm.expectRevert("channelOpenConfirm: failed to verify channel state");
+        vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
         handler.channelOpenConfirm(msg_confirm);
     }
 
@@ -503,7 +501,7 @@ contract IBCChannelHandlerTest is TestPlus {
             portId,
             proofHeight
         );
-        vm.expectRevert("channelOpenTry: failed to verify channel state");
+        vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
         handler.channelOpenTry(msg_try);
     }
 
@@ -523,7 +521,7 @@ contract IBCChannelHandlerTest is TestPlus {
         msg_try.channel.state = ChannelEnums.State.STATE_INIT;
 
         membershipVerifier.pushValid();
-        vm.expectRevert("channelOpenTry: channel state is not TRYOPEN");
+        vm.expectRevert(IBCChannelLib.ErrInvalidChannelState.selector);
         handler.channelOpenTry(msg_try);
     }
 
@@ -626,7 +624,7 @@ contract IBCChannelHandlerTest is TestPlus {
 
         IBCMsgs.MsgChannelCloseConfirm memory msg_close = MsgMocks
             .channelCloseConfirm(portId, channelId, proofHeight);
-        vm.expectRevert("channelCloseConfirm: failed to verify channel state");
+        vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
         handler.channelCloseConfirm(msg_close);
     }
 

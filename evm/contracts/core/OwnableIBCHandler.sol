@@ -1,6 +1,6 @@
 pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/access/Ownable.sol";
 import "./25-handler/IBCHandler.sol";
 
 /**
@@ -19,7 +19,10 @@ contract OwnableIBCHandler is IBCHandler, Ownable {
         address ibcConnection,
         address ibcChannel,
         address ibcPacket
-    ) IBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket) {}
+    )
+        IBCHandler(ibcClient, ibcConnection, ibcChannel, ibcPacket)
+        Ownable(_msgSender())
+    {}
 
     /**
      * @dev registerClient registers a new client type into the client registry

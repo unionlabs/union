@@ -4,6 +4,10 @@ import "../../proto/ibc/core/connection/v1/connection.sol";
 import "../../proto/ibc/core/channel/v1/channel.sol";
 import "../02-client/ILightClient.sol";
 
+library IBCStoreLib {
+    error ErrClientNotFound();
+}
+
 abstract contract IBCStore {
     // Commitments
     // keccak256(IBC-compatible-store-path) => keccak256(IBC-compatible-commitment)
@@ -35,7 +39,9 @@ abstract contract IBCStore {
         string memory clientId
     ) public view returns (ILightClient) {
         address clientImpl = clientImpls[clientId];
-        require(clientImpl != address(0), "getClient: not found");
+        if (clientImpl == address(0)) {
+            revert IBCStoreLib.ErrClientNotFound();
+        }
         return ILightClient(clientImpl);
     }
 }

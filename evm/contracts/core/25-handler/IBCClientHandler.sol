@@ -6,14 +6,11 @@ import "../02-client/IIBCClient.sol";
 /**
  * @dev IBCClientHandler is a contract that calls a contract that implements `IIBCClient` with delegatecall.
  */
-abstract contract IBCClientHandler {
-    // IBC Client contract address
-    address immutable ibcClientAddress;
+abstract contract IBCClientHandler is IIBCClient {
+    address immutable ibcClient;
 
-    event GeneratedClientIdentifier(string);
-
-    constructor(address ibcClient) {
-        ibcClientAddress = ibcClient;
+    constructor(address _ibcClient) {
+        ibcClient = _ibcClient;
     }
 
     /**
@@ -23,16 +20,7 @@ abstract contract IBCClientHandler {
         string calldata clientType,
         ILightClient client
     ) public virtual {
-        (bool success, bytes memory res) = ibcClientAddress.delegatecall(
-            abi.encodeWithSelector(
-                IIBCClient.registerClient.selector,
-                clientType,
-                client
-            )
-        );
-        if (!success) {
-            revert(_getRevertMsg(res));
-        }
+        passthrough(ibcClient);
     }
 
     /**
@@ -40,27 +28,16 @@ abstract contract IBCClientHandler {
      */
     function createClient(
         IBCMsgs.MsgCreateClient calldata msg_
-    ) external returns (string memory clientId) {
-        (bool success, bytes memory res) = ibcClientAddress.delegatecall(
-            abi.encodeWithSelector(IIBCClient.createClient.selector, msg_)
-        );
-        if (!success) {
-            revert(_getRevertMsg(res));
-        }
-        clientId = abi.decode(res, (string));
-        emit GeneratedClientIdentifier(clientId);
-        return clientId;
+    ) external override returns (string memory) {
+        passthrough(ibcClient);
     }
 
     /**
      * @dev updateClient updates the consensus state and the state root from a provided header
      */
-    function updateClient(IBCMsgs.MsgUpdateClient calldata msg_) external {
-        (bool success, bytes memory res) = ibcClientAddress.delegatecall(
-            abi.encodeWithSelector(IIBCClient.updateClient.selector, msg_)
-        );
-        if (!success) {
-            revert(_getRevertMsg(res));
-        }
+    function updateClient(
+        IBCMsgs.MsgUpdateClient calldata msg_
+    ) external override {
+        passthrough(ibcClient);
     }
 }

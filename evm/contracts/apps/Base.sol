@@ -1,7 +1,11 @@
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.23;
 
-import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/utils/Context.sol";
 import "../core/05-port/IIBCModule.sol";
+
+library IBCAppLib {
+    error ErrNotIBC();
+}
 
 /**
  * @dev Base contract of the IBC App protocol
@@ -24,10 +28,9 @@ abstract contract IBCAppBase is Context, IIBCModule {
      * @dev Throws if the sender is not the IBC contract.
      */
     function _checkIBC() internal view virtual {
-        require(
-            ibcAddress() == _msgSender(),
-            "IBCAppBase: caller is not the IBC contract"
-        );
+        if (ibcAddress() != _msgSender()) {
+            revert IBCAppLib.ErrNotIBC();
+        }
     }
 
     /**
@@ -128,6 +131,11 @@ abstract contract IBCAppBase is Context, IIBCModule {
         address relayer
     ) external virtual override onlyIBC {}
 
+    /**
+     * @dev See IIBCModule-onTimeoutPacket
+     *
+     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     */
     function onTimeoutPacket(
         IbcCoreChannelV1Packet.Data calldata packet,
         address relayer

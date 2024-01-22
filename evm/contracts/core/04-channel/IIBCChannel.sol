@@ -8,14 +8,14 @@ interface IIBCChannelHandshake {
      */
     function channelOpenInit(
         IBCMsgs.MsgChannelOpenInit calldata msg_
-    ) external returns (string memory channelId);
+    ) external returns (string memory);
 
     /**
      * @dev channelOpenTry is called by a module to accept the first step of a channel opening handshake initiated by a module on another chain.
      */
     function channelOpenTry(
         IBCMsgs.MsgChannelOpenTry calldata msg_
-    ) external returns (string memory channelId);
+    ) external returns (string memory);
 
     /**
      * @dev channelOpenAck is called by the handshake-originating module to acknowledge the acceptance of the initial request by the counterparty module on the other chain.
@@ -57,7 +57,7 @@ interface IIBCPacket {
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
-    ) external returns (uint64);
+    ) external;
 
     /**
      * @dev recvPacket is called by a module in order to receive & process an IBC packet

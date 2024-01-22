@@ -11,7 +11,7 @@ import {IBCConnection} from "../../../contracts/core/03-connection/IBCConnection
 import {IBCClient} from "../../../contracts/core/02-client/IBCClient.sol";
 import {IBCChannelHandshake} from "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
 import {IIBCPacket} from "../../../contracts/core/04-channel/IIBCChannel.sol";
-import {IBCPacket} from "../../../contracts/core/04-channel/IBCPacket.sol";
+import {IBCPacket, IBCPacketLib} from "../../../contracts/core/04-channel/IBCPacket.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IbcCoreClientV1Height as ClientHeight} from "../../../contracts/proto/MockClient.sol";
 import {IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
@@ -291,7 +291,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(malicious != address(0) && malicious != address(app));
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
-        vm.expectRevert("sendPacket: unauthorized");
+        vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
         vm.prank(malicious);
         handler.sendPacket(
             PORT_ID,
@@ -336,9 +336,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(0 < timeoutHeight && timeoutHeight <= LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
         vm.prank(address(app));
-        vm.expectRevert(
-            "sendPacket: receiving chain block height >= packet timeout height"
-        );
+        vm.expectRevert(IBCPacketLib.ErrInvalidTimeoutHeight.selector);
         handler.sendPacket(
             PORT_ID,
             channelId,
@@ -359,9 +357,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(0 < timeoutTimestamp && timeoutTimestamp <= LATEST_TIMESTAMP);
         vm.prank(address(app));
-        vm.expectRevert(
-            "sendPacket: receiving chain block timestamp >= packet timeout timestamp"
-        );
+        vm.expectRevert(IBCPacketLib.ErrInvalidTimeoutTimestamp.selector);
         handler.sendPacket(
             PORT_ID,
             channelId,
@@ -456,14 +452,12 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.prank(relayer);
         handler.recvPacket(msg_);
         membershipVerifier.pushValid();
-        vm.expectRevert(
-            "recvPacket: packet sequence already has been received"
-        );
+        vm.expectRevert(IBCPacketLib.ErrPacketAlreadyReceived.selector);
         vm.prank(relayer);
         handler.recvPacket(msg_);
     }
 
-    function test_recvPacket_invalidTimeoutHeight(
+    function test_recvPacket_timeoutHeight(
         address relayer,
         bytes memory payload,
         uint32 timeoutHeight,
@@ -475,7 +469,7 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         vm.assume(timeoutHeight > 0);
         membershipVerifier.pushValid();
-        vm.expectRevert("recvPacket: block height >= packet timeout height");
+        vm.expectRevert(IBCPacketLib.ErrHeightTimeout.selector);
         vm.prank(relayer);
         handler.recvPacket(
             MsgMocks.packetRecv(
@@ -489,7 +483,7 @@ contract IBCPacketHandlerTest is TestPlus {
         );
     }
 
-    function test_recvPacket_invalidTimeoutTimestamp(
+    function test_recvPacket_timeoutTimestamp(
         address relayer,
         bytes memory payload,
         uint64 timeoutHeight,
@@ -499,9 +493,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(0 < timeoutHeight && timeoutHeight > vm.getBlockNumber());
         vm.assume(timeoutTimestamp > 0);
         membershipVerifier.pushValid();
-        vm.expectRevert(
-            "recvPacket: block timestamp >= packet timeout timestamp"
-        );
+        vm.expectRevert(IBCPacketLib.ErrTimestampTimeout.selector);
         vm.prank(relayer);
         handler.recvPacket(
             MsgMocks.packetRecv(
@@ -524,7 +516,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         vm.assume(timeoutHeight > vm.getBlockNumber());
         vm.assume(timeoutTimestamp > vm.getBlockTimestamp());
-        vm.expectRevert("recvPacket: failed to verify packet commitment");
+        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
         vm.prank(relayer);
         handler.recvPacket(
             MsgMocks.packetRecv(
@@ -558,7 +550,7 @@ contract IBCPacketHandlerTest is TestPlus {
         msg_.packet.source_port = "invalid";
         membershipVerifier.pushValid();
         vm.expectRevert(
-            "recvPacket: packet source port doesn't match the counterparty's port"
+            IBCPacketLib.ErrSourceAndCounterpartyPortMismatch.selector
         );
         vm.prank(relayer);
         handler.recvPacket(msg_);
@@ -584,7 +576,7 @@ contract IBCPacketHandlerTest is TestPlus {
         msg_.packet.source_channel = "invalid";
         membershipVerifier.pushValid();
         vm.expectRevert(
-            "recvPacket: packet source channel doesn't match the counterparty's channel"
+            IBCPacketLib.ErrSourceAndCounterpartyChannelMismatch.selector
         );
         vm.prank(relayer);
         handler.recvPacket(msg_);
@@ -618,9 +610,7 @@ contract IBCPacketHandlerTest is TestPlus {
             acknowledgement
         );
         vm.prank(address(app));
-        vm.expectRevert(
-            "writeAcknowlegement: acknowledgement for packet already exists"
-        );
+        vm.expectRevert(IBCPacketLib.ErrAcknowledgementAlreadyExists.selector);
         handler.writeAcknowledgement(
             PORT_ID,
             channelId,
@@ -633,7 +623,7 @@ contract IBCPacketHandlerTest is TestPlus {
         uint64 sequence
     ) public {
         vm.prank(address(app));
-        vm.expectRevert("writeAcknowlegement: acknowledgement cannot be empty");
+        vm.expectRevert(IBCPacketLib.ErrAcknowledgementIsEmpty.selector);
         handler.writeAcknowledgement(PORT_ID, channelId, sequence, bytes(""));
     }
 
@@ -645,7 +635,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(malicious != address(0) && malicious != address(app));
         vm.assume(acknowledgement.length > 0);
         vm.prank(address(malicious));
-        vm.expectRevert("writeAcknowledgement: unauthorized");
+        vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
         handler.writeAcknowledgement(
             PORT_ID,
             channelId,
@@ -726,7 +716,7 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         membershipVerifier.pushValid();
         vm.prank(relayer);
-        vm.expectRevert("acknowledgePacket: packet commitment not found");
+        vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
         handler.acknowledgePacket(
             MsgMocks.packetAck(
                 PORT_ID,
@@ -762,9 +752,7 @@ contract IBCPacketHandlerTest is TestPlus {
             payload
         );
         vm.prank(relayer);
-        vm.expectRevert(
-            "acknowledgePacket: failed to verify packet acknowledgement commitment"
-        );
+        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
         handler.acknowledgePacket(
             MsgMocks.packetAck(
                 PORT_ID,
@@ -789,7 +777,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
         vm.prank(relayer);
-        vm.expectRevert("acknowledgePacket: packet commitment not found");
+        vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
         handler.acknowledgePacket(
             MsgMocks.packetAck(
                 PORT_ID,
@@ -825,7 +813,7 @@ contract IBCPacketHandlerTest is TestPlus {
             payload
         );
         vm.prank(relayer);
-        vm.expectRevert("acknowledgePacket: commitment bytes are not equal");
+        vm.expectRevert(IBCPacketLib.ErrInvalidPacketCommitment.selector);
         handler.acknowledgePacket(
             MsgMocks.packetAck(
                 PORT_ID,
@@ -873,7 +861,7 @@ contract IBCPacketHandlerTest is TestPlus {
         msg_.packet.destination_port = "invalid";
         vm.prank(relayer);
         vm.expectRevert(
-            "acknowledgePacket: packet destination port doesn't match the counterparty's port"
+            IBCPacketLib.ErrDestinationAndCounterpartyPortMismatch.selector
         );
         handler.acknowledgePacket(msg_);
     }
@@ -912,7 +900,7 @@ contract IBCPacketHandlerTest is TestPlus {
         msg_.packet.destination_channel = "invalid";
         vm.prank(relayer);
         vm.expectRevert(
-            "acknowledgePacket: packet destination channel doesn't match the counterparty's channel"
+            IBCPacketLib.ErrDestinationAndCounterpartyChannelMismatch.selector
         );
         handler.acknowledgePacket(msg_);
     }
@@ -934,7 +922,7 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         membershipVerifier.pushValid();
         vm.prank(relayer);
-        vm.expectRevert("timeoutPacket: commitment bytes are not equal");
+        vm.expectRevert(IBCPacketLib.ErrInvalidPacketCommitment.selector);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
                 PORT_ID,
@@ -954,7 +942,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(relayer != address(0) && relayer != address(app));
         membershipVerifier.pushValid();
         vm.prank(relayer);
-        vm.expectRevert("timeoutPacket: packet commitment not found");
+        vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
                 PORT_ID,
@@ -984,7 +972,7 @@ contract IBCPacketHandlerTest is TestPlus {
         membershipVerifier.pushValid();
         vm.prank(relayer);
         vm.expectRevert(
-            "timeoutPacket: packet destination port doesn't match the counterparty's port"
+            IBCPacketLib.ErrDestinationAndCounterpartyPortMismatch.selector
         );
         handler.timeoutPacket(msg_);
     }
@@ -1006,7 +994,7 @@ contract IBCPacketHandlerTest is TestPlus {
         membershipVerifier.pushValid();
         vm.prank(relayer);
         vm.expectRevert(
-            "timeoutPacket: packet destination channel doesn't match the counterparty's channel"
+            IBCPacketLib.ErrDestinationAndCounterpartyChannelMismatch.selector
         );
         handler.timeoutPacket(msg_);
     }
@@ -1026,9 +1014,7 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         membershipVerifier.pushValid();
         vm.prank(relayer);
-        vm.expectRevert(
-            "timeoutPacket: packet has no timestamp/height timeout"
-        );
+        vm.expectRevert(IBCPacketLib.ErrPacketWithoutTimeout.selector);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
                 PORT_ID,
@@ -1125,7 +1111,7 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         membershipVerifier.pushValid();
         vm.prank(relayer);
-        vm.expectRevert("timeoutPacket: packet commitment not found");
+        vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
                 PORT_ID,
@@ -1167,9 +1153,7 @@ contract IBCPacketHandlerTest is TestPlus {
             )
         );
         vm.prank(relayer);
-        vm.expectRevert(
-            "timeoutPacket: failed to verify packet timeout absence proof"
-        );
+        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
                 PORT_ID,
@@ -1212,9 +1196,7 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         membershipVerifier.pushValid();
         vm.prank(relayer);
-        vm.expectRevert(
-            "timeoutPacket: height timeout not reached for the given proof height"
-        );
+        vm.expectRevert(IBCPacketLib.ErrTimeoutHeightNotReached.selector);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
                 PORT_ID,
@@ -1295,9 +1277,7 @@ contract IBCPacketHandlerTest is TestPlus {
         );
         membershipVerifier.pushValid();
         vm.prank(relayer);
-        vm.expectRevert(
-            "timeoutPacket: timestamp timeout not reached for the given proof height"
-        );
+        vm.expectRevert(IBCPacketLib.ErrTimeoutTimestampNotReached.selector);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
                 PORT_ID,

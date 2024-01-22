@@ -89,19 +89,19 @@ contract PingPong is IBCAppBase {
         IbcCoreChannelV1Packet.Data calldata packet,
         address relayer
     ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
-        PingPongPacket memory packet = PingPongPacketLib.decode(packet.data);
-        emit Ring(packet.ping);
-        uint64 counterpartyTimeoutRevisionNumber = packet
+        PingPongPacket memory pp = PingPongPacketLib.decode(packet.data);
+        emit Ring(pp.ping);
+        uint64 counterpartyTimeoutRevisionNumber = pp
             .counterpartyTimeoutRevisionNumber;
-        uint64 counterpartyTimeoutRevisionHeight = packet
+        uint64 counterpartyTimeoutRevisionHeight = pp
             .counterpartyTimeoutRevisionHeight;
-        packet.ping = !packet.ping;
-        packet.counterpartyTimeoutRevisionNumber = revisionNumber;
-        packet.counterpartyTimeoutRevisionHeight =
+        pp.ping = !pp.ping;
+        pp.counterpartyTimeoutRevisionNumber = revisionNumber;
+        pp.counterpartyTimeoutRevisionHeight =
             uint64(block.number) +
             numberOfBlockBeforePongTimeout;
         initiate(
-            packet,
+            pp,
             counterpartyTimeoutRevisionNumber,
             counterpartyTimeoutRevisionHeight
         );

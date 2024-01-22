@@ -2,9 +2,10 @@ pragma solidity ^0.8.23;
 
 import "solidity-bytes-utils/BytesLib.sol";
 
+import {IBCClientLib} from "../../../contracts/core/02-client/IBCClient.sol";
 import {ILightClient, ConsensusStateUpdate} from "../../../contracts/core/02-client/ILightClient.sol";
 import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
-import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
+import {CometblsClient, CometblsClientLib} from "../../../contracts/clients/CometblsClientV2.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
 import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
@@ -169,12 +170,12 @@ contract IBCClientHandlerTests is TestPlus {
     function test_registerClient_alreadyRegistered() public {
         handler.registerClient(CLIENT_TYPE, client);
 
-        vm.expectRevert("registerClient: client type already exists");
+        vm.expectRevert(IBCClientLib.ErrClientTypeAlreadyExists.selector);
         handler.registerClient(CLIENT_TYPE, client);
     }
 
     function test_registerClient_self() public {
-        vm.expectRevert("registerClient: must not be self");
+        vm.expectRevert(IBCClientLib.ErrClientMustNotBeSelf.selector);
         handler.registerClient(CLIENT_TYPE, ILightClient(address(handler)));
     }
 
@@ -227,7 +228,7 @@ contract IBCClientHandlerTests is TestPlus {
             uint64(vm.getBlockTimestamp())
         );
 
-        vm.expectRevert("createClient: failed to create client");
+        vm.expectRevert(IBCClientLib.ErrFailedToCreateClient.selector);
         handler.createClient(m);
     }
 
@@ -247,7 +248,7 @@ contract IBCClientHandlerTests is TestPlus {
             uint64(vm.getBlockTimestamp())
         );
 
-        vm.expectRevert("createClient: unregistered client type");
+        vm.expectRevert(IBCClientLib.ErrClientTypeNotFound.selector);
         handler.createClient(m);
     }
 
@@ -281,7 +282,7 @@ contract IBCClientHandlerTests is TestPlus {
         );
 
         verifier.pushValid();
-        vm.expectRevert("LC: unauthorized");
+        vm.expectRevert(CometblsClientLib.ErrUnauthorized.selector);
         client.createClient(
             "blabla",
             m.clientStateBytes,
@@ -330,7 +331,7 @@ contract IBCClientHandlerTests is TestPlus {
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
         verifier.pushValid();
-        vm.expectRevert("LC: unauthorized");
+        vm.expectRevert(CometblsClientLib.ErrUnauthorized.selector);
         client.updateClient(m2.clientId, m2.clientMessage);
     }
 
@@ -502,7 +503,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
-        vm.expectRevert();
+        vm.expectRevert(CometblsClientLib.ErrInvalidZKP.selector);
         handler.updateClient(m2);
     }
 
@@ -551,7 +552,9 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
-        vm.expectRevert("LC: commit.block_id.hash != header.root()");
+        vm.expectRevert(
+            CometblsClientLib.ErrPrecomputedRootAndBlockRootMismatch.selector
+        );
         handler.updateClient(m2);
     }
 
@@ -592,7 +595,9 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
-        vm.expectRevert("LC: header height <= consensus state height");
+        vm.expectRevert(
+            CometblsClientLib.ErrUntrustedHeightLTETrustedHeight.selector
+        );
         handler.updateClient(m2);
     }
 
@@ -637,7 +642,7 @@ contract IBCClientHandlerTests is TestPlus {
             uint64(signedHeader.header.time.secs) + Cometbls.TRUSTING_PERIOD + 1
         );
 
-        vm.expectRevert("LC: header expired");
+        vm.expectRevert(CometblsClientLib.ErrHeaderExpired.selector);
         handler.updateClient(m2);
     }
 
@@ -947,7 +952,9 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        vm.expectRevert("LC: verifyMembership: consensusState does not exist");
+        vm.expectRevert(
+            CometblsClientLib.ErrTrustedConsensusStateNotFound.selector
+        );
         client.verifyMembership(
             clientId,
             IbcCoreClientV1Height.Data({
@@ -1067,7 +1074,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.warp(vm.getBlockTimestamp() + delayTime);
 
-        vm.expectRevert("LC: delayPeriod not expired");
+        vm.expectRevert(CometblsClientLib.ErrDelayPeriodNotExpired.selector);
         client.verifyMembership(
             clientId,
             IbcCoreClientV1Height.Data({
@@ -1112,7 +1119,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.warp(vm.getBlockNumber() + delayBlocks);
 
-        vm.expectRevert("LC: delayPeriod not expired");
+        vm.expectRevert(CometblsClientLib.ErrDelayPeriodNotExpired.selector);
         client.verifyMembership(
             clientId,
             IbcCoreClientV1Height.Data({
@@ -1318,7 +1325,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.warp(vm.getBlockTimestamp() + delayTime);
 
-        vm.expectRevert("LC: delayPeriod not expired");
+        vm.expectRevert(CometblsClientLib.ErrDelayPeriodNotExpired.selector);
         client.verifyNonMembership(
             clientId,
             IbcCoreClientV1Height.Data({
@@ -1362,7 +1369,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         vm.warp(vm.getBlockNumber() + delayBlocks);
 
-        vm.expectRevert("LC: delayPeriod not expired");
+        vm.expectRevert(CometblsClientLib.ErrDelayPeriodNotExpired.selector);
         client.verifyNonMembership(
             clientId,
             IbcCoreClientV1Height.Data({

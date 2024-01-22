@@ -5,6 +5,7 @@ import "solidity-bytes-utils/BytesLib.sol";
 import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
 import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
+import {IBCConnectionLib} from "../../../contracts/core/03-connection/IBCConnection.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
@@ -172,13 +173,13 @@ contract IBCConnectionHandlerTests is TestPlus {
 
     function preAckInvalidConnectionStateProof() public {
         membershipVerifier.reset();
-        vm.expectRevert("connectionOpenAck: failed to verify connection state");
+        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function preAckInvalidClientStateProof() public {
         membershipVerifier.reset();
         membershipVerifier.pushValid(0);
-        vm.expectRevert("connectionOpenAck: failed to verify clientState");
+        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function preTryValidProofs() public {
@@ -189,13 +190,13 @@ contract IBCConnectionHandlerTests is TestPlus {
 
     function preTryInvalidConnectionStateProof() public {
         membershipVerifier.reset();
-        vm.expectRevert("connectionOpenTry: failed to verify connection state");
+        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function preTryInvalidClientStateProof() public {
         membershipVerifier.reset();
         membershipVerifier.pushValid(0);
-        vm.expectRevert("connectionOpenTry: failed to verify clientState");
+        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function preConfirmValidProofs() public {
@@ -204,9 +205,7 @@ contract IBCConnectionHandlerTests is TestPlus {
     }
 
     function preConfirmInvalidConnectionState() public {
-        vm.expectRevert(
-            "connectionOpenConfirm: failed to verify connection state"
-        );
+        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
     }
 
     function test_handshake_init_ack_ok(uint64 proofHeight) public {
@@ -283,7 +282,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
             .connectionOpenAck(clientId, "", proofHeight);
         preAckValidProofs();
-        vm.expectRevert("connectionOpenAck: connection state is not INIT");
+        vm.expectRevert(IBCConnectionLib.ErrInvalidConnectionState.selector);
         handler.connectionOpenAck(msg_ack);
     }
 
@@ -327,9 +326,7 @@ contract IBCConnectionHandlerTests is TestPlus {
             .connectionOpenAck(clientId, connId, proofHeight);
         msg_ack.version.identifier = "2";
         preAckValidProofs();
-        vm.expectRevert(
-            "connectionOpenAck: the counterparty selected version is not supported by versions selected on INIT"
-        );
+        vm.expectRevert(IBCConnectionLib.ErrUnsupportedVersion.selector);
         handler.connectionOpenAck(msg_ack);
     }
 
@@ -488,9 +485,7 @@ contract IBCConnectionHandlerTests is TestPlus {
             .connectionOpenTry(clientId, proofHeight);
         msg_try.counterpartyVersions[0].identifier = "4";
         preTryValidProofs();
-        vm.expectRevert(
-            "connectionOpenTry: the counterparty selected version is not supported by versions selected on INIT"
-        );
+        vm.expectRevert(IBCConnectionLib.ErrUnsupportedVersion.selector);
         handler.connectionOpenTry(msg_try);
     }
 
@@ -577,9 +572,7 @@ contract IBCConnectionHandlerTests is TestPlus {
         IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
             .connectionOpenConfirm(clientId, "", proofHeight);
         preConfirmValidProofs();
-        vm.expectRevert(
-            "connectionOpenConfirm: connection state is not TRYOPEN"
-        );
+        vm.expectRevert(IBCConnectionLib.ErrInvalidConnectionState.selector);
         handler.connectionOpenConfirm(msg_confirm);
     }
 

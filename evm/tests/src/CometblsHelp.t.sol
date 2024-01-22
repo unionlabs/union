@@ -71,7 +71,7 @@ contract CometblsHelpTests is Test {
 
     function test_optimize_iso(
         uint64 timestamp,
-        bytes32 root,
+        bytes32 appHash,
         bytes32 validatorsHash
     ) public {
         UnionIbcLightclientsCometblsV1ConsensusState.Data
@@ -79,7 +79,7 @@ contract CometblsHelpTests is Test {
                 .Data({
                     timestamp: timestamp,
                     root: IbcCoreCommitmentV1MerkleRoot.Data({
-                        hash: abi.encodePacked(root)
+                        hash: abi.encodePacked(appHash)
                     }),
                     next_validators_hash: abi.encodePacked(validatorsHash)
                 });
@@ -89,7 +89,7 @@ contract CometblsHelpTests is Test {
         assertEq(consensusState.timestamp, optimizedConsensusState.timestamp);
         assertEq(
             consensusState.root.hash,
-            abi.encodePacked(optimizedConsensusState.root)
+            abi.encodePacked(optimizedConsensusState.appHash)
         );
         assertEq(
             consensusState.next_validators_hash,
