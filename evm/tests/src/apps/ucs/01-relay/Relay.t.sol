@@ -4,6 +4,7 @@ import "forge-std/Test.sol";
 import "solidity-stringutils/strings.sol";
 import "solady/utils/LibString.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
+import "../../../../../contracts/apps/Base.sol";
 import "../../../../../contracts/apps/ucs/01-relay/Relay.sol";
 import "../../../../../contracts/apps/ucs/01-relay/ERC20Denom.sol";
 import "../../../../../contracts/apps/ucs/01-relay/IERC20Denom.sol";
@@ -261,7 +262,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
         relay.onChanOpenInit(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
@@ -282,7 +283,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(RelayLib.ErrInvalidProtocolVersion.selector);
         vm.prank(address(ibcHandler));
         relay.onChanOpenInit(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
@@ -304,7 +305,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(RelayLib.ErrInvalidProtocolOrdering.selector);
         vm.prank(address(ibcHandler));
         relay.onChanOpenInit(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
@@ -351,7 +352,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
         relay.onChanOpenTry(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
             new string[](0),
@@ -399,7 +400,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(RelayLib.ErrInvalidProtocolVersion.selector);
         vm.prank(address(ibcHandler));
         relay.onChanOpenTry(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
@@ -422,7 +423,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(RelayLib.ErrInvalidProtocolOrdering.selector);
         vm.prank(address(ibcHandler));
         relay.onChanOpenTry(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED,
@@ -445,7 +446,9 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(
+            RelayLib.ErrInvalidCounterpartyProtocolVersion.selector
+        );
         vm.prank(address(ibcHandler));
         relay.onChanOpenTry(
             IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED,
@@ -467,7 +470,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
         relay.onChanOpenAck(
             destinationPort,
             destinationChannel,
@@ -482,7 +485,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(RelayLib.ErrInvalidCounterpartyProtocolVersion.selector);
         vm.prank(address(ibcHandler));
         relay.onChanOpenAck(
             destinationPort,
@@ -535,7 +538,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
         relay.onChanOpenConfirm(destinationPort, destinationChannel);
     }
 
@@ -553,7 +556,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
         relay.onChanCloseInit(destinationPort, destinationChannel);
     }
 
@@ -562,7 +565,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(RelayLib.ErrUnstoppable.selector);
         vm.prank(address(ibcHandler));
         relay.onChanCloseInit(destinationPort, destinationChannel);
     }
@@ -572,7 +575,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
         relay.onChanCloseConfirm(destinationPort, destinationChannel);
     }
 
@@ -581,7 +584,7 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(RelayLib.ErrUnstoppable.selector);
         vm.prank(address(ibcHandler));
         relay.onChanCloseConfirm(destinationPort, destinationChannel);
     }
@@ -598,7 +601,7 @@ contract RelayTests is Test {
         address relayer
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert();
+        vm.expectRevert(RelayLib.ErrUnauthorized.selector);
         vm.prank(address(ibcHandler));
         relay.onRecvPacketProcessing(
             IbcCoreChannelV1Packet.Data({
@@ -648,11 +651,11 @@ contract RelayTests is Test {
             }),
             relayer
         );
+        assertEq(acknowledgement, abi.encodePacked(RelayLib.ACK_FAILURE));
         (bytes32[] memory reads, bytes32[] memory writes) = vm.accesses(
             address(relay)
         );
         assertEq(writes.length, 0);
-        assertEq(acknowledgement, abi.encodePacked(RelayLib.ACK_FAILURE));
     }
 
     function test_receive_localToken(
@@ -1030,7 +1033,7 @@ contract RelayTests is Test {
         );
     }
 
-    function test_timeout_refund_remote(
+    function test_onTimeout_refund_remote(
         uint64 sequence,
         string memory sourcePort,
         string memory sourceChannel,
