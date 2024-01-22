@@ -30,6 +30,15 @@ struct RelayPacket {
 library RelayLib {
     using LibString for *;
 
+    error ErrInvalidHexAddress();
+    error ErrInvalidBytesAddress();
+    error ErrUnauthorized();
+    error ErrInvalidAcknowledgement();
+    error ErrInvalidProtocolVersion();
+    error ErrInvalidProtocolOrdering();
+    error ErrInvalidCounterpartyProtocolVersion();
+    error ErrUnstoppable();
+
     IbcCoreChannelV1GlobalEnums.Order public constant ORDER =
         IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED;
     string public constant VERSION = "ucs01-0";
@@ -96,25 +105,26 @@ library RelayLib {
     function hexToBytes16(bytes32 h) internal pure returns (bytes16 b) {
         unchecked {
             // Ensure all chars below 128
-            require(
+            if (
                 h &
-                    0x8080808080808080808080808080808080808080808080808080808080808080 ==
-                    0
-            );
-
+                    0x8080808080808080808080808080808080808080808080808080808080808080 !=
+                0
+            ) {
+                revert ErrInvalidHexAddress();
+            }
             // Subtract '0' from every char
             h = bytes32(
                 uint256(h) -
                     0x3030303030303030303030303030303030303030303030303030303030303030
             );
-
             // Ensure all chars still below 128, i.e. no underflow in the previous line
-            require(
+            if (
                 h &
-                    0x8080808080808080808080808080808080808080808080808080808080808080 ==
-                    0
-            );
-
+                    0x8080808080808080808080808080808080808080808080808080808080808080 !=
+                0
+            ) {
+                revert ErrInvalidHexAddress();
+            }
             // Calculate mask for chars that originally were above '9'
             bytes32 ndm = bytes32(
                 (((uint256(h) +
@@ -122,7 +132,6 @@ library RelayLib {
                     0x8080808080808080808080808080808080808080808080808080808080808080) >>
                     7) * 0xFF
             );
-
             // Subtract 7 ('A' - '0') from every char that originally was above '9'
             h = bytes32(
                 uint256(h) -
@@ -131,25 +140,26 @@ library RelayLib {
                             0x0707070707070707070707070707070707070707070707070707070707070707
                     )
             );
-
             // Ensure all chars still below 128, i.e. no underflow in the previous line
-            require(
+            if (
                 h &
-                    0x8080808080808080808080808080808080808080808080808080808080808080 ==
-                    0
-            );
-
+                    0x8080808080808080808080808080808080808080808080808080808080808080 !=
+                0
+            ) {
+                revert ErrInvalidHexAddress();
+            }
             // Ensure chars that originally were above '9' are now above 9
-            require(
+            if (
                 (uint256(h) -
                     uint256(
                         ndm &
                             0x0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A
                     )) &
-                    0x8080808080808080808080808080808080808080808080808080808080808080 ==
-                    0
-            );
-
+                    0x8080808080808080808080808080808080808080808080808080808080808080 !=
+                0
+            ) {
+                revert ErrInvalidHexAddress();
+            }
             // Calculate Mask for chars that originally were above 'F'
             bytes32 lcm = bytes32(
                 (((uint256(h) +
@@ -157,7 +167,6 @@ library RelayLib {
                     0x8080808080808080808080808080808080808080808080808080808080808080) >>
                     7) * 0xFF
             );
-
             // Subtract 32 ('a' - 'A') from all chars that oroginally were above 'F'
             h = bytes32(
                 uint256(h) -
@@ -166,25 +175,26 @@ library RelayLib {
                             0x2020202020202020202020202020202020202020202020202020202020202020
                     )
             );
-
             // Ensure chars that originally were above 'F' are now above 9
-            require(
+            if (
                 (uint256(h) -
                     uint256(
                         lcm &
                             0x0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A
                     )) &
-                    0x8080808080808080808080808080808080808080808080808080808080808080 ==
-                    0
-            );
-
+                    0x8080808080808080808080808080808080808080808080808080808080808080 !=
+                0
+            ) {
+                revert ErrInvalidHexAddress();
+            }
             // Ensure all chars are below 16
-            require(
+            if (
                 h &
-                    0xF0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0 ==
-                    0
-            );
-
+                    0xF0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0 !=
+                0
+            ) {
+                revert ErrInvalidHexAddress();
+            }
             // 0x0A0B0C0D... -> 0xAB00CD00...
             h =
                 ((h &
@@ -193,7 +203,6 @@ library RelayLib {
                 ((h &
                     0x000F000F000F000F000F000F000F000F000F000F000F000F000F000F000F000F) <<
                     8);
-
             // 0xAA00BB00CC00DD00... -> 0xAABB0000CCDD0000...
             h =
                 (h &
@@ -201,7 +210,6 @@ library RelayLib {
                 ((h &
                     0x0000FF000000FF000000FF000000FF000000FF000000FF000000FF000000FF00) <<
                     8);
-
             // 0xAAAA0000BBBB0000CCCC0000DDDD0000... -> 0xAAAABBBB00000000CCCCDDDD00000000...
             h =
                 (h &
@@ -209,7 +217,6 @@ library RelayLib {
                 ((h &
                     0x00000000FFFF000000000000FFFF000000000000FFFF000000000000FFFF0000) <<
                     16);
-
             // 0xAAAAAAAA00000000BBBBBBBB00000000CCCCCCCC00000000DDDDDDDD00000000 -> 0xAAAAAAAABBBBBBBB0000000000000000CCCCCCCCDDDDDDDD0000000000000000
             h =
                 (h &
@@ -217,7 +224,6 @@ library RelayLib {
                 ((h &
                     0x0000000000000000FFFFFFFF000000000000000000000000FFFFFFFF00000000) <<
                     32);
-
             // 0xAAAAAAAAAAAAAAAA0000000000000000BBBBBBBBBBBBBBBB0000000000000000 -> 0xAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBB00000000000000000000000000000000
             h =
                 (h &
@@ -225,14 +231,15 @@ library RelayLib {
                 ((h &
                     0x00000000000000000000000000000000FFFFFFFFFFFFFFFF0000000000000000) <<
                     64);
-
             // Trim to 16 bytes
             b = bytes16(h);
         }
     }
 
     function hexToAddress(string memory s) public pure returns (address) {
-        require(bytes(s).length == 42, "ucs01-relay: invalid hex address");
+        if (bytes(s).length != 42) {
+            revert ErrInvalidHexAddress();
+        }
         bytes2 prefix;
         bytes32 leftHex;
         bytes32 rightHex;
@@ -241,14 +248,18 @@ library RelayLib {
             leftHex := mload(add(s, 0x22))
             rightHex := mload(add(s, 0x2A))
         }
-        require(prefix == "0x", "ucs01-relay: invalid hex prefix");
+        if (prefix != "0x") {
+            revert ErrInvalidHexAddress();
+        }
         bytes16 left = hexToBytes16(leftHex);
         bytes16 right = hexToBytes16(rightHex);
         return address(bytes20(left) | (bytes20(right) >> 32));
     }
 
     function bytesToAddress(bytes memory b) internal pure returns (address) {
-        require(b.length == 20, "ucs01-relay: invalid bytes address");
+        if (b.length != 20) {
+            revert ErrInvalidBytesAddress();
+        }
         return address(uint160(bytes20(b)));
     }
 }
@@ -280,12 +291,12 @@ contract UCS01Relay is IBCAppBase {
 
     IBCHandler private immutable ibcHandler;
 
-    mapping(string => address) public denomToAddress;
-    mapping(address => string) public addressToDenom;
+    mapping(string => address) private denomToAddress;
+    mapping(address => string) private addressToDenom;
     mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
-        public counterpartyEndpoints;
+        private counterpartyEndpoints;
     mapping(string => mapping(string => mapping(address => uint256)))
-        public outstanding;
+        private outstanding;
 
     constructor(IBCHandler _ibcHandler) {
         ibcHandler = _ibcHandler;
@@ -306,10 +317,6 @@ contract UCS01Relay is IBCAppBase {
         string memory sourceChannel,
         address token
     ) public view returns (uint256) {
-        require(
-            token != address(0),
-            "ucs01-relay: getOutstanding: address is zero"
-        );
         return outstanding[sourcePort][sourceChannel][token];
     }
 
@@ -469,10 +476,9 @@ contract UCS01Relay is IBCAppBase {
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address relayer
     ) public {
-        require(
-            msg.sender == address(this),
-            "ucs01-relay: sender must be self"
-        );
+        if (msg.sender != address(this)) {
+            revert RelayLib.ErrUnauthorized();
+        }
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = RelayLib.makeDenomPrefix(
             ibcPacket.destination_port,
@@ -548,12 +554,13 @@ contract UCS01Relay is IBCAppBase {
         bytes calldata acknowledgement,
         address _relayer
     ) external virtual override onlyIBC {
-        require(
-            acknowledgement.length == RelayLib.ACK_LENGTH &&
-                (acknowledgement[0] == RelayLib.ACK_FAILURE ||
-                    acknowledgement[0] == RelayLib.ACK_SUCCESS),
-            "ucs01-relay: ack must be bool"
-        );
+        if (
+            acknowledgement.length != RelayLib.ACK_LENGTH ||
+            (acknowledgement[0] != RelayLib.ACK_FAILURE &&
+                acknowledgement[0] != RelayLib.ACK_SUCCESS)
+        ) {
+            revert RelayLib.ErrInvalidAcknowledgement();
+        }
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
@@ -583,14 +590,12 @@ contract UCS01Relay is IBCAppBase {
         IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
         string calldata version
     ) external virtual override onlyIBC {
-        require(
-            RelayLib.isValidVersion(version),
-            "ucs01-relay: invalid version"
-        );
-        require(
-            order == RelayLib.ORDER,
-            "ucs01-relay: invalid channel ordering"
-        );
+        if (!RelayLib.isValidVersion(version)) {
+            revert RelayLib.ErrInvalidProtocolVersion();
+        }
+        if (order != RelayLib.ORDER) {
+            revert RelayLib.ErrInvalidProtocolOrdering();
+        }
         counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
     }
 
@@ -603,18 +608,15 @@ contract UCS01Relay is IBCAppBase {
         string calldata version,
         string calldata counterpartyVersion
     ) external virtual override onlyIBC {
-        require(
-            RelayLib.isValidVersion(version),
-            "ucs01-relay: invalid version"
-        );
-        require(
-            RelayLib.isValidVersion(counterpartyVersion),
-            "ucs01-relay: invalid counterparty version"
-        );
-        require(
-            order == RelayLib.ORDER,
-            "ucs01-relay: invalid channel ordering"
-        );
+        if (!RelayLib.isValidVersion(version)) {
+            revert RelayLib.ErrInvalidProtocolVersion();
+        }
+        if (order != RelayLib.ORDER) {
+            revert RelayLib.ErrInvalidProtocolOrdering();
+        }
+        if (!RelayLib.isValidVersion(counterpartyVersion)) {
+            revert RelayLib.ErrInvalidCounterpartyProtocolVersion();
+        }
         counterpartyEndpoints[portId][channelId] = counterpartyEndpoint;
     }
 
@@ -624,10 +626,9 @@ contract UCS01Relay is IBCAppBase {
         string calldata counterpartyChannelId,
         string calldata counterpartyVersion
     ) external virtual override onlyIBC {
-        require(
-            RelayLib.isValidVersion(counterpartyVersion),
-            "ucs01-relay: invalid counterparty version"
-        );
+        if (!RelayLib.isValidVersion(counterpartyVersion)) {
+            revert RelayLib.ErrInvalidCounterpartyProtocolVersion();
+        }
         // Counterparty channel was empty.
         counterpartyEndpoints[portId][channelId]
             .channel_id = counterpartyChannelId;
@@ -642,13 +643,13 @@ contract UCS01Relay is IBCAppBase {
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
-        revert("ucs01-relay: closing a channel is not supported");
+        revert RelayLib.ErrUnstoppable();
     }
 
     function onChanCloseConfirm(
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
-        revert("ucs01-relay: closing a channel is not supported");
+        revert RelayLib.ErrUnstoppable();
     }
 }
