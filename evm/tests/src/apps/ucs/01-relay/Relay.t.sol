@@ -621,7 +621,39 @@ contract RelayTests is Test {
         );
     }
 
-    function test_onRecvPacket_invalidIdentity(
+    function test_onRecvPacket_onlyIBC(
+        uint64 sequence,
+        string memory sourcePort,
+        string memory sourceChannel,
+        string memory destinationPort,
+        string memory destinationChannel,
+        uint64 timeoutRevisionNumber,
+        uint64 timeoutRevisionHeight,
+        uint64 timeoutTimestamp,
+        address relayer
+    ) public {
+        UCS01Relay relay = new UCS01Relay(ibcHandler);
+        vm.record();
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
+        relay.onRecvPacket(
+            IbcCoreChannelV1Packet.Data({
+                sequence: sequence,
+                source_port: sourcePort,
+                source_channel: sourceChannel,
+                destination_port: destinationPort,
+                destination_channel: destinationChannel,
+                data: hex"00",
+                timeout_height: IbcCoreClientV1Height.Data({
+                    revision_number: timeoutRevisionNumber,
+                    revision_height: timeoutRevisionHeight
+                }),
+                timeout_timestamp: timeoutTimestamp
+            }),
+            relayer
+        );
+    }
+
+    function test_onRecvPacket_revertProcessing_noop(
         uint64 sequence,
         string memory sourcePort,
         string memory sourceChannel,
@@ -970,7 +1002,45 @@ contract RelayTests is Test {
         }
     }
 
-    function test_timeout_refund_local(
+    function test_onTimeout_onlyIBC(
+        string memory sourcePort,
+        string memory sourceChannel,
+        string memory destinationPort,
+        string memory destinationChannel,
+        address sender,
+        bytes memory receiver,
+        address relayer,
+        string memory denomName,
+        uint128 amount
+    ) public {
+        vm.assume(sender != address(0));
+        vm.assume(relayer != address(0));
+        vm.assume(amount > 0);
+
+        UCS01Relay relay = createRelay(
+            destinationPort,
+            destinationChannel,
+            sourcePort,
+            sourceChannel
+        );
+
+        address denomAddress = sendLocalToken(
+            relay,
+            destinationPort,
+            destinationChannel,
+            sender,
+            receiver,
+            denomName,
+            amount
+        );
+
+        IbcCoreChannelV1Packet.Data memory packet = ibcHandler.lastPacket();
+
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
+        relay.onTimeoutPacket(packet, relayer);
+    }
+
+    function test_onTimeout_refund_local(
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
