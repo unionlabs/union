@@ -2,11 +2,11 @@
   --sl-text-h1: 3.5rem;
 }
 
-:root[data-theme='light'] {
+:root[data-theme="light"] {
   --logo-text-color: #000000;
 }
 
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   --logo-text-color: #f9f9f9f9;
 }
 
@@ -15,7 +15,7 @@
   color: white;
 }
 
-span[data-astro-source-file$='/starlight/components/SiteTitle.astro'] {
+span[data-astro-source-file$="/starlight/components/SiteTitle.astro"] {
   color: var(--logo-text-color);
 }
 

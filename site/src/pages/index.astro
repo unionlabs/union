@@ -1,15 +1,15 @@
 ---
 import { fade } from 'astro:transitions'
+import xIcon from '#/assets/images/x.svg'
 import Layout from '#/layouts/Layout.svelte'
 import { getCollection } from 'astro:content'
 import { ViewTransitions } from 'astro:transitions'
+import discordIcon from '#/assets/images/discord.svg'
+import calendarIcon from '#/assets/images/calendar.svg'
 import CodeSnippet from '#/components/CodeSnippet.svelte'
 import ConnectedVisual from '#/components/ConnectedVisual.svelte'
 import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
-import xIcon from '#/assets/images/x.svg'
-import discordIcon from '#/assets/images/discord.svg'
-import calendarIcon from '#/assets/images/calendar.svg'
 
 let socialLinks = [
   {
@@ -56,6 +56,9 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
   if (data.hidden) return false
   return { slug, ...data }
 })
+
+const textGlowStyle =
+  'select-none pointer-events-none opacity-0.6 z[-1] blur-md absolute left-0 right-0'
 ---
 
 <Layout>
@@ -63,11 +66,20 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
     class='flex flex-col flex-1'
     transition:animate={fade({ duration: '0.4s' })}
   >
-    <section class='flex flex-col items-center py-32 gap-6 grid-effect-bg'>
-      <div class='sm:text-7xl text-5xl text-white text-center'>
+    <section class='flex flex-col items-center py-32 gap-6 grid-effect-bg antialiased'>
+      <div
+        class:list={[
+          // The first occurrence of this text is to provide glowing background
+          'sm:text-7xl text-5xl text-white text-center',
+          textGlowStyle
+        ]}
+      >
         The Sovereign<br />Interoperability Layer
       </div>
-      <div class='text-xl max-w-lg font-normal text-center'>
+      <div class='sm:text-7xl text-5xl text-white text-center font-semibold'>
+        The Sovereign<br />Interoperability Layer
+      </div>
+      <div class='text-xl max-w-lg font-normal text-center antialiased'>
         By using consensus verification, Union builds unstoppable and decentralized connections to
         enable anyone to transfer assets and data.
       </div>
