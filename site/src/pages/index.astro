@@ -144,10 +144,10 @@ const textGlowStyle =
         class='flex sm:flex-row flex-col max-w-6xl justify-between overflow-none mx-auto items-center content-start px-3'
       >
         <div class='sm:max-w-2/3 max-w-[640px]'>
-          <CodeSnippet
+          <!-- <CodeSnippet
             client:load
             code={soliditySnippet}
-          />
+          /> -->
         </div>
         <div class='sm:w-1/3 w-full flex flex-col content-between justify-between p-4 max-w-2xl'>
           <p class='font-normal text-3xl mt-0 text-gray-400'>
@@ -171,7 +171,9 @@ const textGlowStyle =
 
     <section class='flex flex-col items-center justify-center'>
       <h2 class='text-4xl mb-4 font-normal'>Connecting L1s, L2s, AppChains and Rollups</h2>
-      <ConnectedVisual />
+      <div class='w-full'>
+        <ConnectedVisual />
+      </div>
     </section>
     <section class='flex flex-col items-center justif-center py-32'>
       <h2 class='text-4xl mb-4 font-normal'>The leading interoperability layer.</h2>
