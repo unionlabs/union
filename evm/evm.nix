@@ -326,7 +326,9 @@
             {
               buildInputs = [ wrappedForge pkgs.lcov ];
             } ''
-            forge coverage --ir-minimum --report lcov
+            FOUNDRY_CONFIG="${foundryConfig}/foundry.toml" \
+            FOUNDRY_PROFILE="test" \
+              forge coverage --ir-minimum --report lcov
             lcov --remove ./lcov.info -o ./lcov.info.pruned \
               '${evmSources}/contracts/proto/*' \
               '${evmSources}/contracts/clients/MockClient.sol' \
