@@ -485,7 +485,9 @@ contract RelayTests is Test {
         string memory destinationChannel
     ) public {
         UCS01Relay relay = new UCS01Relay(ibcHandler);
-        vm.expectRevert(RelayLib.ErrInvalidCounterpartyProtocolVersion.selector);
+        vm.expectRevert(
+            RelayLib.ErrInvalidCounterpartyProtocolVersion.selector
+        );
         vm.prank(address(ibcHandler));
         relay.onChanOpenAck(
             destinationPort,
