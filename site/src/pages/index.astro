@@ -7,11 +7,26 @@ import CodeSnippet from '#/components/CodeSnippet.svelte'
 import ConnectedVisual from '#/components/ConnectedVisual.svelte'
 import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
+import xIcon from '#/assets/images/x.svg'
+import discordIcon from '#/assets/images/discord.svg'
+import calendarIcon from '#/assets/images/calendar.svg'
 
 let socialLinks = [
-  { href: 'https://x.com/union_build', iconSrc: '/images/x.svg', cta: 'Join us on X' },
-  { href: 'https://discord.union.build', iconSrc: '/images/discord.svg', cta: 'Join our Discord' },
-  { href: 'https://x.com/union_build', iconSrc: '/images/calendar.svg', cta: 'Join our Events' }
+  {
+    href: 'https://x.com/union_build',
+    iconSrc: xIcon.src,
+    cta: 'Join us on X'
+  },
+  {
+    href: 'https://discord.union.build',
+    iconSrc: discordIcon.src,
+    cta: 'Join our Discord'
+  },
+  {
+    href: 'https://x.com/union_build',
+    iconSrc: calendarIcon.src,
+    cta: 'Join our Events'
+  }
 ]
 
 const soliditySnippet = `
@@ -323,7 +338,7 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
     <section>
       <img
         class='w-[300px] md:w-[500px] absolute left-[50%] -ml-[150px] md:-ml-[250px] z-10 -mt-[50px] md:-mt-[100px] eth-logo'
-        src='/images/ethereum.svg'
+        src='../../../../assets/images/ethereum.svg'
         alt='Ethereum'
       />
       <div class='flex flex-col items-center z-20 relative'>
@@ -349,17 +364,17 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
       <div class='flex flex-col md:flex-row gap-[24px] mt-[24px] items-center'>
         <img
           class='block w-[200px]'
-          src='/images/investors/galileo.svg'
+          src='../../../../assets/images/investors/galileo.svg'
           alt='Galileo'
         />
         <img
           class='block w-[60px] mx-8'
-          src='/images/investors/nascent.svg'
+          src='../../../../assets/images/investors/nascent.svg'
           alt='Nascent'
         />
         <img
           class='block w-[200px]'
-          src='/images/investors/tioga.png'
+          src='../../../../assets/images/investors/tioga.png'
           alt='Tioga'
         />
       </div>
@@ -367,12 +382,12 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
       <div class='flex flex-col md:flex-row gap-[24px] mt-[24px] items-center'>
         <img
           class='block w-[220px]'
-          src='/images/investors/semantic.png'
+          src='../../../../assets/images/investors/semantic.png'
           alt='Semantic'
         />
         <img
           class='block w-[220px]'
-          src='/images/investors/lightshift.png'
+          src='../../../../assets/images/investors/lightshift.png'
           alt='Lightshift'
         />
       </div>
