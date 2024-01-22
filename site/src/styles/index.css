@@ -30,6 +30,11 @@ html {
   background-color: #a0ecfd;
 }
 
+* {
+  scrollbar-width: 0.1rem;
+  scrollbar-color: transparent transparent;
+}
+
 *::-webkit-scrollbar {
   width: 0.5rem;
   height: 0.5rem;
@@ -52,7 +57,9 @@ body {
 }
 
 h3 code {
-  @apply !text-lg md:!text-xl;
+  @apply md:!text-xl;
+  font-size: 1.125rem;
+  line-height: 1.75rem;
 }
 
 pre {
@@ -60,6 +67,7 @@ pre {
   padding-left: 0;
   padding-right: 0;
   border-radius: 0.5rem;
+  -webkit-font-smoothing: antialiased;
 }
 
 code {
@@ -110,16 +118,19 @@ pre [data-line] {
 }
 
 [data-highlighted-chars] {
-  @apply bg-zinc-600/50 rounded;
+  border-radius: 0.25rem;
   box-shadow: 0 0 0 4px rgb(82 82 91 / 0.5);
+  background-color: rgb(82 82 91 / 0.5);
 }
 
 [data-chars-id] {
-  @apply shadow-none p-1 border-b-2;
+  @apply shadow-none;
+  padding: 0.25rem;
+  border-bottom-width: 2px;
 }
 
 [data-chars-id] span {
-  @apply !text-inherit;
+  color: inherit !important;
 }
 
 [data-chars-id='v'] {

@@ -1,9 +1,9 @@
 ---
 import { fade } from 'astro:transitions'
-import Code from '#/components/CodeSnippet.svelte'
 import Layout from '#/layouts/Layout.svelte'
 import { getCollection } from 'astro:content'
 import { ViewTransitions } from 'astro:transitions'
+import CodeSnippet from '#/components/CodeSnippet.svelte'
 import ConnectedVisual from '#/components/ConnectedVisual.svelte'
 import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
@@ -49,7 +49,9 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
     transition:animate={fade({ duration: '0.4s' })}
   >
     <section class='flex flex-col items-center py-32 gap-6 grid-effect-bg'>
-      <div class='text-7xl text-white text-center'>The Sovereign<br />Interoperability Layer</div>
+      <div class='sm:text-7xl text-5xl text-white text-center'>
+        The Sovereign<br />Interoperability Layer
+      </div>
       <div class='text-xl max-w-lg font-normal text-center'>
         By using consensus verification, Union builds unstoppable and decentralized connections to
         enable anyone to transfer assets and data.
@@ -112,15 +114,15 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
     <section class='flex flex-col items-center justif-center py-32 my-50'>
       <h2 class='text-4xl mb-4 font-normal'>Build for any stack.</h2>
       <div
-        class='flex flex-row max-w-6xl justify-between overflow-none mx-auto items-center content-start'
+        class='flex sm:flex-row flex-col max-w-6xl justify-between overflow-none mx-auto items-center content-start px-3'
       >
-        <div class='w-2/3 max-w-[640px]'>
-          <Code
+        <div class='sm:max-w-2/3 max-w-[640px]'>
+          <CodeSnippet
             client:load
             code={soliditySnippet}
           />
         </div>
-        <div class='flex flex-col content-between justify-between p-4 max-w-2xl'>
+        <div class='sm:w-1/3 w-full flex flex-col content-between justify-between p-4 max-w-2xl'>
           <p class='font-normal text-3xl mt-0 text-gray-400'>
             Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
             by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
