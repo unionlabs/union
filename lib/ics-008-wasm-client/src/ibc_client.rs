@@ -33,6 +33,19 @@ pub trait IbcClient {
     type ClientState: TryFromProto;
     type ConsensusState: TryFromProto;
 
+    /// `sudo` entrypoint of the clients. The client contracts should forward the `sudo` calls to this function.
+    ///
+    /// # Important note
+    /// Implementers should put the return data to `data` field of the `Response`. Check the example.
+    ///
+    /// # Example:
+    /// ```no_run
+    /// #[entry_point]
+    /// pub fn sudo(deps: DepsMut<CustomQuery>, env: Env, msg: SudoMsg) -> Result<Response, Error> {
+    ///     let result = EthereumLightClient::sudo(deps, env, msg)?;
+    ///     Ok(Response::default().set_data(result))
+    /// }
+    /// ```
     fn sudo(deps: DepsMut<Self::CustomQuery>, env: Env, msg: SudoMsg) -> Result<Binary, Self::Error>
     where
         // NOTE(aeryz): unfortunately bounding to `Debug` in associated type creates a
@@ -115,6 +128,16 @@ pub trait IbcClient {
         .map_err(Into::into)
     }
 
+    /// Implementation of the `query` entrypoint of the client contract. Implementers should forward
+    /// the execution to this function.
+    ///
+    /// # Example
+    /// ```no_run
+    /// #[entry_point]
+    /// pub fn query(deps: Deps<CustomQuery>, env: Env, msg: QueryMsg) -> Result<QueryResponse, Error> {
+    ///     EthereumLightClient::query(deps, env, msg)
+    /// }
+    /// ```
     fn query(
         deps: Deps<Self::CustomQuery>,
         env: Env,
@@ -156,6 +179,8 @@ pub trait IbcClient {
         .map_err(Into::into)
     }
 
+    /// Verifies membership and non-membership.
+    // TODO(aeryz): elaborate
     #[allow(clippy::too_many_arguments)]
     fn verify_membership(
         deps: Deps<Self::CustomQuery>,
@@ -167,17 +192,30 @@ pub trait IbcClient {
         value: StorageState,
     ) -> Result<(), Self::Error>;
 
+    /// Verifies whether `header` is valid.
+    ///
+    /// Note that this is a query and only meant for verification. The host module
+    /// will call [`Self::update_state`] if this function verifies the header.
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
         env: Env,
         header: Self::Header,
     ) -> Result<(), Self::Error>;
 
+    /// Verifies whether `misbehavior` is valid.
+    ///
+    /// Note that this is a query and only meant for verification. The host module
+    /// will call [`Self::update_state_on_misbehaviour`] if this function verifies the header.
     fn verify_misbehaviour(
         deps: Deps<Self::CustomQuery>,
         misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error>;
 
+    /// Updates the state by using the `header`.
+    ///
+    /// Verification is meant to be done in [`Self::verify_header`]. The host module calls this
+    /// function if that verification passes. So this function shouldn't require doing the
+    /// header verification.
     fn update_state(
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
@@ -185,22 +223,30 @@ pub trait IbcClient {
     ) -> Result<UpdateStateResult, Self::Error>;
 
     // TODO(aeryz): make this client message generic over the underlying types
+    // TODO(aeryz): docs
     fn update_state_on_misbehaviour(
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
         client_message: Vec<u8>,
     ) -> Result<(), Self::Error>;
 
+    /// Checks whether `header` yields to a misbehavior.
     fn check_for_misbehaviour_on_header(
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
     ) -> Result<CheckForMisbehaviourResult, Self::Error>;
 
+    /// Checks whether `misbehaviour` yields to a misbehavior.
+    ///
+    /// `misbehaviour` is the data to update the client with a misbehaviour which could be
+    /// sent by anyone. So this data could be malicious or incorrect itself. Hence, this is
+    /// called prior to [`Self::update_state_on_misbehaviour`] to check if the misbehaviour is valid.
     fn check_for_misbehaviour_on_misbehaviour(
         deps: Deps<Self::CustomQuery>,
         misbehaviour: Self::Misbehaviour,
     ) -> Result<CheckForMisbehaviourResult, Self::Error>;
 
+    // TODO(aeryz): docs
     fn verify_upgrade_and_update_state(
         deps: DepsMut<Self::CustomQuery>,
         upgrade_client_state: ClientState<Self::ClientState>,
@@ -209,15 +255,20 @@ pub trait IbcClient {
         proof_upgrade_consensus_state: Binary,
     ) -> Result<(), Self::Error>;
 
+    /// TODO(aeryz): docs
     fn migrate_client_store(deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error>;
 
+    /// Returns the status of the client.
     fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, Self::Error>;
 
+    /// Exports metadata of the client to be used when exporting the genesis out of a state.
+    /// TODO(aeryz): elaborate how to do it correctly
     fn export_metadata(
         deps: Deps<Self::CustomQuery>,
         env: &Env,
     ) -> Result<Vec<GenesisMetadata>, Self::Error>;
 
+    // TODO(aeryz): docs
     fn timestamp_at_height(
         deps: Deps<Self::CustomQuery>,
         height: Height,

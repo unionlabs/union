@@ -13,7 +13,8 @@ use unionlabs::{
 use crate::{primitives::GENESIS_SLOT, Error, InvalidMerkleBranch};
 
 /// Returns the fork version based on the `epoch` and `fork_parameters`.
-/// NOTE: This implementation is based on capella.
+///
+/// **NOTE**: This implementation is based on capella.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/fork.md#modified-compute_fork_version)
 pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Version {
