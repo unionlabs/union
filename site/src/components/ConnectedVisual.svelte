@@ -27,19 +27,19 @@
     skip: { x: 13, y: 4, logo: skip, url: "https://skip.money/", scale: 1.2 },
   };
   console.log(nodes)
-  const conns: [string, string][] = [
-    ["celestia", "union"],
-    ["ethereum", "union"],
-    ["movement", "union"],
-    ["noble", "union"],
-    ["quasar", "union"],
-    ["skip", "union"],
-    ["union", "celestia"],
-    ["union", "ethereum"],
-    ["union", "movement"],
-    ["union", "noble"],
-    ["union", "quasar"],
-    ["union", "skip"],
+  const conns: { from:string, to:string, delay:number }[] = [
+    { to: "celestia", from: "union", delay: 2 },
+    { to: "ethereum", from: "union", delay: 3 },
+    { to: "movement", from: "union", delay: 4 },
+    { to: "noble", from: "union", delay: 5 },
+    { to: "quasar", from: "union", delay: 6 },
+    { to: "skip", from: "union", delay: 7 },
+    { to: "union", from: "celestia", delay: 7 },
+    { to: "union", from: "ethereum", delay: 6 },
+    { to: "union", from: "movement", delay: 5 },
+    { to: "union", from: "noble", delay: 4 },
+    { to: "union", from: "quasar", delay: 3 },
+    { to: "union", from: "skip", delay: 2 },
   ];
 
   const scale = (input: number, srcRange: [number, number], dstRange: [number, number]) => {
@@ -52,14 +52,11 @@
     return dstOutput;
   };
 
-  const SECONDS_PER_CELL = 0.4;
+  const SECONDS_PER_CELL = 0.7;
 
   const LOGO_SIZE = 28
 
-  // delay between animation repetitions
-  const DELAY = 2
-
-  let connectionData = conns.map(([from, to]) => {
+  let connectionData = conns.map(({ from, to, delay }) => {
 
     const { x: fromX, y: fromY } = nodes[from];
     const { x: toX, y: toY } = nodes[to];
@@ -73,7 +70,7 @@
 
     let duration = totalDistance * SECONDS_PER_CELL;
 
-    let totalTime = duration + DELAY;
+    let totalTime = duration + delay;
 
     console.log(
       "dx",
@@ -96,17 +93,14 @@
     let radiusKeyTimes = [0, 0.1, 0.4, 0.5, 1]
       .map((x) => scale(x, [0, 1], [0, duration / totalTime]))
       .join(";");
-    console.log("radiusKeyTimes", radiusKeyTimes);
 
     let cxKeyTimes = [0, 0.5, 1].map((x) => scale(x, [0, 1], [0, hTime])).join(";");
-    console.log("cxKeyTimes", cxKeyTimes);
 
     let cyKeyTimes = [0, 0.5, 1]
       .map((x) => scale(x, [0, 1], [hTime, hTime + vTime]) - hTime / 2)
       .join(";");
-    console.log("cyKeyTimes", cyKeyTimes);
 
-return {from, to, dx, dy, fromX, fromY, toX, toY, totalTime, cxKeyTimes, cyKeyTimes, radiusKeyTimes}    });
+return { from, to, dx, dy, fromX, fromY, toX, toY, totalTime, cxKeyTimes, cyKeyTimes, radiusKeyTimes, delay }    });
 </script>
 
 <svg
@@ -146,7 +140,7 @@ return {from, to, dx, dy, fromX, fromY, toX, toY, totalTime, cxKeyTimes, cyKeyTi
   <rect width="100%" height="100%" fill="url(#edge-gradient-ns)" />
   <rect width="100%" height="100%" fill="url(#edge-gradient-ew)" />
 
-  {#each connectionData as {from, to, dx, dy, fromX, fromY, toX, toY, totalTime, cxKeyTimes, cyKeyTimes, radiusKeyTimes}}
+  {#each connectionData as { from, to, dx, dy, fromX, fromY, toX, toY, totalTime, cxKeyTimes, cyKeyTimes, radiusKeyTimes, delay }}
     {@debug from, to}
     <g>
       <path
@@ -154,19 +148,19 @@ return {from, to, dx, dy, fromX, fromY, toX, toY, totalTime, cxKeyTimes, cyKeyTi
         fill="none"
         stroke="url(#gradient-{from}-{to})"
         stroke-linecap="round"
-        stroke-width="2"
+        stroke-width="4"
         vector-effect="non-scaling-stroke"
         id="path-{from}-{to}"
       >
       </path>
       <defs>
-        <radialGradient cx="{pos(fromX)}" cy="{pos(fromY)}" r="32" gradientUnits="userSpaceOnUse" id="gradient-{from}-{to}">
+        <radialGradient cx={pos(fromX)} cy={pos(fromY)} r="12" gradientUnits="userSpaceOnUse" id="gradient-{from}-{to}">
           <stop offset="0" stop-color="pink"></stop>
           <stop offset="0.4" stop-color="pink"></stop>
           <stop offset="1" stop-color="pink" stop-opacity="0"></stop>
-          <animate attributeName="cx" dur="{totalTime}s" keyTimes="{cxKeyTimes};1" repeatCount="indefinite" values="{pos(fromX)};{pos(toX)};{pos(toX)};{pos(toX)}" id="cx-{from}-{to}"></animate>
-          <animate attributeName="cy" dur="{totalTime}s" keyTimes="0;{cyKeyTimes};1" repeatCount="indefinite" values="{pos(fromY)};{pos(fromY)};{pos(toY)};{pos(toY)};{pos(toY)}" id="cy-{from}-{to}"></animate>
-          <animate attributeName="r" dur="{totalTime}s" keyTimes="{radiusKeyTimes};1" values="16;32;32;16;0;0" repeatCount="indefinite" id="radius-{from}-{to}"></animate>
+          <animate attributeName="cx" dur="{totalTime}s" begin="{delay}s" keyTimes="{cxKeyTimes};1" repeatCount="indefinite" values="{pos(fromX)};{pos(toX)};{pos(toX)};{pos(toX)}" id="cx-{from}-{to}"></animate>
+          <animate attributeName="cy" dur="{totalTime}s" begin="{delay}s" keyTimes="0;{cyKeyTimes};1" repeatCount="indefinite" values="{pos(fromY)};{pos(fromY)};{pos(toY)};{pos(toY)};{pos(toY)}" id="cy-{from}-{to}"></animate>
+          <animate attributeName="r" dur="{totalTime}s" begin="{delay}s" keyTimes="{radiusKeyTimes};1" values="12;16;16;12;0;0" repeatCount="indefinite" id="radius-{from}-{to}"></animate>
         </radialGradient>
       </defs>
     </g>
