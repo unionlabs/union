@@ -9,6 +9,7 @@ import calendarIcon from '#/assets/images/calendar.svg'
 import CodeSnippet from '#/components/CodeSnippet.svelte'
 import ConnectedVisual from '#/components/ConnectedVisual.svelte'
 import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
+import Chart from '#/components/Chart.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
 
 let socialLinks = [
@@ -30,27 +31,41 @@ let socialLinks = [
 ]
 
 const soliditySnippet = `
-\`\`\`solidity title="lorem.sol" showLineNumbers /onRecvPacket/1#w /relayer/#i /ibcPacket/#s /ACK_SUCCESS/#g /ACK_FAILURE/#r
-function onRecvPacket(
-  IbcPacket calldata ibcPacket,
-  address relayer
-)
-  external
-  override
-  onlyIBC
-  returns (bytes memory) {
-  
-  (bool success, bytes memory) = address(this).call(
-    abi.encodeWithSelector(
-      this.onRecvPacketProcessing.selector,
-      ibcPacket,
-      relayer
-    )
-  );
-  if (success) {
-    return abi.encodePacked(RelayLib.ACK_SUCCESS);
-  } else {
-    return abi.encodePacked(RelayLib.ACK_FAILURE);
+\`\`\`solidity title="lorem.sol" /onRecvPacket/1#w /relayer/#i /ibcPacket/#s /ACK_SUCCESS/#g /ACK_FAILURE/#r
+contract DexPortal is IBCAppBase {
+  IBCHandler private ibcHandler;
+
+  mapping(address => Proxy) swapProxies;
+
+  constructor(IBCHandler _ibcHandler) {
+    ibcHandler = _ibcHandler;
+  }
+
+  function swap(
+    address base,
+    uint256 amount,
+    uint256 minReturn,
+    uint64 timeout
+  ) public {
+    Proxy quote = swapProxies[base];
+    require(quote.port.length != 0);
+    require(quote.channel.length != 0);
+    IERC20(base).transferFrom(
+      _msgSender(),
+      address(this)
+    );
+    ibcHandler.send(
+      quote.port,
+      quote.channel,
+      timeout,
+      abi.encode(
+        Swap({
+          origin: _msgSender(),
+          amount: amount,
+          minReturn: minReturn
+        })
+      )
+    );
   }
 }
 \`\`\`
@@ -60,380 +75,314 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
   if (data.hidden) return false
   return { slug, ...data }
 })
-
-const textGlowStyle =
-  'select-none pointer-events-none opacity-0.6 z[-1] blur-md absolute left-0 right-0'
 ---
 
 <Layout>
   <main
-    class='flex flex-col flex-1'
+    class='flex flex-col flex-1 items-center px-4'
     transition:animate={fade({ duration: '0.4s' })}
   >
-    <section class='flex flex-col items-center py-32 gap-6 grid-effect-bg antialiased'>
-      <div
-        class:list={[
-          // The first occurrence of this text is to provide glowing background
-          'sm:text-7xl text-5xl text-white text-center font-semibold',
-          textGlowStyle
-        ]}
-      >
-        The Sovereign<br />Interoperability Layer
-      </div>
-      <div class='sm:text-7xl text-5xl text-white text-center font-semibold'>
-        The Sovereign<br />Interoperability Layer
-      </div>
-      <div class='text-xl max-w-lg font-normal text-center antialiased'>
-        By using consensus verification, Union builds unstoppable and decentralized connections to
-        enable anyone to transfer assets and data.
-      </div>
-      <div>
-        <a
-          class='mt-16 border-b-2 uppercase'
-          href='/docs'
-        >
-          Join the community -&gt;
-        </a>
-      </div>
-    </section>
+  <div class="w-full flex flex-col max-w-4xl p-px bg-gray-800">
+      <section class='flex flex-col items-center py-32 gap-6 grid-effect-bg antialiased bg-black mb-px'>
+        <div class='sm:text-7xl text-5xl text-white text-center font-semibold'>
+          The Sovereign<br />Interoperability Layer
+        </div>
+        <div class='text-xl max-w-lg font-normal text-center antialiased'>
+          By using consensus verification, Union builds unstoppable and decentralized connections to
+          enable anyone to transfer assets and data.
+        </div>
+        <div>
+          <a
+            class='mt-16 border-b-2 uppercase'
+            href='/docs'
+          >
+            Join the community -&gt;
+          </a>
+        </div>
+      </section>
 
-    <section class='bg-black text-white flex flex-col items-center py-16 px-4'>
-      <h2 class='text-4xl mb-4 font-normal text-center'>Redesigned from the ground up.</h2>
+      <div class="h-2 bg-black mb-px"></div>
 
-      <div class='flex md:flex-row flex-col gap-16 max-w-4xl text-balance'>
-        <div class='flex-1 p-4'>
-          <p class='text-3xl text-gray-500 font-normal mb-0'>
-            <span class='text-white'>
-              Trustless, decentralized, and permissionless interoperability is now possible.
-            </span>
-            Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge
-            cryptography.
-          </p>
-        </div>
-      </div>
-    </section>
-    <section class='flex flex-col items-center gap-6 grid-effect-bg antialiased pb-0 sm:pb-12'>
-      <div
-        class:list={[
-          // The first occurrence of this text is to provide glowing background
-          ' mx-auto text-center select-none pointer-events-none opacity-0.6 z[-1] blur-md absolute right-0 left-0 font-semibold font-serif text-2xl sm:text-4xl md:text-5xl'
-        ]}
-      >
-        Union's ..................
-      </div>
-      <div
-        class='text-2xl sm:text-4xl md:text-5xl text-white text-center font-semibold bg-gradient-to-tr from-gray-900 via-gray-900 bg-clip-text text-transparent text-pretty'
-      >
-        Union's Galois vs. TendermindX
-      </div>
-    </section>
-    <section class='max-w-4xl mx-auto'>
-      <div class='w-full px-12 min-w-full'>
-        <PerformanceGraph client:load />
-      </div>
-    </section>
-    <section class='bg-black text-white flex flex-col items-center py-16'>
-      <h2 class='text-4xl mb-4 font-normal'>Prove anywhere, verify on chain.</h2>
-      <div class='flex gap-4 max-w-4xl'>
-        <div class='flex-1 p-4 w-1/2'>
-          <p class='text-3xl font-normal mb-0 text-gray-400'>
-            Galois is the first interoperability proving layer that is so efficient that it allows
-            anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
-            of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
-          </p>
-        </div>
-      </div>
-    </section>
-    <section class='flex flex-col items-center justif-center justify-around py-32 my-50'>
-      <h2 class='text-4xl mb-4 font-normal'>Build for any stack.</h2>
-      <div
-        class='flex md:flex-row flex-col max-w-6xl justify-around overflow-none mx-auto items-center content-start px-3'
-      >
-        <!-- <div class='lg:w-1/4 w-full flex flex-col content-between justify-between p-4 max-w-2xl'>
-          <p class='font-normal text-3xl mt-0 text-gray-400'>
-            Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-            by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
-          </p>
-        </div> -->
-        <div class='max-w-[640px] antialiased'>
-          <CodeSnippet
-            client:load
-            code={soliditySnippet}
-          />
-        </div>
-        <div class='w-1/2 flex flex-col text-xl md:text-2xl lg:text-3xl content-between justify-between p-4 max-w-2xl space-y-10'>
-          <p class='font-normal mt-0 text-gray-400'>
-            Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-            by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
-          </p>
-          <p class='font-normal mt-0 text-gray-400'>
-            Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-            by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
-          </p>
-          <p class='font-normal mt-0 text-gray-400'>
-            Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-            by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
-          </p>
-        </div>
-        <!-- <div class='w-1/2'>
+      <section class='bg-black text-white flex flex-col items-center py-16 px-4 mb-px'>
+        <h2 class='text-4xl mb-4 font-normal text-center'>Redesigned from the ground up.</h2>
+
+        <div class='flex md:flex-row flex-col gap-16 max-w-4xl text-balance'>
           <div class='flex-1 p-4'>
-            <p class='text-4xl font-normal mt-auto text-gray-400 self-start h-full'>
+            <p class='text-3xl text-gray-500 font-normal mb-0 text-center'>
+              <span class='text-white'>
+                Trustless, decentralized, and permissionless interoperability is now possible.
+              </span>
+              Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge
+              cryptography.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class='flex flex-col items-center gap-6 grid-effect-bg antialiased pb-0 sm:pb-12 mb-px bg-black'>
+        <div
+          class='text-2xl sm:text-4xl md:text-5xl text-white text-center font-semibold text-transparent text-pretty'
+        >
+          Galois
+        </div>
+      </section>
+
+      <section class='flex flex-col max-w-4x items-center mb-px bg-black p-4'>
+        <div class='w-full'>
+          <PerformanceGraph client:load/>
+        </div>
+      </section>
+
+      <section class='bg-black mb-px text-white flex flex-col items-center'>
+        <h2 class='text-4xl font-normal m-8'>Prove anywhere, verify on chain.</h2>
+        <div class='flex gap-4 mx-8 mb-8'>
+          <div class='flex-1'>
+            <p class='text-3xl font-normal mb-0 text-gray-400'>
+              Galois is the first interoperability proving layer that is so efficient that it allows
+              anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
+              of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class='flex flex-col p-4 items-center bg-black mb-px'>
+        <h2 class='text-4xl font-normal'>Build for any stack.</h2>
+        <div
+          class='flex md:flex-row flex-col justify-around overflow-none mx-auto items-center content-start px-3'
+        >
+          <div class='max-w-sm antialiased'>
+            <CodeSnippet
+              client:load
+              code={soliditySnippet}
+            />
+          </div>
+          <div class='flex flex-col text-xl md:text-2xl lg:text-3xl content-between justify-between p-4 space-y-4'>
+            <p class='font-normal text-wrap mt-0 text-gray-400'>
+              Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
+              by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
+            </p>
+            <p class='font-normal text-wrap mt-0 text-gray-400'>
+              Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
+              by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
+            </p>
+            <p class='font-normal text-wrap mt-0 text-gray-400'>
               Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
               by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
             </p>
           </div>
-          <div class='flex-1 gap-4 flex overflow-none'>
-            {arraySizeN(21).map(() => <div class='bg-white h-[300px] w-2' />)}
+        </div>
+      </section>
+
+      <section class='bg-black mb-px flex flex-col items-center justify-center'>
+        <h2 class='text-4xl px-6 pt-6 font-normal sm:text-3xl xs:text-xl'>Connecting L1s, L2s, AppChains and Rollups</h2>
+        <div class='w-full max-w-full'>
+          <ConnectedVisual />
+        </div>
+      </section>
+
+      <section class='bg-black mb-px flex flex-col items-center justif-center py-32'>
+        <h2 class='text-4xl mb-4 font-normal'>The leading interoperability layer.</h2>
+        <div class='w-full'>
+          <AppleGraphContainer
+            bars={[
+              { width: 100, label: 'union gud', primary: true },
+              { width: 50, label: 'others bad' },
+              { width: 20, label: 'others bad' }
+            ]}
+            client:load
+          />
+        </div>
+        <div class='grid grid-cols-3 xs:grid-rows-3 gap-4'>
+          <div class="m-px">
+            <h3>Galois</h3>
+            <p>Decentralized Proving, for everyone.</p>
           </div>
-        </div> -->
-      </div>
-    </section>
+          <div>
+            <h3>CometBLS</h3>
+            <p>ZK-aligned Consensus engine</p>
+          </div>
+          <div>
+            <h3>Voyager</h3>
+            <p>Stateless relaying for a cross-chain future.</p>
+          </div>
+        </div>
+      </section>
 
-    <section class='flex flex-col items-center justify-center'>
-      <h2 class='text-4xl mb-4 font-normal'>Connecting L1s, L2s, AppChains and Rollups</h2>
-      <div class='w-full max-w-full'>
-        <ConnectedVisual />
-      </div>
-    </section>
-    <section class='flex flex-col items-center justif-center py-32'>
-      <h2 class='text-4xl mb-4 font-normal'>The leading interoperability layer.</h2>
-      <div class='w-2/3'>
-        <AppleGraphContainer
-          bars={[
-            { width: 100, label: 'union gud', primary: true },
-            { width: 50, label: 'others bad' },
-            { width: 20, label: 'others bad' }
-          ]}
-          client:load
-        />
-      </div>
-      <div class='grid grid-cols-3 gap-4'>
-        <div>
-          <h3>Galois</h3>
-          <p>Decentralized Proving, for everyone.</p>
+      <section class='bg-black mb-px flex flex-col items-center justif-center py-32'>
+        <h2 class='text-4xl mb-4 font-normal'>The ZK toolchain for the next century.</h2>
+        <div class='grid md:grid-cols-3 sm:grid-rows-3 gap-4'>
+          <div>
+            <h3>Galois</h3>
+            <p>Decentralized Proving, for everyone.</p>
+          </div>
+          <div>
+            <h3>CometBLS</h3>
+            <p>ZK-aligned Consensus engine</p>
+          </div>
+          <div>
+            <h3>Voyager</h3>
+            <p>Stateless relaying for a cross-chain future.</p>
+          </div>
         </div>
-        <div>
-          <h3>CometBLS</h3>
-          <p>ZK-aligned Consensus engine</p>
-        </div>
-        <div>
-          <h3>Voyager</h3>
-          <p></p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section class='flex flex-col items-center justif-center py-32'>
-      <h2 class='text-4xl mb-4 font-normal'>The ZK toolchain for the next century.</h2>
-      <div class='grid grid-cols-3 gap-4'>
-        <div>
-          <h3>Galois</h3>
-          <p>Decentralized Proving, for everyone.</p>
+      <section class='bg-black mb-px flex flex-col items-center justif-center py-32'>
+        <h2 class='text-4xl mb-4 font-normal'>Qualities of the product.</h2>
+        <div class='grid grid-cols-3 max-w-4xl gap-8'>
+          <div>
+            <h3 class='text-gray-300 font-normal'>Quality 1</h3>
+            <p class='text-2xl font-semibold'>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
+              fermentum ac eget tellus.
+            </p>
+          </div>
+          <div>
+            <h3 class='text-gray-300 font-normal'>Quality 2</h3>
+            <p class='text-2xl font-semibold'>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
+              fermentum ac eget tellus.
+            </p>
+          </div>
+          <div>
+            <h3 class='text-gray-300 font-normal'>Quality 3</h3>
+            <p class='text-2xl font-semibold'>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
+              fermentum ac eget tellus.
+            </p>
+          </div>
         </div>
-        <div>
-          <h3>CometBLS</h3>
-          <p>ZK-aligned Consensus engine</p>
-        </div>
-        <div>
-          <h3>Voyager</h3>
-          <p></p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section class='flex flex-col items-center justif-center py-32'>
-      <h2 class='text-4xl mb-4 font-normal'>The ZK toolchain for the next century.</h2>
-      <div class='grid grid-cols-3 gap-4'>
-        <div>
-          <h3>Galois</h3>
-          <p>Decentralized Proving, for everyone.</p>
+      <section class='bg-black mb-px flex justify-center bg-white text-black py-32'>
+        <div class='flex-1 max-w-4xl'>
+          <h2 class='text-4xl mb-4 font-normal text-center'>Blog</h2>
+          <ul>
+            {
+              publishedBlogPosts.map(post => (
+                <li id={post.slug}>
+                  <a
+                    href={`/blog/${post.slug}`}
+                    class='flex flex-col md:flex-row p-8'
+                  >
+                    {JSON.stringify(post.data, undefined, 2)}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
         </div>
-        <div>
-          <h3>CometBLS</h3>
-          <p>ZK-aligned Consensus engine</p>
-        </div>
-        <div>
-          <h3>Voyager</h3>
-          <p></p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section class='flex flex-col items-center justif-center py-32'>
-      <h2 class='text-4xl mb-4 font-normal'>Qualities of the product.</h2>
-      <div class='grid grid-cols-3 max-w-4xl gap-8'>
-        <div>
-          <h3 class='text-gray-300 font-normal'>Quality 1</h3>
-          <p class='text-2xl font-semibold'>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
-            fermentum ac eget tellus.
-          </p>
-        </div>
-        <div>
-          <h3 class='text-gray-300 font-normal'>Quality 2</h3>
-          <p class='text-2xl font-semibold'>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
-            fermentum ac eget tellus.
-          </p>
-        </div>
-        <div>
-          <h3 class='text-gray-300 font-normal'>Quality 3</h3>
-          <p class='text-2xl font-semibold'>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
-            fermentum ac eget tellus.
-          </p>
-        </div>
-        <div>
-          <h3 class='text-gray-300 font-normal'>Quality 4</h3>
-          <p class='text-2xl font-semibold'>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
-            fermentum ac eget tellus.
-          </p>
-        </div>
-        <div>
-          <h3 class='text-gray-300 font-normal'>Quality 5</h3>
-          <p class='text-2xl font-semibold'>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
-            fermentum ac eget tellus.
-          </p>
-        </div>
-        <div>
-          <h3 class='text-gray-300 font-normal'>Quality 6</h3>
-          <p class='text-2xl font-semibold'>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
-            fermentum ac eget tellus.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <section class='flex justify-center bg-white text-black py-32'>
-      <!-- <div class='flex-1 max-w-4xl'>
-        <h2 class='text-4xl mb-4 font-normal text-center'>Blog</h2>
-        <ul>
-          {
-            publishedBlogPosts.map(post => (
-              <li id={post.slug}>
+      <section class='bg-black mb-px flex justify-center bg-white text-black py-32'>
+        <div class='flex-1 max-w-4xl'>
+          <h2 class='text-4xl mb-4 font-normal text-center'>Join the Union</h2>
+          <!-- <p>Together, we </p> -->
+          <div class='flex flex-col md:flex-row'>
+            {
+              socialLinks.map(socialLink => (
                 <a
-                  href={`/blog/${post.slug}`}
-                  class='flex flex-col md:flex-row p-8'
+                  href={socialLink.href}
+                  class='flex flex-col flex-1 p-8 text-center'
                 >
-                  {JSON.stringify(post.data, undefined, 2)}
+                  <img
+                    src={socialLink.iconSrc}
+                    class='h-10'
+                  />
+                  <div class='mt-4'>
+                    <span class='mt-16 border-b-2 uppercase text-black border-black text-semibold undelrine'>
+                      {socialLink.cta} -&gt;
+                    </span>
+                  </div>
                 </a>
-              </li>
-            ))
-          }
-        </ul>
-      </div> -->
-    </section>
-    <section class='flex justify-center bg-white text-black py-32'>
-      <div class='flex-1 max-w-4xl'>
-        <h2 class='text-4xl mb-4 font-normal text-center'>Join the Union</h2>
-        <!-- <p>Together, we </p> -->
-        <div class='flex flex-col md:flex-row'>
-          {
-            socialLinks.map(socialLink => (
-              <a
-                href={socialLink.href}
-                class='flex flex-col flex-1 p-8 text-center'
-              >
-                <img
-                  src={socialLink.iconSrc}
-                  class='h-10'
-                />
-                <div class='mt-4'>
-                  <span class='mt-16 border-b-2 uppercase text-black border-black text-semibold undelrine'>
-                    {socialLink.cta} -&gt;
-                  </span>
-                </div>
-              </a>
-            ))
-          }
+              ))
+            }
 
-          <!-- <div class="flex-1 p-8 text-center">
-					<img src={DiscordLogo.src} class="h-10"/>
+            <!-- <div class="flex-1 p-8 text-center">
+  					<img src={DiscordLogo.src} class="h-10"/>
 
-					<div class="mt-4">
-						<a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Discord -&gt;</a>
-					</div>
-				</div>
-				<div class="flex-1 p-8 text-center">
-					<img src={CalendarIcon.src} class="h-10"/>
+  					<div class="mt-4">
+  						<a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Discord -&gt;</a>
+  					</div>
+  				</div>
+  				<div class="flex-1 p-8 text-center">
+  					<img src={CalendarIcon.src} class="h-10"/>
 
-					<div class="mt-4">
-						<a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Events -&gt;</a>
-					</div>
-				</div> -->
+  					<div class="mt-4">
+  						<a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Events -&gt;</a>
+  					</div>
+  				</div> -->
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!--
-    <section>
-      <img
-        class='w-[300px] md:w-[500px] absolute left-[50%] -ml-[150px] md:-ml-[250px] z-10 -mt-[50px] md:-mt-[100px] eth-logo'
-        src='../../../../assets/images/ethereum.svg'
-        alt='Ethereum'
-      />
-      <div class='flex flex-col items-center z-20 relative'>
-        <h2 class='text-4xl md:text-6xl font-bold text-center -mb-6'>ETH &lt;-&gt; IBC</h2>
-        <h3 class='text-[16px] md:text-[27px] font-bold text-center text-gray-200'>
-          Union's flagship product
-        </h3>
-        <p class='md:text-2xl text-center -mt-4'>
-          Built using Zero-Knowledge Cryptography and BLS Signatures, a
-        </p>
-        <div
-          class='text-center trustless-connection text-2xl md:text-5xl text-accent font-black italic animate-character animate-character-delay'
-        >
-          Trustless Ethereum IBC Connection
+      <!--
+      <section>
+        <img
+          class='w-[300px] md:w-[500px] absolute left-[50%] -ml-[150px] md:-ml-[250px] z-10 -mt-[50px] md:-mt-[100px] eth-logo'
+          src='../../../../assets/images/ethereum.svg'
+          alt='Ethereum'
+        />
+        <div class='flex flex-col items-center z-20 relative'>
+          <h2 class='text-4xl md:text-6xl font-bold text-center -mb-6'>ETH &lt;-&gt; IBC</h2>
+          <h3 class='text-[16px] md:text-[27px] font-bold text-center text-gray-200'>
+            Union's flagship product
+          </h3>
+          <p class='md:text-2xl text-center -mt-4'>
+            Built using Zero-Knowledge Cryptography and BLS Signatures, a
+          </p>
+          <div
+            class='text-center trustless-connection text-2xl md:text-5xl text-accent font-black italic animate-character animate-character-delay'
+          >
+            Trustless Ethereum IBC Connection
+          </div>
+          <p class='text-center md:text-2xl'>Live between Union's Testnet and Ethereum's Testnet.</p>
         </div>
-        <p class='text-center md:text-2xl'>Live between Union's Testnet and Ethereum's Testnet.</p>
-      </div>
-    </section>
- -->
-    <!-- <section class='flex flex-col items-center pb-56'>
-      <h2 class='text-xl md:text-3xl font-bold'>Backed by industry experts</h2>
+      </section>
+   -->
+      <!-- <section class='flex flex-col items-center pb-56'>
+        <h2 class='text-xl md:text-3xl font-bold'>Backed by industry experts</h2>
 
-      <div class='flex flex-col md:flex-row gap-[24px] mt-[24px] items-center'>
-        <img
-          class='block w-[200px]'
-          src='../../../../assets/images/investors/galileo.svg'
-          alt='Galileo'
-        />
-        <img
-          class='block w-[60px] mx-8'
-          src='../../../../assets/images/investors/nascent.svg'
-          alt='Nascent'
-        />
-        <img
-          class='block w-[200px]'
-          src='../../../../assets/images/investors/tioga.png'
-          alt='Tioga'
-        />
-      </div>
+        <div class='flex flex-col md:flex-row gap-[24px] mt-[24px] items-center'>
+          <img
+            class='block w-[200px]'
+            src='../../../../assets/images/investors/galileo.svg'
+            alt='Galileo'
+          />
+          <img
+            class='block w-[60px] mx-8'
+            src='../../../../assets/images/investors/nascent.svg'
+            alt='Nascent'
+          />
+          <img
+            class='block w-[200px]'
+            src='../../../../assets/images/investors/tioga.png'
+            alt='Tioga'
+          />
+        </div>
 
-      <div class='flex flex-col md:flex-row gap-[24px] mt-[24px] items-center'>
-        <img
-          class='block w-[220px]'
-          src='../../../../assets/images/investors/semantic.png'
-          alt='Semantic'
-        />
-        <img
-          class='block w-[220px]'
-          src='../../../../assets/images/investors/lightshift.png'
-          alt='Lightshift'
-        />
-      </div>
-	  <div class="mt-8">
-        <a
-          class='mt-16 uppercase'
-          href='/blog/seed-raise'
-        >
-          Read the announcement -&gt;
-        </a>
-      </div>
-    </section> -->
+        <div class='flex flex-col md:flex-row gap-[24px] mt-[24px] items-center'>
+          <img
+            class='block w-[220px]'
+            src='../../../../assets/images/investors/semantic.png'
+            alt='Semantic'
+          />
+          <img
+            class='block w-[220px]'
+            src='../../../../assets/images/investors/lightshift.png'
+            alt='Lightshift'
+          />
+        </div>
+  	  <div class="mt-8">
+          <a
+            class='mt-16 uppercase'
+            href='/blog/seed-raise'
+          >
+            Read the announcement -&gt;
+          </a>
+        </div>
+      </section> -->
+  </div>
   </main>
 </Layout>
 

@@ -16,21 +16,17 @@
   onMount(async () => (highlightedCode = await highlightCode(code)))
 </script>
 
+<div class="container text-sm">
 {@html highlightedCode}
+</div>
 
 <style>
-  :global(code) {
-    padding: 10px 20px 10px 10px;
-  }
-
-  :global(span) {
-    padding: 0px !important;
-  }
-
-  :global(figure[data-rehype-pretty-code-figure]) {
+  :global(.container > figure[data-rehype-pretty-code-figure] span[data-line]) {
     overflow-x: scroll;
     max-width: 100%px;
     width: 100%;
+    font-size: 0.75rem; /* 12px */
+    line-height: 1rem; /* 16px */
   }
 
   @media (max-width: 400px) {

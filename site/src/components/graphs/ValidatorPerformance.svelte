@@ -87,21 +87,8 @@
             strokeWidth: 3,
             stroke: galoisLineColor
           }),
-          Plot.line(tendermintX, {
-            x: 'x',
-            y: 'y',
-            strokeWidth: 4,
-            curve: 'linear',
-            stroke: tendermindXLineColor
-          }),
-          Plot.dot(tendermintX, {
-            x: 'x',
-            y: 'y',
-            strokeWidth: 4,
-            stroke: tendermindXLineColor
-          }),
           Plot.tip(
-            tendermintX,
+            galois,
             Plot.pointerX({
               x: 'x',
               y: 'y',
@@ -127,26 +114,24 @@
   onMount(() => {
     const observer = new IntersectionObserver(
       entries => {
-        const pathElements = getRelevantPathElements({
-          selector: `g[stroke="${tendermindXLineColor}"], g[stroke="${galoisLineColor}"]`
-        })
-        // const pathElementsLengths = pathElements.map(pathElement => pathElement.getTotalLength())
-        entries.forEach(entry => {
-          console.log(entry.isIntersecting)
-          if (entry.isIntersecting) pathElements.forEach(resumeAnimation)
-          else pathElements.forEach(pauseAnimation)
-        })
+        // const pathElements = getRelevantPathElements({
+        //   selector: `g[stroke="${tendermindXLineColor}"], g[stroke="${galoisLineColor}"]`
+        // })
+        // // const pathElementsLengths = pathElements.map(pathElement => pathElement.getTotalLength())
+        // entries.forEach(entry => {
+        //   console.log(entry.isIntersecting)
+        //   if (entry.isIntersecting) pathElements.forEach(resumeAnimation)
+        //   else pathElements.forEach(pauseAnimation)
+        // })
       },
       { threshold: 0.5 }
     )
 
     observer.observe(chartElement)
   })
-  const textGlowStyle =
-  'select-none pointer-events-none opacity-0.6 z[-1] blur-md absolute left-0 right-0'
 </script>
 
-<div class="w-full text-center my-12 px-2 relative flex antialiased">
+<div class="w-full text-center flex antialiased">
   <!-- <p
 
     class="transform rotate-180 text-md sm:text-xl font-semibold absolute md:-left-32 -left-18 my-auto mx-auto h-[75%]"
@@ -171,7 +156,7 @@
 
 <style>
   /* animation: line-progress 2s linear infinite normal forwards running; */
-  :root {
+  /* :root {
     --animation-direction: normal;
     --animation-play-state: running;
     --animation-timing-function: ease;
@@ -274,7 +259,7 @@
   :global(g[stroke='#9DA3AE'] path) {
     /*
     * to get this exact length, call `pathElement.getTotalLength()`
-    */
+    /
     stroke-dasharray: 668px;
     stroke-dashoffset: 668px;
     stroke-width: 2.5px;
@@ -316,7 +301,7 @@
   :global(g[stroke='#3F8EF7'] path) {
     /*
     * to get this exact length, call `pathElement.getTotalLength()`
-    */
+    *
     stroke-dasharray: 580px;
     stroke-dashoffset: 580px;
     stroke-width: 2px;
@@ -344,5 +329,5 @@
     100% {
       stroke-dashoffset: 0%;
     }
-  }
+  } */
 </style>

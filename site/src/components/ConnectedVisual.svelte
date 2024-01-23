@@ -225,15 +225,15 @@
         >
           <stop
             offset="0"
-            stop-color="pink"
+            stop-color="#A0ECFD"
           ></stop>
           <stop
             offset="0.4"
-            stop-color="pink"
+            stop-color="#A0ECFD"
           ></stop>
           <stop
             offset="1"
-            stop-color="pink"
+            stop-color="#A0ECFD"
             stop-opacity="0"
           ></stop>
           <animate
