@@ -64,7 +64,7 @@
               echo $val_mnemonic
 
               echo $val_mnemonic | ${uniond} keys add --recover ${key} --keyring-backend test --home $out
-              ${uniond} add-genesis-account ${key} 100000000000000000000000000stake --keyring-backend test --home $out
+              ${uniond} genesis add-genesis-account ${key} 100000000000000000000000000stake --keyring-backend test --home $out
             '') genesisAccounts)}
           '';
 
