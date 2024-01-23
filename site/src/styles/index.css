@@ -72,12 +72,14 @@ pre {
   padding-left: 0;
   padding-right: 0;
   border-radius: 0.5rem;
+  overflow-x: scroll;
+
   -webkit-font-smoothing: antialiased;
 }
 
 code {
   @apply md:text-base;
-  line-height: 2;
+  line-height: 1.6;
   font-size: 0.875rem;
 }
 
@@ -106,15 +108,15 @@ code[data-line-numbers] {
 code[data-line-numbers] > [data-line]::before {
   counter-increment: line;
   content: counter(line);
-  @apply inline-block w-4 mr-4 text-right text-gray-500;
+  @apply inline-block w-4 mr-2 text-right text-gray-500;
 }
 
 .prose {
-  @apply max-w-[55rem] sm:text-lg md:text-xl !leading-7 sm:!leading-9;
+  /* @apply max-w-[55rem] sm:text-lg md:text-xl !leading-7 sm:!leading-9; */
 }
 
 pre [data-line] {
-  @apply px-6 border-l-2 border-l-transparent;
+  /* @apply px-6 border-l-2 border-l-transparent; */
 }
 
 [data-highlighted-line] {
@@ -139,28 +141,28 @@ pre [data-line] {
 }
 
 [data-chars-id='v'] {
-  @apply !text-pink-300 bg-rose-800/50 border-b-pink-600 font-bold;
+  @apply !text-pink-300 bg-rose-800/30 border-b-pink-800 font-bold;
 }
 
 [data-chars-id='s'] {
-  @apply !text-yellow-300 bg-yellow-800/50 border-b-yellow-600 font-bold;
+  @apply !text-yellow-300 bg-yellow-800/30 border-b-yellow-600 font-bold;
 }
 
 [data-chars-id='i'] {
-  @apply !text-purple-200 bg-purple-800/50 border-b-purple-600 font-bold;
+  @apply !text-purple-200 bg-purple-800/30 border-b-purple-700 font-bold;
 }
 
 [data-chars-id='g'] {
-  @apply !text-green-300 bg-green-800/50 border-b-green-600 font-bold;
+  @apply !text-green-200 bg-green-800/30 border-b-green-800 font-bold;
 }
 
 [data-chars-id='w'] {
-  @apply !text-zinc-300 bg-zinc-400/50 border-b-zinc-300 font-bold;
+  @apply !text-zinc-300 bg-zinc-400/30 border-b-zinc-400 font-bold;
 }
 
 [data-chars-id='r'] {
   color: rgb(255, 201, 201);
-  background-color: rgb(153 27 27 / 0.5);
+  background-color: rgb(153 27 27 / 0.4);
   border-bottom-color: rgb(153 27 27);
   font-weight: 700;
 }
@@ -168,7 +170,7 @@ pre [data-line] {
 [data-rehype-pretty-code-title] {
   font-weight: 500;
   padding: 0.5rem 0.75rem 0.5rem 0.75rem;
-  background-color: rgb(8, 7, 12);
+  background-color: #0d0d0d;
   border-radius: 0.25rem 0.25rem 0 0;
   font-family: 'JetBrains Mono', monospace;
 }

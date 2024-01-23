@@ -34,7 +34,11 @@ const soliditySnippet = `
 function onRecvPacket(
   IbcPacket calldata ibcPacket,
   address relayer
-) external override onlyIBC returns (bytes memory) {
+)
+  external
+  override
+  onlyIBC
+  returns (bytes memory) {
   
   (bool success, bytes memory) = address(this).call(
     abi.encodeWithSelector(
@@ -112,13 +116,13 @@ const textGlowStyle =
       <div
         class:list={[
           // The first occurrence of this text is to provide glowing background
-          'mx-auto text-center select-none pointer-events-none opacity-0.6 z[-1] blur-xl absolute right-0 left-0 font-semibold font-serif text-2xl sm:text-4xl md:text-5xl',
+          ' mx-auto text-center select-none pointer-events-none opacity-0.6 z[-1] blur-md absolute right-0 left-0 font-semibold font-serif text-2xl sm:text-4xl md:text-5xl'
         ]}
       >
-        Union's  ..................
+        Union's ..................
       </div>
       <div
-        class='text-2xl sm:text-4xl md:text-5xl text-white text-center font-semibold bg-gradient-to-tr from-gray-100 via-gray-300 bg-clip-text text-transparent text-pretty'
+        class='text-2xl sm:text-4xl md:text-5xl text-white text-center font-semibold bg-gradient-to-tr from-gray-900 via-gray-900 bg-clip-text text-transparent text-pretty'
       >
         Union's Galois vs. TendermindX
       </div>
@@ -140,19 +144,33 @@ const textGlowStyle =
         </div>
       </div>
     </section>
-    <section class='flex flex-col items-center justif-center py-32 my-50'>
+    <section class='flex flex-col items-center justif-center justify-around py-32 my-50'>
       <h2 class='text-4xl mb-4 font-normal'>Build for any stack.</h2>
       <div
-        class='flex sm:flex-row flex-col max-w-6xl justify-between overflow-none mx-auto items-center content-start px-3'
+        class='flex md:flex-row flex-col max-w-6xl justify-around overflow-none mx-auto items-center content-start px-3'
       >
-        <div class='sm:max-w-2/3 max-w-[640px]'>
-          <!-- <CodeSnippet
+        <!-- <div class='lg:w-1/4 w-full flex flex-col content-between justify-between p-4 max-w-2xl'>
+          <p class='font-normal text-3xl mt-0 text-gray-400'>
+            Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
+            by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
+          </p>
+        </div> -->
+        <div class='max-w-[640px] antialiased'>
+          <CodeSnippet
             client:load
             code={soliditySnippet}
-          /> -->
+          />
         </div>
-        <div class='sm:w-1/3 w-full flex flex-col content-between justify-between p-4 max-w-2xl'>
-          <p class='font-normal text-3xl mt-0 text-gray-400'>
+        <div class='w-1/2 flex flex-col text-xl md:text-2xl lg:text-3xl content-between justify-between p-4 max-w-2xl space-y-10'>
+          <p class='font-normal mt-0 text-gray-400'>
+            Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
+            by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
+          </p>
+          <p class='font-normal mt-0 text-gray-400'>
+            Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
+            by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
+          </p>
+          <p class='font-normal mt-0 text-gray-400'>
             Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
             by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
           </p>

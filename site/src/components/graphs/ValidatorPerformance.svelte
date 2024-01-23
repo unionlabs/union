@@ -149,10 +149,6 @@
 <div class="w-full text-center my-12 px-2 relative flex antialiased">
   <!-- <p
 
-    from-purple-600 via-pink-600 to-blue-600 bg-gradient-to-r bg-clip-text text-transparent
-    bg-[conic-gradient(at_bottom_left,_var(--tw-gradient-stops))] from-gray-700 via-gray-900 to-black
-
-    bg-gradient-to-r from-fuchsia-100 via-zinc-500 to-white
     class="transform rotate-180 text-md sm:text-xl font-semibold absolute md:-left-32 -left-18 my-auto mx-auto h-[75%]"
     style="writing-mode: vertical-lr;"
     id="y-axis-label"

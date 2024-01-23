@@ -20,10 +20,22 @@
 
 <style>
   :global(code) {
-    padding: 10px 20px 20px 10px;
+    padding: 10px 20px 10px 10px;
   }
 
   :global(span) {
     padding: 0px !important;
+  }
+
+  :global(figure[data-rehype-pretty-code-figure]) {
+    overflow-x: scroll;
+    max-width: 100%px;
+    width: 100%;
+  }
+
+  @media (max-width: 400px) {
+    :global(figure[data-rehype-pretty-code-figure]) {
+      max-width: 385px;
+    }
   }
 </style>
