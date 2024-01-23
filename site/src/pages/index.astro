@@ -70,7 +70,7 @@ const textGlowStyle =
       <div
         class:list={[
           // The first occurrence of this text is to provide glowing background
-          'sm:text-7xl text-5xl text-white text-center',
+          'sm:text-7xl text-5xl text-white text-center font-semibold',
           textGlowStyle
         ]}
       >
@@ -93,16 +93,10 @@ const textGlowStyle =
       </div>
     </section>
 
-    <section class='bg-black text-white flex flex-col items-center py-16'>
-      <h2 class='text-4xl mb-4 font-normal'>Redesigned from the ground up.</h2>
+    <section class='bg-black text-white flex flex-col items-center py-16 px-4'>
+      <h2 class='text-4xl mb-4 font-normal text-center'>Redesigned from the ground up.</h2>
 
-      <div class='flex md:flex-row flex-col gap-16 max-w-4xl'>
-        <div class='flex-1 flex items-center justify-center content mb-0 gap-2'>
-          <div class='bg-white h-20 w-20 rounded-full'></div>
-          <div class='bg-white h-40 w-40 rounded-full'></div>
-          <div class='bg-white h-20 w-20 rounded-full'></div>
-        </div>
-
+      <div class='flex md:flex-row flex-col gap-16 max-w-4xl text-balance'>
         <div class='flex-1 p-4'>
           <p class='text-3xl text-gray-500 font-normal mb-0'>
             <span class='text-white'>
@@ -111,18 +105,12 @@ const textGlowStyle =
             Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge
             cryptography.
           </p>
-          <p class='text-lg'>
-            Union is the only protocol that provides all three, using state-of-the art
-            Zero-Knowledge cryptography.
-          </p>
         </div>
       </div>
     </section>
-    <section class='max-w-4xl mx-auto h-[600px]'>
-      <div class='w-full h-full overflow-visible'>
-        <p class='-mb-20 mt-10 ml-16 -mr-1 text-xl font-semibold'>
-          Prove anywhere, verify <span class='text-gray-400'> on chain.</span>
-        </p>
+    <section class='max-w-4xl mx-auto'>
+      <div class='w-full px-16 min-w-full'>
+
         <PerformanceGraph client:load />
       </div>
     </section>
@@ -171,8 +159,8 @@ const textGlowStyle =
 
     <section class='flex flex-col items-center justify-center'>
       <h2 class='text-4xl mb-4 font-normal'>Connecting L1s, L2s, AppChains and Rollups</h2>
-      <div class='w-full'>
-        <ConnectedVisual />
+      <div class='w-full max-w-full'>
+        <!-- <ConnectedVisual /> -->
       </div>
     </section>
     <section class='flex flex-col items-center justif-center py-32'>
@@ -288,7 +276,7 @@ const textGlowStyle =
     </section>
 
     <section class='flex justify-center bg-white text-black py-32'>
-      <div class='flex-1 max-w-4xl'>
+      <!-- <div class='flex-1 max-w-4xl'>
         <h2 class='text-4xl mb-4 font-normal text-center'>Blog</h2>
         <ul>
           {
@@ -304,7 +292,7 @@ const textGlowStyle =
             ))
           }
         </ul>
-      </div>
+      </div> -->
     </section>
     <section class='flex justify-center bg-white text-black py-32'>
       <div class='flex-1 max-w-4xl'>

@@ -1,11 +1,11 @@
 <script lang="ts">
+  import '#/styles/index.css'
+  import * as d3 from 'd3'
   import { onMount } from 'svelte'
   import * as Plot from '@observablehq/plot'
   import { roundNumber } from '#/lib/utilities.ts'
 
-  export const [zkFastLineColor, zkSlowLineColor] = ['#1ED2FA', '#9DA3AE']
-
-  const generateRandomNumber = (min: number, max: number) => Math.random() * (max - min) + min
+  export const [galoisLineColor, tendermindXLineColor] = ['#3F8EF7', '#9DA3AE']
 
   const pauseAnimation = (element: SVGPathElement) => (element.style.animationPlayState = 'paused')
   const resumeAnimation = (element: SVGPathElement) =>
@@ -13,84 +13,105 @@
 
   function getRelevantPathElements({ selector }: { selector: string }) {
     const gElements = document.querySelectorAll(selector)
-    const pathElements = Array.from(gElements).map(
-      gElement => gElement.querySelector('path') as SVGPathElement
-    )
+    const pathElements = Array.from(gElements)
+      .map(gElement => gElement.querySelector('path') as SVGPathElement)
+      .filter(Boolean)
     return pathElements
   }
 
   let chartElement: HTMLElement
-  /**
-   * Plot data
-   * TODO: replace with real data
-   */
-  const totalLength = 50
-  let zkSlowPlotLine = Array.from({ length: totalLength }, (_, index) => ({
-    x: index,
-    y: 1 + index * 0.1
-  }))
-  let zkFastPlotLine = Array.from({ length: totalLength }, (_, index) => ({
-    x: index,
-    y: index + generateRandomNumber(-2, 2)
-  }))
+
+  // https://unionlabs.github.io/galois-benchmark/c6i.x32large.v3/report.html
+  let galoisExtrapolated = d3.scaleLinear([4, 128], [6.05, 8.1])
+  let galois = [
+    { x: 4, y: 6.05 },
+    { x: 8, y: 6.18 },
+    { x: 16, y: 6.23 },
+    { x: 32, y: 6.94 },
+    { x: 64, y: 6.91 },
+    { x: 128, y: 8.1 },
+    { x: 150, y: galoisExtrapolated(150) }
+  ]
+
+  // https://blog.succinct.xyz/tendermintx/
+  let tendermintXExtrapolated = d3.scaleLinear([60, 150], [300, 720])
+  let tendermintX = [
+    { x: 4, y: tendermintXExtrapolated(4) },
+    { x: 60, y: 300 },
+    { x: 100, y: 480 },
+    { x: 150, y: 720 }
+  ]
 
   $: {
     chartElement?.append(
       // @ts-expect-error
       Plot.plot({
-        width: 800,
-        height: 400,
-
+        style: {
+          scale: '1',
+          borderRadius: '5px',
+          backgroundColor: '#181A21',
+          fontVariantNumeric: 'tabular-nums'
+        },
         x: {
           tickSize: 0,
           axis: 'bottom',
-
-          label: '# of validators',
+          labelAnchor: 'center',
           ariaLabel: '#-validators',
+          legend: true,
           tickFormat: (d: number) => d
         },
         y: {
           tickSize: 0,
           axis: 'left',
-          labelAnchor: 'top',
-          label: 'Seconds to prove',
-          scheme: 'Viridis',
+          legend: true,
+          label: '',
+          labelAnchor: undefined,
           fontVariant: 'tabular-nums',
           tickFormat: (d: number) => d,
           ariaDescription: 'seconds-to-prove'
         },
         figure: true,
-
         marks: [
           Plot.gridY({
             stroke: '#ffffff',
             strokeWidth: 1,
             strokeOpacity: 0.3
           }),
-          Plot.gridY([0], {
-            x: (y, _index) => y,
-            color: '#ffffff',
-            strokeWidth: 0.5,
-            strokeOpacity: 0.5
-          }),
-          Plot.line([{ x: 0, y: 2 }].concat(zkFastPlotLine), {
+          Plot.ruleY([1], { stroke: '#ffffff', strokeWidth: 1, strokeOpacity: 0.3 }),
+          Plot.line(galois, {
+            markerStart: 'none',
             x: 'x',
             y: 'y',
-            curve: 'catmull-rom',
-            stroke: zkFastLineColor
+            strokeWidth: 3,
+            curve: 'linear',
+            stroke: galoisLineColor
           }),
-          Plot.line([{ x: 0, y: 1 }].concat(zkSlowPlotLine), {
+          Plot.dot(galois, {
             x: 'x',
             y: 'y',
-            stroke: zkSlowLineColor,
-            curve: 'bump-y'
+            strokeWidth: 3,
+            stroke: galoisLineColor
+          }),
+          Plot.line(tendermintX, {
+            x: 'x',
+            y: 'y',
+            strokeWidth: 4,
+            curve: 'linear',
+            stroke: tendermindXLineColor
+          }),
+          Plot.dot(tendermintX, {
+            x: 'x',
+            y: 'y',
+            strokeWidth: 4,
+            stroke: tendermindXLineColor
           }),
           Plot.tip(
-            zkFastPlotLine,
+            tendermintX,
             Plot.pointerX({
               x: 'x',
               y: 'y',
-              fontSize: 12,
+              fontSize: 16,
+              stroke: 'red',
               fill: '#181A21',
               fillOpacity: 1,
               strokeWidth: 0,
@@ -101,10 +122,6 @@
               fontVariant: 'tabular-nums',
               title: ({ x, y }) => `↑ ${x}\n\n→ ${roundNumber(y, 2)}s`
             })
-          ),
-          Plot.dot(
-            zkFastPlotLine,
-            Plot.pointerX({ x: 'x', y: 'y', stroke: 'red', fill: 'red', r: 3 })
           )
         ]
       })
@@ -115,9 +132,11 @@
     const observer = new IntersectionObserver(
       entries => {
         const pathElements = getRelevantPathElements({
-          selector: `g[stroke="${zkSlowLineColor}"], g[stroke="${zkFastLineColor}"]`
+          selector: `g[stroke="${tendermindXLineColor}"], g[stroke="${galoisLineColor}"]`
         })
+        // const pathElementsLengths = pathElements.map(pathElement => pathElement.getTotalLength())
         entries.forEach(entry => {
+          console.log(entry.isIntersecting)
           if (entry.isIntersecting) pathElements.forEach(resumeAnimation)
           else pathElements.forEach(pauseAnimation)
         })
@@ -129,67 +148,126 @@
   })
 </script>
 
-<article
-  data-graph="performance"
-  bind:this={chartElement}
-></article>
+<div class="w-full text-center my-12 relative flex">
+  <p
+    class="transform rotate-180 h-52 text-xl font-semibold absolute top-[20%] left-[-2rem]"
+    style="writing-mode: vertical-lr;"
+  >
+    Seconds to prove
+  </p>
+  <div>
+    <article
+      data-graph="performance"
+      bind:this={chartElement}
+    ></article>
+    <p class="mt-1.5 text-xl font-semibold">Number of validators</p>
+  </div>
+</div>
 
 <style>
   /* animation: line-progress 2s linear infinite normal forwards running; */
   :root {
     --animation-direction: normal;
-    --animation-play-state: paused;
+    --animation-play-state: running;
     --animation-timing-function: ease;
     --animation-iteration-count: 1;
-    --axis-label-font-size: 20px;
+    --animation-fill-mode: forwards;
+    --axis-tick-label-font-size: 14px;
+    --axis-label-font-size: 1rem;
+    --axis-label-color: transparent;
   }
 
-  :global(g[aria-label='y-axis label'] text) {
-    font-size: var(--axis-label-font-size);
+  :global(g[aria-label='y-axis tick label'] text) {
+    font-size: var(--axis-tick-label-font-size);
     font-family: var(--axis-label-font-family);
   }
 
-  :global(g[aria-label='x-axis label'] text) {
-    text-align: center;
-    font-size: var(--axis-label-font-size);
+  :global(g[aria-label='x-axis tick label'] text) {
+    font-size: var(--axis-tick-label-font-size);
     font-family: var(--axis-label-font-family);
+  }
+
+  :global(g[aria-label='y-axis label']) {
+    color: var(--axis-label-color);
+    display: none;
+    font-size: 0;
+    visibility: hidden;
+  }
+
+  :global(g[aria-label='x-axis label']) {
+    color: var(--axis-label-color);
+    display: none;
   }
 
   :global(g[stroke='#9DA3AE'] path) {
-    stroke-dasharray: 105%;
-    /* stroke-dashoffset: 100%; */
+    /*
+    * to get this exact length, call `pathElement.getTotalLength()`
+    */
+    stroke-dasharray: 668px;
+    stroke-dashoffset: 668px;
     stroke-width: 2.5px;
     animation-name: slow-line-progress;
-    animation-duration: 4.5s;
+    animation-duration: 1.5s;
     animation-direction: var(--animation-direction);
     animation-play-state: var(--animation-play-state);
+    animation-fill-mode: var(--animation-fill-mode);
     animation-timing-function: var(--animation-timing-function);
     animation-iteration-count: var(--animation-iteration-count);
   }
 
-  :global(g[stroke='#1ED2FA'] path) {
-    stroke-dasharray: 180%;
-    /* stroke-dashoffset: 180%; */
-    stroke-width: 2px;
-    animation-duration: 2.5s;
-    animation-name: fast-line-progress;
-    animation-direction: var(--animation-direction);
-    animation-play-state: var(--animation-play-state);
-    animation-timing-function: var(--animation-timing-function);
-    animation-iteration-count: var(--animation-iteration-count);
-  }
-
-  @keyframes fast-line-progress {
+  @keyframes slow-line-progress {
     0% {
-      stroke-dashoffset: 100%;
+      stroke-dashoffset: 668px;
     }
     100% {
       stroke-dashoffset: 0%;
     }
   }
-  @keyframes slow-line-progress {
+
+  :global(g[stroke='#9DA3AE'] circle) {
+    opacity: 0;
+    animation-name: fade-in;
+    animation-duration: 1.5s;
+    animation-delay: 1.5s;
+    animation-fill-mode: var(--animation-fill-mode);
+  }
+
+  @keyframes fade-in {
     0% {
-      stroke-dashoffset: 100%;
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  :global(g[stroke='#3F8EF7'] path) {
+    /*
+    * to get this exact length, call `pathElement.getTotalLength()`
+    */
+    stroke-dasharray: 580px;
+    stroke-dashoffset: 580px;
+    stroke-width: 2px;
+    animation-duration: 2.5s;
+    animation-name: fast-line-progress;
+    animation-direction: var(--animation-direction);
+    animation-play-state: var(--animation-play-state);
+    animation-fill-mode: var(--animation-fill-mode);
+    animation-timing-function: var(--animation-timing-function);
+    animation-iteration-count: var(--animation-iteration-count);
+  }
+
+  :global(g[stroke='#3F8EF7'] circle) {
+    opacity: 0;
+    animation-name: fade-in;
+    animation-duration: 1.5s;
+    animation-delay: 1.5s;
+    animation-fill-mode: var(--animation-fill-mode);
+  }
+
+  @keyframes fast-line-progress {
+    0% {
+      stroke-dashoffset: 580px;
     }
     100% {
       stroke-dashoffset: 0%;
