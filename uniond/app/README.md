@@ -8,7 +8,7 @@ The structure of our app module is based off the app_v1 design from the cosmos-s
 
 ### Custom Query
 
-The `custom_query` submodule is used for BLS aggregation of custom queries from light clients.
+The `custom_query` submodule is used for native BLS aggregation and verification of custom queries from light clients.
 
 ### IBC
 
