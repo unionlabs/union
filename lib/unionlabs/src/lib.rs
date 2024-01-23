@@ -1,3 +1,4 @@
+#![doc = include!("../README.md")]
 #![deny(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
 
@@ -121,9 +122,6 @@ pub mod errors {
     }
 }
 
-// TODO: Move these traits into `ibc`
-
-// Into<Self::Proto>
 pub trait Proto {
     // all prost generated code implements Default
     type Proto: Message + Default;
@@ -380,6 +378,7 @@ pub enum WasmClientTypeParseError {
     UnknownType(String),
 }
 
+// TODO: Move this and the above type into tools/parse-wasm-client-type, and make it into a library with an optional `parse` feature (so as to not bring in the very heavy wasmparser stack where it's not needed)
 pub fn parse_wasm_client_type(
     bz: impl AsRef<[u8]>,
 ) -> Result<Option<WasmClientType>, WasmClientTypeParseError> {
