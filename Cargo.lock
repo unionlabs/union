@@ -2984,10 +2984,12 @@ name = "ics008-wasm-client"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
+ "frame-support-procedural",
  "prost",
  "protos",
  "serde",
  "serde_json",
+ "thiserror",
  "unionlabs",
 ]
 

@@ -7,11 +7,13 @@ publish = false
 version = "0.1.0"
 
 [dependencies]
-cosmwasm-std = { workspace = true }
-prost        = { workspace = true }
-protos       = { workspace = true, default-features = false, features = ["proto_full", "std"] }
-serde        = { workspace = true, features = ["derive"] }
-unionlabs    = { workspace = true, default-features = false }
+cosmwasm-std             = { workspace = true }
+frame-support-procedural = { workspace = true }
+prost                    = { workspace = true }
+protos                   = { workspace = true, default-features = false, features = ["proto_full", "std"] }
+serde                    = { workspace = true, features = ["derive"] }
+thiserror                = { workspace = true }
+unionlabs                = { workspace = true, default-features = false }
 
 [dev-dependencies]
 serde_json = { workspace = true }

@@ -14,7 +14,15 @@ use unionlabs::{
     IntoProto, Proto, TryFromProto, TryFromProtoErrorOf,
 };
 
-use crate::Error;
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("client state not found")]
+    ClientStateNotFound,
+    #[error("client state decode failed")]
+    ClientStateDecode,
+    #[error("consensus state decode failed")]
+    ConsensusStateDecode,
+}
 
 // Client state that is stored by the host
 pub const HOST_CLIENT_STATE_KEY: &str = "clientState";
@@ -50,7 +58,7 @@ where
 
     Any::try_from_proto_bytes(any_state.as_slice())
         .map(|any| any.0)
-        .map_err(|err| Error::Decode(format!("error reading the client state: {err:#?}")))
+        .map_err(|_| Error::ClientStateDecode)
 }
 
 /// Reads the consensus state at a specific height from the host.
@@ -74,7 +82,7 @@ where
         .get(consensus_db_key(height).as_bytes())
         .map(|bytes| Any::try_from_proto_bytes(&bytes).map(|any| any.0))
         .transpose()
-        .map_err(|err| Error::Decode(format!("error reading consensus state: {err:#?}")))
+        .map_err(|_| Error::ConsensusStateDecode)
 }
 
 pub fn save_client_state<C: CustomQuery, CS: IntoProto>(
