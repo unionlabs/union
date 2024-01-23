@@ -47,7 +47,6 @@
       // @ts-expect-error
       Plot.plot({
         style: {
-          scale: '1',
           borderRadius: '5px',
           backgroundColor: '#181A21',
           fontVariantNumeric: 'tabular-nums'
@@ -150,8 +149,9 @@
 
 <div class="w-full text-center my-12 relative flex">
   <p
-    class="transform rotate-180 h-52 text-xl font-semibold absolute top-[20%] left-[-2rem]"
+    class="transform rotate-180 text-xl font-semibold absolute md:-left-24 -left-12 my-auto mx-auto h-[75%]"
     style="writing-mode: vertical-lr;"
+    id="y-axis-label"
   >
     Seconds to prove
   </p>
@@ -160,7 +160,9 @@
       data-graph="performance"
       bind:this={chartElement}
     ></article>
-    <p class="mt-1.5 text-xl font-semibold">Number of validators</p>
+    <p class="text-md sm:text-xl font-semibold"
+    id="x-axis-label"
+    >Number of validators</p>
   </div>
 </div>
 
@@ -175,6 +177,31 @@
     --axis-tick-label-font-size: 14px;
     --axis-label-font-size: 1rem;
     --axis-label-color: transparent;
+  }
+
+  :global(figure > svg) {
+    scale: 1.2;
+    width: 100%;
+  }
+
+  :global(#y-axis-label) {
+    left: -3rem;
+  }
+  :global(#x-axis-label) {
+    margin-top: 46px;
+  }
+
+  @media (max-width: 891px) {
+    :global(figure > svg) {
+      scale: 1.05;
+    }
+    :global(#y-axis-label) {
+      left: -3.5rem !important;
+    }
+
+    :global(#x-axis-label) {
+     margin-top: 16px !important;
+    }
   }
 
   :global(g[aria-label='y-axis tick label'] text) {
