@@ -7,7 +7,7 @@
       MNEMONIC = "wine parrot nominee girl exchange element pudding grow area twenty next junior come render shadow evidence sentence start rough debate feed all limb real";
       GENESIS_ACCOUNT_NAME = "testkey";
 
-      uniond = pkgs.lib.getExe (get-flake inputs.v0_15_0).packages.${system}.uniond;
+      uniond = pkgs.lib.getExe (get-flake inputs.v0_18_0).packages.${system}.uniond;
 
       mkNodeId = name:
         pkgs.runCommand "node-id" { } ''
@@ -35,6 +35,7 @@
           dasel put --help
 
           dasel -f $out/config/genesis.json put -t string -v 12s '.app_state.gov.params.voting_period'
+          dasel -f $out/config/genesis.json put -t string -v 10s '.app_state.gov.params.expedited_voting_period'
         '';
 
       mkHome = { genesisAccounts }: home:
@@ -111,7 +112,7 @@
                 }.json | jq ."pub_key"."value"`
                 PUBKEY="{\"@type\":\"/cosmos.crypto.bn254.PubKey\",\"key\":$PUBKEY}"
                 mkdir -p $out
-                ${uniond} gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${CHAIN_ID} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
+                ${uniond} genesis gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${CHAIN_ID} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
                   toString i
                 }.json
               '')
@@ -137,8 +138,8 @@
           cp ${valGentx}/valgentx-${toString i}.json ./config/gentx/
         '') validatorGentxs)}
 
-        ${uniond} collect-gentxs --home $HOME 2> /dev/null
-        ${uniond} validate-genesis --home $HOME
+        ${uniond} genesis collect-gentxs --home $HOME 2> /dev/null
+        ${uniond} genesis validate-genesis --home $HOME
       '';
 
       packages.minimal-validator-keys = pkgs.symlinkJoin {
