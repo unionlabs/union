@@ -1,7 +1,7 @@
 [language-server.astro-ls]
 command = "npx"
 args = [ "@astrojs/language-server", "--stdio" ]
-config = { "typescript" = { "tsdk" = "/home/ben/projects/union/union/site/node_modules/typescript/lib"}, "environment" = "node" }
+config = { "typescript" = { "tsdk" = "./site/node_modules/typescript/lib"}, "environment" = "node" }
 
 [[language]]
 name = "astro"
