@@ -1,3 +1,4 @@
+# cspell:ignore tomls
 { inputs, ... }: {
   perSystem = { self', pkgs, rust, system, lib, dbg, inputs', ... }:
     let
@@ -65,6 +66,7 @@
         };
 
       workspaceCargoToml = lib.trivial.importTOML (root + "/Cargo.toml");
+
       workspaceCargoLockPath = root + "/Cargo.lock";
 
       buildWorkspaceMember =
@@ -154,30 +156,56 @@
             "expected crateDirFromRoot to be a string, but it was a ${builtins.typeOf crateDirFromRoot}: ${crateDirFromRoot}"
             crateDirFromRoot);
 
-          crateSrc = mkCleanSrc {
-            name = cratePname;
-            srcFilter = path': type: ((additionalSrcFilter path' type)
-              # TODO: only include this filter for tests; maybe by adding to preConfigureHooks?
-              || (additionalTestSrcFilter path' type))
-            && (
-              path' == "Cargo.toml"
-                || path' == "Cargo.lock"
-                || (
-                builtins.any
-                  (depPath: ensureDirectoryIncluded {
-                    inherit path';
-                    pathToInclude = depPath;
-                  })
-                  workspaceDepsForCrate
-              )
-                # Yes, this does need to be filtered twice - once in the original filter so it's included
-                # in the cargo sources, and once again so it's included when filtering down to workspace
-                # dependencies
-                || (additionalSrcFilter path' type)
-                # TODO: Only include this filter for tests; maybe by adding to preConfigureHooks?
+          # apparently nix doesn't cache calls to builtins.readFile (which importTOML calls internally), so we cache the cargo tomls here
+          # this saves ~2-3 minutes in evaluation time
+          workspaceDepsForCrateCargoTomls = builtins.listToAttrs (map (dep: lib.attrsets.nameValuePair dep (lib.trivial.importTOML "${root}/${dep}/Cargo.toml")) workspaceDepsForCrate);
+
+          crateSrc =
+            let
+              isIncluded = path': builtins.elem path'
+                (
+                  lib.unique
+                    (lib.flatten
+                      (map
+                        (dep: map
+                          (includedPath: "${dep}/${includedPath}")
+                          (pkgs.lib.attrsets.attrByPath
+                            [ "package" "include" ]
+                            [ ]
+                            (workspaceDepsForCrateCargoTomls.${dep})
+                          )
+                        )
+                        workspaceDepsForCrate)
+                    )
+                );
+            in
+            mkCleanSrc {
+              name = cratePname;
+              srcFilter = path': type: ((additionalSrcFilter path' type)
+                # TODO: only include this filter for tests; maybe by adding to preConfigureHooks?
                 || (additionalTestSrcFilter path' type)
-            );
-          };
+                || (isIncluded path')
+              )
+              && (
+                path' == "Cargo.toml"
+                  || path' == "Cargo.lock"
+                  || (
+                  builtins.any
+                    (depPath: ensureDirectoryIncluded {
+                      inherit path';
+                      pathToInclude = depPath;
+                    })
+                    workspaceDepsForCrate
+                )
+                  # Yes, this does need to be filtered twice - once in the original filter so it's included
+                  # in the cargo sources, and once again so it's included when filtering down to workspace
+                  # dependencies
+                  || (additionalSrcFilter path' type)
+                  # TODO: Only include this filter for tests; maybe by adding to preConfigureHooks?
+                  || (additionalTestSrcFilter path' type)
+                  || (isIncluded path')
+              );
+            };
 
           # patch the workspace Cargo.toml to only contain the local dependencies required to build this crate.
           patchedWorkspaceToml =
@@ -185,7 +213,7 @@
               patchedCargoToml = (pkgs.formats.toml { }).generate
                 "Cargo.toml"
                 (lib.recursiveUpdate workspaceCargoToml {
-                  workspace. members = workspaceDepsForCrate;
+                  workspace.members = workspaceDepsForCrate;
                 });
             in
             # REVIEW: This can maybe be a runCommand?
@@ -300,26 +328,48 @@
           };
         };
 
+      allCargoTomls = builtins.listToAttrs (map (dep: lib.attrsets.nameValuePair dep (lib.trivial.importTOML "${root}/${dep}/Cargo.toml")) workspaceCargoToml.workspace.members);
 
-      cargoWorkspaceSrc = mkCleanSrc {
-        name = "cargo-workspace-src";
-        srcFilter =
-          path: _type: (pkgs.lib.hasPrefix "hubble/src/graphql/" path || pkgs.lib.hasPrefix ".sqlx" path) ||
-            (pkgs.lib.hasPrefix "unionvisor/src/testdata/" path) ||
-            (pkgs.lib.hasPrefix ".sqlx" path) ||
-            ((pkgs.lib.hasPrefix "lib/pg-queue/.sqlx" path)) ||
-            (pkgs.lib.hasPrefix "hubble/src/graphql" path) ||
-            ((lib.hasPrefix "lib/ethereum-verifier/src/test" path)
-              && (lib.strings.hasSuffix ".json" path)) ||
-            (ensureDirectoryIncluded {
-              path' = path;
-              pathToInclude = "light-clients/ethereum-light-client/src/test";
-            }) ||
-            (ensureDirectoryIncluded {
-              path' = path;
-              pathToInclude = "light-clients/cometbls-light-client/src/test";
-            });
-      };
+      cargoWorkspaceSrc =
+        let
+          allIncludes = lib.unique
+            (lib.flatten
+              (map
+                (dep: map
+                  (includedPath: "${dep}/${includedPath}")
+                  (pkgs.lib.attrsets.attrByPath
+                    [ "package" "include" ]
+                    [ ]
+                    (allCargoTomls.${dep})
+                  )
+                )
+                workspaceCargoToml.workspace.members)
+            );
+          isIncluded = path': builtins.elem path'
+            (
+              allIncludes
+            );
+        in
+        mkCleanSrc {
+          name = "cargo-workspace-src";
+          srcFilter =
+            path: _type: (pkgs.lib.hasPrefix "hubble/src/graphql/" path || pkgs.lib.hasPrefix ".sqlx" path) ||
+              (pkgs.lib.hasPrefix "unionvisor/src/testdata/" path) ||
+              (pkgs.lib.hasPrefix ".sqlx" path) ||
+              (pkgs.lib.hasPrefix "lib/pg-queue/.sqlx" path) ||
+              (pkgs.lib.hasPrefix "hubble/src/graphql" path) ||
+              ((lib.hasPrefix "lib/ethereum-verifier/src/test" path)
+                && (lib.strings.hasSuffix ".json" path)) ||
+              (ensureDirectoryIncluded {
+                path' = path;
+                pathToInclude = "light-clients/ethereum-light-client/src/test";
+              }) ||
+              (isIncluded path) ||
+              (ensureDirectoryIncluded {
+                path' = path;
+                pathToInclude = "light-clients/cometbls-light-client/src/test";
+              });
+        };
     in
     {
       _module.args = {

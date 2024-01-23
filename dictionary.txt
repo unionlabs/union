@@ -638,6 +638,7 @@ roadmap
 rollups
 rpath
 rsplit
+ruint
 runtimeservices
 rustc
 rustfilt
@@ -775,7 +776,7 @@ unbonded
 unbonding
 undelegate
 undelegations
-undelrine
+unergonomic
 unescrow
 uninit
 unionbuild
@@ -808,8 +809,6 @@ urql
 ursi
 utilised
 utilising
-uunionx
-uuno
 valbz
 valcons
 valconspub
@@ -853,7 +852,6 @@ xprv
 xqxp
 ypyp
 yqyp
-zedxv
 zellij
 zerg
 zerolog
