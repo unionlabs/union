@@ -48,7 +48,7 @@
       Plot.plot({
         style: {
           borderRadius: '5px',
-          backgroundColor: '#181A21',
+          fontFamily: 'monospace',
           fontVariantNumeric: 'tabular-nums'
         },
         x: {
@@ -71,12 +71,8 @@
         },
         figure: true,
         marks: [
-          Plot.gridY({
-            stroke: '#ffffff',
-            strokeWidth: 1,
-            strokeOpacity: 0.3
-          }),
-          Plot.ruleY([1], { stroke: '#ffffff', strokeWidth: 1, strokeOpacity: 0.3 }),
+          Plot.gridY({ strokeWidth: 1.2, strokeOpacity: 0.5 }),
+          Plot.ruleY([1], { stroke: '#ffffff', strokeWidth: 1.2, strokeOpacity: 0.5 }),
           Plot.line(galois, {
             markerStart: 'none',
             x: 'x',
@@ -110,16 +106,17 @@
               x: 'x',
               y: 'y',
               fontSize: 16,
-              stroke: 'red',
-              fill: '#181A21',
+              stroke: '#2D2D2D',
+              fill: 'rgb(24, 26, 33)',
               fillOpacity: 1,
-              strokeWidth: 0,
+              strokeWidth: 1,
               textAnchor: 'start',
               fontWeight: 'bolder',
               frameAnchor: 'middle',
               pointerEvents: 'none',
               fontVariant: 'tabular-nums',
-              title: ({ x, y }) => `↑ ${x}\n\n→ ${roundNumber(y, 2)}s`
+              fontFamily: 'monospace',
+              title: ({ x, y }) => `𝑥 ${x}\n\n𝑦 ${roundNumber(y, 2)}s`
             })
           )
         ]
@@ -145,24 +142,34 @@
 
     observer.observe(chartElement)
   })
+  const textGlowStyle =
+  'select-none pointer-events-none opacity-0.6 z[-1] blur-md absolute left-0 right-0'
 </script>
 
-<div class="w-full text-center my-12 relative flex">
-  <p
-    class="transform rotate-180 text-xl font-semibold absolute md:-left-24 -left-12 my-auto mx-auto h-[75%]"
+<div class="w-full text-center my-12 px-2 relative flex antialiased">
+  <!-- <p
+
+    from-purple-600 via-pink-600 to-blue-600 bg-gradient-to-r bg-clip-text text-transparent
+    bg-[conic-gradient(at_bottom_left,_var(--tw-gradient-stops))] from-gray-700 via-gray-900 to-black
+
+    bg-gradient-to-r from-fuchsia-100 via-zinc-500 to-white
+    class="transform rotate-180 text-md sm:text-xl font-semibold absolute md:-left-32 -left-18 my-auto mx-auto h-[75%]"
     style="writing-mode: vertical-lr;"
     id="y-axis-label"
   >
     Seconds to prove
-  </p>
+  </p> -->
   <div>
     <article
       data-graph="performance"
       bind:this={chartElement}
     ></article>
-    <p class="text-md sm:text-xl font-semibold"
-    id="x-axis-label"
-    >Number of validators</p>
+    <p
+      class="text-xs sm:text-xl font-semibold"
+      id="x-axis-label"
+    >
+      Number of validators
+    </p>
   </div>
 </div>
 
@@ -174,33 +181,75 @@
     --animation-timing-function: ease;
     --animation-iteration-count: 1;
     --animation-fill-mode: forwards;
-    --axis-tick-label-font-size: 14px;
+    --axis-tick-label-font-size: 12px;
     --axis-label-font-size: 1rem;
     --axis-label-color: transparent;
   }
 
+  article figure svg {
+    -webkit-font-feature-settings: 'c2cs';
+  }
+
+  :global(g[aria-label='tip'] g path) {
+    border-radius: 50px !important;
+    padding: 0.5rem !important;
+    background-color: red !important;
+  }
+
+  :global(article figure svg) {
+  }
+
+  :global(article figure svg g[aria-label='y-grid'] line) {
+    stroke: rgb(113, 113, 113);
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+
   :global(figure > svg) {
-    scale: 1.2;
+    scale: 1.5;
     width: 100%;
   }
 
   :global(#y-axis-label) {
     left: -3rem;
   }
+
   :global(#x-axis-label) {
-    margin-top: 46px;
+    position: relative;
+    margin-top: 60px !important;
+  }
+
+  @media (min-width: 790px) {
+  }
+  @media (max-width: 790px) {
+    :global(#y-axis-label) {
+      margin-left: 0px !important;
+      font-size: 1rem !important;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    :global(figure > svg) {
+      scale: 1.3;
+    }
+  }
+  @media (min-width: 1024px) {
+    :global(#x-axis-label) {
+      margin-top: 92px !important;
+    }
   }
 
   @media (max-width: 891px) {
     :global(figure > svg) {
-      scale: 1.05;
+      scale: 1.2;
     }
     :global(#y-axis-label) {
-      left: -3.5rem !important;
+      left: -2rem !important;
     }
 
     :global(#x-axis-label) {
-     margin-top: 16px !important;
+      margin-top: 32px !important;
     }
   }
 
