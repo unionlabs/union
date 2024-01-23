@@ -2988,6 +2988,7 @@ dependencies = [
  "prost",
  "protos",
  "serde",
+ "serde-utils",
  "serde_json",
  "thiserror",
  "unionlabs",

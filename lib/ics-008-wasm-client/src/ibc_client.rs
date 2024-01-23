@@ -21,7 +21,7 @@ pub enum StorageState {
 #[derive(DebugNoBound)]
 pub enum DecodeError<T: IbcClient> {
     Header(<T::Header as Decode<T::Encoding>>::Error),
-    // Misbehaviour(<T::Misbehaviour as Decode<T::Encoding>>::Error),
+    Misbehaviour(<T::Misbehaviour as Decode<T::Encoding>>::Error),
     ClientState(<T::ClientState as Decode<T::Encoding>>::Error),
     ConsensusState(<T::ConsensusState as Decode<T::Encoding>>::Error),
 }
@@ -38,13 +38,15 @@ pub enum IbcClientError<T: IbcClient> {
     ClientStateNotFound,
     #[error(transparent)]
     ClientSpecific(T::Error),
+    #[error("misbehaviour data cannot be decoded ({data})", data = serde_utils::to_hex(.0))]
+    MisbehaviourDataDecode(Vec<u8>),
 }
 
 pub trait IbcClient: Sized {
     type Error: std::error::Error;
     type CustomQuery: cosmwasm_std::CustomQuery;
     type Header: Decode<Self::Encoding> + Debug;
-    type Misbehaviour;
+    type Misbehaviour: Decode<Self::Encoding> + Debug;
     type ClientState: Decode<Self::Encoding> + Debug;
     type ConsensusState: Decode<Self::Encoding> + Debug;
     type Encoding: Encoding;
@@ -172,10 +174,15 @@ where
                         &Self::verify_header(deps, env, header)
                             .map_err(IbcClientError::ClientSpecific)?,
                     )
+                } else if let Ok(misbehaviour) =
+                    <Self::Misbehaviour as Decode<Self::Encoding>>::decode(&client_message.0)
+                {
+                    to_json_binary(
+                        &Self::verify_misbehaviour(deps, misbehaviour)
+                            .map_err(IbcClientError::ClientSpecific)?,
+                    )
                 } else {
-                    Err(IbcClientError::UnexpectedCallDataFromHostModule(
-                        "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
-                    ))?
+                    return Err(IbcClientError::MisbehaviourDataDecode(client_message.0));
                 }
             }
             QueryMsg::CheckForMisbehaviour { client_message } => {
@@ -186,10 +193,18 @@ where
                         found_misbehaviour: Self::check_for_misbehaviour_on_header(deps, header)
                             .map_err(IbcClientError::ClientSpecific)?,
                     })
+                } else if let Ok(misbehaviour) =
+                    <Self::Misbehaviour as Decode<Self::Encoding>>::decode(&client_message.0)
+                {
+                    to_json_binary(&CheckForMisbehaviourResult {
+                        found_misbehaviour: Self::check_for_misbehaviour_on_misbehaviour(
+                            deps,
+                            misbehaviour,
+                        )
+                        .map_err(IbcClientError::ClientSpecific)?,
+                    })
                 } else {
-                    Err(IbcClientError::UnexpectedCallDataFromHostModule(
-                        "`Misbehavior` is not supported for now".to_string(),
-                    ))?
+                    return Err(IbcClientError::MisbehaviourDataDecode(client_message.0));
                 }
             }
             QueryMsg::TimestampAtHeight { height } => to_json_binary(&TimestampAtHeightResult {
