@@ -18,8 +18,8 @@
 	</div>
 
 	<div class="flex flex-col items-center text-accent text-semibold">
-		<div class="text-6xl">60x</div>
-		<div class="text-3xl">faster</div>
+		<div class="text-4xl sm:text-6xl">60x</div>
+		<div class="text-2xl sm:text-3xl">faster</div>
 	</div>
 </div>
 
