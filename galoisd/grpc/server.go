@@ -18,6 +18,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"galois/grpc/api/v2"
+
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
@@ -41,7 +43,7 @@ import (
 )
 
 type proverServer struct {
-	UnimplementedUnionProverAPIServer
+	grpc.UnimplementedUnionProverAPIServer
 	cs      cs_bn254.R1CS
 	pk      backend_bn254.ProvingKey
 	vk      backend_bn254.VerifyingKey
@@ -52,10 +54,10 @@ type proverServer struct {
 
 func (*proverServer) mustEmbedUnimplementedUnionProverAPIServer() {}
 
-func (p *proverServer) Poll(ctx context.Context, pollReq *PollRequest) (*PollResponse, error) {
+func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*grpc.PollResponse, error) {
 	req := pollReq.Request
 
-	prove := func() (*ProveResponse, error) {
+	prove := func() (*grpc.ProveResponse, error) {
 
 		marshalValidators := func(validators []*types.SimpleValidator) ([lightclient.MaxVal]lightclient.Validator, []byte, error) {
 			lcValidators := [lightclient.MaxVal]lightclient.Validator{}
@@ -154,14 +156,18 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *PollRequest) (*PollRes
 			return nil, fmt.Errorf("Could not marshal the vote %s", err)
 		}
 
-		hmX, hmY := cometbn254.HashToField2(signedBytes)
+		message := cometbn254.HashToField(signedBytes)
+
+		hashedMessage := cometbn254.HashToG2(signedBytes)
 
 		witness := lcgadget.Circuit{
+			DomainSeparationTag:      []byte(cometbn254.CometblsSigDST),
 			TrustedInput:             trustedInput,
 			UntrustedInput:           untrustedInput,
 			ExpectedTrustedValRoot:   trustedValidatorsRoot,
 			ExpectedUntrustedValRoot: untrustedValidatorsRoot,
-			Message:                  [2]frontend.Variable{hmX, hmY},
+			Message:                  message,
+			HashedMessage:            gadget.NewG2Affine(hashedMessage),
 		}
 
 		privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
@@ -246,8 +252,8 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *PollRequest) (*PollRes
 		// The EVM verifier has been extended to support this two extra public inputs.
 		evmProof := append(append(proofBz[:256], commitmentHash...), proofCommitment...)
 
-		proveRes := ProveResponse{
-			Proof: &ZeroKnowledgeProof{
+		proveRes := grpc.ProveResponse{
+			Proof: &grpc.ZeroKnowledgeProof{
 				Content:           proofBz,
 				CompressedContent: compressedProofBz,
 				PublicInputs:      publicInputs,
@@ -266,30 +272,30 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *PollRequest) (*PollRes
 	}
 	proveKey := sha256.Sum256(reqJson)
 
-	result, found := p.results.LoadOrStore(proveKey, &ProveRequestPending{})
+	result, found := p.results.LoadOrStore(proveKey, &grpc.ProveRequestPending{})
 	if found {
 		log.Println("Poll check...")
 
 		switch _result := result.(type) {
-		case *ProveRequestPending:
-			return &PollResponse{
-				Result: &PollResponse_Pending{
+		case *grpc.ProveRequestPending:
+			return &grpc.PollResponse{
+				Result: &grpc.PollResponse_Pending{
 					Pending: _result,
 				},
 			}, nil
-		case *ProveResponse:
+		case *grpc.ProveResponse:
 			p.results.Delete(proveKey)
-			return &PollResponse{
-				Result: &PollResponse_Done{
-					Done: &ProveRequestDone{
+			return &grpc.PollResponse{
+				Result: &grpc.PollResponse_Done{
+					Done: &grpc.ProveRequestDone{
 						Response: _result,
 					},
 				},
 			}, nil
 		case string:
-			return &PollResponse{
-				Result: &PollResponse_Failed{
-					Failed: &ProveRequestFailed{
+			return &grpc.PollResponse{
+				Result: &grpc.PollResponse_Failed{
+					Failed: &grpc.ProveRequestFailed{
 						Message: _result,
 					},
 				},
@@ -330,14 +336,14 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *PollRequest) (*PollRes
 		}()
 	}
 
-	return &PollResponse{
-		Result: &PollResponse_Pending{
-			Pending: &ProveRequestPending{},
+	return &grpc.PollResponse{
+		Result: &grpc.PollResponse_Pending{
+			Pending: &grpc.ProveRequestPending{},
 		},
 	}, nil
 }
 
-func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyResponse, error) {
+func (p *proverServer) Verify(ctx context.Context, req *grpc.VerifyRequest) (*grpc.VerifyResponse, error) {
 	log.Println("Verifying...")
 
 	reqJson, err := json.MarshalIndent(req, "", "    ")
@@ -359,16 +365,10 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 		return nil, fmt.Errorf("The untrusted validator set root must be a SHA256 hash")
 	}
 
-	var blockX fr.Element
-	err = blockX.SetBytesCanonical(req.BlockHeaderX.Value)
+	var hashedMessage fr.Element
+	err = hashedMessage.SetBytesCanonical(req.HashedMessage.Value)
 	if err != nil {
-		return nil, fmt.Errorf("The block header X must be a BN254 fr.Element: %w", err)
-	}
-
-	var blockY fr.Element
-	err = blockY.SetBytesCanonical(req.BlockHeaderY.Value)
-	if err != nil {
-		return nil, fmt.Errorf("The block header Y must be a BN254 fr.Element: %w", err)
+		return nil, fmt.Errorf("The hashed message must be a BN254 fr.Element: %w", err)
 	}
 
 	validators := [lightclient.MaxVal]lightclient.Validator{}
@@ -394,7 +394,7 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 		UntrustedInput:           dummyInput,
 		ExpectedTrustedValRoot:   req.TrustedValidatorSetRoot,
 		ExpectedUntrustedValRoot: req.UntrustedValidatorSetRoot,
-		Message:                  [2]frontend.Variable{req.BlockHeaderX.Value, req.BlockHeaderY.Value},
+		Message:                  hashedMessage,
 	}
 
 	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
@@ -410,17 +410,17 @@ func (p *proverServer) Verify(ctx context.Context, req *VerifyRequest) (*VerifyR
 	err = backend.Verify(backend.Proof(&proof), backend.VerifyingKey(&p.vk), publicWitness)
 	if err != nil {
 		log.Println("Verification failed: %w", err)
-		return &VerifyResponse{
+		return &grpc.VerifyResponse{
 			Valid: false,
 		}, nil
 	} else {
-		return &VerifyResponse{
+		return &grpc.VerifyResponse{
 			Valid: true,
 		}, nil
 	}
 }
 
-func (p *proverServer) GenerateContract(ctx context.Context, req *GenerateContractRequest) (*GenerateContractResponse, error) {
+func (p *proverServer) GenerateContract(ctx context.Context, req *grpc.GenerateContractRequest) (*grpc.GenerateContractResponse, error) {
 	log.Println("Generating contract...")
 
 	var buffer bytes.Buffer
@@ -431,42 +431,42 @@ func (p *proverServer) GenerateContract(ctx context.Context, req *GenerateContra
 	}
 	mem.Flush()
 
-	return &GenerateContractResponse{
+	return &grpc.GenerateContractResponse{
 		Content: buffer.Bytes(),
 	}, nil
 }
 
-func (p *proverServer) QueryStats(ctx context.Context, req *QueryStatsRequest) (*QueryStatsResponse, error) {
+func (p *proverServer) QueryStats(ctx context.Context, req *grpc.QueryStatsRequest) (*grpc.QueryStatsResponse, error) {
 	log.Println("Querying stats...")
 
-	return &QueryStatsResponse{
-		VariableStats: &VariableStats{
+	return &grpc.QueryStatsResponse{
+		VariableStats: &grpc.VariableStats{
 			NbInternalVariables: uint32(p.cs.GetNbInternalVariables()),
 			NbSecretVariables:   uint32(p.cs.GetNbSecretVariables()),
 			NbPublicVariables:   uint32(p.cs.GetNbPublicVariables()),
 			NbConstraints:       uint32(p.cs.GetNbConstraints()),
 			NbCoefficients:      uint32(p.cs.GetNbCoefficients()),
 		},
-		ProvingKeyStats: &ProvingKeyStats{
+		ProvingKeyStats: &grpc.ProvingKeyStats{
 			NbG1: uint32(p.pk.NbG1()),
 			NbG2: uint32(p.pk.NbG2()),
 		},
-		VerifyingKeyStats: &VerifyingKeyStats{
+		VerifyingKeyStats: &grpc.VerifyingKeyStats{
 			NbG1:            uint32(p.vk.NbG1()),
 			NbG2:            uint32(p.vk.NbG2()),
 			NbPublicWitness: uint32(p.vk.NbPublicWitness()),
 		},
 		// Deprecated
-		CommitmentStats: &CommitmentStats{
+		CommitmentStats: &grpc.CommitmentStats{
 			NbPublicCommitted:  uint32(0),
 			NbPrivateCommitted: uint32(0),
 		},
 	}, nil
 }
 
-func (p *proverServer) Prove(ctx context.Context, req *ProveRequest) (*ProveResponse, error) {
+func (p *proverServer) Prove(ctx context.Context, req *grpc.ProveRequest) (*grpc.ProveResponse, error) {
 	for true {
-		pollRes, err := p.Poll(ctx, &PollRequest{
+		pollRes, err := p.Poll(ctx, &grpc.PollRequest{
 			Request: req,
 		})
 		if err != nil {

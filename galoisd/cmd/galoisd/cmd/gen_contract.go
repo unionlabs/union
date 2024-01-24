@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	provergrpc "galois/grpc/api/v1"
+	provergrpc "galois/grpc/api/v2"
 	"log"
 	"os"
 
