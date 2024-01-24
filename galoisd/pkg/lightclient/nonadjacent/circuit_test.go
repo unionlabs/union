@@ -241,7 +241,7 @@ func FuzzNonadjacent(f *testing.F) {
 		votingPower := 0
 
 		for true {
-			if votingPower >= int(totalPower)/3*2 {
+			if votingPower > int(totalPower)/3*2+1 {
 				break
 			}
 			index := uint32(rand.Int31n(int32(nbOfValidators) - 1))
