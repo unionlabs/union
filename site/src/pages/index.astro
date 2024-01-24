@@ -128,20 +128,20 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
       </section>
 
 
-      <section class='grid grid-cols-2 divide-x divide-solid divide-[#1f1f1f] md:flex-row max-w-4x items-center mb-px bg-black'>
+      <section class='grid grid-cols-1 md:grid-cols-2 md:divide-x divide-solid divide-[#1f1f1f] items-center mb-px bg-black'>
         <div class="p-8 text-2xl font-normal text-gray-400">
               Galois is the first interoperability proving layer that is so efficient that it allows
               anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
               of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
         </div>
-        <div class="p-8 w-full min-w-full h-full min-h-full">
+        <div class="pb-4 md:p-8 h-64 md:h-full">
           <PerformanceGraph client:load/>
         </div>
       </section>
 
       <section class='flex flex-col items-center bg-black mb-px'>
         <div
-          class='grid grid-cols-2 divide-x divide-solid divide-[#1f1f1f]'
+          class='grid grid-cols-1 md:grid-cols-2 md:divide-x divide-solid divide-[#1f1f1f]'
         >
           <div class='w-full antialiased p-8'>
             <CodeSnippet
@@ -149,7 +149,7 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
               code={soliditySnippet}
             />
           </div>
-          <div class="p-8 text-2xl font-normal text-gray-400">
+          <div class="p-8 -order-1 md:order-2 text-2xl font-normal text-gray-400">
             <h2 class='text-4xl font-normal text-white'>Build for any stack.</h2>
                 Galois is the first interoperability proving layer that is so efficient that it allows
                 anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
