@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, Deps, DepsMut, Env};
+use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_verifier::{
     compute_sync_committee_period_at_slot, validate_light_client_update,
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
@@ -13,6 +13,7 @@ use ics008_wasm_client::{
 use protos::ibc::core::client::v1::GenesisMetadata;
 use sha3::Digest;
 use unionlabs::{
+    encoding::Proto,
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -54,18 +55,20 @@ impl IbcClient for EthereumLightClient {
     type Header = Header<Config>;
 
     // TODO(aeryz): See #588
-    type Misbehaviour = ();
+    type Misbehaviour = Header<Config>;
 
     type ClientState = ClientState;
 
     type ConsensusState = ConsensusState;
+
+    type Encoding = Proto;
 
     fn verify_membership(
         deps: Deps<Self::CustomQuery>,
         height: Height,
         _delay_time_period: u64,
         _delay_block_period: u64,
-        proof: Binary,
+        proof: Vec<u8>,
         mut path: MerklePath,
         value: ics008_wasm_client::StorageState,
     ) -> Result<(), Self::Error> {
@@ -79,7 +82,7 @@ impl IbcClient for EthereumLightClient {
         let storage_root = consensus_state.data.storage_root;
 
         let storage_proof = {
-            let mut proofs = StorageProof::try_from_proto_bytes(&proof.0)
+            let mut proofs = StorageProof::try_from_proto_bytes(&proof)
                 .map_err(|e| Error::DecodeFromProto {
                     reason: format!("when decoding storage proof: {e:#?}"),
                 })?
@@ -173,7 +176,7 @@ impl IbcClient for EthereumLightClient {
         mut deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         header: Self::Header,
-    ) -> Result<ics008_wasm_client::UpdateStateResult, Self::Error> {
+    ) -> Result<Vec<Height>, Self::Error> {
         let trusted_sync_committee = header.trusted_sync_committee;
         let trusted_height = trusted_sync_committee.trusted_height;
 
@@ -235,9 +238,7 @@ impl IbcClient for EthereumLightClient {
 
         save_consensus_state(deps, consensus_state, &updated_height);
 
-        Ok(ics008_wasm_client::UpdateStateResult {
-            heights: vec![updated_height],
-        })
+        Ok(vec![updated_height])
     }
 
     fn update_state_on_misbehaviour(
@@ -258,7 +259,7 @@ impl IbcClient for EthereumLightClient {
     fn check_for_misbehaviour_on_header(
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
-    ) -> Result<ics008_wasm_client::CheckForMisbehaviourResult, Self::Error> {
+    ) -> Result<bool, Self::Error> {
         let height = Height::new(0, header.consensus_update.attested_header.beacon.slot);
 
         if let Some(consensus_state) =
@@ -294,26 +295,22 @@ impl IbcClient for EthereumLightClient {
 
         // TODO(#605): Do we need to check whether this header's timestamp is between
         // the next and the previous consensus state in terms of height?
-
-        // TODO(aeryz): Why not return Result<(), Error> and interpret it in the wasm lib?
-        Ok(ics008_wasm_client::CheckForMisbehaviourResult {
-            found_misbehaviour: false,
-        })
+        Ok(false)
     }
 
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<ics008_wasm_client::CheckForMisbehaviourResult, Self::Error> {
+    ) -> Result<bool, Self::Error> {
         unimplemented!()
     }
 
     fn verify_upgrade_and_update_state(
         _deps: DepsMut<Self::CustomQuery>,
-        _upgrade_client_state: WasmClientState,
-        _upgrade_consensus_state: WasmConsensusState,
-        _proof_upgrade_client: Binary,
-        _proof_upgrade_consensus_state: Binary,
+        _upgrade_client_state: Self::ClientState,
+        _upgrade_consensus_state: Self::ConsensusState,
+        _proof_upgrade_client: Vec<u8>,
+        _proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(), Self::Error> {
         unimplemented!()
     }
@@ -485,7 +482,7 @@ mod test {
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockQuerier, MockQuerierCustomHandlerResult, MockStorage},
-        OwnedDeps, SystemResult, Timestamp,
+        Binary, OwnedDeps, SystemResult, Timestamp,
     };
     use ethereum_verifier::crypto::{
         eth_aggregate_public_keys_unchecked, fast_aggregate_verify_unchecked,
@@ -495,10 +492,7 @@ mod test {
     use unionlabs::{
         bls::BlsPublicKey,
         ethereum::config::Mainnet,
-        ibc::{
-            core::connection::connection_end::ConnectionEnd,
-            lightclients::{cometbls, ethereum, wasm},
-        },
+        ibc::{core::connection::connection_end::ConnectionEnd, lightclients::ethereum},
         id::ClientId,
         proof::ConnectionPath,
         IntoProto,

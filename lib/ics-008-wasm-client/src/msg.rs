@@ -1,16 +1,10 @@
 use std::fmt::Display;
 
 use cosmwasm_std::Binary;
-use protos::ibc::{
-    core::client::v1::GenesisMetadata,
-    lightclients::wasm::v1::{
-        ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
-    },
-};
+use protos::ibc::core::client::v1::GenesisMetadata;
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::{client::height::Height, commitment::merkle_path::MerklePath};
 
-// TODO(aeryz): Handle all these properly
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InstantiateMsg {
     pub client_state: Binary,
@@ -79,8 +73,8 @@ pub enum SudoMsg {
     },
 
     VerifyUpgradeAndUpdateState {
-        upgrade_client_state: ProtoClientState,
-        upgrade_consensus_state: ProtoConsensusState,
+        upgrade_client_state: Binary,
+        upgrade_consensus_state: Binary,
         proof_upgrade_client: Binary,
         proof_upgrade_consensus_state: Binary,
     },
@@ -126,17 +120,3 @@ impl From<Status> for StatusResult {
         }
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::{ClientMessage, ExecuteMsg};
-
-//     #[test]
-//     fn execute_msg_snake_case_encoded() {
-//         let msg = ExecuteMsg::CheckSubstituteAndUpdateState {};
-//         assert_eq!(
-//             serde_json::to_string(&msg).unwrap(),
-//             r#"{"check_substitute_and_update_state":{}}"#
-//         )
-//     }
-// }

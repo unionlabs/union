@@ -1,17 +1,15 @@
-use core::fmt::{Debug, Display};
+use core::fmt::Debug;
 
 use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, StdError};
+use frame_support_procedural::DebugNoBound;
 use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
-    ibc::{
-        core::{client::height::Height, commitment::merkle_path::MerklePath},
-        lightclients::wasm::{client_state::ClientState, consensus_state::ConsensusState},
-    },
-    Proto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf,
+    encoding::{Decode, Encoding},
+    ibc::core::{client::height::Height, commitment::merkle_path::MerklePath},
 };
 
 use crate::{
-    msg::QueryMsg, CheckForMisbehaviourResult, EmptyResult, Error, ExportMetadataResult, Status,
+    msg::QueryMsg, CheckForMisbehaviourResult, EmptyResult, ExportMetadataResult, Status,
     StatusResult, SudoMsg, TimestampAtHeightResult, UpdateStateResult,
 };
 
@@ -20,28 +18,45 @@ pub enum StorageState {
     Empty,
 }
 
-pub trait IbcClient {
-    type Error: From<TryFromProtoBytesError<TryFromProtoErrorOf<Self::Header>>>
-        + From<Error>
-        + From<StdError>
-        + Display;
-    type CustomQuery: cosmwasm_std::CustomQuery;
-    // TODO(aeryz): see #583
-    type Header: TryFromProto;
-    // TODO(aeryz): see #583, #588
-    type Misbehaviour;
-    type ClientState: TryFromProto;
-    type ConsensusState: TryFromProto;
+#[derive(DebugNoBound)]
+pub enum DecodeError<T: IbcClient> {
+    Header(<T::Header as Decode<T::Encoding>>::Error),
+    Misbehaviour(<T::Misbehaviour as Decode<T::Encoding>>::Error),
+    ClientState(<T::ClientState as Decode<T::Encoding>>::Error),
+    ConsensusState(<T::ConsensusState as Decode<T::Encoding>>::Error),
+}
 
-    fn sudo(deps: DepsMut<Self::CustomQuery>, env: Env, msg: SudoMsg) -> Result<Binary, Self::Error>
-    where
-        // NOTE(aeryz): unfortunately bounding to `Debug` in associated type creates a
-        // recursion in the compiler, see this issue: https://github.com/rust-lang/rust/issues/87755
-        <Self::ClientState as Proto>::Proto: prost::Message + Default,
-        TryFromProtoErrorOf<Self::ClientState>: Debug,
-        <Self::ConsensusState as Proto>::Proto: prost::Message + Default,
-        TryFromProtoErrorOf<Self::ConsensusState>: Debug,
-    {
+#[derive(thiserror::Error, DebugNoBound)]
+pub enum IbcClientError<T: IbcClient> {
+    #[error("decode error ({0:?})")]
+    Decode(#[from] DecodeError<T>),
+    #[error("std error ({0:?})")]
+    Std(#[from] StdError),
+    #[error("unexpected call from the host module ({0})")]
+    UnexpectedCallDataFromHostModule(String),
+    #[error("client state not found")]
+    ClientStateNotFound,
+    #[error(transparent)]
+    ClientSpecific(T::Error),
+    #[error("`ClientMessage` cannot be decoded ({data})", data = serde_utils::to_hex(.0))]
+    InvalidClientMessage(Vec<u8>),
+}
+
+pub trait IbcClient: Sized {
+    type Error: std::error::Error;
+    type CustomQuery: cosmwasm_std::CustomQuery;
+    type Header: Decode<Self::Encoding> + Debug;
+    type Misbehaviour: Decode<Self::Encoding> + Debug;
+    type ClientState: Decode<Self::Encoding> + Debug;
+    type ConsensusState: Decode<Self::Encoding> + Debug;
+    type Encoding: Encoding;
+
+    fn sudo(
+        deps: DepsMut<Self::CustomQuery>,
+        env: Env,
+        msg: SudoMsg,
+    ) -> Result<Binary, IbcClientError<Self>>
+where {
         match msg {
             SudoMsg::VerifyMembership {
                 height,
@@ -50,43 +65,53 @@ pub trait IbcClient {
                 proof,
                 path,
                 value,
-            } => to_json_binary(&Self::verify_membership(
-                deps.as_ref(),
-                height,
-                delay_time_period,
-                delay_block_period,
-                proof,
-                path,
-                StorageState::Occupied(value.0),
-            )?),
+            } => to_json_binary(
+                &Self::verify_membership(
+                    deps.as_ref(),
+                    height,
+                    delay_time_period,
+                    delay_block_period,
+                    proof.into(),
+                    path,
+                    StorageState::Occupied(value.0),
+                )
+                .map_err(IbcClientError::ClientSpecific)?,
+            ),
             SudoMsg::VerifyNonMembership {
                 height,
                 delay_time_period,
                 delay_block_period,
                 proof,
                 path,
-            } => to_json_binary(&Self::verify_membership(
-                deps.as_ref(),
-                height,
-                delay_time_period,
-                delay_block_period,
-                proof,
-                path,
-                StorageState::Empty,
-            )?),
+            } => to_json_binary(
+                &Self::verify_membership(
+                    deps.as_ref(),
+                    height,
+                    delay_time_period,
+                    delay_block_period,
+                    proof.into(),
+                    path,
+                    StorageState::Empty,
+                )
+                .map_err(IbcClientError::ClientSpecific)?,
+            ),
             SudoMsg::UpdateState { client_message } => {
                 if let Ok(header) =
-                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.0)
+                    <Self::Header as Decode<Self::Encoding>>::decode(&client_message.0)
                 {
-                    to_json_binary(&Self::update_state(deps, env, header)?)
+                    to_json_binary(&UpdateStateResult {
+                        heights: Self::update_state(deps, env, header)
+                            .map_err(IbcClientError::ClientSpecific)?,
+                    })
                 } else {
-                    Err(Error::UnexpectedCallDataFromHostModule(
+                    return Err(IbcClientError::UnexpectedCallDataFromHostModule(
                         "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
-                    ))?
+                    ));
                 }
             }
             SudoMsg::UpdateStateOnMisbehaviour { client_message } => {
-                Self::update_state_on_misbehaviour(deps, env, client_message.0)?;
+                Self::update_state_on_misbehaviour(deps, env, client_message.0)
+                    .map_err(IbcClientError::ClientSpecific)?;
                 to_json_binary(&EmptyResult {})
             }
             SudoMsg::VerifyUpgradeAndUpdateState {
@@ -97,18 +122,24 @@ pub trait IbcClient {
             } => {
                 Self::verify_upgrade_and_update_state(
                     deps,
-                    <_>::try_from_proto(upgrade_client_state)
-                        .map_err(|err| Error::Decode(format!("{err:?}")))?,
-                    <_>::try_from_proto(upgrade_consensus_state)
-                        .map_err(|err| Error::Decode(format!("{err:?}")))?,
-                    proof_upgrade_client,
-                    proof_upgrade_consensus_state,
-                )?;
+                    <Self::ClientState as Decode<Self::Encoding>>::decode(
+                        upgrade_client_state.as_slice(),
+                    )
+                    .map_err(DecodeError::ClientState)?,
+                    <Self::ConsensusState as Decode<Self::Encoding>>::decode(
+                        upgrade_consensus_state.as_slice(),
+                    )
+                    .map_err(DecodeError::ConsensusState)?,
+                    proof_upgrade_client.into(),
+                    proof_upgrade_consensus_state.into(),
+                )
+                .map_err(IbcClientError::ClientSpecific)?;
 
                 to_json_binary(&EmptyResult {})
             }
             SudoMsg::MigrateClientStore {} => {
-                Self::migrate_client_store(deps.as_ref())?;
+                Self::migrate_client_store(deps.as_ref())
+                    .map_err(IbcClientError::ClientSpecific)?;
                 to_json_binary(&EmptyResult {})
             }
         }
@@ -119,38 +150,59 @@ pub trait IbcClient {
         deps: Deps<Self::CustomQuery>,
         env: Env,
         msg: QueryMsg,
-    ) -> Result<Binary, Self::Error> {
+    ) -> Result<Binary, IbcClientError<Self>> {
         match msg {
-            QueryMsg::Status {} => {
-                to_json_binary(&Into::<StatusResult>::into(Self::status(deps, &env)?))
-            }
+            QueryMsg::Status {} => to_json_binary(&Into::<StatusResult>::into(
+                Self::status(deps, &env).map_err(IbcClientError::ClientSpecific)?,
+            )),
             QueryMsg::ExportMetadata {} => to_json_binary(&ExportMetadataResult {
-                genesis_metadata: Self::export_metadata(deps, &env)?,
+                genesis_metadata: Self::export_metadata(deps, &env)
+                    .map_err(IbcClientError::ClientSpecific)?,
             }),
             QueryMsg::VerifyClientMessage { client_message } => {
                 if let Ok(header) =
-                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.0)
+                    <Self::Header as Decode<Self::Encoding>>::decode(&client_message.0)
                 {
-                    to_json_binary(&Self::verify_header(deps, env, header)?)
+                    to_json_binary(
+                        &Self::verify_header(deps, env, header)
+                            .map_err(IbcClientError::ClientSpecific)?,
+                    )
+                } else if let Ok(misbehaviour) =
+                    <Self::Misbehaviour as Decode<Self::Encoding>>::decode(&client_message.0)
+                {
+                    to_json_binary(
+                        &Self::verify_misbehaviour(deps, misbehaviour)
+                            .map_err(IbcClientError::ClientSpecific)?,
+                    )
                 } else {
-                    Err(Error::UnexpectedCallDataFromHostModule(
-                        "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
-                    ))?
+                    return Err(IbcClientError::InvalidClientMessage(client_message.0));
                 }
             }
             QueryMsg::CheckForMisbehaviour { client_message } => {
                 if let Ok(header) =
-                    <Self::Header as TryFromProto>::try_from_proto_bytes(&client_message.0)
+                    <Self::Header as Decode<Self::Encoding>>::decode(&client_message.0)
                 {
-                    to_json_binary(&Self::verify_header(deps, env, header)?)
+                    to_json_binary(&CheckForMisbehaviourResult {
+                        found_misbehaviour: Self::check_for_misbehaviour_on_header(deps, header)
+                            .map_err(IbcClientError::ClientSpecific)?,
+                    })
+                } else if let Ok(misbehaviour) =
+                    <Self::Misbehaviour as Decode<Self::Encoding>>::decode(&client_message.0)
+                {
+                    to_json_binary(&CheckForMisbehaviourResult {
+                        found_misbehaviour: Self::check_for_misbehaviour_on_misbehaviour(
+                            deps,
+                            misbehaviour,
+                        )
+                        .map_err(IbcClientError::ClientSpecific)?,
+                    })
                 } else {
-                    Err(Error::UnexpectedCallDataFromHostModule(
-                        "`UpdateState` cannot be called with `Misbehaviour`".to_string(),
-                    ))?
+                    return Err(IbcClientError::InvalidClientMessage(client_message.0));
                 }
             }
             QueryMsg::TimestampAtHeight { height } => to_json_binary(&TimestampAtHeightResult {
-                timestamp: Self::timestamp_at_height(deps, height)?,
+                timestamp: Self::timestamp_at_height(deps, height)
+                    .map_err(IbcClientError::ClientSpecific)?,
             }),
         }
         .map_err(Into::into)
@@ -162,7 +214,7 @@ pub trait IbcClient {
         height: Height,
         delay_time_period: u64,
         delay_block_period: u64,
-        proof: Binary,
+        proof: Vec<u8>,
         path: MerklePath,
         value: StorageState,
     ) -> Result<(), Self::Error>;
@@ -182,9 +234,10 @@ pub trait IbcClient {
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
         header: Self::Header,
-    ) -> Result<UpdateStateResult, Self::Error>;
+    ) -> Result<Vec<Height>, Self::Error>;
 
-    // TODO(aeryz): make this client message generic over the underlying types
+    /// `client_message` is being left without decoding because it could be either `Header`
+    /// or `Misbehaviour` and it is generally not being used.
     fn update_state_on_misbehaviour(
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
@@ -194,19 +247,19 @@ pub trait IbcClient {
     fn check_for_misbehaviour_on_header(
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
-    ) -> Result<CheckForMisbehaviourResult, Self::Error>;
+    ) -> Result<bool, Self::Error>;
 
     fn check_for_misbehaviour_on_misbehaviour(
         deps: Deps<Self::CustomQuery>,
         misbehaviour: Self::Misbehaviour,
-    ) -> Result<CheckForMisbehaviourResult, Self::Error>;
+    ) -> Result<bool, Self::Error>;
 
     fn verify_upgrade_and_update_state(
         deps: DepsMut<Self::CustomQuery>,
-        upgrade_client_state: ClientState<Self::ClientState>,
-        upgrade_consensus_state: ConsensusState<Self::ConsensusState>,
-        proof_upgrade_client: Binary,
-        proof_upgrade_consensus_state: Binary,
+        upgrade_client_state: Self::ClientState,
+        upgrade_consensus_state: Self::ConsensusState,
+        proof_upgrade_client: Vec<u8>,
+        proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(), Self::Error>;
 
     fn migrate_client_store(deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error>;

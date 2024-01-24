@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env};
+use cosmwasm_std::{Deps, DepsMut, Empty, Env};
 use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
@@ -9,6 +9,7 @@ use ics23::ibc_api::SDK_SPECS;
 use prost::Message;
 use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
+    encoding::Proto,
     hash::H256,
     ibc::{
         core::{
@@ -44,18 +45,20 @@ impl IbcClient for CometblsLightClient {
     type Header = Header;
 
     // TODO(aeryz): Change this to appropriate misbehavior type when it is implemented
-    type Misbehaviour = ();
+    type Misbehaviour = Header;
 
     type ClientState = ClientState;
 
     type ConsensusState = ConsensusState;
+
+    type Encoding = Proto;
 
     fn verify_membership(
         deps: Deps<Self::CustomQuery>,
         height: Height,
         _delay_time_period: u64,
         _delay_block_period: u64,
-        proof: Binary,
+        proof: Vec<u8>,
         path: MerklePath,
         value: StorageState,
     ) -> Result<(), Self::Error> {
@@ -199,7 +202,7 @@ impl IbcClient for CometblsLightClient {
         mut deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         header: Self::Header,
-    ) -> Result<ics008_wasm_client::UpdateStateResult, Self::Error> {
+    ) -> Result<Vec<Height>, Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         let mut consensus_state: WasmConsensusState =
             read_consensus_state(deps.as_ref(), &header.trusted_height)?
@@ -245,9 +248,7 @@ impl IbcClient for CometblsLightClient {
         save_client_state(deps.branch(), client_state);
         save_consensus_state(deps, consensus_state, &untrusted_height);
 
-        Ok(ics008_wasm_client::UpdateStateResult {
-            heights: vec![untrusted_height],
-        })
+        Ok(vec![untrusted_height])
     }
 
     fn update_state_on_misbehaviour(
@@ -261,25 +262,24 @@ impl IbcClient for CometblsLightClient {
     fn check_for_misbehaviour_on_header(
         _deps: Deps<Self::CustomQuery>,
         _header: Self::Header,
-    ) -> Result<ics008_wasm_client::CheckForMisbehaviourResult, Self::Error> {
-        Ok(ics008_wasm_client::CheckForMisbehaviourResult {
-            found_misbehaviour: false,
-        })
+    ) -> Result<bool, Self::Error> {
+        // TODO(aeryz): Leaving this as success for us to be able to update the client. See: #588.
+        Ok(false)
     }
 
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<ics008_wasm_client::CheckForMisbehaviourResult, Self::Error> {
+    ) -> Result<bool, Self::Error> {
         unimplemented!()
     }
 
     fn verify_upgrade_and_update_state(
         _deps: DepsMut<Self::CustomQuery>,
-        _upgrade_client_state: WasmClientState,
-        _upgrade_consensus_state: WasmConsensusState,
-        _proof_upgrade_client: Binary,
-        _proof_upgrade_consensus_state: Binary,
+        _upgrade_client_state: Self::ClientState,
+        _upgrade_consensus_state: Self::ConsensusState,
+        _proof_upgrade_client: Vec<u8>,
+        _proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(), Self::Error> {
         unimplemented!()
     }
