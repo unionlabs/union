@@ -163,12 +163,15 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
           <AppleGraphContainer
             bars={[
               { width: 100, label: 'CometBLS V3', primary: true },
-              { width: 9.1, label: 'ZkMint' },
+              { width: 9.1, label: 'ZkMint*' },
               { width: 1.45, label: 'TendermintX' },
               { width: 0.77, label: 'Fraud-proof bridges' },
             ]}
             client:load
           />
+        </div>
+        <div class="italic text-gray-400">
+          * does not scale to 128 validators, 60x is compared to TendermintX
         </div>
       </section>
 

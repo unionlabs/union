@@ -10,9 +10,16 @@
   export let bars: BarProps[];
 </script>
 
-<div class="grid grid-5 gap-4 w-full min-w-full">
-	{#each bars as { primary, width, label }}
-		<AppleGraph {primary} {width} {label} />
-	{/each}
+<div class="flex gap-8">
+	<div class="flex-1 grid gap-4">
+		{#each bars as { primary, width, label }}
+			<AppleGraph {primary} {width} {label} />
+		{/each}
+	</div>
+
+	<div class="flex flex-col items-center text-accent text-semibold">
+		<div class="text-6xl">60x</div>
+		<div class="text-3xl">faster</div>
+	</div>
 </div>
 
