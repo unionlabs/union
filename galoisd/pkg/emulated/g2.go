@@ -490,7 +490,7 @@ func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable)
 	return e.ClearCofactor(e.Add(Q0, Q1)), nil
 }
 
-// Hash msg to 4 prime field elements (actually scalar field).
+// Hash msg to 4 field elements (actually scalar field).
 // https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-06#section-5.2
 func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variable) ([]*emulated.Element[emulated.BN254Fp], error) {
 	pseudoRandomBits, err := e.ExpandMsgXmd(message, dst)
@@ -510,12 +510,14 @@ func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variab
 	return elements, nil
 }
 
-// This is not a general implementation as the input/output length are fixed 192 bytes.
+// This is not a general implementation as the input/output length are fixed.
 // It is tailor-made for bn254_G2_XMD:MiMC_SSWU_RO_ hash_to_curve implementation.
 // Note: we use a 256 bit block
 // https://datatracker.ietf.org/doc/html/rfc9380#name-expand_message_xmd
 // https://datatracker.ietf.org/doc/html/rfc9380#name-utility-functions (I2OSP/O2ISP)
 // https://eprint.iacr.org/2016/492.pdf
+// Input: message, dst scalar field elements
+// Output: 192*8 bits
 func (e *EmulatedAPI) ExpandMsgXmd(message frontend.Variable, dst frontend.Variable) ([]frontend.Variable, error) {
 	h, err := mimc.NewMiMC(e.api)
 	if err != nil {
