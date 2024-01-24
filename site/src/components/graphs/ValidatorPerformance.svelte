@@ -149,7 +149,6 @@
       class="text-xs sm:text-xl font-semibold"
       id="x-axis-label"
     >
-      Number of validators
     </p>
   </div>
 </div>

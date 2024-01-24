@@ -74,7 +74,7 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
     class='flex flex-col flex-1 items-center px-4'
     transition:animate={fade({ duration: '0.4s' })}
   >
-  <div class="w-full flex flex-col max-w-5xl p-px bg-[#1f1f1f]">
+  <div class="w-full flex flex-col max-w-5xl p-px bg-[#1f1f1f] ">
       <section class='flex flex-col items-center py-32 gap-6 grid-effect-bg antialiased bg-black mb-px'>
         <div class='sm:text-7xl text-5xl text-white text-center font-semibold'>
           The Sovereign<br />Interoperability Layer
@@ -125,69 +125,35 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
           !-->
         </div>
         <ConnectedVisual />
-
       </section>
 
 
-      <div class="h-2 bg-black mb-px"></div>
-      <section class='flex flex-col items-center gap-6 grid-effect-bg antialiased pb-0 sm:pb-12 mb-px bg-black'>
-        <div
-          class='text-2xl sm:text-4xl md:text-5xl text-white text-center font-semibold text-transparent text-pretty'
-        >
-          Galois
+      <section class='grid grid-cols-2 divide-x divide-solid divide-[#1f1f1f] md:flex-row max-w-4x items-center mb-px bg-black'>
+        <div class="p-8 text-2xl font-normal text-gray-400">
+              Galois is the first interoperability proving layer that is so efficient that it allows
+              anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
+              of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
         </div>
-      </section>
-
-      <section class='flex flex-col md:flex-row max-w-4x items-center mb-px bg-black p-4'>
-        <div class="flex-1">
+        <div class="p-8">
           <PerformanceGraph client:load/>
         </div>
-        <div class="flex-1">
-            <p class='text-3xl font-normal mb-0 text-gray-400'>
-              Galois is the first interoperability proving layer that is so efficient that it allows
-              anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
-              of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
-            </p>
-        </div>
       </section>
 
-      <section class='bg-black mb-px text-white flex flex-col items-center'>
-        <h2 class='text-4xl font-normal m-8'>Prove anywhere, verify on chain.</h2>
-        <div class='flex gap-4 mx-8 mb-8'>
-          <div class='flex-1'>
-            <p class='text-3xl font-normal mb-0 text-gray-400'>
-              Galois is the first interoperability proving layer that is so efficient that it allows
-              anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
-              of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section class='flex flex-col p-4 items-center bg-black mb-px'>
-        <h2 class='text-4xl font-normal'>Build for any stack.</h2>
+      <section class='flex flex-col items-center bg-black mb-px'>
         <div
-          class='flex sm:flex-row flex-col justify-around overflow-none mx-auto items-center content-start px-3'
+          class='grid grid-cols-2 divide-x divide-solid divide-[#1f1f1f]'
         >
-          <div class='w-full antialiased'>
+          <div class='w-full antialiased p-8'>
             <CodeSnippet
               client:load
               code={soliditySnippet}
             />
           </div>
-          <div class='w-full flex flex-col text-xl md:text-2xl lg:text-3xl content-between justify-between p-4 space-y-4'>
-            <p class='font-normal text-wrap mt-0 text-gray-400'>
-              Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-              by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
-            </p>
-            <p class='font-normal text-wrap mt-0 text-gray-400'>
-              Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-              by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
-            </p>
-            <p class='font-normal text-wrap mt-0 text-gray-400'>
-              Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
-              by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
-            </p>
+          <div class="p-8 text-2xl font-normal text-gray-400">
+            <h2 class='text-4xl font-normal text-white'>Build for any stack.</h2>
+                Galois is the first interoperability proving layer that is so efficient that it allows
+                anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
+                of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
           </div>
         </div>
       </section>
@@ -199,26 +165,12 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
               { width: 100, label: 'CometBLS V3.0', primary: true },
               { width: 50, label: 'Ed25519-based proving' },
               { width: 50, label: 'TendermintX' },
-              { width: 20, label: 'others bad' }
             ]}
             client:load
           />
         </div>
-        <div class='grid grid-cols-3 xs:grid-rows-3 gap-4'>
-          <div class="m-px">
-            <h3>Galois</h3>
-            <p>Decentralized Proving, for everyone.</p>
-          </div>
-          <div>
-            <h3>CometBLS</h3>
-            <p>ZK-aligned Consensus engine</p>
-          </div>
-          <div>
-            <h3>Voyager</h3>
-            <p>Stateless relaying for a cross-chain future.</p>
-          </div>
-        </div>
       </section>
+
 
       <section class='bg-black mb-px flex flex-col items-center justif-center py-32'>
         <h2 class='text-4xl mb-4 font-normal'>The ZK toolchain for the next century.</h2>
@@ -265,6 +217,8 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
         </div>
       </section>
 
+
+    <!--
       <section class='bg-black mb-px flex justify-center bg-white text-black py-32'>
         <div class='flex-1 max-w-4xl'>
           <h2 class='text-4xl mb-4 font-normal text-center'>Blog</h2>
@@ -284,12 +238,13 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
           </ul>
         </div>
       </section>
+      !-->
 
-      <section class='bg-black mb-px flex justify-center bg-white text-black py-32'>
+      <section class='bg-black mb-px flex flex-col items-center justif-center py-32'>
         <div class='flex-1 max-w-4xl'>
           <h2 class='text-4xl mb-4 font-normal text-center'>Join the Union</h2>
           <!-- <p>Together, we </p> -->
-          <div class='flex flex-col md:flex-row'>
+          <div class='grid grid-cols-1 md:grid-cols-3 '>
             {
               socialLinks.map(socialLink => (
                 <a
@@ -301,7 +256,7 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
                     class='h-10'
                   />
                   <div class='mt-4'>
-                    <span class='mt-16 border-b-2 uppercase text-black border-black text-semibold undelrine'>
+                    <span class='mt-16 border-b-2 uppercase border-white text-semibold undelrine'>
                       {socialLink.cta} -&gt;
                     </span>
                   </div>
