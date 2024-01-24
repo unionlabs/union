@@ -2,6 +2,7 @@ package nonadjacent
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"galois/pkg/lightclient"
 	"math/big"
@@ -9,9 +10,8 @@ import (
 	"cosmossdk.io/math"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/frontend"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/assert"
 
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
@@ -19,6 +19,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 
+	"github.com/consensys/gnark/frontend"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 
 	"testing"
@@ -26,8 +27,99 @@ import (
 	"github.com/consensys/gnark/test"
 )
 
+type Pairing struct {
+	PK  gadget.G1Affine
+	Sig gadget.G2Affine
+	Msg gadget.G2Affine
+}
+
+func (c *Pairing) Define(api frontend.API) error {
+	pairing, err := gadget.NewPairing(api)
+	if err != nil {
+		return fmt.Errorf("new pairing: %w", err)
+	}
+	_, _, g1Gen, _ := curve.Generators()
+	g1GenNeg := gadget.NewG1Affine(*g1Gen.Neg(&g1Gen))
+
+	err = pairing.PairingCheck(
+		[]*gadget.G1Affine{&g1GenNeg, &c.PK},
+		[]*gadget.G2Affine{&c.Sig, &c.Msg},
+	)
+	if err != nil {
+		return fmt.Errorf("pairing check: %w", err)
+	}
+	return nil
+}
+
+func TestPairingVirtual(t *testing.T) {
+	hex := func(h string) []byte {
+		b, err := hex.DecodeString(h)
+		assert.NoError(t, err)
+		return b
+	}
+
+	_, _, g1Gen, _ := curve.Generators()
+	var g1GenNeg curve.G1Affine
+	g1GenNeg.Neg(&g1Gen)
+
+	var pk curve.G1Affine
+	_, err := pk.SetBytes(hex("83D016646DF946E887CD36AE6C10BED9C4A49D675CCC072E5AAF496AA4B2D50D"))
+	assert.NoError(t, err)
+	var sig curve.G2Affine
+	_, err = sig.SetBytes(hex("C4B626B703FACBFA5A5071B8254E4A4B78BB45C6A534FF5822BA806730BCE9522707DBF7D689759DFB5CE8DA3A99E04219DDC1CBB8F94481876B1F24FFA5A73E"))
+	assert.NoError(t, err)
+	var msg curve.G2Affine
+	_, err = msg.SetBytes(hex("8591C93118F5A406886C558BEA365D249D881BBC7FCD68673307CC8350BA9C49000ABE5E44150F1E98196B088D4A3A60AFE27E49BA4D4411E528320022D324CF"))
+	assert.NoError(t, err)
+
+	err = test.IsSolved(
+		&Pairing{},
+		&Pairing{
+			PK:  gadget.NewG1Affine(pk),
+			Sig: gadget.NewG2Affine(sig),
+			Msg: gadget.NewG2Affine(msg),
+		},
+		ecc.BN254.ScalarField(),
+	)
+	assert.NoError(t, err)
+}
+
+func TestPairingNative(t *testing.T) {
+	hex := func(h string) []byte {
+		b, err := hex.DecodeString(h)
+		assert.NoError(t, err)
+		return b
+	}
+
+	_, _, g1Gen, _ := curve.Generators()
+	var g1GenNeg curve.G1Affine
+	g1GenNeg.Neg(&g1Gen)
+
+	var pk curve.G1Affine
+	_, err := pk.SetBytes(hex("83D016646DF946E887CD36AE6C10BED9C4A49D675CCC072E5AAF496AA4B2D50D"))
+	assert.NoError(t, err)
+	var sig curve.G2Affine
+	_, err = sig.SetBytes(hex("C4B626B703FACBFA5A5071B8254E4A4B78BB45C6A534FF5822BA806730BCE9522707DBF7D689759DFB5CE8DA3A99E04219DDC1CBB8F94481876B1F24FFA5A73E"))
+	assert.NoError(t, err)
+	var msg curve.G2Affine
+	_, err = msg.SetBytes(hex("8591C93118F5A406886C558BEA365D249D881BBC7FCD68673307CC8350BA9C49000ABE5E44150F1E98196B088D4A3A60AFE27E49BA4D4411E528320022D324CF"))
+	assert.NoError(t, err)
+
+	ok, err := curve.PairingCheck(
+		[]curve.G1Affine{
+			g1GenNeg,
+			pk,
+		},
+		[]curve.G2Affine{
+			sig,
+			msg,
+		})
+	assert.NoError(t, err)
+	assert.True(t, ok)
+}
+
 func Test(t *testing.T) {
-	nbOfValidators := lightclient.MaxVal
+	nbOfValidators := 1
 
 	// Nb of tokens for each val in devnet
 	toValidator := func(pubKey []byte) (*types.SimpleValidator, error) {
@@ -209,10 +301,14 @@ func Test(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if !trustedAggregatedSignature.IsInSubGroup() || !trustedAggregatedSignature.IsOnCurve() || trustedAggregatedSignature.IsInfinity() {
+		panic("")
+	}
+
 	trustedInput := TendermintNonAdjacentLightClientInput{
 		Sig:           gadget.NewG2Affine(trustedAggregatedSignature),
 		Validators:    trustedValidatorsInput,
-		NbOfVal:       len(trustedValidators),
+		NbOfVal:       nbOfValidators,
 		NbOfSignature: len(trustedSignatures),
 		Bitmap:        trustedBitmap,
 	}
@@ -220,27 +316,53 @@ func Test(t *testing.T) {
 	untrustedInput := TendermintNonAdjacentLightClientInput{
 		Sig:           gadget.NewG2Affine(untrustedAggregatedSignature),
 		Validators:    untrustedValidatorsInput,
-		NbOfVal:       len(untrustedValidators),
+		NbOfVal:       nbOfValidators,
 		NbOfSignature: len(untrustedSignatures),
 		Bitmap:        untrustedBitmap,
 	}
 
-	hmX, hmY := cometbn254.HashToField2(signedBytes)
+	message := cometbn254.HashToField(signedBytes)
+
+	hashedMessage := cometbn254.HashToG2(signedBytes)
+
+	_, _, g1Gen, _ := curve.Generators()
+	var g1GenNeg curve.G1Affine
+	g1GenNeg.Neg(&g1Gen)
+
+	var aggPK curve.G1Affine
+	for _, val := range privKeys {
+		var public curve.G1Affine
+		_, err := public.SetBytes(val.PubKey().Bytes())
+		assert.NoError(t, err)
+		aggPK.Add(&aggPK, &public)
+	}
+
+	ok, err := curve.PairingCheck(
+		[]curve.G1Affine{
+			g1GenNeg,
+			aggPK,
+		},
+		[]curve.G2Affine{
+			trustedAggregatedSignature,
+			hashedMessage,
+		})
+	assert.NoError(t, err)
+	assert.True(t, ok)
 
 	circuit := Circuit{
+		DomainSeparationTag:      []byte(cometbn254.CometblsSigDST),
 		TrustedInput:             trustedInput,
 		UntrustedInput:           untrustedInput,
 		ExpectedTrustedValRoot:   trustedValidatorsRoot,
 		ExpectedUntrustedValRoot: untrustedValidatorsRoot,
-		Message:                  [2]frontend.Variable{hmX, hmY},
+		Message:                  message,
+		HashedMessage:            gadget.NewG2Affine(hashedMessage),
 	}
 
-	assert := test.NewAssert(t)
-	assert.CheckCircuit(
+	err = test.IsSolved(
 		&Circuit{},
-		test.WithValidAssignment(&circuit),
-		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-		test.NoFuzzing(),
+		&circuit,
+		ecc.BN254.ScalarField(),
 	)
+	assert.NoError(t, err)
 }

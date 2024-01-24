@@ -25,11 +25,13 @@ type TendermintNonAdjacentLightClientInput struct {
 }
 
 type Circuit struct {
+	DomainSeparationTag      frontend.Variable
 	TrustedInput             TendermintNonAdjacentLightClientInput
 	UntrustedInput           TendermintNonAdjacentLightClientInput
 	ExpectedTrustedValRoot   frontend.Variable `gnark:",public"`
 	ExpectedUntrustedValRoot frontend.Variable `gnark:",public"`
 	Message                  frontend.Variable `gnark:",public"`
+	HashedMessage            gadget.G2Affine
 }
 
 func (circuit *Circuit) Define(api frontend.API) error {
@@ -37,10 +39,11 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	if err != nil {
 		return err
 	}
-	messagePoint, err := emulatedAPI.HashToG2(circuit.Message, 0)
+	hashedMessage, err := emulatedAPI.HashToG2(circuit.Message, circuit.DomainSeparationTag)
 	if err != nil {
 		return err
 	}
+	emulatedAPI.AssertIsEqual(hashedMessage, &circuit.HashedMessage)
 	lc := lightclient.NewTendermintLightClientAPI(api, &lightclient.TendermintLightClientInput{
 		Sig:           circuit.TrustedInput.Sig,
 		Validators:    circuit.TrustedInput.Validators,
@@ -48,7 +51,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		NbOfSignature: circuit.TrustedInput.NbOfSignature,
 		Bitmap:        circuit.TrustedInput.Bitmap,
 	})
-	res := lc.Verify(messagePoint, circuit.ExpectedTrustedValRoot, TrustedRatioNum, TrustedRatioDen)
+	res := lc.Verify(&circuit.HashedMessage, circuit.ExpectedTrustedValRoot, TrustedRatioNum, TrustedRatioDen)
 	if res != nil {
 		return res
 	}
@@ -59,5 +62,5 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		NbOfSignature: circuit.UntrustedInput.NbOfSignature,
 		Bitmap:        circuit.UntrustedInput.Bitmap,
 	})
-	return lc.Verify(messagePoint, circuit.ExpectedUntrustedValRoot, UntrustedRatioNum, UntrustedRatioDen)
+	return lc.Verify(&circuit.HashedMessage, circuit.ExpectedUntrustedValRoot, UntrustedRatioNum, UntrustedRatioDen)
 }
