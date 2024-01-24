@@ -74,7 +74,7 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
     class='flex flex-col flex-1 items-center px-4'
     transition:animate={fade({ duration: '0.4s' })}
   >
-  <div class="w-full flex flex-col max-w-4xl p-px bg-gray-800">
+  <div class="w-full flex flex-col max-w-5xl p-px bg-[#1f1f1f]">
       <section class='flex flex-col items-center py-32 gap-6 grid-effect-bg antialiased bg-black mb-px'>
         <div class='sm:text-7xl text-5xl text-white text-center font-semibold'>
           The Sovereign<br />Interoperability Layer
@@ -93,10 +93,7 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
         </div>
       </section>
 
-      <div class="h-2 bg-black mb-px"></div>
-
       <section class='bg-black text-white flex flex-col items-center py-16 px-4 mb-px'>
-        <h2 class='text-4xl mb-4 font-normal text-center'>Redesigned from the ground up.</h2>
 
         <div class='flex md:flex-row flex-col gap-16 max-w-4xl text-balance'>
           <div class='flex-1 p-4'>
@@ -111,6 +108,28 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
         </div>
       </section>
 
+
+      <section class='bg-black mb-px relative items-center justify-center'>
+        <div class="absolute flex flex-col items-center w-full">
+          <h2 class='text-4xl px-6 pt-12 font-normal sm:text-3xl xs:text-xl'>Interoperability for the Modular Stack</h2>
+        
+        <!--
+          <div class="mt-4">
+            <a
+              class='mt-16 border-b-2 uppercase'
+              href='/docs'
+            >
+              Read more about building -&gt;
+            </a>
+          </div>
+          !-->
+        </div>
+        <ConnectedVisual />
+
+      </section>
+
+
+      <div class="h-2 bg-black mb-px"></div>
       <section class='flex flex-col items-center gap-6 grid-effect-bg antialiased pb-0 sm:pb-12 mb-px bg-black'>
         <div
           class='text-2xl sm:text-4xl md:text-5xl text-white text-center font-semibold text-transparent text-pretty'
@@ -119,9 +138,16 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
         </div>
       </section>
 
-      <section class='flex flex-col max-w-4x items-center mb-px bg-black p-4'>
-        <div class='w-full'>
+      <section class='flex flex-col md:flex-row max-w-4x items-center mb-px bg-black p-4'>
+        <div class="flex-1">
           <PerformanceGraph client:load/>
+        </div>
+        <div class="flex-1">
+            <p class='text-3xl font-normal mb-0 text-gray-400'>
+              Galois is the first interoperability proving layer that is so efficient that it allows
+              anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
+              of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
+            </p>
         </div>
       </section>
 
@@ -165,21 +191,14 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
           </div>
         </div>
       </section>
-
-      <section class='bg-black mb-px flex flex-col items-center justify-center'>
-        <h2 class='text-4xl px-6 pt-6 font-normal sm:text-3xl xs:text-xl'>Connecting L1s, L2s, AppChains and Rollups</h2>
-        <div class='w-full max-w-full'>
-          <ConnectedVisual />
-        </div>
-      </section>
-
-      <section class='bg-black mb-px flex flex-col items-center justif-center py-32'>
-        <h2 class='text-4xl mb-4 font-normal'>The leading interoperability layer.</h2>
+      <section class='bg-black mb-px flex flex-col items-center justif-center p-32'>
+        <h2 class='text-4xl mb-8 font-normal'>The leading interoperability layer.</h2>
         <div class='w-full'>
           <AppleGraphContainer
             bars={[
-              { width: 100, label: 'union gud', primary: true },
-              { width: 50, label: 'others bad' },
+              { width: 100, label: 'CometBLS V3.0', primary: true },
+              { width: 50, label: 'Ed25519-based proving' },
+              { width: 50, label: 'TendermintX' },
               { width: 20, label: 'others bad' }
             ]}
             client:load

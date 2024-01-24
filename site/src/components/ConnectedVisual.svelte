@@ -173,8 +173,8 @@
       <path
         d="M 32 0 L 0 0 0 32"
         fill="none"
-        stroke="gray"
-        stroke-width="0.5"
+        stroke="#1f1f1f"
+        stroke-width="1"
       />
     </pattern>
   </defs>
@@ -191,6 +191,7 @@
     fill="url(#grid)"
   />
 
+  <!--
   <rect
     width="100%"
     height="100%"
@@ -201,6 +202,7 @@
     height="100%"
     fill="url(#edge-gradient-ew)"
   />
+  !-->
 
   {#each connectionData as { from, to, dx, dy, fromX, fromY, toX, toY, totalTime, cxKeyTimes, cyKeyTimes, radiusKeyTimes, delay }}
     {@debug from, to}

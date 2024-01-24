@@ -14,8 +14,12 @@
       <nav class='flex flex-1 justify-end'>
         <ul class='flex gap-4 !text-xl! !md:text-2xl font-normal list-none align-middle my-auto'>
           <li>
-            <a href='/blog' class="text-md md:text-2xl">Build</a>
+            <a href='/blog' class="text-md md:text-2xl">Blog</a>
           </li>
+          <li>
+            <a href='/docs' class="text-md md:text-2xl">Docs</a>
+          </li>
+          <!--
           <li>
             <a href='/docs' class="text-md md:text-2xl">Discover</a>
           </li>
