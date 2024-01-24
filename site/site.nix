@@ -6,7 +6,7 @@
     {
       packages = {
         site = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-FuIWelGAagTOR6Bo0IstoqtqfdmAk6tHFfz3BMbkiyE=";
+          npmDepsHash = "sha256-Yoq8eCZEj6tViTyL5Uj+sr1EOWl9AXiF3/L7DTZrfyw=";
           src = ./.;
           pname = "site";
           version = "0.0.1";
