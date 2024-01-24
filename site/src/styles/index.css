@@ -167,6 +167,11 @@ pre [data-line] {
   font-weight: 700;
 }
 
+[data-chars-id="accent"] {
+  @apply !text-accent-500 p-0 bg-transparent font-bold border-none rounded-none;
+  
+}
+
 [data-rehype-pretty-code-title] {
   font-weight: 500;
   padding: 0.5rem 0.75rem 0.5rem 0.75rem;

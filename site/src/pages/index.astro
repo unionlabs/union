@@ -11,6 +11,8 @@ import ConnectedVisual from '#/components/ConnectedVisual.svelte'
 import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import Chart from '#/components/Chart.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import {Code} from 'astro:components'
 
 let socialLinks = [
   {
@@ -31,7 +33,7 @@ let socialLinks = [
 ]
 
 const soliditySnippet = `
-\`\`\`solidity
+\`\`\`solidity /IBCAppBase/#accent /ibcHandler/#accent
 contract DexPortal is IBCAppBase {
   function swap(
     address base,
@@ -40,8 +42,6 @@ contract DexPortal is IBCAppBase {
     uint64 timeout
   ) public {
     Proxy quote = swapProxies[base];
-    require(quote.port.length != 0);
-    require(quote.channel.length != 0);
     IERC20(base).transferFrom(
       _msgSender(),
       address(this)
@@ -63,10 +63,11 @@ contract DexPortal is IBCAppBase {
 \`\`\`
 `
 
-const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
+let publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
   if (data.hidden) return false
-  return { slug, ...data }
+  return { slug, data }
 })
+publishedBlogPosts.reverse()
 ---
 
 <Layout>
@@ -113,43 +114,42 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
         <div class="absolute flex flex-col items-center w-full">
           <h2 class='text-4xl px-6 pt-12 font-normal sm:text-3xl xs:text-xl'>Interoperability for the Modular Stack</h2>
         
-        <!--
-          <div class="mt-4">
-            <a
-              class='mt-16 border-b-2 uppercase'
-              href='/docs'
-            >
-              Read more about building -&gt;
-            </a>
-          </div>
-          !-->
         </div>
         <ConnectedVisual />
       </section>
 
 
-      <section class='grid grid-cols-1 md:grid-cols-2 md:divide-x divide-solid divide-[#1f1f1f] items-center mb-px bg-black'>
+      <section class='grid grid-cols-2 divide-x divide-solid divide-[#1f1f1f] md:flex-row max-w-4x items-center mb-px bg-black'>
         <div class="p-8 text-2xl font-normal text-gray-400">
               Galois is the first interoperability proving layer that is so efficient that it allows
               anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
               of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
         </div>
-        <div class="h-64 md:h-full">
+        <div class="p-8 w-full min-w-full h-full min-h-full">
           <PerformanceGraph client:load/>
         </div>
       </section>
 
       <section class='flex flex-col items-center bg-black mb-px'>
         <div
-          class='grid grid-cols-1 md:grid-cols-2 md:divide-x divide-solid divide-[#1f1f1f]'
+          class='grid grid-cols-1 grid-rows-2 sm:grid-cols-2 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]'
         >
-          <div class='w-full antialiased p-8'>
-            <CodeSnippet
+          <div class='w-full antialiased bg-[#050505] py-2 text-left font-monospace text-[15px]'>
+          <Tabs>
+          <TabItem label="ibc.sol">
+           <div class="px-3"> <CodeSnippet
               client:load
               code={soliditySnippet}
+            /></div>
+            </TabItem>
+            <TabItem label="lorem.ts">
+            <CodeSnippet
+              client:load
             />
+            </TabItem>
+            </Tabs>
           </div>
-          <div class="p-8 -order-1 md:order-2 text-2xl font-normal text-gray-400">
+          <div class="p-8 text-2xl font-normal text-gray-400">
             <h2 class='text-4xl font-normal text-white'>Build for any stack.</h2>
                 Galois is the first interoperability proving layer that is so efficient that it allows
                 anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
@@ -157,27 +157,23 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
           </div>
         </div>
       </section>
-      <section class='bg-black mb-px flex flex-col items-center justif-center p-8 md:p-16'>
+      <section class='bg-black mb-px flex flex-col items-center justif-center p-32'>
         <h2 class='text-4xl mb-8 font-normal'>The leading interoperability layer.</h2>
         <div class='w-full'>
           <AppleGraphContainer
             bars={[
-              { width: 100, label: 'CometBLS V3', primary: true },
-              { width: 9.1, label: 'ZkMint*' },
-              { width: 1.45, label: 'TendermintX' },
-              { width: 0.77, label: 'Fraud-proof bridges' },
+              { width: 100, label: 'CometBLS V3.0', primary: true },
+              { width: 50, label: 'Ed25519-based proving' },
+              { width: 50, label: 'TendermintX' },
             ]}
             client:load
           />
-        </div>
-        <div class="italic text-gray-400">
-          * does not scale to 128 validators, 60x is compared to TendermintX
         </div>
       </section>
 
 
       <section class='bg-black mb-px'>
-        <div class="grid grid-cols-3 divide-x divide-solid divide-[#1f1f1f]">
+        <div class="grid grid-rows-3 grid-cols-1 sm:grid-cols-3 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]">
           <div class="p-8">
             <h3 class="mb-1">Galois</h3>
             <p>Decentralized Proving, for everyone. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus.  </p>
@@ -223,27 +219,40 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
       !-->
 
 
-    <!--
-      <section class='bg-black mb-px flex justify-center bg-white text-black py-32'>
-        <div class='flex-1 max-w-4xl'>
-          <h2 class='text-4xl mb-4 font-normal text-center'>Blog</h2>
-          <ul>
+      <section class='bg-black mb-px flex justify-center justify-between flex-row text-center text-white mb-px divide-x divide-[#1f1f1f]'>
+      <div class="w-1/2 p-8 mr-px">
+      <a
+      class="text-left space-y-2"
+      href={`/blog/${publishedBlogPosts[0].slug}`}
+      
+      >
+      <div>
+      <p
+      class="text-3xl font-bold"
+      >
+      {publishedBlogPosts[0].data.title}
+      </p>
+      <a class="underline uppercase text-md font-normal">Read more {'->'}</a></div>
+      <p class="text-pretty text-lg text-left">
+      {publishedBlogPosts[0].data.description}
+      </p>
+      </a>
+      </div>
+          <ul class="p-0 list-none mx-auto w-1/2  grid grid-rows-3 divide divide-y divide-solid divide-[#1f1f1f]">
+        
             {
-              publishedBlogPosts.map(post => (
-                <li id={post.slug}>
-                  <a
-                    href={`/blog/${post.slug}`}
-                    class='flex flex-col md:flex-row p-8'
-                  >
-                    {JSON.stringify(post.data, undefined, 2)}
-                  </a>
+              publishedBlogPosts.slice(1).map(post => (
+                              <li id={post.slug}                     class='justify-center w-full h-full flex flex-col text-left flex-start px-8 py-4 my-auto'
+              <a href={`/blog/${post.slug}`} class="my-auto w-full h-full">
+              
+                  <p class="text-xl font-bold">{post.data.title}</p>
+                  <p class="underline uppercase" href={`/blog/${post.slug}`}>Read more {'->'}</p>
+                </a>
                 </li>
-              ))
+        ))
             }
           </ul>
-        </div>
       </section>
-      !-->
 
       <section class='bg-black mb-px flex flex-col items-center justif-center py-32'>
         <div class='flex-1 max-w-4xl'>
@@ -261,7 +270,7 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
                     class='h-10'
                   />
                   <div class='mt-4'>
-                    <span class='mt-16 border-b-2 uppercase border-white text-semibold undelrine'>
+                    <span class='mt-16 border-b-[1px] uppercase border-white text-semibold undelrine'>
                       {socialLink.cta} -&gt;
                     </span>
                   </div>

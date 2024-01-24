@@ -16,7 +16,7 @@
   onMount(async () => (highlightedCode = await highlightCode(code)))
 </script>
 
-<div class="container text-sm">
+<div class="">
 {@html highlightedCode}
 </div>
 
@@ -33,5 +33,35 @@
     :global(figure[data-rehype-pretty-code-figure]) {
       max-width: 385px;
     }
+  }
+  :global(ul[role="tablist"]){
+    border-bottom: 2px solid #1f1f1f;
+  }
+
+  :global(a:not([tabindex])){
+    font-family: monospace;
+  padding-left: 7px !important;
+  border: 1px solid #1f1f1f;
+  border-color: #050505 !important;
+  }
+
+  :global(a[tabindex="-1"]){
+    
+  border: 0px !important;
+  }
+
+:global(a[role="tab"]){
+    padding: 0 6px 0 7px !important;
+  margin-right: 10px;
+  margin-left: 0px;
+  font-family: monospace;
+  }
+  :global(a[role="tab"]::before){
+    content: url(https://upload.wikimedia.org/wikipedia/commons/9/98/Solidity_logo.svg);
+  display: inline-block;
+    width: 8px;
+  height:8px;
+  filter: invert(1);
+  
   }
 </style>
