@@ -10,7 +10,9 @@
 
 
   // export const [constraintsLineColor, ramLineColor] = ['url(#constraints-gradient)', 'url(#ram-gradient)']
-  export const [constraintsLineColor, ramLineColor] = [`${tw.theme.extend.colors.accent.DEFAULT}`, `${tw.theme.extend.colors.accent[800]}`]
+  export const constraintsLineColor = `${tw.theme.extend.colors.accent[900]}`
+  export const ramLineColor = `${tw.theme.extend.colors.accent[500]}`
+  export const speedLineColor = `${tw.theme.extend.colors.accent[700]}`
 
   const pauseAnimation = (element: SVGPathElement) => (element.style.animationPlayState = 'paused')
   const resumeAnimation = (element: SVGPathElement) =>
@@ -43,8 +45,6 @@
     { x: 128, y: 3600000 },
   ]
 
-  const constraintsInterpolate = d3.interpolateNumber(2650000, 3600000)
-
   let ram = [
     { x: 4, y: 2.9 },
     { x: 8, y: 3.06 },
@@ -52,6 +52,15 @@
     { x: 32, y: 4.05 },
     { x: 64, y: 5.3 },
     { x: 128, y: 8 },
+  ]
+
+  let speed = [
+    { x: 4, y: 6.05 },
+    { x: 8, y: 6.18 },
+    { x: 16, y: 6.23 },
+    { x: 32, y: 6.70 },
+    { x: 64, y: 6.91 },
+    { x: 128, y: 8.10 },
   ]
 
   let hiddenData = Array(128 / 4).fill(0).map((_, i) => [i * 4, '-'])
@@ -129,6 +138,12 @@
       {
         show: false,
         max(value) {
+            return value.max * (6_000_000 / 3_200_000);
+        },
+      },
+      {
+        show: false,
+        max(value) {
             return value.max * (6_000_000 / 3_400_000);
         },
       }],
@@ -150,6 +165,15 @@
           data: ram.map(({x,y})=>[x,y]),
           lineStyle: { color: ramLineColor },
           itemStyle: { color: ramLineColor },
+        },
+        {
+          name: 'Speed',
+          type: 'line',
+          yAxisIndex: 2,
+          symbol: 'circle',
+          data: speed.map(({x,y})=>[x,y]),
+          lineStyle: { color: speedLineColor },
+          itemStyle: { color: speedLineColor },
         },
       ]
     };
