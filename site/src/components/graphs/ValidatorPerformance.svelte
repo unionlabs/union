@@ -5,6 +5,8 @@
   import * as Plot from '@observablehq/plot'
   import * as htl from 'htl'
   import { roundNumber } from '#/lib/utilities.ts'
+  import * as echarts from 'echarts';
+
 
   // export const [constraintsLineColor, ramLineColor] = ['url(#constraints-gradient)', 'url(#ram-gradient)']
   export const [constraintsLineColor, ramLineColor] = ['#A0ECFD', '#A0ECFD']
@@ -65,102 +67,95 @@
     stroke: 'stroke',
   }
 
-  $: {
-    chartElement?.append(
-      // @ts-expect-error
-      Plot.plot({
-        className: "galois-graph",
-        style: {
-          borderRadius: '5px',
-          fontFamily: 'monospace',
-          fontVariantNumeric: 'tabular-nums'
-        },
-        x: {
-          domain: [-5, 140],
-          tickSize: 0,
-          axis: 'bottom',
-          labelArrow: "none",
-          label: "VALIDATORS",
-          labelAnchor: 'center',
-          legend: true,
-          tickFormat: (d: number) => d
-        },
-        y: {
-          domain: [0, 200],
-          axis: null
-        },
-        figure: true,
-        marks: [
-          () => htl.svg`<defs>
-            <linearGradient id="current-point-line-gradient">
-              <stop offset="0%" stop-color="#1f1f1f" stop-opacity="0" />
-              <stop offset="5%" stop-color="#1f1f1f" />
-              <stop offset="95%" stop-color="#1f1f1f" />
-              <stop offset="100%" stop-color="#1f1f1f" stop-opacity="0" />
-            </linearGradient>
-            <linearGradient id="ram-gradient">
-              <stop offset="0%" stop-color="#A0ECFD" stop-opacity="0" />
-              <stop offset="5%" stop-color="#A0ECFD" />
-              <stop offset="95%" stop-color="#A0ECFD" />
-              <stop offset="100%" stop-color="#A0ECFD" stop-opacity="0" />
-            </linearGradient>
-            <linearGradient id="constraints-gradient">
-              <stop offset="0%" stop-color="#A0ECFD" stop-opacity="0" />
-              <stop offset="5%" stop-color="#A0ECFD" />
-              <stop offset="95%" stop-color="#A0ECFD" />
-              <stop offset="100%" stop-color="#A0ECFD" stop-opacity="0" />
-            </linearGradient>
-          </defs>`,
-          Plot.ruleX(points, Plot.pointerX({ x: 'x', py: 'y', strokeWidth: 2, stroke: "#1f1f1f" })),
-          Plot.gridY({ stroke: '#1f1f1f', strokeWidth: 1, strokeOpacity: 1 }),
-          Plot.ruleY([1], { stroke: '#1f1f1f', strokeWidth: 1 }),
-          Plot.line(points, {
-            ...xyz,
-            markerStart: 'none',
-            strokeWidth: 3,
-            curve: 'linear',
-          }),
-          // Plot.line(ramPoints, {
-          //   markerStart: 'none',
-          //   x: 'x',
-          //   y: 'y',
-          //   strokeWidth: 3,
-          //   curve: 'linear',
-          //   stroke: ramLineColor
-          // }),
-          Plot.dot(points, {
-            ...xyz,
-            strokeWidth: 2,
-            fill(d, i) {
-              return d.stroke  
-            },
-          }),
-          Plot.tip(constraintsPoints, Plot.pointerX({
-            x: 'x',
-            y: 'y',
-            strokeWidth: 1,
-            fill: 'black',
-            stroke: '#1f1f1f',
-            title: ({ x, y }) => `constraints ${roundNumber(y / 100 * 3600000, 0)}\n\nram ${roundNumber(y / 100 * 8, 0)}GB`
-          })),
-
-          // Plot.tip(
-          //   points,
-          //   Plot.pointerX(Plot.groupX({
-          //       y: 'y',
-          //     },
-          //     {
-          //       x: 'x',
-          //       y: 'y',
-          //       z: 'x',
-          //   })
-          // ))
-        ]
-      })
-    )
-  }
-
   onMount(() => {
+    let chartDom = document.getElementById('galois-graph');
+    let myChart = echarts.init(chartDom, 'light', { renderer: 'svg' });
+    let option;
+
+    option = {
+      title: {
+      },
+      tooltip: {
+        trigger: 'axis'
+      },
+      grid: {
+        left: '3%',
+        right: '3%',
+        bottom: '10%',
+        top: '10%',
+        containLabel: false,
+        // borderColor: "#1f1f1f"
+      },
+      toolbox: {
+        feature: {
+          // saveAsImage: {}
+        }
+      },
+      xAxis: {
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
+        type: 'category',
+        boundaryGap: false,
+        // data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      },
+      yAxis: [{
+        axisLine: {
+          show: false
+        },
+        // axisTick: {
+        //   show: false
+        // },
+        axisLabel: {
+          show: false
+        },
+        splitLine: {
+          lineStyle: {
+            color: "#1f1f1f"
+          }
+        }
+      },
+      {
+        axisLine: {
+          show: false
+        },
+        // axisTick: {
+        //   show: false
+        // },
+        axisLabel: {
+          show: false
+        },
+        splitLine: {
+          lineStyle: {
+            color: "#1f1f1f"
+          }
+        }
+      }],
+      series: [
+        {
+          name: 'Constraints',
+          type: 'line',
+          yAxisIndex: 0,
+          data: constraints.map(({x,y})=>[x,y])
+        },
+        {
+          name: 'Ram',
+          type: 'line',
+          yAxisIndex: 1,
+          data: ram.map(({x,y})=>[x,y])
+        },
+      ]
+    };
+
+    option && myChart.setOption(option);
+
+    window.addEventListener('resize', function() {
+      myChart.resize();
+    });
+      
     const observer = new IntersectionObserver(
       entries => {
         const pathElements = getRelevantPathElements({
@@ -180,7 +175,7 @@
   })
 </script>
 
-<div class="w-full text-center flex antialiased">
+<div class="w-full h-full text-center flex antialiased">
   <!-- <p
 
     class="transform rotate-180 text-md sm:text-xl font-semibold absolute md:-left-32 -left-18 my-auto mx-auto h-[75%]"
@@ -189,138 +184,9 @@
   >
     Seconds to prove
   </p> -->
-  <div>
     <article
-      data-graph="performance"
+      id="galois-graph"
+      class="w-full h-full text-center flex antialiased"
       bind:this={chartElement}
     ></article>
-  </div>
 </div>
-
-<style>
-  /* animation: line-progress 2s linear infinite normal forwards running; */
-  :root {
-    --animation-direction: normal;
-    --animation-play-state: running;
-    --animation-timing-function: ease;
-    --animation-iteration-count: 1;
-    --animation-fill-mode: forwards;
-    --axis-tick-label-font-size: 12px;
-    --axis-label-font-size: 1rem;
-    --axis-label-color: transparent;
-  }
-
-  :global(g[aria-label='tip']) {
-    border-radius: 50px !important;
-    padding: 0.5rem !important;
-    background-color: red !important;
-  }
-
-  @media (min-width: 790px) {
-  }
-  @media (max-width: 790px) {
-    :global(#y-axis-label) {
-      margin-left: 0px !important;
-      font-size: 1rem !important;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    :global(figure > svg) {
-      scale: 1.3;
-    }
-  }
-  @media (min-width: 1024px) {
-    :global(#x-axis-label) {
-      margin-top: 92px !important;
-    }
-  }
-
-  @media (max-width: 891px) {
-    :global(figure > svg) {
-      scale: 1.2;
-    }
-    :global(#y-axis-label) {
-      left: -2rem !important;
-    }
-
-    :global(#x-axis-label) {
-      margin-top: 32px !important;
-    }
-  }
-
-  :global(g[stroke='#9DA3AE'] path) {
-    /*
-    * to get this exact length, call `pathElement.getTotalLength()`
-    */
-    stroke-dasharray: 668px;
-    stroke-dashoffset: 668px;
-    stroke-width: 2.5px;
-    animation-name: slow-line-progress;
-    animation-duration: 1.5s;
-    animation-direction: var(--animation-direction);
-    animation-play-state: var(--animation-play-state);
-    animation-fill-mode: var(--animation-fill-mode);
-    animation-timing-function: var(--animation-timing-function);
-    animation-iteration-count: var(--animation-iteration-count);
-  }
-
-  @keyframes slow-line-progress {
-    0% {
-      stroke-dashoffset: 668px;
-    }
-    100% {
-      stroke-dashoffset: 0%;
-    }
-  }
-
-  :global(.galois-graph > g[aria-label="dot"] > circle) {
-    opacity: 0;
-    animation-name: fade-in;
-    animation-duration: 1.5s;
-    animation-delay: 1.5s;
-    animation-fill-mode: var(--animation-fill-mode);
-  }
-
-  @keyframes fade-in {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-
-  :global(g path[stroke="#A0ECFD"]) {
-    /*
-    * to get this exact length, call `pathElement.getTotalLength()`
-    */
-    stroke-dasharray: 580px;
-    stroke-dashoffset: 580px;
-    stroke-width: 2px;
-    animation-duration: 2.5s;
-    animation-name: fast-line-progress;
-    animation-direction: var(--animation-direction);
-    animation-play-state: var(--animation-play-state);
-    animation-fill-mode: var(--animation-fill-mode);
-    animation-timing-function: var(--animation-timing-function);
-    animation-iteration-count: var(--animation-iteration-count);
-  }
-
-  :global(g circle[stroke="#A0ECFD"]) {
-    opacity: 0;
-    animation-name: fade-in;
-    animation-duration: 1.5s;
-    animation-delay: 1.5s;
-    animation-fill-mode: var(--animation-fill-mode);
-  }
-
-  @keyframes fast-line-progress {
-    0% {
-      stroke-dashoffset: 580px;
-    }
-    100% {
-      stroke-dashoffset: 0%;
-    }
-  }
-</style>
