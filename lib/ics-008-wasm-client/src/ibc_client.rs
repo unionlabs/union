@@ -56,14 +56,7 @@ pub trait IbcClient: Sized {
         env: Env,
         msg: SudoMsg,
     ) -> Result<Binary, IbcClientError<Self>>
-where
-        // NOTE(aeryz): unfortunately bounding to `Debug` in associated type creates a
-        // recursion in the compiler, see this issue: https://github.com/rust-lang/rust/issues/87755
-        // <Self::ClientState as Proto>::Proto: prost::Message + Default,
-        // TryFromProtoErrorOf<Self::ClientState>: Debug,
-        // <Self::ConsensusState as Proto>::Proto: prost::Message + Default,
-        // TryFromProtoErrorOf<Self::ConsensusState>: Debug,
-    {
+where {
         match msg {
             SudoMsg::VerifyMembership {
                 height,

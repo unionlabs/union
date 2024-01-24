@@ -1,7 +1,7 @@
 use cosmwasm_std::{entry_point, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response};
 use ics008_wasm_client::{
     storage_utils::{save_proto_client_state, save_proto_consensus_state},
-    IbcClient, InstantiateMsg, QueryMsg, SudoMsg,
+    IbcClient, IbcClientError, InstantiateMsg, QueryMsg, SudoMsg,
 };
 use protos::ibc::lightclients::wasm::v1::{
     ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
@@ -42,12 +42,20 @@ pub fn instantiate(
 }
 
 #[entry_point]
-pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, Error> {
+pub fn sudo(
+    deps: DepsMut,
+    env: Env,
+    msg: SudoMsg,
+) -> Result<Response, IbcClientError<CometblsLightClient>> {
     let result = CometblsLightClient::sudo(deps, env, msg)?;
     Ok(Response::default().set_data(result))
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<QueryResponse, Error> {
+pub fn query(
+    deps: Deps,
+    env: Env,
+    msg: QueryMsg,
+) -> Result<QueryResponse, IbcClientError<CometblsLightClient>> {
     CometblsLightClient::query(deps, env, msg)
 }

@@ -176,12 +176,20 @@ impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header>>> for Error {
     }
 }
 
-impl From<ics008_wasm_client::Error> for Error {
-    fn from(error: ics008_wasm_client::Error) -> Self {
+impl From<ics008_wasm_client::storage_utils::Error> for Error {
+    fn from(error: ics008_wasm_client::storage_utils::Error) -> Self {
         match error {
-            ics008_wasm_client::Error::Decode(e) => Error::DecodeError(e),
-            ics008_wasm_client::Error::UnexpectedCallDataFromHostModule(e) => Error::Wasm(e),
-            ics008_wasm_client::Error::ClientStateNotFound => Error::Wasm(format!("{error:#?}")),
+            ics008_wasm_client::storage_utils::Error::ClientStateNotFound => {
+                Error::ClientStateNotFound
+            }
+            ics008_wasm_client::storage_utils::Error::ClientStateDecode => Error::DecodeFromProto {
+                reason: error.to_string(),
+            },
+            ics008_wasm_client::storage_utils::Error::ConsensusStateDecode => {
+                Error::DecodeFromProto {
+                    reason: error.to_string(),
+                }
+            }
         }
     }
 }
