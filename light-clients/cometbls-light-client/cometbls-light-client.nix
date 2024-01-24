@@ -11,6 +11,9 @@
             }}
           '')
         ];
+        additionalTestSrcFilter = path: _:
+          (lib.hasPrefix "light-clients/cometbls-light-client/src/test" path)
+          && (lib.strings.hasSuffix ".json" path);
       });
     in
     {

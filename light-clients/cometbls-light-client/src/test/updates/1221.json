@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1228,
+      "block_id": {
+        "hash": "0x849d2ad46b1d4090694e6c8513e31ab8d392d2456442cd1254407afec5f6bbdf",
+        "part_set_header": {
+          "hash": "0x1b4e42c73e7192756a34627aa1ac1f2d87044a4d9d99d59b190f1cc31b6b7c37",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x9e50efee4153af4d7a5231a0b3f537c9bf755ed1c3b5d71e7ec1d72a9db00d6a07e57658f192b4371ee5c355fc88f680261fba8ef7dbc82660f318050375c6e2",
+            "timestamp": "2024-01-18T16:23:51.965216555Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xcc43f340f78894ec071a212eaaf9e053ce99c5518fef858a00ffa105cc92b11c176fa0407fff1129a11243287bb2dca87705e959ebe8e186e4a3f12da1d4979b",
+            "timestamp": "2024-01-18T16:23:51.965773143Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xa4295e67ca3b59cbc8704a4a6c374fee7468e97937ec9bc2e43d23f70b7858be2c93ab0eed4f5c27ddd71542ab488400487c6ddcf95916947d1c1b781a93fb2e",
+            "timestamp": "2024-01-18T16:23:51.965580517Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x9710fcb293cc1da893721a4f1fb93755e0062babbb18bd89bdaba154d34a6bc2179e678256c377badb379b12f8e407fec46a8370a9a08eed1b11083c4e4aa404",
+            "timestamp": "2024-01-18T16:23:51.863693946Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:23:46.586773803Z",
+      "height": "1228",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0xfaa82084e29172fa701de4de6a50450696575ec75cab7f26348fd1eaa1e87c32",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0x6544df26471b969f68aa3b1323b3aad798528c94d42fd390fec6fb0eb3c2fddb",
+        "part_set_header": {
+          "hash": "0x96a511b1e5b8fb00022a41c346a537f5cd8c4bf3aec838b27d559c7bf18d8334",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0x1c5f2aa8a2ccbc2777a5ea82be671af00c94e6032c1a0e302c399e6d8e7b6f99",
+      "proposer_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1221,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x28fe0380febdad4ace0353c03c95d3337f2be08dd9df99c480e98d666b0cb24302a766042164fcb119a240648213f5977a2f011ac931650f02a3910723b01469052988d36604a4b59d05177cc44b83f4d58c59e43530a4db74933b02aa1584bd0488277ba3efbcc74f5d8a5f4815c5b6de6900965e3424ef90546b9f7bbc5c302d5362f9d8d5e5f2a385238276cd280d97269e3f18b6860452e2b0ff2108d78c0d8fa17789c92f1d1a776b27e4ad4822207b28e6d0775db8c7391fea900d69a023171b5b1443bfd52a696e667cdb0fabccb70f9d066267c2df0234e14a9388982fdddb310a65c4b26c043ed2739089c9b5e1b83e3651a591cb9be983a0c1f7362b981bac7be720aecc6dd295b75ebee03778286050bffdc6d04a89e9fe9be4fa0501d62c188f5f53a082ada1cbccb8d7f79ddbb588b6ffab3ccea57858b17a842e39c2b6814c89228984982be14a2ea1897c3c3f6f69f8f50bbb3d7530ccaf25"
+}

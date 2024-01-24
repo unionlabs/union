@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1146,
+      "block_id": {
+        "hash": "0x6ad0c180762b1d0a068626666ee5972340dfe25bb597b9b25085643bac97bd55",
+        "part_set_header": {
+          "hash": "0xdc209603496aadd52405ffe98f0847da3e15baecfd88ec412213f80257e7923a",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xa45fc40c8e8d1069f0e28dd2a22b7705564160e60e5f220aaae1d8127712a9b42a81a5a0b8aa9e2cc0ce2cb595c19cece35dfae10bb8dbd015550e00a370b35e",
+            "timestamp": "2024-01-18T16:16:20.827887702Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x859d1d470cac70df02644db27abc04fa6e9dbfb84bf27692ae9f6ddb440546b7296d00976e51674921c4c0b1fd7a20d5c3d4f8897012752c716f2cfb6039477b",
+            "timestamp": "2024-01-18T16:16:21.020274472Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xcf4e36488622bd2f0bc362516d8a0cb5d02a038268af7df6205cc5691d414eb11b426713955290d501ce9916489d4ffd5680f64a67c4680b587c23cfd95a8485",
+            "timestamp": "2024-01-18T16:16:20.825866267Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x84f060cb27d30a4d6081e3a53b25a69056b3d1ab962392ce98276c2b25af94770fa2bbdaa1bae72c61aa9c0478b1b91ccb65d0b5fe0eb821b66e01f92ac2bf34",
+            "timestamp": "2024-01-18T16:16:20.916780167Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:16:15.302557057Z",
+      "height": "1146",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0x94e91901de8e70390c055570dcabfc3083f161b383e58a05e8886b5cbdbe4bba",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0x3407bde85e3e4cc666676c3b226ccac92c81f238f2ff682f6486b8bd0f386a8d",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0x3b352667acbd7c8012e050cb9b1797756f426c9d74ee195635850724a416c577",
+        "part_set_header": {
+          "hash": "0xcfdc93413ab541bb341824cab39fccad192839a22e885283802096ef5574760c",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0xfe119b14319a7e0e7323ab632ac4fac7283a05531a0889544707a46b1bfa5914",
+      "proposer_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1138,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x09b2c565e52d2dd0df67f677e0b5f9232560faff2872b3c1c969cfe3490a2dee26f3e35ec2a4592ab7533cd89eebec23d95d1cdaa9a567004bb9270073fc3f91144d2a41f136c26782ca45c4420b2f7489bbc340d2e2e3a6a6dcb0602f95248d192285ecd9f6807672a84001a24d844b297458f6dd98b037acc40b0c9c6fc82a137a2221ccba45777808743d8375a761ac220d6c21c100fa56aa0f0c72286f0011696d8c8a6f96d8f3ef2cb3626fb79d10512e32852e6a02710cfd980d0617c1237bd021b43a015388b55c763d0760b2cbccaa853135b2cafb1890c33219472310fb65cc7f70121007e833e29460c0a1d7ebfbd6f1ae365a1c7293d526a2ad8e21d9ea256a4315f3ac1689a862824cbf705d320907e726450bd0331db37e5a3a278580e0fedd9f3ccdd3d521c53b71b0ea2b82f938eb914a9b0b8618b283616c23ff6ba1af9921409646fb8d1d45f69048cb0069f206949b57bfd36e15978fcc"
+}

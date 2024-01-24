@@ -654,7 +654,7 @@ mod test {
         let mut env = mock_env();
 
         env.block.time = Timestamp::from_seconds(
-            wasm_client_state.data.trusting_period + wasm_consensus_state.timestamp + 1,
+            wasm_client_state.data.trusting_period + wasm_consensus_state.data.timestamp + 1,
         );
         assert_eq!(
             EthereumLightClient::status(deps.as_ref(), &env),
@@ -662,7 +662,7 @@ mod test {
         );
 
         env.block.time = Timestamp::from_seconds(
-            wasm_client_state.data.trusting_period + wasm_consensus_state.timestamp,
+            wasm_client_state.data.trusting_period + wasm_consensus_state.data.timestamp,
         );
         assert_eq!(
             EthereumLightClient::status(deps.as_ref(), &env),
@@ -814,10 +814,12 @@ mod test {
         };
 
         let wasm_client_state: WasmClientState =
-            serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
 
         let wasm_consensus_state: WasmConsensusState =
-            serde_json::from_str(include_str!("./test/consensus_state.json")).unwrap();
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
 
         save_client_state(deps.as_mut(), wasm_client_state);
         save_consensus_state(
@@ -830,7 +832,7 @@ mod test {
 
         let mut env = mock_env();
         env.block.time =
-            cosmwasm_std::Timestamp::from_seconds(wasm_consensus_state.timestamp + 60 * 5);
+            cosmwasm_std::Timestamp::from_seconds(wasm_consensus_state.data.timestamp + 60 * 5);
 
         (deps, update, env)
     }
@@ -1053,25 +1055,14 @@ mod test {
 
     #[test]
     fn update_state_on_misbehaviour_works() {
-        let (mut deps, header, env) = prepare_test_data();
+        let (mut deps, _, env) = prepare_test_data();
 
-        EthereumLightClient::update_state_on_misbehaviour(
-            deps.as_mut(),
-            env.clone(),
-            ics008_wasm_client::ClientMessage::Header(
-                protos::ibc::lightclients::wasm::v1::Header {
-                    data: header.into_proto_bytes(),
-                    height: None,
-                },
-            ),
-        )
-        .unwrap();
+        EthereumLightClient::update_state_on_misbehaviour(deps.as_mut(), env.clone(), Vec::new())
+            .unwrap();
 
         assert_eq!(
-            EthereumLightClient::status(deps.as_ref(), &env)
-                .unwrap()
-                .status,
-            Status::Frozen.to_string()
+            EthereumLightClient::status(deps.as_ref(), &env),
+            Ok(Status::Frozen)
         );
     }
 }

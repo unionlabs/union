@@ -619,7 +619,8 @@
   },
   "trusted_sync_committee": {
     "sync_committee": {
-      "Next": {
+      "@type": "next",
+      "@value": {
         "pubkeys": [
           "0xa4a052a95cdb71be46a05657cbc598124af42e11e9bc5ef24d5ebfd8663e5636cbbb1aebca5bbcebfa7aa4cb0c7db1ce",
           "0x8effe3fb27c9f76bbd78687b743b52e6f3330eddc81bc9006ca81fd640f149d73630af578694f4530833c2151522dcc1",

@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1277,
+      "block_id": {
+        "hash": "0x752b79aeb7740014eb46c1972f43a7ad1ec3b96038ffaf3410c8c2cd8b6d83e3",
+        "part_set_header": {
+          "hash": "0x4f06ad856fb5714ebdcd683832ec60f27432ab20978ce7ee0b82fe1f9568db9e",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xd06d31dd4067c86c7e802f639d597bd5ebc2dee5ce41bd2a1016ee317be2bdaa1f07a62a0e421df670d729dada23cf0309025f044511f31a1b4e5b54d07947eb",
+            "timestamp": "2024-01-18T16:28:21.795220322Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xd73689c17311863ce0f05c1f704f3860b0a8b992265168bc7982bf0d57f0bb9e19e2f5c0ff56684ed78fabb301297fb8b5e58f2e417b2e9d5066378d0e5873c7",
+            "timestamp": "2024-01-18T16:28:21.603053794Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xd67f61b7887704e0e079cfcf0fada2eaab90b2f6650eef8613d7a545d87e1bbf2b56b950611e006b843509c1ebf88ac9fbca063e94040f5e5309d45d409a9801",
+            "timestamp": "2024-01-18T16:28:21.603335422Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x8b7f12dfb597fa23bd4fc87c52e5735c0e0f08eb8f8579ecf0a4117966c474731f2bcad8372cd66ff8768713daf92864d7ed4abea9ee3a7c283e8405836b40ab",
+            "timestamp": "2024-01-18T16:28:21.691161321Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:28:16.154156783Z",
+      "height": "1277",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0xd33e10a36e92f89091fadf935e5c860e0b0c4ee14a7e95e723005285f55d58c0",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0x91215d09f759fd9d41a8f79e8e546c2cf94b2a88f0a71902c78f78cda02130f7",
+        "part_set_header": {
+          "hash": "0x1339bee1544ad201fd48ee5afdddf80454b4bd9318e2882c1fb5572167601919",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0x574ab7dedba12d6e6f4e24dd83ca0eeb8750e2d579bcf69625522788ab7c6460",
+      "proposer_address": "0x196d6009588da28cf40039c957a53b08104723f9",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1271,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x0ed4e429714a2bc052dd912782dbc2df8991c79185a38bb50365670618b9976f146383149281fb1cc1252ff5b64010eb61f290f509f83cdf72d39326a12e35811537df10d55811d93800130bd361780162fbfe6968453dd1c41773a7fd0913a6298384636d065ca55e3d539356753d3b637895d0753091f0f8f9de4eee2e64c00b088a6c821e4773e26193b4861380379e48dd3afcec73ae81595935f879727911c5634b110030550e437a610db69c3d4d30d3c0f81041ece4f744ab61edf9aa21fd9507012d7609199323b04f8972076f0727ff30f4196f5f11565ce3d4cdb30b17782af726c89076aea55ae048733daa431f6ca316d92354b5829482695eda1c9c975c04e083e52df3e1a2de7c8eed177211a5399e31739ae4d2b1c913a0bd13b979da6982011ca6ecd03ef683c5a3f842d85fb1d980978de9d37b665bf0372411694ce34b95e69afc5fd7e1dd3190dfab4dbf876d7b5301e279a5ce252a31"
+}

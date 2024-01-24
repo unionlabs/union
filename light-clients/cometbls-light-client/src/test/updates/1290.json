@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1298,
+      "block_id": {
+        "hash": "0x9ec54adc61d79e9bd2a2cf717c14fd869c995059353c517f26320d9d8421ee76",
+        "part_set_header": {
+          "hash": "0x0175658d96c4864510bf054d6f662c3879c6b68749d2dca0f872fe04e2177874",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xaab3f65b90136f733b11276ed31229cf0a0227ed158c94fd22f9ffec0f8c209b292afc18aeaaa15a50e8104c5b4cad54aa2e77c1edf3d418eb737e2f1e5356b5",
+            "timestamp": "2024-01-18T16:30:16.710869463Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xd10ed7d3628c9adeffa3b602edeb62ef9c2bea97f35a0a2d2b64ddd55f3589a205fa8446082d5022ec5054cb98af5d3b1b49e61da0932dc9c031e044e2636ccb",
+            "timestamp": "2024-01-18T16:30:16.925719301Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xaf9b75c82e5281ee5c0285533b7e593c70484d434949f0c76d98f2d3a2e7925202eb485b543870a0a1e7d499b68a4b0902561aee294a5b8a131569dfb5ab9b60",
+            "timestamp": "2024-01-18T16:30:16.715850500Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x87e4a25b0073e8645957c5b8caca8feed96532407b37535b98f2201e84f10045139343cb73210ea9561875273e3f86267c3b80eb6fcf963b50673fb2d6737383",
+            "timestamp": "2024-01-18T16:30:16.815598112Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:30:11.266612158Z",
+      "height": "1298",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0xdf2ecd9204efbb97436b110d6dc1d0f37449dd5b5c4df54360cf137647befe57",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0x3fa41e19e53a29d74082e761d5ad212aaddfc5898d4c86adecbc02cc58d45319",
+        "part_set_header": {
+          "hash": "0x7777c6a0fc960a6590a44623ae128a7785a4c57f9e19c32e26f408f42240c6fc",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0xf389632e4f7c3b0341d08f37115e37389263529548bf79e2efae63f32903aef5",
+      "proposer_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1290,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x26f43e628d31e5574d8cac75186b46215b0f6dce4eb072890275471d4e0952710d571870077df013e067c7dda0ad951a112f1244c087d9739866d0bfe8bc99a31d12864d95b21b64f50aaace371184713d79932d6b5d90a9ddab48df397c82981d28c1256824bb3c0181fb67b88482b0c6b1f6712084cc12e512f5889caa14ca2ecfab93dce712441049d287a21a2041ea192eba4bca95ef0c8a5b509fa2869018d7471c2136476200141761d3996e620dd10fb8346e8e4cc1e059c9ec69ad5d1b3aaea1c27aea846e96c41b93f0daf70348491b90c188dd25f64f976119205b0491801addf7413e8c35f5c14f777358ce635700b350462dfec52f856af1d7c21d9fe55ae98136726f91eaa45a615c390aa913dae9949bd634fadb8b38a5d448015402016094831ef9235f94f536a9c2a08813b84eab1add41f5804d6d2d831725f0aeece2730c66fcd0225cabc6d3b4a5b6aa4d721e0b227d2bedb216b6d54b"
+}

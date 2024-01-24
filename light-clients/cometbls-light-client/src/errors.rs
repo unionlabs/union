@@ -23,7 +23,7 @@ pub enum InvalidHeaderError {
     #[error("negative header timestamp ({0})")]
     NegativeTimestamp(i64),
     #[error("signed header timestamp ({signed_timestamp}) cannot exceed the max clock drift ({max_clock_drift})")]
-    SignerHeaderCannotExceedMaxClockDrift {
+    SignedHeaderCannotExceedMaxClockDrift {
         signed_timestamp: u64,
         max_clock_drift: u64,
     },
@@ -38,6 +38,12 @@ pub enum InvalidHeaderError {
 pub enum Error {
     #[error("{0}")]
     Std(#[from] StdError),
+
+    #[error("math operation with overflow")]
+    MathOverflow,
+
+    #[error("timestamp is negative ({0})")]
+    NegativeTimestamp(i64),
 
     #[error("error while decoding proto ({reason})")]
     DecodeFromProto { reason: String },

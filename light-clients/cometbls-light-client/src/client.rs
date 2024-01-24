@@ -96,8 +96,9 @@ impl IbcClient for CometblsLightClient {
             read_consensus_state(deps, &header.trusted_height)?
                 .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
 
+        // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
         let untrusted_height_number = header.signed_header.commit.height.inner() as u64;
-        let trusted_height_number = header.trusted_height.revision_number;
+        let trusted_height_number = header.trusted_height.revision_height;
 
         if untrusted_height_number <= trusted_height_number {
             return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
@@ -131,9 +132,15 @@ impl IbcClient for CometblsLightClient {
             return Err(InvalidHeaderError::HeaderExpired(consensus_state.data.timestamp).into());
         }
 
-        let max_clock_drift = env.block.time.seconds() + client_state.data.max_clock_drift;
+        let max_clock_drift = env
+            .block
+            .time
+            .seconds()
+            .checked_add(client_state.data.max_clock_drift)
+            .ok_or(Error::MathOverflow)?;
+
         if untrusted_timestamp >= max_clock_drift {
-            return Err(InvalidHeaderError::SignerHeaderCannotExceedMaxClockDrift {
+            return Err(InvalidHeaderError::SignedHeaderCannotExceedMaxClockDrift {
                 signed_timestamp: untrusted_timestamp,
                 max_clock_drift,
             }
@@ -143,9 +150,9 @@ impl IbcClient for CometblsLightClient {
         let trusted_validators_hash = consensus_state.data.next_validators_hash;
 
         let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
-            trusted_validators_hash.clone()
+            &trusted_validators_hash
         } else {
-            header.signed_header.header.validators_hash.clone()
+            &header.signed_header.header.validators_hash
         };
 
         let expected_block_hash = header
@@ -200,6 +207,7 @@ impl IbcClient for CometblsLightClient {
 
         let untrusted_height = Height::new(
             header.trusted_height.revision_number,
+            // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
             header.signed_header.commit.height.inner() as u64,
         );
 
@@ -212,8 +220,9 @@ impl IbcClient for CometblsLightClient {
             hash: header.signed_header.header.app_hash,
         };
 
+        // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
         let untrusted_height_number = header.signed_header.commit.height.inner() as u64;
-        let trusted_height_number = header.trusted_height.revision_number;
+        let trusted_height_number = header.trusted_height.revision_height;
 
         let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
             consensus_state.data.next_validators_hash.clone()
@@ -222,7 +231,16 @@ impl IbcClient for CometblsLightClient {
         };
 
         consensus_state.data.next_validators_hash = untrusted_validators_hash;
-        consensus_state.data.timestamp = header.signed_header.header.time.seconds.inner() as u64;
+        consensus_state.data.timestamp = header
+            .signed_header
+            .header
+            .time
+            .seconds
+            .inner()
+            .try_into()
+            .map_err(|_| {
+                Error::NegativeTimestamp(header.signed_header.header.time.seconds.inner())
+            })?;
 
         save_client_state(deps.branch(), client_state);
         save_consensus_state(deps, consensus_state, &untrusted_height);
@@ -244,7 +262,6 @@ impl IbcClient for CometblsLightClient {
         _deps: Deps<Self::CustomQuery>,
         _header: Self::Header,
     ) -> Result<ics008_wasm_client::CheckForMisbehaviourResult, Self::Error> {
-        // TODO(aeryz): Leaving this as success for us to be able to update the client. See: #588.
         Ok(ics008_wasm_client::CheckForMisbehaviourResult {
             found_misbehaviour: false,
         })
@@ -325,7 +342,13 @@ fn is_client_expired(
     trusting_period: u64,
     current_block_time: u64,
 ) -> bool {
-    consensus_state_timestamp + trusting_period < current_block_time
+    if let Some(sum) = consensus_state_timestamp.checked_add(trusting_period) {
+        sum < current_block_time
+    } else {
+        // TODO(aeryz): This is really an unexpected error and this should return
+        // a nice error message.
+        true
+    }
 }
 
 fn canonical_vote(
@@ -346,5 +369,439 @@ fn canonical_vote(
             }),
         }),
         chain_id,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::{cmp::Ordering, fs};
+
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
+        OwnedDeps, Timestamp,
+    };
+    use unionlabs::{
+        google::protobuf::timestamp::TIMESTAMP_SECONDS_MAX, ibc::lightclients::cometbls,
+    };
+
+    use super::*;
+
+    const UPDATES_DIR_PATH: &str = "src/test/updates/";
+
+    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
+        revision_number: 1,
+        revision_height: 1124,
+    };
+
+    lazy_static::lazy_static! {
+        static ref UPDATES: Vec<cometbls::header::Header> = {
+            let mut update_files = vec![];
+            for entry in fs::read_dir(UPDATES_DIR_PATH).unwrap() {
+                let entry = entry.unwrap();
+                let path = entry.path();
+                if path.file_name().is_some() {
+                    update_files.push(path);
+                }
+            }
+
+            update_files.sort_by(|lhs, rhs| {
+                let lhs = lhs.file_name().unwrap().to_string_lossy().strip_suffix(".json").unwrap().to_string().parse::<u32>().unwrap();
+                let rhs = rhs.file_name().unwrap().to_string_lossy().strip_suffix(".json").unwrap().to_string().parse().unwrap();
+                if lhs > rhs {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
+            });
+
+            let mut updates = vec![];
+            let mut prev_height = 0;
+            for f in update_files {
+                let mut data: cometbls::header::Header= serde_json::from_str(&fs::read_to_string(f).unwrap()).unwrap();
+                if prev_height != 0 {
+                    data.trusted_height.revision_height = prev_height;
+                }
+                prev_height = data.signed_header.header.height.inner().try_into().unwrap();
+                updates.push(data);
+            }
+
+            updates
+        };
+    }
+
+    fn prepare_test_data() -> (
+        OwnedDeps<MockStorage, MockApi, MockQuerier>,
+        cometbls::header::Header,
+        Env,
+    ) {
+        let mut deps = mock_dependencies();
+
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
+
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
+
+        save_client_state(deps.as_mut(), wasm_client_state);
+        save_consensus_state(
+            deps.as_mut(),
+            wasm_consensus_state.clone(),
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
+        );
+
+        let update = UPDATES[0].clone();
+
+        let mut env = mock_env();
+        env.block.time =
+            cosmwasm_std::Timestamp::from_seconds(wasm_consensus_state.data.timestamp + 60 * 5);
+
+        (deps, update, env)
+    }
+
+    #[test]
+    fn is_client_expired_works() {
+        // expires when a + b < c
+        assert_eq!(is_client_expired(1, 1, 10), true);
+        assert_eq!(is_client_expired(1, 10, 10), false);
+        assert_eq!(is_client_expired(10, 1, 10), false);
+        // expires when a + b = c
+        assert_eq!(is_client_expired(5, 5, 10), false);
+        // expires when a + b overflows
+        assert_eq!(is_client_expired(u64::MAX, 5, 10), true);
+    }
+
+    #[test]
+    fn verify_and_update_header_works_with_good_data() {
+        let mut deps = mock_dependencies();
+
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
+
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
+
+        let prev_consensus_height = INITIAL_CONSENSUS_STATE_HEIGHT;
+
+        save_client_state(deps.as_mut(), wasm_client_state);
+        save_consensus_state(deps.as_mut(), wasm_consensus_state, &prev_consensus_height);
+
+        for update in UPDATES.iter() {
+            let mut env = mock_env();
+            env.block.time = cosmwasm_std::Timestamp::from_seconds(
+                update
+                    .signed_header
+                    .header
+                    .time
+                    .seconds
+                    .inner()
+                    .try_into()
+                    .unwrap(),
+            );
+            CometblsLightClient::check_for_misbehaviour_on_header(deps.as_ref(), update.clone())
+                .unwrap();
+            CometblsLightClient::verify_header(deps.as_ref(), env.clone(), update.clone()).unwrap();
+            CometblsLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
+
+            let consensus_state: WasmConsensusState = read_consensus_state(
+                deps.as_ref(),
+                &Height {
+                    revision_number: 1,
+                    revision_height: update
+                        .signed_header
+                        .header
+                        .height
+                        .inner()
+                        .try_into()
+                        .unwrap(),
+                },
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(
+                consensus_state.data.timestamp,
+                TryInto::<u64>::try_into(update.signed_header.header.time.seconds.inner()).unwrap()
+            );
+            assert_eq!(
+                consensus_state.data.next_validators_hash,
+                if TryInto::<u64>::try_into(update.signed_header.commit.height.inner()).unwrap()
+                    == update.trusted_height.revision_height + 1
+                {
+                    let prev_consensus_state: WasmConsensusState =
+                        read_consensus_state(deps.as_ref(), &prev_consensus_height)
+                            .unwrap()
+                            .unwrap();
+                    prev_consensus_state.data.next_validators_hash
+                } else {
+                    update.signed_header.header.validators_hash.clone()
+                }
+            );
+            assert_eq!(
+                consensus_state.data.root.hash,
+                update.signed_header.header.app_hash
+            );
+        }
+    }
+
+    #[test]
+    fn verify_header_fails_with_signed_header_height_from_past() {
+        let (deps, mut update, env) = prepare_test_data();
+
+        update.signed_header.commit.height = 0.try_into().unwrap();
+
+        assert!(matches!(
+            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            Err(Error::InvalidHeader(
+                InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent { .. }
+            ))
+        ));
+    }
+
+    #[test]
+    fn verify_header_fails_with_signed_header_timestamp_from_past() {
+        let (deps, mut update, env) = prepare_test_data();
+
+        update.signed_header.header.time.seconds = 0.try_into().unwrap();
+
+        assert!(matches!(
+            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            Err(Error::InvalidHeader(
+                InvalidHeaderError::SignedHeaderTimestampMustBeMoreRecent { .. }
+            ))
+        ));
+    }
+
+    #[test]
+    fn verify_header_fails_with_negative_timestamp() {
+        let (deps, mut update, env) = prepare_test_data();
+
+        update.signed_header.header.time.seconds = (-10000).try_into().unwrap();
+
+        assert!(matches!(
+            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            Err(Error::InvalidHeader(InvalidHeaderError::NegativeTimestamp(
+                _
+            )))
+        ));
+    }
+
+    #[test]
+    fn verify_header_fails_when_client_expired() {
+        let (deps, update, mut env) = prepare_test_data();
+
+        env.block.time = Timestamp::from_nanos(u64::MAX);
+
+        assert!(matches!(
+            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            Err(Error::InvalidHeader(InvalidHeaderError::HeaderExpired(_)))
+        ));
+    }
+
+    #[test]
+    fn verify_header_fails_when_signed_header_exceeds_max_clock_drift() {
+        let (mut deps, correct_update, mut env) = prepare_test_data();
+
+        let mut update = correct_update.clone();
+        update.signed_header.header.time.seconds = TIMESTAMP_SECONDS_MAX.try_into().unwrap();
+
+        assert!(matches!(
+            CometblsLightClient::verify_header(deps.as_ref(), env.clone(), update),
+            Err(Error::InvalidHeader(
+                InvalidHeaderError::SignedHeaderCannotExceedMaxClockDrift { .. }
+            ))
+        ));
+
+        let mut client_state: WasmClientState = read_client_state(deps.as_ref()).unwrap();
+        client_state.data.max_clock_drift = 0;
+        save_client_state(deps.as_mut(), client_state);
+        env.block.time = Timestamp::from_seconds(
+            correct_update
+                .signed_header
+                .header
+                .time
+                .seconds
+                .inner()
+                .try_into()
+                .unwrap(),
+        );
+
+        assert!(matches!(
+            CometblsLightClient::verify_header(deps.as_ref(), env, correct_update),
+            Err(Error::InvalidHeader(
+                InvalidHeaderError::SignedHeaderCannotExceedMaxClockDrift { .. }
+            ))
+        ));
+    }
+
+    #[test]
+    fn verify_header_fails_when_invalid_commit_hash() {
+        let (deps, correct_update, env) = prepare_test_data();
+
+        let mut update = correct_update.clone();
+        update.signed_header.commit.block_id.hash.0[0] =
+            u8::MAX - update.signed_header.commit.block_id.hash.0[0];
+
+        assert!(matches!(
+            CometblsLightClient::verify_header(deps.as_ref(), env.clone(), update),
+            Err(Error::InvalidHeader(
+                InvalidHeaderError::SignedHeaderMismatchWithCommitHash { .. }
+            ))
+        ));
+
+        let mut update = correct_update.clone();
+        update.signed_header.header.chain_id = "foobar".to_string();
+
+        assert!(matches!(
+            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            Err(Error::InvalidHeader(
+                InvalidHeaderError::SignedHeaderMismatchWithCommitHash { .. }
+            ))
+        ));
+    }
+
+    #[test]
+    fn verify_header_fails_when_invalid_zkp() {
+        let (deps, mut update, env) = prepare_test_data();
+
+        update.zero_knowledge_proof[0] = u8::MAX - update.zero_knowledge_proof[0];
+
+        assert_eq!(
+            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            Err(Error::InvalidZKP)
+        );
+    }
+
+    #[test]
+    fn verify_header_fails_when_invalid_trusted_validators_hash() {
+        let (mut deps, update, env) = prepare_test_data();
+
+        let mut consensus_state: WasmConsensusState =
+            read_consensus_state(deps.as_ref(), &INITIAL_CONSENSUS_STATE_HEIGHT)
+                .unwrap()
+                .unwrap();
+
+        consensus_state.data.next_validators_hash.0[0] =
+            u8::MAX - consensus_state.data.next_validators_hash.0[0];
+
+        save_consensus_state(
+            deps.as_mut(),
+            consensus_state,
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
+        );
+
+        assert_eq!(
+            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            Err(Error::InvalidZKP)
+        );
+    }
+
+    #[test]
+    fn verify_header_fails_when_invalid_signed_vote() {
+        let (deps, mut update, env) = prepare_test_data();
+
+        update.signed_header.commit.round = (update.signed_header.commit.round.inner() + 1)
+            .try_into()
+            .unwrap();
+
+        assert_eq!(
+            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            Err(Error::InvalidZKP)
+        );
+    }
+
+    #[test]
+    fn query_status_returns_active() {
+        let mut deps = mock_dependencies();
+
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
+
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
+
+        save_client_state(deps.as_mut(), wasm_client_state);
+
+        save_consensus_state(
+            deps.as_mut(),
+            wasm_consensus_state,
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
+        );
+
+        let mut env = mock_env();
+        env.block.time = Timestamp::from_seconds(0);
+
+        assert_eq!(
+            CometblsLightClient::status(deps.as_ref(), &env),
+            Ok(Status::Active.into())
+        );
+    }
+
+    #[test]
+    fn query_status_expired_when_consensus_state_missing() {
+        let mut deps = mock_dependencies();
+
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
+
+        save_client_state(deps.as_mut(), wasm_client_state);
+
+        assert_eq!(
+            CometblsLightClient::status(deps.as_ref(), &mock_env()),
+            Ok(Status::Expired.into())
+        );
+    }
+
+    #[test]
+    fn query_status_expired_when_client_expired() {
+        let mut deps = mock_dependencies();
+
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
+
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
+
+        save_client_state(deps.as_mut(), wasm_client_state);
+
+        save_consensus_state(
+            deps.as_mut(),
+            wasm_consensus_state,
+            &INITIAL_CONSENSUS_STATE_HEIGHT,
+        );
+
+        let mut env = mock_env();
+        env.block.time = Timestamp::from_nanos(u64::MAX);
+
+        assert_eq!(
+            CometblsLightClient::status(deps.as_ref(), &env),
+            Ok(Status::Expired.into())
+        );
+    }
+
+    #[test]
+    fn query_status_frozen() {
+        let mut deps = mock_dependencies();
+
+        let mut wasm_client_state: WasmClientState =
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
+
+        wasm_client_state.data.frozen_height.revision_height = 1;
+
+        save_client_state(deps.as_mut(), wasm_client_state);
+
+        assert_eq!(
+            CometblsLightClient::status(deps.as_ref(), &mock_env()),
+            Ok(Status::Frozen.into()),
+        );
     }
 }

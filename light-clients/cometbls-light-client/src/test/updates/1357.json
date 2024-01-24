@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1362,
+      "block_id": {
+        "hash": "0x49f503006846c1eada86d3ae80e46dcfa5396b4ed40af9dde2df394320b8fc8e",
+        "part_set_header": {
+          "hash": "0x22ef3bcc6861df8122e7156dd07ec6451eae4e4cd0095a6e9f9c59ed47dfa46d",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x8a7553c313677227a3ce428c1b4843686a30daac3ae9e0b9f681a8c50b8563a108a337ad49a92225f88f61adedcd480bc4ed3279aad930161852dc8062a8f737",
+            "timestamp": "2024-01-18T16:36:09.476172475Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xd50a8f88191c95af1fbfdb6a211dcf3a1bc40f25b39ea36246fedfaa0c0fc2da102409104a0d1786fc2ca9adf30e20c831d708713178eb2e712f209397b601a3",
+            "timestamp": "2024-01-18T16:36:09.672939582Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xa0491b0df6e194f8b811abdd28c075fac93207d95ada39a86e5062998816b20d04ee24751ec1fbd102909ec5170aa69bcbfd2d2c7d28051525bb8e7a08bcb6ce",
+            "timestamp": "2024-01-18T16:36:09.470183066Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xa9f1a2c6b7669da19f583e11a046609fbc34d92e65cf2a70aab95acd6c053535182c9acfa8a81f4ad9bd823f5112209072fcf51d14d8de107ac3a72b44d3e432",
+            "timestamp": "2024-01-18T16:36:09.569660351Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:36:03.899287618Z",
+      "height": "1362",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0xe207763ef258720952f13da4c50fb2a7d236a2392edee417c264af00dd522984",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0x60a81c6b5b58cc6a202f9b9d4e48ff4b7a6323238c28e0f82784fc4df0bf70ed",
+        "part_set_header": {
+          "hash": "0x3f5a3170db59816bf55cad4dddc976c48f348dafae4704995ab92b6ffd19a9a9",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0x1614b868cf56ce9bad15ecfe028a68100dab2053f28f72739f79517d795bca15",
+      "proposer_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1357,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x2cdb345ebdb463fc6fbf6d3c7e842b768e845ebe63d788c4d6d1c879a215cd0f2802206174612d8286a1ff2b717d31c56d07bd1c76805d7e92ed185d4174630216409e2cea6eb72f2dd23bf88cf314f8e0b5ec0bbfd35746fceba6bee7b5dd0a28aae0c1048691c1726b1d1ea91f7366d45bca93e424933f2594822901ee16a002540fc7f468b23a637b058a7510d4c9839073a7a45434c62272cc592bee13f80c69dba5644cadee6e484d017f8ccc5464f1620f53bc768abdbf34d70ed15be21d1054da6f0ff9b89a0881005ad77affa7ab0d2c5ec319275c5836398da14baa2856da1c90098f81775c97cc443ab317cdab1d0cbecac65207d7ec127c49fd332bb36dec0ecbb1e3d58b7ae4e9441dac291d972738ab0fbbe4d5e502a8c6719902921867c69c7084c0ee328985ee88ec91e10e71d266d8b6be5d19be3b30b1bf059d5f546736463093fe1063bd7aba202e73ed92958f442b2c49aa1c6cfc2023"
+}

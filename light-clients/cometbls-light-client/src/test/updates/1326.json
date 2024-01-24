@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1331,
+      "block_id": {
+        "hash": "0x395a3c6ba4b2ac1103ec949ca18d69173e344071d2114ec227c67072fdda23dd",
+        "part_set_header": {
+          "hash": "0xcb2f5755f676def1f6bfbf751813b99102389cc2877cd3b09a3d10c142fdd76c",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xa1fea2454aaf2ab04ada4aa273aa41efc88b0e55920d5868542ceae5e7c4988b1cc702e9adca77195f58c727f4c905c69e9114992cb3c649e630117213905e09",
+            "timestamp": "2024-01-18T16:33:17.953739725Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xe243c89e6b0a0b217661866b95d2ca0e540894aa754169c153d19edbd73e53bb3038b03c16b42485d0f7b5b050eec4335096cf34065eb2932ce980d7def3952f",
+            "timestamp": "2024-01-18T16:33:17.955768075Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "nil",
+          "@value": {
+            "signature": "0xc1b92485be1772bc4192dc80aab76cd9d8d253462baa7d1db1639ee8d8aad2a4273dea0994171ef317fc15b156a1667f7af9a4984349ecc9b1f255338a95f05e",
+            "timestamp": "2024-01-18T16:33:18.148951925Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x858e540094d1cf3900665f44d40f9d88cb62f0e265c2178eeab815fa4a113b0d29c46d6fc90695f559cfcff7f1ce0e56fbb23ddc8566642680db28fecd4241e5",
+            "timestamp": "2024-01-18T16:33:18.052195249Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:33:12.511964177Z",
+      "height": "1331",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0x3cce6e0aeb07662847512a2fe25be655c8bc0994bb689e1b4d517e58442afbd6",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0xe371e19bec1cf47d146170376a9c7f9ba2ff011bb00d98fac6478466222e7f97",
+        "part_set_header": {
+          "hash": "0x26160c78133439de75d661c2b0f10ec7cb6cee7439df8dc74d71419f136403bd",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0xa340ab77f3c164d8f67ae4352e13a66bae4b9da5cceb5ef8a213104677f916bc",
+      "proposer_address": "0x4ce57693c82b50f830731dab14fa759327762456",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1326,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x0ac4ba3b25558b4c1c381a15d47b4a9efd43e8d869d8dfd7a2138fed832214f612cefc43a6a43d82a64059ff48cf754fd114d27d68f31a07c871cded8cc2f3101b7467999059ef90c28267fc8175904ce38e8b16e6296a329a5680a8ec6ab9be250dd65b5164c5892c416572c23ca230e48329b8a3f79d5375a7f4632e563397217827f0fc91a721a2008f4e3b2047c8d6a4176186106d11e62229fd94691c1e0ec46b43557c3d812a3956bfaa829843dc27b478431c0806391193eff8a95880232d7314da22fa614ea107d1052f0d00914327f504584726960b9b20bdb6f86209bce8d04cd06532f356e09e2e799f3ce98d7f6b48319d7f9d42925bf9b94a0e07a69d033251c67c5d5a103daac5d47af1b35886e619b9fc49718a50dd1573300993ba77633009cfb82433de5d84299e4b5b8def5f2b8ac0ae60e6dc7ffe5a13060d5774b0dc0d6cf3dd401b5a671ad032807d5fb7c839f106fb2eb0fffac305"
+}

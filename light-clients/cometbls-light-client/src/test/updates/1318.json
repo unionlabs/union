@@ -1,0 +1,79 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 1326,
+      "block_id": {
+        "hash": "0x2610e1b33860f5023943ca949d4f7c09983a15fdce0f5c97170c9a03707a2155",
+        "part_set_header": {
+          "hash": "0x749ef0a6828e34cbb37beec580a81b0b0afaf06a939816eb7fb79e13de13eac8",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xed399fe2ed45033cf7b0f7633fca502980b43081704efc916dde1b7030378a720ca34b7e93d28e6a0bacdb6bdd32f15c9b0d7302955201ccdb41d3562d970e49",
+            "timestamp": "2024-01-18T16:32:50.438352529Z",
+            "validator_address": "0x196d6009588da28cf40039c957a53b08104723f9"
+          }
+        },
+        {
+          "@type": "nil",
+          "@value": {
+            "signature": "0xe68415db6582116f328a72fba2fbd9a07741b4e812bce455f88c0b9f25212be014f3722721d0762f3924d5ffb4a6241ac9fd8cfb2f43ecb7800c5e5c7a274eab",
+            "timestamp": "2024-01-18T16:32:50.622727763Z",
+            "validator_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xeb92633408db124db38488d1d271d81b5e363d4a68f71f32e0bc53715ad5b29c09c8877770307533297f82cfc171e8acd7329cb5b8a36b218783fba5f8b75762",
+            "timestamp": "2024-01-18T16:32:50.437404646Z",
+            "validator_address": "0x4ce57693c82b50f830731dab14fa759327762456"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xc471823b5b92afad7efe2897ac86e83245a6c2414fdbd9f2157b23c2ec0d818a1f4fb3c28e7c6e2400d3a523be937fc53576434c5c19e7a4685a3744ed517b99",
+            "timestamp": "2024-01-18T16:32:50.523623859Z",
+            "validator_address": "0xefb1d8b3a56d97f2ab24ac5f0b04f48535f74da9"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-01-18T16:32:44.877864081Z",
+      "height": "1326",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0xbd22d489d6032ee1853d108facccd8e789df84abdfa1a3260da4b9721bbe8f41",
+      "chain_id": "union-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0x2191398c60beeff12c484b101a676a0fe4d66f9dbe8001e4e6f1ee183426be5d",
+        "part_set_header": {
+          "hash": "0x450df793561d04d2f2f2171bdd93f505e01d4aa5f714a3f838c8c0faa5af6353",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb",
+      "last_commit_hash": "0xd977fd87ff68e61cfcf63ac7280cedad8c17417867814ceb383f49e375e38d5a",
+      "proposer_address": "0x36e1644d94064ed11521041e9138a0d1cca9c31c",
+      "last_results_hash": "0xfb194110fbb175a3675b257f007363443084a52df366f1dc1ea49fc321c82081",
+      "next_validators_hash": "0x0ff4a046d3592c39ed98fd94930049d10c17a09f729460687ba462ea56d8b6bb"
+    }
+  },
+  "trusted_height": {
+    "revision_height": 1318,
+    "revision_number": 1
+  },
+  "zero_knowledge_proof": "0x1945cef9d412db78fdfb3f7013ece61170cfc79a04c645456845e67c41a22d811b1e7b69fc3cf365b6c4363237367027a27cbcd68f583b4f0b07140e9648c8f22ed6ec36bf9d75c442b0e92769a96eee80be0a2f882a6bcd5623b3c226a9c9961bb13042c2fb4d64407af2257b18bab39c67c23e02d0192b39d39af9921c3f66147145e13cc295341369b9ca72fbefe12f532c7987e527a25e4fbadacef28794280bbc961a1458c4783e06580860932b4b68d8e220f09f58decdcc890da341813007d1eef8ffd3a72e78222b389b709b4078d89ec6ab39ada6d3079640959c1100c9d8d65e7a62bb51fc94fa2852222bce0754988c27c1f340569957c9ab01770985eda888e8044e6ce6dab5e7fe7bf7d60d32ecc29cd9e6b95172cebaeec70812b8c1652b73c5c5300f16754714e53947f0f8bea8c5217a5118d2117a07b7e713835ec1ca6800c7a3c2605a243e5ac9b4c86f144b4e66b215e4da04dd473dbf"
+}

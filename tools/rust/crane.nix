@@ -314,6 +314,10 @@
             (ensureDirectoryIncluded {
               path' = path;
               pathToInclude = "light-clients/ethereum-light-client/src/test";
+            }) ||
+            (ensureDirectoryIncluded {
+              path' = path;
+              pathToInclude = "light-clients/cometbls-light-client/src/test";
             });
       };
     in
