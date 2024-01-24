@@ -1,5 +1,6 @@
 <script lang="ts">
   import '#/styles/index.css'
+  import tw from '../../../tailwind.config.ts'
   import * as d3 from 'd3'
   import { onMount } from 'svelte'
   import * as Plot from '@observablehq/plot'
@@ -9,7 +10,7 @@
 
 
   // export const [constraintsLineColor, ramLineColor] = ['url(#constraints-gradient)', 'url(#ram-gradient)']
-  export const [constraintsLineColor, ramLineColor] = ['#A0ECFD', '#A0ECFD']
+  export const [constraintsLineColor, ramLineColor] = [`${tw.theme.extend.colors.accent.DEFAULT}`, `${tw.theme.extend.colors.accent[800]}`]
 
   const pauseAnimation = (element: SVGPathElement) => (element.style.animationPlayState = 'paused')
   const resumeAnimation = (element: SVGPathElement) =>
@@ -42,7 +43,7 @@
     { x: 128, y: 3600000 },
   ]
 
-  const constraintsPoints = constraints.map(({x, y}) => {return {x: x, y: interpolate(y / 3600000)}})
+  const constraintsInterpolate = d3.interpolateNumber(2650000, 3600000)
 
   let ram = [
     { x: 4, y: 2.9 },
@@ -53,19 +54,8 @@
     { x: 128, y: 8 },
   ]
 
-  const ramPoints = ram.map(({x, y}) => {return {x: x, y: interpolate(y / 8)}})
-
-  const points = [
-    ...constraintsPoints.map(r => ({x: r.x, y: r.y, z: "constraints", stroke: constraintsLineColor})),
-    ...ramPoints.map(r => ({x: r.x, y: r.y, z: "ram", stroke: ramLineColor}))
-  ]
-
-  const xyz = {
-    x: 'x',
-    y: 'y',
-    z: 'z',
-    stroke: 'stroke',
-  }
+  let hiddenData = Array(128 / 4).fill(0).map((_, i) => [i * 4, '-'])
+  console.log(hiddenData)
 
   onMount(() => {
     let chartDom = document.getElementById('galois-graph');
@@ -79,11 +69,11 @@
         trigger: 'axis'
       },
       grid: {
-        left: '3%',
-        right: '3%',
-        bottom: '10%',
-        top: '10%',
-        containLabel: false,
+        left: '0%',
+        right: '0%',
+        bottom: '16.66666%',
+        top: '-1px',
+        // containLabel: true,
         // borderColor: "#1f1f1f"
       },
       toolbox: {
@@ -95,20 +85,34 @@
         axisLine: {
           show: false
         },
+        splitLine: {
+          show: false
+        },
         axisTick: {
           show: false
         },
-        type: 'category',
+        interval: 4,
+        axisLabel: {
+          formatter(value, index) {
+            return [4, 64, 128].includes(value) ? value : null
+          },
+        },
+        type: 'value',
         boundaryGap: false,
-        // data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        min(value) {
+            return value.min - 12;
+        },
+        max(value) {
+            return value.max + 12;
+        },
       },
       yAxis: [{
         axisLine: {
           show: false
         },
-        // axisTick: {
-        //   show: false
-        // },
+        axisTick: {
+          show: false
+        },
         axisLabel: {
           show: false
         },
@@ -116,36 +120,36 @@
           lineStyle: {
             color: "#1f1f1f"
           }
-        }
+        },
+        max(value) {
+            return 6_000_000;
+        },
+        interval: 1_200_000,
       },
       {
-        axisLine: {
-          show: false
+        show: false,
+        max(value) {
+            return value.max * (6_000_000 / 3_400_000);
         },
-        // axisTick: {
-        //   show: false
-        // },
-        axisLabel: {
-          show: false
-        },
-        splitLine: {
-          lineStyle: {
-            color: "#1f1f1f"
-          }
-        }
       }],
       series: [
         {
           name: 'Constraints',
           type: 'line',
           yAxisIndex: 0,
-          data: constraints.map(({x,y})=>[x,y])
+          symbol: 'circle',
+          data: constraints.map(({x,y})=>[x,y]),
+          lineStyle: { color: constraintsLineColor },
+          itemStyle: { color: constraintsLineColor },
         },
         {
           name: 'Ram',
           type: 'line',
           yAxisIndex: 1,
-          data: ram.map(({x,y})=>[x,y])
+          symbol: 'circle',
+          data: ram.map(({x,y})=>[x,y]),
+          lineStyle: { color: ramLineColor },
+          itemStyle: { color: ramLineColor },
         },
       ]
     };
@@ -186,7 +190,7 @@
   </p> -->
     <article
       id="galois-graph"
-      class="w-full h-full text-center flex antialiased"
+      class="w-full h-full"
       bind:this={chartElement}
     ></article>
 </div>
