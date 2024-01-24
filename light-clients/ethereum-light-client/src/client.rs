@@ -482,7 +482,7 @@ mod test {
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockQuerier, MockQuerierCustomHandlerResult, MockStorage},
-        OwnedDeps, SystemResult, Timestamp,
+        Binary, OwnedDeps, SystemResult, Timestamp,
     };
     use ethereum_verifier::crypto::{
         eth_aggregate_public_keys_unchecked, fast_aggregate_verify_unchecked,
@@ -492,10 +492,7 @@ mod test {
     use unionlabs::{
         bls::BlsPublicKey,
         ethereum::config::Mainnet,
-        ibc::{
-            core::connection::connection_end::ConnectionEnd,
-            lightclients::{cometbls, ethereum, wasm},
-        },
+        ibc::{core::connection::connection_end::ConnectionEnd, lightclients::ethereum},
         id::ClientId,
         proof::ConnectionPath,
         IntoProto,

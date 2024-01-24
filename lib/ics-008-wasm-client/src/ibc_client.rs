@@ -38,8 +38,8 @@ pub enum IbcClientError<T: IbcClient> {
     ClientStateNotFound,
     #[error(transparent)]
     ClientSpecific(T::Error),
-    #[error("misbehaviour data cannot be decoded ({data})", data = serde_utils::to_hex(.0))]
-    MisbehaviourDataDecode(Vec<u8>),
+    #[error("`ClientMessage` cannot be decoded ({data})", data = serde_utils::to_hex(.0))]
+    InvalidClientMessage(Vec<u8>),
 }
 
 pub trait IbcClient: Sized {
@@ -175,7 +175,7 @@ where {
                             .map_err(IbcClientError::ClientSpecific)?,
                     )
                 } else {
-                    return Err(IbcClientError::MisbehaviourDataDecode(client_message.0));
+                    return Err(IbcClientError::InvalidClientMessage(client_message.0));
                 }
             }
             QueryMsg::CheckForMisbehaviour { client_message } => {
@@ -197,7 +197,7 @@ where {
                         .map_err(IbcClientError::ClientSpecific)?,
                     })
                 } else {
-                    return Err(IbcClientError::MisbehaviourDataDecode(client_message.0));
+                    return Err(IbcClientError::InvalidClientMessage(client_message.0));
                 }
             }
             QueryMsg::TimestampAtHeight { height } => to_json_binary(&TimestampAtHeightResult {
