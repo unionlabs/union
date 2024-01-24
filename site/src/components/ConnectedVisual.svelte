@@ -111,7 +111,7 @@
 <svg
   id="connected-visual"
   class="w-full h-full"
-  viewBox="0 0 576 384"
+  viewBox="1 1 575 383"
   version="1.1"
   xmlns="http://www.w3.org/2000/svg"
 >
