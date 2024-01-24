@@ -5,7 +5,7 @@
   import * as Plot from '@observablehq/plot'
   import { roundNumber } from '#/lib/utilities.ts'
 
-  export const [galoisLineColor, tendermindXLineColor] = ['#3F8EF7', '#9DA3AE']
+  export const [constraintsLineColor, ramLineColor] = ['#3F8EF7', '#9DA3AE']
 
   const pauseAnimation = (element: SVGPathElement) => (element.style.animationPlayState = 'paused')
   const resumeAnimation = (element: SVGPathElement) =>
@@ -21,91 +21,109 @@
 
   let chartElement: HTMLElement
 
+  const i = d3.interpolateNumber(0, 100);
+  const interpolate = (n: number) => {
+    console.log(n, i(n))
+    return i(n)
+  }
+
   // https://unionlabs.github.io/galois-benchmark/c6i.x32large.v3/report.html
-  let galoisExtrapolated = d3.scaleLinear([4, 128], [6.05, 8.1])
-  let galois = [
-    { x: 4, y: 6.05 },
-    { x: 8, y: 6.18 },
-    { x: 16, y: 6.23 },
-    { x: 32, y: 6.94 },
-    { x: 64, y: 6.91 },
-    { x: 128, y: 8.1 },
-    { x: 150, y: galoisExtrapolated(150) }
+  let constraints = [
+    { x: 4, y: 2650000 },
+    { x: 8, y: 2680645 },
+    { x: 16, y: 2741935 },
+    { x: 32, y: 2864516 },
+    { x: 64, y: 3109677 },
+    { x: 128, y: 3600000 },
   ]
 
-  // https://blog.succinct.xyz/tendermintx/
-  let tendermintXExtrapolated = d3.scaleLinear([60, 150], [300, 720])
-  let tendermintX = [
-    { x: 4, y: tendermintXExtrapolated(4) },
-    { x: 60, y: 300 },
-    { x: 100, y: 480 },
-    { x: 150, y: 720 }
+  const constraintsPoints = constraints.map(({x, y}) => {return {x: x, y: interpolate(y / 3600000)}})
+
+  let ram = [
+    { x: 4, y: 2.9 },
+    { x: 8, y: 3.06 },
+    { x: 16, y: 3.4 },
+    { x: 32, y: 4.05 },
+    { x: 64, y: 5.3 },
+    { x: 128, y: 8 },
   ]
+
+  const ramPoints = ram.map(({x, y}) => {return {x: x, y: interpolate(y / 8)}})
+
+  const points = [
+    ...constraintsPoints.map(r => ({x: r.x, y: r.y, z: "constraints", stroke: constraintsLineColor})),
+    ...ramPoints.map(r => ({x: r.x, y: r.y, z: "ram", stroke: ramLineColor}))
+  ]
+
+  const xyz = {
+    x: 'x',
+    y: 'y',
+    z: 'z',
+    stroke: 'stroke',
+  }
 
   $: {
     chartElement?.append(
       // @ts-expect-error
       Plot.plot({
+        className: "galois-graph",
         style: {
           borderRadius: '5px',
           fontFamily: 'monospace',
           fontVariantNumeric: 'tabular-nums'
         },
         x: {
+          domain: [-5, 140],
           tickSize: 0,
           axis: 'bottom',
           labelAnchor: 'center',
-          ariaLabel: '#-validators',
           legend: true,
           tickFormat: (d: number) => d
         },
         y: {
-          tickSize: 0,
-          axis: 'left',
-          legend: true,
-          label: '',
-          labelAnchor: undefined,
-          fontVariant: 'tabular-nums',
-          tickFormat: (d: number) => d,
-          ariaDescription: 'seconds-to-prove'
+          domain: [0, 200],
+          axis: null
         },
         figure: true,
         marks: [
-          Plot.gridY({ strokeWidth: 1.2, strokeOpacity: 0.5 }),
-          Plot.ruleY([1], { stroke: '#ffffff', strokeWidth: 1.2, strokeOpacity: 0.5 }),
-          Plot.line(galois, {
+          Plot.gridY({ stroke: '#1f1f1f', strokeWidth: 1, strokeOpacity: 1 }),
+          Plot.ruleY([1], { stroke: '#1f1f1f', strokeWidth: 1 }),
+          Plot.line(points, {
+            ...xyz,
             markerStart: 'none',
-            x: 'x',
-            y: 'y',
             strokeWidth: 3,
             curve: 'linear',
-            stroke: galoisLineColor
           }),
-          Plot.dot(galois, {
-            x: 'x',
-            y: 'y',
+          // Plot.line(ramPoints, {
+          //   markerStart: 'none',
+          //   x: 'x',
+          //   y: 'y',
+          //   strokeWidth: 3,
+          //   curve: 'linear',
+          //   stroke: ramLineColor
+          // }),
+          Plot.dot(points, {
+            ...xyz,
             strokeWidth: 3,
-            stroke: galoisLineColor
           }),
+          // Plot.tip(points, Plot.pointerX({
+          //   ...xyz,
+          //   strokeWidth: 3,
+          // })),
+          Plot.ruleX(points, Plot.pointerX({ x: 'x', py: 'y', stroke: "#1f1f1f" })),
+
           Plot.tip(
-            galois,
-            Plot.pointerX({
-              x: 'x',
-              y: 'y',
-              fontSize: 16,
-              stroke: '#2D2D2D',
-              fill: 'rgb(24, 26, 33)',
-              fillOpacity: 1,
-              strokeWidth: 1,
-              textAnchor: 'start',
-              fontWeight: 'bolder',
-              frameAnchor: 'middle',
-              pointerEvents: 'none',
-              fontVariant: 'tabular-nums',
-              fontFamily: 'monospace',
-              title: ({ x, y }) => `𝑥 ${x}\n\n𝑦 ${roundNumber(y, 2)}s`
+            points,
+            Plot.pointerX(Plot.groupX({
+                y: 'y',
+                title: ({ x, y }) => `constraints ${x}\n\n𝑦 ${roundNumber(y, 2)}s`
+              },
+              {
+                x: 'x',
+                y: 'y',
+                z: 'x',
             })
-          )
+          ))
         ]
       })
     )
@@ -145,11 +163,6 @@
       data-graph="performance"
       bind:this={chartElement}
     ></article>
-    <p
-      class="text-xs sm:text-xl font-semibold"
-      id="x-axis-label"
-    >
-    </p>
   </div>
 </div>
 
