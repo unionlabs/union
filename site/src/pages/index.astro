@@ -33,14 +33,6 @@ let socialLinks = [
 const soliditySnippet = `
 \`\`\`solidity
 contract DexPortal is IBCAppBase {
-  IBCHandler private ibcHandler;
-
-  mapping(address => Proxy) swapProxies;
-
-  constructor(IBCHandler _ibcHandler) {
-    ibcHandler = _ibcHandler;
-  }
-
   function swap(
     address base,
     uint256 amount,
@@ -149,15 +141,15 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
       <section class='flex flex-col p-4 items-center bg-black mb-px'>
         <h2 class='text-4xl font-normal'>Build for any stack.</h2>
         <div
-          class='flex md:flex-row flex-col justify-around overflow-none mx-auto items-center content-start px-3'
+          class='flex sm:flex-row flex-col justify-around overflow-none mx-auto items-center content-start px-3'
         >
-          <div class='max-w-sm antialiased'>
+          <div class='w-full antialiased'>
             <CodeSnippet
               client:load
               code={soliditySnippet}
             />
           </div>
-          <div class='flex flex-col text-xl md:text-2xl lg:text-3xl content-between justify-between p-4 space-y-4'>
+          <div class='w-full flex flex-col text-xl md:text-2xl lg:text-3xl content-between justify-between p-4 space-y-4'>
             <p class='font-normal text-wrap mt-0 text-gray-400'>
               Union brings <span class='text-white'>Ethereum alignment to the modular stack</span>
               by advancing IBC connectivity. Solidity. Smart Contracts. Wasm.
