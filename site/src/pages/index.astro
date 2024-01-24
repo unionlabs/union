@@ -138,14 +138,23 @@ publishedBlogPosts.reverse()
           <div class='w-full antialiased bg-[#050505] py-2 text-left font-monospace text-[15px]'>
           <Tabs>
           <TabItem label="ibc.sol">
-           <div class="px-3"> <CodeSnippet
+           <div class="px-3">
+            <CodeSnippet
               client:load
               code={soliditySnippet}
-            /></div>
+            />
+          </div>
             </TabItem>
             <TabItem label="lorem.ts">
             <CodeSnippet
               client:load
+              code={`
+\`\`\`typescript
+export const hello = () => {
+  console.log('hello world')
+}
+\`\`\`
+              `}
             />
             </TabItem>
             </Tabs>
@@ -220,7 +229,7 @@ publishedBlogPosts.reverse()
       !-->
 
 
-      <section class='bg-black mb-px flex justify-center justify-between flex-row text-center text-white mb-px divide-x divide-[#1f1f1f]'>
+      <section class='bg-black mb-px flex justify-center justify-between flex-row text-center text-white divide-x divide-[#1f1f1f]'>
       <div class="w-1/2 p-8 mr-px">
       <a
       class="text-left space-y-2"

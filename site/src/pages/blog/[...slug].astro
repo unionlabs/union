@@ -18,14 +18,13 @@ const { Content, headings } = await entry.render()
 
 <Layout>
   <main
-    transition:animate={fade({ duration: '0.4s' })}
-    class='sm:text-xl flex-grow px-4 sm:mt-0 mt-2 pb-24 justify-center max-w-3xl self-center'
+    class='sm:text-xl flex-grow py-4 sm:mt-0 pb-24 sm:px-0 px-6 justify-center max-w-xl self-center'
   >
-    <p class='text-3xl sm:text-5xl font-extrabold my-0'>
+    <p class='blog-title text-3xl sm:text-5xl font-extrabold max-w-xl'>
       {entry.data.title}
     </p>
 
-    <div class='font-mono mt-3 sm:text-lg uppercase tracking-widest'>
+    <div class='font-mono sm:text-lg uppercase tracking-widest mb-5 mt-1'>
       <time datetime={entry.data.date.toISOString()}>
         {
           entry.data.date.toLocaleDateString('fr-CA', {
@@ -44,38 +43,43 @@ const { Content, headings } = await entry.render()
         @{entry.data.author}
       </a>
     </div>
-
-    <!--
-    <ul class="list-['#']">
-      {
-        headings.map(heading => (
-          <li>
-            <a
-              class='text-accent font-normal ml-2'
-              href={`#${heading.slug}`}
-            >
-              {heading.text}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-    !-->
-
-    <Content />
+    <div transition:animate='fade'>
+      <Content />
+    </div>
   </main>
 </Layout>
 
 <ViewTransitions />
 
-<style lang="postcss">
-  h1 {
-    line-height: 3rem !important;
+<style is:inline lang="postcss">
+  .blog-title {
   }
+  p > a {
+    text-decoration: underline;
+    text-decoration-color: #A0ECFD !important;
+    transition: border-bottom-color 0.2s ease-in-out;
+  }
+  @media (max-width: 640px) {
+    p > a:hover {
+      color: #A0ECFD;
+      text-decoration-color: #fff !important;
+    }
+    h1 {
+font-size: 1.5rem !important;
+    }
+  }
+
+  h1 {
+    line-height: 3rem;
+    margin-top: 10px;
+    font-size: 1.87rem;
+
+  }
+
   h2 {
     margin-bottom: 0;
     margin-top: 1rem;
-    font-size: 5rem;
+
     line-height: 2rem;
     font-weight: 700;
 

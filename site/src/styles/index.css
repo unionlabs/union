@@ -169,7 +169,6 @@ pre [data-line] {
 
 [data-chars-id="accent"] {
   @apply !text-accent-500 p-0 bg-transparent font-bold border-none rounded-none;
-  
 }
 
 [data-rehype-pretty-code-title] {

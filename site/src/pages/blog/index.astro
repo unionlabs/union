@@ -1,10 +1,10 @@
 ---
-import { fade } from 'astro:transitions'
+import { fade,slide, } from 'astro:transitions'
 import Layout from '#/layouts/Layout.svelte'
 import { getCollection } from 'astro:content'
 import { ViewTransitions } from 'astro:transitions'
 
-const isProduction = import.meta.env.PROD;
+const isProduction = import.meta.env.PROD
 
 let blogEntries = await getCollection('blog', ({ data }) =>
   // filter out unpublished posts in production
@@ -16,19 +16,17 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
 <Layout>
   <main
     transition:animate={fade({ duration: '0.4s' })}
-
     class='flex items-center text-xl md:text-2xl sm:mt-0 mt-2 justify-center p-4'
   >
-    <ul class='flex flex-col gap-16 flex-1 list-none list-outside p-0 max-w-xl'>
+    <ul class='flex flex-col gap-12 flex-1 list-none list-outside p-0 max-w-xl'>
       {
         blogEntries.map(blogPostEntry => (
           <li>
-            <a class="pointer-cursor" href={`/blog/${blogPostEntry.slug}`}>
-              <h2
-                class='text-3xl sm:text-5xl font-extrabold mb-0'
-              >
-                {blogPostEntry.data.title}
-              </h2>
+            <a
+              class='pointer-cursor'
+              href={`/blog/${blogPostEntry.slug}`}
+            >
+              <p class='text-3xl sm:text-5xl font-extrabold mb-0'>{blogPostEntry.data.title}</p>
               <div class='font-mono mt-1 sm:text-lg uppercase tracking-widest'>
                 <time datetime={blogPostEntry.data.date.toISOString()}>
                   {blogPostEntry.data.date.toLocaleDateString('fr-CA', {
@@ -38,11 +36,9 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
                   })}
                 </time>
               </div>
-              <p class='sm:text-xl '>{blogPostEntry.data.description}</p>
+              <p class='sm:text-xl'>{blogPostEntry.data.description}</p>
 
-              <div class='font-mono uppercase text-lg' >
-                read full post ->
-              </div>
+              <div class='font-mono font-semibold mt-1 uppercase text-lg'>read full post -></div>
             </a>
           </li>
         ))

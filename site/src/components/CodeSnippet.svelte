@@ -34,7 +34,7 @@
       max-width: 385px;
     }
   }
-  :global(ul[role="tablist"]){
+  /* :global(ul[role="tablist"]){
     border-bottom: 2px solid #1f1f1f;
   }
 
@@ -63,5 +63,5 @@
   height:8px;
   filter: invert(1);
   
-  }
+  } */
 </style>
