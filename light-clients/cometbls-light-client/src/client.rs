@@ -260,10 +260,34 @@ impl IbcClient for CometblsLightClient {
     }
 
     fn check_for_misbehaviour_on_header(
-        _deps: Deps<Self::CustomQuery>,
-        _header: Self::Header,
+        deps: Deps<Self::CustomQuery>,
+        header: Self::Header,
     ) -> Result<bool, Self::Error> {
-        // TODO(aeryz): Leaving this as success for us to be able to update the client. See: #588.
+        // If there is already a header at this height, it should be exactly the same as the header that
+        // we have saved previously. If this is not the case, either the client is broken or the chain is
+        // broken. Because it should not be possible to have two distinct valid headers at a height.
+        if let Some(consensus_state) =
+            read_consensus_state::<_, ConsensusState>(deps, &update_height(&header))?
+        {
+            let expected_timestamp: u64 = header
+                .signed_header
+                .header
+                .time
+                .seconds
+                .inner()
+                .try_into()
+                .map_err(|_| {
+                    Error::NegativeTimestamp(header.signed_header.header.time.seconds.inner())
+                })?;
+            if consensus_state.data.timestamp != expected_timestamp
+                || consensus_state.data.root.hash != header.signed_header.header.app_hash
+                || consensus_state.data.next_validators_hash
+                    != header.signed_header.header.next_validators_hash
+            {
+                return Ok(true);
+            }
+        }
+
         Ok(false)
     }
 
@@ -369,6 +393,19 @@ fn canonical_vote(
             }),
         }),
         chain_id,
+    }
+}
+
+/// Returns the height from the update data
+///
+/// `header.signed_header.header.height` is `u64` and it does not contain the
+/// revision height. This function is a utility to generate a `Height` type out
+/// of the update data.
+fn update_height(header: &Header) -> Height {
+    Height {
+        revision_number: header.trusted_height.revision_number,
+        // SAFETY: height's bounds are [0..i64::MAX]
+        revision_height: header.signed_header.header.height.inner() as u64,
     }
 }
 
