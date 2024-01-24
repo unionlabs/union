@@ -157,14 +157,15 @@ const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
           </div>
         </div>
       </section>
-      <section class='bg-black mb-px flex flex-col items-center justif-center p-32'>
+      <section class='bg-black mb-px flex flex-col items-center justif-center p-8 md:p-16'>
         <h2 class='text-4xl mb-8 font-normal'>The leading interoperability layer.</h2>
         <div class='w-full'>
           <AppleGraphContainer
             bars={[
-              { width: 100, label: 'CometBLS V3.0', primary: true },
-              { width: 50, label: 'Ed25519-based proving' },
-              { width: 50, label: 'TendermintX' },
+              { width: 100, label: 'CometBLS V3', primary: true },
+              { width: 9.1, label: 'ZkMint' },
+              { width: 1.45, label: 'TendermintX' },
+              { width: 0.77, label: 'Fraud-proof bridges' },
             ]}
             client:load
           />
