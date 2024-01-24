@@ -11,8 +11,8 @@ import ConnectedVisual from '#/components/ConnectedVisual.svelte'
 import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import Chart from '#/components/Chart.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
-import { Tabs, TabItem } from '@astrojs/starlight/components';
-import {Code} from 'astro:components'
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+import { Code } from 'astro:components'
 
 let socialLinks = [
   {
@@ -32,7 +32,11 @@ let socialLinks = [
   }
 ]
 
-const soliditySnippet = `
+const codeSnippets = [
+  {
+    lang: 'solidity',
+    title: 'swap.sol',
+    code: `
 \`\`\`solidity /IBCAppBase/#accent /ibcHandler/#accent
 contract DexPortal is IBCAppBase {
   function swap(
@@ -63,6 +67,45 @@ contract DexPortal is IBCAppBase {
 }
 \`\`\`
 `
+  },
+  {
+    lang: 'rust',
+    title: 'swap.rs',
+    code: `
+\`\`\`rust
+fn swap(
+    deps: Deps,
+    env: Env,
+    info: MessageInfo,
+    base: String,
+    amount: Uint256,
+    min_return: Uint256,
+    timeout: u64,
+) -> Result<Response, Error> {
+    let proxy = SWAP_PROXIES.load(&deps.storage, base)?;
+
+    Ok(Response::add_message(wasm_execute(
+        base,
+        &cw20::msg::TransferFrom {
+            owner: info.sender,
+            recipient: env.contract.address,
+            amount,
+        },
+        vec![],
+    ))
+    .add_message(IbcMsg::SendPacket {
+        channel_id: proxy.channel,
+        data: Swap {
+            origin: info.sender,
+            amount,
+            min_return,
+        },
+        timeout: IbcTimeout::with_block(timeout),
+    }))
+}
+`
+  }
+] satisfies Array<{ lang: string; code: string; title: string }>
 
 let publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
   if (data.hidden) return false
@@ -76,8 +119,10 @@ publishedBlogPosts.reverse()
     class='flex flex-col flex-1 items-center px-4'
     transition:animate={fade({ duration: '0.4s' })}
   >
-  <div class="w-full flex flex-col max-w-5xl p-px bg-[#1f1f1f] ">
-      <section class='flex flex-col items-center py-32 gap-6 grid-effect-bg antialiased bg-black mb-px'>
+    <div class='w-full flex flex-col max-w-5xl p-px bg-[#1f1f1f]'>
+      <section
+        class='flex flex-col items-center py-32 gap-6 grid-effect-bg antialiased bg-black mb-px'
+      >
         <div class='sm:text-7xl text-5xl text-white text-center font-semibold'>
           The Sovereign<br />Interoperability Layer
         </div>
@@ -96,7 +141,6 @@ publishedBlogPosts.reverse()
       </section>
 
       <section class='bg-black text-white flex flex-col items-center py-16 px-4 mb-px'>
-
         <div class='flex md:flex-row flex-col gap-16 max-w-4xl text-balance'>
           <div class='flex-1 p-4'>
             <p class='text-3xl text-gray-500 font-normal mb-0 text-center'>
@@ -110,24 +154,28 @@ publishedBlogPosts.reverse()
         </div>
       </section>
 
-
       <section class='bg-black mb-px relative items-center justify-center'>
-        <div class="absolute flex flex-col items-center w-full">
-          <h2 class='text-4xl px-6 pt-12 font-normal sm:text-3xl xs:text-xl'>Interoperability for the Modular Stack</h2>
-        
+        <div class='absolute flex flex-col items-center w-full'>
+          <h2 class='text-4xl px-6 pt-12 font-normal sm:text-3xl xs:text-xl'>
+            Interoperability for the Modular Stack
+          </h2>
         </div>
         <ConnectedVisual />
       </section>
 
-
-      <section class='grid grid-cols-2 divide-x divide-solid divide-[#1f1f1f] md:flex-row max-w-4x items-center mb-px bg-black'>
-        <div class="p-8 text-2xl font-normal text-gray-400">
-              Galois is the first interoperability proving layer that is so efficient that it allows
-              anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
-              of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
+      <section
+        class:list={[
+          'grid sm:grid-cols-2 grid-cols-1 sm:grid-rows-1 grid-rows-2 divide-x divide-solid divide-[#1f1f1f]',
+          'md:flex-row max-w-4x items-center mb-px bg-black'
+        ]}
+      >
+        <div class='p-4 sm:p-8 text-2xl font-normal text-gray-400'>
+          Galois is the first interoperability proving layer that is so efficient that it allows
+          anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era of
+          needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
         </div>
-        <div class="p-8 w-full min-w-full h-full min-h-full">
-          <PerformanceGraph client:load/>
+        <div class='p-4 sm:p-8 w-full min-w-full h-full min-h-full'>
+          <PerformanceGraph client:load />
         </div>
       </section>
 
@@ -136,139 +184,111 @@ publishedBlogPosts.reverse()
           class='grid grid-cols-1 grid-rows-2 sm:grid-cols-2 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]'
         >
           <div class='w-full antialiased bg-[#050505] py-2 text-left font-monospace text-[15px]'>
-          <Tabs>
-          <TabItem label="ibc.sol">
-           <div class="px-3">
-            <CodeSnippet
-              client:load
-              code={soliditySnippet}
-            />
-          </div>
-            </TabItem>
-            <TabItem label="lorem.ts">
-            <CodeSnippet
-              client:load
-              code={`
-\`\`\`typescript
-export const hello = () => {
-  console.log('hello world')
-}
-\`\`\`
-              `}
-            />
-            </TabItem>
+            <Tabs>
+              {
+                codeSnippets.map(snippet => (
+                  <TabItem label={snippet.title}>
+                    <div class='px-3'>
+                      <CodeSnippet
+                        code={snippet.code}
+                        client:load
+                      />
+                    </div>
+                  </TabItem>
+                ))
+              }
             </Tabs>
           </div>
-          <div class="p-8 text-2xl font-normal text-gray-400">
+          <div class='p-8 text-2xl font-normal text-gray-400'>
             <h2 class='text-4xl font-normal text-white'>Build for any stack.</h2>
-                Galois is the first interoperability proving layer that is so efficient that it allows
-                anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era
-                of needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
+            Galois is the first interoperability proving layer that is so efficient that it allows anyone
+            to <span class='text-white'>generate proofs on your phone.</span> Gone is the era of needing
+            expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
           </div>
         </div>
       </section>
-      <section class='bg-black mb-px flex flex-col items-center justif-center p-32'>
+      <section class='bg-black mb-px flex flex-col items-center justif-center p-12 sm:p-20 lg:p-32'>
         <h2 class='text-4xl mb-8 font-normal'>The leading interoperability layer.</h2>
         <div class='w-full'>
           <AppleGraphContainer
             bars={[
               { width: 100, label: 'CometBLS V3.0', primary: true },
               { width: 50, label: 'Ed25519-based proving' },
-              { width: 50, label: 'TendermintX' },
+              { width: 50, label: 'TendermintX' }
             ]}
             client:load
           />
         </div>
       </section>
 
-
       <section class='bg-black mb-px'>
-        <div class="grid grid-rows-3 grid-cols-1 sm:grid-cols-3 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]">
-          <div class="p-8">
-            <h3 class="mb-1">Galois</h3>
-            <p>Decentralized Proving, for everyone. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus.  </p>
-          </div>
-          <div class="p-8">
-            <h3 class="mb-1">CometBLS</h3>
-            <p>ZK-aligned Consensus engine. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p>
-          </div>
-          <div class="p-8">
-            <h3 class="mb-1">Voyager</h3>
-            <p>Stateless relaying for a cross-chain future. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus. </p>
-          </div>
-        </div>
-      </section>
-      <!--
-
-      <section class='bg-black mb-px flex flex-col items-center justif-center py-32'>
-        <h2 class='text-4xl mb-4 font-normal'>Qualities of the product.</h2>
-        <div class='grid grid-cols-3 max-w-4xl gap-8'>
-          <div>
-            <h3 class='text-gray-300 font-normal'>Quality 1</h3>
-            <p class='text-2xl font-semibold'>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
-              fermentum ac eget tellus.
+        <div
+          class='grid grid-rows-3 grid-cols-1 sm:grid-cols-3 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]'
+        >
+          <div class='p-8'>
+            <h3 class='mb-1'>Galois</h3>
+            <p>
+              Decentralized Proving, for everyone. Lorem ipsum dolor sit amet, consectetur
+              adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus.
             </p>
           </div>
-          <div>
-            <h3 class='text-gray-300 font-normal'>Quality 2</h3>
-            <p class='text-2xl font-semibold'>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
-              fermentum ac eget tellus.
+          <div class='p-8'>
+            <h3 class='mb-1'>CometBLS</h3>
+            <p>
+              ZK-aligned Consensus engine. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              Phasellus a enim a nisi aliquet fermentum ac eget tellus.
             </p>
           </div>
-          <div>
-            <h3 class='text-gray-300 font-normal'>Quality 3</h3>
-            <p class='text-2xl font-semibold'>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus a enim a nisi aliquet
-              fermentum ac eget tellus.
+          <div class='p-8'>
+            <h3 class='mb-1'>Voyager</h3>
+            <p>
+              Stateless relaying for a cross-chain future. Lorem ipsum dolor sit amet, consectetur
+              adipiscing elit. Phasellus a enim a nisi aliquet fermentum ac eget tellus.
             </p>
           </div>
         </div>
       </section>
-      !-->
 
-
-      <section class='bg-black mb-px flex justify-center justify-between flex-row text-center text-white divide-x divide-[#1f1f1f]'>
-      <div class="w-1/2 p-8 mr-px">
-      <a
-      class="text-left space-y-2"
-      href={`/blog/${publishedBlogPosts[0].slug}`}
-      
+      <section
+        class='bg-black mb-px flex justify-between flex-row text-center text-white divide-x divide-[#1f1f1f]'
       >
-      <div>
-      <p
-      class="text-3xl font-bold"
-      >
-      {publishedBlogPosts[0].data.title}
-      </p>
-      <a class="underline uppercase text-md font-normal">Read more {'->'}</a></div>
-      <p class="text-pretty text-lg text-left">
-      {publishedBlogPosts[0].data.description}
-      </p>
-      </a>
-      </div>
-          <ul class="p-0 list-none mx-auto w-1/2  grid grid-rows-3 divide divide-y divide-solid divide-[#1f1f1f]">
-        
-            {
-              publishedBlogPosts.slice(1).map(post => (
-                              <li id={post.slug}                     class='justify-center w-full h-full flex flex-col text-left flex-start px-8 py-4 my-auto'
-              <a href={`/blog/${post.slug}`} class="my-auto w-full h-full">
-              
-                  <p class="text-xl font-bold">{post.data.title}</p>
-                  <p class="underline uppercase" href={`/blog/${post.slug}`}>Read more {'->'}</p>
-                </a>
-                </li>
-        ))
-            }
-          </ul>
+        <div class='w-1/2 p-8 mr-px'>
+          <a
+            class='text-left space-y-2'
+            href={`/blog/${publishedBlogPosts[0].slug}`}
+          >
+            <div>
+              <p class='text-3xl font-bold'>
+                {publishedBlogPosts[0].data.title}
+              </p>
+              <a class='underline uppercase text-md font-normal'>Read more {'->'}</a>
+            </div>
+            <p class='text-pretty text-lg text-left'>
+              {publishedBlogPosts[0].data.description}
+            </p>
+          </a>
+        </div>
+        <div
+          class='p-0 list-none mx-auto w-1/2 grid grid-rows-3 divide divide-y divide-solid divide-[#1f1f1f]'
+        >
+          {
+            publishedBlogPosts.slice(1).map(post => (
+              <a
+                href={`/blog/${post.slug}`}
+                class='justify-center w-full h-full flex flex-col text-left flex-start px-8 py-4 my-auto'
+              >
+                <p class='text-xl font-bold'>{post.data.title}</p>
+                <p class='underline uppercase'>Read more {'->'}</p>
+              </a>
+            ))
+          }
+        </div>
       </section>
 
       <section class='bg-black mb-px flex flex-col items-center justif-center py-32'>
         <div class='flex-1 max-w-4xl'>
           <h2 class='text-4xl mb-4 font-normal text-center'>Join the Union</h2>
-          <!-- <p>Together, we </p> -->
-          <div class='grid grid-cols-1 md:grid-cols-3 '>
+          <div class='grid grid-cols-1 md:grid-cols-3'>
             {
               socialLinks.map(socialLink => (
                 <a
@@ -287,21 +307,6 @@ export const hello = () => {
                 </a>
               ))
             }
-
-            <!-- <div class="flex-1 p-8 text-center">
-  					<img src={DiscordLogo.src} class="h-10"/>
-
-  					<div class="mt-4">
-  						<a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Discord -&gt;</a>
-  					</div>
-  				</div>
-  				<div class="flex-1 p-8 text-center">
-  					<img src={CalendarIcon.src} class="h-10"/>
-
-  					<div class="mt-4">
-  						<a class='mt-16 border-b-2 uppercase text-black border-black text-semibold' href='/docs'>Join our Events -&gt;</a>
-  					</div>
-  				</div> -->
           </div>
         </div>
       </section>
@@ -372,7 +377,7 @@ export const hello = () => {
           </a>
         </div>
       </section> -->
-  </div>
+    </div>
   </main>
 </Layout>
 
