@@ -41,7 +41,7 @@
             --keyring-backend test \
             --home $out
 
-          ${uniond} add-genesis-account ${genesisAccountName} 10000000000000000000000000stake \
+          ${uniond} genesis add-genesis-account ${genesisAccountName} 10000000000000000000000000stake \
             --keyring-backend test \
             --home $out
 
@@ -51,7 +51,7 @@
               --recover ${genesisAccountName}-${toString i} \
               --keyring-backend test \
               --home $out
-            ${uniond} add-genesis-account ${genesisAccountName}-${toString i} 10000000000000000000000000stake \
+            ${uniond} genesis add-genesis-account ${genesisAccountName}-${toString i} 10000000000000000000000000stake \
               --keyring-backend test \
               --home $out
           '') devMnemonics)}
@@ -437,7 +437,7 @@
               echo $val_mnemonic
 
               echo $val_mnemonic | ${uniond} keys add --recover ${key} --keyring-backend test --home $out
-              ${uniond} add-genesis-account ${key} 100000000000000000000000000stake --keyring-backend test --home $out
+              ${uniond} genesis add-genesis-account ${key} 100000000000000000000000000stake --keyring-backend test --home $out
             '') genesisAccounts)}
           '';
       mkValidatorKeys = { validatorCount, home }:
