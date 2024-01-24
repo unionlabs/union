@@ -65,19 +65,19 @@
 
     let totalDistance = Math.abs(dx) + Math.abs(dy)
 
-    console.log(dx, dy, totalDistance)
+    // console.log(dx, dy, totalDistance)
 
     let duration = totalDistance * SECONDS_PER_CELL
 
     let totalTime = duration + delay
 
-    console.log('dx', dx, 'dy', dy, 'duration', duration, 'totalTime', totalTime)
+    // console.log('dx', dx, 'dy', dy, 'duration', duration, 'totalTime', totalTime)
 
     // time (clamped between [0, 1]) for the h and v components
     let hTime = (Math.abs(dx) * SECONDS_PER_CELL) / totalTime
     let vTime = (Math.abs(dy) * SECONDS_PER_CELL) / totalTime
 
-    console.log('hTime', hTime, 'vTime', vTime)
+    // console.log('hTime', hTime, 'vTime', vTime)
 
     // clamp between [0, (duration / totalTime)]
     let radiusKeyTimes = [0, 0.1, 0.4, 0.5, 1]
@@ -109,7 +109,7 @@
 </script>
 
 <svg
-  id="ben"
+  id="connected-visual"
   class="w-full h-full"
   viewBox="0 0 576 384"
   version="1.1"

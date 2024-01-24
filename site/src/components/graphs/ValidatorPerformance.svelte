@@ -3,19 +3,22 @@
   import * as d3 from 'd3'
   import { onMount } from 'svelte'
   import * as Plot from '@observablehq/plot'
+  import * as htl from 'htl'
   import { roundNumber } from '#/lib/utilities.ts'
 
-  export const [constraintsLineColor, ramLineColor] = ['#3F8EF7', '#9DA3AE']
+  // export const [constraintsLineColor, ramLineColor] = ['url(#constraints-gradient)', 'url(#ram-gradient)']
+  export const [constraintsLineColor, ramLineColor] = ['#A0ECFD', '#A0ECFD']
 
   const pauseAnimation = (element: SVGPathElement) => (element.style.animationPlayState = 'paused')
   const resumeAnimation = (element: SVGPathElement) =>
     (element.style.animationPlayState = 'running')
 
   function getRelevantPathElements({ selector }: { selector: string }) {
+    console.log(selector)
     const gElements = document.querySelectorAll(selector)
     const pathElements = Array.from(gElements)
-      .map(gElement => gElement.querySelector('path') as SVGPathElement)
-      .filter(Boolean)
+      .map(gElement => gElement as SVGPathElement)
+    console.log(pathElements)
     return pathElements
   }
 
@@ -76,6 +79,8 @@
           domain: [-5, 140],
           tickSize: 0,
           axis: 'bottom',
+          labelArrow: "none",
+          label: "VALIDATORS",
           labelAnchor: 'center',
           legend: true,
           tickFormat: (d: number) => d
@@ -86,6 +91,27 @@
         },
         figure: true,
         marks: [
+          () => htl.svg`<defs>
+            <linearGradient id="current-point-line-gradient">
+              <stop offset="0%" stop-color="#1f1f1f" stop-opacity="0" />
+              <stop offset="5%" stop-color="#1f1f1f" />
+              <stop offset="95%" stop-color="#1f1f1f" />
+              <stop offset="100%" stop-color="#1f1f1f" stop-opacity="0" />
+            </linearGradient>
+            <linearGradient id="ram-gradient">
+              <stop offset="0%" stop-color="#A0ECFD" stop-opacity="0" />
+              <stop offset="5%" stop-color="#A0ECFD" />
+              <stop offset="95%" stop-color="#A0ECFD" />
+              <stop offset="100%" stop-color="#A0ECFD" stop-opacity="0" />
+            </linearGradient>
+            <linearGradient id="constraints-gradient">
+              <stop offset="0%" stop-color="#A0ECFD" stop-opacity="0" />
+              <stop offset="5%" stop-color="#A0ECFD" />
+              <stop offset="95%" stop-color="#A0ECFD" />
+              <stop offset="100%" stop-color="#A0ECFD" stop-opacity="0" />
+            </linearGradient>
+          </defs>`,
+          Plot.ruleX(points, Plot.pointerX({ x: 'x', py: 'y', strokeWidth: 2, stroke: "#1f1f1f" })),
           Plot.gridY({ stroke: '#1f1f1f', strokeWidth: 1, strokeOpacity: 1 }),
           Plot.ruleY([1], { stroke: '#1f1f1f', strokeWidth: 1 }),
           Plot.line(points, {
@@ -104,26 +130,31 @@
           // }),
           Plot.dot(points, {
             ...xyz,
-            strokeWidth: 3,
+            strokeWidth: 2,
+            fill(d, i) {
+              return d.stroke  
+            },
           }),
-          // Plot.tip(points, Plot.pointerX({
-          //   ...xyz,
-          //   strokeWidth: 3,
-          // })),
-          Plot.ruleX(points, Plot.pointerX({ x: 'x', py: 'y', stroke: "#1f1f1f" })),
+          Plot.tip(constraintsPoints, Plot.pointerX({
+            x: 'x',
+            y: 'y',
+            strokeWidth: 1,
+            fill: 'black',
+            stroke: '#1f1f1f',
+            title: ({ x, y }) => `constraints ${roundNumber(y / 100 * 3600000, 0)}\n\nram ${roundNumber(y / 100 * 8, 0)}GB`
+          })),
 
-          Plot.tip(
-            points,
-            Plot.pointerX(Plot.groupX({
-                y: 'y',
-                title: ({ x, y }) => `constraints ${x}\n\n𝑦 ${roundNumber(y, 2)}s`
-              },
-              {
-                x: 'x',
-                y: 'y',
-                z: 'x',
-            })
-          ))
+          // Plot.tip(
+          //   points,
+          //   Plot.pointerX(Plot.groupX({
+          //       y: 'y',
+          //     },
+          //     {
+          //       x: 'x',
+          //       y: 'y',
+          //       z: 'x',
+          //   })
+          // ))
         ]
       })
     )
@@ -132,15 +163,15 @@
   onMount(() => {
     const observer = new IntersectionObserver(
       entries => {
-        // const pathElements = getRelevantPathElements({
-        //   selector: `g[stroke="${tendermindXLineColor}"], g[stroke="${galoisLineColor}"]`
-        // })
-        // // const pathElementsLengths = pathElements.map(pathElement => pathElement.getTotalLength())
-        // entries.forEach(entry => {
-        //   console.log(entry.isIntersecting)
-        //   if (entry.isIntersecting) pathElements.forEach(resumeAnimation)
-        //   else pathElements.forEach(pauseAnimation)
-        // })
+        const pathElements = getRelevantPathElements({
+          selector: `.galois-graph > g > path[stroke="${ramLineColor}"]`
+        })
+        // const pathElementsLengths = pathElements.map(pathElement => pathElement.getTotalLength())
+        entries.forEach(entry => {
+          console.log(entry.isIntersecting)
+          if (entry.isIntersecting) pathElements.forEach(resumeAnimation)
+          else pathElements.forEach(pauseAnimation)
+        })
       },
       { threshold: 0.5 }
     )
@@ -168,7 +199,7 @@
 
 <style>
   /* animation: line-progress 2s linear infinite normal forwards running; */
-  /* :root {
+  :root {
     --animation-direction: normal;
     --animation-play-state: running;
     --animation-timing-function: ease;
@@ -179,38 +210,10 @@
     --axis-label-color: transparent;
   }
 
-  article figure svg {
-    -webkit-font-feature-settings: 'c2cs';
-  }
-
-  :global(g[aria-label='tip'] g path) {
+  :global(g[aria-label='tip']) {
     border-radius: 50px !important;
     padding: 0.5rem !important;
     background-color: red !important;
-  }
-
-  :global(article figure svg) {
-  }
-
-  :global(article figure svg g[aria-label='y-grid'] line) {
-    stroke: rgb(113, 113, 113);
-    -webkit-background-clip: text !important;
-    background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-  }
-
-  :global(figure > svg) {
-    scale: 1.5;
-    width: 100%;
-  }
-
-  :global(#y-axis-label) {
-    left: -3rem;
-  }
-
-  :global(#x-axis-label) {
-    position: relative;
-    margin-top: 60px !important;
   }
 
   @media (min-width: 790px) {
@@ -246,32 +249,10 @@
     }
   }
 
-  :global(g[aria-label='y-axis tick label'] text) {
-    font-size: var(--axis-tick-label-font-size);
-    font-family: var(--axis-label-font-family);
-  }
-
-  :global(g[aria-label='x-axis tick label'] text) {
-    font-size: var(--axis-tick-label-font-size);
-    font-family: var(--axis-label-font-family);
-  }
-
-  :global(g[aria-label='y-axis label']) {
-    color: var(--axis-label-color);
-    display: none;
-    font-size: 0;
-    visibility: hidden;
-  }
-
-  :global(g[aria-label='x-axis label']) {
-    color: var(--axis-label-color);
-    display: none;
-  }
-
   :global(g[stroke='#9DA3AE'] path) {
     /*
     * to get this exact length, call `pathElement.getTotalLength()`
-    /
+    */
     stroke-dasharray: 668px;
     stroke-dashoffset: 668px;
     stroke-width: 2.5px;
@@ -293,7 +274,7 @@
     }
   }
 
-  :global(g[stroke='#9DA3AE'] circle) {
+  :global(.galois-graph > g[aria-label="dot"] > circle) {
     opacity: 0;
     animation-name: fade-in;
     animation-duration: 1.5s;
@@ -310,10 +291,10 @@
     }
   }
 
-  :global(g[stroke='#3F8EF7'] path) {
+  :global(g path[stroke="#A0ECFD"]) {
     /*
     * to get this exact length, call `pathElement.getTotalLength()`
-    *
+    */
     stroke-dasharray: 580px;
     stroke-dashoffset: 580px;
     stroke-width: 2px;
@@ -326,7 +307,7 @@
     animation-iteration-count: var(--animation-iteration-count);
   }
 
-  :global(g[stroke='#3F8EF7'] circle) {
+  :global(g circle[stroke="#A0ECFD"]) {
     opacity: 0;
     animation-name: fade-in;
     animation-duration: 1.5s;
@@ -341,5 +322,5 @@
     100% {
       stroke-dashoffset: 0%;
     }
-  } */
+  }
 </style>
