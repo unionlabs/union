@@ -44,7 +44,8 @@ contract DexPortal is IBCAppBase {
     Proxy quote = swapProxies[base];
     IERC20(base).transferFrom(
       _msgSender(),
-      address(this)
+      address(this),
+      amount
     );
     ibcHandler.send(
       quote.port,
