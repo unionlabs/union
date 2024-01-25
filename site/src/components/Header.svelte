@@ -4,7 +4,7 @@
 </script>
 
 <header class="flex justify-around pt-3 px-2 sm:px-4">
-  <div class="max-w-7xl flex flex-1 items-center p-3 sm:p-4 gap-4">
+  <div class="max-w-7xl flex flex-1 items-center p-3 sm:p-4 ">
     <a
       class="flex items-center gap-3 decoration-transparent visited:text-white"
       href="/"
