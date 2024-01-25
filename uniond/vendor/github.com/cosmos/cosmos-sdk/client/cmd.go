@@ -1,7 +1,6 @@
 package client
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"strings"
@@ -359,7 +358,13 @@ func GetClientContextFromCmd(cmd *cobra.Command) Context {
 // SetCmdClientContext sets a command's Context value to the provided argument.
 // If the context has not been set, set the given context as the default.
 func SetCmdClientContext(cmd *cobra.Command, clientCtx Context) error {
-	cmd.SetContext(context.WithValue(cmd.Context(), ClientContextKey, &clientCtx))
+	v := cmd.Context().Value(ClientContextKey)
+	if v == nil {
+		v = &clientCtx
+	}
+
+	clientCtxPtr := v.(*Context)
+	*clientCtxPtr = clientCtx
 
 	return nil
 }

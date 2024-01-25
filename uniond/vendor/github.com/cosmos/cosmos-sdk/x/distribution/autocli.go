@@ -99,6 +99,14 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					},
 				},
 				{
+					RpcMethod: "WithdrawValidatorCommission",
+					Use:       "withdraw-validator-commission [validator-addr]",
+					Short:     "Withdraw commissions from a validator address (must be a validator operator)",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "validator_address"},
+					},
+				},
+				{
 					RpcMethod: "DepositValidatorRewardsPool",
 					Use:       "fund-validator-rewards-pool [validator-addr] [amount]",
 					Short:     "Fund the validator rewards pool with the specified amount",

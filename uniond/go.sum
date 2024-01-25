@@ -234,7 +234,6 @@ github.com/CosmWasm/wasmd v0.50.0 h1:NVaGqCSTRfb9UTDHJwT6nQIWcb6VjlQl88iI+u1+qjE
 github.com/CosmWasm/wasmd v0.50.0/go.mod h1:UjmShW4l9YxaMytwJZ7IB7MWzHiynSZP3DdWrG0FRtk=
 github.com/CosmWasm/wasmvm v1.5.0 h1:3hKeT9SfwfLhxTGKH3vXaKFzBz1yuvP8SlfwfQXbQfw=
 github.com/CosmWasm/wasmvm v1.5.0/go.mod h1:fXB+m2gyh4v9839zlIXdMZGeLAxqUdYdFQqYsTha2hc=
-github.com/DataDog/datadog-go v3.2.0+incompatible h1:qSG2N4FghB1He/r2mFrWKCaL7dXCilEuNEeAn20fdD4=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/zstd v1.5.5 h1:oWf5W7GtOLgp6bciQYDmhHHjdhYkALu6S/5Ni9ZgSvQ=
 github.com/DataDog/zstd v1.5.5/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
@@ -1070,6 +1069,8 @@ github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e/go.mod h1:
 github.com/tidwall/btree v1.7.0 h1:L1fkJH/AuEh5zBnnBbmTwQ5Lt+bRJ5A8EWecslvo9iI=
 github.com/tidwall/btree v1.7.0/go.mod h1:twD9XRA5jj9VUQGELzDO4HPQTNJsoWWfYEL+EUQ2cKY=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
+github.com/tunabay/go-bitarray v1.3.1 h1:5q38uagXhrdzT0LjKWBB5ILO56fptGrJG8750171cAo=
+github.com/tunabay/go-bitarray v1.3.1/go.mod h1:k6MncM9mWklQRcVy5Xe9RYixeDd9b3H0xqtgiANJFF4=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
 github.com/ugorji/go v1.1.7 h1:/68gy2h+1mWMrwZFeD1kQialdSzAb432dtpeJ42ovdo=
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
@@ -1080,10 +1081,10 @@ github.com/ugorji/go/codec v1.2.11/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZ
 github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=
 github.com/ulikunitz/xz v0.5.11/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/unionlabs/cometbls v0.0.0-20240111183309-e159e964fa07 h1:y2q9sWscXNgo0w/iDdnRID3Fd2s4Mbdcn4poDwwSfpI=
-github.com/unionlabs/cometbls v0.0.0-20240111183309-e159e964fa07/go.mod h1:3H1gcLEVOQZbPwdH8gyv4UzwHtEawNgcnytglkCQVOQ=
-github.com/unionlabs/cosmos-sdk v0.0.0-20240111212621-d8e5bd6e5f86 h1:IceIrcM+/hzbQAbMK2NFhPAG242s3m5jC0ymCGirWZc=
-github.com/unionlabs/cosmos-sdk v0.0.0-20240111212621-d8e5bd6e5f86/go.mod h1:7APxtjR0pTYrLeTG/iMp77at8y8BoUttNGjMkxQUAVo=
+github.com/unionlabs/cometbls v0.0.0-20240124223549-fdd557e6f742 h1:vTLY4qdxcaGzT+LholMCdN0rrAH29lbz4BEtoGnUfPE=
+github.com/unionlabs/cometbls v0.0.0-20240124223549-fdd557e6f742/go.mod h1:ZN5TH4WzX9x+hgcipytd0WghjGcCBy6M8YVgnHOCd/0=
+github.com/unionlabs/cosmos-sdk v0.0.0-20240124173644-e3b38523ae87 h1:vEMBIzdXx56EF46RZM45yKXczFC5M3ac+zi8JLz7SgE=
+github.com/unionlabs/cosmos-sdk v0.0.0-20240124173644-e3b38523ae87/go.mod h1:7KrOi+TRWzNq0CX/JjlnnsJwSShmKMeRBxuF/4bXvPU=
 github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578 h1:Owzup0XvshGNHgS1s0xUI/mZM+fPvTT7dLg7P0cT2vQ=
 github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578/go.mod h1:v2Gy7L/4ZRosZ7Ivs+9SfUDr0f5UlG+EM5t7MPHiLuY=
 github.com/unionlabs/ibc-go/modules/light-clients/08-wasm v0.0.0-20231219091832-0947f2e3d1aa h1:pzXp42whoLAzvNkdJHPnWPzWAN2iDtqAFoN/BksxmAE=
