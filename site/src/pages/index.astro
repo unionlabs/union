@@ -70,11 +70,11 @@ publishedBlogPosts.reverse()
 
       <section
         class:list={[
-          'grid sm:grid-cols-2 grid-cols-1 sm:grid-rows-1 grid-rows-2 divide-x divide-solid divide-[#1f1f1f]',
+          'grid sm:grid-cols-2 grid-cols-1 sm:grid-rows-1 grid-rows-2 sm:divide-x sm:divide-y-0 divide-y divide-solid divide-[#1f1f1f]',
           'md:flex-row max-w-4x items-center mb-px bg-black'
         ]}
       >
-        <div class='p-4 sm:p-8 text-2xl font-normal text-gray-400'>
+        <div class='p-4 sm:p-8 text-xl md:text-2xl font-normal text-gray-400'>
           Galois is the first interoperability proving layer that is so efficient that it allows
           anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era of
           needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
@@ -106,7 +106,7 @@ publishedBlogPosts.reverse()
               }
             </Tabs>
           </div>
-          <div class='p-8 text-2xl font-normal text-gray-400 w-full sm:w-1/2'>
+          <div class='p-8 text-xl md:text-2xl font-normal text-gray-400 w-full sm:w-1/2'>
             <h2 class='text-4xl font-normal text-white'>Build for any stack.</h2>
             Galois is the first interoperability proving layer that is so efficient that it allows anyone
             to <span class='text-white'>generate proofs on your phone.</span> Gone is the era of needing
@@ -114,7 +114,7 @@ publishedBlogPosts.reverse()
           </div>
         </div>
       </section>
-      <section class='bg-black mb-px flex flex-col items-center justif-center p-12 sm:p-20 lg:p-32'>
+      <section class='bg-black mb-px flex flex-col items-center justif-center p-8 sm:p-20 lg:p-32'>
         <h2 class='text-3xl sm:text-4xl mb-8 font-normal'>The leading interoperability layer.</h2>
         <div class='w-full'>
           <AppleGraphContainer

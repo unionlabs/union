@@ -102,16 +102,16 @@
         },
         interval: 4,
         axisLabel: {
-          formatter(value, index) {
+          formatter(value: number, index: any) {
             return [4, 64, 128].includes(value) ? value : null
           },
         },
         type: 'value',
         boundaryGap: false,
-        min(value) {
+        min(value: { min: number }) {
             return value.min - 12;
         },
-        max(value) {
+        max(value: { max: number }) {
             return value.max + 12;
         },
       },
@@ -130,20 +130,20 @@
             color: "#1f1f1f"
           }
         },
-        max(value) {
+        max(value: any) {
             return 6_000_000;
         },
         interval: 1_200_000,
       },
       {
         show: false,
-        max(value) {
+        max(value: { max: number }) {
             return value.max * (6_000_000 / 3_200_000);
         },
       },
       {
         show: false,
-        max(value) {
+        max(value: { max: number }) {
             return value.max * (6_000_000 / 3_400_000);
         },
       }],
