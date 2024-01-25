@@ -13,7 +13,6 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fp"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark-crypto/ecc/bn254/fr/mimc"
 	bls254 "github.com/consensys/gnark-crypto/ecc/bn254/signature/bls"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -28,18 +27,20 @@ const (
 	sizeFp                   = fp.Bytes
 	sizePublicKey            = sizeFp
 	sizePrivateKey           = sizeFr + sizePublicKey
-	XHashToScalarFieldPrefix = 0
-	YHashToScalarFieldPrefix = 1
 	PrivKeyName              = "tendermint/PrivKeyBn254"
 	PubKeyName               = "tendermint/PubKeyBn254"
 	KeyType                  = "bn254"
+	CometblsSigDST           = "COMETBLS_SIG_BN254G2_XMD:MIMC256"
+	CometblsHMACKey          = "CometBLS"
 )
 
-var G1Gen bn254.G1Affine
-var G2Gen bn254.G2Affine
-var G2Cofactor big.Int
+var (
+	G1Gen    bn254.G1Affine
+	G1GenNeg bn254.G1Affine
+	G2Gen    bn254.G2Affine
 
-var Hash = sha3.NewLegacyKeccak256
+	Hash = sha3.NewLegacyKeccak256
+)
 
 func init() {
 	cjson.RegisterType(PubKey{}, PubKeyName)
@@ -47,13 +48,7 @@ func init() {
 
 	_, _, G1Gen, G2Gen = bn254.Generators()
 
-	// BN254 cofactor
-	value, err := new(big.Int).SetString("30644e72e131a029b85045b68181585e06ceecda572a2489345f2299c0f9fa8d", 16)
-	if !err {
-		panic("Cannot build cofactor")
-	}
-
-	G2Cofactor.Set(value)
+	G1GenNeg.Neg(&G1Gen)
 }
 
 var _ crypto.PrivKey = PrivKey{}
@@ -67,20 +62,20 @@ func (privKey PrivKey) Bytes() []byte {
 }
 
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	s := new(big.Int)
-	s = s.SetBytes(privKey)
+	var s big.Int
+	s.SetBytes(privKey)
 	hm := HashToG2(msg)
 	var p bn254.G2Affine
-	p.ScalarMultiplication(&hm, s)
+	p.ScalarMultiplication(&hm, &s)
 	compressedSig := p.Bytes()
 	return compressedSig[:], nil
 }
 
 func (privKey PrivKey) PubKey() crypto.PubKey {
-	s := new(big.Int)
+	var s big.Int
 	s.SetBytes(privKey)
 	var pk bn254.G1Affine
-	pk.ScalarMultiplication(&G1Gen, s)
+	pk.ScalarMultiplication(&G1Gen, &s)
 	pkBytes := pk.Bytes()
 	return PubKey(pkBytes[:])
 }
@@ -123,13 +118,13 @@ func (pubKey PubKey) Bytes() []byte {
 }
 
 func (pubKey PubKey) VerifySignature(msg []byte, sig []byte) bool {
-	hashedMessage := HashToG2(msg)
-	var public bn254.G1Affine
-	_, err := public.SetBytes(pubKey)
+	hm := HashToG2(msg)
+	var pk bn254.G1Affine
+	_, err := pk.SetBytes(pubKey)
 	if err != nil {
 		return false
 	}
-	if public.IsInfinity() {
+	if pk.IsInfinity() {
 		return false
 	}
 
@@ -142,10 +137,15 @@ func (pubKey PubKey) VerifySignature(msg []byte, sig []byte) bool {
 		return false
 	}
 
-	var G1BaseNeg bn254.G1Affine
-	G1BaseNeg.Neg(&G1Gen)
-
-	valid, err := bn254.PairingCheck([]bn254.G1Affine{G1BaseNeg, public}, []bn254.G2Affine{signature, hashedMessage})
+	valid, err := bn254.PairingCheck(
+		[]bn254.G1Affine{
+			G1GenNeg,
+			pk,
+		},
+		[]bn254.G2Affine{
+			signature,
+			hm,
+		})
 	if err != nil {
 		return false
 	}
@@ -167,6 +167,16 @@ func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 	return false
 }
 
+func GenPrivKeyFromSeed(seed []byte) PrivKey {
+	reader := bytes.NewReader(seed)
+
+	secret, err := bls254.GenerateKey(reader)
+	if err != nil {
+		panic(err)
+	}
+	return PrivKey(secret.Bytes())
+}
+
 func GenPrivKey() PrivKey {
 	secret, err := bls254.GenerateKey(rand.Reader)
 	if err != nil {
@@ -175,27 +185,9 @@ func GenPrivKey() PrivKey {
 	return PrivKey(secret.Bytes())
 }
 
-// Naive scalar multiplication used for cofactor clearing, basic double-and-add
-func nativeNaiveScalarMul(p bn254.G2Affine, s *big.Int) bn254.G2Affine {
-	// initialize result point to infinity
-	var result bn254.G2Affine
-	result.X.SetZero()
-	result.Y.SetZero()
-	bits := s.BitLen()
-	// iterate over binary digits of s and double the current result point at each iteration
-	for i := bits - 1; i >= 0; i-- {
-		result.Add(&result, &result)
-		// if current binary digit is 1, add the original point p to the result
-		if s.Bit(i) == 1 {
-			result.Add(&result, &p)
-		}
-	}
-	return result
-}
-
-// TODO: link union whitepaper 4.1.1, equation (1), H_p
+// TODO: link union whitepaper 4.1.1, equation (1), H_r
 func HashToField(msg []byte) fr.Element {
-	hmac := hmac.New(Hash, []byte("CometBLS"))
+	hmac := hmac.New(Hash, []byte(CometblsHMACKey))
 	hmac.Write(msg)
 	modMinusOne := new(big.Int).Sub(fr.Modulus(), big.NewInt(1))
 	num := new(big.Int).SetBytes(hmac.Sum(nil))
@@ -214,93 +206,21 @@ func HashToField(msg []byte) fr.Element {
 	return element
 }
 
-// TODO: link union whitepaper 4.1.1, H_{p^2}
-func HashToField2(msg []byte) (fr.Element, fr.Element) {
-	x := HashToField(append([]byte{XHashToScalarFieldPrefix}, msg...))
-	y := HashToField(append([]byte{YHashToScalarFieldPrefix}, msg...))
-	return x, y
-}
-
 // TODO: link union whitepaper 4.1.1, M
 func HashToG2(msg []byte) bn254.G2Affine {
-	x, y := HashToField2(msg)
-	point := bn254.MapToG2(bn254.E2{
-		A0: *new(fp.Element).SetBigInt(x.BigInt(new(big.Int))),
-		A1: *new(fp.Element).SetBigInt(y.BigInt(new(big.Int))),
-	})
-	// Must not be zero
-	if point.IsInfinity() {
-		panic("Point is zero")
+	img := HashToField(msg)
+	var imgBytes [32]byte
+	fr.LittleEndian.PutElement(&imgBytes, img)
+	var dst fr.Element
+	dst.SetBytes([]byte(CometblsSigDST))
+	var dstBytes [32]byte
+	fr.LittleEndian.PutElement(&dstBytes, dst)
+	point, err := HashToG2MiMC(imgBytes[:], dstBytes[:])
+	if err != nil {
+		panic("impossible; qed;")
+	}
+	if point.IsInfinity() || !point.IsOnCurve() || !point.IsInSubGroup() {
+		panic("impossible; qed;")
 	}
 	return point
-}
-
-type MerkleLeaf struct {
-	VotingPower int64
-	ShiftedX    fr.Element
-	ShiftedY    fr.Element
-	MsbX        uint8
-	MsbY        uint8
-}
-
-func NewMerkleLeaf(pubKey bn254.G1Affine, votingPower int64) (MerkleLeaf, error) {
-	x := pubKey.X.BigInt(new(big.Int))
-	y := pubKey.Y.BigInt(new(big.Int))
-	msbX := x.Bit(253)
-	msbY := y.Bit(253)
-	var frX, frY fr.Element
-	x.SetBit(x, 253, 0)
-	var padded [32]byte
-	x.FillBytes(padded[:])
-	err := frX.SetBytesCanonical(padded[:])
-	if err != nil {
-		return MerkleLeaf{}, err
-	}
-	y.SetBit(y, 253, 0)
-	y.FillBytes(padded[:])
-	err = frY.SetBytesCanonical(padded[:])
-	if err != nil {
-		return MerkleLeaf{}, err
-	}
-	return MerkleLeaf{
-		VotingPower: votingPower,
-		ShiftedX:    frX,
-		ShiftedY:    frY,
-		MsbX:        uint8(msbX),
-		MsbY:        uint8(msbY),
-	}, nil
-}
-
-// mimc(X, Xmsb, Y, Ymsb, power)
-func (l MerkleLeaf) Hash() ([]byte, error) {
-	frXBytes := l.ShiftedX.Bytes()
-	frYBytes := l.ShiftedY.Bytes()
-	mimc := mimc.NewMiMC()
-	_, err := mimc.Write(frXBytes[:])
-	if err != nil {
-		return nil, err
-	}
-	_, err = mimc.Write(frYBytes[:])
-	if err != nil {
-		return nil, err
-	}
-	var padded [32]byte
-	big.NewInt(int64(l.MsbX)).FillBytes(padded[:])
-	_, err = mimc.Write(padded[:])
-	if err != nil {
-		return nil, err
-	}
-	big.NewInt(int64(l.MsbY)).FillBytes(padded[:])
-	_, err = mimc.Write(padded[:])
-	if err != nil {
-		return nil, err
-	}
-	var powerBytes big.Int
-	powerBytes.SetUint64(uint64(l.VotingPower))
-	powerBytes.FillBytes(padded[:])
-	_, err = mimc.Write(padded[:])
-	if err != nil {
-		return nil, err
-	}
-	return mimc.Sum(nil), nil
 }
