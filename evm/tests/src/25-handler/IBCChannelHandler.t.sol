@@ -27,7 +27,7 @@ contract TestVerifier is IZKVerifierV2 {
     function verifyProof(
         uint256[8] memory proof,
         uint256[2] memory proofCommitment,
-        uint256[5] calldata input
+        uint256[4] calldata input
     ) external returns (bool) {
         bool ok = valid > 0;
         if (valid > 0) {

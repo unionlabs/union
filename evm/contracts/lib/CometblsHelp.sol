@@ -37,9 +37,6 @@ library CometblsHelp {
     bytes constant HMAC_O =
         hex"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
 
-    bytes1 constant ZERO = bytes1(uint8(0));
-    bytes1 constant ONE = bytes1(uint8(1));
-
     // Specialized https://en.wikipedia.org/wiki/HMAC for keccak256 with `CometBLS` as key.
     // TODO: link whitepaper
     function hmac_keccak(bytes memory message) internal pure returns (bytes32) {
@@ -57,16 +54,6 @@ library CometblsHelp {
         return (uint256(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + 1;
     }
 
-    // TODO: link whitepaper
-    function hashToField2(
-        bytes memory message
-    ) internal pure returns (uint256, uint256) {
-        return (
-            hashToField(abi.encodePacked(ZERO, message)),
-            hashToField(abi.encodePacked(ONE, message))
-        );
-    }
-
     function verifyZKP(
         IZKVerifierV2 verifier,
         bytes32 trustedValidatorsHash,
@@ -74,7 +61,7 @@ library CometblsHelp {
         bytes memory message,
         bytes memory zkp
     ) internal returns (bool) {
-        (uint256 messageX, uint256 messageY) = hashToField2(message);
+        uint256 message = hashToField(message);
 
         (
             uint256[8] memory proof,
@@ -82,11 +69,10 @@ library CometblsHelp {
             uint256[2] memory proofCommitment
         ) = abi.decode(zkp, (uint256[8], uint256, uint256[2]));
 
-        uint256[5] memory inputs = [
+        uint256[4] memory inputs = [
             uint256(trustedValidatorsHash),
             uint256(untrustedValidatorsHash),
-            messageX,
-            messageY,
+            message,
             // Gnark commitment API extend internal inputs with the following commitment hash and proof commitment
             // See https://github.com/ConsenSys/gnark/issues/652
             commitmentHash
