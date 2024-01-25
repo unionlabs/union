@@ -91,6 +91,7 @@ Rushi
 Rustup
 SIGINT
 SSWU
+SVDW
 Secp
 Segoe
 Shacham
