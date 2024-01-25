@@ -167,7 +167,7 @@ contract PingPong is IBCAppBase {
         address relayer
     ) external virtual override onlyIBC {
         /*
-            Similarly to the onAcknowledgementPacket function, this indicate a failure to deliver the packet in expected time.
+            Similarly to the onAcknowledgementPacket function, this indicates a failure to deliver the packet in expected time.
             A sophisticated protocol would revert the action done before sending this packet.
         */
         emit PingPongLib.TimedOut();
@@ -224,7 +224,7 @@ contract PingPong is IBCAppBase {
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
-        // For some reason, we do not allow the channel to be closed.
+        // The ping-pong is infinite, closing the channel is disallowed.
         revert PingPongLib.ErrInfiniteGame();
     }
 
@@ -232,7 +232,7 @@ contract PingPong is IBCAppBase {
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
-        // Similar to onChanCloseInit
+        // Symmetric to onChanCloseInit
         revert PingPongLib.ErrInfiniteGame();
     }
 }
