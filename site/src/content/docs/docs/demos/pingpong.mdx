@@ -10,9 +10,9 @@ The `PingPong` contract implements a simple ping pong protocol that alternates b
 
 The contract consists of the following components:
 
-1. **Data Structures and Library**: Defines a `PingPongPacket` struct to represent the ping pong packet data and a library `PingPongPacketLib` for encoding and decoding packets.
+1. **Data Structures and Library**: Defines a `PingPongPacket` struct to represent the ping pong packet data.
 
-2. **Contract Definition**: The `PingPong` contract inherits from `IBCAppBase` and implements the IBC callbacks.
+2. **Contract Definition**: The `PingPong` contract inherits from `IBCAppBase` and implements the callbacks from `IIBCModule`.
 
 3. **Constructor**: Initializes the contract with the IBC handler, revision number, and the number of blocks before pong timeout.
 
@@ -30,3 +30,424 @@ The contract consists of the following components:
 ## Conclusion
 
 The `PingPong` contract showcases a basic example of cross-chain communication over IBC using Solidity. It demonstrates how developers can implement a simple ping pong protocol, exchanging packets and alternating between ping and pong messages. This example serves as a starting point for building more complex cross-chain applications using IBC and Solidity.
+
+## Code
+
+### Protocol
+
+```solidity
+// Protocol specific packet
+struct PingPongPacket {
+    bool ping;
+    uint64 counterpartyTimeout;
+}
+
+library PingPongLib {
+    bytes1 public constant ACK_SUCCESS = 0x01;
+
+    error ErrOnlyOneChannel();
+    error ErrInvalidAck();
+    error ErrNoChannel();
+    error ErrInfiniteGame();
+
+    event Ring(bool ping);
+    event TimedOut();
+    event Acknowledged();
+
+    function encode(
+        PingPongPacket memory packet
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encode(
+                packet.ping,
+                packet.counterpartyTimeout
+            );
+    }
+
+    function decode(
+        bytes memory packet
+    ) internal pure returns (PingPongPacket memory) {
+        (
+            bool ping,
+            uint64 counterpartyTimeout
+        ) = abi.decode(packet, (bool, uint64));
+        return
+            PingPongPacket({
+                ping: ping,
+                counterpartyTimeout: counterpartyTimeout
+            });
+    }
+}
+
+contract PingPong is IBCAppBase {
+    using PingPongLib for *;
+
+    IBCHandler private ibcHandler;
+    string private portId;
+    string private channelId;
+    uint64 private revisionNumber;
+    uint64 private timeout;
+
+    constructor(
+        IBCHandler _ibcHandler,
+        uint64 _revisionNumber,
+        uint64 _timeout
+    ) {
+        ibcHandler = _ibcHandler;
+        revisionNumber = _revisionNumber;
+        timeout = _timeout;
+    }
+
+    function ibcAddress() public view virtual override returns (address) {
+        return address(ibcHandler);
+    }
+
+    function initiate(
+        PingPongPacket memory packet,
+        uint64 localTimeout,
+    ) public {
+        if(bytes(channelId).length == 0) {
+            revert PingPongLib.ErrNoChannel();
+        }
+        ibcHandler.sendPacket(
+            portId,
+            channelId,
+            // No height timeout
+            IbcCoreClientV1Height.zero(),
+            // Timestamp timeout
+            localTimeout,
+            // Raw protocol packet
+            packet.encode()
+        );
+    }
+
+    function onRecvPacket(
+        IbcCoreChannelV1Packet.Data calldata packet,
+        address relayer
+    ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
+        PingPongPacket memory pp = PingPongPacketLib.decode(packet.data);
+
+        emit PingPongLib.Ring(pp.ping);
+
+        uint64 localTimeout = pp.counterpartyTimeout;
+
+        pp.ping = !pp.ping;
+        pp.counterpartyTimeout = uint64(block.timestamp) + timeout;
+
+        // Send back the packet after having reversed the bool and set the counterparty timeout
+        initiate(
+            pp,
+            localTimeout
+        );
+
+        // Return protocol specific successful acknowledgement
+        return abi.encodePacked(PingPongLib.ACK_SUCCESS);
+    }
+
+    function onAcknowledgementPacket(
+        IbcCoreChannelV1Packet.Data calldata packet,
+        bytes calldata acknowledgement,
+        address relayer
+    ) external virtual override onlyIBC {
+        /*
+            In practice, a more sophisticated protocol would check
+            and execute code depending on the counterparty outcome (refund etc...).
+            In our case, the acknowledgement will always be ACK_SUCCESS
+        */
+        if(acknowledgement != abi.encodePacked(PingPongLib.ACK_SUCCESS)) {
+            revert PingPongLib.ErrInvalidAck();
+        }
+        emit PingPongLib.Acknowledged();
+    }
+
+    function onTimeoutPacket(
+        IbcCoreChannelV1Packet.Data calldata packet,
+        address relayer
+    ) external virtual override onlyIBC {
+        /*
+            Similarly to the onAcknowledgementPacket function, this indicate a failure to deliver the packet in expected time.
+            A sophisticated protocol would revert the action done before sending this packet.
+        */
+        emit PingPongLib.TimedOut();
+    }
+
+    function onChanOpenInit(
+        IbcCoreChannelV1GlobalEnums.Order,
+        string[] calldata,
+        string calldata,
+        string calldata,
+        IbcCoreChannelV1Counterparty.Data calldata,
+        string calldata
+    ) external virtual override onlyIBC {
+        // This protocol is only accepting a single counterparty.
+        if(bytes(channelId).length != 0) {
+            revert PingPongLib.ErrOnlyOneChannel();
+        }
+    }
+
+    function onChanOpenTry(
+        IbcCoreChannelV1GlobalEnums.Order,
+        string[] calldata,
+        string calldata,
+        string calldata,
+        IbcCoreChannelV1Counterparty.Data calldata,
+        string calldata,
+        string calldata
+    ) external virtual override onlyIBC {
+        // This protocol is only accepting a single counterparty.
+        if(bytes(channelId).length != 0) {
+            revert PingPongLib.ErrOnlyOneChannel();
+        }
+    }
+
+    function onChanOpenAck(
+        string calldata _portId,
+        string calldata _channelId,
+        string calldata _counterpartyChannelId,
+        string calldata _counterpartyVersion
+    ) external virtual override onlyIBC {
+        portId = _portId;
+        channelId = _channelId;
+    }
+
+    function onChanOpenConfirm(
+        string calldata _portId,
+        string calldata _channelId
+    ) external virtual override onlyIBC {
+        portId = _portId;
+        channelId = _channelId;
+    }
+
+    function onChanCloseInit(
+        string calldata _portId,
+        string calldata _channelId
+    ) external virtual override onlyIBC {
+        // For some reason, we do not allow the channel to be closed.
+        revert PingPongLib.ErrInfiniteGame();
+    }
+
+    function onChanCloseConfirm(
+        string calldata _portId,
+        string calldata _channelId
+    ) external virtual override onlyIBC {
+        // Similar to onChanCloseInit
+        revert PingPongLib.ErrInfiniteGame();
+    }
+}
+```
+
+### Interface
+
+See https://github.com/cosmos/ibc/blob/2921c5cec7b18e4ef77677e16a6b693051ae3b35/spec/core/ics-026-routing-module/README.md
+
+#### IIBCModule
+
+```solidity
+pragma solidity ^0.8.23;
+
+import "../../proto/ibc/core/channel/v1/channel.sol";
+
+// IIBCModule defines an interface that implements all the callbacks
+// that modules must define as specified in ICS-26
+// https://github.com/cosmos/ibc/blob/2921c5cec7b18e4ef77677e16a6b693051ae3b35/spec/core/ics-026-routing-module/README.md
+interface IIBCModule {
+  function onChanOpenInit(
+    IbcCoreChannelV1GlobalEnums.Order,
+    string[] calldata connectionHops,
+    string calldata portId,
+    string calldata channelId,
+    IbcCoreChannelV1Counterparty.Data calldata counterparty,
+    string calldata version
+  ) external;
+
+  function onChanOpenTry(
+    IbcCoreChannelV1GlobalEnums.Order,
+    string[] calldata connectionHops,
+    string calldata portId,
+    string calldata channelId,
+    IbcCoreChannelV1Counterparty.Data calldata counterparty,
+    string calldata version,
+    string calldata counterpartyVersion
+  ) external;
+
+  function onChanOpenAck(
+    string calldata portId,
+    string calldata channelId,
+    string calldata counterpartyChannelId,
+    string calldata counterpartyVersion
+  ) external;
+
+  function onChanOpenConfirm(
+    string calldata portId,
+    string calldata channelId
+  ) external;
+
+  function onChanCloseInit(
+    string calldata portId,
+    string calldata channelId
+  ) external;
+
+  function onChanCloseConfirm(
+    string calldata portId,
+    string calldata channelId
+  ) external;
+
+  function onRecvPacket(
+    IbcCoreChannelV1Packet.Data calldata,
+    address relayer
+  ) external returns (bytes memory);
+
+  function onAcknowledgementPacket(
+    IbcCoreChannelV1Packet.Data calldata,
+    bytes calldata acknowledgement,
+    address relayer
+  ) external;
+
+  function onTimeoutPacket(
+    IbcCoreChannelV1Packet.Data calldata,
+    address relayer
+  ) external;
+}
+```
+
+#### IBCAppBase
+
+```solidity
+pragma solidity ^0.8.23;
+
+import "@openzeppelin/utils/Context.sol";
+import "../core/05-port/IIBCModule.sol";
+
+library IBCAppLib {
+  error ErrNotIBC();
+}
+
+/**
+ * @dev Base contract of the IBC App protocol
+ */
+abstract contract IBCAppBase is Context, IIBCModule {
+  /**
+   * @dev Throws if called by any account other than the IBC contract.
+   */
+  modifier onlyIBC() {
+    _checkIBC();
+    _;
+  }
+
+  /**
+   * @dev Returns the address of the IBC contract.
+   */
+  function ibcAddress() public view virtual returns (address);
+
+  /**
+   * @dev Throws if the sender is not the IBC contract.
+   */
+  function _checkIBC() internal view virtual {
+    if (ibcAddress() != _msgSender()) {
+      revert IBCAppLib.ErrNotIBC();
+    }
+  }
+
+  /**
+   * @dev See IIBCModule-onChanOpenInit
+   *
+   * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+   */
+  function onChanOpenInit(
+    IbcCoreChannelV1GlobalEnums.Order,
+    string[] calldata connectionHops,
+    string calldata portId,
+    string calldata channelId,
+    IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+    string calldata version
+  ) external virtual override onlyIBC {}
+
+  /**
+   * @dev See IIBCModule-onChanOpenTry
+   *
+   * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+   */
+  function onChanOpenTry(
+    IbcCoreChannelV1GlobalEnums.Order,
+    string[] calldata connectionHops,
+    string calldata portId,
+    string calldata channelId,
+    IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
+    string calldata version,
+    string calldata counterpartyVersion
+  ) external virtual override onlyIBC {}
+
+  /**
+   * @dev See IIBCModule-onChanOpenAck
+   *
+   * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+   */
+  function onChanOpenAck(
+    string calldata portId,
+    string calldata channelId,
+    string calldata counterpartyChannelId,
+    string calldata counterpartyVersion
+  ) external virtual override onlyIBC {}
+
+  /**
+   * @dev See IIBCModule-onChanOpenConfirm
+   *
+   * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+   */
+  function onChanOpenConfirm(
+    string calldata portId,
+    string calldata channelId
+  ) external virtual override onlyIBC {}
+
+  /**
+   * @dev See IIBCModule-onChanCloseInit
+   *
+   * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+   */
+  function onChanCloseInit(
+    string calldata portId,
+    string calldata channelId
+  ) external virtual override onlyIBC {}
+
+  /**
+   * @dev See IIBCModule-onChanCloseConfirm
+   *
+   * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+   */
+  function onChanCloseConfirm(
+    string calldata portId,
+    string calldata channelId
+  ) external virtual override onlyIBC {}
+
+  /**
+   * @dev See IIBCModule-onRecvPacket
+   *
+   * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+   */
+  function onRecvPacket(
+    IbcCoreChannelV1Packet.Data calldata packet,
+    address relayer
+  ) external virtual override onlyIBC returns (bytes memory acknowledgement) {}
+
+  /**
+   * @dev See IIBCModule-onAcknowledgementPacket
+   *
+   * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+   */
+  function onAcknowledgementPacket(
+    IbcCoreChannelV1Packet.Data calldata packet,
+    bytes calldata acknowledgement,
+    address relayer
+  ) external virtual override onlyIBC {}
+
+  /**
+   * @dev See IIBCModule-onTimeoutPacket
+   *
+   * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+   */
+  function onTimeoutPacket(
+    IbcCoreChannelV1Packet.Data calldata packet,
+    address relayer
+  ) external virtual override onlyIBC {}
+}
+```
