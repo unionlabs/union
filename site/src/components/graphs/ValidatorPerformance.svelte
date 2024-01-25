@@ -77,24 +77,21 @@
         backgroundColor: "#000",
         formatter(params, ticket, callback) {
           return `
-            <div style="margin: 0px 0 0;line-height:1;">
-               <div style="font-size:14px;color:#666;font-weight:400;line-height:1;">${params[0].value[0]} Validators</div>
-               <div style="margin: 10px 0 0;line-height:1;">
+            <div class="text-gray-400">
+               <div><span class="text-white">${params[0].value[0]}</span>&nbsp;Validators</div>
+               <div>
                  ${
                    params.map(x => `
-                    <div style="margin: 0px 0 0;line-height:1;">
-                       <div class="text-left" style="margin: 0px 0 0;line-height:1;">
-                          ${x.marker}
-                          <span class="text-left w-full" style="font-size:14px;color:#666;font-weight:400;margin-right:auto;text-align:start">${x.seriesName}</span>
-                          <span class="font-mono" style="float:right;margin-left:20px;font-size:14px;color:#666">${seriesValue(x.value[1], x.seriesName)}</span>
-                          <div style="clear:both"></div>
+                    <div class="mt-0">
+                       <div class="flex text-sm items-center">
+                          <span class="flex-none w-3 h-3 min-w-3 min-h-3 mr-1 rounded-full" style="background-color:${x.color};"></span>
+                          <span class="flex-grow font-normal text-left mr-3">${x.seriesName}</span>
+                          <span class="font-mono flex-none">${seriesValue(x.value[1], x.seriesName)}</span>
                        </div>
-                       <div style="clear:both"></div>
                     </div>
                    `).join('')
                  }
                </div>
-               <div style="clear:both"></div>
             </div>
           `
         }
