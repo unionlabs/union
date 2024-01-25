@@ -38,11 +38,11 @@
 
   function seriesValue(value: any, name: string): string {
     switch (name) {
-      case "Ram":
+      case RAM:
         return `${value}GB`;
-      case "Time":
+      case PROVING_TIME:
         return `${value}s`;
-      case "Constraints":
+      case CONSTRAINTS:
         // NOTE: We can use toLocaleString here
         return new Intl.NumberFormat('en-US', { style: 'decimal' }).format(value);
       default:
@@ -54,6 +54,10 @@
   // console.log(hiddenData)
 
   let myChart;
+
+  const CONSTRAINTS = 'Constraints';
+  const PROVING_TIME = 'Proving Time';
+  const RAM = 'RAM Usage';
 
   onMount(() => {
     let chartDom = document.getElementById('galois-graph');
@@ -174,7 +178,7 @@
             myChart.setOption({
               series: [
                 {
-                  name: 'Constraints',
+                  name: CONSTRAINTS,
                   type: 'line',
                   yAxisIndex: 0,
                   symbol: 'circle',
@@ -183,7 +187,7 @@
                   itemStyle: { color: constraintsLineColor },
                 },
                 {
-                  name: 'Time',
+                  name: PROVING_TIME,
                   type: 'line',
                   yAxisIndex: 2,
                   symbol: 'circle',
@@ -192,7 +196,7 @@
                   itemStyle: { color: timeLineColor },
                 },
                 {
-                  name: 'Ram',
+                  name: RAM,
                   type: 'line',
                   yAxisIndex: 1,
                   symbol: 'circle',
