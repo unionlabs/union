@@ -21,9 +21,9 @@ const { Content, headings } = await entry.render()
   <main
     class='sm:text-xl flex-grow py-4 sm:mt-0 pb-24 sm:px-0 px-6 justify-center max-w-xl self-center'
   >
-    <p class='blog-title text-3xl sm:text-5xl font-extrabold max-w-xl'>
+    <h1 class='text-3xl sm:text-5xl font-extrabold max-w-xl'>
       {entry.data.title}
-    </p>
+    </h1>
 
     <div class='font-mono sm:text-lg uppercase tracking-widest mb-5 mt-1'>
       <time datetime={entry.data.date.toISOString()}>
@@ -44,9 +44,7 @@ const { Content, headings } = await entry.render()
         @{entry.data.author}
       </a>
     </div>
-    <div transition:animate='fade'>
-      <Content />
-    </div>
+    <Content />
   </main>
   <Socials />
 </Layout>
@@ -57,8 +55,6 @@ const { Content, headings } = await entry.render()
 ></script>
 
 <style is:inline lang="postcss">
-  .blog-title {
-  }
   p > a {
     text-decoration: underline;
     text-decoration-color: #A0ECFD !important;
@@ -69,29 +65,16 @@ const { Content, headings } = await entry.render()
       color: #A0ECFD;
       text-decoration-color: #fff !important;
     }
-    h1 {
+    h2 {
 font-size: 1.5rem !important;
     }
   }
 
-  h1 {
+  h2 {
     line-height: 3rem;
-    margin-top: 10px;
+    margin-top: 14px;
+    margin-bottom: 8px;
     font-size: 1.87rem;
 
-  }
-
-  h2 {
-    margin-bottom: 0;
-    margin-top: 1rem;
-
-    line-height: 2rem;
-    font-weight: 700;
-
-    @media (min-width: 640px) {
-      margin-top: 2rem;
-      font-size: 1.875rem;
-      line-height: 2.25rem;
-    }
   }
 </style>
