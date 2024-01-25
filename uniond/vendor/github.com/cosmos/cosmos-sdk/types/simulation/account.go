@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/bn254"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -44,7 +44,7 @@ func RandomAccounts(r *rand.Rand, n int) []Account {
 		accs[i].PubKey = accs[i].PrivKey.PubKey()
 		accs[i].Address = sdk.AccAddress(accs[i].PubKey.Address())
 
-		accs[i].ConsKey = bn254.GenPrivKeyFromSecret(privkeySeed)
+		accs[i].ConsKey = ed25519.GenPrivKeyFromSecret(privkeySeed)
 	}
 
 	return accs

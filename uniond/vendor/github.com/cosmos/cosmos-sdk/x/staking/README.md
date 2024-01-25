@@ -18,50 +18,6 @@ ultimately determining the effective validator set for the system.
 This module is used in the Cosmos Hub, the first Hub in the Cosmos
 network.
 
-## Epoch Staking Additions
-
-*The design of the epoch staking changes to the `x/staking` module are heavily inspired by [ADR 039: Epoch Staking](https://docs.cosmos.network/v0.45/architecture/adr-039-epoched-staking.html). The primary difference in design is the addition of a `JailedValidatorThreshold`, which exists to prevent the network from halting in the case of the active set becoming entirely jailed.*
-
-To avoid a heavy block at the end of each epoch, we eagerly perform the stake and delegation changes at the end of each block but buffer the validator set state changes until the end of each epoch.
-
-Two conditions trigger a validator set update:
-
-1. The first block of an epoch. This will also determine the timestamp of the next epoch.
-
-2. The number of jailed validators exceeding a defined threshold.
-
-### Changes
-
-To minimize maintenance efforts until a variation of epoch staking is up-streamed, all changes for epoch staking are contained in the existing `x/staking` module.
-
-To introduce epoch staking to the `x/staking` module, we've introduced several new storage items and parameters to the `x/staking` module.
-
-#### Storage Items
-
-- `NumberOfValidatorsInEpoch`
-- `NumberOfValidatorsInJail`
-
-#### Parameters
-
-- `JailedValidatorTrheshold` *(default: `50`)*
-- `EpochLength` *(default: `1`)*
-
-In addition to these storage items and paramaters, changes were made to the `BlockValidatorUpdates` function workflow.
-
-Instead of always running `ApplyAndRetrunValidatorSetUpdates`, the set updates are now only triggered by the logic defined below:
-
-```mermaid
-flowchart TD
-    A[EndBlocker]
-    A --> C{End of Epoch?}
-    C -->|Yes| D[FullValidatorUpdates]
-    C -->|No| E{JailedValidators >= THRESHOLD}
-    E -->|Yes| D[BlockValidatorUpdates]
-    E -->|No| F[MinimumValidatorUpdates]
-```
-
-The logic that determines the end of the epoch is based off the current height of the network and can be expressed as true or false with `currentHeight % epochLength == 0`.
-
 ## Contents
 
 * [State](#state)

@@ -351,9 +351,8 @@ func (vals *ValidatorSet) Hash() []byte {
 	for i, val := range vals.Validators {
 		var pubKey bn254.G1Affine
 		_, err := pubKey.SetBytes(val.PubKey.Bytes())
-		fmt.Printf("Len: %d\n", len(val.PubKey.Bytes()))
 		if err != nil {
-			panic(fmt.Errorf("ValidatorSet.Hash(): impossible invalid validator: %v: Err %s", val, err))
+			panic(fmt.Errorf("ValidatorSet.Hash(): impossible invalid validator: %v", val))
 		}
 		leaf, err := cometbn254.NewMerkleLeaf(pubKey, val.VotingPower)
 		if err != nil {

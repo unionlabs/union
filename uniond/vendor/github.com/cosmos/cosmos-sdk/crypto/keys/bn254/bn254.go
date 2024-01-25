@@ -2,7 +2,6 @@ package bn254
 
 import (
 	"crypto/sha256"
-	"crypto/sha512"
 	"crypto/subtle"
 	"fmt"
 
@@ -49,13 +48,6 @@ func (privKey *PrivKey) Sign(msg []byte) ([]byte, error) {
 
 func GenPrivKey() *PrivKey {
 	return &PrivKey{Key: bn254.GenPrivKey()}
-}
-
-func GenPrivKeyFromSecret(secret []byte) *PrivKey {
-	hasher := sha512.New()
-	hasher.Write(secret)
-	seed := hasher.Sum(nil)
-	return &PrivKey{Key: bn254.GenPrivKeyFromSeed(seed)}
 }
 
 // PubKey gets the corresponding public key from the private key.

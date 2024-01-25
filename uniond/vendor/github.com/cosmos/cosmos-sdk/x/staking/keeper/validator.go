@@ -68,6 +68,7 @@ func (k Keeper) IncermentNumberofValidatorsInJail(ctx context.Context) {
 	store := k.storeService.OpenKVStore(ctx)
 
 	has, err := store.Has(types.NumberOfValidatorsInJail)
+
 	if err != nil {
 		// TODO(aeryz): Seems like panics are changed into errors, check if it is okay to panic here
 		panic(err)
@@ -101,6 +102,7 @@ func (k Keeper) IncermentNumberofValidatorsInJail(ctx context.Context) {
 func (k Keeper) DecrementNumberofValidatorsInJail(ctx context.Context) error {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.NumberOfValidatorsInJail)
+
 	if err != nil {
 		return err
 	}
@@ -728,6 +730,7 @@ func (k Keeper) GetNumberOfValidatorsInEpoch(ctx context.Context) uint32 {
 	store := k.storeService.OpenKVStore(ctx)
 
 	has, err := store.Has(types.NumberOfValidatorsInEpoch)
+
 	if err != nil {
 		// TODO(aeryz): check if its ok to panic here
 		panic(err)
@@ -751,6 +754,7 @@ func (k Keeper) GetNumberOfJailedValidators(ctx context.Context) uint32 {
 	store := k.storeService.OpenKVStore(ctx)
 
 	has, err := store.Has(types.NumberOfValidatorsInJail)
+
 	if err != nil {
 		// TODO(aeryz): check if its ok to panic here
 		panic(err)
