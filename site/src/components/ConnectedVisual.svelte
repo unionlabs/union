@@ -6,6 +6,37 @@
   import ethereum from '#/assets/partners/ethereum.svelte?raw'
   import movement from '#/assets/partners/movement.svelte?raw'
   import union from '#/assets/union-logo/union-logo-transparent.svg?raw'
+  import { onMount } from 'svelte'
+
+  /* Define our media query and media query object */
+  let mq;
+    let svg;
+
+  onMount(() => {
+    mq = matchMedia('only screen and (max-width: 640px)');
+    svg = document.querySelector('#connected-visual')
+
+    console.log("svg", svg)
+
+    /* Store the original value in a variable */
+    const originalViewBox = svg.getAttribute('viewBox');
+
+    /* Define the handler */
+    const updateViewBox = () => {
+        console.log(mq)
+        if (mq.matches) {
+            /* Change the viewBox dimensions to show the hexagon */
+            svg.setAttribute('viewBox', `64 0 ${(14 * 32) - 1} ${(11 * 32) - 1}`);
+        } else {
+            svg.setAttribute('viewBox', originalViewBox);
+        }
+    }
+
+    svg.addEventListener('SVGLoad', updateViewBox);
+
+    /* Fire if the media condition changes */
+    mq.addEventListener('change', updateViewBox);
+  })
 
   const pos = (p: number) => p * 32
 
@@ -106,12 +137,14 @@
       delay
     }
   })
+
+  const smallViewBox = `0 0 ${(18 * 32) - 1} ${(11 * 32) - 1}`;
 </script>
 
 <svg
   id="connected-visual"
   class="w-full h-full"
-  viewBox="0 0 576 384"
+  viewBox="0 0 {(18 * 32) - 1} {(11 * 32) - 1}"
   version="1.1"
   xmlns="http://www.w3.org/2000/svg"
 >
@@ -171,10 +204,11 @@
       patternUnits="userSpaceOnUse"
     >
       <path
-        d="M 32 0 L 0 0 0 32"
+        d="M 32 0 L 32 32 0 32"
         fill="none"
         stroke="#1f1f1f"
-        stroke-width="1"
+        vector-effect="non-scaling-stroke"
+        stroke-width="1px"
       />
     </pattern>
   </defs>
