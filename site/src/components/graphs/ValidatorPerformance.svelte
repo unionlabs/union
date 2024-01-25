@@ -1,8 +1,8 @@
 <script lang="ts">
   import '#/styles/index.css'
+  import { init } from 'echarts'
   import { onMount } from 'svelte'
   import tw from '~tailwind.config'
-  import * as echarts from 'echarts'
 
   const constraintsLineColor = `${tw.theme.extend.colors.accent[900]}`
   const ramLineColor = `${tw.theme.extend.colors.accent[500]}`
@@ -39,9 +39,9 @@
   function seriesValue(value: any, name: string): string {
     switch (name) {
       case RAM:
-        return `${value}GB`;
+        return `${value}GB`
       case PROVING_TIME:
-        return `${value}s`;
+        return `${value}s`
       case CONSTRAINTS:
         // NOTE: We can use toLocaleString here
         return new Intl.NumberFormat('en-US', { style: 'decimal' }).format(value)
@@ -55,15 +55,15 @@
     .map((_, i) => [i * 4, '-'])
   // console.log(hiddenData)
 
-  let myChart;
+  let myChart
 
-  const CONSTRAINTS = 'Constraints';
-  const PROVING_TIME = 'Proving Time';
-  const RAM = 'RAM Usage';
+  const CONSTRAINTS = 'Constraints'
+  const PROVING_TIME = 'Proving Time'
+  const RAM = 'RAM Usage'
 
   onMount(() => {
     let chartDom = document.getElementById('galois-graph')
-    let myChart = echarts.init(chartDom, 'light', { renderer: 'svg' })
+    let myChart = init(chartDom, 'light', { renderer: 'svg' })
     let option
 
     option = {
@@ -140,41 +140,39 @@
           return value.max + 12
         }
       },
-      yAxis: [
-        {
-          axisLine: {
-            show: false
-          },
-          axisTick: {
-            show: false
-          },
-          axisLabel: {
-            show: false
-          },
-          splitLine: {
-            lineStyle: {
-              color: '#1f1f1f'
-            }
-          },
-          max(value: any) {
-            return 6_000_000
-          },
-          interval: 1_200_000
+      yAxis: [{
+        axisLine: {
+          show: false
         },
-        {
-          show: false,
-          max(value: { max: number }) {
-            return value.max * (6_000_000 / 1_600_000)
+        axisTick: {
+          show: false
+        },
+        axisLabel: {
+          show: false
+        },
+        splitLine: {
+          lineStyle: {
+            color: "#1f1f1f"
           }
         },
-        {
-          show: false,
-          max(value: { max: number }) {
-            return value.max * (6_000_000 / 2_800_000)
-          }
-        }
-      ]
-    }
+        max(value: any) {
+            return 6_000_000;
+        },
+        interval: 1_200_000,
+      },
+      {
+        show: false,
+        max(value: { max: number }) {
+            return value.max * (6_000_000 / 1_600_000);
+        },
+      },
+      {
+        show: false,
+        max(value: { max: number }) {
+            return value.max * (6_000_000 / 2_800_000);
+        },
+      }],
+    };
 
     option && myChart.setOption(option)
 

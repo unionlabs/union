@@ -318,6 +318,7 @@
       </defs>
       <a
         href={url}
+        aria-label={id}
         target="_blank"
       >
         <circle
