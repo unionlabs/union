@@ -13,11 +13,12 @@ import {IBCHandler} from "../../../../../contracts/core/25-handler/IBCHandler.so
 import {IBCConnection} from "../../../../../contracts/core/03-connection/IBCConnection.sol";
 import {IBCClient} from "../../../../../contracts/core/02-client/IBCClient.sol";
 import {IBCChannelHandshake} from "../../../../../contracts/core/04-channel/IBCChannelHandshake.sol";
-import {IIBCPacket} from "../../../../../contracts/core/04-channel/IIBCChannel.sol";
+import {IIBCPacket} from "../../../../../contracts/core/04-channel/IIBCPacket.sol";
 import {IBCPacket} from "../../../../../contracts/core/04-channel/IBCPacket.sol";
 
 contract IBCHandlerFake is IBCHandler {
     IbcCoreChannelV1Packet.Data[] packets;
+    uint64 sequence;
 
     constructor()
         IBCHandler(
@@ -34,10 +35,12 @@ contract IBCHandlerFake is IBCHandler {
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
-    ) external override {
+    ) external override returns (uint64) {
+        uint64 packetSequence = sequence;
+        sequence++;
         packets.push(
             IbcCoreChannelV1Packet.Data({
-                sequence: 0,
+                sequence: packetSequence,
                 source_port: sourcePort,
                 source_channel: sourceChannel,
                 destination_port: "dummy-port",
@@ -47,6 +50,7 @@ contract IBCHandlerFake is IBCHandler {
                 timeout_timestamp: timeoutTimestamp
             })
         );
+        return packetSequence;
     }
 
     function lastPacket()

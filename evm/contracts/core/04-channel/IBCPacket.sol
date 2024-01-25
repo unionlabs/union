@@ -6,7 +6,7 @@ import "../25-handler/IBCMsgs.sol";
 import "../02-client/IBCHeight.sol";
 import "../24-host/IBCStore.sol";
 import "../24-host/IBCCommitment.sol";
-import "../04-channel/IIBCChannel.sol";
+import "../04-channel/IIBCPacket.sol";
 import "../05-port/ModuleManager.sol";
 import "../05-port/IIBCModule.sol";
 
@@ -76,7 +76,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
-    ) external override {
+    ) external override returns (uint64) {
         if (
             !authenticateCapability(
                 channelCapabilityPath(sourcePort, sourceChannel)
@@ -144,6 +144,8 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             timeoutTimestamp,
             data
         );
+
+        return packetSequence;
     }
 
     /**

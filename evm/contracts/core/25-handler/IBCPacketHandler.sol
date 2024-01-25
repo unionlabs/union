@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/utils/Context.sol";
 import "../25-handler/IBCMsgs.sol";
 import "../24-host/IBCHost.sol";
-import "../04-channel/IIBCChannel.sol";
+import "../04-channel/IIBCPacket.sol";
 import "../05-port/ModuleManager.sol";
 
 /**
@@ -23,7 +23,7 @@ abstract contract IBCPacketHandler is IIBCPacket, Context, ModuleManager {
         IbcCoreClientV1Height.Data calldata timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
-    ) external virtual override {
+    ) external virtual override returns (uint64) {
         passthrough(ibcPacket);
     }
 
