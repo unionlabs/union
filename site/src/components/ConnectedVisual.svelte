@@ -32,7 +32,12 @@
         }
     }
 
-    svg.addEventListener('SVGLoad', updateViewBox);
+    updateViewBox()
+
+    svg.addEventListener('load', () => {
+      console.log("loaded")
+      updateViewBox()
+    });
 
     /* Fire if the media condition changes */
     mq.addEventListener('change', updateViewBox);
@@ -220,8 +225,8 @@
   />
 
   <rect
-    width="100%"
-    height="100%"
+    width="150%"
+    height="150%"
     fill="url(#grid)"
   />
 
