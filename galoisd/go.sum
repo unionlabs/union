@@ -23,6 +23,7 @@ github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4/go.mod h1:hN
 github.com/99designs/keyring v1.2.1 h1:tYLp1ULvO7i3fI5vE21ReQuj99QFSs7lGm0xWyJo87o=
 github.com/99designs/keyring v1.2.1/go.mod h1:fc+wB5KTk9wQ9sDx0kFXB3A0MaeGHM9AwRStKOQ5vOA=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/DataDog/datadog-go v3.2.0+incompatible h1:qSG2N4FghB1He/r2mFrWKCaL7dXCilEuNEeAn20fdD4=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/zstd v1.5.5 h1:oWf5W7GtOLgp6bciQYDmhHHjdhYkALu6S/5Ni9ZgSvQ=
 github.com/DataDog/zstd v1.5.5/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
@@ -429,10 +430,10 @@ github.com/tunabay/go-bitarray v1.3.1 h1:5q38uagXhrdzT0LjKWBB5ILO56fptGrJG875017
 github.com/tunabay/go-bitarray v1.3.1/go.mod h1:k6MncM9mWklQRcVy5Xe9RYixeDd9b3H0xqtgiANJFF4=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
-github.com/unionlabs/cometbls v0.0.0-20240124223549-fdd557e6f742 h1:vTLY4qdxcaGzT+LholMCdN0rrAH29lbz4BEtoGnUfPE=
-github.com/unionlabs/cometbls v0.0.0-20240124223549-fdd557e6f742/go.mod h1:ZN5TH4WzX9x+hgcipytd0WghjGcCBy6M8YVgnHOCd/0=
-github.com/unionlabs/cosmos-sdk v0.0.0-20240124173644-e3b38523ae87 h1:vEMBIzdXx56EF46RZM45yKXczFC5M3ac+zi8JLz7SgE=
-github.com/unionlabs/cosmos-sdk v0.0.0-20240124173644-e3b38523ae87/go.mod h1:7KrOi+TRWzNq0CX/JjlnnsJwSShmKMeRBxuF/4bXvPU=
+github.com/unionlabs/cometbls v0.0.0-20240125180347-5b33e3460932 h1:ecEdIXw7w3I4JEpNoNMwpHu4Iy6PRgGl++uWQIcPYBw=
+github.com/unionlabs/cometbls v0.0.0-20240125180347-5b33e3460932/go.mod h1:ZN5TH4WzX9x+hgcipytd0WghjGcCBy6M8YVgnHOCd/0=
+github.com/unionlabs/cosmos-sdk v0.0.0-20240125200611-e1b8b82c712b h1:eUv6PZDYQaO4vFVGYXlufFjiDq8UnZtmoVyBen+uzyo=
+github.com/unionlabs/cosmos-sdk v0.0.0-20240125200611-e1b8b82c712b/go.mod h1:iEaeKpRLz88bVPyU7Zk0WODyY05qHmR33vNsFaJ4lP8=
 github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6 h1:wRt6Yt29bWvwCSeRmRJ/Wm1sRev1GjJGXn4MzSrMbv4=
 github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6/go.mod h1:wKqwsieaKPThcFkHe0d0zMsbHEUWFmZcG7KBCse210o=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=

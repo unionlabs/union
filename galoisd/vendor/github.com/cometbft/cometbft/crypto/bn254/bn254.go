@@ -167,6 +167,16 @@ func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 	return false
 }
 
+func GenPrivKeyFromSeed(seed []byte) PrivKey {
+	reader := bytes.NewReader(seed)
+
+	secret, err := bls254.GenerateKey(reader)
+	if err != nil {
+		panic(err)
+	}
+	return PrivKey(secret.Bytes())
+}
+
 func GenPrivKey() PrivKey {
 	secret, err := bls254.GenerateKey(rand.Reader)
 	if err != nil {

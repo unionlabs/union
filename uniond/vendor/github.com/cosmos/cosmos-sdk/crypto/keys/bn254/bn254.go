@@ -2,6 +2,7 @@ package bn254
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/subtle"
 	"fmt"
 
@@ -48,6 +49,13 @@ func (privKey *PrivKey) Sign(msg []byte) ([]byte, error) {
 
 func GenPrivKey() *PrivKey {
 	return &PrivKey{Key: bn254.GenPrivKey()}
+}
+
+func GenPrivKeyFromSecret(secret []byte) *PrivKey {
+	hasher := sha512.New()
+	hasher.Write(secret)
+	seed := hasher.Sum(nil)
+	return &PrivKey{Key: bn254.GenPrivKeyFromSeed(seed)}
 }
 
 // PubKey gets the corresponding public key from the private key.
@@ -159,6 +167,10 @@ func (pubKey *PubKey) UnmarshalAmino(bz []byte) error {
 	if len(bz) != PubKeySize {
 		return errorsmod.Wrap(errors.ErrInvalidPubKey, "invalid pubkey size")
 	}
+	var pKey bn254.PubKey = bz
+	if err := pKey.EnsureValid(); err != nil {
+		panic(err)
+	}
 	pubKey.Key = bz
 
 	return nil
@@ -173,9 +185,5 @@ func (pubKey PubKey) MarshalAminoJSON() ([]byte, error) {
 
 // UnmarshalAminoJSON overrides Amino JSON marshalling.
 func (pubKey *PubKey) UnmarshalAminoJSON(bz []byte) error {
-	var pKey bn254.PubKey = pubKey.Bytes()
-	if err := pKey.EnsureValid(); err != nil {
-		return errorsmod.Wrap(err, "invalid compression for PubKeyBn254")
-	}
 	return pubKey.UnmarshalAmino(bz)
 }

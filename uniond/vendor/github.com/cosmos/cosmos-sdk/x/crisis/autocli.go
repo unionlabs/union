@@ -25,6 +25,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Skip:      true, // Skipped because UpdateParams is authority gated
 				},
 			},
+			EnhanceCustomCommand: false,
 		},
 	}
 }

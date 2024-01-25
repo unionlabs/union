@@ -42,6 +42,7 @@ func NewTxCmd(valAc, ac address.Codec) *cobra.Command {
 		NewWithdrawAllRewardsCmd(valAc, ac),
 		NewSetWithdrawAddrCmd(ac),
 		NewFundCommunityPoolCmd(ac),
+		NewWithdrawValidatorCommission(valAc, ac),
 		NewDepositValidatorRewardsPoolCmd(valAc, ac),
 	)
 
@@ -258,6 +259,33 @@ $ %s tx distribution fund-community-pool 100uatom --from mykey
 			}
 
 			msg := types.NewMsgFundCommunityPool(amount, depositorAddr)
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func NewWithdrawValidatorCommission(valCodec, ac address.Codec) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "withdraw-validator-commission [validator-addr]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Withdraw commissions from a validator address (must be a validator operator)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			_, err = valCodec.StringToBytes(args[0])
+			if err != nil {
+				return err
+			}
+
+			msg := types.NewMsgWithdrawValidatorCommission(args[0])
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},

@@ -58,10 +58,14 @@ func (k Keeper) MinCommissionRate(ctx context.Context) (math.LegacyDec, error) {
 
 func (k Keeper) EpochLength(ctx context.Context) int64 {
 	params, err := k.GetParams(ctx)
-
 	if err != nil {
 		// TODO(aeryz): Check if its ok to panic here
 		panic(err)
+	}
+
+	// Epoch should never be 0, minimum of 1
+	if params.EpochLength == 0 {
+		return 1
 	}
 
 	return params.EpochLength
@@ -69,7 +73,6 @@ func (k Keeper) EpochLength(ctx context.Context) int64 {
 
 func (k Keeper) JailedValidatorThreshold(ctx context.Context) uint32 {
 	params, err := k.GetParams(ctx)
-
 	if err != nil {
 		// TODO(aeryz): Check if its ok to panic here
 		panic(err)
