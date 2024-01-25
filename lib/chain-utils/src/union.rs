@@ -185,7 +185,7 @@ impl Chain for Union {
                     .unix_timestamp()
                     .try_into()
                     .unwrap(),
-                root: MerkleRoot {
+                app_hash: MerkleRoot {
                     hash: commit
                         .signed_header
                         .header

@@ -13,7 +13,7 @@ use crate::{
 #[serde(deny_unknown_fields)]
 pub struct ConsensusState {
     pub timestamp: u64,
-    pub root: MerkleRoot,
+    pub app_hash: MerkleRoot,
     pub next_validators_hash: H256,
 }
 
@@ -32,7 +32,7 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ConsensusState> for
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             timestamp: value.timestamp,
-            root: required!(value.root)?
+            app_hash: required!(value.root)?
                 .try_into()
                 .map_err(TryFromConsensusStateError::Root)?,
             next_validators_hash: value
@@ -60,7 +60,7 @@ impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::Co
     fn from(value: ConsensusState) -> Self {
         Self {
             timestamp: value.timestamp,
-            root: Some(value.root.into()),
+            root: Some(value.app_hash.into()),
             next_validators_hash: value.next_validators_hash.into(),
         }
     }
@@ -71,7 +71,7 @@ impl From<ConsensusState> for contracts::glue::OptimizedConsensusState {
     fn from(value: ConsensusState) -> Self {
         Self {
             timestamp: value.timestamp,
-            root: value.root.hash.into(),
+            app_hash: value.app_hash.hash.into(),
             next_validators_hash: value.next_validators_hash.into(),
         }
     }
@@ -91,7 +91,7 @@ impl TryFrom<contracts::glue::OptimizedConsensusState> for ConsensusState {
     fn try_from(value: contracts::glue::OptimizedConsensusState) -> Result<Self, Self::Error> {
         Ok(Self {
             timestamp: value.timestamp,
-            root: MerkleRoot::from(H256::from(value.root)),
+            app_hash: MerkleRoot::from(H256::from(value.app_hash)),
             next_validators_hash: value.next_validators_hash.into(),
         })
     }

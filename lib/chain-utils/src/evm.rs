@@ -2,13 +2,18 @@ use std::{fmt::Debug, marker::PhantomData, ops::Div, str::FromStr, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
+    devnet_ownable_ibc_handler::DevnetOwnableIBCHandler,
+    ibc_channel_handshake::IBCChannelHandshakeEvents,
+    ibc_client::GeneratedClientIdentifierFilter,
+    ibc_connection::IBCConnectionEvents,
     ibc_handler::{
         GetChannelCall, GetChannelReturn, GetClientStateCall, GetClientStateReturn,
         GetConnectionCall, GetConnectionReturn, GetConsensusStateCall, GetConsensusStateReturn,
         GetHashedPacketAcknowledgementCommitmentCall,
         GetHashedPacketAcknowledgementCommitmentReturn, GetHashedPacketCommitmentCall,
-        GetHashedPacketCommitmentReturn, IBCHandler, IBCHandlerEvents, WriteAcknowledgementFilter,
+        GetHashedPacketCommitmentReturn, IBCHandler,
     },
+    ibc_packet::{IBCPacket, IBCPacketEvents, WriteAcknowledgementFilter},
     shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
 };
 use ethers::{
@@ -60,7 +65,8 @@ pub type CometblsMiddleware =
 pub struct Evm<C: ChainSpec> {
     pub chain_id: U256,
 
-    pub readonly_ibc_handler: IBCHandler<Provider<Ws>>,
+    pub readonly_ibc_handler: DevnetOwnableIBCHandler<Provider<Ws>>,
+    pub readonly_ibc_packet: IBCPacket<Provider<Ws>>,
 
     // pub wallet: LocalWallet,
     pub ibc_handlers: Pool<IBCHandler<CometblsMiddleware>>,
@@ -110,6 +116,33 @@ impl<C: ChainSpec> FromStrExact for EvmChainType<C> {
             }
         }
     };
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum IBCHandlerEvents {
+    PacketEvent(IBCPacketEvents),
+    ConnectionEvent(IBCConnectionEvents),
+    ChannelEvent(IBCChannelHandshakeEvents),
+    ClientEvent(GeneratedClientIdentifierFilter),
+}
+
+impl EthLogDecode for IBCHandlerEvents {
+    fn decode_log(log: &ethers::abi::RawLog) -> Result<Self, ethers::abi::Error>
+    where
+        Self: Sized,
+    {
+        let packet_event = IBCPacketEvents::decode_log(log).map(IBCHandlerEvents::PacketEvent);
+        let conn_event =
+            IBCConnectionEvents::decode_log(log).map(IBCHandlerEvents::ConnectionEvent);
+        let chan_event =
+            IBCChannelHandshakeEvents::decode_log(log).map(IBCHandlerEvents::ChannelEvent);
+        [packet_event, conn_event, chan_event]
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?
+            .first()
+            .cloned()
+            .ok_or(ethers::abi::Error::InvalidData)
+    }
 }
 
 impl<C: ChainSpec> Chain for Evm<C> {
@@ -305,7 +338,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
     ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
             let filter = self
-                .readonly_ibc_handler
+                .readonly_ibc_packet
                 .write_acknowledgement_filter()
                 .filter
                 .at_block_hash(block_hash);
@@ -316,7 +349,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 .map(|log| <WriteAcknowledgementFilter as EthLogDecode>::decode_log(&log.into()))
                 .find_map(|e| match e {
                     Ok(WriteAcknowledgementFilter {
-                        destination_port_id: ack_dst_port_id,
+                        destination_port: ack_dst_port_id,
                         destination_channel,
                         sequence: ack_sequence,
                         acknowledgement,
@@ -368,7 +401,11 @@ impl<C: ChainSpec> Evm<C> {
         Ok(Self {
             chain_id: U256(chain_id),
             ibc_handlers: Pool::new(ibc_handlers),
-            readonly_ibc_handler: IBCHandler::new(
+            readonly_ibc_handler: DevnetOwnableIBCHandler::new(
+                config.ibc_handler_address.clone(),
+                provider.clone().into(),
+            ),
+            readonly_ibc_packet: IBCPacket::new(
                 config.ibc_handler_address,
                 provider.clone().into(),
             ),
@@ -649,7 +686,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                         };
 
                         let event = match event {
-                            IBCHandlerEvents::AcknowledgePacketFilter(packet_ack) => {
+                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::AcknowledgePacketFilter(packet_ack)) => {
                                 // TODO: Would be nice if this info was passed through in the SendPacket event
                                 let channel_data: Channel = read_channel(
                                     packet_ack.packet.source_port.clone(),
@@ -685,9 +722,9 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     connection_id: channel_data.connection_hops[0].clone(),
                                 }))
                             }
-                            IBCHandlerEvents::ChannelCloseConfirmFilter(_) => todo!(),
-                            IBCHandlerEvents::ChannelCloseInitFilter(_) => todo!(),
-                            IBCHandlerEvents::ChannelOpenAckFilter(event) => {
+                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelCloseConfirmFilter(_)) => todo!(),
+                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelCloseInitFilter(_)) => todo!(),
+                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenAckFilter(event)) => {
                                 let channel =
                                     read_channel(event.port_id.clone(), event.channel_id.clone())
                                         .await?;
@@ -710,7 +747,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     connection_id: channel.connection_hops[0].clone(),
                                 }))
                             }
-                            IBCHandlerEvents::ChannelOpenConfirmFilter(event) => {
+                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenConfirmFilter(event)) => {
                                 let channel =
                                     read_channel(event.port_id.clone(), event.channel_id.clone())
                                         .await?;
@@ -733,7 +770,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     connection_id: channel.connection_hops[0].clone(),
                                 }))
                             }
-                            IBCHandlerEvents::ChannelOpenInitFilter(event) => {
+                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenInitFilter(event)) => {
                                 let channel =
                                     read_channel(event.port_id.clone(), event.channel_id.clone())
                                         .await?;
@@ -758,7 +795,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     version: channel.version,
                                 }))
                             }
-                            IBCHandlerEvents::ChannelOpenTryFilter(event) => {
+                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenTryFilter(event)) => {
                                 let channel =
                                     read_channel(event.port_id.clone(), event.channel_id.clone())
                                         .await?;
@@ -788,7 +825,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     version: event.version,
                                 }))
                             }
-                            IBCHandlerEvents::ConnectionOpenAckFilter(event) => {
+                            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenAckFilter(event)) => {
                                 let connection: ConnectionEnd<<Self as Chain>::ClientId, String> =
                                     read_connection(event.connection_id.clone()).await?;
 
@@ -804,7 +841,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .connection_id,
                                 }))
                             }
-                            IBCHandlerEvents::ConnectionOpenConfirmFilter(event) => {
+                            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenConfirmFilter(event)) => {
                                 let connection: ConnectionEnd<<Self as Chain>::ClientId, String> =
                                     read_connection(event.connection_id.clone()).await?;
 
@@ -820,7 +857,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .connection_id,
                                 }))
                             }
-                            IBCHandlerEvents::ConnectionOpenInitFilter(event) => {
+                            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenInitFilter(event)) => {
                                 let connection: ConnectionEnd<
                                     <Self as Chain>::ClientId,
                                     String,
@@ -851,7 +888,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     counterparty_client_id: connection.counterparty.client_id,
                                 }))
                             }
-                            IBCHandlerEvents::ConnectionOpenTryFilter(event) => {
+                            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenTryFilter(event)) => {
                                 let connection: ConnectionEnd<<Self as Chain>::ClientId, String> =
                                     read_connection(event.connection_id.clone()).await?;
 
@@ -867,16 +904,16 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .connection_id,
                                 }))
                             }
-                            IBCHandlerEvents::GeneratedClientIdentifierFilter(event) => {
+                            IBCHandlerEvents::ClientEvent(GeneratedClientIdentifierFilter(client_id)) => {
                                 let client_type = this
                                     .readonly_ibc_handler
-                                    .client_types(event.0.clone())
+                                    .client_types(client_id.clone())
                                     .await
                                     .map_err(EvmEventSourceError::Contract)?;
 
                                 let (client_state, success) = this
                                     .readonly_ibc_handler
-                                    .get_client_state(event.0.clone())
+                                    .get_client_state(client_id.clone())
                                     .await
                                     .unwrap();
 
@@ -891,15 +928,14 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     .unwrap();
 
                                 Some(IbcEvent::CreateClient(CreateClient {
-                                    client_id: event
-                                        .0
+                                    client_id: client_id
                                         .parse()
                                         .map_err(EvmEventSourceError::ClientIdParse)?,
                                     client_type,
                                     consensus_height: client_state.latest_height,
                                 }))
                             }
-                            IBCHandlerEvents::RecvPacketFilter(event) => {
+                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::RecvPacketFilter(event)) => {
                                 let channel = read_channel(
                                     event.packet.destination_port.clone(),
                                     event.packet.destination_channel.clone(),
@@ -935,7 +971,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     connection_id: channel.connection_hops[0].clone(),
                                 }))
                             }
-                            IBCHandlerEvents::SendPacketFilter(event) => {
+                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::SendPacketFilter(event)) => {
                                 let channel = read_channel(
                                     event.source_port.clone(),
                                     event.source_channel.clone(),
@@ -967,8 +1003,8 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     connection_id: channel.connection_hops[0].clone(),
                                 }))
                             }
-                            IBCHandlerEvents::WriteAcknowledgementFilter(_) => None,
-                            IBCHandlerEvents::TimeoutPacketFilter(_) => None,
+                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::WriteAcknowledgementFilter(_)) => None,
+                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(_)) => None,
                         };
 
                         Ok(event.map(|event| {

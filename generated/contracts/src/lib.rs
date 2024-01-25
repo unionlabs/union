@@ -6,6 +6,10 @@
 pub mod devnet_ownable_ibc_handler;
 pub mod erc20;
 pub mod glue;
+pub mod ibc_channel_handshake;
+pub mod ibc_client;
+pub mod ibc_connection;
 pub mod ibc_handler;
+pub mod ibc_packet;
 pub mod shared_types;
 pub mod ucs01_relay;
