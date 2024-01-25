@@ -2,7 +2,6 @@
 import { fade } from 'astro:transitions'
 import Layout from '#/layouts/Layout.svelte'
 import { getCollection } from 'astro:content'
-import { ViewTransitions } from 'astro:transitions'
 import CodeSnippet from '#/components/CodeSnippet.svelte'
 import { codeSnippets } from '#/content/snippets/landing.ts'
 import { Tabs, TabItem } from '@astrojs/starlight/components'
@@ -267,7 +266,6 @@ publishedBlogPosts.reverse()
   </main>
 </Layout>
 
-<ViewTransitions transition:name='landing-transition' />
 
 <style lang="postcss" is:inline>
 

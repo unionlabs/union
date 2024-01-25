@@ -2,8 +2,6 @@
 import { fade,slide, } from 'astro:transitions'
 import Layout from '#/layouts/Layout.svelte'
 import { getCollection } from 'astro:content'
-import { ViewTransitions } from 'astro:transitions'
-
 const isProduction = import.meta.env.PROD
 
 let blogEntries = await getCollection('blog', ({ data }) =>
@@ -47,4 +45,3 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
   </main>
 </Layout>
 
-<ViewTransitions />
