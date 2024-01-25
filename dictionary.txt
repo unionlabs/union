@@ -44,6 +44,7 @@ Hasher
 Hhvf
 Hyperlane
 IAVL
+IERC
 IIBC
 Infima
 Interchain
@@ -293,6 +294,7 @@ drawio
 ducimus
 dyld
 dylib
+echarts
 eget
 elems
 eligendi
@@ -707,6 +709,7 @@ sumbitter
 svrcmd
 symlinker
 syncmode
+tablist
 tailwindcss
 taplo
 teku

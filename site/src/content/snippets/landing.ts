@@ -1,7 +1,7 @@
 export const codeSnippets = [
   {
-    lang: 'solidity',
-    title: 'swap.sol',
+    lang: "solidity",
+    title: "swap.sol",
     code: `
 \`\`\`solidity showLineNumbers wrap /IBCAppBase/#accent /ibcHandler/#accent
 contract DexPortal is IBCAppBase {
@@ -32,11 +32,11 @@ contract DexPortal is IBCAppBase {
   }
 }
 \`\`\`
-`
+`,
   },
   {
-    lang: 'rust',
-    title: 'swap.rs',
+    lang: "rust",
+    title: "swap.rs",
     code: `
 \`\`\`rust showLineNumbers /IbcMsg/#accent
 fn swap(
@@ -69,7 +69,6 @@ fn swap(
         timeout: IbcTimeout::with_block(timeout),
     }))
 }
-`
-  }
-] satisfies Array<{ lang: string; code: string; title: string }>
-
+`,
+  },
+] satisfies Array<{ lang: string; code: string; title: string }>;
