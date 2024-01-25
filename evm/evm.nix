@@ -352,6 +352,7 @@
           text = ''
             ${ensureAtRepositoryRoot}
             FOUNDRY_CONFIG="${foundryConfig}/foundry.toml" \
+            FOUNDRY_SRC="evm/contracts" \
             FOUNDRY_PROFILE="test" \
             FOUNDRY_TEST="evm/tests/src" \
               forge test -vvv --gas-report
