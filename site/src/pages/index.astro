@@ -7,12 +7,11 @@ import { ViewTransitions } from 'astro:transitions'
 import discordIcon from '#/assets/images/discord.svg'
 import calendarIcon from '#/assets/images/calendar.svg'
 import CodeSnippet from '#/components/CodeSnippet.svelte'
-import ConnectedVisual from '#/components/ConnectedVisual.svelte'
-import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
-import Chart from '#/components/Chart.svelte'
-import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
+import { codeSnippets } from '#/content/snippets/landing.ts'
 import { Tabs, TabItem } from '@astrojs/starlight/components'
-import { Code } from 'astro:components'
+import ConnectedVisual from '#/components/ConnectedVisual.svelte'
+import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
+import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 
 let socialLinks = [
   {
@@ -31,81 +30,6 @@ let socialLinks = [
     cta: 'Join our Events'
   }
 ]
-
-const codeSnippets = [
-  {
-    lang: 'solidity',
-    title: 'swap.sol',
-    code: `
-\`\`\`solidity /IBCAppBase/#accent /ibcHandler/#accent
-contract DexPortal is IBCAppBase {
-  function swap(
-    address base,
-    uint256 amount,
-    uint256 minReturn,
-    uint64 timeout
-  ) public {
-    Proxy quote = swapProxies[base];
-    IERC20(base).transferFrom(
-      _msgSender(),
-      address(this),
-      amount
-    );
-    ibcHandler.send(
-      quote.port,
-      quote.channel,
-      timeout,
-      abi.encode(
-        Swap({
-          origin: _msgSender(),
-          amount: amount,
-          minReturn: minReturn
-        })
-      )
-    );
-  }
-}
-\`\`\`
-`
-  },
-  {
-    lang: 'rust',
-    title: 'swap.rs',
-    code: `
-\`\`\`rust /IbcMsg/#accent
-fn swap(
-    deps: Deps,
-    env: Env,
-    info: MessageInfo,
-    base: String,
-    amount: Uint256,
-    min_return: Uint256,
-    timeout: u64,
-) -> Result<Response, Error> {
-    let proxy = SWAP_PROXIES.load(&deps.storage, base)?;
-
-    Ok(Response::add_message(wasm_execute(
-        base,
-        &cw20::msg::TransferFrom {
-            owner: info.sender,
-            recipient: env.contract.address,
-            amount,
-        },
-        vec![],
-    ))
-    .add_message(IbcMsg::SendPacket {
-        channel_id: proxy.channel,
-        data: Swap {
-            origin: info.sender,
-            amount,
-            min_return,
-        },
-        timeout: IbcTimeout::with_block(timeout),
-    }))
-}
-`
-  }
-] satisfies Array<{ lang: string; code: string; title: string }>
 
 let publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
   if (data.hidden) return false
@@ -160,7 +84,7 @@ publishedBlogPosts.reverse()
             Interoperability for the Modular Stack
           </h2>
         </div>
-        <div class="w-full min-w-full h-full min-h-full">
+        <div class='w-full min-w-full h-full min-h-full'>
           <ConnectedVisual />
         </div>
       </section>
@@ -176,8 +100,8 @@ publishedBlogPosts.reverse()
           anyone to <span class='text-white'>generate proofs on your phone.</span> Gone is the era of
           needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
         </div>
-        <div class="w-full min-w-full h-full min-h-full">
-          <PerformanceGraph client:load/>
+        <div class='w-full min-w-full h-full min-h-full'>
+          <PerformanceGraph client:load />
         </div>
       </section>
 
@@ -185,7 +109,10 @@ publishedBlogPosts.reverse()
         <div
           class='grid grid-cols-1 grid-rows-2 sm:grid-cols-2 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]'
         >
-          <div class='w-full antialiased bg-[#050505] py-2 text-left font-monospace text-[15px]'>
+          <div
+            id='code-snippets'
+            class='w-full antialiased bg-[#050505] text-left font-monospace text-[15px]'
+          >
             <Tabs>
               {
                 codeSnippets.map(snippet => (
@@ -201,7 +128,7 @@ publishedBlogPosts.reverse()
               }
             </Tabs>
           </div>
-          <div class='p-8 text-2xl font-normal text-gray-400 '>
+          <div class='p-8 text-2xl font-normal text-gray-400'>
             <h2 class='text-4xl font-normal text-white'>Build for any stack.</h2>
             Galois is the first interoperability proving layer that is so efficient that it allows anyone
             to <span class='text-white'>generate proofs on your phone.</span> Gone is the era of needing
@@ -217,7 +144,7 @@ publishedBlogPosts.reverse()
               { width: 100, label: 'CometBLS V3', primary: true },
               { width: 9.1, label: 'ZkMint*' },
               { width: 1.45, label: 'TendermintX' },
-              { width: 0.77, label: 'Fraud-proof bridges' },
+              { width: 0.77, label: 'Fraud-proof bridges' }
             ]}
             client:load
           />
@@ -386,8 +313,46 @@ publishedBlogPosts.reverse()
 
 <ViewTransitions transition:name='landing-transition' />
 
-<style lang="postcss">
+<style lang="postcss" is:inline>
 
+ul[role='tablist'] {
+    border-bottom-color: transparent;
+    font-family: monospace !important;
+    width: 100%;
+    @media (max-width: 680px) {
+      justify-content:space-evenly;      
+    }
+  }
+
+li[role="presentation"]{
+  width: 100%;
+}
+
+  a[role='tab'] {
+border-color: transparent !important;
+    padding-bottom: 5px !important;
+    padding-top: 5px !important;
+    text-align: center;
+    width: 100% !important;
+    border-left:  2px solid #0f0f0f !important;
+    border-right: none !important;
+  }
+
+  a[role="tab"][tabIndex='-1'] {
+    padding-bottom: 5px !important;
+    border-bottom-color: #0f0f0f !important;
+    border-left: none !important;
+    /* border-right:  2px solid #0f0f0f !important; */
+border-left: none !important;
+    border-left: 2px solid #0f0f0f !important;
+  }
+
+  a[role='tab']::before {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    filter: invert(1);
+  }
 	.main-text {
 		max-width: 72rem;
 		font-size: 26px;

@@ -34,23 +34,4 @@
       max-width: 385px;
     }
   }
-
-  :global(ul[role='tablist']) {
-    border-bottom-color: #0f0f0f;
-    font-family: monospace !important;
-  }
-
-  :global(a[role='tab']) {
-    padding-bottom: 5px !important;
-  }
-
-  /* :global(a[role='tab']::before) {
-    content: url(https://upload.wikimedia.org/wikipedia/commons/9/98/Solidity_logo.svg);
-  }
-  :global(a[role='tab']::before) {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    filter: invert(1);
-  } */
 </style>
