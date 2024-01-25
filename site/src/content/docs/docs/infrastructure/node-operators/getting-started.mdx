@@ -58,7 +58,7 @@ Verify that the binary works on your server by running:
 
 For convenience, we can add the binary to the `PATH`, to make it callable from anywhere.
 
-```sh
+```sh frame="none"
 mv ./uniond /usr/bin/
 ```
 
@@ -66,7 +66,7 @@ mv ./uniond /usr/bin/
 
 We also provide containers in our [package registry](https://github.com/unionlabs/union/pkgs/container/uniond).
 
-```sh
+```sh frame="none"
 docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 ```
 
@@ -86,7 +86,7 @@ We'll need to set up a few configuration files and obtain the [`genesis.json`](h
 
 First, set some environment variables, which are used throughout initialization.
 
-```sh
+```sh frame="none"
 export CHAIN_ID=union-testnet-5 # or union-1
 export MONIKER="Unionized Goblin"
 export KEY_NAME=alice
@@ -115,7 +115,7 @@ seeds = "daa56ac6573c6427ecef438d4c248d72b206597b@union.testnet.4.seed.poisonpha
 
 Download the `genesis.json` and copy it to your `uniond` home directory.
 
-```sh
+```sh frame="none"
 curl $GENESIS_URL | jq '.result.genesis' > ~/.union/config/genesis.json
 ```
 
@@ -125,7 +125,7 @@ To join as a validator, you need to submit a registration transaction. You can d
 
 First, add a wallet that holds Union tokens.
 
-```sh
+```sh frame="none"
 uniond keys add $KEY_NAME --recover
 ```
 
@@ -133,7 +133,7 @@ uniond keys add $KEY_NAME --recover
 
 To submit the registration transaction and become a validator, you must submit a `create-validator` transaction:
 
-```sh
+```sh frame="none"
 uniond tx staking create-validator \
   --amount 1000000muno \
   --pubkey $(uniond tendermint show-validator) \
@@ -172,7 +172,7 @@ WantedBy=multi-user.target
 
 You should be able to view the node logs by executing
 
-```sh
+```sh frame="none"
 sudo journalctl -f --user uniond
 ```
 
