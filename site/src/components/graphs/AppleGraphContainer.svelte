@@ -20,11 +20,11 @@
 	<div class="grid grid-cols-1 gap-4">
 		<div class="flex flex-col items-center text-accent text-semibold">
 			<div class="text-4xl sm:text-6xl">60x</div>
-			<div class="text-2xl sm:text-3xl -mt-2">faster</div>
+			<div class="text-2xl sm:text-3xl text-gray-200 -mt-2">faster</div>
 		</div>
 		<div class="flex flex-col items-center text-accent-900 text-semibold">
 			<div class="text-4xl sm:text-6xl">150x</div>
-			<div class="text-2xl sm:text-3xl -mt-2">cheaper</div>
+			<div class="text-2xl sm:text-3xl text-gray-200 -mt-2">cheaper</div>
 		</div>
 	</div>
 </div>
