@@ -3,7 +3,7 @@ export const codeSnippets = [
     lang: 'solidity',
     title: 'swap.sol',
     code: `
-\`\`\`solidity /IBCAppBase/#accent /ibcHandler/#accent
+\`\`\`solidity showLineNumbers wrap /IBCAppBase/#accent /ibcHandler/#accent
 contract DexPortal is IBCAppBase {
   function swap(
     address base,
@@ -38,7 +38,7 @@ contract DexPortal is IBCAppBase {
     lang: 'rust',
     title: 'swap.rs',
     code: `
-\`\`\`rust /IbcMsg/#accent
+\`\`\`rust showLineNumbers /IbcMsg/#accent
 fn swap(
     deps: Deps,
     env: Env,

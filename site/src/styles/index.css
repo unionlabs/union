@@ -108,15 +108,7 @@ code[data-line-numbers] {
 code[data-line-numbers] > [data-line]::before {
   counter-increment: line;
   content: counter(line);
-  @apply inline-block w-4 mr-2 text-right text-gray-500;
-}
-
-.prose {
-  /* @apply max-w-[55rem] sm:text-lg md:text-xl !leading-7 sm:!leading-9; */
-}
-
-pre [data-line] {
-  /* @apply px-6 border-l-2 border-l-transparent; */
+  @apply inline-block w-4 mr-2 text-right text-gray-600;
 }
 
 [data-highlighted-line] {

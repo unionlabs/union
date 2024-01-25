@@ -23,7 +23,7 @@
 <style>
   :global(.container > figure[data-rehype-pretty-code-figure] span[data-line]) {
     overflow-x: scroll;
-    max-width: 100%px;
+    max-width: 100%;
     width: 100%;
     font-size: 0.75rem; /* 12px */
     line-height: 1rem; /* 16px */

@@ -8,7 +8,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components'
 import ConnectedVisual from '#/components/ConnectedVisual.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
 import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
-import Socials from '#/components/Socials.astro';
+import Socials from '#/components/Socials.astro'
 
 let publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
   if (data.hidden) return false
@@ -63,7 +63,7 @@ publishedBlogPosts.reverse()
             Interoperability for the Modular Stack
           </h2>
         </div>
-        <div class="w-full min-w-full h-full min-h-full">
+        <div class='w-full min-w-full h-full min-h-full'>
           <ConnectedVisual client:load />
         </div>
       </section>
@@ -83,20 +83,19 @@ publishedBlogPosts.reverse()
           <PerformanceGraph client:load />
         </div>
       </section>
-
       <section class='flex flex-col items-center bg-black mb-px'>
         <div
-          class='grid grid-cols-1 grid-rows-2 sm:grid-cols-2 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]'
+          class='w-full flex flex-col sm:flex-row justify-evenly divide-y divide-x-0 sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]'
         >
           <div
             id='code-snippets'
-            class='w-full antialiased bg-[#050505] text-left font-monospace text-[15px]'
+            class='antialiased bg-[#050505] text-left font-monospace text-[15px] w-full sm:w-1/2'
           >
             <Tabs>
               {
                 codeSnippets.map(snippet => (
                   <TabItem label={snippet.title}>
-                    <div class='px-3'>
+                    <div class='px-1 w-full'>
                       <CodeSnippet
                         code={snippet.code}
                         client:load
@@ -107,7 +106,7 @@ publishedBlogPosts.reverse()
               }
             </Tabs>
           </div>
-          <div class='p-8 text-2xl font-normal text-gray-400'>
+          <div class='p-8 text-2xl font-normal text-gray-400 w-full sm:w-1/2'>
             <h2 class='text-4xl font-normal text-white'>Build for any stack.</h2>
             Galois is the first interoperability proving layer that is so efficient that it allows anyone
             to <span class='text-white'>generate proofs on your phone.</span> Gone is the era of needing
@@ -271,6 +270,9 @@ publishedBlogPosts.reverse()
 
 <style lang="postcss" is:inline>
 
+[data-line-numbers] {
+  /* display: none !important; */
+}
 ul[role='tablist'] {
     border-bottom-color: transparent;
     font-family: monospace !important;
