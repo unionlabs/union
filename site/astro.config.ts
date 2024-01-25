@@ -108,11 +108,17 @@ export default defineConfig({
             },
           ],
         },
-        {
-          label: "Demos",
-          autogenerate: {
-            directory: "/docs/demos",
+          {
+              label: "Integration",
+              autogenerate: {
+                  directory: "/docs/integration",
+              },
           },
+          {
+              label: "Demos",
+              autogenerate: {
+                  directory: "/docs/demos",
+              },
         },
         {
           label: "Joining the Testnet",
