@@ -109,6 +109,12 @@ export default defineConfig({
           ],
         },
         {
+          label: "Integration",
+          autogenerate: {
+            directory: "/docs/integration",
+          },
+        },
+        {
           label: "Demos",
           autogenerate: {
             directory: "/docs/demos",

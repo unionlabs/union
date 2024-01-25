@@ -2,6 +2,8 @@
 title: "PingPong"
 ---
 
+import EmbedCodeSnippet from "#/components/EmbedCodeSnippet.astro";
+
 ## Overview
 
 The `PingPong` contract implements a simple ping pong protocol that alternates between sending "ping" and "pong" messages between two contracts deployed on two different blockchains connected via IBC.
@@ -10,9 +12,9 @@ The `PingPong` contract implements a simple ping pong protocol that alternates b
 
 The contract consists of the following components:
 
-1. **Data Structures and Library**: Defines a `PingPongPacket` struct to represent the ping pong packet data and a library `PingPongPacketLib` for encoding and decoding packets.
+1. **Data Structures and Library**: Defines a `PingPongPacket` struct to represent the ping pong packet data.
 
-2. **Contract Definition**: The `PingPong` contract inherits from `IBCAppBase` and implements the IBC callbacks.
+2. **Contract Definition**: The `PingPong` contract inherits from `IBCAppBase` and implements the callbacks from `IIBCModule`.
 
 3. **Constructor**: Initializes the contract with the IBC handler, revision number, and the number of blocks before pong timeout.
 
@@ -30,3 +32,13 @@ The contract consists of the following components:
 ## Conclusion
 
 The `PingPong` contract showcases a basic example of cross-chain communication over IBC using Solidity. It demonstrates how developers can implement a simple ping pong protocol, exchanging packets and alternating between ping and pong messages. This example serves as a starting point for building more complex cross-chain applications using IBC and Solidity.
+
+## Implementation
+
+The interface used by the implementation is the one described in [the Solidity integration section.](../integration/solidity)
+
+<EmbedCodeSnippet
+  filepath="../../../evm/contracts/apps/ucs/00-pingpong/PingPong.sol"
+  filename="PingPong.sol"
+  language="solidity"
+/>

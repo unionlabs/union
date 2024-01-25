@@ -8,6 +8,11 @@
         site = pkgs.buildNpmPackage {
           npmDepsHash = "sha256-MnKC0nRMAa4tWVYXYhvfpb73BJ5GXEbATQtqzmQxI4E=";
           src = ./.;
+          srcs = [
+            ./.
+            ./../evm/.
+          ];
+          sourceRoot = "site";
           pname = "site";
           version = "0.0.1";
           PUPPETEER_SKIP_DOWNLOAD = true;

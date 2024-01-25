@@ -3,61 +3,62 @@ pragma solidity ^0.8.23;
 import "../../Base.sol";
 import "../../../core/25-handler/IBCHandler.sol";
 
+// Protocol specific packet
 struct PingPongPacket {
     bool ping;
-    uint64 counterpartyTimeoutRevisionNumber;
-    uint64 counterpartyTimeoutRevisionHeight;
+    uint64 counterpartyTimeout;
 }
 
-library PingPongPacketLib {
+library PingPongLib {
+    bytes1 public constant ACK_SUCCESS = 0x01;
+
+    error ErrOnlyOneChannel();
+    error ErrInvalidAck();
+    error ErrNoChannel();
+    error ErrInfiniteGame();
+
+    event Ring(bool ping);
+    event TimedOut();
+    event Acknowledged();
+
     function encode(
         PingPongPacket memory packet
     ) internal pure returns (bytes memory) {
-        return
-            abi.encode(
-                packet.ping,
-                packet.counterpartyTimeoutRevisionNumber,
-                packet.counterpartyTimeoutRevisionHeight
-            );
+        return abi.encode(packet.ping, packet.counterpartyTimeout);
     }
 
     function decode(
         bytes memory packet
     ) internal pure returns (PingPongPacket memory) {
-        (
-            bool ping,
-            uint64 counterpartyTimeoutRevisionNumber,
-            uint64 counterpartyTimeoutRevisionHeight
-        ) = abi.decode(packet, (bool, uint64, uint64));
+        (bool ping, uint64 counterpartyTimeout) = abi.decode(
+            packet,
+            (bool, uint64)
+        );
         return
             PingPongPacket({
                 ping: ping,
-                counterpartyTimeoutRevisionNumber: counterpartyTimeoutRevisionNumber,
-                counterpartyTimeoutRevisionHeight: counterpartyTimeoutRevisionHeight
+                counterpartyTimeout: counterpartyTimeout
             });
     }
 }
 
 contract PingPong is IBCAppBase {
-    using PingPongPacketLib for PingPongPacket;
+    using PingPongLib for *;
 
     IBCHandler private ibcHandler;
     string private portId;
     string private channelId;
     uint64 private revisionNumber;
-    uint64 private numberOfBlockBeforePongTimeout;
-
-    event Ring(bool ping);
-    event TimedOut();
+    uint64 private timeout;
 
     constructor(
         IBCHandler _ibcHandler,
         uint64 _revisionNumber,
-        uint64 _numberOfBlockBeforePongTimeout
+        uint64 _timeout
     ) {
         ibcHandler = _ibcHandler;
         revisionNumber = _revisionNumber;
-        numberOfBlockBeforePongTimeout = _numberOfBlockBeforePongTimeout;
+        timeout = _timeout;
     }
 
     function ibcAddress() public view virtual override returns (address) {
@@ -66,21 +67,22 @@ contract PingPong is IBCAppBase {
 
     function initiate(
         PingPongPacket memory packet,
-        uint64 counterpartyTimeoutRevisionNumber,
-        uint64 counterpartyTimeoutRevisionHeight
+        uint64 localTimeout
     ) public {
-        require(
-            bytes(channelId).length != 0,
-            "pingpong: channel must be opened"
-        );
+        if (bytes(channelId).length == 0) {
+            revert PingPongLib.ErrNoChannel();
+        }
         ibcHandler.sendPacket(
             portId,
             channelId,
+            // No height timeout
             IbcCoreClientV1Height.Data({
-                revision_number: counterpartyTimeoutRevisionNumber,
-                revision_height: counterpartyTimeoutRevisionHeight
+                revision_number: 0,
+                revision_height: 0
             }),
-            0,
+            // Timestamp timeout
+            localTimeout,
+            // Raw protocol packet
             packet.encode()
         );
     }
@@ -89,36 +91,50 @@ contract PingPong is IBCAppBase {
         IbcCoreChannelV1Packet.Data calldata packet,
         address relayer
     ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
-        PingPongPacket memory pp = PingPongPacketLib.decode(packet.data);
-        emit Ring(pp.ping);
-        uint64 counterpartyTimeoutRevisionNumber = pp
-            .counterpartyTimeoutRevisionNumber;
-        uint64 counterpartyTimeoutRevisionHeight = pp
-            .counterpartyTimeoutRevisionHeight;
+        PingPongPacket memory pp = PingPongLib.decode(packet.data);
+
+        emit PingPongLib.Ring(pp.ping);
+
+        uint64 localTimeout = pp.counterpartyTimeout;
+
         pp.ping = !pp.ping;
-        pp.counterpartyTimeoutRevisionNumber = revisionNumber;
-        pp.counterpartyTimeoutRevisionHeight =
-            uint64(block.number) +
-            numberOfBlockBeforePongTimeout;
-        initiate(
-            pp,
-            counterpartyTimeoutRevisionNumber,
-            counterpartyTimeoutRevisionHeight
-        );
-        return hex"01";
+        pp.counterpartyTimeout = uint64(block.timestamp) + timeout;
+
+        // Send back the packet after having reversed the bool and set the counterparty timeout
+        initiate(pp, localTimeout);
+
+        // Return protocol specific successful acknowledgement
+        return abi.encodePacked(PingPongLib.ACK_SUCCESS);
     }
 
     function onAcknowledgementPacket(
         IbcCoreChannelV1Packet.Data calldata packet,
         bytes calldata acknowledgement,
         address relayer
-    ) external virtual override onlyIBC {}
+    ) external virtual override onlyIBC {
+        /*
+            In practice, a more sophisticated protocol would check
+            and execute code depending on the counterparty outcome (refund etc...).
+            In our case, the acknowledgement will always be ACK_SUCCESS
+        */
+        if (
+            keccak256(acknowledgement) !=
+            keccak256(abi.encodePacked(PingPongLib.ACK_SUCCESS))
+        ) {
+            revert PingPongLib.ErrInvalidAck();
+        }
+        emit PingPongLib.Acknowledged();
+    }
 
     function onTimeoutPacket(
         IbcCoreChannelV1Packet.Data calldata packet,
         address relayer
     ) external virtual override onlyIBC {
-        emit TimedOut();
+        /*
+            Similarly to the onAcknowledgementPacket function, this indicates a failure to deliver the packet in expected time.
+            A sophisticated protocol would revert the action done before sending this packet.
+        */
+        emit PingPongLib.TimedOut();
     }
 
     function onChanOpenInit(
@@ -129,10 +145,10 @@ contract PingPong is IBCAppBase {
         IbcCoreChannelV1Counterparty.Data calldata,
         string calldata
     ) external virtual override onlyIBC {
-        require(
-            bytes(channelId).length == 0,
-            "pingpong: only one channel can be opened"
-        );
+        // This protocol is only accepting a single counterparty.
+        if (bytes(channelId).length != 0) {
+            revert PingPongLib.ErrOnlyOneChannel();
+        }
     }
 
     function onChanOpenTry(
@@ -144,10 +160,10 @@ contract PingPong is IBCAppBase {
         string calldata,
         string calldata
     ) external virtual override onlyIBC {
-        require(
-            bytes(channelId).length == 0,
-            "pingpong: only one channel can be opened"
-        );
+        // Symmetric to onChanOpenInit
+        if (bytes(channelId).length != 0) {
+            revert PingPongLib.ErrOnlyOneChannel();
+        }
     }
 
     function onChanOpenAck(
@@ -156,6 +172,7 @@ contract PingPong is IBCAppBase {
         string calldata _counterpartyChannelId,
         string calldata _counterpartyVersion
     ) external virtual override onlyIBC {
+        // Store the port/channel needed to send packets.
         portId = _portId;
         channelId = _channelId;
     }
@@ -164,6 +181,7 @@ contract PingPong is IBCAppBase {
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
+        // Symmetric to onChanOpenAck
         portId = _portId;
         channelId = _channelId;
     }
@@ -172,13 +190,15 @@ contract PingPong is IBCAppBase {
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
-        revert("This game is infinite");
+        // The ping-pong is infinite, closing the channel is disallowed.
+        revert PingPongLib.ErrInfiniteGame();
     }
 
     function onChanCloseConfirm(
         string calldata _portId,
         string calldata _channelId
     ) external virtual override onlyIBC {
-        revert("This game is infinite");
+        // Symmetric to onChanCloseInit
+        revert PingPongLib.ErrInfiniteGame();
     }
 }

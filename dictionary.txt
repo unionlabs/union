@@ -761,6 +761,7 @@ txpool
 typecheck
 typemap
 typenum
+typeof
 typesparams
 uatom
 ucli

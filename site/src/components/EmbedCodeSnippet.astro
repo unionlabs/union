@@ -1,0 +1,24 @@
+---
+import { Code } from 'astro:components'
+import { getFileContent } from '#/lib/utilities.ts'
+
+interface Props {
+  filepath: string
+  filename: string
+  language: Parameters<typeof Code>[0]['lang']
+}
+
+/**
+ * TODO: add tab support
+ */
+const { filepath, filename, language } = Astro.props
+
+const fileContent = await getFileContent({ filepath })
+---
+
+<Code
+  lang={language}
+  code={fileContent}
+  theme={'css-variables'}
+  class:list={['expressive-code']}
+/>
