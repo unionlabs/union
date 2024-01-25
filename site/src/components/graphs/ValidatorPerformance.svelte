@@ -51,7 +51,7 @@
   }
 
   let hiddenData = Array(128 / 4).fill(0).map((_, i) => [i * 4, '-'])
-  console.log(hiddenData)
+  // console.log(hiddenData)
 
   let myChart;
 
