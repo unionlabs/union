@@ -37,22 +37,22 @@
     "@cosmjs/encoding": "^0.32.2",
     "@cosmjs/stargate": "^0.32.2",
     "@cosmjs/tendermint-rpc": "^0.32.2",
-    "viem": "^2.0.0"
+    "viem": "^2.5.0"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.13.5",
-    "@biomejs/biome": "^1.4.1",
+    "@arethetypeswrong/cli": "^0.13.6",
+    "@biomejs/biome": "^1.5.3",
     "@cosmjs/amino": "^0.32.2",
     "@cosmjs/proto-signing": "^0.32.2",
     "@leapwallet/cosmos-snap-provider": "^0.1.25",
-    "@total-typescript/ts-reset": "^0.5.1",
-    "@types/node": "^20.10.6",
-    "@types/bun": "^1.0.0",
+    "@total-typescript/ts-reset":"^0.5.1",
+    "@types/node": "^20.11.6",
+    "@types/bun":"^1.0.4",
     "publint": "^0.2.7",
     "tsup": "^8.0.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.1.3"
+    "vitest": "^1.2.1"
   },
   "repository": {
     "type": "git",
