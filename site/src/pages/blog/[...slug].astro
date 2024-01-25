@@ -1,8 +1,6 @@
 ---
-import { fade } from 'astro:transitions'
 import Layout from '#/layouts/Layout.svelte'
 import { getCollection } from 'astro:content'
-import { ViewTransitions } from 'astro:transitions'
 import Socials from '#/components/Socials.astro'
 
 export async function getStaticPaths() {
@@ -14,12 +12,12 @@ export async function getStaticPaths() {
 }
 
 const { entry } = Astro.props
-const { Content, headings } = await entry.render()
+const { Content } = await entry.render()
 ---
 
 <Layout>
   <main
-    class='sm:text-xl flex-grow py-4 sm:mt-0 pb-24 sm:px-0 px-6 justify-center max-w-xl self-center'
+    class='sm:text-xl flex-grow py-4 sm:mt-0 pb-24 sm:px-0 mt-12 px-6 justify-center max-w-xl self-center'
   >
     <h1 class='text-3xl sm:text-5xl font-extrabold max-w-xl'>
       {entry.data.title}
@@ -55,10 +53,18 @@ const { Content, headings } = await entry.render()
 ></script>
 
 <style is:inline lang="postcss">
+  p {
+    margin-bottom: 1rem;
+  }
   p > a {
     text-decoration: underline;
     text-decoration-color: #A0ECFD !important;
     transition: border-bottom-color 0.2s ease-in-out;
+  }
+  ol {
+    li {
+      padding-top: 1rem;
+    }
   }
   @media (max-width: 640px) {
     p > a:hover {
@@ -66,14 +72,14 @@ const { Content, headings } = await entry.render()
       text-decoration-color: #fff !important;
     }
     h2 {
-font-size: 1.5rem !important;
+      font-size: 1.5rem !important;
     }
   }
 
   h2 {
     line-height: 3rem;
-    margin-top: 14px;
-    margin-bottom: 8px;
+    margin-top: 20px;
+    margin-bottom: 0px;
     font-size: 1.87rem;
 
   }
