@@ -89,6 +89,7 @@
       tooltip: {
         trigger: 'axis',
         axisPointer: {
+          // show: true,
           z: -10000,
           lineStyle: {
             color: "#1f1f1f",
@@ -107,10 +108,10 @@
                  ${
                    params.map(x => `
                     <div style="margin: 0px 0 0;line-height:1;">
-                       <div style="margin: 0px 0 0;line-height:1;">
+                       <div class="text-left" style="margin: 0px 0 0;line-height:1;">
                           ${x.marker}
-                          <span style="font-size:14px;color:#666;font-weight:400;margin-left:2px">${x.seriesName}</span>
-                          <span style="float:right;margin-left:20px;font-size:14px;color:#666;font-weight:900">${seriesValue(x.value[1], x.seriesName)}</span>
+                          <span class="text-left w-full" style="font-size:14px;color:#666;font-weight:400;margin-right:auto;text-align:start">${x.seriesName}</span>
+                          <span class="font-mono" style="float:right;margin-left:20px;font-size:14px;color:#666">${seriesValue(x.value[1], x.seriesName)}</span>
                           <div style="clear:both"></div>
                        </div>
                        <div style="clear:both"></div>
@@ -204,15 +205,6 @@
           itemStyle: { color: constraintsLineColor },
         },
         {
-          name: 'Ram',
-          type: 'line',
-          yAxisIndex: 1,
-          symbol: 'circle',
-          data: ram.map(({x,y})=>[x,y]),
-          lineStyle: { color: ramLineColor },
-          itemStyle: { color: ramLineColor },
-        },
-        {
           name: 'Time',
           type: 'line',
           yAxisIndex: 2,
@@ -220,6 +212,15 @@
           data: time.map(({x,y})=>[x,y]),
           lineStyle: { color: timeLineColor },
           itemStyle: { color: timeLineColor },
+        },
+        {
+          name: 'Ram',
+          type: 'line',
+          yAxisIndex: 1,
+          symbol: 'circle',
+          data: ram.map(({x,y})=>[x,y]),
+          lineStyle: { color: ramLineColor },
+          itemStyle: { color: ramLineColor },
         },
       ]
     };
