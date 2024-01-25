@@ -32,10 +32,3 @@
 <div class="w-full">
 	<div id="chart" class="w-full"></div>
 </div>
-
-<style>
-  .app {
-    width: 100vw;
-    height: 100vh;
-  }
-</style>

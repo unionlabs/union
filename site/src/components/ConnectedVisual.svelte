@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
+  import tw from '~tailwind.config'
   import skip from '#/assets/partners/skip.svelte?raw'
   import noble from '#/assets/partners/noble.svelte?raw'
   import quasar from '#/assets/partners/quasar.svelte?raw'
@@ -6,33 +8,31 @@
   import ethereum from '#/assets/partners/ethereum.svelte?raw'
   import movement from '#/assets/partners/movement.svelte?raw'
   import union from '#/assets/union-logo/union-logo-transparent.svg?raw'
-  import { onMount } from 'svelte'
-  import tw from '../../tailwind.config.ts'
 
   /* Define our media query and media query object */
-  let mq;
-  let svg;
+  let mq: MediaQueryList;
+  let svg: Element | null;
 
   onMount(() => {
     mq = matchMedia('only screen and (max-width: 640px)');
     svg = document.querySelector('#connected-visual')
 
     /* Store the original value in a variable */
-    const originalViewBox = svg.getAttribute('viewBox');
+    const originalViewBox = svg?.getAttribute('viewBox');
 
     /* Define the handler */
     const updateViewBox = () => {
         if (mq.matches) {
             /* Change the viewBox dimensions to show the hexagon */
-            svg.setAttribute('viewBox', `64 0 ${(14 * 32) - 1} ${(11 * 32) - 1}`);
+            svg?.setAttribute('viewBox', `64 0 ${(14 * 32) - 1} ${(11 * 32) - 1}`);
         } else {
-            svg.setAttribute('viewBox', originalViewBox);
+            svg?.setAttribute('viewBox', originalViewBox!);
         }
     }
 
     updateViewBox()
 
-    svg.addEventListener('load', () => {
+    svg?.addEventListener('load', () => {
       updateViewBox()
     });
 
@@ -227,21 +227,7 @@
     fill="url(#grid)"
   />
 
-  <!--
-  <rect
-    width="100%"
-    height="100%"
-    fill="url(#edge-gradient-ns)"
-  />
-  <rect
-    width="100%"
-    height="100%"
-    fill="url(#edge-gradient-ew)"
-  />
-  !-->
-
   {#each connectionData as { from, to, dx, dy, fromX, fromY, toX, toY, totalTime, cxKeyTimes, cyKeyTimes, radiusKeyTimes, delay }}
-    {@debug from, to}
     <g>
       <path
         d={`M ${pos(fromX)} ${pos(fromY)} h ${pos(dx)} v ${pos(dy)}`}
