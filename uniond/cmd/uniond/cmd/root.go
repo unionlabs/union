@@ -99,7 +99,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())
 
-			initClientCtx = initClientCtx.WithCmdContext(cmd.Context())
+			initClientCtx = initClientCtx.WithCmdContext(cmd.Context()).WithViper("")
 
 			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
 			if err != nil {
