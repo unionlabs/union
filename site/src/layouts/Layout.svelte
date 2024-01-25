@@ -23,7 +23,7 @@
     <slot />
 
     <footer
-      class='flex items-center p-4 gap-4 justify-center text-lg font-normal bottom-0 mx-auto w-full'
+      class='flex items-center pt-8 p-4 gap-4 justify-center text-lg font-normal bottom-0 mx-auto w-full'
     >
       <p>&copy; Union.fi Labs, Inc.</p>
     </footer>
