@@ -24,6 +24,7 @@
     "@observablehq/plot": "^0.6.13",
     "@urql/svelte": "4.0.4",
     "astro": "4.0.9",
+    "astro-seo": "^0.8.0",
     "graphql": "16.8.1",
     "htl": "^0.3.1",
     "rehype-autolink-headings": "^7.1.0",
