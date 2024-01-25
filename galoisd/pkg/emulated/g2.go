@@ -24,7 +24,7 @@ var (
 	twist bn254.E2
 	// bTwistCurveCoeff b coeff of the twist (defined over 𝔽p²) curve
 	bTwistCurveCoeff bn254.E2
-	B fields_bn254.E2
+	B                fields_bn254.E2
 )
 
 func init() {
