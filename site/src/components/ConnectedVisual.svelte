@@ -7,23 +7,21 @@
   import movement from '#/assets/partners/movement.svelte?raw'
   import union from '#/assets/union-logo/union-logo-transparent.svg?raw'
   import { onMount } from 'svelte'
+  import tw from '../../tailwind.config.ts'
 
   /* Define our media query and media query object */
   let mq;
-    let svg;
+  let svg;
 
   onMount(() => {
     mq = matchMedia('only screen and (max-width: 640px)');
     svg = document.querySelector('#connected-visual')
-
-    console.log("svg", svg)
 
     /* Store the original value in a variable */
     const originalViewBox = svg.getAttribute('viewBox');
 
     /* Define the handler */
     const updateViewBox = () => {
-        console.log(mq)
         if (mq.matches) {
             /* Change the viewBox dimensions to show the hexagon */
             svg.setAttribute('viewBox', `64 0 ${(14 * 32) - 1} ${(11 * 32) - 1}`);
@@ -35,7 +33,6 @@
     updateViewBox()
 
     svg.addEventListener('load', () => {
-      console.log("loaded")
       updateViewBox()
     });
 
@@ -62,7 +59,7 @@
     quasar: { x: 10, y: 9, logo: quasar, url: 'https://quasar.fi/' },
     skip: { x: 13, y: 4, logo: skip, url: 'https://skip.money/', scale: 1.2 }
   }
-  console.log(nodes)
+
   const conns: { from: string; to: string; delay: number }[] = [
     { to: 'celestia', from: 'union', delay: 2 },
     { to: 'ethereum', from: 'union', delay: 3 },
@@ -266,15 +263,15 @@
         >
           <stop
             offset="0"
-            stop-color="#A0ECFD"
+            stop-color="{tw.theme.extend.colors.accent[800]}"
           ></stop>
           <stop
             offset="0.4"
-            stop-color="#A0ECFD"
+            stop-color="{tw.theme.extend.colors.accent[800]}"
           ></stop>
           <stop
             offset="1"
-            stop-color="#A0ECFD"
+            stop-color="{tw.theme.extend.colors.accent[800]}"
             stop-opacity="0"
           ></stop>
           <animate
