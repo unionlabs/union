@@ -12,7 +12,7 @@
     "baseUrl": ".",
     "paths": {
       "#/*": ["./src/*"],
-      "~public": ["./public/*"]
+      "~tailwind.config": ["./tailwind.config.ts"]
     },
     "plugins": [
       {

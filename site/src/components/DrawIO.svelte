@@ -3,8 +3,6 @@
 
   export let src: string
 
-  console.log('src', src)
-
   const htmlElement = document.querySelector('html')
   const currentTheme = htmlElement?.getAttribute('data-theme')
   const selectThemeElement = document.querySelector('select')

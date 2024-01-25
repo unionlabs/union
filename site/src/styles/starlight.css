@@ -1,5 +1,6 @@
 :root {
   --sl-text-h1: 3.5rem;
+  --dark-blue: #00262f;
 }
 
 :root[data-theme="light"] {
@@ -15,6 +16,14 @@
   color: white;
 }
 
+li a[aria-current="page"] {
+  color: var(--dark-blue);
+}
+
+a[aria-current="true"]
+  span[data-astro-source-file$="/starlight/components/TableOfContents/TableOfContentsList.astro"] {
+  color: var(--dark-blue);
+}
 span[data-astro-source-file$="/starlight/components/SiteTitle.astro"] {
   color: var(--logo-text-color);
 }
