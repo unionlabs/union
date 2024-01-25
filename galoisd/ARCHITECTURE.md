@@ -9,9 +9,9 @@ We decided to implements the circuit on top of [Gnark](https://github.com/Consen
 Galois includes the following **gadgets** that are not yet available in Gnark:
 
 - a **merkle** gadget to re-compute the validator set MiMC merkle root in-circuit.
-- a **emulated** gadget for `BN254` emulated $G_2$ arithmetic: addition, multiplication, scalar multiplication, mapping to curve and cofactor clearing.
+- a **emulated** gadget for `BN254` emulated $G_2$ arithmetic: addition, multiplication, scalar multiplication, hashing to curve and cofactor clearing.
 - a **bls** gadget on top of emulated arithmetic for public key aggregation and signature verification.
-- a **lightclient** gadget to verify CometBLS (non-)adjacent transition between blocks (public key aggregation, power threshold validation and signature verification).
+- a **lightclient** gadget to verify CometBLS (non-)adjacent transition signature between blocks (public key aggregation, validator set root verification, voting power threshold validation and signature verification).
 
 ## gRPC
 

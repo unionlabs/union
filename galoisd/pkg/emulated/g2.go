@@ -13,15 +13,19 @@ import (
 	"github.com/consensys/gnark/std/math/emulated"
 )
 
-// Constant not public in gnark crypto...
-var bCurveCoeff fp.Element
+const (
+	MiMCBlockSize = 256
+)
 
-// twist
-var twist bn254.E2
-
-// bTwistCurveCoeff b coeff of the twist (defined over 𝔽p²) curve
-var bTwistCurveCoeff bn254.E2
-var B fields_bn254.E2
+var (
+	// Constant not public in gnark crypto...
+	bCurveCoeff fp.Element
+	// twist
+	twist bn254.E2
+	// bTwistCurveCoeff b coeff of the twist (defined over 𝔽p²) curve
+	bTwistCurveCoeff bn254.E2
+	B fields_bn254.E2
+)
 
 func init() {
 	bCurveCoeff.SetUint64(3)
@@ -144,10 +148,9 @@ func (e *EmulatedAPI) g2Sgn0Circuit(z *fields_bn254.E2) frontend.Variable {
 	return sign
 }
 
-// https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#name-shallue-van-de-woestijne-met
-// F.1. Shallue-van de Woestijne method
+// https://datatracker.ietf.org/doc/html/rfc9380#straightline-svdw
 func (e *EmulatedAPI) MapToCurve(u *fields_bn254.E2) *gadget.G2Affine {
-	// Legendre must be called before calling sqrt
+	// NOTE: up to the caller to call legendre if the root is not guarantee to exist
 	sqrt := func(x *fields_bn254.E2) *fields_bn254.E2 {
 		roots, err := e.field.NewHint(hintSqrt, 2, &x.A0, &x.A1)
 		if err != nil {
@@ -491,7 +494,7 @@ func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable)
 }
 
 // Hash msg to 4 field elements (actually scalar field).
-// https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-06#section-5.2
+// https://datatracker.ietf.org/doc/html/rfc9380#name-hash_to_field-implementatio
 func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variable) ([]*emulated.Element[emulated.BN254Fp], error) {
 	pseudoRandomBits, err := e.ExpandMsgXmd(message, dst)
 	if err != nil {
@@ -511,13 +514,13 @@ func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variab
 }
 
 // This is not a general implementation as the input/output length are fixed.
-// It is tailor-made for bn254_G2_XMD:MiMC_SSWU_RO_ hash_to_curve implementation.
-// Note: we use a 256 bit block
+// It is a tailor-made for BN254G2_XMD:MiMC-256_SVDW hash_to_curve implementation.
 // https://datatracker.ietf.org/doc/html/rfc9380#name-expand_message_xmd
 // https://datatracker.ietf.org/doc/html/rfc9380#name-utility-functions (I2OSP/O2ISP)
 // https://eprint.iacr.org/2016/492.pdf
 // Input: message, dst scalar field elements
 // Output: 192*8 bits
+// Note: we use a 256 bit block (mod scalar field) hashing
 func (e *EmulatedAPI) ExpandMsgXmd(message frontend.Variable, dst frontend.Variable) ([]frontend.Variable, error) {
 	h, err := mimc.NewMiMC(e.api)
 	if err != nil {
@@ -537,11 +540,11 @@ func (e *EmulatedAPI) ExpandMsgXmd(message frontend.Variable, dst frontend.Varia
 	}
 	sum := func() []frontend.Variable {
 		// fill block
-		if len(block)%256 != 0 {
-			repeat(0, 256-len(block)%256)
+		if len(block)%MiMCBlockSize != 0 {
+			repeat(0, MiMCBlockSize-len(block)%MiMCBlockSize)
 		}
-		for i := 0; i < len(block); i += 256 {
-			h.Write(e.api.FromBinary(block[i : i+256]...))
+		for i := 0; i < len(block); i += MiMCBlockSize {
+			h.Write(e.api.FromBinary(block[i : i+MiMCBlockSize]...))
 		}
 		block = []frontend.Variable{}
 		s := h.Sum()
