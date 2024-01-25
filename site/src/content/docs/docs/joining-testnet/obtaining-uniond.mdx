@@ -4,9 +4,9 @@ sidebar:
   order: 1
 ---
 
-import FileTree from "#/components/file-tree.astro";
-import Version from "#/components/chain-versions.svelte";
-import DownloadGenesis from "#/components/genesis.svelte";
+import FileTree from "#/components/FileTree.astro";
+import Version from "#/components/ChainVersions.svelte";
+import DownloadFile from "#/components/DownloadFile.svelte";
 
 Currently, we are only officially supporting running the Union Testnet binary (`uniond`) as a Docker container.
 
@@ -51,7 +51,12 @@ Now, using the `uniond` image and the folder we just created, we can initialize 
 To do this, we'll be using Docker volumes.
 
 ```sh
-docker run -u $(id -u):$(id -g) -v ~/.union:/.union -v /tmp:/tmp -it ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION init $MONIKER bn254 --home /.union
+docker run \
+  --user $(id -u):$(id -g) \
+  --volume ~/.union:/.union \
+  --volume /tmp:/tmp \
+  -it ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION init $MONIKER bn254 \
+  --home /.union
 ```
 
 _Where `MONIKER` is the preferred moniker you'd like to use on this node._
@@ -127,12 +132,12 @@ For some configuration recommendations see our [Node Configuration](/infrastruct
 
 You can download the genesis here:
 
-<DownloadGenesis />
+<DownloadFile filepath="/genesis.json" filename="genesis.json" />
 
 :::
 
 To run your node in detached mode, run:
 
 ```sh
-docker compose -f path/to/compose.yaml up -d
+docker compose --file path/to/compose.yaml up --detach
 ```

@@ -1,4 +1,5 @@
 import remarkToc from "remark-toc";
+import rehypeSlug from "rehype-slug";
 import { visit } from "unist-util-visit";
 import { toHtml } from "hast-util-to-html";
 import remarkMathPlugin from "remark-math";
@@ -7,6 +8,7 @@ import rehypeKatexPlugin from "rehype-katex";
 import rehypeMathjaxPlugin from "rehype-mathjax";
 import { type AstroUserConfig } from "astro/config";
 import { rehypeHeadingIds } from "@astrojs/markdown-remark";
+import rehypeAutolinkHeadings from "rehype-autolink-headings";
 
 type Markdown = AstroUserConfig["markdown"];
 
@@ -16,7 +18,13 @@ export const markdownConfiguration = {
     remarkMathPlugin,
     [remarkToc, { heading: "contents", prefix: "toc-" }],
   ],
-  rehypePlugins: [rehypeHeadingIds, rehypeKatexPlugin, rehypeMathjaxPlugin],
+  rehypePlugins: [
+    rehypeHeadingIds,
+    rehypeSlug,
+    [rehypeAutolinkHeadings, { behavior: "wrap" }],
+    rehypeKatexPlugin,
+    rehypeMathjaxPlugin,
+  ],
 } satisfies Markdown;
 
 function remarkMermaidToHtml() {

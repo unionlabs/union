@@ -1,6 +1,3 @@
-<script lang="ts">
-
-const genesis = 
 {
   "app_name": "uniond",
   "app_version": "",
@@ -11,9 +8,7 @@ const genesis =
   "app_state": {
     "06-solomachine": null,
     "07-tendermint": null,
-    "08-wasm": {
-      "contracts": []
-    },
+    "08-wasm": { "contracts": [] },
     "auth": {
       "params": {
         "max_memo_characters": "256",
@@ -438,562 +433,254 @@ const genesis =
         }
       ]
     },
-    "authz": {
-      "authorization": []
-    },
+    "authz": { "authorization": [] },
     "bank": {
-      "params": {
-        "send_enabled": [],
-        "default_send_enabled": true
-      },
+      "params": { "send_enabled": [], "default_send_enabled": true },
       "balances": [
         {
           "address": "union1du88zzc05esnzgt2g57fxcu93ny0dsm6jutrsw",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1n2cv9p4w89ldeuhqu8dxruknhhzr4e6lzezxv5",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union109stqggg33n5ca5jtfwxvpgfkg44lctkexv3mp",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1rljyw223ec4fmlksgezwh7e5rqz0qu0w5lpg5v",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1wv4lw6yhvy87z20uyd9rr9aghtmczncpklc6t9",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1jzv52ewect8ntvwjs2za087yzl6y3smf0ym390",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1wlc9twen0exempkrcag080h7maj2gf53p9xgww",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1jt9w26mpxxjsk63mvd4m2ynj0af09cslfklw8q",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1nue4xu43a2ypqrtfx4tzeeh5ws5sm66y2uxz2q",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1x5wgh6vwye60wv3dtshs9dmqggwfx2ldehd3z7",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1ezyzt6lv9mywfsllxp90u9mmrf5ue9yjy0pj3d",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1k5tr2gw9tht3gvzlearzw566hz3cjvvg0nfuyx",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1jcsdksyyhxhacl03a9f7746cgmq42d38237krd",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1tt4xnj2cwsl46d8quj9j0x3u8rpj68fyq95u4l",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union14qekdkj2nmmwea4ufg9n002a3pud23y804prlp",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1p62638t9fac4jzr39ezuk68ut5d95zptvtlt7u",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union10ussnau09f4ux6ndek3zzpcffpjejufyx98srr",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union16uss84sqqpjjurglftxlfzzj462mlaqd78nexr",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1p8d4x68r5k93xltr94nlptyxt4vrvjasqwm0w9",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1th40vf3ncsez0qkaxv5azal365dkwxak6q75dl",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1njscsuv50n5zqfs8p7w85ln7lzh3rdq32k6tqq",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union17v79v5unjn6ef92l4a58uf0kvup66wust5x7ja",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1ex50uacwuhhgtu3pxm6w9znehkrw74s3hydqjl",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union188waq9fmefazu62daystwrdtddp05tuakqly8k",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union19lhsag7n3rsj99fyfyqfysza7zmzrn7c4k0y8h",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union13fx29mnt2ssfae5td4t9grqmdpg6dtr8sjlesh",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1w3egagl99am5n58cp26asvgdq8mh4n3pc5e7t6",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union174gzecgpzl367q8ma8ph9mue8xrd24ev702sjx",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union180kkpdsk22ra4g6pskhpu6qemaptcw560hx5r6",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1etx55kw7tkmnjqz0k0mups4ewxlr324tlz58sh",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1hdqghdfqan4n2epeeea0u2kecmtu58fpn3hqqa",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1xzern65ppact6sgh4htllnr8pg9dpnc8fqcj9g",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1jl5r5s64jrqparv7e92nulx2lva2hk0s9eycs7",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union19xm3crpq47rr5lxsqtfgk8f55ash4npapqr5af",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union17mq2njvg5np28g7l8j7qzs6juuqf8gm398ne3e",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1ddwg5uzv7280yl9kut0ejtxuacusfahg8dc3zc",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1hf9nwshs2dvvc6rp6n88h4vz5ny0sl590jjhxw",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1lfs9uz50ervcqxk68yax9qtfhngfr2vmt0e377",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1f3k28skfn8eae7fpqwnklee8rslvtaq4we9tlt",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union12vzzm89nathlzssze88x9urtf36cd0edg2sk9j",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union18tfmww24r3upstygg4h3rkcsqhq20mxx8hm36j",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union12gt98qguxx3snvzq8luucv35uftrl3dxz06e37",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union19w2488ntfgpduzqq3sk4j5x387zynwknex3e0u",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1z9pzw4nphjqjjsk093c4kdlj27vc43638eqnnr",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1wpayju4jcn2mhv6yewclf6rcq9fyqzvatzfqxq",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1ff9jg6cfl6hyzknn2padtf6syg3ac6n9tpvypw",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1zt9tjn9hf00c6nr6y03tymtevp6u98f4xy6emr",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1jhwhrfv9p647u4vj44xjmpqprcm302glya3rnf",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1qk3g5r2spp9t3a28ek0ken6k62rwyyxa45e2gc",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union13xa4fkm9e9344jljs9sz0jc76sca38nwe6yplh",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1dr96r6pdkrz64snr43cyk9rx0k030wm4r7v09u",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "3000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "3000000" }]
         },
         {
           "address": "union1g0jxmy25g5t6qdagq2dkclux7c46kwym8decfw",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "128000000000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "128000000000000" }]
         },
         {
           "address": "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "128000000000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "128000000000000" }]
         },
         {
           "address": "union1v39zvpn9ff7quu9lxsawdwpg60lyfpz8pmhfey",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "128000000000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "128000000000000" }]
         },
         {
           "address": "union1ml67yhc5kp8qrxssfnqz8pxqvjyln5fus654vk",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "128000000000000"
-            }
-          ]
+          "coins": [{ "denom": "muno", "amount": "128000000000000" }]
         },
         {
           "address": "union1g9fqjzcvjhy53mwyq7v42c87a49fm7q7rdeh8c",
-          "coins": [
-            {
-              "amount": "128000000000000",
-              "denom": "muno"
-            }
-          ]
+          "coins": [{ "amount": "128000000000000", "denom": "muno" }]
         },
         {
           "address": "union1pasu7pjmzqlhgpcxgz7ru9yetc63rrw8ykg5w0",
-          "coins": [
-            {
-              "amount": "3000000000000",
-              "denom": "muno"
-            }
-          ]
+          "coins": [{ "amount": "3000000000000", "denom": "muno" }]
         },
         {
           "address": "union1wv7yh86t0s4lw5lp9wdn59c22us75thmy5233q",
-          "coins": [
-            {
-              "amount": "128000000000000",
-              "denom": "muno"
-            }
-          ]
+          "coins": [{ "amount": "128000000000000", "denom": "muno" }]
         },
         {
           "address": "union1khlx3gkk80nn6fcl5vc7ldrp9fjczmqsxfkjd0",
-          "coins": [
-            {
-              "amount": "128000000000000",
-              "denom": "muno"
-            }
-          ]
+          "coins": [{ "amount": "128000000000000", "denom": "muno" }]
         }
       ],
       "supply": [],
       "denom_metadata": [],
       "send_enabled": []
     },
-    "capability": {
-      "index": "1",
-      "owners": []
-    },
+    "capability": { "index": "1", "owners": [] },
     "consensus": null,
-    "crisis": {
-      "constant_fee": {
-        "denom": "muno",
-        "amount": "1000"
-      }
-    },
+    "crisis": { "constant_fee": { "denom": "muno", "amount": "1000" } },
     "distribution": {
       "params": {
         "community_tax": "0.020000000000000000",
@@ -1001,9 +688,7 @@ const genesis =
         "bonus_proposer_reward": "0.000000000000000000",
         "withdraw_addr_enabled": true
       },
-      "fee_pool": {
-        "community_pool": []
-      },
+      "fee_pool": { "community_pool": [] },
       "delegator_withdraw_infos": [],
       "previous_proposer": "",
       "outstanding_rewards": [],
@@ -1013,12 +698,8 @@ const genesis =
       "delegator_starting_infos": [],
       "validator_slash_events": []
     },
-    "evidence": {
-      "evidence": []
-    },
-    "feegrant": {
-      "allowances": []
-    },
+    "evidence": { "evidence": [] },
+    "feegrant": { "allowances": [] },
     "genutil": {
       "gen_txs": [
         {
@@ -1045,10 +726,7 @@ const genesis =
                   "@type": "/cosmos.crypto.bn254.PubKey",
                   "key": "21zHut5mxVAiYfWzVJVsXZHxpNKNmIeb/yaSdKveQi0="
                 },
-                "value": {
-                  "denom": "muno",
-                  "amount": "2000000000000"
-                }
+                "value": { "denom": "muno", "amount": "2000000000000" }
               }
             ],
             "memo": "d719c02c10b09fc677290516debe2ae3bac119e6@purmuzlu.cc:443",
@@ -1063,11 +741,7 @@ const genesis =
                   "@type": "/cosmos.crypto.secp256k1.PubKey",
                   "key": "AzMpeaWPvsivTVttJEDh34iHhu3E5oHgAntOzBmY7cOd"
                 },
-                "mode_info": {
-                  "single": {
-                    "mode": "SIGN_MODE_DIRECT"
-                  }
-                },
+                "mode_info": { "single": { "mode": "SIGN_MODE_DIRECT" } },
                 "sequence": "0"
               }
             ],
@@ -1107,10 +781,7 @@ const genesis =
                   "@type": "/cosmos.crypto.bn254.PubKey",
                   "key": "rOOWkyDiACW/FVezeVi/ur0LEB2FAFMi4lD6gvuuzL4="
                 },
-                "value": {
-                  "denom": "muno",
-                  "amount": "2000000000000"
-                }
+                "value": { "denom": "muno", "amount": "2000000000000" }
               }
             ],
             "memo": "819d62f0cebf2b4ef8dac7794fbe7ec62f8a4481@157.245.1.52:26656",
@@ -1125,11 +796,7 @@ const genesis =
                   "@type": "/cosmos.crypto.secp256k1.PubKey",
                   "key": "AxUGr2Lk9SXK+2c3c/eBYpZT3gX38avdU4RkPfwZnlEe"
                 },
-                "mode_info": {
-                  "single": {
-                    "mode": "SIGN_MODE_DIRECT"
-                  }
-                },
+                "mode_info": { "single": { "mode": "SIGN_MODE_DIRECT" } },
                 "sequence": "0"
               }
             ],
@@ -1156,12 +823,7 @@ const genesis =
       "voting_params": null,
       "tally_params": null,
       "params": {
-        "min_deposit": [
-          {
-            "denom": "muno",
-            "amount": "10000000"
-          }
-        ],
+        "min_deposit": [{ "denom": "muno", "amount": "10000000" }],
         "max_deposit_period": "600s",
         "voting_period": "600s",
         "quorum": "0.334000000000000000",
@@ -1172,12 +834,7 @@ const genesis =
         "proposal_cancel_dest": "",
         "expedited_voting_period": "300s",
         "expedited_threshold": "0.667000000000000000",
-        "expedited_min_deposit": [
-          {
-            "denom": "muno",
-            "amount": "50000000"
-          }
-        ],
+        "expedited_min_deposit": [{ "denom": "muno", "amount": "50000000" }],
         "burn_vote_quorum": false,
         "burn_proposal_deposit_prevote": false,
         "burn_vote_veto": true,
@@ -1210,9 +867,7 @@ const genesis =
         "connections": [],
         "client_connection_paths": [],
         "next_connection_sequence": "0",
-        "params": {
-          "max_expected_time_per_block": "30000000000"
-        }
+        "params": { "max_expected_time_per_block": "30000000000" }
       },
       "channel_genesis": {
         "channels": [],
@@ -1230,18 +885,13 @@ const genesis =
         "active_channels": [],
         "interchain_accounts": [],
         "ports": [],
-        "params": {
-          "controller_enabled": true
-        }
+        "params": { "controller_enabled": true }
       },
       "host_genesis_state": {
         "active_channels": [],
         "interchain_accounts": [],
         "port": "icahost",
-        "params": {
-          "host_enabled": true,
-          "allow_messages": ["*"]
-        }
+        "params": { "host_enabled": true, "allow_messages": ["*"] }
       }
     },
     "mint": {
@@ -1291,12 +941,7 @@ const genesis =
     },
     "tokenfactory": {
       "params": {
-        "denom_creation_fee": [
-          {
-            "denom": "muno",
-            "amount": "10000000"
-          }
-        ],
+        "denom_creation_fee": [{ "denom": "muno", "amount": "10000000" }],
         "denom_creation_gas_consume": "2000000"
       },
       "factory_denoms": []
@@ -1304,20 +949,14 @@ const genesis =
     "transfer": {
       "port_id": "transfer",
       "denom_traces": [],
-      "params": {
-        "send_enabled": true,
-        "receive_enabled": true
-      },
+      "params": { "send_enabled": true, "receive_enabled": true },
       "total_escrowed": []
     },
     "upgrade": {},
     "vesting": {},
     "wasm": {
       "params": {
-        "code_upload_access": {
-          "permission": "Everybody",
-          "addresses": []
-        },
+        "code_upload_access": { "permission": "Everybody", "addresses": [] },
         "instantiate_default_permission": "Everybody"
       },
       "codes": [],
@@ -1327,33 +966,15 @@ const genesis =
   },
   "consensus": {
     "params": {
-      "block": {
-        "max_bytes": "22020096",
-        "max_gas": "-1"
-      },
+      "block": { "max_bytes": "22020096", "max_gas": "-1" },
       "evidence": {
         "max_age_num_blocks": "100000",
         "max_age_duration": "172800000000000",
         "max_bytes": "1048576"
       },
-      "validator": {
-        "pub_key_types": ["bn254"]
-      },
-      "version": {
-        "app": "0"
-      },
-      "abci": {
-        "vote_extensions_enable_height": "0"
-      }
+      "validator": { "pub_key_types": ["bn254"] },
+      "version": { "app": "0" },
+      "abci": { "vote_extensions_enable_height": "0" }
     }
   }
 }
-
-</script>
-
-<button>
-  <a href={"data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(genesis,undefined,2))} download="genesis.json">
-    Download Genesis
-  </a>
-</button>
-

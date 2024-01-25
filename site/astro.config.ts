@@ -1,6 +1,3 @@
-import "dotenv/config";
-Object.assign(process.env, { ASTRO_TELEMETRY_DISABLED: 1 });
-
 import svelte from "@astrojs/svelte";
 import tailwind from "@astrojs/tailwind";
 import starlight from "@astrojs/starlight";
@@ -9,14 +6,15 @@ import { defineConfig, squooshImageService } from "astro/config";
 
 const SITE_URL = "https://union.build";
 
+const PORT = Number(process.env.PORT || import.meta.env.PORT || 4321);
+
 // https://astro.build/config
 export default defineConfig({
   site: SITE_URL,
-  prefetch: true,
   output: "static",
   trailingSlash: "ignore",
   server: (_options) => ({
-    port: Number(process.env.PORT || import.meta.env.PORT || 4321),
+    port: PORT,
   }),
   markdown: markdownConfiguration,
   integrations: [
@@ -44,6 +42,21 @@ export default defineConfig({
       },
       head: [
         {
+          tag: "meta",
+          attrs: {
+            name: "description",
+            content: "The Sovereign Interoperability Layer",
+          },
+        },
+        {
+          tag: "script",
+          attrs: {
+            type: "module",
+            src: "/anchor-targets.js",
+          },
+        },
+        {
+          // math rendering breaks without this
           tag: "link",
           attrs: {
             rel: "stylesheet",
@@ -60,7 +73,8 @@ export default defineConfig({
       defaultLocale: "en",
       logo: {
         alt: "Union Logo",
-        src: "./public/images/logo.png",
+        dark: "./src/assets/union-logo/union-logo-transparent.svg",
+        light: "./src/assets/union-logo/union-logo-white-transparent.svg",
       },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/site",
@@ -107,14 +121,16 @@ export default defineConfig({
           },
         },
       ],
+      plugins: [],
       customCss: [
-        "./src/styles/index.css",
+        "./src/styles/starlight.css",
         "./src/styles/tailwind.css",
-        "@fontsource/jetbrains-mono/400.css",
-        "@fontsource/jetbrains-mono/600.css",
+        "@fontsource/ibm-plex-mono/400.css",
+        "@fontsource/ibm-plex-mono/600.css",
       ],
     }),
     tailwind({
+      applyBaseStyles: false,
       configFile: "tailwind.config.ts",
     }),
     svelte(),

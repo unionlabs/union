@@ -1,0 +1,44 @@
+:root {
+  --sl-text-h1: 3.5rem;
+}
+
+:root[data-theme="light"] {
+  --logo-text-color: #000000;
+}
+
+:root[data-theme="dark"] {
+  --logo-text-color: #f9f9f9f9;
+}
+
+.site-title {
+  gap: 4px;
+  color: white;
+}
+
+span[data-astro-source-file$="/starlight/components/SiteTitle.astro"] {
+  color: var(--logo-text-color);
+}
+
+* {
+  scrollbar-width: 0.01rem;
+  scrollbar-color: transparent transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 0.1rem;
+  height: 0.1rem;
+  background-color: transparent;
+}
+
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+a {
+  text-decoration: none;
+}
+
+h1 > a {
+  font-size: 2.5rem;
+}

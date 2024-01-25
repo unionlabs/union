@@ -5,7 +5,7 @@ sidebar:
 ---
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
-import Version from "#/components/chain-versions.svelte";
+import Version from "#/components/ChainVersions.svelte";
 
 This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](../nixos) and the [Kubernetes](../kubernetes) guide for more production-ready deployments.
 
@@ -173,7 +173,7 @@ WantedBy=multi-user.target
 You should be able to view the node logs by executing
 
 ```sh
-sudo journalctl -f -u uniond
+sudo journalctl -f --user uniond
 ```
 
 It's then recommended to back up these files from `~/.union/config` in a secure location:

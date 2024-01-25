@@ -4,7 +4,7 @@ import { docsSchema, i18nSchema } from "@astrojs/starlight/schema";
 const blogCollection = defineCollection({
   type: "content",
   schema: z.object({
-    layout: z.string().default("../layouts/blog-layout.astro"),
+    layout: z.string().optional(),
     title: z.string(),
     // yyyy-MM-dd
     date: z.date(),

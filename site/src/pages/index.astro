@@ -1,94 +1,340 @@
 ---
-import Layout from '#/layouts/layout.astro'
+import { fade } from 'astro:transitions'
+import Layout from '#/layouts/Layout.svelte'
+import { getCollection } from 'astro:content'
+import Socials from '#/components/Socials.astro'
+import CodeSnippet from '#/components/CodeSnippet.svelte'
+import { codeSnippets } from '#/content/snippets/landing.ts'
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+import ConnectedVisual from '#/components/ConnectedVisual.svelte'
+import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
+import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
+
+let publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
+  if (data.hidden) return false
+  return { slug, data }
+})
+publishedBlogPosts.reverse()
 ---
 
 <Layout>
-  <main class='flex flex-col flex-1 gap-[100px] md:gap-[200px] my-[50px] md:my-[100px]'>
-    <div class='flex flex-col items-center'>
-      <div class='main-text leading-3'>Infrastructure for the</div>
-      <div class='next-century-text animate-character my-[0.5px]'>next century</div>
-      <div class='tagline'>
-        Union is a hyper-efficient, zero-knowledge interoperability layer<br />
-        that connects Appchains, Layer 1, and Layer 2 networks.
-      </div>
-      <div>
-        <a
-          class='text-black skew-button'
-          href='/docs'
-        >
-          <span>EXPLORE THE DOCS -&gt;</span>
-        </a>
-      </div>
-    </div>
-
-    <section>
-      <img
-        class='w-[300px] md:w-[500px] absolute left-[50%] -ml-[150px] md:-ml-[250px] z-10 -mt-[50px] md:-mt-[100px] eth-logo'
-        src='/images/ethereum.svg'
-        alt='Ethereum'
-      />
-      <div class='flex flex-col items-center z-20 relative'>
-        <h2 class='text-4xl md:text-6xl font-bold text-center -mb-6'>ETH &lt;-&gt; IBC</h2>
-        <h3 class='text-[16px] md:text-[27px] font-bold text-center text-gray-200'>
-          Union's flagship product
-        </h3>
-        <p class='md:text-2xl text-center -mt-4'>
-          Built using Zero-Knowledge Cryptography and BLS Signatures, a
-        </p>
-        <div
-          class='text-center trustless-connection text-2xl md:text-5xl text-accent font-black italic animate-character animate-character-delay'
-        >
-          Trustless Ethereum IBC Connection
+  <main
+    class='flex flex-col flex-1 items-center px-4'
+    transition:animate={fade({ duration: '0.4s' })}
+  >
+    <div class='w-full flex flex-col max-w-5xl p-px bg-[#1f1f1f]'>
+      <section
+        class='flex flex-col items-center sm:py-16 py-10 md:py-20 gap-2 md:gap-6 grid-effect-bg antialiased bg-black mb-px p-4 md:p-8'
+      > <div class='text-4xl md:text-6xl lg:text-7xl sm:text-5xl text-white text-center font-semibold px-4'> The Sovereign<br />Interoperability Layer
         </div>
-        <p class='text-center md:text-2xl'>Live between Union's Testnet and Ethereum's Testnet.</p>
-      </div>
-    </section>
+        <div class='text-lg sm:text-xl text-md max-w-lg font-normal text-center antialiased text-gray-400 '>
+          By using consensus verification, Union builds unstoppable and decentralized connections to
+          enable anyone to transfer assets and data.
+        </div>
+        <div>
+          <a
+            class='mt-16 underline text-lg uppercase text-accent font-semibold'
+            href='/docs'
+          >
+            Start building -&gt;
+          </a>
+        </div>
+      </section>
 
-    <section class='flex flex-col items-center pb-56'>
-      <h2 class='text-xl md:text-3xl font-bold'>Backed by industry experts</h2>
+      <section class='bg-black text-white flex flex-col items-center mb-px'>
+        <div class='p-4 sm:p-8 md:p-16 text-xl md:text-2xl lg:text-3xl font-normal text-gray-400 text-center'>
+          <span class="text-white">Trustless, decentralized, and permissionless</span> interoperability is now possible.        
+              Union is the only protocol that provides all three, using state-of-the-art <span class="text-white">Zero-Knowledge
+              cryptography</span>.
+          
+          
+          </div>
 
-      <div class='flex flex-col md:flex-row gap-[24px] mt-[24px] items-center'>
-        <img
-          class='block w-[200px]'
-          src='/images/investors/galileo.svg'
-          alt='Galileo'
-        />
-        <img
-          class='block w-[60px] mx-8'
-          src='/images/investors/nascent.svg'
-          alt='Nascent'
-        />
-        <img
-          class='block w-[200px]'
-          src='/images/investors/tioga.png'
-          alt='Tioga'
-        />
-      </div>
 
-      <div class='flex flex-col md:flex-row gap-[24px] mt-[24px] items-center'>
-        <img
-          class='block w-[220px]'
-          src='/images/investors/semantic.png'
-          alt='Semantic'
-        />
-        <img
-          class='block w-[220px]'
-          src='/images/investors/lightshift.png'
-          alt='Lightshift'
-        />
-      </div>
-      <div class='mt-4'>
-        <a
-          class='skew-button text-black'
-          href='/blog/seed-raise'
-          ><span>READ THE ANNOUNCEMENT -&gt;</span></a
+          
+
+
+          
+        <!--<div class='flex md:flex-row flex-col gap-16 max-w-4xl text-balance'>
+          <div class='flex-1 p-4'>
+            <p class='text-3xl text-gray-500 font-normal mb-0 text-center'>
+              <span class='text-white'>
+                Trustless, decentralized, and permissionless interoperability is now possible.
+              </span>
+              Union is the only protocol that provides all three, using state-of-the art Zero-Knowledge
+              cryptography.
+            </p>
+          </div>!-->
+      </section>
+
+      <section class='bg-black mb-px relative items-center justify-center'>
+        <div class='absolute flex flex-col items-center w-full'>
+          <h2 class='text-gray-400 text-base min-[400px]:text-xl min-[400px]:pt-4 sm:text-2xl md:text-3xl lg:text-4xl lg:px-6 lg:pt-12 font-normal md:pt-5 sm:text-3xl xs:pt-3 text-center'>
+            Interoperability for the <span class="text-accent">Modular Stack</span>
+          </h2>
+        </div>
+        <div class='w-full min-w-full h-full min-h-full'>
+          <ConnectedVisual client:load />
+        </div>
+      </section>
+
+      <section
+        class:list={[
+          'grid sm:grid-cols-2 grid-cols-1 sm:grid-rows-1 grid-rows-2 sm:divide-x sm:divide-y-0 divide-y divide-solid divide-[#1f1f1f]',
+          'md:flex-row max-w-4x items-center mb-px bg-black'
+        ]}
+      >
+        <div class='p-4 sm:p-8 text-xl md:text-2xl font-normal text-gray-400'>
+          <span class="text-white">Galois</span> is the first interoperability proving layer that is so efficient that it allows
+          anyone to <span class='text-white'>generate proofs on a phone.</span> Gone is the era of
+          needing expensive cloud-clusters for ZK. Now we liberate ZK to be available to anyone.
+        </div>
+        <div class='w-full min-w-full h-full min-h-full'>
+          <div class='absolute p-4 sm:p-8 text-xl md:text-2xl font-normal text-white z-20'>
+            <span>
+              Unmatched Scalability
+            </span>
+          </div>
+          <PerformanceGraph client:load />
+        </div>
+      </section>
+      <section class='flex flex-col items-center bg-black mb-px'>
+        <div
+          class='w-full flex flex-col-reverse sm:flex-row justify-evenly divide-y divide-x-0 sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]'
         >
-      </div>
-    </section>
+          <div
+            id='code-snippets'
+            class='antialiased bg-black text-left font-monospace text-[15px] w-full sm:w-1/2'
+          >
+            <Tabs>
+              {
+                codeSnippets.map(snippet => (
+                  <TabItem label={snippet.title}>
+                    <div class='px-1 w-full'>
+                      <CodeSnippet
+                        code={snippet.code}
+                        client:load
+                      />
+                    </div>
+                  </TabItem>
+                ))
+              }
+            </Tabs>
+          </div>
+          <div
+            class='antialiased bg-[#1f1f1f] hidden md:show md:h-px'
+          >
+          </div>
+          <div class='flex flex-col gap-4 sm:p-8 p-4 sm:gap-8 items-center justify-center text-xl md:text-2xl font-normal text-gray-400 w-full sm:w-1/2 md:border-b-2'>
+            <p><span class="text-white">Union</span> is the only interoperability layer that solves the <span class="text-white">sovereign bridging trilemma.</span></p>
+            <p><span class="text-accent">Trustless</span>: Union implements proper <span class="text-white">consensus-verification</span> and does not compromise on IBC's security guarantees.</p>
+            <p><span class="text-accent">Decentralized</span>: Through CometBLS' hyper-efficient prover, <span class="text-white">proofs can be generated by anyone</span> rather than relying on large institutions.</p>
+            <p><span class="text-accent">Permissionless</span>: Union's infrastructure allows for anyone to set up <span class="text-white">sovereign connections</span> to new networks.</p>
+
+          </div>
+      </section>
+
+      <section class='bg-black mb-px'>
+        <div
+          class='grid grid-rows-3 grid-cols-1 sm:grid-cols-3 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]'
+        >
+          <div class='p-8'>
+            <h3 class='mb-1 text-2xl'>Galois</h3>
+            <p class="text-gray-200">
+             Decentralized proving for everyone. Galois, a key component of Union's ZK efforts, ensures proof verification with lightning-fast execution, cost-efficient operation, and decentralized infrastructure.
+            </p>
+            <a class='underline uppercase block mt-2 text-accent font-semibold' href="/docs/architecture/galois">Read more {'->'}</a>
+          </div>
+          <div class='p-8'>
+            <h3 class='mb-1 text-2xl'>CometBLS</h3>
+            <p class="text-gray-200">
+              ZK-aligned consensus engine. CometBLS is an enhancement upon Tendermint which utilizes BLS signatures for efficient ZK proving, and thereby ensuring secure bridging and consensus verification.
+            </p>
+            <a class='underline uppercase block mt-2 text-accent font-semibold' href="/docs/architecture/cometbls">Read more {'->'}</a>
+          </div>
+          <div class='p-8'>
+            <h3 class='mb-1 text-2xl'>Voyager</h3>
+            <p class="text-gray-200">
+            Stateless relaying for a cross-chain future. Voyager is our in-house relayer, allowing us to support new networks without waiting for up-stream support, by seamlessly integrating with Galois.
+            </p>
+            <a class='underline uppercase block mt-2 text-accent font-semibold' href="/docs/architecture/voyager">Read more {'->'}</a>
+          </div>
+        </div>
+      </section>
+      <section class='bg-black mb-px flex flex-col items-center justif-center p-8 sm:p-16 lg:p-16'>
+        <h2 class='text-3xl sm:text-4xl mb-8 font-normal'>The most efficient interoperability layer.</h2>
+        <div class='w-full'>
+          <AppleGraphContainer
+            bars={[
+              { width: 100, label: 'CometBLS V3', primary: true },
+              { width: 9.1, label: 'ZkMint*' },
+              { width: 1.45, label: 'TendermintX' },
+              { width: 0.77, label: 'Fraud-proof bridges' }
+            ]}
+            client:load
+          />
+        </div>
+      </section>
+
+      <section
+        class='bg-black mb-px grid grid-rows-2 grid-cols-1 sm:grid-cols-2 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]'
+      >
+        <div class='w-full p-8 mr-px'>
+          <a
+            class='text-left space-y-2'
+            href={`/blog/${publishedBlogPosts[0].slug}`}
+          >
+            <div>
+              <p class='text-3xl font-bold'>
+                {publishedBlogPosts[0].data.title}
+              </p>
+            </div>
+            <p class='text-pretty text-lg text-left'>
+              {publishedBlogPosts[0].data.description}
+            </p>
+
+            <a class='underline uppercase block mt-2 text-accent font-semibold'>Read more {'->'}</a>
+          </a>
+        </div>
+        <div
+          class='p-0 list-none mx-auto w-full grid grid-rows-3 divide divide-y divide-solid divide-[#1f1f1f]'
+        >
+          {
+            publishedBlogPosts.slice(1).map(post => (
+              <a
+                href={`/blog/${post.slug}`}
+                class='justify-center w-full h-full flex flex-col text-left flex-start px-8 py-4 my-auto'
+              >
+                <p class='text-xl font-bold'>{post.data.title}</p>
+                <p class='underline uppercase text-accent font-semibold'>Read more {'->'}</p>
+              </a>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="bg-black py-16">
+        <Socials/>
+      </section>
+
+      <!--
+      <section>
+        <img
+          class='w-[300px] md:w-[500px] absolute left-[50%] -ml-[150px] md:-ml-[250px] z-10 -mt-[50px] md:-mt-[100px] eth-logo'
+          src='../../../../assets/images/ethereum.svg'
+          alt='Ethereum'
+        />
+        <div class='flex flex-col items-center z-20 relative'>
+          <h2 class='text-4xl md:text-6xl font-bold text-center -mb-6'>ETH &lt;-&gt; IBC</h2>
+          <h3 class='text-[16px] md:text-[27px] font-bold text-center text-gray-200'>
+            Union's flagship product
+          </h3>
+          <p class='md:text-2xl text-center -mt-4'>
+            Built using Zero-Knowledge Cryptography and BLS Signatures, a
+          </p>
+          <div
+            class='text-center trustless-connection text-2xl md:text-5xl text-accent font-black italic animate-character animate-character-delay'
+          >
+            Trustless Ethereum IBC Connection
+          </div>
+          <p class='text-center md:text-2xl'>Live between Union's Testnet and Ethereum's Testnet.</p>
+        </div>
+      </section>
+   -->
+      <!-- <section class='flex flex-col items-center pb-56'>
+        <h2 class='text-xl md:text-3xl font-bold'>Backed by industry experts</h2>
+
+        <div class='flex flex-col md:flex-row gap-[24px] mt-[24px] items-center'>
+          <img
+            class='block w-[200px]'
+            src='../../../../assets/images/investors/galileo.svg'
+            alt='Galileo'
+          />
+          <img
+            class='block w-[60px] mx-8'
+            src='../../../../assets/images/investors/nascent.svg'
+            alt='Nascent'
+          />
+          <img
+            class='block w-[200px]'
+            src='../../../../assets/images/investors/tioga.png'
+            alt='Tioga'
+          />
+        </div>
+
+        <div class='flex flex-col md:flex-row gap-[24px] mt-[24px] items-center'>
+          <img
+            class='block w-[220px]'
+            src='../../../../assets/images/investors/semantic.png'
+            alt='Semantic'
+          />
+          <img
+            class='block w-[220px]'
+            src='../../../../assets/images/investors/lightshift.png'
+            alt='Lightshift'
+          />
+        </div>
+  	  <div class="mt-8">
+          <a
+            class='mt-16 uppercase'
+            href='/blog/seed-raise'
+          >
+            Read the announcement -&gt;
+          </a>
+        </div>
+      </section> -->
+    </div>
   </main>
 </Layout>
 
-<style lang="postcss">
+
+<style lang="postcss" is:inline>
+
+  [data-line-numbers] {
+    /* display: none !important; */
+  }
+  ul[role='tablist'] {
+    border-bottom-color: transparent;
+    font-family: monospace !important;
+    width: 100%;
+    @media (max-width: 680px) {
+      justify-content:space-evenly;      
+    }
+  }
+
+  ul[role='tablist'] > li:first-child > a {
+    border-left: none !important;
+  }
+
+  li[role="presentation"]{
+    width: 100%;
+  }
+
+  a[role='tab'] {
+    border-color: transparent !important;
+    padding-bottom: 5px !important;
+    padding-top: 5px !important;
+    text-align: center;
+    width: 100% !important;
+    border-left:  1px solid #1f1f1f !important;
+    border-right: none !important;
+  }
+
+  a[role="tab"][tabIndex='-1'] {
+    padding-bottom: 5px !important;
+    border-bottom: 1px solid #1f1f1f !important;
+    border-left: none !important;
+    /* border-right:  2px solid #1f1f1f !important; */
+    border-left: none !important;
+    border-left: 1px solid #1f1f1f !important;
+  }
+
+  a[role='tab']::before {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    filter: invert(1);
+  }
 
 	.main-text {
 		max-width: 72rem;

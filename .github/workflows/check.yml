@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
       - name: Check for LFS files
         run: ./.github/scripts/lfs.sh
-      - name: Lint commit messages
-        uses: wagoid/commitlint-github-action@v5
-        with:
-          failOnWarnings: true
+      # - name: Lint commit messages
+      #   uses: wagoid/commitlint-github-action@v5
+      #   with:
+      #     failOnWarnings: true

@@ -4,8 +4,8 @@ sidebar:
   order: 2
 ---
 
-import FileTree from "#/components/file-tree.astro";
-import Version from "#/components/chain-versions.svelte";
+import FileTree from "#/components/FileTree.astro";
+import Version from "#/components/ChainVersions.svelte";
 
 Unionvisor is a utility for managing `uniond` deployments. It manages running, upgrading, and interacting with the node.
 
@@ -46,7 +46,13 @@ Now, using the `unionvisor` image and the folder we just created, we can initial
 To do this, we'll be using Docker volumes.
 
 ```sh
-docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp -it ghcr.io/unionlabs/bundle-testnet-5:$UNIONVISOR_VERSION init --moniker $MONIKER --network union-testnet-5 --seeds "daa56ac6573c6427ecef438d4c248d72b206597b@union.testnet.4.seed.poisonphang.com:26656"
+docker run \
+  --volume ~/.unionvisor:/.unionvisor \
+  --volume /tmp:/tmp \
+  -it ghcr.io/unionlabs/bundle-testnet-5:$UNIONVISOR_VERSION \
+  init --moniker $MONIKER \
+  --network union-testnet-5 \
+  --seeds "daa56ac6573c6427ecef438d4c248d72b206597b@union.testnet.4.seed.poisonphang.com:26656"
 ```
 
 _Where `MONIKER` is the preferred moniker you'd like to use on this node._
@@ -153,5 +159,5 @@ For some configuration recommendations see our [Node Configuration](/infrastruct
 To run your node in detached mode, run:
 
 ```sh
-docker compose -f path/to/compose.yaml up -d
+docker compose --file path/to/compose.yaml up --detach
 ```

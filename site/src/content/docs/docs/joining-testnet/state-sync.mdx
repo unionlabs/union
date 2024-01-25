@@ -21,7 +21,8 @@ Before joining the network using state sync, you will need to use one of our RPC
 To do this, you can run the following command:
 
 ```sh
-curl -s $RPC_ENDPOINT/block | jq -r '.result.block.header.height + "\n" + .result.block_id.hash'
+curl --silent $RPC_ENDPOINT/block | \
+  jq --raw-output '.result.block.header.height + "\n" + .result.block_id.hash'
 ```
 
 _Where `RPC_ENDPOINT` is an RPC endpoint from the [Public Endpoints](../public-endpoints) list._
