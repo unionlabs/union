@@ -3,6 +3,7 @@ import { fade } from 'astro:transitions'
 import Layout from '#/layouts/Layout.svelte'
 import { getCollection } from 'astro:content'
 import { ViewTransitions } from 'astro:transitions'
+import Socials from '#/components/Socials.astro'
 
 export async function getStaticPaths() {
   const blogEntries = await getCollection('blog')
@@ -47,6 +48,7 @@ const { Content, headings } = await entry.render()
       <Content />
     </div>
   </main>
+    <Socials/>
 </Layout>
 
 <ViewTransitions />
