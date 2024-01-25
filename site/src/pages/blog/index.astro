@@ -13,8 +13,7 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
 
 <Layout>
   <main
-    transition:animate={fade({ duration: '0.4s' })}
-    class='flex items-center text-xl md:text-2xl sm:mt-0 mt-2 justify-center p-4'
+    class='flex items-center text-xl md:text-2xl mt-2 sm:mt-12 justify-center pt-6 sm:pt-0 mx-4'
   >
     <ul class='flex flex-col gap-12 flex-1 list-none list-outside p-0 max-w-xl'>
       {
@@ -25,7 +24,7 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
               href={`/blog/${blogPostEntry.slug}`}
             >
               <p class='text-3xl sm:text-5xl font-extrabold mb-0'>{blogPostEntry.data.title}</p>
-              <div class='font-mono mt-1 sm:text-lg uppercase tracking-widest'>
+              <div class='font-mono mt-1 text-lg uppercase tracking-widest'>
                 <time datetime={blogPostEntry.data.date.toISOString()}>
                   {blogPostEntry.data.date.toLocaleDateString('fr-CA', {
                     year: 'numeric',

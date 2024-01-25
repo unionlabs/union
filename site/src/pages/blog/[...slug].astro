@@ -17,13 +17,13 @@ const { Content } = await entry.render()
 
 <Layout>
   <main
-    class='sm:text-xl flex-grow py-4 sm:mt-0 pb-24 sm:px-0 mt-12 px-6 justify-center max-w-xl self-center'
+    class='sm:text-xl flex-grow mt-2 sm:mt-12 pb-16 max-w-xl self-center flex flex-col pt-6 sm:pt-0 mx-4'
   >
     <h1 class='text-3xl sm:text-5xl font-extrabold max-w-xl'>
       {entry.data.title}
     </h1>
 
-    <div class='font-mono sm:text-lg uppercase tracking-widest mb-5 mt-1'>
+    <div class='font-mono text-lg uppercase tracking-widest mt-1'>
       <time datetime={entry.data.date.toISOString()}>
         {
           entry.data.date.toLocaleDateString('fr-CA', {
@@ -53,9 +53,7 @@ const { Content } = await entry.render()
 ></script>
 
 <style is:inline lang="postcss">
-  p {
-    margin-bottom: 1rem;
-  }
+
   p > a {
     text-decoration: underline;
     text-decoration-color: #A0ECFD !important;
