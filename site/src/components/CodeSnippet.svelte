@@ -16,17 +16,13 @@
   onMount(async () => (highlightedCode = await highlightCode(code)))
 </script>
 
-<div class="">
+<div class="code-snippet">
   {@html highlightedCode}
 </div>
 
 <style>
-  :global(.container > figure[data-rehype-pretty-code-figure] span[data-line]) {
-    overflow-x: scroll;
-    max-width: 100%;
-    width: 100%;
-    font-size: 0.75rem; /* 12px */
-    line-height: 1rem; /* 16px */
+  :global(.code-snippet > figure[data-rehype-pretty-code-figure] > pre) {
+    background-color: black !important;
   }
 
   @media (max-width: 400px) {

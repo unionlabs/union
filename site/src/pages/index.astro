@@ -110,7 +110,7 @@ publishedBlogPosts.reverse()
               {
                 codeSnippets.map(snippet => (
                   <TabItem label={snippet.title}>
-                    <div class='px-1 w-full'>
+                    <div class='pl-1 w-full'>
                       <CodeSnippet
                         code={snippet.code}
                         client:load
@@ -122,7 +122,7 @@ publishedBlogPosts.reverse()
             </Tabs>
           </div>
           <div
-            class='antialiased bg-[#1f1f1f] hidden md:show md:h-px'
+            class='antialiased bg-[#1f1f1f] sm:hidden md:show md:h-px'
           >
           </div>
           <div class='flex flex-col gap-4 sm:p-8 p-4 sm:gap-8 items-center justify-center text-xl md:text-2xl font-normal text-gray-400 w-full sm:w-1/2 md:border-b-2'>
@@ -311,6 +311,7 @@ publishedBlogPosts.reverse()
   }
 
   a[role='tab'] {
+    border-bottom-width: 1px !important;
     border-color: transparent !important;
     padding-bottom: 5px !important;
     padding-top: 5px !important;
