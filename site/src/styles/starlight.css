@@ -34,3 +34,12 @@ span[data-astro-source-file$="/starlight/components/SiteTitle.astro"] {
 *::-webkit-scrollbar-track {
   background-color: transparent;
 }
+
+
+a {
+  text-decoration: none;
+}
+
+h1 > a {
+  font-size: 2.5rem;
+}
