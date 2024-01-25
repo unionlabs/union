@@ -12,7 +12,7 @@
   // export const [constraintsLineColor, ramLineColor] = ['url(#constraints-gradient)', 'url(#ram-gradient)']
   export const constraintsLineColor = `${tw.theme.extend.colors.accent[900]}`
   export const ramLineColor = `${tw.theme.extend.colors.accent[500]}`
-  export const speedLineColor = `${tw.theme.extend.colors.accent[700]}`
+  export const timeLineColor = `${tw.theme.extend.colors.accent[700]}`
 
   const pauseAnimation = (element: SVGPathElement) => (element.style.animationPlayState = 'paused')
   const resumeAnimation = (element: SVGPathElement) =>
@@ -54,7 +54,7 @@
     { x: 128, y: 8 },
   ]
 
-  let speed = [
+  let time = [
     { x: 4, y: 6.05 },
     { x: 8, y: 6.18 },
     { x: 16, y: 6.23 },
@@ -62,6 +62,20 @@
     { x: 64, y: 6.91 },
     { x: 128, y: 8.10 },
   ]
+
+  function seriesValue(value: any, name: string): string {
+    switch (name) {
+      case "Ram":
+        return `${value}GB`;
+      case "Time":
+        return `${value}s`;
+      case "Constraints":
+        // NOTE: We can use toLocaleString here
+        return new Intl.NumberFormat('en-US', { style: 'decimal' }).format(value);
+      default:
+        return "";
+    }
+  }
 
   let hiddenData = Array(128 / 4).fill(0).map((_, i) => [i * 4, '-'])
   console.log(hiddenData)
@@ -72,10 +86,42 @@
     let option;
 
     option = {
-      title: {
-      },
       tooltip: {
-        trigger: 'axis'
+        trigger: 'axis',
+        axisPointer: {
+          z: -10000,
+          lineStyle: {
+            color: "#1f1f1f",
+            type: "solid",
+          }
+        },
+        borderColor: "#1f1f1f",
+        backgroundColor: "#000",
+        formatter(params, ticket, callback) {
+          // console.log(params, ticket, callback);
+
+          return `
+            <div style="margin: 0px 0 0;line-height:1;">
+               <div style="font-size:14px;color:#666;font-weight:400;line-height:1;">${params[0].value[0]} Validators</div>
+               <div style="margin: 10px 0 0;line-height:1;">
+                 ${
+                   params.map(x => `
+                    <div style="margin: 0px 0 0;line-height:1;">
+                       <div style="margin: 0px 0 0;line-height:1;">
+                          ${x.marker}
+                          <span style="font-size:14px;color:#666;font-weight:400;margin-left:2px">${x.seriesName}</span>
+                          <span style="float:right;margin-left:20px;font-size:14px;color:#666;font-weight:900">${seriesValue(x.value[1], x.seriesName)}</span>
+                          <div style="clear:both"></div>
+                       </div>
+                       <div style="clear:both"></div>
+                    </div>
+                   `).join('')
+                 }
+               </div>
+               <div style="clear:both"></div>
+            </div>
+          `
+        }
       },
       grid: {
         left: '0%',
@@ -137,14 +183,14 @@
       },
       {
         show: false,
-        max(value: { max: number }) {
-            return value.max * (6_000_000 / 3_200_000);
+        max(value) {
+            return value.max * (6_000_000 / 1_600_000);
         },
       },
       {
         show: false,
-        max(value: { max: number }) {
-            return value.max * (6_000_000 / 3_400_000);
+        max(value) {
+            return value.max * (6_000_000 / 2_800_000);
         },
       }],
       series: [
@@ -167,13 +213,13 @@
           itemStyle: { color: ramLineColor },
         },
         {
-          name: 'Speed',
+          name: 'Time',
           type: 'line',
           yAxisIndex: 2,
           symbol: 'circle',
-          data: speed.map(({x,y})=>[x,y]),
-          lineStyle: { color: speedLineColor },
-          itemStyle: { color: speedLineColor },
+          data: time.map(({x,y})=>[x,y]),
+          lineStyle: { color: timeLineColor },
+          itemStyle: { color: timeLineColor },
         },
       ]
     };
