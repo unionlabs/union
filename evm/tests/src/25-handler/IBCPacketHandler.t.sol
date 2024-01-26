@@ -10,7 +10,7 @@ import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
 import {IBCConnection} from "../../../contracts/core/03-connection/IBCConnection.sol";
 import {IBCClient} from "../../../contracts/core/02-client/IBCClient.sol";
 import {IBCChannelHandshake} from "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
-import {IIBCPacket} from "../../../contracts/core/04-channel/IIBCChannel.sol";
+import {IIBCPacket} from "../../../contracts/core/04-channel/IIBCPacket.sol";
 import {IBCPacket, IBCPacketLib} from "../../../contracts/core/04-channel/IBCPacket.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IbcCoreClientV1Height as ClientHeight} from "../../../contracts/proto/MockClient.sol";
@@ -46,7 +46,7 @@ contract TestVerifier is IZKVerifierV2 {
     function verifyProof(
         uint256[8] memory proof,
         uint256[2] memory proofCommitment,
-        uint256[5] calldata input
+        uint256[4] calldata input
     ) external returns (bool) {
         bool ok = valid > 0;
         if (valid > 0) {

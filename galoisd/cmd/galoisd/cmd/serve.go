@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	provergrpc "galois/grpc/api/v1"
+	provergrpc "galois/grpc"
+	provergrpcapi "galois/grpc/api/v2"
 	"log"
 	"net"
 	"time"
@@ -57,7 +58,7 @@ func ServeCmd() *cobra.Command {
 				Time:                  5 * time.Second,
 				Timeout:               20 * time.Second,
 			}))
-			provergrpc.RegisterUnionProverAPIServer(grpcServer, server)
+			provergrpcapi.RegisterUnionProverAPIServer(grpcServer, server)
 			log.Println("Serving...")
 			return grpcServer.Serve(limitedLis)
 		},

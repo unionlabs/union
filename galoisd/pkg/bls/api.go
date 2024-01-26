@@ -22,9 +22,12 @@ func NewBlsAPI(api frontend.API) (*BlsAPI, error) {
 		return nil, err
 	}
 	_, _, g1Gen, _ := curve.Generators()
+	var g1GenNeg curve.G1Affine
+	g1GenNeg.Neg(&g1Gen)
+
 	return &BlsAPI{
 		api:       api,
-		negG1Gen:  gadget.NewG1Affine(*g1Gen.Neg(&g1Gen)),
+		negG1Gen:  gadget.NewG1Affine(g1GenNeg),
 		Nonnative: nonnative,
 	}, nil
 }
@@ -76,6 +79,10 @@ func (b *BlsAPI) VerifySignature(publicKey *gadget.G1Affine, message *gadget.G2A
 	if err != nil {
 		return fmt.Errorf("new pairing: %w", err)
 	}
+	pairing.AssertIsOnG1(&b.negG1Gen)
+	pairing.AssertIsOnG1(publicKey)
+	pairing.AssertIsOnG2(message)
+	pairing.AssertIsOnG2(signature)
 	// Verify that the aggregated signature is correct
 	err = pairing.PairingCheck(
 		[]*gadget.G1Affine{&b.negG1Gen, publicKey},

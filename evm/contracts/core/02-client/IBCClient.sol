@@ -15,7 +15,6 @@ library IBCClientLib {
     error ErrClientTypeNotFound();
     error ErrFailedToCreateClient();
     error ErrFailedToUpdateClient();
-    error ErrClientNotFound();
 }
 
 /**
@@ -92,7 +91,7 @@ contract IBCClient is IBCStore, IIBCClient {
                 IBCCommitment.clientStateCommitmentKey(msg_.clientId)
             ] == bytes32(0)
         ) {
-            revert IBCClientLib.ErrClientNotFound();
+            revert IBCStoreLib.ErrClientNotFound();
         }
         (
             bytes32 clientStateCommitment,

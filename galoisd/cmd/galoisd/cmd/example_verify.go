@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	provergrpc "galois/grpc/api/v1"
+	provergrpc "galois/grpc/api/v2"
 	"log"
 	"math/big"
 
@@ -375,14 +375,13 @@ func ExampleVerifyCmd() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			hmX, hmY := cometbft_bn254.HashToField2(signedBytes)
+			hm := cometbft_bn254.HashToField(signedBytes)
 
 			verifyRes, err := client.Verify(ctx, &provergrpc.VerifyRequest{
 				Proof:                     proveRes.Proof,
 				TrustedValidatorSetRoot:   trustedValidatorSetRoot,
 				UntrustedValidatorSetRoot: untrustedValidatorSetRoot,
-				BlockHeaderX:              &provergrpc.FrElement{Value: hmX.Marshal()},
-				BlockHeaderY:              &provergrpc.FrElement{Value: hmY.Marshal()},
+				HashedMessage:             &provergrpc.FrElement{Value: hm.Marshal()},
 			})
 
 			if err != nil {

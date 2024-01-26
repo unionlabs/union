@@ -144,7 +144,7 @@ async fn handle_ucs_balance<C: ChainSpec>(
     ));
     let relay = UCS01Relay::new(contract_address, signer_middleware.clone());
 
-    let denom = relay.denom_to_address(denom).await.unwrap();
+    let denom = relay.get_denom_address(denom).await.unwrap();
     println!("Corresponding ERC20 address: {}", denom);
 
     let erc_contract = erc20::ERC20::new(denom, signer_middleware.clone());
@@ -183,7 +183,7 @@ async fn handle_transfer<C: ChainSpec>(
     ));
     let relay = UCS01Relay::new(relay_address, signer_middleware.clone());
 
-    let denom = relay.denom_to_address(denom).await.unwrap();
+    let denom = relay.get_denom_address(denom).await.unwrap();
     println!("Address is: {}", denom);
 
     let erc_contract = erc20::ERC20::new(denom, signer_middleware.clone());

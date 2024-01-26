@@ -1,17 +1,17 @@
 package nonadjacent
 
 import (
-	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"galois/pkg/lightclient"
 	"math/big"
+	"math/rand"
 
 	"cosmossdk.io/math"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/frontend"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/assert"
 
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
@@ -19,6 +19,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 
+	"github.com/consensys/gnark/frontend"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 
 	"testing"
@@ -26,117 +27,102 @@ import (
 	"github.com/consensys/gnark/test"
 )
 
-func Test(t *testing.T) {
-	nbOfValidators := lightclient.MaxVal
+type Pairing struct {
+	PK  gadget.G1Affine
+	Sig gadget.G2Affine
+	Msg gadget.G2Affine
+}
 
-	// Nb of tokens for each val in devnet
-	toValidator := func(pubKey []byte) (*types.SimpleValidator, error) {
-		protoPK, err := ce.PubKeyToProto(cometbn254.PubKey(pubKey))
-		if err != nil {
-			return &types.SimpleValidator{}, err
-		}
-		power, err := rand.Int(rand.Reader, big.NewInt(922337203685477586))
-		if err != nil {
-			return &types.SimpleValidator{}, err
-		}
-		return &types.SimpleValidator{
-			PubKey:      &protoPK,
-			VotingPower: sdk.TokensToConsensusPower(math.NewInt(power.Int64()), sdk.DefaultPowerReduction),
-		}, nil
-	}
-
-	blockHash := make([]byte, 32)
-	_, err := rand.Read(blockHash)
+func (c *Pairing) Define(api frontend.API) error {
+	pairing, err := gadget.NewPairing(api)
 	if err != nil {
-		t.Fatal(err)
+		return fmt.Errorf("new pairing: %w", err)
 	}
+	_, _, g1Gen, _ := curve.Generators()
+	g1GenNeg := gadget.NewG1Affine(*g1Gen.Neg(&g1Gen))
 
-	partSetHeaderHash := make([]byte, 32)
-	_, err = rand.Read(partSetHeaderHash)
+	err = pairing.PairingCheck(
+		[]*gadget.G1Affine{&g1GenNeg, &c.PK},
+		[]*gadget.G2Affine{&c.Sig, &c.Msg},
+	)
 	if err != nil {
-		t.Fatal(err)
+		return fmt.Errorf("pairing check: %w", err)
+	}
+	return nil
+}
+
+func TestPairingVirtual(t *testing.T) {
+	t.Parallel()
+
+	hex := func(h string) []byte {
+		b, err := hex.DecodeString(h)
+		assert.NoError(t, err)
+		return b
 	}
 
-	height, err := rand.Int(rand.Reader, new(big.Int).SetUint64(^uint64(0)))
-	if err != nil {
-		t.Fatal(err)
-	}
+	_, _, g1Gen, _ := curve.Generators()
+	var g1GenNeg curve.G1Affine
+	g1GenNeg.Neg(&g1Gen)
 
-	round, err := rand.Int(rand.Reader, new(big.Int).SetUint64(^uint64(0)))
-	if err != nil {
-		t.Fatal(err)
-	}
+	var pk curve.G1Affine
+	_, err := pk.SetBytes(hex("83D016646DF946E887CD36AE6C10BED9C4A49D675CCC072E5AAF496AA4B2D50D"))
+	assert.NoError(t, err)
+	var sig curve.G2Affine
+	_, err = sig.SetBytes(hex("C4B626B703FACBFA5A5071B8254E4A4B78BB45C6A534FF5822BA806730BCE9522707DBF7D689759DFB5CE8DA3A99E04219DDC1CBB8F94481876B1F24FFA5A73E"))
+	assert.NoError(t, err)
+	var msg curve.G2Affine
+	_, err = msg.SetBytes(hex("8591C93118F5A406886C558BEA365D249D881BBC7FCD68673307CC8350BA9C49000ABE5E44150F1E98196B088D4A3A60AFE27E49BA4D4411E528320022D324CF"))
+	assert.NoError(t, err)
 
-	chainId, err := rand.Int(rand.Reader, new(big.Int).SetUint64(^uint64(0)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	vote := types.CanonicalVote{
-		Type:   types.PrecommitType,
-		Height: height.Int64(),
-		Round:  round.Int64(),
-		BlockID: &types.CanonicalBlockID{
-			Hash: blockHash,
-			PartSetHeader: types.CanonicalPartSetHeader{
-				Total: 1,
-				Hash:  partSetHeaderHash,
-			},
+	err = test.IsSolved(
+		&Pairing{},
+		&Pairing{
+			PK:  gadget.NewG1Affine(pk),
+			Sig: gadget.NewG2Affine(sig),
+			Msg: gadget.NewG2Affine(msg),
 		},
-		ChainID: fmt.Sprintf("union-devnet-%d", chainId.Uint64()),
+		ecc.BN254.ScalarField(),
+	)
+	assert.NoError(t, err)
+}
+
+func TestPairingNative(t *testing.T) {
+	t.Parallel()
+
+	hex := func(h string) []byte {
+		b, err := hex.DecodeString(h)
+		assert.NoError(t, err)
+		return b
 	}
 
-	privKeys := make([]cometbn254.PrivKey, nbOfValidators)
-	validators := make([]*types.SimpleValidator, nbOfValidators)
-	totalPower := int64(0)
-	for i := 0; i < len(validators); i++ {
-		privKeys[i] = cometbn254.GenPrivKey()
-		val, err := toValidator(privKeys[i].PubKey().Bytes())
-		if err != nil {
-			t.Fatal(err)
-		}
-		totalPower += val.VotingPower
-		validators[i] = val
-	}
+	_, _, g1Gen, _ := curve.Generators()
+	var g1GenNeg curve.G1Affine
+	g1GenNeg.Neg(&g1Gen)
 
-	signedBytes, err := protoio.MarshalDelimited(&vote)
-	if err != nil {
-		t.Fatal(err)
-	}
+	var pk curve.G1Affine
+	_, err := pk.SetBytes(hex("83D016646DF946E887CD36AE6C10BED9C4A49D675CCC072E5AAF496AA4B2D50D"))
+	assert.NoError(t, err)
+	var sig curve.G2Affine
+	_, err = sig.SetBytes(hex("C4B626B703FACBFA5A5071B8254E4A4B78BB45C6A534FF5822BA806730BCE9522707DBF7D689759DFB5CE8DA3A99E04219DDC1CBB8F94481876B1F24FFA5A73E"))
+	assert.NoError(t, err)
+	var msg curve.G2Affine
+	_, err = msg.SetBytes(hex("8591C93118F5A406886C558BEA365D249D881BBC7FCD68673307CC8350BA9C49000ABE5E44150F1E98196B088D4A3A60AFE27E49BA4D4411E528320022D324CF"))
+	assert.NoError(t, err)
 
-	var signatures [][]byte
-	var bitmap big.Int
-	votingPower := 0
+	ok, err := curve.PairingCheck(
+		[]curve.G1Affine{
+			g1GenNeg,
+			pk,
+		},
+		[]curve.G2Affine{
+			sig,
+			msg,
+		})
+	assert.NoError(t, err)
+	assert.True(t, ok)
+}
 
-	for true {
-		if votingPower >= int(totalPower)/3*2 {
-			break
-		}
-		index, err := rand.Int(rand.Reader, big.NewInt(int64(nbOfValidators)))
-		if err != nil {
-			t.Fatal(err)
-		}
-		i := index.Int64()
-		if bitmap.Bit(int(i)) == 0 {
-			votingPower += int(validators[i].VotingPower)
-			bitmap.SetBit(&bitmap, int(i), 1)
-			sig, err := privKeys[i].Sign(signedBytes)
-			if err != nil {
-				t.Fatal(err)
-			}
-			signatures = append(signatures, sig)
-		}
-	}
-
-	trustedValidators := validators
-	untrustedValidators := validators
-
-	trustedSignatures := signatures
-	untrustedSignatures := signatures
-
-	trustedBitmap := bitmap
-	untrustedBitmap := bitmap
-
+func FuzzNonadjacent(f *testing.F) {
 	marshalValidators := func(validators []*types.SimpleValidator) ([lightclient.MaxVal]lightclient.Validator, []byte, error) {
 		lcValidators := [lightclient.MaxVal]lightclient.Validator{}
 		// Make sure we zero initialize
@@ -188,59 +174,158 @@ func Test(t *testing.T) {
 		}
 		return aggregatedSignature, nil
 	}
-
-	trustedValidatorsInput, trustedValidatorsRoot, err := marshalValidators(trustedValidators)
-	if err != nil {
-		t.Fatal(err)
+	// Nb of tokens for each val in devnet
+	toValidator := func(pubKey []byte, power int64) (*types.SimpleValidator, error) {
+		protoPK, err := ce.PubKeyToProto(cometbn254.PubKey(pubKey))
+		if err != nil {
+			return &types.SimpleValidator{}, err
+		}
+		return &types.SimpleValidator{
+			PubKey:      &protoPK,
+			VotingPower: sdk.TokensToConsensusPower(math.NewInt(power), sdk.DefaultPowerReduction),
+		}, nil
 	}
 
-	trustedAggregatedSignature, err := aggregateSignatures(trustedSignatures)
-	if err != nil {
-		t.Fatal(err)
-	}
+	f.Fuzz(func(t *testing.T, seed int64) {
+		t.Parallel()
+		r := rand.New(rand.NewSource(seed))
 
-	untrustedValidatorsInput, untrustedValidatorsRoot, err := marshalValidators(untrustedValidators)
-	if err != nil {
-		t.Fatal(err)
-	}
+		nbOfValidators := 1 + r.Uint32()%lightclient.MaxVal
 
-	untrustedAggregatedSignature, err := aggregateSignatures(untrustedSignatures)
-	if err != nil {
-		t.Fatal(err)
-	}
+		blockHash := make([]byte, 32)
+		_, err := r.Read(blockHash)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	trustedInput := TendermintNonAdjacentLightClientInput{
-		Sig:           gadget.NewG2Affine(trustedAggregatedSignature),
-		Validators:    trustedValidatorsInput,
-		NbOfVal:       len(trustedValidators),
-		NbOfSignature: len(trustedSignatures),
-		Bitmap:        trustedBitmap,
-	}
+		partSetHeaderHash := make([]byte, 32)
+		_, err = r.Read(partSetHeaderHash)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	untrustedInput := TendermintNonAdjacentLightClientInput{
-		Sig:           gadget.NewG2Affine(untrustedAggregatedSignature),
-		Validators:    untrustedValidatorsInput,
-		NbOfVal:       len(untrustedValidators),
-		NbOfSignature: len(untrustedSignatures),
-		Bitmap:        untrustedBitmap,
-	}
+		vote := types.CanonicalVote{
+			Type:   types.PrecommitType,
+			Height: r.Int63(),
+			Round:  r.Int63(),
+			BlockID: &types.CanonicalBlockID{
+				Hash: blockHash,
+				PartSetHeader: types.CanonicalPartSetHeader{
+					Total: 1,
+					Hash:  partSetHeaderHash,
+				},
+			},
+			ChainID: fmt.Sprintf("union-devnet-%d", r.Uint64()),
+		}
 
-	hmX, hmY := cometbn254.HashToField2(signedBytes)
+		privKeys := make([]cometbn254.PrivKey, nbOfValidators)
+		validators := make([]*types.SimpleValidator, nbOfValidators)
+		totalPower := int64(0)
+		for i := 0; i < len(validators); i++ {
+			privKeys[i] = cometbn254.GenPrivKey()
+			val, err := toValidator(privKeys[i].PubKey().Bytes(), 100000000+r.Int63n(100000000))
+			if err != nil {
+				t.Fatal(err)
+			}
+			totalPower += val.VotingPower
+			validators[i] = val
+		}
 
-	circuit := Circuit{
-		TrustedInput:             trustedInput,
-		UntrustedInput:           untrustedInput,
-		ExpectedTrustedValRoot:   trustedValidatorsRoot,
-		ExpectedUntrustedValRoot: untrustedValidatorsRoot,
-		Message:                  [2]frontend.Variable{hmX, hmY},
-	}
+		signedBytes, err := protoio.MarshalDelimited(&vote)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	assert := test.NewAssert(t)
-	assert.CheckCircuit(
-		&Circuit{},
-		test.WithValidAssignment(&circuit),
-		test.WithCurves(ecc.BN254),
-		test.WithBackends(backend.GROTH16),
-		test.NoFuzzing(),
-	)
+		var signatures [][]byte
+		var bitmap big.Int
+		votingPower := 0
+
+		for true {
+			if votingPower > int(totalPower)/3*2+1 {
+				break
+			}
+			index := uint32(rand.Int31n(int32(nbOfValidators) - 1))
+			i := index
+			for bitmap.Bit(int(i)) == 1 {
+				i = (i + 1) % nbOfValidators
+			}
+			votingPower += int(validators[i].VotingPower)
+			bitmap.SetBit(&bitmap, int(i), 1)
+			sig, err := privKeys[i].Sign(signedBytes)
+			if err != nil {
+				t.Fatal(err)
+			}
+			signatures = append(signatures, sig)
+		}
+
+		trustedValidators := validators
+		untrustedValidators := validators
+
+		trustedSignatures := signatures
+		untrustedSignatures := signatures
+
+		trustedBitmap := bitmap
+		untrustedBitmap := bitmap
+
+		trustedValidatorsInput, trustedValidatorsRoot, err := marshalValidators(trustedValidators)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		trustedAggregatedSignature, err := aggregateSignatures(trustedSignatures)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		untrustedValidatorsInput, untrustedValidatorsRoot, err := marshalValidators(untrustedValidators)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		untrustedAggregatedSignature, err := aggregateSignatures(untrustedSignatures)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !trustedAggregatedSignature.IsInSubGroup() || !trustedAggregatedSignature.IsOnCurve() || trustedAggregatedSignature.IsInfinity() {
+			panic("")
+		}
+
+		trustedInput := TendermintNonAdjacentLightClientInput{
+			Sig:           gadget.NewG2Affine(trustedAggregatedSignature),
+			Validators:    trustedValidatorsInput,
+			NbOfVal:       nbOfValidators,
+			NbOfSignature: len(trustedSignatures),
+			Bitmap:        trustedBitmap,
+		}
+
+		untrustedInput := TendermintNonAdjacentLightClientInput{
+			Sig:           gadget.NewG2Affine(untrustedAggregatedSignature),
+			Validators:    untrustedValidatorsInput,
+			NbOfVal:       nbOfValidators,
+			NbOfSignature: len(untrustedSignatures),
+			Bitmap:        untrustedBitmap,
+		}
+
+		message := cometbn254.HashToField(signedBytes)
+
+		hashedMessage := cometbn254.HashToG2(signedBytes)
+
+		circuit := Circuit{
+			DomainSeparationTag:      []byte(cometbn254.CometblsSigDST),
+			TrustedInput:             trustedInput,
+			UntrustedInput:           untrustedInput,
+			ExpectedTrustedValRoot:   trustedValidatorsRoot,
+			ExpectedUntrustedValRoot: untrustedValidatorsRoot,
+			Message:                  message,
+			HashedMessage:            gadget.NewG2Affine(hashedMessage),
+		}
+
+		err = test.IsSolved(
+			&Circuit{},
+			&circuit,
+			ecc.BN254.ScalarField(),
+		)
+		assert.NoError(t, err)
+	})
 }

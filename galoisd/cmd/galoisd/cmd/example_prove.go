@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	provergrpc "galois/grpc/api/v1"
+	provergrpc "galois/grpc/api/v2"
 	"math/big"
 	"strconv"
 

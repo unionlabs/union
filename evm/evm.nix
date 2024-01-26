@@ -108,7 +108,8 @@
           wrapProgram $out/bin/forge \
             --append-flags "--offline --no-auto-detect" \
             --set PATH ${pkgs.lib.makeBinPath [ pkgs.solc ]} \
-            --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+            --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" \
+            --set FOUNDRY_CONFIG "${foundryConfig}/foundry.toml"
         '';
       };
       networks = [
@@ -134,7 +135,7 @@
 
       deploy = { rpc-url, private-key, path, name, args ? "" }: ''
         echo "Deploying ${name}..."
-        ${pkgs.lib.toUpper name}=$(forge create \
+        ${pkgs.lib.toUpper name}=$(FOUNDRY_PROFILE=optimized forge create \
                  --json \
                  --rpc-url ${rpc-url} \
                  --private-key ${private-key} \
@@ -284,7 +285,6 @@
           buildInputs = [ wrappedForge ];
           buildPhase = ''
             forge --version
-            cp ${foundryConfig}/foundry.toml .
             FOUNDRY_PROFILE=optimized forge build --sizes
           '';
           doCheck = true;
@@ -315,47 +315,41 @@
           '';
         };
 
-        solidity-coverage =
-          pkgs.runCommand "solidity-coverage"
-            {
-              buildInputs = [ wrappedForge pkgs.lcov ];
-            } ''
-            FOUNDRY_CONFIG="${foundryConfig}/foundry.toml" \
-            FOUNDRY_PROFILE="test" \
-              forge coverage --ir-minimum --report lcov
-            lcov --remove ./lcov.info -o ./lcov.info.pruned \
-              '${evmSources}/contracts/proto/*' \
-              '${evmSources}/contracts/clients/MockClient.sol' \
-              '${evmSources}/contracts/clients/Verifier.sol' \
-              '${evmSources}/contracts/apps/ucs/00-pingpong/*' \
-              '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
-              '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
-              '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
-              '${evmSources}/contracts/core/25-handler/IBCQuerier.sol' \
-              '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
-              '${evmSources}/tests/*'
-            genhtml lcov.info.pruned -o $out --branch-coverage
-            mv lcov.info.pruned $out/lcov.info
-          '';
-
-        show-solidity-coverage = pkgs.writeShellApplication {
-          name = "show-solidity-coverage";
-          runtimeInputs = [ ];
-          text = ''
-            xdg-open ${self'.packages.solidity-coverage}/index.html
-          '';
-        };
+        # NOTE: currently unable to build the tests with coverage, tried many different combination of the optimizer though...
+        # solidity-coverage =
+        #   pkgs.runCommand "solidity-coverage"
+        #     {
+        #       buildInputs = [ self'.packages.forge pkgs.lcov ];
+        #     } ''
+        #     FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
+        #     lcov --remove ./lcov.info -o ./lcov.info.pruned \
+        #       '${evmSources}/contracts/proto/*' \
+        #       '${evmSources}/contracts/clients/MockClient.sol' \
+        #       '${evmSources}/contracts/clients/Verifier.sol' \
+        #       '${evmSources}/contracts/apps/ucs/00-pingpong/*' \
+        #       '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
+        #       '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
+        #       '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
+        #       '${evmSources}/contracts/core/25-handler/IBCQuerier.sol' \
+        #       '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
+        #       '${evmSources}/tests/*'
+        #     genhtml lcov.info.pruned -o $out --branch-coverage
+        #     mv lcov.info.pruned $out/lcov.info
+        #   '';
+        # show-solidity-coverage = pkgs.writeShellApplication {
+        #   name = "show-solidity-coverage";
+        #   runtimeInputs = [ ];
+        #   text = ''
+        #     xdg-open ${self'.packages.solidity-coverage}/index.html
+        #   '';
+        # };
 
         solidity-build-tests = pkgs.writeShellApplication {
           name = "run-solidity-build-tests";
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            FOUNDRY_CONFIG="${foundryConfig}/foundry.toml" \
-            FOUNDRY_SRC="evm/contracts" \
-            FOUNDRY_PROFILE="test" \
-            FOUNDRY_TEST="evm/tests/src" \
-              forge test -vvv --gas-report
+            FOUNDRY_PROFILE="test" forge test -vvv --gas-report
           '';
         };
 

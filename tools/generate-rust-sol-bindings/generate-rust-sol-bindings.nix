@@ -28,6 +28,10 @@
           ${generate-rust-sol-bindings-crate}/bin/generate-rust-sol-bindings \
             --cratedir ./out/ \
             ${self'.packages.evm-contracts}/out/IBCHandler.sol/IBCHandler.json \
+            ${self'.packages.evm-contracts}/out/IBCClient.sol/IBCClient.json \
+            ${self'.packages.evm-contracts}/out/IBCConnection.sol/IBCConnection.json \
+            ${self'.packages.evm-contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json \
+            ${self'.packages.evm-contracts}/out/IBCPacket.sol/IBCPacket.json \
             ${self'.packages.evm-contracts}/out/Glue.sol/Glue.json \
             ${self'.packages.evm-contracts}/out/DevnetOwnableIBCHandler.sol/DevnetOwnableIBCHandler.json \
             ${self'.packages.external-evm-contracts}/out/ERC20.sol/ERC20.json \
