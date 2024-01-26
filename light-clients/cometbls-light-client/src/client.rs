@@ -263,7 +263,7 @@ impl IbcClient for CometblsLightClient {
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
     ) -> Result<bool, Self::Error> {
-        let height = update_height(&header);
+        let height = height_from_header(&header);
 
         let expected_timestamp: u64 = header
             .signed_header
@@ -277,7 +277,7 @@ impl IbcClient for CometblsLightClient {
             })?;
 
         // If there is already a header at this height, it should be exactly the same as the header that
-        // we have saved previously. If this is not the case, either the client is broken or the chain is
+        // we saved previously. If this is not the case, either the client is broken or the chain is
         // broken. Because it should not be possible to have two distinct valid headers at a height.
         if let Some(WasmConsensusState {
             data:
@@ -294,18 +294,24 @@ impl IbcClient for CometblsLightClient {
             {
                 return Ok(true);
             }
+
+            // We don't need to check for previous or next consensus state since we know that we already
+            // saved this header correctly previously.
+            return Ok(false);
         }
 
         if let Ok(Some((_, next_consensus_state))) = get_or_next_consensus_state_meta(deps, height)
         {
-            if next_consensus_state.timestamp < expected_timestamp {
+            // next (in terms of height) consensus state must have a larger timestamp
+            if next_consensus_state.timestamp <= expected_timestamp {
                 return Ok(true);
             }
         }
 
         if let Ok(Some((_, prev_consensus_state))) = get_or_prev_consensus_state_meta(deps, height)
         {
-            if prev_consensus_state.timestamp > expected_timestamp {
+            // previous (in terms of height) consensus state must have a smaller timestamp
+            if prev_consensus_state.timestamp >= expected_timestamp {
                 return Ok(true);
             }
         }
@@ -423,7 +429,7 @@ fn canonical_vote(
 /// `header.signed_header.header.height` is `u64` and it does not contain the
 /// revision height. This function is a utility to generate a `Height` type out
 /// of the update data.
-fn update_height(header: &Header) -> Height {
+fn height_from_header(header: &Header) -> Height {
     Height {
         revision_number: header.trusted_height.revision_number,
         // SAFETY: height's bounds are [0..i64::MAX]

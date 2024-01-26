@@ -16,11 +16,11 @@ pub struct ConsensusStateMetadata {
 }
 
 impl ConsensusStateMetadata {
-    fn new(timestamp: u64) -> Self {
+    pub fn new(timestamp: u64) -> Self {
         ConsensusStateMetadata { timestamp }
     }
 
-    fn decode_packed(data: &[u8]) -> Result<Self, StorageError> {
+    pub fn decode_packed(data: &[u8]) -> Result<Self, StorageError> {
         if data.len() != METADATA_SIZE {
             return Err(StorageError::InvalidConsensusStateMetadata);
         }
@@ -30,14 +30,20 @@ impl ConsensusStateMetadata {
         })
     }
 
-    fn encode_packed(self) -> [u8; METADATA_SIZE] {
+    pub fn encode_packed(self) -> [u8; METADATA_SIZE] {
         let mut key: [u8; METADATA_SIZE] = [0; METADATA_SIZE];
         key[0..8].copy_from_slice(&self.timestamp.to_le_bytes());
         key
     }
 }
 
-/// return the item at `height` if it exists or the previous item in terms of lexicographical order.
+/// Return the item at `height` if it exists or the previous item in terms of lexicographical order.
+///
+/// **Note**: This is not meant to be used for iteration. It wouldn't work because if the data exists
+/// at `height`, it returns the it. And it will be an endless loop.
+/// **Note**: The caller should note that if there is no other (lexicographically) previous consensus
+/// state metadata in the storage, this could try to parse a random item and return an error. Hence,
+/// on such occasion, there is no guarantee of whether the caller will get `Ok(None)` or `Err`.
 pub fn get_or_prev_consensus_state_meta(
     deps: Deps,
     height: Height,
@@ -57,7 +63,13 @@ pub fn get_or_prev_consensus_state_meta(
     }
 }
 
-/// return the item at `height` if it exists or the next item in terms of lexicographical order.
+/// Return the item at `height` if it exists or the next item in terms of lexicographical order.
+///
+/// **Note**: This is not meant to be used for iteration. It wouldn't work because if the data exists
+/// at `height`, it returns the it. And it will be an endless loop.
+/// **Note**: The caller should note that if there is no other (lexicographically) next consensus
+/// state metadata in the storage, this could try to parse a random item and return an error. Hence,
+/// on such occasion, there is no guarantee of whether the caller will get `Ok(None)` or `Err`.
 pub fn get_or_next_consensus_state_meta(
     deps: Deps,
     height: Height,
@@ -77,11 +89,14 @@ pub fn get_or_next_consensus_state_meta(
     }
 }
 
-fn parse_height_from_key(key: &[u8]) -> Result<Height, StorageError> {
+/// Parse the height from the given iteration `key`.
+pub fn parse_height_from_key(key: &[u8]) -> Result<Height, StorageError> {
     // 17: '/' + height
     if key.len() != CONSENSUS_STATE_ITER_KEY_PREFIX.len() + 17 {
         return Err(StorageError::InvalidConsensusStateMetadata);
     }
+    // `unwrap`'s are safe here because we get a slice with length 8, which will always
+    // succeed when we try to convert it to [u8; 8].
     let revision_height = u64::from_be_bytes(key[key.len() - 8..key.len()].try_into().unwrap());
     let revision_number =
         u64::from_be_bytes(key[key.len() - 16..key.len() - 8].try_into().unwrap());
@@ -91,6 +106,7 @@ fn parse_height_from_key(key: &[u8]) -> Result<Height, StorageError> {
     })
 }
 
+/// Save the consensus state metadata at `height`.
 pub fn save_consensus_state_metadata(deps: DepsMut, timestamp: u64, height: Height) {
     let iterator_key = consensus_state_iterator_key(height);
 
@@ -100,6 +116,7 @@ pub fn save_consensus_state_metadata(deps: DepsMut, timestamp: u64, height: Heig
     );
 }
 
+/// Get the consensus state iterator key with the `height`.
 pub fn consensus_state_iterator_key(height: Height) -> Vec<u8> {
     CONSENSUS_STATE_ITER_KEY_PREFIX
         .bytes()

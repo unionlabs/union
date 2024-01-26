@@ -235,7 +235,7 @@ contract CometblsClient is ILightClient {
         consensusState.appHash = header.signed_header.header.app_hash.toBytes32(
             0
         );
-        consensusState.nextValidatorsHash = untrustedValidatorsHash;
+        consensusState.nextValidatorsHash = header.signed_header.header.next_validators_hash.toBytes32(0);
 
         processedMoments[clientId][untrustedHeightIndex].timestamp = block
             .timestamp;
