@@ -108,7 +108,8 @@
           wrapProgram $out/bin/forge \
             --append-flags "--offline --no-auto-detect" \
             --set PATH ${pkgs.lib.makeBinPath [ pkgs.solc ]} \
-            --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+            --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" \
+            --set FOUNDRY_CONFIG "${foundryConfig}/foundry.toml"
         '';
       };
       networks = [
@@ -134,7 +135,7 @@
 
       deploy = { rpc-url, private-key, path, name, args ? "" }: ''
         echo "Deploying ${name}..."
-        ${pkgs.lib.toUpper name}=$(forge create \
+        ${pkgs.lib.toUpper name}=$(FOUNDRY_PROFILE=optimized forge create \
                  --json \
                  --rpc-url ${rpc-url} \
                  --private-key ${private-key} \
@@ -284,7 +285,6 @@
           buildInputs = [ wrappedForge ];
           buildPhase = ''
             forge --version
-            cp ${foundryConfig}/foundry.toml .
             FOUNDRY_PROFILE=optimized forge build --sizes
           '';
           doCheck = true;
@@ -351,11 +351,7 @@
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            FOUNDRY_CONFIG="${foundryConfig}/foundry.toml" \
-            FOUNDRY_SRC="evm/contracts" \
-            FOUNDRY_PROFILE="test" \
-            FOUNDRY_TEST="evm/tests/src" \
-              forge test -vvv --gas-report
+            FOUNDRY_PROFILE="test" forge test -vvv --gas-report
           '';
         };
 
