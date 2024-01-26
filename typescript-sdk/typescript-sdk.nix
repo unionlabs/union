@@ -8,9 +8,8 @@
         site = pkgs.buildNpmPackage {
           npmDepsHash = "";
           src = ./.;
-          pname = "sdk";
+          pname = "@unionlabs/client";
           version = "0.0.0";
-          PUPPETEER_SKIP_DOWNLOAD = true;
           nativeBuildInputs = pkgsDeps;
           buildInputs = pkgsDeps;
 

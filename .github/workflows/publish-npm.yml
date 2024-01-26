@@ -1,0 +1,66 @@
+name: Publish TypeScript SDK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'typescript-sdk/**'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  ACTIONS_RUNNER_DEBUG: true
+  NODE_OPTIONS: '--no-warnings'
+
+jobs:
+  changelog:
+    name: 'Generate Changelog'
+    runs-on: ['ubuntu-latest']
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 'Generate Changelog'
+        run: npm_config_yes=true npx changelogithub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-npm:
+    name: NPM Registry
+    needs: [changelog]
+    permissions:
+      id-token: write
+      contents: write
+    runs-on: ['ubuntu-latest']
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 'Install Dependencies'
+        working-directory: './typescript-sdk'
+        run: npm ci
+
+      - name: 'Publish to NPM'
+        working-directory: './typescript-sdk'
+        run: |
+          npm publish --access='public' --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
