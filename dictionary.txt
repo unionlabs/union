@@ -194,6 +194,7 @@ blst
 boneh
 bools
 builtins
+bumpp
 byteorder
 cachix
 canonicalization
