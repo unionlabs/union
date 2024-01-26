@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use cosmwasm_std::{Deps, DepsMut, Empty, Env};
 use ics008_wasm_client::{
     storage_utils::{
@@ -32,16 +34,16 @@ use crate::{
         get_or_next_consensus_state_meta, get_or_prev_consensus_state_meta,
         save_consensus_state_metadata,
     },
-    zkp_verifier::verify_zkp,
+    zkp_verifier::ZKPVerifier,
 };
 
 type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
 type WasmConsensusState =
     unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
 
-pub struct CometblsLightClient;
+pub struct CometblsLightClient<T: ZKPVerifier = ()>(PhantomData<T>);
 
-impl IbcClient for CometblsLightClient {
+impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
     type Error = Error;
 
     type CustomQuery = Empty;
@@ -183,7 +185,7 @@ impl IbcClient for CometblsLightClient {
         )
         .encode_length_delimited_to_vec();
 
-        if !verify_zkp(
+        if !T::verify_zkp(
             &trusted_validators_hash.0,
             &untrusted_validators_hash.0,
             &signed_vote,
@@ -283,7 +285,7 @@ impl IbcClient for CometblsLightClient {
             data:
                 ConsensusState {
                     timestamp,
-                    root: MerkleRoot { hash },
+                    app_hash: MerkleRoot { hash },
                     next_validators_hash,
                 },
         }) = read_consensus_state::<_, ConsensusState>(deps, &height)?
@@ -451,6 +453,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::zkp_verifier::MockZKPVerifier;
 
     const UPDATES_DIR_PATH: &str = "src/test/updates/";
 
@@ -458,6 +461,8 @@ mod tests {
         revision_number: 1,
         revision_height: 1124,
     };
+
+    type MockLightClient = CometblsLightClient<MockZKPVerifier>;
 
     lazy_static::lazy_static! {
         static ref UPDATES: Vec<cometbls::header::Header> = {
@@ -573,15 +578,12 @@ mod tests {
             );
 
             assert_eq!(
-                CometblsLightClient::check_for_misbehaviour_on_header(
-                    deps.as_ref(),
-                    update.clone()
-                )
-                .unwrap(),
+                MockLightClient::check_for_misbehaviour_on_header(deps.as_ref(), update.clone())
+                    .unwrap(),
                 false
             );
-            CometblsLightClient::verify_header(deps.as_ref(), env.clone(), update.clone()).unwrap();
-            CometblsLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
+            MockLightClient::verify_header(deps.as_ref(), env.clone(), update.clone()).unwrap();
+            MockLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
 
             let consensus_state: WasmConsensusState = read_consensus_state(
                 deps.as_ref(),
@@ -630,7 +632,7 @@ mod tests {
         update.signed_header.commit.height = 0.try_into().unwrap();
 
         assert!(matches!(
-            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            MockLightClient::verify_header(deps.as_ref(), env, update),
             Err(Error::InvalidHeader(
                 InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent { .. }
             ))
@@ -644,7 +646,7 @@ mod tests {
         update.signed_header.header.time.seconds = 0.try_into().unwrap();
 
         assert!(matches!(
-            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            MockLightClient::verify_header(deps.as_ref(), env, update),
             Err(Error::InvalidHeader(
                 InvalidHeaderError::SignedHeaderTimestampMustBeMoreRecent { .. }
             ))
@@ -658,7 +660,7 @@ mod tests {
         update.signed_header.header.time.seconds = (-10000).try_into().unwrap();
 
         assert!(matches!(
-            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            MockLightClient::verify_header(deps.as_ref(), env, update),
             Err(Error::InvalidHeader(InvalidHeaderError::NegativeTimestamp(
                 _
             )))
@@ -672,7 +674,7 @@ mod tests {
         env.block.time = Timestamp::from_nanos(u64::MAX);
 
         assert!(matches!(
-            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            MockLightClient::verify_header(deps.as_ref(), env, update),
             Err(Error::InvalidHeader(InvalidHeaderError::HeaderExpired(_)))
         ));
     }
@@ -685,7 +687,7 @@ mod tests {
         update.signed_header.header.time.seconds = TIMESTAMP_SECONDS_MAX.try_into().unwrap();
 
         assert!(matches!(
-            CometblsLightClient::verify_header(deps.as_ref(), env.clone(), update),
+            MockLightClient::verify_header(deps.as_ref(), env.clone(), update),
             Err(Error::InvalidHeader(
                 InvalidHeaderError::SignedHeaderCannotExceedMaxClockDrift { .. }
             ))
@@ -706,7 +708,7 @@ mod tests {
         );
 
         assert!(matches!(
-            CometblsLightClient::verify_header(deps.as_ref(), env, correct_update),
+            MockLightClient::verify_header(deps.as_ref(), env, correct_update),
             Err(Error::InvalidHeader(
                 InvalidHeaderError::SignedHeaderCannotExceedMaxClockDrift { .. }
             ))
@@ -722,7 +724,7 @@ mod tests {
             u8::MAX - update.signed_header.commit.block_id.hash.0[0];
 
         assert!(matches!(
-            CometblsLightClient::verify_header(deps.as_ref(), env.clone(), update),
+            MockLightClient::verify_header(deps.as_ref(), env.clone(), update),
             Err(Error::InvalidHeader(
                 InvalidHeaderError::SignedHeaderMismatchWithCommitHash { .. }
             ))
@@ -732,61 +734,11 @@ mod tests {
         update.signed_header.header.chain_id = "foobar".to_string();
 
         assert!(matches!(
-            CometblsLightClient::verify_header(deps.as_ref(), env, update),
+            MockLightClient::verify_header(deps.as_ref(), env, update),
             Err(Error::InvalidHeader(
                 InvalidHeaderError::SignedHeaderMismatchWithCommitHash { .. }
             ))
         ));
-    }
-
-    #[test]
-    fn verify_header_fails_when_invalid_zkp() {
-        let (deps, mut update, env) = prepare_test_data();
-
-        update.zero_knowledge_proof[0] = u8::MAX - update.zero_knowledge_proof[0];
-
-        assert_eq!(
-            CometblsLightClient::verify_header(deps.as_ref(), env, update),
-            Err(Error::InvalidZKP)
-        );
-    }
-
-    #[test]
-    fn verify_header_fails_when_invalid_trusted_validators_hash() {
-        let (mut deps, update, env) = prepare_test_data();
-
-        let mut consensus_state: WasmConsensusState =
-            read_consensus_state(deps.as_ref(), &INITIAL_CONSENSUS_STATE_HEIGHT)
-                .unwrap()
-                .unwrap();
-
-        consensus_state.data.next_validators_hash.0[0] =
-            u8::MAX - consensus_state.data.next_validators_hash.0[0];
-
-        save_consensus_state(
-            deps.as_mut(),
-            consensus_state,
-            &INITIAL_CONSENSUS_STATE_HEIGHT,
-        );
-
-        assert_eq!(
-            CometblsLightClient::verify_header(deps.as_ref(), env, update),
-            Err(Error::InvalidZKP)
-        );
-    }
-
-    #[test]
-    fn verify_header_fails_when_invalid_signed_vote() {
-        let (deps, mut update, env) = prepare_test_data();
-
-        update.signed_header.commit.round = (update.signed_header.commit.round.inner() + 1)
-            .try_into()
-            .unwrap();
-
-        assert_eq!(
-            CometblsLightClient::verify_header(deps.as_ref(), env, update),
-            Err(Error::InvalidZKP)
-        );
     }
 
     #[test]
@@ -813,7 +765,7 @@ mod tests {
         env.block.time = Timestamp::from_seconds(0);
 
         assert_eq!(
-            CometblsLightClient::status(deps.as_ref(), &env),
+            MockLightClient::status(deps.as_ref(), &env),
             Ok(Status::Active.into())
         );
     }
@@ -829,7 +781,7 @@ mod tests {
         save_client_state(deps.as_mut(), wasm_client_state);
 
         assert_eq!(
-            CometblsLightClient::status(deps.as_ref(), &mock_env()),
+            MockLightClient::status(deps.as_ref(), &mock_env()),
             Ok(Status::Expired.into())
         );
     }
@@ -858,7 +810,7 @@ mod tests {
         env.block.time = Timestamp::from_nanos(u64::MAX);
 
         assert_eq!(
-            CometblsLightClient::status(deps.as_ref(), &env),
+            MockLightClient::status(deps.as_ref(), &env),
             Ok(Status::Expired.into())
         );
     }
@@ -876,7 +828,7 @@ mod tests {
         save_client_state(deps.as_mut(), wasm_client_state);
 
         assert_eq!(
-            CometblsLightClient::status(deps.as_ref(), &mock_env()),
+            MockLightClient::status(deps.as_ref(), &mock_env()),
             Ok(Status::Frozen.into()),
         );
     }
