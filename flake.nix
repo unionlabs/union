@@ -5,12 +5,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
-
     # We need the latest nixpkgs for buildGo121Module, remove this once we upgrade nixpkgs
     nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    # Track a separate nixpkgs for Vercel as it needs to be the latest version for every deploy
-    nixpkgs-vercel.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
