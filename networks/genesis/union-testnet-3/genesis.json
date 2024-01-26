@@ -468,12 +468,7 @@
         "clients_consensus": [],
         "clients_metadata": [],
         "params": {
-          "allowed_clients": [
-            "06-solomachine",
-            "07-tendermint",
-            "08-wasm",
-            "09-localhost"
-          ]
+          "allowed_clients": ["06-solomachine", "07-tendermint", "08-wasm", "09-localhost"]
         },
         "create_localhost": false,
         "next_client_sequence": "0"

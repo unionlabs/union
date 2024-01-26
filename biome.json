@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.5.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.4.1/schema.json",
   "vcs": {
     "root": ".",
     "enabled": true,
@@ -7,20 +7,16 @@
   },
   "files": {
     "include": [
-      "./**/*.ts",
-      "./**/*.js",
-      "./**/*.cjs",
-      "./**/*.tsx",
-      "./**/*.d.ts",
-      "./**/*.json",
-      "./**/*.jsonc"
+      "*.ts",
+      "*.js",
+      "*.cjs",
+      "*.tsx",
+      "*.d.ts",
+      "*.json",
+      "*.jsonc"
     ],
     "ignoreUnknown": true,
-    "ignore": [
-      "node_modules",
-      "dist",
-      "_"
-    ]
+    "ignore": ["node_modules", "dist", "_"]
   },
   "organizeImports": {
     "enabled": false
@@ -33,50 +29,40 @@
     "formatWithErrors": true,
     "include": [
       "*.ts",
-      "./**/*.ts",
-      "./**/*.js",
-      "./**/*.mjs",
-      "./**/*.cjs",
-      "./**/*.jsx",
-      "./**/*.tsx",
-      "./**/*.d.ts",
-      "./**/*.d.cts",
-      "./**/*.d.mts",
-      "./**/*.json",
-      "./**/*.jsonc"
+      "*.js",
+      "*.mjs",
+      "*.cjs",
+      "*.jsx",
+      "*.tsx",
+      "*.d.ts",
+      "*.d.cts",
+      "*.d.mts",
+      "*.json",
+      "*.jsonc"
     ],
-    "ignore": [
-      "node_modules",
-      "dist",
-      "_"
-    ]
+    "ignore": ["dist", "biome.json", "node_modules", "_"]
   },
   "linter": {
     "include": [
-      "./**/*.ts",
-      "./**/*.js",
-      "./**/*.mjs",
-      "./**/*.cjs",
-      "./**/*.jsx",
-      "./**/*.tsx",
-      "./**/*.d.ts",
-      "./**/*.json",
-      "./**/*.d.cts",
-      "./**/*.d.mts",
-      "./**/*.jsonc"
+      "*.ts",
+      "*.js",
+      "*.mjs",
+      "*.cjs",
+      "*.jsx",
+      "*.tsx",
+      "*.d.ts",
+      "*.json",
+      "*.d.cts",
+      "*.d.mts",
+      "*.jsonc"
     ],
-    "ignore": [
-      "node_modules",
-      "dist",
-      "_"
-    ],
+    "ignore": ["node_modules", "dist", "_"],
     "enabled": true,
     "rules": {
       "all": true,
       "style": {
         "all": true,
         "noNamespace": "off",
-        //"noDefaultExport": "off",
         "useFragmentSyntax": "off",
         "useBlockStatements": "off",
         "useNamingConvention": "off",
@@ -92,10 +78,7 @@
       "nursery": {
         "all": true,
         "useAwait": "off",
-        //"noNodejsModules": "off",
         "noUnusedImports": "off"
-        //"noUselessTernary": "off",
-        //"useConsistentArrayType": "off"
       },
       "performance": {
         "all": true,
@@ -121,27 +104,17 @@
       }
     }
   },
-  // "css": {
-  //   "formatter": {
-  //     "enabled": true,
-  //     "quoteStyle": "single"
-  //   },
-  //   "parser": {
-  //     "allowWrongLineComments": false
-  //   }
-  // },
   "json": {
     "parser": {
-      "allowComments": true
+      "allowComments": true,
+      "allowTrailingCommas": true
     },
     "formatter": {
       "enabled": true
     }
   },
   "javascript": {
-    "globals": [
-      "NodeJS"
-    ],
+    "globals": ["NodeJS"],
     "parser": {
       "unsafeParameterDecoratorsEnabled": true
     },

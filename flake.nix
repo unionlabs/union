@@ -443,10 +443,13 @@
               };
               settings = {
                 global.excludes = [ "**/vendor/**" ];
+                formatter.biome =
+                  { };
                 formatter.prettier = {
                   # TODO: Use settings.pluginSearchDirs
                   options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
                   includes = [
+                    "*.css"
                     "*.html"
                     "*.md"
                     "*.mdx"
