@@ -27,6 +27,32 @@ struct RelayPacket {
     Token[] tokens;
 }
 
+interface IRelay is IIBCModule {
+    function getDenomAddress(
+        string memory denom
+    ) external view returns (address);
+
+    function getOutstanding(
+        string memory sourcePort,
+        string memory sourceChannel,
+        address token
+    ) external view returns (uint256);
+
+    function getCounterpartyEndpoint(
+        string memory sourcePort,
+        string memory sourceChannel
+    ) external view returns (IbcCoreChannelV1Counterparty.Data memory);
+
+    function send(
+        string calldata sourcePort,
+        string calldata sourceChannel,
+        bytes calldata receiver,
+        LocalToken[] calldata tokens,
+        uint64 counterpartyTimeoutRevisionNumber,
+        uint64 counterpartyTimeoutRevisionHeight
+    ) external;
+}
+
 library RelayLib {
     using LibString for *;
 
@@ -236,7 +262,7 @@ library RelayLib {
         }
     }
 
-    function hexToAddress(string memory s) public pure returns (address) {
+    function hexToAddress(string memory s) internal pure returns (address) {
         if (bytes(s).length != 42) {
             revert ErrInvalidHexAddress();
         }
@@ -284,7 +310,7 @@ library RelayPacketLib {
     }
 }
 
-contract UCS01Relay is IBCAppBase {
+contract UCS01Relay is IBCAppBase, IRelay {
     using RelayPacketLib for RelayPacket;
     using LibString for *;
     using strings for *;
@@ -308,7 +334,7 @@ contract UCS01Relay is IBCAppBase {
 
     function getDenomAddress(
         string memory denom
-    ) public view returns (address) {
+    ) external view override returns (address) {
         return denomToAddress[denom];
     }
 
@@ -316,14 +342,19 @@ contract UCS01Relay is IBCAppBase {
         string memory sourcePort,
         string memory sourceChannel,
         address token
-    ) public view returns (uint256) {
+    ) external view override returns (uint256) {
         return outstanding[sourcePort][sourceChannel][token];
     }
 
     function getCounterpartyEndpoint(
         string memory sourcePort,
         string memory sourceChannel
-    ) public view returns (IbcCoreChannelV1Counterparty.Data memory) {
+    )
+        external
+        view
+        override
+        returns (IbcCoreChannelV1Counterparty.Data memory)
+    {
         return counterpartyEndpoints[sourcePort][sourceChannel];
     }
 
@@ -388,7 +419,7 @@ contract UCS01Relay is IBCAppBase {
         LocalToken[] calldata tokens,
         uint64 counterpartyTimeoutRevisionNumber,
         uint64 counterpartyTimeoutRevisionHeight
-    ) public {
+    ) external override {
         IbcCoreChannelV1Counterparty.Data
             memory counterparty = counterpartyEndpoints[sourcePort][
                 sourceChannel
@@ -533,7 +564,7 @@ contract UCS01Relay is IBCAppBase {
     function onRecvPacket(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address relayer
-    ) external virtual override onlyIBC returns (bytes memory) {
+    ) external override(IBCAppBase, IIBCModule) onlyIBC returns (bytes memory) {
         // TODO: maybe consider threading _res in the failure ack
         (bool success, bytes memory _res) = address(this).call(
             abi.encodeWithSelector(
@@ -553,7 +584,7 @@ contract UCS01Relay is IBCAppBase {
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         bytes calldata acknowledgement,
         address _relayer
-    ) external virtual override onlyIBC {
+    ) external override(IBCAppBase, IIBCModule) onlyIBC {
         if (
             acknowledgement.length != RelayLib.ACK_LENGTH ||
             (acknowledgement[0] != RelayLib.ACK_FAILURE &&
@@ -574,7 +605,7 @@ contract UCS01Relay is IBCAppBase {
     function onTimeoutPacket(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address _relayer
-    ) external virtual override onlyIBC {
+    ) external override(IBCAppBase, IIBCModule) onlyIBC {
         refundTokens(
             ibcPacket.source_port,
             ibcPacket.source_channel,
@@ -589,7 +620,7 @@ contract UCS01Relay is IBCAppBase {
         string calldata channelId,
         IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
         string calldata version
-    ) external virtual override onlyIBC {
+    ) external override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
             revert RelayLib.ErrInvalidProtocolVersion();
         }
@@ -607,7 +638,7 @@ contract UCS01Relay is IBCAppBase {
         IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
         string calldata version,
         string calldata counterpartyVersion
-    ) external virtual override onlyIBC {
+    ) external override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
             revert RelayLib.ErrInvalidProtocolVersion();
         }
@@ -625,7 +656,7 @@ contract UCS01Relay is IBCAppBase {
         string calldata channelId,
         string calldata counterpartyChannelId,
         string calldata counterpartyVersion
-    ) external virtual override onlyIBC {
+    ) external override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(counterpartyVersion)) {
             revert RelayLib.ErrInvalidCounterpartyProtocolVersion();
         }
@@ -637,19 +668,19 @@ contract UCS01Relay is IBCAppBase {
     function onChanOpenConfirm(
         string calldata _portId,
         string calldata _channelId
-    ) external virtual override onlyIBC {}
+    ) external override(IBCAppBase, IIBCModule) onlyIBC {}
 
     function onChanCloseInit(
         string calldata _portId,
         string calldata _channelId
-    ) external virtual override onlyIBC {
+    ) external override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
 
     function onChanCloseConfirm(
         string calldata _portId,
         string calldata _channelId
-    ) external virtual override onlyIBC {
+    ) external override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
 }
