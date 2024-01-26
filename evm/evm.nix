@@ -336,14 +336,13 @@
         #     genhtml lcov.info.pruned -o $out --branch-coverage
         #     mv lcov.info.pruned $out/lcov.info
         #   '';
-
-        show-solidity-coverage = pkgs.writeShellApplication {
-          name = "show-solidity-coverage";
-          runtimeInputs = [ ];
-          text = ''
-            xdg-open ${self'.packages.solidity-coverage}/index.html
-          '';
-        };
+        # show-solidity-coverage = pkgs.writeShellApplication {
+        #   name = "show-solidity-coverage";
+        #   runtimeInputs = [ ];
+        #   text = ''
+        #     xdg-open ${self'.packages.solidity-coverage}/index.html
+        #   '';
+        # };
 
         solidity-build-tests = pkgs.writeShellApplication {
           name = "run-solidity-build-tests";
