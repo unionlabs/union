@@ -76,6 +76,7 @@ pub enum NeighborSearchError {
     InvalidPath,
 }
 
+/// Implements ICS-23 verifyNonMembership: verifies a proof that a path has not been set to any value in a commitment.
 pub fn verify_non_membership(
     spec: &ProofSpec,
     root: &[u8],
@@ -86,6 +87,7 @@ pub fn verify_non_membership(
         .map_err(VerifyMembershipError::ExistenceProofVerify)
 }
 
+/// Implements ICS-23 verifyMembership: verifies a proof that a path has been set to a particular value in a commitment.
 pub fn verify_membership(
     spec: &ProofSpec,
     root: &[u8],
