@@ -5,10 +5,23 @@
 
 :root[data-theme="light"] {
   --logo-text-color: #000000;
+  --sl-color-text-accent: #04acd2;
+  --sl-color-bg: #f9f9f9;
 }
 
 :root[data-theme="dark"] {
   --logo-text-color: #f9f9f9f9;
+}
+
+h1 a,
+h2 a,
+h3 a,
+h4 a {
+  color: var(--logo-text-color) !important;
+}
+
+.social-icons a {
+  color: var(--logo-text-color);
 }
 
 .site-title {
@@ -24,7 +37,7 @@ a[aria-current="true"]
   span[data-astro-source-file$="/starlight/components/TableOfContents/TableOfContentsList.astro"] {
   color: var(--dark-blue);
 }
-span[data-astro-source-file$="/starlight/components/SiteTitle.astro"] {
+.site-title span {
   color: var(--logo-text-color);
 }
 

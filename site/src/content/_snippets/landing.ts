@@ -1,3 +1,9 @@
+interface Snippet {
+  lang: string;
+  code: string;
+  title: string;
+}
+
 export const codeSnippets = [
   {
     lang: "solidity",
@@ -71,4 +77,4 @@ fn swap(
 }
 `,
   },
-] satisfies Array<{ lang: string; code: string; title: string }>;
+] satisfies Array<Snippet>;
