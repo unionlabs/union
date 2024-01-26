@@ -1,6 +1,6 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_verifier::{
-    compute_sync_committee_period_at_slot, validate_light_client_update,
+    compute_sync_committee_period_at_slot, compute_timestamp_at_slot, validate_light_client_update,
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
 use ics008_wasm_client::{
@@ -225,6 +225,11 @@ impl IbcClient for EthereumLightClient {
 
             consensus_state.data.storage_root = account_update.account_proof.storage_root;
 
+            consensus_state.data.timestamp = compute_timestamp_at_slot::<Config>(
+                client_state.data.genesis_time,
+                consensus_update.attested_header.beacon.slot,
+            );
+
             if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
                 client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
                 update_client_state(deps.branch(), client_state, updated_height);
@@ -278,23 +283,13 @@ impl IbcClient for EthereumLightClient {
                 return Err(Error::SlotCannotBeModified);
             }
 
-            // Next sync committee for a consensus height can be set if it is not being set
-            // previously, but it cannot be changed or unset after being set.
-            if let (Some(lhs), Some(rhs)) = (
-                consensus_state.data.next_sync_committee,
-                header.consensus_update.next_sync_committee,
-            ) {
-                if lhs != rhs.aggregate_pubkey {
-                    return Err(Error::NextSyncCommitteeCannotBeModified);
-                }
-            }
-
             // NOTE(aeryz): we don't check the timestamp here since it is calculated based on the
-            // client state and the slot number during update.
+            // thn slot and we already check the slot.
+
+            // NOTE(aeryz): we don't check the next sync committee because it's not being signed with
+            // a header. so it should be an error during the state update not a misbehaviour.
         }
 
-        // TODO(#605): Do we need to check whether this header's timestamp is between
-        // the next and the previous consensus state in terms of height?
         Ok(false)
     }
 
@@ -316,6 +311,7 @@ impl IbcClient for EthereumLightClient {
     }
 
     fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
+        // migration from previous client to self, so unimplemented now
         unimplemented!()
     }
 
