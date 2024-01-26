@@ -75,14 +75,14 @@ impl IbcClient for CometblsLightClient {
             StorageState::Occupied(value) => ics23::ibc_api::verify_membership(
                 &merkle_proof,
                 &SDK_SPECS,
-                &consensus_state.data.root,
+                &consensus_state.data.app_hash,
                 &path,
                 value,
             ),
             StorageState::Empty => ics23::ibc_api::verify_non_membership(
                 &merkle_proof,
                 &SDK_SPECS,
-                &consensus_state.data.root,
+                &consensus_state.data.app_hash,
                 &path,
             ),
         }
@@ -219,7 +219,7 @@ impl IbcClient for CometblsLightClient {
             client_state.data.latest_height = untrusted_height;
         }
 
-        consensus_state.data.root = MerkleRoot {
+        consensus_state.data.app_hash = MerkleRoot {
             hash: header.signed_header.header.app_hash,
         };
 
@@ -541,7 +541,7 @@ mod tests {
                 }
             );
             assert_eq!(
-                consensus_state.data.root.hash,
+                consensus_state.data.app_hash.hash,
                 update.signed_header.header.app_hash
             );
         }
