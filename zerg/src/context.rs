@@ -9,7 +9,7 @@ use std::{
 use chain_utils::{cosmos_sdk::CosmosSdkChainExt, EventSource};
 use contracts::{
     erc20,
-    ibc_handler::SendPacketFilter,
+    ibc_packet::SendPacketFilter,
     ucs01_relay::{self as ucs01relay, LocalToken},
 };
 use cosmwasm_std::Uint128;
@@ -83,7 +83,7 @@ impl Context {
             "wasm.{}/{}/{}",
             zerg_config.union_contract, zerg_config.channel, zerg_config.union.fee_denom
         );
-        let denom_address = ucs01_relay.denom_to_address(denom).call().await.unwrap();
+        let denom_address = ucs01_relay.get_denom_address(denom).call().await.unwrap();
         tracing::debug!("Fetched denom address.");
 
         for signer in zerg_config.clone().evm.signers.into_iter() {
