@@ -29,7 +29,8 @@ use unionlabs::{
 use crate::{
     errors::{Error, InvalidHeaderError},
     storage::{
-        next_consensus_state_meta, prev_consensus_state_meta, save_consensus_state_metadata,
+        get_or_next_consensus_state_meta, get_or_prev_consensus_state_meta,
+        save_consensus_state_metadata,
     },
     zkp_verifier::verify_zkp,
 };
@@ -295,13 +296,15 @@ impl IbcClient for CometblsLightClient {
             }
         }
 
-        if let Ok(Some((_, next_consensus_state))) = next_consensus_state_meta(deps, height) {
+        if let Ok(Some((_, next_consensus_state))) = get_or_next_consensus_state_meta(deps, height)
+        {
             if next_consensus_state.timestamp < expected_timestamp {
                 return Ok(true);
             }
         }
 
-        if let Ok(Some((_, prev_consensus_state))) = prev_consensus_state_meta(deps, height) {
+        if let Ok(Some((_, prev_consensus_state))) = get_or_prev_consensus_state_meta(deps, height)
+        {
             if prev_consensus_state.timestamp > expected_timestamp {
                 return Ok(true);
             }
