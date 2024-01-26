@@ -5,12 +5,10 @@
     nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
-
     # We need the latest nixpkgs for buildGo121Module, remove this once we upgrade nixpkgs
     nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    # Track a separate nixpkgs for Vercel as it needs to be the latest version for every deploy
-    nixpkgs-vercel.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # We need the latest nixpkgs for biome, remove this once we upgrade nixpkgs
+    nixpkgs-biome.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -97,6 +95,7 @@
     , nixpkgs
     , nixpkgs-solc
     , nixpkgs-go
+    , nixpkgs-biome
     , flake-parts
     , nix-filter
     , crane
@@ -185,6 +184,7 @@
           };
 
           goPkgs = import inputs.nixpkgs-go { inherit system; };
+          biomePkg = import inputs.nixpkgs-biome { inherit system; };
         in
         {
           _module = {
@@ -430,7 +430,13 @@
                   enable = true;
                   file = "dictionary.txt";
                 };
-                prettier.enable = true;
+                prettier = {
+                  enable = true;
+                };
+                biome = {
+                  enable = true;
+                  package = biomePkg.biome;
+                };
                 taplo = {
                   enable = true;
                 };
@@ -441,19 +447,10 @@
                   # TODO: Use settings.pluginSearchDirs
                   options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
                   includes = [
-                    "*.css"
                     "*.html"
-                    "*.js"
-                    "*.cjs"
-                    "*.mjs"
-                    "*.json"
-                    "*.jsx"
                     "*.md"
                     "*.mdx"
                     "*.scss"
-                    "*.ts"
-                    "*.tsx"
-                    "*.d.ts"
                     "*.yaml"
                     "*.yml"
                     "*.sol"

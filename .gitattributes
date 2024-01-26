@@ -9,6 +9,7 @@
 **/vendor/** linguist-vendored
 **/generated/** linguist-generated
 evm/contracts/proto/** linguist-generated
-wrangler.json  linguist-generated=JSON-with-Comments
+biome.json  linguist-generated=JSON-with-Comments
 strict.json  linguist-generated=JSON-with-Comments
+wrangler.json  linguist-generated=JSON-with-Comments
 .zip filter=lfs diff=lfs merge=lfs -text

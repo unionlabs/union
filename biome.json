@@ -1,0 +1,161 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.5.3/schema.json",
+  "vcs": {
+    "root": ".",
+    "enabled": true,
+    "clientKind": "git"
+  },
+  "files": {
+    "include": [
+      "./**/*.ts",
+      "./**/*.js",
+      "./**/*.cjs",
+      "./**/*.tsx",
+      "./**/*.d.ts",
+      "./**/*.json",
+      "./**/*.jsonc"
+    ],
+    "ignoreUnknown": true,
+    "ignore": [
+      "node_modules",
+      "dist",
+      "_"
+    ]
+  },
+  "organizeImports": {
+    "enabled": false
+  },
+  "formatter": {
+    "enabled": true,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "indentStyle": "space",
+    "formatWithErrors": true,
+    "include": [
+      "*.ts",
+      "./**/*.ts",
+      "./**/*.js",
+      "./**/*.mjs",
+      "./**/*.cjs",
+      "./**/*.jsx",
+      "./**/*.tsx",
+      "./**/*.d.ts",
+      "./**/*.d.cts",
+      "./**/*.d.mts",
+      "./**/*.json",
+      "./**/*.jsonc"
+    ],
+    "ignore": [
+      "node_modules",
+      "dist",
+      "_"
+    ]
+  },
+  "linter": {
+    "include": [
+      "./**/*.ts",
+      "./**/*.js",
+      "./**/*.mjs",
+      "./**/*.cjs",
+      "./**/*.jsx",
+      "./**/*.tsx",
+      "./**/*.d.ts",
+      "./**/*.json",
+      "./**/*.d.cts",
+      "./**/*.d.mts",
+      "./**/*.jsonc"
+    ],
+    "ignore": [
+      "node_modules",
+      "dist",
+      "_"
+    ],
+    "enabled": true,
+    "rules": {
+      "all": true,
+      "style": {
+        "all": true,
+        "noNamespace": "off",
+        //"noDefaultExport": "off",
+        "useFragmentSyntax": "off",
+        "useBlockStatements": "off",
+        "useNamingConvention": "off",
+        "useShorthandArrayType": "off",
+        "useSelfClosingElements": "off",
+        "noUnusedTemplateLiteral": "off"
+      },
+      "a11y": {
+        "all": true,
+        "noSvgWithoutTitle": "off",
+        "noDistractingElements": "off"
+      },
+      "nursery": {
+        "all": true,
+        "useAwait": "off",
+        //"noNodejsModules": "off",
+        "noUnusedImports": "off"
+        //"noUselessTernary": "off",
+        //"useConsistentArrayType": "off"
+      },
+      "performance": {
+        "all": true,
+        "noAccumulatingSpread": "off"
+      },
+      "correctness": {
+        "all": true,
+        "noUnusedVariables": "off",
+        "noUndeclaredVariables": "off"
+      },
+      "suspicious": {
+        "all": true,
+        "noConsoleLog": "off",
+        "noExplicitAny": "off",
+        "noEmptyInterface": "off"
+      },
+      "complexity": {
+        "all": true,
+        "noBannedTypes": "off",
+        "useLiteralKeys": "off",
+        "noUselessFragments": "off",
+        "noExcessiveCognitiveComplexity": "off"
+      }
+    }
+  },
+  // "css": {
+  //   "formatter": {
+  //     "enabled": true,
+  //     "quoteStyle": "single"
+  //   },
+  //   "parser": {
+  //     "allowWrongLineComments": false
+  //   }
+  // },
+  "json": {
+    "parser": {
+      "allowComments": true
+    },
+    "formatter": {
+      "enabled": true
+    }
+  },
+  "javascript": {
+    "globals": [
+      "NodeJS"
+    ],
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    },
+    "formatter": {
+      "enabled": true,
+      "lineWidth": 100,
+      "indentWidth": 2,
+      "indentStyle": "space",
+      "quoteStyle": "single",
+      "trailingComma": "none",
+      "semicolons": "asNeeded",
+      "jsxQuoteStyle": "single",
+      "quoteProperties": "asNeeded",
+      "arrowParentheses": "asNeeded"
+    }
+  }
+}
