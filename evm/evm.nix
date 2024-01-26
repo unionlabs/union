@@ -315,28 +315,27 @@
           '';
         };
 
-        solidity-coverage =
-          pkgs.runCommand "solidity-coverage"
-            {
-              buildInputs = [ wrappedForge pkgs.lcov ];
-            } ''
-            FOUNDRY_CONFIG="${foundryConfig}/foundry.toml" \
-            FOUNDRY_PROFILE="test" \
-              forge coverage --ir-minimum --report lcov
-            lcov --remove ./lcov.info -o ./lcov.info.pruned \
-              '${evmSources}/contracts/proto/*' \
-              '${evmSources}/contracts/clients/MockClient.sol' \
-              '${evmSources}/contracts/clients/Verifier.sol' \
-              '${evmSources}/contracts/apps/ucs/00-pingpong/*' \
-              '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
-              '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
-              '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
-              '${evmSources}/contracts/core/25-handler/IBCQuerier.sol' \
-              '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
-              '${evmSources}/tests/*'
-            genhtml lcov.info.pruned -o $out --branch-coverage
-            mv lcov.info.pruned $out/lcov.info
-          '';
+        # NOTE: currently unable to build the tests with coverage, tried many different combination of the optimizer though...
+        # solidity-coverage =
+        #   pkgs.runCommand "solidity-coverage"
+        #     {
+        #       buildInputs = [ self'.packages.forge pkgs.lcov ];
+        #     } ''
+        #     FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
+        #     lcov --remove ./lcov.info -o ./lcov.info.pruned \
+        #       '${evmSources}/contracts/proto/*' \
+        #       '${evmSources}/contracts/clients/MockClient.sol' \
+        #       '${evmSources}/contracts/clients/Verifier.sol' \
+        #       '${evmSources}/contracts/apps/ucs/00-pingpong/*' \
+        #       '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
+        #       '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
+        #       '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
+        #       '${evmSources}/contracts/core/25-handler/IBCQuerier.sol' \
+        #       '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
+        #       '${evmSources}/tests/*'
+        #     genhtml lcov.info.pruned -o $out --branch-coverage
+        #     mv lcov.info.pruned $out/lcov.info
+        #   '';
 
         show-solidity-coverage = pkgs.writeShellApplication {
           name = "show-solidity-coverage";
