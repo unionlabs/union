@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 bytes                     = { workspace = true }
 cometbls-groth16-verifier = { workspace = true, default-features = false }
-cosmwasm-std              = { workspace = true, features = ["abort"] }
+cosmwasm-std              = { workspace = true, features = ["abort", "iterator"] }
 hex                       = { workspace = true }
 prost                     = { workspace = true }
 protos                    = { workspace = true, default-features = false, features = ["proto_full", "std"] }

@@ -278,16 +278,8 @@ impl IbcClient for EthereumLightClient {
                 return Err(Error::SlotCannotBeModified);
             }
 
-            // Next sync committee for a consensus height can be set if it is not being set
-            // previously, but it cannot be changed or unset after being set.
-            if let (Some(lhs), Some(rhs)) = (
-                consensus_state.data.next_sync_committee,
-                header.consensus_update.next_sync_committee,
-            ) {
-                if lhs != rhs.aggregate_pubkey {
-                    return Err(Error::NextSyncCommitteeCannotBeModified);
-                }
-            }
+            // NOTE(aeryz): we don't check the next sync committee because it's not being signed with
+            // a header. so it should be an error during the state update not a misbehaviour.
 
             // NOTE(aeryz): we don't check the timestamp here since it is calculated based on the
             // client state and the slot number during update.
@@ -316,6 +308,7 @@ impl IbcClient for EthereumLightClient {
     }
 
     fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
+        // migration from previous client to self, so unimplemented now
         unimplemented!()
     }
 

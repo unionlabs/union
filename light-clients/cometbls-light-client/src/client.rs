@@ -28,6 +28,9 @@ use unionlabs::{
 
 use crate::{
     errors::{Error, InvalidHeaderError},
+    storage::{
+        next_consensus_state_meta, prev_consensus_state_meta, save_consensus_state_metadata,
+    },
     zkp_verifier::verify_zkp,
 };
 
@@ -223,17 +226,8 @@ impl IbcClient for CometblsLightClient {
             hash: header.signed_header.header.app_hash,
         };
 
-        // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
-        let untrusted_height_number = header.signed_header.commit.height.inner() as u64;
-        let trusted_height_number = header.trusted_height.revision_height;
-
-        let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
-            consensus_state.data.next_validators_hash.clone()
-        } else {
-            header.signed_header.header.validators_hash
-        };
-
-        consensus_state.data.next_validators_hash = untrusted_validators_hash;
+        consensus_state.data.next_validators_hash =
+            header.signed_header.header.next_validators_hash;
         consensus_state.data.timestamp = header
             .signed_header
             .header
@@ -246,6 +240,11 @@ impl IbcClient for CometblsLightClient {
             })?;
 
         save_client_state(deps.branch(), client_state);
+        save_consensus_state_metadata(
+            deps.branch(),
+            consensus_state.data.timestamp,
+            untrusted_height,
+        );
         save_consensus_state(deps, consensus_state, &untrusted_height);
 
         Ok(vec![untrusted_height])
@@ -263,27 +262,47 @@ impl IbcClient for CometblsLightClient {
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
     ) -> Result<bool, Self::Error> {
+        let height = update_height(&header);
+
+        let expected_timestamp: u64 = header
+            .signed_header
+            .header
+            .time
+            .seconds
+            .inner()
+            .try_into()
+            .map_err(|_| {
+                Error::NegativeTimestamp(header.signed_header.header.time.seconds.inner())
+            })?;
+
         // If there is already a header at this height, it should be exactly the same as the header that
         // we have saved previously. If this is not the case, either the client is broken or the chain is
         // broken. Because it should not be possible to have two distinct valid headers at a height.
-        if let Some(consensus_state) =
-            read_consensus_state::<_, ConsensusState>(deps, &update_height(&header))?
+        if let Some(WasmConsensusState {
+            data:
+                ConsensusState {
+                    timestamp,
+                    root: MerkleRoot { hash },
+                    next_validators_hash,
+                },
+        }) = read_consensus_state::<_, ConsensusState>(deps, &height)?
         {
-            let expected_timestamp: u64 = header
-                .signed_header
-                .header
-                .time
-                .seconds
-                .inner()
-                .try_into()
-                .map_err(|_| {
-                    Error::NegativeTimestamp(header.signed_header.header.time.seconds.inner())
-                })?;
-            if consensus_state.data.timestamp != expected_timestamp
-                || consensus_state.data.root.hash != header.signed_header.header.app_hash
-                || consensus_state.data.next_validators_hash
-                    != header.signed_header.header.next_validators_hash
+            if timestamp != expected_timestamp
+                || hash != header.signed_header.header.app_hash
+                || next_validators_hash != header.signed_header.header.next_validators_hash
             {
+                return Ok(true);
+            }
+        }
+
+        if let Ok(Some((_, next_consensus_state))) = next_consensus_state_meta(deps, height) {
+            if next_consensus_state.timestamp < expected_timestamp {
+                return Ok(true);
+            }
+        }
+
+        if let Ok(Some((_, prev_consensus_state))) = prev_consensus_state_meta(deps, height) {
+            if prev_consensus_state.timestamp > expected_timestamp {
                 return Ok(true);
             }
         }
@@ -514,79 +533,86 @@ mod tests {
     // separately in cometbls-groth16-verifier. Instead, mock the verifier and
     // predetermine what the result will be.
 
-    // #[test]
-    // fn verify_and_update_header_works_with_good_data() {
-    //     let mut deps = mock_dependencies();
+    #[test]
+    fn verify_and_update_header_works_with_good_data() {
+        let mut deps = mock_dependencies();
 
-    //     let wasm_client_state: WasmClientState =
-    //         serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
-    //             .unwrap();
+        let wasm_client_state: WasmClientState =
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap();
 
-    //     let wasm_consensus_state: WasmConsensusState =
-    //         serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
-    //             .unwrap();
+        let wasm_consensus_state: WasmConsensusState =
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap();
 
-    //     let prev_consensus_height = INITIAL_CONSENSUS_STATE_HEIGHT;
+        let prev_consensus_height = INITIAL_CONSENSUS_STATE_HEIGHT;
 
-    //     save_client_state(deps.as_mut(), wasm_client_state);
-    //     save_consensus_state(deps.as_mut(), wasm_consensus_state, &prev_consensus_height);
+        save_client_state(deps.as_mut(), wasm_client_state);
+        save_consensus_state(deps.as_mut(), wasm_consensus_state, &prev_consensus_height);
 
-    //     for update in UPDATES.iter() {
-    //         let mut env = mock_env();
-    //         env.block.time = cosmwasm_std::Timestamp::from_seconds(
-    //             update
-    //                 .signed_header
-    //                 .header
-    //                 .time
-    //                 .seconds
-    //                 .inner()
-    //                 .try_into()
-    //                 .unwrap(),
-    //         );
-    //         CometblsLightClient::check_for_misbehaviour_on_header(deps.as_ref(), update.clone())
-    //             .unwrap();
-    //         CometblsLightClient::verify_header(deps.as_ref(), env.clone(), update.clone()).unwrap();
-    //         CometblsLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
+        for update in UPDATES.iter() {
+            let mut env = mock_env();
+            env.block.time = cosmwasm_std::Timestamp::from_seconds(
+                update
+                    .signed_header
+                    .header
+                    .time
+                    .seconds
+                    .inner()
+                    .try_into()
+                    .unwrap(),
+            );
 
-    //         let consensus_state: WasmConsensusState = read_consensus_state(
-    //             deps.as_ref(),
-    //             &Height {
-    //                 revision_number: 1,
-    //                 revision_height: update
-    //                     .signed_header
-    //                     .header
-    //                     .height
-    //                     .inner()
-    //                     .try_into()
-    //                     .unwrap(),
-    //             },
-    //         )
-    //         .unwrap()
-    //         .unwrap();
-    //         assert_eq!(
-    //             consensus_state.data.timestamp,
-    //             TryInto::<u64>::try_into(update.signed_header.header.time.seconds.inner()).unwrap()
-    //         );
-    //         assert_eq!(
-    //             consensus_state.data.next_validators_hash,
-    //             if TryInto::<u64>::try_into(update.signed_header.commit.height.inner()).unwrap()
-    //                 == update.trusted_height.revision_height + 1
-    //             {
-    //                 let prev_consensus_state: WasmConsensusState =
-    //                     read_consensus_state(deps.as_ref(), &prev_consensus_height)
-    //                         .unwrap()
-    //                         .unwrap();
-    //                 prev_consensus_state.data.next_validators_hash
-    //             } else {
-    //                 update.signed_header.header.validators_hash.clone()
-    //             }
-    //         );
-    //         assert_eq!(
-    //             consensus_state.data.app_hash.hash,
-    //             update.signed_header.header.app_hash
-    //         );
-    //     }
-    // }
+            assert_eq!(
+                CometblsLightClient::check_for_misbehaviour_on_header(
+                    deps.as_ref(),
+                    update.clone()
+                )
+                .unwrap(),
+                false
+            );
+            CometblsLightClient::verify_header(deps.as_ref(), env.clone(), update.clone()).unwrap();
+            CometblsLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
+
+            let consensus_state: WasmConsensusState = read_consensus_state(
+                deps.as_ref(),
+                &Height {
+                    revision_number: 1,
+                    revision_height: update
+                        .signed_header
+                        .header
+                        .height
+                        .inner()
+                        .try_into()
+                        .unwrap(),
+                },
+            )
+            .unwrap()
+            .unwrap();
+            assert_eq!(
+                consensus_state.data.timestamp,
+                TryInto::<u64>::try_into(update.signed_header.header.time.seconds.inner()).unwrap()
+            );
+            assert_eq!(
+                consensus_state.data.next_validators_hash,
+                if TryInto::<u64>::try_into(update.signed_header.commit.height.inner()).unwrap()
+                    == update.trusted_height.revision_height + 1
+                {
+                    let prev_consensus_state: WasmConsensusState =
+                        read_consensus_state(deps.as_ref(), &prev_consensus_height)
+                            .unwrap()
+                            .unwrap();
+                    prev_consensus_state.data.next_validators_hash
+                } else {
+                    update.signed_header.header.validators_hash.clone()
+                }
+            );
+            assert_eq!(
+                consensus_state.data.app_hash.hash,
+                update.signed_header.header.app_hash
+            );
+        }
+    }
 
     #[test]
     fn verify_header_fails_with_signed_header_height_from_past() {
