@@ -1,5 +1,6 @@
 [package]
 edition = "2021"
+include = ["README.md"]
 name    = "unionlabs"
 version = "0.1.0"
 
