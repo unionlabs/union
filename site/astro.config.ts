@@ -128,10 +128,10 @@ export default defineConfig({
       ],
       plugins: [],
       customCss: [
-        "./src/styles/starlight.css",
         "./src/styles/tailwind.css",
-        "@fontsource/ibm-plex-mono/400.css",
-        "@fontsource/ibm-plex-mono/600.css",
+        "./src/styles/starlight.css",
+        "@fontsource/jetbrains-mono/400.css",
+        "@fontsource/jetbrains-mono/600.css",
       ],
     }),
     tailwind({
@@ -144,9 +144,6 @@ export default defineConfig({
     service: squooshImageService(),
   },
   vite: {
-    ssr: {
-      noExternal: ["smartypants"],
-    },
     optimizeDeps: {
       exclude: ["@urql/svelte", "echarts"],
     },
