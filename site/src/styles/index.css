@@ -33,6 +33,7 @@ html {
 
 ::selection {
   background-color: #a0ecfd;
+  color: #0d0d0d;
 }
 
 * {
