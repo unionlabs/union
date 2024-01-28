@@ -51,7 +51,6 @@ export default defineConfig({
         {
           tag: "script",
           attrs: {
-            type: "module",
             src: "/anchor-targets.js",
           },
         },
@@ -149,7 +148,7 @@ export default defineConfig({
       noExternal: ["smartypants"],
     },
     optimizeDeps: {
-      exclude: ["@urql/svelte"],
+      exclude: ["@urql/svelte", "echarts"],
     },
   },
 });

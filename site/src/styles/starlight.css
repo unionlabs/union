@@ -29,6 +29,14 @@ h4 a {
   color: white;
 }
 
+h1 > a,
+h2 > a,
+h3 > a,
+h4 > a,
+h5 > a {
+  text-decoration: none;
+}
+
 li a[aria-current="page"] {
   color: var(--dark-blue);
 }
