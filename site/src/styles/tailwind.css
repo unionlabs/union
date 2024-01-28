@@ -1,8 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @font-face {
   font-family: "Inter var";
   font-style: normal;
   font-weight: 100 900;
-  font-display: swap;
+  font-display: optional;
   src: url("/fonts/InterVariable.woff2") format("woff2");
 }
 
@@ -10,26 +14,6 @@
   font-family: "Inter var";
   font-style: italic;
   font-weight: 100 900;
-  font-display: swap;
+  font-display: optional;
   src: url("/fonts/InterVariable-Italic.woff2") format("woff2");
 }
-
-@font-face {
-  font-family: "Monospace Argon";
-  src: url("/fonts/MonaspaceArgon-Regular.woff") format("woff");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Monospace Argon";
-  src: url("/fonts/MonaspaceArgon-Bold.woff") format("woff");
-  font-weight: bold;
-  font-style: normal;
-  font-display: swap;
-}
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;

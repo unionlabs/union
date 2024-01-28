@@ -45,7 +45,6 @@ export default {
           },
         ],
         serif: ['"Inter var"'],
-        argon: ['"Monospace Argon"'],
       },
     },
   },

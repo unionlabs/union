@@ -46,6 +46,7 @@ IAVL
 IBC's
 IERC
 IIBC
+IOSVG
 Infima
 Interchain
 Jelena
@@ -98,6 +99,7 @@ Shacham
 Shallue
 Snapshotter
 Subdemom
+Sublist
 TRYOPEN
 Tempdirs
 Tendermint

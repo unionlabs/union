@@ -3,6 +3,7 @@ import rehypeSlug from "rehype-slug";
 import remarkMathPlugin from "remark-math";
 import rehypeKatexPlugin from "rehype-katex";
 import rehypeMathjaxPlugin from "rehype-mathjax";
+import remarkSmartypants from "remark-smartypants";
 import { type AstroUserConfig } from "astro/config";
 import { rehypeHeadingIds } from "@astrojs/markdown-remark";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
@@ -11,8 +12,10 @@ type Markdown = AstroUserConfig["markdown"];
 
 export const markdownConfiguration = {
   gfm: true,
+  smartypants: false,
   remarkPlugins: [
     remarkMathPlugin,
+    remarkSmartypants,
     [remarkToc, { heading: "contents", prefix: "toc-" }],
   ],
   rehypePlugins: [
