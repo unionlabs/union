@@ -17,13 +17,13 @@ Before running the setup command, we need to start both chains. The following co
 1. Union with 4 validators.
 2. Ethereum with the [the minimal preset](https://github.com/ethereum/consensus-specs/blob/v1.3.0/configs/minimal.yaml).
 
-```bash
+```bash frame="none"
 nix run ".#devnet"
 ```
 
 The above command will run both of the chains in a single session. So if you want to have separate logs for Ethereum and Union, you can run both of the devnets separately:
 
-```bash
+```bash frame="none"
 # For ethereum
 nix run ".#devnet-eth"
 
@@ -33,7 +33,7 @@ nix run ".#devnet-union"
 
 Now that we are ready, we can run the setup:
 
-```bash
+```bash frame="none"
 nix run ".#e2e-setup" -- --circuit-path ./
 ```
 
@@ -65,19 +65,19 @@ This can be very handy because starting the prover locally takes time and memory
 
 To run the prover:
 
-```bash
+```bash frame="none"
 nix run ".#galoisd-devnet" -- serve 0.0.0.0:16657
 ```
 
 For using a prover where the TLS is not enabled:
 
-```bash
+```bash frame="none"
 nix run ".#e2e-setup" -- --galois-url http://myserver.com:1111
 ```
 
 To enable the TLS:
 
-```bash
+```bash frame="none"
 nix run ".#e2e-setup" -- --galois-url http://myserver.com:1111 --galois-tls
 ```
 
@@ -102,7 +102,7 @@ Our relayer Voyager uses a configuration file for the IBC contracts that are dep
 
 To change this configuration path, run:
 
-```bash
+```bash frame="none"
 nix run ".#e2e-setup" -- --voyager-config-file /path/to/config.json
 ```
 
@@ -110,6 +110,6 @@ nix run ".#e2e-setup" -- --voyager-config-file /path/to/config.json
 
 Our ping-pong contracts have the timeout argument which is the number of blocks before `ping` message times out. By default, this is `1000`. To change this, run:
 
-```bash
+```bash frame="none"
 nix run ".#e2e-setup" -- --ping-pong-timeout 100
 ```

@@ -7,10 +7,12 @@
   --logo-text-color: #000000;
   --sl-color-text-accent: #04acd2;
   --sl-color-bg: #f9f9f9;
+  --anchor-icon-filter: invert(0);
 }
 
 :root[data-theme="dark"] {
   --logo-text-color: #f9f9f9f9;
+  --anchor-icon-filter: invert(1);
 }
 
 h1 a,
@@ -27,6 +29,31 @@ h4 a {
 .site-title {
   gap: 4px;
   color: white;
+}
+
+h1 > a,
+h2 > a,
+h3 > a,
+h4 > a,
+h5 > a {
+  text-decoration: none;
+}
+
+h1 > a:hover::after,
+h2 > a:hover::after,
+h3 > a:hover::after,
+h4 > a:hover::after,
+h5 > a:hover::after {
+  content: "";
+  width: 0.75em;
+  height: 0.75em;
+  margin-left: 5px;
+  background-repeat: no-repeat;
+  background-size: contain;
+  display: inline-block;
+  background-image: url("../assets/images/link.svg");
+  transform: rotate(135deg);
+  filter: var(--anchor-icon-filter);
 }
 
 li a[aria-current="page"] {
@@ -55,10 +82,6 @@ a[aria-current="true"]
 *::-webkit-scrollbar-thumb,
 *::-webkit-scrollbar-track {
   background-color: transparent;
-}
-
-a {
-  text-decoration: none;
 }
 
 h1 > a {

@@ -4,8 +4,9 @@ sidebar:
   order: 1
 ---
 
-import { Tabs, TabItem } from "@astrojs/starlight/components";
 import Version from "#/components/ChainVersions.svelte";
+import DownloadFile from "#/components/DownloadFile.astro";
+import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](../nixos) and the [Kubernetes](../kubernetes) guide for more production-ready deployments.
 
@@ -82,7 +83,7 @@ When running the container, make sure to map a volume to the path passed in `--h
 
 ## Initialization
 
-We'll need to set up a few configuration files and obtain the [`genesis.json`](https://rpc.cryptware.io/genesis) before we can run the node.
+We'll need to set up a few configuration files and obtain the <DownloadFile filepath="/genesis.json" filename="genesis.json" /> before we can run the node.
 
 First, set some environment variables, which are used throughout initialization.
 
@@ -95,7 +96,7 @@ export GENESIS_URL="union.testnet.4.seed.poisonphang.com:26657/genesis"
 
 Then we'll have `uniond` initialize our data and configuration directories. By default, `/User/{USER}/.uniond` is used.
 
-```sh
+```sh frame="none"
 uniond init $MONIKER "bn254" --chain-id $CHAIN_ID
 ```
 
@@ -129,7 +130,11 @@ First, add a wallet that holds Union tokens.
 uniond keys add $KEY_NAME --recover
 ```
 
-:::caution For production usage, we recommend not storing the wallet on a server. :::
+:::caution
+
+For production usage, we recommend not storing the wallet on a server.
+
+:::
 
 To submit the registration transaction and become a validator, you must submit a `create-validator` transaction:
 
