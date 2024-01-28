@@ -2,12 +2,14 @@
 import '#/styles/reset.css'
 import '#/styles/tailwind.css'
 import { SEO } from 'astro-seo'
+import { Head } from 'astro-capo'
 import '@fontsource/jetbrains-mono'
 import Header from '#/components/Header.astro'
 ---
 
+<!doctype html>
 <html lang='en'>
-  <head>
+  <Head>
     <meta charset='utf-8' />
     <SEO
       title='Union'
@@ -40,17 +42,19 @@ import Header from '#/components/Header.astro'
       extend={{
         link: [
           { rel: 'icon', href: 'favicon.ico' },
-          { rel: 'canonical', href: 'https://union.build' }
+          { rel: 'canonical', href: 'https://union.build' },
+          { rel: 'sitemap', href: '/sitemap-index.xml' }
         ],
         meta: [
           { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
+          { name: 'robots', content: 'index, follow' },
           { name: 'twitter:domain', content: 'union.build' },
           { name: 'twitter:url', content: 'https://union.build' },
           { name: 'twitter:description', content: 'The Sovereign Interoperability Layer' }
         ]
       }}
     />
-  </head>
+  </Head>
   <body
     class='font-sans flex flex-col items-stretch flex-1 shadow-effect-bg pb-12 bg-black text-white not-content'
   >

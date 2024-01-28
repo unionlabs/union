@@ -23,6 +23,7 @@
     "@fontsource/jetbrains-mono": "^5.0.18",
     "@urql/svelte": "^4.0.4",
     "astro": "4.0.9",
+    "astro-capo": "^0.0.1",
     "astro-seo": "^0.8.0",
     "echarts": "^5.4.3",
     "graphql": "^16.8.1",
