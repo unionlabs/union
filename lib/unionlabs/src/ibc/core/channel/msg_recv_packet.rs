@@ -13,6 +13,7 @@ use crate::{
     ),
     deny_unknown_fields
 )]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct MsgRecvPacket<ProofCommitment, ProofHeight: IsHeight> {
     pub packet: Packet,
     pub proof_commitment: ProofCommitment,

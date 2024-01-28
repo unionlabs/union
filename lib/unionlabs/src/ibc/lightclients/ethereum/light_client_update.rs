@@ -23,6 +23,7 @@ pub type FinalityBranch = [H256; floorlog2(FINALIZED_ROOT_INDEX)];
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct LightClientUpdate<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     /// Header attested to by the sync committee
     pub attested_header: LightClientHeader<C>,

@@ -10,6 +10,7 @@ use crate::{
 // REVIEW: H256 or actual arbitrary bytes?
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct AccountProof {
     pub contract_address: H160,
     pub storage_root: H256,

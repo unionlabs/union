@@ -87,22 +87,39 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Fetch<Hc, Tr> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct FetchSelfClientState<Hc: ChainExt, Tr: ChainExt> {
     pub at: QueryHeight<HeightOf<Hc>>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct FetchSelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
     pub at: QueryHeight<HeightOf<Hc>>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct FetchProof<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
     pub path: proof::Path<Hc::ClientId, Tr::Height>,
@@ -110,6 +127,11 @@ pub struct FetchProof<Hc: ChainExt, Tr: ChainExt> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct FetchState<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
     pub path: proof::Path<Hc::ClientId, Tr::Height>,
@@ -117,25 +139,42 @@ pub struct FetchState<Hc: ChainExt, Tr: ChainExt> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct FetchLatestClientState<Hc: ChainExt, Tr: ChainExt> {
     pub path: ClientStatePath<Hc::ClientId>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct FetchPacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
     pub block_hash: H256,
     pub destination_port_id: PortId,
     pub destination_channel_id: ChannelId,
     pub sequence: u64,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
     pub client_id: ClientIdOf<Hc>,
     pub counterparty_chain_id: ChainIdOf<Tr>,
@@ -147,6 +186,11 @@ pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct LightClientSpecificFetch<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
 
 impl<Hc, Tr> Fetch<Hc, Tr>

@@ -15,6 +15,7 @@ use crate::{
     rename_all = "snake_case",
     deny_unknown_fields
 )]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum CommitSig {
     Absent,
     Commit {

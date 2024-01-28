@@ -13,6 +13,7 @@ use crate::{
 
 /// Wrapper type to indicate that a type is to be serialized as an Any.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Any<T>(pub T);
 
 pub trait IntoAny {

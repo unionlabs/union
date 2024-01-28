@@ -8,6 +8,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct MsgChannelOpenConfirm<ProofAck> {
     pub port_id: PortId,
     pub channel_id: ChannelId,

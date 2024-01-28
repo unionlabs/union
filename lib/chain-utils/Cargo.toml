@@ -12,6 +12,7 @@ protos      = { workspace = true, default-features = true, features = ["client"]
 serde-utils = { workspace = true }
 unionlabs   = { workspace = true, default-features = true }
 
+arbitrary       = { workspace = true, optional = true, features = ["derive"] }
 bip32           = { workspace = true, features = ["secp256k1"] }
 chrono          = { workspace = true, features = ["alloc"] }
 crossbeam-queue = { workspace = true, features = ["std"] }

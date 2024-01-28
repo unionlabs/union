@@ -9,6 +9,8 @@ macro_rules! hex_string_array_wrapper {
                 Clone,
                 PartialEq,
                 Eq,
+                PartialOrd,
+                Ord,
                 ::ssz::Encode,
                 ::ssz::Decode,
                 ::serde::Serialize,
@@ -16,6 +18,7 @@ macro_rules! hex_string_array_wrapper {
                 Hash
             )]
             #[ssz(struct_behaviour = "transparent")]
+            #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
             pub struct $Struct(#[serde(with = "::serde_utils::hex_string")] pub [u8; $N]);
 
             impl $Struct {
@@ -231,6 +234,7 @@ macro_rules! wrapper_enum {
     ) => {
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
         $(#[$meta])*
+        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
         pub enum $Enum {
             $(
                 $(#[$inner_meta])*

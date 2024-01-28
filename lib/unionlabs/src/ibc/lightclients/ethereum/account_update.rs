@@ -8,6 +8,7 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct AccountUpdate {
     pub account_proof: AccountProof,
 }

@@ -414,6 +414,11 @@ where
     deny_unknown_fields
 )]
 #[allow(clippy::large_enum_variant)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Tr: ChainExt")
+)]
 pub enum UnionDataMsg<Tr: ChainExt> {
     // NOTE: Not used currently?
     // TrustedCommit {
@@ -438,6 +443,11 @@ pub enum UnionDataMsg<Tr: ChainExt> {
     deny_unknown_fields
 )]
 #[allow(clippy::large_enum_variant)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub enum UnionFetch<Hc: ChainExt, Tr: ChainExt> {
     // FetchTrustedCommit { height: Height },
     #[display(fmt = "FetchUntrustedCommit")]
@@ -657,7 +667,21 @@ where
                     )
                     .await
                     .unwrap()
-                    .validators;
+                    .validators
+                    .into_iter()
+                    .map(|info| unionlabs::tendermint::types::validator::Validator {
+                        address: info.address.as_bytes().try_into().unwrap(),
+                        pub_key: match info.pub_key {
+                            tendermint::PublicKey::Ed25519(bz) => {
+                                PublicKey::Ed25519(bz.as_bytes().to_vec())
+                            }
+                            tendermint::PublicKey::Bn254(bz) => PublicKey::Bn254(bz.to_vec()),
+                            _ => todo!(),
+                        },
+                        voting_power: i64::from(info.power).try_into().unwrap(),
+                        proposer_priority: info.proposer_priority.value(),
+                    })
+                    .collect();
 
                 let msg = UnionDataMsg::Validators(Validators {
                     height,
@@ -734,6 +758,11 @@ where
     rename_all = "snake_case"
 )]
 #[allow(clippy::large_enum_variant)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub enum UnionAggregateMsg<Hc: ChainExt, Tr: ChainExt> {
     #[display(fmt = "AggregateProveRequest")]
     AggregateProveRequest(AggregateProveRequest<Hc, Tr>),
@@ -800,52 +829,77 @@ const _: () = {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Tr: ChainExt")
+)]
 pub struct UntrustedCommit<Tr: ChainExt> {
     pub height: Height,
     pub signed_header: SignedHeader,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Tr: ChainExt")
+)]
 pub struct Validators<Tr: ChainExt> {
     pub height: Height,
     // TODO: Use non-`tendermint-rs` type here
-    pub validators: Vec<tendermint::validator::Info>,
+    pub validators: Vec<unionlabs::tendermint::types::validator::Validator>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Tr: ChainExt")
+)]
 pub struct ProveResponse<Tr: ChainExt> {
     pub prove_response: prove_response::ProveResponse,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct FetchUntrustedCommit {
     pub height: Height,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-// TODO: Add Height param
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct FetchValidators {
     pub height: Height,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct FetchProveRequest {
     pub request: ProveRequest,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub signed_header: SignedHeader,
     pub req: FetchUpdateHeaders<Hc, Tr>,
@@ -853,6 +907,11 @@ pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct AggregateProveRequest<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
@@ -930,22 +989,21 @@ where
         assert_eq!(req.update_from, trusted_validators_height.into());
         assert_eq!(untrusted_commit_height, untrusted_validators_height);
 
-        let make_validators_commit = |mut validators: Vec<tendermint::validator::Info>| {
+        let make_validators_commit = |mut validators: Vec<
+            unionlabs::tendermint::types::validator::Validator,
+        >| {
             // Validators must be sorted to match the root, by token then address
             validators.sort_by(|a, b| {
-                let a_power = a.power;
-                let b_power = b.power;
+                // TODO: Double check how these comparisons are supposed to work
                 #[allow(clippy::collapsible_else_if)]
-                if a_power == b_power {
-                    let a_address = a.address;
-                    let b_address = b.address;
-                    if a_address < b_address {
+                if a.voting_power == b.voting_power {
+                    if a.address < b.address {
                         std::cmp::Ordering::Less
                     } else {
                         std::cmp::Ordering::Greater
                     }
                 } else {
-                    if a_power > b_power {
+                    if a.voting_power > b.voting_power {
                         std::cmp::Ordering::Less
                     } else {
                         std::cmp::Ordering::Greater
@@ -961,7 +1019,7 @@ where
             let validators_map = validators
                 .iter()
                 .enumerate()
-                .map(|(i, v)| (v.address, i))
+                .map(|(i, v)| (v.address.clone(), i))
                 .collect::<HashMap<_, _>>();
 
             // For each validator signature, we search for the actual validator
@@ -1002,12 +1060,12 @@ where
             let simple_validators = validators
                 .iter()
                 .map(|v| {
-                    let tendermint::PublicKey::Bn254(key) = v.pub_key else {
+                    let PublicKey::Bn254(ref key) = v.pub_key else {
                         panic!("must be bn254")
                     };
                     SimpleValidator {
                         pub_key: PublicKey::Bn254(key.to_vec()),
-                        voting_power: v.power.into(),
+                        voting_power: v.voting_power.into(),
                     }
                 })
                 .collect::<Vec<_>>();
@@ -1023,38 +1081,36 @@ where
         let untrusted_validators_commit = make_validators_commit(untrusted_validators);
 
         aggregate(
-            [{
-                fetch(Identified::<Hc, Tr, _>::new(
-                    chain_id.clone(),
-                    LightClientSpecificFetch(UnionFetch::FetchProveRequest(FetchProveRequest {
-                        request: ProveRequest {
-                            vote: CanonicalVote {
-                                // REVIEW: Should this be hardcoded to precommit?
-                                ty: SignedMsgType::Precommit,
-                                height: signed_header.commit.height,
-                                round: BoundedI64::new(signed_header.commit.round.inner().into())
-                                    .expect("0..=i32::MAX can be converted to 0..=i64::MAX safely"),
-                                block_id: CanonicalBlockId {
-                                    hash: signed_header.commit.block_id.hash.clone(),
-                                    part_set_header: CanonicalPartSetHeader {
-                                        total: signed_header.commit.block_id.part_set_header.total,
-                                        hash: signed_header
-                                            .commit
-                                            .block_id
-                                            .part_set_header
-                                            .hash
-                                            .clone(),
-                                    },
+            [fetch(Identified::<Hc, Tr, _>::new(
+                chain_id.clone(),
+                LightClientSpecificFetch(UnionFetch::FetchProveRequest(FetchProveRequest {
+                    request: ProveRequest {
+                        vote: CanonicalVote {
+                            // REVIEW: Should this be hardcoded to precommit?
+                            ty: SignedMsgType::Precommit,
+                            height: signed_header.commit.height,
+                            round: BoundedI64::new(signed_header.commit.round.inner().into())
+                                .expect("0..=i32::MAX can be converted to 0..=i64::MAX safely"),
+                            block_id: CanonicalBlockId {
+                                hash: signed_header.commit.block_id.hash.clone(),
+                                part_set_header: CanonicalPartSetHeader {
+                                    total: signed_header.commit.block_id.part_set_header.total,
+                                    hash: signed_header
+                                        .commit
+                                        .block_id
+                                        .part_set_header
+                                        .hash
+                                        .clone(),
                                 },
-                                chain_id: signed_header.header.chain_id.clone(),
                             },
-                            trusted_commit: trusted_validators_commit,
-                            untrusted_commit: untrusted_validators_commit,
+                            chain_id: signed_header.header.chain_id.clone(),
                         },
-                    }))
-                    .into(),
-                ))
-            }],
+                        trusted_commit: trusted_validators_commit,
+                        untrusted_commit: untrusted_validators_commit,
+                    },
+                }))
+                .into(),
+            ))],
             [],
             Identified::new(
                 chain_id,

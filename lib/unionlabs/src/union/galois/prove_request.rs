@@ -7,6 +7,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct ProveRequest {
     pub vote: CanonicalVote,
     pub trusted_commit: ValidatorSetCommit,

@@ -113,12 +113,22 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Msg<Hc, Tr> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgConnectionOpenInitData<Hc: ChainExt, Tr: ChainExt>(
     pub MsgConnectionOpenInit<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 );
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt>(
     pub  MsgConnectionOpenTry<
         Tr::StoredClientState<Hc>,
@@ -134,6 +144,11 @@ pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt>(
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt>(
     pub  MsgConnectionOpenAck<
         Tr::StoredClientState<Hc>,
@@ -145,62 +160,109 @@ pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt>(
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgConnectionOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgConnectionOpenConfirm<HeightOf<Tr>, Tr::StateProof>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Hc>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgChannelOpenInitData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenInit,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgChannelOpenTryData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenTry<Tr::StateProof>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgChannelOpenAckData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenAck<Tr::StateProof, Tr::Height>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgChannelOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenConfirm<Tr::StateProof>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgRecvPacketData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgRecvPacket<Tr::StateProof, Tr::Height>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgAckPacketData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgAcknowledgement<Tr::StateProof, Tr::Height>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgCreateClientData<Hc: ChainExt, Tr: ChainExt> {
     pub config: Hc::Config,
     pub msg: MsgCreateClient<ClientStateOf<Tr>, ConsensusStateOf<Tr>>,
@@ -208,6 +270,11 @@ pub struct MsgCreateClientData<Hc: ChainExt, Tr: ChainExt> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), transparent)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct MsgUpdateClientData<Hc: ChainExt, Tr: ChainExt>(
     pub MsgUpdateClient<ClientIdOf<Hc>, HeaderOf<Tr>>,
 );

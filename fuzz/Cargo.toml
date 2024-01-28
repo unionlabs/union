@@ -1,0 +1,43 @@
+[package]
+edition = "2021"
+name    = "fuzz"
+publish = false
+version = "0.0.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys   = "0.4"
+unionlabs       = { workspace = true, features = ["fuzzing"] }
+voyager-message = { workspace = true, features = ["arbitrary"] }
+
+[[bin]]
+doc  = false
+name = "voyager_message_roundtrip"
+path = "../voyager/voyager-message/fuzz_targets/serde_roundtrip.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "duration_roundtrip"
+path = "../lib/unionlabs/fuzz_targets/duration/roundtrip.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "duration_from_str"
+path = "../lib/unionlabs/fuzz_targets/duration/from_str.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "duration_checked_add"
+path = "../lib/unionlabs/fuzz_targets/duration/checked_add.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "timestamp_roundtrip"
+path = "../lib/unionlabs/fuzz_targets/timestamp/roundtrip.rs"
+test = false

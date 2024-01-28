@@ -4,6 +4,7 @@ use crate::TypeUrl;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct MsgUpdateClient<ClientId, Header> {
     pub client_id: ClientId,
     pub client_message: Header,

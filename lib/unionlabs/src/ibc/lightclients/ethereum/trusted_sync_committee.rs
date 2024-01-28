@@ -23,6 +23,7 @@ use crate::{
     deny_unknown_fields,
     rename_all = "snake_case"
 )]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum ActiveSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     Current(SyncCommittee<C>),
     Next(SyncCommittee<C>),
@@ -50,6 +51,7 @@ impl<C: SYNC_COMMITTEE_SIZE> ActiveSyncCommittee<C> {
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct TrustedSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     pub trusted_height: Height,
     pub sync_committee: ActiveSyncCommittee<C>,

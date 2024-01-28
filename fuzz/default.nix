@@ -32,7 +32,7 @@
 
       # TODO: Continuous fuzzing in nightly CI
       # https://github.com/google/fuzzing/blob/master/tutorial/libFuzzerTutorial.md#continuous-fuzzing
-      runFuzzTargets = targets: mkCi false (pkgs.writeShellApplication {
+      runFuzzTargets = mkCi false (pkgs.writeShellApplication {
         name = "fuzz";
         runtimeInputs = [ cargo-fuzz rust.toolchains.dev ];
         text = ''
@@ -40,27 +40,20 @@
 
           mkdir -p fuzzing-code-coverage
 
-          ${pkgs.lib.concatMapStrings 
-            (target: ''
+          for target in $(cargo fuzz list); do
               cargo fuzz run \
-                ${target} \
-                --fuzz-dir=lib/unionlabs/fuzz/ \
+                "$target" \
                 -- \
                 -max_total_time=${max_total_time}
 
-              cargo fuzz coverage \
-                ${target} \
-                --fuzz-dir=lib/unionlabs/fuzz/
-            '')
-            targets}
+              cargo fuzz coverage "$target"
+          done
 
           echo "merging profdata"
 
           ${rust.toolchains.dev}/lib/rustlib/${rustTarget}/bin/llvm-profdata \
             merge \
-            ${pkgs.lib.concatMapStrings 
-              (target: "lib/unionlabs/fuzz/coverage/${target}/coverage.profdata ")
-              targets} \
+            "$(for target in $(cargo fuzz list); do echo -n "fuzz/coverage/$target/coverage.profdata "; done)" \
             -o fuzzing-code-coverage/merged.profdata
 
           echo "generating coverage"
@@ -88,11 +81,8 @@
     {
       # TODO: Get these from `cargo fuzz list`
       # This was easier than figuring it out in bash
-      packages.fuzz = runFuzzTargets [
-        "duration_checked_add"
-        "duration_from_str"
-        "duration_roundtrip"
-        "timestamp_roundtrip"
-      ];
+      packages.fuzz = runFuzzTargets;
+
+      _module.args.cargo-fuzz = cargo-fuzz;
     };
 }

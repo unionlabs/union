@@ -7,6 +7,7 @@ use crate::{Proto, TypeUrl};
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 // REVIEW: Are these fields fixed size?
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct ZeroKnowledgeProof {
     #[serde(with = "::serde_utils::hex_string")]
     pub content: Vec<u8>,

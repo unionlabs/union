@@ -7,6 +7,7 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct StorageProof {
     pub proofs: Vec<Proof>,
 }

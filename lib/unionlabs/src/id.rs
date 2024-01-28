@@ -115,7 +115,7 @@ impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize>
     crate::validated::ValidateExt<T> for Bounded<MIN, MAX>
 {
     fn restrict(t: T, u: &mut arbitrary::Unstructured) -> arbitrary::Result<T> {
-        const_assert!(MIN: usize, MAX: usize => MIN < MAX);
+        const_assert!(MIN: usize, MAX: usize => MIN <= MAX);
 
         let s: String = t.into();
 

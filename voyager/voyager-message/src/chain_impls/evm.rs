@@ -11,7 +11,6 @@ use ethers::{
     abi::AbiEncode,
     contract::{ContractError, EthCall},
     providers::{Middleware, ProviderError},
-    types::EIP1186ProofResponse,
     utils::keccak256,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -65,6 +64,7 @@ pub const EVM_REVISION_NUMBER: u64 = 0;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct EvmConfig {
     pub client_type: String,
     pub client_address: H160,
@@ -487,19 +487,30 @@ where
                     })
                     .await;
 
+                let account_update = c
+                    .provider
+                    .get_proof(
+                        c.readonly_ibc_handler.address(),
+                        vec![],
+                        // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
+                        Some(execution_height.into()),
+                    )
+                    .await
+                    .unwrap();
+
                 EvmDataMsg::AccountUpdate(AccountUpdateData {
                     slot,
-                    ibc_handler_address: c.readonly_ibc_handler.address().0.into(),
-                    update: c
-                        .provider
-                        .get_proof(
-                            c.readonly_ibc_handler.address(),
-                            vec![],
-                            // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
-                            Some(execution_height.into()),
-                        )
-                        .await
-                        .unwrap(),
+                    update: AccountUpdate {
+                        account_proof: AccountProof {
+                            contract_address: c.readonly_ibc_handler.address().0.into(),
+                            storage_root: account_update.storage_hash.into(),
+                            proof: account_update
+                                .account_proof
+                                .into_iter()
+                                .map(|x| x.to_vec())
+                                .collect(),
+                        },
+                    },
                     __marker: PhantomData,
                 })
             }
@@ -689,6 +700,11 @@ where
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
 pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Evm<C>, Tr>,
     pub currently_trusted_slot: u64,
@@ -698,12 +714,23 @@ pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
+
 pub struct MakeCreateUpdatesData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Evm<C>, Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
 pub struct MakeCreateUpdatesFromLightClientUpdatesData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Evm<C>, Tr>,
     pub trusted_height: Height,
@@ -712,68 +739,116 @@ pub struct MakeCreateUpdatesFromLightClientUpdatesData<C: ChainSpec, Tr: ChainEx
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec")
+)]
 pub struct FetchLightClientUpdate<C: ChainSpec> {
     pub period: u64,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> C>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec")
+)]
 pub struct FetchLightClientUpdates<C: ChainSpec> {
     pub trusted_period: u64,
     pub target_period: u64,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> C>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec")
+)]
 pub struct FetchBootstrap<C: ChainSpec> {
     pub slot: u64,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> C>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec")
+)]
 pub struct FetchAccountUpdate<C: ChainSpec> {
     pub slot: u64,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> C>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec")
+)]
 pub struct FetchBeaconGenesis<C: ChainSpec> {
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> C>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
 pub struct BootstrapData<C: ChainSpec, Tr: ChainExt> {
     pub slot: u64,
     pub bootstrap: LightClientBootstrap<C>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
 pub struct AccountUpdateData<C: ChainSpec, Tr: ChainExt> {
     pub slot: u64,
-    pub ibc_handler_address: H160,
-    pub update: EIP1186ProofResponse,
+    // pub ibc_handler_address: H160,
+    pub update: AccountUpdate,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> (C, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
 pub struct BeaconGenesisData<C: ChainSpec, Tr: ChainExt> {
     genesis: GenesisData,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> (C, Tr)>,
 }
 
@@ -798,6 +873,11 @@ try_from_relayer_msg! {
     tag = "@type",
     content = "@value",
     rename_all = "snake_case"
+)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
 )]
 pub enum EvmFetchMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "FinalityUpdate")]
@@ -827,6 +907,11 @@ pub enum EvmFetchMsg<C: ChainSpec, Tr: ChainExt> {
     content = "@value",
     rename_all = "snake_case"
 )]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
 #[allow(clippy::large_enum_variant)]
 pub enum EvmDataMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "FinalityUpdate")]
@@ -852,6 +937,11 @@ pub enum EvmDataMsg<C: ChainSpec, Tr: ChainExt> {
     content = "@value",
     rename_all = "snake_case"
 )]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
 #[allow(clippy::large_enum_variant)]
 pub enum EvmAggregateMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "CreateUpdate")]
@@ -864,25 +954,46 @@ pub enum EvmAggregateMsg<C: ChainSpec, Tr: ChainExt> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
+
 pub struct FinalityUpdate<C: ChainSpec, Tr: ChainExt> {
     pub finality_update: LightClientFinalityUpdate<C>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
+
 pub struct LightClientUpdates<C: ChainSpec, Tr: ChainExt> {
     pub light_client_updates: Vec<light_client_update::LightClientUpdate<C>>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
+
 pub struct LightClientUpdate<C: ChainSpec, Tr: ChainExt> {
     pub update: light_client_update::LightClientUpdate<C>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
@@ -1021,6 +1132,12 @@ fn mk_function_call<Call: EthCall>(
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
+
 pub struct GetProof<C: ChainSpec, Tr: ChainExt> {
     path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
     height: HeightOf<Evm<C>>,
@@ -1028,6 +1145,12 @@ pub struct GetProof<C: ChainSpec, Tr: ChainExt> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+)]
+
 pub struct FetchIbcState<C: ChainSpec, Tr: ChainExt> {
     path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
     height: HeightOf<Evm<C>>,
@@ -1079,7 +1202,7 @@ where
                 chain_id: account_update_chain_id,
                 t: AccountUpdateData {
                     slot: _account_update_data_beacon_slot,
-                    ibc_handler_address,
+                    // ibc_handler_address,
                     update: account_update,
                     __marker,
                 },
@@ -1112,17 +1235,7 @@ where
                     ActiveSyncCommittee::Current(next_sync_committee.unwrap())
                 },
             },
-            account_update: AccountUpdate {
-                account_proof: AccountProof {
-                    contract_address: ibc_handler_address,
-                    storage_root: account_update.storage_hash.into(),
-                    proof: account_update
-                        .account_proof
-                        .into_iter()
-                        .map(|x| x.to_vec())
-                        .collect(),
-                },
-            },
+            account_update,
         };
 
         seq([

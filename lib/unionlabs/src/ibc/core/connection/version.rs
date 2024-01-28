@@ -4,6 +4,7 @@ use crate::{errors::UnknownEnumVariant, ibc::core::channel::order::Order};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Version {
     // TODO(benluelo): "The identifier field specifies a unique version identifier. A value of "1" specifies IBC 1.0.0."
     pub identifier: String,

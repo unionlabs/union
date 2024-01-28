@@ -4,6 +4,7 @@ use crate::{hash::H256, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct CanonicalPartSetHeader {
     pub total: u32,
     pub hash: H256,

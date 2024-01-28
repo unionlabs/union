@@ -38,6 +38,7 @@ impl BlsSecretKey {
 
 #[derive(Clone, Hash, PartialEq, Eq, Encode, Decode, Serialize, Deserialize)]
 #[ssz(struct_behaviour = "transparent")]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct BlsPublicKey(
     #[serde(with = "::serde_utils::hex_string")] pub [u8; BLS_PUBLIC_KEY_BYTES_LEN],
 );
@@ -134,6 +135,7 @@ impl TryFrom<&BlsPublicKey> for milagro_bls::PublicKey {
 
 #[derive(Clone, Hash, PartialEq, Eq, Encode, Decode, Serialize, Deserialize)]
 #[ssz(struct_behaviour = "transparent")]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct BlsSignature(#[serde(with = "::serde_utils::hex_string")] [u8; BLS_SIGNATURE_BYTES_LEN]);
 
 impl TreeHash for BlsSignature {

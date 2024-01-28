@@ -4,6 +4,7 @@ use crate::{cosmos::ics23::commitment_proof::CommitmentProof, TryFromProtoErrorO
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct MerkleProof {
     pub proofs: Vec<CommitmentProof>,
 }

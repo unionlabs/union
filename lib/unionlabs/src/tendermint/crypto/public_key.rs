@@ -7,6 +7,7 @@ use crate::errors::{required, MissingField};
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 // TODO: These are fixed sizes, not arbitrary bytes
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum PublicKey {
     Ed25519(#[serde(with = "::serde_utils::hex_string")] Vec<u8>),
     Secp256k1(#[serde(with = "::serde_utils::hex_string")] Vec<u8>),

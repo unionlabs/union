@@ -153,22 +153,39 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Wait<Hc, Tr> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct WaitForBlock<Hc: ChainExt, Tr: ChainExt> {
     pub height: HeightOf<Hc>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct WaitForTimestamp<Hc: ChainExt, Tr: ChainExt> {
     pub timestamp: i64,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct WaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
     pub client_id: Hc::ClientId,
     pub counterparty_client_id: Tr::ClientId,

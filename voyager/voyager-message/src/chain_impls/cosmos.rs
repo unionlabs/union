@@ -406,6 +406,11 @@ where
     rename_all = "snake_case"
 )]
 #[allow(clippy::large_enum_variant)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Tr: ChainExt")
+)]
 pub enum CosmosDataMsg<Tr: ChainExt> {
     #[display(fmt = "FetchUntrustedCommit")]
     TrustedCommit(TrustedCommit<Tr>),
@@ -419,37 +424,61 @@ pub enum CosmosDataMsg<Tr: ChainExt> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Tr: ChainExt")
+)]
 pub struct UntrustedCommit<Tr: ChainExt> {
     pub height: Height,
     pub signed_header: SignedHeader,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Tr: ChainExt")
+)]
 pub struct TrustedCommit<Tr: ChainExt> {
     pub height: Height,
     pub signed_header: SignedHeader,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Tr: ChainExt")
+)]
 pub struct TrustedValidators<Tr: ChainExt> {
     pub height: Height,
     pub validators: Vec<Validator>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Tr: ChainExt")
+)]
 pub struct UntrustedValidators<Tr: ChainExt> {
     pub height: Height,
     pub validators: Vec<Validator>,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
@@ -463,6 +492,11 @@ pub struct UntrustedValidators<Tr: ChainExt> {
     rename_all = "snake_case"
 )]
 #[allow(clippy::large_enum_variant)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub enum CosmosFetch<Hc: ChainExt, Tr: ChainExt> {
     #[display(fmt = "FetchUntrustedCommit")]
     FetchTrustedCommit(FetchTrustedCommit),
@@ -747,6 +781,11 @@ fn tendermint_commit_to_signed_header(
     rename_all = "snake_case"
 )]
 #[allow(clippy::large_enum_variant)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub enum CosmosAggregateMsg<Hc: ChainExt, Tr: ChainExt> {
     #[display(fmt = "AggregateHeader")]
     AggregateHeader(AggregateHeader<Hc, Tr>),
@@ -784,56 +823,65 @@ where
 
 const _: () = {
     try_from_relayer_msg! {
-    chain = Cosmos,
-    generics = (Tr: ChainExt),
-    msgs = CosmosDataMsg(
-    TrustedCommit(TrustedCommit<Tr>),
-    UntrustedCommit(UntrustedCommit<Tr>),
-    TrustedValidators(TrustedValidators<Tr>),
-    UntrustedValidators(UntrustedValidators<Tr>),
-    ),
+        chain = Cosmos,
+        generics = (Tr: ChainExt),
+        msgs = CosmosDataMsg(
+            TrustedCommit(TrustedCommit<Tr>),
+            UntrustedCommit(UntrustedCommit<Tr>),
+            TrustedValidators(TrustedValidators<Tr>),
+            UntrustedValidators(UntrustedValidators<Tr>),
+        ),
     }
 };
 
 const _: () = {
     try_from_relayer_msg! {
-    chain = Wasm<Cosmos>,
-    generics = (Tr: ChainExt),
-    msgs = CosmosDataMsg(
-    TrustedCommit(TrustedCommit<Tr>),
-    UntrustedCommit(UntrustedCommit<Tr>),
-    TrustedValidators(TrustedValidators<Tr>),
-    UntrustedValidators(UntrustedValidators<Tr>),
-    ),
+        chain = Wasm<Cosmos>,
+        generics = (Tr: ChainExt),
+        msgs = CosmosDataMsg(
+            TrustedCommit(TrustedCommit<Tr>),
+            UntrustedCommit(UntrustedCommit<Tr>),
+            TrustedValidators(TrustedValidators<Tr>),
+            UntrustedValidators(UntrustedValidators<Tr>),
+        ),
     }
 };
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct FetchTrustedCommit {
     pub height: Height,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct FetchUntrustedCommit {
     pub height: Height,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct FetchTrustedValidators {
     pub height: Height,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct FetchUntrustedValidators {
     pub height: Height,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }

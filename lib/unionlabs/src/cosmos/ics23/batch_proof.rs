@@ -4,6 +4,7 @@ use crate::{cosmos::ics23::batch_entry::BatchEntry, TryFromProtoErrorOf};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct BatchProof {
     pub entries: Vec<BatchEntry>,
 }

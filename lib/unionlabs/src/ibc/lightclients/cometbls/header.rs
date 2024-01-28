@@ -13,6 +13,7 @@ use crate::{
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Header {
     pub signed_header: SignedHeader,
     pub trusted_height: Height,

@@ -12,6 +12,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Counterparty<ClientId, ConnectionId = id::ConnectionId> {
     pub client_id: ClientId,
     pub connection_id: ConnectionId,

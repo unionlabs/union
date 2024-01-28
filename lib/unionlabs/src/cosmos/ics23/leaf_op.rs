@@ -7,12 +7,14 @@ use crate::{errors::UnknownEnumVariant, Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct LeafOp {
     pub hash: HashOp,
     pub prehash_key: HashOp,
     pub prehash_value: HashOp,
     pub length: LengthOp,
     #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "arbitrary", arbitrary(with = crate::arbitrary_cow_static))]
     pub prefix: Cow<'static, [u8]>,
 }
 
