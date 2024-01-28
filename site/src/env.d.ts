@@ -8,8 +8,6 @@ interface EventTarget {
 interface EnvironmentVariables {
   readonly NODE_ENV: "development" | "production" | "test";
   readonly PORT: string;
-  readonly PUBLIC_DOCS_BASE_URL: string;
-  readonly PUBLIC_BLOG_BASE_URL: string;
 }
 // Node.js environment variables types
 declare module NodeJS {

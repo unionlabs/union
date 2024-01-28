@@ -7,6 +7,8 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "jsx": "preserve",
     "allowJs": true,
     "checkJs": true,
     "baseUrl": ".",
@@ -27,6 +29,7 @@
   },
   "include": ["src/**/*", "public/**/*"],
   "files": [
+    "reset.d.ts",
     ".eslintrc.cjs",
     ".prettierrc.mjs",
     "astro.config.ts",
