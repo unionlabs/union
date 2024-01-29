@@ -12,12 +12,6 @@
 
       rustToolchain = rust.mkNightly { target = CARGO_BUILD_TARGET; };
 
-      # wasmvm_1_3_0 = builtins.fetchGit {
-      #   owner = "CosmWasm";
-      #   repo = "wasmvm";
-      #   # hash = "sha256-rsTYvbkYpDkUE4IvILdSL3hXMgAWxz5ltGotJB2t1e4=";
-      # };
-
       mkLibwasmvm =
         wasmvm:
         let
@@ -73,10 +67,6 @@
         });
     in
     {
-      # _module.args.libwasmvmCargoToml_1_3_0 = "${wasmvm_1_3_0}/libwasmvm/Cargo.toml";
-      # _module.args.libwasmvmCargoToml_1_5_0 = "${wasmvm_1_5_0}/libwasmvm/Cargo.toml";
-
-      packages.libwasmvm = mkLibwasmvm inputs.wasmvm_1_5_0;
-      packages.libwasmvm_1_5_0 = mkLibwasmvm inputs.wasmvm_1_5_0;
+      packages.libwasmvm = mkLibwasmvm inputs.wasmvm;
     };
 }

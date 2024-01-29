@@ -8,7 +8,6 @@ use crate::id::{ChannelId, PortId};
 #[serde(deny_unknown_fields)]
 pub struct Counterparty {
     pub port_id: PortId,
-    // pub channel_id: ChannelId,
     pub channel_id: String,
 }
 
@@ -16,7 +15,6 @@ impl From<Counterparty> for protos::ibc::core::channel::v1::Counterparty {
     fn from(value: Counterparty) -> Self {
         Self {
             port_id: value.port_id.to_string(),
-            // channel_id: value.channel_id.to_string(),
             channel_id: value.channel_id,
         }
     }
@@ -39,10 +37,6 @@ impl TryFrom<protos::ibc::core::channel::v1::Counterparty> for Counterparty {
                 .port_id
                 .parse()
                 .map_err(TryFromChannelCounterpartyError::PortId)?,
-            // channel_id: proto
-            //     .channel_id
-            //     .parse()
-            //     .map_err(TryFromChannelCounterpartyError::ChannelId)?,
             channel_id: proto.channel_id,
         })
     }
@@ -53,7 +47,6 @@ impl From<Counterparty> for contracts::ibc_handler::IbcCoreChannelV1Counterparty
     fn from(value: Counterparty) -> Self {
         Self {
             port_id: value.port_id.to_string(),
-            // channel_id: value.channel_id.to_string(),
             channel_id: value.channel_id,
         }
     }
@@ -80,10 +73,6 @@ impl TryFrom<contracts::ibc_handler::IbcCoreChannelV1CounterpartyData> for Count
                 .port_id
                 .parse()
                 .map_err(TryFromChannelCounterpartyError::PortId)?,
-            // channel_id: value
-            //     .channel_id
-            //     .parse()
-            //     .map_err(TryFromChannelCounterpartyError::ChannelId)?,
             channel_id: value.channel_id,
         })
     }
