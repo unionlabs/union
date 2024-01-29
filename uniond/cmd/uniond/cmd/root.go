@@ -88,7 +88,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		WithViper("")
 
 	rootCmd := &cobra.Command{
-		Use:   app.Name + "dog",
+		Use:   app.Name + "d",
 		Short: "Start union node",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// panic if there is no home flag
