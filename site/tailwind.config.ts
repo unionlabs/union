@@ -12,6 +12,9 @@ export default {
   darkMode: "class",
   important: true,
   future: { hoverOnlyWhenSupported: true },
+  experimental: {
+    optimizeUniversalDefaults: true,
+  },
   theme: {
     transparent: "transparent",
     current: "currentColor",
@@ -36,15 +39,15 @@ export default {
         },
       },
       fontFamily: {
-        mono: ["JetBrainsMono", ...defaultTheme.fontFamily.mono],
         sans: [
-          '"Inter var", sans-serif',
+          "Inter var",
           {
             fontFeatureSettings: '"cv11", "ss01"',
             fontVariationSettings: '"opsz" 32',
           },
         ],
-        serif: ['"Inter var"'],
+        mono: ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
+        jetbrains: ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
       },
     },
   },

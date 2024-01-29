@@ -30,16 +30,6 @@ export default defineConfig({
         discord: "https://discord.union.build",
         "x.com": "https://x.com/union_build",
       },
-      expressiveCode: {
-        frames: {
-          extractFileNameFromCode: true,
-          showCopyToClipboardButton: true,
-          removeCommentsWhenCopyingTerminalFrames: true,
-        },
-        themes: ["starlight-dark", "starlight-light"],
-        useStarlightDarkModeSwitch: true,
-        useStarlightUiThemeColors: true,
-      },
       head: [
         {
           tag: "meta",
@@ -128,10 +118,9 @@ export default defineConfig({
       ],
       plugins: [],
       customCss: [
+        "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
         "./src/styles/starlight.css",
-        "@fontsource/jetbrains-mono/400.css",
-        "@fontsource/jetbrains-mono/600.css",
       ],
     }),
     tailwind({

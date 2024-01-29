@@ -1,13 +1,18 @@
 ---
+import '#/styles/fonts.css'
 import '#/styles/reset.css'
 import '#/styles/tailwind.css'
 import { SEO } from 'astro-seo'
-import '@fontsource/jetbrains-mono'
+import { Head } from 'astro-capo'
+import { AstroFont } from 'astro-font'
 import Header from '#/components/Header.astro'
+
+const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 ---
 
+<!doctype html>
 <html lang='en'>
-  <head>
+  <Head>
     <meta charset='utf-8' />
     <SEO
       title='Union'
@@ -40,17 +45,47 @@ import Header from '#/components/Header.astro'
       extend={{
         link: [
           { rel: 'icon', href: 'favicon.ico' },
-          { rel: 'canonical', href: 'https://union.build' }
+          { rel: 'canonical', href: 'https://union.build' },
+          { rel: 'sitemap', href: '/sitemap-index.xml' }
         ],
         meta: [
           { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
+          { name: 'robots', content: 'index, follow' },
           { name: 'twitter:domain', content: 'union.build' },
           { name: 'twitter:url', content: 'https://union.build' },
           { name: 'twitter:description', content: 'The Sovereign Interoperability Layer' }
         ]
       }}
     />
-  </head>
+    <AstroFont
+      config={[
+        {
+          name: 'Inter var',
+          src: fontWeights.map(weight => ({
+            path: '/fonts/InterVariable.woff2',
+            style: 'normal',
+            weight
+          })),
+          preload: true,
+          display: 'swap',
+          fallback: 'sans-serif'
+        },
+        {
+          name: 'JetBrains Mono',
+          src: fontWeights.map(weight => ({
+            path: '/fonts/JetBrainsMono[wght].woff2',
+            style: 'normal',
+            weight
+          })),
+          preload: true,
+          display: 'swap',
+          // @ts-ignore
+          fallback: 'sans-serif'
+        }
+
+      ]}
+    />
+  </Head>
   <body
     class='font-sans flex flex-col items-stretch flex-1 shadow-effect-bg pb-12 bg-black text-white not-content'
   >

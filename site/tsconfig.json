@@ -30,6 +30,7 @@
   "include": ["src/**/*", "public/**/*"],
   "files": [
     "reset.d.ts",
+    "ec.config.mjs",
     ".eslintrc.cjs",
     ".prettierrc.mjs",
     "astro.config.ts",
