@@ -396,7 +396,7 @@ func (e *EmulatedAPI) Double(p *gadget.G2Affine) *gadget.G2Affine {
 	return &point
 }
 
-func (e *EmulatedAPI) Reduce(p * gadget.G2Affine) *gadget.G2Affine {
+func (e *EmulatedAPI) Reduce(p *gadget.G2Affine) *gadget.G2Affine {
 	reducedP := gadget.G2Affine{}
 	reducedP.P.X.A0 = *e.field.Reduce(&p.P.X.A0)
 	reducedP.P.X.A1 = *e.field.Reduce(&p.P.X.A1)
