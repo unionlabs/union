@@ -1876,7 +1876,7 @@ where
                         ordering: channel.ordering,
                         counterparty: channel::counterparty::Counterparty {
                             port_id: event.port_id.clone(),
-                            channel_id: event.channel_id.clone(),
+                            channel_id: event.channel_id.clone().to_string(),
                         },
                         connection_hops: vec![connection
                             .counterparty
