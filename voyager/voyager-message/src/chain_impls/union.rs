@@ -13,7 +13,7 @@ use frunk::{hlist_pat, HList};
 use num_bigint::BigUint;
 use protos::{
     ibc::core::connection::v1::MsgConnectionOpenInit,
-    union::galois::api::v1::union_prover_api_client,
+    union::galois::api::v2::union_prover_api_client,
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;

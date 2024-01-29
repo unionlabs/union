@@ -43,14 +43,14 @@ impl Debug for ValidatorSetCommit {
 }
 
 impl Proto for ValidatorSetCommit {
-    type Proto = protos::union::galois::api::v1::ValidatorSetCommit;
+    type Proto = protos::union::galois::api::v2::ValidatorSetCommit;
 }
 
-impl TypeUrl for protos::union::galois::api::v1::ValidatorSetCommit {
-    const TYPE_URL: &'static str = "/union.galois.api.v1.ValidatorSetCommit";
+impl TypeUrl for protos::union::galois::api::v2::ValidatorSetCommit {
+    const TYPE_URL: &'static str = "/union.galois.api.v2.ValidatorSetCommit";
 }
 
-impl From<ValidatorSetCommit> for protos::union::galois::api::v1::ValidatorSetCommit {
+impl From<ValidatorSetCommit> for protos::union::galois::api::v2::ValidatorSetCommit {
     fn from(value: ValidatorSetCommit) -> Self {
         Self {
             validators: value.validators.into_iter().map(Into::into).collect(),

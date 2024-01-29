@@ -9,14 +9,14 @@ pub struct PollRequest {
 }
 
 impl Proto for PollRequest {
-    type Proto = protos::union::galois::api::v1::PollRequest;
+    type Proto = protos::union::galois::api::v2::PollRequest;
 }
 
-impl TypeUrl for protos::union::galois::api::v1::PollRequest {
-    const TYPE_URL: &'static str = "/union.galois.api.v1.PollRequest";
+impl TypeUrl for protos::union::galois::api::v2::PollRequest {
+    const TYPE_URL: &'static str = "/union.galois.api.v2.PollRequest";
 }
 
-impl From<PollRequest> for protos::union::galois::api::v1::PollRequest {
+impl From<PollRequest> for protos::union::galois::api::v2::PollRequest {
     fn from(value: PollRequest) -> Self {
         Self {
             request: Some(value.request.into()),

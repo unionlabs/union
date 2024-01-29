@@ -33,14 +33,14 @@ impl Debug for ZeroKnowledgeProof {
 }
 
 impl Proto for ZeroKnowledgeProof {
-    type Proto = protos::union::galois::api::v1::ZeroKnowledgeProof;
+    type Proto = protos::union::galois::api::v2::ZeroKnowledgeProof;
 }
 
-impl TypeUrl for protos::union::galois::api::v1::ZeroKnowledgeProof {
-    const TYPE_URL: &'static str = "/union.galois.api.v1.ZeroKnowledgeProof";
+impl TypeUrl for protos::union::galois::api::v2::ZeroKnowledgeProof {
+    const TYPE_URL: &'static str = "/union.galois.api.v2.ZeroKnowledgeProof";
 }
 
-impl From<ZeroKnowledgeProof> for protos::union::galois::api::v1::ZeroKnowledgeProof {
+impl From<ZeroKnowledgeProof> for protos::union::galois::api::v2::ZeroKnowledgeProof {
     fn from(value: ZeroKnowledgeProof) -> Self {
         Self {
             content: value.content,
@@ -51,8 +51,8 @@ impl From<ZeroKnowledgeProof> for protos::union::galois::api::v1::ZeroKnowledgeP
     }
 }
 
-impl From<protos::union::galois::api::v1::ZeroKnowledgeProof> for ZeroKnowledgeProof {
-    fn from(value: protos::union::galois::api::v1::ZeroKnowledgeProof) -> Self {
+impl From<protos::union::galois::api::v2::ZeroKnowledgeProof> for ZeroKnowledgeProof {
+    fn from(value: protos::union::galois::api::v2::ZeroKnowledgeProof) -> Self {
         Self {
             content: value.content,
             compressed_content: value.compressed_content,

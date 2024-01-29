@@ -30,32 +30,32 @@ pub struct ProveRequestDone {
 }
 
 impl Proto for PollResponse {
-    type Proto = protos::union::galois::api::v1::PollResponse;
+    type Proto = protos::union::galois::api::v2::PollResponse;
 }
 
-impl TypeUrl for protos::union::galois::api::v1::PollResponse {
-    const TYPE_URL: &'static str = "/union.galois.api.v1.PollResponse";
+impl TypeUrl for protos::union::galois::api::v2::PollResponse {
+    const TYPE_URL: &'static str = "/union.galois.api.v2.PollResponse";
 }
 
-impl From<PollResponse> for protos::union::galois::api::v1::PollResponse {
+impl From<PollResponse> for protos::union::galois::api::v2::PollResponse {
     fn from(value: PollResponse) -> Self {
         Self {
             result: Some(match value {
                 PollResponse::Pending => {
-                    protos::union::galois::api::v1::poll_response::Result::Pending(
-                        protos::union::galois::api::v1::ProveRequestPending {},
+                    protos::union::galois::api::v2::poll_response::Result::Pending(
+                        protos::union::galois::api::v2::ProveRequestPending {},
                     )
                 }
                 PollResponse::Failed(failed) => {
-                    protos::union::galois::api::v1::poll_response::Result::Failed(
-                        protos::union::galois::api::v1::ProveRequestFailed {
+                    protos::union::galois::api::v2::poll_response::Result::Failed(
+                        protos::union::galois::api::v2::ProveRequestFailed {
                             message: failed.message,
                         },
                     )
                 }
                 PollResponse::Done(done) => {
-                    protos::union::galois::api::v1::poll_response::Result::Done(
-                        protos::union::galois::api::v1::ProveRequestDone {
+                    protos::union::galois::api::v2::poll_response::Result::Done(
+                        protos::union::galois::api::v2::ProveRequestDone {
                             response: Some(done.response.into()),
                         },
                     )
@@ -71,18 +71,18 @@ pub enum TryFromPollResponseError {
     ProveResponse(TryFromProtoErrorOf<ProveResponse>),
 }
 
-impl TryFrom<protos::union::galois::api::v1::PollResponse> for PollResponse {
+impl TryFrom<protos::union::galois::api::v2::PollResponse> for PollResponse {
     type Error = TryFromPollResponseError;
 
-    fn try_from(value: protos::union::galois::api::v1::PollResponse) -> Result<Self, Self::Error> {
+    fn try_from(value: protos::union::galois::api::v2::PollResponse) -> Result<Self, Self::Error> {
         match required!(value.result)? {
-            protos::union::galois::api::v1::poll_response::Result::Pending(_) => Ok(Self::Pending),
-            protos::union::galois::api::v1::poll_response::Result::Failed(failed) => {
+            protos::union::galois::api::v2::poll_response::Result::Pending(_) => Ok(Self::Pending),
+            protos::union::galois::api::v2::poll_response::Result::Failed(failed) => {
                 Ok(Self::Failed(ProveRequestFailed {
                     message: failed.message,
                 }))
             }
-            protos::union::galois::api::v1::poll_response::Result::Done(done) => {
+            protos::union::galois::api::v2::poll_response::Result::Done(done) => {
                 Ok(Self::Done(ProveRequestDone {
                     response: required!(done.response)?
                         .try_into()
