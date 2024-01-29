@@ -122,18 +122,7 @@ func (e *EmulatedAPI) AssertIsEqual(p, q *gadget.G2Affine) {
 	e.ext2.AssertIsEqual(&p.P.Y, &q.P.Y)
 }
 
-// https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#name-the-sgn0-function
-// 	sgn0_m_eq_2(x)
-
-// 	Input: x, an element of GF(p^2).
-// 		Output: 0 or 1.
-
-// Steps:
-//  1. sign_0 = x_0 mod 2
-//  2. zero_0 = x_0 == 0
-//  3. sign_1 = x_1 mod 2
-//  4. s = sign_0 OR (zero_0 AND sign_1) # Avoid short-circuit logic ops
-//  5. return s
+// https://datatracker.ietf.org/doc/html/rfc9380#name-the-sgn0-function
 func (e *EmulatedAPI) g2Sgn0Circuit(z *fields_bn254.E2) frontend.Variable {
 	a0b := e.field.ToBits(&z.A0)
 
@@ -148,6 +137,8 @@ func (e *EmulatedAPI) g2Sgn0Circuit(z *fields_bn254.E2) frontend.Variable {
 	return sign
 }
 
+// Union whitepaper: (2) svdw
+//
 // https://datatracker.ietf.org/doc/html/rfc9380#straightline-svdw
 func (e *EmulatedAPI) MapToCurve(u *fields_bn254.E2) *gadget.G2Affine {
 	// NOTE: up to the caller to call legendre if the root is not guarantee to exist
@@ -459,6 +450,8 @@ func (e *EmulatedAPI) ScalarMulBySeed(q *gadget.G2Affine) *gadget.G2Affine {
 	return z
 }
 
+// Union whitepaper: (2) h
+//
 // http://cacr.uwaterloo.ca/techreports/2011/cacr2011-26.pdf, 6.1
 func (e *EmulatedAPI) ClearCofactor(Q *gadget.G2Affine) *gadget.G2Affine {
 	// xQ
@@ -477,6 +470,9 @@ func (e *EmulatedAPI) MapToG2(u *fields_bn254.E2) *gadget.G2Affine {
 	return e.ClearCofactor(e.MapToCurve(u))
 }
 
+// Union whitepaper: (1), (2) M ◦ H_{mimc^4}
+//
+// https://datatracker.ietf.org/doc/html/rfc9380#name-encoding-byte-strings-to-el
 func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable) (*gadget.G2Affine, error) {
 	u, err := e.HashToField(message, dst)
 	if err != nil {
@@ -493,8 +489,10 @@ func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable)
 	return e.ClearCofactor(e.Add(Q0, Q1)), nil
 }
 
-// Hash msg to 4 field elements (actually scalar field).
+// Union whitepaper: (1), (2) M ◦ H_{mimc^4}
+//
 // https://datatracker.ietf.org/doc/html/rfc9380#name-hash_to_field-implementatio
+// NOTE: /!\ Tailored for 4 field elements (actually scalar field because of the underlying MiMC hash function).
 func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variable) ([]*emulated.Element[emulated.BN254Fp], error) {
 	pseudoRandomBits, err := e.ExpandMsgXmd(message, dst)
 	if err != nil {
@@ -504,23 +502,20 @@ func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variab
 	for i := 0; i < 4; i++ {
 		elemBits := pseudoRandomBits[i*48*8 : (i+1)*48*8]
 		// sadly this result is >limbs than expected and looks like gnark don't like it
-		// elements[i] = e.field.FromBits(elemBits...)
-		l := e.field.FromBits(elemBits[:17*8]...)
-		r := e.field.FromBits(elemBits[17*8:]...)
-		c := emulated.ValueOf[emulated.BN254Fp](new(big.Int).Lsh(big.NewInt(1), 136))
+		splitPoint := int64(17)
+		l := e.field.FromBits(elemBits[:splitPoint*8]...)
+		r := e.field.FromBits(elemBits[splitPoint*8:]...)
+		c := emulated.ValueOf[emulated.BN254Fp](new(big.Int).Lsh(big.NewInt(1), uint(splitPoint*8)))
 		elements[i] = e.field.Add(l, e.field.Mul(r, &c))
 	}
 	return elements, nil
 }
 
-// This is not a general implementation as the input/output length are fixed.
+// /!\ IMPORTANT /!\ : This is not a general implementation as the input/output length are fixed.
 // It is a tailor-made for BN254G2_XMD:MiMC-256_SVDW hash_to_curve implementation.
 // https://datatracker.ietf.org/doc/html/rfc9380#name-expand_message_xmd
 // https://datatracker.ietf.org/doc/html/rfc9380#name-utility-functions (I2OSP/O2ISP)
 // https://eprint.iacr.org/2016/492.pdf
-// Input: message, dst scalar field elements
-// Output: 192*8 bits
-// Note: we use a 256 bit block (mod scalar field) hashing
 func (e *EmulatedAPI) ExpandMsgXmd(message frontend.Variable, dst frontend.Variable) ([]frontend.Variable, error) {
 	h, err := mimc.NewMiMC(e.api)
 	if err != nil {

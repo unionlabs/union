@@ -74,13 +74,16 @@ func (b *BlsAPI) WithAggregation(callback func(aggregateKey func(selector fronte
 	return aggregatedPublicKey, nbOfKeys, nil
 }
 
+// Union whitepaper: (6)
 func (b *BlsAPI) VerifySignature(publicKey *gadget.G1Affine, message *gadget.G2Affine, signature *gadget.G2Affine) error {
 	pairing, err := gadget.NewPairing(b.api)
 	if err != nil {
 		return fmt.Errorf("new pairing: %w", err)
 	}
+	// Technically not needed as constant
 	pairing.AssertIsOnG1(&b.negG1Gen)
 	pairing.AssertIsOnG1(publicKey)
+	// Technically not needed if the hashing to curve happen in-circuit
 	pairing.AssertIsOnG2(message)
 	pairing.AssertIsOnG2(signature)
 	// Verify that the aggregated signature is correct
