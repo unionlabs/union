@@ -309,8 +309,6 @@ func FuzzNonadjacent(f *testing.F) {
 
 		message := cometbn254.HashToField(signedBytes)
 
-		hashedMessage := cometbn254.HashToG2(signedBytes)
-
 		circuit := Circuit{
 			DomainSeparationTag:      []byte(cometbn254.CometblsSigDST),
 			TrustedInput:             trustedInput,
@@ -318,7 +316,6 @@ func FuzzNonadjacent(f *testing.F) {
 			ExpectedTrustedValRoot:   trustedValidatorsRoot,
 			ExpectedUntrustedValRoot: untrustedValidatorsRoot,
 			Message:                  message,
-			HashedMessage:            gadget.NewG2Affine(hashedMessage),
 		}
 
 		err = test.IsSolved(

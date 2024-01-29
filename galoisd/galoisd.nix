@@ -73,20 +73,20 @@
       download-circuit =
         let
           files = pkgs.writeText "files.txt" ''
-            /vk.bin
-            /pk.bin
-            /r1cs.bin
+            /circuit.zip
           '';
         in
         pkgs.writeShellApplication {
           name = "download-circuit";
-          runtimeInputs = [ pkgs.rclone ];
+          runtimeInputs = [ pkgs.rclone pkgs.zip ];
           text = ''
             if [[ "$#" -ne 1 ]]; then
             echo "Invalid arguments, must be: download-circuit [path]"
             exit 1
             fi
             rclone --progress --no-traverse --http-url "https://circuit.cryptware.io" copy :http:/ "$1" --files-from=${files}
+            unzip circuit.zip
+            rm circuit.zip
           '';
         };
     };

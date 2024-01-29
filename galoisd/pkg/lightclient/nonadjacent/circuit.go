@@ -31,7 +31,6 @@ type Circuit struct {
 	ExpectedTrustedValRoot   frontend.Variable `gnark:",public"`
 	ExpectedUntrustedValRoot frontend.Variable `gnark:",public"`
 	Message                  frontend.Variable `gnark:",public"`
-	HashedMessage            gadget.G2Affine
 }
 
 // Union whitepaper: Algorithm 2. procedure Main
@@ -44,7 +43,6 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	if err != nil {
 		return err
 	}
-	emulatedAPI.AssertIsEqual(hashedMessage, &circuit.HashedMessage)
 	lc := lightclient.NewTendermintLightClientAPI(api, &lightclient.TendermintLightClientInput{
 		Sig:           circuit.TrustedInput.Sig,
 		Validators:    circuit.TrustedInput.Validators,
@@ -52,7 +50,7 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		NbOfSignature: circuit.TrustedInput.NbOfSignature,
 		Bitmap:        circuit.TrustedInput.Bitmap,
 	})
-	res := lc.Verify(&circuit.HashedMessage, circuit.ExpectedTrustedValRoot, TrustedRatioNum, TrustedRatioDen)
+	res := lc.Verify(hashedMessage, circuit.ExpectedTrustedValRoot, TrustedRatioNum, TrustedRatioDen)
 	if res != nil {
 		return res
 	}
@@ -63,5 +61,5 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		NbOfSignature: circuit.UntrustedInput.NbOfSignature,
 		Bitmap:        circuit.UntrustedInput.Bitmap,
 	})
-	return lc.Verify(&circuit.HashedMessage, circuit.ExpectedUntrustedValRoot, UntrustedRatioNum, UntrustedRatioDen)
+	return lc.Verify(hashedMessage, circuit.ExpectedUntrustedValRoot, UntrustedRatioNum, UntrustedRatioDen)
 }

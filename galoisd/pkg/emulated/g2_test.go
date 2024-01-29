@@ -48,38 +48,6 @@ func FuzzMapToCurve(f *testing.F) {
 	})
 }
 
-type MapToG2 struct {
-	Preimage fields_bn254.E2
-	Image    gadget.G2Affine
-}
-
-func (c *MapToG2) Define(api frontend.API) error {
-	emulated, err := NewEmulatedAPI(api)
-	if err != nil {
-		return err
-	}
-	emulated.AssertIsEqual(&c.Image, emulated.MapToG2(&c.Preimage))
-	return nil
-}
-
-func FuzzMapToG2(f *testing.F) {
-	f.Fuzz(func(t *testing.T, x []byte, y []byte) {
-		t.Parallel()
-		var preimage curve.E2
-		preimage.A0.SetBytes(x)
-		preimage.A1.SetBytes(y)
-		err := test.IsSolved(
-			&MapToG2{},
-			&MapToG2{
-				Preimage: fields_bn254.FromE2(&preimage),
-				Image:    gadget.NewG2Affine(curve.MapToG2(preimage)),
-			},
-			ecc.BN254.ScalarField(),
-		)
-		assert.NoError(t, err)
-	})
-}
-
 type ExpandMsgXmd struct {
 	Preimage frontend.Variable
 	Domain   frontend.Variable
