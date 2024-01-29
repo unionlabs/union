@@ -396,6 +396,15 @@ func (e *EmulatedAPI) Double(p *gadget.G2Affine) *gadget.G2Affine {
 	return &point
 }
 
+func (e *EmulatedAPI) Reduce(p * gadget.G2Affine) *gadget.G2Affine {
+	reducedP := gadget.G2Affine{}
+	reducedP.P.X.A0 = *e.field.Reduce(&p.P.X.A0)
+	reducedP.P.X.A1 = *e.field.Reduce(&p.P.X.A1)
+	reducedP.P.Y.A0 = *e.field.Reduce(&p.P.Y.A0)
+	reducedP.P.Y.A1 = *e.field.Reduce(&p.P.Y.A1)
+	return &reducedP
+}
+
 func (e *EmulatedAPI) DoubleN(p *gadget.G2Affine, n int) *gadget.G2Affine {
 	pn := p
 	for s := 0; s < n; s++ {
@@ -466,10 +475,6 @@ func (e *EmulatedAPI) ClearCofactor(Q *gadget.G2Affine) *gadget.G2Affine {
 	return e.Add(e.Add(e.Add(xQ, psi_3xQ), psi2_xQ), psi3_Q)
 }
 
-func (e *EmulatedAPI) MapToG2(u *fields_bn254.E2) *gadget.G2Affine {
-	return e.ClearCofactor(e.MapToCurve(u))
-}
-
 // Union whitepaper: (1), (2) M ◦ H_{mimc^4}
 //
 // https://datatracker.ietf.org/doc/html/rfc9380#name-encoding-byte-strings-to-el
@@ -486,7 +491,7 @@ func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable)
 		A0: *u[2],
 		A1: *u[3],
 	})
-	return e.ClearCofactor(e.Add(Q0, Q1)), nil
+	return e.Reduce(e.ClearCofactor(e.Add(Q0, Q1))), nil
 }
 
 // Union whitepaper: (1), (2) M ◦ H_{mimc^4}
