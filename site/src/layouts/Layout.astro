@@ -1,10 +1,13 @@
 ---
+import '#/styles/fonts.css'
 import '#/styles/reset.css'
 import '#/styles/tailwind.css'
 import { SEO } from 'astro-seo'
 import { Head } from 'astro-capo'
-import '@fontsource/jetbrains-mono'
+import { AstroFont } from 'astro-font'
 import Header from '#/components/Header.astro'
+
+const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 ---
 
 <!doctype html>
@@ -53,6 +56,34 @@ import Header from '#/components/Header.astro'
           { name: 'twitter:description', content: 'The Sovereign Interoperability Layer' }
         ]
       }}
+    />
+    <AstroFont
+      config={[
+        {
+          name: 'Inter var',
+          src: fontWeights.map(weight => ({
+            path: '/fonts/InterVariable.woff2',
+            style: 'normal',
+            weight
+          })),
+          preload: true,
+          display: 'swap',
+          fallback: 'sans-serif'
+        },
+        {
+          name: 'JetBrains Mono',
+          src: fontWeights.map(weight => ({
+            path: '/fonts/JetBrainsMono[wght].woff2',
+            style: 'normal',
+            weight
+          })),
+          preload: true,
+          display: 'swap',
+          // @ts-ignore
+          fallback: 'sans-serif'
+        }
+
+      ]}
     />
   </Head>
   <body

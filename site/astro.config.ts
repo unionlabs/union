@@ -118,10 +118,9 @@ export default defineConfig({
       ],
       plugins: [],
       customCss: [
+        "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
         "./src/styles/starlight.css",
-        "@fontsource/jetbrains-mono/400.css",
-        "@fontsource/jetbrains-mono/600.css",
       ],
     }),
     tailwind({

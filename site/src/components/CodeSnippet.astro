@@ -1,4 +1,6 @@
 ---
+import '#/styles/fonts.css'
+
 import { highlightCode } from '#/lib/highlight-code.ts'
 
 /**
@@ -17,13 +19,17 @@ const highlightedCode = await highlightCode(code)
 ---
 
 <div
-  class='code-snippet'
+  class='code-snippet font-mono'
   set:html={highlightedCode}
 />
 
 <style is:inline>
   .code-snippet > figure[data-rehype-pretty-code-figure] > pre {
     background-color: black !important;
+  }
+
+  figure pre code span {
+    font-family: 'JetBrains Mono', monospace !important;
   }
 
   @media (max-width: 400px) {

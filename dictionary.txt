@@ -847,6 +847,7 @@ wasmvmtypes
 wctx
 wearehome
 webpki
+wght
 whistleblower
 withdrawability
 woestijne
