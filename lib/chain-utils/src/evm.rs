@@ -141,11 +141,8 @@ impl EthLogDecode for IBCHandlerEvents {
 
         [packet_event, conn_event, chan_event, client_event]
             .into_iter()
-            .filter(|event| event.is_ok())
-            .collect::<Result<Vec<_>, _>>()?
-            .first()
-            .cloned()
-            .ok_or(ethers::abi::Error::InvalidData)
+            .find(|event| event.is_ok())
+            .ok_or(ethers::abi::Error::InvalidData)?
     }
 }
 
