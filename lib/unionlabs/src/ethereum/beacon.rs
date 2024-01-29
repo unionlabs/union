@@ -150,9 +150,13 @@ pub struct ExecutionPayload<
     /// 'difficulty' in the yellow paper
     pub prev_randao: H256,
     /// 'number' in the yellow paper
+    #[serde(with = "::serde_utils::string")]
     pub block_number: u64,
+    #[serde(with = "::serde_utils::string")]
     pub gas_limit: u64,
+    #[serde(with = "::serde_utils::string")]
     pub gas_used: u64,
+    #[serde(with = "::serde_utils::string")]
     pub timestamp: u64,
     #[serde(with = "::serde_utils::hex_string")]
     pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,

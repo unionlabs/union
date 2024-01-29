@@ -76,7 +76,7 @@
       # _module.args.libwasmvmCargoToml_1_3_0 = "${wasmvm_1_3_0}/libwasmvm/Cargo.toml";
       # _module.args.libwasmvmCargoToml_1_5_0 = "${wasmvm_1_5_0}/libwasmvm/Cargo.toml";
 
-      packages.libwasmvm = mkLibwasmvm (dbg inputs.wasmvm_1_3_0);
+      packages.libwasmvm = mkLibwasmvm inputs.wasmvm_1_5_0;
       packages.libwasmvm_1_5_0 = mkLibwasmvm inputs.wasmvm_1_5_0;
     };
 }

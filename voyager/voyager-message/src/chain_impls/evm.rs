@@ -235,10 +235,15 @@ where
                         Ok(ok) => {
                             ok.await.unwrap().unwrap();
                         }
+
                         Err(why) => tracing::info!(
-                            "error registering client type, it is likely already registered: {}",
-                            why.decode_revert::<String>().unwrap()
+                            "error registering client type, it is likely already registered: {:?}",
+                            why
                         ),
+                        // Err(why) => tracing::info!(
+                        //     "error registering client type, it is likely already registered: {}",
+                        //     why.decode_revert::<String>().unwrap()
+                        // ),
                     }
 
                     mk_function_call(

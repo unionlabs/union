@@ -136,8 +136,12 @@ impl EthLogDecode for IBCHandlerEvents {
             IBCConnectionEvents::decode_log(log).map(IBCHandlerEvents::ConnectionEvent);
         let chan_event =
             IBCChannelHandshakeEvents::decode_log(log).map(IBCHandlerEvents::ChannelEvent);
-        [packet_event, conn_event, chan_event]
+        let client_event =
+            GeneratedClientIdentifierFilter::decode_log(log).map(IBCHandlerEvents::ClientEvent);
+
+        [packet_event, conn_event, chan_event, client_event]
             .into_iter()
+            .filter(|event| event.is_ok())
             .collect::<Result<Vec<_>, _>>()?
             .first()
             .cloned()
