@@ -20,6 +20,7 @@ func NewMerkleTreeAPI(api frontend.API) *MerkleTreeAPI {
 	return &MerkleTreeAPI{api: api}
 }
 
+// Union whitepaper: (11) H_leaf
 func (m *MerkleTreeAPI) LeafHash(leaf []frontend.Variable) frontend.Variable {
 	preimage := make([]frontend.Variable, 1+len(leaf))
 	// Leaf prefix
@@ -35,6 +36,7 @@ func (m *MerkleTreeAPI) LeafHash(leaf []frontend.Variable) frontend.Variable {
 	return mimc.Sum()
 }
 
+// Union whitepaper: (11) H_inner
 func (m *MerkleTreeAPI) InnerHash(left frontend.Variable, right frontend.Variable) frontend.Variable {
 	mimc, err := mimc.NewMiMC(m.api)
 	if err != nil {
@@ -44,6 +46,8 @@ func (m *MerkleTreeAPI) InnerHash(left frontend.Variable, right frontend.Variabl
 	return mimc.Sum()
 }
 
+// Union whitepaper: (11) merkle_root
+//
 // Compute merkle root in place at leafHashes[0]
 func (m *MerkleTreeAPI) RootHash(leafHashes []frontend.Variable, size frontend.Variable) frontend.Variable {
 	maxLeaves := len(leafHashes)

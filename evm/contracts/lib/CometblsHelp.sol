@@ -37,8 +37,6 @@ library CometblsHelp {
     bytes constant HMAC_O =
         hex"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
 
-    // Specialized https://en.wikipedia.org/wiki/HMAC for keccak256 with `CometBLS` as key.
-    // TODO: link whitepaper
     function hmac_keccak(bytes memory message) internal pure returns (bytes32) {
         return
             keccak256(
@@ -49,7 +47,7 @@ library CometblsHelp {
             );
     }
 
-    // TODO: link whitepaper
+    // Union whitepaper: (1) H_{hmac_r}
     function hashToField(bytes memory message) internal pure returns (uint256) {
         return (uint256(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + 1;
     }

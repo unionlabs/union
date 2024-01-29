@@ -65,6 +65,7 @@ func Repack(api frontend.API, unpacked []frontend.Variable, sizeOfInput int, siz
 	return elems
 }
 
+// Union whitepaper: Algorithm 2. procedure V
 func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedValRoot frontend.Variable, powerNumerator frontend.Variable, powerDenominator frontend.Variable) error {
 	lc.api.AssertIsLessOrEqual(lc.input.NbOfVal, MaxVal)
 	lc.api.AssertIsLessOrEqual(lc.input.NbOfSignature, lc.input.NbOfVal)
@@ -85,6 +86,8 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 			if err != nil {
 				return fmt.Errorf("new mimc: %w", err)
 			}
+			// Union whitepaper: (11) H_pre
+			//
 			h.Write(validator.HashableX, validator.HashableY, validator.HashableXMSB, validator.HashableYMSB, validator.Power)
 			leaf := h.Sum()
 

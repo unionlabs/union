@@ -34,6 +34,7 @@ type Circuit struct {
 	HashedMessage            gadget.G2Affine
 }
 
+// Union whitepaper: Algorithm 2. procedure Main
 func (circuit *Circuit) Define(api frontend.API) error {
 	emulatedAPI, err := g2.NewEmulatedAPI(api)
 	if err != nil {
