@@ -12,6 +12,7 @@ import (
 
 func QueryStats() *cobra.Command {
 	var cmd = &cobra.Command{
+		Short: "Query various circuit statistics (constraints, nb of public/private witnesses etc...)",
 		Use:  "query-stats [uri]",
 		Args: cobra.ExactArgs(1),
 		RunE: MakeCobra(func(ctx context.Context, client provergrpc.UnionProverAPIClient, cmd *cobra.Command, args []string) error {

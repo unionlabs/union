@@ -21,6 +21,7 @@ import (
 // The sole purpose of this command is to see a live example and understand how to interact with the prover.
 func ExampleProveCmd() *cobra.Command {
 	cmd := &cobra.Command{
+		Short: "Simulation of a client submitting a proof request (data will be randomly generated)",
 		Use:  "example-prove [uri] [nb_validators]",
 		Args: cobra.ExactArgs(2),
 		RunE: MakeCobra(func(ctx context.Context, client provergrpc.UnionProverAPIClient, cmd *cobra.Command, args []string) error {
