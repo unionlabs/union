@@ -64,8 +64,7 @@ impl<'a> PrimaryKey<'a> for IbcEndpointKey {
 pub const FOREIGN_DENOM_TO_HASH: Map<(IbcEndpointKey, String), Hash> =
     Map::new("foreign_denom_to_hash");
 
-pub const HASH_TO_FOREIGN_DENOM: Map<(IbcEndpointKey, Hash), String> =
-    Map::new("hash_to_foreign_denom");
+pub const HASH_TO_FOREIGN_DENOM: Map<Hash, String> = Map::new("hash_to_foreign_denom");
 
 #[cw_serde]
 #[derive(Default)]
