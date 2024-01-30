@@ -7,7 +7,7 @@ on:
     paths:
       - 'typescript-sdk/**'
     tags:
-      - 'v*'
+      - 'typescript-sdk-v*'
   workflow_dispatch:
 
 concurrency:
