@@ -5,8 +5,8 @@
     in
     {
       packages = {
-        site = pkgs.buildNpmPackage {
-          npmDepsHash = "";
+        typescript-sdk = pkgs.buildNpmPackage {
+          npmDepsHash = "sha256-HarCdLQ4dLGjImqNSrCFXjcLfqzgfxMshf40USckY3w=";
           src = ./.;
           pname = "@unionlabs/client";
           version = "0.0.0";
@@ -17,11 +17,9 @@
             mkdir -p $out
             cp -r ./dist/* $out
           '';
-
           doDist = false;
         };
       };
-
       apps = { };
     };
 }

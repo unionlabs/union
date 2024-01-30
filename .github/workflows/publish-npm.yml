@@ -3,7 +3,7 @@ name: Publish TypeScript SDK
 on:
   push:
     branches:
-      - main
+      - 'main'
     paths:
       - 'typescript-sdk/**'
     tags:
@@ -19,8 +19,8 @@ defaults:
     shell: bash
 
 env:
-  ACTIONS_RUNNER_DEBUG: true
   NODE_OPTIONS: '--no-warnings'
+  ACTIONS_RUNNER_DEBUG: true
 
 jobs:
   changelog:
@@ -38,7 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
-    name: NPM Registry
+    name: 'Publish NPM Registry'
     needs: [changelog]
     permissions:
       id-token: write
@@ -48,6 +48,7 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v4
 
+      # This is needed to do npm authentication
       - name: 'Setup Node.js'
         uses: actions/setup-node@v4
         with:
