@@ -95,20 +95,6 @@ contract RelayTests is Test {
         );
     }
 
-    function initRelay(
-        string memory sourcePort,
-        string memory sourceChannel,
-        string memory destinationPort,
-        string memory destinationChannel
-    ) public {
-        initChannel(
-            destinationPort,
-            destinationChannel,
-            sourcePort,
-            sourceChannel
-        );
-    }
-
     function sendLocalToken(
         string memory sourcePort,
         string memory sourceChannel,
@@ -708,11 +694,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = address(new ERC20Denom(denomName));
@@ -817,11 +803,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         receiveRemoteToken(
@@ -854,11 +840,11 @@ contract RelayTests is Test {
         vm.assume(sender != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = address(new ERC20Denom(denomName));
@@ -926,11 +912,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         receiveRemoteToken(
@@ -1014,11 +1000,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = sendLocalToken(
@@ -1051,11 +1037,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = sendLocalToken(
@@ -1124,11 +1110,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         receiveRemoteToken(
@@ -1203,11 +1189,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = sendLocalToken(
@@ -1280,11 +1266,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         receiveRemoteToken(
@@ -1363,11 +1349,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = sendLocalToken(
@@ -1415,11 +1401,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         receiveRemoteToken(
