@@ -26,6 +26,7 @@ env:
 
 jobs:
   changelog:
+    if: false
     name: 'Generate Changelog'
     runs-on: ['ubuntu-latest']
     steps:
@@ -40,6 +41,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
+    if: false
     name: 'Publish NPM Registry'
     needs: [changelog]
     permissions:
