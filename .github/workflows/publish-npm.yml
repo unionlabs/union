@@ -69,8 +69,7 @@ jobs:
       - name: 'Build SDK'
         working-directory: './typescript-sdk'
         run: |
-          nix build .#typescript-sdk
-          cp -rL result dist
+          nix build .#typescript-sdk -o dist
 
       - name: 'Publish to NPM'
         working-directory: './typescript-sdk'
