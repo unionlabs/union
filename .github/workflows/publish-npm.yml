@@ -19,6 +19,8 @@ defaults:
     shell: bash
 
 env:
+  NIX_VERSION: nix-2.13.2
+  NIXPKGS_CHANNEL: nixos-22.11
   NODE_OPTIONS: '--no-warnings'
   ACTIONS_RUNNER_DEBUG: true
 
@@ -55,9 +57,20 @@ jobs:
           node-version: 'lts/*'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: 'Install Dependencies'
+      - name: 'Install Nix'
+        uses: cachix/install-nix-action@v25
+        with:
+          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
+          github_access_token: ${{ github.token }}
+      - run: |
+          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
+          nix-channel --update
+
+      - name: 'Build SDK'
         working-directory: './typescript-sdk'
-        run: npm ci
+        run: |
+          nix build .#typescript-sdk
+          cp -rL result dist
 
       - name: 'Publish to NPM'
         working-directory: './typescript-sdk'

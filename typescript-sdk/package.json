@@ -31,7 +31,6 @@
     "demo": "node --import=tsx --env-file=.env ./scripts/demo.ts",
     "release": "bumpp package.json --commit --push --tag",
     "prebuild": "rm -rf dist",
-    "prepublishOnly": "NODE_ENV='production' npm run build",
     "check-package": "npx publint@latest --public --strict && npm pack && attw --pack",
     "clean": "rm -rf dist node_modules"
   },
@@ -40,7 +39,7 @@
     "@cosmjs/encoding": "^0.32.2",
     "@cosmjs/stargate": "^0.32.2",
     "@cosmjs/tendermint-rpc": "^0.32.2",
-    "viem": "^2.5.0"
+    "viem": "^2.6.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.13.6",
