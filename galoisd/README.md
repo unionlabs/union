@@ -28,4 +28,3 @@ docker pull ghcr.io/unionlabs/galoisd:<VERSION>
 ### Nix
 
 `nix run github:unionlabs/union/<COMMIT_OR_VERSION>#galoisd -- --help`
-
