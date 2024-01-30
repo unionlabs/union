@@ -137,6 +137,7 @@ trait OnReceive {
     fn foreign_toggle(
         &mut self,
         contract_address: &Addr,
+        local_endpoint: &IbcEndpoint,
         denom: &str,
     ) -> Result<(bool, Hash, CosmosMsg<TokenFactoryMsg>), ContractError>;
 
@@ -176,7 +177,7 @@ trait OnReceive {
                     DenomOrigin::Remote { denom } => {
                         let foreign_denom = make_foreign_denom(counterparty_endpoint, denom);
                         let (exists, hashed_foreign_denom, register_msg) =
-                            self.foreign_toggle(contract_address, &foreign_denom)?;
+                            self.foreign_toggle(contract_address, endpoint, &foreign_denom)?;
                         let normalized_foreign_denom =
                             format!("0x{}", hex::encode(hashed_foreign_denom));
                         let factory_denom =
@@ -214,9 +215,13 @@ impl<'a> OnReceive for StatefulOnReceive<'a> {
     fn foreign_toggle(
         &mut self,
         contract_address: &Addr,
+        local_endpoint: &IbcEndpoint,
         denom: &str,
     ) -> Result<(bool, Hash, CosmosMsg<TokenFactoryMsg>), ContractError> {
-        let exists = FOREIGN_DENOM_TO_HASH.has(self.deps.storage, denom.into());
+        let exists = FOREIGN_DENOM_TO_HASH.has(
+            self.deps.storage,
+            (local_endpoint.clone().into(), denom.into()),
+        );
         let hash = hash_denom(denom);
         Ok((
             exists,
@@ -224,6 +229,7 @@ impl<'a> OnReceive for StatefulOnReceive<'a> {
             wasm_execute(
                 contract_address,
                 &ExecuteMsg::RegisterDenom {
+                    local_endpoint: local_endpoint.clone(),
                     denom: denom.to_string(),
                     hash: hash.into(),
                 },
@@ -245,8 +251,6 @@ impl<'a> OnReceive for StatefulOnReceive<'a> {
 }
 
 trait ForTokens {
-    fn hash_to_denom(&mut self, denom_hash: Hash) -> Result<String, ContractError>;
-
     fn on_local(
         &mut self,
         channel_id: &str,
@@ -320,12 +324,6 @@ impl<'a> ForTokens for StatefulSendTokens<'a> {
         }
         .into()])
     }
-
-    fn hash_to_denom(&mut self, denom_hash: Hash) -> Result<String, ContractError> {
-        HASH_TO_FOREIGN_DENOM
-            .load(self.deps.storage, denom_hash)
-            .map_err(Into::into)
-    }
 }
 
 struct StatefulRefundTokens<'a> {
@@ -363,12 +361,6 @@ impl<'a> ForTokens for StatefulRefundTokens<'a> {
             mint_to_address: self.receiver.clone(),
         }
         .into()])
-    }
-
-    fn hash_to_denom(&mut self, denom_hash: Hash) -> Result<String, ContractError> {
-        HASH_TO_FOREIGN_DENOM
-            .load(self.deps.storage, denom_hash)
-            .map_err(Into::into)
     }
 }
 
@@ -482,7 +474,10 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         normalize_for_ibc_transfer(
             |hash| {
                 HASH_TO_FOREIGN_DENOM
-                    .load(self.common.deps.storage, hash)
+                    .load(
+                        self.common.deps.storage,
+                        (self.common.channel.endpoint.clone().into(), hash),
+                    )
                     .map_err(Into::into)
             },
             self.common.env.contract.address.as_str(),
@@ -611,7 +606,10 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         normalize_for_ibc_transfer(
             |hash| {
                 HASH_TO_FOREIGN_DENOM
-                    .load(self.common.deps.storage, hash)
+                    .load(
+                        self.common.deps.storage,
+                        (self.common.channel.endpoint.clone().into(), hash),
+                    )
                     .map_err(Into::into)
             },
             self.common.env.contract.address.as_str(),
@@ -659,6 +657,7 @@ mod tests {
         fn foreign_toggle(
             &mut self,
             contract_address: &Addr,
+            local_endpoint: &IbcEndpoint,
             denom: &str,
         ) -> Result<(bool, Hash, CosmosMsg<TokenFactoryMsg>), ContractError> {
             let hash = hash_denom(denom);
@@ -668,6 +667,7 @@ mod tests {
                 wasm_execute(
                     contract_address,
                     &ExecuteMsg::RegisterDenom {
+                        local_endpoint: local_endpoint.clone(),
                         denom: denom.to_string(),
                         hash: hash.into(),
                     },
@@ -710,6 +710,10 @@ mod tests {
                 wasm_execute(
                     Addr::unchecked("0xDEADC0DE"),
                     &ExecuteMsg::RegisterDenom {
+                        local_endpoint: IbcEndpoint {
+                            port_id: "wasm.0xDEADC0DE".into(),
+                            channel_id: "channel-1".into(),
+                        },
                         denom: "transfer/channel-34/from-counterparty".into(),
                         hash: hex::decode("af30fd00576e1d27471a4d2b0c0487dc6876e0589e")
                             .unwrap()
@@ -824,13 +828,6 @@ mod tests {
                 }
                 .into()])
             }
-
-            fn hash_to_denom(
-                &mut self,
-                _denom_hash: Hash,
-            ) -> Result<String, crate::error::ContractError> {
-                todo!()
-            }
         }
         assert_eq!(
             OnRemoteOnly.execute(
@@ -900,13 +897,6 @@ mod tests {
                 Vec<cosmwasm_std::CosmosMsg<token_factory_api::TokenFactoryMsg>>,
                 crate::error::ContractError,
             > {
-                todo!()
-            }
-
-            fn hash_to_denom(
-                &mut self,
-                _denom_hash: Hash,
-            ) -> Result<String, crate::error::ContractError> {
                 todo!()
             }
         }

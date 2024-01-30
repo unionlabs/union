@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, CosmosMsg, IbcChannel, Uint512};
+use cosmwasm_std::{Binary, CosmosMsg, IbcChannel, IbcEndpoint, Uint512};
 use token_factory_api::TokenFactoryMsg;
 
 use crate::state::ChannelInfo;
@@ -22,7 +22,11 @@ pub enum ExecuteMsg {
     /// This allows us to transfer native tokens
     Transfer(TransferMsg),
     /// Register a denom, this message exist only to create sub-transaction from the top-level IBC call.
-    RegisterDenom { denom: String, hash: Binary },
+    RegisterDenom {
+        local_endpoint: IbcEndpoint,
+        denom: String,
+        hash: Binary,
+    },
     /// Change the admin (must be called by current admin)
     UpdateAdmin { admin: String },
     BatchExecute {
