@@ -1073,7 +1073,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(relay), address(sender), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Timeout(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
 
         assertEq(
             relay.getOutstanding(
@@ -1166,7 +1166,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(0), address(receiver), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Timeout(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
 
         uint256 outstandingBefore = relay.getOutstanding(
             destinationPort,
@@ -1225,7 +1225,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(relay), address(sender), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Timeout(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
 
         assertEq(
             relay.getOutstanding(
@@ -1322,7 +1322,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(0), address(receiver), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Timeout(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
 
         uint256 outstandingBefore = relay.getOutstanding(
             destinationPort,

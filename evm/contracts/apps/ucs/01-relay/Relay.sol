@@ -87,7 +87,7 @@ library RelayLib {
         address token,
         uint256 amount
     );
-    event Timeout(
+    event Refunded(
         address sender,
         string receiver,
         string denom,
@@ -493,7 +493,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 );
                 IERC20(denomAddress).transfer(userToRefund, token.amount);
             }
-            emit RelayLib.Timeout(
+            emit RelayLib.Refunded(
                 userToRefund,
                 receiver,
                 token.denom,
