@@ -5,7 +5,7 @@ import { getUnoFromFaucet } from "#/utilities/faucet.ts";
 
 // bun ./scripts/faucet.ts --address union1rph0kfwlew2dqs78uydcs93pwza5qqnc22n6ln
 
-const REST_API_URL = 'https://api.testnet.bonlulu.uno'
+const REST_API_URL = "https://api.testnet.bonlulu.uno";
 
 const [flag, address] = process.argv.slice(2);
 
