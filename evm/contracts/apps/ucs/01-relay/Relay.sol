@@ -29,6 +29,8 @@ struct RelayPacket {
 
 interface IRelay is IIBCModule {
     function getDenomAddress(
+        string memory sourcePort,
+        string memory sourceChannel,
         string memory denom
     ) external view returns (address);
 
@@ -318,10 +320,12 @@ contract UCS01Relay is IBCAppBase, IRelay {
     IBCHandler private immutable ibcHandler;
 
     // A mapping from remote denom to local ERC20 wrapper.
-    mapping(string => address) private denomToAddress;
+    mapping(string => mapping(string => mapping(string => address)))
+        private denomToAddress;
     // A mapping from a local ERC20 wrapper to the remote denom.
     // Required to determine whether an ERC20 token is originating from a remote chain.
-    mapping(address => string) private addressToDenom;
+    mapping(string => mapping(string => mapping(address => string)))
+        private addressToDenom;
     // A mapping from local port/channel to it's counterparty.
     // This is required to remap denoms.
     mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
@@ -339,9 +343,11 @@ contract UCS01Relay is IBCAppBase, IRelay {
 
     // Return the ERC20 wrapper for the given remote-native denom.
     function getDenomAddress(
+        string memory sourcePort,
+        string memory sourceChannel,
         string memory denom
     ) external view override returns (address) {
-        return denomToAddress[denom];
+        return denomToAddress[sourcePort][sourceChannel][denom];
     }
 
     // Return the amount of tokens submitted through the given port/channel.
@@ -408,14 +414,10 @@ contract UCS01Relay is IBCAppBase, IRelay {
             localToken.amount
         );
         // If the token is originating from the counterparty channel, we must have saved it's denom.
-        addressDenom = addressToDenom[localToken.denom];
-        if (
-            RelayLib.isFromChannel(
-                counterpartyPortId,
-                counterpartyChannelId,
-                addressDenom
-            )
-        ) {
+        addressDenom = addressToDenom[sourcePort][sourceChannel][
+            localToken.denom
+        ];
+        if (bytes(addressDenom).length != 0) {
             // Token originating from the remote chain, burn the amount.
             IERC20Denom(localToken.denom).burn(
                 address(this),
@@ -496,7 +498,9 @@ contract UCS01Relay is IBCAppBase, IRelay {
         address userToRefund = RelayLib.bytesToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
-            address denomAddress = denomToAddress[token.denom];
+            address denomAddress = denomToAddress[portId][channelId][
+                token.denom
+            ];
             if (denomAddress != address(0)) {
                 // The token was originating from the remote chain, we burnt it.
                 // Refund means minting in this case.
@@ -570,11 +574,17 @@ contract UCS01Relay is IBCAppBase, IRelay {
                     ibcPacket.source_channel,
                     token.denom
                 );
-                denomAddress = denomToAddress[denom];
+                denomAddress = denomToAddress[ibcPacket.destination_port][
+                    ibcPacket.destination_channel
+                ][denom];
                 if (denomAddress == address(0)) {
                     denomAddress = address(new ERC20Denom(denom));
-                    denomToAddress[denom] = denomAddress;
-                    addressToDenom[denomAddress] = denom;
+                    denomToAddress[ibcPacket.destination_port][
+                        ibcPacket.destination_channel
+                    ][denom] = denomAddress;
+                    addressToDenom[ibcPacket.destination_port][
+                        ibcPacket.destination_channel
+                    ][denomAddress] = denom;
                     emit RelayLib.DenomCreated(denom, denomAddress);
                 }
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
