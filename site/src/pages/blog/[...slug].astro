@@ -15,7 +15,12 @@ const { entry } = Astro.props
 const { Content } = await entry.render()
 ---
 
-<Layout>
+<Layout
+  url={Astro.url.href}
+  title={entry.data.title}
+  image={entry.data.backgroundImage}
+  description={entry.data.description}
+>
   <main
     class='sm:text-xl flex-grow mt-2 sm:mt-12 pb-16 max-w-xl self-center flex flex-col pt-6 sm:pt-0 mx-4'
   >

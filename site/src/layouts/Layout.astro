@@ -7,6 +7,20 @@ import { Head } from 'astro-capo'
 import { AstroFont } from 'astro-font'
 import Header from '#/components/Header.astro'
 
+interface Props {
+  url?: string
+  title?: string
+  image?: string
+  description?: string
+}
+
+const {
+  url = 'https://union.build',
+  title = 'Union',
+  image = '/logo.png',
+  description = 'The Sovereign Interoperability Layer'
+} = Astro.props
+
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 ---
 
@@ -15,32 +29,30 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
   <Head>
     <meta charset='utf-8' />
     <SEO
-      title='Union'
-      description='The Sovereign Interoperability Layer'
+      title={title}
+      description={description}
       openGraph={{
         basic: {
-          title: 'Union',
-          type: 'website',
-          image: '/logo.png',
-          url: 'https://union.build'
+          url,
+          title,
+          image,
+          type: 'website'
         },
         optional: {
           locale: 'en',
           siteName: 'Union',
-          description: 'The Sovereign Interoperability Layer'
+          description
         },
-        image: {
-          url: '/logo.png'
-        }
+        image: { url: '/logo.png' }
       }}
       twitter={{
-        title: 'Union',
-        image: '/logo.png',
+        title,
+        image,
+        site: url,
+        description,
         imageAlt: 'Union Logo',
         creator: '@union_build',
-        site: 'https://union.build',
         card: 'summary_large_image',
-        description: 'The Sovereign Interoperability Layer'
       }}
       extend={{
         link: [
@@ -52,8 +64,9 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
           { name: 'robots', content: 'index, follow' },
           { name: 'twitter:domain', content: 'union.build' },
-          { name: 'twitter:url', content: 'https://union.build' },
-          { name: 'twitter:description', content: 'The Sovereign Interoperability Layer' }
+          { name: 'twitter:url', content: url },
+          { name: 'twitter:title', content: title },
+          { name: 'twitter:description', content: description }
         ]
       }}
     />
@@ -79,10 +92,8 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           })),
           preload: true,
           display: 'swap',
-          // @ts-ignore
           fallback: 'sans-serif'
         }
-
       ]}
     />
   </Head>

@@ -10,6 +10,7 @@ const blogCollection = defineCollection({
     date: z.date(),
     author: z.string().default("union_build"),
     description: z.string().optional(),
+    backgroundImage: z.string().optional(),
     editUrl: z.union([z.string().url(), z.boolean()]).optional().default(true),
     lastUpdated: z.union([z.date(), z.boolean()]).optional(),
     hidden: z.boolean().optional().default(false),

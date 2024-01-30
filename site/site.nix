@@ -1,17 +1,12 @@
 { ... }: {
   perSystem = { pkgs, lib, ensureAtRepositoryRoot, ... }:
-    let
-      pkgsDeps = with pkgs; [ nodejs_20 vips pkg-config ];
-    in
-    {
+    let pkgsDeps = with pkgs; [ nodejs_20 vips pkg-config ];
+    in {
       packages = {
         site = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-+3BmO5gZapR0wz4e5QWtcIy6a2U3pw5SScN8N6YBgyw=";
+          npmDepsHash = "sha256-6tbIEWn7E5KSH9NcCF+uiMh4AxJmQQhdMXXZOyWqNuA=";
           src = ./.;
-          srcs = [
-            ./.
-            ./../evm/.
-          ];
+          srcs = [ ./. ./../evm/. ];
           sourceRoot = "site";
           pname = "site";
           version = "0.0.1";
