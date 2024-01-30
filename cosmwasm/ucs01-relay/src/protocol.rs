@@ -645,12 +645,13 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        wasm_execute, Addr, BankMsg, Coin, CosmosMsg, IbcEndpoint, Uint128, Uint256,
+        testing::mock_dependencies, wasm_execute, Addr, BankMsg, Coin, CosmosMsg, IbcEndpoint,
+        Uint128, Uint256,
     };
     use token_factory_api::TokenFactoryMsg;
     use ucs01_relay_api::types::TransferToken;
 
-    use super::{hash_denom, ForTokens, OnReceive};
+    use super::{hash_denom, ForTokens, OnReceive, StatefulOnReceive};
     use crate::{
         error::ContractError,
         msg::ExecuteMsg,
@@ -668,21 +669,12 @@ mod tests {
             local_endpoint: &IbcEndpoint,
             denom: &str,
         ) -> Result<(bool, Hash, CosmosMsg<TokenFactoryMsg>), ContractError> {
-            let hash = hash_denom(denom);
-            Ok((
-                self.toggle,
-                hash,
-                wasm_execute(
-                    contract_address,
-                    &ExecuteMsg::RegisterDenom {
-                        local_endpoint: local_endpoint.clone(),
-                        denom: denom.to_string(),
-                        hash: hash.into(),
-                    },
-                    Default::default(),
-                )?
-                .into(),
-            ))
+            let mut deps = mock_dependencies();
+            let (_, hash, msg) = StatefulOnReceive {
+                deps: deps.as_mut(),
+            }
+            .foreign_toggle(contract_address, local_endpoint, denom)?;
+            Ok((self.toggle, hash, msg))
         }
 
         fn local_unescrow(
@@ -697,6 +689,9 @@ mod tests {
 
     #[test]
     fn receive_transfer_create_foreign() {
+        let denom = hash_denom("wasm.0xDEADC0DE/channel-1/transfer/channel-34/from-counterparty");
+        let denom_str =
+            hash_denom_str("wasm.0xDEADC0DE/channel-1/transfer/channel-34/from-counterparty");
         assert_eq!(
             TestOnReceive { toggle: false }.receive_phase1_transfer(
                 &Addr::unchecked("0xDEADC0DE"),
@@ -723,21 +718,19 @@ mod tests {
                             channel_id: "channel-1".into(),
                         },
                         denom: "transfer/channel-34/from-counterparty".into(),
-                        hash: hex::decode("af30fd00576e1d27471a4d2b0c0487dc6876e0589e")
-                            .unwrap()
-                            .into(),
+                        hash: denom.into(),
                     },
                     Default::default()
                 )
                 .unwrap()
                 .into(),
                 TokenFactoryMsg::CreateDenom {
-                    subdenom: "0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
+                    subdenom: denom_str.clone(),
                     metadata: None
                 }
                 .into(),
                 TokenFactoryMsg::MintTokens {
-                    denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
+                    denom: format!("factory/0xDEADC0DE/{}", denom_str),
                     amount: Uint128::from(100u128),
                     mint_to_address: "receiver".into()
                 }
@@ -747,7 +740,61 @@ mod tests {
     }
 
     #[test]
+    fn receive_transfer_destination_collision_yields_different_hashes() {
+        let source_endpoint_1 = IbcEndpoint {
+            port_id: "wasm.0xDEADC0DE".into(),
+            channel_id: "channel-1".into(),
+        };
+        let source_endpoint_2 = IbcEndpoint {
+            port_id: "wasm.0xDEADC0DE".into(),
+            channel_id: "channel-2".into(),
+        };
+        let conflicing_destination = IbcEndpoint {
+            port_id: "transfer".into(),
+            channel_id: "channel-34".into(),
+        };
+
+        let CosmosMsg::Custom(TokenFactoryMsg::MintTokens { denom: denom1, .. }) =
+            &TestOnReceive { toggle: true }
+                .receive_phase1_transfer(
+                    &Addr::unchecked("0xDEADC0DE"),
+                    &source_endpoint_1,
+                    &conflicing_destination,
+                    "receiver",
+                    vec![TransferToken {
+                        denom: "from-counterparty".into(),
+                        amount: Uint256::from(100u128),
+                    }],
+                )
+                .unwrap()[0]
+        else {
+            panic!("invalid msg");
+        };
+
+        let CosmosMsg::Custom(TokenFactoryMsg::MintTokens { denom: denom2, .. }) =
+            &TestOnReceive { toggle: true }
+                .receive_phase1_transfer(
+                    &Addr::unchecked("0xDEADC0DE"),
+                    &source_endpoint_2,
+                    &conflicing_destination,
+                    "receiver",
+                    vec![TransferToken {
+                        denom: "from-counterparty".into(),
+                        amount: Uint256::from(100u128),
+                    }],
+                )
+                .unwrap()[0]
+        else {
+            panic!("invalid msg");
+        };
+
+        assert_ne!(denom1, denom2);
+    }
+
+    #[test]
     fn receive_transfer_foreign() {
+        let denom =
+            hash_denom_str("wasm.0xDEADC0DE/channel-1/transfer/channel-34/from-counterparty");
         assert_eq!(
             TestOnReceive { toggle: true }.receive_phase1_transfer(
                 &Addr::unchecked("0xDEADC0DE"),
@@ -766,7 +813,7 @@ mod tests {
                 },],
             ),
             Ok(vec![TokenFactoryMsg::MintTokens {
-                denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
+                denom: format!("factory/0xDEADC0DE/{}", denom),
                 amount: Uint128::from(100u128),
                 mint_to_address: "receiver".into()
             }
