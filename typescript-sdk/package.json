@@ -29,7 +29,9 @@
     "faucet": "bun ./scripts/faucet.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "demo": "node --import=tsx --env-file=.env ./scripts/demo.ts",
-    "check-package": "publint --public --strict && npm pack && attw --pack",
+    "release": "bumpp package.json --commit --push --tag",
+    "prebuild": "rm -rf dist",
+    "check-package": "npx publint@latest --public --strict && npm pack && attw --pack",
     "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
@@ -37,22 +39,22 @@
     "@cosmjs/encoding": "^0.32.2",
     "@cosmjs/stargate": "^0.32.2",
     "@cosmjs/tendermint-rpc": "^0.32.2",
-    "viem": "^2.0.0"
+    "viem": "^2.6.0"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.13.5",
-    "@biomejs/biome": "^1.4.1",
+    "@arethetypeswrong/cli": "^0.13.6",
     "@cosmjs/amino": "^0.32.2",
     "@cosmjs/proto-signing": "^0.32.2",
     "@leapwallet/cosmos-snap-provider": "^0.1.25",
     "@total-typescript/ts-reset": "^0.5.1",
-    "@types/node": "^20.10.6",
-    "@types/bun": "^1.0.0",
+    "@types/bun": "^1.0.4",
+    "@types/node": "^20.11.10",
+    "bumpp": "^9.3.0",
     "publint": "^0.2.7",
     "tsup": "^8.0.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.1.3"
+    "vitest": "^1.2.2"
   },
   "repository": {
     "type": "git",

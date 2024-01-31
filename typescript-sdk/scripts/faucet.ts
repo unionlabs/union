@@ -5,6 +5,8 @@ import { getUnoFromFaucet } from "#/utilities/faucet.ts";
 
 // bun ./scripts/faucet.ts --address union1rph0kfwlew2dqs78uydcs93pwza5qqnc22n6ln
 
+const REST_API_URL = "https://api.testnet.bonlulu.uno";
+
 const [flag, address] = process.argv.slice(2);
 
 main().catch((error) => {
@@ -26,7 +28,7 @@ async function main() {
   const {
     balances: [balance],
   } = await fetcher<{ balances: Array<Coin> }>(
-    `https://union-testnet-api.polkachu.com/cosmos/bank/v1beta1/balances/${address}`
+    `${REST_API_URL}/cosmos/bank/v1beta1/balances/${address}`
   );
   if (!balance || !balance.amount) {
     console.error(
