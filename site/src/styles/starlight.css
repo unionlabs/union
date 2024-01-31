@@ -71,6 +71,15 @@ a[aria-current="true"]
   color: var(--nav-selected-color);
 }
 
+figure figcaption span {
+  letter-spacing: 0.02em !important;
+}
+
+/* controls line height of code snippets in docs */
+.expressive-code figure pre code {
+  line-height: 1.45rem;
+}
+
 .site-title span {
   color: var(--logo-text-color);
 }
@@ -93,8 +102,4 @@ a[aria-current="true"]
 
 h1 > a {
   font-size: 2.5rem;
-}
-
-figure figcaption span {
-  letter-spacing: 0.02em !important;
 }
