@@ -16,8 +16,9 @@ const (
 
 func GenContract() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:  "gen-contract [uri]",
-		Args: cobra.ExactArgs(1),
+		Short: "Generate a solidity verifier. Note that the output require further manual modifications before being usable",
+		Use:   "gen-contract [uri]",
+		Args:  cobra.ExactArgs(1),
 		RunE: MakeCobra(func(ctx context.Context, client provergrpc.UnionProverAPIClient, cmd *cobra.Command, args []string) error {
 			res, err := client.GenerateContract(ctx, &provergrpc.GenerateContractRequest{})
 			if err != nil {

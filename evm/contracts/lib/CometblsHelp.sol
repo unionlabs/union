@@ -59,7 +59,7 @@ library CometblsHelp {
         bytes memory message,
         bytes memory zkp
     ) internal returns (bool) {
-        uint256 message = hashToField(message);
+        uint256 hashedMessage = hashToField(message);
 
         (
             uint256[8] memory proof,
@@ -70,7 +70,7 @@ library CometblsHelp {
         uint256[4] memory inputs = [
             uint256(trustedValidatorsHash),
             uint256(untrustedValidatorsHash),
-            message,
+            hashedMessage,
             // Gnark commitment API extend internal inputs with the following commitment hash and proof commitment
             // See https://github.com/ConsenSys/gnark/issues/652
             commitmentHash

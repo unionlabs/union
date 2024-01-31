@@ -95,20 +95,6 @@ contract RelayTests is Test {
         );
     }
 
-    function initRelay(
-        string memory sourcePort,
-        string memory sourceChannel,
-        string memory destinationPort,
-        string memory destinationChannel
-    ) public {
-        initChannel(
-            destinationPort,
-            destinationChannel,
-            sourcePort,
-            sourceChannel
-        );
-    }
-
     function sendLocalToken(
         string memory sourcePort,
         string memory sourceChannel,
@@ -708,11 +694,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = address(new ERC20Denom(denomName));
@@ -817,11 +803,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         receiveRemoteToken(
@@ -854,11 +840,11 @@ contract RelayTests is Test {
         vm.assume(sender != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = address(new ERC20Denom(denomName));
@@ -926,11 +912,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         receiveRemoteToken(
@@ -951,6 +937,8 @@ contract RelayTests is Test {
 
         {
             address denomAddress = relay.getDenomAddress(
+                destinationPort,
+                destinationChannel,
                 RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
             );
 
@@ -999,6 +987,164 @@ contract RelayTests is Test {
         }
     }
 
+    function test_send_local_from_remote(
+        uint64 sequence,
+        string memory destinationPort,
+        string memory sourcePort,
+        string memory sourceChannel,
+        uint64 timeoutRevisionNumber,
+        uint64 timeoutRevisionHeight,
+        uint64 timeoutTimestamp,
+        bytes memory sender,
+        address receiver,
+        address relayer,
+        string memory denomName,
+        uint128 amount
+    ) public {
+        vm.assume(sequence < 1000000000);
+        vm.assume(receiver != address(0));
+        vm.assume(relayer != address(0));
+        vm.assume(amount > 0);
+
+        // Open two different local channels with the same counterparty
+        initChannel(sourcePort, sourceChannel, destinationPort, "channel-1");
+        initChannel(sourcePort, sourceChannel, destinationPort, "channel-2");
+
+        receiveRemoteToken(
+            sequence,
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            "channel-1",
+            timeoutRevisionNumber,
+            timeoutRevisionHeight,
+            timeoutTimestamp,
+            sender,
+            receiver,
+            relayer,
+            denomName,
+            amount
+        );
+
+        receiveRemoteToken(
+            sequence + 1,
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            "channel-2",
+            timeoutRevisionNumber,
+            timeoutRevisionHeight,
+            timeoutTimestamp,
+            sender,
+            receiver,
+            relayer,
+            denomName,
+            amount
+        );
+
+        {
+            address denomAddress = relay.getDenomAddress(
+                destinationPort,
+                "channel-1",
+                RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
+            );
+
+            LocalToken[] memory localTokens = new LocalToken[](1);
+            localTokens[0].denom = denomAddress;
+            localTokens[0].amount = amount;
+
+            vm.prank(receiver);
+            IERC20Denom(denomAddress).approve(address(relay), amount);
+
+            uint256 outstandingBefore = relay.getOutstanding(
+                destinationPort,
+                "channel-2",
+                denomAddress
+            );
+
+            vm.expectEmit();
+            emit IERC20.Transfer(address(receiver), address(relay), amount);
+
+            vm.expectEmit(false, false, false, false);
+            emit RelayLib.Sent(address(0), "", "", address(0), 0);
+
+            vm.prank(receiver);
+            relay.send(
+                destinationPort,
+                "channel-2",
+                abi.encodePacked(receiver),
+                localTokens,
+                0,
+                0
+            );
+
+            uint256 outstandingAfter = relay.getOutstanding(
+                destinationPort,
+                "channel-2",
+                denomAddress
+            );
+
+            // Remote tokens are not tracked as outstanding
+            assertEq(outstandingBefore + amount, outstandingAfter);
+        }
+    }
+
+    function test_receive_remote_no_collision(
+        uint64 sequence,
+        string memory destinationPort,
+        string memory sourcePort,
+        string memory sourceChannel,
+        uint64 timeoutRevisionNumber,
+        uint64 timeoutRevisionHeight,
+        uint64 timeoutTimestamp,
+        bytes memory sender,
+        address receiver,
+        address relayer,
+        string memory denomName,
+        uint128 amount
+    ) public {
+        vm.assume(sequence < 1000000000);
+        vm.assume(receiver != address(0));
+        vm.assume(relayer != address(0));
+        vm.assume(amount > 0);
+
+        // Open two different local channels with the same counterparty
+        initChannel(sourcePort, sourceChannel, destinationPort, "channel-1");
+        initChannel(sourcePort, sourceChannel, destinationPort, "channel-2");
+
+        receiveRemoteToken(
+            sequence,
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            "channel-1",
+            timeoutRevisionNumber,
+            timeoutRevisionHeight,
+            timeoutTimestamp,
+            sender,
+            receiver,
+            relayer,
+            denomName,
+            amount
+        );
+
+        receiveRemoteToken(
+            sequence + 1,
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            "channel-2",
+            timeoutRevisionNumber,
+            timeoutRevisionHeight,
+            timeoutTimestamp,
+            sender,
+            receiver,
+            relayer,
+            denomName,
+            amount
+        );
+    }
+
     function test_onTimeout_onlyIBC(
         string memory sourcePort,
         string memory sourceChannel,
@@ -1014,11 +1160,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = sendLocalToken(
@@ -1051,11 +1197,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = sendLocalToken(
@@ -1073,7 +1219,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(relay), address(sender), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Timeout(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
 
         assertEq(
             relay.getOutstanding(
@@ -1124,11 +1270,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         receiveRemoteToken(
@@ -1148,6 +1294,8 @@ contract RelayTests is Test {
         );
 
         address denomAddress = relay.getDenomAddress(
+            destinationPort,
+            destinationChannel,
             RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
         );
 
@@ -1166,7 +1314,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(0), address(receiver), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Timeout(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
 
         uint256 outstandingBefore = relay.getOutstanding(
             destinationPort,
@@ -1203,11 +1351,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = sendLocalToken(
@@ -1225,7 +1373,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(relay), address(sender), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Timeout(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
 
         assertEq(
             relay.getOutstanding(
@@ -1280,11 +1428,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         receiveRemoteToken(
@@ -1304,6 +1452,8 @@ contract RelayTests is Test {
         );
 
         address denomAddress = relay.getDenomAddress(
+            destinationPort,
+            destinationChannel,
             RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
         );
 
@@ -1322,7 +1472,7 @@ contract RelayTests is Test {
         emit IERC20.Transfer(address(0), address(receiver), amount);
 
         vm.expectEmit(false, false, false, false);
-        emit RelayLib.Timeout(address(0), "", "", address(this), 0);
+        emit RelayLib.Refunded(address(0), "", "", address(this), 0);
 
         uint256 outstandingBefore = relay.getOutstanding(
             destinationPort,
@@ -1363,11 +1513,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         address denomAddress = sendLocalToken(
@@ -1415,11 +1565,11 @@ contract RelayTests is Test {
         vm.assume(relayer != address(0));
         vm.assume(amount > 0);
 
-        initRelay(
-            destinationPort,
-            destinationChannel,
+        initChannel(
             sourcePort,
-            sourceChannel
+            sourceChannel,
+            destinationPort,
+            destinationChannel
         );
 
         receiveRemoteToken(
@@ -1439,6 +1589,8 @@ contract RelayTests is Test {
         );
 
         address denomAddress = relay.getDenomAddress(
+            destinationPort,
+            destinationChannel,
             RelayLib.makeForeignDenom(sourcePort, sourceChannel, denomName)
         );
 

@@ -74,13 +74,25 @@ pub fn execute(
             let admin = deps.api.addr_validate(&admin)?;
             Ok(ADMIN.execute_update_admin(deps, info, Some(admin))?)
         }
-        ExecuteMsg::RegisterDenom { denom, hash } => {
+        ExecuteMsg::RegisterDenom {
+            local_endpoint,
+            denom,
+            hash,
+        } => {
             if info.sender != env.contract.address {
                 Err(ContractError::Unauthorized)
             } else {
                 let normalized_hash = hash.0.try_into().expect("impossible");
-                FOREIGN_DENOM_TO_HASH.save(deps.storage, denom.clone(), &normalized_hash)?;
-                HASH_TO_FOREIGN_DENOM.save(deps.storage, normalized_hash, &denom.to_string())?;
+                FOREIGN_DENOM_TO_HASH.save(
+                    deps.storage,
+                    (local_endpoint.clone().into(), denom.clone()),
+                    &normalized_hash,
+                )?;
+                HASH_TO_FOREIGN_DENOM.save(
+                    deps.storage,
+                    (local_endpoint.into(), normalized_hash),
+                    &denom.to_string(),
+                )?;
                 Ok(Response::default())
             }
         }

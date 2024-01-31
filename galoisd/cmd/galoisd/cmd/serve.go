@@ -22,8 +22,9 @@ const (
 
 func ServeCmd() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:  "serve [uri]",
-		Args: cobra.ExactArgs(1),
+		Short: "Expose the prover daemon to the network as a gRPC endpoint",
+		Use:   "serve [uri]",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			r1csPath, err := cmd.Flags().GetString(flagR1CS)
 			if err != nil {

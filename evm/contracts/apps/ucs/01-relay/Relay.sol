@@ -29,6 +29,8 @@ struct RelayPacket {
 
 interface IRelay is IIBCModule {
     function getDenomAddress(
+        string memory sourcePort,
+        string memory sourceChannel,
         string memory denom
     ) external view returns (address);
 
@@ -87,7 +89,7 @@ library RelayLib {
         address token,
         uint256 amount
     );
-    event Timeout(
+    event Refunded(
         address sender,
         string receiver,
         string denom,
@@ -317,8 +319,15 @@ contract UCS01Relay is IBCAppBase, IRelay {
 
     IBCHandler private immutable ibcHandler;
 
-    mapping(string => address) private denomToAddress;
-    mapping(address => string) private addressToDenom;
+    // A mapping from remote denom to local ERC20 wrapper.
+    mapping(string => mapping(string => mapping(string => address)))
+        private denomToAddress;
+    // A mapping from a local ERC20 wrapper to the remote denom.
+    // Required to determine whether an ERC20 token is originating from a remote chain.
+    mapping(string => mapping(string => mapping(address => string)))
+        private addressToDenom;
+    // A mapping from local port/channel to it's counterparty.
+    // This is required to remap denoms.
     mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
         private counterpartyEndpoints;
     mapping(string => mapping(string => mapping(address => uint256)))
@@ -332,12 +341,16 @@ contract UCS01Relay is IBCAppBase, IRelay {
         return address(ibcHandler);
     }
 
+    // Return the ERC20 wrapper for the given remote-native denom.
     function getDenomAddress(
+        string memory sourcePort,
+        string memory sourceChannel,
         string memory denom
     ) external view override returns (address) {
-        return denomToAddress[denom];
+        return denomToAddress[sourcePort][sourceChannel][denom];
     }
 
+    // Return the amount of tokens submitted through the given port/channel.
     function getOutstanding(
         string memory sourcePort,
         string memory sourceChannel,
@@ -346,6 +359,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
         return outstanding[sourcePort][sourceChannel][token];
     }
 
+    // Return a channel counterparty endpoint.
+    // A counterparty will exist only if a channel has been previously opened.
     function getCounterpartyEndpoint(
         string memory sourcePort,
         string memory sourceChannel
@@ -358,6 +373,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
         return counterpartyEndpoints[sourcePort][sourceChannel];
     }
 
+    // Increase the oustanding amount on the given port/channel.
+    // Happens when we send the token.
     function increaseOutstanding(
         string memory sourcePort,
         string memory sourceChannel,
@@ -367,6 +384,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
         outstanding[sourcePort][sourceChannel][token] += amount;
     }
 
+    // Decrease the outstanding amount on the given port/channel.
+    // Happens either when receiving previously sent tokens or when refunding.
     function decreaseOutstanding(
         string memory sourcePort,
         string memory sourceChannel,
@@ -376,6 +395,10 @@ contract UCS01Relay is IBCAppBase, IRelay {
         outstanding[sourcePort][sourceChannel][token] -= amount;
     }
 
+    // Internal function
+    // Send the given token over the specified channel.
+    // If token is native, we increase the oustanding amount and escrow it. Otherwise, we burn the amount.
+    // The operation is symmetric with the counterparty, if we burn locally, the remote relay will unescrow. If we escrow locally, the remote relay will mint.
     function sendToken(
         string calldata sourcePort,
         string calldata sourceChannel,
@@ -383,25 +406,25 @@ contract UCS01Relay is IBCAppBase, IRelay {
         string memory counterpartyChannelId,
         LocalToken calldata localToken
     ) internal returns (string memory addressDenom) {
+        // Ensure the user properly fund us.
         SafeERC20.safeTransferFrom(
             IERC20(localToken.denom),
             msg.sender,
             address(this),
             localToken.amount
         );
-        addressDenom = addressToDenom[localToken.denom];
-        if (
-            RelayLib.isFromChannel(
-                counterpartyPortId,
-                counterpartyChannelId,
-                addressDenom
-            )
-        ) {
+        // If the token is originating from the counterparty channel, we must have saved it's denom.
+        addressDenom = addressToDenom[sourcePort][sourceChannel][
+            localToken.denom
+        ];
+        if (bytes(addressDenom).length != 0) {
+            // Token originating from the remote chain, burn the amount.
             IERC20Denom(localToken.denom).burn(
                 address(this),
                 localToken.amount
             );
         } else {
+            // Token originating from the local chain, increase outstanding and escrow the amount.
             increaseOutstanding(
                 sourcePort,
                 sourceChannel,
@@ -425,9 +448,6 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 sourceChannel
             ];
         Token[] memory normalizedTokens = new Token[](tokens.length);
-        // For each token, we transfer them locally then:
-        // - if the token is locally native, keep it escrowed
-        // - if the token is remote native, burn the wrapper
         for (uint256 i = 0; i < tokens.length; i++) {
             LocalToken calldata localToken = tokens[i];
             string memory addressDenom = sendToken(
@@ -462,6 +482,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
             sourcePort,
             sourceChannel,
             timeoutHeight,
+            // TODO: do we want to allow both height and timestamp timeouts?
             0,
             packet.encode()
         );
@@ -477,13 +498,18 @@ contract UCS01Relay is IBCAppBase, IRelay {
         address userToRefund = RelayLib.bytesToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
-            // Either we tried to send back a remote native token
-            // which we burnt, or a locally native token that we escrowed.
-            address denomAddress = denomToAddress[token.denom];
+            address denomAddress = denomToAddress[portId][channelId][
+                token.denom
+            ];
             if (denomAddress != address(0)) {
+                // The token was originating from the remote chain, we burnt it.
+                // Refund means minting in this case.
                 IERC20Denom(denomAddress).mint(userToRefund, token.amount);
             } else {
-                // It must be in the form 0x...
+                // The token was originating from the local chain, we escrowed
+                // it. Refund means unescrowing.
+
+                // It's an ERC20 string 0x prefixed hex address
                 denomAddress = RelayLib.hexToAddress(token.denom);
                 decreaseOutstanding(
                     portId,
@@ -493,7 +519,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 );
                 IERC20(denomAddress).transfer(userToRefund, token.amount);
             }
-            emit RelayLib.Timeout(
+            emit RelayLib.Refunded(
                 userToRefund,
                 receiver,
                 token.denom,
@@ -526,7 +552,11 @@ contract UCS01Relay is IBCAppBase, IRelay {
             address denomAddress;
             string memory denom;
             if (!denomSlice.equals(token.denom.toSlice())) {
+                // In this branch the token was originating from
+                // this chain as it was prefixed by the local channel/port.
+                // We need to unescrow the amount.
                 denom = trimedDenom.toString();
+                // It's an ERC20 string 0x prefixed hex address
                 denomAddress = RelayLib.hexToAddress(denom);
                 // The token must be outstanding.
                 decreaseOutstanding(
@@ -537,16 +567,24 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 );
                 IERC20(denomAddress).transfer(receiver, token.amount);
             } else {
+                // In this branch the token was originating from the
+                // counterparty chain. We need to mint the amount.
                 denom = RelayLib.makeForeignDenom(
                     ibcPacket.source_port,
                     ibcPacket.source_channel,
                     token.denom
                 );
-                denomAddress = denomToAddress[denom];
+                denomAddress = denomToAddress[ibcPacket.destination_port][
+                    ibcPacket.destination_channel
+                ][denom];
                 if (denomAddress == address(0)) {
                     denomAddress = address(new ERC20Denom(denom));
-                    denomToAddress[denom] = denomAddress;
-                    addressToDenom[denomAddress] = denom;
+                    denomToAddress[ibcPacket.destination_port][
+                        ibcPacket.destination_channel
+                    ][denom] = denomAddress;
+                    addressToDenom[ibcPacket.destination_port][
+                        ibcPacket.destination_channel
+                    ][denomAddress] = denom;
                     emit RelayLib.DenomCreated(denom, denomAddress);
                 }
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
@@ -573,6 +611,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 relayer
             )
         );
+        // We make sure not to revert to allow the failure ack to be sent back,
+        // resulting in a refund.
         if (success) {
             return abi.encodePacked(RelayLib.ACK_SUCCESS);
         } else {
@@ -593,6 +633,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
             revert RelayLib.ErrInvalidAcknowledgement();
         }
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
+        // Counterparty failed to execute the transfer, we refund.
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
                 ibcPacket.source_port,
