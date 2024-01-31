@@ -39,6 +39,20 @@ export default defineConfig({
           },
         },
         {
+          tag: "meta",
+          attrs: {
+            name: "og:image",
+            content: "/og.png",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            name: "twitter:image",
+            content: "/og.png",
+          },
+        },
+        {
           tag: "script",
           attrs: {
             src: "/anchor-targets.js",
