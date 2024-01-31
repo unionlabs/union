@@ -1,12 +1,18 @@
-[language-server.astro-ls]
-command = "npx"
-args = [ "@astrojs/language-server", "--stdio" ]
-config = { "typescript" = { "tsdk" = "./site/node_modules/typescript/lib"}, "environment" = "node" }
+[language-server]
+astro-ls = { command = "npx", args = ["@astrojs/language-server", "--stdio"], config = { typescript = { tsdk = "./node_modules/typescript/lib" }, environment = "node" } }
+emmet-ls = { command = "emmet-ls", args = ["--stdio"], filetypes = ["html", "css", "javascript", "typescript", "typescriptreact", "javascriptreact"] }
 
 [[language]]
-name = "astro"
-scope = "source.astro"
-injection-regex = "astro"
-file-types = ["astro"]
-roots = ["package.json", "astro.config.ts"]
-language-servers = [ "astro-ls" ]
+name             = "astro"
+injection-regex  = "astro"
+file-types       = ["astro"]
+language-servers = ["astro-ls"]
+scope            = "source.astro"
+roots            = ["package.json", "astro.config.ts"]
+
+
+[[language]]
+name = "typescript"
+language-servers = [ "typescript-language-server", "emmet-ls" ]
+formatter = { command = "prettier", args = [ "--config", ".prettierrc.json" ] }
+auto-format = true

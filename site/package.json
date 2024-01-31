@@ -62,8 +62,6 @@
     "eslint-plugin-mdx": "2.3.1",
     "eslint-plugin-prettier": "5.1.2",
     "eslint-plugin-unicorn": "50.0.1",
-    "prettier": "3.1.1",
-    "prettier-plugin-tailwindcss": "0.5.10",
     "tailwindcss-animate": "1.0.7",
     "tsx": "4.7.0",
     "typed-query-selector": "^2.11.0",

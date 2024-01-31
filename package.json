@@ -1,0 +1,16 @@
+{
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "format": "prettier --write x.mjs --ignore-path='.gitignore' --ignore-unknown --cache",
+    "lint": "eslint --fix . --ext='js,cjs,mjs,ts,tsx,d.ts,astro,md,mdx,json' --report-unused-disable-directives --max-warnings=0 --cache"
+  },
+  "devDependencies": {
+    "@types/prettier": "^3.0.0",
+    "prettier": "3.1.1",
+    "prettier-plugin-tailwindcss": "^0.5.11",
+    "typescript": "^5.3.3",
+    "prettier-plugin-astro": "^0.13.0",
+    "prettier-plugin-svelte": "^3.1.2"
+  }
+}
