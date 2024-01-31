@@ -135,11 +135,11 @@
         ./tools/rust/rust.nix
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
+        ./tools/oxlint/oxlint.nix
         ./tools/docgen/docgen.nix
         ./tools/hasura-cli/hasura-cli.nix
         ./tools/todo-comment.nix
         ./tools/iaviewer/iaviewer.nix
-        ./tools/sqlx-cli/sqlx-cli.nix
         ./networks/e2e-setup.nix
         ./networks/devnet.nix
         ./networks/genesis/devnet-minimal.nix
@@ -166,6 +166,7 @@
         , crane
         , system
         , lib
+        , oxlint
         , ...
         }:
         let
@@ -353,7 +354,7 @@
 
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
-            buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
+            buildInputs = [ rust.toolchains.dev oxlint ] ++ (with pkgs; [
               cargo-llvm-cov
               bacon
               cargo-nextest
@@ -381,8 +382,8 @@
             ]) ++ (if pkgs.stdenv.isLinux then [
               pkgs.solc
               pkgs.foundry-bin
+              pkgs.sqlx-cli
               self'.packages.hasura-cli
-              self'.packages.sqlx-cli
             ] else [ ]));
             nativeBuildInputs = [ config.treefmt.build.wrapper ]
               ++ lib.attrsets.attrValues config.treefmt.build.programs;

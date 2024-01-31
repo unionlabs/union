@@ -25,37 +25,44 @@
         hash = "sha256-l0cNF0YjviEl/JLJ4VdvDtIGuAYyFfncVo83ROfQFD8=";
       };
 
-      mkLibwasmvm = wasmvm: pkgs.stdenv.mkDerivation ({
-        inherit CARGO_BUILD_TARGET;
+      mkLibwasmvm =
+        wasmvm:
+        let
+          attrs =
+            {
+              inherit CARGO_BUILD_TARGET;
 
-        name = "libwasmvm";
-        version = wasmvm.rev;
+              pname = "libwasmvm";
+              version = wasmvm.rev;
 
-        # cargoArtifacts = null;
+              # cargoArtifacts = null;
 
-        buildInputs = [ rustToolchain ];
+              buildInputs = [ rustToolchain ];
 
-        src = srcWithVendoredSources { name = "libwasmvm"; originalSrc = "${wasmvm}/libwasmvm"; };
-        # cargoLock = "${wasmvm}/libwasmvm/Cargo.lock";
-        # # cargoVendorDir = vendorDir;
-        # doCheck = false;
-        # doInstallCargoArtifacts = false;
-        # buildPhaseCargoCommand = "";
-      } // (if pkgs.stdenv.isLinux then {
-        buildPhase = "cargo build --release --locked --offline --example=wasmvmstatic";
-        installPhase = ''
-          mkdir -p $out/lib
-          mv target/${CARGO_BUILD_TARGET}/release/examples/libwasmvmstatic.a $out/lib/libwasmvm.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
-        '';
-      } else if pkgs.stdenv.isDarwin then {
-        # non-static dylib build on macOS
-        buildPhase = "cargo build --release --locked --offline";
-        installPhase = ''
-          mkdir -p $out/lib
-          mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib
-        '';
-      } else throwBadSystem)
-      );
+              src = "${wasmvm}/libwasmvm";
+              # cargoLock = "${wasmvm}/libwasmvm/Cargo.lock";
+              # # cargoVendorDir = vendorDir;
+              # doCheck = false;
+              # doInstallCargoArtifacts = false;
+              # buildPhaseCargoCommand = "";
+            } // (if pkgs.stdenv.isLinux then {
+              cargoExtraArgs = "--release --locked --offline --example=wasmvmstatic";
+              # installPhase = ''
+              #   mkdir -p $out/lib
+              #   mv target/${CARGO_BUILD_TARGET}/release/examples/libwasmvmstatic.a $out/lib/libwasmvm.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
+              # '';
+            } else if pkgs.stdenv.isDarwin then {
+              # non-static dylib build on macOS
+              cargoExtraArgs = "cargo build --release --locked --offline";
+              # installPhase = ''
+              #   mkdir -p $out/lib
+              #   mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib
+              # '';
+            } else throwBadSystem);
+        in
+        crane.lib.buildPackage (attrs // {
+          cargoArtifacts = crane.lib.buildDepsOnly attrs;
+        });
     in
     {
       _module.args.libwasmvmCargoToml_1_3_0 = "${wasmvm_1_3_0}/libwasmvm/Cargo.toml";
