@@ -9,10 +9,7 @@
   "arrowParens": "avoid",
   "trailingComma": "none",
   "singleAttributePerLine": true,
-  "plugins": [
-    "prettier-plugin-astro",
-    "prettier-plugin-svelte"
-  ],
+  "plugins": ["prettier-plugin-astro", "prettier-plugin-svelte"],
   "overrides": [
     {
       "files": "*.astro",

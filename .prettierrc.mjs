@@ -10,26 +10,7 @@ export default {
   arrowParens: 'avoid',
   trailingComma: 'none',
   singleAttributePerLine: true,
-  plugins: [
-    'prettier-plugin-astro',
-    'prettier-plugin-svelte',
-    'prettier-plugin-solidity',
-    // must come last
-    'prettier-plugin-tailwindcss',
-  ],
   overrides: [
-    {
-      files: '*.astro',
-      options: {
-        parser: 'astro'
-      }
-    },
-    {
-      files: '*.svelte',
-      options: {
-        parser: 'svelte'
-      }
-    },
     {
       files: '*.mdx',
       options: {
