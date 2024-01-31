@@ -1,6 +1,6 @@
 import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections";
 
-/** @type {import('@astrojs/starlight/expressive-code').AstroExpressiveCodeOptions} */
+/** @type {import('@astrojs/starlight/expressive-code').StarlightExpressiveCodeOptions} */
 export default {
   frames: {
     extractFileNameFromCode: true,
@@ -8,5 +8,8 @@ export default {
     removeCommentsWhenCopyingTerminalFrames: true,
   },
   styleOverrides: {},
+  useStarlightUiThemeColors: true,
+  useStarlightDarkModeSwitch: true,
+  themes: ["starlight-dark", "starlight-light"],
   plugins: [pluginCollapsibleSections()],
 };

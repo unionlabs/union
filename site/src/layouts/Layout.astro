@@ -9,12 +9,7 @@ interface Props {
   description?: string
 }
 
-const {
-  url = 'https://union.build',
-  title = 'Union',
-  image = '/logo.png',
-  description = 'The Sovereign Interoperability Layer'
-} = Astro.props
+const { url, title, image, description } = Astro.props
 ---
 
 <BaseLayout
