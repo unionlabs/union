@@ -85,10 +85,14 @@ pub fn execute(
                 let normalized_hash = hash.0.try_into().expect("impossible");
                 FOREIGN_DENOM_TO_HASH.save(
                     deps.storage,
-                    (local_endpoint.into(), denom.clone()),
+                    (local_endpoint.clone().into(), denom.clone()),
                     &normalized_hash,
                 )?;
-                HASH_TO_FOREIGN_DENOM.save(deps.storage, normalized_hash, &denom.to_string())?;
+                HASH_TO_FOREIGN_DENOM.save(
+                    deps.storage,
+                    (local_endpoint.into(), normalized_hash),
+                    &denom.to_string(),
+                )?;
                 Ok(Response::default())
             }
         }
