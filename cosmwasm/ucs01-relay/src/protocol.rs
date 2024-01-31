@@ -757,7 +757,7 @@ mod tests {
     /// 2. Receive `denom` from `B` with `port-id-N/channel-id-N` over `channel-id-B`
     /// 3. Send the token that is received from `A` to `B`.
     /// Expected result: Although the counterparty port id/channel id are the same, there are
-    /// two different counterparties, so this token should be considered to be local and outstanding
+    /// two different counterparty, so this token should be considered to be local and outstanding
     /// should be increased instead of burning.
     #[test]
     fn receive_transfer_destination_collusion_outstanding_instead_of_burn() {
@@ -772,7 +772,7 @@ mod tests {
             port_id: "wasm.0xDEADC0DE".into(),
             channel_id: "channel-2".into(),
         };
-        let conflicing_destination = IbcEndpoint {
+        let conflicting_destination = IbcEndpoint {
             port_id: "transfer".into(),
             channel_id: "channel-34".into(),
         };
@@ -795,7 +795,7 @@ mod tests {
             cosmwasm_std::IbcChannelConnectMsg::OpenAck {
                 channel: IbcChannel::new(
                     source_endpoint_1.clone(),
-                    conflicing_destination.clone(),
+                    conflicting_destination.clone(),
                     cosmwasm_std::IbcOrder::Unordered,
                     "ucs01-0".to_string(),
                     "connection-1".to_string(),
@@ -811,7 +811,7 @@ mod tests {
             cosmwasm_std::IbcChannelConnectMsg::OpenAck {
                 channel: IbcChannel::new(
                     source_endpoint_2.clone(),
-                    conflicing_destination.clone(),
+                    conflicting_destination.clone(),
                     cosmwasm_std::IbcOrder::Unordered,
                     "ucs01-0".to_string(),
                     "connection-1".to_string(),
@@ -949,7 +949,7 @@ mod tests {
             port_id: "wasm.0xDEADC0DE".into(),
             channel_id: "channel-2".into(),
         };
-        let conflicing_destination = IbcEndpoint {
+        let conflicting_destination = IbcEndpoint {
             port_id: "transfer".into(),
             channel_id: "channel-34".into(),
         };
@@ -959,7 +959,7 @@ mod tests {
                 .receive_phase1_transfer(
                     &Addr::unchecked("0xDEADC0DE"),
                     &source_endpoint_1,
-                    &conflicing_destination,
+                    &conflicting_destination,
                     "receiver",
                     vec![TransferToken {
                         denom: "from-counterparty".into(),
@@ -976,7 +976,7 @@ mod tests {
                 .receive_phase1_transfer(
                     &Addr::unchecked("0xDEADC0DE"),
                     &source_endpoint_2,
-                    &conflicing_destination,
+                    &conflicting_destination,
                     "receiver",
                     vec![TransferToken {
                         denom: "from-counterparty".into(),
