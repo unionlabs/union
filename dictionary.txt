@@ -553,6 +553,7 @@ outdir
 outfile
 overrrides
 oxalica
+oxlint
 pagefind
 paramaters
 paramproposal
@@ -833,10 +834,8 @@ vhosts
 viem
 virtualisation
 vmdebug
-voluptas
 vuex
 wakey
-warningbox
 wasi
 wasmd
 wasmer

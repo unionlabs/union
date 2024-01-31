@@ -1,7 +1,0 @@
-error: structopt only supports non-tuple structs and enums
-  --> $DIR/tuple_struct.rs:11:10
-   |
-11 | #[derive(StructOpt, Debug)]
-   |          ^^^^^^^^^
-   |
-   = note: this error originates in the derive macro `StructOpt` (in Nightly builds, run with -Z macro-backtrace for more info)

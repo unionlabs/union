@@ -1,4 +1,0 @@
-root;0;root
-user;1000;user
-wheel;1;user,root
-loip;1007;loip

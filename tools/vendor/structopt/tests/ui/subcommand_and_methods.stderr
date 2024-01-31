@@ -1,5 +1,0 @@
-error: methods in attributes are not allowed for subcommand
-  --> $DIR/subcommand_and_methods.rs:17:17
-   |
-17 |     #[structopt(subcommand, long)]
-   |                 ^^^^^^^^^^

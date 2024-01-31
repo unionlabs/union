@@ -1,4 +1,0 @@
-(type DoesNotDeriveDebug nodebug
-      (enum A
-            B
-            C))

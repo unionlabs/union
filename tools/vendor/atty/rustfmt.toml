@@ -1,4 +1,0 @@
-# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#fn_args_layout
-fn_args_layout = "Vertical"
-# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md#merge_imports
-merge_imports = true

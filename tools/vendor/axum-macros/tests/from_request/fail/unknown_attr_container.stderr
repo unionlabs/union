@@ -1,5 +1,0 @@
-error: expected `via` or `rejection_derive`
- --> tests/from_request/fail/unknown_attr_container.rs:4:16
-  |
-4 | #[from_request(foo)]
-  |                ^^^

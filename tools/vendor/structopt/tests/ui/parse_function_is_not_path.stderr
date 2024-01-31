@@ -1,5 +1,0 @@
-error: `parse` argument must be a function path
-  --> $DIR/parse_function_is_not_path.rs:14:34
-   |
-14 |     #[structopt(parse(from_str = "2"))]
-   |                                  ^^^

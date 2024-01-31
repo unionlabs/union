@@ -1,5 +1,0 @@
-error: default_value is meaningless for Option
-  --> $DIR/option_default_value.rs:14:24
-   |
-14 |     #[structopt(short, default_value = 1)]
-   |                        ^^^^^^^^^^^^^

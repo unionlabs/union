@@ -65,6 +65,15 @@
     };
     nix-filter.url = "github:numtide/nix-filter";
     get-flake.url = "github:ursi/get-flake";
+    wasmvm_1_3_0 = {
+      url = "github:CosmWasm/wasmvm/v1.3.0";
+      flake = false;
+    };
+    wasmvm_1_5_0 = {
+      url = "github:CosmWasm/wasmvm/v1.5.0";
+      flake = false;
+    };
+
     # uniond versions
     v0_14_0 = {
       # NOTE: This *must* be after this commit
@@ -129,7 +138,6 @@
         ./evm/evm.nix
         ./tools/rust-proto.nix
         ./tools/wasm-light-client.nix
-        ./tools/vendor.nix
         ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/rust/rust.nix

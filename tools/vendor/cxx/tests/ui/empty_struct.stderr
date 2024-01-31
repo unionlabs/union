@@ -1,5 +1,0 @@
-error: structs without any fields are not supported
- --> tests/ui/empty_struct.rs:3:5
-  |
-3 |     struct Empty {}
-  |     ^^^^^^^^^^^^^^^

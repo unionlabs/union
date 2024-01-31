@@ -1,5 +1,0 @@
-error: opt out of `Display` requires also opting out of `Error`. Use `#[from_request(rejection_derive(!Display, !Error))]`
- --> tests/from_request/fail/derive_opt_out_display_without_error.rs:4:34
-  |
-4 | #[from_request(rejection_derive(!Display))]
-  |                                  ^^^^^^^

@@ -1,5 +1,0 @@
-error: can only #[wasm_bindgen] public functions
- --> $DIR/non-public-function.rs:4:1
-  |
-4 | fn foo() {}
-  | ^^^^^^^^^^^

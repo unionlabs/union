@@ -1,5 +1,0 @@
-error: required is meaningless for Option
-  --> $DIR/option_required.rs:14:24
-   |
-14 |     #[structopt(short, required = true)]
-   |                        ^^^^^^^^

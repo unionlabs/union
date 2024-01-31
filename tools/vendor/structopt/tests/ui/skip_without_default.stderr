@@ -1,7 +1,0 @@
-error[E0277]: the trait bound `Kind: Default` is not satisfied
-   --> $DIR/skip_without_default.rs:22:17
-    |
-22  |     #[structopt(skip)]
-    |                 ^^^^ the trait `Default` is not implemented for `Kind`
-    |
-note: required by `std::default::Default::default`

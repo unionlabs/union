@@ -418,7 +418,9 @@
         "v0_16_0": "v0_16_0",
         "v0_17_0": "v0_17_0",
         "v0_18_0": "v0_18_0",
-        "wasmd": "wasmd"
+        "wasmd": "wasmd",
+        "wasmvm_1_3_0": "wasmvm_1_3_0",
+        "wasmvm_1_5_0": "wasmvm_1_5_0"
       }
     },
     "rust-overlay": {
@@ -650,6 +652,40 @@
         "owner": "CosmWasm",
         "repo": "wasmd",
         "rev": "03f3c72a6ce447fafc2da023a1322899327433f8",
+        "type": "github"
+      }
+    },
+    "wasmvm_1_3_0": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1689589428,
+        "narHash": "sha256-rsTYvbkYpDkUE4IvILdSL3hXMgAWxz5ltGotJB2t1e4=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "71a9c0dc0ecf9623148e82facb3564fbbf0a896f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v1.3.0",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm_1_5_0": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1698746477,
+        "narHash": "sha256-l0cNF0YjviEl/JLJ4VdvDtIGuAYyFfncVo83ROfQFD8=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "2041b184c146f278157d195361bc6cc6b56cc9d4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v1.5.0",
+        "repo": "wasmvm",
         "type": "github"
       }
     }

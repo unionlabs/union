@@ -1,5 +1,0 @@
-error: cannot specify both `structural` and `final`
- --> $DIR/structural-and-final.rs:7:40
-  |
-7 |     #[wasm_bindgen(method, structural, final)]
-  |                                        ^^^^^

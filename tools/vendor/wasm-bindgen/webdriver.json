@@ -1,8 +1,0 @@
-{
-  "moz:firefoxOptions": {
-    "prefs": {
-        "dom.workers.modules.enabled": true
-    },
-    "args": []
-  }
-}

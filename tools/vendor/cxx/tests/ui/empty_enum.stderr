@@ -1,5 +1,0 @@
-error: explicit #[repr(...)] is required for enum without any variants
- --> tests/ui/empty_enum.rs:3:5
-  |
-3 |     enum A {}
-  |     ^^^^^^^^^
