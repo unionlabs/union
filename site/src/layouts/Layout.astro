@@ -1,10 +1,5 @@
 ---
-import '#/styles/fonts.css'
-import '#/styles/reset.css'
-import '#/styles/tailwind.css'
-import { SEO } from 'astro-seo'
-import { Head } from 'astro-capo'
-import { AstroFont } from 'astro-font'
+import BaseLayout from './BaseLayout.astro'
 import Header from '#/components/Header.astro'
 
 interface Props {
@@ -20,94 +15,21 @@ const {
   image = '/logo.png',
   description = 'The Sovereign Interoperability Layer'
 } = Astro.props
-
-const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 ---
 
-<!doctype html>
-<html lang='en'>
-  <Head>
-    <meta charset='utf-8' />
-    <SEO
-      title={title}
-      description={description}
-      openGraph={{
-        basic: {
-          url,
-          title,
-          image,
-          type: 'website'
-        },
-        optional: {
-          locale: 'en',
-          siteName: 'Union',
-          description
-        },
-        image: { url: '/logo.png' }
-      }}
-      twitter={{
-        title,
-        image,
-        site: url,
-        description,
-        imageAlt: 'Union Logo',
-        creator: '@union_build',
-        card: 'summary_large_image',
-      }}
-      extend={{
-        link: [
-          { rel: 'icon', href: 'favicon.ico' },
-          { rel: 'canonical', href: 'https://union.build' },
-          { rel: 'sitemap', href: '/sitemap-index.xml' }
-        ],
-        meta: [
-          { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
-          { name: 'robots', content: 'index, follow' },
-          { name: 'twitter:domain', content: 'union.build' },
-          { name: 'twitter:url', content: url },
-          { name: 'twitter:title', content: title },
-          { name: 'twitter:description', content: description }
-        ]
-      }}
-    />
-    <AstroFont
-      config={[
-        {
-          name: 'Inter var',
-          src: fontWeights.map(weight => ({
-            path: '/fonts/InterVariable.woff2',
-            style: 'normal',
-            weight
-          })),
-          preload: true,
-          display: 'swap',
-          fallback: 'sans-serif'
-        },
-        {
-          name: 'JetBrains Mono',
-          src: fontWeights.map(weight => ({
-            path: '/fonts/JetBrainsMono[wght].woff2',
-            style: 'normal',
-            weight
-          })),
-          preload: true,
-          display: 'swap',
-          fallback: 'sans-serif'
-        }
-      ]}
-    />
-  </Head>
-  <body
-    class='font-sans flex flex-col items-stretch flex-1 shadow-effect-bg pb-12 bg-black text-white not-content'
+<BaseLayout
+  {url}
+  {title}
+  {image}
+  {description}
+>
+  <Header />
+
+  <slot />
+
+  <footer
+    class='flex items-center pt-8 p-4 gap-4 justify-center text-lg font-normal bottom-0 mx-auto w-full'
   >
-    <Header />
-
-    <slot />
-
-    <footer
-      class='flex items-center pt-8 p-4 gap-4 justify-center text-lg font-normal bottom-0 mx-auto w-full'
-    >
-      <p>&copy; Union.fi Labs, Inc.</p>
-    </footer>
-  </body>
-</html>
+    <p>&copy; Union.fi Labs, Inc.</p>
+  </footer>
+</BaseLayout>

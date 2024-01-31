@@ -1,0 +1,111 @@
+---
+import '#/styles/fonts.css'
+import '#/styles/reset.css'
+import '#/styles/tailwind.css'
+import { SEO } from 'astro-seo'
+import { Head } from 'astro-capo'
+import { AstroFont } from 'astro-font'
+
+interface Props {
+  url?: string
+  title?: string
+  image?: string
+  description?: string
+  // pages that don't have text content don't need to load fonts
+  loadFonts?: boolean
+}
+
+const {
+  url = 'https://union.build',
+  title = 'Union',
+  image = '/logo.png',
+  description = 'The Sovereign Interoperability Layer',
+  loadFonts = true
+} = Astro.props
+
+const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
+---
+
+<!doctype html>
+<html lang='en'>
+  <Head>
+    <meta charset='utf-8' />
+    <SEO
+      title={title}
+      description={description}
+      openGraph={{
+        basic: {
+          url,
+          title,
+          image,
+          type: 'website'
+        },
+        optional: {
+          locale: 'en',
+          siteName: 'Union',
+          description
+        },
+        image: { url: '/logo.png' }
+      }}
+      twitter={{
+        title,
+        image,
+        site: url,
+        description,
+        imageAlt: 'Union Logo',
+        creator: '@union_build',
+        card: 'summary_large_image'
+      }}
+      extend={{
+        link: [
+          { rel: 'icon', href: 'favicon.ico' },
+          { rel: 'canonical', href: 'https://union.build' },
+          { rel: 'sitemap', href: '/sitemap-index.xml' }
+        ],
+        meta: [
+          { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
+          { name: 'robots', content: 'index, follow' },
+          { name: 'twitter:domain', content: 'union.build' },
+          { name: 'twitter:url', content: url },
+          { name: 'twitter:title', content: title },
+          { name: 'twitter:description', content: description }
+        ]
+      }}
+    />
+    {
+      loadFonts && (
+        <AstroFont
+          config={[
+            {
+              name: 'Inter var',
+              src: fontWeights.map(weight => ({
+                path: '/fonts/InterVariable.woff2',
+                style: 'normal',
+                weight
+              })),
+              preload: true,
+              display: 'swap',
+              fallback: 'sans-serif'
+            },
+            {
+              name: 'JetBrains Mono',
+              src: fontWeights.map(weight => ({
+                path: '/fonts/JetBrainsMono[wght].woff2',
+                style: 'normal',
+                weight
+              })),
+              preload: true,
+              display: 'swap',
+              fallback: 'sans-serif'
+            }
+          ]}
+        />
+      )
+    }
+  </Head>
+  <body
+    class='font-sans flex flex-col items-stretch flex-1 shadow-effect-bg pb-12 bg-black text-white not-content'
+  >
+    <slot />
+  </body>
+</html>
