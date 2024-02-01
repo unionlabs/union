@@ -14,7 +14,7 @@
           buildInputs = pkgsDeps;
           installPhase = ''
             mkdir -p $out
-            cp -r ./dist/* $out
+            cp -r ./build/* $out
           '';
           doDist = false;
         };
