@@ -98,9 +98,26 @@
       flake = false;
     };
   };
-  outputs = inputs@{ self, nixpkgs, nixpkgs-solc, nixpkgs-go, flake-parts
-    , nix-filter, crane, foundry, treefmt-nix, iohk-nix, ibc-go, ics23
-    , cosmosproto, gogoproto, googleapis, get-flake, wasmd, ... }:
+  outputs =
+    inputs@{ self
+    , nixpkgs
+    , nixpkgs-solc
+    , nixpkgs-go
+    , flake-parts
+    , nix-filter
+    , crane
+    , foundry
+    , treefmt-nix
+    , iohk-nix
+    , ibc-go
+    , ics23
+    , cosmosproto
+    , gogoproto
+    , googleapis
+    , get-flake
+    , wasmd
+    , ...
+    }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -149,8 +166,19 @@
         treefmt-nix.flakeModule
       ];
 
-      perSystem = { config, self', inputs', pkgs, treefmt, rust, crane, system
-        , lib, oxlint, ... }:
+      perSystem =
+        { config
+        , self'
+        , inputs'
+        , pkgs
+        , treefmt
+        , rust
+        , crane
+        , system
+        , lib
+        , oxlint
+        , ...
+        }:
         let
           mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
           dbg = value:
@@ -165,7 +193,8 @@
           };
 
           goPkgs = import inputs.nixpkgs-go { inherit system; };
-        in {
+        in
+        {
           _module = {
             args = {
               inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs;
@@ -184,50 +213,52 @@
                   iohk-nix.overlays.crypto
                   foundry.overlay
                   (_: _: {
-                    solc = let
-                      jsoncppVersion = "1.9.3";
-                      jsoncppUrl =
-                        "https://github.com/open-source-parsers/jsoncpp/archive/${jsoncppVersion}.tar.gz";
-                      jsoncpp = pkgs.fetchzip {
-                        url = jsoncppUrl;
-                        sha256 =
-                          "1vbhi503rgwarf275ajfdb8vpdcbn1f7917wjkf8jghqwb1c24lq";
-                      };
-                      range3Version = "0.12.0";
-                      range3Url =
-                        "https://github.com/ericniebler/range-v3/archive/${range3Version}.tar.gz";
-                      range3 = pkgs.fetchzip {
-                        url = range3Url;
-                        sha256 =
-                          "sha256-bRSX91+ROqG1C3nB9HSQaKgLzOHEFy9mrD2WW3PRBWU=";
-                      };
-                      fmtlibVersion = "9.1.0";
-                      fmtlibUrl =
-                        "https://github.com/fmtlib/fmt/archive/${fmtlibVersion}.tar.gz";
-                      fmtlib = pkgs.fetchzip {
-                        url = fmtlibUrl;
-                        sha256 =
-                          "1mnvxqsan034d2jiqnw2yvkljl7lwvhakmj5bscwp1fpkn655bbw";
-                      };
-                    in nixpkgs-solc.legacyPackages.${system}.solc.overrideAttrs
-                    (old:
-                      old // rec {
-                        version = "0.8.23";
-                        src = pkgs.fetchzip {
-                          url =
-                            "https://github.com/ethereum/solidity/releases/download/v${version}/solidity_${version}.tar.gz";
+                    solc =
+                      let
+                        jsoncppVersion = "1.9.3";
+                        jsoncppUrl =
+                          "https://github.com/open-source-parsers/jsoncpp/archive/${jsoncppVersion}.tar.gz";
+                        jsoncpp = pkgs.fetchzip {
+                          url = jsoncppUrl;
                           sha256 =
-                            "sha256-9GIDfjkjDFrZQ0uqopDycMWYUN+M9yLF9NpOgSksXqI=";
+                            "1vbhi503rgwarf275ajfdb8vpdcbn1f7917wjkf8jghqwb1c24lq";
                         };
-                        postPatch = ''
-                          substituteInPlace cmake/jsoncpp.cmake \
-                            --replace "${jsoncppUrl}" ${jsoncpp}
-                          substituteInPlace cmake/range-v3.cmake \
-                            --replace "${range3Url}" ${range3}
-                          substituteInPlace cmake/fmtlib.cmake \
-                            --replace "${fmtlibUrl}" ${fmtlib}
-                        '';
-                      });
+                        range3Version = "0.12.0";
+                        range3Url =
+                          "https://github.com/ericniebler/range-v3/archive/${range3Version}.tar.gz";
+                        range3 = pkgs.fetchzip {
+                          url = range3Url;
+                          sha256 =
+                            "sha256-bRSX91+ROqG1C3nB9HSQaKgLzOHEFy9mrD2WW3PRBWU=";
+                        };
+                        fmtlibVersion = "9.1.0";
+                        fmtlibUrl =
+                          "https://github.com/fmtlib/fmt/archive/${fmtlibVersion}.tar.gz";
+                        fmtlib = pkgs.fetchzip {
+                          url = fmtlibUrl;
+                          sha256 =
+                            "1mnvxqsan034d2jiqnw2yvkljl7lwvhakmj5bscwp1fpkn655bbw";
+                        };
+                      in
+                      nixpkgs-solc.legacyPackages.${system}.solc.overrideAttrs
+                        (old:
+                          old // rec {
+                            version = "0.8.23";
+                            src = pkgs.fetchzip {
+                              url =
+                                "https://github.com/ethereum/solidity/releases/download/v${version}/solidity_${version}.tar.gz";
+                              sha256 =
+                                "sha256-9GIDfjkjDFrZQ0uqopDycMWYUN+M9yLF9NpOgSksXqI=";
+                            };
+                            postPatch = ''
+                              substituteInPlace cmake/jsoncpp.cmake \
+                                --replace "${jsoncppUrl}" ${jsoncpp}
+                              substituteInPlace cmake/range-v3.cmake \
+                                --replace "${range3Url}" ${range3}
+                              substituteInPlace cmake/fmtlib.cmake \
+                                --replace "${fmtlibUrl}" ${fmtlib}
+                            '';
+                          });
                   })
                 ]);
 
@@ -382,69 +413,74 @@
             '';
           };
 
-          treefmt = let
-            prettier-solidity = pkgs.buildNpmPackage {
-              name = "prettier-plugin-solidity";
-              version = "1.1.3";
-              nativeBuildInputs = [ pkgs.pkg-config pkgs.python3 ];
-              src = pkgs.fetchFromGitHub {
-                owner = "prettier-solidity";
-                repo = "prettier-plugin-solidity";
-                rev = "0f0b31bd1d76626cad4ce576d89088ef23ad87f3";
-                hash = "sha256-zodOB5hARb7Jrb6d4gqmBKEFKUg0ZNZKbTN7H4vJk2w=";
+          treefmt =
+            let
+              prettier-solidity = pkgs.buildNpmPackage {
+                name = "prettier-plugin-solidity";
+                version = "1.1.3";
+                nativeBuildInputs = [ pkgs.pkg-config pkgs.python3 ];
+                src = pkgs.fetchFromGitHub {
+                  owner = "prettier-solidity";
+                  repo = "prettier-plugin-solidity";
+                  rev = "0f0b31bd1d76626cad4ce576d89088ef23ad87f3";
+                  hash = "sha256-zodOB5hARb7Jrb6d4gqmBKEFKUg0ZNZKbTN7H4vJk2w=";
+                };
+                npmInstallFlags = "--include=dev";
+                npmDepsHash =
+                  "sha256-Hzc4j9icNxTJNNaZ3PrmLKcUVR26nu4KqLireP4WmZM=";
               };
-              npmInstallFlags = "--include=dev";
-              npmDepsHash =
-                "sha256-Hzc4j9icNxTJNNaZ3PrmLKcUVR26nu4KqLireP4WmZM=";
+            in
+            {
+              projectRootFile = "flake.nix";
+              programs = {
+                nixpkgs-fmt.enable = true;
+                gofmt = {
+                  enable = true;
+                  package = goPkgs.go;
+                };
+                rustfmt = {
+                  enable = true;
+                  package = rust.toolchains.dev;
+                };
+                sort = {
+                  enable = true;
+                  file = "dictionary.txt";
+                };
+                prettier = {
+                  enable = true;
+                  excludes = [ "./app" "./app/**/*" ];
+                };
+                taplo = { enable = true; };
+              };
+              settings = {
+                global.excludes = [ "**/vendor/**" ];
+                formatter.prettier = {
+                  # TODO: Use settings.pluginSearchDirs
+                  options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then
+                    [ "--plugin-search-dir=${prettier-solidity}/lib" ]
+                  else
+                    [ ]);
+                  includes = [
+                    "*.css"
+                    "*.html"
+                    "*.js"
+                    "*.cjs"
+                    "*.mjs"
+                    "*.json"
+                    "*.jsx"
+                    "*.md"
+                    "*.mdx"
+                    "*.scss"
+                    "*.ts"
+                    "*.tsx"
+                    "*.d.ts"
+                    "*.yaml"
+                    "*.yml"
+                    "*.sol"
+                  ];
+                };
+              };
             };
-          in {
-            projectRootFile = "flake.nix";
-            programs = {
-              nixpkgs-fmt.enable = true;
-              gofmt = {
-                enable = true;
-                package = goPkgs.go;
-              };
-              rustfmt = {
-                enable = true;
-                package = rust.toolchains.dev;
-              };
-              sort = {
-                enable = true;
-                file = "dictionary.txt";
-              };
-              prettier.enable = true;
-              taplo = { enable = true; };
-            };
-            settings = {
-              global.excludes = [ "**/vendor/**" ];
-              formatter.prettier = {
-                # TODO: Use settings.pluginSearchDirs
-                options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then
-                  [ "--plugin-search-dir=${prettier-solidity}/lib" ]
-                else
-                  [ ]);
-                includes = [
-                  # "*.css"
-                  # "*.html"
-                  # "*.js"
-                  # "*.cjs"
-                  # "*.mjs"
-                  "*.json"
-                  # "*.jsx"
-                  "*.md"
-                  "*.mdx"
-                  "*.scss"
-                  # "*.ts"
-                  # "*.tsx"
-                  # "*.d.ts"
-                  "*.yaml"
-                  "*.yml"
-                  "*.sol"
-                ];
-              };
-            };
-          };
         };
     };
 
