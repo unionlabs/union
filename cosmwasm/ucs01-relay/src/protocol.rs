@@ -876,7 +876,7 @@ mod tests {
             deps.as_mut(),
             env.clone(),
             mock_info(
-                &env.contract.address.to_string(),
+                env.contract.address.as_ref(),
                 &[Coin {
                     denom: denom.clone(),
                     amount: Uint128::new(50),
@@ -909,7 +909,7 @@ mod tests {
             deps.as_mut(),
             env.clone(),
             mock_info(
-                &env.contract.address.to_string(),
+                env.contract.address.as_ref(),
                 &[Coin {
                     denom: denom.clone(),
                     amount: Uint128::new(50),

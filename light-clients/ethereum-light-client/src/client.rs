@@ -581,7 +581,7 @@ mod test {
 
         assert_eq!(
             EthereumLightClient::status(deps.as_ref(), &env),
-            Ok(Status::Active.into())
+            Ok(Status::Active)
         );
     }
 
@@ -606,7 +606,7 @@ mod test {
 
         assert_eq!(
             EthereumLightClient::status(deps.as_ref(), &mock_env()),
-            Ok(Status::Frozen.into())
+            Ok(Status::Frozen)
         );
     }
 
@@ -627,7 +627,7 @@ mod test {
         // Client returns expired here because it cannot find the consensus state
         assert_eq!(
             EthereumLightClient::status(deps.as_ref(), &mock_env()),
-            Ok(Status::Expired.into())
+            Ok(Status::Expired)
         );
 
         let wasm_consensus_state: WasmConsensusState =
@@ -648,7 +648,7 @@ mod test {
         );
         assert_eq!(
             EthereumLightClient::status(deps.as_ref(), &env),
-            Ok(Status::Expired.into())
+            Ok(Status::Expired)
         );
 
         env.block.time = Timestamp::from_seconds(
@@ -656,7 +656,7 @@ mod test {
         );
         assert_eq!(
             EthereumLightClient::status(deps.as_ref(), &env),
-            Ok(Status::Active.into())
+            Ok(Status::Active)
         )
     }
 
@@ -911,8 +911,8 @@ mod test {
             serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
 
         let proof = Proof {
-            key: data.key.into(),
-            value: data.value.into(),
+            key: data.key,
+            value: data.value,
             proof: data.proof.into_iter().map(Into::into).collect(),
         };
 

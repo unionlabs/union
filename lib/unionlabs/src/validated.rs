@@ -64,6 +64,7 @@ impl<T: Clone, V: Validate<T>> Clone for Validated<T, V> {
 }
 
 impl<T: PartialEq, V: Validate<T>> PartialEq for Validated<T, V> {
+    #[allow(clippy::unconditional_recursion)] // false positive
     fn eq(&self, other: &Self) -> bool {
         self.0.eq(&other.0)
     }

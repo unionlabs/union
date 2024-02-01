@@ -337,7 +337,7 @@ mod tests {
 
         static ref UPDATES: Vec<(Context, LightClientUpdate<Mainnet>)> = {
             // Read all the updates, only process files
-            let mut updates: Vec<LightClientUpdate<Mainnet>> = fs::read_dir("src/test/updates/").unwrap().into_iter().filter(|f|
+            let mut updates: Vec<LightClientUpdate<Mainnet>> = fs::read_dir("src/test/updates/").unwrap().filter(|f|
                 f.as_ref().unwrap().path().is_file()
             ).map(|f| {
                 serde_json::from_str(&fs::read_to_string(f.unwrap().path()).unwrap()).unwrap()
@@ -535,7 +535,7 @@ mod tests {
         let (mut ctx, correct_update) = UPDATES
             .iter()
             .find(|(_, update)| update.next_sync_committee.is_some())
-            .map(|u| u.clone())
+            .cloned()
             .unwrap()
             .clone();
 
@@ -573,7 +573,7 @@ mod tests {
         let (ctx, mut update) = UPDATES
             .iter()
             .find(|(_, update)| update.next_sync_committee.is_some())
-            .map(|u| u.clone())
+            .cloned()
             .unwrap()
             .clone();
 
