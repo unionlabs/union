@@ -1,4 +1,4 @@
-{ pkgs}:
+{ pkgs }:
 isCi: drv:
 let
   passthru = {

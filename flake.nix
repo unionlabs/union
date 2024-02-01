@@ -119,17 +119,19 @@
     , ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      flake = let
-        isCi = attr: v: (if v?ci then v.ci else true);
-      in {
-        spell-fmt = {
-          spellcheck = self.checks.x86_64-linux.spellcheck;
-          treefmt = self.checks.x86_64-linux.treefmt;
+      flake =
+        let
+          isCi = attr: v: (if v?ci then v.ci else true);
+        in
+        {
+          spell-fmt = {
+            spellcheck = self.checks.x86_64-linux.spellcheck;
+            treefmt = self.checks.x86_64-linux.treefmt;
+          };
+          build = inputs.nixpkgs.lib.filterAttrs isCi self.packages.x86_64-linux;
+          test = inputs.nixpkgs.lib.filterAttrs isCi self.checks.x86_64-linux;
+          dev = inputs.nixpkgs.lib.filterAttrs isCi self.devShells.x86_64-linux;
         };
-        build = inputs.nixpkgs.lib.filterAttrs isCi self.packages.x86_64-linux;
-        test = inputs.nixpkgs.lib.filterAttrs isCi self.checks.x86_64-linux;
-        dev = inputs.nixpkgs.lib.filterAttrs isCi self.devShells.x86_64-linux;
-      };
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
@@ -191,7 +193,7 @@
         , ...
         }:
         let
-          mkCi = import ./tools/mkCi.nix {inherit pkgs;};
+          mkCi = import ./tools/mkCi.nix { inherit pkgs; };
           mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
           dbg = value:
             builtins.trace (pkgs.lib.generators.toPretty { } value) value;
