@@ -1,12 +1,11 @@
-{ pkgs, lib, ...}:
-{isCi, drv}:
+{ pkgs}:
+isCi: drv:
 let
-  inherit (lib) types mkOption mdDoc;
   passthru = {
     ci = isCi;
   };
 in
-lib.lazyDerivation {
+pkgs.lib.lazyDerivation {
   derivation = drv;
   inherit passthru;
 }

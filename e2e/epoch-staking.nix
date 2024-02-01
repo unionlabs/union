@@ -1,6 +1,6 @@
-{ e2e, pkgs, ... }:
+{ e2e, pkgs, dbg, ... }:
 {
-  epoch-completes = e2e.mkTest {
+  epoch-completes = (dbg (e2e.mkTest {
     name = "epoch-completes";
 
     testScript = ''
@@ -16,7 +16,7 @@
     nodes = {
       union = e2e.unionNode.node;
     };
-  };
+  }));
 
   forced-set-rotation = e2e.mkTest {
     name = "forced-set-rotation";

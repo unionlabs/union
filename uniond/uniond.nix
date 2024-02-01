@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, uniondBundleVersions, goPkgs, ... }:
+  perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, uniondBundleVersions, goPkgs, mkCi, ... }:
     let
       CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O -D__BLST_PORTABLE__";
       CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${self'.packages.libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
@@ -91,7 +91,7 @@
             { }
         ));
 
-        uniond-release = self'.packages.uniond.overrideAttrs (old: {
+        uniond-release = mkCi false (self'.packages.uniond.overrideAttrs (old: {
           ldflags = old.ldflags ++ [
             "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
             "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
@@ -99,7 +99,7 @@
             "-X github.com/cosmos/cosmos-sdk/version.Commit=${gitRev}"
             "-X github.com/cosmos/cosmos-sdk/version.Version=${uniondBundleVersions.last}"
           ];
-        });
+        }));
 
         uniond-image = mkUniondImage self'.packages.uniond;
 
@@ -161,7 +161,7 @@
                 go mod tidy
               '';
           in
-          pkgs.writeShellApplication {
+          mkCi false (pkgs.writeShellApplication {
             name = "go-vendor";
             runtimeInputs = [ goPkgs.go vend ];
             text = ''
@@ -175,7 +175,7 @@
               cd ../galoisd
               ${doVendor [ ]}
             '';
-          };
+          });
       };
 
       checks = {

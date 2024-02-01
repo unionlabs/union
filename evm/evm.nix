@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, nix-filter, ensureAtRepositoryRoot, ... }:
+  perSystem = { self', pkgs, proto, nix-filter, ensureAtRepositoryRoot, mkCi, ... }:
     let
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
@@ -218,7 +218,7 @@
     {
       packages = {
         # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
-        generate-sol-proto = pkgs.writeShellApplication {
+        generate-sol-proto = mkCi false (pkgs.writeShellApplication {
           name = "generate-sol-proto";
           runtimeInputs = [ pkgs.protobuf ];
           text =
@@ -277,7 +277,7 @@
                   "$file"
               done
             '';
-        };
+        });
 
         evm-contracts = pkgs.stdenv.mkDerivation {
           name = "evm-contracts";

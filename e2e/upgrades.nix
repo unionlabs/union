@@ -62,6 +62,7 @@ in
       union = e2e.unionTestnetGenesisNode.node;
     };
   };
+
   upgrade-with-tokenfactory-state = e2e.mkTest {
     name = "upgrade-with-tokenfactory-state";
 

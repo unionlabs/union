@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, system, config, crane, stdenv, ensureAtRepositoryRoot, ... }:
+  perSystem = { self', pkgs, system, config, crane, stdenv, ensureAtRepositoryRoot, mkCi, ... }:
     let
       generate-rust-sol-bindings-crate = (crane.buildWorkspaceMember {
         crateDirFromRoot = "tools/generate-rust-sol-bindings";
@@ -58,9 +58,9 @@
     in
     {
       packages = {
-        rust-sol-bindings = rust-sol-bindings;
+        rust-sol-bindings = mkCi false (rust-sol-bindings);
 
-        generate-rust-sol-bindings = pkgs.writeShellApplication {
+        generate-rust-sol-bindings = mkCi false (pkgs.writeShellApplication {
           name = "generate-rust-sol-bindings";
           runtimeInputs = [ rust-sol-bindings ];
           text = ''
@@ -72,7 +72,7 @@
 
             echo "Generation successful!"
           '';
-        };
+        });
       };
     };
 }

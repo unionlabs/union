@@ -9,6 +9,7 @@
     , libwasmvmCargoToml_1_3_0
     , libwasmvmCargoToml_1_5_0
     , sqlxCliCargoToml
+    , mkCi
     , ...
     }:
     let
@@ -76,7 +77,7 @@
               [ libwasmvmCargoToml_1_3_0 libwasmvmCargoToml_1_5_0 sqlxCliCargoToml ]
             );
         in
-        pkgs.writeShellApplication {
+        mkCi false (pkgs.writeShellApplication {
           name = "vendor-tools";
           text =
             ''
@@ -86,6 +87,6 @@
 
               CARGO_NET_GIT_FETCH_WITH_CLI=true cargo vendor --locked ${args} ${vendorDir}
             '';
-        };
+        });
     };
 }

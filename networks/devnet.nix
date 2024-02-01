@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { devnetConfig, pkgs, lib, self', inputs', system, get-flake, ... }:
+  perSystem = { devnetConfig, pkgs, lib, self', inputs', system, get-flake, mkCi, ... }:
     let
       arion = inputs'.arion.packages.default;
 
@@ -166,13 +166,13 @@
         };
 
       packages.voyager-queue =
-        pkgs.writeShellApplication {
+        mkCi false (pkgs.writeShellApplication {
           name = "postgres";
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-voyager-queue} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
-        };
+        });
 
       _module.args.networks = {
         inherit devnet devnet-minimal union sepolia;

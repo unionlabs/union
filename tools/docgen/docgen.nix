@@ -1,5 +1,5 @@
 { self, ... }: {
-  perSystem = { pkgs, self', lib, config, tera, ... }:
+  perSystem = { pkgs, self', lib, config, tera, mkCi, ... }:
     let
       treefmt = config.treefmt.build.wrapper;
       teraBin = "${tera}/bin/tera";
@@ -8,7 +8,7 @@
     in
     {
       packages = {
-        docgen = pkgs.writeShellApplication {
+        docgen = mkCi false (pkgs.writeShellApplication {
           name = "docgen";
           runtimeInputs = [ teraBin treefmt ];
           text = ''
@@ -20,7 +20,7 @@
             echo '{"doc_comment": "${doc_comment}"}' | ${teraBin} --template unionvisor/docs/README.md --include-path unionvisor -s -o unionvisor/README.md > /dev/null 2>&1
             treefmt > /dev/null 2>&1
           '';
-        };
+        });
       };
 
       checks = {
