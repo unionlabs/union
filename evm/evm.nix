@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, nix-filter, ensureAtRepositoryRoot, mkCi, ... }:
+  perSystem = { self', pkgs, proto, nix-filter, ensureAtRepositoryRoot, system, mkCi, ... }:
     let
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
@@ -279,7 +279,7 @@
             '';
         });
 
-        evm-contracts = pkgs.stdenv.mkDerivation {
+        evm-contracts = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
           name = "evm-contracts";
           src = evmSources;
           buildInputs = [ wrappedForge ];
@@ -296,9 +296,9 @@
             mv out $out
             mv cache $out
           '';
-        };
+        });
 
-        external-evm-contracts = pkgs.stdenv.mkDerivation {
+        external-evm-contracts = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
           name = "external-evm-contracts";
           src = "${openzeppelin}/contracts/token/ERC20";
           buildInputs = [ wrappedForge ];
@@ -313,7 +313,7 @@
             mv out $out
             mv cache $out
           '';
-        };
+        });
 
         # NOTE: currently unable to build the tests with coverage, tried many different combination of the optimizer though...
         # solidity-coverage =

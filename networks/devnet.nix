@@ -130,40 +130,40 @@
     in
     {
       packages.devnet =
-        pkgs.writeShellApplication {
+        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
           name = "union-devnet";
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
-        };
+        });
 
       packages.devnet-simd =
-        pkgs.writeShellApplication {
+        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
           name = "simd-devnet";
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-simd} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
-        };
+        });
 
       packages.devnet-eth =
-        pkgs.writeShellApplication {
+        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
           name = "union-devnet-eth";
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-eth} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
-        };
+        });
 
       packages.devnet-union =
-        pkgs.writeShellApplication {
+        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
           name = "union-devnet-union";
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-union} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
-        };
+        });
 
       packages.voyager-queue =
         mkCi false (pkgs.writeShellApplication {
