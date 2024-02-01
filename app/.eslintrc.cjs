@@ -12,7 +12,6 @@ module.exports = {
     'eslint:recommended',
     'plugin:unicorn/all',
     'plugin:@typescript-eslint/recommended',
-    'plugin:jsonc/prettier',
     'plugin:svelte/recommended',
     'prettier'
   ],
