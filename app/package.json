@@ -1,0 +1,42 @@
+{
+  "name": "app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "test": "vitest",
+    "lint": "eslint --fix . --ext='js,cjs,mjs,ts,d.ts,json,svelte' --report-unused-disable-directives --max-warnings=0 --cache",
+    "format": "prettier --write . --ignore-path='.eslintignore' --ignore-unknown --cache",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "^3.1.1",
+    "@sveltejs/adapter-static": "^3.0.1",
+    "@sveltejs/kit": "^2.5.0",
+    "@sveltejs/vite-plugin-svelte": "^3.0.2",
+    "@total-typescript/ts-reset": "^0.5.1",
+    "@types/eslint": "8.56.2",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-svelte": "^2.35.1",
+    "postcss": "^8.4.33",
+    "prettier": "^3.2.4",
+    "prettier-plugin-svelte": "^3.1.2",
+    "svelte": "^4.2.9",
+    "svelte-check": "^3.6.3",
+    "tailwindcss": "^3.4.1",
+    "tslib": "^2.6.2",
+    "typed-query-selector": "^2.11.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12",
+    "vitest": "^1.2.2"
+  }
+}
