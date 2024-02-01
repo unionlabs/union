@@ -102,6 +102,25 @@ contract Verifier is IZKVerifierV2 {
     uint256 constant PUB_3_Y =
         9336098954712618302413022925991187147043963777349552077325468595033619593827;
 
+    // Commitment key
+    uint256 constant PEDERSEN_G_X_0 =
+        0x0DB410C824A5ADBD313D740A430630A107D57410B9BF6FAF5AFCFAAB2B2617FE;
+    uint256 constant PEDERSEN_G_X_1 =
+        0x1B42C82BA48ECE99B163761C96B995CCC15598BFBA746FC6E9DBAD445DDA796D;
+    uint256 constant PEDERSEN_G_Y_0 =
+        0x1F34EBAF716B9210C884F8F07F0E08DEB6435B770E5E34B8244497D38840CE2B;
+    uint256 constant PEDERSEN_G_Y_1 =
+        0x21EA2052643FFDCD11760154036BD266D6A261638E25AFB9917DA8E0C347C9B8;
+
+    uint256 constant PEDERSEN_G_ROOT_SIGMA_NEG_X_0 =
+        0x247B0E5AF7C23D717F5C88E71545A7CD67052C3141DF9EBF8B1FFE7ADB1CBDC1;
+    uint256 constant PEDERSEN_G_ROOT_SIGMA_NEG_X_1 =
+        0x0C301FD6EA0C05EF4B9FB346AF88B7BA904A8EB37E87E412B04A002801B429A7;
+    uint256 constant PEDERSEN_G_ROOT_SIGMA_NEG_Y_0 =
+        0x161556EA8AE6D6B0B9E74133A53F5F15B2859611C982615E0D7937FD929EB90A;
+    uint256 constant PEDERSEN_G_ROOT_SIGMA_NEG_Y_1 =
+        0x2C07A459154070A4C140C7766C4034D1AF770F072C1A3C7E5E41B685AB9547A9;
+
     /// Compute the public input linear combination.
     /// @notice Reverts with PublicInputNotInField if the input is not in the field.
     /// @notice Computes the multi-scalar-multiplication of the public input
@@ -192,6 +211,29 @@ contract Verifier is IZKVerifierV2 {
             x := mload(f)
             y := mload(add(f, 0x20))
         }
+    }
+
+    function verifyProofCommitmentPOK(
+        uint256[2] calldata proofCommitment,
+        uint256[2] calldata proofCommitmentPOK
+    ) public view returns (bool) {
+        bool success = true;
+        assembly ("memory-safe") {
+            let f := mload(0x40)
+            calldatacopy(f, proofCommitment, 0x40)
+            mstore(add(f, 0x40), PEDERSEN_G_X_0)
+            mstore(add(f, 0x60), PEDERSEN_G_X_1)
+            mstore(add(f, 0x80), PEDERSEN_G_Y_0)
+            mstore(add(f, 0xA0), PEDERSEN_G_Y_1)
+            calldatacopy(add(f, 0xC0), proofCommitmentPOK, 0x40)
+            mstore(add(f, 0x100), PEDERSEN_G_ROOT_SIGMA_NEG_X_0)
+            mstore(add(f, 0x120), PEDERSEN_G_ROOT_SIGMA_NEG_X_1)
+            mstore(add(f, 0x140), PEDERSEN_G_ROOT_SIGMA_NEG_Y_0)
+            mstore(add(f, 0x160), PEDERSEN_G_ROOT_SIGMA_NEG_Y_1)
+            success := staticcall(gas(), PRECOMPILE_VERIFY, f, 0x180, f, 0x20)
+            success := and(success, mload(f))
+        }
+        return success;
     }
 
     /// Verify an uncompressed Groth16 proof.

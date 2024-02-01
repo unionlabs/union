@@ -24,6 +24,13 @@ contract TestVerifier is IZKVerifierV2 {
         valid += 1;
     }
 
+    function verifyProofCommitmentPOK(
+        uint256[2] calldata proofCommitment,
+        uint256[2] calldata proofCommitmentPOK
+    ) public view returns (bool) {
+        return true;
+    }
+
     function verifyProof(
         uint256[8] memory proof,
         uint256[2] memory proofCommitment,
