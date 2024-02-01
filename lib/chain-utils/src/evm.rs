@@ -136,12 +136,13 @@ impl EthLogDecode for IBCHandlerEvents {
             IBCConnectionEvents::decode_log(log).map(IBCHandlerEvents::ConnectionEvent);
         let chan_event =
             IBCChannelHandshakeEvents::decode_log(log).map(IBCHandlerEvents::ChannelEvent);
-        [packet_event, conn_event, chan_event]
+        let client_event =
+            GeneratedClientIdentifierFilter::decode_log(log).map(IBCHandlerEvents::ClientEvent);
+
+        [packet_event, conn_event, chan_event, client_event]
             .into_iter()
-            .collect::<Result<Vec<_>, _>>()?
-            .first()
-            .cloned()
-            .ok_or(ethers::abi::Error::InvalidData)
+            .find(|event| event.is_ok())
+            .ok_or(ethers::abi::Error::InvalidData)?
     }
 }
 

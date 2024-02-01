@@ -14,14 +14,14 @@ pub struct ProveRequest {
 }
 
 impl Proto for ProveRequest {
-    type Proto = protos::union::galois::api::v1::ProveRequest;
+    type Proto = protos::union::galois::api::v2::ProveRequest;
 }
 
-impl TypeUrl for protos::union::galois::api::v1::ProveRequest {
-    const TYPE_URL: &'static str = "/union.galois.api.v1.ProveRequest";
+impl TypeUrl for protos::union::galois::api::v2::ProveRequest {
+    const TYPE_URL: &'static str = "/union.galois.api.v2.ProveRequest";
 }
 
-impl From<ProveRequest> for protos::union::galois::api::v1::ProveRequest {
+impl From<ProveRequest> for protos::union::galois::api::v2::ProveRequest {
     fn from(value: ProveRequest) -> Self {
         Self {
             vote: Some(value.vote.into()),

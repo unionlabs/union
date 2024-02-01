@@ -12,59 +12,52 @@
 
       rustToolchain = rust.mkNightly { target = CARGO_BUILD_TARGET; };
 
-      # wasmvm_1_3_0 = builtins.fetchGit {
-      #   owner = "CosmWasm";
-      #   repo = "wasmvm";
-      #   # hash = "sha256-rsTYvbkYpDkUE4IvILdSL3hXMgAWxz5ltGotJB2t1e4=";
-      # };
-
       mkLibwasmvm =
         wasmvm:
         let
-          attrs =
-            {
-              inherit CARGO_BUILD_TARGET;
+          attrs = {
+            inherit CARGO_BUILD_TARGET;
 
-              pname = "libwasmvm";
-              version = (dbg wasmvm).rev;
+            pname = "libwasmvm";
+            version = wasmvm.rev;
 
-              # cargoArtifacts = null;
+            # cargoArtifacts = null;
 
-              buildInputs = [ rustToolchain ];
+            buildInputs = [ rustToolchain ];
 
-              src = "${wasmvm}/libwasmvm";
+            src = "${wasmvm}/libwasmvm";
 
-              # dummySrc = crane.lib.mkDummySrc "${wasmvm}/libwasmvm";
+            # dummySrc = crane.lib.mkDummySrc "${wasmvm}/libwasmvm";
 
-              # cargoVendorDir = crane.lib.vendorMultipleCargoDeps {
-              #   inherit (crane.lib.findCargoFiles wasmvm) cargoConfigs;
-              #   cargoLockList = [
-              #     workspaceCargoLockPath
-              #   ] ++ (lib.optionals (buildStdTarget != null) ([
-              #     ./rust-std-Cargo.lock
-              #   ]));
-              # };
+            # cargoVendorDir = crane.lib.vendorMultipleCargoDeps {
+            #   inherit (crane.lib.findCargoFiles wasmvm) cargoConfigs;
+            #   cargoLockList = [
+            #     workspaceCargoLockPath
+            #   ] ++ (lib.optionals (buildStdTarget != null) ([
+            #     ./rust-std-Cargo.lock
+            #   ]));
+            # };
 
 
-              # cargoLock = "${wasmvm}/libwasmvm/Cargo.lock";
-              # # cargoVendorDir = vendorDir;
-              # doCheck = false;
-              # doInstallCargoArtifacts = false;
-              # buildPhaseCargoCommand = "";
-            } // (if pkgs.stdenv.isLinux then {
-              cargoExtraArgs = "--locked --offline --example=wasmvmstatic";
-              installPhase = ''
-                mkdir -p $out/lib
-                mv target/${CARGO_BUILD_TARGET}/release/examples/libwasmvmstatic.a $out/lib/libwasmvm.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
-              '';
-            } else if pkgs.stdenv.isDarwin then {
-              # non-static dylib build on macOS
-              cargoExtraArgs = "--locked --offline";
-              installPhase = ''
-                mkdir -p $out/lib
-                mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib
-              '';
-            } else throwBadSystem);
+            # cargoLock = "${wasmvm}/libwasmvm/Cargo.lock";
+            # # cargoVendorDir = vendorDir;
+            # doCheck = false;
+            # doInstallCargoArtifacts = false;
+            # buildPhaseCargoCommand = "";
+          } // (if pkgs.stdenv.isLinux then {
+            cargoExtraArgs = "--locked --offline --example=wasmvmstatic";
+            installPhase = ''
+              mkdir -p $out/lib
+              mv target/${CARGO_BUILD_TARGET}/release/examples/libwasmvmstatic.a $out/lib/libwasmvm.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
+            '';
+          } else if pkgs.stdenv.isDarwin then {
+            # non-static dylib build on macOS
+            cargoExtraArgs = "--locked --offline";
+            installPhase = ''
+              mkdir -p $out/lib
+              mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib
+            '';
+          } else throwBadSystem);
 
           craneLib = crane.lib.overrideToolchain (rust.mkNightly { target = CARGO_BUILD_TARGET; });
         in
@@ -73,10 +66,6 @@
         });
     in
     {
-      # _module.args.libwasmvmCargoToml_1_3_0 = "${wasmvm_1_3_0}/libwasmvm/Cargo.toml";
-      # _module.args.libwasmvmCargoToml_1_5_0 = "${wasmvm_1_5_0}/libwasmvm/Cargo.toml";
-
-      packages.libwasmvm = mkLibwasmvm (dbg inputs.wasmvm_1_3_0);
-      packages.libwasmvm_1_5_0 = mkLibwasmvm inputs.wasmvm_1_5_0;
+      packages.libwasmvm = mkLibwasmvm inputs.wasmvm;
     };
 }

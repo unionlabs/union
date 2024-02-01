@@ -1,18 +1,4 @@
 // @generated
-/// IncentivizedAcknowledgement is the acknowledgement format to be used by applications wrapped in the fee middleware
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IncentivizedAcknowledgement {
-    /// the underlying app acknowledgement bytes
-    #[prost(bytes = "vec", tag = "1")]
-    pub app_acknowledgement: ::prost::alloc::vec::Vec<u8>,
-    /// the relayer address which submits the recv packet message
-    #[prost(string, tag = "2")]
-    pub forward_relayer_address: ::prost::alloc::string::String,
-    /// success flag of the base application callback
-    #[prost(bool, tag = "3")]
-    pub underlying_app_success: bool,
-}
 /// Fee defines the ICS29 receive, acknowledgement and timeout fees
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -352,6 +338,20 @@ pub struct QueryFeeEnabledChannelResponse {
     /// boolean flag representing the fee enabled channel status
     #[prost(bool, tag = "1")]
     pub fee_enabled: bool,
+}
+/// IncentivizedAcknowledgement is the acknowledgement format to be used by applications wrapped in the fee middleware
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IncentivizedAcknowledgement {
+    /// the underlying app acknowledgement bytes
+    #[prost(bytes = "vec", tag = "1")]
+    pub app_acknowledgement: ::prost::alloc::vec::Vec<u8>,
+    /// the relayer address which submits the recv packet message
+    #[prost(string, tag = "2")]
+    pub forward_relayer_address: ::prost::alloc::string::String,
+    /// success flag of the base application callback
+    #[prost(bool, tag = "3")]
+    pub underlying_app_success: bool,
 }
 /// MsgRegisterPayee defines the request type for the RegisterPayee rpc
 #[allow(clippy::derive_partial_eq_without_eq)]

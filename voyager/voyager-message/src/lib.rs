@@ -1048,6 +1048,9 @@ mod tests {
         let eth_chain_id: U256 = parse!("32382");
         let cosmos_chain_id: String = parse!("simd-devnet-1");
 
+        println!("---------------------------------------");
+        println!("Union - Eth (Sending to Union) Connection Open: ");
+        println!("---------------------------------------");
         print_json(msg(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
             union_chain_id.clone(),
             MsgConnectionOpenInitData(MsgConnectionOpenInit {
@@ -1067,6 +1070,9 @@ mod tests {
             }),
         )));
 
+        println!("---------------------------------------");
+        println!("Fetch Client State: ");
+        println!("---------------------------------------");
         print_json(fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
             union_chain_id.clone(),
             LightClientSpecificFetch(UnionFetch::AbciQuery(FetchAbciQuery {
@@ -1078,26 +1084,32 @@ mod tests {
             })),
         )));
 
+        println!("---------------------------------------");
+        println!("Eth - Union (Sending to Union) Channel Open: ");
+        println!("---------------------------------------");
         print_json(msg(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
             union_chain_id.clone(),
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
-                    port_id: parse!("ucs01-relay"),
+                    port_id: parse!("WASM_PORT_ID"),
                     channel: Channel {
                         state: channel::state::State::Init,
                         ordering: channel::order::Order::Unordered,
                         counterparty: channel::counterparty::Counterparty {
-                            port_id: parse!("WASM_PORT_ID"),
-                            channel_id: parse!("channel-0"),
+                            port_id: parse!("ucs01-relay"),
+                            channel_id: parse!(""),
                         },
                         connection_hops: vec![parse!("connection-8")],
-                        version: "ucs00-pingpong-1".to_string(),
+                        version: "ucs01-0".to_string(),
                     },
                 },
                 __marker: PhantomData,
             },
         )));
 
+        println!("---------------------------------------");
+        println!("Eth - Union (Starting on Union) Channel Open: ");
+        println!("---------------------------------------");
         print_json(msg(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
             eth_chain_id,
             MsgChannelOpenInitData {
@@ -1108,7 +1120,7 @@ mod tests {
                         ordering: channel::order::Order::Ordered,
                         counterparty: channel::counterparty::Counterparty {
                             port_id: parse!("ucs01-relay"),
-                            channel_id: parse!("channel-0"),
+                            channel_id: parse!(""),
                         },
                         connection_hops: vec![parse!("connection-8")],
                         version: "ucs001-pingpong".to_string(),
@@ -1118,6 +1130,9 @@ mod tests {
             },
         )));
 
+        println!("---------------------------------------");
+        println!("Eth - Union (Sending to Eth) Connection Open: ");
+        println!("---------------------------------------");
         print_json(msg(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
             eth_chain_id,
             MsgConnectionOpenInitData(MsgConnectionOpenInit {
@@ -1137,6 +1152,9 @@ mod tests {
             }),
         )));
 
+        println!("---------------------------------------");
+        println!("Eth - Union (Sending to Eth) Connection Try: ");
+        println!("---------------------------------------");
         print_json(event(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
             eth_chain_id,
             IbcEvent {
@@ -1151,6 +1169,9 @@ mod tests {
             },
         )));
 
+        println!("---------------------------------------");
+        println!("Eth - Union (Sending to Eth) Update Client: ");
+        println!("---------------------------------------");
         print_json(repeat(
             u64::MAX,
             seq([
@@ -1165,6 +1186,9 @@ mod tests {
             ]),
         ));
 
+        println!("---------------------------------------");
+        println!("Eth - Union (Sending to Union) Update Client: ");
+        println!("---------------------------------------");
         print_json(repeat(
             u64::MAX,
             seq([
@@ -1179,6 +1203,9 @@ mod tests {
             ]),
         ));
 
+        println!("---------------------------------------");
+        println!("Cosmos - Union (Sending to Cosmos) Update Client: ");
+        println!("---------------------------------------");
         print_json(repeat(
             u64::MAX,
             seq([
@@ -1193,6 +1220,9 @@ mod tests {
             ]),
         ));
 
+        println!("---------------------------------------");
+        println!("Cosmos - Union (Sending to Union) Update Client: ");
+        println!("---------------------------------------");
         print_json(repeat(
             u64::MAX,
             seq([
@@ -1207,8 +1237,9 @@ mod tests {
             ]),
         ));
 
-        println!("\ncreate client msgs\n");
-
+        println!("---------------------------------------");
+        println!("Union - Eth Create Both Clients: ");
+        println!("---------------------------------------");
         print_json(seq([
             aggregate(
                 [
@@ -1271,6 +1302,9 @@ mod tests {
             ),
         ]));
 
+        println!("---------------------------------------");
+        println!("Union - Cosmos Create Both Client: ");
+        println!("---------------------------------------");
         print_json(seq([
             aggregate(
                 [

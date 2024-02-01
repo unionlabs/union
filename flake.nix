@@ -66,11 +66,7 @@
     };
     nix-filter.url = "github:numtide/nix-filter";
     get-flake.url = "github:ursi/get-flake";
-    wasmvm_1_3_0 = {
-      url = "github:CosmWasm/wasmvm/v1.3.0";
-      flake = false;
-    };
-    wasmvm_1_5_0 = {
+    wasmvm = {
       url = "github:CosmWasm/wasmvm/v1.5.0";
       flake = false;
     };

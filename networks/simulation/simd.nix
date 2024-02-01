@@ -16,7 +16,7 @@
           meta.mainProgram = "wasmd";
           # CGO_ENABLED = 0;
         } // (
-          let libwasmvm = self'.packages.libwasmvm_1_5_0;
+          let libwasmvm = self'.packages.libwasmvm;
           in if pkgs.stdenv.isLinux then {
             # Statically link if we're on linux
             nativeBuildInputs = [ pkgs.musl libwasmvm ];
