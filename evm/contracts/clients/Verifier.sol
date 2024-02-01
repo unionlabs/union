@@ -213,29 +213,6 @@ contract Verifier is IZKVerifierV2 {
         }
     }
 
-    function verifyProofCommitmentPOK(
-        uint256[2] calldata proofCommitment,
-        uint256[2] calldata proofCommitmentPOK
-    ) public view returns (bool) {
-        bool success = true;
-        assembly ("memory-safe") {
-            let f := mload(0x40)
-            calldatacopy(f, proofCommitment, 0x40)
-            mstore(add(f, 0x40), PEDERSEN_G_X_0)
-            mstore(add(f, 0x60), PEDERSEN_G_X_1)
-            mstore(add(f, 0x80), PEDERSEN_G_Y_0)
-            mstore(add(f, 0xA0), PEDERSEN_G_Y_1)
-            calldatacopy(add(f, 0xC0), proofCommitmentPOK, 0x40)
-            mstore(add(f, 0x100), PEDERSEN_G_ROOT_SIGMA_NEG_X_0)
-            mstore(add(f, 0x120), PEDERSEN_G_ROOT_SIGMA_NEG_X_1)
-            mstore(add(f, 0x140), PEDERSEN_G_ROOT_SIGMA_NEG_Y_0)
-            mstore(add(f, 0x160), PEDERSEN_G_ROOT_SIGMA_NEG_Y_1)
-            success := staticcall(gas(), PRECOMPILE_VERIFY, f, 0x180, f, 0x20)
-            success := and(success, mload(f))
-        }
-        return success;
-    }
-
     /// Verify an uncompressed Groth16 proof.
     /// @notice Reverts with InvalidProof if the proof is invalid or
     /// with PublicInputNotInField the public input is not reduced.
@@ -248,6 +225,7 @@ contract Verifier is IZKVerifierV2 {
     function verifyProof(
         uint256[8] calldata proof,
         uint256[2] calldata proofCommitment,
+        uint256[2] calldata proofCommitmentPOK,
         uint256[4] calldata input
     ) public view returns (bool) {
         (bool success, uint256 x, uint256 y) = publicInputMSM(
@@ -288,8 +266,21 @@ contract Verifier is IZKVerifierV2 {
             mstore(add(f, 0x2c0), GAMMA_NEG_Y_1)
             mstore(add(f, 0x2e0), GAMMA_NEG_Y_0)
 
+            // Verify pedersen commitment proof of knowledge
+            // Symmetric to https://github.com/Consensys/gnark-crypto/blob/2e4aaaaefdbfdf06515663986ed884fed1b2177e/ecc/bn254/fr/pedersen/pedersen.go#L212-L224
+            calldatacopy(add(f, 0x300), proofCommitment, 0x40)
+            mstore(add(f, 0x340), PEDERSEN_G_X_0)
+            mstore(add(f, 0x360), PEDERSEN_G_X_1)
+            mstore(add(f, 0x380), PEDERSEN_G_Y_0)
+            mstore(add(f, 0x3A0), PEDERSEN_G_Y_1)
+            calldatacopy(add(f, 0x3C0), proofCommitmentPOK, 0x40)
+            mstore(add(f, 0x400), PEDERSEN_G_ROOT_SIGMA_NEG_X_0)
+            mstore(add(f, 0x420), PEDERSEN_G_ROOT_SIGMA_NEG_X_1)
+            mstore(add(f, 0x440), PEDERSEN_G_ROOT_SIGMA_NEG_Y_0)
+            mstore(add(f, 0x460), PEDERSEN_G_ROOT_SIGMA_NEG_Y_1)
+
             // Check pairing equation.
-            success := staticcall(gas(), PRECOMPILE_VERIFY, f, 0x300, f, 0x20)
+            success := staticcall(gas(), PRECOMPILE_VERIFY, f, 0x480, f, 0x20)
             // Also check returned value (both are either 1 or 0).
             success := and(success, mload(f))
         }

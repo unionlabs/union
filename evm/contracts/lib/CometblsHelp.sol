@@ -65,15 +65,6 @@ library CometblsHelp {
             uint256[2] memory proofCommitmentPOK
         ) = abi.decode(zkp, (uint256[8], uint256[2], uint256[2]));
 
-        if (
-            !verifier.verifyProofCommitmentPOK(
-                proofCommitment,
-                proofCommitmentPOK
-            )
-        ) {
-            return false;
-        }
-
         uint256 commitmentHash = hashToField(abi.encodePacked(proofCommitment));
 
         uint256 hashedMessage = hashToField(message);
@@ -87,7 +78,13 @@ library CometblsHelp {
             commitmentHash
         ];
 
-        return verifier.verifyProof(proof, proofCommitment, inputs);
+        return
+            verifier.verifyProof(
+                proof,
+                proofCommitment,
+                proofCommitmentPOK,
+                inputs
+            );
     }
 
     function isExpired(
