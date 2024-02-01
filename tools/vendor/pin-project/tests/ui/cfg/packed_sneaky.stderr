@@ -1,5 +1,0 @@
-error: #[pin_project] attribute may not be used on #[repr(packed)] types
- --> tests/ui/cfg/packed_sneaky.rs:6:27
-  |
-6 | #[hidden_repr_cfg_not_any(packed)] //~ ERROR may not be used on #[repr(packed)] types
-  |                           ^^^^^^

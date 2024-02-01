@@ -1,5 +1,0 @@
-error: `Error` opt out specified more than once
- --> tests/from_request/fail/derive_opt_out_duplicate.rs:4:42
-  |
-4 | #[from_request(rejection_derive(!Error, !Error))]
-  |                                          ^^^^^

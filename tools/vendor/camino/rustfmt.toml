@@ -1,2 +1,0 @@
-edition = "2018"
-use_field_init_shorthand = true

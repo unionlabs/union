@@ -1,3 +1,0 @@
-
-cdef extern from *:
-  pass

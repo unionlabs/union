@@ -1,5 +1,0 @@
-error: append_dummy test
- --> $DIR/append_dummy.rs:9:15
-  |
-9 | append_dummy!(need_default);
-  |               ^^^^^^^^^^^^

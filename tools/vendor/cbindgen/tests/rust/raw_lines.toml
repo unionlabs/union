@@ -1,3 +1,0 @@
-include_guard = "INCLUDE_GUARD_H"
-no_includes = false
-after_includes = "#define VERSION 1"

@@ -1,5 +1,0 @@
-error: parse attribute is not allowed for flattened entry
-  --> $DIR/flatten_and_parse.rs:22:26
-   |
-22 |     #[structopt(flatten, parse(from_occurrences))]
-   |                          ^^^^^

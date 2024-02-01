@@ -1,5 +1,0 @@
-error: the main function has to be called main
- --> ui-tests/main.rs:7:4
-  |
-7 | fn fail() {}
-  |    ^^^^

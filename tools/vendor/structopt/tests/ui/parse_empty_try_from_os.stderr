@@ -1,5 +1,0 @@
-error: you must set parser for `try_from_os_str` explicitly
-  --> $DIR/parse_empty_try_from_os.rs:14:23
-   |
-14 |     #[structopt(parse(try_from_os_str))]
-   |                       ^^^^^^^^^^^^^^^

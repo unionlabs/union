@@ -1,5 +1,0 @@
-error: Option<Vec<T>> type is meaningless for positional argument
-  --> $DIR/opt_vec_nonpositional.rs:14:8
-   |
-14 |     n: Option<Vec<u32>>,
-   |        ^^^^^^^^^^^^^^^^

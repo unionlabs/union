@@ -1,5 +1,0 @@
-error: methods are not allowed for skipped fields
- --> $DIR/skip_with_other_options.rs:8:17
-  |
-8 |     #[structopt(skip, long)]
-  |                 ^^^^

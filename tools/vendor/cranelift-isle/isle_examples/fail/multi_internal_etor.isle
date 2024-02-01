@@ -1,4 +1,0 @@
-(type u32 (primitive u32))
-
-(decl multi A (u32) u32)
-(extractor (A x) x)

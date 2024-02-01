@@ -1,2 +1,0 @@
-mod rxvt;
-mod xterm;

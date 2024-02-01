@@ -1,5 +1,0 @@
-error: `Request` extractor should always be last
- --> tests/debug_handler/fail/request_not_last.rs:5:18
-  |
-5 | async fn handler(_: Request<Body>, _: Extension<String>) {}
-  |                  ^^^^^^^^^^^^^^^^

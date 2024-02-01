@@ -1,5 +1,0 @@
-error: methods are not allowed for flattened entry
-  --> $DIR/flatten_and_methods.rs:22:24
-   |
-22 |     #[structopt(short, flatten)]
-   |                        ^^^^^^^

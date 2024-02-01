@@ -1,3 +1,0 @@
-# This makes merge conflicts less likely to occur, and makes it easier to see
-# symmetry between parameters.
-fn_args_layout = "Vertical"

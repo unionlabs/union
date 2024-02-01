@@ -1,1 +1,0 @@
-bindgen vendor/wepoll/wepoll.h -o src/bindings.rs

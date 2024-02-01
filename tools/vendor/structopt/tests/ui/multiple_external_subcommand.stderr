@@ -1,5 +1,0 @@
-error: Only one variant can be marked with `external_subcommand`, this is the second
-  --> $DIR/multiple_external_subcommand.rs:14:17
-   |
-14 |     #[structopt(external_subcommand)]
-   |                 ^^^^^^^^^^^^^^^^^^^
