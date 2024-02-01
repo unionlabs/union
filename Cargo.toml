@@ -37,21 +37,11 @@ edition      = "2021"
 license-file = "LICENSE"
 repository   = "https://github.com/unionlabs/union"
 
-# TODO: Review if crane uses this and if so, how we should set these values
 [profile.release]
-debug     = true
+lto       = "thin"
 opt-level = 3
-# rpath = false
-lto = "fat"
-# debug-assertions = false
-# codegen-units = 1
-# panic = "abort"
-# incremental = false
-# overflow-checks = true
-# strip = true
 
 [workspace.dependencies]
-
 beacon-api                = { path = "lib/beacon-api", default-features = false }
 chain-utils               = { path = "lib/chain-utils", default-features = false }
 cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
