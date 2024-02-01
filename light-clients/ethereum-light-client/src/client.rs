@@ -118,11 +118,27 @@ impl IbcClient for EthereumLightClient {
         header: Self::Header,
     ) -> Result<(), Self::Error> {
         let trusted_sync_committee = header.trusted_sync_committee;
+
+        // `trusted_height` is the height that we are doing this upgrade against. Every update must be verified
+        // with a state that is already been verified and trusted. And the light client don't limit the relayers to
+        // only be able to send a latter header than the latest header that the client saved (in terms of height).
+        // Because assume that 2 IBC tx's happened and the first tx is made at the height `N + 5`, and the second one is
+        // made at height `N`, and the relayer picked up the tx at height `N + 5` first and updated the client. The relayer still
+        // needs to provide the client the header at height `N` to be able to verify the commitments at that height. That's why we
+        // get the header height that we are using as the base state. If no header presents at this height, the update fails since
+        // there is no way for us to verify it.
         let wasm_consensus_state =
             read_consensus_state(deps, &trusted_sync_committee.trusted_height)?.ok_or(
                 Error::ConsensusStateNotFound(trusted_sync_committee.trusted_height),
             )?;
 
+        // It might sound weird to see that we are getting something that we "trust" from the relayer which
+        // we shouldn't trust. But this data is also being verified. Signature verification is a part of the upgrade. But
+        // we didn't want to store all of the 512 public keys (x2 since we store next and current sync committees) in every consensus
+        // state that we store. Please note that these public keys are BLS public keys which can be aggregated to produce a
+        // single aggregated public key. We store this aggregated public key, and later, when we do an upgrade, we get this sync committee
+        // from the relayer and in the function below we aggregate the public keys again and check if it matches the aggregated public key
+        // that we saved previously. So to sum up, we choose compute time over storage here.
         let trusted_consensus_state = TrustedConsensusState::new(
             deps,
             wasm_consensus_state.data,
@@ -132,8 +148,11 @@ impl IbcClient for EthereumLightClient {
         let wasm_client_state = read_client_state(deps)?;
         let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
 
-        // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
-        // at the current timestamp.
+        // Algorithm here: (current_time - genesis_time) / seconds_per_slot + genesis_slot
+        // Note that slots are purely time based. And even no block is being produced for a
+        // slot - for some reason - the slot is still there. So let's say that a block is not produced
+        // at slot N + 1, and a block is being produced one slot time after it, the block's slot will be
+        // N + 2. (Slots might contain no blocks)
         let current_slot = (env.block.time.seconds() - wasm_client_state.data.genesis_time)
             / wasm_client_state.data.seconds_per_slot
             + wasm_client_state.data.fork_parameters.genesis_slot;
@@ -145,9 +164,13 @@ impl IbcClient for EthereumLightClient {
             wasm_client_state.data.genesis_validators_root.clone(),
             VerificationContext { deps },
         )?;
+        // After this point, we have the assumption that `header.consensus_update` is verified and we trust it.
 
         let proof_data = header.account_update.account_proof;
 
+        // This `ibc_contract_address` is the address of the `IBCClient` contract that runs on Ethereum. And that
+        // contract will be the one who saves all of the commitments under its storage. We don't allow this contract's
+        // address to be changed in any time to make the verification easier.
         if proof_data.contract_address != wasm_client_state.data.ibc_contract_address {
             return Err(Error::IbcContractAddressMismatch {
                 given: proof_data.contract_address,
@@ -155,6 +178,8 @@ impl IbcClient for EthereumLightClient {
             });
         }
 
+        // This asserts that the new `storage_root` that the relayer provides for the `IBCClient` on counterpary is valid.
+        // This means that we will be able to use this `storage_root` at this height to do membership verification.
         verify_account_storage_root(
             header.consensus_update.attested_header.execution.state_root,
             &proof_data.contract_address,
@@ -169,9 +194,16 @@ impl IbcClient for EthereumLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
+        // In IBC, you can provide a Misbehaviour type which is specific to clients. This is used for letting the light client know that
+        // something is going wrong with the counterparty chain or this client implementation. This is different from `check_for_misbehaviour`
+        // which I will explain later on.
         panic!("Not implemented")
     }
 
+    /// This is used to update the state. A major assumption here is that the `header` is already been verified with the `verify_header` function.
+    /// Although they are two distinct functions, you can see in the `ibc-go` code that this function is only being called if `verify_header`
+    /// succeeds. You can see it in here `https://github.com/cosmos/ibc-go/blob/116029f0436394016372ed11cea4614e8ef71dba/modules/core/02-client/keeper/client.go#L71`
+    /// `VerifyClientMessage` function calls `verify_header` internally and `UpdateState` calls this function only if the previous one succeeds.
     fn update_state(
         mut deps: DepsMut<Self::CustomQuery>,
         _env: Env,
@@ -189,6 +221,9 @@ impl IbcClient for EthereumLightClient {
         let consensus_update = header.consensus_update;
         let account_update = header.account_update;
 
+        // Note that this and the `match` below is the implementation of this function:
+        // https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#apply_light_client_update
+        // The only missing part is being we don't have `optimized_header`
         let store_period =
             compute_sync_committee_period_at_slot::<Config>(consensus_state.data.slot);
         let update_finalized_period = compute_sync_committee_period_at_slot::<Config>(
@@ -199,6 +234,7 @@ impl IbcClient for EthereumLightClient {
             None if update_finalized_period != store_period => {
                 return Err(Error::StorePeriodMustBeEqualToFinalizedPeriod)
             }
+            // REVIEW: We probably need to put `if update_finalized_period == store_period` here.
             None => {
                 consensus_state.data.next_sync_committee = consensus_update
                     .next_sync_committee
@@ -210,16 +246,30 @@ impl IbcClient for EthereumLightClient {
                     .next_sync_committee
                     .map(|c| c.aggregate_pubkey);
             }
+            // the consensus-spec of ethereum don't fail on other cases, so we don't fail as well.
             _ => {}
         }
 
         // Some updates can be only for updating the sync committee, therefore the slot number can be
         // smaller. We don't want to save a new state if this is the case.
+        // NOTE: The comment that I wrote here makes no sense now. Because `validate_light_client_update` does the following
+        // verification:
+        // if !(update_attested_slot > ctx.finalized_slot()
+        //     || (update_attested_period == stored_period
+        //         && update.next_sync_committee.is_some()
+        //         && ctx.next_sync_committee().is_none()))
+        // {
+        //     Err(Error::IrrelevantUpdate)?;
+        // }
+        // NOTE cont'd: This already ensures that `attested_header.beacon.slot` is larger than the trusted height.
         let updated_height = core::cmp::max(
             trusted_height.revision_height,
             consensus_update.attested_header.beacon.slot,
         );
 
+        // Again, this should always be the case since instead of tracking the `finalized_header`, we are tracking
+        // the `attested_header`. Not sure if this or the code above would change anything, but it would be nice to be
+        // cautious about this :)
         if consensus_update.attested_header.beacon.slot > consensus_state.data.slot {
             consensus_state.data.slot = consensus_update.attested_header.beacon.slot;
 
@@ -230,6 +280,8 @@ impl IbcClient for EthereumLightClient {
                 consensus_update.attested_header.beacon.slot,
             );
 
+            // The update height might be smaller than the latest height as we have explained previously, so we only change it
+            // if it needs a change.
             if client_state.data.latest_slot < consensus_update.attested_header.beacon.slot {
                 client_state.data.latest_slot = consensus_update.attested_header.beacon.slot;
                 update_client_state(deps.branch(), client_state, updated_height);
@@ -246,11 +298,14 @@ impl IbcClient for EthereumLightClient {
         Ok(vec![updated_height])
     }
 
+    /// NOTE that this is being called by the host module only if `check_for_misbehaviour_on_header` detects a misbehaviour.
     fn update_state_on_misbehaviour(
         deps: DepsMut<Self::CustomQuery>,
         env: Env,
         _client_message: Vec<u8>,
     ) -> Result<(), Self::Error> {
+        // Nothing to be done here apart from freezing the client.
+        // Actually, one thing that I notice now is that an update might target a previous height.
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         client_state.data.frozen_height = Height {
             revision_number: client_state.latest_height.revision_number,
@@ -261,6 +316,11 @@ impl IbcClient for EthereumLightClient {
         Ok(())
     }
 
+    /// This is called after the `verify_header` function. So this function will not be called with an untrusted/unverified
+    /// header. These checks are here to make sure that the majority of the chain didn't act maliciously and signed another
+    /// block at the same height. This could only happen if the chain get hacked or it is forked. Currently, our light client
+    /// follows the `attested_header` which is not safe against forking. But this will be changed in near future where we start
+    /// following the `justified` and `finalized` headers.
     fn check_for_misbehaviour_on_header(
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
@@ -284,7 +344,7 @@ impl IbcClient for EthereumLightClient {
             }
 
             // NOTE(aeryz): we don't check the timestamp here since it is calculated based on the
-            // thn slot and we already check the slot.
+            // the slot and we already check the slot.
 
             // NOTE(aeryz): we don't check the next sync committee because it's not being signed with
             // a header. so it should be an error during the state update not a misbehaviour.
@@ -293,6 +353,7 @@ impl IbcClient for EthereumLightClient {
         Ok(false)
     }
 
+    /// Since we don't have a `Misbehaviour` type defined, we don't need this.
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
@@ -366,6 +427,8 @@ fn do_verify_membership(
     storage_proof: Proof,
     raw_value: Vec<u8>,
 ) -> Result<(), Error> {
+    // IBC spec tells us that the commitments must be done under certain keys. We enforce the counterparty to do the
+    // commitments under a `mapping` under a `slot` that is saved in the client state.
     check_commitment_key(
         &path,
         counterparty_commitment_slot,
@@ -376,6 +439,10 @@ fn do_verify_membership(
         .parse::<Path<String, Height>>()
         .map_err(|_| Error::UnknownIbcPath(path))?;
 
+    // For performance reasons, the client on Ethereum saves the `ClientState` and `ConsensusState` in a `ethabi` encoded
+    // way. But the current ibc-go implementation has a limitation where it enforces clients to save their client state in
+    // a protobuf encoded format. That's why we first decode the state, and encode it again with ethabi to make sure that we
+    // are verifying the exact same bytes that the counterparty client stores.
     let canonical_value = match path {
         Path::ClientStatePath(_) => {
             Any::<cometbls::client_state::ClientState>::try_from_proto_bytes(raw_value.as_ref())
