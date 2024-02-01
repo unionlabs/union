@@ -5,12 +5,14 @@
     "checkJs": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "alwaysStrict": true,
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
     "moduleResolution": "bundler",
-    "types": ["typed-query-selector/strict"],
+    "types": ["@cloudflare/workers-types", "typed-query-selector/strict"],
     "paths": {
       "$lib/*": ["./src/lib/*"],
       "#/*": ["./src/*"]

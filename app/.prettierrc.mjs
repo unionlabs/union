@@ -10,7 +10,7 @@ export default {
   arrowParens: 'avoid',
   trailingComma: 'none',
   singleAttributePerLine: true,
-  plugins: ['prettier-plugin-svelte'],
+  plugins: ['prettier-plugin-svelte', 'prettier-plugin-tailwindcss'],
   overrides: [
     {
       files: '*.svelte',
