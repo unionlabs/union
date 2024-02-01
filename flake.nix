@@ -125,12 +125,27 @@
         in
         {
           spell-fmt = {
-            spellcheck = self.checks.x86_64-linux.spellcheck;
-            treefmt = self.checks.x86_64-linux.treefmt;
+            x86_64-linux = {
+              spellcheck = self.checks.x86_64-linux.spellcheck;
+              treefmt = self.checks.x86_64-linux.treefmt;
+            };
+            aarch64-linux = {
+              spellcheck = self.checks.aarch64-linux.spellcheck;
+              treefmt = self.checks.aarch64-linux.treefmt;
+            };
           };
-          build = inputs.nixpkgs.lib.filterAttrs isCi self.packages.x86_64-linux;
-          test = inputs.nixpkgs.lib.filterAttrs isCi self.checks.x86_64-linux;
-          dev = inputs.nixpkgs.lib.filterAttrs isCi self.devShells.x86_64-linux;
+          build = {
+            x86_64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.packages.x86_64-linux;
+            aarch64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.packages.aarch64-linux;
+          };
+          test = {
+            x86_64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.checks.x86_64-linux;
+            aarch64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.checks.aarch64-linux;
+          };
+          dev = {
+            x86_64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.devShells.x86_64-linux;
+            aarch64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.devShells.aarch64-linux;
+          };
         };
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
