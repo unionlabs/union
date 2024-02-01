@@ -9,7 +9,6 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "lint": "oxlint --ignore-path='.eslintignore' --import-plugin --jsx-a11y-plugin --jest-plugin -D all .",
     "format": "prettier --write . --ignore-path='.eslintignore' --ignore-unknown --cache",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
