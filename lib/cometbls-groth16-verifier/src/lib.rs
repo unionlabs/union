@@ -4,11 +4,14 @@ extern crate alloc;
 
 use core::{marker::PhantomData, ops::AddAssign};
 
-use ark_ec::{pairing::Pairing, AffineRepr};
-use ark_ff::{vec, vec::Vec, BigInt, PrimeField, QuadExtField};
+use ark_ec::{
+    pairing::{Pairing, PairingOutput},
+    AffineRepr,
+};
+use ark_ff::{vec, vec::Vec, BigInt, One, PrimeField, QuadExtField};
 use ark_groth16::{Groth16, Proof, VerifyingKey};
 use ark_relations::r1cs::SynthesisError;
-use ark_serialize::CanonicalDeserialize;
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use ethabi::ethereum_types::U256;
 use hex_literal::hex;
@@ -38,6 +41,12 @@ fn make_g2(x0: BigInt<4>, x1: BigInt<4>, y0: BigInt<4>, y1: BigInt<4>) -> ark_bn
             c1: y1.into(),
         },
     )
+}
+
+pub fn pedersen_commitment_key() -> (ark_bn254::G2Affine, ark_bn254::G2Affine) {
+    let G2Affine(_, g) = G2Affine::<BigEndian, ark_bn254::Bn254>::try_from(hex!("0DB410C824A5ADBD313D740A430630A107D57410B9BF6FAF5AFCFAAB2B2617FE1B42C82BA48ECE99B163761C96B995CCC15598BFBA746FC6E9DBAD445DDA796D1F34EBAF716B9210C884F8F07F0E08DEB6435B770E5E34B8244497D38840CE2B21EA2052643FFDCD11760154036BD266D6A261638E25AFB9917DA8E0C347C9B8")).expect("impossible");
+    let G2Affine(_, g_root_sigma_neg) = G2Affine::<BigEndian, ark_bn254::Bn254>::try_from(hex!("247B0E5AF7C23D717F5C88E71545A7CD67052C3141DF9EBF8B1FFE7ADB1CBDC10C301FD6EA0C05EF4B9FB346AF88B7BA904A8EB37E87E412B04A002801B429A7161556EA8AE6D6B0B9E74133A53F5F15B2859611C982615E0D7937FD929EB90A2C07A459154070A4C140C7766C4034D1AF770F072C1A3C7E5E41B685AB9547A9")).expect("impossible");
+    (g, g_root_sigma_neg)
 }
 
 pub fn universal_vk() -> VerifyingKey<ark_bn254::Bn254> {
@@ -195,41 +204,24 @@ impl<P: Pairing> TryFrom<[u8; G2_SIZE]> for G2AffineLE<P> {
     }
 }
 
-pub struct CommitmentHash<FromOrder>(PhantomData<FromOrder>, U256);
-pub type CommitmentHashBE = CommitmentHash<BigEndian>;
-pub type CommitmentHashLE = CommitmentHash<LittleEndian>;
-
-impl From<[u8; COMMITMENT_HASH_SIZE]> for CommitmentHashBE {
-    fn from(value: [u8; COMMITMENT_HASH_SIZE]) -> Self {
-        CommitmentHash(PhantomData, U256::from_big_endian(&value))
-    }
-}
-
-impl From<[u8; COMMITMENT_HASH_SIZE]> for CommitmentHashLE {
-    fn from(value: [u8; COMMITMENT_HASH_SIZE]) -> Self {
-        CommitmentHash(PhantomData, U256::from_little_endian(&value))
-    }
-}
-
 #[derive(Debug)]
 pub struct ZKP<FromOrder, P: Pairing> {
     pub proof: Proof<P>,
-    pub commitment_hash: U256,
     pub proof_commitment: P::G1Affine,
+    pub proof_commitment_pok: P::G1Affine,
     pub _marker: PhantomData<FromOrder>,
 }
 
-// G1 + G2 + G1 + U256 + G1
-pub const EXPECTED_PROOF_SIZE: usize = G1_SIZE + G2_SIZE + G1_SIZE + COMMITMENT_HASH_SIZE + G1_SIZE;
+// G1 + G2 + G1 + G1 + G1
+pub const EXPECTED_PROOF_SIZE: usize = G1_SIZE + G2_SIZE + G1_SIZE + G1_SIZE + G1_SIZE;
 
-// [a ... b ... c ... commitment_hash ... proof_commitment]
+// [a ... b ... c ... proof_commitment ... commitment_pok]
 pub type RawZKP = [u8; EXPECTED_PROOF_SIZE];
 
 impl<FromOrder: ByteOrder, P: Pairing> TryFrom<&[u8]> for ZKP<FromOrder, P>
 where
     G1Affine<FromOrder, P>: TryFrom<[u8; G1_SIZE], Error = Error>,
     G2Affine<FromOrder, P>: TryFrom<[u8; G2_SIZE], Error = Error>,
-    CommitmentHash<FromOrder>: From<[u8; COMMITMENT_HASH_SIZE]>,
 {
     type Error = Error;
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
@@ -247,21 +239,21 @@ where
                 .try_into()
                 .expect("impossible"),
         )?;
-        let CommitmentHash(_, commitment_hash) = CommitmentHash::<FromOrder>::from(
-            value[G1_SIZE + G2_SIZE + G1_SIZE..G1_SIZE + G2_SIZE + G1_SIZE + COMMITMENT_HASH_SIZE]
+        let G1Affine(_, proof_commitment) = G1Affine::<FromOrder, P>::try_from(
+            value[G1_SIZE + G2_SIZE + G1_SIZE..G1_SIZE + G2_SIZE + G1_SIZE + G1_SIZE]
                 .try_into()
                 .expect("impossible"),
-        );
-        let G1Affine(_, proof_commitment) = G1Affine::<FromOrder, P>::try_from(
-            value[G1_SIZE + G2_SIZE + G1_SIZE + COMMITMENT_HASH_SIZE
-                ..G1_SIZE + G2_SIZE + G1_SIZE + COMMITMENT_HASH_SIZE + G1_SIZE]
+        )?;
+        let G1Affine(_, proof_commitment_pok) = G1Affine::<FromOrder, P>::try_from(
+            value[G1_SIZE + G2_SIZE + G1_SIZE + G1_SIZE
+                ..G1_SIZE + G2_SIZE + G1_SIZE + G1_SIZE + G1_SIZE]
                 .try_into()
                 .expect("impossible"),
         )?;
         Ok(Self {
             proof: Proof { a, b, c },
-            commitment_hash,
             proof_commitment,
+            proof_commitment_pok,
             _marker: PhantomData,
         })
     }
@@ -270,9 +262,12 @@ where
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     EthAbiDecoding,
+    InvalidPublicInput,
     InvalidPoint,
     InvalidProof(SynthesisError),
     InvalidVerifyingKey,
+    InvalidCommitment,
+    InvalidCommitmentPOK,
     InvalidRawProof,
 }
 
@@ -282,13 +277,42 @@ pub fn verify_zkp(
     message: &[u8],
     zkp: impl Into<Vec<u8>>,
 ) -> Result<(), Error> {
+    let (g, g_root_sigma_neg) = pedersen_commitment_key();
     verify_generic_zkp::<ark_bn254::Bn254>(
         universal_vk(),
         trusted_validators_hash,
         untrusted_validators_hash,
         message,
+        &g,
+        &g_root_sigma_neg,
         ZKP::try_from(zkp.into().as_ref())?,
     )
+}
+
+// Verify the pedersen commitment
+// Symmetric to https://github.com/Consensys/gnark-crypto/blob/2e4aaaaefdbfdf06515663986ed884fed1b2177e/ecc/bn254/fr/pedersen/pedersen.go#L212-L224
+fn verify_pedersen_commitment_pok<P: Pairing>(
+    g: &P::G2Affine,
+    g_root_sigma_neg: &P::G2Affine,
+    zkp: &ZKP<BigEndian, P>,
+) -> Result<U256, Error> {
+    let PairingOutput(fe) = P::final_exponentiation(P::multi_miller_loop(
+        [zkp.proof_commitment, zkp.proof_commitment_pok],
+        [g, g_root_sigma_neg],
+    ))
+    .ok_or(Error::InvalidCommitmentPOK)?;
+    if fe == P::TargetField::one() {
+        let mut buffer = [0u8; 64];
+        zkp.proof_commitment
+            .serialize_uncompressed(&mut buffer[..])
+            .map_err(|_| Error::InvalidCommitment)?;
+        // arkworks is little endian, gnark is big endian
+        buffer[0..32].reverse();
+        buffer[32..64].reverse();
+        Ok(hash_to_field(&buffer))
+    } else {
+        Err(Error::InvalidCommitmentPOK)
+    }
 }
 
 fn verify_generic_zkp<P: Pairing>(
@@ -296,24 +320,27 @@ fn verify_generic_zkp<P: Pairing>(
     trusted_validators_hash: U256,
     untrusted_validators_hash: U256,
     message: &[u8],
+    g: &P::G2Affine,
+    g_root_sigma_neg: &P::G2Affine,
     zkp: ZKP<BigEndian, P>,
 ) -> Result<(), Error> {
     let mut buffer = [0u8; 32];
-    let mut decode_scalar = move |x: U256| {
+    let mut decode_scalar = move |x: U256| -> Result<P::ScalarField, Error> {
         x.to_little_endian(&mut buffer);
-        // NOTE: This would silently fail if the input do not fit the scalar
-        // field, which is unlikely to happen unless the parameters have been
-        // tampered. The pairing check would obviously fail in this case.
-        <P::ScalarField as PrimeField>::from_le_bytes_mod_order(&buffer)
+        let value = <P::ScalarField as PrimeField>::BigInt::deserialize_uncompressed(&buffer[..])
+            .map_err(|_| Error::InvalidPublicInput)?;
+        <P::ScalarField as PrimeField>::from_bigint(value).ok_or(Error::InvalidPublicInput)
     };
+
+    let commitment_hash = verify_pedersen_commitment_pok(g, g_root_sigma_neg, &zkp)?;
 
     let hashed_message = hash_to_field(message);
 
     let public_inputs: [P::ScalarField; 4] = [
-        decode_scalar(trusted_validators_hash),
-        decode_scalar(untrusted_validators_hash),
-        decode_scalar(hashed_message),
-        decode_scalar(zkp.commitment_hash),
+        decode_scalar(trusted_validators_hash)?,
+        decode_scalar(untrusted_validators_hash)?,
+        decode_scalar(hashed_message)?,
+        decode_scalar(commitment_hash)?,
     ];
 
     let mut prepared_inputs = vk
@@ -354,10 +381,10 @@ mod tests {
     fn test_ok() {
         assert_eq!(
             verify_zkp(
-                U256::from_str("2A55A1417E3E50AD714B5E1C85A9432CCC3B1A477C524E64D25D4173EDEE1C05").unwrap(),
-                U256::from_str("2A55A1417E3E50AD714B5E1C85A9432CCC3B1A477C524E64D25D4173EDEE1C05").unwrap(),
-                &hex!("650802113E0200000000000022480A205245B762DA04AEE98BB41B8CA4F55A4E6C795931317BFCE196A643C8708A736112240801122012384DA4CDB8E223D9E581590B39D4E8B8B3D7702F159578E2E4E55703DCE783320E756E696F6E2D6465766E65742D31"),
-                hex!("1F8483CFE28CC94F5B90CBD73A3BD3592F07338F3BA834D7FB739B1A0B313A6913FA014685598BCE33F05E196F6865786DEAE1F4F3DA7511E6E2911FDEC40342260D687282CCBBFF470C96866316924A507E43AA442AB4C5B5AFB8F83C87FBFC09295422479D6D4D96037BD6758A08F7ED0E9639EC37CD50CDAC6431EA4D74D602DDBEACC10A3ABCB4038F9C46168A8C1B354C3B378DFF7FF0E6DC91CF714A8E130D25238407C17D20E89B488E9EA14649E626D04B08DF0722AEEF6C1EBFD69B19722A0D6D52C4CB4182459939EABA60C5B539BBBF97F5A17DF0D43DBD16F6EB303C91E2291AEEF9C5EF19277D8010DEFBC2583D61C8141B36F3B57170BC489C0369E2274B22FCE30D28DE47CA4EBC334D04AE7AD29D5BBEFE19C317995FE3D2217518822C57A50257DBEC2D9F87AA10FF8CF97779A3BB90C088F51D29FB2314279FB97CEDFC91D68BEB55F3F975AA8DB9FBEFCAE24EDD022B74BDEE66E83498")
+                U256::from_str("17204F2B98C9E9A6C92C29AC7E19C1BF025530DEE72793868EE9B040CA00417B").unwrap(),
+                U256::from_str("17204F2B98C9E9A6C92C29AC7E19C1BF025530DEE72793868EE9B040CA00417B").unwrap(),
+                &hex!("650802113E0200000000000022480A207A3675198C63E4D7E49CD290929CA9B713B6FCB867EA023DB55BB9CA505946B212240801122009F221212558CB45E97A3A349E215937FF36B69E1EDE1F468A6C64C71F57A2E4320E756E696F6E2D6465766E65742D31"),
+                hex!("195562CC376E9265A7FD89A086855C100173B717B0DEA58AC9F50120E9CBDD7402D59ADAC8A274C5DDB199915B03B5CFB7A91032A71723876F946A7662135D4912EB1FAD1FCA5E88AD1D9097870391D1D477F4CD2A26F27DB3CFC8B511922C482F374A4821BEE34818589A052995CC5994CE787538207F1BA0D595890EB96D751D947274566F6338FC14BB1728C9E42F47F9D47A8A7F46CFA341D3EC71F0A8E80ECDAA9E38B4D6090989B165E536C4332BDF470E860D85001362EC7B369DE0092FD13C85FE2A16247E574B759B7B8EBFE8C7ED19CE7520A693BD09FD604CA54E2FA277AC176ACEC9626313DA7022E8B8DB599E1B02C25DA90AD508AA315DA67C0EAF8A0F41C4CDC897A4941F3BFA7D0E0C2BDD3030D5B0025FB4030A31C886F417B2509E9ECFEA86AA22F75402599E72C21623E9C32A499D7B14B6DBC3A1251E119244B7DC12B54A74FBC3B23E7954435491D89AFA7ABF6F07E1DADE0B28F0DA1978EC72A2C2C0F1FE8DEDA8DD8DDA7E82454618C3DFF1341C9901456F7E656A")
             ),
             Ok(())
         );
@@ -370,7 +397,7 @@ mod tests {
                 U256::from_str("1BBACC23BE35969FFCEFC2892440045E83C3C78E81BF2D6473DD745A93835684").unwrap(),
                 U256::from_str("1BBACC23BE35969FFCEFC2892440045E83C3C78E81BF2D6473DD745A93835684").unwrap(),
                 &hex!("650802113E0200000000000022480A2053D3DC9F43757EEA63FC3B28C383074A111146B2DE7F73A198D29A6D6919DA6D12240801122023C8BED9455A38334F6462A3EAC87616CF51226F825A229FA23CA420E26730B9320E756E696F6E2D6465766E65742D31"),
-                hex!("21D80AACFCA03DC2B84881E3EF1A73C25D2D088E48AA35764A6B4485A78354F021C90A4CBAAB731658D13CE5152F147DF1734F0196031DAF918BF06DAEA1A4E9082959B87795E28482B4FE13AD4B777F9A2D4BFBC8C3FF2640A5DB5619A8F2DA04D6037DAEA584F0C93EDC769859BE695493F48813E491540C37587C2C3214490AE2C9DC087D8039CAF2BD181E289D60EA9AC8B4BF3411A9F9888DC9250525DD055143FE81924CF683CF8381167431A8CB0C984C9DB2BA13D6C9B2374FFD7323052586453C7C06E234B861E9E212EB4A8DF470BD9ADCDB759FED40E62004ECB8210E3A53A0D1F570552C5118521943BC2CC4BB1DA8A5877667A2800D4DF62665304E914F6631B3CE27C88F21E1E8FFAC6C0512D62AE00BEEA79F649BD6E139BD254011571644878C8A72D167D82B5F409360209E1B8E146457C1893769383F4F2F9C0E2EF22885F92672277AF244840CA6EB5298D74E73334BD88360D6B33681")
+                hex!("195562CC376E9265A7FD89A086855C100173B717B0DEA58AC9F50120E9CBDD7402D59ADAC8A274C5DDB199915B03B5CFB7A91032A71723876F946A7662135D4912EB1FAD1FCA5E88AD1D9097870391D1D477F4CD2A26F27DB3CFC8B511922C482F374A4821BEE34818589A052995CC5994CE787538207F1BA0D595890EB96D751D947274566F6338FC14BB1728C9E42F47F9D47A8A7F46CFA341D3EC71F0A8E80ECDAA9E38B4D6090989B165E536C4332BDF470E860D85001362EC7B369DE0092FD13C85FE2A16247E574B759B7B8EBFE8C7ED19CE7520A693BD09FD604CA54E2FA277AC176ACEC9626313DA7022E8B8DB599E1B02C25DA90AD508AA315DA67C0EAF8A0F41C4CDC897A4941F3BFA7D0E0C2BDD3030D5B0025FB4030A31C886F417B2509E9ECFEA86AA22F75402599E72C21623E9C32A499D7B14B6DBC3A1251E119244B7DC12B54A74FBC3B23E7954435491D89AFA7ABF6F07E1DADE0B28F0DA1978EC72A2C2C0F1FE8DEDA8DD8DDA7E82454618C3DFF1341C9901456F7E656A")
             ),
             Err(Error::InvalidProof(SynthesisError::UnexpectedIdentity))
         );
