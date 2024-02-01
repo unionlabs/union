@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use crate::id::{ChannelId, PortId};
+use crate::id::PortId;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -57,8 +57,8 @@ impl From<Counterparty> for contracts::ibc_handler::IbcCoreChannelV1Counterparty
 pub enum TryFromEthAbiChannelCounterpartyError {
     #[error("error parsing port id")]
     PortId(#[source] <PortId as FromStr>::Err),
-    #[error("error parsing channel id")]
-    ChannelId(#[source] <ChannelId as FromStr>::Err),
+    // #[error("error parsing channel id")]
+    // ChannelId(#[source] <ChannelId as FromStr>::Err),
 }
 
 #[cfg(feature = "ethabi")]
