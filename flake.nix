@@ -2,7 +2,8 @@
   description =
     "Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security and usage in decentralized finance.";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
+    nixpkgs.url =
+      "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
     # We need the latest nixpkgs for buildGo121Module, remove this once we upgrade nixpkgs
@@ -36,8 +37,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     ibc-go = {
-      url =
-        "github:cosmos/ibc-go?rev=c98311964dc550b9fe9a5bff8b6dd8e35bf13642";
+      url = "github:cosmos/ibc-go?rev=c98311964dc550b9fe9a5bff8b6dd8e35bf13642";
       flake = false;
     };
     ics23 = {
@@ -60,7 +60,8 @@
       flake = false;
     };
     wasmd = {
-      url = "github:CosmWasm/wasmd?rev=03f3c72a6ce447fafc2da023a1322899327433f8";
+      url =
+        "github:CosmWasm/wasmd?rev=03f3c72a6ce447fafc2da023a1322899327433f8";
       flake = false;
     };
     nix-filter.url = "github:numtide/nix-filter";
@@ -130,6 +131,7 @@
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./uniond/proto.nix
         ./typescript-sdk/typescript-sdk.nix
+        ./app/app.nix
         ./site/site.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
@@ -198,11 +200,12 @@
               inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs;
 
               gitRev =
-                if (builtins.hasAttr "rev" self)
-                then self.rev
-                else "dirty";
+                if (builtins.hasAttr "rev" self) then self.rev else "dirty";
 
-              writeShellApplicationWithArgs = import ./tools/writeShellApplicationWithArgs.nix { inherit pkgs; };
+              writeShellApplicationWithArgs =
+                import ./tools/writeShellApplicationWithArgs.nix {
+                  inherit pkgs;
+                };
 
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays
                 (with inputs; [
@@ -213,39 +216,49 @@
                     solc =
                       let
                         jsoncppVersion = "1.9.3";
-                        jsoncppUrl = "https://github.com/open-source-parsers/jsoncpp/archive/${jsoncppVersion}.tar.gz";
+                        jsoncppUrl =
+                          "https://github.com/open-source-parsers/jsoncpp/archive/${jsoncppVersion}.tar.gz";
                         jsoncpp = pkgs.fetchzip {
                           url = jsoncppUrl;
-                          sha256 = "1vbhi503rgwarf275ajfdb8vpdcbn1f7917wjkf8jghqwb1c24lq";
+                          sha256 =
+                            "1vbhi503rgwarf275ajfdb8vpdcbn1f7917wjkf8jghqwb1c24lq";
                         };
                         range3Version = "0.12.0";
-                        range3Url = "https://github.com/ericniebler/range-v3/archive/${range3Version}.tar.gz";
+                        range3Url =
+                          "https://github.com/ericniebler/range-v3/archive/${range3Version}.tar.gz";
                         range3 = pkgs.fetchzip {
                           url = range3Url;
-                          sha256 = "sha256-bRSX91+ROqG1C3nB9HSQaKgLzOHEFy9mrD2WW3PRBWU=";
+                          sha256 =
+                            "sha256-bRSX91+ROqG1C3nB9HSQaKgLzOHEFy9mrD2WW3PRBWU=";
                         };
                         fmtlibVersion = "9.1.0";
-                        fmtlibUrl = "https://github.com/fmtlib/fmt/archive/${fmtlibVersion}.tar.gz";
+                        fmtlibUrl =
+                          "https://github.com/fmtlib/fmt/archive/${fmtlibVersion}.tar.gz";
                         fmtlib = pkgs.fetchzip {
                           url = fmtlibUrl;
-                          sha256 = "1mnvxqsan034d2jiqnw2yvkljl7lwvhakmj5bscwp1fpkn655bbw";
+                          sha256 =
+                            "1mnvxqsan034d2jiqnw2yvkljl7lwvhakmj5bscwp1fpkn655bbw";
                         };
                       in
-                      nixpkgs-solc.legacyPackages.${system}.solc.overrideAttrs (old: old // rec {
-                        version = "0.8.23";
-                        src = pkgs.fetchzip {
-                          url = "https://github.com/ethereum/solidity/releases/download/v${version}/solidity_${version}.tar.gz";
-                          sha256 = "sha256-9GIDfjkjDFrZQ0uqopDycMWYUN+M9yLF9NpOgSksXqI=";
-                        };
-                        postPatch = ''
-                          substituteInPlace cmake/jsoncpp.cmake \
-                            --replace "${jsoncppUrl}" ${jsoncpp}
-                          substituteInPlace cmake/range-v3.cmake \
-                            --replace "${range3Url}" ${range3}
-                          substituteInPlace cmake/fmtlib.cmake \
-                            --replace "${fmtlibUrl}" ${fmtlib}
-                        '';
-                      });
+                      nixpkgs-solc.legacyPackages.${system}.solc.overrideAttrs
+                        (old:
+                          old // rec {
+                            version = "0.8.23";
+                            src = pkgs.fetchzip {
+                              url =
+                                "https://github.com/ethereum/solidity/releases/download/v${version}/solidity_${version}.tar.gz";
+                              sha256 =
+                                "sha256-9GIDfjkjDFrZQ0uqopDycMWYUN+M9yLF9NpOgSksXqI=";
+                            };
+                            postPatch = ''
+                              substituteInPlace cmake/jsoncpp.cmake \
+                                --replace "${jsoncppUrl}" ${jsoncpp}
+                              substituteInPlace cmake/range-v3.cmake \
+                                --replace "${range3Url}" ${range3}
+                              substituteInPlace cmake/fmtlib.cmake \
+                                --replace "${fmtlibUrl}" ${fmtlib}
+                            '';
+                          });
                   })
                 ]);
 
@@ -362,37 +375,35 @@
 
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
-            buildInputs = [ rust.toolchains.dev oxlint ] ++ (with pkgs; [
-              cargo-llvm-cov
-              bacon
-              cargo-nextest
-              jq
-              go-ethereum
-              marksman
-              nil
-              nixfmt
-              nix-tree
-              nodejs_20
-              openssl
-              pkg-config
-              protobuf
-              self'.packages.tdc
-              yq
-              nodePackages.graphqurl
-              nodePackages.svelte-language-server
-              nodePackages.typescript-language-server
-              nodePackages.vscode-css-languageserver-bin
-            ] ++ (with goPkgs; [
-              go
-              gopls
-              go-tools
-              gotools
-            ]) ++ (if pkgs.stdenv.isLinux then [
-              pkgs.solc
-              pkgs.foundry-bin
-              pkgs.sqlx-cli
-              self'.packages.hasura-cli
-            ] else [ ]));
+            buildInputs = [ rust.toolchains.dev oxlint ] ++ (with pkgs;
+              [
+                cargo-llvm-cov
+                bacon
+                cargo-nextest
+                jq
+                go-ethereum
+                marksman
+                nil
+                nixfmt
+                nix-tree
+                nodejs_20
+                openssl
+                pkg-config
+                protobuf
+                self'.packages.tdc
+                yq
+                nodePackages.graphqurl
+                nodePackages.svelte-language-server
+                nodePackages.typescript-language-server
+                nodePackages.vscode-css-languageserver-bin
+              ] ++ (with goPkgs; [ go gopls go-tools gotools ])
+              ++ (if pkgs.stdenv.isLinux then [
+                pkgs.solc
+                pkgs.foundry-bin
+                pkgs.sqlx-cli
+                self'.packages.hasura-cli
+              ] else
+                [ ]));
             nativeBuildInputs = [ config.treefmt.build.wrapper ]
               ++ lib.attrsets.attrValues config.treefmt.build.programs;
             GOPRIVATE = "github.com/unionlabs/*";
@@ -401,7 +412,6 @@
               alias voy-send-msg='curl localhost:65534/msg -H "content-type: application/json" -d'
             '';
           };
-
 
           treefmt =
             let
@@ -436,16 +446,20 @@
                   enable = true;
                   file = "dictionary.txt";
                 };
-                prettier.enable = true;
-                taplo = {
+                prettier = {
                   enable = true;
+                  excludes = [ "./app" "./app/**/*" ];
                 };
+                taplo = { enable = true; };
               };
               settings = {
                 global.excludes = [ "**/vendor/**" ];
                 formatter.prettier = {
                   # TODO: Use settings.pluginSearchDirs
-                  options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then [ "--plugin-search-dir=${prettier-solidity}/lib" ] else [ ]);
+                  options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then
+                    [ "--plugin-search-dir=${prettier-solidity}/lib" ]
+                  else
+                    [ ]);
                   includes = [
                     "*.css"
                     "*.html"

@@ -1,14 +1,14 @@
-name: Deploy Site
+name: Deploy App
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'site/**'
+      - 'app/**'
   pull_request:
     paths:
-      - 'site/**'
+      - 'app/**'
   workflow_dispatch:
 
 concurrency:
@@ -43,8 +43,8 @@ jobs:
           nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
           nix-channel --update
 
-      - name: Build Site
-        run: nix build .#site
+      - name: Build App
+        run: nix build .#app
 
         # deploy to `https://union.build` when branch is main AND trigger is push OR workflow_dispatch
       - name: '[production] 🔶 Publish to Cloudflare Pages'
@@ -52,7 +52,7 @@ jobs:
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="site" --branch="main" deploy result
+        run: npx --yes wrangler@latest pages --project-name="app" --branch="main" deploy result
 
         # create preview deployment when trigger is workflow_dispatch && branch is not main
       - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
@@ -60,7 +60,7 @@ jobs:
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="site" deploy result
+        run: npx --yes wrangler@latest pages --project-name="app" deploy result
 
         # create preview deployment when trigger is pull_request, then post preview deployment url as a pr comment
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
@@ -68,14 +68,14 @@ jobs:
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="site" deploy result >> /tmp/site_deploy.txt
+        run: npx --yes wrangler@latest pages --project-name="app" deploy result >> /tmp/app_deploy.txt
 
       - name: Set Deploy Output
         if: github.event_name == 'pull_request'
         run: |
           {
             echo 'DEPLOY_OUTPUT<<EOF'
-            tail -n 2 /tmp/site_deploy.txt
+            tail -n 2 /tmp/app_deploy.txt
             echo 'EOF'
           } >> $GITHUB_ENV
 
@@ -89,7 +89,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const commentBody = `
-              <h1>Site/Docs 🤠</h1>
+              <h1>App 🤌</h1>
               ${process.env.DEPLOY_OUTPUT}
 
               **${process.env.LAST_UPDATED_AT}**

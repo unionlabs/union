@@ -48,3 +48,5 @@ bun.lockb
 .nfs*
 
 cache
+.eslintcache
+.prettiercache
