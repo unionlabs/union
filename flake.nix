@@ -128,6 +128,7 @@
         };
         build = inputs.nixpkgs.lib.filterAttrs isCi self.packages.x86_64-linux;
         test = inputs.nixpkgs.lib.filterAttrs isCi self.checks.x86_64-linux;
+        dev = inputs.nixpkgs.lib.filterAttrs isCi self.devShells.x86_64-linux;
       };
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
