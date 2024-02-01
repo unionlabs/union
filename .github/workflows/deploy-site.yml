@@ -92,7 +92,7 @@ jobs:
               <h1>Site/Docs 🤠</h1>
               ${process.env.DEPLOY_OUTPUT}
 
-              **`${process.env.LAST_UPDATED_AT}`**
+              **${process.env.LAST_UPDATED_AT}**
             `
             const prComments = await github.rest.issues.listComments({
               issue_number: context.issue.number,
