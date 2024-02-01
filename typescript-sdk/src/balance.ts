@@ -14,8 +14,8 @@ export async function getBalance(
 ): Promise<bigint> {
   if (!chainIds.includes(args.chainId))
     throw new Error(`Invalid chainId: ${args.chainId}`);
-  if (args.chainId === "32382") return  getBalanceOnUnion(args);
-  return  getBalanceOnEthereum(client, args);
+  if (args.chainId === "32382") return getBalanceOnUnion(args);
+  return getBalanceOnEthereum(client, args);
 }
 
 interface GetBalanceOnUnion {
