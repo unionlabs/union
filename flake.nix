@@ -74,6 +74,10 @@
       url = "github:CosmWasm/wasmvm/v1.5.0";
       flake = false;
     };
+    oxlint = {
+      url = "github:web-infra-dev/oxc/oxlint_v0.2.6";
+      flake = false;
+    };
 
     # uniond versions
     v0_14_0 = {
