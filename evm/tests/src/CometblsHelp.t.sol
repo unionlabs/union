@@ -21,13 +21,14 @@ contract CometblsHelpProxy {
         bytes memory message,
         bytes memory zkp
     ) public returns (bool) {
-        return CometblsHelp.verifyZKP(
-            verifier,
-            trustedValidatorsHash,
-            untrustedValidatorsHash,
-            message,
-            zkp
-        );
+        return
+            CometblsHelp.verifyZKP(
+                verifier,
+                trustedValidatorsHash,
+                untrustedValidatorsHash,
+                message,
+                zkp
+            );
     }
 
     function optimize(
