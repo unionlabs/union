@@ -138,7 +138,7 @@ jobs:
                   "union-runs",
                   "upgrade-from-genesis",
                   "upgrade-with-tokenfactory-state",
-                  "virtualisation-works",
+                  "virtualisation-works"
                 ]
               )
             ) | not
