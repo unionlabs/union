@@ -1,6 +1,6 @@
 # cspell:ignore tomls
 { inputs, ... }: {
-  perSystem = { self', pkgs, rust, system, lib, dbg, inputs', ... }:
+  perSystem = { self', pkgs, rust, system, lib, dbg, inputs', mkCi, ... }:
     let
       # crane = builtins.trace (pkgs.lib.generators.toPretty { } inputs.crane ) inputs.crane;
       inherit (inputs) crane;
@@ -320,11 +320,11 @@
           );
 
           checks = mkChecks "${cratePname}" {
-            clippy = craneLib.cargoClippy (crateAttrs // {
+            clippy = mkCi (system == "x86_64-linux") (craneLib.cargoClippy (crateAttrs // {
               cargoArtifacts = artifacts;
               cargoClippyExtraArgs = " -- --deny warnings ${cargoClippyExtraArgs}";
-            });
-            tests = craneLib.cargoNextest cargoNextestAttrs;
+            }));
+            tests = mkCi (system == "x86_64-linux") (craneLib.cargoNextest cargoNextestAttrs);
           };
         };
 

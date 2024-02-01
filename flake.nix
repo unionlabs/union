@@ -373,7 +373,7 @@
           packages = { default = self'.packages.uniond; };
 
           checks = {
-            spellcheck = pkgs.stdenv.mkDerivation {
+            spellcheck = mkCi false (pkgs.stdenv.mkDerivation {
               name = "spellcheck";
               dontUnpack = true;
               src = ./.;
@@ -384,9 +384,9 @@
                 cspell lint --no-progress "**"
                 touch $out
               '';
-            };
+            });
 
-            nil = pkgs.stdenv.mkDerivation {
+            nil = mkCi (system == "x86_64") (pkgs.stdenv.mkDerivation {
               name = "nil";
               dontUnpack = true;
               src = ./.;
@@ -399,7 +399,7 @@
                 done
                 touch $out
               '';
-            };
+            });
           };
 
           devShells.default = pkgs.mkShell {

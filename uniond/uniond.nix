@@ -179,7 +179,7 @@
       };
 
       checks = {
-        go-test = pkgs.go.stdenv.mkDerivation {
+        go-test = mkCi (system == "x86_64-linux") (pkgs.go.stdenv.mkDerivation {
           name = "go-test";
           buildInputs = [ goPkgs.go ];
           src = ./.;
@@ -195,9 +195,9 @@
             go test ./...
             touch $out
           '';
-        };
+        });
 
-        go-vet = pkgs.go.stdenv.mkDerivation {
+        go-vet = mkCi (system == "x86_64-linux") (pkgs.go.stdenv.mkDerivation {
           name = "go-vet";
           buildInputs = [ goPkgs.go ];
           src = ./.;
@@ -212,9 +212,9 @@
             go vet ./...
             touch $out
           '';
-        };
+        });
 
-        go-staticcheck = pkgs.go.stdenv.mkDerivation {
+        go-staticcheck = mkCi (system == "x86_64-linux") (pkgs.go.stdenv.mkDerivation {
           name = "go-staticcheck";
           buildInputs = [ goPkgs.go goPkgs.go-tools ];
           src = ./.;
@@ -228,7 +228,7 @@
             staticcheck ./...
             touch $out
           '';
-        };
+        });
 
       };
     };

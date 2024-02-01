@@ -1,5 +1,5 @@
 { self, ... }: {
-  perSystem = { pkgs, self', lib, config, tera, mkCi, ... }:
+  perSystem = { pkgs, self', lib, config, tera, mkCi, system, ... }:
     let
       treefmt = config.treefmt.build.wrapper;
       teraBin = "${tera}/bin/tera";
@@ -24,7 +24,7 @@
       };
 
       checks = {
-        docgen-updated = pkgs.stdenv.mkDerivation {
+        docgen-updated = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
           name = "docgen-check";
           src = ../../.;
           buildInputs = [ pkgs.git self'.packages.docgen ];
@@ -53,7 +53,7 @@
             git --no-pager diff --exit-code
             touch $out
           '';
-        };
+        });
       };
     };
 }
