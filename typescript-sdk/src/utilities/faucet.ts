@@ -3,7 +3,7 @@ import { UNION_GRAPHQL_API } from "#/constants";
 
 export async function getUnoFromFaucet({ address }: { address: string }) {
   const response = await fetcher<
-    | { data: { union: { send: null } } }
+    | { data: { union: { send: undefined } } }
     | {
         errors: Array<{
           message: string;

@@ -42,7 +42,6 @@ fuzzing-code-coverage
 *.wasm
 _
 bun.lockb
-.astro
 ._*
 .wrangler
 .nfs*
@@ -50,3 +49,5 @@ bun.lockb
 cache
 
 uniond
+
+./site/src/lib/rehype-file-tree.ts
