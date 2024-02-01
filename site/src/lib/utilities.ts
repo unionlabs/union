@@ -19,5 +19,5 @@ export const generateRandomNumber = (min: number, max: number) =>
 export async function getFileContent({ filepath }: { filepath: string }) {
   const file = path.resolve(__dirname, filepath);
   if (!fs.stat(file)) throw new Error(`File not found: ${file}`);
-  return  fs.readFile(file, { encoding: "utf8" });
+  return fs.readFile(file, { encoding: "utf8" });
 }
