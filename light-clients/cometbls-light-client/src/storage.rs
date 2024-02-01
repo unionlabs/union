@@ -128,8 +128,6 @@ pub fn consensus_state_iterator_key(height: Height) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use std::cmp::Ordering;
-
     use cosmwasm_std::{testing::mock_dependencies, Storage};
 
     use super::*;
@@ -309,21 +307,7 @@ mod tests {
             );
         });
 
-        unordered_heights.sort_by(|lhs, rhs| {
-            if lhs.0 > rhs.0 {
-                Ordering::Greater
-            } else if lhs.0 < rhs.0 {
-                Ordering::Less
-            } else {
-                if lhs.1 > rhs.1 {
-                    Ordering::Greater
-                } else if lhs.1 < rhs.1 {
-                    Ordering::Less
-                } else {
-                    Ordering::Equal
-                }
-            }
-        });
+        unordered_heights.sort();
 
         deps.storage
             .range(None, None, cosmwasm_std::Order::Ascending)

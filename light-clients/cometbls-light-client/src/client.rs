@@ -534,13 +534,13 @@ mod tests {
     #[test]
     fn is_client_expired_works() {
         // expires when a + b < c
-        assert_eq!(is_client_expired(1, 1, 10), true);
-        assert_eq!(is_client_expired(1, 10, 10), false);
-        assert_eq!(is_client_expired(10, 1, 10), false);
+        assert!(is_client_expired(1, 1, 10));
+        assert!(!is_client_expired(1, 10, 10));
+        assert!(!is_client_expired(10, 1, 10));
         // expires when a + b = c
-        assert_eq!(is_client_expired(5, 5, 10), false);
+        assert!(!is_client_expired(5, 5, 10));
         // expires when a + b overflows
-        assert_eq!(is_client_expired(u64::MAX, 5, 10), true);
+        assert!(is_client_expired(u64::MAX, 5, 10));
     }
 
     // TODO: avoid using the zkp verifier for this tests as we already test it
@@ -577,11 +577,11 @@ mod tests {
                     .unwrap(),
             );
 
-            assert_eq!(
-                MockLightClient::check_for_misbehaviour_on_header(deps.as_ref(), update.clone())
-                    .unwrap(),
-                false
-            );
+            assert!(!MockLightClient::check_for_misbehaviour_on_header(
+                deps.as_ref(),
+                update.clone()
+            )
+            .unwrap());
             MockLightClient::verify_header(deps.as_ref(), env.clone(), update.clone()).unwrap();
             MockLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
 
@@ -766,7 +766,7 @@ mod tests {
 
         assert_eq!(
             MockLightClient::status(deps.as_ref(), &env),
-            Ok(Status::Active.into())
+            Ok(Status::Active)
         );
     }
 
@@ -782,7 +782,7 @@ mod tests {
 
         assert_eq!(
             MockLightClient::status(deps.as_ref(), &mock_env()),
-            Ok(Status::Expired.into())
+            Ok(Status::Expired)
         );
     }
 
@@ -811,7 +811,7 @@ mod tests {
 
         assert_eq!(
             MockLightClient::status(deps.as_ref(), &env),
-            Ok(Status::Expired.into())
+            Ok(Status::Expired)
         );
     }
 
@@ -829,7 +829,7 @@ mod tests {
 
         assert_eq!(
             MockLightClient::status(deps.as_ref(), &mock_env()),
-            Ok(Status::Frozen.into()),
+            Ok(Status::Frozen),
         );
     }
 }
