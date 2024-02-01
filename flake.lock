@@ -394,6 +394,23 @@
         "type": "github"
       }
     },
+    "oxlint": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1706279735,
+        "narHash": "sha256-J4QDhb3C4ioJyD3345hyNRHsGyiJWuCxZ77auCg8joQ=",
+        "owner": "web-infra-dev",
+        "repo": "oxc",
+        "rev": "1b5bbb954c53b0461c2e1eebe56d8a1e60d745e7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "web-infra-dev",
+        "ref": "oxlint_v0.2.6",
+        "repo": "oxc",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "arion": "arion",
@@ -411,6 +428,7 @@
         "nixpkgs": "nixpkgs",
         "nixpkgs-go": "nixpkgs-go",
         "nixpkgs-solc": "nixpkgs-solc",
+        "oxlint": "oxlint",
         "rust-overlay": "rust-overlay_2",
         "treefmt-nix": "treefmt-nix",
         "v0_14_0": "v0_14_0",
@@ -419,8 +437,7 @@
         "v0_17_0": "v0_17_0",
         "v0_18_0": "v0_18_0",
         "wasmd": "wasmd",
-        "wasmvm_1_3_0": "wasmvm_1_3_0",
-        "wasmvm_1_5_0": "wasmvm_1_5_0"
+        "wasmvm": "wasmvm"
       }
     },
     "rust-overlay": {
@@ -655,24 +672,7 @@
         "type": "github"
       }
     },
-    "wasmvm_1_3_0": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1689589428,
-        "narHash": "sha256-rsTYvbkYpDkUE4IvILdSL3hXMgAWxz5ltGotJB2t1e4=",
-        "owner": "CosmWasm",
-        "repo": "wasmvm",
-        "rev": "71a9c0dc0ecf9623148e82facb3564fbbf0a896f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "CosmWasm",
-        "ref": "v1.3.0",
-        "repo": "wasmvm",
-        "type": "github"
-      }
-    },
-    "wasmvm_1_5_0": {
+    "wasmvm": {
       "flake": false,
       "locked": {
         "lastModified": 1698746477,
