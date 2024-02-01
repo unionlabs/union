@@ -20,6 +20,8 @@ jobs:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
+      eval_target: 'spell-fmt'
+      eval_top_attr: 'checks'
       filter_builds: |
         (
           (.top_attr == "checks") and
@@ -46,6 +48,8 @@ jobs:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
+      eval_target: 'build'
+      eval_top_attr: 'packages'
       filter_builds: |
         (
           (.top_attr == "packages" or .top_attr == "devShells") and
@@ -117,6 +121,8 @@ jobs:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
+      eval_target: 'test'
+      eval_top_attr: 'checks'
       filter_builds: |
         (
           (.top_attr == "checks") and
