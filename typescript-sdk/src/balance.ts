@@ -43,7 +43,7 @@ async function getBalanceOnEthereum(
   client: UnionClient,
   { address, assetId }: GetBalanceOnEthereum
 ): Promise<bigint> {
-  return  client.readContract({
+  return client.readContract({
     abi: erc20Abi,
     functionName: "balanceOf",
     address: assetId,
