@@ -78,6 +78,7 @@ Parameterizable
 Paramspace
 Partset
 Patchelf
+Pedersen
 Phasellus
 PoisonPhang
 Polkadot
@@ -567,6 +568,7 @@ paren
 partset
 passthru
 patchelf
+pedersen
 permissioned
 permissionless
 pflag

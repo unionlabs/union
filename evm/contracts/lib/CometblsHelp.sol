@@ -59,13 +59,24 @@ library CometblsHelp {
         bytes memory message,
         bytes memory zkp
     ) internal returns (bool) {
-        uint256 hashedMessage = hashToField(message);
-
         (
             uint256[8] memory proof,
-            uint256 commitmentHash,
-            uint256[2] memory proofCommitment
-        ) = abi.decode(zkp, (uint256[8], uint256, uint256[2]));
+            uint256[2] memory proofCommitment,
+            uint256[2] memory proofCommitmentPOK
+        ) = abi.decode(zkp, (uint256[8], uint256[2], uint256[2]));
+
+        if (
+            !verifier.verifyProofCommitmentPOK(
+                proofCommitment,
+                proofCommitmentPOK
+            )
+        ) {
+            return false;
+        }
+
+        uint256 commitmentHash = hashToField(abi.encodePacked(proofCommitment));
+
+        uint256 hashedMessage = hashToField(message);
 
         uint256[4] memory inputs = [
             uint256(trustedValidatorsHash),

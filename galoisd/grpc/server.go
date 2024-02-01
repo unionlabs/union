@@ -17,9 +17,8 @@ import (
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bn254"
-	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/consensys/gnark-crypto/utils"
+	backend_opts "github.com/consensys/gnark/backend"
 	backend "github.com/consensys/gnark/backend/groth16"
 	backend_bn254 "github.com/consensys/gnark/backend/groth16/bn254"
 	"github.com/consensys/gnark/constraint"
@@ -47,6 +46,33 @@ type proverServer struct {
 	maxJobs uint32
 	nbJobs  atomic.Uint32
 	results sync.Map
+}
+
+type cometblsHashToField struct {
+	data []byte
+}
+
+func (c *cometblsHashToField) Write(p []byte) (n int, err error) {
+	c.data = append(c.data, p...)
+	return len(p), nil
+}
+
+func (c *cometblsHashToField) Sum(b []byte) []byte {
+	e := cometbn254.HashToField(c.data)
+	eB := e.Bytes()
+	return append(b, eB[:]...)
+}
+
+func (c *cometblsHashToField) Reset() {
+	c.data = []byte{}
+}
+
+func (c *cometblsHashToField) Size() int {
+	return fr.Bytes
+}
+
+func (c *cometblsHashToField) BlockSize() int {
+	return fr.Bytes
 }
 
 func (*proverServer) mustEmbedUnimplementedUnionProverAPIServer() {}
@@ -90,13 +116,13 @@ func MarshalValidators(validators []*types.SimpleValidator) ([lightclient.MaxVal
 	return lcValidators, merkle.MimcHashFromByteSlices(merkleTree), nil
 }
 
-func AggregateSignatures(signatures [][]byte) (curve.G2Affine, error) {
-	var aggregatedSignature curve.G2Affine
-	var decompressedSignature curve.G2Affine
+func AggregateSignatures(signatures [][]byte) (bn254.G2Affine, error) {
+	var aggregatedSignature bn254.G2Affine
+	var decompressedSignature bn254.G2Affine
 	for _, signature := range signatures {
 		_, err := decompressedSignature.SetBytes(signature)
 		if err != nil {
-			return curve.G2Affine{}, fmt.Errorf("Could not decompress signature %s", err)
+			return bn254.G2Affine{}, fmt.Errorf("Could not decompress signature %s", err)
 		}
 		aggregatedSignature.Add(&aggregatedSignature, &decompressedSignature)
 	}
@@ -186,7 +212,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 		logger.Logger().Level(zerolog.TraceLevel)
 
 		log.Println("Executing proving backend...")
-		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness)
+		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness, backend_opts.WithProverHashToFieldFunction(&cometblsHashToField{}))
 		if err != nil {
 			return nil, fmt.Errorf("Prover failed with %s", err)
 		}
@@ -196,36 +222,15 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			return nil, fmt.Errorf("Could not extract public inputs from witness %s", err)
 		}
 
-		// F_r element
-		var commitmentHash []byte
-		// G1 uncompressed
 		var proofCommitment []byte
-		// Ugly but https://github.com/ConsenSys/gnark/issues/652
+		var commitmentPOK []byte
 		switch _proof := proof.(type) {
 		case *backend_bn254.Proof:
 			if len(p.vk.PublicAndCommitmentCommitted) != 1 {
 				return nil, fmt.Errorf("Expected a single proof commitment, got: %d", len(p.vk.PublicAndCommitmentCommitted))
 			}
-			witnesses := publicWitness.Vector().(fr.Vector)
-			maxNbPublicCommitted := 0
-			for _, s := range p.vk.PublicAndCommitmentCommitted {
-				maxNbPublicCommitted = utils.Max(maxNbPublicCommitted, len(s))
-			}
-			commitmentPrehashSerialized := make([]byte, curve.SizeOfG1AffineUncompressed+maxNbPublicCommitted*fr.Bytes)
-			for i := range p.vk.PublicAndCommitmentCommitted {
-				copy(commitmentPrehashSerialized, _proof.Commitments[i].Marshal())
-				offset := curve.SizeOfG1AffineUncompressed
-				for j := range p.vk.PublicAndCommitmentCommitted[i] {
-					copy(commitmentPrehashSerialized[offset:], witnesses[p.vk.PublicAndCommitmentCommitted[i][j]-1].Marshal())
-					offset += fr.Bytes
-				}
-				if res, err := fr.Hash(commitmentPrehashSerialized[:offset], []byte(constraint.CommitmentDst), 1); err != nil {
-					return nil, fmt.Errorf("Failed to hash commitment: %v", err)
-				} else {
-					commitmentHash = res[0].Marshal()
-				}
-			}
 			proofCommitment = _proof.Commitments[0].Marshal()
+			commitmentPOK = _proof.CommitmentPok.Marshal()
 			break
 		default:
 			return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
@@ -255,9 +260,9 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 		compressedProofBz := compressedProofBuffer.Bytes()
 
 		// Due to how gnark proves, we not only need the ZKP A/B/C points, but also a commitment hash and proof commitment.
-		// The proof is an uncompressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment hash and commitment proof from the public inputs.
+		// The proof is an uncompressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment and its POK.
 		// The EVM verifier has been extended to support this two extra public inputs.
-		evmProof := append(append(proofBz[:256], commitmentHash...), proofCommitment...)
+		evmProof := append(append(proofBz[:256], proofCommitment...), commitmentPOK...)
 
 		proveRes := grpc.ProveResponse{
 			Proof: &grpc.ZeroKnowledgeProof{
@@ -532,6 +537,16 @@ func loadOrCreate(r1csPath string, pkPath string, vkPath string) (cs_bn254.R1CS,
 				log.Printf("VK Delta X1: %v", vk.G2.Delta.X.A1.String())
 				log.Printf("VK Delta Y0: %v", vk.G2.Delta.Y.A0.String())
 				log.Printf("VK Delta Y1: %v", vk.G2.Delta.Y.A1.String())
+				var commitmentKeyBytes bytes.Buffer
+				mem := bufio.NewWriter(&commitmentKeyBytes)
+				_, err = vk.CommitmentKey.WriteRawTo(mem)
+				if err != nil {
+					return cs, pk, vk, err
+				}
+				mem.Flush()
+				commitmentKey := commitmentKeyBytes.Bytes()
+				log.Printf("Pedersen commitment key: %X", commitmentKey)
+				log.Printf("Public committed: %v", vk.PublicAndCommitmentCommitted)
 
 				return cs, pk, vk, nil
 			}

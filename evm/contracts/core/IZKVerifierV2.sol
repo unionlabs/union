@@ -6,4 +6,9 @@ interface IZKVerifierV2 {
         uint256[2] calldata proofCommitment,
         uint256[4] calldata input
     ) external returns (bool);
+
+    function verifyProofCommitmentPOK(
+        uint256[2] calldata proofCommitment,
+        uint256[2] calldata proofCommitmentPOK
+    ) external returns (bool);
 }
