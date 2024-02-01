@@ -14,8 +14,8 @@ export async function getBalance(
 ): Promise<bigint> {
   if (!chainIds.includes(args.chainId))
     throw new Error(`Invalid chainId: ${args.chainId}`);
-  if (args.chainId === "32382") return await getBalanceOnUnion(args);
-  return await getBalanceOnEthereum(client, args);
+  if (args.chainId === "32382") return getBalanceOnUnion(args);
+  return getBalanceOnEthereum(client, args);
 }
 
 interface GetBalanceOnUnion {
@@ -43,7 +43,7 @@ async function getBalanceOnEthereum(
   client: UnionClient,
   { address, assetId }: GetBalanceOnEthereum
 ): Promise<bigint> {
-  return await client.readContract({
+  return client.readContract({
     abi: erc20Abi,
     functionName: "balanceOf",
     address: assetId,
