@@ -73,20 +73,15 @@ jobs:
                   "generate-prover-proto",
                   "generate-rust-proto",
                   "gen-proto",
-                  "githook",
                   "go-vendor",
                   "rust-proto",
-                  "site-static",
-                  "site-server",
                   "voyager-queue",
                   "sqlx-cli",
                   "fetchRustStdCargoLock",
                   "fetch-membership-data",
                   "gen-eth-lc-update-test-data",
-                  "impure-site-deploy",
                   "rust-sol-bindings",
                   "vendor-tools",
-                  "impure-site-deploy",
                   "generate-rust-sol-bindings"
                 ]
               )
@@ -144,7 +139,6 @@ jobs:
                   "upgrade-from-genesis",
                   "upgrade-with-tokenfactory-state",
                   "virtualisation-works",
-                  "voyager-queue"
                 ]
               )
             ) | not
