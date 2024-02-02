@@ -6,10 +6,10 @@ use core::{marker::PhantomData, ops::AddAssign};
 
 use ark_ec::{
     pairing::{Pairing, PairingOutput},
-    AffineRepr,
+    AffineRepr, CurveGroup,
 };
-use ark_ff::{vec, vec::Vec, BigInt, One, PrimeField, QuadExtField};
-use ark_groth16::{Groth16, Proof, VerifyingKey};
+use ark_ff::{vec, vec::Vec, BigInt, PrimeField, QuadExtField};
+use ark_groth16::{PreparedVerifyingKey, Proof, VerifyingKey};
 use ark_relations::r1cs::SynthesisError;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
@@ -289,30 +289,15 @@ pub fn verify_zkp(
     )
 }
 
-// Verify the pedersen commitment
-// Symmetric to https://github.com/Consensys/gnark-crypto/blob/2e4aaaaefdbfdf06515663986ed884fed1b2177e/ecc/bn254/fr/pedersen/pedersen.go#L212-L224
-fn verify_pedersen_commitment_pok<P: Pairing>(
-    g: &P::G2Affine,
-    g_root_sigma_neg: &P::G2Affine,
-    zkp: &ZKP<BigEndian, P>,
-) -> Result<U256, Error> {
-    let PairingOutput(fe) = P::final_exponentiation(P::multi_miller_loop(
-        [zkp.proof_commitment, zkp.proof_commitment_pok],
-        [g, g_root_sigma_neg],
-    ))
-    .ok_or(Error::InvalidCommitmentPOK)?;
-    if fe == P::TargetField::one() {
-        let mut buffer = [0u8; 64];
-        zkp.proof_commitment
-            .serialize_uncompressed(&mut buffer[..])
-            .map_err(|_| Error::InvalidCommitment)?;
-        // arkworks is little endian, gnark is big endian
-        buffer[0..32].reverse();
-        buffer[32..64].reverse();
-        Ok(hash_to_field(&buffer))
-    } else {
-        Err(Error::InvalidCommitmentPOK)
-    }
+fn hash_commitment<P: Pairing>(proof_commitment: &P::G1Affine) -> Result<U256, Error> {
+    let mut buffer = [0u8; 64];
+    proof_commitment
+        .serialize_uncompressed(&mut buffer[..])
+        .map_err(|_| Error::InvalidCommitment)?;
+    // arkworks is little endian, gnark is big endian
+    buffer[0..32].reverse();
+    buffer[32..64].reverse();
+    Ok(hash_to_field(&buffer))
 }
 
 fn verify_generic_zkp<P: Pairing>(
@@ -332,7 +317,7 @@ fn verify_generic_zkp<P: Pairing>(
         <P::ScalarField as PrimeField>::from_bigint(value).ok_or(Error::InvalidPublicInput)
     };
 
-    let commitment_hash = verify_pedersen_commitment_pok(g, g_root_sigma_neg, &zkp)?;
+    let commitment_hash = hash_commitment::<P>(&zkp.proof_commitment)?;
 
     let hashed_message = hash_to_field(message);
 
@@ -358,15 +343,35 @@ fn verify_generic_zkp<P: Pairing>(
         prepared_inputs.add_assign(&b.mul_bigint(i.into_bigint()));
     }
 
-    Groth16::<P>::verify_proof_with_prepared_inputs(&vk.into(), &zkp.proof, &prepared_inputs)
-        .map_err(Error::InvalidProof)
-        .and_then(|v| {
-            if v {
-                Ok(())
-            } else {
-                Err(Error::InvalidProof(SynthesisError::UnexpectedIdentity))
-            }
-        })
+    let pvk = PreparedVerifyingKey::from(vk);
+
+    // Verify both the pedersen commitment and the zkp
+    let PairingOutput(result) = P::final_exponentiation(P::multi_miller_loop(
+        [
+            <P::G1Affine as Into<P::G1Prepared>>::into(zkp.proof.a),
+            prepared_inputs.into_affine().into(),
+            zkp.proof.c.into(),
+            // Pedersen commitment proof of knowledge
+            // Symmetric to https://github.com/Consensys/gnark-crypto/blob/2e4aaaaefdbfdf06515663986ed884fed1b2177e/ecc/bn254/fr/pedersen/pedersen.go#L212-L224
+            zkp.proof_commitment.into(),
+            zkp.proof_commitment_pok.into(),
+        ],
+        [
+            zkp.proof.b.into(),
+            pvk.gamma_g2_neg_pc,
+            pvk.delta_g2_neg_pc,
+            // Pedersen key
+            g.into(),
+            g_root_sigma_neg.into(),
+        ],
+    ))
+    .ok_or(Error::InvalidProof(SynthesisError::UnexpectedIdentity))?;
+
+    if result == pvk.alpha_g1_beta_g2 {
+        Ok(())
+    } else {
+        Err(Error::InvalidProof(SynthesisError::UnexpectedIdentity))
+    }
 }
 
 #[cfg(test)]
