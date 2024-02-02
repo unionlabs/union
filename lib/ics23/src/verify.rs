@@ -239,7 +239,10 @@ fn is_left_most(spec: &InnerSpec, path: &[InnerOp]) -> Result<bool, NeighborSear
 
 /// returns true if the padding bytes correspond to all empty siblings
 /// on the right side of a branch, ie. it's a valid placeholder on a rightmost path
-fn right_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, NeighborSearchError> {
+pub fn right_branches_are_empty(
+    spec: &InnerSpec,
+    op: &InnerOp,
+) -> Result<bool, NeighborSearchError> {
     let idx = order_from_padding(spec, op)?;
 
     let right_branches = spec.child_order.len() - 1 - idx;
@@ -269,7 +272,10 @@ fn right_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, Neig
 
 /// returns true if the padding bytes correspond to all empty siblings
 /// on the left side of a branch, ie. it's a valid placeholder on a leftmost path
-fn left_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, NeighborSearchError> {
+pub fn left_branches_are_empty(
+    spec: &InnerSpec,
+    op: &InnerOp,
+) -> Result<bool, NeighborSearchError> {
     let left_branches = order_from_padding(spec, op)?;
 
     if left_branches == 0 {

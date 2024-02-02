@@ -3,14 +3,19 @@ use std::{collections::HashMap, fmt::Display, fs, path::PathBuf};
 use anyhow::{bail, Context};
 use ics23::{
     existence_proof::{self, calculate_root},
-    ops::{hash_op, inner_op, leaf_op},
+    ops::{hash_op, inner_op, inner_op::check_against_spec, leaf_op},
     proof_specs::{IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC},
-    verify::{verify_membership, verify_non_membership},
+    verify::{
+        left_branches_are_empty, right_branches_are_empty, verify_membership, verify_non_membership,
+    },
 };
 use protos::cosmos::ics23::v1::InnerSpec;
 use serde::{de::DeserializeOwned, Deserialize};
 use unionlabs::{
-    cosmos::ics23::{commitment_proof::CommitmentProof, hash_op::HashOp, proof_spec::ProofSpec},
+    cosmos::ics23::{
+        commitment_proof::CommitmentProof, hash_op::HashOp, inner_op::InnerOp,
+        proof_spec::ProofSpec,
+    },
     TryFromProto,
 };
 
@@ -27,6 +32,10 @@ fn suite() -> anyhow::Result<()> {
     // run_test_cases::<TestCheckAgainstSpecData>(
     //     testdata_dir.join("TestCheckAgainstSpecData.json"),
     // )?;
+    run_test_cases_in_array::<TestEmptyBranchData>(
+        testdata_dir.join("TestEmptyBranchData.json"),
+        "test empty branch data",
+    )?;
 
     run_vector_tests(testdata_dir)?;
 
@@ -38,6 +47,18 @@ fn run_test_cases<T: TestCase>(p: PathBuf) -> Result<(), anyhow::Error> {
 
     for (case, t) in json {
         eprint!("{case}... ");
+        t.run()?;
+        eprintln!("ok");
+    }
+
+    Ok(())
+}
+
+fn run_test_cases_in_array<T: TestCase>(p: PathBuf, name: &str) -> Result<(), anyhow::Error> {
+    let json = read_json::<Vec<T>>(p);
+
+    for (case, t) in json.into_iter().enumerate() {
+        eprint!("{name}[{case}]... ");
         t.run()?;
         eprintln!("ok");
     }
@@ -315,6 +336,60 @@ impl TestCase for TestCheckAgainstSpecData {
                 if !self.is_err {
                     bail!("Unexpected errors: {err1:?}, {err2:?}")
                 }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct TestEmptyBranchData {
+    op: protos::cosmos::ics23::v1::InnerOp,
+    spec: protos::cosmos::ics23::v1::ProofSpec,
+    is_left: bool,
+    is_right: bool,
+}
+
+impl TestCase for TestEmptyBranchData {
+    fn run(self) -> anyhow::Result<()> {
+        match (InnerOp::try_from(self.op), ProofSpec::try_from(self.spec)) {
+            (Ok(op), Ok(spec)) => {
+                match check_against_spec(&op, &spec, 1) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        bail!("Invalid InnerOp: {err:?}")
+                    }
+                }
+
+                match left_branches_are_empty(&spec.inner_spec, &op) {
+                    Ok(empty) => {
+                        // TODO: This fails, but only with in the first test
+                        assert_eq!(empty, self.is_left)
+                    }
+                    Err(err) => {
+                        bail!("Left branches empty check failed: {err:?}")
+                    }
+                }
+
+                match right_branches_are_empty(&spec.inner_spec, &op) {
+                    Ok(empty) => {
+                        assert_eq!(empty, self.is_right)
+                    }
+                    Err(err) => {
+                        bail!("Right branches empty check failed: {err:?}")
+                    }
+                }
+            }
+            (Ok(_), Err(err)) => {
+                bail!("Unexpected error (ProofSpec): {err:?}")
+            }
+            (Err(err), Ok(_)) => {
+                bail!("Unexpected error (Op): {err:?}")
+            }
+            (Err(err1), Err(err2)) => {
+                bail!("Unexpected errors (Op): {err1:?}, (ProofSpec): {err2:?}")
             }
         }
 
