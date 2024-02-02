@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, rust, system, ensureAtRepositoryRoot, mkCi,... }:
+  perSystem = { pkgs, self', crane, rust, system, ensureAtRepositoryRoot, mkCi, ... }:
     let
       cargo-fuzz = crane.lib.buildPackage {
         name = "cargo-fuzz";
