@@ -121,6 +121,7 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       flake =
         let
+          inherit (inputs.nixpkgs.lib) filterAttrs;
           isCi = attr: v: (if v?ci then v.ci else true);
         in
         {
@@ -132,16 +133,16 @@
             aarch64-linux = { };
           };
           build = {
-            x86_64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.packages.x86_64-linux;
-            aarch64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.packages.aarch64-linux;
+            x86_64-linux = filterAttrs isCi self.packages.x86_64-linux;
+            aarch64-linux = filterAttrs isCi self.packages.aarch64-linux;
           };
           test = {
-            x86_64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.checks.x86_64-linux;
-            aarch64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.checks.aarch64-linux;
+            x86_64-linux = filterAttrs isCi self.checks.x86_64-linux;
+            aarch64-linux = filterAttrs isCi self.checks.aarch64-linux;
           };
           dev = {
-            x86_64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.devShells.x86_64-linux;
-            aarch64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.devShells.aarch64-linux;
+            x86_64-linux = filterAttrs isCi self.devShells.x86_64-linux;
+            aarch64-linux = filterAttrs isCi self.devShells.aarch64-linux;
           };
         };
       systems =
