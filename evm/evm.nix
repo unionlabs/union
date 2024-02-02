@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, nix-filter, ensureAtRepositoryRoot, ... }:
+  perSystem = { self', pkgs, proto, nix-filter, ensureAtRepositoryRoot, system, mkCi, ... }:
     let
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
@@ -144,7 +144,7 @@
       '';
 
       deploy-ibc-contracts = { network, rpc-url, private-key }:
-        pkgs.writeShellApplication {
+        mkCi false (pkgs.writeShellApplication {
           name = "eth-${network}-deploy";
           runtimeInputs = [ pkgs.jq wrappedForge ];
           # Sadly, forge is trying to write back the cache file even if no change is needed :).
@@ -173,9 +173,9 @@
 
             rm -rf "$OUT"
           '';
-        };
+        });
 
-      deploy-ping-pong = { network, rpc-url, private-key, ... }: pkgs.writeShellApplication {
+      deploy-ping-pong = { network, rpc-url, private-key, ... }: mkCi false (pkgs.writeShellApplication {
         name = "evm-${network}-ping-pong-deploy";
         runtimeInputs = [ pkgs.jq wrappedForge ];
         text = ''
@@ -193,9 +193,9 @@
 
           rm -rf "$OUT"
         '';
-      };
+      });
 
-      deploy-ucs01 = { network, rpc-url, private-key, ... }: pkgs.writeShellApplication {
+      deploy-ucs01 = { network, rpc-url, private-key, ... }: mkCi false (pkgs.writeShellApplication {
         name = "evm-${network}-ucs01";
         runtimeInputs = [ pkgs.jq wrappedForge ];
         text = ''
@@ -213,12 +213,12 @@
 
           rm -rf "$OUT"
         '';
-      };
+      });
     in
     {
       packages = {
         # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
-        generate-sol-proto = pkgs.writeShellApplication {
+        generate-sol-proto = mkCi false (pkgs.writeShellApplication {
           name = "generate-sol-proto";
           runtimeInputs = [ pkgs.protobuf ];
           text =
@@ -277,9 +277,9 @@
                   "$file"
               done
             '';
-        };
+        });
 
-        evm-contracts = pkgs.stdenv.mkDerivation {
+        evm-contracts = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
           name = "evm-contracts";
           src = evmSources;
           buildInputs = [ wrappedForge ];
@@ -296,9 +296,9 @@
             mv out $out
             mv cache $out
           '';
-        };
+        });
 
-        external-evm-contracts = pkgs.stdenv.mkDerivation {
+        external-evm-contracts = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
           name = "external-evm-contracts";
           src = "${openzeppelin}/contracts/token/ERC20";
           buildInputs = [ wrappedForge ];
@@ -313,7 +313,7 @@
             mv out $out
             mv cache $out
           '';
-        };
+        });
 
         # NOTE: currently unable to build the tests with coverage, tried many different combination of the optimizer though...
         # solidity-coverage =

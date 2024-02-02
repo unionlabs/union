@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, crane, system, config, ensureAtRepositoryRoot, ... }:
+  perSystem = { self', pkgs, proto, crane, system, config, ensureAtRepositoryRoot, mkCi, ... }:
     let
       protoc-gen-tonic = crane.lib.buildPackage {
         pname = "protoc-gen-tonic";
@@ -350,9 +350,9 @@
       };
     in
     {
-      packages.rust-proto = rust-proto;
+      packages.rust-proto = mkCi false rust-proto;
 
-      packages.generate-rust-proto = pkgs.writeShellApplication {
+      packages.generate-rust-proto = mkCi false (pkgs.writeShellApplication {
         name = "generate-rust-proto";
         runtimeInputs = [ rust-proto pkgs.rsync ];
         text = ''
@@ -366,6 +366,6 @@
 
           echo "Generation successful!"
         '';
-      };
+      });
     };
 }

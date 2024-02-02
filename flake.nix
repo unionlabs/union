@@ -119,6 +119,32 @@
     , ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
+      flake =
+        let
+          inherit (inputs.nixpkgs.lib) filterAttrs;
+          isCi = attr: v: (if v?ci then v.ci else true);
+        in
+        {
+          spell-fmt = {
+            x86_64-linux = {
+              spellcheck = self.checks.x86_64-linux.spellcheck;
+              treefmt = self.checks.x86_64-linux.treefmt;
+            };
+            aarch64-linux = { };
+          };
+          build = {
+            x86_64-linux = filterAttrs isCi self.packages.x86_64-linux;
+            aarch64-linux = filterAttrs isCi self.packages.aarch64-linux;
+          };
+          test = {
+            x86_64-linux = filterAttrs isCi self.checks.x86_64-linux;
+            aarch64-linux = filterAttrs isCi self.checks.aarch64-linux;
+          };
+          dev = {
+            x86_64-linux = filterAttrs isCi self.devShells.x86_64-linux;
+            aarch64-linux = filterAttrs isCi self.devShells.aarch64-linux;
+          };
+        };
       systems =
         [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       imports = [
@@ -180,6 +206,7 @@
         , ...
         }:
         let
+          mkCi = import ./tools/mkCi.nix { inherit pkgs; };
           mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
           dbg = value:
             builtins.trace (pkgs.lib.generators.toPretty { } value) value;
@@ -197,7 +224,7 @@
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs;
+              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs mkCi;
 
               gitRev =
                 if (builtins.hasAttr "rev" self) then self.rev else "dirty";
@@ -344,7 +371,7 @@
           packages = { default = self'.packages.uniond; };
 
           checks = {
-            spellcheck = pkgs.stdenv.mkDerivation {
+            spellcheck = mkCi false (pkgs.stdenv.mkDerivation {
               name = "spellcheck";
               dontUnpack = true;
               src = ./.;
@@ -355,9 +382,9 @@
                 cspell lint --no-progress "**"
                 touch $out
               '';
-            };
+            });
 
-            nil = pkgs.stdenv.mkDerivation {
+            nil = mkCi (system == "x86_64") (pkgs.stdenv.mkDerivation {
               name = "nil";
               dontUnpack = true;
               src = ./.;
@@ -370,7 +397,7 @@
                 done
                 touch $out
               '';
-            };
+            });
           };
 
           devShells.default = pkgs.mkShell {

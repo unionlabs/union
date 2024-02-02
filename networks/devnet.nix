@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { devnetConfig, pkgs, lib, self', inputs', system, get-flake, ... }:
+  perSystem = { devnetConfig, pkgs, lib, self', inputs', system, get-flake, mkCi, ... }:
     let
       arion = inputs'.arion.packages.default;
 
@@ -130,49 +130,49 @@
     in
     {
       packages.devnet =
-        pkgs.writeShellApplication {
+        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
           name = "union-devnet";
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
-        };
+        });
 
       packages.devnet-simd =
-        pkgs.writeShellApplication {
+        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
           name = "simd-devnet";
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-simd} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
-        };
+        });
 
       packages.devnet-eth =
-        pkgs.writeShellApplication {
+        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
           name = "union-devnet-eth";
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-eth} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
-        };
+        });
 
       packages.devnet-union =
-        pkgs.writeShellApplication {
+        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
           name = "union-devnet-union";
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-union} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
-        };
+        });
 
       packages.voyager-queue =
-        pkgs.writeShellApplication {
+        mkCi false (pkgs.writeShellApplication {
           name = "postgres";
           runtimeInputs = [ arion ];
           text = ''
             arion --prebuilt-file ${build-voyager-queue} up --build --force-recreate -V --always-recreate-deps --remove-orphans
           '';
-        };
+        });
 
       _module.args.networks = {
         inherit devnet devnet-minimal union sepolia;

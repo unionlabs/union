@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, system, dbg, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, system, dbg, ensureAtRepositoryRoot, mkCi, ... }:
     let
       nightlyVersion = "2024-01-27";
       channel = "nightly-${nightlyVersion}";
@@ -75,7 +75,7 @@
     rec {
       packages.rust-home = _module.args.rust.toolchains.dev;
 
-      packages.fetchRustStdCargoLock = pkgs.writeShellApplication {
+      packages.fetchRustStdCargoLock = mkCi false (pkgs.writeShellApplication {
         name = "fetchRustStdCargoLock";
         runtimeInputs = [ pkgs.xz ];
         text = ''
@@ -91,7 +91,7 @@
 
           cp "$output"/rust-src-nightly/rust-src/lib/rustlib/src/rust/Cargo.lock tools/rust/rust-std-Cargo.lock
         '';
-      };
+      });
 
       _module.args.rust = {
         inherit mkBuildStdToolchain mkNightly rustSrc;

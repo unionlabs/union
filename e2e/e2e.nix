@@ -9,6 +9,7 @@
         nixos-lib.runTest {
           inherit name testScript nodes;
           hostPkgs = pkgs; # the Nixpkgs package set used outside the VMs
+          passthru = { ci = false; };
         };
 
 

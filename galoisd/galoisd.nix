@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', pkgs, proto, goPkgs, ensureAtRepositoryRoot, ... }: {
+  perSystem = { self', pkgs, proto, goPkgs, ensureAtRepositoryRoot, mkCi, ... }: {
     packages = {
       galoisd-coverage-show =
         pkgs.writeShellApplication {
@@ -51,7 +51,7 @@
         };
       };
 
-      generate-prover-proto = pkgs.writeShellApplication {
+      generate-prover-proto = mkCi false (pkgs.writeShellApplication {
         name = "generate-prover-proto";
         runtimeInputs =
           [ pkgs.protobuf pkgs.protoc-gen-go pkgs.protoc-gen-go-grpc ];
@@ -68,7 +68,7 @@
           "$file"
           done
         '';
-      };
+      });
 
       download-circuit =
         let
@@ -76,7 +76,7 @@
             /circuit.zip
           '';
         in
-        pkgs.writeShellApplication {
+        mkCi false (pkgs.writeShellApplication {
           name = "download-circuit";
           runtimeInputs = [ pkgs.rclone pkgs.zip ];
           text = ''
@@ -88,7 +88,7 @@
             unzip circuit.zip
             rm circuit.zip
           '';
-        };
+        });
     };
   };
 }
