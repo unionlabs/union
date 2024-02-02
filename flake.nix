@@ -129,6 +129,7 @@
               spellcheck = self.checks.x86_64-linux.spellcheck;
               treefmt = self.checks.x86_64-linux.treefmt;
             };
+            aarch64-linux = {};
           };
           build = {
             x86_64-linux = inputs.nixpkgs.lib.filterAttrs isCi self.packages.x86_64-linux;
