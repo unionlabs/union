@@ -1,0 +1,110 @@
+[
+  {
+    "attr": "spellcheck",
+    "attrPath": [
+      "spellcheck"
+    ],
+    "drvPath": "/nix/store/40cj6hc2bd1g57zpvsmn8yvrrzy810q4-spellcheck.drv",
+    "inputDrvs": {
+      "/nix/store/5lz9p8xhf89kb1c1kk6jxrzskaiygnlh-bash-5.2-p15.drv": [
+        "out"
+      ],
+      "/nix/store/pwqdr2z09gh50dxzdnba1vnwvbqpw062-cspell-6.31.1.drv": [
+        "out"
+      ],
+      "/nix/store/vvj5a1j1i1avp1ibm8gdcz2jz5gkkkvq-stdenv-linux.drv": [
+        "out"
+      ]
+    },
+    "isCached": false,
+    "name": "spellcheck",
+    "outputs": {
+      "out": "/nix/store/1qh4ra74c9i1pd8dgbafnnqx468mqkn7-spellcheck"
+    },
+    "system": "x86_64-linux",
+    "top_attr": "checks"
+  },
+  {
+    "attr": "treefmt",
+    "attrPath": [
+      "treefmt"
+    ],
+    "drvPath": "/nix/store/0r9v24bi1qhmz2mrcxfiirqapy3sakj3-treefmt-check.drv",
+    "inputDrvs": {
+      "/nix/store/4clcjwrqrabh0is5q4fc2j261nh2v2sq-treefmt.drv": [
+        "out"
+      ],
+      "/nix/store/5lz9p8xhf89kb1c1kk6jxrzskaiygnlh-bash-5.2-p15.drv": [
+        "out"
+      ],
+      "/nix/store/i9d59jji7vvm13a0d1s0a1r98c1vz9vl-git-2.40.1.drv": [
+        "out"
+      ],
+      "/nix/store/sj5ff3z5ihhrc7jgra9ldiz54bh3hfp3-stdenv-linux.drv": [
+        "out"
+      ]
+    },
+    "isCached": false,
+    "name": "treefmt-check",
+    "outputs": {
+      "out": "/nix/store/6spxf0yzb97ardjjj0vnmyzvjww26kvb-treefmt-check"
+    },
+    "system": "x86_64-linux",
+    "top_attr": "checks"
+  }
+]
+[
+  {
+    "attr": "treefmt",
+    "attrPath": [
+      "treefmt"
+    ],
+    "drvPath": "/nix/store/84yya5nkrc72nd9n76zxjaklvfm6x7ky-treefmt-check.drv",
+    "inputDrvs": {
+      "/nix/store/ffwna8x5wrj3f2b37miimryj0hph6mn8-stdenv-linux.drv": [
+        "out"
+      ],
+      "/nix/store/p8i0sz5vh5hwy9wnnghsdrjdz7zbph76-bash-5.2-p15.drv": [
+        "out"
+      ],
+      "/nix/store/r5dsc55ypqmb4bx3fccgzh1ifn69sa02-git-2.40.1.drv": [
+        "out"
+      ],
+      "/nix/store/rd6mlf3rkqhbi9q7axm6izpsxgj59x7h-treefmt.drv": [
+        "out"
+      ]
+    },
+    "isCached": false,
+    "name": "treefmt-check",
+    "outputs": {
+      "out": "/nix/store/fwql9rm4a62lryd0dvl61mdcn8q1brpa-treefmt-check"
+    },
+    "system": "aarch64-linux",
+    "top_attr": "checks"
+  },
+  {
+    "attr": "spellcheck",
+    "attrPath": [
+      "spellcheck"
+    ],
+    "drvPath": "/nix/store/g0zs54f6gg3lf15bqvlxlgv60wnnagmm-spellcheck.drv",
+    "inputDrvs": {
+      "/nix/store/5f0wfa7cnfb7d7xadw0zdnxx90gai8v9-cspell-6.31.1.drv": [
+        "out"
+      ],
+      "/nix/store/chbym233l2b2v4sfmhyrzayn2ipd6mjd-stdenv-linux.drv": [
+        "out"
+      ],
+      "/nix/store/p8i0sz5vh5hwy9wnnghsdrjdz7zbph76-bash-5.2-p15.drv": [
+        "out"
+      ]
+    },
+    "isCached": false,
+    "name": "spellcheck",
+    "outputs": {
+      "out": "/nix/store/hy91bshmknmxz2mya2iw86wcg9f237r3-spellcheck"
+    },
+    "system": "aarch64-linux",
+    "top_attr": "checks"
+  }
+]
