@@ -8,7 +8,9 @@ import "../24-host/IBCCommitment.sol";
 import "../02-client/IIBCClient.sol";
 
 library IBCClientLib {
-    event GeneratedClientIdentifier(string);
+    event ClientRegistered(string, address);
+    event ClientCreated(string);
+    event ClientUpdated(string);
 
     error ErrClientTypeAlreadyExists();
     error ErrClientMustNotBeSelf();
@@ -35,6 +37,8 @@ contract IBCClient is IBCStore, IIBCClient {
             revert IBCClientLib.ErrClientMustNotBeSelf();
         }
         clientRegistry[clientType] = address(client);
+
+        emit IBCClientLib.ClientRegistered(clientType, address(client));
     }
 
     /**
@@ -75,7 +79,7 @@ contract IBCClient is IBCStore, IIBCClient {
             )
         ] = update.consensusStateCommitment;
 
-        emit IBCClientLib.GeneratedClientIdentifier(clientId);
+        emit IBCClientLib.ClientCreated(clientId);
 
         return clientId;
     }
@@ -118,6 +122,8 @@ contract IBCClient is IBCStore, IIBCClient {
                 )
             ] = updates[i].consensusStateCommitment;
         }
+
+        emit IBCClientLib.ClientUpdated(msg_.clientId);
     }
 
     function generateClientIdentifier(
