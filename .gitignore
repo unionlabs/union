@@ -50,3 +50,4 @@ bun.lockb
 cache
 .eslintcache
 .prettiercache
+.code-workspace
