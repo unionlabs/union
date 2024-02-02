@@ -350,7 +350,7 @@
       };
     in
     {
-      packages.rust-proto = mkCi false (rust-proto);
+      packages.rust-proto = mkCi false rust-proto;
 
       packages.generate-rust-proto = mkCi false (pkgs.writeShellApplication {
         name = "generate-rust-proto";
