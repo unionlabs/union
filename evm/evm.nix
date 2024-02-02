@@ -144,7 +144,7 @@
       '';
 
       deploy-ibc-contracts = { network, rpc-url, private-key }:
-        pkgs.writeShellApplication {
+        mkCi false (pkgs.writeShellApplication {
           name = "eth-${network}-deploy";
           runtimeInputs = [ pkgs.jq wrappedForge ];
           # Sadly, forge is trying to write back the cache file even if no change is needed :).
@@ -173,9 +173,9 @@
 
             rm -rf "$OUT"
           '';
-        };
+        });
 
-      deploy-ping-pong = { network, rpc-url, private-key, ... }: pkgs.writeShellApplication {
+      deploy-ping-pong = { network, rpc-url, private-key, ... }: mkCi false (pkgs.writeShellApplication {
         name = "evm-${network}-ping-pong-deploy";
         runtimeInputs = [ pkgs.jq wrappedForge ];
         text = ''
@@ -193,9 +193,9 @@
 
           rm -rf "$OUT"
         '';
-      };
+      });
 
-      deploy-ucs01 = { network, rpc-url, private-key, ... }: pkgs.writeShellApplication {
+      deploy-ucs01 = { network, rpc-url, private-key, ... }: mkCi false (pkgs.writeShellApplication {
         name = "evm-${network}-ucs01";
         runtimeInputs = [ pkgs.jq wrappedForge ];
         text = ''
@@ -213,7 +213,7 @@
 
           rm -rf "$OUT"
         '';
-      };
+      });
     in
     {
       packages = {

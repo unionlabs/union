@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, self', crane, rust, system, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, self', crane, rust, system, ensureAtRepositoryRoot, mkCi,... }:
     let
       cargo-fuzz = crane.lib.buildPackage {
         name = "cargo-fuzz";
@@ -32,7 +32,7 @@
 
       # TODO: Continuous fuzzing in nightly CI
       # https://github.com/google/fuzzing/blob/master/tutorial/libFuzzerTutorial.md#continuous-fuzzing
-      runFuzzTargets = targets: pkgs.writeShellApplication {
+      runFuzzTargets = targets: mkCi false (pkgs.writeShellApplication {
         name = "fuzz";
         runtimeInputs = [ cargo-fuzz rust.toolchains.dev ];
         text = ''
@@ -83,7 +83,7 @@
             --format html \
             --output-dir="./fuzzing-code-coverage"
         '';
-      };
+      });
     in
     {
       # TODO: Get these from `cargo fuzz list`
