@@ -84,6 +84,7 @@ Polkadot
 Prefixer
 Protobuf
 RUSTFLAGS
+Recvs
 Redelegate
 Redelegation
 Redelegations

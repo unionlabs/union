@@ -9,6 +9,7 @@ export function munoToUno(muno: string | number) {
 export async function fetcher<T>(url: string, options?: RequestInit) {
   const response = await fetch(url, {
     ...options,
+    // @ts-expect-error
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
