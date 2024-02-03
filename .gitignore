@@ -51,3 +51,5 @@ cache
 .eslintcache
 .prettiercache
 .code-workspace
+
+.idea
