@@ -115,6 +115,6 @@ jobs:
       - name: 'Publish to GitHub Package Registry'
         working-directory: './typescript-sdk'
         run: |
-          npm publish --access='public' --no-git-checks
+          npm publish --access='private' --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
