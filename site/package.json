@@ -13,8 +13,8 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@astrojs/markdown-remark": "^4.2.0",
-    "@astrojs/starlight": "^0.17.1",
+    "@astrojs/markdown-remark": "^4.2.1",
+    "@astrojs/starlight": "^0.17.2",
     "@astrojs/starlight-tailwind": "^2.0.1",
     "@astrojs/svelte": "^5.0.3",
     "@astrojs/tailwind": "^5.1.0",

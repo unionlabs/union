@@ -2,12 +2,12 @@ import type { ChainId } from "#/constants/chain.ts";
 import type { ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { type GetBalanceParameters, getBalance } from "#/balance.ts";
 import type {
-  Account,
+  Hash,
   Chain,
   Client,
-  Hash,
-  PublicActions,
+  Account,
   Transport,
+  PublicActions,
   WalletActions,
 } from "viem";
 import {

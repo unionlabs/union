@@ -61,17 +61,21 @@ async function main() {
     })
     .then((_) => console.log({ sendAssetFromEthereumToUnion: _ }));
 
-  const balanceOnEthereum = await client.getBalance({
-    chainId: "11155111",
-    address: demoEthereumAddress,
-    assetId: sepolia.token.address,
-  });
+  await client
+    .getBalance({
+      chainId: "11155111",
+      address: demoEthereumAddress,
+      assetId: sepolia.token.address,
+    })
+    .then((_) => console.log({ balanceOnSepolia: _ }));
 
-  const balanceOnUnion = await client.getBalance({
-    chainId: "32382",
-    address: demoUnionAddress,
-    assetId: unionTestnet.token.denom,
-  });
+  await client
+    .getBalance({
+      chainId: "32382",
+      address: demoUnionAddress,
+      assetId: unionTestnet.token.denom,
+    })
+    .then((_) => console.log({ balanceOnUnion: _ }));
 
   await client
     .sendAsset({

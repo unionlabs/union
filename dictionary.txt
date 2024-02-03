@@ -23,6 +23,11 @@ Counterparty
 DATADIR
 DYLD
 Denoms
+tanstack
+wagmi
+vaul
+eitherway
+Wagmi
 Devconnect
 Devs
 Disket
