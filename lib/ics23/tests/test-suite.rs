@@ -365,7 +365,6 @@ impl TestCase for TestEmptyBranchData {
 
                 match left_branches_are_empty(&spec.inner_spec, &op) {
                     Ok(empty) => {
-                        // TODO: This fails, but only with in the first test
                         assert_eq!(empty, self.is_left)
                     }
                     Err(err) => {
