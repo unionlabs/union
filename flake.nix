@@ -79,6 +79,12 @@
       flake = false;
     };
 
+    berachain = {
+      # https://github.com/NixOS/nix/issues/4423#issuecomment-1580924502
+      url = "git+https://github.com/berachain/polaris?submodules=1";
+      flake = false;
+    };
+
     # uniond versions
     v0_14_0 = {
       # NOTE: This *must* be after this commit
@@ -174,6 +180,7 @@
         ./evm/evm.nix
         ./tools/rust-proto.nix
         ./tools/tools.nix
+        ./tools/berachain.nix
         ./tools/wasm-light-client.nix
         ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix

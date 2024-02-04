@@ -22,6 +22,24 @@
         "type": "github"
       }
     },
+    "berachain": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1706732859,
+        "narHash": "sha256-Qoh24iad0k7W/A1U7jc9QeAum+VuqBE7SBMdGcCMF+I=",
+        "ref": "refs/heads/main",
+        "rev": "a5b91d03f2e6bce44a22b13aeb439c68b7c72377",
+        "revCount": 818,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/berachain/polaris"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/berachain/polaris"
+      }
+    },
     "blst": {
       "flake": false,
       "locked": {
@@ -364,11 +382,11 @@
     },
     "nixpkgs-go": {
       "locked": {
-        "lastModified": 1700612854,
-        "narHash": "sha256-yrQ8osMD+vDLGFX7pcwsY/Qr5PUd6OmDMYJZzZi0+zc=",
+        "lastModified": 1706732774,
+        "narHash": "sha256-hqJlyJk4MRpcItGYMF+3uHe8HvxNETWvlGtLuVpqLU0=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "19cbff58383a4ae384dea4d1d0c823d72b49d614",
+        "rev": "b8b232ae7b8b144397fdb12d20f592e5e7c1a64d",
         "type": "github"
       },
       "original": {
@@ -414,6 +432,7 @@
     "root": {
       "inputs": {
         "arion": "arion",
+        "berachain": "berachain",
         "cosmosproto": "cosmosproto",
         "crane": "crane",
         "flake-parts": "flake-parts_2",
