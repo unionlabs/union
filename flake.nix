@@ -475,7 +475,7 @@
                 };
                 prettier = {
                   enable = true;
-                  excludes = [ "./app" "./app/**/*" ];
+                  excludes = [ "./app/**/*" ];
                 };
                 taplo = { enable = true; };
               };

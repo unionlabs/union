@@ -4,7 +4,7 @@
     in {
       packages = {
         site = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-4Ugv1rZpDcOUq2dvWsZ5Kg8cWA7yeQGbgHsFBYxx0/E=";
+          npmDepsHash = "sha256-4YjZqfA13yM8XX+N18UkHtT6CddFIETntuuXyFRn59g=";
           src = ./.;
           srcs = [ ./. ./../evm/. ];
           sourceRoot = "site";

@@ -11,33 +11,30 @@ export const chain = {
   ethereum: {
     sepolia: {
       ...sepolia,
-      portId: process.env.UCS01_SEPOLIA_PORT_ID ?? "ucs01-relay",
-      channelId: process.env.UCS01_SEPOLIA_SOURCE_CHANNEL ?? "channel-0",
+      portId: process.env.UCS01_SEPOLIA_PORT_ID,
+      channelId: process.env.UCS01_SEPOLIA_SOURCE_CHANNEL,
       token: {
         name: "Union",
         symbol: "UNO",
         denom: "muno",
         decimals: 6,
-        address:
-          process.env.MUNO_ERC20_ADDRESS ??
-          "0xbCe4f3C33B330800ac11208e2726a8551B3d0E99",
+        address: process.env.MUNO_ERC20_ADDRESS,
       },
     },
   },
   union: {
     testnet: {
-      name: "union-testnet-1",
+      name: "union-testnet-5",
       id: 32_382,
-      channelId: process.env.UCS01_UNION_SOURCE_CHANNEL ?? "channel-3",
+      channelId: process.env.UCS01_UNION_SOURCE_CHANNEL,
       rpcUrls: {
         default: {
           /**
            * @see https://docs.union.build/joining_the_testnet/public_endpoints#rpc
            */
           http: [
+            "https://rpc.testnet.bonlulu.uno",
             "https://union-testnet-rpc.polkachu.com",
-            "https://rpc-union-testnet-01.stakeflow.io",
-            "https://rpc-t.union.nodestake.top",
           ],
         },
       },
@@ -51,9 +48,7 @@ export const chain = {
         symbol: "UNO",
         denom: "muno",
         decimals: 6,
-        address:
-          process.env.UCS01_UNION_ADDRESS ??
-          "union1mkdwqejs8ph0q0cu4n285g83e4zmsjxdjncjl8rpktgd02jy6gwslm960p",
+        address: process.env.UCS01_UNION_ADDRESS,
       },
     },
   },

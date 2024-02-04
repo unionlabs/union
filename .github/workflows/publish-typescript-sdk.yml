@@ -26,6 +26,7 @@ env:
 
 jobs:
   changelog:
+    # manually temporarily disabled
     if: false
     name: 'Generate Changelog'
     runs-on: ['ubuntu-latest']
@@ -41,9 +42,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
+    # manually temporarily disabled
     if: false
     name: 'Publish NPM Registry'
-    needs: [changelog]
     permissions:
       id-token: write
       contents: write
@@ -77,5 +78,43 @@ jobs:
         working-directory: './typescript-sdk'
         run: |
           npm publish --access='public' --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-github:
+    name: 'Publish GitHub Package Registry'
+    permissions:
+      id-token: write
+      contents: write
+    runs-on: ['ubuntu-latest']
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      # This is needed to do npm authentication
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://npm.pkg.github.com'
+
+      - name: 'Install Nix'
+        uses: cachix/install-nix-action@v25
+        with:
+          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
+          github_access_token: ${{ github.token }}
+      - run: |
+          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
+          nix-channel --update
+
+      - name: 'Build SDK'
+        working-directory: './typescript-sdk'
+        run: |
+          nix build .#typescript-sdk -o dist
+
+      - name: 'Publish to GitHub Package Registry'
+        working-directory: './typescript-sdk'
+        run: |
+          npm publish --access='private' --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -39,7 +39,7 @@
     "@cosmjs/encoding": "^0.32.2",
     "@cosmjs/stargate": "^0.32.2",
     "@cosmjs/tendermint-rpc": "^0.32.2",
-    "viem": "^2.7.1"
+    "viem": "^2.7.2"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.13.6",
@@ -65,8 +65,5 @@
     "node": ">=18"
   },
   "engineStrict": true,
-  "publishConfig": {
-    "access": "public"
-  },
   "sideEffects": false
 }

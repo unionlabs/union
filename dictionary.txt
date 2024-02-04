@@ -120,6 +120,7 @@ Unjail
 Unmarshal
 Verkle
 Viridis
+Wagmi
 Woestijne
 Wrapf
 XMSB
@@ -304,6 +305,7 @@ dyld
 dylib
 echarts
 eget
+eitherway
 elems
 eligendi
 elit
@@ -724,6 +726,7 @@ symlinker
 syncmode
 tablist
 tailwindcss
+tanstack
 taplo
 teku
 tempdir
@@ -829,6 +832,7 @@ valoper
 valoperpub
 valset
 varint
+vaul
 vercel
 verison
 verkle
@@ -838,6 +842,7 @@ viem
 virtualisation
 vmdebug
 vuex
+wagmi
 wakey
 wasi
 wasmd
