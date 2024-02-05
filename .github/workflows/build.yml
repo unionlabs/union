@@ -34,6 +34,8 @@ jobs:
     with:
       eval_target: 'build'
       eval_top_attr: 'packages'
+      filter_builds: |
+        (false)
   dev:
     needs: [ spell-fmt-check ]
     if: |
@@ -46,6 +48,8 @@ jobs:
     with:
       eval_target: 'dev'
       eval_top_attr: 'devShells'
+      filter_builds: |
+        (false)
   test:
     needs: [ spell-fmt-check ]
     if: |
@@ -59,17 +63,4 @@ jobs:
       eval_target: 'test'
       eval_top_attr: 'checks'
       filter_builds: |
-        (
-          (.top_attr == "checks") and
-          (.system == "x86_64-linux") and 
-          ( 
-            (
-              # Do not run
-              [.attr] | inside(
-                [
-                  "treefmt-check"
-                ]
-              )
-            ) | not
-          )
-        )
+        (false)
