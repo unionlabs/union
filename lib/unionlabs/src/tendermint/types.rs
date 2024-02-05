@@ -12,3 +12,4 @@ pub mod signed_msg_type;
 pub mod simple_validator;
 pub mod validator;
 pub mod validator_set;
+pub mod vote;

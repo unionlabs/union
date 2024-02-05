@@ -5581,6 +5581,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tendermint-verifier"
+version = "0.1.0"
+dependencies = [
+ "sha2 0.10.8",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "term"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

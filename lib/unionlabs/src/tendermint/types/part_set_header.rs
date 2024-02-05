@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PartSetHeader {
     pub total: u32,

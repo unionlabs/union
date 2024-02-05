@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::tendermint::crypto::public_key::PublicKey;
+use crate::{tendermint::crypto::public_key::PublicKey, Proto};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -16,4 +16,8 @@ impl From<SimpleValidator> for protos::tendermint::types::SimpleValidator {
             voting_power: value.voting_power,
         }
     }
+}
+
+impl Proto for SimpleValidator {
+    type Proto = protos::tendermint::types::SimpleValidator;
 }
