@@ -91,11 +91,6 @@ pub mod commitment_proof {
 /// Then combine the bytes, and hash it
 /// output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[cfg_attr(
-    all(feature = "json-schema", feature = "std"),
-    derive(::schemars::JsonSchema)
-)]
-#[derive(Eq)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LeafOp {
@@ -114,10 +109,6 @@ pub struct LeafOp {
     /// prefix is a fixed bytes that may optionally be included at the beginning to differentiate
     /// a leaf node from an inner node.
     #[prost(bytes = "vec", tag = "5")]
-    #[cfg_attr(
-        all(feature = "json-schema", feature = "std"),
-        schemars(with = "String")
-    )]
     #[cfg_attr(feature = "serde", serde(default))]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub prefix: ::prost::alloc::vec::Vec<u8>,
@@ -139,11 +130,6 @@ pub struct LeafOp {
 /// some value to differentiate from leaf nodes, should be included in prefix and suffix.
 /// If either of prefix or suffix is empty, we just treat it as an empty string
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[cfg_attr(
-    all(feature = "json-schema", feature = "std"),
-    derive(::schemars::JsonSchema)
-)]
-#[derive(Eq)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InnerOp {
@@ -152,18 +138,10 @@ pub struct InnerOp {
     #[prost(bytes = "vec", tag = "2")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     #[cfg_attr(feature = "serde", serde(default))]
-    #[cfg_attr(
-        all(feature = "json-schema", feature = "std"),
-        schemars(with = "String")
-    )]
     pub prefix: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "3")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     #[cfg_attr(feature = "serde", serde(default))]
-    #[cfg_attr(
-        all(feature = "json-schema", feature = "std"),
-        schemars(with = "String")
-    )]
     pub suffix: ::prost::alloc::vec::Vec<u8>,
 }
 /// *
@@ -178,11 +156,6 @@ pub struct InnerOp {
 /// We need this for proper security, requires client knows a priori what
 /// tree format server uses. But not in code, rather a configuration object.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[derive(Eq)]
-#[cfg_attr(
-    all(feature = "json-schema", feature = "std"),
-    derive(::schemars::JsonSchema)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProofSpec {
@@ -216,11 +189,6 @@ pub struct ProofSpec {
 /// isRightMost(spec: InnerSpec, op: InnerOp)
 /// isLeftNeighbor(spec: InnerSpec, left: InnerOp, right: InnerOp)
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[cfg_attr(
-    all(feature = "json-schema", feature = "std"),
-    derive(::schemars::JsonSchema)
-)]
-#[derive(Eq)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InnerSpec {
@@ -238,10 +206,6 @@ pub struct InnerSpec {
     /// empty child is the prehash image that is used when one child is nil (eg. 20 bytes of 0)
     #[prost(bytes = "vec", tag = "5")]
     #[cfg_attr(feature = "serde", serde(default))]
-    #[cfg_attr(
-        all(feature = "json-schema", feature = "std"),
-        schemars(with = "String")
-    )]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub empty_child: ::prost::alloc::vec::Vec<u8>,
     /// hash is the algorithm that must be used for each InnerOp

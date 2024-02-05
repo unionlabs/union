@@ -66,7 +66,7 @@
           text = ''
             ${ensureAtRepositoryRoot}
 
-            outdir="generated/contracts"
+            outdir="generated/rust/contracts"
 
             cp -r --no-preserve=mode ${rust-sol-bindings}/* $outdir
 

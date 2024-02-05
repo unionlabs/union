@@ -11,12 +11,12 @@ ripemd      = { workspace = true }
 serde-utils = { workspace = true }
 sha2        = { workspace = true }
 thiserror   = { workspace = true }
-unionlabs   = { workspace = true, default-features = false }
+unionlabs   = { workspace = true }
 
 [dev-dependencies]
 anyhow      = "1.0.79"
 hex         = { workspace = true, features = ["serde"] }
 hex-literal = { workspace = true }
-protos      = { workspace = true, features = ["cosmos+ics23+v1"] }
+protos      = { workspace = true, features = ["cosmos+ics23+v1", "serde"] }
 serde       = { workspace = true, features = ["derive"] }
 serde_json  = { workspace = true }

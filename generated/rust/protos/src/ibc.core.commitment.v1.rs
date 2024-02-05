@@ -2,18 +2,10 @@
 /// MerkleRoot defines a merkle root hash.
 /// In the Cosmos SDK, the AppHash of a block header becomes the root.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[cfg_attr(
-    all(feature = "json-schema", feature = "std"),
-    derive(::schemars::JsonSchema)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerkleRoot {
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(
-        all(feature = "json-schema", feature = "std"),
-        schemars(with = "String")
-    )]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
@@ -21,18 +13,10 @@ pub struct MerkleRoot {
 /// The constructed key from the Path and the key will be append(Path.KeyPath,
 /// append(Path.KeyPrefix, key...))
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[cfg_attr(
-    all(feature = "json-schema", feature = "std"),
-    derive(::schemars::JsonSchema)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerklePrefix {
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(
-        all(feature = "json-schema", feature = "std"),
-        schemars(with = "String")
-    )]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub key_prefix: ::prost::alloc::vec::Vec<u8>,
 }

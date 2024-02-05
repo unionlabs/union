@@ -49,11 +49,6 @@ pub struct ClientConsensusStates {
 /// height continues to be monitonically increasing even as the RevisionHeight
 /// gets reset
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[cfg_attr(
-    all(feature = "json-schema", feature = "std"),
-    derive(::schemars::JsonSchema)
-)]
-#[derive(Eq, PartialOrd, Ord)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Height {

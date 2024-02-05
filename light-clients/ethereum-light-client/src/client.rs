@@ -10,14 +10,16 @@ use ics008_wasm_client::{
     },
     IbcClient, Status, StorageState,
 };
-use protos::ibc::core::client::v1::GenesisMetadata;
 use sha3::Digest;
 use unionlabs::{
     encoding::Proto,
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
-        core::{client::height::Height, commitment::merkle_path::MerklePath},
+        core::{
+            client::{genesis_metadata::GenesisMetadata, height::Height},
+            commitment::merkle_path::MerklePath,
+        },
         lightclients::{
             cometbls,
             ethereum::{

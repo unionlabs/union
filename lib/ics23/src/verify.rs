@@ -32,7 +32,11 @@ pub enum VerifyError {
     },
     #[error("root calculation ({0})")]
     RootCalculation(CalculateRootError),
-    #[error("calculated and given root doesn't match ({calculated_root}, {given_root})", calculated_root = serde_utils::to_hex(calculated_root), given_root = serde_utils::to_hex(given_root))]
+    #[error(
+        "calculated and given root doesn't match ({calculated_root}, {given_root})",
+        calculated_root = serde_utils::to_hex(calculated_root),
+        given_root = serde_utils::to_hex(given_root)
+    )]
     CalculatedAndGivenRootMismatch {
         calculated_root: Vec<u8>,
         given_root: Vec<u8>,

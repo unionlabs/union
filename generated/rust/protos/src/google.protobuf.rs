@@ -1138,7 +1138,6 @@ pub mod generated_code_info {
 /// microsecond should be expressed in JSON format as "3.000001s".
 ///
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[derive(Eq)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Duration {
@@ -1347,7 +1346,6 @@ pub struct Timestamp {
 ///        "value": "1.212s"
 ///      }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[derive(Eq)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Any {

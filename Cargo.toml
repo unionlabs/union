@@ -15,8 +15,8 @@ members = [
   "light-clients/cometbls-light-client",
   "light-clients/ethereum-light-client",
   "e2e/ensure-blocks",
-  "generated/rust",
-  "generated/contracts",
+  "generated/rust/protos",
+  "generated/rust/contracts",
   "ucli",
   "unionvisor",
   "voyager",
@@ -45,12 +45,12 @@ opt-level = 3
 beacon-api                = { path = "lib/beacon-api", default-features = false }
 chain-utils               = { path = "lib/chain-utils", default-features = false }
 cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
-contracts                 = { path = "generated/contracts", default-features = false }
+contracts                 = { path = "generated/rust/contracts", default-features = false }
 ethereum-verifier         = { path = "lib/ethereum-verifier", default-features = false }
 ics008-wasm-client        = { path = "lib/ics-008-wasm-client", default-features = false }
 ics23                     = { path = "lib/ics23", default-features = false }
 pg-queue                  = { path = "lib/pg-queue", default-features = false }
-protos                    = { path = "generated/rust", default-features = false }
+protos                    = { path = "generated/rust/protos", default-features = false }
 serde-utils               = { path = "lib/serde-utils", default-features = false }
 token-factory-api         = { path = "cosmwasm/token-factory-api", default-features = false }
 ucs01-relay               = { path = "cosmwasm/ucs01-relay", default-features = false }

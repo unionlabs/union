@@ -9,13 +9,12 @@ use ics008_wasm_client::{
 };
 use ics23::ibc_api::SDK_SPECS;
 use prost::Message;
-use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
     encoding::Proto,
     hash::H256,
     ibc::{
         core::{
-            client::height::Height,
+            client::{genesis_metadata::GenesisMetadata, height::Height},
             commitment::{
                 merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
             },
