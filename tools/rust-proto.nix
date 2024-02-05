@@ -339,10 +339,10 @@
           # normalize comments in generated code
           for i in $(find . -name "*.rs" -type f); do
             echo "[FORMAT] $i"
-            rustfmt --config-file=${../rustfmt.toml} --config normalize_comments=true --edition "2021" "$i"
+            rustfmt --config-path=${../rustfmt.toml} --config normalize_comments=true --edition "2021" "$i"
           done
 
-          taplo format ./Cargo.toml
+          taplo format --config=${../taplo.toml} ./Cargo.toml
 
           cp -r ./src $out/
           cp -r ./Cargo.toml $out/
