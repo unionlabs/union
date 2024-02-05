@@ -2,7 +2,6 @@
 name: Full end-to-end (e2e) testsuite.
 
 on:
-  push:
   workflow_call:
     secrets:
       nixbuild_token:
