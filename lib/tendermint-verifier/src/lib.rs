@@ -19,6 +19,10 @@ pub const BATCH_VERIFY_THRESHOLD: usize = 2;
 
 pub mod merkle;
 
+pub trait SignatureVerifier {
+    fn verify_signature(msg: &[u8], sig: &[u8]) -> bool;
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("integer overflow")]
@@ -55,9 +59,11 @@ pub enum Error {
     DoubleVote(H160),
     #[error("not enough voting power, have ({have}), need ({need})")]
     NotEnoughVotingPower { have: u64, need: u64 },
+    #[error("signature cannot be verified")]
+    SignatureVerification,
 }
 
-pub fn verify(
+pub fn verify<V: SignatureVerifier>(
     trusted_header: &SignedHeader,
     trusted_vals: &ValidatorSet,     // height=X or height=X+1
     untrusted_header: &SignedHeader, // height=Y
@@ -78,7 +84,7 @@ pub fn verify(
             .checked_add(1)
             .ok_or(Error::IntegerOverflow)?
     {
-        verify_non_adjacent(
+        verify_non_adjacent::<V>(
             trusted_header,
             trusted_vals,
             untrusted_header,
@@ -100,7 +106,7 @@ pub fn verify(
     }
 }
 
-pub fn verify_non_adjacent(
+pub fn verify_non_adjacent<V: SignatureVerifier>(
     trusted_header: &SignedHeader,
     trusted_vals: &ValidatorSet,     // height=X or height=X+1
     untrusted_header: &SignedHeader, // height=Y
@@ -139,7 +145,7 @@ pub fn verify_non_adjacent(
         max_clock_drift,
     )?;
 
-    verify_commit_light_trusting(
+    verify_commit_light_trusting::<V>(
         &trusted_header.header.chain_id,
         trusted_vals,
         &untrusted_header.commit,
@@ -167,7 +173,7 @@ pub fn verify_commit_light(
     Ok(())
 }
 
-pub fn verify_commit_light_trusting(
+pub fn verify_commit_light_trusting<V: SignatureVerifier>(
     chain_id: &str,
     vals: &ValidatorSet,
     commit: &Commit,
@@ -217,7 +223,7 @@ pub fn verify_commit_light_trusting(
             false,
         )
     } else {
-        verify_commit_single(
+        verify_commit_single::<V>(
             chain_id,
             vals,
             commit,
@@ -243,7 +249,7 @@ fn verify_commit_batch(
     Ok(())
 }
 
-fn verify_commit_single(
+fn verify_commit_single<V: SignatureVerifier>(
     chain_id: &str,
     vals: &ValidatorSet,
     commit: &Commit,
@@ -284,14 +290,9 @@ fn verify_commit_single(
 
         let vote_sign_bytes = canonical_vote(commit, commit_sig, chain_id);
 
-        // TODO(aeryz): signature verification here has to be pluggable like
-        // in the ethereum-verifier
-        // if !val
-        //     .PubKey
-        //     .VerifySignature(voteSignBytes, commitSig.Signature)
-        // {
-        //     return fmt.Errorf("wrong signature (#%d): %X", idx, commitSig.Signature);
-        // }
+        if !V::verify_signature(&vote_sign_bytes, signature.as_ref()) {
+            return Err(Error::SignatureVerification);
+        }
 
         // If this signature counts then add the voting power of the validator
         // to the tally
