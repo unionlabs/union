@@ -1,5 +1,10 @@
 use core::num::TryFromIntError;
-use std::{cmp::Ordering, fmt::Display, ops::Neg, str::FromStr};
+use std::{
+    cmp::Ordering,
+    fmt::Display,
+    ops::{Div, Neg},
+    str::FromStr,
+};
 
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
 use serde::{
