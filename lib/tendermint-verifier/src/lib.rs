@@ -23,6 +23,36 @@ pub const BATCH_VERIFY_THRESHOLD: usize = 2;
 
 pub mod merkle;
 
+pub trait BatchSignatureVerifier {
+    /// Implementer should decide whether it's going to make sense to
+    /// do batch verification based on how many signatures we have.
+    fn should_batch_verify(signature_len: usize) -> bool;
+
+    fn new() -> Self;
+
+    fn add(&mut self, pubkey: &PublicKey, msg: Vec<u8>, signature: &[u8]) -> Result<(), ()>;
+
+    fn verify_signature(&self) -> bool;
+}
+
+impl BatchSignatureVerifier for () {
+    fn should_batch_verify(_signature_len: usize) -> bool {
+        false
+    }
+
+    fn new() -> Self {
+        ()
+    }
+
+    fn add(&mut self, _pubkey: &PublicKey, _msg: Vec<u8>, _signature: &[u8]) -> Result<(), ()> {
+        Err(())
+    }
+
+    fn verify_signature(&self) -> bool {
+        false
+    }
+}
+
 pub trait SignatureVerifier {
     fn verify_signature(pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool;
 }
@@ -77,9 +107,24 @@ pub enum Error {
         next_validators_hash: H256,
         validators_hash: H256,
     },
+    #[error("commit signatures length ({sig_len}) does not match the validators len ({val_len})")]
+    InvalidCommitSignaturesLength { sig_len: usize, val_len: usize },
+    #[error("commit height ({commit_height}) does not match the expected height ({height})")]
+    InvalidCommitHeight { commit_height: i64, height: i64 },
+    #[error(
+        "commit block_id ({commit_block_id:?}) does not match the expected block id ({block_id:?})"
+    )]
+    InvalidCommitBlockId {
+        commit_block_id: BlockId,
+        block_id: BlockId,
+    },
+    #[error("voting power ({0}) cannot be negative")]
+    NegativeVotingPower(i64),
+    #[error("signature count ({count}) is below the batch verify threshold ({threshold})")]
+    SignatureCountBelowBatchVerifyThreshold { threshold: usize, count: usize },
 }
 
-pub fn verify<V: SignatureVerifier>(
+pub fn verify<V: SignatureVerifier, B: BatchSignatureVerifier>(
     trusted_header: &SignedHeader,
     trusted_vals: &ValidatorSet,     // height=X or height=X+1
     untrusted_header: &SignedHeader, // height=Y
@@ -100,7 +145,7 @@ pub fn verify<V: SignatureVerifier>(
             .checked_add(1)
             .ok_or(Error::IntegerOverflow)?
     {
-        verify_non_adjacent::<V>(
+        verify_non_adjacent::<V, B>(
             trusted_header,
             trusted_vals,
             untrusted_header,
@@ -111,7 +156,7 @@ pub fn verify<V: SignatureVerifier>(
             trust_level,
         )
     } else {
-        verify_adjacent(
+        verify_adjacent::<V, B>(
             trusted_header,
             untrusted_header,
             untrusted_vals,
@@ -122,7 +167,7 @@ pub fn verify<V: SignatureVerifier>(
     }
 }
 
-pub fn verify_non_adjacent<V: SignatureVerifier>(
+pub fn verify_non_adjacent<V: SignatureVerifier, B: BatchSignatureVerifier>(
     trusted_header: &SignedHeader,
     trusted_vals: &ValidatorSet,     // height=X or height=X+1
     untrusted_header: &SignedHeader, // height=Y
@@ -161,7 +206,7 @@ pub fn verify_non_adjacent<V: SignatureVerifier>(
         max_clock_drift,
     )?;
 
-    verify_commit_light_trusting::<V>(
+    verify_commit_light_trusting::<V, B>(
         &trusted_header.header.chain_id,
         trusted_vals,
         &untrusted_header.commit,
@@ -170,7 +215,8 @@ pub fn verify_non_adjacent<V: SignatureVerifier>(
         false,
     )?;
 
-    verify_commit_light(
+    verify_commit_light::<V, B>(
+        untrusted_vals,
         &trusted_header.header.chain_id,
         &untrusted_header.commit.block_id,
         untrusted_header.header.height.inner(),
@@ -180,16 +226,91 @@ pub fn verify_non_adjacent<V: SignatureVerifier>(
     Ok(())
 }
 
-pub fn verify_commit_light(
-    _chain_id: &str,
-    _block_id: &BlockId,
-    _height: i64,
-    _commit: &Commit,
+pub fn verify_commit_light<V: SignatureVerifier, B: BatchSignatureVerifier>(
+    vals: &ValidatorSet,
+    chain_id: &str,
+    block_id: &BlockId,
+    height: i64,
+    commit: &Commit,
 ) -> Result<(), Error> {
+    verify_basic_vals_and_commit(vals, commit, height, block_id)?;
+
+    let voting_power_needed = TryInto::<u64>::try_into(vals.total_voting_power)
+        .map_err(|_| Error::NegativeVotingPower(vals.total_voting_power))?
+        * 2
+        / 3;
+
+    let filter_commit = |commit_sig: &CommitSig| -> Option<(H160, Timestamp, H512)> {
+        match commit_sig {
+            CommitSig::Commit {
+                validator_address,
+                timestamp,
+                signature,
+            } => Some((
+                validator_address.clone(),
+                timestamp.clone(),
+                signature.clone(),
+            )),
+            _ => None,
+        }
+    };
+
+    if B::should_batch_verify(commit.signatures.len()) {
+        verify_commit_batch::<B>(
+            chain_id,
+            vals,
+            commit,
+            voting_power_needed,
+            filter_commit,
+            |_| true,
+            false,
+            true,
+        )
+    } else {
+        verify_commit_single::<V>(
+            chain_id,
+            vals,
+            commit,
+            voting_power_needed,
+            filter_commit,
+            |_| true,
+            false,
+            true,
+        )
+    }
+}
+
+fn verify_basic_vals_and_commit(
+    vals: &ValidatorSet,
+    commit: &Commit,
+    height: i64,
+    block_id: &BlockId,
+) -> Result<(), Error> {
+    if vals.validators.len() != commit.signatures.len() {
+        return Err(Error::InvalidCommitSignaturesLength {
+            sig_len: commit.signatures.len(),
+            val_len: vals.validators.len(),
+        });
+    }
+
+    if height != commit.height.inner() {
+        return Err(Error::InvalidCommitHeight {
+            commit_height: commit.height.inner(),
+            height,
+        });
+    }
+
+    if block_id != &commit.block_id {
+        return Err(Error::InvalidCommitBlockId {
+            commit_block_id: commit.block_id.clone(),
+            block_id: block_id.clone(),
+        });
+    }
+
     Ok(())
 }
 
-pub fn verify_commit_light_trusting<V: SignatureVerifier>(
+pub fn verify_commit_light_trusting<V: SignatureVerifier, B: BatchSignatureVerifier>(
     chain_id: &str,
     vals: &ValidatorSet,
     commit: &Commit,
@@ -205,10 +326,7 @@ pub fn verify_commit_light_trusting<V: SignatureVerifier>(
         .checked_div(trust_level.denominator)
         .ok_or(Error::DivideByZero)?;
 
-    // ignore all commit signatures that are not for the block
-    let ignore =
-        |commit_sig: &CommitSig| -> bool { matches!(commit_sig, CommitSig::Commit { .. }) };
-
+    // only use the commit signatures
     let filter_commit = |commit_sig: &CommitSig| -> Option<(H160, Timestamp, H512)> {
         match commit_sig {
             CommitSig::Commit {
@@ -227,8 +345,8 @@ pub fn verify_commit_light_trusting<V: SignatureVerifier>(
     // attempt to batch verify commit. As the validator set doesn't necessarily
     // correspond with the validator set that signed the block we need to look
     // up by address rather than index.
-    if should_batch_verify(vals, commit) {
-        verify_commit_batch(
+    if B::should_batch_verify(commit.signatures.len()) {
+        verify_commit_batch::<B>(
             chain_id,
             vals,
             commit,
@@ -252,17 +370,86 @@ pub fn verify_commit_light_trusting<V: SignatureVerifier>(
     }
 }
 
-fn verify_commit_batch(
-    _chain_id: &str,
-    _vals: &ValidatorSet,
-    _commit: &Commit,
-    _voting_power_needed: u64,
-    _filter_commit: fn(&CommitSig) -> Option<(H160, Timestamp, H512)>,
-    _count_sig: fn(&CommitSig) -> bool,
-    _count_all_signatures: bool,
-    _lookup_by_index: bool,
+fn verify_commit_batch<V: BatchSignatureVerifier>(
+    chain_id: &str,
+    vals: &ValidatorSet,
+    commit: &Commit,
+    voting_power_needed: u64,
+    filter_commit: fn(&CommitSig) -> Option<(H160, Timestamp, H512)>,
+    count_sig: fn(&CommitSig) -> bool,
+    count_all_signatures: bool,
+    lookup_by_index: bool,
 ) -> Result<(), Error> {
-    Ok(())
+    let mut seen_vals: BTreeMap<usize, usize> = BTreeMap::new();
+    let mut tallied_voting_power: u64 = 0;
+
+    // TODO(aeryz): make this batch verify threshold a global constant
+    if commit.signatures.len() < 2 {
+        return Err(Error::SignatureCountBelowBatchVerifyThreshold {
+            threshold: 2,
+            count: commit.signatures.len(),
+        });
+    }
+
+    let mut batch_verifier = V::new();
+
+    for (i, commit_sig) in commit.signatures.iter().enumerate() {
+        let Some((validator_address, timestamp, signature)) = filter_commit(commit_sig) else {
+            continue;
+        };
+
+        // TODO(aeryz): commit_sig.ValidateBasic()
+        let val = if lookup_by_index {
+            vals.validators
+                .get(i)
+                .ok_or(Error::InvalidIndexInValidatorSet {
+                    index: i,
+                    val_len: vals.validators.len(),
+                })?
+        } else {
+            let Some((val_idx, val)) = get_validator_by_address(vals, &validator_address) else {
+                continue;
+            };
+
+            if seen_vals.get(&val_idx).is_some() {
+                return Err(Error::DoubleVote(validator_address));
+            }
+
+            seen_vals.insert(val_idx, i);
+
+            val
+        };
+
+        let vote_sign_bytes = canonical_vote(commit, commit_sig, &timestamp, chain_id);
+
+        // TODO(aeryz): remove unwrap
+        batch_verifier
+            .add(&val.pub_key, vote_sign_bytes, signature.as_ref())
+            .unwrap();
+
+        // If this signature counts then add the voting power of the validator
+        // to the tally
+        if count_sig(commit_sig) {
+            tallied_voting_power += val.voting_power.inner() as u64; // SAFE because within the bounds
+        }
+
+        if !count_all_signatures && tallied_voting_power > voting_power_needed {
+            break;
+        }
+    }
+
+    if tallied_voting_power <= voting_power_needed {
+        return Err(Error::NotEnoughVotingPower {
+            have: tallied_voting_power,
+            need: voting_power_needed,
+        });
+    }
+
+    if batch_verifier.verify_signature() {
+        Ok(())
+    } else {
+        Err(Error::SignatureVerification)
+    }
 }
 
 fn verify_commit_single<V: SignatureVerifier>(
@@ -372,13 +559,6 @@ fn get_validator_by_address<'a>(
         .find(|(_, val)| &val.address == address)
 }
 
-// TODO(aeryz): check if we need to implement `supportsBatchVerify`
-fn should_batch_verify(vals: &ValidatorSet, commit: &Commit) -> bool {
-    // TODO(aeryz): remove
-    // commit.signatures.len() >= BATCH_VERIFY_THRESHOLD
-    false
-}
-
 fn verify_new_headers_and_vals(
     untrusted_header: &SignedHeader, // height=Y
     untrusted_vals: &ValidatorSet,   // height=Y
@@ -449,7 +629,7 @@ pub fn header_expired(_h: &SignedHeader, _trusting_period: Duration, _now: Times
     false
 }
 
-pub fn verify_adjacent(
+pub fn verify_adjacent<V: SignatureVerifier, B: BatchSignatureVerifier>(
     trusted_header: &SignedHeader,
     untrusted_header: &SignedHeader, // height=Y
     untrusted_vals: &ValidatorSet,   // height=Y
@@ -493,7 +673,8 @@ pub fn verify_adjacent(
         });
     }
 
-    verify_commit_light(
+    verify_commit_light::<V, B>(
+        untrusted_vals,
         &trusted_header.header.chain_id,
         &untrusted_header.commit.block_id,
         untrusted_header.header.height.inner(),
@@ -505,12 +686,12 @@ pub fn verify_adjacent(
 
 #[cfg(test)]
 mod tests {
+    use ed25519_dalek::{Signature, Verifier, VerifyingKey};
     use unionlabs::ibc::lightclients::tendermint::header::Header;
 
     use super::*;
 
     struct EdVerifier;
-    use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 
     impl SignatureVerifier for EdVerifier {
         fn verify_signature(pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool {
@@ -524,12 +705,57 @@ mod tests {
         }
     }
 
+    #[derive(Default)]
+    struct BatchEdVerifier {
+        signatures: Vec<Signature>,
+        messages: Vec<Vec<u8>>,
+        verifying_keys: Vec<VerifyingKey>,
+    }
+
+    impl BatchSignatureVerifier for BatchEdVerifier {
+        fn should_batch_verify(signature_len: usize) -> bool {
+            signature_len >= 2
+        }
+
+        fn new() -> Self {
+            BatchEdVerifier::default()
+        }
+
+        fn add(&mut self, pubkey: &PublicKey, msg: Vec<u8>, signature: &[u8]) -> Result<(), ()> {
+            let PublicKey::Ed25519(pubkey) = pubkey else {
+                panic!("invalid pubkey");
+            };
+            let key: VerifyingKey =
+                VerifyingKey::from_bytes(pubkey.as_slice().try_into().unwrap()).unwrap();
+            let signature: Signature = Signature::from_bytes(signature.try_into().unwrap());
+
+            self.signatures.push(signature);
+            self.verifying_keys.push(key);
+            self.messages.push(msg.into());
+
+            Ok(())
+        }
+
+        fn verify_signature(&self) -> bool {
+            ed25519_dalek::verify_batch(
+                self.messages
+                    .iter()
+                    .map(|v| v.as_slice())
+                    .collect::<Vec<_>>()
+                    .as_slice(),
+                &self.signatures,
+                &self.verifying_keys,
+            )
+            .is_ok()
+        }
+    }
+
     #[test]
     fn verify_works() {
         let initial_header: Header = serde_json::from_str(include_str!("test/288.json")).unwrap();
         let update_header: Header = serde_json::from_str(include_str!("test/291.json")).unwrap();
 
-        verify::<EdVerifier>(
+        verify::<EdVerifier, ()>(
             &initial_header.signed_header,
             &initial_header.validator_set,
             &update_header.signed_header,
@@ -546,33 +772,23 @@ mod tests {
     }
 
     #[test]
-    fn canonical_vote() {
-        let vote: protos::tendermint::types::LegacyCanonicalVote =
-            protos::tendermint::types::LegacyCanonicalVote {
-                r#type: 0,
-                height: 0.try_into().unwrap(),
-                round: 0.try_into().unwrap(),
-                block_id: None,
-                chain_id: "".to_string(),
-                timestamp: None,
-            };
+    fn batch_verify_works() {
+        let initial_header: Header = serde_json::from_str(include_str!("test/288.json")).unwrap();
+        let update_header: Header = serde_json::from_str(include_str!("test/291.json")).unwrap();
 
-        let delimited = vote.encode_length_delimited_to_vec();
-
-        let canonical = protos::tendermint::types::LegacyCanonicalVote::decode_length_delimited(
-            &[
-                0xd_u8, 0x2a, 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
-            ][..],
+        verify::<EdVerifier, BatchEdVerifier>(
+            &initial_header.signed_header,
+            &initial_header.validator_set,
+            &update_header.signed_header,
+            &update_header.validator_set,
+            Duration::new(315576000000, 0).unwrap(),
+            update_header.signed_header.header.time,
+            Duration::new(100_000_000, 0).unwrap(),
+            Fraction {
+                numerator: 1,
+                denominator: 3,
+            },
         )
         .unwrap();
-
-        println!("canonical: {:?}", canonical);
-
-        println!("encoded: {:?}", canonical.encode_length_delimited_to_vec());
-
-        // assert_eq!(
-        //     delimited,
-        //     vec![0xd, 0x2a, 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1]
-        // );
     }
 }

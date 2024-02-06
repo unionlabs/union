@@ -18,4 +18,4 @@ serde-utils.workspace = true
 [dev-dependencies]
 hex-literal.workspace = true
 serde_json.workspace  = true
-ed25519-dalek       = "2.1.0"
+ed25519-dalek       = { version = "2.1.0", features = [ "batch" ] }
