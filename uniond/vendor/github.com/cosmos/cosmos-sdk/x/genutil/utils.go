@@ -8,6 +8,7 @@ import (
 	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
+	tmbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	tmed25519 "github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
@@ -83,10 +84,16 @@ func InitializeNodeValidatorFilesFromMnemonicCustom(config *cfg.Config, mnemonic
 	var filePV *privval.FilePV
 	if len(mnemonic) == 0 {
 		filePV = privval.LoadOrGenFilePVCustom(pvKeyFile, pvStateFile, keyType)
-	} else {
+	} else if keyType == "ed25519" {
 		privKey := tmed25519.GenPrivKeyFromSecret([]byte(mnemonic))
 		filePV = privval.NewFilePV(privKey, pvKeyFile, pvStateFile)
 		filePV.Save()
+	} else if keyType == "bn254" {
+		privKey := tmbn254.GenPrivKeyFromSeed([]byte(mnemonic))
+		filePV = privval.NewFilePV(privKey, pvKeyFile, pvStateFile)
+		filePV.Save()
+	} else {
+		return "", nil, fmt.Errorf("keyType not supported: %s", keyType)
 	}
 
 	tmValPubKey, err := filePV.GetPubKey()

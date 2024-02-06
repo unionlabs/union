@@ -34,9 +34,9 @@ func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalI
 	fsCreateValidator, defaultsDesc := cli.CreateValidatorMsgFlagSet(ipDefault)
 
 	cmd := &cobra.Command{
-		Use:   "gentx [key_name] [amount] [key_type]",
+		Use:   "gentx [key_name] [amount]",
 		Short: "Generate a genesis tx carrying a self delegation",
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(2),
 		Long: fmt.Sprintf(`Generate a genesis transaction that creates a validator with a self-delegation,
 that is signed by the key in the Keyring referenced by a given name. A node ID and consensus
 pubkey may optionally be provided. If they are omitted, they will be retrieved from the priv_validator.json
@@ -65,7 +65,7 @@ $ %s gentx my-key-name 1000000stake secp256k1 --home=/path/to/home/dir --keyring
 			config := serverCtx.Config
 			config.SetRoot(clientCtx.HomeDir)
 
-			keyType := args[2]
+			keyType := "bn254"
 			mnemonic := ""
 			nodeID, valPubKey, err := genutil.InitializeNodeValidatorFilesFromMnemonicCustom(serverCtx.Config, mnemonic, keyType)
 			if err != nil {
