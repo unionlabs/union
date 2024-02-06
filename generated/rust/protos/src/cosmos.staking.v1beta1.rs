@@ -490,48 +490,6 @@ impl Infraction {
         }
     }
 }
-/// GenesisState defines the staking module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// params defines all the parameters of related to deposit.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-    /// last_total_power tracks the total amounts of bonded tokens recorded during
-    /// the previous end block.
-    #[prost(bytes = "vec", tag = "2")]
-    pub last_total_power: ::prost::alloc::vec::Vec<u8>,
-    /// last_validator_powers is a special index that provides a historical list
-    /// of the last-block's bonded validators.
-    #[prost(message, repeated, tag = "3")]
-    pub last_validator_powers: ::prost::alloc::vec::Vec<LastValidatorPower>,
-    /// validators defines the validator set at genesis.
-    #[prost(message, repeated, tag = "4")]
-    pub validators: ::prost::alloc::vec::Vec<Validator>,
-    /// delegations defines the delegations active at genesis.
-    #[prost(message, repeated, tag = "5")]
-    pub delegations: ::prost::alloc::vec::Vec<Delegation>,
-    /// unbonding_delegations defines the unbonding delegations active at genesis.
-    #[prost(message, repeated, tag = "6")]
-    pub unbonding_delegations: ::prost::alloc::vec::Vec<UnbondingDelegation>,
-    /// redelegations defines the redelegations active at genesis.
-    #[prost(message, repeated, tag = "7")]
-    pub redelegations: ::prost::alloc::vec::Vec<Redelegation>,
-    /// exported defines a bool to identify whether the chain dealing with exported or initialized genesis.
-    #[prost(bool, tag = "8")]
-    pub exported: bool,
-}
-/// LastValidatorPower required for validator set update logic.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct LastValidatorPower {
-    /// address is the address of the validator.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    /// power defines the power of the validator.
-    #[prost(int64, tag = "2")]
-    pub power: i64,
-}
 /// QueryValidatorsRequest is request type for Query/Validators RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -973,5 +931,133 @@ pub struct MsgUpdateParams {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParamsResponse {}
+/// StakeAuthorization defines authorization for delegate/undelegate/redelegate.
+///
+/// Since: cosmos-sdk 0.43
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StakeAuthorization {
+    /// max_tokens specifies the maximum amount of tokens can be delegate to a validator. If it is
+    /// empty, there is no spend limit and any amount of coins can be delegated.
+    #[prost(message, optional, tag = "1")]
+    pub max_tokens: ::core::option::Option<super::super::base::v1beta1::Coin>,
+    /// authorization_type defines one of AuthorizationType.
+    #[prost(enumeration = "AuthorizationType", tag = "4")]
+    pub authorization_type: i32,
+    /// validators is the oneof that represents either allow_list or deny_list
+    #[prost(oneof = "stake_authorization::Validators", tags = "2, 3")]
+    pub validators: ::core::option::Option<stake_authorization::Validators>,
+}
+/// Nested message and enum types in `StakeAuthorization`.
+pub mod stake_authorization {
+    /// Validators defines list of validator addresses.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ValidatorsVec {
+        #[prost(string, repeated, tag = "1")]
+        pub address: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    }
+    /// validators is the oneof that represents either allow_list or deny_list
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Validators {
+        /// allow_list specifies list of validator addresses to whom grantee can delegate tokens on behalf of granter's
+        /// account.
+        #[prost(message, tag = "2")]
+        AllowList(ValidatorsVec),
+        /// deny_list specifies list of validator addresses to whom grantee can not delegate tokens.
+        #[prost(message, tag = "3")]
+        DenyList(ValidatorsVec),
+    }
+}
+/// AuthorizationType defines the type of staking module authorization type
+///
+/// Since: cosmos-sdk 0.43
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum AuthorizationType {
+    /// AUTHORIZATION_TYPE_UNSPECIFIED specifies an unknown authorization type
+    Unspecified = 0,
+    /// AUTHORIZATION_TYPE_DELEGATE defines an authorization type for Msg/Delegate
+    Delegate = 1,
+    /// AUTHORIZATION_TYPE_UNDELEGATE defines an authorization type for Msg/Undelegate
+    Undelegate = 2,
+    /// AUTHORIZATION_TYPE_REDELEGATE defines an authorization type for Msg/BeginRedelegate
+    Redelegate = 3,
+    /// AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION defines an authorization type for Msg/MsgCancelUnbondingDelegation
+    CancelUnbondingDelegation = 4,
+}
+impl AuthorizationType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            AuthorizationType::Unspecified => "AUTHORIZATION_TYPE_UNSPECIFIED",
+            AuthorizationType::Delegate => "AUTHORIZATION_TYPE_DELEGATE",
+            AuthorizationType::Undelegate => "AUTHORIZATION_TYPE_UNDELEGATE",
+            AuthorizationType::Redelegate => "AUTHORIZATION_TYPE_REDELEGATE",
+            AuthorizationType::CancelUnbondingDelegation => {
+                "AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION"
+            }
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "AUTHORIZATION_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "AUTHORIZATION_TYPE_DELEGATE" => Some(Self::Delegate),
+            "AUTHORIZATION_TYPE_UNDELEGATE" => Some(Self::Undelegate),
+            "AUTHORIZATION_TYPE_REDELEGATE" => Some(Self::Redelegate),
+            "AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION" => {
+                Some(Self::CancelUnbondingDelegation)
+            }
+            _ => None,
+        }
+    }
+}
+/// GenesisState defines the staking module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// params defines all the parameters of related to deposit.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+    /// last_total_power tracks the total amounts of bonded tokens recorded during
+    /// the previous end block.
+    #[prost(bytes = "vec", tag = "2")]
+    pub last_total_power: ::prost::alloc::vec::Vec<u8>,
+    /// last_validator_powers is a special index that provides a historical list
+    /// of the last-block's bonded validators.
+    #[prost(message, repeated, tag = "3")]
+    pub last_validator_powers: ::prost::alloc::vec::Vec<LastValidatorPower>,
+    /// validators defines the validator set at genesis.
+    #[prost(message, repeated, tag = "4")]
+    pub validators: ::prost::alloc::vec::Vec<Validator>,
+    /// delegations defines the delegations active at genesis.
+    #[prost(message, repeated, tag = "5")]
+    pub delegations: ::prost::alloc::vec::Vec<Delegation>,
+    /// unbonding_delegations defines the unbonding delegations active at genesis.
+    #[prost(message, repeated, tag = "6")]
+    pub unbonding_delegations: ::prost::alloc::vec::Vec<UnbondingDelegation>,
+    /// redelegations defines the redelegations active at genesis.
+    #[prost(message, repeated, tag = "7")]
+    pub redelegations: ::prost::alloc::vec::Vec<Redelegation>,
+    /// exported defines a bool to identify whether the chain dealing with exported or initialized genesis.
+    #[prost(bool, tag = "8")]
+    pub exported: bool,
+}
+/// LastValidatorPower required for validator set update logic.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LastValidatorPower {
+    /// address is the address of the validator.
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    /// power defines the power of the validator.
+    #[prost(int64, tag = "2")]
+    pub power: i64,
+}
 include!("cosmos.staking.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

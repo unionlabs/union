@@ -1,16 +1,22 @@
 use std::collections::BTreeMap;
 
 use merkle::calculate_merkle_root;
+use prost::Message;
 use unionlabs::{
+    cosmos::crypto::AnyPubKey,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::{H160, H256, H512},
     ibc::lightclients::tendermint::fraction::Fraction,
-    tendermint::types::{
-        block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
-        canonical_block_id::CanonicalBlockId, canonical_vote::CanonicalVote, commit::Commit,
-        commit_sig::CommitSig, signed_header::SignedHeader, signed_msg_type::SignedMsgType,
-        simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
-        vote::Vote,
+    tendermint::{
+        crypto::public_key::PublicKey,
+        types::{
+            block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
+            canonical_block_id::CanonicalBlockId, commit::Commit, commit_sig::CommitSig,
+            legacy_canonical_vote::LegacyCanonicalVote as CanonicalVote,
+            signed_header::SignedHeader, signed_msg_type::SignedMsgType,
+            simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
+            vote::Vote,
+        },
     },
     IntoProto,
 };
@@ -20,7 +26,7 @@ pub const BATCH_VERIFY_THRESHOLD: usize = 2;
 pub mod merkle;
 
 pub trait SignatureVerifier {
-    fn verify_signature(msg: &[u8], sig: &[u8]) -> bool;
+    fn verify_signature(pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool;
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -212,6 +218,7 @@ pub fn verify_commit_light_trusting<V: SignatureVerifier>(
     // correspond with the validator set that signed the block we need to look
     // up by address rather than index.
     if should_batch_verify(vals, commit) {
+        println!("asdasd");
         verify_commit_batch(
             chain_id,
             vals,
@@ -288,9 +295,9 @@ fn verify_commit_single<V: SignatureVerifier>(
             val
         };
 
-        let vote_sign_bytes = canonical_vote(commit, commit_sig, chain_id);
+        let vote_sign_bytes = canonical_vote(commit, commit_sig, &timestamp, chain_id);
 
-        if !V::verify_signature(&vote_sign_bytes, signature.as_ref()) {
+        if !V::verify_signature(&val.pub_key, &vote_sign_bytes, signature.as_ref()) {
             return Err(Error::SignatureVerification);
         }
 
@@ -315,18 +322,19 @@ fn verify_commit_single<V: SignatureVerifier>(
     }
 }
 
-fn canonical_vote(commit: &Commit, commit_sig: &CommitSig, chain_id: &str) -> Vec<u8> {
+fn canonical_vote(
+    commit: &Commit,
+    commit_sig: &CommitSig,
+    timestamp: &Timestamp,
+    chain_id: &str,
+) -> Vec<u8> {
     let block_id = match commit_sig {
         CommitSig::Absent => BlockId::default(),
-        CommitSig::Commit {
-            validator_address,
-            timestamp,
-            signature,
-        } => commit.block_id.clone(),
+        CommitSig::Commit { .. } => commit.block_id.clone(),
         CommitSig::Nil { .. } => BlockId::default(),
     };
 
-    CanonicalVote {
+    Into::<protos::tendermint::types::LegacyCanonicalVote>::into(CanonicalVote {
         ty: SignedMsgType::Precommit,
         height: commit.height,
         round: (commit.round.inner() as i64)
@@ -340,8 +348,9 @@ fn canonical_vote(commit: &Commit, commit_sig: &CommitSig, chain_id: &str) -> Ve
             },
         },
         chain_id: chain_id.to_string(),
-    }
-    .into_proto_bytes()
+        timestamp: timestamp.clone(),
+    })
+    .encode_length_delimited_to_vec()
 }
 
 fn get_validator_by_address<'a>(
@@ -356,7 +365,9 @@ fn get_validator_by_address<'a>(
 
 // TODO(aeryz): check if we need to implement `supportsBatchVerify`
 fn should_batch_verify(vals: &ValidatorSet, commit: &Commit) -> bool {
-    commit.signatures.len() >= BATCH_VERIFY_THRESHOLD
+    // TODO(aeryz): remove
+    // commit.signatures.len() >= BATCH_VERIFY_THRESHOLD
+    false
 }
 
 fn verify_new_headers_and_vals(
@@ -401,7 +412,7 @@ fn verify_new_headers_and_vals(
     // 		maxClockDrift)
     // }
 
-    if untrusted_header.header.validators_hash == validators_hash(untrusted_vals) {
+    if untrusted_header.header.validators_hash != validators_hash(untrusted_vals) {
         return Err(Error::UntrustedValidatorSetMismatch);
     }
 
@@ -418,21 +429,98 @@ fn validators_hash(vals: &ValidatorSet) -> H256 {
     calculate_merkle_root(&raw_validators)
 }
 
-pub fn header_expired(h: &SignedHeader, trusting_period: Duration, now: Timestamp) -> bool {
+pub fn header_expired(_h: &SignedHeader, _trusting_period: Duration, _now: Timestamp) -> bool {
     // TODO(aeryz): Implement
     false
 }
 
 pub fn verify_adjacent(
-    trusted_header: &SignedHeader,
-    untrusted_header: &SignedHeader, // height=Y
-    untrusted_vals: &ValidatorSet,   // height=Y
+    _trusted_header: &SignedHeader,
+    _untrusted_header: &SignedHeader, // height=Y
+    _untrusted_vals: &ValidatorSet,   // height=Y
     // TODO(aeryz): Is this duration supposed to be proto?
-    trusting_period: Duration,
+    _trusting_period: Duration,
     // TODO(aeryz): Until we define a Time type
-    now: Timestamp,
+    _now: Timestamp,
     // TODO(aeryz): Is this duration supposed to be proto?
-    max_clock_drift: Duration,
+    _max_clock_drift: Duration,
 ) -> Result<(), Error> {
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use unionlabs::{
+        ibc::lightclients::tendermint::header::Header,
+        tendermint::types::part_set_header::PartSetHeader,
+    };
+
+    use super::*;
+
+    struct EdVerifier;
+    use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+
+    impl SignatureVerifier for EdVerifier {
+        fn verify_signature(pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool {
+            let PublicKey::Ed25519(pubkey) = pubkey else {
+                panic!("invalid pubkey");
+            };
+            let key: VerifyingKey =
+                VerifyingKey::from_bytes(pubkey.as_slice().try_into().unwrap()).unwrap();
+            let signature: Signature = Signature::from_bytes(sig.try_into().unwrap());
+            key.verify(msg, &signature).is_ok()
+        }
+    }
+
+    #[test]
+    fn verify_works() {
+        let initial_header: Header = serde_json::from_str(include_str!("test/288.json")).unwrap();
+        let update_header: Header = serde_json::from_str(include_str!("test/291.json")).unwrap();
+
+        verify::<EdVerifier>(
+            &initial_header.signed_header,
+            &initial_header.validator_set,
+            &update_header.signed_header,
+            &update_header.validator_set,
+            Duration::new(315576000000, 0).unwrap(),
+            update_header.signed_header.header.time,
+            Duration::new(315576000000, 0).unwrap(),
+            Fraction {
+                numerator: 1,
+                denominator: 3,
+            },
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn canonical_vote() {
+        let vote: protos::tendermint::types::LegacyCanonicalVote =
+            protos::tendermint::types::LegacyCanonicalVote {
+                r#type: 0,
+                height: 0.try_into().unwrap(),
+                round: 0.try_into().unwrap(),
+                block_id: None,
+                chain_id: "".to_string(),
+                timestamp: None,
+            };
+
+        let delimited = vote.encode_length_delimited_to_vec();
+
+        let canonical = protos::tendermint::types::LegacyCanonicalVote::decode_length_delimited(
+            &[
+                0xd_u8, 0x2a, 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
+            ][..],
+        )
+        .unwrap();
+
+        println!("canonical: {:?}", canonical);
+
+        println!("encoded: {:?}", canonical.encode_length_delimited_to_vec());
+
+        // assert_eq!(
+        //     delimited,
+        //     vec![0xd, 0x2a, 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1]
+        // );
+    }
 }

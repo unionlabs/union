@@ -30,7 +30,6 @@ members = [
   "zerg",
   "tools/cargo-workspace-dependencies",
   "tools/keygen",
-  "tools/cargo-workspace-dependencies", 
 ]
 
 resolver = "2"

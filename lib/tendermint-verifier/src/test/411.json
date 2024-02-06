@@ -1,0 +1,163 @@
+{
+  "signed_header": {
+    "commit": {
+      "round": 0,
+      "height": 411,
+      "block_id": {
+        "hash": "0x9cc748b4c9f3b6de5de5d8de025db0127b6ff198dc36e27f0e8a3eb939e581b6",
+        "part_set_header": {
+          "hash": "0x13c610c72c8597ffee9fd47a2850003a691c2ef33f9ce6bcab81ba0fff1dc05d",
+          "total": 1
+        }
+      },
+      "signatures": [
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xdd9c8bbe26c4f50fad61c48c253afc97eb2b2d707902f77e116f793659cf2c824b4311994151b9e9a23fb71930da040c97473aae1b1e4316901ddb82848dda03",
+            "timestamp": "2024-02-05T20:14:52.749316131Z",
+            "validator_address": "0x0217a42a8bea30521411a8b34bbfbeabf81daa1d"
+          }
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0x365abc016f3fed6de315dab81d23a20b96ab7fb93b08264c2c60290078ebf17e41a54e4cdf7fa86cf53dbdf1d0a54f29042c2e10c19ee122391f28ee0a450209",
+            "timestamp": "2024-02-05T20:14:52.874635838Z",
+            "validator_address": "0x12729fc85ff80e52064b6f46312b77c95f90f4bf"
+          }
+        },
+        {
+          "@type": "absent"
+        },
+        {
+          "@type": "commit",
+          "@value": {
+            "signature": "0xa63b0af3f2285ce5da5895877a72b5a39d6c481349eede243ccdf95bd05141e5ee84ddc4d602c59de55ac9eb3c2a908a0bf4b6dfe6035c03f118b9585ffd8c01",
+            "timestamp": "2024-02-05T20:14:52.750325715Z",
+            "validator_address": "0x55c7594dba46848c8241bd06e400129a1082cd4c"
+          }
+        }
+      ]
+    },
+    "header": {
+      "time": "2024-02-05T20:14:47.305291306Z",
+      "height": "411",
+      "version": {
+        "app": "0",
+        "block": "11"
+      },
+      "app_hash": "0x55fbb4e165d3defa05c49e37f1f31c1e1d95a54c8ec921f6bf4604fe9b27c1a8",
+      "chain_id": "simd-devnet-1",
+      "data_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "last_block_id": {
+        "hash": "0x296c0a06d9c0b73e7681bc4eff9d171cd6b6c9021e12bf6f5a36c4a3945003cd",
+        "part_set_header": {
+          "hash": "0xa79aaa717771d82218aa627a30e75b3460191d6928f26722225740ed5ff8bcaa",
+          "total": 1
+        }
+      },
+      "consensus_hash": "0x048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f",
+      "validators_hash": "0x7df2f1e323160f0cfabafa33a84a562444ed2907ba308c5e77e031606983be40",
+      "last_commit_hash": "0xa327c8fc9b0c246510faa60f2b460c74497aeb5812e59ff5231596942f3d953b",
+      "proposer_address": "0x3fb23e5cd869ee24a00604bcf0b9a2696ab0b599",
+      "last_results_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "next_validators_hash": "0x7df2f1e323160f0cfabafa33a84a562444ed2907ba308c5e77e031606983be40"
+    }
+  },
+  "validator_set": {
+    "proposer": {
+      "address": "3FB23E5CD869EE24A00604BCF0B9A2696AB0B599",
+      "pub_key": {
+        "Ed25519": "0x280baa494775fb0a9aa33945ba11d58e9c6cce4524ca0a4ce2339e538da5ac5e"
+      },
+      "voting_power": 1000000000000000,
+      "proposer_priority": 0
+    },
+    "validators": [
+      {
+        "address": "0217A42A8BEA30521411A8B34BBFBEABF81DAA1D",
+        "pub_key": {
+          "Ed25519": "0xc461c9f66adafabc1cd3d1a57fd69eb4ee3842050ab8737b21a029df6e0df768"
+        },
+        "voting_power": 1000000000000000,
+        "proposer_priority": 0
+      },
+      {
+        "address": "12729FC85FF80E52064B6F46312B77C95F90F4BF",
+        "pub_key": {
+          "Ed25519": "0xdadbada3cd3c252d650fd9589b72a15b8a396fefde212b0cbe5cc87d1de598bf"
+        },
+        "voting_power": 1000000000000000,
+        "proposer_priority": 0
+      },
+      {
+        "address": "3FB23E5CD869EE24A00604BCF0B9A2696AB0B599",
+        "pub_key": {
+          "Ed25519": "0x280baa494775fb0a9aa33945ba11d58e9c6cce4524ca0a4ce2339e538da5ac5e"
+        },
+        "voting_power": 1000000000000000,
+        "proposer_priority": 0
+      },
+      {
+        "address": "55C7594DBA46848C8241BD06E400129A1082CD4C",
+        "pub_key": {
+          "Ed25519": "0x05c8e3335f980483183ff9484be2558b221d5cc5e81c4a26d3d73269fcf24759"
+        },
+        "voting_power": 1000000000000000,
+        "proposer_priority": 0
+      }
+    ],
+    "total_voting_power": 4000000000000000
+  },
+  "trusted_height": {
+    "revision_height": 409,
+    "revision_number": 1
+  },
+  "trusted_validators": {
+    "proposer": {
+      "address": "12729FC85FF80E52064B6F46312B77C95F90F4BF",
+      "pub_key": {
+        "Ed25519": "0xdadbada3cd3c252d650fd9589b72a15b8a396fefde212b0cbe5cc87d1de598bf"
+      },
+      "voting_power": 1000000000000000,
+      "proposer_priority": 0
+    },
+    "validators": [
+      {
+        "address": "0217A42A8BEA30521411A8B34BBFBEABF81DAA1D",
+        "pub_key": {
+          "Ed25519": "0xc461c9f66adafabc1cd3d1a57fd69eb4ee3842050ab8737b21a029df6e0df768"
+        },
+        "voting_power": 1000000000000000,
+        "proposer_priority": 0
+      },
+      {
+        "address": "12729FC85FF80E52064B6F46312B77C95F90F4BF",
+        "pub_key": {
+          "Ed25519": "0xdadbada3cd3c252d650fd9589b72a15b8a396fefde212b0cbe5cc87d1de598bf"
+        },
+        "voting_power": 1000000000000000,
+        "proposer_priority": 0
+      },
+      {
+        "address": "3FB23E5CD869EE24A00604BCF0B9A2696AB0B599",
+        "pub_key": {
+          "Ed25519": "0x280baa494775fb0a9aa33945ba11d58e9c6cce4524ca0a4ce2339e538da5ac5e"
+        },
+        "voting_power": 1000000000000000,
+        "proposer_priority": 0
+      },
+      {
+        "address": "55C7594DBA46848C8241BD06E400129A1082CD4C",
+        "pub_key": {
+          "Ed25519": "0x05c8e3335f980483183ff9484be2558b221d5cc5e81c4a26d3d73269fcf24759"
+        },
+        "voting_power": 1000000000000000,
+        "proposer_priority": 0
+      }
+    ],
+    "total_voting_power": 4000000000000000
+  }
+}

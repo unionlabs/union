@@ -4,7 +4,7 @@ use crate::{
     hash::H256, tendermint::types::canonical_block_header::CanonicalPartSetHeader, Proto, TypeUrl,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct CanonicalBlockId {
