@@ -174,7 +174,6 @@ impl InitCmd {
             args: vec![
                 OsString::from("init"),
                 OsString::from(self.moniker.clone()),
-                OsString::from("bn254"),
                 OsString::from("--chain-id"),
                 OsString::from(&self.network),
             ],
