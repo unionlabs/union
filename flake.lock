@@ -675,16 +675,16 @@
     "wasmvm": {
       "flake": false,
       "locked": {
-        "lastModified": 1698746477,
-        "narHash": "sha256-l0cNF0YjviEl/JLJ4VdvDtIGuAYyFfncVo83ROfQFD8=",
+        "lastModified": 1705576719,
+        "narHash": "sha256-3KJq5jFllFSqlm85/iRWYMhu99iuokvR3Ib9Gq3gIjc=",
         "owner": "CosmWasm",
         "repo": "wasmvm",
-        "rev": "2041b184c146f278157d195361bc6cc6b56cc9d4",
+        "rev": "b742b2623cce98f04ae5d8bfb488c73988f3dd61",
         "type": "github"
       },
       "original": {
         "owner": "CosmWasm",
-        "ref": "v1.5.0",
+        "ref": "v1.5.2",
         "repo": "wasmvm",
         "type": "github"
       }

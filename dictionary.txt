@@ -868,4 +868,5 @@ zellij
 zerg
 zerolog
 zkps
+zstd
 λpxrx
