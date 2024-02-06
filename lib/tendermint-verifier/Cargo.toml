@@ -8,13 +8,14 @@ version                = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ed25519-dalek       = "2.1.0"
 prost.workspace     = true
 protos.workspace    = true
 sha2.workspace      = true
 thiserror.workspace = true
 unionlabs.workspace = true
+serde-utils.workspace = true
 
 [dev-dependencies]
 hex-literal.workspace = true
 serde_json.workspace  = true
+ed25519-dalek       = "2.1.0"

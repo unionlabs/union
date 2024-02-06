@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use merkle::calculate_merkle_root;
 use prost::Message;
 use unionlabs::{
-    cosmos::crypto::AnyPubKey,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::{H160, H256, H512},
     ibc::lightclients::tendermint::fraction::Fraction,
@@ -15,7 +14,6 @@ use unionlabs::{
             legacy_canonical_vote::LegacyCanonicalVote as CanonicalVote,
             signed_header::SignedHeader, signed_msg_type::SignedMsgType,
             simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
-            vote::Vote,
         },
     },
     IntoProto,
@@ -35,6 +33,8 @@ pub enum Error {
     IntegerOverflow,
     #[error("divide by 0")]
     DivideByZero,
+    #[error("headers must be non-adjacent")]
+    HeadersMustBeNonAdjacent,
     #[error("headers must be adjacent")]
     HeadersMustBeAdjacent,
     #[error("header with the timestamp ({header_timestamp}) is expired (trusting period {trusting_period})")]
@@ -67,6 +67,16 @@ pub enum Error {
     NotEnoughVotingPower { have: u64, need: u64 },
     #[error("signature cannot be verified")]
     SignatureVerification,
+    #[error("max clock drift ({max_clock_drift:?}) check failed against ({timestamp:?})")]
+    MaxClockDriftCheckFailed {
+        max_clock_drift: Duration,
+        timestamp: Timestamp,
+    },
+    #[error("next validators hash ({next_validators_hash}) of the trusted header does not match the adjacent header's validators hash ({validators_hash})", next_validators_hash = serde_utils::to_hex(next_validators_hash), validators_hash = serde_utils::to_hex(validators_hash))]
+    NextValidatorsHashMismatch {
+        next_validators_hash: H256,
+        validators_hash: H256,
+    },
 }
 
 pub fn verify<V: SignatureVerifier>(
@@ -133,7 +143,7 @@ pub fn verify_non_adjacent<V: SignatureVerifier>(
             .checked_add(1)
             .ok_or(Error::IntegerOverflow)?
     {
-        return Err(Error::HeadersMustBeAdjacent);
+        return Err(Error::HeadersMustBeNonAdjacent);
     }
 
     if header_expired(trusted_header, trusting_period, now) {
@@ -171,10 +181,10 @@ pub fn verify_non_adjacent<V: SignatureVerifier>(
 }
 
 pub fn verify_commit_light(
-    chain_id: &str,
-    block_id: &BlockId,
-    height: i64,
-    commit: &Commit,
+    _chain_id: &str,
+    _block_id: &BlockId,
+    _height: i64,
+    _commit: &Commit,
 ) -> Result<(), Error> {
     Ok(())
 }
@@ -218,7 +228,6 @@ pub fn verify_commit_light_trusting<V: SignatureVerifier>(
     // correspond with the validator set that signed the block we need to look
     // up by address rather than index.
     if should_batch_verify(vals, commit) {
-        println!("asdasd");
         verify_commit_batch(
             chain_id,
             vals,
@@ -404,13 +413,19 @@ fn verify_new_headers_and_vals(
         });
     }
 
-    // TODO(aeryz): time + duration math
-    // if !untrustedHeader.Time.Before(now.Add(maxClockDrift)) {
-    // 	return fmt.Errorf("new header has a time from the future %v (now: %v; max clock drift: %v)",
-    // 		untrustedHeader.Time,
-    // 		now,
-    // 		maxClockDrift)
-    // }
+    let drift_timestamp =
+        now.checked_add(max_clock_drift)
+            .ok_or(Error::MaxClockDriftCheckFailed {
+                max_clock_drift,
+                timestamp: now,
+            })?;
+
+    if untrusted_header.header.time >= drift_timestamp {
+        return Err(Error::MaxClockDriftCheckFailed {
+            max_clock_drift,
+            timestamp: untrusted_header.header.time,
+        });
+    }
 
     if untrusted_header.header.validators_hash != validators_hash(untrusted_vals) {
         return Err(Error::UntrustedValidatorSetMismatch);
@@ -435,25 +450,62 @@ pub fn header_expired(_h: &SignedHeader, _trusting_period: Duration, _now: Times
 }
 
 pub fn verify_adjacent(
-    _trusted_header: &SignedHeader,
-    _untrusted_header: &SignedHeader, // height=Y
-    _untrusted_vals: &ValidatorSet,   // height=Y
+    trusted_header: &SignedHeader,
+    untrusted_header: &SignedHeader, // height=Y
+    untrusted_vals: &ValidatorSet,   // height=Y
     // TODO(aeryz): Is this duration supposed to be proto?
-    _trusting_period: Duration,
+    trusting_period: Duration,
     // TODO(aeryz): Until we define a Time type
-    _now: Timestamp,
+    now: Timestamp,
     // TODO(aeryz): Is this duration supposed to be proto?
-    _max_clock_drift: Duration,
+    max_clock_drift: Duration,
 ) -> Result<(), Error> {
+    if untrusted_header.header.height.inner()
+        != trusted_header
+            .header
+            .height
+            .inner()
+            .checked_add(1)
+            .ok_or(Error::IntegerOverflow)?
+    {
+        return Err(Error::HeadersMustBeAdjacent);
+    }
+
+    if header_expired(trusted_header, trusting_period, now) {
+        return Err(Error::HeaderExpired {
+            trusting_period,
+            header_timestamp: trusted_header.header.time,
+        });
+    }
+
+    verify_new_headers_and_vals(
+        untrusted_header,
+        untrusted_vals,
+        trusted_header,
+        now,
+        max_clock_drift,
+    )?;
+
+    if untrusted_header.header.validators_hash != trusted_header.header.next_validators_hash {
+        return Err(Error::NextValidatorsHashMismatch {
+            next_validators_hash: untrusted_header.header.next_validators_hash.clone(),
+            validators_hash: trusted_header.header.next_validators_hash.clone(),
+        });
+    }
+
+    verify_commit_light(
+        &trusted_header.header.chain_id,
+        &untrusted_header.commit.block_id,
+        untrusted_header.header.height.inner(),
+        &untrusted_header.commit,
+    )?;
+
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use unionlabs::{
-        ibc::lightclients::tendermint::header::Header,
-        tendermint::types::part_set_header::PartSetHeader,
-    };
+    use unionlabs::ibc::lightclients::tendermint::header::Header;
 
     use super::*;
 
@@ -484,7 +536,7 @@ mod tests {
             &update_header.validator_set,
             Duration::new(315576000000, 0).unwrap(),
             update_header.signed_header.header.time,
-            Duration::new(315576000000, 0).unwrap(),
+            Duration::new(100_000_000, 0).unwrap(),
             Fraction {
                 numerator: 1,
                 denominator: 3,
