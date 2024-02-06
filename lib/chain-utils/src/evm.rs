@@ -4,7 +4,7 @@ use beacon_api::client::BeaconApiClient;
 use contracts::{
     devnet_ownable_ibc_handler::DevnetOwnableIBCHandler,
     ibc_channel_handshake::IBCChannelHandshakeEvents,
-    ibc_client::GeneratedClientIdentifierFilter,
+    ibc_client::{ClientCreatedFilter, IBCClientEvents},
     ibc_connection::IBCConnectionEvents,
     ibc_handler::{
         GetChannelCall, GetChannelReturn, GetClientStateCall, GetClientStateReturn,
@@ -123,7 +123,7 @@ pub enum IBCHandlerEvents {
     PacketEvent(IBCPacketEvents),
     ConnectionEvent(IBCConnectionEvents),
     ChannelEvent(IBCChannelHandshakeEvents),
-    ClientEvent(GeneratedClientIdentifierFilter),
+    ClientEvent(IBCClientEvents),
 }
 
 impl EthLogDecode for IBCHandlerEvents {
@@ -136,8 +136,7 @@ impl EthLogDecode for IBCHandlerEvents {
             IBCConnectionEvents::decode_log(log).map(IBCHandlerEvents::ConnectionEvent);
         let chan_event =
             IBCChannelHandshakeEvents::decode_log(log).map(IBCHandlerEvents::ChannelEvent);
-        let client_event =
-            GeneratedClientIdentifierFilter::decode_log(log).map(IBCHandlerEvents::ClientEvent);
+        let client_event = IBCClientEvents::decode_log(log).map(IBCHandlerEvents::ClientEvent);
 
         [packet_event, conn_event, chan_event, client_event]
             .into_iter()
@@ -905,7 +904,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                         .connection_id,
                                 }))
                             }
-                            IBCHandlerEvents::ClientEvent(GeneratedClientIdentifierFilter(client_id)) => {
+                            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientCreatedFilter(ClientCreatedFilter(client_id))) => {
                                 let client_type = this
                                     .readonly_ibc_handler
                                     .client_types(client_id.clone())
@@ -936,6 +935,8 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                     consensus_height: client_state.latest_height,
                                 }))
                             }
+                            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(_)) => None,
+                            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(_)) => None,
                             IBCHandlerEvents::PacketEvent(IBCPacketEvents::RecvPacketFilter(event)) => {
                                 let channel = read_channel(
                                     event.packet.destination_port.clone(),
