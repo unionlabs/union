@@ -67,7 +67,7 @@
     nix-filter.url = "github:numtide/nix-filter";
     get-flake.url = "github:ursi/get-flake";
     wasmvm = {
-      url = "github:CosmWasm/wasmvm/v1.5.0";
+      url = "github:CosmWasm/wasmvm/v1.5.2";
       flake = false;
     };
     oxlint = {
