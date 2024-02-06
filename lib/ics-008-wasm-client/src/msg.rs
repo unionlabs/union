@@ -1,9 +1,11 @@
 use std::fmt::Display;
 
 use cosmwasm_std::Binary;
-use protos::ibc::core::client::v1::GenesisMetadata;
 use serde::{Deserialize, Serialize};
-use unionlabs::ibc::core::{client::height::Height, commitment::merkle_path::MerklePath};
+use unionlabs::ibc::core::{
+    client::{genesis_metadata::GenesisMetadata, height::Height},
+    commitment::merkle_path::MerklePath,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InstantiateMsg {

@@ -4,10 +4,6 @@
 /// NOTE: there must only be 2 defined ConnectionEnds to establish
 /// a connection between two chains.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[cfg_attr(
-    all(feature = "json-schema", feature = "std"),
-    derive(::schemars::JsonSchema)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConnectionEnd {
@@ -58,10 +54,6 @@ pub struct IdentifiedConnection {
 }
 /// Counterparty defines the counterparty chain associated with a connection end.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[cfg_attr(
-    all(feature = "json-schema", feature = "std"),
-    derive(::schemars::JsonSchema)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Counterparty {
@@ -101,10 +93,6 @@ pub struct ConnectionPaths {
 /// Version defines the versioning scheme used to negotiate the IBC verison in
 /// the connection handshake.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[cfg_attr(
-    all(feature = "json-schema", feature = "std"),
-    derive(::schemars::JsonSchema)
-)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {

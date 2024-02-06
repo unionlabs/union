@@ -1,4 +1,21 @@
 // @generated
+/// SendAuthorization allows the grantee to spend up to spend_limit coins from
+/// the granter's account.
+///
+/// Since: cosmos-sdk 0.43
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SendAuthorization {
+    #[prost(message, repeated, tag = "1")]
+    pub spend_limit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+    /// allow_list specifies an optional list of addresses to whom the grantee can send tokens on behalf of the
+    /// granter. If omitted, any recipient is allowed.
+    ///
+    /// Since: cosmos-sdk 0.47
+    #[prost(string, repeated, tag = "2")]
+    pub allow_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
 /// Params defines the parameters for the bank module.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -453,23 +470,6 @@ pub struct QuerySendEnabledResponse {
     /// populated if the denoms field in the request is empty.
     #[prost(message, optional, tag = "99")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-/// SendAuthorization allows the grantee to spend up to spend_limit coins from
-/// the granter's account.
-///
-/// Since: cosmos-sdk 0.43
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SendAuthorization {
-    #[prost(message, repeated, tag = "1")]
-    pub spend_limit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-    /// allow_list specifies an optional list of addresses to whom the grantee can send tokens on behalf of the
-    /// granter. If omitted, any recipient is allowed.
-    ///
-    /// Since: cosmos-sdk 0.47
-    #[prost(string, repeated, tag = "2")]
-    pub allow_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// MsgSend represents a message to send coins from one account to another.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]

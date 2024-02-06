@@ -140,8 +140,8 @@
           # { derive = ["Eq", "PartialOrd", "Ord"] }
           # { cfg_attr = [{ feature = "std"; } {serde = ["default"]} ]}
           attrs = {
-            ord = ''#[derive(Eq, PartialOrd, Ord)]'';
-            eq = ''#[derive(Eq)]'';
+            # ord = ''#[derive(Eq, PartialOrd, Ord)]'';
+            # eq = ''#[derive(Eq)]'';
 
             # eth_abi = ''#[cfg_attr(feature = "ethers", derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec))]'';
 
@@ -150,27 +150,27 @@
             serde_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]'';
             serde_inner_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]'';
 
-            jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
-            jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';
+            # jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
+            # jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';
           };
         in
         with attrs; {
           type_attribute = {
-            ".google.protobuf.Any" = [ serde eq ];
+            ".google.protobuf.Any" = [ serde ];
             ".google.protobuf.Timestamp" = [ serde ];
-            ".google.protobuf.Duration" = [ serde eq ];
+            ".google.protobuf.Duration" = [ serde ];
             ".ibc.core.client.v1" = [ serde ];
-            ".ibc.core.client.v1.Height" = [ jsonschema ord ];
+            ".ibc.core.client.v1.Height" = [ ];
             ".ibc.core.commitment.v1" = [ serde ];
-            ".ibc.core.commitment.v1.MerkleRoot" = [ jsonschema ];
-            ".ibc.core.commitment.v1.MerklePrefix" = [ jsonschema ];
+            ".ibc.core.commitment.v1.MerkleRoot" = [ ];
+            ".ibc.core.commitment.v1.MerklePrefix" = [ ];
             ".ibc.core.channel.v1" = [ serde ];
-            ".ibc.core.channel.v1.Channel" = [ jsonschema ];
-            ".ibc.core.channel.v1.Counterparty" = [ jsonschema ];
+            ".ibc.core.channel.v1.Channel" = [ ];
+            ".ibc.core.channel.v1.Counterparty" = [ ];
             ".ibc.core.connection.v1" = [ serde ];
-            ".ibc.core.connection.v1.ConnectionEnd" = [ jsonschema ];
-            ".ibc.core.connection.v1.Counterparty" = [ jsonschema ];
-            ".ibc.core.connection.v1.Version" = [ jsonschema ];
+            ".ibc.core.connection.v1.ConnectionEnd" = [ ];
+            ".ibc.core.connection.v1.Counterparty" = [ ];
+            ".ibc.core.connection.v1.Version" = [ ];
             ".ibc.core.types.v1" = [ serde ];
             ".ibc.applications.transfer.v1" = [ serde ];
             ".ibc.applications.transfer.v2" = [ serde ];
@@ -180,10 +180,10 @@
             ".ibc.lightclients.tendermint.v1.Fraction" = [ serde ];
             ".union.ibc.lightclients.ethereum.v1" = [ serde ];
             ".cosmos.ics23.v1" = [ serde ];
-            ".cosmos.ics23.v1.LeafOp" = [ jsonschema eq ];
-            ".cosmos.ics23.v1.InnerOp" = [ jsonschema eq ];
-            ".cosmos.ics23.v1.ProofSpec" = [ eq jsonschema ];
-            ".cosmos.ics23.v1.InnerSpec" = [ jsonschema eq ];
+            ".cosmos.ics23.v1.LeafOp" = [ ];
+            ".cosmos.ics23.v1.InnerOp" = [ ];
+            ".cosmos.ics23.v1.ProofSpec" = [ ];
+            ".cosmos.ics23.v1.InnerSpec" = [ ];
             ".cosmos.auth.v1beta1" = [ serde ];
             ".cosmos.upgrade.v1beta1" = [ serde ];
             ".cosmos.base.v1beta1" = [ serde ];
@@ -194,9 +194,9 @@
           field_attribute = {
             ".ibc.core.client.v1.Height" = [ serde_default ];
 
-            ".ibc.core.commitment.v1.MerkleRoot.hash" = [ jsonschema_str serde_base64 ];
+            ".ibc.core.commitment.v1.MerkleRoot.hash" = [ serde_base64 ];
 
-            ".ibc.core.commitment.v1.MerklePrefix.key_prefix" = [ jsonschema_str serde_base64 ];
+            ".ibc.core.commitment.v1.MerklePrefix.key_prefix" = [ serde_base64 ];
 
             ".ibc.lightclients.wasm.v1.ClientState.data" = [ serde_base64 ];
             ".ibc.lightclients.wasm.v1.ClientState.checksum" = [ serde_base64 ];
@@ -240,16 +240,16 @@
             ".cosmos.ics23.v1.LeafOp.prehash_key" = [ serde_default ];
             ".cosmos.ics23.v1.LeafOp.prehash_value" = [ serde_default ];
             ".cosmos.ics23.v1.LeafOp.length" = [ serde_default ];
-            ".cosmos.ics23.v1.LeafOp.prefix" = [ jsonschema_str serde_default serde_base64 ];
+            ".cosmos.ics23.v1.LeafOp.prefix" = [ serde_default serde_base64 ];
 
-            ".cosmos.ics23.v1.InnerOp.prefix" = [ serde_base64 serde_default jsonschema_str ];
-            ".cosmos.ics23.v1.InnerOp.suffix" = [ serde_base64 serde_default jsonschema_str ];
+            ".cosmos.ics23.v1.InnerOp.prefix" = [ serde_base64 serde_default ];
+            ".cosmos.ics23.v1.InnerOp.suffix" = [ serde_base64 serde_default ];
 
             ".cosmos.ics23.v1.ProofSpec.max_depth" = [ serde_default ];
             ".cosmos.ics23.v1.ProofSpec.min_depth" = [ serde_default ];
             ".cosmos.ics23.v1.ProofSpec.prehash_key_before_comparison" = [ serde_default ];
 
-            ".cosmos.ics23.v1.InnerSpec.empty_child" = [ serde_default jsonschema_str serde_base64 ];
+            ".cosmos.ics23.v1.InnerSpec.empty_child" = [ serde_default serde_base64 ];
 
             ".cosmos.ics23.v1.ExistenceProof.key" = [ serde_base64 ];
             ".cosmos.ics23.v1.ExistenceProof.value" = [ serde_base64 ];
@@ -339,10 +339,10 @@
           # normalize comments in generated code
           for i in $(find . -name "*.rs" -type f); do
             echo "[FORMAT] $i"
-            rustfmt --config normalize_comments=true --edition "2021" "$i"
+            rustfmt --config-path=${../rustfmt.toml} --config normalize_comments=true --edition "2021" "$i"
           done
 
-          taplo format ./Cargo.toml
+          taplo format --config=${../taplo.toml} ./Cargo.toml
 
           cp -r ./src $out/
           cp -r ./Cargo.toml $out/
@@ -358,7 +358,7 @@
         text = ''
           ${ensureAtRepositoryRoot}
 
-          outdir="generated/rust/"
+          outdir="generated/rust/protos/"
 
           mkdir -p "$outdir"
 

@@ -2,10 +2,12 @@ use core::fmt::Debug;
 
 use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, StdError};
 use frame_support_procedural::DebugNoBound;
-use protos::ibc::core::client::v1::GenesisMetadata;
 use unionlabs::{
     encoding::{Decode, Encoding},
-    ibc::core::{client::height::Height, commitment::merkle_path::MerklePath},
+    ibc::core::{
+        client::{genesis_metadata::GenesisMetadata, height::Height},
+        commitment::merkle_path::MerklePath,
+    },
 };
 
 use crate::{
