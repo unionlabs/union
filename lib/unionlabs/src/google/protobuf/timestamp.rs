@@ -22,6 +22,8 @@ use crate::{
 pub const TIMESTAMP_SECONDS_MAX: i64 = 253_402_300_799;
 pub const TIMESTAMP_SECONDS_MIN: i64 = -62_135_596_800;
 
+const NANOS_MAX: i32 = 999_999_999;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Timestamp {
@@ -29,7 +31,7 @@ pub struct Timestamp {
     /// 9999-12-31T23:59:59Z inclusive."
     pub seconds: BoundedI64<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>,
     // As per the proto docs: "Must be from 0 to 999,999,999 inclusive."
-    pub nanos: BoundedI32<0, 999_999_999>,
+    pub nanos: BoundedI32<0, NANOS_MAX>,
 }
 
 impl Ord for Timestamp {
@@ -90,6 +92,32 @@ impl Timestamp {
             }
             Ordering::Equal => Duration::new(0, 0).ok(),
             Ordering::Less => other.duration_since(self).map(Neg::neg),
+        }
+    }
+
+    pub fn checked_add(&self, duration: Duration) -> Option<Timestamp> {
+        let mut seconds = self
+            .seconds
+            .inner()
+            .checked_add(duration.seconds().inner())?;
+
+        // No need to do checked_add here since MAX and MIN values of this
+        // addition is within the bounds of i32
+        let mut nanos = self.nanos.inner() + duration.nanos().inner();
+
+        if nanos < 0 {
+            nanos += NANOS_MAX + 1;
+            seconds -= 1;
+        } else if nanos > NANOS_MAX {
+            // Subtract instead of mod since we know that NANOS cannot be greater
+            // than 2 * NANOS_MAX;
+            nanos -= NANOS_MAX + 1;
+            seconds += 1;
+        }
+
+        match (seconds.try_into(), nanos.try_into()) {
+            (Ok(seconds), Ok(nanos)) => Some(Timestamp { seconds, nanos }),
+            _ => None,
         }
     }
 }
@@ -351,5 +379,60 @@ mod tests {
         Timestamp::from_str("2017-01-15T01:30:15.03441Z").unwrap();
 
         assert_string_roundtrip(&ts!(12345, 6789));
+    }
+
+    #[test]
+    fn timestamp_duration_arithmetic() {
+        // (timestamp.seconds, timestamp.nanos) + (duration) = (timestamp)
+        let test_items = [
+            // Simple sum
+            (
+                (100_231_231, 1000),
+                (100_000_000, 12),
+                Some((200_231_231, 1012)),
+            ),
+            // Duration contains negative values
+            (
+                (100_231_111, 2312),
+                (-100_000, -12),
+                Some((100_131_111, 2300)),
+            ),
+            // Nanos carry 1 to seconds when the sum > MAX
+            (
+                (1_234, 100_000_000),
+                (1_000, NANOS_MAX - 80_000_000),
+                Some((2_235, 19_999_999)),
+            ),
+            // Nanos carry 1 to seconds when the sum == MAX
+            ((1_234, 100_000_000), (1_000, 900_000_000), Some((2_235, 0))),
+            // Seconds -1 when nanos < 0
+            (
+                (1_234, 100_000_000),
+                (-1_000, -900_000_000),
+                Some((233, 200_000_000)),
+            ),
+            // None when seconds is not within the bounds
+            ((1_234, 0), (TIMESTAMP_SECONDS_MIN - 1_235, 0), None),
+            // None when carry from nanos causes seconds to be out of bounds
+            (
+                (-TIMESTAMP_SECONDS_MIN, 0),
+                (2 * TIMESTAMP_SECONDS_MIN, -1),
+                None,
+            ),
+        ];
+
+        for items in test_items {
+            assert_eq!(
+                Timestamp {
+                    seconds: items.0 .0.try_into().unwrap(),
+                    nanos: items.0 .1.try_into().unwrap()
+                }
+                .checked_add(Duration::new(items.1 .0, items.1 .1).unwrap()),
+                items.2.map(|(seconds, nanos)| Timestamp {
+                    seconds: seconds.try_into().unwrap(),
+                    nanos: nanos.try_into().unwrap()
+                })
+            );
+        }
     }
 }
