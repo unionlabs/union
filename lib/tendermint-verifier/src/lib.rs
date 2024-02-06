@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, fmt::Display};
 
 use merkle::calculate_merkle_root;
 use prost::Message;
@@ -24,18 +24,37 @@ pub const BATCH_VERIFY_THRESHOLD: usize = 2;
 pub mod merkle;
 
 pub trait BatchSignatureVerifier {
+    type Error: 'static + std::error::Error;
     /// Implementer should decide whether it's going to make sense to
     /// do batch verification based on how many signatures we have.
     fn should_batch_verify(signature_len: usize) -> bool;
 
     fn new() -> Self;
 
-    fn add(&mut self, pubkey: &PublicKey, msg: Vec<u8>, signature: &[u8]) -> Result<(), ()>;
+    fn add(
+        &mut self,
+        pubkey: &PublicKey,
+        msg: Vec<u8>,
+        signature: &[u8],
+    ) -> Result<(), Self::Error>;
 
     fn verify_signature(&self) -> bool;
 }
 
+#[derive(Debug)]
+pub struct BatchVerificationError;
+
+impl Display for BatchVerificationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
+impl std::error::Error for BatchVerificationError {}
+
 impl BatchSignatureVerifier for () {
+    type Error = BatchVerificationError;
+
     fn should_batch_verify(_signature_len: usize) -> bool {
         false
     }
@@ -44,8 +63,13 @@ impl BatchSignatureVerifier for () {
         ()
     }
 
-    fn add(&mut self, _pubkey: &PublicKey, _msg: Vec<u8>, _signature: &[u8]) -> Result<(), ()> {
-        Err(())
+    fn add(
+        &mut self,
+        _pubkey: &PublicKey,
+        _msg: Vec<u8>,
+        _signature: &[u8],
+    ) -> Result<(), Self::Error> {
+        Err(BatchVerificationError)
     }
 
     fn verify_signature(&self) -> bool {
@@ -122,6 +146,9 @@ pub enum Error {
     NegativeVotingPower(i64),
     #[error("signature count ({count}) is below the batch verify threshold ({threshold})")]
     SignatureCountBelowBatchVerifyThreshold { threshold: usize, count: usize },
+
+    #[error("batch verification ({0})")]
+    BatchVerification(Box<dyn std::error::Error>),
 }
 
 pub fn verify<V: SignatureVerifier, B: BatchSignatureVerifier>(
@@ -382,15 +409,6 @@ fn verify_commit_batch<V: BatchSignatureVerifier>(
 ) -> Result<(), Error> {
     let mut seen_vals: BTreeMap<usize, usize> = BTreeMap::new();
     let mut tallied_voting_power: u64 = 0;
-
-    // TODO(aeryz): make this batch verify threshold a global constant
-    if commit.signatures.len() < 2 {
-        return Err(Error::SignatureCountBelowBatchVerifyThreshold {
-            threshold: 2,
-            count: commit.signatures.len(),
-        });
-    }
-
     let mut batch_verifier = V::new();
 
     for (i, commit_sig) in commit.signatures.iter().enumerate() {
@@ -422,10 +440,9 @@ fn verify_commit_batch<V: BatchSignatureVerifier>(
 
         let vote_sign_bytes = canonical_vote(commit, commit_sig, &timestamp, chain_id);
 
-        // TODO(aeryz): remove unwrap
         batch_verifier
             .add(&val.pub_key, vote_sign_bytes, signature.as_ref())
-            .unwrap();
+            .map_err(|e| Error::BatchVerification(Box::new(e)))?;
 
         // If this signature counts then add the voting power of the validator
         // to the tally
@@ -624,9 +641,12 @@ fn validators_hash(vals: &ValidatorSet) -> H256 {
     calculate_merkle_root(&raw_validators)
 }
 
-pub fn header_expired(_h: &SignedHeader, _trusting_period: Duration, _now: Timestamp) -> bool {
-    // TODO(aeryz): Implement
-    false
+pub fn header_expired(h: &SignedHeader, trusting_period: Duration, now: Timestamp) -> bool {
+    let Some(expiration_time) = h.header.time.checked_add(trusting_period) else {
+        return false;
+    };
+
+    expiration_time <= now
 }
 
 pub fn verify_adjacent<V: SignatureVerifier, B: BatchSignatureVerifier>(
@@ -713,6 +733,8 @@ mod tests {
     }
 
     impl BatchSignatureVerifier for BatchEdVerifier {
+        type Error = BatchVerificationError;
+
         fn should_batch_verify(signature_len: usize) -> bool {
             signature_len >= 2
         }
@@ -721,7 +743,12 @@ mod tests {
             BatchEdVerifier::default()
         }
 
-        fn add(&mut self, pubkey: &PublicKey, msg: Vec<u8>, signature: &[u8]) -> Result<(), ()> {
+        fn add(
+            &mut self,
+            pubkey: &PublicKey,
+            msg: Vec<u8>,
+            signature: &[u8],
+        ) -> Result<(), Self::Error> {
             let PublicKey::Ed25519(pubkey) = pubkey else {
                 panic!("invalid pubkey");
             };
