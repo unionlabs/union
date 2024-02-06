@@ -390,38 +390,6 @@ impl ProposalExecutorResult {
         }
     }
 }
-/// GenesisState defines the group module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// group_seq is the group table orm.Sequence,
-    /// it is used to get the next group ID.
-    #[prost(uint64, tag = "1")]
-    pub group_seq: u64,
-    /// groups is the list of groups info.
-    #[prost(message, repeated, tag = "2")]
-    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
-    /// group_members is the list of groups members.
-    #[prost(message, repeated, tag = "3")]
-    pub group_members: ::prost::alloc::vec::Vec<GroupMember>,
-    /// group_policy_seq is the group policy table orm.Sequence,
-    /// it is used to generate the next group policy account address.
-    #[prost(uint64, tag = "4")]
-    pub group_policy_seq: u64,
-    /// group_policies is the list of group policies info.
-    #[prost(message, repeated, tag = "5")]
-    pub group_policies: ::prost::alloc::vec::Vec<GroupPolicyInfo>,
-    /// proposal_seq is the proposal table orm.Sequence,
-    /// it is used to get the next proposal ID.
-    #[prost(uint64, tag = "6")]
-    pub proposal_seq: u64,
-    /// proposals is the list of proposals.
-    #[prost(message, repeated, tag = "7")]
-    pub proposals: ::prost::alloc::vec::Vec<Proposal>,
-    /// votes is the list of votes.
-    #[prost(message, repeated, tag = "8")]
-    pub votes: ::prost::alloc::vec::Vec<Vote>,
-}
 /// QueryGroupInfoRequest is the Query/GroupInfo request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1137,6 +1105,38 @@ impl Exec {
             _ => None,
         }
     }
+}
+/// GenesisState defines the group module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// group_seq is the group table orm.Sequence,
+    /// it is used to get the next group ID.
+    #[prost(uint64, tag = "1")]
+    pub group_seq: u64,
+    /// groups is the list of groups info.
+    #[prost(message, repeated, tag = "2")]
+    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
+    /// group_members is the list of groups members.
+    #[prost(message, repeated, tag = "3")]
+    pub group_members: ::prost::alloc::vec::Vec<GroupMember>,
+    /// group_policy_seq is the group policy table orm.Sequence,
+    /// it is used to generate the next group policy account address.
+    #[prost(uint64, tag = "4")]
+    pub group_policy_seq: u64,
+    /// group_policies is the list of group policies info.
+    #[prost(message, repeated, tag = "5")]
+    pub group_policies: ::prost::alloc::vec::Vec<GroupPolicyInfo>,
+    /// proposal_seq is the proposal table orm.Sequence,
+    /// it is used to get the next proposal ID.
+    #[prost(uint64, tag = "6")]
+    pub proposal_seq: u64,
+    /// proposals is the list of proposals.
+    #[prost(message, repeated, tag = "7")]
+    pub proposals: ::prost::alloc::vec::Vec<Proposal>,
+    /// votes is the list of votes.
+    #[prost(message, repeated, tag = "8")]
+    pub votes: ::prost::alloc::vec::Vec<Vote>,
 }
 include!("cosmos.group.v1.tonic.rs");
 // @@protoc_insertion_point(module)

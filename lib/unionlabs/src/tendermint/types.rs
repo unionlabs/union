@@ -6,6 +6,7 @@ pub mod canonical_vote;
 pub mod commit;
 pub mod commit_sig;
 pub mod header;
+pub mod legacy_canonical_vote;
 pub mod part_set_header;
 pub mod signed_header;
 pub mod signed_msg_type;

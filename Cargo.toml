@@ -28,7 +28,8 @@ members = [
   "hubble",
   "tools/parse-wasm-client-type",
   "zerg",
-  "tools/cargo-workspace-dependencies", "lib/tendermint-verifier",
+  "tools/cargo-workspace-dependencies",
+  "lib/tendermint-verifier",
 ]
 
 resolver = "2"

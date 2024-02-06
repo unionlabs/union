@@ -1,22 +1,4 @@
 // @generated
-/// GenesisState defines 08-wasm's keeper genesis state
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// uploaded light client wasm contracts
-    #[prost(message, repeated, tag = "1")]
-    pub contracts: ::prost::alloc::vec::Vec<Contract>,
-}
-/// Contract stores contract code
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Contract {
-    /// contract byte code
-    #[prost(bytes = "vec", tag = "1")]
-    pub code_bytes: ::prost::alloc::vec::Vec<u8>,
-}
 /// QueryChecksumsRequest is the request type for the Query/Checksums RPC method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -56,41 +38,6 @@ pub struct QueryCodeRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryCodeResponse {
-    #[prost(bytes = "vec", tag = "1")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-}
-/// Wasm light client's Client state
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ClientState {
-    /// bytes encoding the client state of the underlying light client
-    /// implemented as a Wasm contract.
-    #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
-    pub checksum: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "3")]
-    pub latest_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
-}
-/// Wasm light client's ConsensusState
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsensusState {
-    /// bytes encoding the consensus state of the underlying light client
-    /// implemented as a Wasm contract.
-    #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-}
-/// Wasm light client message (either header(s) or misbehaviour)
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ClientMessage {
     #[prost(bytes = "vec", tag = "1")]
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
@@ -155,5 +102,58 @@ pub struct MsgMigrateContract {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgMigrateContractResponse {}
+/// Wasm light client's Client state
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ClientState {
+    /// bytes encoding the client state of the underlying light client
+    /// implemented as a Wasm contract.
+    #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+    pub checksum: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub latest_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
+}
+/// Wasm light client's ConsensusState
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ConsensusState {
+    /// bytes encoding the consensus state of the underlying light client
+    /// implemented as a Wasm contract.
+    #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+/// Wasm light client message (either header(s) or misbehaviour)
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ClientMessage {
+    #[prost(bytes = "vec", tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+/// GenesisState defines 08-wasm's keeper genesis state
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// uploaded light client wasm contracts
+    #[prost(message, repeated, tag = "1")]
+    pub contracts: ::prost::alloc::vec::Vec<Contract>,
+}
+/// Contract stores contract code
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Contract {
+    /// contract byte code
+    #[prost(bytes = "vec", tag = "1")]
+    pub code_bytes: ::prost::alloc::vec::Vec<u8>,
+}
 include!("ibc.lightclients.wasm.v1.tonic.rs");
 // @@protoc_insertion_point(module)
