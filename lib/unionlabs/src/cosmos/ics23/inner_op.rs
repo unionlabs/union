@@ -4,6 +4,7 @@ use crate::{cosmos::ics23::hash_op::HashOp, errors::UnknownEnumVariant};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct InnerOp {
     pub hash: HashOp,
     #[serde(with = "::serde_utils::hex_string")]

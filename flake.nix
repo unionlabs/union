@@ -185,7 +185,7 @@
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
-        ./lib/unionlabs/fuzz/default.nix
+        ./fuzz
         ./faucet/faucet.nix
         ./ucli/ucli.nix
         ./zerg/zerg.nix
@@ -203,6 +203,7 @@
         , system
         , lib
         , oxlint
+        , cargo-fuzz
         , ...
         }:
         let
@@ -402,35 +403,38 @@
 
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
-            buildInputs = [ rust.toolchains.dev oxlint ] ++ (with pkgs;
-              [
-                cargo-llvm-cov
-                bacon
-                cargo-nextest
-                jq
-                go-ethereum
-                marksman
-                nil
-                nixfmt
-                nix-tree
-                nodejs_20
-                openssl
-                pkg-config
-                protobuf
-                self'.packages.tdc
-                yq
-                nodePackages.graphqurl
-                nodePackages.svelte-language-server
-                nodePackages.typescript-language-server
-                nodePackages.vscode-css-languageserver-bin
-              ] ++ (with goPkgs; [ go gopls go-tools gotools ])
-              ++ (if pkgs.stdenv.isLinux then [
-                pkgs.solc
-                pkgs.foundry-bin
-                pkgs.sqlx-cli
-                self'.packages.hasura-cli
-              ] else
-                [ ]));
+            buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
+              cargo-fuzz
+              cargo-llvm-cov
+              bacon
+              cargo-nextest
+              jq
+              go-ethereum
+              marksman
+              nil
+              nixfmt
+              nix-tree
+              nodejs_20
+              openssl
+              pkg-config
+              protobuf
+              self'.packages.tdc
+              yq
+              nodePackages.graphqurl
+              nodePackages.svelte-language-server
+              nodePackages.typescript-language-server
+              nodePackages.vscode-css-languageserver-bin
+            ] ++ (with goPkgs; [
+              go
+              gopls
+              go-tools
+              gotools
+            ]) ++ (if pkgs.stdenv.isLinux then [
+              pkgs.solc
+              pkgs.foundry-bin
+              self'.packages.hasura-cli
+              self'.packages.sqlx-cli
+            ] else [ ]));
             nativeBuildInputs = [ config.treefmt.build.wrapper ]
               ++ lib.attrsets.attrValues config.treefmt.build.programs;
             GOPRIVATE = "github.com/unionlabs/*";

@@ -9,6 +9,7 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct SyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     #[serde(with = "::serde_utils::hex_string_list")]
     pub pubkeys: FixedVector<BlsPublicKey, C::SYNC_COMMITTEE_SIZE>,

@@ -200,6 +200,11 @@ pub mod fetch {
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
     #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+    #[cfg_attr(
+        feature = "arbitrary",
+        derive(arbitrary::Arbitrary),
+        arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+    )]
     pub struct FetchAbciQuery<Hc: ChainExt, Tr: ChainExt> {
         pub path: PathOf<Hc, Tr>,
         pub height: HeightOf<Hc>,
@@ -207,8 +212,12 @@ pub mod fetch {
     }
 
     #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-    #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-    #[serde(rename_all = "snake_case")]
+    #[serde(
+        bound(serialize = "", deserialize = ""),
+        deny_unknown_fields,
+        rename_all = "snake_case"
+    )]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub enum AbciQueryType {
         State,
         Proof,

@@ -343,6 +343,11 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Event<Hc, Tr> {
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
     pub block_hash: H256,
     pub height: HeightOf<Hc>,
@@ -385,6 +390,11 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for IbcEvent<Hc, Tr> {
     rename_all = "snake_case"
 )]
 #[display(fmt = "Command::{}")]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+)]
 pub enum Command<Hc: ChainExt, Tr: ChainExt> {
     #[display(fmt = "UpdateClient({client_id}, {counterparty_client_id})")]
     UpdateClient {

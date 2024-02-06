@@ -32,6 +32,7 @@ use crate::{
     ),
     deny_unknown_fields
 )]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct MsgConnectionOpenTry<
     ClientState,
     ClientId,

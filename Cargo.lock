@@ -836,6 +836,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "chain-utils"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "beacon-api",
  "bip32",
  "chrono",
@@ -2272,6 +2273,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "835c052cb0c08c1acf6ffd71c022172e18723949c8282f2b9f27efbc51e64534"
 dependencies = [
+ "arbitrary",
  "byteorder",
  "rand",
  "rustc-hex",
@@ -2583,6 +2585,15 @@ dependencies = [
  "pin-project-lite",
  "pin-utils",
  "slab",
+]
+
+[[package]]
+name = "fuzz"
+version = "0.0.0"
+dependencies = [
+ "libfuzzer-sys",
+ "unionlabs",
+ "voyager-message",
 ]
 
 [[package]]
@@ -4191,7 +4202,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "efb6c9a1dd1def8e2124d17e83a20af56f1570d6c2d2bd9e266ccb768df3840e"
 dependencies = [
  "anyhow",
- "itertools 0.11.0",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 2.0.48",
@@ -5313,6 +5324,7 @@ name = "ssz_types"
 version = "0.5.4"
 source = "git+https://github.com/unionlabs/ssz_types?branch=try-from-instead-of-from#dbbcd2e47a802f9ffc7e937024ada5c6da41d883"
 dependencies = [
+ "arbitrary",
  "derivative",
  "ethereum_serde_utils",
  "ethereum_ssz",
@@ -5495,6 +5507,7 @@ name = "tendermint"
 version = "0.34.0"
 source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.34.0-bn254#2a874af56d4650945b9c72358738be3c4833c4a0"
 dependencies = [
+ "arbitrary",
  "bytes",
  "digest 0.10.7",
  "ed25519",
@@ -6205,6 +6218,7 @@ version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76f64bba2c53b04fcab63c01a7d7427eadc821e3bc48c34dc9ba29c501164b52"
 dependencies = [
+ "arbitrary",
  "byteorder",
  "crunchy",
  "hex",
@@ -6309,14 +6323,6 @@ dependencies = [
  "uint",
  "unionlabs",
  "wasmparser",
-]
-
-[[package]]
-name = "unionlabs-fuzz"
-version = "0.0.0"
-dependencies = [
- "libfuzzer-sys",
- "unionlabs",
 ]
 
 [[package]]
@@ -6487,6 +6493,7 @@ dependencies = [
 name = "voyager-message"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "beacon-api",
  "chain-utils",
  "contracts",

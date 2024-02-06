@@ -20,7 +20,7 @@ use crate::{
     id::{ChannelId, PortId},
     uint::U256,
     validated::{Validate, Validated},
-    TypeUrl,
+    MaybeArbitrary, TypeUrl,
 };
 
 /// A convenience trait for a string id (`ChainId`, `ClientId`, `ConnectionId`, etc)
@@ -98,7 +98,8 @@ pub trait Chain: Sized + Send + Sync + 'static {
         + crate::IntoProto // hack
         + TypeUrl // hack
         // TODO: Bound ChainId in the same way
-        + ClientState<Height = Self::Height>;
+        + ClientState<Height = Self::Height>
+        + MaybeArbitrary;
     type SelfConsensusState: ConsensusState
         + Debug
         + Clone
@@ -106,7 +107,8 @@ pub trait Chain: Sized + Send + Sync + 'static {
         + crate::IntoProto // hack
         + TypeUrl // hack
         + Serialize
-        + for<'de> Deserialize<'de>;
+        + for<'de> Deserialize<'de>
+        + MaybeArbitrary;
 
     type StoredClientState<Tr: Chain>: Debug
         + Clone
@@ -114,27 +116,45 @@ pub trait Chain: Sized + Send + Sync + 'static {
         + Serialize
         + for<'de> Deserialize<'de>
         + ClientState<ChainId = ChainIdOf<Tr>, Height = Tr::Height>
+        + MaybeArbitrary
         + 'static;
     type StoredConsensusState<Tr: Chain>: Debug
         + Clone
         + PartialEq
         + Serialize
         + for<'de> Deserialize<'de>
+        + MaybeArbitrary
         + 'static;
 
-    type Header: Header + Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+    type Header: Header
+        + Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + MaybeArbitrary;
 
     // this is just Height
-    type Height: IsHeight;
+    type Height: IsHeight + MaybeArbitrary;
 
-    type ClientId: Id;
+    type ClientId: Id + MaybeArbitrary;
 
     type IbcStateEncoding: Encoding;
 
-    type StateProof: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+    type StateProof: Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + MaybeArbitrary;
 
     /// Available client types for this chain.
-    type ClientType: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+    type ClientType: Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + MaybeArbitrary;
 
     type Error: Debug;
 
@@ -179,8 +199,9 @@ pub trait ClientState {
         + Hash
         + Clone
         + Serialize
-        + for<'de> Deserialize<'de>;
-    type Height: IsHeight;
+        + for<'de> Deserialize<'de>
+        + MaybeArbitrary;
+    type Height: IsHeight + MaybeArbitrary;
 
     fn height(&self) -> Self::Height;
     fn chain_id(&self) -> Self::ChainId;

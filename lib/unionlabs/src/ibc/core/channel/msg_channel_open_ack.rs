@@ -14,6 +14,7 @@ use crate::{
     ),
     deny_unknown_fields
 )]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct MsgChannelOpenAck<ProofTry, ProofHeight: IsHeight> {
     pub port_id: PortId,
     pub channel_id: ChannelId,

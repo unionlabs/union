@@ -13,6 +13,7 @@ use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
 )]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct MerkleRoot {
     pub hash: H256,
 }

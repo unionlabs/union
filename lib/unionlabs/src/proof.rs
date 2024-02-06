@@ -14,6 +14,7 @@ use crate::{
     },
     id::{ChannelId, ConnectionId, PortId},
     traits::{self, Chain, ClientIdOf, HeightOf},
+    MaybeArbitrary,
 };
 
 fn eat_static_segment(s: Option<&str>, expecting: &'static str) -> Result<(), PathParseError> {
@@ -77,8 +78,9 @@ pub trait IbcPath<Hc: Chain, Tr: Chain>:
     + Sized
     + TryFrom<Path<ClientIdOf<Hc>, HeightOf<Tr>>, Error = Path<ClientIdOf<Hc>, HeightOf<Tr>>>
     + Into<Path<ClientIdOf<Hc>, HeightOf<Tr>>>
+    + MaybeArbitrary
 {
-    type Output: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+    type Output: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de> + MaybeArbitrary;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display, clap::Args)]

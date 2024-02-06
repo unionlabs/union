@@ -19,6 +19,7 @@ use crate::{
     ),
     deny_unknown_fields
 )]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct MsgConnectionOpenInit<ClientId, CounterpartyClientId> {
     pub client_id: ClientId,
     pub counterparty: Counterparty<CounterpartyClientId, EmptyString>,

@@ -6,6 +6,7 @@ use crate::id::PortId;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: String,

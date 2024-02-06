@@ -29,7 +29,7 @@ use unionlabs::{
         Chain, ChainIdOf, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf,
         HeightOf,
     },
-    IntoProto, MaybeRecoverableError, TypeUrl,
+    IntoProto, MaybeArbitrary, MaybeRecoverableError, TypeUrl,
 };
 
 use crate::{
@@ -57,8 +57,14 @@ pub mod wait;
 // TODO: Rename this module to something better, `lightclient` clashes with the workspace crate (could also rename the crate)
 pub mod chain_impls;
 
-pub trait RelayerMsgDatagram =
-    Debug + Display + Clone + PartialEq + Serialize + for<'de> Deserialize<'de> + 'static;
+pub trait RelayerMsgDatagram = Debug
+    + Display
+    + Clone
+    + PartialEq
+    + Serialize
+    + for<'de> Deserialize<'de>
+    + 'static
+    + MaybeArbitrary;
 
 pub trait ChainExt: Chain {
     type Data<Tr: ChainExt>: RelayerMsgDatagram;
@@ -69,7 +75,7 @@ pub trait ChainExt: Chain {
     type MsgError: Debug + MaybeRecoverableError;
 
     /// The config required to construct this light client.
-    type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de>;
+    type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de> + MaybeArbitrary;
 
     fn do_fetch<Tr: ChainExt>(&self, msg: Self::Fetch<Tr>) -> impl Future<Output = RelayerMsg> + '_
     where
@@ -81,6 +87,7 @@ pub trait ChainExt: Chain {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum DeferPoint {
     Absolute,
     Relative,
@@ -94,6 +101,11 @@ pub enum DeferPoint {
     content = "@value",
     rename_all = "snake_case",
     deny_unknown_fields
+)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "T: QueueMsgTypes")
 )]
 pub enum QueueMsg<T: QueueMsgTypes> {
     Event(T::Event),
@@ -214,60 +226,23 @@ pub mod ctors {
 pub trait TryFromIntoQueueMsg<T: QueueMsgTypes> =
     TryFrom<QueueMsg<T>, Error = QueueMsg<T>> + Into<QueueMsg<T>>;
 
+pub trait QueueMsgTypeBound = Debug
+    + Display
+    + Clone
+    + PartialEq
+    + Serialize
+    + for<'a> Deserialize<'a>
+    + Send
+    + Sync
+    + MaybeArbitrary;
+
 pub trait QueueMsgTypes: Sized + 'static {
-    type Event: HandleEvent<Self>
-        + Debug
-        + Display
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'a> Deserialize<'a>
-        + Send
-        + Sync;
-    type Data: Debug
-        + Display
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'a> Deserialize<'a>
-        + Send
-        + Sync;
-    type Fetch: HandleFetch<Self>
-        + Debug
-        + Display
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'a> Deserialize<'a>
-        + Send
-        + Sync;
-    type Msg: HandleMsg<Self>
-        + Debug
-        + Display
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'a> Deserialize<'a>
-        + Send
-        + Sync;
-    type Wait: HandleWait<Self>
-        + Debug
-        + Display
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'a> Deserialize<'a>
-        + Send
-        + Sync;
-    type Aggregate: HandleAggregate<Self>
-        + Debug
-        + Display
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'a> Deserialize<'a>
-        + Send
-        + Sync;
+    type Event: HandleEvent<Self> + QueueMsgTypeBound;
+    type Data: QueueMsgTypeBound;
+    type Fetch: HandleFetch<Self> + QueueMsgTypeBound;
+    type Msg: HandleMsg<Self> + QueueMsgTypeBound;
+    type Wait: HandleWait<Self> + QueueMsgTypeBound;
+    type Aggregate: HandleAggregate<Self> + QueueMsgTypeBound;
 
     type Store: Send + Sync;
 }
@@ -579,6 +554,11 @@ macro_rules! any_enum {
             ::serde::Deserialize,
             ::enumorph::Enumorph,
         )]
+        #[cfg_attr(
+            feature = "arbitrary",
+            derive(arbitrary::Arbitrary),
+            arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
+        )]
         #[serde(
             bound(serialize = "", deserialize = ""),
             tag = "@type",
@@ -664,7 +644,8 @@ pub trait AnyLightClient {
         + Clone
         + PartialEq
         + Serialize
-        + for<'de> Deserialize<'de>;
+        + for<'de> Deserialize<'de>
+        + MaybeArbitrary;
 }
 
 pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
@@ -677,6 +658,11 @@ pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
     Deserialize,
     derive_more::Display,
     enumorph::Enumorph,
+)]
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "T: AnyLightClient")
 )]
 #[serde(
     from = "AnyLightClientIdentifiedSerde<T>",
@@ -813,11 +799,17 @@ pub enum LcError<Hc: ChainExt, Tr: ChainExt> {
 )]
 // TODO: `T: AnyLightClient`
 // prerequisites: derive macro for AnyLightClient
+#[cfg_attr(
+    feature = "arbitrary",
+    derive(arbitrary::Arbitrary),
+    arbitrary(bound = "Hc: Chain, T: arbitrary::Arbitrary<'arbitrary>")
+)]
 pub struct Identified<Hc: Chain, Tr, T> {
     // #[serde(rename = "@chain_id")]
     pub chain_id: ChainIdOf<Hc>,
     pub t: T,
     #[serde(skip)]
+    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 
@@ -927,6 +919,7 @@ fn flatten() {
     struct EmptyMsgTypes;
 
     #[derive(Debug, derive_more::Display, Clone, PartialEq, Serialize, Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     struct Unit;
 
     impl HandleMsg<EmptyMsgTypes> for Unit {
@@ -1448,6 +1441,7 @@ where
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct WasmConfig {
     pub checksum: H256,
     // pub inner: T,

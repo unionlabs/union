@@ -1,6 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![deny(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
+#![feature(trait_alias)]
 
 use std::{
     fmt::{Debug, Display},
@@ -407,6 +408,7 @@ pub fn parse_wasm_client_type(
     into = "String",
     bound(serialize = "", deserialize = "")
 )]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum QueryHeight<H: IsHeight> {
     Latest,
     Specific(H),
@@ -451,3 +453,19 @@ pub trait MaybeRecoverableError: std::error::Error {
 }
 
 fn _is_object_safe(_: &dyn MaybeRecoverableError) {}
+
+#[cfg(not(feature = "arbitrary"))]
+pub trait MaybeArbitrary =;
+#[cfg(feature = "arbitrary")]
+pub trait MaybeArbitrary = for<'a> arbitrary::Arbitrary<'a>;
+
+#[cfg(feature = "arbitrary")]
+fn arbitrary_cow_static<T>(
+    u: &mut arbitrary::Unstructured,
+) -> arbitrary::Result<std::borrow::Cow<'static, T>>
+where
+    T: ToOwned + ?Sized,
+    T::Owned: for<'a> arbitrary::Arbitrary<'a>,
+{
+    u.arbitrary::<T::Owned>().map(std::borrow::Cow::Owned)
+}

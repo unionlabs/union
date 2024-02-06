@@ -15,6 +15,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 // REVIEW: Are all hashes here hex_upper_unprefixed?
 #[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Header {
     /// basic block info
     pub version: Consensus,

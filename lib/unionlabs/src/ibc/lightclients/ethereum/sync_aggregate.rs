@@ -9,6 +9,7 @@ use crate::{
 
 #[derive(Clone, PartialEq, Deserialize, Serialize, Encode, Decode, TreeHash)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct SyncAggregate<C: SYNC_COMMITTEE_SIZE> {
     // TODO: Change debug print for this type in ssz_types
     pub sync_committee_bits: BitVector<C::SYNC_COMMITTEE_SIZE>,

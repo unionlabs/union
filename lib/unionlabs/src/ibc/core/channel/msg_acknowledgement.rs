@@ -13,6 +13,7 @@ use crate::{
     ),
     deny_unknown_fields
 )]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct MsgAcknowledgement<ProofAcked, ProofHeight: IsHeight> {
     pub packet: Packet,
     #[serde(with = "::serde_utils::hex_string")]

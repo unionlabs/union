@@ -8,6 +8,7 @@ version      = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 beacon-api               = { workspace = true, default-features = false }
 chain-utils              = { workspace = true }
 contracts                = { workspace = true, features = ["providers"] }
@@ -38,3 +39,14 @@ unionlabs                = { workspace = true, features = ["ethabi"] }
 [dev-dependencies]
 hex-literal = { workspace = true }
 serde_json  = { workspace = true }
+
+[features]
+default = ["arbitrary"]
+
+arbitrary = [
+  "dep:arbitrary",
+  "tendermint/arbitrary",
+  "tendermint/std",
+  "unionlabs/arbitrary",
+  "chain-utils/arbitrary",
+]

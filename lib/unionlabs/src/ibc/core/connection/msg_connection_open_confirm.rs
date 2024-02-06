@@ -10,6 +10,7 @@ use crate::{ibc::core::client::height::IsHeight, id::ConnectionId, TypeUrl};
     ),
     deny_unknown_fields
 )]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct MsgConnectionOpenConfirm<ProofHeight: IsHeight, ProofAck> {
     pub connection_id: ConnectionId,
     pub proof_ack: ProofAck,
