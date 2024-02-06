@@ -11,7 +11,7 @@
 
       mkNodeId = name:
         pkgs.runCommand "node-id" { } ''
-          ${uniond} init testnet --chain-id ${CHAIN_ID} --home .
+          ${uniond} init testnet bn254 --chain-id ${CHAIN_ID} --home .
           mkdir -p $out
           mv ./config/node_key.json $out/${name}
         '';
@@ -24,7 +24,7 @@
           export HOME=$(pwd)
           mkdir -p $out
 
-          ${uniond} init testnet --chain-id ${CHAIN_ID} --home $out
+          ${uniond} init testnet bn254 --chain-id ${CHAIN_ID} --home $out
 
           # Add the dev account
           echo ${MNEMONIC} | ${uniond} keys add \
@@ -112,7 +112,7 @@
                 }.json | jq ."pub_key"."value"`
                 PUBKEY="{\"@type\":\"/cosmos.crypto.bn254.PubKey\",\"key\":$PUBKEY}"
                 mkdir -p $out
-                ${uniond} genesis gentx val-${toString i} 1000000000000000000000stake --keyring-backend test --chain-id ${CHAIN_ID} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
+                ${uniond} genesis gentx val-${toString i} 1000000000000000000000stake "bn254" --keyring-backend test --chain-id ${CHAIN_ID} --home ${home} --ip "0.0.0.0" --pubkey $PUBKEY --moniker validator-${toString i} --output-document $out/valgentx-${
                   toString i
                 }.json
               '')
