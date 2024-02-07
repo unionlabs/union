@@ -82,6 +82,10 @@ pub enum EvmQuery {
         denom: String,
         #[arg(long)]
         address: H160,
+        #[arg(long)]
+        channel_id: String,
+        #[arg(long)]
+        port_id: String,
     },
     Erc20Balance {
         #[arg(long)]
