@@ -1,8 +1,8 @@
 import svelte from "@astrojs/svelte";
 import tailwind from "@astrojs/tailwind";
 import starlight from "@astrojs/starlight";
+import { defineConfig } from "astro/config";
 import { markdownConfiguration } from "./markdown.config.ts";
-import { defineConfig, squooshImageService } from "astro/config";
 
 const SITE_URL = "https://union.build";
 
@@ -143,9 +143,6 @@ export default defineConfig({
     }),
     svelte(),
   ],
-  image: {
-    service: squooshImageService(),
-  },
   vite: {
     optimizeDeps: {
       exclude: ["@urql/svelte", "echarts"],
