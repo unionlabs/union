@@ -1,30 +1,26 @@
 {
   "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
+    "strict": true,
     "allowJs": true,
     "checkJs": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "alwaysStrict": true,
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
     "sourceMap": true,
-    "strict": true,
+    "skipLibCheck": true,
+    "alwaysStrict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
     "moduleResolution": "bundler",
-    "types": ["@cloudflare/workers-types", "typed-query-selector/strict"],
-    "paths": {
-      "$lib/*": ["./src/lib/*"],
-      "#/*": ["./src/*"]
-    }
+    "allowImportingTsExtensions": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["@cloudflare/workers-types", "typed-query-selector/strict"]
   },
   "files": [
-    "reset.d.ts",
     "reset.d.ts",
     ".eslintrc.cjs",
     "vite.config.ts",
     ".prettierrc.mjs",
     "svelte.config.js",
+    "environment.d.ts",
     "postcss.config.cjs",
     "tailwind.config.ts"
   ]

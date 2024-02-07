@@ -4,7 +4,7 @@
     in {
       packages = {
         app = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-RVB0gqaALZLtIndTn0PWlWzb7YoU5NVj+QzjME5SRLY=";
+          npmDepsHash = "";
           src = ./.;
           sourceRoot = "app";
           pname = "app";

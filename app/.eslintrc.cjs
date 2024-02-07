@@ -13,6 +13,7 @@ module.exports = {
     'plugin:unicorn/all',
     'plugin:@typescript-eslint/recommended',
     'plugin:svelte/recommended',
+    'plugin:@tanstack/eslint-plugin-query/recommended',
     'prettier'
   ],
   parser: '@typescript-eslint/parser',
