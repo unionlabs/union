@@ -10,5 +10,6 @@ pub struct Config {
     pub union_contract: String,
     pub evm_contract: H160,
     pub channel: String,
+    pub port: String,
     pub rush_blocks: u64,
 }
