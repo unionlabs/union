@@ -13,7 +13,7 @@
   async function connectWallet(_event: MouseEvent) {
     const { accounts, chainId } = await connect(config, {
       chainId: sepolia.id,
-      connector: injected({ target: 'metaMask' })
+      connector: injected()
     })
   }
 
@@ -23,7 +23,7 @@
         accounts: [address]
       }
     ] = await reconnect(config, {
-      connectors: [injected({ target: 'metaMask' })]
+      connectors: [injected()]
     })
 
     if (account.status === 'connected') buttonText = account.address

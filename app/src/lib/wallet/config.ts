@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { mainnet, sepolia } from '@wagmi/core/chains'
 import { walletConnect, injected } from '@wagmi/connectors'
-import { http, createConfig, createStorage, fallback, unstable_connector } from '@wagmi/core'
+import { http, createConfig, fallback, unstable_connector } from '@wagmi/core'
 
 // Node polyfills
 globalThis.Buffer = Buffer
@@ -12,10 +12,11 @@ export const config = createConfig({
   chains: [mainnet, sepolia],
   syncConnectedChain: true,
   multiInjectedProviderDiscovery: true,
-  // storage: createStorage({ storage: localStorage }),
+  /**
+   * TODO: set storage using `unstorage`
+   */
   connectors: [
     injected({
-      target: 'metaMask',
       shimDisconnect: true,
       unstable_shimAsyncInject: 2500
     }),

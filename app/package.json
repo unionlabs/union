@@ -28,10 +28,8 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240129.0",
-    "@internationalized/date": "^3.5.1",
     "@melt-ui/pp": "^0.3.0",
-    "@melt-ui/svelte": "^0.71.3",
-    "@sveltejs/adapter-auto": "^3.1.1",
+    "@melt-ui/svelte": "^0.72.0",
     "@sveltejs/adapter-static": "^3.0.1",
     "@sveltejs/kit": "^2.5.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.2",
