@@ -432,8 +432,8 @@ github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqri
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/unionlabs/cometbls v0.0.0-20240125180347-5b33e3460932 h1:ecEdIXw7w3I4JEpNoNMwpHu4Iy6PRgGl++uWQIcPYBw=
 github.com/unionlabs/cometbls v0.0.0-20240125180347-5b33e3460932/go.mod h1:ZN5TH4WzX9x+hgcipytd0WghjGcCBy6M8YVgnHOCd/0=
-github.com/unionlabs/cosmos-sdk v0.0.0-20240125200611-e1b8b82c712b h1:eUv6PZDYQaO4vFVGYXlufFjiDq8UnZtmoVyBen+uzyo=
-github.com/unionlabs/cosmos-sdk v0.0.0-20240125200611-e1b8b82c712b/go.mod h1:iEaeKpRLz88bVPyU7Zk0WODyY05qHmR33vNsFaJ4lP8=
+github.com/unionlabs/cosmos-sdk v0.0.0-20240206230727-9973b232e832 h1:Yzf3nF11ClR8geNwP+oe+ZJG489q4dYgQJlBL42ANiA=
+github.com/unionlabs/cosmos-sdk v0.0.0-20240206230727-9973b232e832/go.mod h1:iEaeKpRLz88bVPyU7Zk0WODyY05qHmR33vNsFaJ4lP8=
 github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6 h1:wRt6Yt29bWvwCSeRmRJ/Wm1sRev1GjJGXn4MzSrMbv4=
 github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6/go.mod h1:wKqwsieaKPThcFkHe0d0zMsbHEUWFmZcG7KBCse210o=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
