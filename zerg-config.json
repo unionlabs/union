@@ -48,5 +48,6 @@
   "union_contract": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2",
   "evm_contract": "0xF8F7758FbcEfd546eAEff7dE24AFf666B6228e73",
   "channel": "channel-2",
+  "port": "0",
   "rush_blocks": 2
 }
