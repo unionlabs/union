@@ -1,6 +1,7 @@
-<script lang="ts"></script>
+<script lang="ts">
+  import ConnectButton from '$lib/components/Connect.svelte'
+</script>
 
-<main>
-  <h1 class="text-pink-500">Welcome to SvelteKit</h1>
-  <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<main class="mx-auto mt-12 flex min-h-full min-w-full items-center justify-center">
+  <ConnectButton />
 </main>

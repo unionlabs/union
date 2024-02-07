@@ -4,13 +4,12 @@
     in {
       packages = {
         app = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-RVB0gqaALZLtIndTn0PWlWzb7YoU5NVj+QzjME5SRLY=";
+          npmDepsHash = "sha256-5KgxTfOWJEioLsKdXtwRBJ6aD2F7BEs4dGa1XeOA74Y=";
           src = ./.;
           sourceRoot = "app";
           pname = "app";
           version = "0.0.0";
-          PUPPETEER_SKIP_DOWNLOAD = true;
-          nativeBuildInputs = pkgsDeps;
+          nativeBuildInputs = pkgsDeps ++ [ pkgs.python3 ];
           buildInputs = pkgsDeps;
           installPhase = ''
             mkdir -p $out

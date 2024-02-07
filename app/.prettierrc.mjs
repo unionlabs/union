@@ -9,14 +9,13 @@ export default {
   jsxSingleQuote: true,
   arrowParens: 'avoid',
   trailingComma: 'none',
+  bracketSameLine: false,
   singleAttributePerLine: true,
   plugins: ['prettier-plugin-svelte', 'prettier-plugin-tailwindcss'],
   overrides: [
     {
       files: '*.svelte',
-      options: {
-        parser: 'svelte'
-      }
+      options: { parser: 'svelte' }
     }
   ]
 }
