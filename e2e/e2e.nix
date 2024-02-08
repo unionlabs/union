@@ -41,7 +41,7 @@
             diskSize = 4 * 1024;
             arion = {
               backend = "docker";
-              projects.union-devnet.settings = networks.devnet-minimal;
+              projects.union-devnet.settings = networks.modules.devnet-minimal;
             };
           };
         };

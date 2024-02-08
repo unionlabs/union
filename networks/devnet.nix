@@ -79,7 +79,7 @@
 
         devnet-minimal = {
           project.name = "devnet-minimal";
-          services = services.uniond-testnet-genesis;
+          services = services.union-testnet-genesis;
         };
 
         devnet-union = {
