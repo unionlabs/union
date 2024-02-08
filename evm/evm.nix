@@ -11,7 +11,7 @@
         owner = "GNSPS";
         repo = "solidity-bytes-utils";
         rev = "v0.8.2";
-        hash = "sha256-sJWoYag6hTIoS4Jr1XdqBKfrJaFQ1iMPy+UI5vVb7Lw=";
+        hash = "sha256-eDAYc7qoBR/nW9hKBwO0VcpAG+AYkxNWArqaXZwAL+Y=";
       };
       solady = pkgs.fetchFromGitHub {
         owner = "vectorized";
