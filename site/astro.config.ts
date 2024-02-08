@@ -79,9 +79,6 @@ export default defineConfig({
         dark: "./src/assets/union-logo/union-logo-transparent.svg",
         light: "./src/assets/union-logo/union-logo-white-transparent.svg",
       },
-      editLink: {
-        baseUrl: "https://github.com/unionlabs/union/edit/main/site",
-      },
       sidebar: [
         {
           label: "Introduction",
