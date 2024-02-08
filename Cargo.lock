@@ -5806,6 +5806,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "tendermint-light-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "bytes",
+ "cosmwasm-std",
+ "hex",
+ "ics008-wasm-client",
+ "ics23",
+ "lazy_static",
+ "prost",
+ "protos",
+ "schemars",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3",
+ "tendermint-verifier",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "tendermint-proto"
 version = "0.34.0"
 source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.34.0-bn254#2a874af56d4650945b9c72358738be3c4833c4a0"
