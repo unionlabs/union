@@ -15,6 +15,7 @@ members = [
   "tools/generate-rust-sol-bindings",
   "light-clients/cometbls-light-client",
   "light-clients/ethereum-light-client",
+  "light-clients/tendermint-light-client",
   "e2e/ensure-blocks",
   "generated/rust",
   "generated/contracts",

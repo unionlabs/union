@@ -357,6 +357,7 @@ pub enum WasmClientType {
     EthereumMinimal,
     EthereumMainnet,
     Cometbls,
+    Tendermint,
 }
 
 impl FromStr for WasmClientType {
@@ -367,6 +368,7 @@ impl FromStr for WasmClientType {
             "EthereumMinimal" => Ok(WasmClientType::EthereumMinimal),
             "EthereumMainnet" => Ok(WasmClientType::EthereumMainnet),
             "Cometbls" => Ok(WasmClientType::Cometbls),
+            "Tendermint" => Ok(WasmClientType::Tendermint),
             _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
         }
     }
