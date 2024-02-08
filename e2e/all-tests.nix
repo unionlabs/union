@@ -41,19 +41,18 @@
           '';
         };
 
-        sepolia-runs = e2e.mkTest {
-          name = "sepolia-runs";
+        devnet-eth-runs = e2e.mkTest {
+          name = "devnet-eth-runs";
 
           testScript = ''
             start_all()
 
-            sepolia.wait_for_open_port(${toString e2e.sepoliaNode.wait_for_open_port})
-
-            sepolia.wait_for_console_text('${e2e.sepoliaNode.wait_for_console_text}')
+            devnetEth.wait_for_open_port(${toString e2e.devnetEthNode.wait_for_open_port})
+            devnetEth.wait_for_console_text('${e2e.devnetEthNode.wait_for_console_text}')
           '';
 
           nodes = {
-            sepolia = e2e.sepoliaNode.node;
+            devnetEth = e2e.devnetEth.node;
           };
         };
 

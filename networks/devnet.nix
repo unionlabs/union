@@ -3,179 +3,157 @@
     let
       arion = inputs'.arion.packages.default;
 
-      uniond-services = (builtins.listToAttrs (builtins.genList
-        (id: {
-          name = "uniond-${toString id}";
-          value = import ./services/uniond.nix {
-            inherit pkgs;
-            inherit id;
-            uniond = self'.packages.uniond;
-            devnet-genesis = self'.packages.devnet-genesis;
-            devnet-validator-keys = self'.packages.devnet-validator-keys;
-            devnet-validator-node-ids = self'.packages.devnet-validator-node-ids;
-          };
-        })
-        devnetConfig.validatorCount));
+      services = {
+        devnet-union = (builtins.listToAttrs (builtins.genList
+          (id: {
+            name = "uniond-${toString id}";
+            value = import ./services/uniond.nix {
+              inherit pkgs;
+              inherit id;
+              uniond = self'.packages.uniond;
+              devnet-genesis = self'.packages.devnet-genesis;
+              devnet-validator-keys = self'.packages.devnet-validator-keys;
+              devnet-validator-node-ids = self'.packages.devnet-validator-node-ids;
+            };
+          })
+          devnetConfig.validatorCount));
 
-      simd-services = (builtins.listToAttrs (builtins.genList
-        (id: {
-          name = "simd-${toString id}";
-          value = import ./services/simd.nix {
-            inherit pkgs;
-            inherit id;
-            simd = self'.packages.simd;
-            simd-genesis = self'.packages.simd-genesis;
-            simd-validator-keys = self'.packages.simd-validator-keys;
-            simd-validator-node-ids = self'.packages.simd-validator-node-ids;
-          };
-        })
-        devnetConfig.validatorCount));
+        devnet-simd = (builtins.listToAttrs (builtins.genList
+          (id: {
+            name = "simd-${toString id}";
+            value = import ./services/simd.nix {
+              inherit pkgs;
+              inherit id;
+              simd = self'.packages.simd;
+              simd-genesis = self'.packages.simd-genesis;
+              simd-validator-keys = self'.packages.simd-validator-keys;
+              simd-validator-node-ids = self'.packages.simd-validator-node-ids;
+            };
+          })
+          devnetConfig.validatorCount));
 
-      uniond-testnet-genesis-services = (builtins.listToAttrs (builtins.genList
-        (id: {
-          name = "uniond-${toString id}";
-          value = import ./services/unionvisor.nix {
-            inherit pkgs;
-            inherit id;
-            uniond = (get-flake inputs.v0_15_0).packages.${system}.uniond;
-            unionvisor = self'.packages.unionvisor;
-            devnet-genesis = self'.packages.minimal-genesis;
-            devnet-validator-keys = self'.packages.minimal-validator-keys;
-            devnet-validator-node-ids = self'.packages.minimal-validator-node-ids;
-            network = "union-minimal-1";
-            bundle = self'.packages.bundle-testnet-next;
-          };
-        })
-        4));
+        union-testnet-genesis = (builtins.listToAttrs (builtins.genList
+          (id: {
+            name = "uniond-${toString id}";
+            value = import ./services/unionvisor.nix {
+              inherit pkgs;
+              inherit id;
+              uniond = (get-flake inputs.v0_15_0).packages.${system}.uniond;
+              unionvisor = self'.packages.unionvisor;
+              devnet-genesis = self'.packages.minimal-genesis;
+              devnet-validator-keys = self'.packages.minimal-validator-keys;
+              devnet-validator-node-ids = self'.packages.minimal-validator-node-ids;
+              network = "union-minimal-1";
+              bundle = self'.packages.bundle-testnet-next;
+            };
+          })
+          4));
 
-      sepolia-services = {
-        geth = import ./services/geth.nix {
-          inherit pkgs;
-          config = self'.packages.devnet-eth-config;
+        devnet-eth = {
+          geth = import ./services/geth.nix {
+            inherit pkgs;
+            config = self'.packages.devnet-eth-config;
+          };
+          lodestar = import ./services/lodestar.nix {
+            inherit pkgs;
+            config = self'.packages.devnet-eth-config;
+            validatorCount = devnetConfig.ethereum.beacon.validatorCount;
+          };
         };
-        lodestar = import ./services/lodestar.nix {
-          inherit pkgs;
-          config = self'.packages.devnet-eth-config;
-          validatorCount = devnetConfig.ethereum.beacon.validatorCount;
+
+        postgres = {
+          postgres = import ./services/postgres.nix { inherit lib pkgs; };
         };
+
+        # hasura = import ./services/hasura.nix {
+        #   inherit lib pkgs;
+        # };
+        # hubble = { hubble = import ./services/hubble.nix { inherit lib; image = self'.packages.hubble-image; }; };
       };
 
-      postgres-services = {
-        postgres = import ./services/postgres.nix { inherit lib pkgs; };
-      };
+      modules = {
+        full-dev-setup = {
+          project.name = "full-dev-setup";
+          services = services.devnet-eth // services.devnet-union // services.postgres;
+        };
 
-      # hasura-services = import ./services/hasura.nix {
-      #   inherit lib pkgs;
-      # };
-      # hubble-services = { hubble = import ./services/hubble.nix { inherit lib; image = self'.packages.hubble-image; }; };
+        devnet-minimal = {
+          project.name = "devnet-minimal";
+          services = services.union-testnet-genesis;
+        };
 
-      devnet = {
-        project.name = "devnet";
-        services = sepolia-services // uniond-services // postgres-services;
-      };
+        devnet-union = {
+          project.name = "devnet-union";
+          services = services.devnet-union;
+        };
 
-      devnet-minimal = {
-        project.name = "devnet-minimal";
-        services = uniond-testnet-genesis-services;
-      };
+        devnet-simd = {
+          project.name = "devnet-simd";
+          services = services.devnet-simd;
+        };
 
-      union = {
-        project.name = "union";
-        services = uniond-services;
-      };
+        devnet-eth = {
+          project.name = "devnet-eth";
+          services = services.devnet-eth;
+        };
 
-      sepolia = {
-        project.name = "sepolia";
-        services = sepolia-services;
-      };
-
-      spec = {
-        modules = [ (devnet // { networks.union-devnet = { }; }) ];
-      };
-
-      spec-union = {
-        modules = [ (union // { networks.union-devnet = { }; }) ];
-      };
-
-      spec-simd = {
-        modules = [{
-          project.name = "simd-devnet";
-          networks.simd-devnet = { };
-          services = simd-services;
-        }];
-      };
-
-      spec-eth = {
-        modules = [{
-          project.name = "union-devnet-eth";
-          networks.union-devnet = { };
-          services = sepolia-services;
-        }];
-      };
-
-      build = arion.build spec;
-
-      build-eth = arion.build spec-eth;
-
-      build-union = arion.build spec-union;
-
-      build-simd = arion.build spec-simd;
-
-      build-voyager-queue = arion.build {
-        modules = [{
+        postgres = {
           project.name = "postgres";
-          services = postgres-services;
-        }];
+          services = services.postgres;
+        };
+      };
+
+      specs = {
+        full-dev-setup = {
+          modules = [ (modules.full-dev-setup // { networks.full-dev-setup = { }; }) ];
+        };
+
+        devnet-union = {
+          modules = [ (modules.devnet-union // { networks.devnet-union = { }; }) ];
+        };
+
+        devnet-simd = {
+          modules = [ (modules.devnet-simd // { networks.devnet-simd = { }; }) ];
+        };
+
+        devnet-eth = {
+          modules = [ (modules.devnet-eth // { networks.devnet-eth = { }; }) ];
+        };
+
+        voyager-queue = {
+          modules = [ modules.postgres ];
+        };
+      };
+
+      build = {
+        full-dev-setup = arion.build specs.full-dev-setup;
+
+        devnet-union = arion.build specs.devnet-union;
+
+        devnet-simd = arion.build specs.devnet-simd;
+
+        devnet-eth = arion.build specs.devnet-eth;
+
+        voyager-queue = arion.build specs.voyager-queue;
+      };
+
+      mkArionBuild = target: name: pkgs.writeShellApplication {
+        inherit name;
+        runtimeInputs = [ arion ];
+        text = ''
+          arion --prebuilt-file ${target} up --build --force-recreate -V --always-recreate-deps --remove-orphans
+        '';
       };
     in
     {
-      packages.devnet =
-        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
-          name = "union-devnet";
-          runtimeInputs = [ arion ];
-          text = ''
-            arion --prebuilt-file ${build} up --build --force-recreate -V --always-recreate-deps --remove-orphans
-          '';
-        });
-
-      packages.devnet-simd =
-        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
-          name = "simd-devnet";
-          runtimeInputs = [ arion ];
-          text = ''
-            arion --prebuilt-file ${build-simd} up --build --force-recreate -V --always-recreate-deps --remove-orphans
-          '';
-        });
-
-      packages.devnet-eth =
-        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
-          name = "union-devnet-eth";
-          runtimeInputs = [ arion ];
-          text = ''
-            arion --prebuilt-file ${build-eth} up --build --force-recreate -V --always-recreate-deps --remove-orphans
-          '';
-        });
-
-      packages.devnet-union =
-        mkCi (system == "x86_64-linux") (pkgs.writeShellApplication {
-          name = "union-devnet-union";
-          runtimeInputs = [ arion ];
-          text = ''
-            arion --prebuilt-file ${build-union} up --build --force-recreate -V --always-recreate-deps --remove-orphans
-          '';
-        });
-
-      packages.voyager-queue =
-        mkCi false (pkgs.writeShellApplication {
-          name = "postgres";
-          runtimeInputs = [ arion ];
-          text = ''
-            arion --prebuilt-file ${build-voyager-queue} up --build --force-recreate -V --always-recreate-deps --remove-orphans
-          '';
-        });
-
-      _module.args.networks = {
-        inherit devnet devnet-minimal union sepolia;
+      packages = {
+        full-dev-setup = mkCi (system == "x86_64-linux") (mkArionBuild build.full-dev-setup "full-dev-setup");
+        devnet-union = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-union "devnet-union");
+        devnet-simd = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-simd "devnet-simd");
+        devnet-eth = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-eth "devnet-eth");
+        voyager-queue = mkCi false (mkArionBuild build.voyager-queue "voyager-queue");
       };
+
+      _module.args.networks.modules = modules;
     };
 }

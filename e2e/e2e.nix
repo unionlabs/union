@@ -13,7 +13,7 @@
         };
 
 
-      sepoliaNode = {
+      devnetEthNode = {
         wait_for_console_text = "Synced - slot: [1-9][0-9]*";
         wait_for_open_port = 8546;
         node = { pkgs, ... }: {
@@ -24,7 +24,7 @@
             diskSize = 4 * 1024;
             arion = {
               backend = "docker";
-              projects.sepolia.settings = networks.sepolia;
+              projects.devnet-eth.settings = networks.modules.devnet-eth;
             };
           };
 
@@ -41,7 +41,7 @@
             diskSize = 4 * 1024;
             arion = {
               backend = "docker";
-              projects.union-devnet.settings = networks.devnet-minimal;
+              projects.union-devnet.settings = networks.modules.devnet-minimal;
             };
           };
         };
@@ -58,7 +58,7 @@
             diskSize = 2 * 1024;
             arion = {
               backend = "docker";
-              projects.union.settings = networks.union;
+              projects.union.settings = networks.modules.devnet-union;
             };
           };
         };
@@ -66,8 +66,9 @@
     in
     {
       _module.args.e2e = {
-        inherit mkTest unionNode sepoliaNode unionTestnetGenesisNode;
+        inherit mkTest unionNode unionTestnetGenesisNode devnetEthNode;
 
+        # TODO: This is poorly named, it only starts devnet-union and devnet-eth
         mkTestWithDevnetSetup = { name, testScript, nodes }:
           mkTest {
             inherit name;
@@ -75,23 +76,23 @@
             testScript = ''
               # NOTE: Start union first!
               union.wait_for_open_port(${toString unionNode.wait_for_open_port})
-              sepolia.wait_for_open_port(${toString sepoliaNode.wait_for_open_port})
+              devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
 
               # match non-zero blocks
               union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
-              sepolia.wait_for_console_text('${sepoliaNode.wait_for_console_text}')
+              devnetEth.wait_for_console_text('${devnetEthNode.wait_for_console_text}')
 
-              sepolia.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 0\') == "true" ]]')
+              devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 0\') == "true" ]]')
 
               ${testScript}
             '';
 
             nodes =
               (pkgs.lib.throwIf (builtins.hasAttr "union" nodes) "union node already exists; use a different name")
-                (pkgs.lib.throwIf (builtins.hasAttr "sepolia" nodes) "sepolia node already exists; use a different name")
+                (pkgs.lib.throwIf (builtins.hasAttr "devnetEth" nodes) "devnetEth node already exists; use a different name")
                 ({
                   union = unionNode.node;
-                  sepolia = sepoliaNode.node;
+                  devnetEth = devnetEthNode.node;
                 } // nodes);
           };
       };
