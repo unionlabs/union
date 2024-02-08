@@ -57,7 +57,7 @@ pub(crate) fn get_validator_by_address<'a>(
 }
 
 #[must_use]
-pub(crate) fn validators_hash(vals: &ValidatorSet) -> H256 {
+pub fn validators_hash(vals: &ValidatorSet) -> H256 {
     let raw_validators: Vec<Vec<u8>> = vals
         .validators
         .iter()
