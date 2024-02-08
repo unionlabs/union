@@ -31,5 +31,5 @@ The official docs are hosted [here][docs]. Each individual component also has ac
 The [contributing](./CONTRIBUTING.md) guide explains how to get started working on Union and its components.
 Please make sure to [set up your GitHub PAT](<https://github.com/unionlabs/union/wiki/Personal-Access-Token-(PAT)-Setup>), otherwise Nix builds will fail.
 
-[docs]: https://docs.union.build "Official Union Docs"
+[docs]: https://union.build/docs/ "Official Union Docs"
 [IBC]: https://github.com/cosmos/ibc "cosmos/ibc"
