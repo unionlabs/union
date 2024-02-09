@@ -97,10 +97,6 @@
       url = "github:unionlabs/union/release-v0.18.0";
       flake = false;
     };
-    v0_19_0 = {
-      url = "github:unionlabs/union/release-v0.19.0";
-      flake = false;
-    };
   };
   outputs =
     inputs@{ self
