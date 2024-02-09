@@ -162,13 +162,6 @@
         },
         {
           "@type": "/cosmos.auth.v1beta1.BaseAccount",
-          "address": "union1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3lvg8hx",
-          "pub_key": null,
-          "account_number": 20,
-          "sequence": 0
-        },
-        {
-          "@type": "/cosmos.auth.v1beta1.BaseAccount",
           "address": "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua",
           "pub_key": null,
           "account_number": 21,
@@ -186,13 +179,6 @@
           "address": "union12vzzm89nathlzssze88x9urtf36cd0edg2sk9j",
           "pub_key": null,
           "account_number": 23,
-          "sequence": 0
-        },
-        {
-          "@type": "/cosmos.auth.v1beta1.BaseAccount",
-          "address": "union1tygms3xhhs3yv487phx3dw4a95jn7t7ltv5kpj",
-          "pub_key": null,
-          "account_number": 24,
           "sequence": 0
         },
         {
@@ -319,13 +305,6 @@
           "address": "union1jt9w26mpxxjsk63mvd4m2ynj0af09cslfklw8q",
           "pub_key": null,
           "account_number": 42,
-          "sequence": 0
-        },
-        {
-          "@type": "/cosmos.auth.v1beta1.BaseAccount",
-          "address": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
-          "pub_key": null,
-          "account_number": 43,
           "sequence": 0
         },
         {
@@ -697,15 +676,6 @@
           ]
         },
         {
-          "address": "union1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3lvg8hx",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "128000000000000"
-            }
-          ]
-        },
-        {
           "address": "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua",
           "coins": [
             {
@@ -729,15 +699,6 @@
             {
               "denom": "muno",
               "amount": "3000000"
-            }
-          ]
-        },
-        {
-          "address": "union1tygms3xhhs3yv487phx3dw4a95jn7t7ltv5kpj",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "128000000000000"
             }
           ]
         },
@@ -900,15 +861,6 @@
             {
               "denom": "muno",
               "amount": "3000000"
-            }
-          ]
-        },
-        {
-          "address": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
-          "coins": [
-            {
-              "denom": "muno",
-              "amount": "128000000000000"
             }
           ]
         },
