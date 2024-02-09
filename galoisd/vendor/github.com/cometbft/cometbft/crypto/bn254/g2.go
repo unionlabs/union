@@ -12,6 +12,9 @@ import (
 	"github.com/tunabay/go-bitarray"
 )
 
+
+// Union whitepaper: (1), (2), M ◦ H_{mimc^4}
+//
 // BN254G2_XMD:MIMC-256_SVDW
 // HashToG2 hashes a message to a point on the G2 curve using the SVDW map.
 // Slower than EncodeToG2, but usable as a random oracle.
@@ -41,6 +44,8 @@ func HashToG2MiMC(msg, dst []byte) (curve.G2Affine, error) {
 	return Q1, nil
 }
 
+// Union whitepaper: (1) H_{mimc^4}
+//
 // Hash msg to 4 prime field elements (actually bound to scalar elements).
 // https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-06#section-5.2
 func HashToFieldMiMC(msg, dst []byte) ([4]bn254fp.Element, error) {
@@ -82,6 +87,8 @@ func ExpandMsgXmdMiMC(msg, dst []byte, lenInBytes int) ([]byte, error) {
 
 	block := bitarray.New()
 	writeU8 := func(b byte) {
+		// NOTE: we reverse to simplify the in-circuit implementation
+		// where everything is little-endian.
 		block = block.Append(bitarray.NewBufferFromByteSlice([]byte{b}).BitArray().Reverse())
 	}
 	write := func(bs []byte) {
