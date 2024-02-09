@@ -1,8 +1,8 @@
 import svelte from "@astrojs/svelte";
 import tailwind from "@astrojs/tailwind";
 import starlight from "@astrojs/starlight";
+import { defineConfig } from "astro/config";
 import { markdownConfiguration } from "./markdown.config.ts";
-import { defineConfig, squooshImageService } from "astro/config";
 
 const SITE_URL = "https://union.build";
 
@@ -79,9 +79,6 @@ export default defineConfig({
         dark: "./src/assets/union-logo/union-logo-transparent.svg",
         light: "./src/assets/union-logo/union-logo-white-transparent.svg",
       },
-      editLink: {
-        baseUrl: "https://github.com/unionlabs/union/edit/main/site",
-      },
       sidebar: [
         {
           label: "Introduction",
@@ -143,9 +140,6 @@ export default defineConfig({
     }),
     svelte(),
   ],
-  image: {
-    service: squooshImageService(),
-  },
   vite: {
     optimizeDeps: {
       exclude: ["@urql/svelte", "echarts"],

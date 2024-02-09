@@ -4,23 +4,18 @@
     in {
       packages = {
         site = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-4YjZqfA13yM8XX+N18UkHtT6CddFIETntuuXyFRn59g=";
+          npmDepsHash = "sha256-uWLsohYklJyUPkwXtoI/YsqGfHmwcxSmpVZFEZ4gcTc=";
           src = ./.;
           srcs = [ ./. ./../evm/. ];
           sourceRoot = "site";
           pname = "site";
           version = "0.0.1";
-          PUPPETEER_SKIP_DOWNLOAD = true;
-
-          # nodejs = pkgs.nodejs_20;
           nativeBuildInputs = pkgsDeps;
           buildInputs = pkgsDeps;
-
           installPhase = ''
             mkdir -p $out
             cp -r ./dist/* $out
           '';
-
           doDist = false;
         };
       };

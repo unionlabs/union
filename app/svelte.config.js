@@ -10,19 +10,6 @@ export default {
     preprocessMeltUI()
   ]),
   kit: {
-    csp: {
-      directives: {
-        'frame-ancestors': [
-          'self',
-          'localhost',
-          'localhost:*',
-          'https://verify.walletconnect.com/',
-          'https://verify.walletconnect.org/',
-          'https://*.union.build',
-          'https://union.build'
-        ]
-      }
-    },
     adapter: adapter({
       strict: true
     }),

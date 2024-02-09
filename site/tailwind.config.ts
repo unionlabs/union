@@ -12,9 +12,6 @@ export default {
   darkMode: "class",
   important: true,
   future: { hoverOnlyWhenSupported: true },
-  experimental: {
-    optimizeUniversalDefaults: true,
-  },
   theme: {
     transparent: "transparent",
     current: "currentColor",

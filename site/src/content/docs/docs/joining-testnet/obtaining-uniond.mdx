@@ -65,8 +65,8 @@ _Where `MONIKER` is the preferred moniker you'd like to use on this node._
 
 Note the usage of the flags and arguments we pass to `docker run` run here:
 
-- `-u $(id -u):(id -g)` ensures that the container is being created and ran with the current user and their permissions
-- `-v ~/.union:/.union` mounts the folder we created to the `/.union` folder of the container
+- `--user $(id -u):(id -g)` ensures that the container is being created and ran with the current user and their permissions
+- `--volume ~/.union:/.union` mounts the folder we created to the `/.union` folder of the container
 - `-it` ensures we are running the container interactively
 
 :::
@@ -128,7 +128,7 @@ After creating a `compose.yml` file with the contents above, you'll be able to s
 
 Before starting your Union node for the first time, you should configure your node correctly and obtain the genesis file.
 
-For some configuration recommendations see our [Node Configuration](/infrastructure/node-operators/node-configuration) page.
+For some configuration recommendations see our [Node Configuration](/docs/infrastructure/node-operators/node-configuration) page.
 
 You can download the genesis here:
 
