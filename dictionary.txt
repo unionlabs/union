@@ -455,6 +455,7 @@ keccak
 keepertest
 keybase
 keyframes
+keygen
 keypair
 keypairs
 kwallet
