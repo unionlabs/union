@@ -28,6 +28,7 @@ members = [
   "tools/parse-wasm-client-type",
   "zerg",
   "tools/cargo-workspace-dependencies",
+  "tools/keygen",
 ]
 
 resolver = "2"

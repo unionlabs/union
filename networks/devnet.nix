@@ -1,5 +1,5 @@
 { inputs, ... }: {
-  perSystem = { devnetConfig, pkgs, lib, self', inputs', system, get-flake, mkCi, ... }:
+  perSystem = { devnetConfig, pkgs, lib, self', inputs', system, get-flake, mkCi, mkNodeId, dbg, ... }:
     let
       arion = inputs'.arion.packages.default;
 
@@ -10,10 +10,12 @@
             value = import ./services/uniond.nix {
               inherit pkgs;
               inherit id;
+              inherit mkNodeId dbg;
               uniond = self'.packages.uniond;
-              devnet-genesis = self'.packages.devnet-genesis;
-              devnet-validator-keys = self'.packages.devnet-validator-keys;
-              devnet-validator-node-ids = self'.packages.devnet-validator-node-ids;
+              devnet-genesis = self'.packages.devnet-union-genesis;
+              devnet-priv-validator-keys = self'.packages.devnet-union-priv-validator-keys;
+              devnet-validator-node-ids = self'.packages.devnet-union-validator-node-ids;
+              devnet-validator-node-keys = self'.packages.devnet-union-validator-node-keys;
             };
           })
           devnetConfig.validatorCount));

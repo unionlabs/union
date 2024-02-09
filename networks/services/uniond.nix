@@ -1,18 +1,13 @@
-{ pkgs, uniond, devnet-genesis, devnet-validator-keys, devnet-validator-node-ids, id }:
-let
-  getNodeID = nodeFile:
-    pkgs.runCommand "get-node-id" { } ''
-      export HOME=$(pwd)
-      ${uniond}/bin/uniond init testnet --home .
-      cp ${devnet-validator-node-ids}/${nodeFile} ./config/node_key.json
-      NODE_ID=$(${uniond}/bin/uniond tendermint show-node-id --home .)
-      echo -n $NODE_ID > $out
-    '';
-
-  seedNode = builtins.readFile (getNodeID "valnode-0.json");
-  # All nodes connect to node 0
-  params = if id == 0 then "" else "--p2p.persistent_peers ${seedNode}@uniond-0:26656";
-in
+{ pkgs
+, uniond
+, devnet-genesis
+, devnet-priv-validator-keys
+, devnet-validator-node-keys
+, devnet-validator-node-ids
+, id
+, mkNodeId
+, dbg
+}:
 {
   image = {
     enableRecommendedContents = true;
@@ -20,8 +15,9 @@ in
       pkgs.coreutils
       devnet-genesis
       uniond
-      devnet-validator-keys
+      devnet-priv-validator-keys
       devnet-validator-node-ids
+      devnet-validator-node-keys
     ];
   };
   service = {
@@ -39,13 +35,38 @@ in
       "sh"
       "-c"
       ''
-        cp -R ${devnet-genesis} .
-        cp ${devnet-validator-keys}/valkey-${toString id}.json ./config/priv_validator_key.json
-        cp ${devnet-validator-node-ids}/valnode-${toString id}.json ./config/node_key.json
-        echo ${params}
+        mkdir home
+
+        cp --no-preserve=mode -RL ${devnet-genesis}/* home
+        cp --no-preserve=mode -L ${devnet-priv-validator-keys}/priv_validator_key_${toString id}.json home/config/priv_validator_key.json
+        cp --no-preserve=mode -L ${devnet-validator-node-keys}/node-key-${toString id}.json home/config/node_key.json
+
+        # chmod -R 777 home
+
+        # cat home/config/genesis.json
+
+        ls -al home
+
+        # cat ${mkNodeId 0}
+        # All nodes connect to node 0
+        params="${if id == 0 then "" else "--p2p.persistent_peers $(cat ${mkNodeId 0})@uniond-0:26656"}"
+
+        echo "$${params}"
+
         mkdir ./tmp
         export TMPDIR=./tmp
-        ${uniond}/bin/uniond start --home . ${params} --rpc.laddr tcp://0.0.0.0:26657 --api.enable true --rpc.unsafe --api.address tcp://0.0.0.0:1317 --grpc.address 0.0.0.0:9090
+
+        ${uniond}/bin/uniond comet show-node-id --home home
+
+        ${uniond}/bin/uniond \
+          start \
+          --home home \
+          $$params \
+          --rpc.laddr tcp://0.0.0.0:26657 \
+          --api.enable true \
+          --rpc.unsafe \
+          --api.address tcp://0.0.0.0:1317 \
+          --grpc.address 0.0.0.0:9090
       ''
     ];
     healthcheck = {
