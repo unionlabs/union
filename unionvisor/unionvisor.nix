@@ -141,16 +141,16 @@
             Path to a node_key.json file.
           '';
           example = "/run/secrets/node_key.json";
-          type = types.path;
-          default = "";
+          type = types.nullOr types.path;
+          default = null;
         };
         priv-validator-key-file = mkOption {
           description = lib.mdDoc ''
             Path to a priv_validator_key.json file.
           '';
           example = "/run/secrets/priv_validator_key.json";
-          type = types.path;
-          default = "";
+          type = types.nullOr types.path;
+          default = null;
         };
       };
 
@@ -169,11 +169,25 @@
                 cd /var/lib/unionvisor
                 unionvisor init  --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
 
-              '' # symlink node_key.json and priv_validator_key.json if supplied
-              + (pkgs.lib.optionalString (cfg.node-key-file != "")
-                "rm ./home/config/node_key.json ; ln -s ${cfg.node-key-file} ./home/config/node_key.json ; ")
-              + (pkgs.lib.optionalString (cfg.priv-validator-key-file == "")
-                "rm ./home/config/priv_validator_key.json ; ln -s ${cfg.priv-validator-key-file} ./home/config/priv_validator_key.json ; ")
+              ''
+
+              # symlink node_key.json if supplied               
+              + (pkgs.lib.optionalString (cfg.node-key-file != null)
+                ''
+
+                  rm ./home/config/node_key.json 
+                  ln -s ${cfg.node-key-file} ./home/config/node_key.json 
+
+                '')
+
+              # symlink priv_validator_key.json if supplied               
+              + (pkgs.lib.optionalString (cfg.priv-validator-key-file != null)
+                ''
+
+                  rm ./home/config/priv_validator_key.json
+                  ln -s ${cfg.priv-validator-key-file} ./home/config/priv_validator_key.json 
+                   
+                '')
               +
               ''
                 
