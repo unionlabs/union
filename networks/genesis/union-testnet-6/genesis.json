@@ -502,469 +502,469 @@
       "balances": [
         {
           "address": "union1qk3g5r2spp9t3a28ek0ken6k62rwyyxa45e2gc",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1p8d4x68r5k93xltr94nlptyxt4vrvjasqwm0w9",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1p62638t9fac4jzr39ezuk68ut5d95zptvtlt7u",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1pasu7pjmzqlhgpcxgz7ru9yetc63rrw8ykg5w0",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "128000000000000"
           }
         },
         {
           "address": "union1z9pzw4nphjqjjsk093c4kdlj27vc43638eqnnr",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1rljyw223ec4fmlksgezwh7e5rqz0qu0w5lpg5v",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union19xm3crpq47rr5lxsqtfgk8f55ash4npapqr5af",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "169172687"
           }
         },
         {
           "address": "union19w2488ntfgpduzqq3sk4j5x387zynwknex3e0u",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union19lhsag7n3rsj99fyfyqfysza7zmzrn7c4k0y8h",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1xzern65ppact6sgh4htllnr8pg9dpnc8fqcj9g",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1x5wgh6vwye60wv3dtshs9dmqggwfx2ldehd3z7",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1xagyc7j5gefvux9ydakx3ry9z8fdfu8qekhegr",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union188waq9fmefazu62daystwrdtddp05tuakqly8k",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union18tfmww24r3upstygg4h3rkcsqhq20mxx8hm36j",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "9874594"
           }
         },
         {
           "address": "union180kkpdsk22ra4g6pskhpu6qemaptcw560hx5r6",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union18juw0tyn68wdlm4amyd24a6lrzxw95mtkkn7vz",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1g9fqjzcvjhy53mwyq7v42c87a49fm7q7rdeh8c",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "128000000000000"
           }
         },
         {
           "address": "union1g0jxmy25g5t6qdagq2dkclux7c46kwym8decfw",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "128000000000000"
           }
         },
         {
           "address": "union1ff9jg6cfl6hyzknn2padtf6syg3ac6n9tpvypw",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "417829070"
           }
         },
         {
           "address": "union1f3k28skfn8eae7fpqwnklee8rslvtaq4we9tlt",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3lvg8hx",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "128000000000000"
           }
         },
         {
           "address": "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "256000000000000"
           }
         },
         {
           "address": "union12gt98qguxx3snvzq8luucv35uftrl3dxz06e37",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union12vzzm89nathlzssze88x9urtf36cd0edg2sk9j",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1tygms3xhhs3yv487phx3dw4a95jn7t7ltv5kpj",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "128000000000000"
           }
         },
         {
           "address": "union1th40vf3ncsez0qkaxv5azal365dkwxak6q75dl",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1v39zvpn9ff7quu9lxsawdwpg60lyfpz8pmhfey",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "128000000000000"
           }
         },
         {
           "address": "union1dr96r6pdkrz64snr43cyk9rx0k030wm4r7v09u",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1d2x69hpg47dh5tjpfw8f208dcghs2ndrqzq50f",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "46808745"
           }
         },
         {
           "address": "union1du88zzc05esnzgt2g57fxcu93ny0dsm6jutrsw",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1wpayju4jcn2mhv6yewclf6rcq9fyqzvatzfqxq",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1wv4lw6yhvy87z20uyd9rr9aghtmczncpklc6t9",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1wv7yh86t0s4lw5lp9wdn59c22us75thmy5233q",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "128000000000000"
           }
         },
         {
           "address": "union1w3egagl99am5n58cp26asvgdq8mh4n3pc5e7t6",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1wlc9twen0exempkrcag080h7maj2gf53p9xgww",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union109stqggg33n5ca5jtfwxvpgfkg44lctkexv3mp",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union10g8npdhdcjyn7528gz3v34v9t4tm6hlp4za8yx",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union10ussnau09f4ux6ndek3zzpcffpjejufyx98srr",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union13xa4fkm9e9344jljs9sz0jc76sca38nwe6yplh",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union13fx29mnt2ssfae5td4t9grqmdpg6dtr8sjlesh",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1jzv52ewect8ntvwjs2za087yzl6y3smf0ym390",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1jr8c5qvvm0s258r4893slj5gal9649j3mjsa6k",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1jt9w26mpxxjsk63mvd4m2ynj0af09cslfklw8q",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "128000000000000"
           }
         },
         {
           "address": "union1jjdd5l25nj9yrkqwrdkhahh9n9th9umymt5zsk",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1jhwhrfv9p647u4vj44xjmpqprcm302glya3rnf",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1jcsdksyyhxhacl03a9f7746cgmq42d38237krd",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1n2cv9p4w89ldeuhqu8dxruknhhzr4e6lzezxv5",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1njscsuv50n5zqfs8p7w85ln7lzh3rdq32k6tqq",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1nue4xu43a2ypqrtfx4tzeeh5ws5sm66y2uxz2q",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union155gj5fdcs22dr4gm39mlexplxcclq5sg52lwk9",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union14qekdkj2nmmwea4ufg9n002a3pud23y804prlp",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union14nhz5kgwlfxqjxfh3kld2fe8aqzdvmpzv67h2w",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1kr7frt43rgzar6lq7eccgc3gfxwm8w63mt75z8",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1k5tr2gw9tht3gvzlearzw566hz3cjvvg0nfuyx",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1khlx3gkk80nn6fcl5vc7ldrp9fjczmqsxfkjd0",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "128000000000000"
           }
         },
         {
           "address": "union1hf9nwshs2dvvc6rp6n88h4vz5ny0sl590jjhxw",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1hdqghdfqan4n2epeeea0u2kecmtu58fpn3hqqa",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1ezyzt6lv9mywfsllxp90u9mmrf5ue9yjy0pj3d",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1etx55kw7tkmnjqz0k0mups4ewxlr324tlz58sh",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union16uss84sqqpjjurglftxlfzzj462mlaqd78nexr",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1ml67yhc5kp8qrxssfnqz8pxqvjyln5fus654vk",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "128000000000000"
           }
         },
         {
           "address": "union17v79v5unjn6ef92l4a58uf0kvup66wust5x7ja",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union174gzecgpzl367q8ma8ph9mue8xrd24ev702sjx",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "1393887418"
           }
         },
         {
           "address": "union17mq2njvg5np28g7l8j7qzs6juuqf8gm398ne3e",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "488458673"
           }
         },
         {
           "address": "union1lfs9uz50ervcqxk68yax9qtfhngfr2vmt0e377",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
         },
         {
           "address": "union1d8k65hsvcuxu3qkwnz9fgp0473dw8upetvn5hn",
-          "balance": {
+          "coins": {
             "denom": "muno",
             "amount": "3000000"
           }
