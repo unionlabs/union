@@ -170,11 +170,11 @@
                 unionvisor init  --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
 
               '' # symlink node_key.json and priv_validator_key.json if supplied
-              ++ (pkgs.lib.optionalString (cfg.node-key-file != "")
+              + (pkgs.lib.optionalString (cfg.node-key-file != "")
                 "rm ./home/config/node_key.json ; ln -s ${cfg.node-key-file} ./home/config/node_key.json ; ")
-              ++ (pkgs.lib.optionalString (cfg.priv-validator-key-file == "")
+              + (pkgs.lib.optionalString (cfg.priv-validator-key-file == "")
                 "rm ./home/config/priv_validator_key.json ; ln -s ${cfg.priv-validator-key-file} ./home/config/priv_validator_key.json ; ")
-              ++
+              +
               ''
                 
                 unionvisor run
