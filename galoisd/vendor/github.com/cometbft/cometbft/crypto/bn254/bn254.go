@@ -61,6 +61,8 @@ func (privKey PrivKey) Bytes() []byte {
 	return []byte(privKey)
 }
 
+// Union whitepaper: (5)
+//
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	var s big.Int
 	s.SetBytes(privKey)
@@ -71,6 +73,8 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	return compressedSig[:], nil
 }
 
+// Union whitepaper: (4)
+//
 func (privKey PrivKey) PubKey() crypto.PubKey {
 	var s big.Int
 	s.SetBytes(privKey)
@@ -117,6 +121,8 @@ func (pubKey PubKey) Bytes() []byte {
 	return pubKey
 }
 
+// Union whitepaper: (6)
+//
 func (pubKey PubKey) VerifySignature(msg []byte, sig []byte) bool {
 	hm := HashToG2(msg)
 	var pk bn254.G1Affine
@@ -185,7 +191,8 @@ func GenPrivKey() PrivKey {
 	return PrivKey(secret.Bytes())
 }
 
-// TODO: link union whitepaper 4.1.1, equation (1), H_r
+// Union whitepaper: (1) H_{hmac_r}
+//
 func HashToField(msg []byte) fr.Element {
 	hmac := hmac.New(Hash, []byte(CometblsHMACKey))
 	hmac.Write(msg)
@@ -206,7 +213,8 @@ func HashToField(msg []byte) fr.Element {
 	return element
 }
 
-// TODO: link union whitepaper 4.1.1, M
+// Union whitepaper: (3) H
+//
 func HashToG2(msg []byte) bn254.G2Affine {
 	img := HashToField(msg)
 	var imgBytes [32]byte

@@ -15,6 +15,8 @@ type MerkleLeaf struct {
 	MsbY        uint8
 }
 
+// Union whitepaper: construct arguments of (11) H_pre
+//
 func NewMerkleLeaf(pubKey bn254.G1Affine, votingPower int64) (MerkleLeaf, error) {
 	x := pubKey.X.BigInt(new(big.Int))
 	y := pubKey.Y.BigInt(new(big.Int))
@@ -43,7 +45,8 @@ func NewMerkleLeaf(pubKey bn254.G1Affine, votingPower int64) (MerkleLeaf, error)
 	}, nil
 }
 
-// mimc(X, Y, XMSB, YMSB)
+// Union whitepaper: (11) H_pre
+//
 func (l MerkleLeaf) Hash() ([]byte, error) {
 	frXBytes := l.ShiftedX.Bytes()
 	frYBytes := l.ShiftedY.Bytes()
