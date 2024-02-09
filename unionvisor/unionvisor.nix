@@ -198,7 +198,7 @@
                     { name = "config.toml"; path = cfg.config-toml; }
                   ];
 
-                  configSymLinkCommands = builtins.lib.concatMapStrings
+                  configSymLinkCommands = pkgs.lib.concatMapStrings
                     (l:
                       ''
 
