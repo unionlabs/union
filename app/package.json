@@ -9,8 +9,9 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "lint": "eslint --fix . --ext='js,cjs,mjs,ts,d.ts,json,svelte' --ignore-path='.gitignore' --ignore-path='../.eslintignore' --report-unused-disable-directives --max-warnings=0 --cache --cache-location=./node_modules/.cache/.eslintcache/",
-    "test": "vitest --run",
+    "test": "vitest",
+    "lint": "eslint --fix . --ext='js,cjs,mjs,ts,d.ts,json,svelte' --report-unused-disable-directives --max-warnings=0 --cache",
+    "format": "prettier --write . --ignore-path='.eslintignore' --ignore-unknown --cache",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -50,6 +51,9 @@
     "eslint-plugin-svelte": "^2.35.1",
     "eslint-plugin-unicorn": "51.0.1",
     "postcss": "^8.4.34",
+    "prettier": "^3.2.5",
+    "prettier-plugin-svelte": "^3.1.2",
+    "prettier-plugin-tailwindcss": "^0.5.11",
     "svelte": "^4.2.10",
     "svelte-check": "^3.6.3",
     "tailwind-scrollbar": "^3.0.5",

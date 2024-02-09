@@ -65,8 +65,8 @@ _Where `MONIKER` is the preferred moniker you'd like to use on this node._
 
 Note the usage of the flags and arguments we pass to `docker run` run here:
 
-- `-u $(id -u):(id -g)` ensures that the container is being created and ran with the current user and their permissions
-- `-v ~/.union:/.union` mounts the folder we created to the `/.union` folder of the container
+- `--user $(id -u):(id -g)` ensures that the container is being created and ran with the current user and their permissions
+- `--volume ~/.union:/.union` mounts the folder we created to the `/.union` folder of the container
 - `-it` ensures we are running the container interactively
 
 :::
