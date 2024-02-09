@@ -136,7 +136,7 @@
           type = types.str;
           default = "b4d587b3d3666d52df0cd43962080fd164568fe0@union-testnet.cor.systems:26656";
         };
-        node-key-file = mkOption {
+        node-key-json = mkOption {
           description = lib.mdDoc ''
             Path to a node_key.json file.
           '';
@@ -144,11 +144,35 @@
           type = types.nullOr types.path;
           default = null;
         };
-        priv-validator-key-file = mkOption {
+        priv-validator-key-json = mkOption {
           description = lib.mdDoc ''
             Path to a priv_validator_key.json file.
           '';
           example = "/run/secrets/priv_validator_key.json";
+          type = types.nullOr types.path;
+          default = null;
+        };
+        app-toml = mkOption {
+          description = lib.mdDoc ''
+            Path to an app.toml file.
+          '';
+          example = "/some/app.toml";
+          type = types.nullOr types.path;
+          default = null;
+        };
+        config-toml = mkOption {
+          description = lib.mdDoc ''
+            Path to an config.toml file.
+          '';
+          example = "/some/config.toml";
+          type = types.nullOr types.path;
+          default = null;
+        };
+        client-toml = mkOption {
+          description = lib.mdDoc ''
+            Path to an client.toml file.
+          '';
+          example = "/some/client.toml";
           type = types.nullOr types.path;
           default = null;
         };
@@ -164,35 +188,36 @@
             unionvisor-systemd-script = pkgs.writeShellApplication {
               name = "unionvisor-systemd";
               runtimeInputs = [ pkgs.coreutils wrappedUnionvisor ];
-              text = ''
-                ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor
-                cd /var/lib/unionvisor
-                unionvisor init  --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
+              text =
+                let
+                  configSymlinks = [
+                    { name = "node_key.json"; path = cfg.node-key-json; }
+                    { name = "priv_validator_key.json"; path = cfg.priv-validator-key-json; }
+                    { name = "app.toml"; path = cfg.app-toml; }
+                    { name = "client.toml"; path = cfg.client-toml; }
+                    { name = "config.toml"; path = cfg.config-toml; }
+                  ];
 
-              ''
+                  configSymLinkCommands = builtins.lib.concatMapStrings
+                    (l:
+                      ''
 
-              # symlink node_key.json if supplied               
-              + (pkgs.lib.optionalString (cfg.node-key-file != null)
+                        rm ./home/config/${l.name}
+                        ln -s ${l.path} ./home/config/${l.name}
+
+                      '')
+                    (builtins.filter (l: l.path != null) configSymlinks);
+
+                in
                 ''
+                  ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor
+                  cd /var/lib/unionvisor
+                  unionvisor init  --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
 
-                  rm ./home/config/node_key.json 
-                  ln -s ${cfg.node-key-file} ./home/config/node_key.json 
-
-                '')
-
-              # symlink priv_validator_key.json if supplied               
-              + (pkgs.lib.optionalString (cfg.priv-validator-key-file != null)
-                ''
-
-                  rm ./home/config/priv_validator_key.json
-                  ln -s ${cfg.priv-validator-key-file} ./home/config/priv_validator_key.json 
-                   
-                '')
-              +
-              ''
+                  ${configSymLinkCommands}
                 
-                unionvisor run
-              '';
+                  unionvisor run
+                '';
             };
           in
           {
