@@ -24,7 +24,7 @@
         },
         "value": {
           "denom": "muno",
-          "amount": "2000000000000"
+          "amount": "1000000000000"
         }
       }
     ],
@@ -57,6 +57,6 @@
     "tip": null
   },
   "signatures": [
-    "UbRvTM5KHGaGo6ZJiU+LOGgQklcpJpkZC2/l9f2l1FEHXId7HYLarYi69MDSOWvMFvMI0+YYDGAZptaSCmNyfA=="
+    "mHjL8/qMEojYyMLGYA9S+2CxkrkzNO2kInG7uDjorvB5p2UYDXw1b2lNI9LaCq+l1mYFeaSbgnIej10NHyfPbQ=="
   ]
 }
