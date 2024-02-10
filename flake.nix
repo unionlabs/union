@@ -399,11 +399,13 @@
               protobuf
               self'.packages.tdc
               yq
+            ] ++ (with nodePkgs; [
+              nodejs_21
               nodePackages.graphqurl
               nodePackages.svelte-language-server
               nodePackages.typescript-language-server
               nodePackages.vscode-css-languageserver-bin
-            ] ++ (with nodePkgs; [ nodejs_21 ])
+            ])
             ++ (with goPkgs; [
               go
               gopls

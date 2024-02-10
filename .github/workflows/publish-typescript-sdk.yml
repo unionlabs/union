@@ -69,6 +69,8 @@ jobs:
 
   publish-github:
     name: 'Publish GitHub Package Registry'
+    # manually temporarily disabled
+    if: false
     permissions:
       contents: read
       id-token: write
