@@ -31,7 +31,6 @@
   "files": [
     "reset.d.ts",
     "ec.config.mjs",
-    ".prettierrc.mjs",
     "astro.config.ts",
     "svelte.config.js",
     "tailwind.config.ts",

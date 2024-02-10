@@ -1,17 +1,21 @@
 { ... }: {
-  perSystem = { pkgs, lib, ensureAtRepositoryRoot, ... }:
-    let pkgsDeps = with pkgs; [ nodejs_20 vips pkg-config ];
-    in {
+  perSystem = { pkgs, nodePkgs, lib, ensureAtRepositoryRoot, ... }:
+    let
+      pkgsDeps = with pkgs; [ pkg-config ];
+      nodeDeps = with nodePkgs; [ vips nodejs_21 ];
+      combinedDeps = pkgsDeps ++ nodeDeps;
+    in
+    {
       packages = {
-        site = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-uWLsohYklJyUPkwXtoI/YsqGfHmwcxSmpVZFEZ4gcTc=";
+        site = nodePkgs.buildNpmPackage {
+          npmDepsHash = "sha256-s5d0EmDQhQ8G5GVpOGY1M7Y2OLkpnMpjYqMl1LbtljE=";
           src = ./.;
           srcs = [ ./. ./../evm/. ];
           sourceRoot = "site";
           pname = "site";
           version = "0.0.1";
-          nativeBuildInputs = pkgsDeps;
-          buildInputs = pkgsDeps;
+          nativeBuildInputs = combinedDeps;
+          buildInputs = combinedDeps;
           installPhase = ''
             mkdir -p $out
             cp -r ./dist/* $out
@@ -25,7 +29,7 @@
           type = "app";
           program = pkgs.writeShellApplication {
             name = "site-dev-server";
-            runtimeInputs = pkgsDeps;
+            runtimeInputs = combinedDeps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd site/

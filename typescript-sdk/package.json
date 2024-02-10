@@ -47,7 +47,6 @@
     "@cosmjs/proto-signing": "^0.32.2",
     "@leapwallet/cosmos-snap-provider": "^0.1.25",
     "@total-typescript/ts-reset": "^0.5.1",
-    "@types/bun": "^1.0.5",
     "@types/node": "^20.11.17",
     "bumpp": "^9.3.0",
     "publint": "^0.2.7",

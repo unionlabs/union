@@ -1,16 +1,19 @@
 { ... }: {
-  perSystem = { pkgs, lib, ensureAtRepositoryRoot, ... }:
-    let pkgsDeps = with pkgs; [ nodejs_20 pkg-config ];
-    in {
+  perSystem = { pkgs, nodePkgs, lib, ensureAtRepositoryRoot, ... }:
+    let
+      pkgsDeps = with pkgs; [ pkg-config ];
+      nodeDeps = with nodePkgs; [ nodejs_21 ];
+      combinedDeps = pkgsDeps ++ nodeDeps;
+    in
+    {
       packages = {
-        typescript-sdk = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-2FCg5Vs0+W/KcM0cEEk83Lsp0Tt3kEDL8zqTvEB+Dyc=";
+        typescript-sdk = nodePkgs.buildNpmPackage {
+          npmDepsHash = "sha256-84gQgCGqNm/zBD+gy4bCbuEyoqsAaueoKI/LX2ofJ3w=";
           src = ./.;
           pname = "@unionlabs/client";
           version = "0.0.0";
-          nativeBuildInputs = pkgsDeps;
-          buildInputs = pkgsDeps;
-
+          nativeBuildInputs = combinedDeps;
+          buildInputs = combinedDeps;
           installPhase = ''
             mkdir -p $out
             cp -r ./dist/* $out
@@ -18,6 +21,5 @@
           doDist = false;
         };
       };
-      apps = { };
     };
 }

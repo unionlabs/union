@@ -341,6 +341,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-nodejs": {
+      "locked": {
+        "lastModified": 1707268954,
+        "narHash": "sha256-2en1kvde3cJVc3ZnTy8QeD2oKcseLFjYPLKhIGDanQ0=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f8e2ebd66d097614d51a56a755450d4ae1632df1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-solc": {
       "locked": {
         "lastModified": 1699781429,
@@ -390,6 +406,7 @@
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "nixpkgs-go": "nixpkgs-go",
+        "nixpkgs-nodejs": "nixpkgs-nodejs",
         "nixpkgs-solc": "nixpkgs-solc",
         "oxlint": "oxlint",
         "rust-overlay": "rust-overlay",

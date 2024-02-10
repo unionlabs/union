@@ -1,16 +1,20 @@
 { ... }: {
-  perSystem = { pkgs, lib, ensureAtRepositoryRoot, ... }:
-    let pkgsDeps = with pkgs; [ nodejs_20 pkg-config ];
-    in {
+  perSystem = { pkgs, nodePkgs, lib, ensureAtRepositoryRoot, ... }:
+    let
+      pkgsDeps = with pkgs; [ pkg-config ];
+      nodeDeps = with nodePkgs; [ nodejs_21 ];
+      combinedDeps = pkgsDeps ++ nodeDeps;
+    in
+    {
       packages = {
-        app = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-yx7HhFA41+PhaH8ZFUBY3WjJb7LBidy5/kAwzkMxnVk=";
+        app = nodePkgs.buildNpmPackage {
+          npmDepsHash = "sha256-wCExLYvXK6DYlPQmxzAE+Ojh5jgxeAlrwK8cdBem2mg=";
           src = ./.;
           sourceRoot = "app";
           pname = "app";
           version = "0.0.0";
-          nativeBuildInputs = pkgsDeps ++ [ pkgs.python3 ];
-          buildInputs = pkgsDeps;
+          nativeBuildInputs = combinedDeps ++ [ pkgs.python3 ];
+          buildInputs = combinedDeps;
           installPhase = ''
             mkdir -p $out
             cp -r ./build/* $out
@@ -24,7 +28,7 @@
           type = "app";
           program = pkgs.writeShellApplication {
             name = "app-dev-server";
-            runtimeInputs = pkgsDeps;
+            runtimeInputs = combinedDeps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd app/
