@@ -1,4 +1,4 @@
-{ ... }: {
+{ self, ... }: {
   perSystem = { self', pkgs, proto, crane, system, config, ensureAtRepositoryRoot, mkCi, ... }:
     let
       protoc-gen-tonic = crane.lib.buildPackage {
@@ -365,6 +365,23 @@
           rsync -rL --chmod=ugo=rwX --delete ${rust-proto}/ $outdir
 
           echo "Generation successful!"
+        '';
+      });
+
+      # check that rust protos in git repo are that same as those that are generated in rust-proto derivation
+      checks.rust-proto-is-committed = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
+        name = "rust-proto-is-committed";
+        src = ../.;
+        buildInputs = [ pkgs.git self'.packages.rust-proto ];
+        doCheck = true;
+        checkPhase = ''
+          ${ensureAtRepositoryRoot}
+
+          rust_protos_in_git_repo=${self}/generated/rust/protos
+          rust_protos_in_derivation=${self'.packages.rust-proto}
+
+          git --no-pager diff --exit-code --no-index $rust_protos_in_git_repo $rust_protos_in_derivation
+          touch $out
         '';
       });
     };
