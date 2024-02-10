@@ -4,7 +4,7 @@
     in {
       packages = {
         typescript-sdk = pkgs.buildNpmPackage {
-          npmDepsHash = "sha256-/abjhwdvvagufSsZI7xSppotS72AH9jq/DjUUXdDYRg=";
+          npmDepsHash = "sha256-2FCg5Vs0+W/KcM0cEEk83Lsp0Tt3kEDL8zqTvEB+Dyc=";
           src = ./.;
           pname = "@unionlabs/client";
           version = "0.0.0";
