@@ -15,21 +15,21 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@tanstack/query-async-storage-persister": "^5.18.1",
+    "@tanstack/query-async-storage-persister": "^5.19.1",
     "@tanstack/query-broadcast-client-experimental": "^5.18.1",
     "@tanstack/svelte-query": "^5.18.1",
-    "@tanstack/svelte-query-persist-client": "^5.18.1",
+    "@tanstack/svelte-query-persist-client": "^5.19.1",
     "@wagmi/connectors": "^4.1.13",
     "@wagmi/core": "^2.6.4",
-    "bits-ui": "^0.17.0",
+    "bits-ui": "^0.18.0",
     "unstorage": "^1.10.1",
     "vaul-svelte": "^0.2.3",
-    "viem": "^2.7.6"
+    "viem": "^2.7.8"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240129.0",
+    "@cloudflare/workers-types": "^4.20240208.0",
     "@melt-ui/pp": "^0.3.0",
-    "@melt-ui/svelte": "^0.72.0",
+    "@melt-ui/svelte": "^0.73.0",
     "@sveltejs/adapter-static": "^3.0.1",
     "@sveltejs/kit": "^2.5.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.2",
@@ -50,19 +50,19 @@
     "eslint-plugin-prettier": "5.1.3",
     "eslint-plugin-svelte": "^2.35.1",
     "eslint-plugin-unicorn": "51.0.1",
-    "postcss": "^8.4.34",
+    "postcss": "^8.4.35",
     "prettier": "^3.2.5",
     "prettier-plugin-svelte": "^3.1.2",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "svelte": "^4.2.10",
-    "svelte-check": "^3.6.3",
+    "svelte-check": "^3.6.4",
     "tailwind-scrollbar": "^3.0.5",
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
     "tslib": "^2.6.2",
     "typed-query-selector": "^2.11.0",
     "typescript": "^5.3.3",
-    "vite": "^5.0.12",
+    "vite": "^5.1.1",
     "vitest": "^1.2.2"
   }
 }
