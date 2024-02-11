@@ -3,53 +3,65 @@
     let
       arion = inputs'.arion.packages.default;
 
+      mkCosmosDevnet = import ./mkCosmosDevnet.nix { inherit pkgs dbg; };
+
+      devnet-union = mkCosmosDevnet {
+        node = self'.packages.uniond;
+        chainId = "union-devnet-1";
+        chainName = "union";
+        keyType = "bn254";
+        validatorCount = 4;
+        genesisOverwrites = {
+          app_state = {
+            staking.params = {
+              epoch_length = "8";
+              jailed_validator_threshold = "10";
+            };
+            slashing.params = { signed_blocks_window = "10"; };
+          };
+        };
+        lightClients = [
+          self'.packages.ethereum-light-client-minimal
+          self'.packages.ethereum-light-client-mainnet
+        ];
+        cosmwasmContracts = [
+          self'.packages.ucs00-pingpong
+          self'.packages.ucs01-relay
+        ];
+        portIncrease = 0;
+      };
+
+      devnet-simd = mkCosmosDevnet {
+        node = self'.packages.simd;
+        chainId = "simd-devnet-1";
+        chainName = "simd";
+        keyType = "ed25519";
+        validatorCount = 4;
+        lightClients = [
+          self'.packages.cometbls-light-client
+        ];
+        cosmwasmContracts = [
+          self'.packages.ucs00-pingpong
+          self'.packages.ucs01-relay
+        ];
+        portIncrease = 100;
+      };
+
+      devnet-union-minimal = mkCosmosDevnet {
+        node = (get-flake inputs.v0_19_0).packages.${system}.uniond;
+        chainId = "union-minimal-devnet-1";
+        chainName = "union-minimal";
+        keyType = "bn254";
+        validatorCount = 4;
+        portIncrease = 0;
+      };
+
       services = {
-        devnet-union = (builtins.listToAttrs (builtins.genList
-          (id: {
-            name = "uniond-${toString id}";
-            value = import ./services/uniond.nix {
-              inherit pkgs;
-              inherit id;
-              inherit mkNodeId dbg;
-              uniond = self'.packages.uniond;
-              devnet-genesis = self'.packages.devnet-union-genesis;
-              devnet-priv-validator-keys = self'.packages.devnet-union-priv-validator-keys;
-              devnet-validator-node-ids = self'.packages.devnet-union-validator-node-ids;
-              devnet-validator-node-keys = self'.packages.devnet-union-validator-node-keys;
-            };
-          })
-          devnetConfig.validatorCount));
+        devnet-union = devnet-union.services;
 
-        devnet-simd = (builtins.listToAttrs (builtins.genList
-          (id: {
-            name = "simd-${toString id}";
-            value = import ./services/simd.nix {
-              inherit pkgs;
-              inherit id;
-              simd = self'.packages.simd;
-              simd-genesis = self'.packages.simd-genesis;
-              simd-validator-keys = self'.packages.simd-validator-keys;
-              simd-validator-node-ids = self'.packages.simd-validator-node-ids;
-            };
-          })
-          devnetConfig.validatorCount));
+        devnet-simd = devnet-simd.services;
 
-        union-testnet-genesis = (builtins.listToAttrs (builtins.genList
-          (id: {
-            name = "uniond-${toString id}";
-            value = import ./services/unionvisor.nix {
-              inherit pkgs;
-              inherit id;
-              uniond = (get-flake inputs.v0_15_0).packages.${system}.uniond;
-              unionvisor = self'.packages.unionvisor;
-              devnet-genesis = self'.packages.minimal-genesis;
-              devnet-validator-keys = self'.packages.minimal-validator-keys;
-              devnet-validator-node-ids = self'.packages.minimal-validator-node-ids;
-              network = "union-minimal-1";
-              bundle = self'.packages.bundle-testnet-next;
-            };
-          })
-          4));
+        devnet-union-minimal = devnet-union-minimal.services;
 
         devnet-eth = {
           geth = import ./services/geth.nix {
@@ -79,14 +91,14 @@
           services = services.devnet-eth // services.devnet-union // services.postgres;
         };
 
-        devnet-minimal = {
-          project.name = "devnet-minimal";
-          services = services.union-testnet-genesis;
-        };
-
         devnet-union = {
           project.name = "devnet-union";
           services = services.devnet-union;
+        };
+
+        devnet-union-minimal = {
+          project.name = "devnet-union-minimal";
+          services = services.devnet-union-minimal;
         };
 
         devnet-simd = {
@@ -151,9 +163,18 @@
       packages = {
         full-dev-setup = mkCi (system == "x86_64-linux") (mkArionBuild build.full-dev-setup "full-dev-setup");
         devnet-union = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-union "devnet-union");
+        devnet-union-home = mkCi false (devnet-union.devnet-home);
         devnet-simd = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-simd "devnet-simd");
         devnet-eth = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-eth "devnet-eth");
         voyager-queue = mkCi false (mkArionBuild build.voyager-queue "voyager-queue");
+
+        # FIXME: This shouldn't be defined in this file
+        devnet-eth-config = pkgs.linkFarm "devnet-eth-config" [
+          { name = "genesis.json"; path = "${./genesis/devnet-eth/genesis.json}"; }
+          { name = "dev-key0.prv"; path = "${./genesis/devnet-eth/dev-key0.prv}"; }
+          { name = "dev-key1.prv"; path = "${./genesis/devnet-eth/dev-key1.prv}"; }
+          { name = "dev-jwt.prv"; path = "${./genesis/devnet-eth/dev-jwt.prv}"; }
+        ];
       };
 
       _module.args.networks.modules = modules;
