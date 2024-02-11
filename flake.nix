@@ -70,6 +70,10 @@
       url = "github:CosmWasm/wasmvm/v1.5.2";
       flake = false;
     };
+    wasmvm-1_5_0 = {
+      url = "github:CosmWasm/wasmvm/v1.5.0";
+      flake = false;
+    };
     oxlint = {
       url = "github:web-infra-dev/oxc/oxlint_v0.2.6";
       flake = false;
@@ -183,10 +187,7 @@
         ./tools/iaviewer/iaviewer.nix
         ./networks/e2e-setup.nix
         ./networks/devnet.nix
-        ./networks/genesis/devnet-minimal.nix
-        ./networks/genesis/devnet.nix
         ./networks/simulation/simd.nix
-        ./networks/simulation/genesis.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
@@ -246,6 +247,7 @@
                   iohk-nix.overlays.crypto
                   foundry.overlay
                   (_: _: {
+                    keygen = self'.packages.keygen;
                     solc =
                       let
                         jsoncppVersion = "1.9.3";
@@ -307,15 +309,6 @@
               '';
 
               devnetConfig = {
-                genesisOverwrites = {
-                  app_state = {
-                    staking.params = {
-                      epoch_length = "8";
-                      jailed_validator_threshold = "10";
-                    };
-                    slashing.params = { signed_blocks_window = "10"; };
-                  };
-                };
                 validatorCount = 4;
                 ethereum = { beacon = { validatorCount = 128; }; };
               };
