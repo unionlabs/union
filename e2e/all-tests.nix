@@ -21,7 +21,7 @@
         upgrade-with-tokenfactory-state = upgrades.upgrade-with-tokenfactory-state;
 
         virtualisation-works = e2e.mkTest {
-          name = "devnet";
+          name = "full-dev-setup";
           nodes = {
             devnet = _: {
               imports = [
@@ -31,13 +31,13 @@
                 diskSize = 4 * 1024;
                 arion = {
                   backend = "docker";
-                  projects.devnet.settings = networks.devnet;
+                  projects.full-dev-setup.settings = networks.modules.full-dev-setup;
                 };
               };
             };
           };
           testScript = ''
-            devnet.wait_for_unit("arion-${networks.devnet.project.name}")
+            devnet.wait_for_unit("arion-${networks.modules.full-dev-setup.project.name}")
           '';
         };
 
@@ -52,7 +52,7 @@
           '';
 
           nodes = {
-            devnetEth = e2e.devnetEth.node;
+            devnetEth = e2e.devnetEthNode.node;
           };
         };
 
