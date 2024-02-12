@@ -439,18 +439,14 @@ fn verify_commit<F: FnMut(&PublicKey, Vec<u8>, H512) -> Result<(), Error>>(
         tallied_voting_power += val.voting_power.inner() as u64; // SAFE because within the bounds
 
         if tallied_voting_power > voting_power_needed {
-            break;
+            return Ok(());
         }
     }
 
-    if tallied_voting_power <= voting_power_needed {
-        Err(Error::NotEnoughVotingPower {
-            have: tallied_voting_power,
-            need: voting_power_needed,
-        })
-    } else {
-        Ok(())
-    }
+    Err(Error::NotEnoughVotingPower {
+        have: tallied_voting_power,
+        need: voting_power_needed,
+    })
 }
 
 fn verify_new_headers_and_vals(
@@ -490,7 +486,7 @@ fn verify_new_headers_and_vals(
 
     // we can only update using a latter header
     if untrusted_header.header.height <= trusted_header.header.height {
-        return Err(Error::UntrustedHeaderHeightIsSmaller {
+        return Err(Error::UntrustedHeaderHeightIsLE {
             untrusted_header_height: untrusted_header.header.height.inner(),
             trusted_header_height: trusted_header.header.height.inner(),
         });
@@ -498,7 +494,7 @@ fn verify_new_headers_and_vals(
 
     // a header with a greater height can never have <= time
     if untrusted_header.header.time <= trusted_header.header.time {
-        return Err(Error::UntrustedHeaderTimestampIsSmaller {
+        return Err(Error::UntrustedHeaderTimestampIsLE {
             untrusted_header_timestamp: untrusted_header.header.time,
             trusted_header_timestamp: trusted_header.header.time,
         });

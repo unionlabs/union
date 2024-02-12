@@ -31,12 +31,12 @@ pub enum Error {
     #[error("hash of the signed header ({sh_hash}) and commit ({commit_hash}) mismatch")]
     SignedHeaderCommitHashMismatch { sh_hash: H256, commit_hash: H256 },
     #[error("trusted header height ({untrusted_header_height}) cannot be greater than or equal to the untrusted height ({untrusted_header_height})")]
-    UntrustedHeaderHeightIsSmaller {
+    UntrustedHeaderHeightIsLE {
         untrusted_header_height: i64,
         trusted_header_height: i64,
     },
     #[error("trusted header timestamp ({untrusted_header_timestamp}) cannot be greater than or equal to the untrusted timestamp ({untrusted_header_timestamp})")]
-    UntrustedHeaderTimestampIsSmaller {
+    UntrustedHeaderTimestampIsLE {
         untrusted_header_timestamp: Timestamp,
         trusted_header_timestamp: Timestamp,
     },
