@@ -4,7 +4,7 @@ use beacon_api::client::BeaconApiClient;
 use contracts::{
     devnet_ownable_ibc_handler::DevnetOwnableIBCHandler,
     ibc_channel_handshake::IBCChannelHandshakeEvents,
-    ibc_client::{ClientCreatedFilter, IBCClientEvents},
+    ibc_client::{ClientCreatedFilter, ClientUpdatedFilter, IBCClientEvents},
     ibc_connection::IBCConnectionEvents,
     ibc_handler::{
         GetChannelCall, GetChannelReturn, GetClientStateCall, GetClientStateReturn,
@@ -34,7 +34,7 @@ use unionlabs::{
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        CreateClient, IbcEvent, RecvPacket, SendPacket,
+        CreateClient, IbcEvent, RecvPacket, SendPacket, UpdateClient,
     },
     hash::{H160, H256},
     ibc::{
@@ -137,7 +137,6 @@ impl EthLogDecode for IBCHandlerEvents {
         let chan_event =
             IBCChannelHandshakeEvents::decode_log(log).map(IBCHandlerEvents::ChannelEvent);
         let client_event = IBCClientEvents::decode_log(log).map(IBCHandlerEvents::ClientEvent);
-
         [packet_event, conn_event, chan_event, client_event]
             .into_iter()
             .find(|event| event.is_ok())
@@ -617,7 +616,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                     let current_execution_height =
                         this.execution_height(current_beacon_height).await;
 
-                    let packets = futures::stream::iter(
+                    let events = futures::stream::iter(
                         this.provider
                             .get_logs(
                                 &this
@@ -936,7 +935,38 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                                 }))
                             }
                             IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(_)) => None,
-                            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(_)) => None,
+                            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(ClientUpdatedFilter(client_id))) => {
+                                let client_type = this
+                                    .readonly_ibc_handler
+                                    .client_types(client_id.clone())
+                                    .await
+                                    .map_err(EvmEventSourceError::Contract)?;
+
+                                let (client_state, success) = this
+                                    .readonly_ibc_handler
+                                    .get_client_state(client_id.clone())
+                                    .block(event_height)
+                                    .await
+                                    .unwrap();
+
+                                assert!(success);
+
+                                dbg!(hex::encode(&client_state));
+
+                                let client_state =
+                                    cometbls::client_state::ClientState::try_from_eth_abi_bytes(
+                                        &client_state,
+                                    )
+                                    .unwrap();
+
+                                Some(IbcEvent::UpdateClient(UpdateClient {
+                                    client_id: client_id
+                                        .parse()
+                                        .map_err(EvmEventSourceError::ClientIdParse)?,
+                                    client_type,
+                                    consensus_heights: vec![client_state.latest_height],
+                                }))
+                            },
                             IBCHandlerEvents::PacketEvent(IBCPacketEvents::RecvPacketFilter(event)) => {
                                 let channel = read_channel(
                                     event.packet.destination_port.clone(),
@@ -1021,7 +1051,7 @@ impl<C: ChainSpec> EventSource for Evm<C> {
                     })
                     .filter_map(|x| async { x.transpose() });
 
-                    let iter = futures::stream::iter(packets.collect::<Vec<_>>().await);
+                    let iter = futures::stream::iter(events.collect::<Vec<_>>().await);
 
                     Some((iter, (this, current_beacon_height)))
                 },
