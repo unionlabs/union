@@ -364,7 +364,7 @@
 
           rsync -rL --chmod=ugo=rwX --delete ${rust-proto}/ $outdir
 
-          echo "Generation successful!"
+          echo "Generation Successful!"
         '';
       });
     };
