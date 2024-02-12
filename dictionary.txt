@@ -118,6 +118,7 @@ Undelegate
 Unintersect
 Unjail
 Unmarshal
+Vals
 Verkle
 Viridis
 Wagmi
@@ -271,6 +272,7 @@ crisistypes
 crossorigin
 cryptware
 ctypes
+dalek
 dasel
 dasharray
 dashmap
@@ -832,6 +834,7 @@ valkey
 valnode
 valoper
 valoperpub
+vals
 valset
 varint
 vaul

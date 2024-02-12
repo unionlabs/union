@@ -47,7 +47,7 @@ fn inner_hash(left: &[u8], right: &[u8]) -> H256 {
     )
 }
 
-// returns tmhash(0x00 || leaf)
+// returns tm_hash(0x00 || leaf)
 fn leaf_hash(leaf: &[u8]) -> H256 {
     H256(
         Sha256::new()
