@@ -37,14 +37,14 @@ in
       name = "lodestar-extended";
       fromImage = pkgs.dockerTools.pullImage ({
         imageName = "chainsafe/lodestar";
-        imageDigest = "sha256:5e262f6e631ed3d60ba867200d8b53da6e06ba965eac1a0fdc9b0621c5f65a61";
+        imageDigest = "sha256:02adf60640dddd8f1bbab9eda09563d85aa675414af57a47a2234a1a40bde2e3";
         finalImageName = "chainsafe/lodestar";
-        finalImageTag = "v1.8.0";
+        finalImageTag = "v1.15.1";
       } // (if pkgs.stdenv.isx86_64 then {
-        sha256 = "1p5kc4gs9g6igcs4g0ppgji50xkq79jkyyg3z9cdn2d9m5vam4fm";
+        sha256 = "sha256-iq9Jukk2lzIdXj3PgyxxgXLvikgAV35NaDU1siXqSNQ=";
         arch = "amd64";
       } else {
-        sha256 = "0gnkk3y90wcz78ngqx341kfh25zbjm15z3jdidwl7vh5hbmpsjrz";
+        sha256 = "0gnkk3y90wcz78ngqx341kfh25zbjm15z3jdidwl7vh5hbmpsjrr";
         arch = "arm64";
       }));
       contents = [

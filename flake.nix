@@ -250,7 +250,33 @@
                   rust-overlay.overlays.default
                   iohk-nix.overlays.crypto
                   foundry.overlay
-                  (_: _: {
+                  (_: super: {
+                    go-ethereum = super.go-ethereum.override {
+                      buildGoModule = args: super.buildGoModule (args // rec {
+                        version = "1.13.12";
+                        src = pkgs.fetchFromGitHub {
+                          owner = "ethereum";
+                          repo = "go-ethereum";
+                          rev = "v${version}";
+                          sha256 = "sha256-2olJV7Z01kuXlUGyI0v4YNW07/RfYiDUhBncCIS4s0A=";
+                        };
+                        vendorHash = "sha256-gcLVQTBpOE0DHz7/p7PENhwghftJKUDm88/4jaQ1VYw=";
+                        subPackages = [
+                          "cmd/abidump"
+                          "cmd/abigen"
+                          "cmd/bootnode"
+                          "cmd/clef"
+                          "cmd/devp2p"
+                          "cmd/era"
+                          "cmd/ethkey"
+                          "cmd/evm"
+                          "cmd/geth"
+                          "cmd/p2psim"
+                          "cmd/rlpdump"
+                          "cmd/utils"
+                        ];
+                      });
+                    };
                     keygen = self'.packages.keygen;
                     solc =
                       let
