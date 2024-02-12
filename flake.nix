@@ -192,7 +192,7 @@
           dbg = value:
             builtins.trace (pkgs.lib.generators.toPretty { } value) value;
 
-          versions = builtins.fromJSON (builtins.readFile ./versions.json);
+          versions = builtins.fromJSON (builtins.readFile ./versions/versions.json);
 
           uniondBundleVersions = rec {
             complete = versions.union-testnet-6;
