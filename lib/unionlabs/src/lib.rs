@@ -30,6 +30,9 @@ pub mod ibc;
 /// Defines types that wrap the tendermint specification, matching the proto module structure.
 pub mod tendermint;
 
+/// Defines types that are extended from tendermint in cometbls
+pub mod cometbls;
+
 /// Defines types that wrap the cosmos specification, matching the proto module structure.
 pub mod cosmos;
 

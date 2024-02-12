@@ -4,10 +4,9 @@ use unionlabs::{
     hash::{H160, H256},
     tendermint::types::{
         block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
-        canonical_block_id::CanonicalBlockId, commit::Commit, commit_sig::CommitSig,
-        legacy_canonical_vote::LegacyCanonicalVote as CanonicalVote, signed_header::SignedHeader,
-        signed_msg_type::SignedMsgType, simple_validator::SimpleValidator, validator::Validator,
-        validator_set::ValidatorSet,
+        canonical_block_id::CanonicalBlockId, canonical_vote::CanonicalVote, commit::Commit,
+        commit_sig::CommitSig, signed_header::SignedHeader, signed_msg_type::SignedMsgType,
+        simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
     },
     IntoProto,
 };
