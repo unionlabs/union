@@ -371,7 +371,7 @@
       checks.rust-proto-is-committed = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
         name = "rust-proto-is-committed";
         src = ../.;
-        buildInputs = [ pkgs.git self'.packages.rust-proto ];
+        buildInputs = [ pkgs.git ];
         doCheck = true;
         checkPhase = ''
           rust_protos_in_git_repo=${self}/generated/rust/protos
