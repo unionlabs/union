@@ -25,16 +25,17 @@
     "berachain": {
       "flake": false,
       "locked": {
-        "lastModified": 1706732859,
-        "narHash": "sha256-Qoh24iad0k7W/A1U7jc9QeAum+VuqBE7SBMdGcCMF+I=",
+        "lastModified": 1705541503,
+        "narHash": "sha256-rEiR7BlFj851KvInLMh/K52hsxFsjQywSt7KR4Qs17E=",
         "ref": "refs/heads/main",
-        "rev": "a5b91d03f2e6bce44a22b13aeb439c68b7c72377",
-        "revCount": 818,
+        "rev": "2472a4abf6ee5437cf3bf326c537fd0b09650249",
+        "revCount": 805,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/berachain/polaris"
       },
       "original": {
+        "rev": "2472a4abf6ee5437cf3bf326c537fd0b09650249",
         "submodules": true,
         "type": "git",
         "url": "https://github.com/berachain/polaris"

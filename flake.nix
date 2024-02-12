@@ -81,7 +81,8 @@
 
     berachain = {
       # https://github.com/NixOS/nix/issues/4423#issuecomment-1580924502
-      url = "git+https://github.com/berachain/polaris?submodules=1";
+      # v0.1.6-alpha
+      url = "git+https://github.com/berachain/polaris?rev=2472a4abf6ee5437cf3bf326c537fd0b09650249&submodules=1";
       flake = false;
     };
 

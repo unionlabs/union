@@ -5,7 +5,8 @@
 { node
 , chainId
 , chainName
-, keyType
+, valKeyType
+, appKeyType
 , validatorCount
 , genesisOverwrites ? { }
 , lightClients ? [ ]
@@ -15,7 +16,8 @@
 }:
 assert (builtins.isString chainId);
 assert (builtins.isString chainName);
-assert (builtins.isString keyType);
+assert (builtins.isString valKeyType);
+assert (builtins.isString appKeyType);
 assert (builtins.isInt portIncrease);
 assert (builtins.isInt validatorCount);
 let
@@ -103,7 +105,7 @@ let
       ''
         export HOME=$(pwd)
 
-        PUBKEY="{\"@type\":\"/cosmos.crypto.${keyType}.PubKey\",\"key\":$(cat ${mkPrivValidatorKey idx} | jq ."pub_key"."value")}"
+        PUBKEY="{\"@type\":\"/cosmos.crypto.${valKeyType}.PubKey\",\"key\":$(cat ${mkPrivValidatorKey idx} | jq ."pub_key"."value")}"
 
         echo "validator pubkey: $PUBKEY"
 
@@ -141,8 +143,12 @@ let
         cp --no-preserve=mode -r ${home}/* $out
 
         # Add the dev account
-        echo ${mnemonic} | ${nodeBin} keys add \
-          --recover ${name} \
+        echo ${mnemonic} | ${nodeBin} \
+          keys \
+          add \
+          ${name} \
+          --recover \
+          --key-type "${appKeyType}" \
           --keyring-backend test \
           --home $out
 
@@ -165,8 +171,12 @@ let
         mkdir -p $out
         cp --no-preserve=mode -r ${home}/* $out
 
-        cat ${mkNodeMnemonic idx} | ${nodeBin} keys add \
-          --recover valoper-${toString idx} \
+        cat ${mkNodeMnemonic idx} | ${nodeBin} \
+          keys \
+          add \
+          valoper-${toString idx} \
+          --recover \
+          --key-type "${appKeyType}" \
           --keyring-backend test \
           --home $out
 

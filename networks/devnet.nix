@@ -9,7 +9,8 @@
         node = self'.packages.uniond;
         chainId = "union-devnet-1";
         chainName = "union";
-        keyType = "bn254";
+        valKeyType = "bn254";
+        appKeyType = "secp256k1";
         validatorCount = 4;
         genesisOverwrites = {
           app_state = {
@@ -35,7 +36,25 @@
         node = self'.packages.simd;
         chainId = "simd-devnet-1";
         chainName = "simd";
-        keyType = "ed25519";
+        valKeyType = "ed25519";
+        appKeyType = "secp256k1";
+        validatorCount = 4;
+        lightClients = [
+          self'.packages.cometbls-light-client
+        ];
+        cosmwasmContracts = [
+          self'.packages.ucs00-pingpong
+          self'.packages.ucs01-relay
+        ];
+        portIncrease = 100;
+      };
+
+      devnet-berachain = mkCosmosDevnet {
+        node = self'.packages.polard;
+        chainId = "polar-devnet-1";
+        chainName = "polar";
+        valKeyType = "ed25519";
+        appKeyType = "eth_secp256k1";
         validatorCount = 4;
         lightClients = [
           self'.packages.cometbls-light-client
@@ -60,6 +79,8 @@
         devnet-union = devnet-union.services;
 
         devnet-simd = devnet-simd.services;
+
+        devnet-berachain = devnet-berachain.services;
 
         devnet-union-minimal = devnet-union-minimal.services;
 
@@ -96,14 +117,19 @@
           services = services.devnet-union;
         };
 
-        devnet-union-minimal = {
-          project.name = "devnet-union-minimal";
-          services = services.devnet-union-minimal;
-        };
-
         devnet-simd = {
           project.name = "devnet-simd";
           services = services.devnet-simd;
+        };
+
+        devnet-berachain = {
+          project.name = "devnet-berachain";
+          services = services.devnet-berachain;
+        };
+
+        devnet-union-minimal = {
+          project.name = "devnet-union-minimal";
+          services = services.devnet-union-minimal;
         };
 
         devnet-eth = {
@@ -130,6 +156,10 @@
           modules = [ (modules.devnet-simd // { networks.devnet-simd = { }; }) ];
         };
 
+        devnet-berachain = {
+          modules = [ (modules.devnet-berachain // { networks.devnet-berachain = { }; }) ];
+        };
+
         devnet-eth = {
           modules = [ (modules.devnet-eth // { networks.devnet-eth = { }; }) ];
         };
@@ -145,6 +175,8 @@
         devnet-union = arion.build specs.devnet-union;
 
         devnet-simd = arion.build specs.devnet-simd;
+
+        devnet-berachain = arion.build specs.devnet-berachain;
 
         devnet-eth = arion.build specs.devnet-eth;
 
@@ -164,8 +196,15 @@
         full-dev-setup = mkCi (system == "x86_64-linux") (mkArionBuild build.full-dev-setup "full-dev-setup");
         devnet-union = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-union "devnet-union");
         devnet-union-home = mkCi false (devnet-union.devnet-home);
+
         devnet-simd = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-simd "devnet-simd");
+        devnet-simd-home = mkCi false (devnet-simd.devnet-home);
+
+        devnet-berachain = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-berachain "devnet-berachain");
+        devnet-berachain-home = mkCi false (devnet-berachain.devnet-home);
+
         devnet-eth = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-eth "devnet-eth");
+
         voyager-queue = mkCi false (mkArionBuild build.voyager-queue "voyager-queue");
 
         # FIXME: This shouldn't be defined in this file

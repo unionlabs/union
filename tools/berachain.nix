@@ -17,7 +17,7 @@
           goPkgs.buildGo121Module) ({
           name = "polard";
           src = "${inputs.berachain}/e2e/testapp";
-          vendorHash = "sha256-izghkLhUAdNnh+bvF6qvj6h9F4IIt8Twckp5PnJAMxs=";
+          vendorHash = "sha256-wraIbYGNliebLbRggk7EiUz0akegKoMBNIBX7k9hRg4=";
           # times out for some reason
           doCheck = false;
           tags = [
