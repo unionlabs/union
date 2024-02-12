@@ -155,6 +155,9 @@ pub enum Error {
 
     #[error(transparent)]
     TendermintVerify(#[from] tendermint_verifier::error::Error),
+
+    #[error("invalid timestamp from the host ({0})")]
+    InvalidHostTimestamp(cosmwasm_std::Timestamp),
 }
 
 impl Error {
