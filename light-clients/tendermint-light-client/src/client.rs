@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use cosmwasm_std::{Deps, DepsMut, Empty, Env};
 use ics008_wasm_client::{
     storage_utils::{
@@ -8,16 +6,15 @@ use ics008_wasm_client::{
     IbcClient, Status, StorageState,
 };
 use ics23::ibc_api::SDK_SPECS;
-use prost::Message;
-use protos::ibc::core::client::v1::GenesisMetadata;
+use tendermint_verifier::types::SignatureVerifier;
 use unionlabs::{
     bounded::BoundedI64,
     encoding::Proto,
-    google::protobuf::timestamp::Timestamp,
+    google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::H256,
     ibc::{
         core::{
-            client::height::Height,
+            client::{genesis_metadata::GenesisMetadata, height::Height},
             commitment::{
                 merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
             },
@@ -36,6 +33,7 @@ use crate::{
         get_or_next_consensus_state_meta, get_or_prev_consensus_state_meta,
         save_consensus_state_metadata,
     },
+    verifier::Ed25519Verifier,
 };
 
 type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
@@ -151,6 +149,7 @@ impl IbcClient for TendermintLightClient {
             env.block.time.try_into().unwrap(),
             client_state.data.max_clock_drift,
             client_state.data.trust_level,
+            &SignatureVerifier::new(Ed25519Verifier::new(deps)),
         )?;
 
         Ok(())
@@ -168,39 +167,41 @@ impl IbcClient for TendermintLightClient {
         _env: Env,
         header: Self::Header,
     ) -> Result<Vec<Height>, Self::Error> {
-        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-        let mut consensus_state: WasmConsensusState =
-            read_consensus_state(deps.as_ref(), &header.trusted_height)?
-                .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
-
-        let untrusted_height = Height::new(
-            header.trusted_height.revision_number,
-            // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
-            header.signed_header.commit.height.inner() as u64,
-        );
-
-        if untrusted_height > client_state.latest_height {
-            client_state.latest_height = untrusted_height;
-            client_state.data.latest_height = untrusted_height;
+        let update_height = height_from_header(&header);
+        if read_consensus_state::<_, ConsensusState>(deps.as_ref(), &update_height)?.is_some() {
+            return Ok(vec![update_height]);
         }
 
-        consensus_state.data.root = MerkleRoot {
-            hash: header.signed_header.header.app_hash,
-        };
+        // TODO(aeryz): prune oldest expired consensus state
 
-        consensus_state.data.next_validators_hash =
-            header.signed_header.header.next_validators_hash;
-        consensus_state.data.timestamp = header.signed_header.header.time;
+        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
+
+        if update_height > client_state.latest_height {
+            client_state.latest_height = update_height;
+            client_state.data.latest_height = update_height;
+        }
 
         save_client_state(deps.branch(), client_state);
         save_consensus_state_metadata(
             deps.branch(),
-            consensus_state.data.timestamp,
-            untrusted_height,
+            header.signed_header.header.time,
+            update_height,
         );
-        save_consensus_state(deps, consensus_state, &untrusted_height);
+        save_consensus_state(
+            deps,
+            WasmConsensusState {
+                data: ConsensusState {
+                    timestamp: header.signed_header.header.time,
+                    root: MerkleRoot {
+                        hash: header.signed_header.header.app_hash,
+                    },
+                    next_validators_hash: header.signed_header.header.next_validators_hash,
+                },
+            },
+            &update_height,
+        );
 
-        Ok(vec![untrusted_height])
+        Ok(vec![update_height])
     }
 
     fn update_state_on_misbehaviour(
@@ -299,13 +300,16 @@ impl IbcClient for TendermintLightClient {
             return Ok(Status::Expired);
         };
 
-        // if is_client_expired(
-        //     consensus_state.data.timestamp,
-        //     client_state.data.trusting_period,
-        //     env.block.time.seconds(),
-        // ) {
-        //     return Ok(Status::Expired);
-        // }
+        if is_client_expired(
+            &consensus_state.data.timestamp,
+            client_state.data.trusting_period,
+            env.block
+                .time
+                .try_into()
+                .map_err(|_| Error::InvalidHostTimestamp(env.block.time))?,
+        ) {
+            return Ok(Status::Expired);
+        }
 
         Ok(Status::Active)
     }
@@ -321,17 +325,15 @@ impl IbcClient for TendermintLightClient {
         deps: Deps<Self::CustomQuery>,
         height: Height,
     ) -> Result<u64, Self::Error> {
-        Ok(
-            read_consensus_state::<Self::CustomQuery, ConsensusState>(deps, &height)?
-                .ok_or(Error::ConsensusStateNotFound(height))?
-                .data
-                .timestamp
-                .seconds
-                .inner()
-                .try_into()
-                .unwrap(),
-            // TODO(aeryz): remove
-        )
+        let timestamp = read_consensus_state::<Self::CustomQuery, ConsensusState>(deps, &height)?
+            .ok_or(Error::ConsensusStateNotFound(height))?
+            .data
+            .timestamp
+            .seconds
+            .inner();
+        Ok(timestamp
+            .try_into()
+            .map_err(|_| Error::NegativeTimestamp(timestamp))?)
     }
 }
 
@@ -367,38 +369,15 @@ fn construct_partial_header(
     }
 }
 
-// fn is_client_expired(
-//     consensus_state_timestamp: &Timestamp,
-//     trusting_period: u64,
-//     current_block_time: u64,
-// ) -> bool {
-//     if let Some(sum) = consensus_state_timestamp.checked_add(trusting_period) {
-//         sum < current_block_time
-//     } else {
-//         // TODO(aeryz): This is really an unexpected error and this should return
-//         // a nice error message.
-//         true
-//     }
-// }
-
-fn canonical_vote(
-    commit: &Commit,
-    chain_id: String,
-    expected_block_hash: H256,
-) -> protos::tendermint::types::CanonicalVote {
-    protos::tendermint::types::CanonicalVote {
-        r#type: protos::tendermint::types::SignedMsgType::Precommit as i32,
-        height: commit.height.inner(),
-        round: commit.round.inner() as i64,
-        // TODO(aeryz): Implement BlockId to proto::CanonicalBlockId
-        block_id: Some(protos::tendermint::types::CanonicalBlockId {
-            hash: expected_block_hash.into(),
-            part_set_header: Some(protos::tendermint::types::CanonicalPartSetHeader {
-                total: commit.block_id.part_set_header.total,
-                hash: commit.block_id.part_set_header.hash.0.to_vec(),
-            }),
-        }),
-        chain_id,
+fn is_client_expired(
+    consensus_state_timestamp: &Timestamp,
+    trusting_period: Duration,
+    current_block_time: Timestamp,
+) -> bool {
+    if let Some(sum) = consensus_state_timestamp.checked_add(trusting_period) {
+        sum < current_block_time
+    } else {
+        true
     }
 }
 
