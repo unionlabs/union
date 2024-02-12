@@ -17,8 +17,8 @@ use unionlabs::{
     },
     hash::{H160, H256},
     ibc::lightclients::ethereum::{
-        fork_parameters::ForkParameters, light_client_header::LightClientHeader,
-        light_client_update::LightClientUpdate,
+        execution_payload_header::CapellaExecutionPayloadHeader, fork_parameters::ForkParameters,
+        light_client_header::LightClientHeader, light_client_update::LightClientUpdate,
     },
 };
 
@@ -268,22 +268,48 @@ pub fn verify_storage_absence(
     Ok(verify_state(root, key.as_ref(), proof)?.is_none())
 }
 
+/// Computes the execution block root hash.
+///
+/// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/light-client/sync-protocol.md#modified-get_lc_execution_root)
+pub fn get_lc_execution_root<C: ChainSpec>(
+    fork_parameters: &ForkParameters,
+    header: &LightClientHeader<C>,
+) -> H256 {
+    let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
+    if epoch >= fork_parameters.deneb.epoch {
+        return header.execution.tree_hash_root().into();
+    }
+
+    if epoch >= fork_parameters.capella.epoch {
+        return CapellaExecutionPayloadHeader::from(header.execution.clone())
+            .tree_hash_root()
+            .into();
+    }
+
+    H256::default()
+}
+
 /// Validates a light client header.
 ///
-/// NOTE: This implementation is based on capella.
-/// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/light-client/sync-protocol.md#modified-is_valid_light_client_header)
+/// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/light-client/sync-protocol.md#modified-is_valid_light_client_header)
 pub fn is_valid_light_client_header<C: ChainSpec>(
     fork_parameters: &ForkParameters,
     header: &LightClientHeader<C>,
 ) -> Result<(), Error> {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
 
+    if epoch < fork_parameters.deneb.epoch {
+        if header.execution.blob_gas_used != 0 || header.execution.excess_blob_gas != 0 {
+            return Err(Error::MustBeDeneb);
+        }
+    }
+
     if epoch < fork_parameters.capella.epoch {
         return Err(Error::InvalidChainVersion);
     }
 
     validate_merkle_branch(
-        &H256::from(header.execution.tree_hash_root()),
+        &get_lc_execution_root(fork_parameters, header),
         &header.execution_branch,
         floorlog2(EXECUTION_PAYLOAD_INDEX),
         get_subtree_index(EXECUTION_PAYLOAD_INDEX),
@@ -494,7 +520,10 @@ mod tests {
 
         // attested slot can't be bigger than the signature slot
         let mut update = correct_update.clone();
-        update.attested_header.beacon.slot = u64::MAX - 100;
+
+        let before_deneb =
+            SEPOLIA.fork_parameters.deneb.epoch * (SEPOLIA.preset.SLOTS_PER_EPOCH as u64) - 1;
+        update.finalized_header.beacon.slot = before_deneb - 100;
 
         assert_eq!(
             do_validate_light_client_update(&ctx, update),
@@ -503,7 +532,7 @@ mod tests {
 
         // finalized slot can't be bigger than the attested slot
         let mut update = correct_update;
-        update.finalized_header.beacon.slot = u64::MAX;
+        update.finalized_header.beacon.slot = before_deneb;
 
         assert_eq!(
             do_validate_light_client_update(&ctx, update),

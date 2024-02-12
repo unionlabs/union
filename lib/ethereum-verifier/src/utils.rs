@@ -17,8 +17,8 @@ use crate::{primitives::GENESIS_SLOT, Error, InvalidMerkleBranch};
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/fork.md#modified-compute_fork_version)
 pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Version {
-    if epoch >= fork_parameters.eip4844.epoch {
-        fork_parameters.eip4844.version.clone()
+    if epoch >= fork_parameters.deneb.epoch {
+        fork_parameters.deneb.version.clone()
     } else if epoch >= fork_parameters.capella.epoch {
         fork_parameters.capella.version.clone()
     } else if epoch >= fork_parameters.bellatrix.epoch {
@@ -169,8 +169,8 @@ mod tests {
     fn compute_fork_version_works() {
         let fork_parameters = SEPOLIA.fork_parameters;
         assert_eq!(
-            compute_fork_version(&fork_parameters, fork_parameters.eip4844.epoch),
-            fork_parameters.eip4844.version
+            compute_fork_version(&fork_parameters, fork_parameters.deneb.epoch),
+            fork_parameters.deneb.version
         );
         assert_eq!(
             compute_fork_version(&fork_parameters, fork_parameters.capella.epoch),

@@ -14,7 +14,7 @@ use crate::{
 #[derive(Clone, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
+pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub parent_hash: H256,
     pub fee_recipient: H160,
     pub state_root: H256,
@@ -40,6 +40,67 @@ pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES
     pub withdrawals_root: H256,
 }
 
+impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader<C>>
+    for CapellaExecutionPayloadHeader<C>
+{
+    fn from(value: ExecutionPayloadHeader<C>) -> Self {
+        Self {
+            parent_hash: value.parent_hash,
+            fee_recipient: value.fee_recipient,
+            state_root: value.state_root,
+            receipts_root: value.receipts_root,
+            logs_bloom: value.logs_bloom,
+            prev_randao: value.prev_randao,
+            block_number: value.block_number,
+            gas_limit: value.gas_limit,
+            gas_used: value.gas_used,
+            timestamp: value.timestamp,
+            extra_data: value.extra_data,
+            base_fee_per_gas: value.base_fee_per_gas,
+            block_hash: value.block_hash,
+            transactions_root: value.transactions_root,
+            withdrawals_root: value.withdrawals_root,
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
+    pub parent_hash: H256,
+    pub fee_recipient: H160,
+    pub state_root: H256,
+    pub receipts_root: H256,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub logs_bloom: FixedVector<u8, C::BYTES_PER_LOGS_BLOOM>,
+    pub prev_randao: H256,
+    #[serde(with = "::serde_utils::string")]
+    pub block_number: u64,
+    #[serde(with = "::serde_utils::string")]
+    pub gas_limit: u64,
+    #[serde(with = "::serde_utils::string")]
+    pub gas_used: u64,
+    #[serde(with = "::serde_utils::string")]
+    pub timestamp: u64,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
+    pub base_fee_per_gas: U256,
+    pub block_hash: H256,
+    #[serde(default)]
+    pub transactions_root: H256,
+    #[serde(default)]
+    pub withdrawals_root: H256,
+    // blob_gas_used: uint64  # [New in Deneb:EIP4844]
+    #[serde(with = "::serde_utils::string")]
+    #[serde(default)]
+    pub blob_gas_used: u64,
+    // excess_blob_gas: uint64  # [New in Deneb:EIP4844]
+    #[serde(with = "::serde_utils::string")]
+    #[serde(default)]
+    pub excess_blob_gas: u64,
+}
+
 impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES + std::fmt::Debug> std::fmt::Debug
     for ExecutionPayloadHeader<C>
 {
@@ -60,6 +121,8 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES + std::fmt::Debug> std::fmt:
             .field("block_hash", &self.block_hash)
             .field("transactions_root", &self.transactions_root)
             .field("withdrawals_root", &self.withdrawals_root)
+            .field("blob_gas_used", &self.blob_gas_used)
+            .field("excess_blob_gas", &self.excess_blob_gas)
             .finish()
     }
 }
@@ -84,6 +147,8 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader
             block_hash: value.block_hash.into(),
             transactions_root: value.transactions_root.into(),
             withdrawals_root: value.withdrawals_root.into(),
+            blob_gas_used: value.blob_gas_used,
+            excess_blob_gas: value.excess_blob_gas,
         }
     }
 }
@@ -161,6 +226,8 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .withdrawals_root
                 .try_into()
                 .map_err(TryFromExecutionPayloadHeaderError::WithdrawalsRoot)?,
+            blob_gas_used: value.blob_gas_used,
+            excess_blob_gas: value.excess_blob_gas,
         })
     }
 }

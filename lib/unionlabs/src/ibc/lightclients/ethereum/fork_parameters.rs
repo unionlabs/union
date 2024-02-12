@@ -24,7 +24,7 @@ pub struct ForkParameters {
     pub altair: Fork,
     pub bellatrix: Fork,
     pub capella: Fork,
-    pub eip4844: Fork,
+    pub deneb: Fork,
 }
 
 impl From<ForkParameters> for protos::union::ibc::lightclients::ethereum::v1::ForkParameters {
@@ -35,7 +35,7 @@ impl From<ForkParameters> for protos::union::ibc::lightclients::ethereum::v1::Fo
             altair: Some(value.altair.into()),
             bellatrix: Some(value.bellatrix.into()),
             capella: Some(value.capella.into()),
-            eip4844: Some(value.eip4844.into()),
+            deneb: Some(value.deneb.into()),
         }
     }
 }
@@ -80,10 +80,10 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ForkParameters> for
                 )))?
                 .try_into()
                 .map_err(TryFromForkParametersError::Fork)?,
-            eip4844: proto
-                .eip4844
+            deneb: proto
+                .deneb
                 .ok_or(TryFromForkParametersError::MissingField(MissingField(
-                    "eip4844",
+                    "deneb",
                 )))?
                 .try_into()
                 .map_err(TryFromForkParametersError::Fork)?,

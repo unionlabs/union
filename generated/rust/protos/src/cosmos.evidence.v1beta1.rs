@@ -1,4 +1,12 @@
 // @generated
+/// GenesisState defines the evidence module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// evidence defines all the evidence at genesis.
+    #[prost(message, repeated, tag = "1")]
+    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+}
 /// Equivocation implements the Evidence interface and defines evidence of double
 /// signing misbehavior.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -16,14 +24,6 @@ pub struct Equivocation {
     /// consensus_address is the equivocation validator consensus address.
     #[prost(string, tag = "4")]
     pub consensus_address: ::prost::alloc::string::String,
-}
-/// GenesisState defines the evidence module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// evidence defines all the evidence at genesis.
-    #[prost(message, repeated, tag = "1")]
-    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
 /// QueryEvidenceRequest is the request type for the Query/Evidence RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
