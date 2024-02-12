@@ -197,7 +197,13 @@
           mkCi = import ./tools/mkCi.nix { inherit pkgs; };
           mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
           dbg = value:
-            builtins.trace (pkgs.lib.generators.toPretty { } value) value;
+            builtins.trace
+              (
+                if value ? type && value.type == "derivation"
+                then "derivation: ${value}"
+                else pkgs.lib.generators.toPretty { } value
+              )
+              value;
 
           versions = builtins.fromJSON (builtins.readFile ./versions/versions.json);
 

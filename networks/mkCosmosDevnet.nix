@@ -540,7 +540,7 @@ let
       '';
 
   genesisHome = pkgs.lib.foldl
-    (home: f: (dbg f) (dbg home))
+    (home: f: f home)
     initHome
     (
       pkgs.lib.flatten [
@@ -584,7 +584,7 @@ let
   '';
 
   mkValidatorHome = idx:
-    dbg (pkgs.runCommand
+    pkgs.runCommand
       "${chainName}-validator_${toString idx}-home"
       { }
       ''
@@ -604,7 +604,7 @@ let
         sed -i "s/persistent_peers = \".*\"/persistent_peers = \"$(cat ${mkNodeId 0})@${chainName}-0:26656\"/" $out/config/config.toml
 
         cat $out/config/config.toml | grep "persistent_peers ="
-      '');
+      '';
 
   mkNodeService = idx:
     {

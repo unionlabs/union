@@ -1,5 +1,16 @@
 { inputs, ... }: {
-  perSystem = { pkgs, goPkgs, self', crane, system, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, goPkgs, self', crane, system, ensureAtRepositoryRoot, dbg, ... }:
+    let
+      LAUNCHPAD_TAG = "v3.5.1";
+      launchpadSrc = pkgs.fetchFromGitHub {
+        name = "launchpad";
+        owner = "public-awesome";
+        repo = "launchpad";
+        rev = LAUNCHPAD_TAG;
+        hash = "sha256-d7gHq83I3ShVwetSIUABFgZX/+DTj6Eq9LKjjVB7LFE=";
+      };
+
+    in
     {
       packages = {
         stargaze = goPkgs.pkgsStatic.buildGoModule ({
@@ -34,6 +45,12 @@
           else
             { }
         ));
+
+        sg721 = crane.buildRemoteWasmContract {
+          src = launchpadSrc;
+          version = LAUNCHPAD_TAG;
+          package = "sg721";
+        };
       };
     };
 }
