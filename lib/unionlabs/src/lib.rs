@@ -47,6 +47,8 @@ pub mod events;
 
 pub mod bounded;
 
+pub mod constants;
+
 pub mod proof;
 
 pub mod validated;

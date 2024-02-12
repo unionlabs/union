@@ -7,9 +7,10 @@ use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
     bounded::{BoundedI32, BoundedI64},
+    constants::metric::NANOS_PER_SECOND,
     encoding::Proto,
     events::{IbcEvent, TryFromTendermintEventError, WriteAcknowledgement},
-    google::protobuf::{any::Any, duration::NANOS_PER_SECOND},
+    google::protobuf::any::Any,
     hash::H256,
     ibc::{
         core::{

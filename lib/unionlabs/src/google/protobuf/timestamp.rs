@@ -9,7 +9,8 @@ use serde::{
 
 use crate::{
     bounded::{BoundedI32, BoundedI64, BoundedIntError},
-    google::protobuf::duration::{Duration, NANOS_PER_SECOND},
+    constants::metric::NANOS_PER_SECOND,
+    google::protobuf::duration::Duration,
     Proto, TypeUrl,
 };
 
@@ -17,7 +18,7 @@ use crate::{
 pub const TIMESTAMP_SECONDS_MAX: i64 = 253_402_300_799;
 pub const TIMESTAMP_SECONDS_MIN: i64 = -62_135_596_800;
 
-const NANOS_MAX: i32 = 999_999_999;
+const NANOS_MAX: i32 = NANOS_PER_SECOND - 1;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]

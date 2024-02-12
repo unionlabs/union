@@ -12,11 +12,10 @@ use serde::{
 
 use crate::{
     bounded::{BoundedI128, BoundedI32, BoundedI64, BoundedIntError},
+    constants::metric::NANOS_PER_SECOND,
     macros::result_try,
     Proto, TypeUrl,
 };
-
-pub const NANOS_PER_SECOND: i32 = 1_000_000_000;
 
 pub const DURATION_MAX_SECONDS: i64 = 315_576_000_000;
 pub const DURATION_MIN_SECONDS: i64 = -DURATION_MAX_SECONDS;

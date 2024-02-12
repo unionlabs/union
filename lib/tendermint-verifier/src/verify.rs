@@ -201,7 +201,8 @@ pub fn verify_commit_light<V: HostFns>(
 
     let voting_power_needed = TryInto::<u64>::try_into(vals.total_voting_power)
         .map_err(|_| Error::NegativeVotingPower(vals.total_voting_power))?
-        * 2
+        .checked_mul(2)
+        .ok_or(Error::IntegerOverflow)?
         / 3;
 
     let filter_commit = |commit_sig: &CommitSig| -> Option<(H160, Timestamp, H512)> {
