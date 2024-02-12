@@ -23,7 +23,6 @@ jobs:
       eval_target: 'spell-fmt'
       eval_top_attr: 'checks'
   build:
-    needs: [ spell-fmt-check ]
     if: |
       !cancelled()
       && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
@@ -35,7 +34,6 @@ jobs:
       eval_target: 'build'
       eval_top_attr: 'packages'
   dev:
-    needs: [ spell-fmt-check ]
     if: |
       !cancelled()
       && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
@@ -47,7 +45,6 @@ jobs:
       eval_target: 'dev'
       eval_top_attr: 'devShells'
   test:
-    needs: [ spell-fmt-check ]
     if: |
       !cancelled()
       && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
