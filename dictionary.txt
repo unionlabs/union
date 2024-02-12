@@ -130,6 +130,7 @@ YMSB
 Zerg
 aarch
 abci
+abidump
 abigen
 abigens
 abortable
@@ -200,6 +201,7 @@ blst
 boneh
 bonlulu
 bools
+bootnode
 builtins
 bumpp
 byteorder
@@ -291,6 +293,7 @@ depinject
 deque
 devnet
 devnets
+devp
 devshell
 dirchange
 displaydoc
@@ -326,6 +329,7 @@ ethabicodec
 ethash
 ethcall
 etherbase
+ethkey
 evidencekeeper
 evidencetypes
 extldflags
@@ -436,6 +440,7 @@ impls
 incentivized
 incentivizes
 infima
+informations
 interchain
 interchainaccounts
 interfacetype
@@ -617,6 +622,7 @@ pruningtypes
 prysm
 prysmaticlabs
 prysmctl
+psim
 pubkey
 pubkey's
 pubkeys
@@ -650,6 +656,7 @@ restaking
 rgba
 ripemd
 rlib
+rlpdump
 roadmap
 rollups
 rpath
