@@ -163,6 +163,7 @@
         ./lib/ics23/ics23.nix
         ./hubble/hubble.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
+        ./lib/tendermint-verifier/tendermint-verifier.nix
         ./uniond/proto.nix
         ./typescript-sdk/typescript-sdk.nix
         ./app/app.nix

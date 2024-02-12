@@ -527,6 +527,8 @@ fn should_batch_verify(signatures_len: usize) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use ed25519_dalek::{Signature, Verifier, VerifyingKey};
     use unionlabs::{
         ibc::lightclients::tendermint::header::Header, tendermint::crypto::public_key::PublicKey,
@@ -574,30 +576,10 @@ mod tests {
 
     #[test]
     fn verify_works() {
-        let initial_header: Header = serde_json::from_str(include_str!("test/288.json")).unwrap();
-        let update_header: Header = serde_json::from_str(include_str!("test/291.json")).unwrap();
-
-        verify(
-            &initial_header.signed_header,
-            &initial_header.validator_set,
-            &update_header.signed_header,
-            &update_header.validator_set,
-            Duration::new(315576000000, 0).unwrap(),
-            update_header.signed_header.header.time,
-            Duration::new(100_000_000, 0).unwrap(),
-            Fraction {
-                numerator: 1,
-                denominator: 3,
-            },
-            &SignatureVerifier::new(EdVerifier),
-        )
-        .unwrap();
-    }
-
-    #[test]
-    fn batch_verify_works() {
-        let initial_header: Header = serde_json::from_str(include_str!("test/288.json")).unwrap();
-        let update_header: Header = serde_json::from_str(include_str!("test/291.json")).unwrap();
+        let initial_header: Header =
+            serde_json::from_str(&fs::read_to_string("src/test/288.json").unwrap()).unwrap();
+        let update_header: Header =
+            serde_json::from_str(&fs::read_to_string("src/test/291.json").unwrap()).unwrap();
 
         verify(
             &initial_header.signed_header,
