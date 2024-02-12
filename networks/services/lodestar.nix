@@ -25,6 +25,7 @@ let
         --params.ALTAIR_FORK_EPOCH=0 \
         --params.BELLATRIX_FORK_EPOCH=0 \
         --params.CAPELLA_FORK_EPOCH=0 \
+        --params.DENEB_FORK_EPOCH=0 \
         --eth1=true \
         --jwt-secret=${config}/dev-jwt.prv \
         --rest.namespace="*"
@@ -37,14 +38,15 @@ in
       name = "lodestar-extended";
       fromImage = pkgs.dockerTools.pullImage ({
         imageName = "chainsafe/lodestar";
-        imageDigest = "sha256:02adf60640dddd8f1bbab9eda09563d85aa675414af57a47a2234a1a40bde2e3";
         finalImageName = "chainsafe/lodestar";
         finalImageTag = "v1.15.1";
       } // (if pkgs.stdenv.isx86_64 then {
+        imageDigest = "sha256:02adf60640dddd8f1bbab9eda09563d85aa675414af57a47a2234a1a40bde2e3";
         sha256 = "sha256-iq9Jukk2lzIdXj3PgyxxgXLvikgAV35NaDU1siXqSNQ=";
         arch = "amd64";
       } else {
-        sha256 = "0gnkk3y90wcz78ngqx341kfh25zbjm15z3jdidwl7vh5hbmpsjrr";
+        imageDigest = "sha256:1c6c3f043bfda4cb7e8d8423a46a30594561659e796fe975b3fbff2337f1ce24";
+        sha256 = "sha256-iRh/HOEgtqV6JOqDY9CEzvkwBEcsjCrneqQlob8M48o=";
         arch = "arm64";
       }));
       contents = [
