@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   spell-fmt-check:
-    uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
+    uses: unionlabs/workflows/.github/workflows/build.yml@506c6251f1ced56cc9240fb4e7e667b691c49ae3
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
@@ -23,7 +23,7 @@ jobs:
       eval_target: 'spell-fmt'
       eval_top_attr: 'checks'
   build:
-    uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
+    uses: unionlabs/workflows/.github/workflows/build.yml@506c6251f1ced56cc9240fb4e7e667b691c49ae3
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
@@ -31,7 +31,7 @@ jobs:
       eval_target: 'build'
       eval_top_attr: 'packages'
   dev:
-    uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
+    uses: unionlabs/workflows/.github/workflows/build.yml@506c6251f1ced56cc9240fb4e7e667b691c49ae3
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
@@ -39,7 +39,7 @@ jobs:
       eval_target: 'dev'
       eval_top_attr: 'devShells'
   test:
-    uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
+    uses: unionlabs/workflows/.github/workflows/build.yml@506c6251f1ced56cc9240fb4e7e667b691c49ae3
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
