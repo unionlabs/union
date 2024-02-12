@@ -14,14 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  spell-fmt-check:
-    uses: unionlabs/workflows/.github/workflows/build.yml@d0880ca9903bd66043d640f531f046bf76129668
-    secrets:
-      nixbuild_token: ${{ secrets.nixbuild_token }}
-      access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
-    with:
-      eval_target: 'spell-fmt'
-      eval_top_attr: 'checks'
   build:
     uses: unionlabs/workflows/.github/workflows/build.yml@d0880ca9903bd66043d640f531f046bf76129668
     secrets:
@@ -46,18 +38,3 @@ jobs:
     with:
       eval_target: 'test'
       eval_top_attr: 'checks'
-      filter_builds: |
-        (
-          (.top_attr == "checks") and
-          (.system == "x86_64-linux") and 
-          ( 
-            (
-              # Do not run
-              [.attr] | inside(
-                [
-                  "treefmt-check"
-                ]
-              )
-            ) | not
-          )
-        )

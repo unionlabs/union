@@ -112,13 +112,6 @@
           isCi = attr: v: (if v?ci then v.ci else true);
         in
         {
-          spell-fmt = {
-            x86_64-linux = {
-              spellcheck = self.checks.x86_64-linux.spellcheck;
-              treefmt = self.checks.x86_64-linux.treefmt;
-            };
-            aarch64-linux = { };
-          };
           build = {
             x86_64-linux = filterAttrs isCi self.packages.x86_64-linux;
             aarch64-linux = filterAttrs isCi self.packages.aarch64-linux;
@@ -349,7 +342,7 @@
           packages = { default = self'.packages.uniond; };
 
           checks = {
-            spellcheck = mkCi false (pkgs.stdenv.mkDerivation {
+            spellcheck = pkgs.stdenv.mkDerivation {
               name = "spellcheck";
               dontUnpack = true;
               src = ./.;
@@ -360,7 +353,7 @@
                 cspell lint --no-progress "**"
                 touch $out
               '';
-            });
+            };
 
             nil = mkCi (system == "x86_64") (pkgs.stdenv.mkDerivation {
               name = "nil";
