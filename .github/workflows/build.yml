@@ -23,9 +23,6 @@ jobs:
       eval_target: 'spell-fmt'
       eval_top_attr: 'checks'
   build:
-    if: |
-      !cancelled()
-      && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
     uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
@@ -34,9 +31,6 @@ jobs:
       eval_target: 'build'
       eval_top_attr: 'packages'
   dev:
-    if: |
-      !cancelled()
-      && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
     uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
@@ -45,9 +39,6 @@ jobs:
       eval_target: 'dev'
       eval_top_attr: 'devShells'
   test:
-    if: |
-      !cancelled()
-      && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
     uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
