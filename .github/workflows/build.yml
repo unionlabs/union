@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   spell-fmt-check:
-    uses: unionlabs/workflows/.github/workflows/build.yml@2cf3d4734a27ffce15ba18ef983ea92c37fa5018
+    uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
@@ -27,7 +27,7 @@ jobs:
     if: |
       !cancelled()
       && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
-    uses: unionlabs/workflows/.github/workflows/build.yml@2cf3d4734a27ffce15ba18ef983ea92c37fa5018
+    uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
@@ -39,7 +39,7 @@ jobs:
     if: |
       !cancelled()
       && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
-    uses: unionlabs/workflows/.github/workflows/build.yml@2cf3d4734a27ffce15ba18ef983ea92c37fa5018
+    uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +51,7 @@ jobs:
     if: |
       !cancelled()
       && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
-    uses: unionlabs/workflows/.github/workflows/build.yml@2cf3d4734a27ffce15ba18ef983ea92c37fa5018
+    uses: unionlabs/workflows/.github/workflows/build.yml@c6263df6856b7241780fbafc284a2c049cab2d03
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
