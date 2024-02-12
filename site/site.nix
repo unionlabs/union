@@ -6,7 +6,7 @@
         site = pkgs.buildNpmPackage {
           npmDepsHash = "sha256-uWLsohYklJyUPkwXtoI/YsqGfHmwcxSmpVZFEZ4gcTc=";
           src = ./.;
-          srcs = [ ./. ./../evm/. ];
+          srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";
           pname = "site";
           version = "0.0.1";

@@ -1,10 +1,12 @@
 <script lang="ts">
 
-const versions = {
-  "union-testnet-4": ["v0.14.0", "v0.15.0", "v0.16.0", "v0.17.0"],
-  "union-testnet-5": ["v0.18.0"],
-  "union-testnet-6": ["v0.19.0"]
-}
+import versions from '../../../versions/versions.json'
+
+// const versions = {
+//   "union-testnet-4": ["v0.14.0", "v0.15.0", "v0.16.0", "v0.17.0"],
+//   "union-testnet-5": ["v0.18.0"],
+//   "union-testnet-6": ["v0.19.0"]
+// }
 
 export let chainId = 'union-testnet-4'
 export let genesis = false
