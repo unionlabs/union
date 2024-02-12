@@ -374,8 +374,6 @@
         buildInputs = [ pkgs.git self'.packages.rust-proto ];
         doCheck = true;
         checkPhase = ''
-          ${ensureAtRepositoryRoot}
-
           rust_protos_in_git_repo=${self}/generated/rust/protos
           rust_protos_in_derivation=${self'.packages.rust-proto}
 
