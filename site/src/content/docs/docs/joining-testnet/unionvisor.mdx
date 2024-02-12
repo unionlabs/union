@@ -11,15 +11,15 @@ Unionvisor is a utility for managing `uniond` deployments. It manages running, u
 
 ## Obtaining Unionvisor
 
-We release container images of Unionvisor called bundles. Each bundle contains everything required for running Unionvisor and joining a particular network. The Unionvisor bundle for `union-testnet-5` is `bundle-testnet-5`. You can obtain the Unionvisor bundle for `union-testnet-5` from our [GitHub Container Registry](https://github.com/orgs/unionlabs/packages/container/package/bundle-testnet-5).
+We release container images of Unionvisor called bundles. Each bundle contains everything required for running Unionvisor and joining a particular network. The Unionvisor bundle for `union-testnet-6` is `bundle-testnet-6`. You can obtain the Unionvisor bundle for `union-testnet-6` from our [GitHub Container Registry](https://github.com/orgs/unionlabs/packages/container/package/bundle-testnet-6).
 
 Alternatively, you can run the following command:
 
 ```sh frame="none"
-docker pull ghcr.io/unionlabs/bundle-testnet-5:$UNIONVISOR_VERSION
+docker pull ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION
 ```
 
-_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>_
+_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" genesis="false"/>_
 
 ## Running Unionvisor
 
@@ -49,10 +49,10 @@ To do this, we'll be using Docker volumes.
 docker run \
   --volume ~/.unionvisor:/.unionvisor \
   --volume /tmp:/tmp \
-  -it ghcr.io/unionlabs/bundle-testnet-5:$UNIONVISOR_VERSION \
+  -it ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION \
   init --moniker $MONIKER \
-  --network union-testnet-5 \
-  --seeds "daa56ac6573c6427ecef438d4c248d72b206597b@union.testnet.4.seed.poisonphang.com:26656"
+  --network union-testnet-6 \
+  --seeds "b37de4c50e26f7cde4c7b6ce06046a6693ffef2c@union.testnet.4.seed.poisonphang.com:26656"
 ```
 
 _Where `MONIKER` is the preferred moniker you'd like to use on this node._
@@ -112,10 +112,10 @@ To run `uniond` sub-commands, it will be useful to alias the Docker command in y
 For example, in `zsh`, you can add the following alias to your `.zshrc`:
 
 ```sh frame="none"
-alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-5:$UNIONVISOR_VERSION --log-level off call --'
+alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION --log-level off call --'
 ```
 
-_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-5" genesis="false"/>_
+_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" genesis="false"/>_
 
 :::note
 
@@ -135,7 +135,7 @@ A minimal Docker Compose file for Unionvisor looks like this:
 ```yaml
 services:
   node:
-    image: ghcr.io/unionlabs/bundle-testnet-5:$UNIONVISOR_VERSION
+    image: ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION
     volumes:
       - ~/.unionvisor:/.unionvisor
       - /tmp:/tmp
