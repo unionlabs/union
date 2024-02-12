@@ -80,27 +80,6 @@
     };
 
     # uniond versions
-    v0_14_0 = {
-      # NOTE: This *must* be after this commit
-      url = "github:unionlabs/union/14007cbae6d464e70ca68220a36b30cb445f82fd";
-      flake = false;
-    };
-    v0_15_0 = {
-      url = "github:unionlabs/union/release-v0.15.0";
-      flake = false;
-    };
-    v0_16_0 = {
-      url = "github:unionlabs/union/release-v0.16.0";
-      flake = false;
-    };
-    v0_17_0 = {
-      url = "github:unionlabs/union/release-v0.17.0";
-      flake = false;
-    };
-    v0_18_0 = {
-      url = "github:unionlabs/union/release-v0.18.0";
-      flake = false;
-    };
     v0_19_0 = {
       url = "github:unionlabs/union/release-v0.19.0";
       flake = false;
