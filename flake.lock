@@ -454,6 +454,7 @@
         "nixpkgs-solc": "nixpkgs-solc",
         "oxlint": "oxlint",
         "rust-overlay": "rust-overlay",
+        "stargaze": "stargaze",
         "treefmt-nix": "treefmt-nix",
         "v0_19_0": "v0_19_0",
         "wasmd": "wasmd",
@@ -514,6 +515,25 @@
         "repo": "libsodium",
         "rev": "dbb48cce5429cb6585c9034f002568964f1ce567",
         "type": "github"
+      }
+    },
+    "stargaze": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1706752624,
+        "narHash": "sha256-V8V6XBCHo7dObSbwyIP2G1RK23MS63BP7rcotDuB0t8=",
+        "ref": "feature/sdk-v050",
+        "rev": "c054a5119b4a08377d1958bbc27b9985dc176919",
+        "revCount": 1454,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/public-awesome/stargaze"
+      },
+      "original": {
+        "ref": "feature/sdk-v050",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/public-awesome/stargaze"
       }
     },
     "systems": {
