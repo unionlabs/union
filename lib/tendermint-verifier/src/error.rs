@@ -68,8 +68,8 @@ pub enum Error {
         "commit block_id ({commit_block_id:?}) does not match the expected block id ({block_id:?})"
     )]
     InvalidCommitBlockId {
-        commit_block_id: BlockId,
-        block_id: BlockId,
+        commit_block_id: Box<BlockId>,
+        block_id: Box<BlockId>,
     },
     #[error("voting power ({0}) cannot be negative")]
     NegativeVotingPower(i64),

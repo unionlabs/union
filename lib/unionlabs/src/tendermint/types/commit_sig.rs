@@ -30,20 +30,6 @@ pub enum CommitSig {
     },
 }
 
-impl CommitSig {
-    pub fn validator_address(&self) -> Option<H160> {
-        match &self {
-            CommitSig::Absent => None,
-            CommitSig::Commit {
-                validator_address, ..
-            } => Some(validator_address.clone()),
-            CommitSig::Nil {
-                validator_address, ..
-            } => Some(validator_address.clone()),
-        }
-    }
-}
-
 impl From<CommitSig> for protos::tendermint::types::CommitSig {
     fn from(value: CommitSig) -> Self {
         match value {

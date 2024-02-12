@@ -90,6 +90,7 @@ impl Timestamp {
         }
     }
 
+    #[must_use]
     pub fn checked_add(&self, duration: Duration) -> Option<Timestamp> {
         let mut seconds = self
             .seconds

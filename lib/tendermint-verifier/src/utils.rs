@@ -41,7 +41,7 @@ pub(crate) fn canonical_vote(
             },
         },
         chain_id: chain_id.to_string(),
-        timestamp: timestamp.clone(),
+        timestamp: *timestamp,
     })
     .encode_length_delimited_to_vec()
 }
