@@ -28,11 +28,11 @@ jobs:
   build:
     runs-on: beefy-runner
     needs: [ spell-fmt-check ]
+    if: |
+      !cancelled()
+      && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
     steps:
       - name: build
-        if: |
-          !cancelled()
-          && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
         uses: unionlabs/workflows/.github/workflows/build.yml@b8a18e6f9742145ffd5b74ffe538462639478271
         secrets:
           nixbuild_token: ${{ secrets.nixbuild_token }}
@@ -43,11 +43,11 @@ jobs:
   dev:
     runs-on: beefy-runner
     needs: [ spell-fmt-check ]
+    if: |
+      !cancelled()
+      && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
     steps:
       - name: dev
-        if: |
-          !cancelled()
-          && (contains(needs.*.result, 'success') || github.event.pull_request.draft == true)
         uses: unionlabs/workflows/.github/workflows/build.yml@b8a18e6f9742145ffd5b74ffe538462639478271
         secrets:
           nixbuild_token: ${{ secrets.nixbuild_token }}
