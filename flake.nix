@@ -8,6 +8,8 @@
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
     # We need the latest nixpkgs for buildGo121Module, remove this once we upgrade nixpkgs
     nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Track a separate nixpkgs for latest Node.js
+    nixpkgs-nodejs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -206,11 +208,12 @@
           };
 
           goPkgs = import inputs.nixpkgs-go { inherit system; };
+          nodePkgs = import inputs.nixpkgs-nodejs { inherit system; };
         in
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs mkCi;
+              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs nodePkgs mkCi;
 
               gitRev =
                 if (builtins.hasAttr "rev" self) then self.rev else "dirty";
@@ -391,17 +394,19 @@
               nil
               nixfmt
               nix-tree
-              nodejs_20
               openssl
               pkg-config
               protobuf
               self'.packages.tdc
               yq
+            ] ++ (with nodePkgs; [
+              nodejs_21
               nodePackages.graphqurl
               nodePackages.svelte-language-server
               nodePackages.typescript-language-server
               nodePackages.vscode-css-languageserver-bin
-            ] ++ (with goPkgs; [
+            ])
+            ++ (with goPkgs; [
               go
               gopls
               go-tools

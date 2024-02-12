@@ -36,7 +36,7 @@
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/typography": "^0.5.10",
-    "@tanstack/eslint-plugin-query": "^5.18.1",
+    "@tanstack/eslint-plugin-query": "^5.20.0",
     "@tanstack/svelte-query-devtools": "^5.18.1",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/eslint": "8.56.2",
