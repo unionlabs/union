@@ -1,6 +1,7 @@
 {
   "chain": {
     "ethereum-testnet": {
+      "enabled": false,
       "chain_type": "evm",
       "preset_base": "mainnet",
       "ibc_handler_address": "0xbd3f2BCD8f7FbB11B3Ae4fe83451A9A1bF3B1Dc0",
@@ -13,6 +14,7 @@
       "eth_beacon_rpc_api": "https://sepolia.cryptware.io"
     },
     "union-testnet": {
+      "enabled": true,
       "chain_type": "union",
       "signers": [
         {
@@ -20,17 +22,16 @@
         }
       ],
       "fee_denom": "muno",
-      "ws_url": "wss://rpc.cryptware.io/websocket",
+      "ws_url": "wss://rpc.testnet.bonlulu.uno/websocket",
       "prover_endpoint": "https://prover.cryptware.io:443",
-      "dump_path": "dump",
-      "grpc_url": "https://grpc.cryptware.io"
+      "grpc_url": "https://grpc.testnet.bonlulu.uno"
     }
   },
   "voyager": {
     "num_workers": 20,
     "queue": {
       "type": "pg-queue",
-      "database_url": "postgres://voyager:voyager@92.243.27.237/voyager",
+      "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
       "max_connections": 20,
       "min_connections": 20,
       "idle_timeout": null,

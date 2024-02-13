@@ -2,6 +2,7 @@ use std::{fmt::Debug, marker::PhantomData};
 
 use chain_utils::cosmos_sdk::CosmosSdkChain;
 use prost::Message;
+use queue_msg::data;
 use unionlabs::{
     encoding::Decode,
     ibc::core::{client::height::IsHeight, commitment::merkle_proof::MerkleProof},
@@ -12,7 +13,6 @@ use unionlabs::{
 
 use crate::{
     chain_impls::cosmos_sdk::fetch::AbciQueryType,
-    ctors::data,
     data::{AnyData, Data, IbcProof, IbcState},
     identified,
     use_aggregate::IsAggregateData,

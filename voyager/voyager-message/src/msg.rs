@@ -2,6 +2,7 @@ use std::{fmt::Display, marker::PhantomData};
 
 use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use queue_msg::{HandleMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
@@ -23,10 +24,7 @@ use unionlabs::{
     traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
-use crate::{
-    any_enum, AnyLightClientIdentified, ChainExt, DoMsg, GetChain, HandleMsg, QueueMsgTypes,
-    RelayerMsgTypes, Wasm,
-};
+use crate::{any_enum, AnyLightClientIdentified, ChainExt, DoMsg, GetChain, RelayerMsgTypes, Wasm};
 
 any_enum! {
     /// Defines messages that are sent *to* the lightclient `L`.

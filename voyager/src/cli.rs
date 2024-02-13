@@ -9,6 +9,7 @@ use ethers::{
     types::{Address, H256},
 };
 use frunk::{hlist_pat, HList};
+use queue_msg::{aggregation::HListTryFromIterator, Queue};
 use reqwest::Url;
 use unionlabs::{
     ibc::core::client::height::Height,
@@ -22,11 +23,11 @@ use unionlabs::{
 };
 use voyager_message::{
     data::{IbcProof, IbcState},
-    use_aggregate::{HListTryFromIterator, IsAggregateData},
-    ChainExt, DoFetchProof, DoFetchState, Identified,
+    use_aggregate::IsAggregateData,
+    ChainExt, DoFetchProof, DoFetchState, Identified, RelayerMsgTypes,
 };
 
-use crate::queue::{InMemoryQueue, Queue, Voyager};
+use crate::queue::{InMemoryQueue, Voyager};
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -70,7 +71,7 @@ pub enum QueryCmd {
 }
 
 pub async fn any_state_proof_to_json<Hc, Tr>(
-    mut voyager: Voyager<InMemoryQueue>,
+    mut voyager: Voyager<InMemoryQueue<RelayerMsgTypes>>,
     path: proof::Path<Hc::ClientId, Tr::Height>,
     c: Hc,
     height: QueryHeight<HeightOf<Hc>>,
@@ -105,16 +106,16 @@ where
     let (tx, rx) = std::sync::mpsc::channel();
 
     let (fut, abort_handle) =
-        futures::future::abortable(voyager.worker(0).run(voyager.queue.clone(), Some(tx)));
+        futures::future::abortable(voyager.worker(0).run(voyager.relay_queue.clone(), Some(tx)));
     let handle = tokio::spawn(fut);
 
     voyager
-        .queue
+        .relay_queue
         .enqueue(Hc::state(&c, height, path.clone()))
         .await
         .unwrap();
     voyager
-        .queue
+        .relay_queue
         .enqueue(Hc::proof(&c, height, path.clone()))
         .await
         .unwrap();

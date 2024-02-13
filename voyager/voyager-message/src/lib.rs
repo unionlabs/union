@@ -5,8 +5,7 @@ use std::{
     collections::{HashMap, VecDeque},
     fmt::{Debug, Display},
     future::Future,
-    marker::{PhantomData, Send},
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    marker::PhantomData,
 };
 
 use chain_utils::{
@@ -16,7 +15,7 @@ use chain_utils::{
     union::Union,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use futures::{future::BoxFuture, FutureExt};
+use queue_msg::{seq, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     encoding::{Encode, Proto},
@@ -34,7 +33,6 @@ use unionlabs::{
 
 use crate::{
     aggregate::AnyAggregate,
-    ctors::{aggregate, defer, retry, seq},
     data::{AnyData, Data},
     event::AnyEvent,
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
@@ -83,168 +81,6 @@ pub trait ChainExt: Chain {
     {
         DoFetch::do_fetch(self, msg)
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-pub enum DeferPoint {
-    Absolute,
-    Relative,
-}
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[allow(clippy::large_enum_variant)]
-#[serde(
-    bound(serialize = "", deserialize = ""),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "T: QueueMsgTypes")
-)]
-pub enum QueueMsg<T: QueueMsgTypes> {
-    Event(T::Event),
-    // data that has been read
-    Data(T::Data),
-    // read
-    Fetch(T::Fetch),
-    // write
-    Msg(T::Msg),
-    Wait(T::Wait),
-    DeferUntil {
-        point: DeferPoint,
-        seconds: u64,
-    },
-    Repeat {
-        times: u64,
-        msg: Box<Self>,
-    },
-    Timeout {
-        timeout_timestamp: u64,
-        msg: Box<Self>,
-    },
-    Sequence(VecDeque<Self>),
-    Retry {
-        remaining: u8,
-        msg: Box<Self>,
-    },
-    Aggregate {
-        /// Messages that are expected to resolve to [`Data`].
-        queue: VecDeque<Self>,
-        /// The resolved data messages.
-        data: VecDeque<T::Data>,
-        /// The message that will utilize the aggregated data.
-        receiver: T::Aggregate,
-    },
-    Noop,
-}
-
-pub mod ctors {
-    use crate::{DeferPoint, QueueMsg, QueueMsgTypes};
-
-    #[inline]
-    pub fn retry<T: QueueMsgTypes>(count: u8, t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
-        QueueMsg::Retry {
-            remaining: count,
-            msg: Box::new(t.into()),
-        }
-    }
-
-    #[inline]
-    pub fn repeat<T: QueueMsgTypes>(times: u64, t: impl Into<QueueMsg<T>>) -> QueueMsg<T> {
-        QueueMsg::Repeat {
-            times,
-            msg: Box::new(t.into()),
-        }
-    }
-
-    #[inline]
-    pub fn seq<T: QueueMsgTypes>(ts: impl IntoIterator<Item = QueueMsg<T>>) -> QueueMsg<T> {
-        QueueMsg::Sequence(ts.into_iter().collect())
-    }
-
-    #[inline]
-    pub fn defer<T: QueueMsgTypes>(timestamp: u64) -> QueueMsg<T> {
-        QueueMsg::DeferUntil {
-            point: DeferPoint::Absolute,
-            seconds: timestamp,
-        }
-    }
-
-    #[inline]
-    pub fn defer_relative<T: QueueMsgTypes>(seconds: u64) -> QueueMsg<T> {
-        QueueMsg::DeferUntil {
-            point: DeferPoint::Relative,
-            seconds,
-        }
-    }
-
-    #[inline]
-    pub fn fetch<T: QueueMsgTypes>(t: impl Into<T::Fetch>) -> QueueMsg<T> {
-        QueueMsg::Fetch(t.into())
-    }
-
-    #[inline]
-    pub fn msg<T: QueueMsgTypes>(t: impl Into<T::Msg>) -> QueueMsg<T> {
-        QueueMsg::Msg(t.into())
-    }
-
-    #[inline]
-    pub fn data<T: QueueMsgTypes>(t: impl Into<T::Data>) -> QueueMsg<T> {
-        QueueMsg::Data(t.into())
-    }
-
-    #[inline]
-    pub fn wait<T: QueueMsgTypes>(t: impl Into<T::Wait>) -> QueueMsg<T> {
-        QueueMsg::Wait(t.into())
-    }
-
-    #[inline]
-    pub fn event<T: QueueMsgTypes>(t: impl Into<T::Event>) -> QueueMsg<T> {
-        QueueMsg::Event(t.into())
-    }
-
-    #[inline]
-    pub fn aggregate<T: QueueMsgTypes>(
-        queue: impl IntoIterator<Item = QueueMsg<T>>,
-        data: impl IntoIterator<Item = T::Data>,
-        receiver: impl Into<T::Aggregate>,
-    ) -> QueueMsg<T> {
-        QueueMsg::Aggregate {
-            queue: queue.into_iter().collect(),
-            data: data.into_iter().collect(),
-            receiver: receiver.into(),
-        }
-    }
-}
-
-pub trait TryFromIntoQueueMsg<T: QueueMsgTypes> =
-    TryFrom<QueueMsg<T>, Error = QueueMsg<T>> + Into<QueueMsg<T>>;
-
-pub trait QueueMsgTypeBound = Debug
-    + Display
-    + Clone
-    + PartialEq
-    + Serialize
-    + for<'a> Deserialize<'a>
-    + Send
-    + Sync
-    + MaybeArbitrary;
-
-pub trait QueueMsgTypes: Sized + 'static {
-    type Event: HandleEvent<Self> + QueueMsgTypeBound;
-    type Data: QueueMsgTypeBound;
-    type Fetch: HandleFetch<Self> + QueueMsgTypeBound;
-    type Msg: HandleMsg<Self> + QueueMsgTypeBound;
-    type Wait: HandleWait<Self> + QueueMsgTypeBound;
-    type Aggregate: HandleAggregate<Self> + QueueMsgTypeBound;
-
-    type Store: Send + Sync;
 }
 
 pub struct RelayerMsgTypes;
@@ -305,145 +141,6 @@ impl GetChain<Evm<Mainnet>> for Chains {
     }
 }
 
-impl<T: QueueMsgTypes> QueueMsg<T> {
-    // NOTE: Box is required bc recursion
-    pub fn handle(
-        self,
-        store: &T::Store,
-        depth: usize,
-    ) -> BoxFuture<'_, Result<Option<QueueMsg<T>>, Box<dyn std::error::Error>>> {
-        tracing::info!(
-            depth,
-            %self,
-            "handling message",
-        );
-
-        let fut = async move {
-            match self {
-                QueueMsg::Event(event) => Ok(Some(event.handle(store))),
-                QueueMsg::Data(data) => {
-                    tracing::error!(
-                        data = %serde_json::to_string(&data).unwrap(),
-                        "received data outside of an aggregation"
-                    );
-
-                    Ok(None)
-                }
-                QueueMsg::Fetch(fetch) => Ok(Some(fetch.handle(store).await)),
-                QueueMsg::Msg(msg) => {
-                    msg.handle(store).await?;
-
-                    Ok(None)
-                }
-                QueueMsg::Wait(wait) => Ok(Some(wait.handle(store).await)),
-
-                QueueMsg::DeferUntil {
-                    point: DeferPoint::Relative,
-                    seconds,
-                } => Ok(Some(defer(now() + seconds))),
-                QueueMsg::DeferUntil { seconds, .. } => {
-                    // if we haven't hit the time yet, requeue the defer msg
-                    if now() < seconds {
-                        // TODO: Make the time configurable?
-                        tokio::time::sleep(Duration::from_secs(1)).await;
-
-                        Ok(Some(defer(seconds)))
-                    } else {
-                        Ok(None)
-                    }
-                }
-                QueueMsg::Timeout {
-                    timeout_timestamp,
-                    msg,
-                } => {
-                    // if we haven't hit the timeout yet, handle the msg
-                    if now() > timeout_timestamp {
-                        tracing::warn!(json = %serde_json::to_string(&msg).unwrap(), "message expired");
-
-                        Ok(None)
-                    } else {
-                        msg.handle(store, depth + 1).await
-                    }
-                }
-                QueueMsg::Sequence(mut queue) => match queue.pop_front() {
-                    Some(msg) => {
-                        let msg = msg.handle(store, depth + 1).await?;
-
-                        if let Some(msg) = msg {
-                            queue.push_front(msg);
-                        }
-
-                        Ok(Some(flatten_seq(seq(queue))))
-                    }
-                    None => Ok(None),
-                },
-                QueueMsg::Retry { remaining, msg } => {
-                    const RETRY_DELAY_SECONDS: u64 = 3;
-
-                    match msg.clone().handle(store, depth + 1).await {
-                        Ok(ok) => Ok(ok),
-                        Err(err) => {
-                            if remaining > 0 {
-                                let retries_left = remaining - 1;
-
-                                tracing::warn!(
-                                    %msg,
-                                    retries_left,
-                                    ?err,
-                                    "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds"
-                                );
-
-                                Ok(Some(seq([
-                                    defer(now() + RETRY_DELAY_SECONDS),
-                                    retry(retries_left, *msg),
-                                ])))
-                            } else {
-                                tracing::error!(%msg, "msg failed after all retries");
-                                Err(err)
-                            }
-                        }
-                    }
-                }
-                QueueMsg::Aggregate {
-                    mut queue,
-                    mut data,
-                    receiver,
-                } => {
-                    if let Some(msg) = queue.pop_front() {
-                        let msg = msg.handle(store, depth + 1).await?;
-
-                        match msg {
-                            Some(QueueMsg::Data(d)) => {
-                                data.push_back(d);
-                            }
-                            Some(m) => {
-                                queue.push_back(m);
-                            }
-                            None => {}
-                        }
-
-                        Ok(Some(aggregate(queue, data, receiver)))
-                    } else {
-                        // queue is empty, handle msg
-                        Ok(Some(receiver.handle(data)))
-                    }
-                }
-                QueueMsg::Repeat { times: 0, .. } => Ok(None),
-                QueueMsg::Repeat { times, msg } => Ok(Some(flatten_seq(seq([
-                    *msg.clone(),
-                    QueueMsg::Repeat {
-                        times: times - 1,
-                        msg,
-                    },
-                ])))),
-                QueueMsg::Noop => Ok(None),
-            }
-        };
-
-        fut.boxed()
-    }
-}
-
 // #[derive(Debug, thiserror::Error)]
 // pub enum HandleMsgError {
 //     #[error(transparent)]
@@ -465,60 +162,6 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
 //     #[error(transparent)]
 //     CometblsMinimal(identified!(LcError<Evm<Minimal>, Wasm<Union>>)),
 // }
-
-impl<T: QueueMsgTypes> std::fmt::Display for QueueMsg<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            QueueMsg::Event(event) => write!(f, "Event({event})"),
-            QueueMsg::Data(data) => write!(f, "Data({data})"),
-            QueueMsg::Fetch(fetch) => write!(f, "Fetch({fetch})"),
-            QueueMsg::Msg(msg) => write!(f, "Msg({msg})"),
-            QueueMsg::Wait(wait) => write!(f, "Wait({wait})"),
-            QueueMsg::DeferUntil { point, seconds } => {
-                write!(f, "DeferUntil({:?}, {seconds})", point)
-            }
-            QueueMsg::Repeat { times, msg } => write!(f, "Repeat({times}, {msg})"),
-            QueueMsg::Timeout {
-                timeout_timestamp,
-                msg,
-            } => write!(f, "Timeout({timeout_timestamp}, {msg})"),
-            QueueMsg::Sequence(queue) => {
-                write!(f, "Sequence [")?;
-                let len = queue.len();
-                for (idx, msg) in queue.iter().enumerate() {
-                    write!(f, "{msg}")?;
-                    if idx != len - 1 {
-                        write!(f, ", ")?;
-                    }
-                }
-                write!(f, "]")
-            }
-            QueueMsg::Retry { remaining, msg } => write!(f, "Retry({remaining}, {msg})"),
-            QueueMsg::Aggregate {
-                queue,
-                data,
-                receiver,
-            } => {
-                let data = data
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ");
-
-                let queue = queue
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ");
-
-                write!(f, "Aggregate([{queue}] -> [{data}] -> {receiver})")
-            }
-            QueueMsg::Noop => {
-                write!(f, "Noop")
-            }
-        }
-    }
-}
 
 impl TryFrom<RelayerMsg> for AnyLightClientIdentified<AnyData> {
     type Error = RelayerMsg;
@@ -888,93 +531,6 @@ pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
     fn msg(&self, msg: Msg<Hc, Tr>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
 }
 
-/// Returns the current unix timestamp in seconds.
-pub fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-}
-
-fn flatten_seq<T: QueueMsgTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
-    fn flatten<T: QueueMsgTypes>(msg: QueueMsg<T>) -> VecDeque<QueueMsg<T>> {
-        if let QueueMsg::Sequence(new_seq) = msg {
-            new_seq.into_iter().flat_map(flatten).collect()
-        } else {
-            [msg].into()
-        }
-    }
-
-    let mut msgs = flatten(msg);
-
-    if msgs.len() == 1 {
-        msgs.pop_front().unwrap()
-    } else {
-        seq(msgs)
-    }
-}
-
-#[test]
-fn flatten() {
-    struct EmptyMsgTypes;
-
-    #[derive(Debug, derive_more::Display, Clone, PartialEq, Serialize, Deserialize)]
-    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-    struct Unit;
-
-    impl HandleMsg<EmptyMsgTypes> for Unit {
-        async fn handle(self, _: &()) -> Result<(), Box<dyn std::error::Error>> {
-            todo!()
-        }
-    }
-
-    impl HandleEvent<EmptyMsgTypes> for Unit {
-        fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
-            todo!()
-        }
-    }
-
-    impl HandleFetch<EmptyMsgTypes> for Unit {
-        async fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
-            todo!()
-        }
-    }
-
-    impl HandleWait<EmptyMsgTypes> for Unit {
-        async fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
-            todo!()
-        }
-    }
-
-    impl HandleAggregate<EmptyMsgTypes> for Unit {
-        fn handle(self, _: VecDeque<Unit>) -> QueueMsg<EmptyMsgTypes> {
-            todo!()
-        }
-    }
-
-    impl QueueMsgTypes for EmptyMsgTypes {
-        type Event = Unit;
-        type Data = Unit;
-        type Fetch = Unit;
-        type Msg = Unit;
-        type Wait = Unit;
-        type Aggregate = Unit;
-
-        type Store = ();
-    }
-
-    let msg = seq::<EmptyMsgTypes>([
-        defer(1),
-        seq([defer(2), defer(3)]),
-        seq([defer(4)]),
-        defer(5),
-    ]);
-
-    let msg = flatten_seq(msg);
-
-    dbg!(msg);
-}
-
 #[cfg(test)]
 mod tests {
     #![allow(unused_imports)]
@@ -987,6 +543,7 @@ mod tests {
 
     use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union};
     use hex_literal::hex;
+    use queue_msg::{aggregate, defer_relative, event, fetch, msg, repeat};
     use serde::{de::DeserializeOwned, Serialize};
     use unionlabs::{
         ethereum::config::Minimal,
@@ -1015,7 +572,6 @@ mod tests {
             evm::EvmConfig,
             union::UnionFetch,
         },
-        ctors::{aggregate, defer_relative, event, fetch, msg, repeat},
         data::Data,
         event::{Event, IbcEvent},
         fetch::{
@@ -1826,29 +1382,6 @@ impl<Hc: Chain, Tr: Chain, S> Inner<Hc, Tr, S> {
 //     let json = serde_json::to_string_pretty(&Tester::AB(Struct { field: 1 })).unwrap();
 //     println!("{json}");
 // }
-
-pub trait HandleFetch<T: QueueMsgTypes> {
-    fn handle(self, store: &T::Store) -> impl Future<Output = QueueMsg<T>> + Send;
-}
-
-pub trait HandleWait<T: QueueMsgTypes> {
-    fn handle(self, store: &T::Store) -> impl Future<Output = QueueMsg<T>> + Send;
-}
-
-pub trait HandleEvent<T: QueueMsgTypes> {
-    fn handle(self, store: &T::Store) -> QueueMsg<T>;
-}
-
-pub trait HandleMsg<T: QueueMsgTypes> {
-    fn handle(
-        self,
-        store: &T::Store,
-    ) -> impl Future<Output = Result<(), Box<dyn std::error::Error>>> + Send;
-}
-
-pub trait HandleAggregate<T: QueueMsgTypes> {
-    fn handle(self, data: VecDeque<T::Data>) -> QueueMsg<T>;
-}
 
 macro_rules! any_lc {
     (|$msg:ident| $expr:expr) => {

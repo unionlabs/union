@@ -15,6 +15,11 @@ use protos::{
     ibc::core::connection::v1::MsgConnectionOpenInit,
     union::galois::api::v2::union_prover_api_client,
 };
+use queue_msg::{
+    aggregate,
+    aggregation::{do_aggregate, UseAggregate},
+    data, defer_relative, fetch, msg, wait,
+};
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
 use unionlabs::{
@@ -63,7 +68,6 @@ use crate::{
         fetch::{AbciQueryType, FetchAbciQuery},
         fetch_abci_query,
     },
-    ctors::{aggregate, data, defer_relative, fetch, msg, wait},
     data::{AnyData, Data, IbcState, LightClientSpecificData},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
     identified,
@@ -72,10 +76,11 @@ use crate::{
         MsgUpdateClientData,
     },
     seq,
-    use_aggregate::{do_aggregate, IsAggregateData, UseAggregate},
+    use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, Wasm, WasmConfig, Wraps,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, RelayerMsgTypes, Wasm, WasmConfig,
+    Wraps,
 };
 
 impl ChainExt for Union {
@@ -780,8 +785,8 @@ where
     Identified<Hc, Tr, Validators<Tr>>: IsAggregateData,
     Identified<Hc, Tr, ProveResponse<Tr>>: IsAggregateData,
 
-    Identified<Hc, Tr, AggregateProveRequest<Hc, Tr>>: UseAggregate,
-    Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate,
+    Identified<Hc, Tr, AggregateProveRequest<Hc, Tr>>: UseAggregate<RelayerMsgTypes>,
+    Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate<RelayerMsgTypes>,
 
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
@@ -930,7 +935,7 @@ fn tendermint_height_to_bounded_i64(
     i64::from(height).try_into().unwrap()
 }
 
-impl<Hc, Tr> UseAggregate for Identified<Hc, Tr, AggregateProveRequest<Hc, Tr>>
+impl<Hc, Tr> UseAggregate<RelayerMsgTypes> for Identified<Hc, Tr, AggregateProveRequest<Hc, Tr>>
 where
     Hc: ChainExt<Fetch<Tr> = UnionFetch<Hc, Tr>, Aggregate<Tr> = UnionAggregateMsg<Hc, Tr>>,
     Tr: ChainExt,
@@ -1124,7 +1129,7 @@ where
     }
 }
 
-impl<Hc, Tr> UseAggregate for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
+impl<Hc, Tr> UseAggregate<RelayerMsgTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
 where
     Hc: ChainExt<Header = <Union as Chain>::Header>,
     Tr: ChainExt,
