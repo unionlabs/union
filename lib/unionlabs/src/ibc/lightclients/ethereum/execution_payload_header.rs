@@ -92,12 +92,10 @@ pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES
     #[serde(default)]
     pub withdrawals_root: H256,
     // blob_gas_used: uint64  # [New in Deneb:EIP4844]
-    #[serde(with = "::serde_utils::string")]
-    #[serde(default)]
+    #[serde(default, with = "::serde_utils::string")]
     pub blob_gas_used: u64,
     // excess_blob_gas: uint64  # [New in Deneb:EIP4844]
-    #[serde(with = "::serde_utils::string")]
-    #[serde(default)]
+    #[serde(default, with = "::serde_utils::string")]
     pub excess_blob_gas: u64,
 }
 

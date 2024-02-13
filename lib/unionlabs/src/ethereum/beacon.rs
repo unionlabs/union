@@ -176,12 +176,10 @@ pub struct ExecutionPayload<
     >,
     pub withdrawals: VariableList<Withdrawal, C::MAX_WITHDRAWALS_PER_PAYLOAD>,
     // blob_gas_used: uint64  # [New in Deneb:EIP4844]
-    #[serde(default)]
-    #[serde(with = "::serde_utils::string")]
+    #[serde(default, with = "::serde_utils::string")]
     pub blob_gas_used: u64,
     // excess_blob_gas: uint64  # [New in Deneb:EIP4844]
-    #[serde(default)]
-    #[serde(with = "::serde_utils::string")]
+    #[serde(default, with = "::serde_utils::string")]
     pub excess_blob_gas: u64,
 }
 
@@ -219,10 +217,12 @@ impl<
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 pub struct Withdrawal {
+    #[serde(with = "::serde_utils::string")]
     pub index: u64,
-    // REVIEW: Should this be u64?
-    pub validator_index: usize,
+    #[serde(with = "::serde_utils::string")]
+    pub validator_index: u64,
     pub address: H160,
+    #[serde(with = "::serde_utils::string")]
     pub amount: u64,
 }
 
