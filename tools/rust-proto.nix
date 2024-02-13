@@ -374,6 +374,10 @@
         buildInputs = [ pkgs.git ];
         doCheck = true;
         checkPhase = ''
+          echo rust_protos_in_git_repo=${self}/generated/rust/protos
+          echo rust_protos_in_derivation=${self'.packages.rust-proto}
+
+          echo git --no-pager diff --exit-code --no-index $rust_protos_in_git_repo $rust_protos_in_derivation
           touch $out
         '';
       });
