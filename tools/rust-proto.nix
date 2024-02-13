@@ -1,4 +1,4 @@
-{ self, ... }: {
+{ ... }: {
   perSystem = { self', pkgs, proto, crane, system, config, ensureAtRepositoryRoot, mkCi, ... }:
     let
       protoc-gen-tonic = crane.lib.buildPackage {
