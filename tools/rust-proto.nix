@@ -368,7 +368,7 @@
       });
 
       checks = {
-        rust-proto-check = mkCi false (pkgs.stdenv.mkDerivation {
+        rust-proto-check = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
           name = "rust-proto-is-committed";
           description = "check that rust protos in git repo are that same as those that are generated in rust-proto derivation";
           src = ../.;
