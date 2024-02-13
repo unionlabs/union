@@ -380,10 +380,10 @@
         crane = {
           lib = craneLib;
           inherit buildWorkspaceMember ensureDirectoryIncluded;
-          buildWasmContract = import ./buildWasmContract.nix {
-            inherit buildWorkspaceMember crateCargoToml pkgs lib;
-          };
-        };
+        } //
+        (import ./buildWasmContract.nix {
+          inherit buildWorkspaceMember crateCargoToml pkgs lib rust craneLib dbg;
+        });
       };
 
       packages.rust-coverage =

@@ -434,6 +434,23 @@
         "type": "github"
       }
     },
+    "public-awesome-launchpad": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1706642300,
+        "narHash": "sha256-d7gHq83I3ShVwetSIUABFgZX/+DTj6Eq9LKjjVB7LFE=",
+        "owner": "public-awesome",
+        "repo": "launchpad",
+        "rev": "85bed1c59d6aca8c63830f67611754771d8d6ee9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "public-awesome",
+        "ref": "v3.5.1",
+        "repo": "launchpad",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "arion": "arion",
@@ -453,7 +470,9 @@
         "nixpkgs-nodejs": "nixpkgs-nodejs",
         "nixpkgs-solc": "nixpkgs-solc",
         "oxlint": "oxlint",
+        "public-awesome-launchpad": "public-awesome-launchpad",
         "rust-overlay": "rust-overlay",
+        "stargaze": "stargaze",
         "treefmt-nix": "treefmt-nix",
         "v0_19_0": "v0_19_0",
         "wasmd": "wasmd",
@@ -514,6 +533,25 @@
         "repo": "libsodium",
         "rev": "dbb48cce5429cb6585c9034f002568964f1ce567",
         "type": "github"
+      }
+    },
+    "stargaze": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1707839780,
+        "narHash": "sha256-DRzXjx/L6UCtIgvVlIi9/0DF+dltk1aypFHtSZ5EZcc=",
+        "ref": "feature/sdk-v050",
+        "rev": "2f4915b8408f37d6d2e94f87837828094df4f08d",
+        "revCount": 1460,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/public-awesome/stargaze"
+      },
+      "original": {
+        "ref": "feature/sdk-v050",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/public-awesome/stargaze"
       }
     },
     "systems": {

@@ -81,6 +81,18 @@
       flake = false;
     };
 
+    stargaze = {
+      url = "git+https://github.com/public-awesome/stargaze?ref=feature/sdk-v050&submodules=1";
+      flake = false;
+    };
+    public-awesome-launchpad = {
+      type = "github";
+      owner = "public-awesome";
+      repo = "launchpad";
+      ref = "v3.5.1";
+      flake = false;
+    };
+
     # uniond versions
     v0_19_0 = {
       url = "github:unionlabs/union/release-v0.19.0";
@@ -163,6 +175,7 @@
         ./networks/e2e-setup.nix
         ./networks/devnet.nix
         ./networks/simulation/simd.nix
+        ./networks/stargaze.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
@@ -191,7 +204,13 @@
           mkCi = import ./tools/mkCi.nix { inherit pkgs; };
           mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
           dbg = value:
-            builtins.trace (pkgs.lib.generators.toPretty { } value) value;
+            builtins.trace
+              (
+                if value ? type && value.type == "derivation"
+                then "derivation: ${value}"
+                else pkgs.lib.generators.toPretty { } value
+              )
+              value;
 
           versions = builtins.fromJSON (builtins.readFile ./versions/versions.json);
 
