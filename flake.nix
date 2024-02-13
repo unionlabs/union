@@ -337,7 +337,7 @@
             };
           };
 
-          packages = { default = self'.packages.uniond; };
+          packages = { default = mkCi false (self'.packages.uniond); };
 
           checks = {
             spellcheck = pkgs.stdenv.mkDerivation {
