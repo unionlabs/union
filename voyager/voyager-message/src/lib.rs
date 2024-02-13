@@ -603,7 +603,7 @@ mod tests {
         print_json(msg(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
             union_chain_id.clone(),
             MsgConnectionOpenInitData(MsgConnectionOpenInit {
-                client_id: parse!("08-wasm-2"),
+                client_id: parse!("08-wasm-0"),
                 counterparty: connection::counterparty::Counterparty {
                     client_id: parse!("cometbls-0"),
                     connection_id: parse!(""),
@@ -1148,7 +1148,7 @@ where
         self.0
             .signers()
             .with(|signer| async {
-                let msg_any = match msg {
+                let msg_any = match msg.clone() {
                     Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
                             client_id: data.client_id.to_string(),
@@ -1294,10 +1294,15 @@ where
                     }
                 };
 
-                self.0
+                let tx_hash = self
+                    .0
                     .broadcast_tx_commit(signer, [msg_any])
                     .await
-                    .map(|_| ())
+                    .map(|_| ())?;
+
+                tracing::info!("tx {:?} => {:?}", tx_hash, msg);
+
+                Ok(())
             })
             .await
     }
