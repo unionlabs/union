@@ -1,11 +1,11 @@
 #![allow(clippy::type_complexity)]
 
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{BTreeMap, HashMap, VecDeque},
     error::Error,
     fmt::{Debug, Display},
     str::FromStr,
-    sync::{mpsc, Arc, Mutex},
+    sync::{Arc, Mutex},
     time::Duration,
 };
 
@@ -18,7 +18,7 @@ use chain_utils::{
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{stream, Future, FutureExt, StreamExt, TryStreamExt};
-use queue_msg::{event, Queue, QueueMsg, QueueMsgTypes};
+use queue_msg::{event, Queue, QueueMsg, QueueMsgTypes, Reactor};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
@@ -38,24 +38,20 @@ use voyager_message::{ChainExt, Chains, Identified, RelayerMsgTypes, Wasm};
 
 use crate::{
     chain::{AnyChain, AnyChainTryFromConfigError},
-    config::Config,
+    config::{ChainConfig, Config},
 };
 
 pub mod msg_server;
 
+type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
+
 #[derive(Debug, Clone)]
 pub struct Voyager<Q> {
-    chains: Arc<Chains>,
+    pub chains: Arc<Chains>,
     num_workers: u16,
     msg_server: msg_server::MsgServer,
     // NOTE: pub temporarily
     pub relay_queue: Q,
-}
-
-#[derive(DebugNoBound, CloneNoBound)]
-pub struct Worker<T: QueueMsgTypes> {
-    pub id: u16,
-    pub store: Arc<T::Store>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
@@ -121,22 +117,22 @@ impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
         }
     }
 
-    fn process<F, Fut>(&mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
+    fn process<F, Fut, R>(
+        &mut self,
+        f: F,
+    ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = Result<Option<QueueMsg<T>>, String>> + Send + 'static,
+        Fut: Future<Output = (R, Result<Option<QueueMsg<T>>, String>)> + Send + 'static,
+        R: Send + Sync + 'static,
     {
         async move {
             match self {
                 AnyQueue::InMemory(queue) => {
-                    queue.process(f).await.map_err(AnyQueueError::InMemory)?
+                    queue.process(f).await.map_err(AnyQueueError::InMemory)
                 }
-                AnyQueue::PgQueue(queue) => {
-                    queue.process(f).await.map_err(AnyQueueError::PgQueue)?
-                }
-            };
-
-            Ok(())
+                AnyQueue::PgQueue(queue) => queue.process(f).await.map_err(AnyQueueError::PgQueue),
+            }
         }
     }
 }
@@ -161,10 +157,14 @@ impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
         futures::future::ok(())
     }
 
-    fn process<F, Fut>(&mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
+    fn process<F, Fut, R>(
+        &mut self,
+        f: F,
+    ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = Result<Option<QueueMsg<T>>, String>> + Send + 'static,
+        Fut: Future<Output = (R, Result<Option<QueueMsg<T>>, String>)> + Send + 'static,
+        R: Send + Sync + 'static,
     {
         async move {
             let msg = {
@@ -182,13 +182,15 @@ impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
                         json = %serde_json::to_string(&msg).unwrap(),
                     );
 
-                    match f(msg.clone()).await {
+                    let (r, res) = f(msg.clone()).await;
+                    match res {
                         Ok(new_msg) => {
                             if let Some(new_msg) = new_msg {
                                 let mut queue = self.0.lock().expect("mutex is poisoned");
                                 queue.push_back(new_msg);
                             }
-                            Ok(())
+
+                            Ok(Some(r))
                         }
                         // ProcessFlow::Requeue => {
                         //     let mut queue = self.0.lock().expect("mutex is poisoned");
@@ -198,7 +200,7 @@ impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
                         Err(why) => panic!("{why}"),
                     }
                 }
-                None => Ok(()),
+                None => Ok(None),
             }
         }
     }
@@ -244,10 +246,14 @@ impl<T: QueueMsgTypes> Queue<T> for PgQueue<T> {
         self.0.enqueue(&self.1, item)
     }
 
-    fn process<F, Fut>(&mut self, f: F) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
+    fn process<F, Fut, R>(
+        &mut self,
+        f: F,
+    ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = Result<Option<QueueMsg<T>>, String>> + Send + 'static,
+        Fut: Future<Output = (R, Result<Option<QueueMsg<T>>, String>)> + Send + 'static,
+        R: Send + Sync + 'static,
     {
         self.0.process(&self.1, f)
     }
@@ -263,81 +269,54 @@ pub enum VoyagerInitError<Q: Queue<RelayerMsgTypes>> {
     QueueInit(#[source] Q::Error),
 }
 
-impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
-    pub fn worker(&self, id: u16) -> Worker<RelayerMsgTypes> {
-        Worker {
-            id,
-            store: self.chains.clone(),
+#[derive(DebugNoBound, CloneNoBound)]
+pub struct Worker<T: QueueMsgTypes> {
+    id: u16,
+    reactor: Reactor<T>,
+}
+
+impl<T: QueueMsgTypes> Worker<T> {
+    pub async fn run<Q>(self, q: Q) -> Result<(), BoxDynError>
+    where
+        Q: Queue<T>,
+    {
+        let stream = self.reactor.run(q);
+        pin_utils::pin_mut!(stream);
+
+        while let Some(res) = stream.next().await {
+            match res {
+                Ok(data) => {
+                    tracing::info!(%data, "received data outside of aggregation");
+                }
+                Err(why) => return Err(why),
+            }
         }
+
+        Ok(())
     }
+}
 
+impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
     pub async fn new(config: Config<Q>) -> Result<Self, VoyagerInitError<Q>> {
-        let mut union = HashMap::new();
-        let mut cosmos = HashMap::new();
-        let mut evm_minimal = HashMap::new();
-        let mut evm_mainnet = HashMap::new();
-
-        fn insert_into_chain_map<C: Chain, Q: Queue<RelayerMsgTypes>>(
-            map: &mut HashMap<<<C as Chain>::SelfClientState as ClientState>::ChainId, C>,
-            chain: C,
-        ) -> Result<(), VoyagerInitError<Q>> {
-            let chain_id = chain.chain_id();
-            let chain_id = map
-                .insert(chain_id.clone(), chain)
-                .map_or(Ok(chain_id), |prev| {
-                    Err(VoyagerInitError::DuplicateChainId {
-                        chain_id: prev.chain_id().to_string(),
-                    })
-                })?;
-
-            tracing::info!(
-                %chain_id,
-                chain_type = <C::ChainType as FromStrExact>::EXPECTING,
-                "registered chain"
-            );
-
-            Ok(())
-        }
-
-        for (chain_name, chain_config) in config.chain {
-            if !chain_config.enabled {
-                tracing::info!(%chain_name, "chain not enabled, skipping");
-                continue;
-            }
-
-            let chain = AnyChain::try_from_config(chain_config.ty).await?;
-
-            match chain {
-                AnyChain::Union(c) => {
-                    insert_into_chain_map(&mut union, c)?;
-                }
-                AnyChain::Cosmos(c) => {
-                    insert_into_chain_map(&mut cosmos, c)?;
-                }
-                AnyChain::EvmMainnet(c) => {
-                    insert_into_chain_map(&mut evm_mainnet, c)?;
-                }
-                AnyChain::EvmMinimal(c) => {
-                    insert_into_chain_map(&mut evm_minimal, c)?;
-                }
-            }
-        }
+        let chains = chains_from_config(config.chain).await?;
 
         let queue = Q::new(config.voyager.queue, "relay".to_owned())
             .await
             .map_err(VoyagerInitError::QueueInit)?;
 
         Ok(Self {
-            chains: Arc::new(Chains {
-                evm_minimal,
-                evm_mainnet,
-                union,
-                cosmos,
-            }),
+            chains: Arc::new(chains),
             msg_server: msg_server::MsgServer,
             num_workers: config.voyager.num_workers,
             relay_queue: queue,
         })
+    }
+
+    pub fn worker(&self, id: u16) -> Worker<RelayerMsgTypes> {
+        Worker {
+            id,
+            reactor: Reactor::new(self.chains.clone()),
+        }
     }
 
     pub async fn run(self) -> Result<(), RunError> {
@@ -524,7 +503,7 @@ impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
                 .boxed(),
         ]));
 
-        let mut join_set = JoinSet::new();
+        let mut join_set = JoinSet::<Result<(), BoxDynError>>::new();
 
         let mut q = self.relay_queue.clone();
         join_set.spawn({
@@ -551,7 +530,7 @@ impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
 
             let worker = self.worker(i);
 
-            join_set.spawn(worker.run(self.relay_queue.clone(), None));
+            join_set.spawn(worker.run(self.relay_queue.clone()));
         }
 
         let mut errs = vec![];
@@ -574,6 +553,60 @@ impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
     }
 }
 
+pub async fn chains_from_config(
+    config: BTreeMap<String, ChainConfig>,
+) -> Result<Chains, AnyChainTryFromConfigError> {
+    let mut union = HashMap::new();
+    let mut cosmos = HashMap::new();
+    let mut evm_minimal = HashMap::new();
+    let mut evm_mainnet = HashMap::new();
+
+    fn insert_into_chain_map<C: Chain>(
+        map: &mut HashMap<<<C as Chain>::SelfClientState as ClientState>::ChainId, C>,
+        chain: C,
+    ) {
+        let chain_id = chain.chain_id();
+        map.insert(chain_id.clone(), chain);
+
+        tracing::info!(
+            %chain_id,
+            chain_type = <C::ChainType as FromStrExact>::EXPECTING,
+            "registered chain"
+        );
+    }
+
+    for (chain_name, chain_config) in config {
+        if !chain_config.enabled {
+            tracing::info!(%chain_name, "chain not enabled, skipping");
+            continue;
+        }
+
+        let chain = AnyChain::try_from_config(chain_config.ty).await?;
+
+        match chain {
+            AnyChain::Union(c) => {
+                insert_into_chain_map(&mut union, c);
+            }
+            AnyChain::Cosmos(c) => {
+                insert_into_chain_map(&mut cosmos, c);
+            }
+            AnyChain::EvmMainnet(c) => {
+                insert_into_chain_map(&mut evm_mainnet, c);
+            }
+            AnyChain::EvmMinimal(c) => {
+                insert_into_chain_map(&mut evm_minimal, c);
+            }
+        }
+    }
+
+    Ok(Chains {
+        evm_minimal,
+        evm_mainnet,
+        union,
+        cosmos,
+    })
+}
+
 #[derive(Debug)]
 pub struct RunError {
     errs: Vec<Box<dyn Error + Send + Sync>>,
@@ -588,60 +621,6 @@ impl Display for RunError {
         }
 
         Ok(())
-    }
-}
-
-impl<T: QueueMsgTypes> Worker<T> {
-    pub fn run<Q>(
-        self,
-        mut q: Q,
-        data_out_stream: Option<mpsc::Sender<T::Data>>,
-    ) -> impl Future<Output = Result<(), Box<dyn Error + Send + Sync>>> + Send + 'static
-    where
-        Q: Queue<T>,
-    {
-        async move {
-            loop {
-                // yield back to the runtime
-                tokio::time::sleep(Duration::from_millis(10)).await;
-
-                let worker = self.clone();
-                let mut data_out_stream = data_out_stream.clone();
-
-                q.process(move |msg| {
-                    async move {
-                        let new_msgs = msg.handle(&*worker.store, 0).await;
-
-                        match new_msgs {
-                            Ok(ok) => {
-                                let ok = if let Some(ref mut data_out_stream) = data_out_stream {
-                                    match ok {
-                                        Some(QueueMsg::Data(data)) => {
-                                            tracing::warn!(%data, "received data in worker");
-                                            data_out_stream.send(data).unwrap();
-                                            None
-                                        }
-                                        _ => ok,
-                                    }
-                                } else {
-                                    ok
-                                };
-
-                                Ok(ok)
-                            }
-                            // REVIEW: Check if this error is recoverable or not - i.e. if this is an IO error,
-                            // the msg can likely be retried
-                            Err(err) => {
-                                // ProcessFlow::Fail(err.to_string())
-                                // HACK: panic is OK here since this is spawned in a task, and will be caught by the runtime worker
-                                panic!("{err}");
-                            }
-                        }
-                    }
-                })
-                .await?;
-            }
-        }
     }
 }
 

@@ -40,6 +40,7 @@ pub(crate) fn pluck<T: TryFrom<U, Error = U>, U>(
 
 // TODO: Figure out how to return the entire source list on error
 pub trait HListTryFromIterator<U>: Sized {
+    const LEN: usize;
     fn try_from_iter(vec: VecDeque<U>) -> Result<Self, VecDeque<U>>;
 }
 
@@ -50,6 +51,8 @@ where
     // REVIEW: Should debug be used instead?
     U: Display,
 {
+    const LEN: usize = 1 + Tail::LEN;
+
     fn try_from_iter(vec: VecDeque<U>) -> Result<Self, VecDeque<U>> {
         match pluck::<T, U>(vec) {
             ControlFlow::Continue(invalid) => {
@@ -75,6 +78,8 @@ where
 }
 
 impl<U> HListTryFromIterator<U> for HNil {
+    const LEN: usize = 0;
+
     fn try_from_iter(vec: VecDeque<U>) -> Result<Self, VecDeque<U>> {
         if vec.is_empty() {
             Ok(Self)
@@ -84,10 +89,10 @@ impl<U> HListTryFromIterator<U> for HNil {
     }
 }
 
-pub trait UseAggregate<T: QueueMsgTypes> {
+pub trait UseAggregate<T: QueueMsgTypes, R = QueueMsg<T>> {
     type AggregatedData: HListTryFromIterator<T::Data>;
 
-    fn aggregate(this: Self, data: Self::AggregatedData) -> QueueMsg<T>;
+    fn aggregate(this: Self, data: Self::AggregatedData) -> R;
 }
 
 #[cfg(test)]
