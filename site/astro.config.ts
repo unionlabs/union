@@ -17,6 +17,7 @@ export default defineConfig({
     port: PORT,
   }),
   markdown: markdownConfiguration,
+  devToolbar: { enabled: false },
   integrations: [
     starlight({
       title: "Union",
