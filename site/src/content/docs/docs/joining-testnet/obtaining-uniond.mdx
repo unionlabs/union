@@ -55,7 +55,7 @@ docker run \
   --user $(id -u):$(id -g) \
   --volume ~/.union:/.union \
   --volume /tmp:/tmp \
-  -it ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION init $MONIKER bn254 \
+  -it ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION init $MONIKER \
   --home /.union
 ```
 
