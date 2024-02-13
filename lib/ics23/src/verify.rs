@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 
 use unionlabs::cosmos::ics23::{
     existence_proof::ExistenceProof,
@@ -239,7 +239,10 @@ fn is_left_most(spec: &InnerSpec, path: &[InnerOp]) -> Result<bool, NeighborSear
 
 /// returns true if the padding bytes correspond to all empty siblings
 /// on the right side of a branch, ie. it's a valid placeholder on a rightmost path
-fn right_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, NeighborSearchError> {
+pub fn right_branches_are_empty(
+    spec: &InnerSpec,
+    op: &InnerOp,
+) -> Result<bool, NeighborSearchError> {
     let idx = order_from_padding(spec, op)?;
 
     let right_branches = spec.child_order.len() - 1 - idx;
@@ -269,7 +272,10 @@ fn right_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, Neig
 
 /// returns true if the padding bytes correspond to all empty siblings
 /// on the left side of a branch, ie. it's a valid placeholder on a leftmost path
-fn left_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, NeighborSearchError> {
+pub fn left_branches_are_empty(
+    spec: &InnerSpec,
+    op: &InnerOp,
+) -> Result<bool, NeighborSearchError> {
     let left_branches = order_from_padding(spec, op)?;
 
     if left_branches == 0 {
@@ -287,10 +293,8 @@ fn left_branches_are_empty(spec: &InnerSpec, op: &InnerOp) -> Result<bool, Neigh
 
     for i in 0..left_branches {
         let idx = get_position(&spec.child_order, i)?;
-        let from = actual_prefix + idx * spec.child_size.inner();
-        if from + spec.child_size.inner() >= op.suffix.len()
-            || spec.empty_child != &op.prefix[from..from + spec.child_size.inner()]
-        {
+        let from = actual_prefix + (idx * spec.child_size.inner());
+        if Some(spec.empty_child.borrow()) != op.prefix.get(from..from + spec.child_size.inner()) {
             return Ok(false);
         }
     }
