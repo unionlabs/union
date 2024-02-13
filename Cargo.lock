@@ -4466,6 +4466,7 @@ dependencies = [
  "enumorph",
  "frame-support-procedural 18.0.0",
  "frunk",
+ "futures",
  "serde",
  "serde_json",
  "tokio",

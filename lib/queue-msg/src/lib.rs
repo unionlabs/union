@@ -6,12 +6,18 @@ use std::{
     fmt::{Debug, Display},
     future::Future,
     pin::Pin,
+    sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use futures::{
+    pin_mut, stream::try_unfold, Stream, StreamExt, TryFutureExt, TryStream, TryStreamExt,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::MaybeArbitrary;
+
+use crate::aggregation::{HListTryFromIterator, UseAggregate};
 
 pub mod aggregation;
 
@@ -27,13 +33,14 @@ pub trait Queue<T: QueueMsgTypes>: Clone + Send + Sync + Sized + 'static {
         item: QueueMsg<T>,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_;
 
-    fn process<F, Fut>(
+    fn process<F, Fut, R>(
         &mut self,
         f: F,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_
+    ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = Result<Option<QueueMsg<T>>, String>> + Send + 'static;
+        Fut: Future<Output = (R, Result<Option<QueueMsg<T>>, String>)> + Send + 'static,
+        R: Send + Sync + 'static;
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -205,15 +212,15 @@ pub trait QueueMsgTypes: Sized + 'static {
 impl<T: QueueMsgTypes> QueueMsg<T> {
     // NOTE: Box is required bc recursion
     #[allow(clippy::type_complexity)]
-    pub fn handle(
+    pub fn handle<'a>(
         self,
-        store: &T::Store,
+        store: &'a T::Store,
         depth: usize,
     ) -> Pin<
         Box<
             dyn Future<Output = Result<Option<QueueMsg<T>>, Box<dyn std::error::Error>>>
                 + Send
-                + '_,
+                + 'a,
         >,
     > {
         tracing::info!(
@@ -530,4 +537,106 @@ pub fn now() -> u64 {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs()
+}
+
+#[derive(DebugNoBound, CloneNoBound)]
+pub struct Reactor<T: QueueMsgTypes> {
+    store: Arc<T::Store>,
+}
+
+type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
+
+#[allow(clippy::manual_async_fn)] // please leave me alone
+impl<T: QueueMsgTypes> Reactor<T> {
+    pub fn new(store: Arc<T::Store>) -> Self {
+        Self { store }
+    }
+
+    pub fn run<Q>(self, q: Q) -> impl Stream<Item = Result<T::Data, BoxDynError>> + Send + 'static
+    where
+        Q: Queue<T>,
+    {
+        fn unfold<T: QueueMsgTypes, Q: Queue<T>>(
+            (store, mut q): (Arc<T::Store>, Q),
+        ) -> impl Future<Output = Result<Option<(Option<T::Data>, (Arc<T::Store>, Q))>, BoxDynError>>
+               + Send
+               + 'static {
+            async move {
+                // yield back to the runtime
+                futures::future::ready(()).await;
+
+                let s = store.clone();
+
+                let data = q
+                    .process(move |msg| {
+                        async move {
+                            let new_msgs = msg.handle(&*s, 0).await;
+
+                            match new_msgs {
+                                Ok(ok) => match ok {
+                                    Some(QueueMsg::Data(d)) => (Some(d), Ok(None)),
+                                    _ => (None, Ok(ok)),
+                                },
+                                // REVIEW: Check if this error is recoverable or not - i.e. if this is an IO error,
+                                // the msg can likely be retried
+                                Err(err) => {
+                                    // ProcessFlow::Fail(err.to_string())
+                                    // HACK: panic is OK here since this is spawned in a task, and will be caught by the runtime worker
+                                    panic!("{err}");
+                                }
+                            }
+                        }
+                    })
+                    .await;
+
+                match data {
+                    Ok(data) => Ok(Some((data.flatten(), (store, q)))),
+                    Err(err) => Err(err.into()),
+                }
+            }
+        }
+
+        try_unfold::<_, _, _, Option<T::Data>>((self.store, q), unfold)
+            .filter_map(|x| async { x.transpose() })
+    }
+}
+
+pub async fn run_to_completion<A: UseAggregate<T, R>, T: QueueMsgTypes, R, Q: Queue<T>>(
+    a: A,
+    store: Arc<T::Store>,
+    queue_config: Q::Config,
+    msgs: impl IntoIterator<Item = QueueMsg<T>>,
+) -> R {
+    let mut queue = Q::new(queue_config, "".to_owned()).await.unwrap();
+
+    for msg in msgs {
+        queue.enqueue(msg).await.unwrap();
+    }
+
+    let reactor = Reactor::new(store).run(queue);
+    pin_mut!(reactor);
+
+    let mut output = vec![];
+    while let Some(data) = reactor.next().await {
+        let data = data.unwrap();
+        tracing::info!(%data, "received data");
+        output.push(data);
+        if output.len() >= A::AggregatedData::LEN {
+            tracing::warn!("received all data");
+            break;
+        }
+    }
+
+    let data = output.into();
+    let data = match HListTryFromIterator::try_from_iter(data) {
+        Ok(ok) => ok,
+        Err(_) => {
+            panic!(
+                "could not aggregate data into {}",
+                std::any::type_name::<A>()
+            )
+        }
+    };
+
+    A::aggregate(a, data)
 }

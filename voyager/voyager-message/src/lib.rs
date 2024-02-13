@@ -2,7 +2,7 @@
 #![allow(clippy::type_complexity, async_fn_in_trait)]
 
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{BTreeMap, HashMap, VecDeque},
     fmt::{Debug, Display},
     future::Future,
     marker::PhantomData,
