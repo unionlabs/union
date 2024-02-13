@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
 use unionlabs::{
     bounded::BoundedI64,
+    cometbls::types::canonical_vote::CanonicalVote,
     encoding::{Decode, Encode},
     google::protobuf::{
         any::{mk_any, Any},
@@ -40,8 +41,8 @@ use unionlabs::{
         crypto::public_key::PublicKey,
         types::{
             block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
-            canonical_block_id::CanonicalBlockId, canonical_vote::CanonicalVote, commit::Commit,
-            commit_sig::CommitSig, part_set_header::PartSetHeader, signed_header::SignedHeader,
+            canonical_block_id::CanonicalBlockId, commit::Commit, commit_sig::CommitSig,
+            part_set_header::PartSetHeader, signed_header::SignedHeader,
             signed_msg_type::SignedMsgType, simple_validator::SimpleValidator,
         },
     },

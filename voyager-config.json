@@ -2,7 +2,7 @@
   "chain": {
     "ethereum-devnet": {
       "chain_type": "evm",
-      "enabled": true,
+      "enabled": false,
       "preset_base": "minimal",
       "ibc_handler_address": "0xEDa338E4dC46038493b885327842fD3E301CaB39",
       "signers": [
@@ -67,7 +67,7 @@
     },
     "simd-devnet": {
       "chain_type": "cosmos",
-      "enabled": false,
+      "enabled": true,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"

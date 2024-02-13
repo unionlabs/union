@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{hash::H256, Proto, TypeUrl};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct CanonicalPartSetHeader {

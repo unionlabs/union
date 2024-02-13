@@ -137,6 +137,7 @@
         ./lib/ics23/ics23.nix
         ./hubble/hubble.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
+        ./lib/tendermint-verifier/tendermint-verifier.nix
         ./uniond/proto.nix
         ./typescript-sdk/typescript-sdk.nix
         ./app/app.nix
@@ -306,7 +307,7 @@
                 cometbls = builtins.fetchGit {
                   name = "cometbls";
                   url = "git@github.com:unionlabs/cometbls";
-                  rev = "0005bda13742d508487f066ba6fa3cb91495fc99";
+                  rev = "360766577f7daa89f958a4c28eee909340eb4b02";
                   allRefs = true;
                 };
                 cosmossdk = builtins.fetchGit {

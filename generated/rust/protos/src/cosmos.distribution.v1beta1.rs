@@ -153,135 +153,6 @@ pub struct CommunityPoolSpendProposalWithDeposit {
     #[prost(string, tag = "5")]
     pub deposit: ::prost::alloc::string::String,
 }
-/// DelegatorWithdrawInfo is the address for where distributions rewards are
-/// withdrawn to by default this struct is only used at genesis to feed in
-/// default withdraw addresses.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DelegatorWithdrawInfo {
-    /// delegator_address is the address of the delegator.
-    #[prost(string, tag = "1")]
-    pub delegator_address: ::prost::alloc::string::String,
-    /// withdraw_address is the address to withdraw the delegation rewards to.
-    #[prost(string, tag = "2")]
-    pub withdraw_address: ::prost::alloc::string::String,
-}
-/// ValidatorOutstandingRewardsRecord is used for import/export via genesis json.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValidatorOutstandingRewardsRecord {
-    /// validator_address is the address of the validator.
-    #[prost(string, tag = "1")]
-    pub validator_address: ::prost::alloc::string::String,
-    /// outstanding_rewards represents the outstanding rewards of a validator.
-    #[prost(message, repeated, tag = "2")]
-    pub outstanding_rewards: ::prost::alloc::vec::Vec<super::super::base::v1beta1::DecCoin>,
-}
-/// ValidatorAccumulatedCommissionRecord is used for import / export via genesis
-/// json.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValidatorAccumulatedCommissionRecord {
-    /// validator_address is the address of the validator.
-    #[prost(string, tag = "1")]
-    pub validator_address: ::prost::alloc::string::String,
-    /// accumulated is the accumulated commission of a validator.
-    #[prost(message, optional, tag = "2")]
-    pub accumulated: ::core::option::Option<ValidatorAccumulatedCommission>,
-}
-/// ValidatorHistoricalRewardsRecord is used for import / export via genesis
-/// json.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValidatorHistoricalRewardsRecord {
-    /// validator_address is the address of the validator.
-    #[prost(string, tag = "1")]
-    pub validator_address: ::prost::alloc::string::String,
-    /// period defines the period the historical rewards apply to.
-    #[prost(uint64, tag = "2")]
-    pub period: u64,
-    /// rewards defines the historical rewards of a validator.
-    #[prost(message, optional, tag = "3")]
-    pub rewards: ::core::option::Option<ValidatorHistoricalRewards>,
-}
-/// ValidatorCurrentRewardsRecord is used for import / export via genesis json.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValidatorCurrentRewardsRecord {
-    /// validator_address is the address of the validator.
-    #[prost(string, tag = "1")]
-    pub validator_address: ::prost::alloc::string::String,
-    /// rewards defines the current rewards of a validator.
-    #[prost(message, optional, tag = "2")]
-    pub rewards: ::core::option::Option<ValidatorCurrentRewards>,
-}
-/// DelegatorStartingInfoRecord used for import / export via genesis json.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DelegatorStartingInfoRecord {
-    /// delegator_address is the address of the delegator.
-    #[prost(string, tag = "1")]
-    pub delegator_address: ::prost::alloc::string::String,
-    /// validator_address is the address of the validator.
-    #[prost(string, tag = "2")]
-    pub validator_address: ::prost::alloc::string::String,
-    /// starting_info defines the starting info of a delegator.
-    #[prost(message, optional, tag = "3")]
-    pub starting_info: ::core::option::Option<DelegatorStartingInfo>,
-}
-/// ValidatorSlashEventRecord is used for import / export via genesis json.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValidatorSlashEventRecord {
-    /// validator_address is the address of the validator.
-    #[prost(string, tag = "1")]
-    pub validator_address: ::prost::alloc::string::String,
-    /// height defines the block height at which the slash event occurred.
-    #[prost(uint64, tag = "2")]
-    pub height: u64,
-    /// period is the period of the slash event.
-    #[prost(uint64, tag = "3")]
-    pub period: u64,
-    /// validator_slash_event describes the slash event.
-    #[prost(message, optional, tag = "4")]
-    pub validator_slash_event: ::core::option::Option<ValidatorSlashEvent>,
-}
-/// GenesisState defines the distribution module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// params defines all the parameters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-    /// fee_pool defines the fee pool at genesis.
-    #[prost(message, optional, tag = "2")]
-    pub fee_pool: ::core::option::Option<FeePool>,
-    /// fee_pool defines the delegator withdraw infos at genesis.
-    #[prost(message, repeated, tag = "3")]
-    pub delegator_withdraw_infos: ::prost::alloc::vec::Vec<DelegatorWithdrawInfo>,
-    /// fee_pool defines the previous proposer at genesis.
-    #[prost(string, tag = "4")]
-    pub previous_proposer: ::prost::alloc::string::String,
-    /// fee_pool defines the outstanding rewards of all validators at genesis.
-    #[prost(message, repeated, tag = "5")]
-    pub outstanding_rewards: ::prost::alloc::vec::Vec<ValidatorOutstandingRewardsRecord>,
-    /// fee_pool defines the accumulated commissions of all validators at genesis.
-    #[prost(message, repeated, tag = "6")]
-    pub validator_accumulated_commissions:
-        ::prost::alloc::vec::Vec<ValidatorAccumulatedCommissionRecord>,
-    /// fee_pool defines the historical rewards of all validators at genesis.
-    #[prost(message, repeated, tag = "7")]
-    pub validator_historical_rewards: ::prost::alloc::vec::Vec<ValidatorHistoricalRewardsRecord>,
-    /// fee_pool defines the current rewards of all validators at genesis.
-    #[prost(message, repeated, tag = "8")]
-    pub validator_current_rewards: ::prost::alloc::vec::Vec<ValidatorCurrentRewardsRecord>,
-    /// fee_pool defines the delegator starting infos at genesis.
-    #[prost(message, repeated, tag = "9")]
-    pub delegator_starting_infos: ::prost::alloc::vec::Vec<DelegatorStartingInfoRecord>,
-    /// fee_pool defines the validator slash events at genesis.
-    #[prost(message, repeated, tag = "10")]
-    pub validator_slash_events: ::prost::alloc::vec::Vec<ValidatorSlashEventRecord>,
-}
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -604,5 +475,134 @@ pub struct MsgDepositValidatorRewardsPool {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgDepositValidatorRewardsPoolResponse {}
+/// DelegatorWithdrawInfo is the address for where distributions rewards are
+/// withdrawn to by default this struct is only used at genesis to feed in
+/// default withdraw addresses.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DelegatorWithdrawInfo {
+    /// delegator_address is the address of the delegator.
+    #[prost(string, tag = "1")]
+    pub delegator_address: ::prost::alloc::string::String,
+    /// withdraw_address is the address to withdraw the delegation rewards to.
+    #[prost(string, tag = "2")]
+    pub withdraw_address: ::prost::alloc::string::String,
+}
+/// ValidatorOutstandingRewardsRecord is used for import/export via genesis json.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorOutstandingRewardsRecord {
+    /// validator_address is the address of the validator.
+    #[prost(string, tag = "1")]
+    pub validator_address: ::prost::alloc::string::String,
+    /// outstanding_rewards represents the outstanding rewards of a validator.
+    #[prost(message, repeated, tag = "2")]
+    pub outstanding_rewards: ::prost::alloc::vec::Vec<super::super::base::v1beta1::DecCoin>,
+}
+/// ValidatorAccumulatedCommissionRecord is used for import / export via genesis
+/// json.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorAccumulatedCommissionRecord {
+    /// validator_address is the address of the validator.
+    #[prost(string, tag = "1")]
+    pub validator_address: ::prost::alloc::string::String,
+    /// accumulated is the accumulated commission of a validator.
+    #[prost(message, optional, tag = "2")]
+    pub accumulated: ::core::option::Option<ValidatorAccumulatedCommission>,
+}
+/// ValidatorHistoricalRewardsRecord is used for import / export via genesis
+/// json.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorHistoricalRewardsRecord {
+    /// validator_address is the address of the validator.
+    #[prost(string, tag = "1")]
+    pub validator_address: ::prost::alloc::string::String,
+    /// period defines the period the historical rewards apply to.
+    #[prost(uint64, tag = "2")]
+    pub period: u64,
+    /// rewards defines the historical rewards of a validator.
+    #[prost(message, optional, tag = "3")]
+    pub rewards: ::core::option::Option<ValidatorHistoricalRewards>,
+}
+/// ValidatorCurrentRewardsRecord is used for import / export via genesis json.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorCurrentRewardsRecord {
+    /// validator_address is the address of the validator.
+    #[prost(string, tag = "1")]
+    pub validator_address: ::prost::alloc::string::String,
+    /// rewards defines the current rewards of a validator.
+    #[prost(message, optional, tag = "2")]
+    pub rewards: ::core::option::Option<ValidatorCurrentRewards>,
+}
+/// DelegatorStartingInfoRecord used for import / export via genesis json.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DelegatorStartingInfoRecord {
+    /// delegator_address is the address of the delegator.
+    #[prost(string, tag = "1")]
+    pub delegator_address: ::prost::alloc::string::String,
+    /// validator_address is the address of the validator.
+    #[prost(string, tag = "2")]
+    pub validator_address: ::prost::alloc::string::String,
+    /// starting_info defines the starting info of a delegator.
+    #[prost(message, optional, tag = "3")]
+    pub starting_info: ::core::option::Option<DelegatorStartingInfo>,
+}
+/// ValidatorSlashEventRecord is used for import / export via genesis json.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorSlashEventRecord {
+    /// validator_address is the address of the validator.
+    #[prost(string, tag = "1")]
+    pub validator_address: ::prost::alloc::string::String,
+    /// height defines the block height at which the slash event occurred.
+    #[prost(uint64, tag = "2")]
+    pub height: u64,
+    /// period is the period of the slash event.
+    #[prost(uint64, tag = "3")]
+    pub period: u64,
+    /// validator_slash_event describes the slash event.
+    #[prost(message, optional, tag = "4")]
+    pub validator_slash_event: ::core::option::Option<ValidatorSlashEvent>,
+}
+/// GenesisState defines the distribution module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// params defines all the parameters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+    /// fee_pool defines the fee pool at genesis.
+    #[prost(message, optional, tag = "2")]
+    pub fee_pool: ::core::option::Option<FeePool>,
+    /// fee_pool defines the delegator withdraw infos at genesis.
+    #[prost(message, repeated, tag = "3")]
+    pub delegator_withdraw_infos: ::prost::alloc::vec::Vec<DelegatorWithdrawInfo>,
+    /// fee_pool defines the previous proposer at genesis.
+    #[prost(string, tag = "4")]
+    pub previous_proposer: ::prost::alloc::string::String,
+    /// fee_pool defines the outstanding rewards of all validators at genesis.
+    #[prost(message, repeated, tag = "5")]
+    pub outstanding_rewards: ::prost::alloc::vec::Vec<ValidatorOutstandingRewardsRecord>,
+    /// fee_pool defines the accumulated commissions of all validators at genesis.
+    #[prost(message, repeated, tag = "6")]
+    pub validator_accumulated_commissions:
+        ::prost::alloc::vec::Vec<ValidatorAccumulatedCommissionRecord>,
+    /// fee_pool defines the historical rewards of all validators at genesis.
+    #[prost(message, repeated, tag = "7")]
+    pub validator_historical_rewards: ::prost::alloc::vec::Vec<ValidatorHistoricalRewardsRecord>,
+    /// fee_pool defines the current rewards of all validators at genesis.
+    #[prost(message, repeated, tag = "8")]
+    pub validator_current_rewards: ::prost::alloc::vec::Vec<ValidatorCurrentRewardsRecord>,
+    /// fee_pool defines the delegator starting infos at genesis.
+    #[prost(message, repeated, tag = "9")]
+    pub delegator_starting_infos: ::prost::alloc::vec::Vec<DelegatorStartingInfoRecord>,
+    /// fee_pool defines the validator slash events at genesis.
+    #[prost(message, repeated, tag = "10")]
+    pub validator_slash_events: ::prost::alloc::vec::Vec<ValidatorSlashEventRecord>,
+}
 include!("cosmos.distribution.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

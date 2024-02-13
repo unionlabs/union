@@ -4,7 +4,7 @@ use crate::{
     bounded::{BoundedI64, BoundedIntError},
     errors::{required, InvalidLength, MissingField},
     hash::H160,
-    tendermint::crypto::public_key::PublicKey,
+    tendermint::{crypto::public_key::PublicKey, types::simple_validator::SimpleValidator},
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
@@ -17,6 +17,15 @@ pub struct Validator {
     pub pub_key: PublicKey,
     pub voting_power: BoundedI64<0, { i64::MAX }>,
     pub proposer_priority: i64,
+}
+
+impl From<Validator> for SimpleValidator {
+    fn from(value: Validator) -> Self {
+        Self {
+            pub_key: value.pub_key,
+            voting_power: value.voting_power.inner(),
+        }
+    }
 }
 
 impl From<Validator> for protos::tendermint::types::Validator {

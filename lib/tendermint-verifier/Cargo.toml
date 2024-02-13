@@ -1,0 +1,21 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "tendermint-verifier"
+repository.workspace   = true
+version                = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+hex-literal.workspace = true
+prost.workspace       = true
+protos.workspace      = true
+serde-utils.workspace = true
+sha2.workspace        = true
+thiserror.workspace   = true
+unionlabs.workspace   = true
+
+[dev-dependencies]
+ed25519-dalek        = { version = "2.1.0", features = ["batch"] }
+serde_json.workspace = true

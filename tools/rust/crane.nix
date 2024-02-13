@@ -368,6 +368,10 @@
               (ensureDirectoryIncluded {
                 path' = path;
                 pathToInclude = "light-clients/cometbls-light-client/src/test";
+              }) ||
+              (ensureDirectoryIncluded {
+                path' = path;
+                pathToInclude = "lib/tendermint-verifier/src/test";
               });
         };
     in

@@ -1,22 +1,4 @@
 // @generated
-/// GenesisState defines 08-wasm's keeper genesis state
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// uploaded light client wasm contracts
-    #[prost(message, repeated, tag = "1")]
-    pub contracts: ::prost::alloc::vec::Vec<Contract>,
-}
-/// Contract stores contract code
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Contract {
-    /// contract byte code
-    #[prost(bytes = "vec", tag = "1")]
-    pub code_bytes: ::prost::alloc::vec::Vec<u8>,
-}
 /// QueryChecksumsRequest is the request type for the Query/Checksums RPC method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -154,6 +136,24 @@ pub struct ConsensusState {
 pub struct ClientMessage {
     #[prost(bytes = "vec", tag = "1")]
     pub data: ::prost::alloc::vec::Vec<u8>,
+}
+/// GenesisState defines 08-wasm's keeper genesis state
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// uploaded light client wasm contracts
+    #[prost(message, repeated, tag = "1")]
+    pub contracts: ::prost::alloc::vec::Vec<Contract>,
+}
+/// Contract stores contract code
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Contract {
+    /// contract byte code
+    #[prost(bytes = "vec", tag = "1")]
+    pub code_bytes: ::prost::alloc::vec::Vec<u8>,
 }
 include!("ibc.lightclients.wasm.v1.tonic.rs");
 // @@protoc_insertion_point(module)

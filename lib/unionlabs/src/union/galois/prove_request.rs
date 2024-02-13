@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    tendermint::types::canonical_vote::CanonicalVote,
+    cometbls::types::canonical_vote::CanonicalVote,
     union::galois::validator_set_commit::ValidatorSetCommit, Proto, TypeUrl,
 };
 

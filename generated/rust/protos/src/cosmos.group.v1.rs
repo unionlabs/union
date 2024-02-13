@@ -390,133 +390,6 @@ impl ProposalExecutorResult {
         }
     }
 }
-/// EventCreateGroup is an event emitted when a group is created.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventCreateGroup {
-    /// group_id is the unique ID of the group.
-    #[prost(uint64, tag = "1")]
-    pub group_id: u64,
-}
-/// EventUpdateGroup is an event emitted when a group is updated.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventUpdateGroup {
-    /// group_id is the unique ID of the group.
-    #[prost(uint64, tag = "1")]
-    pub group_id: u64,
-}
-/// EventCreateGroupPolicy is an event emitted when a group policy is created.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventCreateGroupPolicy {
-    /// address is the account address of the group policy.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-}
-/// EventUpdateGroupPolicy is an event emitted when a group policy is updated.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventUpdateGroupPolicy {
-    /// address is the account address of the group policy.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-}
-/// EventSubmitProposal is an event emitted when a proposal is created.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventSubmitProposal {
-    /// proposal_id is the unique ID of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-}
-/// EventWithdrawProposal is an event emitted when a proposal is withdrawn.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventWithdrawProposal {
-    /// proposal_id is the unique ID of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-}
-/// EventVote is an event emitted when a voter votes on a proposal.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventVote {
-    /// proposal_id is the unique ID of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-}
-/// EventExec is an event emitted when a proposal is executed.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventExec {
-    /// proposal_id is the unique ID of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    /// result is the proposal execution result.
-    #[prost(enumeration = "ProposalExecutorResult", tag = "2")]
-    pub result: i32,
-    /// logs contains error logs in case the execution result is FAILURE.
-    #[prost(string, tag = "3")]
-    pub logs: ::prost::alloc::string::String,
-}
-/// EventLeaveGroup is an event emitted when group member leaves the group.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventLeaveGroup {
-    /// group_id is the unique ID of the group.
-    #[prost(uint64, tag = "1")]
-    pub group_id: u64,
-    /// address is the account address of the group member.
-    #[prost(string, tag = "2")]
-    pub address: ::prost::alloc::string::String,
-}
-/// EventProposalPruned is an event emitted when a proposal is pruned.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventProposalPruned {
-    /// proposal_id is the unique ID of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    /// status is the proposal status (UNSPECIFIED, SUBMITTED, ACCEPTED, REJECTED, ABORTED, WITHDRAWN).
-    #[prost(enumeration = "ProposalStatus", tag = "2")]
-    pub status: i32,
-    /// tally_result is the proposal tally result (when applicable).
-    #[prost(message, optional, tag = "3")]
-    pub tally_result: ::core::option::Option<TallyResult>,
-}
-/// GenesisState defines the group module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// group_seq is the group table orm.Sequence,
-    /// it is used to get the next group ID.
-    #[prost(uint64, tag = "1")]
-    pub group_seq: u64,
-    /// groups is the list of groups info.
-    #[prost(message, repeated, tag = "2")]
-    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
-    /// group_members is the list of groups members.
-    #[prost(message, repeated, tag = "3")]
-    pub group_members: ::prost::alloc::vec::Vec<GroupMember>,
-    /// group_policy_seq is the group policy table orm.Sequence,
-    /// it is used to generate the next group policy account address.
-    #[prost(uint64, tag = "4")]
-    pub group_policy_seq: u64,
-    /// group_policies is the list of group policies info.
-    #[prost(message, repeated, tag = "5")]
-    pub group_policies: ::prost::alloc::vec::Vec<GroupPolicyInfo>,
-    /// proposal_seq is the proposal table orm.Sequence,
-    /// it is used to get the next proposal ID.
-    #[prost(uint64, tag = "6")]
-    pub proposal_seq: u64,
-    /// proposals is the list of proposals.
-    #[prost(message, repeated, tag = "7")]
-    pub proposals: ::prost::alloc::vec::Vec<Proposal>,
-    /// votes is the list of votes.
-    #[prost(message, repeated, tag = "8")]
-    pub votes: ::prost::alloc::vec::Vec<Vote>,
-}
 /// QueryGroupInfoRequest is the Query/GroupInfo request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -798,6 +671,101 @@ pub struct QueryGroupsResponse {
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+/// EventCreateGroup is an event emitted when a group is created.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventCreateGroup {
+    /// group_id is the unique ID of the group.
+    #[prost(uint64, tag = "1")]
+    pub group_id: u64,
+}
+/// EventUpdateGroup is an event emitted when a group is updated.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventUpdateGroup {
+    /// group_id is the unique ID of the group.
+    #[prost(uint64, tag = "1")]
+    pub group_id: u64,
+}
+/// EventCreateGroupPolicy is an event emitted when a group policy is created.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventCreateGroupPolicy {
+    /// address is the account address of the group policy.
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+/// EventUpdateGroupPolicy is an event emitted when a group policy is updated.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventUpdateGroupPolicy {
+    /// address is the account address of the group policy.
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+/// EventSubmitProposal is an event emitted when a proposal is created.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventSubmitProposal {
+    /// proposal_id is the unique ID of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+}
+/// EventWithdrawProposal is an event emitted when a proposal is withdrawn.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventWithdrawProposal {
+    /// proposal_id is the unique ID of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+}
+/// EventVote is an event emitted when a voter votes on a proposal.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventVote {
+    /// proposal_id is the unique ID of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+}
+/// EventExec is an event emitted when a proposal is executed.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventExec {
+    /// proposal_id is the unique ID of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// result is the proposal execution result.
+    #[prost(enumeration = "ProposalExecutorResult", tag = "2")]
+    pub result: i32,
+    /// logs contains error logs in case the execution result is FAILURE.
+    #[prost(string, tag = "3")]
+    pub logs: ::prost::alloc::string::String,
+}
+/// EventLeaveGroup is an event emitted when group member leaves the group.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventLeaveGroup {
+    /// group_id is the unique ID of the group.
+    #[prost(uint64, tag = "1")]
+    pub group_id: u64,
+    /// address is the account address of the group member.
+    #[prost(string, tag = "2")]
+    pub address: ::prost::alloc::string::String,
+}
+/// EventProposalPruned is an event emitted when a proposal is pruned.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventProposalPruned {
+    /// proposal_id is the unique ID of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// status is the proposal status (UNSPECIFIED, SUBMITTED, ACCEPTED, REJECTED, ABORTED, WITHDRAWN).
+    #[prost(enumeration = "ProposalStatus", tag = "2")]
+    pub status: i32,
+    /// tally_result is the proposal tally result (when applicable).
+    #[prost(message, optional, tag = "3")]
+    pub tally_result: ::core::option::Option<TallyResult>,
 }
 /// MsgCreateGroup is the Msg/CreateGroup request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1137,6 +1105,38 @@ impl Exec {
             _ => None,
         }
     }
+}
+/// GenesisState defines the group module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// group_seq is the group table orm.Sequence,
+    /// it is used to get the next group ID.
+    #[prost(uint64, tag = "1")]
+    pub group_seq: u64,
+    /// groups is the list of groups info.
+    #[prost(message, repeated, tag = "2")]
+    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
+    /// group_members is the list of groups members.
+    #[prost(message, repeated, tag = "3")]
+    pub group_members: ::prost::alloc::vec::Vec<GroupMember>,
+    /// group_policy_seq is the group policy table orm.Sequence,
+    /// it is used to generate the next group policy account address.
+    #[prost(uint64, tag = "4")]
+    pub group_policy_seq: u64,
+    /// group_policies is the list of group policies info.
+    #[prost(message, repeated, tag = "5")]
+    pub group_policies: ::prost::alloc::vec::Vec<GroupPolicyInfo>,
+    /// proposal_seq is the proposal table orm.Sequence,
+    /// it is used to get the next proposal ID.
+    #[prost(uint64, tag = "6")]
+    pub proposal_seq: u64,
+    /// proposals is the list of proposals.
+    #[prost(message, repeated, tag = "7")]
+    pub proposals: ::prost::alloc::vec::Vec<Proposal>,
+    /// votes is the list of votes.
+    #[prost(message, repeated, tag = "8")]
+    pub votes: ::prost::alloc::vec::Vec<Vote>,
 }
 include!("cosmos.group.v1.tonic.rs");
 // @@protoc_insertion_point(module)
