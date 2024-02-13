@@ -199,7 +199,7 @@ pub fn verify_commit_light<V: HostFns>(
 ) -> Result<(), Error> {
     verify_basic_vals_and_commit(vals, commit, height, block_id)?;
 
-    let voting_power_needed = TryInto::<u64>::try_into(vals.total_voting_power)
+    let voting_power_needed = u64::try_from(vals.total_voting_power)
         .map_err(|_| Error::NegativeVotingPower(vals.total_voting_power))?
         .checked_mul(2)
         .ok_or(Error::IntegerOverflow)?

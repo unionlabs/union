@@ -37,25 +37,21 @@ pub fn calculate_merkle_root<Inner: AsRef<[u8]>>(leaves: &[Inner]) -> H256 {
 }
 
 fn inner_hash(left: &[u8], right: &[u8]) -> H256 {
-    H256(
-        Sha256::new()
-            .chain_update(INNER_PREFIX)
-            .chain_update(left)
-            .chain_update(right)
-            .finalize()
-            .into(),
-    )
+    Sha256::new()
+        .chain_update(INNER_PREFIX)
+        .chain_update(left)
+        .chain_update(right)
+        .finalize()
+        .into()
 }
 
 // returns tm_hash(0x00 || leaf)
 fn leaf_hash(leaf: &[u8]) -> H256 {
-    H256(
-        Sha256::new()
-            .chain_update(LEAF_PREFIX)
-            .chain_update(leaf)
-            .finalize()
-            .into(),
-    )
+    Sha256::new()
+        .chain_update(LEAF_PREFIX)
+        .chain_update(leaf)
+        .finalize()
+        .into()
 }
 
 #[test]
