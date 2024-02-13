@@ -280,7 +280,7 @@ where
 
             match result {
                 Ok(ok) => {
-                    tracing::info!("tx {} => {:?}", ok.tx_hash(), msg);
+                    tracing::info!("evm tx {:?} => {:?}", ok.tx_hash(), msg);
                     let tx_rcp = ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
                     tracing::info!(?tx_rcp, "evm transaction submitted");
                     Ok(())

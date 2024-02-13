@@ -1294,13 +1294,9 @@ where
                     }
                 };
 
-                let tx_hash = self
-                    .0
-                    .broadcast_tx_commit(signer, [msg_any])
-                    .await
-                    .map(|_| ())?;
+                let tx_hash = self.0.broadcast_tx_commit(signer, [msg_any]).await?;
 
-                tracing::info!("tx {:?} => {:?}", tx_hash, msg);
+                tracing::info!("cosmos tx {:?} => {:?}", tx_hash, msg);
 
                 Ok(())
             })
