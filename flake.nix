@@ -93,6 +93,15 @@
       flake = false;
     };
 
+    cometbls = {
+      url = "git+ssh://git@github.com/unionlabs/cometbls?rev=360766577f7daa89f958a4c28eee909340eb4b02";
+      flake = false;
+    };
+    cosmossdk = {
+      url = "git+ssh://git@github.com/unionlabs/cosmos-sdk?rev=f24b2ba59f6ec8fb4624e1b2774ad7f2d90936a2";
+      flake = false;
+    };
+
     # uniond versions
     v0_19_0 = {
       url = "github:unionlabs/union/release-v0.19.0";
@@ -311,50 +320,16 @@
               nix-filter = nix-filter.lib;
 
               proto = {
-                wasmd = mkUnpack {
-                  name = "wasmd-proto";
-                  package = wasmd;
-                };
-                uniond = builtins.path {
-                  name = "uniond-proto";
-                  path = ./uniond/proto;
-                };
-                galoisd = builtins.path {
-                  name = "galoisd-proto";
-                  path = ./galoisd/proto;
-                };
-                cometbls = builtins.fetchGit {
-                  name = "cometbls";
-                  url = "git@github.com:unionlabs/cometbls";
-                  rev = "360766577f7daa89f958a4c28eee909340eb4b02";
-                  allRefs = true;
-                };
-                cosmossdk = builtins.fetchGit {
-                  name = "cosmos-sdk";
-                  url = "git@github.com:unionlabs/cosmos-sdk";
-                  rev = "f24b2ba59f6ec8fb4624e1b2774ad7f2d90936a2";
-                  allRefs = true;
-                };
-                ibcgo = mkUnpack {
-                  name = "ibc-go";
-                  package = ibc-go;
-                };
-                ics23 = mkUnpack {
-                  name = "ics23";
-                  package = ics23;
-                };
-                cosmosproto = mkUnpack {
-                  name = "cosmos-proto";
-                  package = cosmosproto;
-                };
-                gogoproto = mkUnpack {
-                  name = "gogoproto";
-                  package = gogoproto;
-                };
-                googleapis = mkUnpack {
-                  name = "googleapis";
-                  package = googleapis;
-                };
+                inherit wasmd
+                  ibc-go
+                  ics23
+                  cosmosproto
+                  gogoproto
+                  googleapis;
+                uniond = ./uniond/proto;
+                galoisd = ./galoisd/proto;
+                cometbls = inputs.cometbls;
+                cosmossdk = inputs.cosmossdk;
               };
 
               # Used as the salt when executing `instantiate2` in CosmWasm.

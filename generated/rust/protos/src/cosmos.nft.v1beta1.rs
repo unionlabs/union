@@ -90,6 +90,28 @@ pub struct Nft {
     #[prost(message, optional, tag = "10")]
     pub data: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
+/// GenesisState defines the nft module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// class defines the class of the nft type.
+    #[prost(message, repeated, tag = "1")]
+    pub classes: ::prost::alloc::vec::Vec<Class>,
+    /// entry defines all nft owned by a person.
+    #[prost(message, repeated, tag = "2")]
+    pub entries: ::prost::alloc::vec::Vec<Entry>,
+}
+/// Entry Defines all nft owned by a person
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Entry {
+    /// owner is the owner address of the following nft
+    #[prost(string, tag = "1")]
+    pub owner: ::prost::alloc::string::String,
+    /// nfts is a group of nfts of the same owner
+    #[prost(message, repeated, tag = "2")]
+    pub nfts: ::prost::alloc::vec::Vec<Nft>,
+}
 /// QueryBalanceRequest is the request type for the Query/Balance RPC method
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -244,27 +266,5 @@ pub struct MsgSend {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSendResponse {}
-/// GenesisState defines the nft module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// class defines the class of the nft type.
-    #[prost(message, repeated, tag = "1")]
-    pub classes: ::prost::alloc::vec::Vec<Class>,
-    /// entry defines all nft owned by a person.
-    #[prost(message, repeated, tag = "2")]
-    pub entries: ::prost::alloc::vec::Vec<Entry>,
-}
-/// Entry Defines all nft owned by a person
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Entry {
-    /// owner is the owner address of the following nft
-    #[prost(string, tag = "1")]
-    pub owner: ::prost::alloc::string::String,
-    /// nfts is a group of nfts of the same owner
-    #[prost(message, repeated, tag = "2")]
-    pub nfts: ::prost::alloc::vec::Vec<Nft>,
-}
 include!("cosmos.nft.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -75,7 +75,7 @@
                 -I"${proto.googleapis}" \
                 -I"${proto.cosmossdk}/proto" \
                 -I"${proto.cosmosproto}/proto" \
-                -I"${proto.ibcgo}/proto" \
+                -I"${proto.ibc-go}/proto" \
                 -I"${proto.ics23}/proto" \
                 --grpc-gateway_out $out \
                 --grpc-gateway_opt=logtostderr=true,allow_colon_final_segments=true \

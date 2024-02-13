@@ -241,11 +241,11 @@
                 '';
               };
               protoIncludes = ''
-                -I"${proto.cometbls}/proto" -I"${proto.cosmossdk}/proto" -I"${proto.ibcgo}/proto" -I"${proto.cosmosproto}/proto" -I"${proto.ics23}/proto" -I"${proto.googleapis}" -I"${proto.gogoproto}" -I"${proto.uniond}"'';
+                -I"${proto.cometbls}/proto" -I"${proto.cosmossdk}/proto" -I"${proto.ibc-go}/proto" -I"${proto.cosmosproto}/proto" -I"${proto.ics23}/proto" -I"${proto.googleapis}" -I"${proto.gogoproto}" -I"${proto.uniond}"'';
             in
             ''
               plugindir="${solidity-protobuf}/protobuf-solidity/src/protoc"
-              # find ${proto.ibcgo}/proto -name "$1" |\
+              # find ${proto.ibc-go}/proto -name "$1" |\
               # while read -r file; do
               #   echo "Generating $file"
               #   protoc \

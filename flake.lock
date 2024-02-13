@@ -40,6 +40,23 @@
         "type": "github"
       }
     },
+    "cometbls": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1706545041,
+        "narHash": "sha256-qX37SK6d2kEgnHg5a8YDZQNhb5R+GcK7gp7iDTZGYgg=",
+        "ref": "refs/heads/cometbls-v0.38+tm-light-client",
+        "rev": "360766577f7daa89f958a4c28eee909340eb4b02",
+        "revCount": 9452,
+        "type": "git",
+        "url": "ssh://git@github.com/unionlabs/cometbls"
+      },
+      "original": {
+        "rev": "360766577f7daa89f958a4c28eee909340eb4b02",
+        "type": "git",
+        "url": "ssh://git@github.com/unionlabs/cometbls"
+      }
+    },
     "cosmosproto": {
       "flake": false,
       "locked": {
@@ -55,6 +72,23 @@
         "repo": "cosmos-proto",
         "rev": "78e33f25b874e7639f540037599d8ea1d161a62c",
         "type": "github"
+      }
+    },
+    "cosmossdk": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1701268665,
+        "narHash": "sha256-Cgxwy1lPqPxxQUpv3cw5PHMXCp435YcAlNPliCHApps=",
+        "ref": "refs/heads/v0.50.2-bn254",
+        "rev": "f24b2ba59f6ec8fb4624e1b2774ad7f2d90936a2",
+        "revCount": 11603,
+        "type": "git",
+        "url": "ssh://git@github.com/unionlabs/cosmos-sdk"
+      },
+      "original": {
+        "rev": "f24b2ba59f6ec8fb4624e1b2774ad7f2d90936a2",
+        "type": "git",
+        "url": "ssh://git@github.com/unionlabs/cosmos-sdk"
       }
     },
     "crane": {
@@ -453,7 +487,9 @@
     "root": {
       "inputs": {
         "arion": "arion",
+        "cometbls": "cometbls",
         "cosmosproto": "cosmosproto",
+        "cosmossdk": "cosmossdk",
         "crane": "crane",
         "flake-parts": "flake-parts_3",
         "foundry": "foundry",

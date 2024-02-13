@@ -4,11 +4,10 @@
       protoc-gen-tonic = crane.lib.buildPackage {
         pname = "protoc-gen-tonic";
         version = "0.0.1";
-        src = pkgs.fetchFromGitHub {
-          owner = "neoeinstein";
-          repo = "protoc-gen-prost";
+        doCheck = false;
+        src = builtins.fetchGit {
+          url = "https://github.com/neoeinstein/protoc-gen-prost";
           rev = "1a6d3593622af18b75a4a79f545f8530cdaf444f";
-          hash = "sha256-2DeFm3vE1q4KVMQlskJTHZnD7L5b6S0E50kZFF7ksN0=";
         };
       };
 
@@ -84,7 +83,7 @@
           additional-filter = "-path '*google/protobuf/*.proto'";
         };
         ibc-proto = rec {
-          src = "${proto.ibcgo}/proto";
+          src = "${proto.ibc-go}/proto";
           proto-deps = [
             src
             google.src
