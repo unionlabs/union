@@ -516,6 +516,7 @@ mollitia
 monitonically
 monniker
 moreutils
+muldefs
 multisigs
 multistep
 muno
@@ -528,6 +529,7 @@ nemo
 neoeinstein
 neofetch
 neondb
+netgo
 netutil
 networkid
 nextest
@@ -700,6 +702,7 @@ stakingkeeper
 stakingtypes
 stargate
 starport
+starsd
 statemachine
 stateproof
 statesync
@@ -823,6 +826,7 @@ upgradekeeper
 upgradetypes
 urql
 ursi
+ustars
 utilised
 utilising
 valbz

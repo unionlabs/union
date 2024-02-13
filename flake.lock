@@ -434,6 +434,23 @@
         "type": "github"
       }
     },
+    "public-awesome-launchpad": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1706642300,
+        "narHash": "sha256-d7gHq83I3ShVwetSIUABFgZX/+DTj6Eq9LKjjVB7LFE=",
+        "owner": "public-awesome",
+        "repo": "launchpad",
+        "rev": "85bed1c59d6aca8c63830f67611754771d8d6ee9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "public-awesome",
+        "ref": "v3.5.1",
+        "repo": "launchpad",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "arion": "arion",
@@ -453,6 +470,7 @@
         "nixpkgs-nodejs": "nixpkgs-nodejs",
         "nixpkgs-solc": "nixpkgs-solc",
         "oxlint": "oxlint",
+        "public-awesome-launchpad": "public-awesome-launchpad",
         "rust-overlay": "rust-overlay",
         "stargaze": "stargaze",
         "treefmt-nix": "treefmt-nix",

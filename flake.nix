@@ -85,6 +85,13 @@
       url = "git+https://github.com/public-awesome/stargaze?ref=feature/sdk-v050&submodules=1";
       flake = false;
     };
+    public-awesome-launchpad = {
+      type = "github";
+      owner = "public-awesome";
+      repo = "launchpad";
+      ref = "v3.5.1";
+      flake = false;
+    };
 
     # uniond versions
     v0_19_0 = {
