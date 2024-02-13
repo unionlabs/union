@@ -5,6 +5,7 @@
 { node
 , chainId
 , chainName
+, denom
 , keyType
 , validatorCount
 , genesisOverwrites ? { }
@@ -15,6 +16,7 @@
 }:
 assert (builtins.isString chainId);
 assert (builtins.isString chainName);
+assert (builtins.isString denom);
 assert (builtins.isString keyType);
 assert (builtins.isInt portIncrease);
 assert (builtins.isInt validatorCount);
@@ -65,6 +67,7 @@ let
         cat ${mkNodeMnemonic idx} | ${nodeBin} \
           init \
           testnet \
+          --default-denom ${denom} \
           --chain-id ${chainId} \
           --home . \
           --recover 2> /dev/null
@@ -84,6 +87,7 @@ let
         cat ${mkNodeMnemonic idx} | ${nodeBin} \
           init \
           testnet \
+          --default-denom ${denom} \
           --chain-id ${chainId} \
           --home . \
           --recover 2> /dev/null
@@ -111,7 +115,7 @@ let
           genesis \
           gentx \
           valoper-${toString idx} \
-          1000000000000000000000stake \
+          1000000000000000000000${denom} \
           --chain-id ${chainId} \
           --home $src \
           --keyring-backend test \
@@ -128,7 +132,12 @@ let
       export HOME=$(pwd)
       mkdir -p $out
 
-      ${nodeBin} init testnet --chain-id ${chainId} --home $out
+      ${nodeBin} \
+        init \
+        testnet \
+        --default-denom ${denom} \
+        --chain-id ${chainId} \
+        --home $out
     '';
 
   addDevKeyToKeyringAndGenesis = name: mnemonic: home:
@@ -150,7 +159,7 @@ let
           genesis \
           add-genesis-account \
           ${name} \
-          10000000000000000000000000stake \
+          10000000000000000000000000${denom} \
           --keyring-backend test \
           --home $out
       '';
@@ -165,7 +174,9 @@ let
         mkdir -p $out
         cp --no-preserve=mode -r ${home}/* $out
 
-        cat ${mkNodeMnemonic idx} | ${nodeBin} keys add \
+        cat ${mkNodeMnemonic idx} | ${nodeBin} \
+          keys \
+          add \
           --recover valoper-${toString idx} \
           --keyring-backend test \
           --home $out
@@ -174,7 +185,7 @@ let
           genesis \
           add-genesis-account \
           valoper-${toString idx} \
-          10000000000000000000000000stake \
+          10000000000000000000000000${denom} \
           --keyring-backend test \
           --home $out
       '';

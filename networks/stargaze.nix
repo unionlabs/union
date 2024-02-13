@@ -13,10 +13,10 @@
     in
     {
       packages = {
-        stargaze = goPkgs.pkgsStatic.buildGoModule ({
-          name = "stargaze";
+        starsd = goPkgs.pkgsStatic.buildGoModule ({
+          name = "starsd";
           src = inputs.stargaze;
-          vendorHash = "sha256-0icwBUr/jAmYk0/8lVE0THrEExuXBTJkv49/1IWQ33Y=";
+          vendorHash = "sha256-f5buWJFAeqWsoCo2mHehJO9t4pQ1EYCBOM1BDKhucJw=";
           doCheck = false;
           doInstallCheck = false;
           meta.mainProgram = "starsd";
@@ -24,7 +24,7 @@
           subPackages = [ "./cmd/starsd" ];
           buildTags = [ "netgo" ];
         } // (
-          let libwasmvm = self'.packages.libwasmvm-1_5_0;
+          let libwasmvm = self'.packages.libwasmvm;
           in if pkgs.stdenv.isLinux then {
             # Statically link if we're on linux
             nativeBuildInputs = [ pkgs.musl libwasmvm ];
