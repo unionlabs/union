@@ -6,7 +6,7 @@ const isProduction = import.meta.env.PROD
 
 let blogEntries = await getCollection('blog', ({ data }) =>
   // filter out unpublished posts in production
-  isProduction ? data.hidden !== true : true,
+  isProduction ? data.hidden !== true : true
 )
 blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
 ---
@@ -29,10 +29,7 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
                     day: 'numeric',
                   })}
                 </time>
-                -
-                <a href="https://x.com/union_build" class="hover:underline text-accent-400">
-                  @union_build
-                </a>
+                -<span class="text-accent-400">@union_build</span>
               </div>
               <p class="sm:text-xl">{blogPostEntry.data.description}</p>
 
