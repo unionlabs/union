@@ -412,7 +412,6 @@ ibcexported
 ibcfee
 ibcfeekeeper
 ibcfeetypes
-ibcgo
 ibckeeper
 ibcporttypes
 ibctm
