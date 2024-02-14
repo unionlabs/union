@@ -1,13 +1,13 @@
-import type { ChainId } from '#/constants/chain.ts'
+import type { ChainId } from './constants/chain.ts'
 import type { ExecuteResult } from '@cosmjs/cosmwasm-stargate'
-import { type GetBalanceParameters, getBalance, getDenomAddress } from '#/query.ts'
+import { type GetBalanceParameters, getBalance, getDenomAddress } from './query.ts'
 import type { Hash, Chain, Client, Account, Transport, PublicActions, WalletActions, Address } from 'viem'
 import {
   sendAsset,
   approveAsset,
   type SendAssetParameters,
   type ApproveAssetParameters,
-} from '#/send.ts'
+} from './send.ts'
 
 export type UnionClient = Client & PublicActions & WalletActions
 
