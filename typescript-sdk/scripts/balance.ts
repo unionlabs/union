@@ -34,7 +34,6 @@ async function main() {
     .extend(walletActions)
     .extend(unionActions)
 
-  // @ts-expect-error
   const balance = await getBalance(client, { chainId, address: address })
 
   console.log({

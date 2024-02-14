@@ -88,7 +88,7 @@ async function main() {
   const fromAddress = fromChainId === '6' ? unionAddress : ethereumAddress
 
   console.info(
-    `\n\nABOUT TO SEND ${amount} muno\nFROM CHAIN ID: ${fromChainId} - ADDRESS: ${fromAddress}\nTO CHAIN ID ${toChainId} - ADDRESS: ${toAddress}\n\n`
+    `\nABOUT TO SEND ${amount} muno\nFROM CHAIN ID: ${fromChainId} - ADDRESS: ${fromAddress}\nTO CHAIN ID ${toChainId} - ADDRESS: ${toAddress}\n`
   )
 
   const client = createWalletClient({
@@ -102,20 +102,36 @@ async function main() {
     .extend(publicActions)
     .extend(unionActions)
 
+  if (fromChainId === '6') {
+    const result = await client.sendAsset({
+      chainId: '6',
+      signer: unionAccount,
+      assetId: chain.union.testnet.token.address,
+      amount,
+      denom: 'muno',
+      receiver: ethereumAddress,
+      gasPrice: '0.001muno',
+    })
+
+    // console.log(JSON.stringify(result, undefined, 2))
+
+    console.log(
+      'SUCCESS. Transaction hash:\n',
+      fromChainId === '6' ? (result as ExecuteResult).transactionHash : result
+    )
+    return
+  }
+
+  const denomAddress = await client.getDenomAddress()
+
   const result = await client.sendAsset({
-    chainId: '6',
-    signer: unionAccount,
-    assetId: chain.union.testnet.token.address,
-    amount,
-    denom: 'muno',
-    receiver: ethereumAddress,
-    gasPrice: '0.001muno',
+    chainId: '11155111',
+    signer: ethereumAccount,
+    portId: chain.ethereum.sepolia.portId,
+    assetId: denomAddress,
+    amount: BigInt(amount),
+    receiver: unionAddress,
   })
 
-  console.log(JSON.stringify(result, undefined, 2))
-
-  console.log(
-    'SUCCESS. Transaction hash:\n',
-    fromChainId === '6' ? (result as ExecuteResult).transactionHash : result
-  )
+  console.log('SUCCESS. Transaction hash:\n', result)
 }
