@@ -402,6 +402,7 @@ holiman
 horcrux
 horiz
 httptemplate
+hypertable
 iaviewer
 iavl
 ibcante
