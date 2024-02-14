@@ -3,6 +3,7 @@ use crate::macros::hex_string_array_wrapper;
 hex_string_array_wrapper! {
     pub struct H160(pub [u8; 20]);
     pub struct H256(pub [u8; 32]);
+    pub struct H384(pub [u8; 48]);
     pub struct H512(pub [u8; 64]);
 }
 
