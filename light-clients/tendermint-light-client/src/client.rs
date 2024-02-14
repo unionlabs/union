@@ -135,7 +135,7 @@ impl IbcClient for TendermintLightClient {
         tendermint_verifier::verify::verify(
             &construct_partial_header(
                 client_state.data.chain_id,
-                TryInto::<i64>::try_into(header.trusted_height.revision_height)
+                i64::try_from(header.trusted_height.revision_height)
                     .unwrap()
                     .try_into()
                     .unwrap(),
@@ -395,11 +395,11 @@ fn height_from_header(header: &Header) -> Height {
 }
 
 fn check_trusted_header(header: &Header, next_validators_hash: &H256) -> Result<(), Error> {
-    let valhash = tendermint_verifier::utils::validators_hash(&header.trusted_validators);
+    let val_hash = tendermint_verifier::utils::validators_hash(&header.trusted_validators);
 
-    if &valhash != next_validators_hash {
+    if &val_hash != next_validators_hash {
         Err(Error::TrustedValidatorsMismatch(
-            valhash,
+            val_hash,
             next_validators_hash.clone(),
         ))
     } else {
@@ -409,7 +409,7 @@ fn check_trusted_header(header: &Header, next_validators_hash: &H256) -> Result<
 
 fn parse_revision_number(chain_id: &str) -> Option<u64> {
     chain_id
-        .split('-')
-        .last()
+        .rsplit('-')
+        .next()
         .map(|height_str| height_str.parse().ok())?
 }
