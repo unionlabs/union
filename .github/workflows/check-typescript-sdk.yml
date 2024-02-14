@@ -1,4 +1,4 @@
-name: Publish TypeScript SDK
+name: Check TypeScript SDK
 
 on:
   push:
