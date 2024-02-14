@@ -9,7 +9,7 @@ import "../24-host/IBCStore.sol";
 import "../24-host/IBCCommitment.sol";
 import "../03-connection/IIBCConnection.sol";
 
-contract IBCConnectionLib {
+library IBCConnectionLib {
     event ConnectionOpenInit(string connectionId);
     event ConnectionOpenTry(string connectionId);
     event ConnectionOpenAck(string connectionId);
