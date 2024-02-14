@@ -111,7 +111,7 @@ export async function sendAssetFromEthereumToUnion(
   }: SendAssetFromEthereumToUnion
 ): Promise<Hash> {
   // TODO: make dynamic?
-  const counterpartyTimeoutRevisionNumber = 4n
+  const counterpartyTimeoutRevisionNumber = BigInt(chain.union.testnet.id)
   // TODO: make dynamic?
   const counterpartyTimeoutRevisionHeight = 800_000_000n
   try {

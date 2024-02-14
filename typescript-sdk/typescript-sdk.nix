@@ -8,7 +8,7 @@
     {
       packages = {
         typescript-sdk = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-L0uDljuA7K9+FLrVCqPQKZWW7q9ShgdRmYQBFipkSZQ=";
+          npmDepsHash = "sha256-DVseAZQWLIeL74e9SRGkEJprm5OSZFUCWoUgmPEobpk=";
           src = ./.;
           pname = "@unionlabs/client";
           version = "0.0.0";
@@ -17,7 +17,7 @@
           installPhase = ''
             mkdir -p $out
             cp -r ./dist/* $out
-          '';
+          ''; 
           doDist = false;
         };
       };
