@@ -136,9 +136,9 @@ impl IbcClient for TendermintLightClient {
             &construct_partial_header(
                 client_state.data.chain_id,
                 i64::try_from(header.trusted_height.revision_height)
-                    .unwrap()
+                    .map_err(|_| Error::InvalidHeight)? // TODO(aeryz): add context #1333
                     .try_into()
-                    .unwrap(),
+                    .map_err(|_| Error::InvalidHeight)?,
                 consensus_state.data.timestamp,
                 consensus_state.data.next_validators_hash,
             ),
@@ -146,7 +146,10 @@ impl IbcClient for TendermintLightClient {
             &header.signed_header,
             &header.validator_set,
             client_state.data.trusting_period,
-            env.block.time.try_into().unwrap(),
+            env.block
+                .time
+                .try_into()
+                .map_err(|_| Error::InvalidHostTimestamp(env.block.time))?,
             client_state.data.max_clock_drift,
             client_state.data.trust_level,
             &SignatureVerifier::new(Ed25519Verifier::new(deps)),
