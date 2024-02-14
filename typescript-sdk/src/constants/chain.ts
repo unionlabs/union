@@ -1,11 +1,13 @@
-import type { Chain } from "viem";
-import { sepolia } from "viem/chains";
+import type { Chain } from 'viem'
+import { sepolia } from 'viem/chains'
 
 /**
  * Union chain ID is `6` on testnet: 'union-testnet-6'
  */
-export const chainIds = ["1", "6", "11155111"] as const;
-export type ChainId = (typeof chainIds)[number];
+export const chainIds = ['1', '6', '11155111'] as const
+export type ChainId = (typeof chainIds)[number]
+
+export const isValidChainId = (chainId: string): chainId is ChainId => chainIds.includes(chainId)
 
 /**
  * TODO: Add `ethereum.mainnet` and `union.mainnet` info on launch
@@ -20,7 +22,7 @@ export const chain = {
         name: 'Union',
         symbol: 'UNO',
         denom: 'muno',
-        decimals: 6,
+        decimals: 18,
         address: '0x',
       },
     },
@@ -55,22 +57,16 @@ export const chain = {
 } as const satisfies TChain
 
 type Token = {
-  name: string;
-  symbol: string;
-  denom: string;
-  decimals: number;
-  address: string;
-};
+  name: string
+  symbol: string
+  denom: string
+  decimals: number
+  address: string
+}
 
 type TChain =
   | Record<
-      "ethereum",
-      Record<
-        "sepolia",
-        Chain & { token: Token; portId: string; channelId: string }
-      >
+      'ethereum',
+      Record<'sepolia', Chain & { token: Token; portId: string; channelId: string }>
     >
-  | Record<
-      "union",
-      Record<"testnet", Chain & { token: Token; channelId: string; }>
-    >;
+  | Record<'union', Record<'testnet', Chain & { token: Token; channelId: string }>>

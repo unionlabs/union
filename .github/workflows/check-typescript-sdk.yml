@@ -1,0 +1,52 @@
+name: Publish TypeScript SDK
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    paths: ['typescript-sdk/**']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+
+defaults:
+  run:
+    shell: bash
+    working-directory: './typescript-sdk'
+
+env:
+  NIX_VERSION: nix-2.13.2
+  NIXPKGS_CHANNEL: nixos-22.11
+  NODE_OPTIONS: '--no-warnings'
+  ACTIONS_RUNNER_DEBUG: true
+
+jobs:
+  test-typescript-sdk:
+    name: 'Test TypeScript SDK'
+    runs-on: ['ubuntu-latest']
+    defaults:
+      run:
+        working-directory: './typescript-sdk'
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Setup bun'
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 'latest'
+
+      - name: 'Install Nix'
+        uses: cachix/install-nix-action@v25
+        with:
+          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
+          github_access_token: ${{ github.token }}
+      - run: |
+          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
+          nix-channel --update
+
+      - name: 'Build SDK'
+        working-directory: './typescript-sdk'
+        run: |
+          nix build .#typescript-sdk -o dist

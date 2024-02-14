@@ -5,6 +5,7 @@ import {
   type Account,
   type Address,
   type TransportConfig,
+  type FallbackTransport,
 } from 'viem'
 import { raise } from '#/utilities'
 import { usc01relayAbi } from '#/abi'
@@ -144,12 +145,9 @@ export async function sendAssetFromEthereumToUnion(
   }
 }
 
-type OfflineSignerType<TransportConfigType extends TransportConfig['type'] | undefined> =
-  TransportConfigType extends 'custom'
-    ? CosmjsOfflineSigner
-    : TransportConfigType extends 'http'
-      ? DirectSecp256k1HdWallet
-      : never
+type OfflineSignerType<
+  TransportConfigType extends TransportConfig['type'] | FallbackTransport | undefined,
+> = TransportConfigType extends 'custom' ? CosmjsOfflineSigner : DirectSecp256k1HdWallet
 
 type SendAssetFromUnionToEthereum<
   TDenom extends string | undefined,

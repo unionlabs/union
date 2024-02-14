@@ -50,6 +50,7 @@
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/node": "^20.11.17",
     "bumpp": "^9.3.0",
+    "bun": "^1.0.26",
     "patch-package": "^8.0.0",
     "publint": "^0.2.7",
     "tsup": "^8.0.2",

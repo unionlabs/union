@@ -4,6 +4,7 @@ import type { UnionClient } from '#/actions.ts'
 import { chainIds } from '#/constants/chain.ts'
 import { StargateClient } from '@cosmjs/stargate'
 import { UCS01_EVM_ADDRESS, UNION_RPC_URL } from '#/constants'
+import { fetcher, raise } from '#/utilities'
 
 /**
  * Contract arguments:
@@ -46,7 +47,6 @@ export async function getBalanceOnEthereum(
   client: UnionClient,
   { address }: GetBalanceOnEthereum
 ): Promise<bigint> {
-  
   const denomAddress = await getDenomAddress(client)
   if (BigInt(denomAddress) === 0n) return 0n
 
@@ -69,16 +69,21 @@ export async function getBalanceOnUnion({
   assetId = 'muno',
   unionRpcUrl = UNION_RPC_URL,
 }: GetBalanceOnUnion): Promise<bigint> {
-  const client = await StargateClient.connect(unionRpcUrl)
-  const { amount } = await client.getBalance(address, assetId)
-  return BigInt(amount)
-  // const response = await fetch(
-  //   `${process.env.UNION_REST_URL}/cosmos/bank/v1beta1/balances/${address}`
-  // )
-  // const data = (await response.json()) as {
-  //   balances: Array<{ amount: string; denom: string }>
-  //   pagination: { total: number }
-  // }
-  // const balance = data.balances.find(({ denom }) => denom === assetId)
-  // return BigInt(balance?.amount ?? 0)
+  try {
+    try {
+      const client = await StargateClient.connect(unionRpcUrl)
+      const { amount } = await client.getBalance(address, assetId)
+      return BigInt(amount)
+    } catch (error) {
+      const { balances } = await fetcher<{ balances: Array<{ amount: string; denom: string }> }>(
+        `${process.env.UNION_REST_URL}/cosmos/bank/v1beta1/balances/${address}`
+      )
+      const balance = balances.find(({ denom }) => denom === assetId)
+      return BigInt(balance?.amount ?? 0)
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : error
+    console.error(errorMessage)
+    raise(`Failed to get balance for ${address} on Union: ${errorMessage}`)
+  }
 }
