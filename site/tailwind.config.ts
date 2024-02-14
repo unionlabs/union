@@ -19,6 +19,15 @@ export default {
       screens: {
         xs: "320px",
       },
+      fontSize: {
+        // this exists as `*-base` but `*-md` is more intuitive
+        md: [
+          "1rem",
+          {
+            lineHeight: "1.5rem",
+          },
+        ],
+      },
       colors: {
         accent: {
           DEFAULT: "#A0ECFD",

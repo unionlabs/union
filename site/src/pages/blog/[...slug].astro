@@ -7,7 +7,7 @@ export async function getStaticPaths() {
   const blogEntries = await getCollection('blog')
   return blogEntries.map(entry => ({
     params: { slug: entry.slug },
-    props: { entry }
+    props: { entry },
   }))
 }
 
@@ -22,40 +22,46 @@ const { Content } = await entry.render()
   description={entry.data.description}
 >
   <main
-    class='sm:text-xl flex-grow mt-2 sm:mt-12 pb-16 max-w-xl self-center flex flex-col pt-6 sm:pt-0 mx-4'
+    class="sm:text-xl flex-grow mt-2 sm:mt-12 pb-16 max-w-2xl self-center flex flex-col pt-6 sm:pt-0 mx-4"
   >
-    <h1 class='text-3xl sm:text-5xl font-extrabold max-w-xl'>
+    <h1 class="text-3xl sm:text-5xl font-extrabold max-w-xl">
       {entry.data.title}
     </h1>
 
-    <div class='font-mono text-lg uppercase tracking-widest mt-1'>
+    <div class="font-mono text-lg uppercase tracking-widest mt-1 mb-6">
       <time datetime={entry.data.date.toISOString()}>
         {
           entry.data.date.toLocaleDateString('fr-CA', {
             year: 'numeric',
             month: 'numeric',
-            day: 'numeric'
+            day: 'numeric',
           })
         }
-      </time>
+      </time>-
+      <a href="https://x.com/union_build" class="hover:underline text-accent-400">@union_build</a>
     </div>
     <Content />
   </main>
   <Socials />
 </Layout>
 
-<script
-  type='module'
-  src='/anchor-targets.js'
-></script>
+<script type="module" src="/anchor-targets.js"></script>
 
 <style is:inline lang="postcss">
-
   p > a {
     text-decoration: underline;
     text-decoration-color: #A0ECFD !important;
     transition: border-bottom-color 0.2s ease-in-out;
   }
+
+  p {
+    margin-bottom: 1rem;
+  }
+
+  p > a:hover {
+    color: #A0ECFD;
+  }
+
   ol {
     li {
       padding-top: 1rem;
@@ -71,11 +77,28 @@ const { Content } = await entry.render()
     }
   }
 
-  h2 {
-    line-height: 3rem;
-    margin-top: 20px;
-    margin-bottom: 0px;
+  h2,h3,h4,h5 {
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
     font-size: 1.87rem;
+    color: #A0ECFD;
+  }
 
+  h2::after, h3::after, h4::after, h5::after {
+    content: '#';
+    color: #ffffff;
+    margin-left: 0.5rem;
+    font-size: 1.5rem;
+    position: relative;
+    visibility: hidden;
+  }
+
+  h2:hover::after, h3:hover::after, h4:hover::after, h5:hover::after {
+    visibility: visible;
+  }
+
+  *::selection {
+    background-color: #A0ECFD;
+    color: #000;
   }
 </style>
