@@ -1,7 +1,10 @@
 import type { Chain } from "viem";
 import { sepolia } from "viem/chains";
 
-export const chainIds = ["1", "32382", "11155111"] as const;
+/**
+ * Union chain ID is `6` on testnet: 'union-testnet-6'
+ */
+export const chainIds = ["1", "6", "11155111"] as const;
 export type ChainId = (typeof chainIds)[number];
 
 /**
@@ -11,48 +14,45 @@ export const chain = {
   ethereum: {
     sepolia: {
       ...sepolia,
-      portId: process.env.UCS01_SEPOLIA_PORT_ID,
-      channelId: process.env.UCS01_SEPOLIA_SOURCE_CHANNEL,
+      portId: process.env.UCS01_SEPOLIA_PORT_ID || 'ucs01-relay',
+      channelId: process.env.UCS01_SEPOLIA_SOURCE_CHANNEL || 'channel-0',
       token: {
-        name: "Union",
-        symbol: "UNO",
-        denom: "muno",
+        name: 'Union',
+        symbol: 'UNO',
+        denom: 'muno',
         decimals: 6,
-        address: process.env.MUNO_ERC20_ADDRESS,
+        address: '0x',
       },
     },
   },
   union: {
     testnet: {
-      name: "union-testnet-5",
-      id: 32_382,
+      name: process.env.UNION_CHAIN_ID || 'union-testnet-6',
+      id: Number(process.env.UNION_CHAIN_ID.split('-').at(-1) || 6),
       channelId: process.env.UCS01_UNION_SOURCE_CHANNEL,
       rpcUrls: {
         default: {
           /**
            * @see https://docs.union.build/joining_the_testnet/public_endpoints#rpc
            */
-          http: [
-            "https://rpc.testnet.bonlulu.uno",
-            "https://union-testnet-rpc.polkachu.com",
-          ],
+          http: ['https://rpc.testnet.bonlulu.uno', 'https://union-testnet-rpc.polkachu.com'],
         },
       },
       nativeCurrency: {
-        name: "Union",
-        symbol: "UNO",
+        name: 'Union',
+        symbol: 'UNO',
         decimals: 6,
       },
       token: {
-        name: "Union",
-        symbol: "UNO",
-        denom: "muno",
+        name: 'Union',
+        symbol: 'UNO',
+        denom: 'muno',
         decimals: 6,
         address: process.env.UCS01_UNION_ADDRESS,
       },
     },
   },
-} as const satisfies TChain;
+} as const satisfies TChain
 
 type Token = {
   name: string;
@@ -72,5 +72,5 @@ type TChain =
     >
   | Record<
       "union",
-      Record<"testnet", Chain & { token: Token; channelId: string }>
+      Record<"testnet", Chain & { token: Token; channelId: string; }>
     >;
