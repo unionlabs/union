@@ -8,7 +8,7 @@
     {
       packages = {
         app = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-wCExLYvXK6DYlPQmxzAE+Ojh5jgxeAlrwK8cdBem2mg=";
+          npmDepsHash = "sha256-ndkZ21j3cnMCB1uftHRtvWwB2BbbNZbTVVI0Mdbu9c8=";
           src = ./.;
           sourceRoot = "app";
           pname = "app";

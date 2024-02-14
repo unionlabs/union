@@ -1,7 +1,16 @@
 import { Buffer } from 'node:buffer'
+import { writable } from 'svelte/store'
 import { mainnet, sepolia } from '@wagmi/core/chains'
-import { walletConnect, injected } from '@wagmi/connectors'
-import { http, createConfig, fallback, unstable_connector } from '@wagmi/core'
+import { walletConnect, injected, metaMask } from '@wagmi/connectors'
+import {
+  http,
+  fallback,
+  reconnect,
+  getAccount,
+  createConfig,
+  watchAccount,
+  unstable_connector
+} from '@wagmi/core'
 
 // Node polyfills
 globalThis.Buffer = Buffer
@@ -20,7 +29,8 @@ export const config = createConfig({
       shimDisconnect: true,
       unstable_shimAsyncInject: 2500
     }),
-    walletConnect({ projectId })
+    metaMask(),
+    // walletConnect({ projectId })
   ],
   transports: {
     [mainnet.id]: fallback([
@@ -47,3 +57,5 @@ export const config = createConfig({
    * - https://wagmi.sh/core/api/createConfig#client
    */
 })
+
+const accountStore = writable(getAccount(config))
