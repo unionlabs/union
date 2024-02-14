@@ -565,7 +565,7 @@ mod tests {
                 let key: VerifyingKey =
                     VerifyingKey::from_bytes(pubkey.as_slice().try_into().unwrap()).unwrap();
                 let signature: Signature =
-                    Signature::from_bytes(&TryInto::<[u8; 64]>::try_into(*signature).unwrap());
+                    Signature::from_bytes(&<[u8; 64]>::try_from(*signature).unwrap());
                 signatures.push(signature);
                 keys.push(key)
             }
