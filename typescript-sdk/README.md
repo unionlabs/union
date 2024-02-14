@@ -1,5 +1,4 @@
-> [!NOTE]
-> Work in progress
+> [!NOTE] Work in progress
 
 <br />
 
@@ -18,6 +17,10 @@ Union Labs TypeScript SDK providing utilities for cross-chain transfers and more
 ```sh
 yarn add @unionlabs/client
 ```
+
+### Patched dependencies:
+
+- `@cosmjs/tendermint-rpc`, `@cosmjs/amino`, and `@cosmjs/stargate`. See [./patches](./patches) for details.
 
 ```ts
 import { unionActions, chain, UCS01_EVM_ADDRESS } from '@unionlabs/client'
