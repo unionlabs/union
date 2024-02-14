@@ -27,6 +27,7 @@ impl ConsensusStateMetadata {
 
         Ok(Self {
             timestamp: Timestamp {
+                // unwrap is valid here since i64 and i32 is defined for all the possible values of 0..8 and 0..4
                 seconds: i64::from_le_bytes((&data[0..8]).try_into().unwrap())
                     .try_into()
                     .unwrap(),
