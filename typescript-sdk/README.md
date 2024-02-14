@@ -20,29 +20,28 @@ yarn add @unionlabs/client
 ```
 
 ```ts
-import { unionActions, chain, UCS01_EVM_ADDRESS } from "@unionlabs/client";
+import { unionActions, chain, UCS01_EVM_ADDRESS } from '@unionlabs/client'
 
-import { privateKeyToAccount } from "viem/accounts";
-import { http, publicActions, createWalletClient } from "viem";
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { privateKeyToAccount } from 'viem/accounts'
+import { http, publicActions, createWalletClient } from 'viem'
+import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
 
 const demoEthereumAccount = privateKeyToAccount(
-  "0x1075394148aee9ccae14500c37cfdfca7bea4a4984fd5882a9ecf1be610d84ee"
-);
-const demoEthereumAddress = demoEthereumAccount.address;
+  '0x1075394148aee9ccae14500c37cfdfca7bea4a4984fd5882a9ecf1be610d84ee'
+)
+const demoEthereumAddress = demoEthereumAccount.address
 
 const demoUnionAccount = await DirectSecp256k1HdWallet.fromMnemonic(
-  "enlist hip relief stomach skate base shallow young switch frequent cry park",
-  { prefix: "union" }
-);
+  'enlist hip relief stomach skate base shallow young switch frequent cry park',
+  { prefix: 'union' }
+)
 
-const [demoUnionAccountData] = await demoUnionAccount.getAccounts();
-if (!demoUnionAccountData?.address)
-  throw new Error("demoUnionAccountData is undefined");
-const demoUnionAddress = demoUnionAccountData.address;
+const [demoUnionAccountData] = await demoUnionAccount.getAccounts()
+if (!demoUnionAccountData?.address) throw new Error('demoUnionAccountData is undefined')
+const demoUnionAddress = demoUnionAccountData.address
 
-const { sepolia } = chain.ethereum;
-const { testnet: unionTestnet } = chain.union;
+const { sepolia } = chain.ethereum
+const { testnet: unionTestnet } = chain.union
 
 export const client = createWalletClient({
   chain: sepolia,
@@ -51,42 +50,42 @@ export const client = createWalletClient({
   transport: http(process.env.SEPOLIA_RPC_URL),
 })
   .extend(publicActions)
-  .extend(unionActions);
+  .extend(unionActions)
 
 // approve the spending of a handful of uno. Returns transaction hash
 const approvalHash = await client.approveAsset({
-  chainId: "11155111",
+  chainId: '11155111',
   signer: demoEthereumAccount,
   amount: 500n,
   spender: UCS01_EVM_ADDRESS,
   assetId: sepolia.token.address,
-});
+})
 
-console.log(JSON.stringify({ approvalHash }, undefined, 2));
+console.log(JSON.stringify({ approvalHash }, undefined, 2))
 
 // Send 1 muno from Sepolia to Union chain. Returns transaction hash
 const ethereumToUnionTransfer = await client.sendAsset({
-  chainId: "11155111",
+  chainId: '11155111',
   signer: demoEthereumAccount,
   assetId: sepolia.token.address,
   amount: 1n,
   receiver: demoUnionAddress,
-});
+})
 
-console.log(JSON.stringify({ ethereumToUnionTransfer }, undefined, 2));
+console.log(JSON.stringify({ ethereumToUnionTransfer }, undefined, 2))
 
 // Send 500 muno from Union chain to Sepolia. Returns transaction hash
 const unionToEthereumTransfer = await client.sendAsset({
-  chainId: "32382",
+  chainId: '6',
   signer: demoUnionAccount,
   assetId: unionTestnet.token.address,
-  amount: "100",
-  denom: "muno",
+  amount: '100',
+  denom: 'muno',
   receiver: demoEthereumAddress,
-  gasPrice: "0.001muno",
-});
+  gasPrice: '0.001muno',
+})
 
-console.log(JSON.stringify({ unionToEthereumTransfer }, undefined, 2));
+console.log(JSON.stringify({ unionToEthereumTransfer }, undefined, 2))
 ```
 
 Two balance retrieval actions are available:
@@ -94,21 +93,21 @@ Two balance retrieval actions are available:
 ```ts
 // Returns balance of muno on Ethereum
 const balanceOnEthereum = await client.getBalance({
-  chainId: "11155111",
+  chainId: '11155111',
   address: demoEthereumAddress,
   assetId: sepolia.token.address,
-});
+})
 
-console.log(JSON.stringify({ balanceOnEthereum }, undefined, 2));
+console.log(JSON.stringify({ balanceOnEthereum }, undefined, 2))
 
 // Returns balance of muno on Union chain as string
 const balanceOnUnion = await client.getBalance({
-  chainId: "32382",
+  chainId: '6',
   address: demoUnionAddress,
   assetId: unionTestnet.token.denom,
-});
+})
 
-console.log(JSON.stringify({ balanceOnUnion }, undefined, 2));
+console.log(JSON.stringify({ balanceOnUnion }, undefined, 2))
 ```
 
 ## Development
