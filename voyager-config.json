@@ -48,7 +48,7 @@
           "raw": "0xaeff1a3cf6e96d1551c95677fff8399b1ee0c3ed2f610928520897202e5ae690"
         }
       ],
-      "fee_denom": "stake",
+      "fee_denom": "muno",
       "ws_url": "ws://localhost:26657/websocket",
       "prover_endpoint": "http://localhost:9999",
       "grpc_url": "http://localhost:9090"

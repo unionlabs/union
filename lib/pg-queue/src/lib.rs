@@ -9,6 +9,7 @@ use std::{
 
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::{migrate::Migrator, query, query_as, types::Json, Acquire, Postgres};
+use tracing::Instrument;
 
 pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
 
@@ -118,9 +119,9 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
 
         match row {
             Some(row) => {
-                tracing::info!(id = row.id, "processing item");
+                let span = tracing::info_span!("processing item", id = row.id);
+                let (r, res) = f(row.item.0).instrument(span).await;
 
-                let (r, res) = f(row.item.0).await;
                 match res {
                     Err(error) => {
                         // Insert error message in the queue
