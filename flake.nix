@@ -7,7 +7,7 @@
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
     # We need the latest nixpkgs for buildGo121Module, remove this once we upgrade nixpkgs
-    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-go.url = "github:NixOS/nixpkgs?rev=1332fa0d74e3b403d8540640cb185203e5994ec4";
     # Track a separate nixpkgs for latest Node.js
     nixpkgs-nodejs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
@@ -15,7 +15,7 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
     arion = {
-      url = "github:hercules-ci/arion";
+      url = "github:hercules-ci/arion?rev=6a1f03329c400327b3b2e0ed5e1efff11037ba67";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     treefmt-nix = {
@@ -35,7 +35,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     iohk-nix = {
-      url = "github:input-output-hk/iohk-nix";
+      url = "github:input-output-hk/iohk-nix?rev=3358489541bdc1228afaa678c2adf4bb891f560e";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     ibc-go = {
@@ -66,8 +66,8 @@
         "github:CosmWasm/wasmd?rev=03f3c72a6ce447fafc2da023a1322899327433f8";
       flake = false;
     };
-    nix-filter.url = "github:numtide/nix-filter";
-    get-flake.url = "github:ursi/get-flake";
+    nix-filter.url = "github:numtide/nix-filter?rev=3449dc925982ad46246cfc36469baf66e1b64f17";
+    get-flake.url = "github:ursi/get-flake?rev=e0917b6f564aa5acefb1484b5baf76da21746c3c";
     wasmvm = {
       url = "github:CosmWasm/wasmvm/v1.5.2";
       flake = false;
