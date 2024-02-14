@@ -1146,7 +1146,11 @@ where
     fn aggregate(
         Identified {
             chain_id,
-            t: AggregateHeader { signed_header, req },
+            t:
+                AggregateHeader {
+                    mut signed_header,
+                    req,
+                },
             __marker: _,
         }: Self,
         hlist_pat![Identified {
@@ -1159,6 +1163,10 @@ where
         }]: Self::AggregatedData,
     ) -> RelayerMsg {
         assert_eq!(chain_id, untrusted_commit_chain_id);
+
+        // TODO: maybe introduce a new commit for union signed header as we don't need the signatures but the ZKP only
+        // Keeping this signatures significantly increase the size of the structure and the associated gas cost in EVM (calldata).
+        signed_header.commit.signatures.clear();
 
         msg(Identified::<Tr, Hc, _>::new(
             req.counterparty_chain_id,
