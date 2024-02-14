@@ -9,6 +9,9 @@ export default defineConfig({
       'node:buffer': 'buffer'
     }
   },
+  define: {
+    'proccess.env': {},
+  },
   server: {
     port: Number(process.env.PORT || 5173),
     /**

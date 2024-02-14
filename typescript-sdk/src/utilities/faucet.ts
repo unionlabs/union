@@ -1,5 +1,5 @@
 import { fetcher } from "./index.ts";
-import { UNION_GRAPHQL_API } from "#/constants";
+import { UNION_GRAPHQL_API } from "../constants";
 
 export async function getUnoFromFaucet({ address }: { address: string }) {
   const response = await fetcher<

@@ -1,8 +1,8 @@
 <script lang="ts">
+  import '$/patch.ts'
   import '$styles/reset.css'
   import '$styles/tailwind.css'
   import { browser } from '$app/environment'
-
   import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query'
   import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools'
 

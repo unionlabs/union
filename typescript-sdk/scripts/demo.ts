@@ -40,53 +40,54 @@ async function main() {
     .extend(unionActions)
 
   const denomAddress = await client.getDenomAddress()
+  console.log({ denomAddress })
 
-  await client
-    .getBalance({
-      chainId: '6',
-      address: demoUnionAddress,
-      assetId: unionTestnet.token.denom,
-    })
-    .then(_ => console.log({ balanceOnUnion: _ }))
+  // await client
+  //   .getBalance({
+  //     chainId: '6',
+  //     address: demoUnionAddress,
+  //     assetId: unionTestnet.token.denom,
+  //   })
+  //   .then(_ => console.log({ balanceOnUnion: _ }))
 
-  await client
-    .sendAsset({
-      chainId: '6',
-      signer: demoUnionAccount,
-      assetId: unionTestnet.token.address,
-      amount: '1234',
-      denom: 'muno',
-      receiver: demoEthereumAddress,
-      gasPrice: '0.001muno',
-    })
-    .then(_ => console.log(JSON.stringify(_, undefined, 2)))
+  // await client
+  //   .sendAsset({
+  //     chainId: '6',
+  //     signer: demoUnionAccount,
+  //     assetId: unionTestnet.token.address,
+  //     amount: '1234',
+  //     denom: 'muno',
+  //     receiver: demoEthereumAddress,
+  //     gasPrice: '0.001muno',
+  //   })
+  //   .then(_ => console.log(JSON.stringify(_, undefined, 2)))
 
-  await client
-    .getBalance({
-      chainId: '11155111',
-      address: demoEthereumAddress,
-    })
-    .then(_ => console.log({ balanceOnSepolia: _ }))
+  // await client
+  //   .getBalance({
+  //     chainId: '11155111',
+  //     address: demoEthereumAddress,
+  //   })
+  //   .then(_ => console.log({ balanceOnSepolia: _ }))
 
-  await client
-    .approveAsset({
-      chainId: '11155111',
-      signer: demoEthereumAccount,
-      amount: 135920n,
-      spender: UCS01_EVM_ADDRESS,
-      assetId: denomAddress,
-    })
-    .then(_ => console.log({ approvalTransactionHash: _ }))
+  // await client
+  //   .approveAsset({
+  //     chainId: '11155111',
+  //     signer: demoEthereumAccount,
+  //     amount: 135920n,
+  //     spender: UCS01_EVM_ADDRESS,
+  //     assetId: denomAddress,
+  //   })
+  //   .then(_ => console.log({ approvalTransactionHash: _ }))
 
-  await client
-    .sendAsset({
-      chainId: '11155111',
-      portId: sepolia.portId,
-      signer: demoEthereumAccount,
-      assetId: denomAddress,
-      amount: 100n,
-      receiver: demoUnionAddress,
-      simulate: true,
-    })
-    .then(_ => console.log({ sendAssetFromEthereumToUnion: _ }))
+  // await client
+  //   .sendAsset({
+  //     chainId: '11155111',
+  //     portId: sepolia.portId,
+  //     signer: demoEthereumAccount,
+  //     assetId: denomAddress,
+  //     amount: 100n,
+  //     receiver: demoUnionAddress,
+  //     simulate: true,
+  //   })
+  //   .then(_ => console.log({ sendAssetFromEthereumToUnion: _ }))
 }

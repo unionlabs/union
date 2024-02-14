@@ -35,6 +35,7 @@
     "balance": "bun ./scripts/balance.ts",
     "transfer": "bun ./scripts/transfer.ts",
     "clean": "rm -rf dist node_modules",
+    "pack": "rm -rf dist *.tgz && npm run build && npm pack",
     "postinstall": "patch-package"
   },
   "dependencies": {

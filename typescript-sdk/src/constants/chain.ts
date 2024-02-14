@@ -30,7 +30,8 @@ export const chain = {
   union: {
     testnet: {
       name: process.env.UNION_CHAIN_ID || 'union-testnet-6',
-      id: Number(process.env.UNION_CHAIN_ID.split('-').at(-1) || 6),
+      // id: Number(process.env?.UNION_CHAIN_ID.split('-')?.at(-1) || 6) || 6,
+      id: 6,
       channelId: process.env.UCS01_UNION_SOURCE_CHANNEL,
       rpcUrls: {
         default: {
@@ -50,7 +51,9 @@ export const chain = {
         symbol: 'UNO',
         denom: 'muno',
         decimals: 6,
-        address: process.env.UCS01_UNION_ADDRESS,
+        address:
+          process.env.UCS01_UNION_ADDRESS ||
+          'union14pfzjnvzacqsmgjyf0avksc8cr70hsyt5epzcp66tmjpswf8sq8sn5meuy',
       },
     },
   },

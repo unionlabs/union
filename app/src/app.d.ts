@@ -8,6 +8,10 @@ declare global {
     // interface PageState {}
     // interface Platform {}
   }
+  interface Window {
+    EventEmitter: typeof EventEmitter
+    ethereum: { request(...args: any): Promise<any> }
+  }
 }
 
 export {}

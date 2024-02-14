@@ -1,12 +1,44 @@
-import { Buffer } from 'node:buffer'
+import '$/patch.ts'
+import { browser } from '$app/environment'
 import { mainnet, sepolia } from '@wagmi/core/chains'
-import { walletConnect, injected } from '@wagmi/connectors'
-import { http, createConfig, fallback, unstable_connector } from '@wagmi/core'
+import { writable, type Writable } from 'svelte/store'
+import { walletConnect, injected, metaMask } from '@wagmi/connectors'
+import {
+  http,
+  fallback,
+  reconnect,
+  getAccount,
+  createConfig,
+  watchAccount,
+  unstable_connector,
+  connect as _connect,
+  disconnect as _disconnect,
+  switchChain as _switchChain,
+  type GetAccountReturnType
+} from '@wagmi/core'
+import {
+  getKey,
+  getSnap,
+  getSnaps,
+  connectSnap,
+  suggestChain,
+  signArbitrary,
+  getOfflineSigner,
+  experimentalSuggestChain
+} from '@leapwallet/cosmos-snap-provider'
+import { unionWalletClient } from '$/lib/union-actions'
 
-// Node polyfills
-globalThis.Buffer = Buffer
+const ssr = !browser
 
 const projectId = '640277c8235dc052b811d0cb88515fa5'
+
+const chains = [sepolia] as const
+export type ConfiguredChainId = (typeof chains)[number]['id']
+
+export type Wallet = GetAccountReturnType
+export type ConnectedWallet = Wallet & { status: 'connected' }
+
+export type ConnectorType = 'injected'
 
 export const config = createConfig({
   chains: [mainnet, sepolia],
@@ -19,8 +51,9 @@ export const config = createConfig({
     injected({
       shimDisconnect: true,
       unstable_shimAsyncInject: 2500
-    }),
-    walletConnect({ projectId })
+    })
+    // metaMask()
+    // walletConnect({ projectId })
   ],
   transports: {
     [mainnet.id]: fallback([
@@ -47,3 +80,89 @@ export const config = createConfig({
    * - https://wagmi.sh/core/api/createConfig#client
    */
 })
+
+const accountStore = writable(getAccount(config)) satisfies Writable<Wallet>
+watchAccount(config, { onChange: accountStore.set })
+reconnect(config)
+
+export const wallet = { subscribe: accountStore.subscribe }
+
+export async function connect(type: ConnectorType, chainId: ConfiguredChainId | undefined) {
+  const connectors = config.connectors.filter(c => c.type === type)
+  const connector = connectors[0] ?? connectors[1]
+
+  if (connector) return _connect(config, { connector, chainId })
+}
+
+export const disconnect = () => _disconnect(config)
+
+export const switchChain = (chainId: ConfiguredChainId) => _switchChain(config, { chainId })
+
+export const snapInstalled = writable(false) satisfies Writable<boolean>
+export const unoTokenAddedToMetaMask = writable(false) satisfies Writable<boolean>
+export const connectedToUnion = writable(false) satisfies Writable<boolean>
+export const unionAddress = writable('') satisfies Writable<string>
+
+export async function updateSnapInstalled() {
+  const snap = await getSnap()
+  snapInstalled.set(snap !== undefined)
+}
+
+export async function connectLeapSnap() {
+  const snap = await getSnap()
+  if (snap === undefined) await connectSnap()
+  await updateSnapInstalled()
+}
+
+export async function connectToUnion() {
+  await suggestChain(
+    {
+      chainId: 'union-testnet-6',
+      chainName: 'union-testnet',
+      bip44: { coinType: 118 },
+      bech32Config: { bech32PrefixAccAddr: 'union' }
+    },
+    { force: false }
+  )
+  connectedToUnion.set(true)
+}
+
+export async function checkConnectedToUnion() {
+  try {
+    const key = await getKey('union-testnet-6')
+    connectedToUnion.set(key !== undefined)
+    unionAddress.set(key?.address)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : error
+    console.error(errorMessage)
+    connectedToUnion.set(false)
+  }
+}
+
+export async function addUnoERC20() {
+  try {
+    const hasBeenAdded = await window.ethereum.request({
+      method: 'wallet_watchAsset',
+      params: {
+        type: 'ERC20',
+        options: {
+          /**
+           * TODO: THIS SHOULD NOT BE HARDCODED. INSTEAD CALL unionWalletClient().getDenomAddress()
+           */
+          address: '0x7f7ac7d5a1a2bd54dba53a22209c3f96699ed63c',
+          /**
+           * TODO: this should be UNO but our latest deployment to Sepolia has this as symbol
+           */
+          symbol: 'UNO',
+          // 'wasm.union14pfzjnvzacqsmgjyf0avksc8cr70hsyt5epzcp66tmjpswf8sq8sn5meuy/channel-0/muno',
+          decimals: 6,
+          image: 'https://union.build/logo.png'
+        }
+      }
+    })
+
+    if (hasBeenAdded) unoTokenAddedToMetaMask.set(true)
+  } catch {
+    unoTokenAddedToMetaMask.set(false)
+  }
+}

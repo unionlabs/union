@@ -1,5 +1,5 @@
 export * from './chain.ts'
-import { raise } from '#/utilities'
+import { raise } from '../utilities'
 
 const CLIENT_MODE = process.env.CLIENT_MODE
 

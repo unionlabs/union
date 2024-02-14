@@ -7,14 +7,14 @@ import {
   type TransportConfig,
   type FallbackTransport,
 } from 'viem'
-import { raise } from '#/utilities'
-import { usc01relayAbi } from '#/abi'
+import { raise } from './utilities'
+import { usc01relayAbi } from './abi'
 import { GasPrice } from '@cosmjs/stargate'
 import { fromBech32 } from '@cosmjs/encoding'
-import type { UnionClient } from '#/actions.ts'
+import type { UnionClient } from './actions.ts'
 import { Comet38Client } from '@cosmjs/tendermint-rpc'
-import { UNION_RPC_URL, UCS01_EVM_ADDRESS } from '#/constants'
-import { chainIds, type ChainId, chain } from '#/constants/chain.ts'
+import { UNION_RPC_URL, UCS01_EVM_ADDRESS } from './constants'
+import { chainIds, type ChainId, chain } from './constants/chain.ts'
 import type { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
 import type { CosmjsOfflineSigner } from '@leapwallet/cosmos-snap-provider'
 import { type ExecuteResult, SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
@@ -147,7 +147,8 @@ export async function sendAssetFromEthereumToUnion(
 
 type OfflineSignerType<
   TransportConfigType extends TransportConfig['type'] | FallbackTransport | undefined,
-> = TransportConfigType extends 'custom' ? CosmjsOfflineSigner : DirectSecp256k1HdWallet
+> = CosmjsOfflineSigner | DirectSecp256k1HdWallet
+//TransportConfigType extends 'custom' ? CosmjsOfflineSigner : DirectSecp256k1HdWallet
 
 type SendAssetFromUnionToEthereum<
   TDenom extends string | undefined,
@@ -177,11 +178,13 @@ export async function sendAssetFromUnionToEthereum<
     denom,
     receiver,
     gasPrice,
-    rpcUrl = UNION_RPC_URL,
+    rpcUrl = UNION_RPC_URL || 'https://union-testnet-rpc.polkachu.com',
     memo = "random more than four characters I'm transferring.",
   }: SendAssetFromUnionToEthereum<TDenom, TGas, TransportConfigType>
 ): Promise<ExecuteResult> {
+  console.log(signer, assetId, amount, denom, receiver, gasPrice, rpcUrl, memo)
   const tendermintClient = await Comet38Client.connect(rpcUrl)
+  // console.log(await tendermintClient.status())
   const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(tendermintClient, signer, {
     gasPrice: GasPrice.fromString(gasPrice ?? `0.001${denom}`),
   })
@@ -194,7 +197,7 @@ export async function sendAssetFromUnionToEthereum<
     assetId,
     {
       transfer: {
-        channel: chain.union.testnet.channelId,
+        channel: chain.union.testnet.channelId || 'channel-0',
         receiver: receiver.slice(2),
         timeout: null,
         memo,
