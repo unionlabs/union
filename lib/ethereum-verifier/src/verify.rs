@@ -298,10 +298,10 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 ) -> Result<(), Error> {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
 
-    if epoch < fork_parameters.deneb.epoch {
-        if header.execution.blob_gas_used != 0 || header.execution.excess_blob_gas != 0 {
-            return Err(Error::MustBeDeneb);
-        }
+    if epoch < fork_parameters.deneb.epoch
+        && (header.execution.blob_gas_used != 0 || header.execution.excess_blob_gas != 0)
+    {
+        return Err(Error::MustBeDeneb);
     }
 
     if epoch < fork_parameters.capella.epoch {
