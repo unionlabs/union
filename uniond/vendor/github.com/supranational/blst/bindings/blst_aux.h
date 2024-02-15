@@ -10,8 +10,14 @@
  * depending on their proven/unproven worthiness.
  */
 
+void blst_fr_ct_bfly(blst_fr *x0, blst_fr *x1, const blst_fr *twiddle);
+void blst_fr_gs_bfly(blst_fr *x0, blst_fr *x1, const blst_fr *twiddle);
 void blst_fr_to(blst_fr *ret, const blst_fr *a);
 void blst_fr_from(blst_fr *ret, const blst_fr *a);
+#ifdef BLST_FR_PENTAROOT
+void blst_fr_pentaroot(blst_fr *ret, const blst_fr *a);
+void blst_fr_pentapow(blst_fr *ret, const blst_fr *a);
+#endif
 
 void blst_fp_to(blst_fp *ret, const blst_fp *a);
 void blst_fp_from(blst_fp *ret, const blst_fp *a);
@@ -50,7 +56,11 @@ void blst_sk_to_pk2_in_g2(byte out[192], blst_p2_affine *out_pk,
 void blst_sign_pk2_in_g2(byte out[96], blst_p1_affine *out_sig,
                          const blst_p1 *hash, const blst_scalar *SK);
 
+#ifdef __BLST_RUST_BINDGEN__
 typedef struct {} blst_uniq;
+#else
+typedef struct blst_opaque blst_uniq;
+#endif
 
 size_t blst_uniq_sizeof(size_t n_nodes);
 void blst_uniq_init(blst_uniq *tree);
@@ -79,8 +89,29 @@ void blst_bendian_from_fp12(byte out[48*12], const blst_fp12 *a);
 
 void blst_keygen_v3(blst_scalar *out_SK, const byte *IKM, size_t IKM_len,
                     const byte *info DEFNULL, size_t info_len DEFNULL);
+void blst_keygen_v4_5(blst_scalar *out_SK, const byte *IKM, size_t IKM_len,
+                      const byte *salt, size_t salt_len,
+                      const byte *info DEFNULL, size_t info_len DEFNULL);
+void blst_keygen_v5(blst_scalar *out_SK, const byte *IKM, size_t IKM_len,
+                    const byte *salt, size_t salt_len,
+                    const byte *info DEFNULL, size_t info_len DEFNULL);
 void blst_derive_master_eip2333(blst_scalar *out_SK,
                                 const byte *IKM, size_t IKM_len);
 void blst_derive_child_eip2333(blst_scalar *out_SK, const blst_scalar *SK,
                                uint32_t child_index);
+
+void blst_scalar_from_hexascii(blst_scalar *out, const byte *hex);
+void blst_fr_from_hexascii(blst_fr *ret, const byte *hex);
+void blst_fp_from_hexascii(blst_fp *ret, const byte *hex);
+
+size_t blst_p1_sizeof(void);
+size_t blst_p1_affine_sizeof(void);
+size_t blst_p2_sizeof(void);
+size_t blst_p2_affine_sizeof(void);
+size_t blst_fp12_sizeof(void);
+
+/*
+ * Single-shot SHA-256 hash function.
+ */
+void blst_sha256(byte out[32], const byte *msg, size_t msg_len);
 #endif

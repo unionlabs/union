@@ -15,7 +15,6 @@ go_test(
     srcs = [
         "common_test.go",
         "mainnet_test.go",
-        "minimal_test.go",
     ],
     deps = [
         ":go_default_library",

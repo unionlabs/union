@@ -34,10 +34,17 @@
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    iohk-nix = {
-      url = "github:input-output-hk/iohk-nix?rev=3358489541bdc1228afaa678c2adf4bb891f560e";
-      inputs.nixpkgs.follows = "nixpkgs";
+
+    # Prysm bls12-381 native for eth LC aggregate/verify custom query
+    blst = {
+      url = "github:supranational/blst?rev=3dd0f804b1819e5d03fb22ca2e6fac105932043a";
+      flake = false;
     };
+    bls-eth-go = {
+      url = "git+https://github.com/herumi/bls-eth-go-binary?ref=refs/tags/v1.33.0&submodules=1";
+      flake = false;
+    };
+
     ibc-go = {
       url = "github:cosmos/ibc-go?rev=c98311964dc550b9fe9a5bff8b6dd8e35bf13642";
       flake = false;
@@ -118,7 +125,7 @@
     , crane
     , foundry
     , treefmt-nix
-    , iohk-nix
+    , blst
     , ibc-go
     , ics23
     , cosmosproto
@@ -173,6 +180,7 @@
         ./tools/wasm-light-client.nix
         ./tools/generate-rust-sol-bindings/generate-rust-sol-bindings.nix
         ./tools/libwasmvm/libwasmvm.nix
+        ./tools/libblst/libblst.nix
         ./tools/rust/rust.nix
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
@@ -248,7 +256,6 @@
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays
                 (with inputs; [
                   rust-overlay.overlays.default
-                  iohk-nix.overlays.crypto
                   foundry.overlay
                   (_: super: {
                     go-ethereum = super.go-ethereum.override {

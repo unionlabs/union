@@ -1,6 +1,7 @@
 .text	
 
 .globl	_ct_inverse_mod_256
+.private_extern	_ct_inverse_mod_256
 
 .p2align	5
 _ct_inverse_mod_256:

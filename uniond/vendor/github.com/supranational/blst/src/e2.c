@@ -196,7 +196,7 @@ void blst_p2_affine_serialize(unsigned char out[192],
 {
     if (vec_is_zero(in->X, 2*sizeof(in->X))) {
         bytes_zero(out, 192);
-        out[0] = 0x40;    /* infinitiy bit */
+        out[0] = 0x40;    /* infinity bit */
     } else {
         (void)POINTonE2_affine_Serialize_BE(out, in);
     }
@@ -219,7 +219,7 @@ static void POINTonE2_Serialize(unsigned char out[192], const POINTonE2 *in)
 {
     if (vec_is_zero(in->Z, sizeof(in->Z))) {
         bytes_zero(out, 192);
-        out[0] = 0x40;    /* infinitiy bit */
+        out[0] = 0x40;    /* infinity bit */
     } else {
         (void)POINTonE2_Serialize_BE(out, in);
     }
@@ -245,7 +245,7 @@ void blst_p2_affine_compress(unsigned char out[96], const POINTonE2_affine *in)
 {
     if (vec_is_zero(in->X, 2*sizeof(in->X))) {
         bytes_zero(out, 96);
-        out[0] = 0xc0;    /* compressed and infinitiy bits */
+        out[0] = 0xc0;    /* compressed and infinity bits */
     } else {
         limb_t sign = POINTonE2_affine_Compress_BE(out, in);
         out[0] |= (unsigned char)(0x80 | ((sign & 2) << 4));
@@ -269,7 +269,7 @@ void blst_p2_compress(unsigned char out[96], const POINTonE2 *in)
 {
     if (vec_is_zero(in->Z, sizeof(in->Z))) {
         bytes_zero(out, 96);
-        out[0] = 0xc0;    /* compressed and infinitiy bits */
+        out[0] = 0xc0;    /* compressed and infinity bits */
     } else {
         limb_t sign = POINTonE2_Compress_BE(out, in);
         out[0] |= (unsigned char)(0x80 | ((sign & 2) << 4));
@@ -630,3 +630,9 @@ int blst_p2_affine_is_inf(const POINTonE2_affine *p)
 
 const POINTonE2_affine *blst_p2_affine_generator(void)
 {   return (const POINTonE2_affine *)&BLS12_381_G2;   }
+
+size_t blst_p2_sizeof(void)
+{   return sizeof(POINTonE2);   }
+
+size_t blst_p2_affine_sizeof(void)
+{   return sizeof(POINTonE2_affine);   }

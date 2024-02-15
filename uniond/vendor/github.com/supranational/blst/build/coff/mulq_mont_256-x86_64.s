@@ -1,3 +1,4 @@
+.comm	__blst_platform_cap,4
 .text	
 
 .globl	mul_mont_sparse_256
@@ -10,13 +11,17 @@ mul_mont_sparse_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_mul_mont_sparse_256:
+
+
 	movq	%rcx,%rdi
 	movq	%rdx,%rsi
 	movq	%r8,%rdx
 	movq	%r9,%rcx
 	movq	40(%rsp),%r8
-
-
+#ifdef __BLST_PORTABLE__
+	testl	$1,__blst_platform_cap(%rip)
+	jnz	mul_mont_sparse_256$1
+#endif
 	pushq	%rbp
 
 	pushq	%rbx
@@ -80,12 +85,16 @@ sqr_mont_sparse_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_sqr_mont_sparse_256:
+
+
 	movq	%rcx,%rdi
 	movq	%rdx,%rsi
 	movq	%r8,%rdx
 	movq	%r9,%rcx
-
-
+#ifdef __BLST_PORTABLE__
+	testl	$1,__blst_platform_cap(%rip)
+	jnz	sqr_mont_sparse_256$1
+#endif
 	pushq	%rbp
 
 	pushq	%rbx
@@ -430,12 +439,16 @@ from_mont_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_from_mont_256:
+
+
 	movq	%rcx,%rdi
 	movq	%rdx,%rsi
 	movq	%r8,%rdx
 	movq	%r9,%rcx
-
-
+#ifdef __BLST_PORTABLE__
+	testl	$1,__blst_platform_cap(%rip)
+	jnz	from_mont_256$1
+#endif
 	pushq	%rbp
 
 	pushq	%rbx
@@ -510,12 +523,16 @@ redc_mont_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_redc_mont_256:
+
+
 	movq	%rcx,%rdi
 	movq	%rdx,%rsi
 	movq	%r8,%rdx
 	movq	%r9,%rcx
-
-
+#ifdef __BLST_PORTABLE__
+	testl	$1,__blst_platform_cap(%rip)
+	jnz	redc_mont_256$1
+#endif
 	pushq	%rbp
 
 	pushq	%rbx
@@ -778,8 +795,9 @@ __mulq_by_1_mont_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_mul_mont_sparse_256_body:
 .byte	1,0,17,0
 .byte	0x00,0xf4,0x01,0x00
@@ -791,7 +809,8 @@ __mulq_by_1_mont_256:
 .byte	0x00,0x74,0x08,0x00
 .byte	0x00,0x64,0x09,0x00
 .byte	0x00,0x62
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_mul_mont_sparse_256_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00
@@ -802,8 +821,9 @@ __mulq_by_1_mont_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_sqr_mont_sparse_256_body:
 .byte	1,0,17,0
 .byte	0x00,0xf4,0x01,0x00
@@ -815,7 +835,8 @@ __mulq_by_1_mont_256:
 .byte	0x00,0x74,0x08,0x00
 .byte	0x00,0x64,0x09,0x00
 .byte	0x00,0x62
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_sqr_mont_sparse_256_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00
@@ -826,8 +847,9 @@ __mulq_by_1_mont_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_from_mont_256_body:
 .byte	1,0,17,0
 .byte	0x00,0xf4,0x01,0x00
@@ -839,7 +861,8 @@ __mulq_by_1_mont_256:
 .byte	0x00,0x74,0x08,0x00
 .byte	0x00,0x64,0x09,0x00
 .byte	0x00,0x62
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_from_mont_256_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00
@@ -850,8 +873,9 @@ __mulq_by_1_mont_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_redc_mont_256_body:
 .byte	1,0,17,0
 .byte	0x00,0xf4,0x01,0x00
@@ -863,7 +887,8 @@ __mulq_by_1_mont_256:
 .byte	0x00,0x74,0x08,0x00
 .byte	0x00,0x64,0x09,0x00
 .byte	0x00,0x62
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_redc_mont_256_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00

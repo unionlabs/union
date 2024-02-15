@@ -6,14 +6,14 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	lruwrpr "github.com/prysmaticlabs/prysm/v4/cache/lru"
+	"github.com/prysmaticlabs/prysm/v4/cache/nonblocking"
 	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/crypto/bls/common"
 )
 
-var maxKeys = 1_000_000
-var pubkeyCache = lruwrpr.New(maxKeys)
+var maxKeys = 2_000_000
+var pubkeyCache *nonblocking.LRU[[48]byte, common.PublicKey]
 
 // PublicKey used in the BLS signature scheme.
 type PublicKey struct {
@@ -22,12 +22,19 @@ type PublicKey struct {
 
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
 func PublicKeyFromBytes(pubKey []byte) (common.PublicKey, error) {
+	return publicKeyFromBytes(pubKey, true)
+}
+
+func publicKeyFromBytes(pubKey []byte, cacheCopy bool) (common.PublicKey, error) {
 	if len(pubKey) != params.BeaconConfig().BLSPubkeyLength {
 		return nil, fmt.Errorf("public key must be %d bytes", params.BeaconConfig().BLSPubkeyLength)
 	}
 	newKey := (*[fieldparams.BLSPubkeyLength]byte)(pubKey)
 	if cv, ok := pubkeyCache.Get(*newKey); ok {
-		return cv.(*PublicKey).Copy(), nil
+		if cacheCopy {
+			return cv.Copy(), nil
+		}
+		return cv, nil
 	}
 	// Subgroup check NOT done when decompressing pubkey.
 	p := new(blstPublicKey).Uncompress(pubKey)
@@ -54,7 +61,7 @@ func AggregatePublicKeys(pubs [][]byte) (common.PublicKey, error) {
 	agg := new(blstAggregatePublicKey)
 	mulP1 := make([]*blstPublicKey, 0, len(pubs))
 	for _, pubkey := range pubs {
-		pubKeyObj, err := PublicKeyFromBytes(pubkey)
+		pubKeyObj, err := publicKeyFromBytes(pubkey, false)
 		if err != nil {
 			return nil, err
 		}

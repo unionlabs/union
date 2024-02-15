@@ -38,7 +38,7 @@ func decodeP1(m map[string]interface{}) *P1Affine {
 func testG1HashToCurve(t *testing.T, fname string) {
 	vfile, err := os.Open(fname)
 	if err != nil {
-		t.Skip(fmt.Sprintf("%.16s... not found", fname))
+		t.Skipf("%.16s... not found", fname)
 	}
 	defer vfile.Close()
 	buf, err := ioutil.ReadAll(vfile)
@@ -120,7 +120,7 @@ func decodeP2(m map[string]interface{}) *P2Affine {
 func testG2HashToCurve(t *testing.T, fname string) {
 	vfile, err := os.Open(fname)
 	if err != nil {
-		t.Skip(fmt.Sprintf("%.16s... not found", fname))
+		t.Skipf("%.16s... not found", fname)
 	}
 	defer vfile.Close()
 	buf, err := ioutil.ReadAll(vfile)
@@ -171,7 +171,7 @@ func TestG2HashToCurve(t *testing.T) {
 func testExpandMessageXmd(t *testing.T, fname string) {
 	vfile, err := os.Open(fname)
 	if err != nil {
-		t.Skip(fmt.Sprintf("%.16s... not found", fname))
+		t.Skipf("%.16s... not found", fname)
 	}
 	defer vfile.Close()
 	buf, err := ioutil.ReadAll(vfile)

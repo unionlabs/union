@@ -2,8 +2,8 @@ package herumi
 
 import "github.com/herumi/bls-eth-go-binary/bls"
 
-// HerumiInit allows the required curve orders and appropriate sub-groups to be initialized.
-func HerumiInit() {
+// Init allows the required curve orders and appropriate sub-groups to be initialized.
+func Init() {
 	if err := bls.Init(bls.BLS12_381); err != nil {
 		panic(err)
 	}

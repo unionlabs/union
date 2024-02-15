@@ -25,6 +25,8 @@ export interface SecretKeyConstructor {
 
 export interface SecretKey {
   keygen(IKM: binary_string, info?: string): void;
+  derive_master_eip2333(IKM: binary_string): void;
+  derive_child_eip2333(SK: SecretKey, child_index: number): void;
   from_bendian(_32: bytes): void;
   from_lendian(_32: bytes): void;
   to_bendian(): bytes;
@@ -36,12 +38,14 @@ export interface SecretKey {
 export interface ScalarConstructor {
   new (): Scalar;
   new (le: bytes): Scalar;
+  new (msg: binary_string, DST?: string): Scalar;
 }
 
 export interface Scalar {
+  hash_to (msg: binary_string, DST?: string): this;
   dup(): Scalar;
-  from_bendian(be: bytes): void;
-  from_lendian(le: bytes): void;
+  from_bendian(be: bytes): this;
+  from_lendian(le: bytes): this;
   to_bendian(): bytes;
   to_lendian(): bytes;
   add(s: this | SecretKey): this;
@@ -167,6 +171,7 @@ export interface PTConstructor {
   new (q: P2_Affine): PT;
   new (q: P2_Affine | P2, p: P1_Affine | P1): PT;
   new (p: P1_Affine | P1, q: P2_Affine | P2): PT;
+  one(): PT;
 }
 
 export interface PT {
@@ -176,6 +181,8 @@ export interface PT {
   sqr(): this;
   mul(p: PT): this;
   final_exp(): this;
+  in_group(): boolean;
+  to_bendian(): bytes;
 }
 
 // Pairing
@@ -214,6 +221,8 @@ export interface Pairing {
   commit(): void;
   merge(ctx: Pairing): BLST_ERROR;
   finalverify(sig?: PT): boolean;
+  raw_aggregate(q: P2_Affine, p: P1_Affine): void;
+  as_fp12(): PT;
 }
 
 // Misc
@@ -226,4 +235,5 @@ export enum BLST_ERROR {
   BLST_AGGR_TYPE_MISMATCH = 4,
   BLST_VERIFY_FAIL = 5,
   BLST_PK_IS_INFINITY = 6,
+  BLST_BAD_SCALAR = 7,
 }

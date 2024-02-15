@@ -1373,6 +1373,7 @@ $code.=<<___;
 .size	vec_select_$sz,.-vec_select_$sz
 ___
 }
+vec_select(32);
 vec_select(48);
 vec_select(96);
 vec_select(192);
@@ -1424,6 +1425,75 @@ vec_prefetch:
 	prefetchnta	($inp)
 	ret
 .size	vec_prefetch,.-vec_prefetch
+___
+my $len = $win64 ? "%edx" : "%esi";
+
+$code.=<<___;
+.globl	vec_is_zero_16x
+.hidden	vec_is_zero_16x
+.type	vec_is_zero_16x,\@abi-omnipotent
+.align	32
+vec_is_zero_16x:
+	shr		\$4, $len
+	movdqu		($inp), %xmm0
+	lea		16($inp), $inp
+
+.Loop_is_zero:
+	dec		$len
+	jz		.Loop_is_zero_done
+	movdqu		($inp), %xmm1
+	lea		16($inp), $inp
+	por		%xmm1, %xmm0
+	jmp		.Loop_is_zero
+
+.Loop_is_zero_done:
+	pshufd		\$0x4e, %xmm0, %xmm1
+	por		%xmm1, %xmm0
+	movq		%xmm0, %rax
+	inc		$len			# now it's 1
+	test		%rax, %rax
+	cmovnz		$len, %eax
+	xor		\$1, %eax
+	ret
+.size	vec_is_zero_16x,.-vec_is_zero_16x
+___
+}
+{
+my ($inp1, $inp2, $len) = $win64 ? ("%rcx", "%rdx", "%r8d")
+                                 : ("%rdi", "%rsi", "%edx");
+$code.=<<___;
+.globl	vec_is_equal_16x
+.hidden	vec_is_equal_16x
+.type	vec_is_equal_16x,\@abi-omnipotent
+.align	32
+vec_is_equal_16x:
+	shr		\$4, $len
+	movdqu		($inp1), %xmm0
+	movdqu		($inp2), %xmm1
+	sub		$inp1, $inp2
+	lea		16($inp1), $inp1
+	pxor		%xmm1, %xmm0
+
+.Loop_is_equal:
+	dec		$len
+	jz		.Loop_is_equal_done
+	movdqu		($inp1), %xmm1
+	movdqu		($inp1,$inp2), %xmm2
+	lea		16($inp1), $inp1
+	pxor		%xmm2, %xmm1
+	por		%xmm1, %xmm0
+	jmp		.Loop_is_equal
+
+.Loop_is_equal_done:
+	pshufd		\$0x4e, %xmm0, %xmm1
+	por		%xmm1, %xmm0
+	movq		%xmm0, %rax
+	inc		$len			# now it's 1
+	test		%rax, %rax
+	cmovnz		$len, %eax
+	xor		\$1, %eax
+	ret
+.size	vec_is_equal_16x,.-vec_is_equal_16x
 ___
 }
 print $code;

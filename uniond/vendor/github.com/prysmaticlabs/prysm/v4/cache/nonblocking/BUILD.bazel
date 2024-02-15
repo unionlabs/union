@@ -1,0 +1,17 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "list.go",
+        "lru.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/cache/nonblocking",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["lru_test.go"],
+    embed = [":go_default_library"],
+)

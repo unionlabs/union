@@ -1,0 +1,29 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "fork.go",
+        "metrics.go",
+        "version.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/runtime/version",
+    visibility = ["//visibility:public"],
+    x_defs = {
+        "gitCommit": "{STABLE_GIT_COMMIT}",
+        "buildDate": "{DATE}",
+        "buildDateUnix": "{DATE_UNIX}",
+        "gitTag": "{STABLE_GIT_TAG}",
+    },
+    deps = [
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_prometheus_client_golang//prometheus:go_default_library",
+        "@com_github_prometheus_client_golang//prometheus/promauto:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["fork_test.go"],
+    embed = [":go_default_library"],
+)

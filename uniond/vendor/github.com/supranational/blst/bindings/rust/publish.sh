@@ -9,4 +9,4 @@ if [ ! -d blst ]; then
 fi
 
 # --allow-dirty because the temporary blst symbolic link is not committed
-cargo publish --allow-dirty "$@"
+cargo +stable publish --allow-dirty "$@"

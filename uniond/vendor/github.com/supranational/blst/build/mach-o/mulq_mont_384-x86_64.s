@@ -1,3 +1,4 @@
+.comm	___blst_platform_cap,4
 .text	
 
 
@@ -8,7 +9,7 @@
 
 
 .p2align	5
-__sub_mod_384x384:
+__subq_mod_384x384:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
@@ -77,7 +78,7 @@ __sub_mod_384x384:
 
 
 .p2align	5
-__add_mod_384:
+__addq_mod_384:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
@@ -129,7 +130,7 @@ __add_mod_384:
 
 
 .p2align	5
-__sub_mod_384:
+__subq_mod_384:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
@@ -140,7 +141,7 @@ __sub_mod_384:
 	movq	32(%rsi),%r12
 	movq	40(%rsi),%r13
 
-__sub_mod_384_a_is_loaded:
+__subq_mod_384_a_is_loaded:
 	subq	0(%rdx),%r8
 	movq	0(%rcx),%r14
 	sbbq	8(%rdx),%r9
@@ -187,6 +188,10 @@ _mul_mont_384x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	mul_mont_384x$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -232,12 +237,12 @@ _mul_mont_384x:
 	movq	8(%rsp),%rcx
 	leaq	-48(%rsi),%rdx
 	leaq	40+192+48(%rsp),%rdi
-	call	__add_mod_384
+	call	__addq_mod_384
 
 	movq	16(%rsp),%rsi
 	leaq	48(%rsi),%rdx
 	leaq	-48(%rdi),%rdi
-	call	__add_mod_384
+	call	__addq_mod_384
 
 	leaq	(%rdi),%rbx
 	leaq	48(%rdi),%rsi
@@ -247,17 +252,17 @@ _mul_mont_384x:
 	leaq	(%rdi),%rsi
 	leaq	40(%rsp),%rdx
 	movq	8(%rsp),%rcx
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 	leaq	(%rdi),%rsi
 	leaq	-96(%rdi),%rdx
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 
 	leaq	40(%rsp),%rsi
 	leaq	40+96(%rsp),%rdx
 	leaq	40(%rsp),%rdi
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 	movq	%rcx,%rbx
 
@@ -266,14 +271,14 @@ _mul_mont_384x:
 	movq	0(%rsp),%rcx
 	movq	32(%rsp),%rdi
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 
 	leaq	40+192(%rsp),%rsi
 	movq	0(%rsp),%rcx
 	leaq	48(%rdi),%rdi
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	leaq	328(%rsp),%r8
 	movq	0(%r8),%r15
@@ -303,6 +308,10 @@ _sqr_mont_384x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	sqr_mont_384x$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -333,13 +342,13 @@ _sqr_mont_384x:
 
 	leaq	48(%rsi),%rdx
 	leaq	32(%rsp),%rdi
-	call	__add_mod_384
+	call	__addq_mod_384
 
 
 	movq	16(%rsp),%rsi
 	leaq	48(%rsi),%rdx
 	leaq	32+48(%rsp),%rdi
-	call	__sub_mod_384
+	call	__subq_mod_384
 
 
 	movq	16(%rsp),%rsi
@@ -427,6 +436,10 @@ _mul_382x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	mul_382x$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -521,18 +534,18 @@ _mul_382x:
 	leaq	32(%rsp),%rdx
 	movq	24(%rsp),%rcx
 	movq	%rsi,%rdi
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 
 	leaq	0(%rdi),%rsi
 	leaq	-96(%rdi),%rdx
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 
 	leaq	-96(%rdi),%rsi
 	leaq	32(%rsp),%rdx
 	leaq	-96(%rdi),%rdi
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 	leaq	136(%rsp),%r8
 	movq	0(%r8),%r15
@@ -562,6 +575,10 @@ _sqr_382x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	sqr_382x$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -617,7 +634,7 @@ _sqr_382x:
 
 	leaq	48(%rsi),%rdx
 	leaq	48(%rdi),%rdi
-	call	__sub_mod_384_a_is_loaded
+	call	__subq_mod_384_a_is_loaded
 
 
 	leaq	(%rdi),%rsi
@@ -695,6 +712,10 @@ _mul_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	mul_384$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1019,6 +1040,10 @@ _sqr_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	sqr_384$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1265,6 +1290,10 @@ _sqr_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	sqr_mont_384$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1299,7 +1328,7 @@ _sqr_mont_384:
 	movq	104(%rsp),%rbx
 	movq	112(%rsp),%rdi
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	leaq	120(%rsp),%r8
 	movq	120(%rsp),%r15
@@ -1332,6 +1361,10 @@ _redc_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	redc_mont_384$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1356,7 +1389,7 @@ _redc_mont_384:
 
 	movq	%rdx,%rbx
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	movq	8(%rsp),%r15
 .cfi_restore	%r15
@@ -1389,6 +1422,10 @@ _from_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	from_mont_384$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1764,7 +1801,7 @@ __mulq_by_1_mont_384:
 
 
 .p2align	5
-__redc_tail_mont_384:
+__redq_tail_mont_384:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
@@ -1820,6 +1857,10 @@ _sgn0_pty_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	sgn0_pty_mont_384$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1898,6 +1939,10 @@ _sgn0_pty_mont_384x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	sgn0_pty_mont_384x$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -2025,6 +2070,10 @@ _mul_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	mul_mont_384$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -2689,6 +2738,10 @@ _sqr_n_mul_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	sqr_n_mul_mont_384$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -2727,7 +2780,7 @@ L$oop_sqr_384:
 	movq	0(%rsp),%rcx
 	movq	16(%rsp),%rbx
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	movd	%xmm1,%edx
 	leaq	0(%rdi),%rsi
@@ -2777,6 +2830,10 @@ _sqr_n_mul_mont_383:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	sqr_n_mul_mont_383$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -3438,6 +3495,10 @@ _sqr_mont_382x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,___blst_platform_cap(%rip)
+	jnz	sqr_mont_382x$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16

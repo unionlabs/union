@@ -2,7 +2,11 @@ package bytesutil
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"math/big"
+
+	"github.com/prysmaticlabs/prysm/v4/math"
 )
 
 // ToBytes returns integer x to bytes in little-endian format at the specified length.
@@ -149,4 +153,16 @@ func LittleEndianBytesToBigInt(bytes []byte) *big.Int {
 func BigIntToLittleEndianBytes(bigInt *big.Int) []byte {
 	// big.Int.Bytes() returns bytes in big-endian order, so we need to reverse the byte order
 	return ReverseByteOrder(bigInt.Bytes())
+}
+
+// Uint256ToSSZBytes takes a string representation of uint256 and returns its bytes stored as little-endian
+func Uint256ToSSZBytes(num string) ([]byte, error) {
+	uint256, ok := new(big.Int).SetString(num, 10)
+	if !ok {
+		return nil, errors.New("could not parse Uint256")
+	}
+	if !math.IsValidUint256(uint256) {
+		return nil, fmt.Errorf("%s is not a valid Uint256", num)
+	}
+	return PadTo(ReverseByteOrder(uint256.Bytes()), 32), nil
 }

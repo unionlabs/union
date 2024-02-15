@@ -47,7 +47,6 @@ bun.lockb
 .wrangler
 .nfs*
 
-cache
 .eslintcache
 .prettiercache
 .code-workspace

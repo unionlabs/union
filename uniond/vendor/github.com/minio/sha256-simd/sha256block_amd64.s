@@ -1,4 +1,4 @@
-//+build !noasm,!appengine
+//+build !noasm,!appengine,gc
 
 // SHA intrinsic version of SHA256
 
@@ -106,7 +106,7 @@ GLOBL SHUF_MASK<>(SB), RODATA|NOPTR, $16
 // X13 saved hash state // CDGH
 // X15 data shuffle mask (constant)
 
-TEXT ·blockSha(SB), NOSPLIT, $0-32
+TEXT ·blockIntelSha(SB), NOSPLIT, $0-32
 	MOVQ      h+0(FP), DX
 	MOVQ      message_base+8(FP), SI
 	MOVQ      message_len+16(FP), DI

@@ -7,6 +7,7 @@
 #define __BLS12_381_ASM_POINT_H__
 
 #include "vect.h"
+#include "bytes.h"
 
 #define DECLARE_POINT(ptype, bits) \
 typedef struct { vec##bits X,Y,Z; } ptype; \

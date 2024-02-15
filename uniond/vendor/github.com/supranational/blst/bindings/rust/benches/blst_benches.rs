@@ -20,6 +20,17 @@ struct BenchData {
 }
 
 fn gen_bench_data(rng: &mut rand_chacha::ChaCha20Rng) -> BenchData {
+    let msg_len = (rng.next_u64() & 0x3F) + 1;
+    let mut msg = vec![0u8; msg_len as usize];
+    rng.fill_bytes(&mut msg);
+
+    gen_bench_data_for_msg(rng, &msg)
+}
+
+fn gen_bench_data_for_msg(
+    rng: &mut rand_chacha::ChaCha20Rng,
+    msg: &Vec<u8>,
+) -> BenchData {
     let mut ikm = [0u8; 32];
     rng.fill_bytes(&mut ikm);
 
@@ -28,9 +39,6 @@ fn gen_bench_data(rng: &mut rand_chacha::ChaCha20Rng) -> BenchData {
     let dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_"
         .as_bytes()
         .to_owned();
-    let msg_len = (rng.next_u64() & 0x3F) + 1;
-    let mut msg = vec![0u8; msg_len as usize];
-    rng.fill_bytes(&mut msg);
 
     let sig = sk.sign(&msg, &dst, &[]);
 
@@ -38,7 +46,7 @@ fn gen_bench_data(rng: &mut rand_chacha::ChaCha20Rng) -> BenchData {
         sk,
         pk,
         dst,
-        msg,
+        msg: msg.clone(),
         sig,
     };
     bd
@@ -126,9 +134,11 @@ fn bench_verify_multi_aggregate(c: &mut Criterion) {
             &agg_ver,
             |b, (s, p, m, d, r)| {
                 b.iter(|| {
-                    Signature::verify_multiple_aggregate_signatures(
-                        &m, *d, &p, false, &s, false, &r, 64,
-                    )
+                    let result =
+                        Signature::verify_multiple_aggregate_signatures(
+                            &m, *d, &p, false, &s, false, &r, 64,
+                        );
+                    assert_eq!(result, BLST_ERROR::BLST_SUCCESS);
                 });
             },
         );
@@ -143,10 +153,14 @@ fn bench_fast_aggregate_verify(c: &mut Criterion) {
     let seed = [0u8; 32];
     let mut rng = ChaCha20Rng::from_seed(seed);
 
+    let msg_len = (rng.next_u64() & 0x3F) + 1;
+    let mut msg = vec![0u8; msg_len as usize];
+    rng.fill_bytes(&mut msg);
+
     let sizes = vec![8, 16, 32, 64, 128];
 
     let bds: Vec<_> = (0..sizes[sizes.len() - 1])
-        .map(|_| gen_bench_data(&mut rng))
+        .map(|_| gen_bench_data_for_msg(&mut rng, &msg))
         .collect();
 
     for size in sizes.iter() {
@@ -181,7 +195,10 @@ fn bench_fast_aggregate_verify(c: &mut Criterion) {
             BenchmarkId::new("fast_aggregate_verify", size),
             &agg_ver,
             |b, (a, p, m, d)| {
-                b.iter(|| a.fast_aggregate_verify(true, &m, &d, &p));
+                b.iter(|| {
+                    let result = a.fast_aggregate_verify(true, &m, &d, &p);
+                    assert_eq!(result, BLST_ERROR::BLST_SUCCESS);
+                });
             },
         );
 
@@ -190,7 +207,9 @@ fn bench_fast_aggregate_verify(c: &mut Criterion) {
             &agg_pre_ver,
             |b, (a, p, m, d)| {
                 b.iter(|| {
-                    a.fast_aggregate_verify_pre_aggregated(true, &m, &d, &p)
+                    let result = a
+                        .fast_aggregate_verify_pre_aggregated(true, &m, &d, &p);
+                    assert_eq!(result, BLST_ERROR::BLST_SUCCESS);
                 });
             },
         );
@@ -242,7 +261,10 @@ fn bench_aggregate_verify(c: &mut Criterion) {
             BenchmarkId::new("aggregate_verify", size),
             &agg_ver,
             |b, (a, p, m, d)| {
-                b.iter(|| a.aggregate_verify(true, &m, &d, &p, false));
+                b.iter(|| {
+                    let result = a.aggregate_verify(true, &m, &d, &p, false);
+                    assert_eq!(result, BLST_ERROR::BLST_SUCCESS);
+                });
             },
         );
     }

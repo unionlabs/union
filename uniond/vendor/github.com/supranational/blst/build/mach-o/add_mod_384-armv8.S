@@ -748,6 +748,21 @@ _sgn0_pty_mod_384x:
 
 	ret
 
+.globl	_vec_select_32
+.private_extern	_vec_select_32
+
+.align	5
+_vec_select_32:
+	dup	v6.2d, x3
+	ld1	{v0.2d, v1.2d, v2.2d}, [x1],#48
+	cmeq	v6.2d, v6.2d, #0
+	ld1	{v3.2d, v4.2d, v5.2d}, [x2],#48
+	bit	v0.16b, v3.16b, v6.16b
+	bit	v1.16b, v4.16b, v6.16b
+	bit	v2.16b, v5.16b, v6.16b
+	st1	{v0.2d, v1.2d, v2.2d}, [x0]
+	ret
+
 .globl	_vec_select_48
 .private_extern	_vec_select_48
 
@@ -927,5 +942,59 @@ _vec_prefetch:
 	cmp	x0, x1
 	csel	x0, x1, x0, hi
 	prfm	pldl1keep, [x0]
+	ret
+
+.globl	_vec_is_zero_16x
+.private_extern	_vec_is_zero_16x
+
+.align	5
+_vec_is_zero_16x:
+	ld1	{v0.2d}, [x0], #16
+	lsr	x1, x1, #4
+	sub	x1, x1, #1
+	cbz	x1, Loop_is_zero_done
+
+Loop_is_zero:
+	ld1	{v1.2d}, [x0], #16
+	orr	v0.16b, v0.16b, v1.16b
+	sub	x1, x1, #1
+	cbnz	x1, Loop_is_zero
+
+Loop_is_zero_done:
+	dup	v1.2d, v0.d[1]
+	orr	v0.16b, v0.16b, v1.16b
+	mov	x1, v0.d[0]
+	mov	x0, #1
+	cmp	x1, #0
+	csel	x0, x0, xzr, eq
+	ret
+
+.globl	_vec_is_equal_16x
+.private_extern	_vec_is_equal_16x
+
+.align	5
+_vec_is_equal_16x:
+	ld1	{v0.2d}, [x0], #16
+	ld1	{v1.2d}, [x1], #16
+	lsr	x2, x2, #4
+	eor	v0.16b, v0.16b, v1.16b
+
+Loop_is_equal:
+	sub	x2, x2, #1
+	cbz	x2, Loop_is_equal_done
+	ld1	{v1.2d}, [x0], #16
+	ld1	{v2.2d}, [x1], #16
+	eor	v1.16b, v1.16b, v2.16b
+	orr	v0.16b, v0.16b, v1.16b
+	b	Loop_is_equal
+	nop
+
+Loop_is_equal_done:
+	dup	v1.2d, v0.d[1]
+	orr	v0.16b, v0.16b, v1.16b
+	mov	x1, v0.d[0]
+	mov	x0, #1
+	cmp	x1, #0
+	csel	x0, x0, xzr, eq
 	ret
 

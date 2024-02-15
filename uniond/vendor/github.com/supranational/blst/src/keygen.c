@@ -5,6 +5,7 @@
  */
 
 #include "consts.h"
+#include "bytes.h"
 #include "sha256.h"
 
 typedef struct {
@@ -132,6 +133,7 @@ static void HKDF_Expand(unsigned char *OKM, size_t L,
 
 #ifndef __BLST_HKDF_TESTMODE__
 static void keygen(pow256 SK, const void *IKM, size_t IKM_len,
+                              const void *salt, size_t salt_len,
                               const void *info, size_t info_len,
                               int version)
 {
@@ -140,10 +142,9 @@ static void keygen(pow256 SK, const void *IKM, size_t IKM_len,
         unsigned char PRK[32], OKM[48];
         vec512 key;
     } scratch;
-    unsigned char salt[32] = "BLS-SIG-KEYGEN-SALT-";
-    size_t salt_len = 20;
+    unsigned char salt_prime[32] = "BLS-SIG-KEYGEN-SALT-";
 
-    if (IKM_len < 32) {
+    if (IKM_len < 32 || (version > 4 && salt == NULL)) {
         vec_zero(SK, sizeof(pow256));
         return;
     }
@@ -154,15 +155,21 @@ static void keygen(pow256 SK, const void *IKM, size_t IKM_len,
      */
     info_len = info==NULL ? 0 : info_len;
 
-    do {
-        if (version >= 4) {
-            /* salt = H(salt) */
-            sha256_init(&scratch.ctx.ctx);
-            sha256_update(&scratch.ctx.ctx, salt, salt_len);
-            sha256_final(salt, &scratch.ctx.ctx);
-            salt_len = sizeof(salt);
-        }
+    if (salt == NULL) {
+        salt = salt_prime;
+        salt_len = 20;
+    }
 
+    if (version == 4) {
+        /* salt = H(salt) */
+        sha256_init(&scratch.ctx.ctx);
+        sha256_update(&scratch.ctx.ctx, salt, salt_len);
+        sha256_final(salt_prime, &scratch.ctx.ctx);
+        salt = salt_prime;
+        salt_len = sizeof(salt_prime);
+    }
+
+    while (1) {
         /* PRK = HKDF-Extract(salt, IKM || I2OSP(0, 1)) */
         HKDF_Extract(scratch.PRK, salt, salt_len,
                                   IKM, IKM_len, 1, &scratch.ctx);
@@ -183,7 +190,17 @@ static void keygen(pow256 SK, const void *IKM, size_t IKM_len,
          */
         mul_mont_sparse_256(scratch.key, scratch.key, BLS12_381_rRR,
                             BLS12_381_r, r0);
-    } while (version >= 4 && vec_is_zero(scratch.key, sizeof(vec256)));
+
+        if (version < 4 || !vec_is_zero(scratch.key, sizeof(vec256)))
+            break;
+
+        /* salt = H(salt) */
+        sha256_init(&scratch.ctx.ctx);
+        sha256_update(&scratch.ctx.ctx, salt, salt_len);
+        sha256_final(salt_prime, &scratch.ctx.ctx);
+        salt = salt_prime;
+        salt_len = sizeof(salt_prime);
+    }
 
     le_bytes_from_limbs(SK, scratch.key, sizeof(pow256));
 
@@ -196,17 +213,27 @@ static void keygen(pow256 SK, const void *IKM, size_t IKM_len,
 
 void blst_keygen(pow256 SK, const void *IKM, size_t IKM_len,
                             const void *info, size_t info_len)
-{   keygen(SK, IKM, IKM_len, info, info_len, 4);   }
+{   keygen(SK, IKM, IKM_len, NULL, 0, info, info_len, 4);   }
 
 void blst_keygen_v3(pow256 SK, const void *IKM, size_t IKM_len,
                                const void *info, size_t info_len)
-{   keygen(SK, IKM, IKM_len, info, info_len, 3);   }
+{   keygen(SK, IKM, IKM_len, NULL, 0, info, info_len, 3);   }
+
+void blst_keygen_v4_5(pow256 SK, const void *IKM, size_t IKM_len,
+                                 const void *salt, size_t salt_len,
+                                 const void *info, size_t info_len)
+{   keygen(SK, IKM, IKM_len, salt, salt_len, info, info_len, 4);   }
+
+void blst_keygen_v5(pow256 SK, const void *IKM, size_t IKM_len,
+                               const void *salt, size_t salt_len,
+                               const void *info, size_t info_len)
+{   keygen(SK, IKM, IKM_len, salt, salt_len, info, info_len, 5);   }
 
 /*
  * https://eips.ethereum.org/EIPS/eip-2333
  */
 void blst_derive_master_eip2333(pow256 SK, const void *seed, size_t seed_len)
-{   keygen(SK, seed, seed_len, NULL, 0, 4);   }
+{   keygen(SK, seed, seed_len, NULL, 0, NULL, 0, 4);   }
 
 static void parent_SK_to_lamport_PK(pow256 PK, const pow256 parent_SK,
                                     unsigned int index)
@@ -287,6 +314,6 @@ void blst_derive_child_eip2333(pow256 SK, const pow256 parent_SK,
                                unsigned int child_index)
 {
     parent_SK_to_lamport_PK(SK, parent_SK, child_index);
-    keygen(SK, SK, sizeof(pow256), NULL, 0, 4);
+    keygen(SK, SK, sizeof(pow256), NULL, 0, NULL, 0, 4);
 }
 #endif

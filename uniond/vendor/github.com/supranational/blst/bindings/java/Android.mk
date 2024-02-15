@@ -30,7 +30,7 @@ $(LOCAL_PATH)/blst_wrap.cpp: $(LOCAL_PATH)/blst/bindings/blst.swg
 	mkdir -p $$blst_classes && \
 	swig -c++ -java -package supranational.blst -outdir $$blst_classes -o $@ $<
 
-LOCAL_CFLAGS := -fno-builtin-memcpy
+LOCAL_CFLAGS := -fno-builtin-memcpy -fvisibility=hidden
 LOCAL_CPPFLAGS := -fexceptions -I$(LOCAL_PATH)/blst/bindings
 LOCAL_LDFLAGS := -Wl,-Bsymbolic
 

@@ -145,8 +145,7 @@ static void ptype##s_accumulate(ptype *sum, ptype points[], size_t n) \
 void prefix##s_add(ptype *sum, const ptype##_affine *const points[], \
                                size_t npoints) \
 { \
-    /* Performance with 288K scratch is within 1-2-3% from optimal */ \
-    const size_t stride = sizeof(ptype)==sizeof(POINTonE1) ? 2048 : 1024; \
+    const size_t stride = SCRATCH_LIMIT / sizeof(ptype); \
     ptype *scratch = alloca((npoints > stride ? stride : npoints) * \
                             sizeof(ptype)); \
     const ptype##_affine *point = NULL; \
@@ -162,6 +161,15 @@ void prefix##s_add(ptype *sum, const ptype##_affine *const points[], \
         npoints -= j; \
     } \
 }
+
+#ifndef SCRATCH_LIMIT
+# ifdef __wasm__
+#  define SCRATCH_LIMIT (45 * 1024)
+# else
+   /* Performance with 144K scratch is within 1-2-3% from optimal */
+#  define SCRATCH_LIMIT (144 * 1024)
+# endif
+#endif
 
 ADDITION_BTREE(blst_p1, POINTonE1, 384, fp, BLS12_381_Rx.p2)
 

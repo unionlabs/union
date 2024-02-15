@@ -16,9 +16,10 @@
  */
 
 #include "fields.h"
+#include "bytes.h"
 
 /*
- * BLS12-381-specifc Fr shortcuts to assembly.
+ * BLS12-381-specific Fr shortcuts to assembly.
  */
 void blst_fr_add(vec256 ret, const vec256 a, const vec256 b)
 {   add_mod_256(ret, a, b, BLS12_381_r);   }
@@ -37,6 +38,24 @@ void blst_fr_rshift(vec256 ret, const vec256 a, size_t count)
 
 void blst_fr_mul(vec256 ret, const vec256 a, const vec256 b)
 {   mul_mont_sparse_256(ret, a, b, BLS12_381_r, r0);   }
+
+void blst_fr_ct_bfly(vec256 x0, vec256 x1, const vec256 twiddle)
+{
+    vec256 x2;
+
+    mul_mont_sparse_256(x2, x1, twiddle, BLS12_381_r, r0);
+    sub_mod_256(x1, x0, x2, BLS12_381_r);
+    add_mod_256(x0, x0, x2, BLS12_381_r);
+}
+
+void blst_fr_gs_bfly(vec256 x0, vec256 x1, const vec256 twiddle)
+{
+    vec256 x2;
+
+    sub_mod_256(x2, x0, x1, BLS12_381_r);
+    add_mod_256(x0, x0, x1, BLS12_381_r);
+    mul_mont_sparse_256(x1, x2, twiddle, BLS12_381_r, r0);
+}
 
 void blst_fr_sqr(vec256 ret, const vec256 a)
 {   sqr_mont_sparse_256(ret, a, BLS12_381_r, r0);   }
@@ -101,27 +120,26 @@ int blst_sk_sub_n_check(pow256 ret, const pow256 a, const pow256 b)
 
 int blst_sk_mul_n_check(pow256 ret, const pow256 a, const pow256 b)
 {
-    vec256 a_fr, b_fr;
+    vec256 t[2];
     const union {
         long one;
         char little;
     } is_endian = { 1 };
+    bool_t is_zero;
 
     if (((size_t)a|(size_t)b)%sizeof(limb_t) != 0 || !is_endian.little) {
-        limbs_from_le_bytes(a_fr, a, sizeof(a_fr));
-        limbs_from_le_bytes(b_fr, b, sizeof(a_fr));
-        a = (const byte *)a_fr;
-        b = (const byte *)b_fr;
+        limbs_from_le_bytes(t[0], a, sizeof(pow256));
+        limbs_from_le_bytes(t[1], b, sizeof(pow256));
+        a = (const byte *)t[0];
+        b = (const byte *)t[1];
     }
-    mul_mont_sparse_256(a_fr, (const limb_t *)a, BLS12_381_rRR,
-                                                 BLS12_381_r, r0);
-    mul_mont_sparse_256(b_fr, (const limb_t *)b, BLS12_381_rRR,
-                                                 BLS12_381_r, r0);
-    mul_mont_sparse_256(a_fr, a_fr, b_fr, BLS12_381_r, r0);
-    from_mont_256(a_fr, a_fr, BLS12_381_r, r0);
-    le_bytes_from_limbs(ret, a_fr, sizeof(a_fr));
+    mul_mont_sparse_256(t[0], BLS12_381_rRR, (const limb_t *)a, BLS12_381_r, r0);
+    mul_mont_sparse_256(t[0], t[0], (const limb_t *)b, BLS12_381_r, r0);
+    le_bytes_from_limbs(ret, t[0], sizeof(pow256));
+    is_zero = vec_is_zero(t[0], sizeof(vec256));
+    vec_zero(t, sizeof(t));
 
-    return (int)(vec_is_zero(a_fr, sizeof(a_fr)) ^ 1);
+    return (int)(is_zero^1);
 }
 
 void blst_sk_inverse(pow256 ret, const pow256 a)
@@ -149,7 +167,7 @@ void blst_sk_inverse(pow256 ret, const pow256 a)
 }
 
 /*
- * BLS12-381-specifc Fp shortcuts to assembly.
+ * BLS12-381-specific Fp shortcuts to assembly.
  */
 void blst_fp_add(vec384 ret, const vec384 a, const vec384 b)
 {   add_fp(ret, a, b);   }
@@ -283,7 +301,7 @@ void blst_lendian_from_fp(unsigned char ret[48], const vec384 a)
 }
 
 /*
- * BLS12-381-specifc Fp2 shortcuts to assembly.
+ * BLS12-381-specific Fp2 shortcuts to assembly.
  */
 void blst_fp2_add(vec384x ret, const vec384x a, const vec384x b)
 {   add_fp2(ret, a, b);   }
@@ -310,7 +328,7 @@ void blst_fp2_cneg(vec384x ret, const vec384x a, int flag)
 {   cneg_fp2(ret, a, is_zero(flag) ^ 1);   }
 
 /*
- * Scalar serialization/deseriazation
+ * Scalar serialization/deserialization.
  */
 void blst_scalar_from_uint32(pow256 ret, const unsigned int a[8])
 {
@@ -479,103 +497,84 @@ void blst_uint64_from_fr(unsigned long long ret[4], const vec256 a)
 
 int blst_scalar_from_le_bytes(pow256 out, const unsigned char *bytes, size_t n)
 {
-    struct { vec256 out, digit, radix; } t;
+    size_t rem = (n - 1) % 32 + 1;
+    struct { vec256 out, digit; } t;
     limb_t ret;
 
     vec_zero(t.out, sizeof(t.out));
-    vec_copy(t.radix, BLS12_381_rRR, sizeof(t.radix));
 
-    while (n > 32) {
-        limbs_from_le_bytes(t.digit, bytes, 32);
-        from_mont_256(t.digit, t.digit, BLS12_381_r, r0);
-        mul_mont_sparse_256(t.digit, t.digit, t.radix, BLS12_381_r, r0);
+    n -= rem;
+    limbs_from_le_bytes(t.out, bytes += n, rem);
+    mul_mont_sparse_256(t.out, BLS12_381_rRR, t.out, BLS12_381_r, r0);
+
+    while (n) {
+        limbs_from_le_bytes(t.digit, bytes -= 32, 32);
         add_mod_256(t.out, t.out, t.digit, BLS12_381_r);
-        mul_mont_sparse_256(t.radix, t.radix, BLS12_381_rRR, BLS12_381_r, r0);
-        bytes += 32;
+        mul_mont_sparse_256(t.out, BLS12_381_rRR, t.out, BLS12_381_r, r0);
         n -= 32;
     }
 
-    vec_zero(t.digit, sizeof(t.digit));
-    limbs_from_le_bytes(t.digit, bytes, n);
-    from_mont_256(t.digit, t.digit, BLS12_381_r, r0);
-    mul_mont_sparse_256(t.digit, t.digit, t.radix, BLS12_381_r, r0);
-    add_mod_256(t.out, t.out, t.digit, BLS12_381_r);
+    from_mont_256(t.out, t.out, BLS12_381_r, r0);
 
     ret = vec_is_zero(t.out, sizeof(t.out));
     le_bytes_from_limbs(out, t.out, 32);
-    vec_zero(t.out, 2*sizeof(t.out));
+    vec_zero(&t, sizeof(t));
 
     return (int)(ret^1);
 }
 
 int blst_scalar_from_be_bytes(pow256 out, const unsigned char *bytes, size_t n)
 {
-    struct { vec256 out, digit, radix; } t;
+    size_t rem = (n - 1) % 32 + 1;
+    struct { vec256 out, digit; } t;
     limb_t ret;
 
     vec_zero(t.out, sizeof(t.out));
-    vec_copy(t.radix, BLS12_381_rRR, sizeof(t.radix));
 
-    bytes += n;
-    while (n > 32) {
-        limbs_from_be_bytes(t.digit, bytes -= 32, 32);
-        from_mont_256(t.digit, t.digit, BLS12_381_r, r0);
-        mul_mont_sparse_256(t.digit, t.digit, t.radix, BLS12_381_r, r0);
+    limbs_from_be_bytes(t.out, bytes, rem);
+    mul_mont_sparse_256(t.out, BLS12_381_rRR, t.out, BLS12_381_r, r0);
+
+    while (n -= rem) {
+        limbs_from_be_bytes(t.digit, bytes += rem, 32);
         add_mod_256(t.out, t.out, t.digit, BLS12_381_r);
-        mul_mont_sparse_256(t.radix, t.radix, BLS12_381_rRR, BLS12_381_r, r0);
-        n -= 32;
+        mul_mont_sparse_256(t.out, BLS12_381_rRR, t.out, BLS12_381_r, r0);
+        rem = 32;
     }
 
-    vec_zero(t.digit, sizeof(t.digit));
-    limbs_from_be_bytes(t.digit, bytes -= n, n);
-    from_mont_256(t.digit, t.digit, BLS12_381_r, r0);
-    mul_mont_sparse_256(t.digit, t.digit, t.radix, BLS12_381_r, r0);
-    add_mod_256(t.out, t.out, t.digit, BLS12_381_r);
+    from_mont_256(t.out, t.out, BLS12_381_r, r0);
 
     ret = vec_is_zero(t.out, sizeof(t.out));
     le_bytes_from_limbs(out, t.out, 32);
-    vec_zero(t.out, 2*sizeof(t.out));
+    vec_zero(&t, sizeof(t));
 
     return (int)(ret^1);
 }
 
 /*
- * Test facilitator
+ * Single-short SHA-256 hash function.
  */
-static unsigned char nibble(char c)
+#include "sha256.h"
+
+void blst_sha256(unsigned char md[32], const void *msg, size_t len)
 {
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    else if (c >= 'a' && c <= 'f')
-        return 10 + c - 'a';
-    else if (c >= 'A' && c <= 'F')
-        return 10 + c - 'A';
-    else
-        return 16;
+    SHA256_CTX ctx;
+
+    sha256_init(&ctx);
+    sha256_update(&ctx, msg, len);
+    sha256_final(md, &ctx);
 }
 
-static void limbs_from_hexascii(limb_t *ret, size_t sz, const char *hex)
+/*
+ * Test facilitator.
+ */
+void blst_scalar_from_hexascii(pow256 ret, const char *hex)
+{   bytes_from_hexascii(ret, sizeof(pow256), hex);   }
+
+void blst_fr_from_hexascii(vec256 ret, const char *hex)
 {
-    size_t len;
-    limb_t limb = 0;
-
-    if (hex[0]=='0' && (hex[1]=='x' || hex[1]=='X'))
-        hex += 2;
-
-    for (len = 0; len<2*sz && nibble(hex[len])<16; len++) ;
-
-    vec_zero(ret, sz);
-
-    while(len--) {
-        limb <<= 4;
-        limb |= nibble(*hex++);
-        if (len % (2*sizeof(limb_t)) == 0)
-            ret[len / (2*sizeof(limb_t))] = limb;
-    }
+    limbs_from_hexascii(ret, sizeof(vec256), hex);
+    mul_mont_sparse_256(ret, ret, BLS12_381_rRR, BLS12_381_r, r0);
 }
-
-void blst_scalar_from_hexascii(vec256 ret, const char *hex)
-{   limbs_from_hexascii(ret, sizeof(vec256), hex);   }
 
 void blst_fp_from_hexascii(vec384 ret, const char *hex)
 {

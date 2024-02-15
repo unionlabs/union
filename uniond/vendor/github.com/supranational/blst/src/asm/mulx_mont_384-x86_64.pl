@@ -18,6 +18,24 @@ die "can't locate x86_64-xlate.pl";
 open STDOUT,"| \"$^X\" \"$xlate\" $flavour \"$output\""
     or die "can't call $xlate: $!";
 
+$code.=<<___ if ($flavour =~ /masm/);
+.globl	mul_mont_384x\$1
+.globl	sqr_mont_384x\$1
+.globl	mul_382x\$1
+.globl	sqr_382x\$1
+.globl	mul_384\$1
+.globl	sqr_384\$1
+.globl	redc_mont_384\$1
+.globl	from_mont_384\$1
+.globl	sgn0_pty_mont_384\$1
+.globl	sgn0_pty_mont_384x\$1
+.globl	mul_mont_384\$1
+.globl	sqr_mont_384\$1
+.globl	sqr_n_mul_mont_384\$1
+.globl	sqr_n_mul_mont_383\$1
+.globl	sqr_mont_382x\$1
+___
+
 # common argument layout
 ($r_ptr,$a_ptr,$b_org,$n_ptr,$n0) = ("%rdi","%rsi","%rdx","%rcx","%r8");
 $b_ptr = "%rbx";
@@ -37,9 +55,9 @@ $code.=<<___;
 # input boundary condition for Montgomery reduction, not n*n.
 # Just in case, this is duplicated, but only one module is
 # supposed to be linked...
-.type	__sub_mod_384x384,\@abi-omnipotent
+.type	__subx_mod_384x384,\@abi-omnipotent
 .align	32
-__sub_mod_384x384:
+__subx_mod_384x384:
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -100,11 +118,11 @@ __sub_mod_384x384:
 	mov	@acc[11], 8*11($r_ptr)
 
 	ret
-.size	__sub_mod_384x384,.-__sub_mod_384x384
+.size	__subx_mod_384x384,.-__subx_mod_384x384
 
-.type	__add_mod_384,\@abi-omnipotent
+.type	__addx_mod_384,\@abi-omnipotent
 .align	32
-__add_mod_384:
+__addx_mod_384:
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -148,11 +166,11 @@ __add_mod_384:
 	mov	@acc[5], 8*5($r_ptr)
 
 	ret
-.size	__add_mod_384,.-__add_mod_384
+.size	__addx_mod_384,.-__addx_mod_384
 
-.type	__sub_mod_384,\@abi-omnipotent
+.type	__subx_mod_384,\@abi-omnipotent
 .align	32
-__sub_mod_384:
+__subx_mod_384:
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -160,7 +178,7 @@ __sub_mod_384:
 	mov	8*4($a_ptr), @acc[4]
 	mov	8*5($a_ptr), @acc[5]
 
-__sub_mod_384_a_is_loaded:
+__subx_mod_384_a_is_loaded:
 	sub	8*0($b_org), @acc[0]
 	 mov	8*0($n_ptr), @acc[6]
 	sbb	8*1($b_org), @acc[1]
@@ -196,7 +214,7 @@ __sub_mod_384_a_is_loaded:
 	mov	@acc[5], 8*5($r_ptr)
 
 	ret
-.size	__sub_mod_384,.-__sub_mod_384
+.size	__subx_mod_384,.-__subx_mod_384
 ___
 }
 
@@ -216,6 +234,7 @@ $code.=<<___;
 .align	32
 mulx_mont_384x:
 .cfi_startproc
+mul_mont_384x\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -256,12 +275,12 @@ mulx_mont_384x:
 	lea	($b_ptr), $a_ptr	# b->re
 	lea	-48($b_ptr), $b_org	# b->im
 	lea	40+192+48(%rsp), $r_ptr
-	call	__add_mod_384
+	call	__addx_mod_384
 
 	mov	8*3(%rsp), $a_ptr	# a->re
 	lea	48($a_ptr), $b_org	# a->im
 	lea	-48($r_ptr), $r_ptr
-	call	__add_mod_384
+	call	__addx_mod_384
 
 	lea	($r_ptr),$b_ptr
 	lea	48($r_ptr),$a_ptr
@@ -271,17 +290,17 @@ mulx_mont_384x:
 	lea	($r_ptr), $a_ptr	# t2
 	lea	40(%rsp), $b_org	# t0
 	mov	8*1(%rsp), $n_ptr
-	call	__sub_mod_384x384	# t2-t0
+	call	__subx_mod_384x384	# t2-t0
 
 	lea	($r_ptr), $a_ptr	# t2
 	lea	-96($r_ptr), $b_org	# t1
-	call	__sub_mod_384x384	# t2-t0-t1
+	call	__subx_mod_384x384	# t2-t0-t1
 
 	################################# t0=t0-t1
 	lea	40(%rsp), $a_ptr
 	lea	40+96(%rsp), $b_org
 	lea	40(%rsp), $r_ptr
-	call	__sub_mod_384x384	# t0-t1
+	call	__subx_mod_384x384	# t0-t1
 
 	lea	($n_ptr), $b_ptr	# n_ptr for redc_mont_384
 
@@ -290,14 +309,14 @@ mulx_mont_384x:
 	mov	8*0(%rsp), %rcx		# n0 for redc_mont_384
 	mov	8*4(%rsp), $r_ptr	# ret->re
 	call	__mulx_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redx_tail_mont_384
 
 	################################# redc_mont_384(ret->im, t2, mod, n0);
 	lea	40+192(%rsp), $a_ptr	# t2
 	mov	8*0(%rsp), %rcx		# n0 for redc_mont_384
 	lea	48($r_ptr), $r_ptr	# ret->im
 	call	__mulx_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redx_tail_mont_384
 
 	lea	$frame(%rsp), %r8	# size optimization
 	mov	8*0(%r8),%r15
@@ -330,6 +349,7 @@ $code.=<<___;
 .align	32
 sqrx_mont_384x:
 .cfi_startproc
+sqr_mont_384x\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -355,13 +375,13 @@ sqrx_mont_384x:
 	################################# add_mod_384(t0, a->re, a->im);
 	lea	48($a_ptr), $b_org	# a->im
 	lea	32(%rsp), $r_ptr	# t0
-	call	__add_mod_384
+	call	__addx_mod_384
 
 	################################# sub_mod_384(t1, a->re, a->im);
 	mov	8*3(%rsp), $a_ptr	# a->re
 	lea	48($a_ptr), $b_org	# a->im
 	lea	32+48(%rsp), $r_ptr	# t1
-	call	__sub_mod_384
+	call	__subx_mod_384
 
 	################################# mul_mont_384(ret->im, a->re, a->im, mod, n0);
 	mov	8*3(%rsp), $a_ptr	# a->re
@@ -464,6 +484,7 @@ $code.=<<___;
 .align	32
 mulx_382x:
 .cfi_startproc
+mul_382x\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -552,18 +573,18 @@ mulx_382x:
 	lea	32(%rsp), $b_org
 	mov	8*3(%rsp), $n_ptr
 	mov	$a_ptr, $r_ptr
-	call	__sub_mod_384x384
+	call	__subx_mod_384x384
 
 	################################# ret->im -= ret->re
 	lea	0($r_ptr), $a_ptr
 	lea	-96($r_ptr), $b_org
-	call	__sub_mod_384x384
+	call	__subx_mod_384x384
 
 	################################# ret->re -= tx
 	lea	-96($r_ptr), $a_ptr
 	lea	32(%rsp), $b_org
 	lea	-96($r_ptr), $r_ptr
-	call	__sub_mod_384x384
+	call	__subx_mod_384x384
 
 	lea	$frame(%rsp), %r8	# size optimization
 	mov	8*0(%r8),%r15
@@ -595,6 +616,7 @@ $code.=<<___;
 .align	32
 sqrx_382x:
 .cfi_startproc
+sqr_382x\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -644,7 +666,7 @@ sqrx_382x:
 	################################# t1 = a->re - a->im
 	lea	48($a_ptr), $b_org
 	lea	48($r_ptr), $r_ptr
-	call	__sub_mod_384_a_is_loaded
+	call	__subx_mod_384_a_is_loaded
 
 	################################# mul_384(ret->re, t0, t1);
 	lea	($r_ptr), $a_ptr
@@ -727,6 +749,7 @@ $code.=<<___;
 .align	32
 mulx_384:
 .cfi_startproc
+mul_384\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -847,6 +870,7 @@ $code.=<<___;
 .align	32
 sqrx_384:
 .cfi_startproc
+sqr_384\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1202,6 +1226,7 @@ $code.=<<___;
 .align	32
 redcx_mont_384:
 .cfi_startproc
+redc_mont_384\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1220,7 +1245,7 @@ redcx_mont_384:
 
 	mov	$b_org, $n_ptr
 	call	__mulx_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redx_tail_mont_384
 
 	mov	8(%rsp),%r15
 .cfi_restore	%r15
@@ -1250,6 +1275,7 @@ redcx_mont_384:
 .align	32
 fromx_mont_384:
 .cfi_startproc
+from_mont_384\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1370,9 +1396,9 @@ $code.=<<___;
 	ret
 .size	__mulx_by_1_mont_384,.-__mulx_by_1_mont_384
 
-.type	__redc_tail_mont_384,\@abi-omnipotent
+.type	__redx_tail_mont_384,\@abi-omnipotent
 .align	32
-__redc_tail_mont_384:
+__redx_tail_mont_384:
 	add	8*6($a_ptr), @acc[0]	# accumulate upper half
 	mov	@acc[0], %rax
 	adc	8*7($a_ptr), @acc[1]
@@ -1413,7 +1439,7 @@ __redc_tail_mont_384:
 	mov	@acc[5], 8*5($r_ptr)
 
 	ret
-.size	__redc_tail_mont_384,.-__redc_tail_mont_384
+.size	__redx_tail_mont_384,.-__redx_tail_mont_384
 
 .globl	sgn0x_pty_mont_384
 .hidden	sgn0x_pty_mont_384
@@ -1421,6 +1447,7 @@ __redc_tail_mont_384:
 .align	32
 sgn0x_pty_mont_384:
 .cfi_startproc
+sgn0_pty_mont_384\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1490,6 +1517,7 @@ sgn0x_pty_mont_384:
 .align	32
 sgn0x_pty_mont_384x:
 .cfi_startproc
+sgn0_pty_mont_384x\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1616,6 +1644,7 @@ $code.=<<___;
 .align	32
 mulx_mont_384:
 .cfi_startproc
+mul_mont_384\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1835,6 +1864,7 @@ $code.=<<___;
 .align	32
 sqrx_mont_384:
 .cfi_startproc
+sqr_mont_384\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1893,6 +1923,7 @@ sqrx_mont_384:
 .align	32
 sqrx_n_mul_mont_384:
 .cfi_startproc
+sqr_n_mul_mont_384\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1969,6 +2000,7 @@ sqrx_n_mul_mont_384:
 .align	32
 sqrx_n_mul_mont_383:
 .cfi_startproc
+sqr_n_mul_mont_383\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -2185,6 +2217,7 @@ $code.=<<___;
 .align	32
 sqrx_mont_382x:
 .cfi_startproc
+sqr_mont_382x\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx

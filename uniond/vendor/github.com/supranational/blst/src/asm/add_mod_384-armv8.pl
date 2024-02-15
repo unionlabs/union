@@ -813,6 +813,7 @@ $code.=<<___;
 .size	vec_select_$sz,.-vec_select_$sz
 ___
 }
+vec_select(32);
 vec_select(48);
 vec_select(96);
 vec_select(192);
@@ -864,6 +865,70 @@ vec_prefetch:
 	prfm	pldl1keep, [$inp]
 	ret
 .size	vec_prefetch,.-vec_prefetch
+___
+my $len = $end;
+
+$code.=<<___;
+.globl	vec_is_zero_16x
+.hidden	vec_is_zero_16x
+.type	vec_is_zero_16x,%function
+.align	5
+vec_is_zero_16x:
+	ld1	{v0.2d}, [$inp], #16
+	lsr	$len, $len, #4
+	sub	$len, $len, #1
+	cbz	$len, .Loop_is_zero_done
+
+.Loop_is_zero:
+	ld1	{v1.2d}, [$inp], #16
+	orr	v0.16b, v0.16b, v1.16b
+	sub	$len, $len, #1
+	cbnz	$len, .Loop_is_zero
+
+.Loop_is_zero_done:
+	dup	v1.2d, v0.2d[1]
+	orr	v0.16b, v0.16b, v1.16b
+	mov	x1, v0.2d[0]
+	mov	x0, #1
+	cmp	x1, #0
+	csel	x0, x0, xzr, eq
+	ret
+.size	vec_is_zero_16x,.-vec_is_zero_16x
+___
+}
+{
+my ($inp1, $inp2, $len) = map("x$_", (0..2));
+
+$code.=<<___;
+.globl	vec_is_equal_16x
+.hidden	vec_is_equal_16x
+.type	vec_is_equal_16x,%function
+.align	5
+vec_is_equal_16x:
+	ld1	{v0.2d}, [$inp1], #16
+	ld1	{v1.2d}, [$inp2], #16
+	lsr	$len, $len, #4
+	eor	v0.16b, v0.16b, v1.16b
+
+.Loop_is_equal:
+	sub	$len, $len, #1
+	cbz	$len, .Loop_is_equal_done
+	ld1	{v1.2d}, [$inp1], #16
+	ld1	{v2.2d}, [$inp2], #16
+	eor	v1.16b, v1.16b, v2.16b
+	orr	v0.16b, v0.16b, v1.16b
+	b	.Loop_is_equal
+	nop
+
+.Loop_is_equal_done:
+	dup	v1.2d, v0.2d[1]
+	orr	v0.16b, v0.16b, v1.16b
+	mov	x1, v0.2d[0]
+	mov	x0, #1
+	cmp	x1, #0
+	csel	x0, x0, xzr, eq
+	ret
+.size	vec_is_equal_16x,.-vec_is_equal_16x
 ___
 }
 

@@ -11,4 +11,5 @@ const (
 	PraterName          = "prater"
 	GoerliName          = "goerli"
 	SepoliaName         = "sepolia"
+	HoleskyName         = "holesky"
 )

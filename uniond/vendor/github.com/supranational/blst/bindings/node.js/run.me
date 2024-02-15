@@ -21,7 +21,7 @@ include=`(cd $include/nodejs || cd $include; pwd) 2>/dev/null`
 [ -f $include/deps/v8/include/v8.h ] && INCS="$INCS -I$include/deps/v8/include"
 
 if [ ! -f ../libblst.a -o ../blst.h -nt ../libblst.a ]; then
-    (cd ..; ../build.sh "$@")
+    (cd ..; ../build.sh -fvisibility=hidden "$@")
 fi
 
 if [ ! -f blst_wrap.cpp -o ../blst.swg -nt blst_wrap.cpp \
@@ -35,7 +35,10 @@ fi
 if [ ! -f blst.node -o blst_wrap.cpp -nt blst.node \
                     -o ../libblst.a  -nt blst.node ]; then
     # figure out minimally required C++ standard and enforce it...
-    if [ `$NODE -e 'console.log(parseInt(process.versions["node"]))'` -gt 14 ]; then
+    nodever=`$NODE -e 'console.log(parseInt(process.versions["node"]))'`
+    if [ $nodever -gt 18 ]; then
+        min=17
+    elif [ $nodever -gt 14 ]; then
         min=14
     else
         min=11
@@ -43,12 +46,12 @@ if [ ! -f blst.node -o blst_wrap.cpp -nt blst.node \
     STD=`c++ -dM -E -x c++ /dev/null | \
          awk '{ if($2=="__cplusplus" && $3<"20'$min'") print "-std=c++'$min'"; }'`
     case `uname -s` in
-    Darwin) (set -x; c++ -bundle -o blst.node -fPIC ${STD} \
+    Darwin) (set -x; c++ ${STD} -bundle -o blst.node -fPIC -fvisibility=hidden \
                          ${INCS} -I.. -DBUILDING_NODE_EXTENSION \
                          -O -Wall -Wno-unused-result blst_wrap.cpp \
                          ../libblst.a -bundle_loader $NODE)
             ;;
-    *)      (set -x; c++ -shared -o blst.node -fPIC ${STD} \
+    *)      (set -x; c++ ${STD} -shared -o blst.node -fPIC -fvisibility=hidden \
                          ${INCS} -I.. -DBUILDING_NODE_EXTENSION \
                          -O -Wall -Wno-unused-result blst_wrap.cpp \
                          ../libblst.a -Wl,-Bsymbolic)

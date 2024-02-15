@@ -1,6 +1,8 @@
+.comm	__blst_platform_cap,4
 .text	
 
 .globl	ct_inverse_mod_383
+.hidden	ct_inverse_mod_383
 .type	ct_inverse_mod_383,@function
 .align	32
 ct_inverse_mod_383:
@@ -8,6 +10,10 @@ ct_inverse_mod_383:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef __BLST_PORTABLE__
+	testl	$1,__blst_platform_cap(%rip)
+	jnz	ct_inverse_mod_383$1
+#endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16

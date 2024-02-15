@@ -1,3 +1,4 @@
+.comm	___blst_platform_cap,4
 .text	
 
 .p2align	6
@@ -32,6 +33,13 @@ _blst_sha256_block_data_order_shaext:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+
+	pushq	%rbp
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-16
+	movq	%rsp,%rbp
+.cfi_def_cfa_register	%rbp
+L$blst_sha256_block_data_order$2:
 
 	leaq	K256+128(%rip),%rcx
 	movdqu	(%rdi),%xmm1
@@ -234,6 +242,11 @@ L$oop_shaext:
 
 	movdqu	%xmm1,(%rdi)
 	movdqu	%xmm2,16(%rdi)
+.cfi_def_cfa_register	%rsp
+	popq	%rbp
+.cfi_adjust_cfa_offset	-8
+.cfi_restore	%rbp
+
 	.byte	0xf3,0xc3
 .cfi_endproc	
 
@@ -249,30 +262,27 @@ _blst_sha256_block_data_order:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
-	pushq	%rbx
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbx,-24
-	pushq	%r12
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r12,-32
-	pushq	%r13
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r13,-40
-	pushq	%r14
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r14,-48
-	pushq	%r15
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r15,-56
-	shlq	$4,%rdx
-	subq	$40,%rsp
-.cfi_adjust_cfa_offset	40
-	leaq	(%rsi,%rdx,4),%rdx
-	movq	%rdi,0(%rsp)
-
-	movq	%rdx,16(%rsp)
 	movq	%rsp,%rbp
 .cfi_def_cfa_register	%rbp
+	testl	$2,___blst_platform_cap(%rip)
+	jnz	L$blst_sha256_block_data_order$2
+	pushq	%rbx
+.cfi_offset	%rbx,-24
+	pushq	%r12
+.cfi_offset	%r12,-32
+	pushq	%r13
+.cfi_offset	%r13,-40
+	pushq	%r14
+.cfi_offset	%r14,-48
+	pushq	%r15
+.cfi_offset	%r15,-56
+	shlq	$4,%rdx
+	subq	$24,%rsp
+
+	leaq	(%rsi,%rdx,4),%rdx
+	movq	%rdi,-64(%rbp)
+
+	movq	%rdx,-48(%rbp)
 
 
 	leaq	-64(%rsp),%rsp
@@ -291,7 +301,7 @@ _blst_sha256_block_data_order:
 .p2align	4
 L$loop_ssse3:
 	movdqa	K256+256(%rip),%xmm7
-	movq	%rsi,8(%rbp)
+	movq	%rsi,-56(%rbp)
 	movdqu	0(%rsi),%xmm0
 	movdqu	16(%rsi),%xmm1
 	movdqu	32(%rsi),%xmm2
@@ -1316,9 +1326,9 @@ L$ssse3_00_47:
 	addl	%r15d,%eax
 	movl	%r8d,%r13d
 	addl	%eax,%r14d
-	movq	0(%rbp),%rdi
+	movq	-64(%rbp),%rdi
 	movl	%r14d,%eax
-	movq	8(%rbp),%rsi
+	movq	-56(%rbp),%rsi
 
 	addl	0(%rdi),%eax
 	addl	4(%rdi),%ebx
@@ -1330,7 +1340,7 @@ L$ssse3_00_47:
 	addl	28(%rdi),%r11d
 
 	leaq	64(%rsi),%rsi
-	cmpq	16(%rbp),%rsi
+	cmpq	-48(%rbp),%rsi
 
 	movl	%eax,0(%rdi)
 	movl	%ebx,4(%rdi)
@@ -1343,26 +1353,25 @@ L$ssse3_00_47:
 	jb	L$loop_ssse3
 
 	xorps	%xmm0,%xmm0
-	leaq	40+48(%rbp),%r11
-.cfi_def_cfa	%r11,8
 	movaps	%xmm0,0(%rsp)
 	movaps	%xmm0,16(%rsp)
 	movaps	%xmm0,32(%rsp)
 	movaps	%xmm0,48(%rsp)
-	movq	40(%rbp),%r15
-.cfi_restore	%r15
-	movq	-40(%r11),%r14
-.cfi_restore	%r14
-	movq	-32(%r11),%r13
-.cfi_restore	%r13
-	movq	-24(%r11),%r12
-.cfi_restore	%r12
-	movq	-16(%r11),%rbx
-.cfi_restore	%rbx
-	movq	-8(%r11),%rbp
+	movq	-40(%rbp),%r15
+	movq	-32(%rbp),%r14
+	movq	-24(%rbp),%r13
+	movq	-16(%rbp),%r12
+	movq	-8(%rbp),%rbx
+	movq	%rbp,%rsp
+.cfi_def_cfa_register	%rsp
+	popq	%rbp
+.cfi_adjust_cfa_offset	-8
 .cfi_restore	%rbp
-
-	leaq	(%r11),%rsp
+.cfi_restore	%r12
+.cfi_restore	%r13
+.cfi_restore	%r14
+.cfi_restore	%r15
+.cfi_restore	%rbx
 	.byte	0xf3,0xc3
 .cfi_endproc	
 

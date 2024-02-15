@@ -226,6 +226,7 @@ const (
 	SYSCALL                             // System-Call Extension (SCE): SYSCALL and SYSRET instructions.
 	SYSEE                               // SYSENTER and SYSEXIT instructions
 	TBM                                 // AMD Trailing Bit Manipulation
+	TDX_GUEST                           // Intel Trust Domain Extensions Guest
 	TLB_FLUSH_NESTED                    // AMD: Flushing includes all the nested translations for guest translations
 	TME                                 // Intel Total Memory Encryption. The following MSRs are supported: IA32_TME_CAPABILITY, IA32_TME_ACTIVATE, IA32_TME_EXCLUDE_MASK, and IA32_TME_EXCLUDE_BASE.
 	TOPEXT                              // TopologyExtensions: topology extensions support. Indicates support for CPUID Fn8000_001D_EAX_x[N:0]-CPUID Fn8000_001E_EDX.
@@ -1186,13 +1187,8 @@ func support() flagSet {
 		fs.setIf(edx&(1<<30) != 0, IA32_CORE_CAP)
 		fs.setIf(edx&(1<<31) != 0, SPEC_CTRL_SSBD)
 
-		// CPUID.(EAX=7, ECX=1).EDX
-		fs.setIf(edx&(1<<4) != 0, AVXVNNIINT8)
-		fs.setIf(edx&(1<<5) != 0, AVXNECONVERT)
-		fs.setIf(edx&(1<<14) != 0, PREFETCHI)
-
 		// CPUID.(EAX=7, ECX=1).EAX
-		eax1, _, _, _ := cpuidex(7, 1)
+		eax1, _, _, edx1 := cpuidex(7, 1)
 		fs.setIf(fs.inSet(AVX) && eax1&(1<<4) != 0, AVXVNNI)
 		fs.setIf(eax1&(1<<7) != 0, CMPCCXADD)
 		fs.setIf(eax1&(1<<10) != 0, MOVSB_ZL)
@@ -1201,6 +1197,11 @@ func support() flagSet {
 		fs.setIf(eax1&(1<<22) != 0, HRESET)
 		fs.setIf(eax1&(1<<23) != 0, AVXIFMA)
 		fs.setIf(eax1&(1<<26) != 0, LAM)
+
+		// CPUID.(EAX=7, ECX=1).EDX
+		fs.setIf(edx1&(1<<4) != 0, AVXVNNIINT8)
+		fs.setIf(edx1&(1<<5) != 0, AVXNECONVERT)
+		fs.setIf(edx1&(1<<14) != 0, PREFETCHI)
 
 		// Only detect AVX-512 features if XGETBV is supported
 		if c&((1<<26)|(1<<27)) == (1<<26)|(1<<27) {
@@ -1391,6 +1392,13 @@ func support() flagSet {
 		fs.setIf((a>>15)&1 == 1, IBS_PREVENTHOST)
 		fs.setIf((a>>16)&1 == 1, VTE)
 		fs.setIf((a>>24)&1 == 1, VMSA_REGPROT)
+	}
+
+	if mfi >= 0x21 {
+		// Intel Trusted Domain Extensions Guests have their own cpuid leaf (0x21).
+		_, ebx, ecx, edx := cpuid(0x21)
+		identity := string(valAsString(ebx, edx, ecx))
+		fs.setIf(identity == "IntelTDX    ", TDX_GUEST)
 	}
 
 	return fs

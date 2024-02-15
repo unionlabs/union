@@ -46,7 +46,7 @@ div_3_limbs:
 	asr	x3,x0,#63	// top bit -> mask
 	add	x0,x0,x0	// Q <<= 1
 	subs	x6,x4,x1	// R - D
-	add	x0,x0,#1	// Q + specilative bit
+	add	x0,x0,#1	// Q + speculative bit
 	sbcs	x7,x5,x2
 	sbc	x0,x0,xzr	// subtract speculative bit
 

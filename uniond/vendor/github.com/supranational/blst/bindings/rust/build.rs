@@ -5,33 +5,48 @@ extern crate cc;
 use std::env;
 use std::path::{Path, PathBuf};
 
-#[cfg(target_env = "msvc")]
-fn assembly(file_vec: &mut Vec<PathBuf>, base_dir: &Path, arch: &String) {
-    let sfx = match arch.as_str() {
-        "x86_64" => "x86_64",
-        "aarch64" => "armv8",
-        _ => "unknown",
-    };
-    let files =
-        glob::glob(&format!("{}/win64/*-{}.asm", base_dir.display(), sfx))
-            .expect("unable to collect assembly files");
-    for file in files {
-        file_vec.push(file.unwrap());
+fn assembly(file_vec: &mut Vec<PathBuf>, base_dir: &Path, _arch: &str) {
+    #[cfg(target_env = "msvc")]
+    if env::var("CARGO_CFG_TARGET_ENV").unwrap().eq("msvc") {
+        let sfx = match _arch {
+            "x86_64" => "x86_64",
+            "aarch64" => "armv8",
+            _ => "unknown",
+        };
+        let files =
+            glob::glob(&format!("{}/win64/*-{}.asm", base_dir.display(), sfx))
+                .expect("unable to collect assembly files");
+        for file in files {
+            file_vec.push(file.unwrap());
+        }
+        return;
     }
-}
 
-#[cfg(not(target_env = "msvc"))]
-fn assembly(file_vec: &mut Vec<PathBuf>, base_dir: &Path, _: &String) {
-    file_vec.push(base_dir.join("assembly.S"))
+    file_vec.push(base_dir.join("assembly.S"));
 }
 
 fn main() {
-    // account for cross-compilation [by examining environment variable]
-    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
-
-    if target_arch.eq("wasm32") {
-        println!("cargo:rustc-cfg=feature=\"no-threads\"");
+    if env::var("CARGO_FEATURE_SERDE_SECRET").is_ok() {
+        println!(
+            "cargo:warning=blst: non-production feature serde-secret enabled"
+        );
     }
+
+    // account for cross-compilation [by examining environment variables]
+    let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    let target_no_std = target_os.eq("none")
+        || target_os.eq("unknown")
+        || target_os.eq("uefi")
+        || env::var("BLST_TEST_NO_STD").is_ok();
+
+    if !target_no_std {
+        println!("cargo:rustc-cfg=feature=\"std\"");
+        if target_arch.eq("wasm32") {
+            println!("cargo:rustc-cfg=feature=\"no-threads\"");
+        }
+    }
+    println!("cargo:rerun-if-env-changed=BLST_TEST_NO_STD");
 
     /*
      * Use pre-built libblst.a if there is one. This is primarily
@@ -65,12 +80,35 @@ fn main() {
     // Set CC environment variable to choose alternative C compiler.
     // Optimization level depends on whether or not --release is passed
     // or implied.
+
+    if target_os.eq("uefi") && !env::var("CC").is_ok() {
+        match std::process::Command::new("clang")
+            .arg("--version")
+            .output()
+        {
+            Ok(_) => env::set_var("CC", "clang"),
+            Err(_) => { /* no clang in sight, just ignore the error */ }
+        }
+    }
+
     #[cfg(target_env = "msvc")]
     if env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap().eq("32")
         && !env::var("CC").is_ok()
-        && which::which("clang-cl").is_ok()
     {
-        env::set_var("CC", "clang-cl");
+        match std::process::Command::new("clang-cl")
+            .arg("--version")
+            .output()
+        {
+            Ok(out) => {
+                if String::from_utf8(out.stdout)
+                    .unwrap_or("unintelligible".to_string())
+                    .contains("Target: i686-")
+                {
+                    env::set_var("CC", "clang-cl");
+                }
+            }
+            Err(_) => { /* no clang-cl in sight, just ignore the error */ }
+        }
     }
 
     let mut cc = cc::Build::new();
@@ -100,25 +138,59 @@ fn main() {
             }
         }
         (false, false) => {
-            #[cfg(target_arch = "x86_64")]
-            if target_arch.eq("x86_64") && std::is_x86_feature_detected!("adx")
-            {
-                println!("Enabling ADX because it was detected on the host");
-                cc.define("__ADX__", None);
+            if target_arch.eq("x86_64") {
+                // If target-cpu is specified on the rustc command line,
+                // then obey the resulting target-features.
+                if env::var("CARGO_ENCODED_RUSTFLAGS")
+                    .unwrap_or_default()
+                    .contains("target-cpu=")
+                {
+                    let feat_list = env::var("CARGO_CFG_TARGET_FEATURE")
+                        .unwrap_or_default();
+                    let features: Vec<_> = feat_list.split(',').collect();
+                    if !features.contains(&"ssse3") {
+                        println!(
+                            "Compiling in portable mode without ISA extensions"
+                        );
+                        cc.define("__BLST_PORTABLE__", None);
+                    } else if features.contains(&"adx") {
+                        println!(
+                            "Enabling ADX because it was set as target-feature"
+                        );
+                        cc.define("__ADX__", None);
+                    }
+                } else {
+                    #[cfg(target_arch = "x86_64")]
+                    if std::is_x86_feature_detected!("adx") {
+                        println!(
+                            "Enabling ADX because it was detected on the host"
+                        );
+                        cc.define("__ADX__", None);
+                    }
+                }
             }
         }
         (true, true) => panic!(
             "Cannot compile with both `portable` and `force-adx` features"
         ),
     }
+    if env::var("CARGO_CFG_TARGET_ENV").unwrap().eq("msvc") {
+        cc.flag("-Zl");
+    }
     cc.flag_if_supported("-mno-avx") // avoid costly transitions
         .flag_if_supported("-fno-builtin")
         .flag_if_supported("-Wno-unused-function")
         .flag_if_supported("-Wno-unused-command-line-argument");
+    if target_arch.eq("wasm32") || target_no_std {
+        if env::var("CARGO_CFG_TARGET_ENV").unwrap().ne("msvc") {
+            cc.flag("-ffreestanding");
+        }
+        cc.define("SCRATCH_LIMIT", "(45 * 1024)");
+    }
     if !cfg!(debug_assertions) {
         cc.opt_level(2);
     }
-    cc.files(&file_vec).compile("libblst.a");
+    cc.files(&file_vec).compile("blst");
 
     // pass some DEP_BLST_* variables to dependents
     println!(

@@ -399,7 +399,20 @@ void prefix##s_mult_pippenger(ptype *ret, \
                               size_t npoints, \
                               const byte *const scalars[], size_t nbits, \
                               ptype##xyzz scratch[]) \
-{ ptype##s_mult_pippenger(ret, points, npoints, scalars, nbits, scratch, 0); }
+{ \
+    if (npoints == 1) { \
+        prefix##_from_affine(ret, points[0]); \
+        prefix##_mult(ret, ret, scalars[0], nbits); \
+        return; \
+    } \
+    if ((npoints * sizeof(ptype##_affine) * 8 * 3) <= SCRATCH_LIMIT) { \
+        ptype##_affine *table = alloca(npoints * sizeof(ptype##_affine) * 8); \
+        ptype##s_precompute_wbits(table, 4, points, npoints); \
+        ptype##s_mult_wbits(ret, table, 4, npoints, scalars, nbits, NULL); \
+        return; \
+    } \
+    ptype##s_mult_pippenger(ret, points, npoints, scalars, nbits, scratch, 0); \
+}
 
 DECLARE_PRIVATE_POINTXYZZ(POINTonE1, 384)
 POINTXYZZ_TO_JACOBIAN_IMPL(POINTonE1, 384, fp)

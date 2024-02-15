@@ -26,4 +26,11 @@ const (
 	SyncCommitteeAggregationBytesLength   = 1             // SyncCommitteeAggregationBytesLength defines the sync committee aggregate bytes.
 	SyncAggregateSyncCommitteeBytesLength = 4             // SyncAggregateSyncCommitteeBytesLength defines the length of sync committee bytes in a sync aggregate.
 	MaxWithdrawalsPerPayload              = 4             // MaxWithdrawalsPerPayloadLength defines the maximum number of withdrawals that can be included in a payload.
+	MaxBlobsPerBlock                      = 6             // MaxBlobsPerBlock defines the maximum number of blobs with respect to consensus rule can be included in a block.
+	MaxBlobCommitmentsPerBlock            = 16            // MaxBlobCommitmentsPerBlock defines the theoretical limit of blobs can be included in a block.
+	LogMaxBlobCommitments                 = 4             // Log_2 of MaxBlobCommitmentsPerBlock
+	BlobLength                            = 131072        // BlobLength defines the byte length of a blob.
+	BlobSize                              = 131072        // defined to match blob.size in bazel ssz codegen
+	KzgCommitmentInclusionProofDepth      = 17            // Merkle proof depth for blob_kzg_commitments list item
+	NextSyncCommitteeBranchDepth          = 5             // NextSyncCommitteeBranchDepth defines the depth of the next sync committee branch.
 )

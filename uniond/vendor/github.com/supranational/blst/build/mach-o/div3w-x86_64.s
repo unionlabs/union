@@ -8,6 +8,8 @@ _div_3_limbs:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+
+
 	movq	(%rdi),%r8
 	movq	8(%rdi),%r9
 	xorq	%rax,%rax
@@ -39,8 +41,9 @@ L$oop:
 
 	orq	%rcx,%rax
 
+
 	.byte	0xf3,0xc3
-.cfi_endproc
+.cfi_endproc	
 
 .globl	_quot_rem_128
 .private_extern	_quot_rem_128
@@ -49,6 +52,8 @@ L$oop:
 _quot_rem_128:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
+
+
 
 	movq	%rdx,%rax
 	movq	%rdx,%rcx
@@ -84,8 +89,9 @@ _quot_rem_128:
 
 	movq	%rcx,%rax
 
+
 	.byte	0xf3,0xc3
-.cfi_endproc
+.cfi_endproc	
 
 
 
@@ -100,6 +106,8 @@ _quot_rem_64:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+
+
 	movq	%rdx,%rax
 	imulq	0(%rsi),%rdx
 
@@ -110,6 +118,7 @@ _quot_rem_64:
 	movq	%r10,0(%rdi)
 	movq	%rax,8(%rdi)
 
+
 	.byte	0xf3,0xc3
-.cfi_endproc
+.cfi_endproc	
 

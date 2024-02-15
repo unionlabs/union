@@ -3,6 +3,7 @@ OPTION	DOTNAME
 
 PUBLIC	ct_is_square_mod_384
 
+
 ALIGN	32
 ct_is_square_mod_384	PROC PUBLIC
 	DB	243,15,30,250
@@ -10,13 +11,12 @@ ct_is_square_mod_384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_ct_is_square_mod_384::
-	mov	rdi,rcx
-	mov	rsi,rdx
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
 	push	rbx
 
 	push	r12
@@ -133,6 +133,7 @@ ct_is_square_mod_384	ENDP
 ALIGN	32
 __smulq_384_n_shift_by_30	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -305,6 +306,7 @@ __smulq_384_n_shift_by_30	ENDP
 ALIGN	32
 __ab_approximation_30	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rbx,QWORD PTR[88+rsi]
 	mov	r15,QWORD PTR[80+rsi]
 	mov	r14,QWORD PTR[72+rsi]
@@ -369,6 +371,7 @@ __ab_approximation_30	ENDP
 ALIGN	32
 __inner_loop_30	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rbx,07FFFFFFF80000000h
 	mov	rcx,0800000007FFFFFFFh
 	lea	r15,QWORD PTR[((-1))+rbx]
@@ -430,6 +433,7 @@ __inner_loop_30	ENDP
 ALIGN	32
 __inner_loop_48	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	edi,48
 
 $L$oop_48::
@@ -485,8 +489,9 @@ $L$SEH_info_ct_is_square_mod_384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_ct_is_square_mod_384_body::
 DB	1,0,18,0
 DB	000h,0f4h,043h,000h
@@ -498,6 +503,8 @@ DB	000h,054h,048h,000h
 DB	000h,074h,04ah,000h
 DB	000h,064h,04bh,000h
 DB	000h,001h,049h,000h
+DB	000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_ct_is_square_mod_384_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h

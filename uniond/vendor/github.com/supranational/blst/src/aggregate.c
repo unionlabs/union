@@ -90,7 +90,7 @@ const void *blst_pairing_get_dst(const PAIRING *ctx)
 
 /*
  * Optional |nbits|-wide |scalar| is used to facilitate multiple aggregated
- * signature vetification as discussed at
+ * signature verification as discussed at
  * https://ethresear.ch/t/fast-verification-of-multiple-bls-signatures/5407.
  * Usage pattern is not finalized yet, because (sig != NULL) is better and
  * will be handled separately...

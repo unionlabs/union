@@ -1,6 +1,7 @@
 .text	
 
 .globl	ctx_inverse_mod_383
+.hidden	ctx_inverse_mod_383
 .type	ctx_inverse_mod_383,@function
 .align	32
 ctx_inverse_mod_383:
@@ -8,6 +9,7 @@ ctx_inverse_mod_383:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+ct_inverse_mod_383$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -810,7 +812,7 @@ ctx_inverse_mod_383:
 
 	movq	48(%rsi),%r10
 
-	call	__inner_loop_62
+	call	__tail_loop_53
 
 
 
@@ -1521,9 +1523,9 @@ __inner_loop_31:
 .cfi_endproc
 .size	__inner_loop_31,.-__inner_loop_31
 
-.type	__inner_loop_62,@function
+.type	__tail_loop_53,@function
 .align	32
-__inner_loop_62:
+__tail_loop_53:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
@@ -1532,7 +1534,7 @@ __inner_loop_62:
 	xorq	%r12,%r12
 	movq	$1,%r13
 
-.Loop_62:
+.Loop_53:
 	xorq	%rax,%rax
 	testq	$1,%r8
 	movq	%r10,%rbx
@@ -1559,11 +1561,11 @@ __inner_loop_62:
 	subq	%rax,%rdx
 	subq	%rbx,%rcx
 	subl	$1,%edi
-	jnz	.Loop_62
+	jnz	.Loop_53
 
 	.byte	0xf3,0xc3
 .cfi_endproc
-.size	__inner_loop_62,.-__inner_loop_62
+.size	__tail_loop_53,.-__tail_loop_53
 
 .section	.note.GNU-stack,"",@progbits
 .section	.note.gnu.property,"a",@note

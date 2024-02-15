@@ -90,6 +90,7 @@ $code.=<<___;
 .text
 
 .globl	ct_is_square_mod_384
+.hidden	ct_is_square_mod_384
 .type	ct_is_square_mod_384, %function
 .align	5
 ct_is_square_mod_384:

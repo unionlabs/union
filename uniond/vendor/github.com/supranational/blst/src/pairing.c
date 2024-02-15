@@ -409,6 +409,55 @@ void blst_miller_loop(vec384fp12 ret, const POINTonE2_affine *Q,
                        P ? P : (const POINTonE1_affine *)&BLS12_381_G1, 1);
 }
 
+#ifndef MILLER_LOOP_N_MAX
+# define MILLER_LOOP_N_MAX 16
+#endif
+
+void blst_miller_loop_n(vec384fp12 out, const POINTonE2_affine *const Qs[],
+                                        const POINTonE1_affine *const Ps[],
+                                        size_t n)
+{   /* ~10KB of stack storage */
+    POINTonE2 T[MILLER_LOOP_N_MAX];
+    POINTonE2_affine Q[MILLER_LOOP_N_MAX];
+    POINTonE1_affine Px2[MILLER_LOOP_N_MAX];
+    const POINTonE2_affine *Qptr = NULL;
+    const POINTonE1_affine *Pptr = NULL;
+    size_t i, j;
+
+    for (i = 0, j = 0; j < n; j++) {
+        Qptr = *Qs ? *Qs++ : Qptr+1;
+        Pptr = *Ps ? *Ps++ : Pptr+1;
+
+        /* Move common expression from line evaluation to line_by_Px2.  */
+        add_fp(Px2[i].X, Pptr->X, Pptr->X);
+        neg_fp(Px2[i].X, Px2[i].X);
+        add_fp(Px2[i].Y, Pptr->Y, Pptr->Y);
+
+        vec_copy(Q[i].X, Qptr->X, 2*sizeof(Q[i].X));
+        vec_copy(T[i].X, Qptr->X, 2*sizeof(T[i].X));
+        vec_copy(T[i].Z, BLS12_381_Rx.p2, sizeof(T[i].Z));
+
+        if (++i == MILLER_LOOP_N_MAX || j == n-1) {
+            vec384fp12 tmp;
+            vec384fp6 *ret = j < MILLER_LOOP_N_MAX ? out : tmp;
+
+            /* first step is ret = 1^2*line, which is just ret = line       */
+            start_dbl_n(ret, T, Px2, i);            /* 0x2                  */
+            add_n_dbl_n(ret, T, Q, Px2, i, 2);      /* ..0xc                */
+            add_n_dbl_n(ret, T, Q, Px2, i, 3);      /* ..0x68               */
+            add_n_dbl_n(ret, T, Q, Px2, i, 9);      /* ..0xd200             */
+            add_n_dbl_n(ret, T, Q, Px2, i, 32);     /* ..0xd20100000000     */
+            add_n_dbl_n(ret, T, Q, Px2, i, 16);     /* ..0xd201000000010000 */
+            conjugate_fp12(ret);            /* account for z being negative */
+
+            if (j >= MILLER_LOOP_N_MAX)
+                mul_fp12(out, out, ret);
+
+            i = 0;
+        }
+    }
+}
+
 void blst_final_exp(vec384fp12 ret, const vec384fp12 f)
 {   final_exp(ret, f);   }
 

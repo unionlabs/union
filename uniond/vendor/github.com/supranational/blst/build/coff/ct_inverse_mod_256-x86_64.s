@@ -1,6 +1,7 @@
 .text	
 
 .globl	ct_inverse_mod_256
+
 .def	ct_inverse_mod_256;	.scl 2;	.type 32;	.endef
 .p2align	5
 ct_inverse_mod_256:
@@ -9,14 +10,14 @@ ct_inverse_mod_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_ct_inverse_mod_256:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
 	pushq	%rbx
 
 	pushq	%r12
@@ -1188,8 +1189,9 @@ __inner_loop_62_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_ct_inverse_mod_256_body:
 .byte	1,0,18,0
 .byte	0x00,0xf4,0x86,0x00
@@ -1201,6 +1203,8 @@ __inner_loop_62_256:
 .byte	0x00,0x74,0x8d,0x00
 .byte	0x00,0x64,0x8e,0x00
 .byte	0x00,0x01,0x8c,0x00
+.byte	0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_ct_inverse_mod_256_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00

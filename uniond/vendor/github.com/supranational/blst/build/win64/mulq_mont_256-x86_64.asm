@@ -1,4 +1,11 @@
 OPTION	DOTNAME
+EXTERN	mul_mont_sparse_256$1:NEAR
+EXTERN	sqr_mont_sparse_256$1:NEAR
+EXTERN	from_mont_256$1:NEAR
+EXTERN	redc_mont_256$1:NEAR
+_DATA	SEGMENT
+COMM	__blst_platform_cap:DWORD:1
+_DATA	ENDS
 .text$	SEGMENT ALIGN(256) 'CODE'
 
 PUBLIC	mul_mont_sparse_256
@@ -11,14 +18,17 @@ mul_mont_sparse_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_mul_mont_sparse_256::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
 	mov	r8,QWORD PTR[40+rsp]
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	mul_mont_sparse_256$1
+endif
 	push	rbp
 
 	push	rbx
@@ -83,13 +93,16 @@ sqr_mont_sparse_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sqr_mont_sparse_256::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	sqr_mont_sparse_256$1
+endif
 	push	rbp
 
 	push	rbx
@@ -148,6 +161,7 @@ sqr_mont_sparse_256	ENDP
 ALIGN	32
 __mulq_mont_sparse_256	PROC PRIVATE
 	DB	243,15,30,250
+
 	mul	r14
 	add	r10,rax
 	mov	rax,r15
@@ -434,13 +448,16 @@ from_mont_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_from_mont_256::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	from_mont_256$1
+endif
 	push	rbp
 
 	push	rbx
@@ -516,13 +533,16 @@ redc_mont_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_redc_mont_256::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	redc_mont_256$1
+endif
 	push	rbp
 
 	push	rbx
@@ -597,6 +617,7 @@ redc_mont_256	ENDP
 ALIGN	32
 __mulq_by_1_mont_256	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rax,QWORD PTR[rsi]
 	mov	r10,QWORD PTR[8+rsi]
 	mov	r11,QWORD PTR[16+rsi]
@@ -787,8 +808,9 @@ $L$SEH_info_mul_mont_sparse_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_mul_mont_sparse_256_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -800,7 +822,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_mul_mont_sparse_256_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -811,8 +834,9 @@ $L$SEH_info_sqr_mont_sparse_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sqr_mont_sparse_256_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -824,7 +848,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sqr_mont_sparse_256_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -835,8 +860,9 @@ $L$SEH_info_from_mont_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_from_mont_256_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -848,7 +874,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_from_mont_256_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -859,8 +886,9 @@ $L$SEH_info_redc_mont_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_redc_mont_256_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -872,7 +900,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_redc_mont_256_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h

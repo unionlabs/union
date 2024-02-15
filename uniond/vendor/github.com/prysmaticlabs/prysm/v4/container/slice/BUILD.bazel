@@ -1,0 +1,23 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "slice.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/container/slice",
+    visibility = ["//visibility:public"],
+    deps = ["//consensus-types/primitives:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["slice_test.go"],
+    deps = [
+        ":go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

@@ -39,6 +39,13 @@ die "can't locate x86_64-xlate.pl";
 open STDOUT,"| \"$^X\" \"$xlate\" $flavour \"$output\""
     or die "can't call $xlate: $!";
 
+$code.=<<___ if ($flavour =~ /masm/);
+.globl	mul_mont_sparse_256\$1
+.globl	sqr_mont_sparse_256\$1
+.globl	from_mont_256\$1
+.globl	redc_mont_256\$1
+___
+
 # common argument layout
 ($r_ptr,$a_ptr,$b_org,$n_ptr,$n0) = ("%rdi","%rsi","%rdx","%rcx","%r8");
 $b_ptr = "%rbx";
@@ -58,6 +65,7 @@ $code.=<<___;
 .align	32
 mulx_mont_sparse_256:
 .cfi_startproc
+mul_mont_sparse_256\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -111,6 +119,7 @@ mulx_mont_sparse_256:
 .align	32
 sqrx_mont_sparse_256:
 .cfi_startproc
+sqr_mont_sparse_256\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -287,6 +296,7 @@ $code.=<<___;
 .align	32
 fromx_mont_256:
 .cfi_startproc
+from_mont_256\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -353,6 +363,7 @@ fromx_mont_256:
 .align	32
 redcx_mont_256:
 .cfi_startproc
+redc_mont_256\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx

@@ -492,7 +492,7 @@ github.com/cometbft/cometbft-db
 # github.com/consensys/bavard v0.1.13
 ## explicit; go 1.15
 github.com/consensys/bavard
-# github.com/consensys/gnark-crypto v0.9.1-0.20230127122953-83736ef21d69 => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
+# github.com/consensys/gnark-crypto v0.12.1 => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 ## explicit; go 1.18
 github.com/consensys/gnark-crypto/ecc
 github.com/consensys/gnark-crypto/ecc/bn254
@@ -911,8 +911,8 @@ github.com/dvsekhvalnov/jose2go/padding
 # github.com/emicklei/dot v1.6.0
 ## explicit; go 1.13
 github.com/emicklei/dot
-# github.com/ethereum/go-ethereum v1.11.3
-## explicit; go 1.19
+# github.com/ethereum/go-ethereum v1.13.5-0.20231027145059-2d7dba024d76
+## explicit; go 1.20
 github.com/ethereum/go-ethereum/common
 github.com/ethereum/go-ethereum/common/hexutil
 github.com/ethereum/go-ethereum/params
@@ -990,7 +990,7 @@ github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/struct
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
-# github.com/golang/snappy v0.0.4
+# github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb
 ## explicit
 github.com/golang/snappy
 # github.com/google/btree v1.1.2
@@ -1178,7 +1178,7 @@ github.com/klauspost/compress/internal/cpuinfo
 github.com/klauspost/compress/internal/snapref
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
-# github.com/klauspost/cpuid/v2 v2.2.4
+# github.com/klauspost/cpuid/v2 v2.2.5
 ## explicit; go 1.15
 github.com/klauspost/cpuid/v2
 # github.com/kr/pretty v0.3.1
@@ -1218,8 +1218,8 @@ github.com/matttproud/golang_protobuf_extensions/v2/pbutil
 # github.com/minio/highwayhash v1.0.2
 ## explicit; go 1.15
 github.com/minio/highwayhash
-# github.com/minio/sha256-simd v1.0.0
-## explicit; go 1.13
+# github.com/minio/sha256-simd v1.0.1
+## explicit; go 1.17
 github.com/minio/sha256-simd
 # github.com/mitchellh/go-homedir v1.1.0
 ## explicit
@@ -1304,6 +1304,7 @@ github.com/pmezard/go-difflib/difflib
 ## explicit; go 1.19
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
+github.com/prometheus/client_golang/prometheus/promauto
 github.com/prometheus/client_golang/prometheus/promhttp
 github.com/prometheus/client_golang/prometheus/push
 # github.com/prometheus/client_model v0.5.0
@@ -1319,18 +1320,19 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/prysmaticlabs/fastssz v0.0.0-20220628121656-93dfe28febab
+# github.com/prysmaticlabs/fastssz v0.0.0-20221107182844-78142813af44
 ## explicit; go 1.18
 github.com/prysmaticlabs/fastssz
 # github.com/prysmaticlabs/gohashtree v0.0.3-alpha
 ## explicit; go 1.17
 github.com/prysmaticlabs/gohashtree
-# github.com/prysmaticlabs/prysm/v4 v4.0.6
-## explicit; go 1.20
-github.com/prysmaticlabs/prysm/v4/cache/lru
+# github.com/prysmaticlabs/prysm/v4 v4.2.1
+## explicit; go 1.21
+github.com/prysmaticlabs/prysm/v4/cache/nonblocking
 github.com/prysmaticlabs/prysm/v4/config/fieldparams
 github.com/prysmaticlabs/prysm/v4/config/params
 github.com/prysmaticlabs/prysm/v4/consensus-types/primitives
+github.com/prysmaticlabs/prysm/v4/container/slice
 github.com/prysmaticlabs/prysm/v4/crypto/bls
 github.com/prysmaticlabs/prysm/v4/crypto/bls/blst
 github.com/prysmaticlabs/prysm/v4/crypto/bls/common
@@ -1338,6 +1340,7 @@ github.com/prysmaticlabs/prysm/v4/crypto/bls/herumi
 github.com/prysmaticlabs/prysm/v4/crypto/rand
 github.com/prysmaticlabs/prysm/v4/encoding/bytesutil
 github.com/prysmaticlabs/prysm/v4/math
+github.com/prysmaticlabs/prysm/v4/runtime/version
 # github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 ## explicit
 github.com/rcrowley/go-metrics
@@ -1404,7 +1407,7 @@ github.com/stretchr/testify/suite
 # github.com/subosito/gotenv v1.6.0
 ## explicit; go 1.18
 github.com/subosito/gotenv
-# github.com/supranational/blst v0.3.8-0.20220526154634-513d2456b344
+# github.com/supranational/blst v0.3.11
 ## explicit; go 1.11
 github.com/supranational/blst/bindings/go
 # github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
@@ -1471,7 +1474,7 @@ go.opencensus.io/trace/tracestate
 # go.uber.org/multierr v1.11.0
 ## explicit; go 1.19
 go.uber.org/multierr
-# golang.org/x/crypto v0.16.0
+# golang.org/x/crypto v0.17.0
 ## explicit; go 1.18
 golang.org/x/crypto/argon2
 golang.org/x/crypto/bcrypt
@@ -1494,7 +1497,7 @@ golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/ripemd160
 golang.org/x/crypto/salsa20/salsa
 golang.org/x/crypto/sha3
-# golang.org/x/exp v0.0.0-20231006140011-7918f672742d
+# golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
 ## explicit; go 1.20
 golang.org/x/exp/constraints
 golang.org/x/exp/maps

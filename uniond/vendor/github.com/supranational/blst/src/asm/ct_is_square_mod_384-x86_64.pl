@@ -89,6 +89,7 @@ $code.=<<___;
 .text
 
 .globl	ct_is_square_mod_384
+.hidden	ct_is_square_mod_384
 .type	ct_is_square_mod_384,\@function,2,"unwind"
 .align	32
 ct_is_square_mod_384:

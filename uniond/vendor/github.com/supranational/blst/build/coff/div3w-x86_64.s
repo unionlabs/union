@@ -8,11 +8,14 @@ div_3_limbs:
 	.byte	0xf3,0x0f,0x1e,0xfa
 	movq	%rdi,8(%rsp)
 	movq	%rsi,16(%rsp)
-	movq	%rsp,%rax
+	movq	%rsp,%r11
 .LSEH_begin_div_3_limbs:
+
+
 	movq	%rcx,%rdi
 	movq	%rdx,%rsi
 	movq	%r8,%rdx
+.LSEH_body_div_3_limbs:
 
 	movq	(%rdi),%r8
 	movq	8(%rdi),%r9
@@ -45,9 +48,12 @@ div_3_limbs:
 
 	orq	%rcx,%rax
 
-	movq	8(%rsp),%rdi
-	movq	16(%rsp),%rsi
+.LSEH_epilogue_div_3_limbs:
+	mov	8(%rsp),%rdi
+	mov	16(%rsp),%rsi
+
 	.byte	0xf3,0xc3
+
 .LSEH_end_div_3_limbs:
 .globl	quot_rem_128
 
@@ -57,11 +63,14 @@ quot_rem_128:
 	.byte	0xf3,0x0f,0x1e,0xfa
 	movq	%rdi,8(%rsp)
 	movq	%rsi,16(%rsp)
-	movq	%rsp,%rax
+	movq	%rsp,%r11
 .LSEH_begin_quot_rem_128:
+
+
 	movq	%rcx,%rdi
 	movq	%rdx,%rsi
 	movq	%r8,%rdx
+.LSEH_body_quot_rem_128:
 
 	movq	%rdx,%rax
 	movq	%rdx,%rcx
@@ -97,9 +106,12 @@ quot_rem_128:
 
 	movq	%rcx,%rax
 
-	movq	8(%rsp),%rdi
-	movq	16(%rsp),%rsi
+.LSEH_epilogue_quot_rem_128:
+	mov	8(%rsp),%rdi
+	mov	16(%rsp),%rsi
+
 	.byte	0xf3,0xc3
+
 .LSEH_end_quot_rem_128:
 
 
@@ -114,11 +126,14 @@ quot_rem_64:
 	.byte	0xf3,0x0f,0x1e,0xfa
 	movq	%rdi,8(%rsp)
 	movq	%rsi,16(%rsp)
-	movq	%rsp,%rax
+	movq	%rsp,%r11
 .LSEH_begin_quot_rem_64:
+
+
 	movq	%rcx,%rdi
 	movq	%rdx,%rsi
 	movq	%r8,%rdx
+.LSEH_body_quot_rem_64:
 
 	movq	%rdx,%rax
 	imulq	0(%rsi),%rdx
@@ -130,11 +145,104 @@ quot_rem_64:
 	movq	%r10,0(%rdi)
 	movq	%rax,8(%rdi)
 
-	movq	8(%rsp),%rdi
-	movq	16(%rsp),%rsi
+.LSEH_epilogue_quot_rem_64:
+	mov	8(%rsp),%rdi
+	mov	16(%rsp),%rsi
+
 	.byte	0xf3,0xc3
+
 .LSEH_end_quot_rem_64:
 .section	.pdata
 .p2align	2
+.rva	.LSEH_begin_div_3_limbs
+.rva	.LSEH_body_div_3_limbs
+.rva	.LSEH_info_div_3_limbs_prologue
+
+.rva	.LSEH_body_div_3_limbs
+.rva	.LSEH_epilogue_div_3_limbs
+.rva	.LSEH_info_div_3_limbs_body
+
+.rva	.LSEH_epilogue_div_3_limbs
+.rva	.LSEH_end_div_3_limbs
+.rva	.LSEH_info_div_3_limbs_epilogue
+
+.rva	.LSEH_begin_quot_rem_128
+.rva	.LSEH_body_quot_rem_128
+.rva	.LSEH_info_quot_rem_128_prologue
+
+.rva	.LSEH_body_quot_rem_128
+.rva	.LSEH_epilogue_quot_rem_128
+.rva	.LSEH_info_quot_rem_128_body
+
+.rva	.LSEH_epilogue_quot_rem_128
+.rva	.LSEH_end_quot_rem_128
+.rva	.LSEH_info_quot_rem_128_epilogue
+
+.rva	.LSEH_begin_quot_rem_64
+.rva	.LSEH_body_quot_rem_64
+.rva	.LSEH_info_quot_rem_64_prologue
+
+.rva	.LSEH_body_quot_rem_64
+.rva	.LSEH_epilogue_quot_rem_64
+.rva	.LSEH_info_quot_rem_64_body
+
+.rva	.LSEH_epilogue_quot_rem_64
+.rva	.LSEH_end_quot_rem_64
+.rva	.LSEH_info_quot_rem_64_epilogue
+
 .section	.xdata
 .p2align	3
+.LSEH_info_div_3_limbs_prologue:
+.byte	1,0,5,0x0b
+.byte	0,0x74,1,0
+.byte	0,0x64,2,0
+.byte	0,0xb3
+.byte	0,0
+.long	0,0
+.LSEH_info_div_3_limbs_body:
+.byte	1,0,4,0
+.byte	0x00,0x74,0x01,0x00
+.byte	0x00,0x64,0x02,0x00
+.byte	0x00,0x00,0x00,0x00
+.LSEH_info_div_3_limbs_epilogue:
+.byte	1,0,4,0
+.byte	0x00,0x74,0x01,0x00
+.byte	0x00,0x64,0x02,0x00
+.byte	0x00,0x00,0x00,0x00
+
+.LSEH_info_quot_rem_128_prologue:
+.byte	1,0,5,0x0b
+.byte	0,0x74,1,0
+.byte	0,0x64,2,0
+.byte	0,0xb3
+.byte	0,0
+.long	0,0
+.LSEH_info_quot_rem_128_body:
+.byte	1,0,4,0
+.byte	0x00,0x74,0x01,0x00
+.byte	0x00,0x64,0x02,0x00
+.byte	0x00,0x00,0x00,0x00
+.LSEH_info_quot_rem_128_epilogue:
+.byte	1,0,4,0
+.byte	0x00,0x74,0x01,0x00
+.byte	0x00,0x64,0x02,0x00
+.byte	0x00,0x00,0x00,0x00
+
+.LSEH_info_quot_rem_64_prologue:
+.byte	1,0,5,0x0b
+.byte	0,0x74,1,0
+.byte	0,0x64,2,0
+.byte	0,0xb3
+.byte	0,0
+.long	0,0
+.LSEH_info_quot_rem_64_body:
+.byte	1,0,4,0
+.byte	0x00,0x74,0x01,0x00
+.byte	0x00,0x64,0x02,0x00
+.byte	0x00,0x00,0x00,0x00
+.LSEH_info_quot_rem_64_epilogue:
+.byte	1,0,4,0
+.byte	0x00,0x74,0x01,0x00
+.byte	0x00,0x64,0x02,0x00
+.byte	0x00,0x00,0x00,0x00
+

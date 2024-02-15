@@ -1,6 +1,7 @@
 	AREA	|.text|,CODE,ALIGN=8,ARM64
 
 
+
 	EXPORT	|ct_is_square_mod_384|[FUNC]
 	ALIGN	32
 |ct_is_square_mod_384| PROC

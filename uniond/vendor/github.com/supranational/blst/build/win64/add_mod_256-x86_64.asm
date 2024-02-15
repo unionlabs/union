@@ -11,15 +11,14 @@ add_mod_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_add_mod_256::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
 	push	rbx
 
 	sub	rsp,8
@@ -84,14 +83,13 @@ mul_by_3_mod_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_mul_by_3_mod_256::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
 	push	rbx
 
 	push	r12
@@ -130,6 +128,7 @@ mul_by_3_mod_256	ENDP
 ALIGN	32
 __lshift_mod_256	PROC PRIVATE
 	DB	243,15,30,250
+
 	add	r8,r8
 	adc	r9,r9
 	mov	rax,r8
@@ -165,15 +164,14 @@ lshift_mod_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_lshift_mod_256::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
 	push	rbx
 
 	push	r12
@@ -224,15 +222,14 @@ rshift_mod_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_rshift_mod_256::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
 	push	rbx
 
 	sub	rsp,8
@@ -315,15 +312,14 @@ cneg_mod_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_cneg_mod_256::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
 	push	rbx
 
 	push	r12
@@ -395,15 +391,14 @@ sub_mod_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sub_mod_256::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
 	push	rbx
 
 	sub	rsp,8
@@ -466,11 +461,10 @@ check_mod_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_check_mod_256::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
-
-
-
 	mov	rax,QWORD PTR[rdi]
 	mov	r9,QWORD PTR[8+rdi]
 	mov	r10,QWORD PTR[16+rdi]
@@ -511,15 +505,14 @@ add_n_check_mod_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_add_n_check_mod_256::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
 	push	rbx
 
 	sub	rsp,8
@@ -589,15 +582,14 @@ sub_n_check_mod_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sub_n_check_mod_256::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
 	push	rbx
 
 	sub	rsp,8
@@ -764,8 +756,9 @@ $L$SEH_info_add_mod_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_add_mod_256_body::
 DB	1,0,9,0
 DB	000h,034h,001h,000h
@@ -773,7 +766,8 @@ DB	000h,054h,002h,000h
 DB	000h,074h,004h,000h
 DB	000h,064h,005h,000h
 DB	000h,022h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_add_mod_256_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -784,8 +778,9 @@ $L$SEH_info_mul_by_3_mod_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_mul_by_3_mod_256_body::
 DB	1,0,11,0
 DB	000h,0c4h,000h,000h
@@ -805,8 +800,9 @@ $L$SEH_info_lshift_mod_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_lshift_mod_256_body::
 DB	1,0,11,0
 DB	000h,0c4h,000h,000h
@@ -826,8 +822,9 @@ $L$SEH_info_rshift_mod_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_rshift_mod_256_body::
 DB	1,0,9,0
 DB	000h,034h,001h,000h
@@ -835,7 +832,8 @@ DB	000h,054h,002h,000h
 DB	000h,074h,004h,000h
 DB	000h,064h,005h,000h
 DB	000h,022h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_rshift_mod_256_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -846,8 +844,9 @@ $L$SEH_info_cneg_mod_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_cneg_mod_256_body::
 DB	1,0,11,0
 DB	000h,0c4h,000h,000h
@@ -867,8 +866,9 @@ $L$SEH_info_sub_mod_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sub_mod_256_body::
 DB	1,0,9,0
 DB	000h,034h,001h,000h
@@ -876,7 +876,8 @@ DB	000h,054h,002h,000h
 DB	000h,074h,004h,000h
 DB	000h,064h,005h,000h
 DB	000h,022h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sub_mod_256_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -893,8 +894,9 @@ $L$SEH_info_add_n_check_mod_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_add_n_check_mod_256_body::
 DB	1,0,9,0
 DB	000h,034h,001h,000h
@@ -902,7 +904,8 @@ DB	000h,054h,002h,000h
 DB	000h,074h,004h,000h
 DB	000h,064h,005h,000h
 DB	000h,022h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_add_n_check_mod_256_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -913,8 +916,9 @@ $L$SEH_info_sub_n_check_mod_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sub_n_check_mod_256_body::
 DB	1,0,9,0
 DB	000h,034h,001h,000h
@@ -922,7 +926,8 @@ DB	000h,054h,002h,000h
 DB	000h,074h,004h,000h
 DB	000h,064h,005h,000h
 DB	000h,022h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sub_n_check_mod_256_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h

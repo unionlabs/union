@@ -14,7 +14,7 @@ import (
 // efficient than VerifyMultiproof for proving one leaf.
 func VerifyProof(root []byte, proof *Proof) (bool, error) {
 	if len(proof.Hashes) != getPathLength(proof.Index) {
-		return false, errors.New("Invalid proof length")
+		return false, errors.New("invalid proof length")
 	}
 
 	node := proof.Leaf[:]
@@ -37,12 +37,12 @@ func VerifyProof(root []byte, proof *Proof) (bool, error) {
 // VerifyMultiproof verifies a proof for multiple leaves against the given root.
 func VerifyMultiproof(root []byte, proof [][]byte, leaves [][]byte, indices []int) (bool, error) {
 	if len(leaves) != len(indices) {
-		return false, errors.New("Number of leaves and indices mismatch")
+		return false, errors.New("number of leaves and indices mismatch")
 	}
 
 	reqIndices := getRequiredIndices(indices)
 	if len(reqIndices) != len(proof) {
-		return false, fmt.Errorf("Number of proof hashes %d and required indices %d mismatch", len(proof), len(reqIndices))
+		return false, fmt.Errorf("number of proof hashes %d and required indices %d mismatch", len(proof), len(reqIndices))
 	}
 
 	keys := make([]int, len(indices)+len(reqIndices))
@@ -80,7 +80,7 @@ func VerifyMultiproof(root []byte, proof [][]byte, leaves [][]byte, indices []in
 		left, hasLeft := db[(k|1)^1]
 		right, hasRight := db[k|1]
 		if !hasRight || !hasLeft {
-			return false, fmt.Errorf("Proof is missing required nodes, either %d or %d", (k|1)^1, k|1)
+			return false, fmt.Errorf("proof is missing required nodes, either %d or %d", (k|1)^1, k|1)
 		}
 
 		copy(tmp[:32], left[:])
@@ -93,7 +93,7 @@ func VerifyMultiproof(root []byte, proof [][]byte, leaves [][]byte, indices []in
 
 	res, ok := db[1]
 	if !ok {
-		return false, fmt.Errorf("Root was not computed during proof verification")
+		return false, fmt.Errorf("root was not computed during proof verification")
 	}
 
 	return bytes.Equal(res, root), nil

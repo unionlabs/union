@@ -1,6 +1,7 @@
 .text	
 
 .globl	_ctx_inverse_mod_383
+.private_extern	_ctx_inverse_mod_383
 
 .p2align	5
 _ctx_inverse_mod_383:
@@ -8,6 +9,7 @@ _ctx_inverse_mod_383:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+ct_inverse_mod_383$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -810,7 +812,7 @@ _ctx_inverse_mod_383:
 
 	movq	48(%rsi),%r10
 
-	call	__inner_loop_62
+	call	__tail_loop_53
 
 
 
@@ -1523,7 +1525,7 @@ L$oop_31:
 
 
 .p2align	5
-__inner_loop_62:
+__tail_loop_53:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
@@ -1532,7 +1534,7 @@ __inner_loop_62:
 	xorq	%r12,%r12
 	movq	$1,%r13
 
-L$oop_62:
+L$oop_53:
 	xorq	%rax,%rax
 	testq	$1,%r8
 	movq	%r10,%rbx
@@ -1559,7 +1561,7 @@ L$oop_62:
 	subq	%rax,%rdx
 	subq	%rbx,%rcx
 	subl	$1,%edi
-	jnz	L$oop_62
+	jnz	L$oop_53
 
 	.byte	0xf3,0xc3
 .cfi_endproc

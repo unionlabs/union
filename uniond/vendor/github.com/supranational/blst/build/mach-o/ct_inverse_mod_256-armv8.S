@@ -1,6 +1,7 @@
 .text
 
 .globl	_ct_inverse_mod_256
+.private_extern	_ct_inverse_mod_256
 
 .align	5
 _ct_inverse_mod_256:
@@ -60,14 +61,14 @@ _ct_inverse_mod_256:
 	madd	x4, x16, x8, xzr	// |u|*|f0|
 	madd	x4, x17, x9, x4	// |v|*|g0|
 	str	x4, [x0,#8*4]
-	asr	x5, x4, #63		// sign extenstion
+	asr	x5, x4, #63		// sign extension
 	stp	x5, x5, [x0,#8*5]
 	stp	x5, x5, [x0,#8*7]
 
 	madd	x4, x12, x8, xzr	// |u|*|f1|
 	madd	x4, x13, x9, x4	// |v|*|g1|
 	str	x4, [x0,#8*9]
-	asr	x5, x4, #63		// sign extenstion
+	asr	x5, x4, #63		// sign extension
 	stp	x5, x5, [x0,#8*10]
 	stp	x5, x5, [x0,#8*12]
 	eor	x1, x1, #256		// flip-flop src |a|b|u|v|

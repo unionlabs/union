@@ -26,6 +26,7 @@ import (
 	"math/big"
 	"math/rand"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -43,6 +44,12 @@ const (
 var (
 	hashT    = reflect.TypeOf(Hash{})
 	addressT = reflect.TypeOf(Address{})
+
+	// MaxAddress represents the maximum possible address value.
+	MaxAddress = HexToAddress("0xffffffffffffffffffffffffffffffffffffffff")
+
+	// MaxHash represents the maximum possible hash value.
+	MaxHash = HexToHash("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 )
 
 // Hash represents the 32 byte Keccak256 hash of arbitrary data.
@@ -63,6 +70,11 @@ func BigToHash(b *big.Int) Hash { return BytesToHash(b.Bytes()) }
 // HexToHash sets byte representation of s to hash.
 // If b is larger than len(h), b will be cropped from the left.
 func HexToHash(s string) Hash { return BytesToHash(FromHex(s)) }
+
+// Cmp compares two hashes.
+func (h Hash) Cmp(other Hash) int {
+	return bytes.Compare(h[:], other[:])
+}
 
 // Bytes gets the byte representation of the underlying hash.
 func (h Hash) Bytes() []byte { return h[:] }
@@ -225,11 +237,13 @@ func IsHexAddress(s string) bool {
 	return len(s) == 2*AddressLength && isHex(s)
 }
 
+// Cmp compares two addresses.
+func (a Address) Cmp(other Address) int {
+	return bytes.Compare(a[:], other[:])
+}
+
 // Bytes gets the string representation of the underlying address.
 func (a Address) Bytes() []byte { return a[:] }
-
-// Hash converts an address to a hash by left-padding it with zeros.
-func (a Address) Hash() Hash { return BytesToHash(a[:]) }
 
 // Big converts an address to a big integer.
 func (a Address) Big() *big.Int { return new(big.Int).SetBytes(a[:]) }
@@ -400,7 +414,7 @@ func (ma *MixedcaseAddress) UnmarshalJSON(input []byte) error {
 }
 
 // MarshalJSON marshals the original value
-func (ma *MixedcaseAddress) MarshalJSON() ([]byte, error) {
+func (ma MixedcaseAddress) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(ma.original, "0x") || strings.HasPrefix(ma.original, "0X") {
 		return json.Marshal(fmt.Sprintf("0x%s", ma.original[2:]))
 	}
@@ -428,4 +442,36 @@ func (ma *MixedcaseAddress) ValidChecksum() bool {
 // Original returns the mixed-case input string
 func (ma *MixedcaseAddress) Original() string {
 	return ma.original
+}
+
+// AddressEIP55 is an alias of Address with a customized json marshaller
+type AddressEIP55 Address
+
+// String returns the hex representation of the address in the manner of EIP55.
+func (addr AddressEIP55) String() string {
+	return Address(addr).Hex()
+}
+
+// MarshalJSON marshals the address in the manner of EIP55.
+func (addr AddressEIP55) MarshalJSON() ([]byte, error) {
+	return json.Marshal(addr.String())
+}
+
+type Decimal uint64
+
+func isString(input []byte) bool {
+	return len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"'
+}
+
+// UnmarshalJSON parses a hash in hex syntax.
+func (d *Decimal) UnmarshalJSON(input []byte) error {
+	if !isString(input) {
+		return &json.UnmarshalTypeError{Value: "non-string", Type: reflect.TypeOf(uint64(0))}
+	}
+	if i, err := strconv.ParseInt(string(input[1:len(input)-1]), 10, 64); err == nil {
+		*d = Decimal(i)
+		return nil
+	} else {
+		return err
+	}
 }

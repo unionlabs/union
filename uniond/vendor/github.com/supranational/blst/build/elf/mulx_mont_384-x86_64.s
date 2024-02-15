@@ -6,9 +6,9 @@
 
 
 
-.type	__sub_mod_384x384,@function
+.type	__subx_mod_384x384,@function
 .align	32
-__sub_mod_384x384:
+__subx_mod_384x384:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
@@ -73,11 +73,11 @@ __sub_mod_384x384:
 
 	.byte	0xf3,0xc3
 .cfi_endproc
-.size	__sub_mod_384x384,.-__sub_mod_384x384
+.size	__subx_mod_384x384,.-__subx_mod_384x384
 
-.type	__add_mod_384,@function
+.type	__addx_mod_384,@function
 .align	32
-__add_mod_384:
+__addx_mod_384:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
@@ -125,11 +125,11 @@ __add_mod_384:
 
 	.byte	0xf3,0xc3
 .cfi_endproc
-.size	__add_mod_384,.-__add_mod_384
+.size	__addx_mod_384,.-__addx_mod_384
 
-.type	__sub_mod_384,@function
+.type	__subx_mod_384,@function
 .align	32
-__sub_mod_384:
+__subx_mod_384:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
@@ -140,7 +140,7 @@ __sub_mod_384:
 	movq	32(%rsi),%r12
 	movq	40(%rsi),%r13
 
-__sub_mod_384_a_is_loaded:
+__subx_mod_384_a_is_loaded:
 	subq	0(%rdx),%r8
 	movq	0(%rcx),%r14
 	sbbq	8(%rdx),%r9
@@ -177,7 +177,7 @@ __sub_mod_384_a_is_loaded:
 
 	.byte	0xf3,0xc3
 .cfi_endproc
-.size	__sub_mod_384,.-__sub_mod_384
+.size	__subx_mod_384,.-__subx_mod_384
 .globl	mulx_mont_384x
 .hidden	mulx_mont_384x
 .type	mulx_mont_384x,@function
@@ -187,6 +187,7 @@ mulx_mont_384x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+mul_mont_384x$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -233,12 +234,12 @@ mulx_mont_384x:
 	leaq	(%rbx),%rsi
 	leaq	-48(%rbx),%rdx
 	leaq	40+192+48(%rsp),%rdi
-	call	__add_mod_384
+	call	__addx_mod_384
 
 	movq	24(%rsp),%rsi
 	leaq	48(%rsi),%rdx
 	leaq	-48(%rdi),%rdi
-	call	__add_mod_384
+	call	__addx_mod_384
 
 	leaq	(%rdi),%rbx
 	leaq	48(%rdi),%rsi
@@ -248,17 +249,17 @@ mulx_mont_384x:
 	leaq	(%rdi),%rsi
 	leaq	40(%rsp),%rdx
 	movq	8(%rsp),%rcx
-	call	__sub_mod_384x384
+	call	__subx_mod_384x384
 
 	leaq	(%rdi),%rsi
 	leaq	-96(%rdi),%rdx
-	call	__sub_mod_384x384
+	call	__subx_mod_384x384
 
 
 	leaq	40(%rsp),%rsi
 	leaq	40+96(%rsp),%rdx
 	leaq	40(%rsp),%rdi
-	call	__sub_mod_384x384
+	call	__subx_mod_384x384
 
 	leaq	(%rcx),%rbx
 
@@ -267,14 +268,14 @@ mulx_mont_384x:
 	movq	0(%rsp),%rcx
 	movq	32(%rsp),%rdi
 	call	__mulx_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redx_tail_mont_384
 
 
 	leaq	40+192(%rsp),%rsi
 	movq	0(%rsp),%rcx
 	leaq	48(%rdi),%rdi
 	call	__mulx_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redx_tail_mont_384
 
 	leaq	328(%rsp),%r8
 	movq	0(%r8),%r15
@@ -304,6 +305,7 @@ sqrx_mont_384x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+sqr_mont_384x$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -335,13 +337,13 @@ sqrx_mont_384x:
 
 	leaq	48(%rsi),%rdx
 	leaq	32(%rsp),%rdi
-	call	__add_mod_384
+	call	__addx_mod_384
 
 
 	movq	24(%rsp),%rsi
 	leaq	48(%rsi),%rdx
 	leaq	32+48(%rsp),%rdi
-	call	__sub_mod_384
+	call	__subx_mod_384
 
 
 	movq	24(%rsp),%rsi
@@ -439,6 +441,7 @@ mulx_382x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+mul_382x$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -533,18 +536,18 @@ mulx_382x:
 	leaq	32(%rsp),%rdx
 	movq	24(%rsp),%rcx
 	movq	%rsi,%rdi
-	call	__sub_mod_384x384
+	call	__subx_mod_384x384
 
 
 	leaq	0(%rdi),%rsi
 	leaq	-96(%rdi),%rdx
-	call	__sub_mod_384x384
+	call	__subx_mod_384x384
 
 
 	leaq	-96(%rdi),%rsi
 	leaq	32(%rsp),%rdx
 	leaq	-96(%rdi),%rdi
-	call	__sub_mod_384x384
+	call	__subx_mod_384x384
 
 	leaq	136(%rsp),%r8
 	movq	0(%r8),%r15
@@ -574,6 +577,7 @@ sqrx_382x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+sqr_382x$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -629,7 +633,7 @@ sqrx_382x:
 
 	leaq	48(%rsi),%rdx
 	leaq	48(%rdi),%rdi
-	call	__sub_mod_384_a_is_loaded
+	call	__subx_mod_384_a_is_loaded
 
 
 	leaq	(%rdi),%rsi
@@ -707,6 +711,7 @@ mulx_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+mul_384$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -933,6 +938,7 @@ sqrx_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+sqr_384$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1127,6 +1133,7 @@ redcx_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+redc_mont_384$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1151,7 +1158,7 @@ redcx_mont_384:
 
 	movq	%rdx,%rbx
 	call	__mulx_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redx_tail_mont_384
 
 	movq	8(%rsp),%r15
 .cfi_restore	%r15
@@ -1184,6 +1191,7 @@ fromx_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+from_mont_384$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1448,9 +1456,9 @@ __mulx_by_1_mont_384:
 .cfi_endproc
 .size	__mulx_by_1_mont_384,.-__mulx_by_1_mont_384
 
-.type	__redc_tail_mont_384,@function
+.type	__redx_tail_mont_384,@function
 .align	32
-__redc_tail_mont_384:
+__redx_tail_mont_384:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
@@ -1495,7 +1503,7 @@ __redc_tail_mont_384:
 
 	.byte	0xf3,0xc3
 .cfi_endproc
-.size	__redc_tail_mont_384,.-__redc_tail_mont_384
+.size	__redx_tail_mont_384,.-__redx_tail_mont_384
 
 .globl	sgn0x_pty_mont_384
 .hidden	sgn0x_pty_mont_384
@@ -1506,6 +1514,7 @@ sgn0x_pty_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+sgn0_pty_mont_384$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1584,6 +1593,7 @@ sgn0x_pty_mont_384x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+sgn0_pty_mont_384x$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -1711,6 +1721,7 @@ mulx_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+mul_mont_384$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -2178,6 +2189,7 @@ sqrx_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+sqr_mont_384$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -2245,6 +2257,7 @@ sqrx_n_mul_mont_384:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+sqr_n_mul_mont_384$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -2330,6 +2343,7 @@ sqrx_n_mul_mont_383:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+sqr_n_mul_mont_383$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16
@@ -2776,6 +2790,7 @@ sqrx_mont_382x:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+sqr_mont_382x$1:
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
 .cfi_offset	%rbp,-16

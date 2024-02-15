@@ -133,7 +133,7 @@ func Uniq(msgs []Message) bool {
     if n == 1 {
         return true
     } else if n == 2 {
-        return bytes.Compare(msgs[0], msgs[1]) != 0
+        return !bytes.Equal(msgs[0], msgs[1])
     }
 
     var tree rbTree
