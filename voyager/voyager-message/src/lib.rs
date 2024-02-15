@@ -52,7 +52,6 @@ pub mod fetch;
 pub mod msg;
 pub mod wait;
 
-// TODO: Rename this module to something better, `lightclient` clashes with the workspace crate (could also rename the crate)
 pub mod chain_impls;
 
 pub trait RelayerMsgDatagram = Debug

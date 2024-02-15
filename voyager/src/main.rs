@@ -7,13 +7,13 @@
 )]
 // #![deny(clippy::unwrap_used)]
 
-use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCode};
+use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCode, sync::Arc};
 
 use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union};
 use clap::Parser;
 use sqlx::PgPool;
 use tikv_jemallocator::Jemalloc;
-use unionlabs::ethereum::config::{Mainnet, Minimal};
+use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
 use voyager_message::{RelayerMsgTypes, Wasm};
 
 #[global_allocator]
@@ -22,8 +22,11 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     chain::AnyChain,
     cli::{any_state_proof_to_json, AppArgs, Command, QueryCmd},
-    config::{Config, GetChainError, VoyagerConfig},
-    queue::{AnyQueue, AnyQueueConfig, PgQueueConfig, RunError, Voyager, VoyagerInitError},
+    config::{ChainConfigType, Config, EvmChainConfig, GetChainError},
+    queue::{
+        chains_from_config, AnyQueue, AnyQueueConfig, PgQueueConfig, RunError, Voyager,
+        VoyagerInitError,
+    },
 };
 
 pub mod cli;
@@ -193,64 +196,72 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             tracking,
         } => {
             let on = voyager_config.get_chain(&on).await?;
-            let tracking = voyager_config.get_chain(&tracking).await?;
+            let tracking = voyager_config
+                .chain
+                .get(&tracking)
+                .expect("chain not found in config")
+                .clone();
 
-            let voyager = Voyager::new(crate::config::Config {
-                chain: voyager_config.chain,
-                voyager: VoyagerConfig {
-                    num_workers: 1,
-                    queue: (),
-                },
-            })
-            .await
-            .unwrap();
+            let chains = Arc::new(chains_from_config(voyager_config.chain).await.unwrap());
 
             match cmd {
                 QueryCmd::IbcPath(path) => {
-                    let json = match (on, tracking) {
-                        (AnyChain::Union(union), AnyChain::Cosmos(_)) => {
+                    let json = match (on, &tracking.ty) {
+                        (AnyChain::Union(union), ChainConfigType::Cosmos(_)) => {
                             // NOTE: ChainSpec is arbitrary
-                            any_state_proof_to_json::<Union, Wasm<Cosmos>>(voyager, path, union, at)
+                            any_state_proof_to_json::<Union, Wasm<Cosmos>>(chains, path, union, at)
                                 .await
                         }
-                        (AnyChain::Union(union), AnyChain::EvmMainnet(_)) => {
+                        (
+                            AnyChain::Union(union),
+                            ChainConfigType::Evm(EvmChainConfig {
+                                preset_base: PresetBaseKind::Mainnet,
+                                ..
+                            }),
+                        ) => {
                             any_state_proof_to_json::<Wasm<Union>, Evm<Mainnet>>(
-                                voyager,
+                                chains,
                                 path,
                                 Wasm(union),
                                 at,
                             )
                             .await
                         }
-                        (AnyChain::Union(union), AnyChain::EvmMinimal(_)) => {
+                        (
+                            AnyChain::Union(union),
+                            ChainConfigType::Evm(EvmChainConfig {
+                                preset_base: PresetBaseKind::Minimal,
+                                ..
+                            }),
+                        ) => {
                             any_state_proof_to_json::<Wasm<Union>, Evm<Minimal>>(
-                                voyager,
+                                chains,
                                 path,
                                 Wasm(union),
                                 at,
                             )
                             .await
                         }
-                        (AnyChain::Cosmos(cosmos), AnyChain::Union(_)) => {
+                        (AnyChain::Cosmos(cosmos), ChainConfigType::Union(_)) => {
                             // NOTE: ChainSpec is arbitrary
                             any_state_proof_to_json::<Wasm<Cosmos>, Union>(
-                                voyager,
+                                chains,
                                 path,
                                 Wasm(cosmos),
                                 at,
                             )
                             .await
                         }
-                        (AnyChain::EvmMainnet(evm), AnyChain::Union(_)) => {
+                        (AnyChain::EvmMainnet(evm), ChainConfigType::Union(_)) => {
                             any_state_proof_to_json::<Evm<Mainnet>, Wasm<Union>>(
-                                voyager, path, evm, at,
+                                chains, path, evm, at,
                             )
                             .await
                         }
 
-                        (AnyChain::EvmMinimal(evm), AnyChain::Union(_)) => {
+                        (AnyChain::EvmMinimal(evm), ChainConfigType::Union(_)) => {
                             any_state_proof_to_json::<Evm<Minimal>, Wasm<Union>>(
-                                voyager, path, evm, at,
+                                chains, path, evm, at,
                             )
                             .await
                         }

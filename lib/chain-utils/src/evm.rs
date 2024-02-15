@@ -3,9 +3,9 @@ use std::{fmt::Debug, marker::PhantomData, ops::Div, str::FromStr, sync::Arc};
 use beacon_api::client::BeaconApiClient;
 use contracts::{
     devnet_ownable_ibc_handler::DevnetOwnableIBCHandler,
-    ibc_channel_handshake::IBCChannelHandshakeEvents,
-    ibc_client::{ClientCreatedFilter, ClientUpdatedFilter, IBCClientEvents},
-    ibc_connection::IBCConnectionEvents,
+    ibc_channel_handshake::{IBCChannelHandshakeErrors, IBCChannelHandshakeEvents},
+    ibc_client::{ClientCreatedFilter, ClientUpdatedFilter, IBCClientErrors, IBCClientEvents},
+    ibc_connection::{IBCConnectionErrors, IBCConnectionEvents},
     ibc_handler::{
         GetChannelCall, GetChannelReturn, GetClientStateCall, GetClientStateReturn,
         GetConnectionCall, GetConnectionReturn, GetConsensusStateCall, GetConsensusStateReturn,
@@ -13,11 +13,11 @@ use contracts::{
         GetHashedPacketAcknowledgementCommitmentReturn, GetHashedPacketCommitmentCall,
         GetHashedPacketCommitmentReturn, IBCHandler,
     },
-    ibc_packet::{IBCPacket, IBCPacketEvents, WriteAcknowledgementFilter},
+    ibc_packet::{IBCPacket, IBCPacketErrors, IBCPacketEvents, WriteAcknowledgementFilter},
     shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
 };
 use ethers::{
-    abi::Tokenizable,
+    abi::{AbiDecode, Tokenizable},
     contract::{ContractError, EthCall, EthLogDecode},
     core::k256::ecdsa,
     middleware::{NonceManagerMiddleware, SignerMiddleware},
@@ -141,6 +141,38 @@ impl EthLogDecode for IBCHandlerEvents {
             .into_iter()
             .find(|event| event.is_ok())
             .ok_or(ethers::abi::Error::InvalidData)?
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum IbcHandlerErrors {
+    HandlerError(contracts::ibc_handler::IBCHandlerErrors),
+    PacketEvent(IBCPacketErrors),
+    ConnectionEvent(IBCConnectionErrors),
+    ChannelEvent(IBCChannelHandshakeErrors),
+    ClientEvent(IBCClientErrors),
+}
+
+impl AbiDecode for IbcHandlerErrors {
+    fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ethers::abi::AbiError> {
+        let packet_error = IBCPacketErrors::decode(&bytes).map(IbcHandlerErrors::PacketEvent);
+        let conn_error = IBCConnectionErrors::decode(&bytes).map(IbcHandlerErrors::ConnectionEvent);
+        let chan_error =
+            IBCChannelHandshakeErrors::decode(&bytes).map(IbcHandlerErrors::ChannelEvent);
+        let client_error = IBCClientErrors::decode(&bytes).map(IbcHandlerErrors::ClientEvent);
+        let handler_error = contracts::ibc_handler::IBCHandlerErrors::decode(&bytes)
+            .map(IbcHandlerErrors::HandlerError);
+
+        [
+            packet_error,
+            conn_error,
+            chan_error,
+            client_error,
+            handler_error,
+        ]
+        .into_iter()
+        .find(|error| error.is_ok())
+        .ok_or(ethers::abi::Error::InvalidData)?
     }
 }
 

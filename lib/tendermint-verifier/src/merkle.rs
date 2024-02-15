@@ -107,8 +107,8 @@ mod tests {
         // zero elem
         let leaves: &[&[u8]] = &[];
         assert_eq!(
-            calculate_merkle_root_recursive(&leaves),
-            calculate_merkle_root(&leaves)
+            calculate_merkle_root_recursive(leaves),
+            calculate_merkle_root(leaves)
         );
     }
 }

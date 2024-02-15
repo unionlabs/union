@@ -9,6 +9,7 @@ use std::{
 
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::{migrate::Migrator, query, query_as, types::Json, Acquire, Postgres};
+use tracing::Instrument;
 
 pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
 
@@ -75,10 +76,12 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
     /// Database atomicity is used to ensure that the queue is always in a consistent state, meaning that an item
     /// process will always be retried until it reaches ProcessFlow::Fail or ProcessFlow::Success. `f` is responsible for
     /// storing metadata in the job to determine if retrying should fail permanently.
-    pub async fn process<'a, F, Fut, A>(&self, conn: A, f: F) -> Result<(), sqlx::Error>
+    ///
+    /// If the queue is not empty, then Some(R) will be returned, otherwise None.
+    pub async fn process<'a, F, Fut, R, A>(&self, conn: A, f: F) -> Result<Option<R>, sqlx::Error>
     where
-        F: (FnOnce(T) -> Fut) + 'a,
-        Fut: Future<Output = Result<Option<T>, String>> + 'a,
+        F: (FnOnce(T) -> Fut) + 'static,
+        Fut: Future<Output = (R, Result<Option<T>, String>)> + 'static,
         A: Acquire<'a, Database = Postgres>,
     {
         if self.lock.swap(false, Ordering::SeqCst) {
@@ -116,9 +119,10 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
 
         match row {
             Some(row) => {
-                tracing::info!(id = row.id, "processing item");
+                let span = tracing::info_span!("processing item", id = row.id);
+                let (r, res) = f(row.item.0).instrument(span).await;
 
-                match f(row.item.0).await {
+                match res {
                     Err(error) => {
                         // Insert error message in the queue
                         query!(
@@ -151,13 +155,16 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
                         tx.commit().await?;
                     }
                 }
+
+                Ok(Some(r))
             }
             None => {
                 tracing::debug!("queue is empty");
                 self.lock.store(true, Ordering::SeqCst);
                 tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
+
+                Ok(None)
             }
         }
-        Ok(())
     }
 }

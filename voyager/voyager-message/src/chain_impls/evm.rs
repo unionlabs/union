@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
 use beacon_api::errors::{InternalServerError, NotFoundError};
-use chain_utils::evm::{CometblsMiddleware, Evm};
+use chain_utils::evm::{CometblsMiddleware, Evm, IbcHandlerErrors};
 use contracts::ibc_handler::{
     self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall, ChannelOpenInitCall,
     ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall, ConnectionOpenInitCall,
@@ -286,7 +286,8 @@ where
                     Ok(())
                 }
                 Err(ContractError::Revert(revert)) => {
-                    tracing::error!(?revert, "evm transaction failed");
+                    let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone());
+                    tracing::error!(?revert, ?err, "evm transaction failed");
                     Ok(())
                 }
                 _ => {
