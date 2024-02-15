@@ -100,15 +100,15 @@
       flake = false;
     };
 
+    cosmossdk = {
+      url = "github:unionlabs/cosmos-sdk/v0.50.2-bn254";
+      flake = false;
+    };
     cometbls = {
       type = "github";
       owner = "unionlabs";
       repo = "cometbls";
       ref = "cometbls-v0.38+tm-light-client";
-      flake = false;
-    };
-    cosmossdk = {
-      url = "github:unionlabs/cosmos-sdk/v0.50.2-bn254";
       flake = false;
     };
 
