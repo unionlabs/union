@@ -1,0 +1,37 @@
+[package]
+authors = ["Union Labs"]
+edition = "2021"
+license = "BSL-1.1"
+name    = "tendermint-light-client"
+publish = false
+version = "0.1.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bytes           = { workspace = true }
+cosmwasm-std    = { workspace = true, features = ["abort", "iterator"] }
+hex             = { workspace = true }
+prost           = { workspace = true }
+protos          = { workspace = true, default-features = false, features = ["proto_full", "std"] }
+schemars        = { workspace = true }
+serde           = { workspace = true, features = ["derive"] }
+serde-json-wasm = { workspace = true }
+serde-utils     = { workspace = true }
+sha2            = { workspace = true }
+sha3            = { workspace = true }
+thiserror       = { workspace = true }
+
+ics008-wasm-client  = { workspace = true }
+ics23               = { workspace = true }
+tendermint-verifier = { workspace = true }
+unionlabs           = { workspace = true, default-features = false }
+
+[dev-dependencies]
+base64      = "0.21"
+lazy_static = "1.4.0"
+serde_json  = { workspace = true }
+
+
+[features]

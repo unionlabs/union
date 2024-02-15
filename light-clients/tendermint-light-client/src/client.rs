@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use cosmwasm_std::{Deps, DepsMut, Empty, Env};
 use ics008_wasm_client::{
     storage_utils::{
@@ -8,9 +6,11 @@ use ics008_wasm_client::{
     IbcClient, Status, StorageState,
 };
 use ics23::ibc_api::SDK_SPECS;
-use prost::Message;
+use tendermint_verifier::types::SignatureVerifier;
 use unionlabs::{
+    bounded::BoundedI64,
     encoding::Proto,
+    google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::H256,
     ibc::{
         core::{
@@ -19,11 +19,11 @@ use unionlabs::{
                 merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
             },
         },
-        lightclients::cometbls::{
+        lightclients::tendermint::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
         },
     },
-    tendermint::types::commit::Commit,
+    tendermint::types::{commit::Commit, signed_header::SignedHeader},
     TryFromProto,
 };
 
@@ -33,16 +33,16 @@ use crate::{
         get_or_next_consensus_state_meta, get_or_prev_consensus_state_meta,
         save_consensus_state_metadata,
     },
-    zkp_verifier::ZKPVerifier,
+    verifier::Ed25519Verifier,
 };
 
 type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
 type WasmConsensusState =
     unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
 
-pub struct CometblsLightClient<T: ZKPVerifier = ()>(PhantomData<T>);
+pub struct TendermintLightClient;
 
-impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
+impl IbcClient for TendermintLightClient {
     type Error = Error;
 
     type CustomQuery = Empty;
@@ -80,14 +80,14 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
             StorageState::Occupied(value) => ics23::ibc_api::verify_membership(
                 &merkle_proof,
                 &SDK_SPECS,
-                &consensus_state.data.app_hash,
+                &consensus_state.data.root,
                 &path,
                 value,
             ),
             StorageState::Empty => ics23::ibc_api::verify_non_membership(
                 &merkle_proof,
                 &SDK_SPECS,
-                &consensus_state.data.app_hash,
+                &consensus_state.data.root,
                 &path,
             ),
         }
@@ -104,94 +104,56 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
             read_consensus_state(deps, &header.trusted_height)?
                 .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
 
-        // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
-        let untrusted_height_number = header.signed_header.commit.height.inner() as u64;
-        let trusted_height_number = header.trusted_height.revision_height;
+        check_trusted_header(&header, &consensus_state.data.next_validators_hash)?;
 
-        if untrusted_height_number <= trusted_height_number {
-            return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
-                signed_height: untrusted_height_number,
-                trusted_height: trusted_height_number,
-            }
-            .into());
+        let revision_number = parse_revision_number(&header.signed_header.header.chain_id).ok_or(
+            Error::InvalidChainId(header.signed_header.header.chain_id.clone()),
+        )?;
+
+        if revision_number != header.trusted_height.revision_number {
+            return Err(Error::RevisionNumberMismatch {
+                trusted_rn: revision_number,
+                header_rn: header.trusted_height.revision_number,
+            });
         }
 
-        let trusted_timestamp = consensus_state.data.timestamp;
-        let untrusted_timestamp = {
-            let header_timestamp = header.signed_header.header.time.seconds.inner();
-            header_timestamp
-                .try_into()
-                .map_err(|_| InvalidHeaderError::NegativeTimestamp(header_timestamp))?
-        };
-
-        if untrusted_timestamp <= trusted_timestamp {
-            return Err(InvalidHeaderError::SignedHeaderTimestampMustBeMoreRecent {
-                signed_timestamp: untrusted_timestamp,
-                trusted_timestamp,
-            }
-            .into());
-        }
-
-        if is_client_expired(
-            untrusted_timestamp,
-            client_state.data.trusting_period,
-            env.block.time.seconds(),
-        ) {
-            return Err(InvalidHeaderError::HeaderExpired(consensus_state.data.timestamp).into());
-        }
-
-        let max_clock_drift = env
-            .block
-            .time
-            .seconds()
-            .checked_add(client_state.data.max_clock_drift)
-            .ok_or(Error::MathOverflow)?;
-
-        if untrusted_timestamp >= max_clock_drift {
-            return Err(InvalidHeaderError::SignedHeaderCannotExceedMaxClockDrift {
-                signed_timestamp: untrusted_timestamp,
-                max_clock_drift,
-            }
-            .into());
-        }
-
-        let trusted_validators_hash = consensus_state.data.next_validators_hash;
-
-        let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
-            &trusted_validators_hash
-        } else {
-            &header.signed_header.header.validators_hash
-        };
-
-        let expected_block_hash = header
+        let signed_height = header
             .signed_header
             .header
-            .calculate_merkle_root()
-            .ok_or(Error::UnableToCalculateMerkleRoot)?;
-
-        if header.signed_header.commit.block_id.hash != expected_block_hash {
-            return Err(InvalidHeaderError::SignedHeaderMismatchWithCommitHash {
-                commit_hash: header.signed_header.commit.block_id.hash,
-                signed_header_root: expected_block_hash,
+            .height
+            .inner()
+            .try_into()
+            .map_err(|_| Error::InvalidHeight)?;
+        if signed_height <= header.trusted_height.revision_height {
+            return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
+                signed_height,
+                trusted_height: header.trusted_height.revision_height,
             }
             .into());
         }
 
-        let signed_vote = canonical_vote(
-            &header.signed_header.commit,
-            header.signed_header.header.chain_id.clone(),
-            expected_block_hash,
-        )
-        .encode_length_delimited_to_vec();
-
-        if !T::verify_zkp(
-            &trusted_validators_hash.0,
-            &untrusted_validators_hash.0,
-            &signed_vote,
-            &header.zero_knowledge_proof,
-        ) {
-            return Err(Error::InvalidZKP);
-        }
+        tendermint_verifier::verify::verify(
+            &construct_partial_header(
+                client_state.data.chain_id,
+                i64::try_from(header.trusted_height.revision_height)
+                    .map_err(|_| Error::InvalidHeight)? // TODO(aeryz): add context #1333
+                    .try_into()
+                    .map_err(|_| Error::InvalidHeight)?,
+                consensus_state.data.timestamp,
+                consensus_state.data.next_validators_hash,
+            ),
+            &header.trusted_validators,
+            &header.signed_header,
+            &header.validator_set,
+            client_state.data.trusting_period,
+            env.block
+                .time
+                .try_into()
+                .map_err(|_| Error::InvalidHostTimestamp(env.block.time))?,
+            client_state.data.max_clock_drift,
+            client_state.data.trust_level,
+            &SignatureVerifier::new(Ed25519Verifier::new(deps)),
+        )?;
 
         Ok(())
     }
@@ -208,48 +170,41 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         _env: Env,
         header: Self::Header,
     ) -> Result<Vec<Height>, Self::Error> {
-        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-        let mut consensus_state: WasmConsensusState =
-            read_consensus_state(deps.as_ref(), &header.trusted_height)?
-                .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
-
-        let untrusted_height = Height::new(
-            header.trusted_height.revision_number,
-            // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
-            header.signed_header.commit.height.inner() as u64,
-        );
-
-        if untrusted_height > client_state.latest_height {
-            client_state.latest_height = untrusted_height;
-            client_state.data.latest_height = untrusted_height;
+        let update_height = height_from_header(&header);
+        if read_consensus_state::<_, ConsensusState>(deps.as_ref(), &update_height)?.is_some() {
+            return Ok(vec![update_height]);
         }
 
-        consensus_state.data.app_hash = MerkleRoot {
-            hash: header.signed_header.header.app_hash,
-        };
+        // TODO(aeryz): prune oldest expired consensus state
 
-        consensus_state.data.next_validators_hash =
-            header.signed_header.header.next_validators_hash;
-        consensus_state.data.timestamp = header
-            .signed_header
-            .header
-            .time
-            .seconds
-            .inner()
-            .try_into()
-            .map_err(|_| {
-                Error::NegativeTimestamp(header.signed_header.header.time.seconds.inner())
-            })?;
+        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
+
+        if update_height > client_state.latest_height {
+            client_state.latest_height = update_height;
+            client_state.data.latest_height = update_height;
+        }
 
         save_client_state(deps.branch(), client_state);
         save_consensus_state_metadata(
             deps.branch(),
-            consensus_state.data.timestamp,
-            untrusted_height,
+            header.signed_header.header.time,
+            update_height,
         );
-        save_consensus_state(deps, consensus_state, &untrusted_height);
+        save_consensus_state(
+            deps,
+            WasmConsensusState {
+                data: ConsensusState {
+                    timestamp: header.signed_header.header.time,
+                    root: MerkleRoot {
+                        hash: header.signed_header.header.app_hash,
+                    },
+                    next_validators_hash: header.signed_header.header.next_validators_hash,
+                },
+            },
+            &update_height,
+        );
 
-        Ok(vec![untrusted_height])
+        Ok(vec![update_height])
     }
 
     fn update_state_on_misbehaviour(
@@ -266,17 +221,6 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
     ) -> Result<bool, Self::Error> {
         let height = height_from_header(&header);
 
-        let expected_timestamp: u64 = header
-            .signed_header
-            .header
-            .time
-            .seconds
-            .inner()
-            .try_into()
-            .map_err(|_| {
-                Error::NegativeTimestamp(header.signed_header.header.time.seconds.inner())
-            })?;
-
         // If there is already a header at this height, it should be exactly the same as the header that
         // we saved previously. If this is not the case, either the client is broken or the chain is
         // broken. Because it should not be possible to have two distinct valid headers at a height.
@@ -284,12 +228,12 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
             data:
                 ConsensusState {
                     timestamp,
-                    app_hash: MerkleRoot { hash },
                     next_validators_hash,
+                    root: MerkleRoot { hash },
                 },
         }) = read_consensus_state::<_, ConsensusState>(deps, &height)?
         {
-            if timestamp != expected_timestamp
+            if timestamp != header.signed_header.header.time
                 || hash != header.signed_header.header.app_hash
                 || next_validators_hash != header.signed_header.header.next_validators_hash
             {
@@ -304,7 +248,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         if let Ok(Some((_, next_consensus_state))) = get_or_next_consensus_state_meta(deps, height)
         {
             // next (in terms of height) consensus state must have a larger timestamp
-            if next_consensus_state.timestamp <= expected_timestamp {
+            if next_consensus_state.timestamp <= header.signed_header.header.time {
                 return Ok(true);
             }
         }
@@ -312,7 +256,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         if let Ok(Some((_, prev_consensus_state))) = get_or_prev_consensus_state_meta(deps, height)
         {
             // previous (in terms of height) consensus state must have a smaller timestamp
-            if prev_consensus_state.timestamp >= expected_timestamp {
+            if prev_consensus_state.timestamp >= header.signed_header.header.time {
                 return Ok(true);
             }
         }
@@ -360,9 +304,12 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         };
 
         if is_client_expired(
-            consensus_state.data.timestamp,
+            &consensus_state.data.timestamp,
             client_state.data.trusting_period,
-            env.block.time.seconds(),
+            env.block
+                .time
+                .try_into()
+                .map_err(|_| Error::InvalidHostTimestamp(env.block.time))?,
         ) {
             return Ok(Status::Expired);
         }
@@ -381,47 +328,59 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         deps: Deps<Self::CustomQuery>,
         height: Height,
     ) -> Result<u64, Self::Error> {
-        Ok(
-            read_consensus_state::<Self::CustomQuery, ConsensusState>(deps, &height)?
-                .ok_or(Error::ConsensusStateNotFound(height))?
-                .data
-                .timestamp,
-        )
+        let timestamp = read_consensus_state::<Self::CustomQuery, ConsensusState>(deps, &height)?
+            .ok_or(Error::ConsensusStateNotFound(height))?
+            .data
+            .timestamp
+            .seconds
+            .inner();
+        Ok(timestamp
+            .try_into()
+            .map_err(|_| Error::NegativeTimestamp(timestamp))?)
+    }
+}
+
+fn construct_partial_header(
+    chain_id: String,
+    height: BoundedI64<0, { i64::MAX }>,
+    time: Timestamp,
+    next_validators_hash: H256,
+) -> SignedHeader {
+    SignedHeader {
+        header: unionlabs::tendermint::types::header::Header {
+            chain_id,
+            time,
+            next_validators_hash,
+            height,
+            version: Default::default(),
+            last_block_id: Default::default(),
+            last_commit_hash: Default::default(),
+            data_hash: Default::default(),
+            validators_hash: Default::default(),
+            consensus_hash: Default::default(),
+            app_hash: Default::default(),
+            last_results_hash: Default::default(),
+            evidence_hash: Default::default(),
+            proposer_address: Default::default(),
+        },
+        commit: Commit {
+            height,
+            round: 0.try_into().expect("impossible"),
+            block_id: Default::default(),
+            signatures: Default::default(),
+        },
     }
 }
 
 fn is_client_expired(
-    consensus_state_timestamp: u64,
-    trusting_period: u64,
-    current_block_time: u64,
+    consensus_state_timestamp: &Timestamp,
+    trusting_period: Duration,
+    current_block_time: Timestamp,
 ) -> bool {
     if let Some(sum) = consensus_state_timestamp.checked_add(trusting_period) {
         sum < current_block_time
     } else {
-        // TODO(aeryz): This is really an unexpected error and this should return
-        // a nice error message.
         true
-    }
-}
-
-fn canonical_vote(
-    commit: &Commit,
-    chain_id: String,
-    expected_block_hash: H256,
-) -> protos::tendermint::types::CanonicalVote {
-    protos::tendermint::types::CanonicalVote {
-        r#type: protos::tendermint::types::SignedMsgType::Precommit as i32,
-        height: commit.height.inner(),
-        round: commit.round.inner() as i64,
-        // TODO(aeryz): Implement BlockId to proto::CanonicalBlockId
-        block_id: Some(protos::tendermint::types::CanonicalBlockId {
-            hash: expected_block_hash.into(),
-            part_set_header: Some(protos::tendermint::types::CanonicalPartSetHeader {
-                total: commit.block_id.part_set_header.total,
-                hash: commit.block_id.part_set_header.hash.0.to_vec(),
-            }),
-        }),
-        chain_id,
     }
 }
 
@@ -436,4 +395,24 @@ fn height_from_header(header: &Header) -> Height {
         // SAFETY: height's bounds are [0..i64::MAX]
         revision_height: header.signed_header.header.height.inner() as u64,
     }
+}
+
+fn check_trusted_header(header: &Header, next_validators_hash: &H256) -> Result<(), Error> {
+    let val_hash = tendermint_verifier::utils::validators_hash(&header.trusted_validators);
+
+    if &val_hash != next_validators_hash {
+        Err(Error::TrustedValidatorsMismatch(
+            val_hash,
+            next_validators_hash.clone(),
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+fn parse_revision_number(chain_id: &str) -> Option<u64> {
+    chain_id
+        .rsplit('-')
+        .next()
+        .map(|height_str| height_str.parse().ok())?
 }
