@@ -2,7 +2,7 @@
 #![allow(clippy::type_complexity, async_fn_in_trait)]
 
 use std::{
-    collections::{BTreeMap, HashMap, VecDeque},
+    collections::{HashMap, VecDeque},
     fmt::{Debug, Display},
     future::Future,
     marker::PhantomData,
@@ -52,7 +52,6 @@ pub mod fetch;
 pub mod msg;
 pub mod wait;
 
-// TODO: Rename this module to something better, `lightclient` clashes with the workspace crate (could also rename the crate)
 pub mod chain_impls;
 
 pub trait RelayerMsgDatagram = Debug

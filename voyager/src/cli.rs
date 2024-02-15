@@ -9,12 +9,7 @@ use ethers::{
     types::{Address, H256},
 };
 use frunk::{hlist_pat, HList};
-use futures::StreamExt;
-use pin_utils::pin_mut;
-use queue_msg::{
-    aggregation::{do_aggregate, HListTryFromIterator, UseAggregate},
-    run_to_completion, Queue, QueueMsg, QueueMsgTypes, Reactor,
-};
+use queue_msg::{aggregation::UseAggregate, run_to_completion};
 use reqwest::Url;
 use unionlabs::{
     ibc::core::client::height::Height,
@@ -27,13 +22,12 @@ use unionlabs::{
     QueryHeight,
 };
 use voyager_message::{
-    aggregate::Aggregate,
     data::{IbcProof, IbcState},
     use_aggregate::IsAggregateData,
-    ChainExt, Chains, DoAggregate, DoFetchProof, DoFetchState, Identified, RelayerMsgTypes,
+    ChainExt, Chains, DoFetchProof, DoFetchState, Identified, RelayerMsgTypes,
 };
 
-use crate::queue::{InMemoryQueue, Voyager};
+use crate::queue::InMemoryQueue;
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]

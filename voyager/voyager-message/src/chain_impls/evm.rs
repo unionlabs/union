@@ -2,14 +2,10 @@ use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync
 
 use beacon_api::errors::{InternalServerError, NotFoundError};
 use chain_utils::evm::{CometblsMiddleware, Evm, IbcHandlerErrors};
-use contracts::{
-    devnet_ownable_ibc_handler::DevnetOwnableIBCHandlerErrors,
-    ibc_handler::{
-        self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall,
-        ChannelOpenInitCall, ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall,
-        ConnectionOpenInitCall, ConnectionOpenTryCall, CreateClientCall, IBCHandler,
-        RecvPacketCall, UpdateClientCall,
-    },
+use contracts::ibc_handler::{
+    self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall, ChannelOpenInitCall,
+    ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall, ConnectionOpenInitCall,
+    ConnectionOpenTryCall, CreateClientCall, IBCHandler, RecvPacketCall, UpdateClientCall,
 };
 use ethers::{
     abi::AbiEncode,

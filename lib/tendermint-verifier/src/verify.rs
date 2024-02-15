@@ -558,7 +558,7 @@ mod tests {
             let mut signatures = Vec::new();
             let mut keys = Vec::new();
 
-            for (pubkey, signature) in pubkeys.into_iter().zip(sigs.into_iter()) {
+            for (pubkey, signature) in pubkeys.iter().zip(sigs.iter()) {
                 let PublicKey::Ed25519(pubkey) = pubkey else {
                     panic!("invalid pubkey");
                 };

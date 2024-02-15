@@ -22,7 +22,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     chain::AnyChain,
     cli::{any_state_proof_to_json, AppArgs, Command, QueryCmd},
-    config::{ChainConfig, ChainConfigType, Config, EvmChainConfig, GetChainError, VoyagerConfig},
+    config::{ChainConfigType, Config, EvmChainConfig, GetChainError},
     queue::{
         chains_from_config, AnyQueue, AnyQueueConfig, PgQueueConfig, RunError, Voyager,
         VoyagerInitError,

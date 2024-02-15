@@ -4,7 +4,7 @@ use beacon_api::client::BeaconApiClient;
 use contracts::{
     devnet_ownable_ibc_handler::DevnetOwnableIBCHandler,
     ibc_channel_handshake::{IBCChannelHandshakeErrors, IBCChannelHandshakeEvents},
-    ibc_client::{ClientCreatedFilter, IBCClientErrors, IBCClientEvents},
+    ibc_client::{ClientCreatedFilter, ClientUpdatedFilter, IBCClientErrors, IBCClientEvents},
     ibc_connection::{IBCConnectionErrors, IBCConnectionEvents},
     ibc_handler::{
         GetChannelCall, GetChannelReturn, GetClientStateCall, GetClientStateReturn,

@@ -269,33 +269,6 @@ pub enum VoyagerInitError<Q: Queue<RelayerMsgTypes>> {
     QueueInit(#[source] Q::Error),
 }
 
-#[derive(DebugNoBound, CloneNoBound)]
-pub struct Worker<T: QueueMsgTypes> {
-    id: u16,
-    reactor: Reactor<T>,
-}
-
-impl<T: QueueMsgTypes> Worker<T> {
-    pub async fn run<Q>(self, q: Q) -> Result<(), BoxDynError>
-    where
-        Q: Queue<T>,
-    {
-        let stream = self.reactor.run(q);
-        pin_utils::pin_mut!(stream);
-
-        while let Some(res) = stream.next().await {
-            match res {
-                Ok(data) => {
-                    tracing::info!(%data, "received data outside of aggregation");
-                }
-                Err(why) => return Err(why),
-            }
-        }
-
-        Ok(())
-    }
-}
-
 impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
     pub async fn new(config: Config<Q>) -> Result<Self, VoyagerInitError<Q>> {
         let chains = chains_from_config(config.chain).await?;
@@ -312,11 +285,8 @@ impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
         })
     }
 
-    pub fn worker(&self, id: u16) -> Worker<RelayerMsgTypes> {
-        Worker {
-            id,
-            reactor: Reactor::new(self.chains.clone()),
-        }
+    pub fn worker(&self) -> Reactor<RelayerMsgTypes> {
+        Reactor::new(self.chains.clone())
     }
 
     pub async fn run(self) -> Result<(), RunError> {
@@ -528,9 +498,24 @@ impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
         for i in 0..self.num_workers {
             tracing::info!("spawning worker {i}");
 
-            let worker = self.worker(i);
+            let reactor = Reactor::new(self.chains.clone());
+            let q = self.relay_queue.clone();
 
-            join_set.spawn(worker.run(self.relay_queue.clone()));
+            join_set.spawn(async move {
+                let stream = reactor.run(q);
+                pin_utils::pin_mut!(stream);
+
+                while let Some(res) = stream.next().await {
+                    match res {
+                        Ok(data) => {
+                            tracing::info!(%data, "received data outside of an aggregation");
+                        }
+                        Err(why) => return Err(why),
+                    }
+                }
+
+                Ok(())
+            });
         }
 
         let errs = vec![];
