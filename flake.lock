@@ -64,16 +64,16 @@
       "locked": {
         "lastModified": 1706545041,
         "narHash": "sha256-qX37SK6d2kEgnHg5a8YDZQNhb5R+GcK7gp7iDTZGYgg=",
-        "ref": "refs/heads/cometbls-v0.38+tm-light-client",
+        "owner": "unionlabs",
+        "repo": "cometbls",
         "rev": "360766577f7daa89f958a4c28eee909340eb4b02",
-        "revCount": 9452,
-        "type": "git",
-        "url": "ssh://git@github.com/unionlabs/cometbls"
+        "type": "github"
       },
       "original": {
-        "rev": "360766577f7daa89f958a4c28eee909340eb4b02",
-        "type": "git",
-        "url": "ssh://git@github.com/unionlabs/cometbls"
+        "owner": "unionlabs",
+        "ref": "cometbls-v0.38+tm-light-client",
+        "repo": "cometbls",
+        "type": "github"
       }
     },
     "cosmosproto": {
@@ -98,16 +98,16 @@
       "locked": {
         "lastModified": 1707260847,
         "narHash": "sha256-xWmM9mtXQtSauzRO7f4p+kfzMfyxMRvKvVvJMNXrMA0=",
-        "ref": "v0.50.2-bn254",
+        "owner": "unionlabs",
+        "repo": "cosmos-sdk",
         "rev": "9973b232e83270b6c77bd4eb48c58bf1afab8757",
-        "revCount": 11689,
-        "type": "git",
-        "url": "ssh://git@github.com/unionlabs/cosmos-sdk"
+        "type": "github"
       },
       "original": {
+        "owner": "unionlabs",
         "ref": "v0.50.2-bn254",
-        "type": "git",
-        "url": "ssh://git@github.com/unionlabs/cosmos-sdk"
+        "repo": "cosmos-sdk",
+        "type": "github"
       }
     },
     "crane": {

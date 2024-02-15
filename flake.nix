@@ -101,11 +101,14 @@
     };
 
     cometbls = {
-      url = "git+ssh://git@github.com/unionlabs/cometbls?rev=360766577f7daa89f958a4c28eee909340eb4b02";
+      type = "github";
+      owner = "unionlabs";
+      repo = "cometbls";
+      ref = "cometbls-v0.38+tm-light-client";
       flake = false;
     };
     cosmossdk = {
-      url = "git+ssh://git@github.com/unionlabs/cosmos-sdk?ref=v0.50.2-bn254";
+      url = "github:unionlabs/cosmos-sdk/v0.50.2-bn254";
       flake = false;
     };
 
