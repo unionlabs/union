@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    uses: unionlabs/workflows/.github/workflows/build.yml@6edbe7bd9533cc40cea76015ab9042dd30e520e0
+    uses: unionlabs/workflows/.github/workflows/build.yml@d78d80520b937d005968301e88a7828cfd2ab130
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
@@ -23,7 +23,7 @@ jobs:
       eval_target: 'build'
       eval_top_attr: 'packages'
   dev:
-    uses: unionlabs/workflows/.github/workflows/build.yml@6edbe7bd9533cc40cea76015ab9042dd30e520e0
+    uses: unionlabs/workflows/.github/workflows/build.yml@d78d80520b937d005968301e88a7828cfd2ab130
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
@@ -31,7 +31,7 @@ jobs:
       eval_target: 'dev'
       eval_top_attr: 'devShells'
   test:
-    uses: unionlabs/workflows/.github/workflows/build.yml@6edbe7bd9533cc40cea76015ab9042dd30e520e0
+    uses: unionlabs/workflows/.github/workflows/build.yml@d78d80520b937d005968301e88a7828cfd2ab130
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
