@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 # NOTE: All paths must be listed out (i.e. no globs) since ifd is still broken in nix (still can't import the output of `cargo metadata` :( ). See crane.nix for where this is used.
 members = [
   "lib/beacon-api",
@@ -37,9 +38,8 @@ members = [
   "lib/poseidon-rs",
   "lib/zktrie-rs",
   "lib/scroll-verifier",
+  "lib/block-poll-message",
 ]
-
-resolver = "2"
 
 [workspace.package]
 edition      = "2021"
@@ -52,6 +52,7 @@ opt-level = 3
 
 [workspace.dependencies]
 beacon-api                = { path = "lib/beacon-api", default-features = false }
+block-poll-message        = { path = "lib/block-poll-message", default-features = false }
 chain-utils               = { path = "lib/chain-utils", default-features = false }
 cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
 contracts                 = { path = "generated/rust/contracts", default-features = false }
@@ -92,7 +93,7 @@ ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branc
 ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-core            = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 
-arbitrary                = { version = "1.3.0" }
+arbitrary                = { version = "1.3.0", default-features = false }
 axum                     = { version = "0.6.20", default-features = false }
 base64                   = { version = "0.21", default-features = false }
 bip32                    = { version = "0.5.0", default-features = false }

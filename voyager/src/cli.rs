@@ -1,5 +1,6 @@
 use std::{ffi::OsString, marker::PhantomData, str::FromStr, sync::Arc};
 
+use chain_utils::Chains;
 use clap::{
     error::{ContextKind, ContextValue},
     Args, Parser, Subcommand,
@@ -9,7 +10,7 @@ use ethers::{
     types::{Address, H256},
 };
 use frunk::{hlist_pat, HList};
-use queue_msg::{aggregation::UseAggregate, run_to_completion};
+use queue_msg::{aggregation::UseAggregate, run_to_completion, InMemoryQueue};
 use reqwest::Url;
 use unionlabs::{
     ibc::core::client::height::Height,
@@ -24,10 +25,8 @@ use unionlabs::{
 use voyager_message::{
     data::{IbcProof, IbcState},
     use_aggregate::IsAggregateData,
-    ChainExt, Chains, DoFetchProof, DoFetchState, Identified, RelayerMsgTypes,
+    ChainExt, DoFetchProof, DoFetchState, Identified, RelayerMsgTypes,
 };
-
-use crate::queue::InMemoryQueue;
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -207,6 +206,7 @@ struct FetchStateProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
     #[serde(with = "::serde_utils::string")]
     path: P,
     height: HeightOf<Hc>,
+    #[serde(skip)]
     pub __marker: PhantomData<fn() -> Tr>,
 }
 

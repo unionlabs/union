@@ -384,7 +384,8 @@ pub struct AggregateAckPacket<Hc: ChainExt, Tr: ChainExt> {
     pub event_height: HeightOf<Hc>,
     pub event: RecvPacket,
     // HACK: Need to pass the block hash through, figure out a better/cleaner way to do this
-    pub block_hash: H256,
+    // TODO: Replace with the ack directly?
+    pub tx_hash: H256,
     pub counterparty_client_id: ClientIdOf<Tr>,
 }
 
@@ -445,7 +446,7 @@ pub struct AggregatePacketUpdateClient<Hc: ChainExt, Tr: ChainExt> {
     // Will be threaded through to the update msg
     pub update_to: HeightOf<Hc>,
     pub event_height: HeightOf<Hc>,
-    pub block_hash: H256,
+    pub tx_hash: H256,
     pub packet_event: PacketEvent,
     #[serde(skip)]
     #[cfg_attr(feature = "arbitrary", arbitrary(default))]
@@ -710,7 +711,7 @@ where
                 AggregatePacketUpdateClient {
                     update_to,
                     event_height,
-                    block_hash,
+                    tx_hash,
                     packet_event,
                     __marker: _,
                 },
@@ -740,7 +741,7 @@ where
                 AggregateMsgAfterUpdate::AckPacket(AggregateAckPacket {
                     event_height,
                     event: recv,
-                    block_hash,
+                    tx_hash,
                     counterparty_client_id: connection.counterparty.client_id.clone(),
                 }),
             ),
@@ -1549,14 +1550,14 @@ where
             AggregateMsgAfterUpdate::AckPacket(AggregateAckPacket {
                 event_height,
                 event,
-                block_hash,
+                tx_hash,
                 counterparty_client_id,
             }) => aggregate(
                 [
                     fetch(Identified::<Hc, Tr, _>::new(
                         this_chain_id.clone(),
                         FetchPacketAcknowledgement {
-                            block_hash: block_hash.clone(),
+                            tx_hash: tx_hash.clone(),
                             destination_port_id: event.packet_dst_port.clone(),
                             destination_channel_id: event.packet_dst_channel.clone(),
                             sequence: event.packet_sequence,
@@ -1592,7 +1593,7 @@ where
                     AggregateAckPacket {
                         event_height,
                         event,
-                        block_hash,
+                        tx_hash,
                         counterparty_client_id,
                     },
                 ),
@@ -2266,7 +2267,7 @@ where
                 AggregateAckPacket {
                     event_height: _,
                     event,
-                    block_hash: _,
+                    tx_hash: _,
                     counterparty_client_id: _,
                 },
             __marker: _,

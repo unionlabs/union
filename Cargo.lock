@@ -146,15 +146,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arbtest"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d48cee94156b8405b421abf4dc77852a150448f2ece19293238693aa316c75ab"
-dependencies = [
- "arbitrary",
-]
-
-[[package]]
 name = "ark-bn254"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -706,6 +697,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "block-poll-message"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "beacon-api",
+ "chain-utils",
+ "contracts",
+ "dashmap",
+ "derive_more",
+ "enumorph",
+ "ethers",
+ "frame-support-procedural 22.0.0",
+ "frunk",
+ "futures",
+ "hex",
+ "hex-literal",
+ "macros",
+ "num-bigint",
+ "prost",
+ "protos",
+ "queue-msg",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "tendermint",
+ "tendermint-proto",
+ "tendermint-rpc",
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tracing",
+ "typenum",
+ "unionlabs",
+]
+
+[[package]]
 name = "bnum"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1162,7 +1189,9 @@ checksum = "f7144d30dcf0fafbce74250a3963025d8d52177934239851c917d29f1df280c2"
 name = "contracts"
 version = "0.0.0"
 dependencies = [
+ "arbitrary",
  "ethers",
+ "serde",
 ]
 
 [[package]]
@@ -2821,6 +2850,7 @@ dependencies = [
 name = "fuzz"
 version = "0.0.0"
 dependencies = [
+ "block-poll-message",
  "libfuzzer-sys",
  "queue-msg",
  "unionlabs",
@@ -4625,10 +4655,12 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "derive_more",
+ "either",
  "enumorph",
  "frame-support-procedural 18.0.0",
  "frunk",
  "futures",
+ "itertools 0.12.1",
  "serde",
  "serde_json",
  "tokio",
@@ -6873,7 +6905,6 @@ name = "unionlabs"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "arbtest",
  "bip32",
  "bitvec",
  "chrono",
@@ -6886,6 +6917,7 @@ dependencies = [
  "ethereum_ssz",
  "ethers-contract-derive",
  "ethers-core",
+ "frunk",
  "generic-array",
  "hex",
  "hex-literal",
@@ -6910,7 +6942,6 @@ dependencies = [
  "tree_hash",
  "typenum",
  "uint",
- "unionlabs",
  "wasmparser",
 ]
 
@@ -7032,16 +7063,20 @@ checksum = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 name = "voyager"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "axum",
  "beacon-api",
  "bech32",
  "bip32",
  "bitvec",
+ "block-poll-message",
  "chain-utils",
  "clap 4.5.1",
  "contracts",
  "crossbeam-queue",
+ "derive_more",
  "either",
+ "enumorph",
  "ethers",
  "frame-support-procedural 22.0.0",
  "frunk",
@@ -7071,7 +7106,6 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tonic",
- "tower",
  "tracing",
  "tracing-subscriber 0.3.18",
  "typenum",
@@ -7533,6 +7567,7 @@ checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
 name = "zerg"
 version = "0.1.0"
 dependencies = [
+ "block-poll-message",
  "chain-utils",
  "clap 4.5.1",
  "contracts",
@@ -7540,6 +7575,7 @@ dependencies = [
  "csv",
  "ethers",
  "futures",
+ "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",

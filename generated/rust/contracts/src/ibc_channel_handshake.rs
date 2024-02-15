@@ -1758,6 +1758,8 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     #[ethevent(name = "ChannelOpenAck", abi = "ChannelOpenAck(string,string)")]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct ChannelOpenAckFilter {
         pub channel_id: ::std::string::String,
         pub port_id: ::std::string::String,
@@ -1773,6 +1775,8 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     #[ethevent(name = "ChannelOpenConfirm", abi = "ChannelOpenConfirm(string,string)")]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct ChannelOpenConfirmFilter {
         pub channel_id: ::std::string::String,
         pub port_id: ::std::string::String,
@@ -1791,6 +1795,8 @@ pub mod ibc_channel_handshake {
         name = "ChannelOpenInit",
         abi = "ChannelOpenInit(string,string,string,string)"
     )]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct ChannelOpenInitFilter {
         pub channel_id: ::std::string::String,
         pub connection_id: ::std::string::String,
@@ -1811,6 +1817,8 @@ pub mod ibc_channel_handshake {
         name = "ChannelOpenTry",
         abi = "ChannelOpenTry(string,string,string,string,string)"
     )]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct ChannelOpenTryFilter {
         pub channel_id: ::std::string::String,
         pub connection_id: ::std::string::String,

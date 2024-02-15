@@ -1,18 +1,21 @@
 [package]
-edition = "2021"
-name    = "queue-msg"
-version = "0.1.0"
+edition  = "2021"
+name     = "queue-msg"
+resolver = "2"
+version  = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
+either.workspace         = true
 frame-support-procedural = "18.0.0"
 frunk                    = "0.4.2"
-futures.workspace        = true
+futures                  = { workspace = true, features = ["alloc", "std"] }
+itertools                = { version = "0.12.1", default-features = false }
 serde                    = { version = "1.0.173", features = ["derive"] }
 serde_json               = "1.0.96"
-tokio                    = { version = "1.27.0", default-features = false, features = ["time"] }
+tokio                    = { version = "1.27.0", default-features = false, features = ["time", "rt"] }
 tracing                  = "0.1.37"
 unionlabs                = { workspace = true }
 

@@ -2,9 +2,9 @@ use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64, ops::Div, str::FromS
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
-    devnet_ownable_ibc_handler::DevnetOwnableIBCHandler,
+    devnet_ownable_ibc_handler::{DevnetOwnableIBCHandler, OwnershipTransferredFilter},
     ibc_channel_handshake::{IBCChannelHandshakeErrors, IBCChannelHandshakeEvents},
-    ibc_client::{ClientCreatedFilter, ClientUpdatedFilter, IBCClientErrors, IBCClientEvents},
+    ibc_client::{IBCClientErrors, IBCClientEvents},
     ibc_connection::{IBCConnectionErrors, IBCConnectionEvents},
     ibc_handler::{
         GetChannelCall, GetChannelReturn, GetClientStateCall, GetClientStateReturn,
@@ -25,17 +25,13 @@ use ethers::{
     signers::{LocalWallet, Wallet},
     utils::secret_key_to_address,
 };
-use futures::{stream, Future, FutureExt, Stream, StreamExt};
+use futures::Future;
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
+    self,
     encoding::{Decode, EthAbi},
     ethereum::config::ChainSpec,
-    events::{
-        AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
-        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        CreateClient, IbcEvent, RecvPacket, SendPacket, UpdateClient,
-    },
     hash::{H160, H256},
     ibc::{
         core::{
@@ -43,7 +39,7 @@ use unionlabs::{
             client::height::{Height, IsHeight},
             connection::connection_end::ConnectionEnd,
         },
-        lightclients::{cometbls, ethereum, tendermint::fraction::Fraction},
+        lightclients::{ethereum, tendermint::fraction::Fraction},
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
     option_unwrap, promote,
@@ -53,10 +49,10 @@ use unionlabs::{
     },
     traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf, FromStrExact},
     uint::U256,
-    EmptyString, TryFromEthAbi, TryFromEthAbiErrorOf,
+    EmptyString, TryFromEthAbiErrorOf,
 };
 
-use crate::{private_key::PrivateKey, ChainEvent, EventSource, Pool};
+use crate::{private_key::PrivateKey, Pool};
 
 pub type CometblsMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
@@ -92,6 +88,8 @@ pub struct Config {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct EvmChainType<C: ChainSpec>(PhantomData<fn() -> C>);
 
+pub const EVM_REVISION_NUMBER: u64 = 0;
+
 impl<C: ChainSpec> FromStrExact for EvmChainType<C> {
     const EXPECTING: &'static str = {
         const PREFIX: [u8; 4] = *b"eth-";
@@ -125,6 +123,17 @@ pub enum IBCHandlerEvents {
     ConnectionEvent(IBCConnectionEvents),
     ChannelEvent(IBCChannelHandshakeEvents),
     ClientEvent(IBCClientEvents),
+    OwnableEvent(OwnershipTransferredFilter),
+}
+
+macro_rules! try_decode {
+    ($($expr:expr),+) => {
+        $(
+            if let Ok(ok) = $expr {
+                return Ok(ok);
+            }
+        )+
+    };
 }
 
 impl EthLogDecode for IBCHandlerEvents {
@@ -132,16 +141,14 @@ impl EthLogDecode for IBCHandlerEvents {
     where
         Self: Sized,
     {
-        let packet_event = IBCPacketEvents::decode_log(log).map(IBCHandlerEvents::PacketEvent);
-        let conn_event =
-            IBCConnectionEvents::decode_log(log).map(IBCHandlerEvents::ConnectionEvent);
-        let chan_event =
-            IBCChannelHandshakeEvents::decode_log(log).map(IBCHandlerEvents::ChannelEvent);
-        let client_event = IBCClientEvents::decode_log(log).map(IBCHandlerEvents::ClientEvent);
-        [packet_event, conn_event, chan_event, client_event]
-            .into_iter()
-            .find(|event| event.is_ok())
-            .ok_or(ethers::abi::Error::InvalidData)?
+        try_decode!(
+            IBCPacketEvents::decode_log(log).map(IBCHandlerEvents::PacketEvent),
+            IBCConnectionEvents::decode_log(log).map(IBCHandlerEvents::ConnectionEvent),
+            IBCChannelHandshakeEvents::decode_log(log).map(IBCHandlerEvents::ChannelEvent),
+            IBCClientEvents::decode_log(log).map(IBCHandlerEvents::ClientEvent),
+            OwnershipTransferredFilter::decode_log(log).map(IBCHandlerEvents::OwnableEvent)
+        );
+        Err(ethers::abi::Error::InvalidData)
     }
 }
 
@@ -209,7 +216,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
             self.beacon_api_client
                 .finality_update()
                 .await
-                .map(|height| self.make_height(height.data.attested_header.beacon.slot))
+                .map(|response| self.make_height(response.data.attested_header.beacon.slot))
         }
     }
 
@@ -364,21 +371,19 @@ impl<C: ChainSpec> Chain for Evm<C> {
 
     fn read_ack(
         &self,
-        block_hash: H256,
+        tx_hash: H256,
         destination_channel_id: ChannelId,
         destination_port_id: PortId,
         sequence: u64,
     ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
-            let filter = self
-                .readonly_ibc_packet
-                .write_acknowledgement_filter()
-                .filter
-                .at_block_hash(block_hash);
-
-            let log = self.provider.get_logs(&filter).await.unwrap();
-
-            log.into_iter()
+            self.provider
+                .get_transaction_receipt(tx_hash.clone())
+                .await
+                .unwrap()
+                .unwrap()
+                .logs
+                .into_iter()
                 .map(|log| <WriteAcknowledgementFilter as EthLogDecode>::decode_log(&log.into()))
                 .find_map(|e| match e {
                     Ok(WriteAcknowledgementFilter {
@@ -523,57 +528,6 @@ impl<C: ChainSpec> Evm<C> {
             .await
             .map(P::decode_ibc_state)
     }
-
-    // async fn ibc_state_proof<P, Tracking>(&self, at: Height, path: P) -> Vec<u8>
-    // where
-    //     P: IbcPath<Evm<C>, Tracking> + EthereumStateRead<C, Tracking> + 'static,
-    //     Tracking: Chain,
-    // {
-    //     let execution_height = self.execution_height(at).await;
-
-    //     let path = path.to_string();
-
-    //     let location = keccak256(
-    //         keccak256(path.as_bytes())
-    //             .into_iter()
-    //             .chain(ethers::types::U256::from(0).encode())
-    //             .collect::<Vec<_>>(),
-    //     );
-
-    //     let proof = self
-    //         .provider
-    //         .get_proof(
-    //             self.readonly_ibc_handler.address(),
-    //             vec![location.into()],
-    //             Some(execution_height.into()),
-    //         )
-    //         .await
-    //         .unwrap();
-
-    //     tracing::info!(?proof);
-
-    //     let proof = match <[_; 1]>::try_from(proof.storage_proof) {
-    //         Ok([proof]) => proof,
-    //         Err(invalid) => {
-    //             panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
-    //         }
-    //     };
-
-    //     protos::union::ibc::lightclients::ethereum::v1::StorageProof {
-    //         proofs: [protos::union::ibc::lightclients::ethereum::v1::Proof {
-    //             key: proof.key.to_fixed_bytes().to_vec(),
-    //             // REVIEW(benluelo): Make sure this encoding works
-    //             value: proof.value.encode(),
-    //             proof: proof
-    //                 .proof
-    //                 .into_iter()
-    //                 .map(|bytes| bytes.to_vec())
-    //                 .collect(),
-    //         }]
-    //         .to_vec(),
-    //     }
-    //     .encode_to_vec()
-    // }
 }
 
 pub type EvmClientId = ClientId;
@@ -606,494 +560,6 @@ pub enum EvmEventSourceError {
     PortIdParse(<PortId as FromStr>::Err),
     #[error(transparent)]
     EthAbi(#[from] ethers::core::abi::Error),
-}
-
-impl<C: ChainSpec> EventSource for Evm<C> {
-    type Event = ChainEvent<Self>;
-    type Error = EvmEventSourceError;
-
-    // TODO: Make this the height to start from
-    type Seed = ();
-
-    fn events(self, _seed: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>> {
-        async move {
-            let latest_height = self.query_latest_height().await.unwrap();
-
-            stream::unfold(
-                (self, latest_height),
-                move |(this, previous_beacon_height)| async move {
-                    tracing::info!("fetching events");
-
-                    let current_beacon_height = loop {
-                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-
-                        let current_beacon_height = match this.query_latest_height().await {
-                            Ok(current_beacon_height) => current_beacon_height,
-                            Err(e) => {
-                                tracing::error!(error = %e, "Error getting height from beacon. Trying again in 1 second.");
-                                continue;
-                            }
-                        };
-
-                        tracing::debug!(%current_beacon_height, %previous_beacon_height);
-
-                        if current_beacon_height > previous_beacon_height {
-                            break current_beacon_height;
-                        }
-                    };
-                    tracing::debug!(
-                        previous_beacon_height = previous_beacon_height.revision_height,
-                        current_beacon_height = current_beacon_height.revision_height
-                    );
-                    let previous_execution_height =
-                        this.execution_height(previous_beacon_height).await;
-                    let current_execution_height =
-                        this.execution_height(current_beacon_height).await;
-
-                    let events = futures::stream::iter(
-                        this.provider
-                            .get_logs(
-                                &this
-                                    .readonly_ibc_handler
-                                    .events()
-                                    .filter
-                                    .from_block(previous_execution_height)
-                                    .to_block(current_execution_height - 1),
-                            )
-                            .await
-                            .unwrap(),
-                    )
-                    .then(|log| async {
-                        // dbg!(&log);
-
-                        let block_hash = log.block_hash.expect("log should have block_hash");
-
-                        // let event_height = this.make_height(
-                        //     log.block_number.expect("log should have block_number").0[0],
-                        // );
-                        let event_height =
-                            log.block_number.expect("log should have block_number").0[0];
-
-                        let event = IBCHandlerEvents::decode_log(&log.into());
-                        let event = match event {
-                            Ok(x) => x,
-                            Err(e) => {
-                                tracing::error!(
-                                    error = ?e,
-                                    "failed to decode ibc handler event"
-                                );
-                                return Ok::<_, EvmEventSourceError>(None::<ChainEvent<Evm<C>>>);
-                            }
-                        };
-
-                        let read_channel = |port_id: String, channel_id: String| async {
-                            this.ibc_state_read_at_execution_height(
-                                GetChannelCall {
-                                    port_id: port_id.clone(),
-                                    channel_id: channel_id.clone(),
-                                },
-                                event_height,
-                            )
-                            .await
-                            .map_err(EvmEventSourceError::Contract)?
-                            .ok_or(EvmEventSourceError::ChannelNotFound {
-                                port_id,
-                                channel_id,
-                            })?
-                            .try_into()
-                            .map_err(EvmEventSourceError::ChannelConversion)
-                        };
-
-                        let read_connection = |connection_id: String| async {
-                            this.ibc_state_read_at_execution_height(
-                                GetConnectionCall {
-                                    connection_id: connection_id.clone(),
-                                },
-                                event_height,
-                            )
-                            .await
-                            .map_err(EvmEventSourceError::Contract)?
-                            .ok_or(EvmEventSourceError::ConnectionNotFound { connection_id })?
-                            .try_into()
-                            .map_err(EvmEventSourceError::ConnectionConversion)
-                        };
-
-                        let event = match event {
-                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::AcknowledgePacketFilter(packet_ack)) => {
-                                // TODO: Would be nice if this info was passed through in the SendPacket event
-                                let channel_data: Channel = read_channel(
-                                    packet_ack.packet.source_port.clone(),
-                                    packet_ack.packet.source_channel.clone(),
-                                )
-                                .await?;
-
-                                Some(IbcEvent::AcknowledgePacket(AcknowledgePacket {
-                                    packet_timeout_height: packet_ack.packet.timeout_height.into(),
-                                    packet_timeout_timestamp: packet_ack.packet.timeout_timestamp,
-                                    packet_sequence: packet_ack.packet.sequence,
-                                    packet_src_port: packet_ack
-                                        .packet
-                                        .source_port
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    packet_src_channel: packet_ack
-                                        .packet
-                                        .source_channel
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    packet_dst_port: packet_ack
-                                        .packet
-                                        .destination_port
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    packet_dst_channel: packet_ack
-                                        .packet
-                                        .destination_channel
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    packet_channel_ordering: channel_data.ordering,
-                                    connection_id: channel_data.connection_hops[0].clone(),
-                                }))
-                            }
-                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelCloseConfirmFilter(_)) => todo!(),
-                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelCloseInitFilter(_)) => todo!(),
-                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenAckFilter(event)) => {
-                                let channel =
-                                    read_channel(event.port_id.clone(), event.channel_id.clone())
-                                        .await?;
-
-                                Some(IbcEvent::ChannelOpenAck(ChannelOpenAck {
-                                    port_id: event
-                                        .port_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    channel_id: event
-                                        .channel_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    counterparty_port_id: channel.counterparty.port_id,
-                                    counterparty_channel_id: channel
-                                        .counterparty
-                                        .channel_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    connection_id: channel.connection_hops[0].clone(),
-                                }))
-                            }
-                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenConfirmFilter(event)) => {
-                                let channel =
-                                    read_channel(event.port_id.clone(), event.channel_id.clone())
-                                        .await?;
-
-                                Some(IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
-                                    port_id: event
-                                        .port_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    channel_id: event
-                                        .channel_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    counterparty_port_id: channel.counterparty.port_id,
-                                    counterparty_channel_id: channel
-                                        .counterparty
-                                        .channel_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    connection_id: channel.connection_hops[0].clone(),
-                                }))
-                            }
-                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenInitFilter(event)) => {
-                                let channel =
-                                    read_channel(event.port_id.clone(), event.channel_id.clone())
-                                        .await?;
-
-                                Some(IbcEvent::ChannelOpenInit(ChannelOpenInit {
-                                    port_id: event
-                                        .port_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    channel_id: event
-                                        .channel_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    counterparty_port_id: event
-                                        .counterparty_port_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    connection_id: event
-                                        .connection_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
-                                    version: channel.version,
-                                }))
-                            }
-                            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenTryFilter(event)) => {
-                                let channel =
-                                    read_channel(event.port_id.clone(), event.channel_id.clone())
-                                        .await?;
-
-                                Some(IbcEvent::ChannelOpenTry(ChannelOpenTry {
-                                    port_id: event
-                                        .port_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    channel_id: event
-                                        .channel_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    counterparty_port_id: event
-                                        .counterparty_port_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    counterparty_channel_id: channel
-                                        .counterparty
-                                        .channel_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    connection_id: event
-                                        .connection_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
-                                    version: event.version,
-                                }))
-                            }
-                            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenAckFilter(event)) => {
-                                let connection: ConnectionEnd<<Self as Chain>::ClientId, String> =
-                                    read_connection(event.connection_id.clone()).await?;
-
-                                Some(IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
-                                    connection_id: event
-                                        .connection_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
-                                    client_id: connection.client_id,
-                                    counterparty_client_id: connection.counterparty.client_id,
-                                    counterparty_connection_id: connection
-                                        .counterparty
-                                        .connection_id,
-                                }))
-                            }
-                            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenConfirmFilter(event)) => {
-                                let connection: ConnectionEnd<<Self as Chain>::ClientId, String> =
-                                    read_connection(event.connection_id.clone()).await?;
-
-                                Some(IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
-                                    connection_id: event
-                                        .connection_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
-                                    client_id: connection.client_id,
-                                    counterparty_client_id: connection.counterparty.client_id,
-                                    counterparty_connection_id: connection
-                                        .counterparty
-                                        .connection_id,
-                                }))
-                            }
-                            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenInitFilter(event)) => {
-                                let connection: ConnectionEnd<
-                                    <Self as Chain>::ClientId,
-                                    String,
-                                    EmptyString,
-                                > = this
-                                    .ibc_state_read_at_execution_height(
-                                        GetConnectionCall {
-                                            connection_id: event.connection_id.clone(),
-                                        },
-                                        event_height,
-                                    )
-                                    .await
-                                    .map_err(EvmEventSourceError::Contract)?
-                                    .ok_or(EvmEventSourceError::ConnectionNotFound {
-                                        connection_id: event.connection_id.clone(),
-                                    })?
-                                    .try_into()
-                                    .map_err(
-                                        EvmEventSourceError::ConnectionOpenInitConnectionConversion,
-                                    )?;
-
-                                Some(IbcEvent::ConnectionOpenInit(ConnectionOpenInit {
-                                    connection_id: event
-                                        .connection_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
-                                    client_id: connection.client_id,
-                                    counterparty_client_id: connection.counterparty.client_id,
-                                }))
-                            }
-                            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenTryFilter(event)) => {
-                                let connection: ConnectionEnd<<Self as Chain>::ClientId, String> =
-                                    read_connection(event.connection_id.clone()).await?;
-
-                                Some(IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
-                                    connection_id: event
-                                        .connection_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ConnectionIdParse)?,
-                                    client_id: connection.client_id,
-                                    counterparty_client_id: connection.counterparty.client_id,
-                                    counterparty_connection_id: connection
-                                        .counterparty
-                                        .connection_id,
-                                }))
-                            }
-                            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientCreatedFilter(ClientCreatedFilter(client_id))) => {
-                                let client_type = this
-                                    .readonly_ibc_handler
-                                    .client_types(client_id.clone())
-                                    .await
-                                    .map_err(EvmEventSourceError::Contract)?;
-
-                                let (client_state, success) = this
-                                    .readonly_ibc_handler
-                                    .get_client_state(client_id.clone())
-                                    .await
-                                    .unwrap();
-
-                                assert!(success);
-
-                                dbg!(hex::encode(&client_state));
-
-                                let client_state =
-                                    cometbls::client_state::ClientState::try_from_eth_abi_bytes(
-                                        &client_state,
-                                    )
-                                    .unwrap();
-
-                                Some(IbcEvent::CreateClient(CreateClient {
-                                    client_id: client_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ClientIdParse)?,
-                                    client_type,
-                                    consensus_height: client_state.latest_height,
-                                }))
-                            }
-                            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(_)) => None,
-                            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(ClientUpdatedFilter(client_id))) => {
-                                let client_type = this
-                                    .readonly_ibc_handler
-                                    .client_types(client_id.clone())
-                                    .await
-                                    .map_err(EvmEventSourceError::Contract)?;
-
-                                let (client_state, success) = this
-                                    .readonly_ibc_handler
-                                    .get_client_state(client_id.clone())
-                                    .block(event_height)
-                                    .await
-                                    .unwrap();
-
-                                assert!(success);
-
-                                dbg!(hex::encode(&client_state));
-
-                                let client_state =
-                                    cometbls::client_state::ClientState::try_from_eth_abi_bytes(
-                                        &client_state,
-                                    )
-                                    .unwrap();
-
-                                Some(IbcEvent::UpdateClient(UpdateClient {
-                                    client_id: client_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ClientIdParse)?,
-                                    client_type,
-                                    consensus_heights: vec![client_state.latest_height],
-                                }))
-                            },
-                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::RecvPacketFilter(event)) => {
-                                let channel = read_channel(
-                                    event.packet.destination_port.clone(),
-                                    event.packet.destination_channel.clone(),
-                                )
-                                .await?;
-
-                                Some(IbcEvent::RecvPacket(RecvPacket {
-                                    packet_data_hex: event.packet.data.to_vec(),
-                                    packet_timeout_height: event.packet.timeout_height.into(),
-                                    packet_timeout_timestamp: event.packet.timeout_timestamp,
-                                    packet_sequence: event.packet.sequence,
-                                    packet_src_port: event
-                                        .packet
-                                        .source_port
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    packet_src_channel: event
-                                        .packet
-                                        .source_channel
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    packet_dst_port: event
-                                        .packet
-                                        .destination_port
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    packet_dst_channel: event
-                                        .packet
-                                        .destination_channel
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    packet_channel_ordering: channel.ordering,
-                                    connection_id: channel.connection_hops[0].clone(),
-                                }))
-                            }
-                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::SendPacketFilter(event)) => {
-                                let channel = read_channel(
-                                    event.source_port.clone(),
-                                    event.source_channel.clone(),
-                                )
-                                .await?;
-
-                                Some(IbcEvent::SendPacket(SendPacket {
-                                    packet_data_hex: event.data.to_vec(),
-                                    packet_timeout_height: event.timeout_height.into(),
-                                    packet_timeout_timestamp: event.timeout_timestamp,
-                                    packet_sequence: event.sequence,
-                                    packet_src_port: event
-                                        .source_port
-                                        .parse()
-                                        .map_err(EvmEventSourceError::PortIdParse)?,
-                                    packet_src_channel: event
-                                        .source_channel
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    // REVIEW: Should we query the packet instead? Or is that the same info? Is it even possible to
-                                    // query packets from the evm?
-                                    packet_dst_port: channel.counterparty.port_id,
-                                    packet_dst_channel: channel
-                                        .counterparty
-                                        .channel_id
-                                        .parse()
-                                        .map_err(EvmEventSourceError::ChannelIdParse)?,
-                                    packet_channel_ordering: channel.ordering,
-                                    connection_id: channel.connection_hops[0].clone(),
-                                }))
-                            }
-                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::WriteAcknowledgementFilter(_)) => None,
-                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(_)) => None,
-                        };
-
-                        Ok(event.map(|event| {
-                            ChainEvent::<Evm<C>> {
-                                // TODO: Cache
-                                chain_id: this.chain_id(),
-                                block_hash: block_hash.into(),
-                                height: current_beacon_height,
-                                event,
-                            }
-                        }))
-                    })
-                    .filter_map(|x| async { x.transpose() });
-
-                    let iter = futures::stream::iter(events.collect::<Vec<_>>().await);
-
-                    Some((iter, (this, current_beacon_height)))
-                },
-            )
-            .flatten()
-        }
-        .flatten_stream()
-    }
 }
 
 /// Many contract calls return some form of [`(bool, T)`] as a way to emulate nullable/[`Option`].

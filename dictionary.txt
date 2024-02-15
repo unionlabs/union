@@ -462,6 +462,7 @@ interchainaccounts
 interfacetype
 iohk
 ipetkov
+itertools
 iure
 jemalloc
 jemallocator

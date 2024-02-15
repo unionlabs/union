@@ -1,4 +1,4 @@
-#![feature(trait_alias)]
+#![feature(trait_alias, extract_if)]
 
 use std::{
     collections::VecDeque,
@@ -6,14 +6,17 @@ use std::{
     fmt::{Debug, Display},
     future::Future,
     pin::Pin,
-    sync::Arc,
+    sync::{Arc, Mutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use futures::{pin_mut, stream::try_unfold, Stream, StreamExt};
+use futures::{
+    stream::{self, try_unfold},
+    Stream, StreamExt, TryStreamExt,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use unionlabs::MaybeArbitrary;
+use unionlabs::{never::Never, MaybeArbitrary};
 
 use crate::aggregation::{HListTryFromIterator, UseAggregate};
 
@@ -24,7 +27,7 @@ pub trait Queue<T: QueueMsgTypes>: Clone + Send + Sync + Sized + 'static {
     type Error: Error + Send + Sync + 'static;
     type Config: Debug + Clone + Serialize + DeserializeOwned;
 
-    fn new(cfg: Self::Config, topic: String) -> impl Future<Output = Result<Self, Self::Error>>;
+    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>>;
 
     fn enqueue(
         &mut self,
@@ -37,7 +40,7 @@ pub trait Queue<T: QueueMsgTypes>: Clone + Send + Sync + Sized + 'static {
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = (R, Result<Option<QueueMsg<T>>, String>)> + Send + 'static,
+        Fut: Future<Output = (R, Result<Vec<QueueMsg<T>>, String>)> + Send + 'static,
         R: Send + Sync + 'static;
 }
 
@@ -87,6 +90,16 @@ pub enum QueueMsg<T: QueueMsgTypes> {
     /// [D B C]
     /// ```
     Sequence(VecDeque<Self>),
+    /// A list of messages to be executed concurrently. If this is queued as a top-level message, each contained message will be requeued individually as a top-level message, however if it is nested within another message, it's semantics are as follows:
+    ///
+    /// ```txt
+    /// [A B C]
+    /// D = handle(A)
+    /// [B C D]
+    /// ```
+    ///
+    /// Note that this is similar to Sequence, but the new messages are queued at the *back* of the list, allowing for uniform progress across all nested messages.
+    Concurrent(VecDeque<Self>),
     Retry {
         remaining: u8,
         msg: Box<Self>,
@@ -129,6 +142,11 @@ pub fn repeat<T: QueueMsgTypes>(times: u64, t: impl Into<QueueMsg<T>>) -> QueueM
 #[inline]
 pub fn seq<T: QueueMsgTypes>(ts: impl IntoIterator<Item = QueueMsg<T>>) -> QueueMsg<T> {
     QueueMsg::Sequence(ts.into_iter().collect())
+}
+
+#[inline]
+pub fn conc<T: QueueMsgTypes>(ts: impl IntoIterator<Item = QueueMsg<T>>) -> QueueMsg<T> {
+    QueueMsg::Concurrent(ts.into_iter().collect())
 }
 
 #[inline]
@@ -198,7 +216,7 @@ pub trait QueueMsgTypesTraits = Debug
 
 pub trait QueueMsgTypes: Sized + 'static {
     type Event: HandleEvent<Self> + QueueMsgTypesTraits;
-    type Data: QueueMsgTypesTraits;
+    type Data: HandleData<Self> + QueueMsgTypesTraits;
     type Fetch: HandleFetch<Self> + QueueMsgTypesTraits;
     type Msg: HandleMsg<Self> + QueueMsgTypesTraits;
     type Wait: HandleWait<Self> + QueueMsgTypesTraits;
@@ -214,13 +232,7 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
         self,
         store: &'a T::Store,
         depth: usize,
-    ) -> Pin<
-        Box<
-            dyn Future<Output = Result<Option<QueueMsg<T>>, Box<dyn std::error::Error>>>
-                + Send
-                + 'a,
-        >,
-    > {
+    ) -> Pin<Box<dyn Future<Output = Result<Option<QueueMsg<T>>, BoxDynError>> + Send + 'a>> {
         tracing::info!(
             depth,
             %self,
@@ -230,15 +242,7 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
         let fut = async move {
             match self {
                 QueueMsg::Event(event) => Ok(Some(event.handle(store))),
-                QueueMsg::Data(data) => {
-                    // TODO: Send data out
-                    tracing::error!(
-                        data = %serde_json::to_string(&data).unwrap(),
-                        "received data outside of an aggregation"
-                    );
-
-                    Ok(None)
-                }
+                QueueMsg::Data(data) => Ok(Some(data.handle(store))),
                 QueueMsg::Fetch(fetch) => Ok(Some(fetch.handle(store).await)),
                 QueueMsg::Msg(msg) => {
                     msg.handle(store).await?;
@@ -280,10 +284,22 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
                         let msg = msg.handle(store, depth + 1).await?;
 
                         if let Some(msg) = msg {
-                            queue.push_front(msg);
+                            queue.push_front(msg)
                         }
 
                         Ok(Some(flatten_seq(seq(queue))))
+                    }
+                    None => Ok(None),
+                },
+                QueueMsg::Concurrent(mut queue) => match queue.pop_front() {
+                    Some(msg) => {
+                        let msg = msg.handle(store, depth + 1).await?;
+
+                        if let Some(msg) = msg {
+                            queue.push_back(msg)
+                        }
+
+                        Ok(Some(flatten_conc(conc(queue))))
                     }
                     None => Ok(None),
                 },
@@ -322,14 +338,15 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
                     if let Some(msg) = queue.pop_front() {
                         let msg = msg.handle(store, depth + 1).await?;
 
-                        match msg {
-                            Some(QueueMsg::Data(d)) => {
-                                data.push_back(d);
+                        if let Some(msg) = msg {
+                            match msg {
+                                QueueMsg::Data(d) => {
+                                    data.push_back(d);
+                                }
+                                m => {
+                                    queue.push_back(m);
+                                }
                             }
-                            Some(m) => {
-                                queue.push_back(m);
-                            }
-                            None => {}
                         }
 
                         Ok(Some(aggregate(queue, data, receiver)))
@@ -392,9 +409,12 @@ impl<T: QueueMsgTypes> std::fmt::Display for QueueMsg<T> {
                 msg,
             } => write!(f, "Timeout({timeout_timestamp}, {msg})"),
             QueueMsg::Sequence(queue) => {
-                write!(f, "Sequence [")?;
-                display_list(f, queue.iter())?;
-                write!(f, "]")
+                write!(f, "Sequence")?;
+                display_list(f, queue.iter())
+            }
+            QueueMsg::Concurrent(msgs) => {
+                write!(f, "Parallel")?;
+                display_list(f, msgs.iter())
             }
             QueueMsg::Retry { remaining, msg } => write!(f, "Retry({remaining}, {msg})"),
             QueueMsg::Aggregate {
@@ -416,20 +436,53 @@ impl<T: QueueMsgTypes> std::fmt::Display for QueueMsg<T> {
 }
 
 fn flatten_seq<T: QueueMsgTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
-    fn flatten<T: QueueMsgTypes>(msg: QueueMsg<T>) -> VecDeque<QueueMsg<T>> {
-        if let QueueMsg::Sequence(new_seq) = msg {
-            new_seq.into_iter().flat_map(flatten).collect()
-        } else {
-            [msg].into()
+    fn flatten<T: QueueMsgTypes>(msg: QueueMsg<T>) -> Vec<QueueMsg<T>> {
+        match msg {
+            QueueMsg::Sequence(new_seq) => new_seq
+                .into_iter()
+                .flat_map(flatten)
+                .filter(|x| !matches!(x, QueueMsg::Noop))
+                .collect(),
+            _ => [msg].into(),
         }
     }
 
     let mut msgs = flatten(msg);
 
     if msgs.len() == 1 {
-        msgs.pop_front().unwrap()
+        msgs.pop().unwrap()
     } else {
-        seq(msgs)
+        let mut data = vec![];
+        for d in msgs.extract_if(|msg| matches!(msg, QueueMsg::Data(_))) {
+            data.push(d);
+        }
+
+        if data.is_empty() {
+            seq(msgs)
+        } else {
+            conc(data.into_iter().chain([seq(msgs)]))
+        }
+    }
+}
+
+fn flatten_conc<T: QueueMsgTypes>(msg: QueueMsg<T>) -> QueueMsg<T> {
+    fn flatten<T: QueueMsgTypes>(msg: QueueMsg<T>) -> Vec<QueueMsg<T>> {
+        match msg {
+            QueueMsg::Concurrent(new_conc) => new_conc
+                .into_iter()
+                .flat_map(flatten)
+                .filter(|x| !matches!(x, QueueMsg::Noop))
+                .collect(),
+            _ => [msg].into(),
+        }
+    }
+
+    let mut msgs = flatten(msg);
+
+    if msgs.len() == 1 {
+        msgs.pop().unwrap()
+    } else {
+        conc(msgs)
     }
 }
 
@@ -448,12 +501,18 @@ fn flatten() {
     }
 
     impl HandleMsg<EmptyMsgTypes> for Unit {
-        async fn handle(self, _: &()) -> Result<(), Box<dyn std::error::Error>> {
+        async fn handle(self, _: &()) -> Result<(), BoxDynError> {
             Ok(())
         }
     }
 
     impl HandleEvent<EmptyMsgTypes> for Unit {
+        fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
+            QueueMsg::Noop
+        }
+    }
+
+    impl HandleData<EmptyMsgTypes> for Unit {
         fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
             QueueMsg::Noop
         }
@@ -491,23 +550,40 @@ fn flatten() {
 
     let msg = seq::<EmptyMsgTypes>([
         defer(1),
-        seq([defer(2), defer(3)]),
+        seq([defer(2), seq([defer(3)])]),
         seq([defer(4)]),
         defer(5),
     ]);
-
     assert_eq!(
         flatten_seq(msg),
         seq([defer(1), defer(2), defer(3), defer(4), defer(5)])
     );
 
     let msg = seq::<EmptyMsgTypes>([defer(1)]);
-
     assert_eq!(flatten_seq(msg), defer(1));
+
+    let msg = conc::<EmptyMsgTypes>([defer(1)]);
+    assert_eq!(flatten_seq(msg), conc([defer(1)]));
+
+    let msg = conc::<EmptyMsgTypes>([seq([defer(1)])]);
+    assert_eq!(flatten_seq(msg), conc([seq([defer(1)])]));
+
+    let msg = seq::<EmptyMsgTypes>([data(Unit)]);
+    assert_eq!(flatten_seq(msg), data(Unit));
+
+    let msg = conc::<EmptyMsgTypes>([seq([data(Unit)])]);
+    assert_eq!(flatten_seq(msg), conc([seq([data(Unit)])]));
+
+    let msg = conc::<EmptyMsgTypes>([conc([conc([data(Unit)])])]);
+    assert_eq!(flatten_conc(msg), data(Unit));
 }
 
 pub trait HandleFetch<T: QueueMsgTypes> {
     fn handle(self, store: &T::Store) -> impl Future<Output = QueueMsg<T>> + Send;
+}
+
+pub trait HandleData<T: QueueMsgTypes> {
+    fn handle(self, store: &T::Store) -> QueueMsg<T>;
 }
 
 pub trait HandleWait<T: QueueMsgTypes> {
@@ -519,14 +595,35 @@ pub trait HandleEvent<T: QueueMsgTypes> {
 }
 
 pub trait HandleMsg<T: QueueMsgTypes> {
-    fn handle(
-        self,
-        store: &T::Store,
-    ) -> impl Future<Output = Result<(), Box<dyn std::error::Error>>> + Send;
+    fn handle(self, store: &T::Store) -> impl Future<Output = Result<(), BoxDynError>> + Send;
 }
 
 pub trait HandleAggregate<T: QueueMsgTypes> {
     fn handle(self, data: VecDeque<T::Data>) -> QueueMsg<T>;
+}
+
+impl<T: QueueMsgTypes> HandleFetch<T> for Never {
+    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> QueueMsg<T> {
+        match self {}
+    }
+}
+
+impl<T: QueueMsgTypes> HandleWait<T> for Never {
+    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> QueueMsg<T> {
+        match self {}
+    }
+}
+
+impl<T: QueueMsgTypes> HandleEvent<T> for Never {
+    fn handle(self, _: &<T as QueueMsgTypes>::Store) -> QueueMsg<T> {
+        match self {}
+    }
+}
+
+impl<T: QueueMsgTypes> HandleMsg<T> for Never {
+    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<(), BoxDynError> {
+        match self {}
+    }
 }
 
 /// Returns the current unix timestamp in seconds.
@@ -542,7 +639,7 @@ pub struct Reactor<T: QueueMsgTypes> {
     store: Arc<T::Store>,
 }
 
-type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
+pub type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 
 #[allow(clippy::manual_async_fn)] // please leave me alone
 impl<T: QueueMsgTypes> Reactor<T> {
@@ -556,7 +653,7 @@ impl<T: QueueMsgTypes> Reactor<T> {
     {
         fn unfold<T: QueueMsgTypes, Q: Queue<T>>(
             (store, mut q): (Arc<T::Store>, Q),
-        ) -> impl Future<Output = Result<Option<(Option<T::Data>, (Arc<T::Store>, Q))>, BoxDynError>>
+        ) -> impl Future<Output = Result<Option<(Vec<T::Data>, (Arc<T::Store>, Q))>, BoxDynError>>
                + Send
                + 'static {
             async move {
@@ -566,36 +663,25 @@ impl<T: QueueMsgTypes> Reactor<T> {
                 let s = store.clone();
 
                 let data = q
-                    .process(move |msg| {
-                        async move {
-                            let new_msgs = msg.handle(&*s, 0).await;
-
-                            match new_msgs {
-                                Ok(ok) => match ok {
-                                    Some(QueueMsg::Data(d)) => (Some(d), Ok(None)),
-                                    _ => (None, Ok(ok)),
-                                },
-                                // REVIEW: Check if this error is recoverable or not - i.e. if this is an IO error,
-                                // the msg can likely be retried
-                                Err(err) => {
-                                    // ProcessFlow::Fail(err.to_string())
-                                    // HACK: panic is OK here since this is spawned in a task, and will be caught by the runtime worker
-                                    panic!("{err}");
-                                }
-                            }
+                    .process::<_, _, Vec<T::Data>>(move |msg| async move {
+                        match msg.handle(&*s, 0).await.unwrap() {
+                            Some(QueueMsg::Data(d)) => (vec![d], Ok(vec![])),
+                            Some(QueueMsg::Concurrent(msgs)) => (vec![], Ok(msgs.into())),
+                            msg => (vec![], Ok(msg.into_iter().collect())),
                         }
                     })
                     .await;
 
                 match data {
-                    Ok(data) => Ok(Some((data.flatten(), (store, q)))),
+                    Ok(data) => Ok(Some((data.into_iter().flatten().collect(), (store, q)))),
                     Err(err) => Err(err.into()),
                 }
             }
         }
 
-        try_unfold::<_, _, _, Option<T::Data>>((self.store, q), unfold)
-            .filter_map(|x| async { x.transpose() })
+        try_unfold::<_, _, _, Vec<T::Data>>((self.store, q), unfold).flat_map(|x| {
+            stream::iter(x.map_or_else(|err| vec![Err(err)], |ok| ok.into_iter().map(Ok).collect()))
+        })
     }
 }
 
@@ -605,28 +691,20 @@ pub async fn run_to_completion<A: UseAggregate<T, R>, T: QueueMsgTypes, R, Q: Qu
     queue_config: Q::Config,
     msgs: impl IntoIterator<Item = QueueMsg<T>>,
 ) -> R {
-    let mut queue = Q::new(queue_config, "".to_owned()).await.unwrap();
+    let mut queue = Q::new(queue_config).await.unwrap();
 
     for msg in msgs {
         queue.enqueue(msg).await.unwrap();
     }
 
-    let reactor = Reactor::new(store).run(queue);
-    pin_mut!(reactor);
+    let output = Reactor::new(store)
+        .run(queue)
+        .take(A::AggregatedData::LEN)
+        .try_collect()
+        .await
+        .unwrap();
 
-    let mut output = vec![];
-    while let Some(data) = reactor.next().await {
-        let data = data.unwrap();
-        tracing::info!(%data, "received data");
-        output.push(data);
-        if output.len() >= A::AggregatedData::LEN {
-            tracing::warn!("received all data");
-            break;
-        }
-    }
-
-    let data = output.into();
-    let data = match HListTryFromIterator::try_from_iter(data) {
+    let data = match HListTryFromIterator::try_from_iter(output) {
         Ok(ok) => ok,
         Err(_) => {
             panic!(
@@ -637,4 +715,92 @@ pub async fn run_to_completion<A: UseAggregate<T, R>, T: QueueMsgTypes, R, Q: Qu
     };
 
     A::aggregate(a, data)
+}
+
+// impl<T: QueueMsgTypes, Q: Queue<T>> Sink<T> for Q {
+//     type Error;
+
+//     fn poll_ready(
+//         self: Pin<&mut Self>,
+//         cx: &mut std::task::Context<'_>,
+//     ) -> std::task::Poll<Result<(), Self::Error>> {
+//         todo!()
+//     }
+
+//     fn start_send(self: Pin<&mut Self>, item: T) -> Result<(), Self::Error> {
+//         todo!()
+//     }
+
+//     fn poll_flush(
+//         self: Pin<&mut Self>,
+//         cx: &mut std::task::Context<'_>,
+//     ) -> std::task::Poll<Result<(), Self::Error>> {
+//         todo!()
+//     }
+
+//     fn poll_close(
+//         self: Pin<&mut Self>,
+//         cx: &mut std::task::Context<'_>,
+//     ) -> std::task::Poll<Result<(), Self::Error>> {
+//         todo!()
+//     }
+// }
+
+#[derive(DebugNoBound, CloneNoBound)]
+pub struct InMemoryQueue<T: QueueMsgTypes>(Arc<Mutex<VecDeque<QueueMsg<T>>>>);
+
+impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
+    type Error = std::convert::Infallible;
+    type Config = ();
+
+    fn new(_cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
+        futures::future::ok(Self(Arc::new(Mutex::new(VecDeque::default()))))
+    }
+
+    fn enqueue(
+        &mut self,
+        item: QueueMsg<T>,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
+        tracing::warn!(%item, "enqueueing new item");
+        self.0.lock().expect("mutex is poisoned").push_back(item);
+        futures::future::ok(())
+    }
+
+    async fn process<F, Fut, R>(&mut self, f: F) -> Result<Option<R>, Self::Error>
+    where
+        F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
+        Fut: Future<Output = (R, Result<Vec<QueueMsg<T>>, String>)> + Send + 'static,
+        R: Send + Sync + 'static,
+    {
+        let msg = {
+            let mut queue = self.0.lock().expect("mutex is poisoned");
+            let msg = queue.pop_front();
+
+            drop(queue);
+
+            msg
+        };
+
+        match msg {
+            Some(msg) => {
+                tracing::info!(
+                    json = %serde_json::to_string(&msg).unwrap(),
+                );
+
+                let (r, res) = f(msg.clone()).await;
+                match res {
+                    Ok(new_msgs) => {
+                        for new_msg in new_msgs {
+                            let mut queue = self.0.lock().expect("mutex is poisoned");
+                            queue.push_back(new_msg);
+                        }
+
+                        Ok(Some(r))
+                    }
+                    Err(why) => panic!("{why}"),
+                }
+            }
+            None => Ok(None),
+        }
+    }
 }

@@ -1,5 +1,6 @@
 use std::{fmt::Display, marker::PhantomData};
 
+use chain_utils::GetChain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
 use queue_msg::{defer, fetch, now, seq, wait, HandleWait, QueueMsg, QueueMsgTypes};
@@ -13,7 +14,7 @@ use unionlabs::{
 use crate::{
     any_enum,
     fetch::{AnyFetch, Fetch, FetchState},
-    identified, AnyLightClientIdentified, ChainExt, DoFetchState, GetChain, Identified, RelayerMsg,
+    identified, AnyLightClientIdentified, ChainExt, DoFetchState, Identified, RelayerMsg,
     RelayerMsgTypes,
 };
 
