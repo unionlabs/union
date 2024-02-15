@@ -105,10 +105,7 @@
       flake = false;
     };
     cometbls = {
-      type = "github";
-      owner = "unionlabs";
-      repo = "cometbls";
-      ref = "cometbls-v0.38+tm-light-client";
+      url = "github:unionlabs/cometbls/cometbls-v0.38-tm-light-client";
       flake = false;
     };
 

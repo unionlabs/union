@@ -71,7 +71,7 @@
       },
       "original": {
         "owner": "unionlabs",
-        "ref": "cometbls-v0.38+tm-light-client",
+        "ref": "cometbls-v0.38-tm-light-client",
         "repo": "cometbls",
         "type": "github"
       }
