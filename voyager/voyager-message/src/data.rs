@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use macros::apply;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     self,
@@ -13,32 +14,31 @@ use unionlabs::{
 
 use crate::{any_enum, fetch::FetchPacketAcknowledgement, ChainExt};
 
-any_enum! {
-    /// Data that will likely be used in a [`RelayerMsg::Aggregate`].
-    #[any = AnyData]
-    pub enum Data<Hc: ChainExt, Tr: ChainExt> {
-        SelfClientState(SelfClientState<Hc, Tr>),
-        SelfConsensusState(SelfConsensusState<Hc, Tr>),
+#[apply(any_enum)]
+/// Data that will likely be used in a [`RelayerMsg::Aggregate`].
+#[any = AnyData]
+pub enum Data<Hc: ChainExt, Tr: ChainExt> {
+    SelfClientState(SelfClientState<Hc, Tr>),
+    SelfConsensusState(SelfConsensusState<Hc, Tr>),
 
-        PacketAcknowledgement(PacketAcknowledgement<Hc, Tr>),
+    PacketAcknowledgement(PacketAcknowledgement<Hc, Tr>),
 
-        ClientStateProof(IbcProof<Hc, Tr, ClientStatePath<Hc::ClientId>>),
-        ClientConsensusStateProof(IbcProof<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>),
-        ConnectionProof(IbcProof<Hc, Tr, ConnectionPath>),
-        ChannelEndProof(IbcProof<Hc, Tr, ChannelEndPath>),
-        CommitmentProof(IbcProof<Hc, Tr, CommitmentPath>),
-        AcknowledgementProof(IbcProof<Hc, Tr, AcknowledgementPath>),
+    ClientStateProof(IbcProof<Hc, Tr, ClientStatePath<Hc::ClientId>>),
+    ClientConsensusStateProof(IbcProof<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>),
+    ConnectionProof(IbcProof<Hc, Tr, ConnectionPath>),
+    ChannelEndProof(IbcProof<Hc, Tr, ChannelEndPath>),
+    CommitmentProof(IbcProof<Hc, Tr, CommitmentPath>),
+    AcknowledgementProof(IbcProof<Hc, Tr, AcknowledgementPath>),
 
-        ClientState(IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>),
-        ClientConsensusState(IbcState<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>),
-        Connection(IbcState<Hc, Tr, ConnectionPath>),
-        ChannelEnd(IbcState<Hc, Tr, ChannelEndPath>),
-        Commitment(IbcState<Hc, Tr, CommitmentPath>),
-        Acknowledgement(IbcState<Hc, Tr, AcknowledgementPath>),
+    ClientState(IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>),
+    ClientConsensusState(IbcState<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>),
+    Connection(IbcState<Hc, Tr, ConnectionPath>),
+    ChannelEnd(IbcState<Hc, Tr, ChannelEndPath>),
+    Commitment(IbcState<Hc, Tr, CommitmentPath>),
+    Acknowledgement(IbcState<Hc, Tr, AcknowledgementPath>),
 
-        #[serde(untagged)]
-        LightClientSpecific(LightClientSpecificData<Hc, Tr>),
-    }
+    #[serde(untagged)]
+    LightClientSpecific(LightClientSpecificData<Hc, Tr>),
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> std::fmt::Display for Data<Hc, Tr> {

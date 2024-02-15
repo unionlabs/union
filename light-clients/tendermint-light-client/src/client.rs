@@ -334,9 +334,9 @@ impl IbcClient for TendermintLightClient {
             .timestamp
             .seconds
             .inner();
-        Ok(timestamp
+        timestamp
             .try_into()
-            .map_err(|_| Error::NegativeTimestamp(timestamp))?)
+            .map_err(|_| Error::NegativeTimestamp(timestamp))
     }
 }
 

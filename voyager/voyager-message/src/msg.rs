@@ -2,6 +2,7 @@ use std::{fmt::Display, marker::PhantomData};
 
 use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use macros::apply;
 use queue_msg::{HandleMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -26,26 +27,25 @@ use unionlabs::{
 
 use crate::{any_enum, AnyLightClientIdentified, ChainExt, DoMsg, GetChain, RelayerMsgTypes, Wasm};
 
-any_enum! {
-    /// Defines messages that are sent *to* the lightclient `L`.
-    #[any = AnyMsg]
-    pub enum Msg<Hc: ChainExt, Tr: ChainExt> {
-        ConnectionOpenInit(MsgConnectionOpenInitData<Hc, Tr>),
-        ConnectionOpenTry(MsgConnectionOpenTryData<Hc, Tr>),
-        ConnectionOpenAck(MsgConnectionOpenAckData<Hc, Tr>),
-        ConnectionOpenConfirm(MsgConnectionOpenConfirmData<Hc, Tr>),
+#[apply(any_enum)]
+/// Defines messages that are sent *to* the lightclient `L`.
+#[any = AnyMsg]
+pub enum Msg<Hc: ChainExt, Tr: ChainExt> {
+    ConnectionOpenInit(MsgConnectionOpenInitData<Hc, Tr>),
+    ConnectionOpenTry(MsgConnectionOpenTryData<Hc, Tr>),
+    ConnectionOpenAck(MsgConnectionOpenAckData<Hc, Tr>),
+    ConnectionOpenConfirm(MsgConnectionOpenConfirmData<Hc, Tr>),
 
-        ChannelOpenInit(MsgChannelOpenInitData<Hc, Tr>),
-        ChannelOpenTry(MsgChannelOpenTryData<Hc, Tr>),
-        ChannelOpenAck(MsgChannelOpenAckData<Hc, Tr>),
-        ChannelOpenConfirm(MsgChannelOpenConfirmData<Hc, Tr>),
+    ChannelOpenInit(MsgChannelOpenInitData<Hc, Tr>),
+    ChannelOpenTry(MsgChannelOpenTryData<Hc, Tr>),
+    ChannelOpenAck(MsgChannelOpenAckData<Hc, Tr>),
+    ChannelOpenConfirm(MsgChannelOpenConfirmData<Hc, Tr>),
 
-        RecvPacket(MsgRecvPacketData<Hc, Tr>),
-        AckPacket(MsgAckPacketData<Hc, Tr>),
+    RecvPacket(MsgRecvPacketData<Hc, Tr>),
+    AckPacket(MsgAckPacketData<Hc, Tr>),
 
-        CreateClient(MsgCreateClientData<Hc, Tr>),
-        UpdateClient(MsgUpdateClientData<Hc, Tr>),
-    }
+    CreateClient(MsgCreateClientData<Hc, Tr>),
+    UpdateClient(MsgUpdateClientData<Hc, Tr>),
 }
 
 impl HandleMsg<RelayerMsgTypes> for AnyLightClientIdentified<AnyMsg> {

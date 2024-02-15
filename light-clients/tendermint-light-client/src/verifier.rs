@@ -12,10 +12,11 @@ impl<'a> Ed25519Verifier<'a> {
     }
 }
 
+#[allow(clippy::manual_unwrap_or)]
 impl<'a> HostFns for Ed25519Verifier<'a> {
     fn verify_signature(&self, pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool {
         match pubkey {
-            PublicKey::Ed25519(ref key) => match self.deps.api.ed25519_verify(msg, sig, &key) {
+            PublicKey::Ed25519(ref key) => match self.deps.api.ed25519_verify(msg, sig, key) {
                 Ok(res) => res,
                 Err(_) => false,
             },
