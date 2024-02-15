@@ -105,7 +105,7 @@
       flake = false;
     };
     cometbls = {
-      url = "github:unionlabs/cometbls/cometbls-v0.38-tm-light-client";
+      url = "git+ssh://git@github.com/unionlabs/cometbls?rev=360766577f7daa89f958a4c28eee909340eb4b02";
       flake = false;
     };
 

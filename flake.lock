@@ -64,16 +64,15 @@
       "locked": {
         "lastModified": 1706545041,
         "narHash": "sha256-qX37SK6d2kEgnHg5a8YDZQNhb5R+GcK7gp7iDTZGYgg=",
-        "owner": "unionlabs",
-        "repo": "cometbls",
         "rev": "360766577f7daa89f958a4c28eee909340eb4b02",
-        "type": "github"
+        "revCount": 9452,
+        "type": "git",
+        "url": "ssh://git@github.com/unionlabs/cometbls"
       },
       "original": {
-        "owner": "unionlabs",
-        "ref": "cometbls-v0.38-tm-light-client",
-        "repo": "cometbls",
-        "type": "github"
+        "rev": "360766577f7daa89f958a4c28eee909340eb4b02",
+        "type": "git",
+        "url": "ssh://git@github.com/unionlabs/cometbls"
       }
     },
     "cosmosproto": {
