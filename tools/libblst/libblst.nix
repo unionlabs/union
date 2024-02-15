@@ -1,8 +1,7 @@
 { inputs, ... }: {
   perSystem = { pkgs, ... }:
     let
-      enableShared = !pkgs.stdenv.hostPlatform.isStatic
-        && !pkgs.stdenv.hostPlatform.isWindows;
+      enableShared = !pkgs.stdenv.hostPlatform.isStatic;
     in
     with pkgs; {
       packages.libblst = stdenv.mkDerivation rec {
@@ -10,13 +9,9 @@
         version = inputs.blst.shortRev;
         src = inputs.blst;
         buildPhase = ''
-          ./build.sh ${
-            lib.optionalString stdenv.hostPlatform.isWindows "flavour=mingw64"
-          }
+          ./build.sh
         '' + lib.optionalString enableShared ''
-          ./build.sh -shared ${
-            lib.optionalString stdenv.hostPlatform.isWindows "flavour=mingw64"
-          }
+          ./build.sh -shared
         '';
         installPhase = ''
           mkdir -p $out/{lib,include}
