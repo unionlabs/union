@@ -1,6 +1,7 @@
 .text	
 
 .globl	ctx_inverse_mod_383
+
 .def	ctx_inverse_mod_383;	.scl 2;	.type 32;	.endef
 .p2align	5
 ctx_inverse_mod_383:
@@ -9,12 +10,13 @@ ctx_inverse_mod_383:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_ctx_inverse_mod_383:
+
+
 	movq	%rcx,%rdi
 	movq	%rdx,%rsi
 	movq	%r8,%rdx
 	movq	%r9,%rcx
-
-
+ct_inverse_mod_383$1:
 	pushq	%rbp
 
 	pushq	%rbx
@@ -812,7 +814,7 @@ ctx_inverse_mod_383:
 
 	movq	48(%rsi),%r10
 
-	call	__inner_loop_62
+	call	__tail_loop_53
 
 
 
@@ -1514,9 +1516,9 @@ __inner_loop_31:
 	.byte	0xf3,0xc3
 
 
-.def	__inner_loop_62;	.scl 3;	.type 32;	.endef
+.def	__tail_loop_53;	.scl 3;	.type 32;	.endef
 .p2align	5
-__inner_loop_62:
+__tail_loop_53:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 	movq	$1,%rdx
@@ -1524,7 +1526,7 @@ __inner_loop_62:
 	xorq	%r12,%r12
 	movq	$1,%r13
 
-.Loop_62:
+.Loop_53:
 	xorq	%rax,%rax
 	testq	$1,%r8
 	movq	%r10,%rbx
@@ -1551,7 +1553,7 @@ __inner_loop_62:
 	subq	%rax,%rdx
 	subq	%rbx,%rcx
 	subl	$1,%edi
-	jnz	.Loop_62
+	jnz	.Loop_53
 
 	.byte	0xf3,0xc3
 
@@ -1575,8 +1577,9 @@ __inner_loop_62:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_ctx_inverse_mod_383_body:
 .byte	1,0,18,0
 .byte	0x00,0xf4,0x8b,0x00
@@ -1588,6 +1591,8 @@ __inner_loop_62:
 .byte	0x00,0x74,0x92,0x00
 .byte	0x00,0x64,0x93,0x00
 .byte	0x00,0x01,0x91,0x00
+.byte	0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_ctx_inverse_mod_383_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00

@@ -77,6 +77,10 @@ die "can't locate x86_64-xlate.pl";
 open STDOUT,"| \"$^X\" \"$xlate\" $flavour \"$output\""
     or die "can't call $xlate: $!";
 
+$code.=<<___ if ($flavour =~ /masm/);
+.globl	ct_inverse_mod_383\$1
+___
+
 my ($out_ptr, $in_ptr, $n_ptr, $nx_ptr) = ("%rdi", "%rsi", "%rdx", "%rcx");
 my @acc=(map("%r$_",(8..15)), "%rbx", "%rbp", $in_ptr, $out_ptr);
 my ($f0, $g0, $f1, $g1) = ("%rdx","%rcx","%r12","%r13");
@@ -88,10 +92,12 @@ $code.=<<___;
 .text
 
 .globl	ctx_inverse_mod_383
+.hidden	ctx_inverse_mod_383
 .type	ctx_inverse_mod_383,\@function,4,"unwind"
 .align	32
 ctx_inverse_mod_383:
 .cfi_startproc
+ct_inverse_mod_383\$1:
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -280,7 +286,7 @@ $code.=<<___;
 	#xor	@acc[1],      @acc[1]	# |a_hi|
 	mov	8*6($in_ptr), @acc[2]	# |b_lo|
 	#xor	@acc[3],      @acc[3]	# |b_hi|
-	call	__inner_loop_62
+	call	__tail_loop_53
 	#mov	$f0, 8*7(%rsp)
 	#mov	$g0, 8*8(%rsp)
 	#mov	$f1, 8*9(%rsp)
@@ -949,15 +955,15 @@ __inner_loop_31:		################# by Thomas Pornin
 	ret
 .size	__inner_loop_31,.-__inner_loop_31
 
-.type	__inner_loop_62,\@abi-omnipotent
+.type	__tail_loop_53,\@abi-omnipotent
 .align	32
-__inner_loop_62:
+__tail_loop_53:
 	mov	\$1, $f0	# |f0|=1
 	xor	$g0, $g0	# |g0|=0
 	xor	$f1, $f1	# |f1|=0
 	mov	\$1, $g1	# |g1|=1
 
-.Loop_62:
+.Loop_53:
 	xor	$t0, $t0
 	test	\$1, $a_lo	# if |a_| is odd, then we'll be subtracting |b_|
 	mov	$b_lo, $t1
@@ -984,10 +990,10 @@ __inner_loop_62:
 	sub	$t0, $f0	# |f0|-=|f1| (or |f0-=0| if |a_| was even)
 	sub	$t1, $g0	# |g0|-=|g1| (or |g0-=0| ...)
 	sub	\$1, $cnt
-	jnz	.Loop_62
+	jnz	.Loop_53
 
 	ret
-.size	__inner_loop_62,.-__inner_loop_62
+.size	__tail_loop_53,.-__tail_loop_53
 ___
 }
 

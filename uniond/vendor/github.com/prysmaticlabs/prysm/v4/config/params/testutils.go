@@ -11,15 +11,30 @@ func SetupTestConfigCleanup(t testing.TB) {
 	temp := configs.getActive().Copy()
 	undo, err := SetActiveWithUndo(temp)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	prevNetworkCfg := networkConfig.Copy()
 	t.Cleanup(func() {
 		mainnetBeaconConfig = prevDefaultBeaconConfig
 		err = undo()
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 		networkConfig = prevNetworkCfg
+	})
+}
+
+// SetActiveTestCleanup sets an active config,
+// and adds a test cleanup hook to revert to the default config after the test completes.
+func SetActiveTestCleanup(t *testing.T, cfg *BeaconChainConfig) {
+	undo, err := SetActiveWithUndo(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		err = undo()
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 }

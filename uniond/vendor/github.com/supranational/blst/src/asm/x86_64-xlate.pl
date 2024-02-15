@@ -99,6 +99,7 @@ elsif (!$gas)
     $elf=0;
     $decor="\$L\$";
 }
+my $colon= $masm ? "::" : ":";
 
 $dwarf=0 if($win64);
 
@@ -172,7 +173,7 @@ my %globals;
 			   && !$current_function->{unwind}) {
 		    $self->{op} = "mov	rdi,QWORD$PTR\[8+rsp\]\t;WIN64 epilogue\n\t".
 				  "mov	rsi,QWORD$PTR\[16+rsp\]\n\t";
-	    	}
+		}
 		$self->{op} .= "DB\t0F3h,0C3h\t\t;repret";
 	    } elsif ($self->{op} =~ /^(pop|push)f/) {
 		$self->{op} .= $self->{sz};
@@ -203,7 +204,7 @@ my %globals;
 	$ret;
     }
     sub out {
-    	my $self = shift;
+	my $self = shift;
 
 	$self->{value} =~ s/\b(0b[0-1]+)/oct($1)/eig;
 	if ($gas) {
@@ -244,11 +245,11 @@ my %globals;
 	my	$ret;
 
 	# optional * ----vvv--- appears in indirect jmp/call
-	if ($$line =~ /^(\*?)([^\(,]*)\(([%\w,]+)\)((?:{[^}]+})*)/) {
+	if ($$line =~ /^(\*?)([^\(,]*)\(([%\w,\s]+)\)((?:{[^}]+})*)/) {
 	    bless $self, $class;
 	    $self->{asterisk} = $1;
 	    $self->{label} = $2;
-	    ($self->{base},$self->{index},$self->{scale})=split(/,/,$3);
+	    ($self->{base},$self->{index},$self->{scale})=split(/(?:,\s*)/,$3);
 	    $self->{scale} = 1 if (!defined($self->{scale}));
 	    $self->{opmask} = $4;
 	    $ret = $self;
@@ -268,7 +269,7 @@ my %globals;
     sub out {
 	my ($self, $sz) = @_;
 
-	$self->{label} =~ s/([_a-z][_a-z0-9]*)/$globals{$1} or $1/gei;
+	$self->{label} =~ s/([_a-z][_a-z0-9\$]*)/$globals{$1} or $1/gei;
 	$self->{label} =~ s/\.L/$decor/g;
 
 	# Silently convert all EAs to 64-bit. This is required for
@@ -372,7 +373,7 @@ my %globals;
 	$ret;
     }
     sub out {
-    	my $self = shift;
+	my $self = shift;
 	if ($gas)	{ sprintf "%s%%%s%s",	$self->{asterisk},
 						$self->{value},
 						$self->{opmask}; }
@@ -386,7 +387,7 @@ my %globals;
 	my	$self = {};
 	my	$ret;
 
-	if ($$line =~ /(^[\.\w]+)\:/) {
+	if ($$line =~ /(^[\.\w\$]+)\:/) {
 	    bless $self,$class;
 	    $self->{value} = $1;
 	    $ret = $self;
@@ -396,60 +397,81 @@ my %globals;
 	}
 	$ret;
     }
+    sub win64_args {
+	my $narg = $current_function->{narg} // 6;
+	return undef if ($narg < 0);
+	my $arg5 = 4*8 - cfi_directive::cfa_rsp();
+	my $arg6 = $arg5 + 8;
+	my $args;
+	if ($gas) {
+	    $args .= "	movq	%rcx,%rdi\n" if ($narg>0);
+	    $args .= "	movq	%rdx,%rsi\n" if ($narg>1);
+	    $args .= "	movq	%r8,%rdx\n"  if ($narg>2);
+	    $args .= "	movq	%r9,%rcx\n"  if ($narg>3);
+	    $args .= "	movq	$arg5(%rsp),%r8\n" if ($narg>4);
+	    $args .= "	movq	$arg6(%rsp),%r9\n" if ($narg>5);
+	} else {
+	    $args .= "	mov	rdi,rcx\n" if ($narg>0);
+	    $args .= "	mov	rsi,rdx\n" if ($narg>1);
+	    $args .= "	mov	rdx,r8\n"  if ($narg>2);
+	    $args .= "	mov	rcx,r9\n"  if ($narg>3);
+	    $args .= "	mov	r8,QWORD$PTR\[$arg5+rsp\]\n" if ($narg>4);
+	    $args .= "	mov	r9,QWORD$PTR\[$arg6+rsp\]\n" if ($narg>5);
+	}
+	$current_function->{narg} = -1;
+	$args;
+    }
     sub out {
 	my $self = shift;
 
 	if ($gas) {
 	    my $func = ($globals{$self->{value}} or $self->{value}) . ":";
 	    if ($current_function->{name} eq $self->{value}) {
+		$current_function->{pc} = 0;
 		$func .= "\n.cfi_".cfi_directive::startproc()   if ($dwarf);
 		$func .= "\n	.byte	0xf3,0x0f,0x1e,0xfa\n";	# endbranch
-		if ($win64 && $current_function->{abi} eq "svr4") {
-		    my $fp = $current_function->{unwind} ? "%r11" : "%rax";
-		    $func .= "	movq	%rdi,8(%rsp)\n";
-		    $func .= "	movq	%rsi,16(%rsp)\n";
-		    $func .= "	movq	%rsp,$fp\n";
-		    $func .= "${decor}SEH_begin_$current_function->{name}:\n";
-		    my $narg = $current_function->{narg};
-		    $narg=6 if (!defined($narg));
-		    $func .= "	movq	%rcx,%rdi\n" if ($narg>0);
-		    $func .= "	movq	%rdx,%rsi\n" if ($narg>1);
-		    $func .= "	movq	%r8,%rdx\n"  if ($narg>2);
-		    $func .= "	movq	%r9,%rcx\n"  if ($narg>3);
-		    $func .= "	movq	40(%rsp),%r8\n" if ($narg>4);
-		    $func .= "	movq	48(%rsp),%r9\n" if ($narg>5);
+		if ($win64) {
+		    if ($current_function->{abi} eq "svr4") {
+			my $fp = $current_function->{unwind} ? "%r11" : "%rax";
+			$func .= "	movq	%rdi,8(%rsp)\n";
+			$func .= "	movq	%rsi,16(%rsp)\n";
+			$func .= "	movq	%rsp,$fp\n";
+			$func .= "${decor}SEH_begin_$current_function->{name}:\n";
+		    } elsif ($current_function->{unwind}) {
+			$func .= "	movq	%rsp,%r11\n";
+			$func .= "${decor}SEH_begin_$current_function->{name}:\n";
+		    }
 		}
+	    } elsif ($win64 && $current_function->{abi} eq "svr4"
+			    && $current_function->{pc} >= 0) {
+		$func = win64_args().$func;
 	    }
 	    $func;
 	} elsif ($self->{value} ne "$current_function->{name}") {
-	    # Make all labels in masm global.
-	    $self->{value} .= ":" if ($masm);
-	    $self->{value} . ":";
-	} elsif ($win64 && $current_function->{abi} eq "svr4") {
+	    my $func;
+	    if ($win64 && $current_function->{abi} eq "svr4"
+		       && $current_function->{pc} >= 0) {
+		$func = win64_args();
+	    }
+	    $func .= $self->{value} . $colon;
+	    $func;
+	} else {
+	    $current_function->{pc} = 0;
 	    my $func =	"$current_function->{name}" .
 			($nasm ? ":" : "\tPROC $current_function->{scope}") .
 			"\n";
-	    my $fp = $current_function->{unwind} ? "r11" : "rax";
 	    $func .= "	DB	243,15,30,250\n";	# endbranch
-	    $func .= "	mov	QWORD$PTR\[8+rsp\],rdi\t;WIN64 prologue\n";
-	    $func .= "	mov	QWORD$PTR\[16+rsp\],rsi\n";
-	    $func .= "	mov	$fp,rsp\n";
-	    $func .= "${decor}SEH_begin_$current_function->{name}:";
-	    $func .= ":" if ($masm);
-	    $func .= "\n";
-	    my $narg = $current_function->{narg};
-	    $narg=6 if (!defined($narg));
-	    $func .= "	mov	rdi,rcx\n" if ($narg>0);
-	    $func .= "	mov	rsi,rdx\n" if ($narg>1);
-	    $func .= "	mov	rdx,r8\n"  if ($narg>2);
-	    $func .= "	mov	rcx,r9\n"  if ($narg>3);
-	    $func .= "	mov	r8,QWORD$PTR\[40+rsp\]\n" if ($narg>4);
-	    $func .= "	mov	r9,QWORD$PTR\[48+rsp\]\n" if ($narg>5);
-	    $func .= "\n";
-	} else {
-	   "$current_function->{name}".
-			($nasm ? ":" : "\tPROC $current_function->{scope}").
-	   "\n	DB	243,15,30,250";			# endbranch
+	    if ($current_function->{abi} eq "svr4") {
+		my $fp = $current_function->{unwind} ? "r11" : "rax";
+		$func .= "	mov	QWORD$PTR\[8+rsp\],rdi\t;WIN64 prologue\n";
+		$func .= "	mov	QWORD$PTR\[16+rsp\],rsi\n";
+		$func .= "	mov	$fp,rsp\n";
+		$func .= "${decor}SEH_begin_$current_function->{name}${colon}\n";
+	    } elsif ($current_function->{unwind}) {
+		$func .= "	mov	r11,rsp\n";
+		$func .= "${decor}SEH_begin_$current_function->{name}${colon}\n";
+	    }
+	    $func;
 	}
     }
 }
@@ -466,7 +488,7 @@ my %globals;
 	    $$line = substr($$line,@+[0]); $$line =~ s/^\s+//;
 
 	    $self->{value} =~ s/\@PLT// if (!$elf);
-	    $self->{value} =~ s/([_a-z][_a-z0-9]*)/$globals{$1} or $1/gei;
+	    $self->{value} =~ s/([_a-z][_a-z0-9\$]*)/$globals{$1} or $1/gei;
 	    $self->{value} =~ s/\.L/$decor/g;
 	    $self->{opcode} = $opcode;
 	}
@@ -486,7 +508,7 @@ my @pdata_seg = (".section	.pdata", ".align	4");
     # stack unwinding procedure compliant with DWARF specification,
     # see http://dwarfstd.org/. Besides naturally expected for this
     # script platform-specific filtering function, this module adds
-    # three auxiliary synthetic directives not recognized by [GNU]
+    # four auxiliary synthetic directives not recognized by [GNU]
     # assembler:
     #
     # - .cfi_push to annotate push instructions in prologue, which
@@ -495,6 +517,8 @@ my @pdata_seg = (".section	.pdata", ".align	4");
     # - .cfi_pop to annotate pop instructions in epilogue, which
     #   translates to .cfi_adjust_cfa_offset (if needed) and
     #   .cfi_restore;
+    # - .cfi_alloca to annotate stack pointer adjustments, which
+    #   translates to .cfi_adjust_cfa_offset as needed;
     # - [and most notably] .cfi_cfa_expression which encodes
     #   DW_CFA_def_cfa_expression and passes it to .cfi_escape as
     #   byte vector;
@@ -571,6 +595,8 @@ my @pdata_seg = (".section	.pdata", ".align	4");
     my ($cfa_reg, $cfa_off, $cfa_rsp, %saved_regs);
     my @cfa_stack;
 
+    sub cfa_rsp { return $cfa_rsp // -8;  }
+
     # [us]leb128 format is variable-length integer representation base
     # 2^128, with most significant bit of each byte being 0 denoting
     # *last* most significant digit. See "Variable Length Data" in the
@@ -615,7 +641,7 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 	my $val = shift;
 
 	if ($val >= 0 && $val < 32) {
-            return ($DW_OP_complex{lit0}+$val);
+	    return ($DW_OP_complex{lit0}+$val);
 	}
 	return ($DW_OP_complex{consts}, sleb128($val));
     }
@@ -674,48 +700,9 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 	our @dat = ();
 	our $len = 0;
 
-	sub allocstack {
-	    my $offset = shift;
+	sub savereg {
+	    my ($key, $offset) = @_;
 
-	    if ($offset) {
-		if ($offset <= 128) {
-	            $offset = ($offset - 8) >> 3;
-		    push @dat, [0,$offset<<4|2];	# UWOP_ALLOC_SMALL
-		} elsif ($offset < 0x80000) {
-		    push @dat, [0,0x01,unpack("C2",pack("v",$offset>>3))];
-		} else {
-		    push @dat, [0,0x11,unpack("C4",pack("V",$offset))];
-		}
-		$len += $#{@dat[-1]}+1;
-	    }
-	}
-
-	# allocate stack frame
-	if (my $offset = -8 - $cfa_rsp) {
-	    # but see if frame pointer is among saved registers
-	    if ($cfa_reg ne "%rsp" and my $fp_off = $saved_regs{$cfa_reg}) {
-	        $fp_off = -8 - $fp_off;
-		allocstack($fp_off-8);
-		$offset -= $fp_off;
-		push @dat, [0,$WIN64_reg_idx{$cfa_reg}<<4]; # UWOP_PUSH_NONVOL
-		$len += $#{@dat[-1]}+1;
-	    }
-	    allocstack($offset);
-	}
-	# set up frame pointer
-	my $fp_info = 0;
-	if ($cfa_reg ne "%rsp") {
-	    my $offset = $cfa_off - $cfa_rsp;
-	    ($offset > 240 or $offset&0xf) and die "invalid FP offset $offset";
-	    $fp_info = ($offset&-16)|$WIN64_reg_idx{$cfa_reg};
-	    push @dat, [0,3];				# UWOP_SET_FPREG
-	    $len += $#{@dat[-1]}+1;
-	}
-	# save registers
-	foreach my $key (sort { $saved_regs{$b} <=> $saved_regs{$a} }
-			      keys(%saved_regs)) {
-	    next if ($cfa_reg ne "%rsp" && $cfa_reg eq $key);
-	    my $offset = $saved_regs{$key} - $cfa_rsp;
 	    if ($key =~ /%xmm([0-9]+)/) {
 		if ($offset < 0x100000) {
 		    push @dat, [0,($1<<4)|8,unpack("C2",pack("v",$offset>>4))];
@@ -734,10 +721,61 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 	    $len += $#{@dat[-1]}+1;
 	}
 
+	my $fp_info = 0;
+
+	# allocate stack frame
+	if ($cfa_rsp < -8) {
+	    my $offset = -8 - $cfa_rsp;
+	    if ($cfa_reg ne "%rsp" && $saved_regs{$cfa_reg} == -16) {
+		$fp_info = $WIN64_reg_idx{$cfa_reg};
+		push @dat, [0,$fp_info<<4];		# UWOP_PUSH_NONVOL
+		$len += $#{@dat[-1]}+1;
+		$offset -= 8;
+	    }
+	    if ($offset <= 128) {
+		my $alloc = ($offset - 8) >> 3;
+		push @dat, [0,$alloc<<4|2];		# UWOP_ALLOC_SMALL
+	    } elsif ($offset < 0x80000) {
+		push @dat, [0,0x01,unpack("C2",pack("v",$offset>>3))];
+	    } else {
+		push @dat, [0,0x11,unpack("C4",pack("V",$offset))];
+	    }
+	    $len += $#{@dat[-1]}+1;
+	}
+
+	# save frame pointer [if not pushed already]
+	if ($cfa_reg ne "%rsp" && $fp_info == 0) {
+	    $fp_info = $WIN64_reg_idx{$cfa_reg};
+	    if (defined(my $offset = $saved_regs{$cfa_reg})) {
+		$offset -= $cfa_rsp;
+		savereg($cfa_reg, $offset);
+	    }
+	}
+
+	# set up frame pointer
+	if ($fp_info) {
+	    push @dat, [0,($fp_info<<4)|3];		# UWOP_SET_FPREG
+	    $len += $#{@dat[-1]}+1;
+	    my $fp_off = $cfa_off - $cfa_rsp;
+	    ($fp_off > 240 or $fp_off&0xf) and die "invalid FP offset $fp_off";
+	    $fp_info |= $fp_off&-16;
+	}
+
+	# save registers
+	foreach my $key (sort { $saved_regs{$b} <=> $saved_regs{$a} }
+			      keys(%saved_regs)) {
+	    next if ($cfa_reg ne "%rsp" && $cfa_reg eq $key);
+	    my $offset = $saved_regs{$key} - $cfa_rsp;
+	    savereg($key, $offset);
+	}
+
 	my @ret;
 	# generate 4-byte descriptor
 	push @ret, ".byte	1,0,".($len/2).",$fp_info";
 	$len += 4;
+	# keep objdump happy, pad to 4*n and add a 32-bit zero
+	unshift @dat, [(0)x(((-$len)&3)+4)];
+	$len += $#{@dat[0]}+1;
 	# pad to 8*n
 	unshift @dat, [(0)x((-$len)&7)] if ($len&7);
 	# emit data
@@ -787,6 +825,7 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 	    /def_cfa_register/
 			&& do {	$cfa_off = $cfa_rsp if ($cfa_reg eq "%rsp");
 				$cfa_reg = $$line;
+				$cfa_rsp = $cfa_off if ($cfa_reg eq "%rsp");
 				last;
 			      };
 	    /def_cfa_offset/
@@ -802,10 +841,24 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 				}
 				last;
 			      };
-	    /def_cfa/	&& do {	if ($$line =~ /(%r\w+)\s*,\s*(.+)/) {
+	    /alloca/	&& do { $dir = undef;
+				my $val = 1*eval($$line);
+				$cfa_rsp -= $val;
+				if ($cfa_reg eq "%rsp") {
+				    $cfa_off -= $val;
+				    $dir = "adjust_cfa_offset";
+				}
+				last;
+			      };
+	    /def_cfa/	&& do {	if ($$line =~ /(%r\w+)\s*(?:,\s*(.+))?/) {
 				    $cfa_reg = $1;
-				    $cfa_off = -1*eval($2);
-				    $cfa_rsp = $cfa_off if ($cfa_reg eq "%rsp");
+				    if ($cfa_reg eq "%rsp" && !defined($2)) {
+					$cfa_off = $cfa_rsp;
+					$$line .= ",".(-$cfa_rsp);
+				    } else {
+					$cfa_off = -1*eval($2);
+					$cfa_rsp = $cfa_off if ($cfa_reg eq "%rsp");
+				    }
 				}
 				last;
 			      };
@@ -846,9 +899,18 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 				= @{pop @cfa_stack};
 				last;
 			      };
-	    /offset/	&& do { if ($$line =~ /(%\w+)\s*,\s*(.+)/) {
-				    $saved_regs{$1} = 1*eval($2);
-				    $dir = undef if ($1 =~ /%xmm/);
+	    /offset/	&& do { if ($$line =~ /(%\w+)(?:-%xmm(\d+))?\s*,\s*(.+)/) {
+				    my ($reg, $off, $xmmlast) = ($1, 1*eval($3), $2);
+				    if ($reg !~ /%xmm(\d+)/) {
+					$saved_regs{$reg} = $off;
+				    } else {
+					$dir = undef;
+					$xmmlast //= $1;
+					for (my $i=$1; $i<=$xmmlast; $i++) {
+					    $saved_regs{"%xmm$i"} = $off;
+					    $off += 16;
+					}
+				    }
 				}
 				last;
 			      };
@@ -886,48 +948,83 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 	    my $fname = $current_function->{name};
 
 	    if ($ret eq ".endprolog") {
-		$saved_regs{"%rdi"} = 0;	# relative to CFA, remember?
-		$saved_regs{"%rsi"} = 8;
+		$ret = "";
+		if ($current_function->{abi} eq "svr4") {
+		    $ret .= label::win64_args();
+		    $saved_regs{"%rdi"} = 0;	# relative to CFA, remember?
+		    $saved_regs{"%rsi"} = 8;
+		}
 
 		push @pdata_seg,
 		    ".rva	.LSEH_begin_${fname}",
 		    ".rva	.LSEH_body_${fname}",
 		    ".rva	.LSEH_info_${fname}_prologue","";
 		push @xdata_seg,
-		    ".LSEH_info_${fname}_prologue:",
-		    ".byte	1,0,5,0x0b",	# 5 unwind codes, %r11 is FP
-		    ".byte	0,0x74,1,0",	# %rdi at 8(%rsp)
-		    ".byte	0,0x64,2,0",	# %rsi at 16(%rsp)
-		    ".byte	0,0x03",	# set frame pointer
-		    ".byte	0,0"		# padding
-		    ;
+		    ".LSEH_info_${fname}_prologue:";
+		if ($current_function->{unwind} eq "%rbp") {
+		    if ($current_function->{abi} eq "svr4") {
+			push @xdata_seg,
+			".byte	1,4,6,0x05",	# 6 unwind codes, %rbp is FP
+			".byte	4,0x74,2,0",	# %rdi at 16(%rsp)
+			".byte	4,0x64,3,0",	# %rsi at 24(%rsp)
+			".byte	4,0x53",	# mov	%rsp, %rbp
+			".byte	1,0x50",	# push	%rbp
+			".long	0,0"		# pad to keep objdump happy
+			;
+		    } else {
+			push @xdata_seg,
+			".byte	1,4,2,0x05",	# 2 unwind codes, %rbp is FP
+			".byte	4,0x53",	# mov	%rsp, %rbp
+			".byte	1,0x50",	# push	%rbp
+			".long	0,0"		# pad to keep objdump happy
+			;
+		    }
+		} else {
+		    if ($current_function->{abi} eq "svr4") {
+			push @xdata_seg,
+			".byte	1,0,5,0x0b",	# 5 unwind codes, %r11 is FP
+			".byte	0,0x74,1,0",	# %rdi at 8(%rsp)
+			".byte	0,0x64,2,0",	# %rsi at 16(%rsp)
+			".byte	0,0xb3",	# set frame pointer
+			".byte	0,0",		# padding
+			".long	0,0"		# pad to keep objdump happy
+			;
+		    } else {
+			push @xdata_seg,
+			".byte	1,0,1,0x0b",	# 1 unwind code, %r11 is FP
+			".byte	0,0xb3",	# set frame pointer
+			".byte	0,0",		# padding
+			".long	0,0"		# pad to keep objdump happy
+			;
+		    }
+		}
 		push @pdata_seg,
 		    ".rva	.LSEH_body_${fname}",
 		    ".rva	.LSEH_epilogue_${fname}",
 		    ".rva	.LSEH_info_${fname}_body","";
 		push @xdata_seg,".LSEH_info_${fname}_body:", xdata();
-		$ret  = "${decor}SEH_body_${fname}:";
-		$ret .= ":" if ($masm); $ret .= "\n";
+		$ret .= "${decor}SEH_body_${fname}${colon}\n";
 	    } elsif ($ret eq ".epilogue") {
 		%saved_regs = ();
-		$saved_regs{"%rdi"} = 0;	# relative to CFA, remember?
-		$saved_regs{"%rsi"} = 8;
 		$cfa_rsp = $cfa_off;
+		$ret = "${decor}SEH_epilogue_${fname}${colon}\n";
+		if ($current_function->{abi} eq "svr4") {
+		    $saved_regs{"%rdi"} = 0;	# relative to CFA, remember?
+		    $saved_regs{"%rsi"} = 8;
 
-		push @pdata_seg,
-		    ".rva	.LSEH_epilogue_${fname}",
-		    ".rva	.LSEH_end_${fname}",
-		    ".rva	.LSEH_info_${fname}_epilogue","";
-		push @xdata_seg,".LSEH_info_${fname}_epilogue:", xdata(), "";
-		$ret  = "${decor}SEH_epilogue_${fname}:";
-		$ret .= ":" if ($masm); $ret .= "\n";
-		if ($gas) {
-		    $ret .= "	mov	".(0-$off)."(%$reg),%rdi\n";
-		    $ret .= "	mov	".(8-$off)."(%$reg),%rsi\n";
-		} else {
-		    $ret .= "	mov	rdi,QWORD$PTR\[".(0-$off)."+$reg\]";
-		    $ret .= "	;WIN64 epilogue\n";
-		    $ret .= "	mov	rsi,QWORD$PTR\[".(8-$off)."+$reg\]\n";
+		    push @pdata_seg,
+			".rva	.LSEH_epilogue_${fname}",
+			".rva	.LSEH_end_${fname}",
+			".rva	.LSEH_info_${fname}_epilogue","";
+		    push @xdata_seg,".LSEH_info_${fname}_epilogue:", xdata(), "";
+		    if ($gas) {
+			$ret .= "	mov	".(0-$off)."(%$reg),%rdi\n";
+			$ret .= "	mov	".(8-$off)."(%$reg),%rsi\n";
+		    } else {
+			$ret .= "	mov	rdi,QWORD$PTR\[".(0-$off)."+$reg\]";
+			$ret .= "	;WIN64 epilogue\n";
+			$ret .= "	mov	rsi,QWORD$PTR\[".(8-$off)."+$reg\]\n";
+		    }
 		}
 	    }
 	    return $ret;
@@ -953,9 +1050,9 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 	    $$line = substr($$line,@+[0]); $$line =~ s/^\s+//;
 
 	    SWITCH: for ($dir) {
-		/\.global|\.globl|\.extern/
-			    && do { $globals{$$line} = $prefix . $$line;
-				    $$line = $globals{$$line} if ($prefix);
+		/\.global|\.globl|\.extern|\.comm/
+			    && do { $$line =~ s/([_a-z][_a-z0-9\$]*)/$prefix\1/gi;
+				    $globals{$1} = $prefix.$1 if ($1);
 				    last;
 				  };
 		/\.type/    && do { my ($sym,$type,$narg,$unwind) = split(',',$$line);
@@ -966,10 +1063,13 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 					$current_function->{narg} = $narg;
 					$current_function->{scope} = defined($globals{$sym})?"PUBLIC":"PRIVATE";
 					$current_function->{unwind} = $unwind;
+					$current_function->{pc} = -1;
 				    } elsif ($type eq "\@abi-omnipotent") {
 					undef $current_function;
 					$current_function->{name} = $sym;
 					$current_function->{scope} = defined($globals{$sym})?"PUBLIC":"PRIVATE";
+					$current_function->{unwind} = $unwind;
+					$current_function->{pc} = -1;
 				    }
 				    $$line =~ s/\@abi\-omnipotent/\@function/;
 				    $$line =~ s/\@function.*/\@function/;
@@ -982,7 +1082,7 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 				    last;
 				  };
 		/\.rva|\.long|\.quad/
-			    && do { $$line =~ s/([_a-z][_a-z0-9]*)/$globals{$1} or $1/gei;
+			    && do { $$line =~ s/([_a-z][_a-z0-9\$]*)/$globals{$1} or $1/gei;
 				    $$line =~ s/\.L/$decor/g;
 				    last;
 				  };
@@ -1022,7 +1122,7 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 		    if    ($flavour eq "macosx")  { $self->{value} = ".private_extern\t$prefix$$line"; }
 		    elsif ($flavour eq "mingw64") { $self->{value} = ""; }
 		} elsif ($dir =~ /\.comm/) {
-		    $self->{value} = "$dir\t$prefix$$line";
+		    $self->{value} = "$dir\t$$line";
 		    $self->{value} =~ s|,([0-9]+),([0-9]+)$|",$1,".log($2)/log(2)|e if ($flavour eq "macosx");
 		}
 		$$line = "";
@@ -1093,8 +1193,7 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 		/\.size/    && do { if (defined($current_function)) {
 					undef $self->{value};
 					if ($current_function->{abi} eq "svr4") {
-					    $self->{value}="${decor}SEH_end_$current_function->{name}:";
-					    $self->{value}.=":\n" if($masm);
+					    $self->{value}="${decor}SEH_end_$current_function->{name}${colon}\n";
 					}
 					$self->{value}.="$current_function->{name}\tENDP" if($masm && $current_function->{name});
 					undef $current_function;
@@ -1358,7 +1457,10 @@ my $endbr64 = sub {
 
 ########################################################################
 
+my $preproc_prefix = "#";
+
 if ($nasm) {
+    $preproc_prefix = "%";
     print <<___;
 default	rel
 %define XMMWORD
@@ -1366,6 +1468,7 @@ default	rel
 %define ZMMWORD
 ___
 } elsif ($masm) {
+    $preproc_prefix = "";
     print <<___;
 OPTION	DOTNAME
 ___
@@ -1374,7 +1477,16 @@ ___
 sub process {
     my $line = shift;
 
-    $line =~ s|\R$||;           # Better chomp
+    $line =~ s|\R$||;		# Better chomp
+
+    if ($line =~ m/^#\s*(if|elif|else|endif)(.*)/) {	# pass through preproc
+	if ($win64 && $current_function->{abi} eq "svr4"
+		   && $current_function->{narg} >= 0) {
+	    print label::win64_args();
+	}
+	print $preproc_prefix,$1,$2,"\n";
+	next;
+    }
 
     $line =~ s|[#!].*$||;	# get rid of asm-style comments...
     $line =~ s|/\*.*\*/||;	# ... and C-style comments...
@@ -1410,6 +1522,21 @@ sub process {
 	    $line =~ s/^,\s*//;
 	} # ARGUMENT:
 
+	if ($win64 && $current_function->{abi} eq "svr4"
+		   && $current_function->{narg} >= 0) {
+	    my $pc = $current_function->{pc};
+	    my $op = $opcode->{op};
+	    my $a0 = @args[0]->{value} if ($#args>=0);
+	    if (!$current_function->{unwind}
+		|| $pc == 0 && !($op eq "push" && $a0 eq "rbp")
+		|| $pc == 1 && !($op eq "mov" && $a0 eq "rsp"
+					      && @args[1]->{value} eq "rbp"
+					      && ($current_function->{unwind} = "%rbp"))
+		|| $pc > 1) {
+		print label::win64_args();
+	    }
+	}
+
 	if ($#args>=0) {
 	    my $insn;
 	    my $sz=$opcode->size();
@@ -1435,6 +1562,8 @@ sub process {
 	} else {
 	    printf "\t%s",$opcode->out();
 	}
+
+	++$current_function->{pc} if (defined($current_function));
     }
 
     print $line,"\n";
@@ -1442,8 +1571,8 @@ sub process {
 
 while(<>) { process($_); }
 
-map { process($_) } @pdata_seg if ($win64);
-map { process($_) } @xdata_seg if ($win64);
+map { process($_) } @pdata_seg if ($win64 && $#pdata_seg>1);
+map { process($_) } @xdata_seg if ($win64 && $#xdata_seg>1);
 
 # platform-specific epilogue
 if ($masm) {
@@ -1699,27 +1828,30 @@ close STDOUT;
 # and debugging/profiling was implemented by re-purposing DWARF .cfi
 # annotations even for Win64 unwind tables' generation. Unfortunately,
 # but not really unexpectedly, it imposes additional limitations on
-# coding style. Probably most significant limitation is that frame
-# pointer has to be at 16*n distance from stack pointer at the exit
-# from prologue. But first things first. There are two additional
+# coding style. Probably the most significant limitation is that the
+# frame pointer has to be at 16*n distance from the stack pointer at the
+# exit from prologue. But first things first. There are two additional
 # synthetic .cfi directives, .cfi_end_prologue and .cfi_epilogue,
 # that need to be added to all functions marked with additional .type
 # tag (see example below). There are "do's and don'ts" for prologue
-# and epilogue. It shouldn't come as surprise that in prologue one may
+# and epilogue. It shouldn't come as a surprise that in prologue one may
 # not modify non-volatile registers, but one may not modify %r11 either.
-# This is because it's used as temporary frame pointer(*). There is one
-# exception to this rule, and it's setting up frame pointer that is
-# non-volatile or %r11. But it must be last instruction in the prologue.
+# This is because it's used as a temporary frame pointer(*). There are
+# two exceptions to this rule. 1) One can set up a non-volatile register
+# or %r11 as a frame pointer, but it must be last instruction in the
+# prologue. 2) One can use 'push %rbp' as first instruction immediately
+# followed by 'mov %rsp,%rbp' to use %rbp as "legacy" frame pointer.
 # Constraints for epilogue, or rather on its boundary, depend on whether
 # the frame is fixed- or variable-length. In fixed-frame subroutine
-# stack pointer has to be restored in the last instruction prior the
-# .cfi_epilogue directive. If it's variable-frame subroutine, and a
-# non-volatile register was used as frame pointer, then last instruction
-# prior the directive has to restore its original value. This means that
-# final stack pointer adjustment would have to be pushed past the
-# directive. Normally this would render the epilogue non-unwindable, so
-# special care has to be taken. To resolve the dilemma, copy frame
-# pointer to a volatile register in advance. To give an example:
+# stack pointer has to be restored in the last instruction prior to the
+# .cfi_epilogue directive. If it's a variable-frame subroutine, and a
+# non-volatile register was used as a frame pointer, then the last
+# instruction prior to the directive has to restore its original value.
+# This means that final stack pointer adjustment would have to be
+# pushed past the directive. Normally this would render the epilogue
+# non-unwindable, so special care has to be taken. To resolve the
+# dilemma, copy the frame pointer to a volatile register in advance.
+# To give an example:
 #
 # .type	rbp_as_frame_pointer,\@function,3,"unwind"  # mind extra tag!
 # rbp_as_frame_pointer:
@@ -1743,6 +1875,32 @@ close STDOUT;
 #	ret
 # .cfi_endproc
 # .size	rbp_as_frame_pointer,.-rbp_as_frame_pointer
+#
+# An example of "legacy" frame pointer:
+#
+# .type	legacy_frame_pointer,\@function,3,"unwind"  # mind extra tag!
+# legacy_frame_pointer:
+# .cfi_startproc
+#	push	%rbp
+# .cfi_push	%rbp
+# 	mov	%rsp,%rbp
+# .cfi_def_cfa_register	%rbp
+#	push	%rbx
+# .cfi_push	%rbx
+#	sub	\$40,%rsp
+# .cfi_alloca	40
+# .cfi_end_prologue		# %rsp-%rbp has to be 16*n
+#	and	\$-64,%rsp
+#	...
+#	mov	-8(%rbp),%rbx
+#	mov	%rbp,%rsp
+# .cfi_def_cfa_regiser	%rsp
+#	pop	%rbp		# recognized by Windows
+# .cfi_pop	%rbp
+# .cfi_epilogue
+#	ret
+# .cfi_endproc
+# .size	legacy_frame_pointer,.-legacy_frame_pointer
 #
 # To give an example of fixed-frame subroutine for reference:
 #

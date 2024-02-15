@@ -1,6 +1,7 @@
 .text	
 
 .globl	_ct_is_square_mod_384
+.private_extern	_ct_is_square_mod_384
 
 .p2align	5
 _ct_is_square_mod_384:

@@ -1,6 +1,8 @@
+.comm	__blst_platform_cap,4
 .text	
 
 .globl	ct_inverse_mod_383
+
 .def	ct_inverse_mod_383;	.scl 2;	.type 32;	.endef
 .p2align	5
 ct_inverse_mod_383:
@@ -9,12 +11,16 @@ ct_inverse_mod_383:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_ct_inverse_mod_383:
+
+
 	movq	%rcx,%rdi
 	movq	%rdx,%rsi
 	movq	%r8,%rdx
 	movq	%r9,%rcx
-
-
+#ifdef __BLST_PORTABLE__
+	testl	$1,__blst_platform_cap(%rip)
+	jnz	ct_inverse_mod_383$1
+#endif
 	pushq	%rbp
 
 	pushq	%rbx
@@ -1200,8 +1206,9 @@ __inner_loop_62:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_ct_inverse_mod_383_body:
 .byte	1,0,18,0
 .byte	0x00,0xf4,0x8b,0x00
@@ -1213,6 +1220,8 @@ __inner_loop_62:
 .byte	0x00,0x74,0x92,0x00
 .byte	0x00,0x64,0x93,0x00
 .byte	0x00,0x01,0x91,0x00
+.byte	0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_ct_inverse_mod_383_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00

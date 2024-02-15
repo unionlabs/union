@@ -2,25 +2,34 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
+extern crate alloc;
+
+use alloc::boxed::Box;
+use alloc::vec;
+use alloc::vec::Vec;
 use core::any::Any;
 use core::mem::MaybeUninit;
 use core::ptr;
-use core::sync::atomic::*;
-use std::num::Wrapping;
-use std::sync::{mpsc::channel, Arc, Barrier};
 use zeroize::Zeroize;
 
-#[cfg(not(feature = "no-threads"))]
+#[cfg(feature = "std")]
+use std::sync::{atomic::*, mpsc::channel, Arc};
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 trait ThreadPoolExt {
     fn joined_execute<'any, F>(&self, job: F)
     where
         F: FnOnce() + Send + 'any;
 }
-#[cfg(not(feature = "no-threads"))]
+
+#[cfg(all(not(feature = "no-threads"), feature = "std"))]
 mod mt {
     use super::*;
     use core::mem::transmute;
@@ -55,8 +64,10 @@ mod mt {
     }
 }
 
-#[cfg(feature = "no-threads")]
+#[cfg(all(feature = "no-threads", feature = "std"))]
 mod mt {
+    use super::*;
+
     pub struct EmptyPool {}
 
     pub fn da_pool() -> EmptyPool {
@@ -67,7 +78,10 @@ mod mt {
         pub fn max_count(&self) -> usize {
             1
         }
-        pub fn joined_execute<'scope, F>(&self, job: F)
+    }
+
+    impl ThreadPoolExt for EmptyPool {
+        fn joined_execute<'scope, F>(&self, job: F)
         where
             F: FnOnce() + Send + 'scope,
         {
@@ -141,6 +155,82 @@ impl blst_fp12 {
         }
     }
 
+    #[cfg(not(feature = "std"))]
+    pub fn miller_loop_n(q: &[blst_p2_affine], p: &[blst_p1_affine]) -> Self {
+        let n_elems = q.len();
+        if n_elems != p.len() || n_elems == 0 {
+            panic!("inputs' lengths mismatch");
+        }
+        let qs: [*const _; 2] = [&q[0], ptr::null()];
+        let ps: [*const _; 2] = [&p[0], ptr::null()];
+        let mut out = MaybeUninit::<blst_fp12>::uninit();
+        unsafe {
+            blst_miller_loop_n(out.as_mut_ptr(), &qs[0], &ps[0], n_elems);
+            out.assume_init()
+        }
+    }
+
+    #[cfg(feature = "std")]
+    pub fn miller_loop_n(q: &[blst_p2_affine], p: &[blst_p1_affine]) -> Self {
+        let n_elems = q.len();
+        if n_elems != p.len() || n_elems == 0 {
+            panic!("inputs' lengths mismatch");
+        }
+
+        let pool = mt::da_pool();
+
+        let mut n_workers = pool.max_count();
+        if n_workers == 1 {
+            let qs: [*const _; 2] = [&q[0], ptr::null()];
+            let ps: [*const _; 2] = [&p[0], ptr::null()];
+            let mut out = MaybeUninit::<blst_fp12>::uninit();
+            unsafe {
+                blst_miller_loop_n(out.as_mut_ptr(), &qs[0], &ps[0], n_elems);
+                return out.assume_init();
+            }
+        }
+
+        let (tx, rx) = channel();
+        let counter = Arc::new(AtomicUsize::new(0));
+
+        let stride = core::cmp::min((n_elems + n_workers - 1) / n_workers, 16);
+        n_workers = core::cmp::min((n_elems + stride - 1) / stride, n_workers);
+        for _ in 0..n_workers {
+            let tx = tx.clone();
+            let counter = counter.clone();
+
+            pool.joined_execute(move || {
+                let mut acc = blst_fp12::default();
+                let mut tmp = MaybeUninit::<blst_fp12>::uninit();
+                let mut qs: [*const _; 2] = [ptr::null(), ptr::null()];
+                let mut ps: [*const _; 2] = [ptr::null(), ptr::null()];
+
+                loop {
+                    let work = counter.fetch_add(stride, Ordering::Relaxed);
+                    if work >= n_elems {
+                        break;
+                    }
+                    let n = core::cmp::min(n_elems - work, stride);
+                    qs[0] = &q[work];
+                    ps[0] = &p[work];
+                    unsafe {
+                        blst_miller_loop_n(tmp.as_mut_ptr(), &qs[0], &ps[0], n);
+                        acc *= tmp.assume_init();
+                    }
+                }
+
+                tx.send(acc).expect("disaster");
+            });
+        }
+
+        let mut acc = rx.recv().unwrap();
+        for _ in 1..n_workers {
+            acc *= rx.recv().unwrap();
+        }
+
+        acc
+    }
+
     pub fn final_exp(&self) -> Self {
         let mut out = MaybeUninit::<blst_fp12>::uninit();
         unsafe {
@@ -170,7 +260,7 @@ impl blst_scalar {
     pub fn hash_to(msg: &[u8], dst: &[u8]) -> Option<Self> {
         unsafe {
             let mut out = <Self>::default();
-            let mut elem: [u8; 48] = MaybeUninit::uninit().assume_init();
+            let mut elem = [0u8; 48];
             blst_expand_message_xmd(
                 elem.as_mut_ptr(),
                 elem.len(),
@@ -406,6 +496,7 @@ pub fn uniq(msgs: &[&[u8]]) -> bool {
     true
 }
 
+#[cfg(feature = "std")]
 pub fn print_bytes(bytes: &[u8], name: &str) {
     print!("{} ", name);
     for b in bytes.iter() {
@@ -481,6 +572,101 @@ macro_rules! sig_variant_impl {
                     );
                 }
                 Ok(sk)
+            }
+
+            pub fn key_gen_v3(
+                ikm: &[u8],
+                key_info: &[u8],
+            ) -> Result<Self, BLST_ERROR> {
+                if ikm.len() < 32 {
+                    return Err(BLST_ERROR::BLST_BAD_ENCODING);
+                }
+                let mut sk = SecretKey::default();
+                unsafe {
+                    blst_keygen_v3(
+                        &mut sk.value,
+                        ikm.as_ptr(),
+                        ikm.len(),
+                        key_info.as_ptr(),
+                        key_info.len(),
+                    );
+                }
+                Ok(sk)
+            }
+
+            pub fn key_gen_v4_5(
+                ikm: &[u8],
+                salt: &[u8],
+                info: &[u8],
+            ) -> Result<Self, BLST_ERROR> {
+                if ikm.len() < 32 {
+                    return Err(BLST_ERROR::BLST_BAD_ENCODING);
+                }
+                let mut sk = SecretKey::default();
+                unsafe {
+                    blst_keygen_v4_5(
+                        &mut sk.value,
+                        ikm.as_ptr(),
+                        ikm.len(),
+                        salt.as_ptr(),
+                        salt.len(),
+                        info.as_ptr(),
+                        info.len(),
+                    );
+                }
+                Ok(sk)
+            }
+
+            pub fn key_gen_v5(
+                ikm: &[u8],
+                salt: &[u8],
+                info: &[u8],
+            ) -> Result<Self, BLST_ERROR> {
+                if ikm.len() < 32 {
+                    return Err(BLST_ERROR::BLST_BAD_ENCODING);
+                }
+                let mut sk = SecretKey::default();
+                unsafe {
+                    blst_keygen_v5(
+                        &mut sk.value,
+                        ikm.as_ptr(),
+                        ikm.len(),
+                        salt.as_ptr(),
+                        salt.len(),
+                        info.as_ptr(),
+                        info.len(),
+                    );
+                }
+                Ok(sk)
+            }
+
+            pub fn derive_master_eip2333(
+                ikm: &[u8],
+            ) -> Result<Self, BLST_ERROR> {
+                if ikm.len() < 32 {
+                    return Err(BLST_ERROR::BLST_BAD_ENCODING);
+                }
+                let mut sk = SecretKey::default();
+                unsafe {
+                    blst_derive_master_eip2333(
+                        &mut sk.value,
+                        ikm.as_ptr(),
+                        ikm.len(),
+                    );
+                }
+                Ok(sk)
+            }
+
+            pub fn derive_child_eip2333(&self, child_index: u32) -> Self {
+                let mut sk = SecretKey::default();
+                unsafe {
+                    blst_derive_child_eip2333(
+                        &mut sk.value,
+                        &self.value,
+                        child_index,
+                    );
+                }
+                sk
             }
 
             // sk_to_pk
@@ -562,6 +748,29 @@ macro_rules! sig_variant_impl {
 
             pub fn from_bytes(sk_in: &[u8]) -> Result<Self, BLST_ERROR> {
                 SecretKey::deserialize(sk_in)
+            }
+        }
+
+        #[cfg(feature = "serde-secret")]
+        impl Serialize for SecretKey {
+            fn serialize<S: Serializer>(
+                &self,
+                ser: S,
+            ) -> Result<S::Ok, S::Error> {
+                let bytes = zeroize::Zeroizing::new(self.serialize());
+                ser.serialize_bytes(bytes.as_ref())
+            }
+        }
+
+        #[cfg(feature = "serde-secret")]
+        impl<'de> Deserialize<'de> for SecretKey {
+            fn deserialize<D: Deserializer<'de>>(
+                deser: D,
+            ) -> Result<Self, D::Error> {
+                let bytes: &[u8] = Deserialize::deserialize(deser)?;
+                Self::deserialize(bytes).map_err(|e| {
+                    <D::Error as serde::de::Error>::custom(format!("{:?}", e))
+                })
             }
         }
 
@@ -664,6 +873,28 @@ macro_rules! sig_variant_impl {
         impl PartialEq for PublicKey {
             fn eq(&self, other: &Self) -> bool {
                 unsafe { $pk_eq(&self.point, &other.point) }
+            }
+        }
+
+        #[cfg(feature = "serde")]
+        impl Serialize for PublicKey {
+            fn serialize<S: Serializer>(
+                &self,
+                ser: S,
+            ) -> Result<S::Ok, S::Error> {
+                ser.serialize_bytes(&self.serialize())
+            }
+        }
+
+        #[cfg(feature = "serde")]
+        impl<'de> Deserialize<'de> for PublicKey {
+            fn deserialize<D: Deserializer<'de>>(
+                deser: D,
+            ) -> Result<Self, D::Error> {
+                let bytes: &[u8] = Deserialize::deserialize(deser)?;
+                Self::deserialize(&bytes).map_err(|e| {
+                    <D::Error as serde::de::Error>::custom(format!("{:?}", e))
+                })
             }
         }
 
@@ -802,6 +1033,44 @@ macro_rules! sig_variant_impl {
                 Ok(sig)
             }
 
+            #[cfg(not(feature = "std"))]
+            pub fn verify(
+                &self,
+                sig_groupcheck: bool,
+                msg: &[u8],
+                dst: &[u8],
+                aug: &[u8],
+                pk: &PublicKey,
+                pk_validate: bool,
+            ) -> BLST_ERROR {
+                if sig_groupcheck {
+                    match self.validate(false) {
+                        Err(err) => return err,
+                        _ => (),
+                    }
+                }
+                if pk_validate {
+                    match pk.validate() {
+                        Err(err) => return err,
+                        _ => (),
+                    }
+                }
+                unsafe {
+                    $verify(
+                        &pk.point,
+                        &self.point,
+                        $hash_or_encode,
+                        msg.as_ptr(),
+                        msg.len(),
+                        dst.as_ptr(),
+                        dst.len(),
+                        aug.as_ptr(),
+                        aug.len(),
+                    )
+                }
+            }
+
+            #[cfg(feature = "std")]
             pub fn verify(
                 &self,
                 sig_groupcheck: bool,
@@ -821,6 +1090,7 @@ macro_rules! sig_variant_impl {
                 )
             }
 
+            #[cfg(feature = "std")]
             pub fn aggregate_verify(
                 &self,
                 sig_groupcheck: bool,
@@ -903,6 +1173,7 @@ macro_rules! sig_variant_impl {
 
             // pks are assumed to be verified for proof of possession,
             // which implies that they are already group-checked
+            #[cfg(feature = "std")]
             pub fn fast_aggregate_verify(
                 &self,
                 sig_groupcheck: bool,
@@ -924,6 +1195,7 @@ macro_rules! sig_variant_impl {
                 )
             }
 
+            #[cfg(feature = "std")]
             pub fn fast_aggregate_verify_pre_aggregated(
                 &self,
                 sig_groupcheck: bool,
@@ -935,6 +1207,7 @@ macro_rules! sig_variant_impl {
             }
 
             // https://ethresear.ch/t/fast-verification-of-multiple-bls-signatures/5407
+            #[cfg(feature = "std")]
             pub fn verify_multiple_aggregate_signatures(
                 msgs: &[&[u8]],
                 dst: &[u8],
@@ -1092,6 +1365,28 @@ macro_rules! sig_variant_impl {
             }
         }
 
+        #[cfg(feature = "serde")]
+        impl Serialize for Signature {
+            fn serialize<S: Serializer>(
+                &self,
+                ser: S,
+            ) -> Result<S::Ok, S::Error> {
+                ser.serialize_bytes(&self.serialize())
+            }
+        }
+
+        #[cfg(feature = "serde")]
+        impl<'de> Deserialize<'de> for Signature {
+            fn deserialize<D: Deserializer<'de>>(
+                deser: D,
+            ) -> Result<Self, D::Error> {
+                let bytes: &[u8] = Deserialize::deserialize(deser)?;
+                Self::deserialize(&bytes).map_err(|e| {
+                    <D::Error as serde::de::Error>::custom(format!("{:?}", e))
+                })
+            }
+        }
+
         #[derive(Debug, Clone, Copy)]
         pub struct AggregateSignature {
             point: $sig,
@@ -1133,7 +1428,7 @@ macro_rules! sig_variant_impl {
                 }
                 if sigs_groupcheck {
                     // We can't actually judge if input is individual or
-                    // aggregated signature, so we can't enforce infinitiy
+                    // aggregated signature, so we can't enforce infinity
                     // check.
                     sigs[0].validate(false)?;
                 }
@@ -1238,7 +1533,7 @@ macro_rules! sig_variant_impl {
             }
 
             #[test]
-            fn test_sign() {
+            fn test_sign_n_verify() {
                 let ikm: [u8; 32] = [
                     0x93, 0xad, 0x7e, 0x65, 0xde, 0xad, 0x05, 0x2a, 0x08, 0x3a,
                     0x91, 0x0c, 0x8b, 0x72, 0x85, 0x91, 0x46, 0x4c, 0xca, 0x56,
@@ -1258,6 +1553,7 @@ macro_rules! sig_variant_impl {
             }
 
             #[test]
+            #[cfg(feature = "std")]
             fn test_aggregate() {
                 let num_msgs = 10;
                 let dst = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
@@ -1330,6 +1626,7 @@ macro_rules! sig_variant_impl {
             }
 
             #[test]
+            #[cfg(feature = "std")]
             fn test_multiple_agg_sigs() {
                 let dst = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
                 let num_pks_per_sig = 10;
@@ -1529,6 +1826,56 @@ macro_rules! sig_variant_impl {
                 assert_ne!(pk_uncomp2.unwrap(), pk);
                 assert_ne!(pk_deser2.unwrap(), pk);
             }
+
+            #[cfg(feature = "serde")]
+            #[test]
+            fn test_serde() {
+                let seed = [0u8; 32];
+                let mut rng = ChaCha20Rng::from_seed(seed);
+
+                // generate a sk, pk, and sig, and make sure it signs
+                let sk = gen_random_key(&mut rng);
+                let pk = sk.sk_to_pk();
+                let sig = sk.sign(b"asdf", b"qwer", b"zxcv");
+                assert_eq!(
+                    sig.verify(true, b"asdf", b"qwer", b"zxcv", &pk, true),
+                    BLST_ERROR::BLST_SUCCESS
+                );
+
+                // roundtrip through serde
+                let pk_ser =
+                    rmp_serde::encode::to_vec_named(&pk).expect("ser pk");
+                let sig_ser =
+                    rmp_serde::encode::to_vec_named(&sig).expect("ser sig");
+                let pk_des: PublicKey =
+                    rmp_serde::decode::from_slice(&pk_ser).expect("des pk");
+                let sig_des: Signature =
+                    rmp_serde::decode::from_slice(&sig_ser).expect("des sig");
+
+                // check that we got back the right things
+                assert_eq!(pk, pk_des);
+                assert_eq!(sig, sig_des);
+                assert_eq!(
+                    sig.verify(true, b"asdf", b"qwer", b"zxcv", &pk_des, true),
+                    BLST_ERROR::BLST_SUCCESS
+                );
+                assert_eq!(
+                    sig_des.verify(true, b"asdf", b"qwer", b"zxcv", &pk, true),
+                    BLST_ERROR::BLST_SUCCESS
+                );
+                assert_eq!(sk.sign(b"asdf", b"qwer", b"zxcv"), sig_des);
+
+                #[cfg(feature = "serde-secret")]
+                if true {
+                    let sk_ser =
+                        rmp_serde::encode::to_vec_named(&sk).expect("ser sk");
+                    let sk_des: SecretKey =
+                        rmp_serde::decode::from_slice(&sk_ser).expect("des sk");
+                    // BLS signatures are deterministic, so this establishes
+                    // that sk == sk_des
+                    assert_eq!(sk_des.sign(b"asdf", b"qwer", b"zxcv"), sig);
+                }
+            }
         }
     };
 }
@@ -1621,348 +1968,61 @@ pub mod min_sig {
     );
 }
 
-struct tile {
-    x: usize,
-    dx: usize,
-    y: usize,
-    dy: usize,
-}
+#[cfg(feature = "std")]
+include!("pippenger.rs");
 
-// Minimalist core::cell::Cell stand-in, but with Sync marker, which
-// makes it possible to pass it to multiple threads. It works, because
-// *here* each Cell is written only once and by just one thread.
-#[repr(transparent)]
-struct Cell<T: ?Sized> {
-    value: T,
-}
-unsafe impl<T: ?Sized + Sync> Sync for Cell<T> {}
-impl<T> Cell<T> {
-    pub fn as_ptr(&self) -> *mut T {
-        &self.value as *const T as *mut T
-    }
-}
+#[cfg(not(feature = "std"))]
+include!("pippenger-no_std.rs");
 
-macro_rules! pippenger_mult_impl {
-    (
-        $points:ident,
-        $point:ty,
-        $point_affine:ty,
-        $to_affines:ident,
-        $scratch_sizeof:ident,
-        $multi_scalar_mult:ident,
-        $tile_mult:ident,
-        $add_or_double:ident,
-        $double:ident,
-        $test_mod:ident,
-        $generator:ident,
-        $mult:ident,
-    ) => {
-        pub struct $points {
-            points: Vec<$point_affine>,
-        }
+#[cfg(test)]
+mod fp12_test {
+    use super::*;
+    use rand::{RngCore, SeedableRng};
+    use rand_chacha::ChaCha20Rng;
 
-        impl $points {
-            pub fn from(points: &[$point]) -> Self {
-                let npoints = points.len();
-                let mut ret = Self {
-                    points: Vec::with_capacity(npoints),
-                };
-                unsafe { ret.points.set_len(npoints) };
+    #[test]
+    fn miller_loop_n() {
+        const npoints: usize = 97;
+        const nbits: usize = 64;
+        const nbytes: usize = (nbits + 7) / 8;
 
-                let pool = mt::da_pool();
-                let ncpus = pool.max_count();
-                if ncpus < 2 || npoints < 768 {
-                    let p: [*const $point; 2] = [&points[0], ptr::null()];
-                    unsafe { $to_affines(&mut ret.points[0], &p[0], npoints) };
-                    return ret;
-                }
+        let mut scalars = Box::new([0u8; nbytes * npoints]);
+        ChaCha20Rng::from_entropy().fill_bytes(scalars.as_mut());
 
-                let mut nslices = (npoints + 511) / 512;
-                nslices = core::cmp::min(nslices, ncpus);
-                let wg = Arc::new((Barrier::new(2), AtomicUsize::new(nslices)));
+        let mut p1s: Vec<blst_p1> = Vec::with_capacity(npoints);
+        let mut p2s: Vec<blst_p2> = Vec::with_capacity(npoints);
 
-                let (mut delta, mut rem) =
-                    (npoints / nslices + 1, Wrapping(npoints % nslices));
-                let mut x = 0usize;
-                while x < npoints {
-                    let out = &mut ret.points[x];
-                    let inp = &points[x];
+        unsafe {
+            p1s.set_len(npoints);
+            p2s.set_len(npoints);
 
-                    delta -= (rem == Wrapping(0)) as usize;
-                    rem -= Wrapping(1);
-                    x += delta;
-
-                    let wg = wg.clone();
-                    pool.joined_execute(move || {
-                        let p: [*const $point; 2] = [inp, ptr::null()];
-                        unsafe { $to_affines(out, &p[0], delta) };
-                        if wg.1.fetch_sub(1, Ordering::AcqRel) == 1 {
-                            wg.0.wait();
-                        }
-                    });
-                }
-                wg.0.wait();
-
-                ret
-            }
-
-            pub fn mult(&self, scalars: &[u8], nbits: usize) -> $point {
-                let npoints = self.points.len();
-                let nbytes = (nbits + 7) / 8;
-
-                if scalars.len() < nbytes * npoints {
-                    panic!("scalars length mismatch");
-                }
-
-                let pool = mt::da_pool();
-                let ncpus = pool.max_count();
-                if ncpus < 2 || npoints < 32 {
-                    let p: [*const $point_affine; 2] =
-                        [&self.points[0], ptr::null()];
-                    let s: [*const u8; 2] = [&scalars[0], ptr::null()];
-
-                    unsafe {
-                        let mut scratch: Vec<u64> =
-                            Vec::with_capacity($scratch_sizeof(npoints) / 8);
-                        scratch.set_len(scratch.capacity());
-                        let mut ret = <$point>::default();
-                        $multi_scalar_mult(
-                            &mut ret,
-                            &p[0],
-                            npoints,
-                            &s[0],
-                            nbits,
-                            &mut scratch[0],
-                        );
-                        return ret;
-                    }
-                }
-
-                let (nx, ny, window) =
-                    breakdown(nbits, pippenger_window_size(npoints), ncpus);
-
-                // |grid[]| holds "coordinates" and place for result
-                let mut grid: Vec<(tile, Cell<$point>)> =
-                    Vec::with_capacity(nx * ny);
-                unsafe { grid.set_len(grid.capacity()) };
-                let dx = npoints / nx;
-                let mut y = window * (ny - 1);
-                let mut total = 0usize;
-
-                while total < nx {
-                    grid[total].0.x = total * dx;
-                    grid[total].0.dx = dx;
-                    grid[total].0.y = y;
-                    grid[total].0.dy = nbits - y;
-                    total += 1;
-                }
-                grid[total - 1].0.dx = npoints - grid[total - 1].0.x;
-                while y != 0 {
-                    y -= window;
-                    for i in 0..nx {
-                        grid[total].0.x = grid[i].0.x;
-                        grid[total].0.dx = grid[i].0.dx;
-                        grid[total].0.y = y;
-                        grid[total].0.dy = window;
-                        total += 1;
-                    }
-                }
-                let grid = &grid[..];
-
-                let points = &self.points[..];
-                let sz = unsafe { $scratch_sizeof(0) / 8 };
-
-                let mut row_sync: Vec<AtomicUsize> = Vec::with_capacity(ny);
-                row_sync.resize_with(ny, Default::default);
-                let row_sync = Arc::new(row_sync);
-                let counter = Arc::new(AtomicUsize::new(0));
-                let (tx, rx) = channel();
-                let n_workers = core::cmp::min(ncpus, total);
-                for _ in 0..n_workers {
-                    let tx = tx.clone();
-                    let counter = counter.clone();
-                    let row_sync = row_sync.clone();
-
-                    pool.joined_execute(move || {
-                        let mut scratch = vec![0u64; sz << (window - 1)];
-                        let mut p: [*const $point_affine; 2] =
-                            [ptr::null(), ptr::null()];
-                        let mut s: [*const u8; 2] = [ptr::null(), ptr::null()];
-
-                        loop {
-                            let work = counter.fetch_add(1, Ordering::Relaxed);
-                            if work >= total {
-                                break;
-                            }
-                            let x = grid[work].0.x;
-                            let y = grid[work].0.y;
-
-                            p[0] = &points[x];
-                            s[0] = &scalars[x * nbytes];
-                            unsafe {
-                                $tile_mult(
-                                    grid[work].1.as_ptr(),
-                                    &p[0],
-                                    grid[work].0.dx,
-                                    &s[0],
-                                    nbits,
-                                    &mut scratch[0],
-                                    y,
-                                    window,
-                                );
-                            }
-                            if row_sync[y / window]
-                                .fetch_add(1, Ordering::AcqRel)
-                                == nx - 1
-                            {
-                                tx.send(y).expect("disaster");
-                            }
-                        }
-                    });
-                }
-
-                let mut ret = <$point>::default();
-                let mut rows = vec![false; ny];
-                let mut row = 0usize;
-                for _ in 0..ny {
-                    let mut y = rx.recv().unwrap();
-                    rows[y / window] = true;
-                    while grid[row].0.y == y {
-                        while row < total && grid[row].0.y == y {
-                            unsafe {
-                                $add_or_double(
-                                    &mut ret,
-                                    &ret,
-                                    grid[row].1.as_ptr(),
-                                );
-                            }
-                            row += 1;
-                        }
-                        if y == 0 {
-                            break;
-                        }
-                        for _ in 0..window {
-                            unsafe { $double(&mut ret, &ret) };
-                        }
-                        y -= window;
-                        if !rows[y / window] {
-                            break;
-                        }
-                    }
-                }
-                ret
+            for i in 0..npoints {
+                blst_p1_mult(
+                    &mut p1s[i],
+                    blst_p1_generator(),
+                    &scalars[i * nbytes],
+                    32,
+                );
+                blst_p2_mult(
+                    &mut p2s[i],
+                    blst_p2_generator(),
+                    &scalars[i * nbytes + 4],
+                    32,
+                );
             }
         }
 
-        #[cfg(test)]
-        mod $test_mod {
-            use super::*;
-            use rand::{RngCore, SeedableRng};
-            use rand_chacha::ChaCha20Rng;
+        let ps = p1_affines::from(&p1s);
+        let qs = p2_affines::from(&p2s);
 
-            #[test]
-            fn test_mult() {
-                const npoints: usize = 2000;
-                const nbits: usize = 160;
-                const nbytes: usize = (nbits + 7) / 8;
-
-                let mut scalars = [0u8; nbytes * npoints];
-                ChaCha20Rng::from_seed([0u8; 32]).fill_bytes(&mut scalars);
-
-                let mut points: Vec<$point> = Vec::with_capacity(npoints);
-                unsafe { points.set_len(points.capacity()) };
-
-                let mut naive = <$point>::default();
-                for i in 0..npoints {
-                    unsafe {
-                        let mut t = <$point>::default();
-                        $mult(
-                            &mut points[i],
-                            $generator(),
-                            &scalars[i * nbytes],
-                            core::cmp::min(32, nbits),
-                        );
-                        $mult(&mut t, &points[i], &scalars[i * nbytes], nbits);
-                        $add_or_double(&mut naive, &naive, &t);
-                    }
-                }
-
-                let points = $points::from(&points);
-                assert_eq!(naive, points.mult(&scalars, nbits));
-            }
+        let mut naive = blst_fp12::default();
+        for i in 0..npoints {
+            naive *= blst_fp12::miller_loop(&qs[i], &ps[i]);
         }
-    };
-}
 
-pippenger_mult_impl!(
-    p1_affines,
-    blst_p1,
-    blst_p1_affine,
-    blst_p1s_to_affine,
-    blst_p1s_mult_pippenger_scratch_sizeof,
-    blst_p1s_mult_pippenger,
-    blst_p1s_tile_pippenger,
-    blst_p1_add_or_double,
-    blst_p1_double,
-    p1_multi_scalar,
-    blst_p1_generator,
-    blst_p1_mult,
-);
-
-pippenger_mult_impl!(
-    p2_affines,
-    blst_p2,
-    blst_p2_affine,
-    blst_p2s_to_affine,
-    blst_p2s_mult_pippenger_scratch_sizeof,
-    blst_p2s_mult_pippenger,
-    blst_p2s_tile_pippenger,
-    blst_p2_add_or_double,
-    blst_p2_double,
-    p2_multi_scalar,
-    blst_p2_generator,
-    blst_p2_mult,
-);
-
-fn num_bits(l: usize) -> usize {
-    8 * core::mem::size_of_val(&l) - l.leading_zeros() as usize
-}
-
-fn breakdown(
-    nbits: usize,
-    window: usize,
-    ncpus: usize,
-) -> (usize, usize, usize) {
-    let mut nx: usize;
-    let mut wnd: usize;
-
-    if nbits > window * ncpus {
-        nx = 1;
-        wnd = window - num_bits(ncpus / 4);
-    } else {
-        nx = 2;
-        wnd = window - 2;
-        while (nbits / wnd + 1) * nx < ncpus {
-            nx += 1;
-            wnd = window - num_bits(3 * nx / 2);
-        }
-        nx -= 1;
-        wnd = window - num_bits(3 * nx / 2);
+        assert_eq!(
+            naive,
+            blst_fp12::miller_loop_n(qs.as_slice(), ps.as_slice())
+        );
     }
-    let ny = nbits / wnd + 1;
-    wnd = nbits / ny + 1;
-
-    (nx, ny, wnd)
-}
-
-fn pippenger_window_size(npoints: usize) -> usize {
-    let wbits = num_bits(npoints);
-
-    if wbits > 13 {
-        return wbits - 4;
-    }
-    if wbits > 5 {
-        return wbits - 3;
-    }
-    2
 }

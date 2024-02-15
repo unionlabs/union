@@ -1,4 +1,22 @@
 OPTION	DOTNAME
+EXTERN	mul_mont_384x$1:NEAR
+EXTERN	sqr_mont_384x$1:NEAR
+EXTERN	mul_382x$1:NEAR
+EXTERN	sqr_382x$1:NEAR
+EXTERN	mul_384$1:NEAR
+EXTERN	sqr_384$1:NEAR
+EXTERN	redc_mont_384$1:NEAR
+EXTERN	from_mont_384$1:NEAR
+EXTERN	sgn0_pty_mont_384$1:NEAR
+EXTERN	sgn0_pty_mont_384x$1:NEAR
+EXTERN	mul_mont_384$1:NEAR
+EXTERN	sqr_mont_384$1:NEAR
+EXTERN	sqr_n_mul_mont_384$1:NEAR
+EXTERN	sqr_n_mul_mont_383$1:NEAR
+EXTERN	sqr_mont_382x$1:NEAR
+_DATA	SEGMENT
+COMM	__blst_platform_cap:DWORD:1
+_DATA	ENDS
 .text$	SEGMENT ALIGN(256) 'CODE'
 
 
@@ -9,8 +27,9 @@ OPTION	DOTNAME
 
 
 ALIGN	32
-__sub_mod_384x384	PROC PRIVATE
+__subq_mod_384x384	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -71,12 +90,13 @@ __sub_mod_384x384	PROC PRIVATE
 	mov	QWORD PTR[88+rdi],rsi
 
 	DB	0F3h,0C3h		;repret
-__sub_mod_384x384	ENDP
+__subq_mod_384x384	ENDP
 
 
 ALIGN	32
-__add_mod_384	PROC PRIVATE
+__addq_mod_384	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -120,12 +140,13 @@ __add_mod_384	PROC PRIVATE
 	mov	QWORD PTR[40+rdi],r13
 
 	DB	0F3h,0C3h		;repret
-__add_mod_384	ENDP
+__addq_mod_384	ENDP
 
 
 ALIGN	32
-__sub_mod_384	PROC PRIVATE
+__subq_mod_384	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -133,7 +154,7 @@ __sub_mod_384	PROC PRIVATE
 	mov	r12,QWORD PTR[32+rsi]
 	mov	r13,QWORD PTR[40+rsi]
 
-__sub_mod_384_a_is_loaded::
+__subq_mod_384_a_is_loaded::
 	sub	r8,QWORD PTR[rdx]
 	mov	r14,QWORD PTR[rcx]
 	sbb	r9,QWORD PTR[8+rdx]
@@ -169,7 +190,7 @@ __sub_mod_384_a_is_loaded::
 	mov	QWORD PTR[40+rdi],r13
 
 	DB	0F3h,0C3h		;repret
-__sub_mod_384	ENDP
+__subq_mod_384	ENDP
 PUBLIC	mul_mont_384x
 
 
@@ -180,14 +201,17 @@ mul_mont_384x	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_mul_mont_384x::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
 	mov	r8,QWORD PTR[40+rsp]
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	mul_mont_384x$1
+endif
 	push	rbp
 
 	push	rbx
@@ -228,12 +252,12 @@ $L$SEH_body_mul_mont_384x::
 	mov	rcx,QWORD PTR[8+rsp]
 	lea	rdx,QWORD PTR[((-48))+rsi]
 	lea	rdi,QWORD PTR[((40+192+48))+rsp]
-	call	__add_mod_384
+	call	__addq_mod_384
 
 	mov	rsi,QWORD PTR[16+rsp]
 	lea	rdx,QWORD PTR[48+rsi]
 	lea	rdi,QWORD PTR[((-48))+rdi]
-	call	__add_mod_384
+	call	__addq_mod_384
 
 	lea	rbx,QWORD PTR[rdi]
 	lea	rsi,QWORD PTR[48+rdi]
@@ -243,17 +267,17 @@ $L$SEH_body_mul_mont_384x::
 	lea	rsi,QWORD PTR[rdi]
 	lea	rdx,QWORD PTR[40+rsp]
 	mov	rcx,QWORD PTR[8+rsp]
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 	lea	rsi,QWORD PTR[rdi]
 	lea	rdx,QWORD PTR[((-96))+rdi]
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 
 	lea	rsi,QWORD PTR[40+rsp]
 	lea	rdx,QWORD PTR[((40+96))+rsp]
 	lea	rdi,QWORD PTR[40+rsp]
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 	mov	rbx,rcx
 
@@ -262,14 +286,14 @@ $L$SEH_body_mul_mont_384x::
 	mov	rcx,QWORD PTR[rsp]
 	mov	rdi,QWORD PTR[32+rsp]
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 
 	lea	rsi,QWORD PTR[((40+192))+rsp]
 	mov	rcx,QWORD PTR[rsp]
 	lea	rdi,QWORD PTR[48+rdi]
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	lea	r8,QWORD PTR[328+rsp]
 	mov	r15,QWORD PTR[r8]
@@ -304,13 +328,16 @@ sqr_mont_384x	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sqr_mont_384x::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	sqr_mont_384x$1
+endif
 	push	rbp
 
 	push	rbx
@@ -336,13 +363,13 @@ $L$SEH_body_sqr_mont_384x::
 
 	lea	rdx,QWORD PTR[48+rsi]
 	lea	rdi,QWORD PTR[32+rsp]
-	call	__add_mod_384
+	call	__addq_mod_384
 
 
 	mov	rsi,QWORD PTR[16+rsp]
 	lea	rdx,QWORD PTR[48+rsi]
 	lea	rdi,QWORD PTR[((32+48))+rsp]
-	call	__sub_mod_384
+	call	__subq_mod_384
 
 
 	mov	rsi,QWORD PTR[16+rsp]
@@ -435,13 +462,16 @@ mul_382x	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_mul_382x::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	mul_382x$1
+endif
 	push	rbp
 
 	push	rbx
@@ -531,18 +561,18 @@ $L$SEH_body_mul_382x::
 	lea	rdx,QWORD PTR[32+rsp]
 	mov	rcx,QWORD PTR[24+rsp]
 	mov	rdi,rsi
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 
 	lea	rsi,QWORD PTR[rdi]
 	lea	rdx,QWORD PTR[((-96))+rdi]
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 
 	lea	rsi,QWORD PTR[((-96))+rdi]
 	lea	rdx,QWORD PTR[32+rsp]
 	lea	rdi,QWORD PTR[((-96))+rdi]
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 	lea	r8,QWORD PTR[136+rsp]
 	mov	r15,QWORD PTR[r8]
@@ -577,12 +607,15 @@ sqr_382x	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sqr_382x::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	sqr_382x$1
+endif
 	push	rbp
 
 	push	rbx
@@ -633,7 +666,7 @@ $L$SEH_body_sqr_382x::
 
 	lea	rdx,QWORD PTR[48+rsi]
 	lea	rdi,QWORD PTR[48+rdi]
-	call	__sub_mod_384_a_is_loaded
+	call	__subq_mod_384_a_is_loaded
 
 
 	lea	rsi,QWORD PTR[rdi]
@@ -716,12 +749,15 @@ mul_384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_mul_384::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	mul_384$1
+endif
 	push	rbp
 
 	push	rbx
@@ -755,6 +791,7 @@ mul_384	ENDP
 ALIGN	32
 __mulq_384	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rax,QWORD PTR[rbx]
 
 	mov	rbp,rax
@@ -1046,11 +1083,14 @@ sqr_384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sqr_384::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	sqr_384$1
+endif
 	push	rbp
 
 	push	rbx
@@ -1097,6 +1137,7 @@ sqr_384	ENDP
 ALIGN	32
 __sqrq_384	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rax,QWORD PTR[rsi]
 	mov	r15,QWORD PTR[8+rsi]
 	mov	rcx,QWORD PTR[16+rsi]
@@ -1294,13 +1335,16 @@ sqr_mont_384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sqr_mont_384::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	sqr_mont_384$1
+endif
 	push	rbp
 
 	push	rbx
@@ -1330,7 +1374,7 @@ $L$SEH_body_sqr_mont_384::
 	mov	rbx,QWORD PTR[104+rsp]
 	mov	rdi,QWORD PTR[112+rsp]
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	lea	r8,QWORD PTR[120+rsp]
 	mov	r15,QWORD PTR[120+rsp]
@@ -1368,13 +1412,16 @@ redc_mont_384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_redc_mont_384::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	redc_mont_384$1
+endif
 	push	rbp
 
 	push	rbx
@@ -1394,7 +1441,7 @@ $L$SEH_body_redc_mont_384::
 
 	mov	rbx,rdx
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	mov	r15,QWORD PTR[8+rsp]
 
@@ -1432,13 +1479,16 @@ from_mont_384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_from_mont_384::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	from_mont_384$1
+endif
 	push	rbp
 
 	push	rbx
@@ -1515,6 +1565,7 @@ from_mont_384	ENDP
 ALIGN	32
 __mulq_by_1_mont_384	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rax,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -1810,8 +1861,9 @@ __mulq_by_1_mont_384	ENDP
 
 
 ALIGN	32
-__redc_tail_mont_384	PROC PRIVATE
+__redq_tail_mont_384	PROC PRIVATE
 	DB	243,15,30,250
+
 	add	r14,QWORD PTR[48+rsi]
 	mov	rax,r14
 	adc	r15,QWORD PTR[56+rsi]
@@ -1852,7 +1904,7 @@ __redc_tail_mont_384	PROC PRIVATE
 	mov	QWORD PTR[40+rdi],r11
 
 	DB	0F3h,0C3h		;repret
-__redc_tail_mont_384	ENDP
+__redq_tail_mont_384	ENDP
 
 PUBLIC	sgn0_pty_mont_384
 
@@ -1864,12 +1916,15 @@ sgn0_pty_mont_384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sgn0_pty_mont_384::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	sgn0_pty_mont_384$1
+endif
 	push	rbp
 
 	push	rbx
@@ -1948,12 +2003,15 @@ sgn0_pty_mont_384x	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sgn0_pty_mont_384x::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	sgn0_pty_mont_384x$1
+endif
 	push	rbp
 
 	push	rbx
@@ -2081,14 +2139,17 @@ mul_mont_384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_mul_mont_384::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
 	mov	r8,QWORD PTR[40+rsp]
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	mul_mont_384$1
+endif
 	push	rbp
 
 	push	rbx
@@ -2143,6 +2204,7 @@ mul_mont_384	ENDP
 ALIGN	32
 __mulq_mont_384	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rdi,rax
 	mul	r14
 	mov	r8,rax
@@ -2750,15 +2812,18 @@ sqr_n_mul_mont_384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sqr_n_mul_mont_384::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
 	mov	r8,QWORD PTR[40+rsp]
 	mov	r9,QWORD PTR[48+rsp]
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	sqr_n_mul_mont_384$1
+endif
 	push	rbp
 
 	push	rbx
@@ -2792,7 +2857,7 @@ $L$oop_sqr_384::
 	mov	rcx,QWORD PTR[rsp]
 	mov	rbx,QWORD PTR[16+rsp]
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	movd	edx,xmm1
 	lea	rsi,QWORD PTR[rdi]
@@ -2847,15 +2912,18 @@ sqr_n_mul_mont_383	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sqr_n_mul_mont_383::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
 	mov	r8,QWORD PTR[40+rsp]
 	mov	r9,QWORD PTR[48+rsp]
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	sqr_n_mul_mont_383$1
+endif
 	push	rbp
 
 	push	rbx
@@ -2950,6 +3018,7 @@ sqr_n_mul_mont_383	ENDP
 ALIGN	32
 __mulq_mont_383_nonred	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rbp,rax
 	mul	r14
 	mov	r8,rax
@@ -3514,13 +3583,16 @@ sqr_mont_382x	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sqr_mont_382x::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	sqr_mont_382x$1
+endif
 	push	rbp
 
 	push	rbx
@@ -3882,8 +3954,9 @@ $L$SEH_info_mul_mont_384x_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_mul_mont_384x_body::
 DB	1,0,18,0
 DB	000h,0f4h,029h,000h
@@ -3895,6 +3968,8 @@ DB	000h,054h,02eh,000h
 DB	000h,074h,030h,000h
 DB	000h,064h,031h,000h
 DB	000h,001h,02fh,000h
+DB	000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_mul_mont_384x_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -3905,8 +3980,9 @@ $L$SEH_info_sqr_mont_384x_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sqr_mont_384x_body::
 DB	1,0,18,0
 DB	000h,0f4h,011h,000h
@@ -3918,6 +3994,8 @@ DB	000h,054h,016h,000h
 DB	000h,074h,018h,000h
 DB	000h,064h,019h,000h
 DB	000h,001h,017h,000h
+DB	000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sqr_mont_384x_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -3928,8 +4006,9 @@ $L$SEH_info_mul_382x_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_mul_382x_body::
 DB	1,0,18,0
 DB	000h,0f4h,011h,000h
@@ -3941,6 +4020,8 @@ DB	000h,054h,016h,000h
 DB	000h,074h,018h,000h
 DB	000h,064h,019h,000h
 DB	000h,001h,017h,000h
+DB	000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_mul_382x_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -3951,8 +4032,9 @@ $L$SEH_info_sqr_382x_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sqr_382x_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -3964,7 +4046,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sqr_382x_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -3975,8 +4058,9 @@ $L$SEH_info_mul_384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_mul_384_body::
 DB	1,0,11,0
 DB	000h,0c4h,000h,000h
@@ -3996,8 +4080,9 @@ $L$SEH_info_sqr_384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sqr_384_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -4009,7 +4094,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sqr_384_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -4020,8 +4106,9 @@ $L$SEH_info_sqr_mont_384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sqr_mont_384_body::
 DB	1,0,18,0
 DB	000h,0f4h,00fh,000h
@@ -4033,6 +4120,8 @@ DB	000h,054h,014h,000h
 DB	000h,074h,016h,000h
 DB	000h,064h,017h,000h
 DB	000h,001h,015h,000h
+DB	000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sqr_mont_384_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -4043,8 +4132,9 @@ $L$SEH_info_redc_mont_384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_redc_mont_384_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -4056,7 +4146,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_redc_mont_384_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -4067,8 +4158,9 @@ $L$SEH_info_from_mont_384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_from_mont_384_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -4080,7 +4172,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_from_mont_384_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -4091,8 +4184,9 @@ $L$SEH_info_sgn0_pty_mont_384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sgn0_pty_mont_384_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -4104,7 +4198,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sgn0_pty_mont_384_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -4115,8 +4210,9 @@ $L$SEH_info_sgn0_pty_mont_384x_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sgn0_pty_mont_384x_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -4128,7 +4224,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sgn0_pty_mont_384x_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -4139,8 +4236,9 @@ $L$SEH_info_mul_mont_384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_mul_mont_384_body::
 DB	1,0,17,0
 DB	000h,0f4h,003h,000h
@@ -4152,7 +4250,8 @@ DB	000h,054h,008h,000h
 DB	000h,074h,00ah,000h
 DB	000h,064h,00bh,000h
 DB	000h,082h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_mul_mont_384_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -4163,8 +4262,9 @@ $L$SEH_info_sqr_n_mul_mont_384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sqr_n_mul_mont_384_body::
 DB	1,0,18,0
 DB	000h,0f4h,011h,000h
@@ -4176,6 +4276,8 @@ DB	000h,054h,016h,000h
 DB	000h,074h,018h,000h
 DB	000h,064h,019h,000h
 DB	000h,001h,017h,000h
+DB	000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sqr_n_mul_mont_384_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -4186,8 +4288,9 @@ $L$SEH_info_sqr_n_mul_mont_383_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sqr_n_mul_mont_383_body::
 DB	1,0,18,0
 DB	000h,0f4h,011h,000h
@@ -4199,6 +4302,8 @@ DB	000h,054h,016h,000h
 DB	000h,074h,018h,000h
 DB	000h,064h,019h,000h
 DB	000h,001h,017h,000h
+DB	000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sqr_n_mul_mont_383_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -4209,8 +4314,9 @@ $L$SEH_info_sqr_mont_382x_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sqr_mont_382x_body::
 DB	1,0,18,0
 DB	000h,0f4h,011h,000h
@@ -4222,6 +4328,8 @@ DB	000h,054h,016h,000h
 DB	000h,074h,018h,000h
 DB	000h,064h,019h,000h
 DB	000h,001h,017h,000h
+DB	000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sqr_mont_382x_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h

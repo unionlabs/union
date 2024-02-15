@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/supranational/blst.svg?branch=master)](https://travis-ci.com/github/supranational/blst) [![Actions status](https://github.com/supranational/blst/workflows/build/badge.svg)](https://github.com/supranational/blst/actions) [![Total alerts](https://img.shields.io/lgtm/alerts/g/supranational/blst.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/supranational/blst/alerts/)
+[![Build Status](https://travis-ci.com/supranational/blst.svg?branch=master)](https://travis-ci.com/github/supranational/blst) [![Actions status](https://github.com/supranational/blst/workflows/build/badge.svg)](https://github.com/supranational/blst/actions)
 <div align="left">
   <img src=blst_logo_small.png>
 </div>
@@ -34,8 +34,8 @@ An initial audit of this library was conducted by NCC Group in January 2021 and 
 Formal verification of this library by Galois is on-going and can be found [here](https://github.com/GaloisInc/BLST-Verification).
 
 This library is compliant with the following IETF draft specifications:
-- [IETF BLS Signature V4](https://tools.ietf.org/html/draft-irtf-cfrg-bls-signature)
-- [IETF Hash-to-Curve V13](https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve)
+- [IETF BLS Signature V5](https://tools.ietf.org/html/draft-irtf-cfrg-bls-signature)
+- [IETF Hash-to-Curve V16](https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve)
 
 The serialization formatting is implemented according to [the ZCash definition](#serialization-format).
 
@@ -56,6 +56,8 @@ Unless deemed appropriate to implement, bindings for other languages will be pro
 - [Python](bindings/python)
 - [Java](bindings/java)
 - [Node.js](bindings/node.js)
+- [Emscripten](bindings/emscripten)
+- [C#](bindings/c%23)
 
 ## API
 
@@ -134,7 +136,7 @@ The most-significant three bits of a G1 or G2 encoding should be masked away bef
 * The third-most significant bit is set if (and only if) this point is in compressed form _and_ it is not the point at infinity _and_ its y-coordinate is the lexicographically largest of the two associated with the encoded x-coordinate.
 
 ## Build
-The build process is very simple and only requires a C complier. It's integrated into the Go and Rust ecosystems, so that respective users would go about as they would with any other external module. Otherwise, a binary library would have to be compiled.
+The build process is very simple and only requires a C compiler. It's integrated into the Go and Rust ecosystems, so that respective users would go about as they would with any other external module. Otherwise, a binary library would have to be compiled.
 
 ### C static library
 A static library called libblst.a can be built in the current working directory of the user's choice:

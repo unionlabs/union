@@ -9,7 +9,6 @@ package blst
 import (
     "crypto/rand"
     "fmt"
-    mrand "math/rand"
     "runtime"
     "testing"
 )
@@ -53,7 +52,7 @@ func TestSerdesMinPk(t *testing.T) {
     }
 
     // Negative test equals
-    sk.b[0] = sk.b[0] + 1
+    sk.b[0]++
     if sk.Equals(sk2) {
         t.Errorf("sk2 == sk")
     }
@@ -88,7 +87,7 @@ func TestSignVerifyMinPk(t *testing.T) {
         0xed, 0xfe, 0x2b, 0x60, 0xa6, 0x3c, 0x48, 0x99}
 
     sk0 := KeyGen(ikm[:])
-    ikm[0] = ikm[0] + 1
+    ikm[0]++
     sk1 := KeyGen(ikm[:])
 
     // pk
@@ -295,7 +294,10 @@ func TestSignMultipleVerifyAggregateMinPk(t *testing.T) {
 
         randFn := func(s *Scalar) {
             var rbytes [BLST_SCALAR_BYTES]byte
-            mrand.Read(rbytes[:])
+            _, err := rand.Read(rbytes[:])
+            if err != nil {
+                t.Errorf(err.Error())
+            }
             s.FromBEndian(rbytes[:])
         }
 
@@ -622,7 +624,7 @@ func TestEmptySignatureMinPk(t *testing.T) {
 func TestMultiScalarP1(t *testing.T) {
     const npoints = 1027
     scalars := make([]byte, npoints*16)
-    _, err := rand.Read(scalars[:])
+    _, err := rand.Read(scalars)
     if err != nil {
         t.Errorf(err.Error())
 	return
@@ -644,7 +646,7 @@ func TestMultiScalarP1(t *testing.T) {
 func BenchmarkMultiScalarP1(b *testing.B) {
     const npoints = 200000
     scalars := make([]byte, npoints*32)
-    _, err := rand.Read(scalars[:])
+    _, err := rand.Read(scalars)
     if err != nil {
         b.Fatal(err.Error())
     }
@@ -670,7 +672,7 @@ func BenchmarkMultiScalarP1(b *testing.B) {
 func BenchmarkToP1Affines(b *testing.B) {
     const npoints = 32000
     scalars := make([]byte, npoints*32)
-    _, err := rand.Read(scalars[:])
+    _, err := rand.Read(scalars)
     if err != nil {
         b.Fatal(err.Error())
     }

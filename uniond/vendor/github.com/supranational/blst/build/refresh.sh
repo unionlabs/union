@@ -38,12 +38,11 @@ if which bindgen > /dev/null 2>&1; then
             --opaque-type blst_uniq \
             --with-derive-default \
             --with-derive-eq \
-            --size_t-is-usize \
             --rustified-enum BLST.\* \
         blst.h -- -D__BLST_RUST_BINDGEN__ \
     | ${PERL} ../build/bindings_trim.pl > rust/src/bindings.rs
   )
 else
-    echo "Install Rust bindgen with 'cargo install bindgen'" 1>&2
+    echo "Install Rust bindgen with 'cargo install bindgen-cli'" 1>&2
     exit 1
 fi

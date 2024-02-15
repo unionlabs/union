@@ -10,14 +10,14 @@ add_mod_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_add_mod_256:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
 	pushq	%rbx
 
 	subq	$8,%rsp
@@ -81,13 +81,13 @@ mul_by_3_mod_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_mul_by_3_mod_256:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
 	pushq	%rbx
 
 	pushq	%r12
@@ -161,14 +161,14 @@ lshift_mod_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_lshift_mod_256:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
 	pushq	%rbx
 
 	pushq	%r12
@@ -218,14 +218,14 @@ rshift_mod_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_rshift_mod_256:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
 	pushq	%rbx
 
 	subq	$8,%rsp
@@ -307,14 +307,14 @@ cneg_mod_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_cneg_mod_256:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
 	pushq	%rbx
 
 	pushq	%r12
@@ -385,14 +385,14 @@ sub_mod_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_sub_mod_256:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
 	pushq	%rbx
 
 	subq	$8,%rsp
@@ -454,10 +454,10 @@ check_mod_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_check_mod_256:
+
+
 	movq	%rcx,%rdi
 	movq	%rdx,%rsi
-
-
 	movq	0(%rdi),%rax
 	movq	8(%rdi),%r9
 	movq	16(%rdi),%r10
@@ -497,14 +497,14 @@ add_n_check_mod_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_add_n_check_mod_256:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
 	pushq	%rbx
 
 	subq	$8,%rsp
@@ -573,14 +573,14 @@ sub_n_check_mod_256:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_sub_n_check_mod_256:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
 	pushq	%rbx
 
 	subq	$8,%rsp
@@ -744,8 +744,9 @@ sub_n_check_mod_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_add_mod_256_body:
 .byte	1,0,9,0
 .byte	0x00,0x34,0x01,0x00
@@ -753,7 +754,8 @@ sub_n_check_mod_256:
 .byte	0x00,0x74,0x04,0x00
 .byte	0x00,0x64,0x05,0x00
 .byte	0x00,0x22
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_add_mod_256_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00
@@ -764,8 +766,9 @@ sub_n_check_mod_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_mul_by_3_mod_256_body:
 .byte	1,0,11,0
 .byte	0x00,0xc4,0x00,0x00
@@ -785,8 +788,9 @@ sub_n_check_mod_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_lshift_mod_256_body:
 .byte	1,0,11,0
 .byte	0x00,0xc4,0x00,0x00
@@ -806,8 +810,9 @@ sub_n_check_mod_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_rshift_mod_256_body:
 .byte	1,0,9,0
 .byte	0x00,0x34,0x01,0x00
@@ -815,7 +820,8 @@ sub_n_check_mod_256:
 .byte	0x00,0x74,0x04,0x00
 .byte	0x00,0x64,0x05,0x00
 .byte	0x00,0x22
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_rshift_mod_256_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00
@@ -826,8 +832,9 @@ sub_n_check_mod_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_cneg_mod_256_body:
 .byte	1,0,11,0
 .byte	0x00,0xc4,0x00,0x00
@@ -847,8 +854,9 @@ sub_n_check_mod_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_sub_mod_256_body:
 .byte	1,0,9,0
 .byte	0x00,0x34,0x01,0x00
@@ -856,7 +864,8 @@ sub_n_check_mod_256:
 .byte	0x00,0x74,0x04,0x00
 .byte	0x00,0x64,0x05,0x00
 .byte	0x00,0x22
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_sub_mod_256_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00
@@ -873,8 +882,9 @@ sub_n_check_mod_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_add_n_check_mod_256_body:
 .byte	1,0,9,0
 .byte	0x00,0x34,0x01,0x00
@@ -882,7 +892,8 @@ sub_n_check_mod_256:
 .byte	0x00,0x74,0x04,0x00
 .byte	0x00,0x64,0x05,0x00
 .byte	0x00,0x22
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_add_n_check_mod_256_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00
@@ -893,8 +904,9 @@ sub_n_check_mod_256:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_sub_n_check_mod_256_body:
 .byte	1,0,9,0
 .byte	0x00,0x34,0x01,0x00
@@ -902,7 +914,8 @@ sub_n_check_mod_256:
 .byte	0x00,0x74,0x04,0x00
 .byte	0x00,0x64,0x05,0x00
 .byte	0x00,0x22
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_sub_n_check_mod_256_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00

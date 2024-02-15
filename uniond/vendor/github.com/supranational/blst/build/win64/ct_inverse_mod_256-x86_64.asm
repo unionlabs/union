@@ -3,6 +3,7 @@ OPTION	DOTNAME
 
 PUBLIC	ct_inverse_mod_256
 
+
 ALIGN	32
 ct_inverse_mod_256	PROC PUBLIC
 	DB	243,15,30,250
@@ -10,15 +11,14 @@ ct_inverse_mod_256	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_ct_inverse_mod_256::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
 	push	rbx
 
 	push	r12
@@ -643,6 +643,7 @@ ct_inverse_mod_256	ENDP
 ALIGN	32
 __smulq_512x63	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -791,6 +792,7 @@ __smulq_512x63	ENDP
 ALIGN	32
 __smulq_256x63	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r8,QWORD PTR[((0+0))+rsi]
 	mov	r9,QWORD PTR[((0+8))+rsi]
 	mov	r10,QWORD PTR[((0+16))+rsi]
@@ -898,6 +900,7 @@ __smulq_256x63	ENDP
 ALIGN	32
 __smulq_256_n_shift_by_31	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	QWORD PTR[rdi],rdx
 	mov	QWORD PTR[8+rdi],rcx
 	mov	rbp,rdx
@@ -1026,6 +1029,7 @@ __smulq_256_n_shift_by_31	ENDP
 ALIGN	32
 __ab_approximation_31_256	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r9,QWORD PTR[24+rsi]
 	mov	r11,QWORD PTR[56+rsi]
 	mov	rbx,QWORD PTR[16+rsi]
@@ -1079,6 +1083,7 @@ __ab_approximation_31_256	ENDP
 ALIGN	32
 __inner_loop_31_256	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rcx,07FFFFFFF80000000h
 	mov	r13,0800000007FFFFFFFh
 	mov	r15,07FFFFFFF7FFFFFFFh
@@ -1127,6 +1132,7 @@ __inner_loop_31_256	ENDP
 ALIGN	32
 __inner_loop_62_256	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r15d,edx
 	mov	rdx,1
 	xor	rcx,rcx
@@ -1187,8 +1193,9 @@ $L$SEH_info_ct_inverse_mod_256_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_ct_inverse_mod_256_body::
 DB	1,0,18,0
 DB	000h,0f4h,086h,000h
@@ -1200,6 +1207,8 @@ DB	000h,054h,08bh,000h
 DB	000h,074h,08dh,000h
 DB	000h,064h,08eh,000h
 DB	000h,001h,08ch,000h
+DB	000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_ct_inverse_mod_256_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h

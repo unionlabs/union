@@ -18,6 +18,24 @@ die "can't locate x86_64-xlate.pl";
 open STDOUT,"| \"$^X\" \"$xlate\" $flavour \"$output\""
     or die "can't call $xlate: $!";
 
+$code.=<<___ if ($flavour =~ /masm/);
+.extern	mul_mont_384x\$1
+.extern	sqr_mont_384x\$1
+.extern	mul_382x\$1
+.extern	sqr_382x\$1
+.extern	mul_384\$1
+.extern	sqr_384\$1
+.extern	redc_mont_384\$1
+.extern	from_mont_384\$1
+.extern	sgn0_pty_mont_384\$1
+.extern	sgn0_pty_mont_384x\$1
+.extern	mul_mont_384\$1
+.extern	sqr_mont_384\$1
+.extern	sqr_n_mul_mont_384\$1
+.extern	sqr_n_mul_mont_383\$1
+.extern	sqr_mont_382x\$1
+___
+
 # common argument layout
 ($r_ptr,$a_ptr,$b_org,$n_ptr,$n0) = ("%rdi","%rsi","%rdx","%rcx","%r8");
 $b_ptr = "%rbx";
@@ -29,6 +47,7 @@ $b_ptr = "%rbx";
 { my @acc=(@acc,"%rax","%rbx","%rbp",$a_ptr);	# all registers are affected
 						# except for $n_ptr and $r_ptr
 $code.=<<___;
+.comm	__blst_platform_cap,4
 .text
 
 ########################################################################
@@ -37,9 +56,9 @@ $code.=<<___;
 # input boundary condition for Montgomery reduction, not n*n.
 # Just in case, this is duplicated, but only one module is
 # supposed to be linked...
-.type	__sub_mod_384x384,\@abi-omnipotent
+.type	__subq_mod_384x384,\@abi-omnipotent
 .align	32
-__sub_mod_384x384:
+__subq_mod_384x384:
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -100,11 +119,11 @@ __sub_mod_384x384:
 	mov	@acc[11], 8*11($r_ptr)
 
 	ret
-.size	__sub_mod_384x384,.-__sub_mod_384x384
+.size	__subq_mod_384x384,.-__subq_mod_384x384
 
-.type	__add_mod_384,\@abi-omnipotent
+.type	__addq_mod_384,\@abi-omnipotent
 .align	32
-__add_mod_384:
+__addq_mod_384:
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -148,11 +167,11 @@ __add_mod_384:
 	mov	@acc[5], 8*5($r_ptr)
 
 	ret
-.size	__add_mod_384,.-__add_mod_384
+.size	__addq_mod_384,.-__addq_mod_384
 
-.type	__sub_mod_384,\@abi-omnipotent
+.type	__subq_mod_384,\@abi-omnipotent
 .align	32
-__sub_mod_384:
+__subq_mod_384:
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -160,7 +179,7 @@ __sub_mod_384:
 	mov	8*4($a_ptr), @acc[4]
 	mov	8*5($a_ptr), @acc[5]
 
-__sub_mod_384_a_is_loaded:
+__subq_mod_384_a_is_loaded:
 	sub	8*0($b_org), @acc[0]
 	 mov	8*0($n_ptr), @acc[6]
 	sbb	8*1($b_org), @acc[1]
@@ -196,7 +215,7 @@ __sub_mod_384_a_is_loaded:
 	mov	@acc[5], 8*5($r_ptr)
 
 	ret
-.size	__sub_mod_384,.-__sub_mod_384
+.size	__subq_mod_384,.-__subq_mod_384
 ___
 }
 
@@ -214,6 +233,10 @@ $code.=<<___;
 .align	32
 mul_mont_384x:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	mul_mont_384x\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -253,12 +276,12 @@ mul_mont_384x:
 	mov	8*1(%rsp), $n_ptr
 	lea	-48($a_ptr), $b_org
 	lea	40+192+48(%rsp), $r_ptr
-	call	__add_mod_384
+	call	__addq_mod_384
 
 	mov	8*2(%rsp), $a_ptr
 	lea	48($a_ptr), $b_org
 	lea	-48($r_ptr), $r_ptr
-	call	__add_mod_384
+	call	__addq_mod_384
 
 	lea	($r_ptr),$b_ptr
 	lea	48($r_ptr),$a_ptr
@@ -268,17 +291,17 @@ mul_mont_384x:
 	lea	($r_ptr), $a_ptr	# t2
 	lea	40(%rsp), $b_org	# t0
 	mov	8*1(%rsp), $n_ptr
-	call	__sub_mod_384x384	# t2=t2-t0
+	call	__subq_mod_384x384	# t2=t2-t0
 
 	lea	($r_ptr), $a_ptr	# t2
 	lea	-96($r_ptr), $b_org	# t1
-	call	__sub_mod_384x384	# t2=t2-t1
+	call	__subq_mod_384x384	# t2=t2-t1
 
 	################################# t0=t0-t1
 	lea	40(%rsp), $a_ptr
 	lea	40+96(%rsp), $b_org
 	lea	40(%rsp), $r_ptr
-	call	__sub_mod_384x384	# t0-t1
+	call	__subq_mod_384x384	# t0-t1
 
 	mov	$n_ptr, $b_ptr		# n_ptr for redc_mont_384
 
@@ -287,14 +310,14 @@ mul_mont_384x:
 	mov	8*0(%rsp), %rcx		# n0 for redc_mont_384
 	mov	8*4(%rsp), $r_ptr	# ret->re
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	################################# redc_mont_384(ret->im, t2, mod, n0);
 	lea	40+192(%rsp), $a_ptr	# t2
 	mov	8*0(%rsp), %rcx		# n0 for redc_mont_384
 	lea	48($r_ptr), $r_ptr	# ret->im
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	lea	$frame(%rsp), %r8	# size optimization
 	mov	8*0(%r8),%r15
@@ -327,6 +350,10 @@ $code.=<<___;
 .align	32
 sqr_mont_384x:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	sqr_mont_384x\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -351,13 +378,13 @@ sqr_mont_384x:
 	################################# add_mod_384(t0, a->re, a->im);
 	lea	48($a_ptr), $b_org	# a->im
 	lea	32(%rsp), $r_ptr	# t0
-	call	__add_mod_384
+	call	__addq_mod_384
 
 	################################# sub_mod_384(t1, a->re, a->im);
 	mov	8*2(%rsp), $a_ptr	# a->re
 	lea	48($a_ptr), $b_org	# a->im
 	lea	32+48(%rsp), $r_ptr	# t1
-	call	__sub_mod_384
+	call	__subq_mod_384
 
 	################################# mul_mont_384(ret->im, a->re, a->im, mod, n0);
 	mov	8*2(%rsp), $a_ptr	# a->re
@@ -450,6 +477,10 @@ $code.=<<___;
 .align	32
 mul_382x:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	mul_382x\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -538,18 +569,18 @@ mul_382x:
 	lea	32(%rsp), $b_org
 	mov	8*3(%rsp), $n_ptr
 	mov	$a_ptr, $r_ptr
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 	################################# ret->im -= ret->re
 	lea	0($r_ptr), $a_ptr
 	lea	-96($r_ptr), $b_org
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 	################################# ret->re -= tx
 	lea	-96($r_ptr), $a_ptr
 	lea	32(%rsp), $b_org
 	lea	-96($r_ptr), $r_ptr
-	call	__sub_mod_384x384
+	call	__subq_mod_384x384
 
 	lea	$frame(%rsp), %r8	# size optimization
 	mov	8*0(%r8),%r15
@@ -581,6 +612,10 @@ $code.=<<___;
 .align	32
 sqr_382x:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	sqr_382x\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -630,7 +665,7 @@ sqr_382x:
 	################################# t1 = a->re - a->im
 	lea	48($a_ptr), $b_org
 	lea	48($r_ptr), $r_ptr
-	call	__sub_mod_384_a_is_loaded
+	call	__subq_mod_384_a_is_loaded
 
 	################################# mul_384(ret->re, t0, t1);
 	lea	($r_ptr), $a_ptr
@@ -712,6 +747,10 @@ $code.=<<___;
 .align	32
 mul_384:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	mul_384\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1174,6 +1213,10 @@ $code.=<<___;
 .align	32
 sqr_384:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	sqr_384\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1413,6 +1456,10 @@ $code.=<<___;
 .align	32
 sqr_mont_384:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	sqr_mont_384\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1441,7 +1488,7 @@ sqr_mont_384:
 	mov	8*13(%rsp), $b_ptr	# n_ptr for mul_by_1
 	mov	8*14(%rsp), $r_ptr
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	lea	8*15(%rsp), %r8		# size optimization
 	mov	8*15(%rsp), %r15
@@ -1477,6 +1524,10 @@ $code.=<<___;
 .align	32
 redc_mont_384:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	redc_mont_384\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1495,7 +1546,7 @@ redc_mont_384:
 
 	mov	$b_org, $n_ptr
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	mov	8(%rsp),%r15
 .cfi_restore	%r15
@@ -1525,6 +1576,10 @@ redc_mont_384:
 .align	32
 from_mont_384:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	from_mont_384\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1671,9 +1726,9 @@ $code.=<<___;
 	ret
 .size	__mulq_by_1_mont_384,.-__mulq_by_1_mont_384
 
-.type	__redc_tail_mont_384,\@abi-omnipotent
+.type	__redq_tail_mont_384,\@abi-omnipotent
 .align	32
-__redc_tail_mont_384:
+__redq_tail_mont_384:
 	add	8*6($a_ptr), @acc[0]	# accumulate upper half
 	mov	@acc[0], %rax
 	adc	8*7($a_ptr), @acc[1]
@@ -1714,7 +1769,7 @@ __redc_tail_mont_384:
 	mov	@acc[5], 8*5($r_ptr)
 
 	ret
-.size	__redc_tail_mont_384,.-__redc_tail_mont_384
+.size	__redq_tail_mont_384,.-__redq_tail_mont_384
 
 .globl	sgn0_pty_mont_384
 .hidden	sgn0_pty_mont_384
@@ -1722,6 +1777,10 @@ __redc_tail_mont_384:
 .align	32
 sgn0_pty_mont_384:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	sgn0_pty_mont_384\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1791,6 +1850,10 @@ sgn0_pty_mont_384:
 .align	32
 sgn0_pty_mont_384x:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	sgn0_pty_mont_384x\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -1916,6 +1979,10 @@ $code.=<<___;
 .align	32
 mul_mont_384:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	mul_mont_384\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -2155,6 +2222,10 @@ $code.=<<___;
 .align	32
 sqr_n_mul_mont_384:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	sqr_n_mul_mont_384\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -2187,7 +2258,7 @@ sqr_n_mul_mont_384:
 	mov	8*0(%rsp), %rcx		# n0 for mul_by_1
 	mov	8*2(%rsp), $b_ptr	# n_ptr for mul_by_1
 	call	__mulq_by_1_mont_384
-	call	__redc_tail_mont_384
+	call	__redq_tail_mont_384
 
 	movd	%xmm1, %edx
 	lea	0($r_ptr), $a_ptr
@@ -2234,6 +2305,10 @@ sqr_n_mul_mont_384:
 .align	32
 sqr_n_mul_mont_383:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	sqr_n_mul_mont_383\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -2486,6 +2561,10 @@ $code.=<<___;
 .align	32
 sqr_mont_382x:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	sqr_mont_382x\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx

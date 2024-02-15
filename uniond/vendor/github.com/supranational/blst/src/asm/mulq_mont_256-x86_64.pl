@@ -21,6 +21,13 @@ die "can't locate x86_64-xlate.pl";
 open STDOUT,"| \"$^X\" \"$xlate\" $flavour \"$output\""
     or die "can't call $xlate: $!";
 
+$code.=<<___ if ($flavour =~ /masm/);
+.extern	mul_mont_sparse_256\$1
+.extern	sqr_mont_sparse_256\$1
+.extern	from_mont_256\$1
+.extern	redc_mont_256\$1
+___
+
 # common argument layout
 ($r_ptr,$a_ptr,$b_org,$n_ptr,$n0) = ("%rdi","%rsi","%rdx","%rcx","%r8");
 $b_ptr = "%rbx";
@@ -32,6 +39,7 @@ my @acc=map("%r$_",(9..15));
 my ($hi, $a0) = ("%rbp", $r_ptr);
 
 $code.=<<___;
+.comm	__blst_platform_cap,4
 .text
 
 .globl	mul_mont_sparse_256
@@ -40,6 +48,10 @@ $code.=<<___;
 .align	32
 mul_mont_sparse_256:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	mul_mont_sparse_256\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -95,6 +107,10 @@ mul_mont_sparse_256:
 .align	32
 sqr_mont_sparse_256:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	sqr_mont_sparse_256\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -314,6 +330,10 @@ $code.=<<___;
 .align	32
 from_mont_256:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	from_mont_256\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx
@@ -380,6 +400,10 @@ from_mont_256:
 .align	32
 redc_mont_256:
 .cfi_startproc
+#ifdef __BLST_PORTABLE__
+	testl	\$1, __blst_platform_cap(%rip)
+	jnz	redc_mont_256\$1
+#endif
 	push	%rbp
 .cfi_push	%rbp
 	push	%rbx

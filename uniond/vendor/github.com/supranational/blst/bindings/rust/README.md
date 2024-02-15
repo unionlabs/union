@@ -16,17 +16,19 @@ If the target application crashes with an "illegal instruction" exception [after
 
 To compile for WebAssembly, your clang has to recognize `--target=wasm32`. Alternatively you can build your project with `CC` environment variable set to `emcc`, the [Emscripten compiler](https://emscripten.org), and `AR` set to `emar`, naturally, with both commands available on your `PATH`.
 
+While `cargo test`'s dependencies happen to require at least Rust 1.56, the library by itself can be compiled with earlier compiler versions. Though it takes some version pinning in the dependent's Cargo.toml, `zeroize` to "=1.3.0" and `zeroize_derive` to "=1.3.3".
+
 ## Usage
 There are two primary modes of operation that can be chosen based on declaration path:
 
 For minimal-pubkey-size operations:
-```
-use blst::min_pk::*
+```rust
+use blst::min_pk::*;
 ```
 
 For minimal-signature-size operations:
-```
-use blst::min_sig::*
+```rust
+use blst::min_sig::*;
 ```
 
 There are five structs with inherent implementations that provide the BLS12-381 signature functionality.
@@ -39,7 +41,10 @@ AggregateSignature
 ```
 
 A simple example for generating a key, signing a message, and verifying the message:
-```
+```rust
+use blst::min_pk::SecretKey;
+
+let mut rng = rand::thread_rng();
 let mut ikm = [0u8; 32];
 rng.fill_bytes(&mut ikm);
 
@@ -50,8 +55,8 @@ let dst = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
 let msg = b"blst is such a blast";
 let sig = sk.sign(msg, dst, &[]);
 
-let err = sig.verify(msg, dst, &[], &pk);
-assert_eq!(err, BLST_ERROR::BLST_SUCCESS);
+let err = sig.verify(true, msg, dst, &[], &pk, true);
+assert_eq!(err, blst:BLST_ERROR::BLST_SUCCESS);
 ```
 
 See the tests in src/lib.rs and benchmarks in benches/blst_benches.rs for further examples of usage.

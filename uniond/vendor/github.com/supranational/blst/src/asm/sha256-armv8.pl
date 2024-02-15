@@ -11,7 +11,7 @@
 #
 # sha256_block procedure for ARMv8.
 #
-# This module is stripped of scalar code paths, with raionale that all
+# This module is stripped of scalar code paths, with rationale that all
 # known processors are NEON-capable.
 #
 # See original module at CRYPTOGAMS for further details.
@@ -43,6 +43,7 @@ $pre="blst_";
 ($ctx,$inp,$num,$Ktbl)=map("x$_",(0..2,30));
 
 $code.=<<___;
+.comm	__blst_platform_cap,4
 .text
 
 .align	6
@@ -343,6 +344,11 @@ $code.=<<___;
 .type	${pre}sha256_block_data_order,%function
 .align	4
 ${pre}sha256_block_data_order:
+	adrp	x16,__blst_platform_cap
+	ldr	w16,[x16,#:lo12:__blst_platform_cap]
+	tst	w16,#1
+	b.ne	.Lv8_entry
+
 	stp	x29, x30, [sp, #-16]!
 	mov	x29, sp
 	sub	sp,sp,#16*4

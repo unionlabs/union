@@ -1,7 +1,12 @@
 OPTION	DOTNAME
+EXTERN	ct_inverse_mod_383$1:NEAR
+_DATA	SEGMENT
+COMM	__blst_platform_cap:DWORD:1
+_DATA	ENDS
 .text$	SEGMENT ALIGN(256) 'CODE'
 
 PUBLIC	ct_inverse_mod_383
+
 
 ALIGN	32
 ct_inverse_mod_383	PROC PUBLIC
@@ -10,13 +15,16 @@ ct_inverse_mod_383	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_ct_inverse_mod_383::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
 	mov	rcx,r9
-
-
-
+ifdef __BLST_PORTABLE__
+	test	DWORD PTR[__blst_platform_cap],1
+	jnz	ct_inverse_mod_383$1
+endif
 	push	rbp
 
 	push	rbx
@@ -548,6 +556,7 @@ ct_inverse_mod_383	ENDP
 ALIGN	32
 __smulq_767x63	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -758,6 +767,7 @@ __smulq_767x63	ENDP
 ALIGN	32
 __smulq_383x63	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -899,6 +909,7 @@ __smulq_383x63	ENDP
 ALIGN	32
 __smulq_383_n_shift_by_62	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rbx,rdx
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
@@ -1075,6 +1086,7 @@ __smulq_383_n_shift_by_62	ENDP
 ALIGN	32
 __ab_approximation_62	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r9,QWORD PTR[40+rsi]
 	mov	r11,QWORD PTR[88+rsi]
 	mov	rbx,QWORD PTR[32+rsi]
@@ -1131,6 +1143,7 @@ ALIGN	8
 	DD	0
 __inner_loop_62	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	rdx,1
 	xor	rcx,rcx
 	xor	r12,r12
@@ -1200,8 +1213,9 @@ $L$SEH_info_ct_inverse_mod_383_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_ct_inverse_mod_383_body::
 DB	1,0,18,0
 DB	000h,0f4h,08bh,000h
@@ -1213,6 +1227,8 @@ DB	000h,054h,090h,000h
 DB	000h,074h,092h,000h
 DB	000h,064h,093h,000h
 DB	000h,001h,091h,000h
+DB	000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_ct_inverse_mod_383_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h

@@ -1,4 +1,4 @@
-//+build !noasm,!appengine
+//+build !noasm,!appengine,gc
 
 // ARM64 version of SHA256
 
@@ -25,7 +25,7 @@
 // their Plan9 equivalents
 //
 
-TEXT ·blockArm(SB), 7, $0
+TEXT ·blockArmSha2(SB), 7, $0
 	MOVD h+0(FP), R0
 	MOVD message+24(FP), R1
 	MOVD message_len+32(FP), R2 // length of message

@@ -46,9 +46,10 @@ static limb_t get_wval_limb(const byte *d, size_t off, size_t bits)
 static limb_t booth_encode(limb_t wval, size_t sz)
 {
     limb_t mask = 0 - (wval >> sz);     /* "sign" bit -> mask */
+    launder(mask);
 
     wval = (wval + 1) >> 1;
-    wval = (wval & ~mask) | ((0-wval) & mask);
+    wval = (wval ^ mask) - mask;
 
     /* &0x1f, but <=0x10, is index in table, rest is extended "sign" bit */
     return wval;
@@ -61,7 +62,7 @@ static limb_t booth_encode(limb_t wval, size_t sz)
  * pass order's bit-length, which is customarily publicly known, instead
  * of the factual scalars' bit-lengths. This is facilitated by point
  * addition subroutines implemented to handle points at infinity, which
- * are encoded as Z==0. [Doubling agorithms handle such points at
+ * are encoded as Z==0. [Doubling algorithms handle such points at
  * infinity "naturally," since resulting Z is product of original Z.]
  */
 #define POINT_MULT_SCALAR_WX_IMPL(ptype, SZ) \

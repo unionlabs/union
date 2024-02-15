@@ -9,12 +9,14 @@ div_3_limbs	PROC PUBLIC
 	DB	243,15,30,250
 	mov	QWORD PTR[8+rsp],rdi	;WIN64 prologue
 	mov	QWORD PTR[16+rsp],rsi
-	mov	rax,rsp
+	mov	r11,rsp
 $L$SEH_begin_div_3_limbs::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
-
+$L$SEH_body_div_3_limbs::
 
 	mov	r8,QWORD PTR[rdi]
 	mov	r9,QWORD PTR[8+rdi]
@@ -47,9 +49,12 @@ $L$oop::
 
 	or	rax,rcx
 
+$L$SEH_epilogue_div_3_limbs::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
+
 	DB	0F3h,0C3h		;repret
+
 $L$SEH_end_div_3_limbs::
 div_3_limbs	ENDP
 PUBLIC	quot_rem_128
@@ -60,12 +65,14 @@ quot_rem_128	PROC PUBLIC
 	DB	243,15,30,250
 	mov	QWORD PTR[8+rsp],rdi	;WIN64 prologue
 	mov	QWORD PTR[16+rsp],rsi
-	mov	rax,rsp
+	mov	r11,rsp
 $L$SEH_begin_quot_rem_128::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
-
+$L$SEH_body_quot_rem_128::
 
 	mov	rax,rdx
 	mov	rcx,rdx
@@ -101,9 +108,12 @@ $L$SEH_begin_quot_rem_128::
 
 	mov	rax,rcx
 
+$L$SEH_epilogue_quot_rem_128::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
+
 	DB	0F3h,0C3h		;repret
+
 $L$SEH_end_quot_rem_128::
 quot_rem_128	ENDP
 
@@ -119,12 +129,14 @@ quot_rem_64	PROC PUBLIC
 	DB	243,15,30,250
 	mov	QWORD PTR[8+rsp],rdi	;WIN64 prologue
 	mov	QWORD PTR[16+rsp],rsi
-	mov	rax,rsp
+	mov	r11,rsp
 $L$SEH_begin_quot_rem_64::
+
+
 	mov	rdi,rcx
 	mov	rsi,rdx
 	mov	rdx,r8
-
+$L$SEH_body_quot_rem_64::
 
 	mov	rax,rdx
 	imul	rdx,QWORD PTR[rsi]
@@ -136,17 +148,110 @@ $L$SEH_begin_quot_rem_64::
 	mov	QWORD PTR[rdi],r10
 	mov	QWORD PTR[8+rdi],rax
 
+$L$SEH_epilogue_quot_rem_64::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
+
 	DB	0F3h,0C3h		;repret
+
 $L$SEH_end_quot_rem_64::
 quot_rem_64	ENDP
 .text$	ENDS
 .pdata	SEGMENT READONLY ALIGN(4)
 ALIGN	4
+	DD	imagerel $L$SEH_begin_div_3_limbs
+	DD	imagerel $L$SEH_body_div_3_limbs
+	DD	imagerel $L$SEH_info_div_3_limbs_prologue
+
+	DD	imagerel $L$SEH_body_div_3_limbs
+	DD	imagerel $L$SEH_epilogue_div_3_limbs
+	DD	imagerel $L$SEH_info_div_3_limbs_body
+
+	DD	imagerel $L$SEH_epilogue_div_3_limbs
+	DD	imagerel $L$SEH_end_div_3_limbs
+	DD	imagerel $L$SEH_info_div_3_limbs_epilogue
+
+	DD	imagerel $L$SEH_begin_quot_rem_128
+	DD	imagerel $L$SEH_body_quot_rem_128
+	DD	imagerel $L$SEH_info_quot_rem_128_prologue
+
+	DD	imagerel $L$SEH_body_quot_rem_128
+	DD	imagerel $L$SEH_epilogue_quot_rem_128
+	DD	imagerel $L$SEH_info_quot_rem_128_body
+
+	DD	imagerel $L$SEH_epilogue_quot_rem_128
+	DD	imagerel $L$SEH_end_quot_rem_128
+	DD	imagerel $L$SEH_info_quot_rem_128_epilogue
+
+	DD	imagerel $L$SEH_begin_quot_rem_64
+	DD	imagerel $L$SEH_body_quot_rem_64
+	DD	imagerel $L$SEH_info_quot_rem_64_prologue
+
+	DD	imagerel $L$SEH_body_quot_rem_64
+	DD	imagerel $L$SEH_epilogue_quot_rem_64
+	DD	imagerel $L$SEH_info_quot_rem_64_body
+
+	DD	imagerel $L$SEH_epilogue_quot_rem_64
+	DD	imagerel $L$SEH_end_quot_rem_64
+	DD	imagerel $L$SEH_info_quot_rem_64_epilogue
+
 .pdata	ENDS
 .xdata	SEGMENT READONLY ALIGN(8)
 ALIGN	8
+$L$SEH_info_div_3_limbs_prologue::
+DB	1,0,5,00bh
+DB	0,074h,1,0
+DB	0,064h,2,0
+DB	0,0b3h
+DB	0,0
+	DD	0,0
+$L$SEH_info_div_3_limbs_body::
+DB	1,0,4,0
+DB	000h,074h,001h,000h
+DB	000h,064h,002h,000h
+DB	000h,000h,000h,000h
+$L$SEH_info_div_3_limbs_epilogue::
+DB	1,0,4,0
+DB	000h,074h,001h,000h
+DB	000h,064h,002h,000h
+DB	000h,000h,000h,000h
+
+$L$SEH_info_quot_rem_128_prologue::
+DB	1,0,5,00bh
+DB	0,074h,1,0
+DB	0,064h,2,0
+DB	0,0b3h
+DB	0,0
+	DD	0,0
+$L$SEH_info_quot_rem_128_body::
+DB	1,0,4,0
+DB	000h,074h,001h,000h
+DB	000h,064h,002h,000h
+DB	000h,000h,000h,000h
+$L$SEH_info_quot_rem_128_epilogue::
+DB	1,0,4,0
+DB	000h,074h,001h,000h
+DB	000h,064h,002h,000h
+DB	000h,000h,000h,000h
+
+$L$SEH_info_quot_rem_64_prologue::
+DB	1,0,5,00bh
+DB	0,074h,1,0
+DB	0,064h,2,0
+DB	0,0b3h
+DB	0,0
+	DD	0,0
+$L$SEH_info_quot_rem_64_body::
+DB	1,0,4,0
+DB	000h,074h,001h,000h
+DB	000h,064h,002h,000h
+DB	000h,000h,000h,000h
+$L$SEH_info_quot_rem_64_epilogue::
+DB	1,0,4,0
+DB	000h,074h,001h,000h
+DB	000h,064h,002h,000h
+DB	000h,000h,000h,000h
+
 
 .xdata	ENDS
 END

@@ -811,7 +811,13 @@ static const char *const BLST_ERROR_str [] = {
 
 #define SWIG_PYTHON_STRICT_BYTE_CHAR
 
-#ifdef _WIN32
+#if defined(__GNUC__)
+# ifndef alloca
+#  define alloca(s) __builtin_alloca(s)
+# endif
+#elif defined(__sun)
+# include <alloca.h>
+#elif defined(_WIN32)
 # include <malloc.h>
 # ifndef alloca
 #  define alloca(s) _alloca(s)

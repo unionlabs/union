@@ -152,6 +152,7 @@ EXPORTS
 	blst_sk_to_pk_in_g2
 	blst_sign_pk_in_g2
 	blst_miller_loop
+	blst_miller_loop_n
 	blst_final_exp
 	blst_precompute_lines
 	blst_miller_loop_lines
@@ -180,6 +181,8 @@ EXPORTS
 	BLS12_381_NEG_G1
 	BLS12_381_G2
 	BLS12_381_NEG_G2
+	blst_fr_ct_bfly
+	blst_fr_gs_bfly
 	blst_fr_to
 	blst_fr_from
 	blst_fp_to
@@ -202,6 +205,17 @@ EXPORTS
 	blst_pairing_as_fp12
 	blst_bendian_from_fp12
 	blst_keygen_v3
+	blst_keygen_v4_5
+	blst_keygen_v5
 	blst_derive_master_eip2333
 	blst_derive_child_eip2333
+	blst_scalar_from_hexascii
+	blst_fr_from_hexascii
+	blst_fp_from_hexascii
+	blst_p1_sizeof
+	blst_p1_affine_sizeof
+	blst_p2_sizeof
+	blst_p2_affine_sizeof
+	blst_fp12_sizeof
+	blst_sha256
 

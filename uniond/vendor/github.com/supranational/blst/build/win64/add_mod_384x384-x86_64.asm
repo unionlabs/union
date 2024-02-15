@@ -5,6 +5,7 @@ OPTION	DOTNAME
 ALIGN	32
 __add_mod_384x384	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -72,6 +73,7 @@ __add_mod_384x384	ENDP
 ALIGN	32
 __sub_mod_384x384	PROC PRIVATE
 	DB	243,15,30,250
+
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -144,15 +146,14 @@ add_mod_384x384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_add_mod_384x384::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
 	push	rbx
 
 	push	r12
@@ -203,15 +204,14 @@ sub_mod_384x384	PROC PUBLIC
 	mov	QWORD PTR[16+rsp],rsi
 	mov	r11,rsp
 $L$SEH_begin_sub_mod_384x384::
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-
 
 
 	push	rbp
 
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
 	push	rbx
 
 	push	r12
@@ -285,8 +285,9 @@ $L$SEH_info_add_mod_384x384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_add_mod_384x384_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -298,7 +299,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_add_mod_384x384_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h
@@ -309,8 +311,9 @@ $L$SEH_info_sub_mod_384x384_prologue::
 DB	1,0,5,00bh
 DB	0,074h,1,0
 DB	0,064h,2,0
-DB	0,003h
+DB	0,0b3h
 DB	0,0
+	DD	0,0
 $L$SEH_info_sub_mod_384x384_body::
 DB	1,0,17,0
 DB	000h,0f4h,001h,000h
@@ -322,7 +325,8 @@ DB	000h,054h,006h,000h
 DB	000h,074h,008h,000h
 DB	000h,064h,009h,000h
 DB	000h,062h
-DB	000h,000h
+DB	000h,000h,000h,000h,000h,000h
+DB	000h,000h,000h,000h
 $L$SEH_info_sub_mod_384x384_epilogue::
 DB	1,0,4,0
 DB	000h,074h,001h,000h

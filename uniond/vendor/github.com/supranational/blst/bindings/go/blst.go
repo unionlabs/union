@@ -20,7 +20,7 @@ package blst
 // # include <unistd.h>
 // static void handler(int signum)
 // {   ssize_t n = write(2, "Caught SIGILL in blst_cgo_init, "
-//                          "consult <blst>/bindinds/go/README.md.\n", 70);
+//                          "consult <blst>/bindings/go/README.md.\n", 70);
 //     _exit(128+SIGILL);
 //     (void)n;
 // }
@@ -93,6 +93,26 @@ package blst
 //     blst_p2_add_or_double(acc, acc, m);
 // }
 //
+// static void go_p1_sub_assign(blst_p1 *a, const blst_fp *x, bool affine)
+// {   blst_p1 minus_b;
+//     if (affine)
+//         blst_p1_from_affine(&minus_b, (const blst_p1_affine*)x);
+//     else
+//         minus_b = *(const blst_p1*)x;
+//     blst_p1_cneg(&minus_b, 1);
+//     blst_p1_add_or_double(a, a, &minus_b);
+// }
+//
+// static void go_p2_sub_assign(blst_p2 *a, const blst_fp2 *x, bool affine)
+// {   blst_p2 minus_b;
+//     if (affine)
+//         blst_p2_from_affine(&minus_b, (const blst_p2_affine*)x);
+//     else
+//         minus_b = *(const blst_p2*)x;
+//     blst_p2_cneg(&minus_b, 1);
+//     blst_p2_add_or_double(a, a, &minus_b);
+// }
+//
 // static bool go_scalar_from_bendian(blst_scalar *ret, const byte *in)
 // {   blst_scalar_from_bendian(ret, in);
 //     return blst_sk_check(ret);
@@ -103,6 +123,25 @@ package blst
 // {   byte elem[48];
 //     blst_expand_message_xmd(elem, sizeof(elem), msg, msg_len, DST, DST_len);
 //     return blst_scalar_from_be_bytes(ret, elem, sizeof(elem));
+// }
+// static void go_miller_loop_n(blst_fp12 *dst, const blst_p2_affine Q[],
+//                                              const blst_p1_affine P[],
+//                                              size_t npoints, bool acc)
+// {   const blst_p2_affine *Qs[2] = { Q, NULL };
+//     const blst_p1_affine *Ps[2] = { P, NULL };
+//     if (acc) {
+//         blst_fp12 tmp;
+//         blst_miller_loop_n(&tmp, Qs, Ps, npoints);
+//         blst_fp12_mul(dst, dst, &tmp);
+//     } else {
+//         blst_miller_loop_n(dst, Qs, Ps, npoints);
+//     }
+// }
+// static void go_fp12slice_mul(blst_fp12 *dst, const blst_fp12 in[], size_t n)
+// {   size_t i;
+//     blst_fp12_mul(dst, &in[0], &in[1]);
+//     for (i = 2; i < n; i++)
+//         blst_fp12_mul(dst, dst, &in[i]);
 // }
 import "C"
 import (
@@ -164,9 +203,7 @@ func SetMaxProcs(max int) {
 	maxProcs = max
 }
 
-//
 // Secret key
-//
 func (sk *SecretKey) Zeroize() {
 	var zero SecretKey
 	*sk = zero
@@ -193,9 +230,93 @@ func KeyGen(ikm []byte, optional ...[]byte) *SecretKey {
 	return &sk
 }
 
-//
+func KeyGenV3(ikm []byte, optional ...[]byte) *SecretKey {
+	if len(ikm) < 32 {
+		return nil
+	}
+	var sk SecretKey
+	var info []byte
+	var infoP *C.byte
+	if len(optional) > 0 {
+		info = optional[0]
+		if len(info) > 0 {
+			infoP = (*C.byte)(&info[0])
+		}
+	}
+	C.blst_keygen_v3(&sk, (*C.byte)(&ikm[0]), C.size_t(len(ikm)),
+		infoP, C.size_t(len(info)))
+	// Postponing secret key zeroing till garbage collection can be too
+	// late to be effective, but every little bit helps...
+	runtime.SetFinalizer(&sk, func(sk *SecretKey) { sk.Zeroize() })
+	return &sk
+}
+
+func KeyGenV45(ikm []byte, salt []byte, optional ...[]byte) *SecretKey {
+	if len(ikm) < 32 {
+		return nil
+	}
+	var sk SecretKey
+	var info []byte
+	var infoP *C.byte
+	if len(optional) > 0 {
+		info = optional[0]
+		if len(info) > 0 {
+			infoP = (*C.byte)(&info[0])
+		}
+	}
+	C.blst_keygen_v4_5(&sk, (*C.byte)(&ikm[0]), C.size_t(len(ikm)),
+		(*C.byte)(&salt[0]), C.size_t(len(salt)),
+		infoP, C.size_t(len(info)))
+	// Postponing secret key zeroing till garbage collection can be too
+	// late to be effective, but every little bit helps...
+	runtime.SetFinalizer(&sk, func(sk *SecretKey) { sk.Zeroize() })
+	return &sk
+}
+
+func KeyGenV5(ikm []byte, salt []byte, optional ...[]byte) *SecretKey {
+	if len(ikm) < 32 {
+		return nil
+	}
+	var sk SecretKey
+	var info []byte
+	var infoP *C.byte
+	if len(optional) > 0 {
+		info = optional[0]
+		if len(info) > 0 {
+			infoP = (*C.byte)(&info[0])
+		}
+	}
+	C.blst_keygen_v5(&sk, (*C.byte)(&ikm[0]), C.size_t(len(ikm)),
+		(*C.byte)(&salt[0]), C.size_t(len(salt)),
+		infoP, C.size_t(len(info)))
+	// Postponing secret key zeroing till garbage collection can be too
+	// late to be effective, but every little bit helps...
+	runtime.SetFinalizer(&sk, func(sk *SecretKey) { sk.Zeroize() })
+	return &sk
+}
+
+func DeriveMasterEip2333(ikm []byte) *SecretKey {
+	if len(ikm) < 32 {
+		return nil
+	}
+	var sk SecretKey
+	C.blst_derive_master_eip2333(&sk, (*C.byte)(&ikm[0]), C.size_t(len(ikm)))
+	// Postponing secret key zeroing till garbage collection can be too
+	// late to be effective, but every little bit helps...
+	runtime.SetFinalizer(&sk, func(sk *SecretKey) { sk.Zeroize() })
+	return &sk
+}
+
+func (master *SecretKey) DeriveChildEip2333(child_index uint32) *SecretKey {
+	var sk SecretKey
+	C.blst_derive_child_eip2333(&sk, master, C.uint(child_index))
+	// Postponing secret key zeroing till garbage collection can be too
+	// late to be effective, but every little bit helps...
+	runtime.SetFinalizer(&sk, func(sk *SecretKey) { sk.Zeroize() })
+	return &sk
+}
+
 // Pairing
-//
 func PairingCtx(hash_or_encode bool, DST []byte) Pairing {
 	DST_len := C.size_t(len(DST))
 	ctx := make([]C.blst_pairing, int(C.go_pairing_sizeof(DST_len)))
@@ -248,6 +369,64 @@ func Fp12MillerLoop(q *P2Affine, p *P1Affine) *Fp12 {
 	return &pt
 }
 
+func Fp12MillerLoopN(qs []P2Affine, ps []P1Affine) *Fp12 {
+	if len(qs) != len(ps) || len(qs) == 0 {
+		panic("inputs' lengths mismatch")
+	}
+
+	nElems := uint32(len(qs))
+	nThreads := uint32(maxProcs)
+
+	if nThreads == 1 || nElems == 1 {
+		var pt Fp12
+		C.go_miller_loop_n(&pt, &qs[0], &ps[0], C.size_t(nElems), false)
+		return &pt
+	}
+
+	stride := (nElems + nThreads - 1) / nThreads
+	if stride > 16 {
+		stride = 16
+	}
+
+	strides := (nElems + stride - 1) / stride
+	if nThreads > strides {
+		nThreads = strides
+	}
+
+	msgsCh := make(chan Fp12, nThreads)
+	curElem := uint32(0)
+
+	for tid := uint32(0); tid < nThreads; tid++ {
+		go func() {
+			acc := Fp12One()
+			first := true
+			for {
+				work := atomic.AddUint32(&curElem, stride) - stride
+				if work >= nElems {
+					break
+				}
+				n := nElems - work
+				if n > stride {
+					n = stride
+				}
+				C.go_miller_loop_n(&acc, &qs[work], &ps[work], C.size_t(n),
+					C.bool(!first))
+				first = false
+			}
+			msgsCh <- acc
+		}()
+	}
+
+	var ret = make([]Fp12, nThreads)
+	for i := range ret {
+		ret[i] = <-msgsCh
+	}
+
+	var pt Fp12
+	C.go_fp12slice_mul(&pt, &ret[0], C.size_t(nThreads))
+	return &pt
+}
+
 func (pt *Fp12) MulAssign(p *Fp12) {
 	C.blst_fp12_mul(pt, pt, p)
 }
@@ -264,6 +443,10 @@ func (pt *Fp12) ToBendian() []byte {
 	var out [BLST_FP_BYTES * 12]byte
 	C.blst_bendian_from_fp12((*C.byte)(&out[0]), pt)
 	return out[:]
+}
+
+func (pt1 *Fp12) Equals(pt2 *Fp12) bool {
+	return *pt1 == *pt2
 }
 
 //
@@ -289,8 +472,10 @@ func (pk *P1Affine) KeyValidate() bool {
 // always cryptographically safe, but application might want
 // to guard against obviously bogus individual[!] signatures.
 func (sig *P2Affine) SigValidate(sigInfcheck bool) bool {
-	return (sigInfcheck && !bool(C.blst_p2_affine_is_inf(sig))) ||
-		bool(C.blst_p2_affine_in_g2(sig))
+	if sigInfcheck && bool(C.blst_p2_affine_is_inf(sig)) {
+		return false
+	}
+	return bool(C.blst_p2_affine_in_g2(sig))
 }
 
 //
@@ -546,6 +731,47 @@ func coreAggregateVerifyPkInG1(sigFn sigGetterP2, sigGroupcheck bool,
 	return PairingFinalVerify(pairings, &gtsig)
 }
 
+func CoreVerifyPkInG1(pk *P1Affine, sig *P2Affine, hash_or_encode bool,
+	msg Message, dst []byte, optional ...[]byte) int {
+
+	var aug []byte
+	var uaug *C.byte
+	if len(optional) > 0 {
+		aug = optional[0]
+		if len(aug) > 0 {
+			uaug = (*C.byte)(&aug[0])
+		}
+	}
+
+	if runtime.NumGoroutine() < maxProcs {
+		sigFn := func() *P2Affine {
+			return sig
+		}
+		pkFn := func(_ uint32, _ *P1Affine) (*P1Affine, []byte) {
+			return pk, aug
+		}
+		if !coreAggregateVerifyPkInG1(sigFn, true, pkFn, true, []Message{msg},
+			dst, hash_or_encode) {
+			return C.BLST_VERIFY_FAIL
+		}
+		return C.BLST_SUCCESS
+	}
+
+	var udst *C.byte
+	if len(dst) > 0 {
+		udst = (*C.byte)(&dst[0])
+	}
+	var umsg *C.byte
+	if len(msg) > 0 {
+		umsg = (*C.byte)(&msg[0])
+	}
+
+	return int(C.blst_core_verify_pk_in_g1(pk, sig, C.bool(hash_or_encode),
+		umsg, C.size_t(len(msg)),
+		udst, C.size_t(len(dst)),
+		uaug, C.size_t(len(aug))))
+}
+
 // pks are assumed to be verified for proof of possession,
 // which implies that they are already group-checked
 func (sig *P2Affine) FastAggregateVerify(sigGroupcheck bool,
@@ -706,10 +932,7 @@ func (agg *P2Aggregate) Aggregate(elmts []*P2Affine,
 		return true
 	}
 	getter := func(i uint32, _ *P2Affine) *P2Affine { return elmts[i] }
-	if !agg.aggregate(getter, groupcheck, len(elmts)) {
-		return false
-	}
-	return true
+	return agg.aggregate(getter, groupcheck, len(elmts))
 }
 
 // Aggregate compressed elements
@@ -725,10 +948,7 @@ func (agg *P2Aggregate) AggregateCompressed(elmts [][]byte,
 		}
 		return p
 	}
-	if !agg.aggregate(getter, groupcheck, len(elmts)) {
-		return false
-	}
-	return true
+	return agg.aggregate(getter, groupcheck, len(elmts))
 }
 
 func (agg *P2Aggregate) AddAggregate(other *P2Aggregate) {
@@ -872,8 +1092,10 @@ func (pk *P2Affine) KeyValidate() bool {
 // always cryptographically safe, but application might want
 // to guard against obviously bogus individual[!] signatures.
 func (sig *P1Affine) SigValidate(sigInfcheck bool) bool {
-	return (sigInfcheck && !bool(C.blst_p1_affine_is_inf(sig))) ||
-		bool(C.blst_p1_affine_in_g1(sig))
+	if sigInfcheck && bool(C.blst_p1_affine_is_inf(sig)) {
+		return false
+	}
+	return bool(C.blst_p1_affine_in_g1(sig))
 }
 
 //
@@ -1129,6 +1351,47 @@ func coreAggregateVerifyPkInG2(sigFn sigGetterP1, sigGroupcheck bool,
 	return PairingFinalVerify(pairings, &gtsig)
 }
 
+func CoreVerifyPkInG2(pk *P2Affine, sig *P1Affine, hash_or_encode bool,
+	msg Message, dst []byte, optional ...[]byte) int {
+
+	var aug []byte
+	var uaug *C.byte
+	if len(optional) > 0 {
+		aug = optional[0]
+		if len(aug) > 0 {
+			uaug = (*C.byte)(&aug[0])
+		}
+	}
+
+	if runtime.NumGoroutine() < maxProcs {
+		sigFn := func() *P1Affine {
+			return sig
+		}
+		pkFn := func(_ uint32, _ *P2Affine) (*P2Affine, []byte) {
+			return pk, aug
+		}
+		if !coreAggregateVerifyPkInG2(sigFn, true, pkFn, true, []Message{msg},
+			dst, hash_or_encode) {
+			return C.BLST_VERIFY_FAIL
+		}
+		return C.BLST_SUCCESS
+	}
+
+	var udst *C.byte
+	if len(dst) > 0 {
+		udst = (*C.byte)(&dst[0])
+	}
+	var umsg *C.byte
+	if len(msg) > 0 {
+		umsg = (*C.byte)(&msg[0])
+	}
+
+	return int(C.blst_core_verify_pk_in_g2(pk, sig, C.bool(hash_or_encode),
+		umsg, C.size_t(len(msg)),
+		udst, C.size_t(len(dst)),
+		uaug, C.size_t(len(aug))))
+}
+
 // pks are assumed to be verified for proof of possession,
 // which implies that they are already group-checked
 func (sig *P1Affine) FastAggregateVerify(sigGroupcheck bool,
@@ -1289,10 +1552,7 @@ func (agg *P1Aggregate) Aggregate(elmts []*P1Affine,
 		return true
 	}
 	getter := func(i uint32, _ *P1Affine) *P1Affine { return elmts[i] }
-	if !agg.aggregate(getter, groupcheck, len(elmts)) {
-		return false
-	}
-	return true
+	return agg.aggregate(getter, groupcheck, len(elmts))
 }
 
 // Aggregate compressed elements
@@ -1308,10 +1568,7 @@ func (agg *P1Aggregate) AggregateCompressed(elmts [][]byte,
 		}
 		return p
 	}
-	if !agg.aggregate(getter, groupcheck, len(elmts)) {
-		return false
-	}
-	return true
+	return agg.aggregate(getter, groupcheck, len(elmts))
 }
 
 func (agg *P1Aggregate) AddAggregate(other *P1Aggregate) {
@@ -1575,7 +1832,7 @@ func (dummy *P1Affine) BatchUncompress(in [][]byte) []*P1Affine {
 			result = false
 		}
 	}
-	if atomic.LoadInt32(&valid) == 0 || result == false {
+	if atomic.LoadInt32(&valid) == 0 || !result {
 		return nil
 	}
 	return pointsPtrs
@@ -1634,12 +1891,35 @@ func (p1 *P1) Add(pointIf interface{}) *P1 {
 	return ret.AddAssign(pointIf)
 }
 
+func (p1 *P1) SubAssign(pointIf interface{}) *P1 {
+	var x *Fp
+	var affine C.bool
+	switch val := pointIf.(type) {
+	case *P1:
+		x = &val.x
+		affine = false
+	case *P1Affine:
+		x = &val.x
+		affine = true
+	default:
+		panic(fmt.Sprintf("unsupported type %T", val))
+	}
+	C.go_p1_sub_assign(p1, x, affine)
+	return p1
+}
+
+func (p1 *P1) Sub(pointIf interface{}) *P1 {
+	ret := *p1
+	return ret.SubAssign(pointIf)
+}
+
 func P1Generator() *P1 {
 	return C.blst_p1_generator()
 }
 
 // 'acc += point * scalar', passing 'nil' for 'point' means "use the
-//                          group generator point"
+//
+//	group generator point"
 func (acc *P1) MultNAccumulate(pointIf interface{}, scalarIf interface{},
 	optional ...int) *P1 {
 	var x *Fp
@@ -1689,9 +1969,7 @@ func (p *P1) FromAffine(pa *P1Affine) {
 	C.blst_p1_from_affine(p, pa)
 }
 
-//
 // Hash
-//
 func HashToG1(msg []byte, dst []byte,
 	optional ...[]byte) *P1 { // aug
 	var q P1
@@ -2262,7 +2540,7 @@ func (dummy *P2Affine) BatchUncompress(in [][]byte) []*P2Affine {
 			result = false
 		}
 	}
-	if atomic.LoadInt32(&valid) == 0 || result == false {
+	if atomic.LoadInt32(&valid) == 0 || !result {
 		return nil
 	}
 	return pointsPtrs
@@ -2321,12 +2599,35 @@ func (p2 *P2) Add(pointIf interface{}) *P2 {
 	return ret.AddAssign(pointIf)
 }
 
+func (p2 *P2) SubAssign(pointIf interface{}) *P2 {
+	var x *Fp2
+	var affine C.bool
+	switch val := pointIf.(type) {
+	case *P2:
+		x = &val.x
+		affine = false
+	case *P2Affine:
+		x = &val.x
+		affine = true
+	default:
+		panic(fmt.Sprintf("unsupported type %T", val))
+	}
+	C.go_p2_sub_assign(p2, x, affine)
+	return p2
+}
+
+func (p2 *P2) Sub(pointIf interface{}) *P2 {
+	ret := *p2
+	return ret.SubAssign(pointIf)
+}
+
 func P2Generator() *P2 {
 	return C.blst_p2_generator()
 }
 
 // 'acc += point * scalar', passing 'nil' for 'point' means "use the
-//                          group generator point"
+//
+//	group generator point"
 func (acc *P2) MultNAccumulate(pointIf interface{}, scalarIf interface{},
 	optional ...int) *P2 {
 	var x *Fp2
@@ -2376,9 +2677,7 @@ func (p *P2) FromAffine(pa *P2Affine) {
 	C.blst_p2_from_affine(p, pa)
 }
 
-//
 // Hash
-//
 func HashToG2(msg []byte, dst []byte,
 	optional ...[]byte) *P2 { // aug
 	var q P2
@@ -2835,11 +3134,9 @@ func bytesAllZero(s []byte) bool {
 	return true
 }
 
-//
 // These methods are inefficient because of cgo call overhead. For this
 // reason they should be used primarily for prototyping with a goal to
 // formulate interfaces that would process multiple scalars per cgo call.
-//
 func (a *Scalar) MulAssign(b *Scalar) (*Scalar, bool) {
 	return a, bool(C.blst_sk_mul_n_check(a, a, b))
 }
@@ -3097,7 +3394,17 @@ func breakdown(nbits, window, ncpus int) (int, int, int) {
 
 	if nbits > window*ncpus {
 		nx = 1
-		wnd = window - bits.Len(uint(ncpus)/4)
+		wnd = bits.Len(uint(ncpus) / 4)
+		if (window + wnd) > 18 {
+			wnd = window - wnd
+		} else {
+			wnd = (nbits/window + ncpus - 1) / ncpus
+			if (nbits/(window+1)+ncpus-1)/ncpus < wnd {
+				wnd = window + 1
+			} else {
+				wnd = window
+			}
+		}
 	} else {
 		nx = 2
 		wnd = window - 2

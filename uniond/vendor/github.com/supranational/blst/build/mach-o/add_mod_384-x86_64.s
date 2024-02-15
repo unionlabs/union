@@ -1372,6 +1372,37 @@ _sgn0_pty_mod_384x:
 	.byte	0xf3,0xc3
 .cfi_endproc	
 
+.globl	_vec_select_32
+.private_extern	_vec_select_32
+
+.p2align	5
+_vec_select_32:
+.cfi_startproc
+	.byte	0xf3,0x0f,0x1e,0xfa
+
+	movd	%ecx,%xmm5
+	pxor	%xmm4,%xmm4
+	pshufd	$0,%xmm5,%xmm5
+	movdqu	(%rsi),%xmm0
+	leaq	16(%rsi),%rsi
+	pcmpeqd	%xmm4,%xmm5
+	movdqu	(%rdx),%xmm1
+	leaq	16(%rdx),%rdx
+	pcmpeqd	%xmm5,%xmm4
+	leaq	16(%rdi),%rdi
+	pand	%xmm4,%xmm0
+	movdqu	0+16-16(%rsi),%xmm2
+	pand	%xmm5,%xmm1
+	movdqu	0+16-16(%rdx),%xmm3
+	por	%xmm1,%xmm0
+	movdqu	%xmm0,0-16(%rdi)
+	pand	%xmm4,%xmm2
+	pand	%xmm5,%xmm3
+	por	%xmm3,%xmm2
+	movdqu	%xmm2,16-16(%rdi)
+	.byte	0xf3,0xc3
+.cfi_endproc
+
 .globl	_vec_select_48
 .private_extern	_vec_select_48
 
@@ -1796,6 +1827,73 @@ _vec_prefetch:
 	cmpq	%rsi,%rdi
 	cmovaq	%rsi,%rdi
 	prefetchnta	(%rdi)
+	.byte	0xf3,0xc3
+.cfi_endproc
+
+.globl	_vec_is_zero_16x
+.private_extern	_vec_is_zero_16x
+
+.p2align	5
+_vec_is_zero_16x:
+.cfi_startproc
+	.byte	0xf3,0x0f,0x1e,0xfa
+
+	shrl	$4,%esi
+	movdqu	(%rdi),%xmm0
+	leaq	16(%rdi),%rdi
+
+L$oop_is_zero:
+	decl	%esi
+	jz	L$oop_is_zero_done
+	movdqu	(%rdi),%xmm1
+	leaq	16(%rdi),%rdi
+	por	%xmm1,%xmm0
+	jmp	L$oop_is_zero
+
+L$oop_is_zero_done:
+	pshufd	$0x4e,%xmm0,%xmm1
+	por	%xmm1,%xmm0
+.byte	102,72,15,126,192
+	incl	%esi
+	testq	%rax,%rax
+	cmovnzl	%esi,%eax
+	xorl	$1,%eax
+	.byte	0xf3,0xc3
+.cfi_endproc
+
+.globl	_vec_is_equal_16x
+.private_extern	_vec_is_equal_16x
+
+.p2align	5
+_vec_is_equal_16x:
+.cfi_startproc
+	.byte	0xf3,0x0f,0x1e,0xfa
+
+	shrl	$4,%edx
+	movdqu	(%rdi),%xmm0
+	movdqu	(%rsi),%xmm1
+	subq	%rdi,%rsi
+	leaq	16(%rdi),%rdi
+	pxor	%xmm1,%xmm0
+
+L$oop_is_equal:
+	decl	%edx
+	jz	L$oop_is_equal_done
+	movdqu	(%rdi),%xmm1
+	movdqu	(%rdi,%rsi,1),%xmm2
+	leaq	16(%rdi),%rdi
+	pxor	%xmm2,%xmm1
+	por	%xmm1,%xmm0
+	jmp	L$oop_is_equal
+
+L$oop_is_equal_done:
+	pshufd	$0x4e,%xmm0,%xmm1
+	por	%xmm1,%xmm0
+.byte	102,72,15,126,192
+	incl	%edx
+	testq	%rax,%rax
+	cmovnzl	%edx,%eax
+	xorl	$1,%eax
 	.byte	0xf3,0xc3
 .cfi_endproc
 

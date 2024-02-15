@@ -213,14 +213,25 @@ func AddInt(i ...int) (int, error) {
 	return sum, nil
 }
 
+// Wei is the smallest unit of Ether, represented as a pointer to a bigInt.
+type Wei *big.Int
+
+// Gwei is a denomination of 1e9 Wei represented as an uint64.
+type Gwei uint64
+
 // WeiToGwei converts big int wei to uint64 gwei.
 // The input `v` is copied before being modified.
-func WeiToGwei(v *big.Int) uint64 {
+func WeiToGwei(v Wei) Gwei {
 	if v == nil {
 		return 0
 	}
 	gweiPerEth := big.NewInt(1e9)
 	copied := big.NewInt(0).Set(v)
 	copied.Div(copied, gweiPerEth)
-	return copied.Uint64()
+	return Gwei(copied.Uint64())
+}
+
+// IsValidUint256 given a bigint checks if the value is a valid Uint256
+func IsValidUint256(bi *big.Int) bool {
+	return bi.Cmp(big.NewInt(0)) >= 0 && bi.BitLen() <= 256
 }

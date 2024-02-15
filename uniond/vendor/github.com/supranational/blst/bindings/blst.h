@@ -83,7 +83,7 @@ bool blst_scalar_from_be_bytes(blst_scalar *out, const byte *in, size_t len);
 
 #ifndef SWIG
 /*
- * BLS12-381-specifc Fr operations.
+ * BLS12-381-specific Fr operations.
  */
 void blst_fr_add(blst_fr *ret, const blst_fr *a, const blst_fr *b);
 void blst_fr_sub(blst_fr *ret, const blst_fr *a, const blst_fr *b);
@@ -102,7 +102,7 @@ void blst_fr_from_scalar(blst_fr *ret, const blst_scalar *a);
 void blst_scalar_from_fr(blst_scalar *ret, const blst_fr *a);
 
 /*
- * BLS12-381-specifc Fp operations.
+ * BLS12-381-specific Fp operations.
  */
 void blst_fp_add(blst_fp *ret, const blst_fp *a, const blst_fp *b);
 void blst_fp_sub(blst_fp *ret, const blst_fp *a, const blst_fp *b);
@@ -126,7 +126,7 @@ void blst_fp_from_lendian(blst_fp *ret, const byte a[48]);
 void blst_lendian_from_fp(byte ret[48], const blst_fp *a);
 
 /*
- * BLS12-381-specifc Fp2 operations.
+ * BLS12-381-specific Fp2 operations.
  */
 void blst_fp2_add(blst_fp2 *ret, const blst_fp2 *a, const blst_fp2 *b);
 void blst_fp2_sub(blst_fp2 *ret, const blst_fp2 *a, const blst_fp2 *b);
@@ -141,7 +141,7 @@ void blst_fp2_inverse(blst_fp2 *ret, const blst_fp2 *a);
 bool blst_fp2_sqrt(blst_fp2 *ret, const blst_fp2 *a);
 
 /*
- * BLS12-381-specifc Fp12 operations.
+ * BLS12-381-specific Fp12 operations.
  */
 void blst_fp12_sqr(blst_fp12 *ret, const blst_fp12 *a);
 void blst_fp12_cyclotomic_sqr(blst_fp12 *ret, const blst_fp12 *a);
@@ -155,11 +155,11 @@ void blst_fp12_frobenius_map(blst_fp12 *ret, const blst_fp12 *a, size_t n);
 bool blst_fp12_is_equal(const blst_fp12 *a, const blst_fp12 *b);
 bool blst_fp12_is_one(const blst_fp12 *a);
 bool blst_fp12_in_group(const blst_fp12 *a);
-const blst_fp12 *blst_fp12_one();
+const blst_fp12 *blst_fp12_one(void);
 #endif  // SWIG
 
 /*
- * BLS12-381-specifc point operations.
+ * BLS12-381-specific point operations.
  */
 typedef struct { blst_fp x, y, z; } blst_p1;
 typedef struct { blst_fp x, y; } blst_p1_affine;
@@ -180,13 +180,13 @@ bool blst_p1_on_curve(const blst_p1 *p);
 bool blst_p1_in_g1(const blst_p1 *p);
 bool blst_p1_is_equal(const blst_p1 *a, const blst_p1 *b);
 bool blst_p1_is_inf(const blst_p1 *a);
-const blst_p1 *blst_p1_generator();
+const blst_p1 *blst_p1_generator(void);
 
 bool blst_p1_affine_on_curve(const blst_p1_affine *p);
 bool blst_p1_affine_in_g1(const blst_p1_affine *p);
 bool blst_p1_affine_is_equal(const blst_p1_affine *a, const blst_p1_affine *b);
 bool blst_p1_affine_is_inf(const blst_p1_affine *a);
-const blst_p1_affine *blst_p1_affine_generator();
+const blst_p1_affine *blst_p1_affine_generator(void);
 
 typedef struct { blst_fp2 x, y, z; } blst_p2;
 typedef struct { blst_fp2 x, y; } blst_p2_affine;
@@ -207,13 +207,13 @@ bool blst_p2_on_curve(const blst_p2 *p);
 bool blst_p2_in_g2(const blst_p2 *p);
 bool blst_p2_is_equal(const blst_p2 *a, const blst_p2 *b);
 bool blst_p2_is_inf(const blst_p2 *a);
-const blst_p2 *blst_p2_generator();
+const blst_p2 *blst_p2_generator(void);
 
 bool blst_p2_affine_on_curve(const blst_p2_affine *p);
 bool blst_p2_affine_in_g2(const blst_p2_affine *p);
 bool blst_p2_affine_is_equal(const blst_p2_affine *a, const blst_p2_affine *b);
 bool blst_p2_affine_is_inf(const blst_p2_affine *a);
-const blst_p2_affine *blst_p2_affine_generator();
+const blst_p2_affine *blst_p2_affine_generator(void);
 
 /*
  * Multi-scalar multiplications and other multi-point operations.
@@ -337,6 +337,9 @@ void blst_sign_pk_in_g2(blst_p1 *out_sig, const blst_p1 *hash,
 #ifndef SWIG
 void blst_miller_loop(blst_fp12 *ret, const blst_p2_affine *Q,
                                       const blst_p1_affine *P);
+void blst_miller_loop_n(blst_fp12 *ret, const blst_p2_affine *const Qs[],
+                                        const blst_p1_affine *const Ps[],
+                                        size_t n);
 void blst_final_exp(blst_fp12 *ret, const blst_fp12 *f);
 void blst_precompute_lines(blst_fp6 Qlines[68], const blst_p2_affine *Q);
 void blst_miller_loop_lines(blst_fp12 *ret, const blst_fp6 Qlines[68],
@@ -352,7 +355,7 @@ typedef struct {} blst_pairing;
 typedef struct blst_opaque blst_pairing;
 #endif
 
-size_t blst_pairing_sizeof();
+size_t blst_pairing_sizeof(void);
 void blst_pairing_init(blst_pairing *new_ctx, bool hash_or_encode,
                        const byte *DST DEFNULL, size_t DST_len DEFNULL);
 const byte *blst_pairing_get_dst(const blst_pairing *ctx);

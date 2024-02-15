@@ -435,6 +435,7 @@ Exit Code 1
 | SYSCALL            | System-Call Extension (SCE): SYSCALL and SYSRET instructions.                                                                                                                      |
 | SYSEE              | SYSENTER and SYSEXIT instructions                                                                                                                                                  |
 | TBM                | AMD Trailing Bit Manipulation                                                                                                                                                      |
+| TDX_GUEST          | Intel Trust Domain Extensions Guest                                                                                                                                                |
 | TLB_FLUSH_NESTED   | AMD: Flushing includes all the nested translations for guest translations                                                                                                          |
 | TME                | Intel Total Memory Encryption. The following MSRs are supported: IA32_TME_CAPABILITY, IA32_TME_ACTIVATE, IA32_TME_EXCLUDE_MASK, and IA32_TME_EXCLUDE_BASE.                         |
 | TOPEXT             | TopologyExtensions: topology extensions support. Indicates support for CPUID Fn8000_001D_EAX_x[N:0]-CPUID Fn8000_001E_EDX.                                                         |

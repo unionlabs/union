@@ -142,7 +142,7 @@ func (dummy *P1Affine) BatchUncompress(in [][]byte) []*P1Affine {
             result = false
         }
     }
-    if atomic.LoadInt32(&valid) == 0 || result == false {
+    if atomic.LoadInt32(&valid) == 0 || !result {
         return nil
     }
     return pointsPtrs
@@ -199,6 +199,28 @@ func (p1 *P1) AddAssign(pointIf interface{}) *P1 {
 func (p1 *P1) Add(pointIf interface{}) *P1 {
     ret := *p1
     return ret.AddAssign(pointIf)
+}
+
+func (p1 *P1) SubAssign(pointIf interface{}) *P1 {
+    var x *Fp
+    var affine C.bool
+    switch val := pointIf.(type) {
+    case *P1:
+        x = &val.x
+        affine = false
+    case *P1Affine:
+        x = &val.x
+        affine = true
+    default:
+        panic(fmt.Sprintf("unsupported type %T", val))
+    }
+    C.go_p1_sub_assign(p1, x, affine)
+    return p1
+}
+
+func (p1 *P1) Sub(pointIf interface{}) *P1 {
+    ret := *p1
+    return ret.SubAssign(pointIf)
 }
 
 func P1Generator() *P1 {

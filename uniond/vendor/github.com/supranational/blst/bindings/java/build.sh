@@ -59,7 +59,7 @@ LIBBLST_A=libblst.a
 if [ -f "$TOP"/libblst.a -a "$TOP"/libblst.a -nt "$TOP"/blst.h ]; then
     LIBBLST_A="$TOP"/libblst.a
 elif [ ! -f libblst.a -o "$TOP"/blst.h -nt libblst.a ]; then
-    $TOP/../build.sh "$@"
+    $TOP/../build.sh -fvisibility=hidden "$@"
 fi
 
 if [ ! -f $SO_NAME -o blst_wrap.cpp -nt $SO_NAME \
@@ -73,7 +73,9 @@ if [ ! -f $SO_NAME -o blst_wrap.cpp -nt $SO_NAME \
         CXX=g++
         which c++ >/dev/null 2>&1 && CXX=c++
     fi
-    (set -x; ${CXX} -shared -o $SO_NAME -fPIC \
+    STD=`${CXX} -dM -E -x c++ /dev/null | \
+         awk '{ if($2=="__cplusplus" && $3<"2011") print "-std=c++11"; }'`
+    (set -x; ${CXX} ${STD} -shared -o $SO_NAME -fPIC -fvisibility=hidden \
                     -I"$JAVA_HOME"/include -I"$JNI_MD" -I"$TOP" \
                     -O -Wall -Wno-unused-function blst_wrap.cpp \
                     $LIBBLST_A ${LDFLAGS})

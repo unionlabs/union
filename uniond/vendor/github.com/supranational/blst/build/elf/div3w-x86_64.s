@@ -8,6 +8,8 @@ div_3_limbs:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+
+
 	movq	(%rdi),%r8
 	movq	8(%rdi),%r9
 	xorq	%rax,%rax
@@ -39,8 +41,9 @@ div_3_limbs:
 
 	orq	%rcx,%rax
 
+
 	.byte	0xf3,0xc3
-.cfi_endproc
+.cfi_endproc	
 .size	div_3_limbs,.-div_3_limbs
 .globl	quot_rem_128
 .hidden	quot_rem_128
@@ -49,6 +52,8 @@ div_3_limbs:
 quot_rem_128:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
+
+
 
 	movq	%rdx,%rax
 	movq	%rdx,%rcx
@@ -84,8 +89,9 @@ quot_rem_128:
 
 	movq	%rcx,%rax
 
+
 	.byte	0xf3,0xc3
-.cfi_endproc
+.cfi_endproc	
 .size	quot_rem_128,.-quot_rem_128
 
 
@@ -100,6 +106,8 @@ quot_rem_64:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+
+
 	movq	%rdx,%rax
 	imulq	0(%rsi),%rdx
 
@@ -110,8 +118,9 @@ quot_rem_64:
 	movq	%r10,0(%rdi)
 	movq	%rax,8(%rdi)
 
+
 	.byte	0xf3,0xc3
-.cfi_endproc
+.cfi_endproc	
 .size	quot_rem_64,.-quot_rem_64
 
 .section	.note.GNU-stack,"",@progbits

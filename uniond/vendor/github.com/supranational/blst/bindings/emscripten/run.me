@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+cd `dirname $0`
+
+python3 build.py "$@"
+
+NODE=`which ${NODE:-${EMSDK_NODE:-node}} 2>&1` || NODE=`which nodejs`
+env NODE_PATH=.: $NODE runnable.js
+
+if [ "$OLDPWD" = "$PWD" ]; then
+    echo "To test from browser start 'python3 -m http.server -b localhost'"
+    echo "and browse to runnable.html..."
+fi

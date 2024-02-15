@@ -145,14 +145,14 @@ add_mod_384x384:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_add_mod_384x384:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
 	pushq	%rbx
 
 	pushq	%r12
@@ -202,14 +202,14 @@ sub_mod_384x384:
 	movq	%rsi,16(%rsp)
 	movq	%rsp,%r11
 .LSEH_begin_sub_mod_384x384:
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
 
 
 	pushq	%rbp
 
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
 	pushq	%rbx
 
 	pushq	%r12
@@ -280,8 +280,9 @@ sub_mod_384x384:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_add_mod_384x384_body:
 .byte	1,0,17,0
 .byte	0x00,0xf4,0x01,0x00
@@ -293,7 +294,8 @@ sub_mod_384x384:
 .byte	0x00,0x74,0x08,0x00
 .byte	0x00,0x64,0x09,0x00
 .byte	0x00,0x62
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_add_mod_384x384_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00
@@ -304,8 +306,9 @@ sub_mod_384x384:
 .byte	1,0,5,0x0b
 .byte	0,0x74,1,0
 .byte	0,0x64,2,0
-.byte	0,0x03
+.byte	0,0xb3
 .byte	0,0
+.long	0,0
 .LSEH_info_sub_mod_384x384_body:
 .byte	1,0,17,0
 .byte	0x00,0xf4,0x01,0x00
@@ -317,7 +320,8 @@ sub_mod_384x384:
 .byte	0x00,0x74,0x08,0x00
 .byte	0x00,0x64,0x09,0x00
 .byte	0x00,0x62
-.byte	0x00,0x00
+.byte	0x00,0x00,0x00,0x00,0x00,0x00
+.byte	0x00,0x00,0x00,0x00
 .LSEH_info_sub_mod_384x384_epilogue:
 .byte	1,0,4,0
 .byte	0x00,0x74,0x01,0x00

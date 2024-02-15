@@ -1,6 +1,7 @@
 .text
 
 .globl	_ct_inverse_mod_383
+.private_extern	_ct_inverse_mod_383
 
 .align	5
 _ct_inverse_mod_383:
@@ -71,7 +72,7 @@ _ct_inverse_mod_383:
 	adds	x3, x3, x5
 	adc	x4, x4, x6
 	stp	x3, x4, [x0,#8*6]
-	asr	x5, x4, #63		// sign extenstion
+	asr	x5, x4, #63		// sign extension
 	stp	x5, x5, [x0,#8*8]
 	stp	x5, x5, [x0,#8*10]
 
@@ -82,7 +83,7 @@ _ct_inverse_mod_383:
 	adds	x3, x3, x5
 	adc	x4, x4, x6
 	stp	x3, x4, [x0,#8*12]
-	asr	x5, x4, #63		// sign extenstion
+	asr	x5, x4, #63		// sign extension
 	stp	x5, x5, [x0,#8*14]
 	stp	x5, x5, [x0,#8*16]
 	eor	x1, x1, #256		// flip-flop src |a|b|u|v|

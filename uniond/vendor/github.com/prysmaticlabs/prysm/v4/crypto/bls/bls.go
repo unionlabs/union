@@ -11,7 +11,7 @@ import (
 
 // Initialize herumi temporarily while we transition to blst for ethdo.
 func init() {
-	herumi.HerumiInit()
+	herumi.Init()
 }
 
 // SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
