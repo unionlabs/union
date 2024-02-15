@@ -105,7 +105,7 @@
       flake = false;
     };
     cometbls = {
-      url = "git+ssh://git@github.com/unionlabs/cometbls?rev=360766577f7daa89f958a4c28eee909340eb4b02";
+      url = "github:unionlabs/cometbls/360766577f7daa89f958a4c28eee909340eb4b02";
       flake = false;
     };
 
