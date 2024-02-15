@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use ssz_types::{BitList, FixedVector, VariableList};
 use tree_hash::TreeHash;
-use typenum::U;
 
 use self::config::MAX_BLOB_COMMITMENTS_PER_BLOCK;
 use crate::{
@@ -20,7 +19,7 @@ use crate::{
             MAX_WITHDRAWALS_PER_PAYLOAD, SYNC_COMMITTEE_SIZE,
         },
     },
-    hash::{H256, H384},
+    hash::H256,
     ibc::lightclients::ethereum::beacon_block_header::BeaconBlockHeader,
     macros::hex_string_array_wrapper,
 };
@@ -209,26 +208,6 @@ pub struct VoluntaryExit {
     pub validator_index: u64,
 }
 
-/// [Introduced in Deneb](https://github.com/ethereum/consensus-specs/blob/fe8db03f45609e9dd0abeede10294d77ef6fb92c/specs/_features/sharding/polynomial-commitments.md#custom-types)
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Encode, Decode, Serialize, Deserialize)]
-#[ssz(struct_behaviour = "transparent")]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-pub struct KZGCommitment(H384);
-
-impl TreeHash for KZGCommitment {
-    fn tree_hash_type() -> tree_hash::TreeHashType {
-        <FixedVector<u8, U<{ H384::SIZE }>>>::tree_hash_type()
-    }
-
-    fn tree_hash_packed_encoding(&self) -> tree_hash::PackedEncoding {
-        <FixedVector<u8, U<{ H384::SIZE }>>>::tree_hash_packed_encoding(&self.0 .0.into())
-    }
-
-    fn tree_hash_packing_factor() -> usize {
-        <FixedVector<u8, U<{ H384::SIZE }>>>::tree_hash_packing_factor()
-    }
-
-    fn tree_hash_root(&self) -> tree_hash::Hash256 {
-        <FixedVector<u8, U<{ H384::SIZE }>>>::tree_hash_root(&self.0 .0.into())
-    }
+hex_string_array_wrapper! {
+    pub struct KZGCommitment(pub [u8; 48]);
 }

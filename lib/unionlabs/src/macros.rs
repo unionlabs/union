@@ -22,7 +22,7 @@ macro_rules! hex_string_array_wrapper {
             pub struct $Struct(#[serde(with = "::serde_utils::hex_string")] pub [u8; $N]);
 
             impl $Struct {
-                pub const SIZE: usize = $N;
+                pub const BYTES_LEN: usize = $N;
 
                 #[doc = concat!("The [`Display`] impl for [`", stringify!($Struct), "`]")]
                 /// prefixes the output with `0x`, which may not be desirable in all contexts.
