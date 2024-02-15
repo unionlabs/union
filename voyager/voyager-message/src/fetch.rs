@@ -5,6 +5,7 @@ use std::{
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use futures::Future;
+use macros::apply;
 use queue_msg::{data, fetch, HandleFetch, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -22,25 +23,24 @@ use crate::{
     DoFetchUpdateHeaders, GetChain, Identified, RelayerMsg, RelayerMsgTypes,
 };
 
-any_enum! {
-    /// Fetch some data that will likely be used in a [`RelayerMsg::Aggregate`].
-    #[any = AnyFetch]
-    pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
-        State(FetchState<Hc, Tr>),
-        Proof(FetchProof<Hc, Tr>),
+#[apply(any_enum)]
+/// Fetch some data that will likely be used in a [`RelayerMsg::Aggregate`].
+#[any = AnyFetch]
+pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
+    State(FetchState<Hc, Tr>),
+    Proof(FetchProof<Hc, Tr>),
 
-        LatestClientState(FetchLatestClientState<Hc, Tr>),
+    LatestClientState(FetchLatestClientState<Hc, Tr>),
 
-        SelfClientState(FetchSelfClientState<Hc, Tr>),
-        SelfConsensusState(FetchSelfConsensusState<Hc, Tr>),
+    SelfClientState(FetchSelfClientState<Hc, Tr>),
+    SelfConsensusState(FetchSelfConsensusState<Hc, Tr>),
 
-        PacketAcknowledgement(FetchPacketAcknowledgement<Hc, Tr>),
+    PacketAcknowledgement(FetchPacketAcknowledgement<Hc, Tr>),
 
-        UpdateHeaders(FetchUpdateHeaders<Hc, Tr>),
+    UpdateHeaders(FetchUpdateHeaders<Hc, Tr>),
 
-        #[serde(untagged)]
-        LightClientSpecific(LightClientSpecificFetch<Hc, Tr>),
-    }
+    #[serde(untagged)]
+    LightClientSpecific(LightClientSpecificFetch<Hc, Tr>),
 }
 
 impl HandleFetch<RelayerMsgTypes> for AnyLightClientIdentified<AnyFetch> {

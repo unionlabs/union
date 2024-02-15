@@ -1,6 +1,7 @@
 use std::{fmt::Display, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use macros::apply;
 use queue_msg::{aggregate, fetch, wait, HandleEvent, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -24,12 +25,11 @@ use crate::{
     AnyLightClientIdentified, ChainExt, GetChain, Identified, RelayerMsg, RelayerMsgTypes,
 };
 
-any_enum! {
-    #[any = AnyEvent]
-    pub enum Event<Hc: ChainExt, Tr: ChainExt> {
-        Ibc(IbcEvent<Hc, Tr>),
-        Command(Command<Hc, Tr>),
-    }
+#[apply(any_enum)]
+#[any = AnyEvent]
+pub enum Event<Hc: ChainExt, Tr: ChainExt> {
+    Ibc(IbcEvent<Hc, Tr>),
+    Command(Command<Hc, Tr>),
 }
 
 impl HandleEvent<RelayerMsgTypes> for AnyLightClientIdentified<AnyEvent> {

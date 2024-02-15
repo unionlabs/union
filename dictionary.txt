@@ -631,6 +631,7 @@ pubkey
 pubkey's
 pubkeys
 publint
+punct
 pushd
 pvalue
 pxplusqx
