@@ -23,20 +23,39 @@
         "type": "github"
       }
     },
+    "bls-eth-go": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1704351134,
+        "narHash": "sha256-PpBs308170CHZt809QIdyy93D5x+5WTL7hlPytJrpXM=",
+        "ref": "refs/tags/v1.33.0",
+        "rev": "eb66a90ff51d7c982d668d6942e89815a8f7e323",
+        "revCount": 335,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/herumi/bls-eth-go-binary"
+      },
+      "original": {
+        "ref": "refs/tags/v1.33.0",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/herumi/bls-eth-go-binary"
+      }
+    },
     "blst": {
       "flake": false,
       "locked": {
-        "lastModified": 1656163412,
-        "narHash": "sha256-xero1aTe2v4IhWIJaEDUsVDOfE77dOV5zKeHWntHogY=",
+        "lastModified": 1691598027,
+        "narHash": "sha256-oqljy+ZXJAXEB/fJtmB8rlAr4UXM+Z2OkDa20gpILNA=",
         "owner": "supranational",
         "repo": "blst",
-        "rev": "03b5124029979755c752eec45f3c29674b558446",
+        "rev": "3dd0f804b1819e5d03fb22ca2e6fac105932043a",
         "type": "github"
       },
       "original": {
         "owner": "supranational",
         "repo": "blst",
-        "rev": "03b5124029979755c752eec45f3c29674b558446",
+        "rev": "3dd0f804b1819e5d03fb22ca2e6fac105932043a",
         "type": "github"
       }
     },
@@ -306,30 +325,6 @@
         "type": "github"
       }
     },
-    "iohk-nix": {
-      "inputs": {
-        "blst": "blst",
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "secp256k1": "secp256k1",
-        "sodium": "sodium"
-      },
-      "locked": {
-        "lastModified": 1707337252,
-        "narHash": "sha256-sliOZlzvx3sG+YqkgcXqK7Va0OyYFD+VPWiEK+qeoNI=",
-        "owner": "input-output-hk",
-        "repo": "iohk-nix",
-        "rev": "3358489541bdc1228afaa678c2adf4bb891f560e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "input-output-hk",
-        "repo": "iohk-nix",
-        "rev": "3358489541bdc1228afaa678c2adf4bb891f560e",
-        "type": "github"
-      }
-    },
     "nix-filter": {
       "locked": {
         "lastModified": 1705332318,
@@ -447,6 +442,8 @@
     "root": {
       "inputs": {
         "arion": "arion",
+        "bls-eth-go": "bls-eth-go",
+        "blst": "blst",
         "cometbls": "cometbls",
         "cosmosproto": "cosmosproto",
         "cosmossdk": "cosmossdk",
@@ -458,7 +455,6 @@
         "googleapis": "googleapis",
         "ibc-go": "ibc-go",
         "ics23": "ics23",
-        "iohk-nix": "iohk-nix",
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "nixpkgs-go": "nixpkgs-go",
@@ -493,40 +489,6 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "type": "github"
-      }
-    },
-    "secp256k1": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1683999695,
-        "narHash": "sha256-9nJJVENMXjXEJZzw8DHzin1DkFkF8h9m/c6PuM7Uk4s=",
-        "owner": "bitcoin-core",
-        "repo": "secp256k1",
-        "rev": "acf5c55ae6a94e5ca847e07def40427547876101",
-        "type": "github"
-      },
-      "original": {
-        "owner": "bitcoin-core",
-        "ref": "v0.3.2",
-        "repo": "secp256k1",
-        "type": "github"
-      }
-    },
-    "sodium": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1675156279,
-        "narHash": "sha256-0uRcN5gvMwO7MCXVYnoqG/OmeBFi8qRVnDWJLnBb9+Y=",
-        "owner": "input-output-hk",
-        "repo": "libsodium",
-        "rev": "dbb48cce5429cb6585c9034f002568964f1ce567",
-        "type": "github"
-      },
-      "original": {
-        "owner": "input-output-hk",
-        "repo": "libsodium",
-        "rev": "dbb48cce5429cb6585c9034f002568964f1ce567",
         "type": "github"
       }
     },

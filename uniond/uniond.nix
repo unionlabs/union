@@ -1,7 +1,7 @@
-{ ... }: {
+{ inputs, ... }: {
   perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, uniondBundleVersions, goPkgs, mkCi, ... }:
     let
-      CGO_CFLAGS = "-I${pkgs.libblst}/include -I${pkgs.libblst.src}/src -I${pkgs.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O -D__BLST_PORTABLE__";
+      CGO_CFLAGS = "-I${self'.packages.libblst}/include -I${self'.packages.libblst.src}/src -I${self'.packages.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O";
       CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${self'.packages.libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
       CGO_LD_TEST_FLAGS = "-L${self'.packages.bls-eth}/lib";
 
@@ -28,14 +28,8 @@
           in
           pkgs.pkgsStatic.stdenv.mkDerivation {
             pname = "bls-eth";
-            version = "1.32.0";
-            src = pkgs.fetchFromGitHub {
-              owner = "herumi";
-              repo = "bls-eth-go-binary";
-              rev = "321cb9bb9abb3359217a69e21cf579c4419aef50";
-              hash = "sha256-jYOvq3hStZjrEj8xGDirZX4ham6WfY2IPi0k+d9KzaQ=";
-              fetchSubmodules = true;
-            };
+            version = inputs.bls-eth-go.shortRev;
+            src = inputs.bls-eth-go;
             nativeBuildInputs = [ pkgs.pkgsStatic.nasm ] ++ (pkgs.lib.optionals isAarch64 [ pkgs.llvmPackages_9.libcxxClang ]);
             installPhase = ''
               mkdir -p $out/lib
