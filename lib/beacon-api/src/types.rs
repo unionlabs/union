@@ -351,7 +351,7 @@ impl Spec {
                 version: self.capella_fork_version,
                 epoch: self.capella_fork_epoch,
             },
-            eip4844: Fork {
+            deneb: Fork {
                 version: self.deneb_fork_version,
                 epoch: self.deneb_fork_epoch,
             },

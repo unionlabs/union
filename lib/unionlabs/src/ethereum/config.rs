@@ -137,6 +137,7 @@ consts_traits![
     MAX_DEPOSITS,
     MAX_VOLUNTARY_EXITS,
     MAX_BLS_TO_EXECUTION_CHANGES,
+    MAX_BLOB_COMMITMENTS_PER_BLOCK,
     // Execution
     MAX_BYTES_PER_TRANSACTION,
     MAX_TRANSACTIONS_PER_PAYLOAD,
@@ -203,6 +204,7 @@ pub mod preset {
         pub MAX_DEPOSITS: usize,
         pub MAX_VOLUNTARY_EXITS: usize,
         pub MAX_BLS_TO_EXECUTION_CHANGES: usize,
+        pub MAX_BLOB_COMMITMENTS_PER_BLOCK: usize,
 
         /// Execution
         /// ---------------------------------------------------------------
@@ -237,6 +239,7 @@ pub mod preset {
         MAX_DEPOSITS: 16,
         MAX_VOLUNTARY_EXITS: 16,
         MAX_BLS_TO_EXECUTION_CHANGES: 16,
+        MAX_BLOB_COMMITMENTS_PER_BLOCK: 4096,
         SYNC_COMMITTEE_SIZE: 512,
         EPOCHS_PER_SYNC_COMMITTEE_PERIOD: 256,
         MIN_SYNC_COMMITTEE_PARTICIPANTS: 1,
@@ -263,6 +266,8 @@ pub mod preset {
         MAX_DEPOSITS: 16,
         MAX_VOLUNTARY_EXITS: 16,
         MAX_BLS_TO_EXECUTION_CHANGES: 16,
+        MAX_BLOB_COMMITMENTS_PER_BLOCK: 16,
+
         SYNC_COMMITTEE_SIZE: 32,
         EPOCHS_PER_SYNC_COMMITTEE_PERIOD: 8,
         MIN_SYNC_COMMITTEE_PARTICIPANTS: 1,
@@ -300,10 +305,9 @@ pub const GOERLI: Config = Config {
             version: Version([3, 0, 16, 32]),
             epoch: 162_304,
         },
-        // NOTE: dummy data
-        eip4844: Fork {
-            version: Version([4, 0, 0, 0]),
-            epoch: u64::MAX,
+        deneb: Fork {
+            version: Version([4, 0, 16, 32]),
+            epoch: 231_680,
         },
     },
     min_genesis_time: 1_614_588_812,
@@ -327,8 +331,8 @@ pub const MAINNET: Config = Config {
             version: Version([3, 0, 0, 0]),
             epoch: 194_048,
         },
-        eip4844: Fork {
-            // NOTE: dummy data
+        // TODO: enabled march 13th 2024
+        deneb: Fork {
             version: Version([4, 0, 0, 0]),
             epoch: u64::MAX,
         },
@@ -358,9 +362,9 @@ pub const MINIMAL: Config = Config {
         },
 
         // NOTE: dummy data
-        eip4844: Fork {
+        deneb: Fork {
             version: Version([4, 0, 0, 1]),
-            epoch: u64::MAX,
+            epoch: 0,
         },
     },
     min_genesis_time: 1_578_009_600,
@@ -387,10 +391,9 @@ pub const SEPOLIA: Config = Config {
             epoch: 56_832,
         },
 
-        // NOTE: dummy data
-        eip4844: Fork {
-            version: Version([4, 0, 0, 0]),
-            epoch: (u64::MAX),
+        deneb: Fork {
+            version: Version([144, 0, 0, 115]),
+            epoch: 132_608,
         },
     },
     min_genesis_time: 1_655_647_200,

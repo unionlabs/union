@@ -96,7 +96,7 @@ where
 {
     async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
         let f = |ibc_handler| async move {
-            let msg: ethers::contract::FunctionCall<_, _, ()> = match msg {
+            let msg: ethers::contract::FunctionCall<_, _, ()> = match msg.clone() {
                 Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => mk_function_call(
                     ibc_handler,
                     ConnectionOpenInitCall {
@@ -280,6 +280,7 @@ where
 
             match result {
                 Ok(ok) => {
+                    tracing::info!("evm tx {:?} => {:?}", ok.tx_hash(), msg);
                     let tx_rcp = ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
                     tracing::info!(?tx_rcp, "evm transaction submitted");
                     Ok(())

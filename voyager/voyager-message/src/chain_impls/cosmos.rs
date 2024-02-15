@@ -109,7 +109,7 @@ where
     async fn msg(&self, msg: Msg<Hc, Tr>) -> Result<(), BroadcastTxCommitError> {
         self.signers
             .with(|signer| async {
-                let msg_any = match msg {
+                let msg_any = match msg.clone() {
                     Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
                         mk_any(&MsgConnectionOpenInit {
                             client_id: data.client_id.to_string(),
@@ -238,9 +238,11 @@ where
                     }
                 };
 
-                self.broadcast_tx_commit(signer, [msg_any])
-                    .await
-                    .map(|_| ())
+                let tx_hash = self.broadcast_tx_commit(signer, [msg_any]).await?;
+
+                tracing::info!("cosmos tx {:?} => {:?}", tx_hash, msg);
+
+                Ok(())
             })
             .await
     }

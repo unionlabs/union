@@ -75,7 +75,7 @@ message ForkParameters {
   Fork altair = 3;
   Fork bellatrix = 4;
   Fork capella = 5;
-  Fork eip4844 = 6;
+  Fork deneb = 6;
 }
 
 message Fork {
@@ -137,6 +137,8 @@ message ExecutionPayloadHeader {
   bytes block_hash = 13;
   bytes transactions_root = 14;
   bytes withdrawals_root = 15;
+  uint64 blob_gas_used = 16;
+  uint64 excess_blob_gas = 17;
 }
 
 message BeaconBlockHeader {

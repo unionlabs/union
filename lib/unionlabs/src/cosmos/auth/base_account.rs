@@ -32,7 +32,6 @@ impl TryFrom<protos::cosmos::auth::v1beta1::BaseAccount> for BaseAccount {
     type Error = TryFromBaseAccountError;
 
     fn try_from(value: protos::cosmos::auth::v1beta1::BaseAccount) -> Result<Self, Self::Error> {
-        dbg!(&value);
         Ok(Self {
             address: value.address,
             pub_key: value

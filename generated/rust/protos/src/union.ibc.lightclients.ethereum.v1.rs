@@ -129,7 +129,7 @@ pub struct ForkParameters {
     #[prost(message, optional, tag = "5")]
     pub capella: ::core::option::Option<Fork>,
     #[prost(message, optional, tag = "6")]
-    pub eip4844: ::core::option::Option<Fork>,
+    pub deneb: ::core::option::Option<Fork>,
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -261,6 +261,10 @@ pub struct ExecutionPayloadHeader {
     #[prost(bytes = "vec", tag = "15")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub withdrawals_root: ::prost::alloc::vec::Vec<u8>,
+    #[prost(uint64, tag = "16")]
+    pub blob_gas_used: u64,
+    #[prost(uint64, tag = "17")]
+    pub excess_blob_gas: u64,
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]

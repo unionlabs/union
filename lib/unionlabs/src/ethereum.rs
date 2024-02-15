@@ -6,6 +6,7 @@ use ssz::{Decode, Encode};
 use ssz_types::{BitList, FixedVector, VariableList};
 use tree_hash::TreeHash;
 
+use self::config::MAX_BLOB_COMMITMENTS_PER_BLOCK;
 use crate::{
     bls::{BlsPublicKey, BlsSignature},
     ethereum::{
@@ -92,6 +93,7 @@ pub struct SignedBeaconBlock<
         + MAX_TRANSACTIONS_PER_PAYLOAD
         + MAX_WITHDRAWALS_PER_PAYLOAD
         + MAX_BLS_TO_EXECUTION_CHANGES
+        + MAX_BLOB_COMMITMENTS_PER_BLOCK
         + SYNC_COMMITTEE_SIZE,
 > {
     pub message: BeaconBlock<C>,
@@ -204,4 +206,8 @@ pub struct VoluntaryExit {
     pub epoch: u64,
     #[serde(with = "::serde_utils::string")]
     pub validator_index: u64,
+}
+
+hex_string_array_wrapper! {
+    pub struct KZGCommitment(pub [u8; 48]);
 }

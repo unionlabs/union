@@ -4,6 +4,7 @@ use ssz_types::{FixedVector, VariableList};
 use tree_hash::TreeHash;
 use typenum::U;
 
+use super::{config::MAX_BLOB_COMMITMENTS_PER_BLOCK, KZGCommitment};
 use crate::{
     bls::{BlsPublicKey, BlsSignature},
     ethereum::{
@@ -44,6 +45,7 @@ pub struct BeaconBlock<
         + MAX_TRANSACTIONS_PER_PAYLOAD
         + MAX_WITHDRAWALS_PER_PAYLOAD
         + MAX_BLS_TO_EXECUTION_CHANGES
+        + MAX_BLOB_COMMITMENTS_PER_BLOCK
         + SYNC_COMMITTEE_SIZE,
 > {
     #[serde(with = "::serde_utils::string")]
@@ -69,6 +71,7 @@ impl<
             + MAX_TRANSACTIONS_PER_PAYLOAD
             + MAX_WITHDRAWALS_PER_PAYLOAD
             + MAX_BLS_TO_EXECUTION_CHANGES
+            + MAX_BLOB_COMMITMENTS_PER_BLOCK
             + SYNC_COMMITTEE_SIZE,
     > BeaconBlock<C>
 {
@@ -101,6 +104,7 @@ pub struct BeaconBlockBody<
         + MAX_TRANSACTIONS_PER_PAYLOAD
         + MAX_WITHDRAWALS_PER_PAYLOAD
         + MAX_BLS_TO_EXECUTION_CHANGES
+        + MAX_BLOB_COMMITMENTS_PER_BLOCK
         + SYNC_COMMITTEE_SIZE,
 > {
     pub randao_reveal: BlsSignature,
@@ -116,6 +120,7 @@ pub struct BeaconBlockBody<
     pub execution_payload: ExecutionPayload<C>,
     pub bls_to_execution_changes:
         VariableList<SignedBlsToExecutionChange, C::MAX_BLS_TO_EXECUTION_CHANGES>,
+    pub blob_kzg_commitments: VariableList<KZGCommitment, C::MAX_BLOB_COMMITMENTS_PER_BLOCK>,
 }
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
@@ -170,6 +175,12 @@ pub struct ExecutionPayload<
         C::MAX_TRANSACTIONS_PER_PAYLOAD,
     >,
     pub withdrawals: VariableList<Withdrawal, C::MAX_WITHDRAWALS_PER_PAYLOAD>,
+    // blob_gas_used: uint64  # [New in Deneb:EIP4844]
+    #[serde(default, with = "::serde_utils::string")]
+    pub blob_gas_used: u64,
+    // excess_blob_gas: uint64  # [New in Deneb:EIP4844]
+    #[serde(default, with = "::serde_utils::string")]
+    pub excess_blob_gas: u64,
 }
 
 impl<
@@ -198,16 +209,20 @@ impl<
             block_hash: self.block_hash,
             transactions_root: self.transactions.tree_hash_root().into(),
             withdrawals_root: self.withdrawals.tree_hash_root().into(),
+            blob_gas_used: self.blob_gas_used,
+            excess_blob_gas: self.excess_blob_gas,
         }
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 pub struct Withdrawal {
+    #[serde(with = "::serde_utils::string")]
     pub index: u64,
-    // REVIEW: Should this be u64?
-    pub validator_index: usize,
+    #[serde(with = "::serde_utils::string")]
+    pub validator_index: u64,
     pub address: H160,
+    #[serde(with = "::serde_utils::string")]
     pub amount: u64,
 }
 

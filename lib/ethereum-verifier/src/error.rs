@@ -71,6 +71,8 @@ pub enum Error {
     RlpDecode(rlp::DecoderError),
     #[error("custom query error: ({0})")]
     CustomError(String),
+    #[error("update header contains deneb specific informations")]
+    MustBeDeneb,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq)]

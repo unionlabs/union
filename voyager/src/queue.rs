@@ -554,21 +554,26 @@ impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
             join_set.spawn(worker.run(self.relay_queue.clone(), None));
         }
 
-        let mut errs = vec![];
+        let errs = vec![];
 
+        // TODO: figure out
         while let Some(res) = join_set.join_next().await {
-            match res {
-                Ok(Ok(())) => {}
-                Ok(Err(err)) => {
-                    tracing::error!(%err, "error running task");
-                    errs.push(err);
-                }
-                Err(err) => {
-                    tracing::error!(%err, "error running task");
-                    errs.push(Box::new(err));
-                }
-            }
+            res.unwrap().unwrap();
         }
+
+        // while let Some(res) = join_set.join_next().await {
+        //     match res {
+        //         Ok(Ok(())) => {}
+        //         Ok(Err(err)) => {
+        //             tracing::error!(%err, "error running task");
+        //             errs.push(err);
+        //         }
+        //         Err(err) => {
+        //             tracing::error!(%err, "error running task");
+        //             errs.push(Box::new(err));
+        //         }
+        //     }
+        // }
 
         Err(RunError { errs })
     }
