@@ -5,20 +5,24 @@ use std::{
     error::Error,
     fmt::{Debug, Display},
     str::FromStr,
-    sync::{Arc, Mutex},
+    sync::Arc,
     time::Duration,
 };
 
-use chain_utils::{
-    cosmos::Cosmos,
-    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainExt},
-    evm::Evm,
-    union::Union,
-    EventSource,
+use axum::{
+    extract::State,
+    routing::{get, post},
+    Json,
 };
+use block_poll_message::BlockPollingTypes;
+use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
-use futures::{stream, Future, FutureExt, StreamExt, TryStreamExt};
-use queue_msg::{event, Queue, QueueMsg, QueueMsgTypes, Reactor};
+use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt};
+use queue_msg::{
+    event, HandleAggregate, HandleData, HandleEvent, HandleFetch, HandleMsg, HandleWait,
+    InMemoryQueue, Queue, QueueMsg, QueueMsgTypes, Reactor,
+};
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
@@ -30,28 +34,24 @@ use unionlabs::{
         ConnectionOpenTry, CreateClient, IbcEvent, RecvPacket, SendPacket, SubmitEvidence,
         TimeoutPacket, UpdateClient, WriteAcknowledgement,
     },
-    id::ClientId,
     traits::{Chain, ClientIdOf, ClientState, FromStrExact},
     WasmClientType,
 };
-use voyager_message::{ChainExt, Chains, Identified, RelayerMsgTypes, Wasm};
+use voyager_message::{ChainExt, Identified, RelayerMsgTypes};
 
 use crate::{
     chain::{AnyChain, AnyChainTryFromConfigError},
     config::{ChainConfig, Config},
 };
 
-pub mod msg_server;
-
 type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 
 #[derive(Debug, Clone)]
-pub struct Voyager<Q> {
+pub struct Voyager {
     pub chains: Arc<Chains>,
     num_workers: u16,
-    msg_server: msg_server::MsgServer,
     // NOTE: pub temporarily
-    pub relay_queue: Q,
+    pub queue: AnyQueue<VoyagerMessageTypes>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
@@ -60,9 +60,9 @@ pub struct Voyager<Q> {
     tag = "type",
     bound(serialize = "", deserialize = "")
 )]
-pub enum AnyQueueConfig<T: QueueMsgTypes> {
+pub enum AnyQueueConfig {
     InMemory,
-    PgQueue(<PgQueue<T> as Queue<T>>::Config),
+    PgQueue(PgQueueConfig),
 }
 
 #[derive(DebugNoBound, CloneNoBound)]
@@ -73,28 +73,26 @@ pub enum AnyQueue<T: QueueMsgTypes> {
 
 #[derive(DebugNoBound, thiserror::Error)]
 #[error(transparent)]
-pub enum AnyQueueError<T: QueueMsgTypes> {
-    InMemory(<InMemoryQueue<T> as Queue<T>>::Error),
-    PgQueue(<PgQueue<T> as Queue<T>>::Error),
+pub enum AnyQueueError {
+    InMemory(std::convert::Infallible),
+    PgQueue(sqlx::Error),
 }
 
 impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
-    type Error = AnyQueueError<T>;
-    type Config = AnyQueueConfig<T>;
+    type Error = AnyQueueError;
+    type Config = AnyQueueConfig;
 
-    fn new(cfg: Self::Config, topic: String) -> impl Future<Output = Result<Self, Self::Error>> {
+    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
         async move {
             Ok(match cfg {
                 AnyQueueConfig::InMemory => Self::InMemory(
-                    InMemoryQueue::new((), topic)
+                    InMemoryQueue::new(())
                         .await
                         .map_err(AnyQueueError::InMemory)?,
                 ),
-                AnyQueueConfig::PgQueue(cfg) => Self::PgQueue(
-                    PgQueue::new(cfg, topic)
-                        .await
-                        .map_err(AnyQueueError::PgQueue)?,
-                ),
+                AnyQueueConfig::PgQueue(cfg) => {
+                    Self::PgQueue(PgQueue::new(cfg).await.map_err(AnyQueueError::PgQueue)?)
+                }
             })
         }
     }
@@ -113,6 +111,8 @@ impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
                 }
             };
 
+            tracing::debug!("queued");
+
             Ok(())
         }
     }
@@ -123,85 +123,20 @@ impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = (R, Result<Option<QueueMsg<T>>, String>)> + Send + 'static,
+        Fut: Future<Output = (R, Result<Vec<QueueMsg<T>>, String>)> + Send + 'static,
         R: Send + Sync + 'static,
     {
         async move {
-            match self {
+            let res = match self {
                 AnyQueue::InMemory(queue) => {
                     queue.process(f).await.map_err(AnyQueueError::InMemory)
                 }
                 AnyQueue::PgQueue(queue) => queue.process(f).await.map_err(AnyQueueError::PgQueue),
-            }
-        }
-    }
-}
-
-#[derive(DebugNoBound, CloneNoBound)]
-pub struct InMemoryQueue<T: QueueMsgTypes>(Arc<Mutex<VecDeque<QueueMsg<T>>>>);
-
-impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
-    type Error = std::convert::Infallible;
-    type Config = ();
-
-    fn new(_cfg: Self::Config, _topic: String) -> impl Future<Output = Result<Self, Self::Error>> {
-        futures::future::ok(Self(Arc::new(Mutex::new(VecDeque::default()))))
-    }
-
-    fn enqueue(
-        &mut self,
-        item: QueueMsg<T>,
-    ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
-        tracing::warn!(%item, "enqueueing new item");
-        self.0.lock().expect("mutex is poisoned").push_back(item);
-        futures::future::ok(())
-    }
-
-    fn process<F, Fut, R>(
-        &mut self,
-        f: F,
-    ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
-    where
-        F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = (R, Result<Option<QueueMsg<T>>, String>)> + Send + 'static,
-        R: Send + Sync + 'static,
-    {
-        async move {
-            let msg = {
-                let mut queue = self.0.lock().expect("mutex is poisoned");
-                let msg = queue.pop_front();
-
-                drop(queue);
-
-                msg
             };
 
-            match msg {
-                Some(msg) => {
-                    tracing::info!(
-                        json = %serde_json::to_string(&msg).unwrap(),
-                    );
+            tracing::debug!("processed");
 
-                    let (r, res) = f(msg.clone()).await;
-                    match res {
-                        Ok(new_msg) => {
-                            if let Some(new_msg) = new_msg {
-                                let mut queue = self.0.lock().expect("mutex is poisoned");
-                                queue.push_back(new_msg);
-                            }
-
-                            Ok(Some(r))
-                        }
-                        // ProcessFlow::Requeue => {
-                        //     let mut queue = self.0.lock().expect("mutex is poisoned");
-                        //     queue.push_front(msg);
-                        //     Ok(())
-                        // }
-                        Err(why) => panic!("{why}"),
-                    }
-                }
-                None => Ok(None),
-            }
+            res
         }
     }
 }
@@ -223,10 +158,10 @@ impl<T: QueueMsgTypes> Queue<T> for PgQueue<T> {
 
     type Config = PgQueueConfig;
 
-    fn new(cfg: Self::Config, topic: String) -> impl Future<Output = Result<Self, Self::Error>> {
+    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
         async move {
             Ok(Self(
-                pg_queue::Queue::new(topic),
+                pg_queue::Queue::new(),
                 // 10 is the default
                 PgPoolOptions::new()
                     .max_connections(cfg.max_connections.unwrap_or(10))
@@ -252,7 +187,7 @@ impl<T: QueueMsgTypes> Queue<T> for PgQueue<T> {
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
     where
         F: (FnOnce(QueueMsg<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = (R, Result<Option<QueueMsg<T>>, String>)> + Send + 'static,
+        Fut: Future<Output = (R, Result<Vec<QueueMsg<T>>, String>)> + Send + 'static,
         R: Send + Sync + 'static,
     {
         self.0.process(&self.1, f)
@@ -260,28 +195,27 @@ impl<T: QueueMsgTypes> Queue<T> for PgQueue<T> {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum VoyagerInitError<Q: Queue<RelayerMsgTypes>> {
+pub enum VoyagerInitError {
     #[error("multiple configured chains have the same chain id `{chain_id}`")]
     DuplicateChainId { chain_id: String },
     #[error("error initializing chain")]
     ChainInit(#[from] AnyChainTryFromConfigError),
     #[error("error initializing queue")]
-    QueueInit(#[source] Q::Error),
+    QueueInit(#[source] AnyQueueError),
 }
 
-impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
-    pub async fn new(config: Config<Q>) -> Result<Self, VoyagerInitError<Q>> {
+impl Voyager {
+    pub async fn new(config: Config) -> Result<Self, VoyagerInitError> {
         let chains = chains_from_config(config.chain).await?;
 
-        let queue = Q::new(config.voyager.queue, "relay".to_owned())
+        let queue = AnyQueue::new(config.voyager.queue.clone())
             .await
             .map_err(VoyagerInitError::QueueInit)?;
 
         Ok(Self {
             chains: Arc::new(chains),
-            msg_server: msg_server::MsgServer,
             num_workers: config.voyager.num_workers,
-            relay_queue: queue,
+            queue,
         })
     }
 
@@ -290,199 +224,56 @@ impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
     }
 
     pub async fn run(self) -> Result<(), RunError> {
-        let union_events = stream::iter(self.chains.union.clone())
-            .map(|(chain_id, chain)| {
-                chain
-                    .clone()
-                    .events(())
-                    .and_then(move |chain_event| {
-                        let c = chain.clone();
-                        let expected_chain_id = chain_id.clone();
+        // set up msg server
+        let (queue_tx, queue_rx) =
+            futures::channel::mpsc::unbounded::<QueueMsg<VoyagerMessageTypes>>();
 
-                        async move {
-                            if expected_chain_id != chain_event.chain_id {
-                                tracing::warn!(
-                                    "chain {expected_chain_id} produced an event from chain {}",
-                                    chain_event.chain_id.clone()
-                                );
-                            }
+        let app = axum::Router::new()
+            .route("/msg", post(msg))
+            .route("/msgs", post(msgs))
+            .route("/health", get(|| async move { StatusCode::OK }))
+            .with_state(queue_tx.clone());
 
-                            Ok(
-                                match client_type_from_ibc_event(&c, &chain_event.event).await {
-                                    ClientType::Wasm(WasmClientType::EthereumMinimal) => {
-                                        event(
-                                            Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
-                                                chain_event.chain_id,
-                                                voyager_message::event::IbcEvent {
-                                                    block_hash: chain_event.block_hash,
-                                                    height: chain_event.height,
-                                                    event: chain_event_to_lc_event::<
-                                                        Union,
-                                                        Evm<Minimal>,
-                                                    >(
-                                                        chain_event.event
-                                                    ),
-                                                },
-                                            ),
-                                        )
-                                    }
-                                    ClientType::Wasm(WasmClientType::EthereumMainnet) => {
-                                        event(
-                                            Identified::<Wasm<Union>, Evm<Mainnet>, _>::new(
-                                                chain_event.chain_id,
-                                                voyager_message::event::IbcEvent {
-                                                    block_hash: chain_event.block_hash,
-                                                    height: chain_event.height,
-                                                    event: chain_event_to_lc_event::<
-                                                        Union,
-                                                        Evm<Mainnet>,
-                                                    >(
-                                                        chain_event.event
-                                                    ),
-                                                },
-                                            ),
-                                        )
-                                    }
-                                    ClientType::Tendermint => event(Identified::<
-                                        Union,
-                                        Wasm<Cosmos>,
-                                        _,
-                                    >::new(
-                                        chain_event.chain_id,
-                                        voyager_message::event::IbcEvent {
-                                            block_hash: chain_event.block_hash,
-                                            height: chain_event.height,
-                                            event: chain_event_to_lc_event::<Union, Wasm<Cosmos>>(
-                                                chain_event.event,
-                                            ),
-                                        },
-                                    )),
-                                    _ => unimplemented!(),
-                                },
-                            )
-                        }
-                    })
-                    .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
-            })
-            .flatten()
-            .boxed();
-        let cosmos_events = stream::iter(self.chains.cosmos.clone())
-            .map(|(chain_id, chain)| {
-                chain
-                        .clone()
-                        .events(())
-                        .and_then(move |chain_event| {
-                            let c = chain.clone();
-                            let expected_chain_id = chain_id.clone();
+        // #[axum::debug_handler]
+        async fn msg<T: QueueMsgTypes>(
+            State(mut sender): State<UnboundedSender<QueueMsg<T>>>,
+            Json(msg): Json<QueueMsg<T>>,
+        ) -> StatusCode {
+            tracing::info!(?msg, "received msg");
+            sender.send(msg).await.expect("receiver should not close");
 
-                            async move {
-                                if expected_chain_id != chain_event.chain_id {
-                                    tracing::warn!(
-                                        "chain {expected_chain_id} produced an event from chain {}",
-                                        chain_event.chain_id.clone()
-                                    );
-                                }
+            StatusCode::OK
+        }
 
-                                Ok(
-                                    match client_type_from_ibc_event(&c, &chain_event.event).await {
-                                        ClientType::Wasm(WasmClientType::Cometbls) => {
-                                            event(Identified::<Wasm<Cosmos>, Union, _>::new(
-                                                chain_event.chain_id,
-                                                voyager_message::event::IbcEvent {
-                                                    block_hash: chain_event.block_hash,
-                                                    height: chain_event.height,
-                                                    event: chain_event_to_lc_event::<
-                                                        Wasm<Cosmos>,
-                                                        Union,
-                                                    >(
-                                                        chain_event.event
-                                                    ),
-                                                },
-                                            ))
-                                        }
-                                        _ => unimplemented!(),
-                                    },
-                                )
-                            }
-                        })
-                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
-            })
-            .flatten()
-            .boxed();
-        let mut events = Box::pin(stream::select_all([
-            stream::iter(self.chains.evm_minimal.clone())
-                .map(|(chain_id, chain)| {
-                    chain
-                        .events(())
-                        .map_ok(move |chain_event| {
-                            if chain_id != chain_event.chain_id {
-                                tracing::warn!(
-                                    "chain {chain_id} produced an event from chain {}",
-                                    chain_event.chain_id
-                                );
-                            }
+        // #[axum::debug_handler]
+        async fn msgs<T: QueueMsgTypes>(
+            State(mut sender): State<UnboundedSender<QueueMsg<T>>>,
+            Json(msgs): Json<Vec<QueueMsg<T>>>,
+        ) -> StatusCode {
+            tracing::info!(?msgs, "received msgs");
+            for msg in msgs {
+                sender.send(msg).await.expect("receiver should not close");
+            }
 
-                            event(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
-                                chain_event.chain_id,
-                                voyager_message::event::IbcEvent {
-                                    block_hash: chain_event.block_hash,
-                                    height: chain_event.height,
-                                    event: chain_event_to_lc_event::<Evm<Minimal>, Wasm<Union>>(
-                                        chain_event.event,
-                                    ),
-                                },
-                            ))
-                        })
-                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
-                })
-                .flatten()
-                .boxed(),
-            stream::iter(self.chains.evm_mainnet.clone())
-                .map(|(chain_id, chain)| {
-                    chain
-                        .events(())
-                        .map_ok(move |chain_event| {
-                            if chain_id != chain_event.chain_id {
-                                tracing::warn!(
-                                    "chain {chain_id} produced an event from chain {}",
-                                    chain_event.chain_id
-                                );
-                            }
+            StatusCode::OK
+        }
 
-                            event(Identified::<Evm<Mainnet>, Wasm<Union>, _>::new(
-                                chain_event.chain_id,
-                                voyager_message::event::IbcEvent {
-                                    block_hash: chain_event.block_hash,
-                                    height: chain_event.height,
-                                    event: chain_event_to_lc_event::<Evm<Mainnet>, Wasm<Union>>(
-                                        chain_event.event,
-                                    ),
-                                },
-                            ))
-                        })
-                        .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
-                })
-                .flatten()
-                .boxed(),
-            union_events,
-            cosmos_events,
-            self.msg_server
-                .clone()
-                .events(())
-                .map_err(|x| Box::new(x) as Box<dyn Debug + Send + Sync>)
-                .boxed(),
-        ]));
+        tokio::spawn(
+            // TODO: Make this configurable
+            axum::Server::bind(&"0.0.0.0:65534".parse().expect("valid SocketAddr; qed;"))
+                .serve(app.into_make_service()),
+        );
 
         let mut join_set = JoinSet::<Result<(), BoxDynError>>::new();
 
-        let mut q = self.relay_queue.clone();
+        let mut q = self.queue.clone();
         join_set.spawn({
             async move {
                 tracing::debug!("checking for new messages");
 
-                while let Some(msg) = events.next().await {
-                    let msg = msg.map_err(|x| format!("{x:?}"))?;
+                pin_utils::pin_mut!(queue_rx);
 
+                while let Some(msg) = queue_rx.next().await {
                     tracing::info!(
                         json = %serde_json::to_string(&msg).unwrap(),
                         "received new message",
@@ -499,21 +290,17 @@ impl<Q: Queue<RelayerMsgTypes>> Voyager<Q> {
             tracing::info!("spawning worker {i}");
 
             let reactor = Reactor::new(self.chains.clone());
-            let q = self.relay_queue.clone();
+            let q = self.queue.clone();
 
             join_set.spawn(async move {
-                let stream = reactor.run(q);
-                pin_utils::pin_mut!(stream);
+                reactor
+                    .run(q)
+                    .for_each(|x| async {
+                        let msg = x.unwrap();
 
-                while let Some(res) = stream.next().await {
-                    match res {
-                        Ok(data) => {
-                            tracing::info!(%data, "received data outside of an aggregation");
-                        }
-                        Err(why) => return Err(why),
-                    }
-                }
-
+                        dbg!(msg);
+                    })
+                    .await;
                 Ok(())
             });
         }
@@ -613,66 +400,6 @@ impl Display for RunError {
         Ok(())
     }
 }
-
-// pub enum AnyLcError_ {}
-
-// impl AnyLightClient for AnyLcError_ {}
-
-// /// For updating a client, the information we have originally is:
-// ///
-// /// - `chain_id`: the id of the chain that the client to be updated is on
-// /// - `height`: the height to update *to*
-// /// - `client_id`: id of the client to update
-// /// - `counterparty_client_id`: id of the counterparty of the client to update
-// ///
-// /// Given this information, multiple aggregations are required:
-// ///
-// /// - given (`chain_id`, `client_id`), fetch the counterparty client's `chain_id`
-// ///   (contained within the client's client state)
-// ///   - `FetchLatestTrustedClientState<L>`, aggregated down into `UpdateClientData<L>`,
-// ///     producing `UpdateClientWithCounterpartyChainIdData<L>`
-// ///
-// /// - then, with (`counterparty_chain_id`, `counterparty_client_id`), fetch the latest
-// ///   client state of the counterparty client (which contains the latest trusted height)
-// ///   - `FetchLatestTrustedClientState<L::Counterparty>`, aggregated down into
-// ///     `UpdateClientWithCounterpartyChainIdData<L>`, producing `FetchUpdateHeaders<L>`
-// ///
-// /// - finally, with the latest client state, build the headers between
-// ///   `latest_client_state..=update_to` (note that the client may be updated to a height
-// ///   greater than `update_to`, but never less; as such the latest trusted height should
-// ///   always be fetched whenever it's needed)
-// ///   - `FetchUpdateHeaders<L>`, which delegates to `L::generate_counterparty_updates`
-// fn mk_aggregate_update<Hc: ChainExt, Tr: ChainExt>(
-//     chain_id: ChainIdOf<HostChain>,
-//     client_id: Hc::ClientId,
-//     counterparty_client_id: <L::Counterparty as LightClientBase>::ClientId,
-//     event_height: HeightOf<HostChain>,
-// ) -> RelayerMsg
-// where
-//     AnyLightClientIdentified<AnyLcMsg>: From<identified!(LcMsg<L>)>,
-//     AggregateReceiver: From<identified!(Aggregate<L>)>,
-// {
-//     RelayerMsg::Aggregate {
-//         queue: [fetch::<L>(
-//             chain_id.clone(),
-//             FetchTrustedClientState {
-//                 at: QueryHeight::Latest,
-//                 client_id: client_id.clone(),
-//             },
-//         )]
-//         .into(),
-//         data: [].into(),
-//         receiver: AggregateReceiver::from(Identified::new(
-//             chain_id,
-//             Aggregate::<L>::UpdateClient(AggregateUpdateClient {
-//                 // Proof is only valid at N + 1 for tendermint
-//                 update_to: event_height.increment(),
-//                 client_id: client_id.clone(),
-//                 counterparty_client_id,
-//             }),
-//         )),
-//     }
-// }
 
 fn chain_event_to_lc_event<Hc: ChainExt, Tr: ChainExt>(
     event: IbcEvent<Hc::ClientId, Hc::ClientType, String>,
@@ -926,96 +653,349 @@ pub enum ClientType {
     Tendermint,
 }
 
-async fn client_type_from_ibc_event<Hc: ChainExt + CosmosSdkChain>(
-    c: &Hc,
-    ibc_event: &IbcEvent<ClientId, String, String>,
-) -> ClientType {
-    let client_type_from_client_id = |client_id: ClientId| async {
-        if client_id.rsplit_once('-').unwrap().0 == "07-tendermint" {
-            ClientType::Tendermint
-        } else {
-            ClientType::Wasm(
-                c.checksum_of_client_id(client_id)
-                    .then(|checksum| c.client_type_of_checksum(checksum))
-                    .await,
-            )
-        }
-    };
+pub struct VoyagerMessageTypes;
 
-    match ibc_event {
-        IbcEvent::CreateClient(CreateClient { client_id, .. }) => {
-            client_type_from_client_id(client_id.clone()).await
+pub trait FromQueueMsg<T: QueueMsgTypes>: QueueMsgTypes + Sized {
+    fn from_queue_msg(value: QueueMsg<T>) -> QueueMsg<Self>;
+}
+
+impl FromQueueMsg<RelayerMsgTypes> for VoyagerMessageTypes {
+    fn from_queue_msg(value: QueueMsg<RelayerMsgTypes>) -> QueueMsg<Self> {
+        match value {
+            QueueMsg::Event(event) => QueueMsg::Event(VoyagerEvent::Relay(event)),
+            QueueMsg::Data(data) => QueueMsg::Data(VoyagerData::Relay(data)),
+            QueueMsg::Fetch(fetch) => QueueMsg::Fetch(VoyagerFetch::Relay(fetch)),
+            QueueMsg::Msg(msg) => QueueMsg::Msg(VoyagerMsg::Relay(msg)),
+            QueueMsg::Wait(wait) => QueueMsg::Wait(VoyagerWait::Relay(wait)),
+            QueueMsg::DeferUntil { point, seconds } => QueueMsg::DeferUntil { point, seconds },
+            QueueMsg::Repeat { times, msg } => QueueMsg::Repeat {
+                times,
+                msg: Box::new(Self::from_queue_msg(*msg)),
+            },
+            QueueMsg::Timeout {
+                timeout_timestamp,
+                msg,
+            } => QueueMsg::Timeout {
+                timeout_timestamp,
+                msg: Box::new(Self::from_queue_msg(*msg)),
+            },
+            QueueMsg::Sequence(seq) => {
+                QueueMsg::Sequence(seq.into_iter().map(Self::from_queue_msg).collect())
+            }
+            QueueMsg::Concurrent(seq) => {
+                QueueMsg::Concurrent(seq.into_iter().map(Self::from_queue_msg).collect())
+            }
+            QueueMsg::Retry { remaining, msg } => QueueMsg::Retry {
+                remaining,
+                msg: Box::new(Self::from_queue_msg(*msg)),
+            },
+            QueueMsg::Aggregate {
+                queue,
+                data,
+                receiver,
+            } => QueueMsg::Aggregate {
+                queue: queue.into_iter().map(Self::from_queue_msg).collect(),
+                data: data.into_iter().map(VoyagerData::Relay).collect(),
+                receiver: VoyagerAggregate::Relay(receiver),
+            },
+            QueueMsg::Noop => QueueMsg::Noop,
         }
-        IbcEvent::UpdateClient(UpdateClient { client_id, .. }) => {
-            client_type_from_client_id(client_id.clone()).await
+    }
+}
+
+impl FromQueueMsg<BlockPollingTypes> for VoyagerMessageTypes {
+    fn from_queue_msg(value: QueueMsg<BlockPollingTypes>) -> QueueMsg<Self> {
+        match value {
+            QueueMsg::Event(event) => QueueMsg::Event(VoyagerEvent::Block(event)),
+            QueueMsg::Data(data) => QueueMsg::Data(VoyagerData::Block(data)),
+            QueueMsg::Fetch(fetch) => QueueMsg::Fetch(VoyagerFetch::Block(fetch)),
+            QueueMsg::Msg(msg) => QueueMsg::Msg(VoyagerMsg::Block(msg)),
+            QueueMsg::Wait(wait) => QueueMsg::Wait(VoyagerWait::Block(wait)),
+            QueueMsg::DeferUntil { point, seconds } => QueueMsg::DeferUntil { point, seconds },
+            QueueMsg::Repeat { times, msg } => QueueMsg::Repeat {
+                times,
+                msg: Box::new(Self::from_queue_msg(*msg)),
+            },
+            QueueMsg::Timeout {
+                timeout_timestamp,
+                msg,
+            } => QueueMsg::Timeout {
+                timeout_timestamp,
+                msg: Box::new(Self::from_queue_msg(*msg)),
+            },
+            QueueMsg::Sequence(seq) => {
+                QueueMsg::Sequence(seq.into_iter().map(Self::from_queue_msg).collect())
+            }
+            QueueMsg::Concurrent(seq) => {
+                QueueMsg::Concurrent(seq.into_iter().map(Self::from_queue_msg).collect())
+            }
+            QueueMsg::Retry { remaining, msg } => QueueMsg::Retry {
+                remaining,
+                msg: Box::new(Self::from_queue_msg(*msg)),
+            },
+            QueueMsg::Aggregate {
+                queue,
+                data,
+                receiver,
+            } => QueueMsg::Aggregate {
+                queue: queue.into_iter().map(Self::from_queue_msg).collect(),
+                data: data.into_iter().map(VoyagerData::Block).collect(),
+                receiver: VoyagerAggregate::Block(receiver),
+            },
+            QueueMsg::Noop => QueueMsg::Noop,
         }
-        IbcEvent::ClientMisbehaviour(ClientMisbehaviour { client_id, .. }) => {
-            client_type_from_client_id(client_id.clone()).await
+    }
+}
+
+impl QueueMsgTypes for VoyagerMessageTypes {
+    type Event = VoyagerEvent;
+    type Data = VoyagerData;
+    type Fetch = VoyagerFetch;
+    type Msg = VoyagerMsg;
+    type Wait = VoyagerWait;
+    type Aggregate = VoyagerAggregate;
+
+    type Store = Chains;
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+pub enum VoyagerEvent {
+    Block(<BlockPollingTypes as QueueMsgTypes>::Event),
+    Relay(<RelayerMsgTypes as QueueMsgTypes>::Event),
+}
+
+impl HandleEvent<VoyagerMessageTypes> for VoyagerEvent {
+    fn handle(
+        self,
+        store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
+    ) -> QueueMsg<VoyagerMessageTypes> {
+        match self {
+            Self::Block(event) => {
+                <VoyagerMessageTypes as FromQueueMsg<BlockPollingTypes>>::from_queue_msg(
+                    HandleEvent::handle(event, store),
+                )
+            }
+            Self::Relay(event) => {
+                <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
+                    HandleEvent::handle(event, store),
+                )
+            }
         }
-        IbcEvent::SubmitEvidence(SubmitEvidence { .. }) => {
-            // TODO: Not sure how to handle this one, since it only contains the hash
-            // union
-            //     .code_id_of_client_id(client_id)
-            //     .then(|checksum| union.client_type_of_code_id(checksum))
-            //     .await
-            panic!()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+pub enum VoyagerData {
+    Block(<BlockPollingTypes as QueueMsgTypes>::Data),
+    Relay(<RelayerMsgTypes as QueueMsgTypes>::Data),
+}
+
+impl HandleData<VoyagerMessageTypes> for VoyagerData {
+    fn handle(
+        self,
+        store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
+    ) -> QueueMsg<VoyagerMessageTypes> {
+        match self {
+            Self::Block(data) => match data.handle(store) {
+                QueueMsg::Data(block_poll_message::AnyChainIdentified::Cosmos(
+                    block_poll_message::Identified {
+                        chain_id,
+                        t: block_poll_message::data::Data::IbcEvent(ibc_event),
+                    },
+                )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
+                    match ibc_event.client_type {
+                        unionlabs::ClientType::Wasm(unionlabs::WasmClientType::Cometbls) => {
+                            event::<RelayerMsgTypes>(voyager_message::Identified::<
+                                Wasm<Cosmos>,
+                                Union,
+                                _,
+                            >::new(
+                                chain_id,
+                                voyager_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Wasm<Cosmos>, Union>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
+                        _ => unimplemented!(),
+                    },
+                ),
+                QueueMsg::Data(block_poll_message::AnyChainIdentified::Union(
+                    block_poll_message::Identified {
+                        chain_id,
+                        t: block_poll_message::data::Data::IbcEvent(ibc_event),
+                    },
+                )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
+                    match ibc_event.client_type {
+                        unionlabs::ClientType::Wasm(unionlabs::WasmClientType::EthereumMinimal) => {
+                            event(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+                                chain_id,
+                                voyager_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Union, Evm<Minimal>>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
+                        unionlabs::ClientType::Wasm(unionlabs::WasmClientType::EthereumMainnet) => {
+                            event(Identified::<Wasm<Union>, Evm<Mainnet>, _>::new(
+                                chain_id,
+                                voyager_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Union, Evm<Mainnet>>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
+                        unionlabs::ClientType::Tendermint => {
+                            event(Identified::<Union, Wasm<Cosmos>, _>::new(
+                                chain_id,
+                                voyager_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Union, Wasm<Cosmos>>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
+                        _ => unimplemented!(),
+                    },
+                ),
+                msg => {
+                    <VoyagerMessageTypes as FromQueueMsg<BlockPollingTypes>>::from_queue_msg(msg)
+                }
+            },
+            Self::Relay(data) => {
+                <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
+                    data.handle(store),
+                )
+            }
         }
-        IbcEvent::ConnectionOpenInit(ConnectionOpenInit { client_id, .. }) => {
-            client_type_from_client_id(client_id.clone()).await
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+pub enum VoyagerFetch {
+    Block(<BlockPollingTypes as QueueMsgTypes>::Fetch),
+    Relay(<RelayerMsgTypes as QueueMsgTypes>::Fetch),
+}
+
+impl HandleFetch<VoyagerMessageTypes> for VoyagerFetch {
+    async fn handle(
+        self,
+        store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
+    ) -> QueueMsg<VoyagerMessageTypes> {
+        match self {
+            Self::Block(fetch) => {
+                <VoyagerMessageTypes as FromQueueMsg<BlockPollingTypes>>::from_queue_msg(
+                    fetch.handle(store).await,
+                )
+            }
+            Self::Relay(fetch) => {
+                <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
+                    fetch.handle(store).await,
+                )
+            }
         }
-        IbcEvent::ConnectionOpenTry(ConnectionOpenTry { client_id, .. }) => {
-            client_type_from_client_id(client_id.clone()).await
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+pub enum VoyagerMsg {
+    Block(<BlockPollingTypes as QueueMsgTypes>::Msg),
+    Relay(<RelayerMsgTypes as QueueMsgTypes>::Msg),
+}
+
+impl HandleMsg<VoyagerMessageTypes> for VoyagerMsg {
+    async fn handle(
+        self,
+        store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
+    ) -> Result<(), BoxDynError> {
+        match self {
+            Self::Block(msg) => HandleMsg::<BlockPollingTypes>::handle(msg, store).await,
+            Self::Relay(msg) => HandleMsg::handle(msg, store).await,
         }
-        IbcEvent::ConnectionOpenAck(ConnectionOpenAck { client_id, .. }) => {
-            client_type_from_client_id(client_id.clone()).await
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+pub enum VoyagerWait {
+    Block(<BlockPollingTypes as QueueMsgTypes>::Wait),
+    Relay(<RelayerMsgTypes as QueueMsgTypes>::Wait),
+}
+
+impl HandleWait<VoyagerMessageTypes> for VoyagerWait {
+    async fn handle(
+        self,
+        store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
+    ) -> QueueMsg<VoyagerMessageTypes> {
+        match self {
+            Self::Block(msg) => {
+                <VoyagerMessageTypes as FromQueueMsg<BlockPollingTypes>>::from_queue_msg(
+                    HandleWait::<BlockPollingTypes>::handle(msg, store).await,
+                )
+            }
+            Self::Relay(msg) => {
+                <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
+                    HandleWait::<RelayerMsgTypes>::handle(msg, store).await,
+                )
+            }
         }
-        IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm { client_id, .. }) => {
-            client_type_from_client_id(client_id.clone()).await
-        }
-        IbcEvent::ChannelOpenInit(ChannelOpenInit { connection_id, .. }) => {
-            c.client_id_of_connection(connection_id.clone())
-                .then(|client_id| client_type_from_client_id(client_id.clone()))
-                .await
-        }
-        IbcEvent::ChannelOpenTry(ChannelOpenTry { connection_id, .. }) => {
-            c.client_id_of_connection(connection_id.clone())
-                .then(|client_id| client_type_from_client_id(client_id.clone()))
-                .await
-        }
-        IbcEvent::ChannelOpenAck(ChannelOpenAck { connection_id, .. }) => {
-            c.client_id_of_connection(connection_id.clone())
-                .then(|client_id| client_type_from_client_id(client_id.clone()))
-                .await
-        }
-        IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm { connection_id, .. }) => {
-            c.client_id_of_connection(connection_id.clone())
-                .then(|client_id| client_type_from_client_id(client_id.clone()))
-                .await
-        }
-        IbcEvent::WriteAcknowledgement(WriteAcknowledgement { connection_id, .. }) => {
-            c.client_id_of_connection(connection_id.clone())
-                .then(|client_id| client_type_from_client_id(client_id.clone()))
-                .await
-        }
-        IbcEvent::RecvPacket(RecvPacket { connection_id, .. }) => {
-            c.client_id_of_connection(connection_id.clone())
-                .then(|client_id| client_type_from_client_id(client_id.clone()))
-                .await
-        }
-        IbcEvent::SendPacket(SendPacket { connection_id, .. }) => {
-            c.client_id_of_connection(connection_id.clone())
-                .then(|client_id| client_type_from_client_id(client_id.clone()))
-                .await
-        }
-        IbcEvent::AcknowledgePacket(AcknowledgePacket { connection_id, .. }) => {
-            c.client_id_of_connection(connection_id.clone())
-                .then(|client_id| client_type_from_client_id(client_id.clone()))
-                .await
-        }
-        IbcEvent::TimeoutPacket(TimeoutPacket { connection_id, .. }) => {
-            c.client_id_of_connection(connection_id.clone())
-                .then(|client_id| client_type_from_client_id(client_id.clone()))
-                .await
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_more::Display)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+pub enum VoyagerAggregate {
+    Block(<BlockPollingTypes as QueueMsgTypes>::Aggregate),
+    Relay(<RelayerMsgTypes as QueueMsgTypes>::Aggregate),
+}
+
+impl HandleAggregate<VoyagerMessageTypes> for VoyagerAggregate {
+    fn handle(
+        self,
+        data: VecDeque<<VoyagerMessageTypes as QueueMsgTypes>::Data>,
+    ) -> QueueMsg<VoyagerMessageTypes> {
+        match self {
+            Self::Block(aggregate) => VoyagerMessageTypes::from_queue_msg(
+                aggregate.handle(
+                    data.into_iter()
+                        .map(|d| match d {
+                            VoyagerData::Block(d) => d,
+                            VoyagerData::Relay(_) => panic!(),
+                        })
+                        .collect(),
+                ),
+            ),
+            Self::Relay(aggregate) => VoyagerMessageTypes::from_queue_msg(
+                aggregate.handle(
+                    data.into_iter()
+                        .map(|d| match d {
+                            VoyagerData::Block(_) => panic!(),
+                            VoyagerData::Relay(d) => d,
+                        })
+                        .collect(),
+                ),
+            ),
         }
     }
 }

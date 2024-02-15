@@ -10,6 +10,7 @@ use std::{
 
 use prost::Message;
 use serde::{Deserialize, Serialize};
+pub use typenum;
 
 use crate::{
     ibc::core::client::height::{HeightFromStrError, IsHeight},
@@ -361,13 +362,22 @@ macro_rules! export_wasm_client_type {
 /// This type is used to discriminate 08-wasm light clients.
 /// We need to be able to determine the light client from the light client code itself (not instantiated yet).
 /// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE: WasmClientType = WasmClientType::...` variable.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum WasmClientType {
     EthereumMinimal,
     EthereumMainnet,
     Cometbls,
     Tendermint,
     Scroll,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+pub enum ClientType {
+    Wasm(WasmClientType),
+    Tendermint,
+    Cometbls,
 }
 
 impl FromStr for WasmClientType {
@@ -391,7 +401,7 @@ pub enum WasmClientTypeParseError {
     UnknownType(String),
 }
 
-// TODO: Move this and the above type into tools/parse-wasm-client-type, and make it into a library with an optional `parse` feature (so as to not bring in the very heavy wasmparser stack where it's not needed)
+// TODO: Move this and the above types into tools/parse-wasm-client-type, and make it into a library with an optional `parse` feature (so as to not bring in the very heavy wasmparser stack where it's not needed)
 pub fn parse_wasm_client_type(
     bz: impl AsRef<[u8]>,
 ) -> Result<Option<WasmClientType>, WasmClientTypeParseError> {
@@ -471,6 +481,8 @@ pub trait MaybeArbitrary =;
 #[cfg(feature = "arbitrary")]
 pub trait MaybeArbitrary = for<'a> arbitrary::Arbitrary<'a>;
 
+pub fn impl_maybe_arbitrary<T: MaybeArbitrary>() {}
+
 #[cfg(feature = "arbitrary")]
 fn arbitrary_cow_static<T>(
     u: &mut arbitrary::Unstructured,
@@ -480,4 +492,20 @@ where
     T::Owned: for<'a> arbitrary::Arbitrary<'a>,
 {
     u.arbitrary::<T::Owned>().map(std::borrow::Cow::Owned)
+}
+
+pub mod never {
+    use std::{self, fmt::Display};
+
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+    pub enum Never {}
+
+    impl Display for Never {
+        fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match *self {}
+        }
+    }
 }

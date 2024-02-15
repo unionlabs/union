@@ -25,16 +25,14 @@ pub static MIGRATOR: Migrator = sqlx::migrate!(); // defaults to "./migrations"
 /// ```
 #[derive(Debug, Clone)]
 pub struct Queue<T> {
-    topic: String,
     lock: Arc<AtomicBool>,
     __marker: PhantomData<fn() -> T>,
 }
 
 impl<T> Queue<T> {
     #[allow(clippy::new_without_default)]
-    pub fn new(topic: String) -> Self {
+    pub fn new() -> Self {
         Self {
-            topic,
             lock: Arc::new(AtomicBool::new(false)),
             __marker: PhantomData,
         }
@@ -51,8 +49,7 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
         let mut tx = conn.begin().await?;
 
         let row = query!(
-            "INSERT INTO queue (topic, item) VALUES ($1, $2) RETURNING id",
-            &self.topic,
+            "INSERT INTO queue (item) VALUES ($1) RETURNING id",
             Json(item) as _
         )
         .fetch_one(tx.as_mut())
@@ -78,10 +75,14 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
     /// storing metadata in the job to determine if retrying should fail permanently.
     ///
     /// If the queue is not empty, then Some(R) will be returned, otherwise None.
-    pub async fn process<'a, F, Fut, R, A>(&self, conn: A, f: F) -> Result<Option<R>, sqlx::Error>
+    pub async fn process<'a, 'b, F, Fut, R, A>(
+        &self,
+        conn: A,
+        f: F,
+    ) -> Result<Option<R>, sqlx::Error>
     where
-        F: (FnOnce(T) -> Fut) + 'static,
-        Fut: Future<Output = (R, Result<Option<T>, String>)> + 'static,
+        F: (FnOnce(T) -> Fut) + 'b,
+        Fut: Future<Output = (R, Result<Vec<T>, String>)> + 'static,
         A: Acquire<'a, Database = Postgres>,
     {
         if self.lock.swap(false, Ordering::SeqCst) {
@@ -106,13 +107,11 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
               SELECT id
               FROM queue
               WHERE status = 'ready'::status
-              AND topic = $1
               ORDER BY id ASC
               FOR UPDATE SKIP LOCKED
               LIMIT 1
             )
             RETURNING id, item as \"item: Json<T>\"",
-            &self.topic
         )
         .fetch_optional(tx.as_mut())
         .await?;
@@ -136,13 +135,12 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
                         .await?;
                         tx.commit().await?;
                     }
-                    Ok(maybe_new_msg) => {
-                        if let Some(new_msg) = maybe_new_msg {
+                    Ok(new_msgs) => {
+                        for new_msg in new_msgs {
                             let new_row = query!(
-                                "INSERT INTO queue (topic, item)
-                                VALUES ($1, $2::JSONB)
+                                "INSERT INTO queue (item)
+                                VALUES ($1::JSONB)
                                 RETURNING id",
-                                &self.topic,
                                 serde_json::to_value(new_msg)
                                     .expect("queue message should have infallible serialization")
                             )

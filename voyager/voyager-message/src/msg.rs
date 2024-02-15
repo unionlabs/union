@@ -1,9 +1,9 @@
 use std::{fmt::Display, marker::PhantomData};
 
-use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union};
+use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, GetChain};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
-use queue_msg::{HandleMsg, QueueMsgTypes};
+use queue_msg::{BoxDynError, HandleMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
@@ -25,7 +25,7 @@ use unionlabs::{
     traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
-use crate::{any_enum, AnyLightClientIdentified, ChainExt, DoMsg, GetChain, RelayerMsgTypes, Wasm};
+use crate::{any_enum, AnyLightClientIdentified, ChainExt, DoMsg, RelayerMsgTypes, Wasm};
 
 #[apply(any_enum)]
 /// Defines messages that are sent *to* the lightclient `L`.
@@ -52,7 +52,7 @@ impl HandleMsg<RelayerMsgTypes> for AnyLightClientIdentified<AnyMsg> {
     async fn handle(
         self,
         store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), BoxDynError> {
         match self {
             AnyLightClientIdentified::EvmMainnetOnUnion(msg) => {
                 GetChain::<Wasm<Union>>::get_chain(store, &msg.chain_id)

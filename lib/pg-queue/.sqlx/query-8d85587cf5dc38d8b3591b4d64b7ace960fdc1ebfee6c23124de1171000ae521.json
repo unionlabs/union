@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO queue (topic, item)\n                                VALUES ($1, $2::JSONB)\n                                RETURNING id",
+  "query": "INSERT INTO queue (item)\n                                VALUES ($1::JSONB)\n                                RETURNING id",
   "describe": {
     "columns": [
       {
@@ -11,7 +11,6 @@
     ],
     "parameters": {
       "Left": [
-        "Varchar",
         "Jsonb"
       ]
     },
@@ -19,5 +18,5 @@
       false
     ]
   },
-  "hash": "0ca68e29857359fdfbe4af69e326f804cea052b27706e7125274d9638e7851f5"
+  "hash": "8d85587cf5dc38d8b3591b4d64b7ace960fdc1ebfee6c23124de1171000ae521"
 }

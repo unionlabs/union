@@ -4,19 +4,24 @@ license-file = { workspace = true }
 name         = "voyager"
 publish      = false
 repository   = { workspace = true }
+resolver     = "2"
 version      = "0.1.0"
 
 [dependencies]
+arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 axum                     = { workspace = true, features = ["macros", "tokio", "json"] }
 beacon-api               = { workspace = true, default-features = false }
 bech32                   = "0.9.1"
 bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }
+block-poll-message       = { workspace = true }
 chain-utils              = { workspace = true }
 clap                     = { workspace = true, features = ["default", "derive", "env", "error-context"] }
 contracts                = { workspace = true }
 crossbeam-queue          = { workspace = true, features = ["std"] }
+derive_more.workspace    = true
 either                   = { workspace = true, features = ["serde"] }
+enumorph.workspace       = true
 ethers                   = { workspace = true, features = ["rustls", "ws"] }
 frame-support-procedural = { workspace = true }
 frunk                    = { workspace = true }
@@ -46,9 +51,20 @@ tokio                    = { workspace = true, features = ["macros"] }
 tokio-stream             = { workspace = true }
 tokio-util               = "0.7.9"
 tonic                    = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
-tower                    = { version = "*", features = ["log"] }
 tracing                  = { workspace = true }
 tracing-subscriber       = { workspace = true, features = ["env-filter"] }
 typenum                  = { workspace = true }
 unionlabs                = { workspace = true, features = ["ethabi"] }
 voyager-message          = { workspace = true }
+
+[features]
+default = []
+
+arbitrary = [
+  "dep:arbitrary",
+  "voyager-message/arbitrary",
+  "block-poll-message/arbitrary",
+  "unionlabs/arbitrary",
+  "chain-utils/arbitrary",
+  "queue-msg/arbitrary",
+]

@@ -4,16 +4,9 @@ use prost::Message;
 use sha2::Digest;
 use tendermint_rpc::{Client, WebSocketClient};
 use unionlabs::{
-    cosmos::auth::base_account::BaseAccount,
-    google::protobuf::any::Any,
-    hash::H256,
-    ibc::core::client::height::IsHeight,
-    id::{ClientId, ConnectionId},
-    parse_wasm_client_type,
-    signer::CosmosSigner,
-    traits::Chain,
-    validated::ValidateT,
-    MaybeRecoverableError, TypeUrl, WasmClientType,
+    cosmos::auth::base_account::BaseAccount, google::protobuf::any::Any, hash::H256,
+    ibc::core::client::height::IsHeight, id::ConnectionId, parse_wasm_client_type,
+    signer::CosmosSigner, traits::Chain, MaybeRecoverableError, TypeUrl, WasmClientType,
 };
 
 use crate::{
@@ -73,7 +66,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         ty
     }
 
-    async fn checksum_of_client_id(&self, client_id: ClientId) -> H256 {
+    async fn checksum_of_client_id(&self, client_id: Self::ClientId) -> H256 {
         let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
             self.grpc_url().clone(),
         )
@@ -100,7 +93,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
             .unwrap()
     }
 
-    async fn client_id_of_connection(&self, connection_id: ConnectionId) -> ClientId {
+    async fn client_id_of_connection(&self, connection_id: ConnectionId) -> Self::ClientId {
         protos::ibc::core::connection::v1::query_client::QueryClient::connect(
             self.grpc_url().clone(),
         )
@@ -115,7 +108,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         .connection
         .unwrap()
         .client_id
-        .validate()
+        .parse()
         .unwrap()
     }
 

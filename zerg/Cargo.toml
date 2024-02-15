@@ -25,10 +25,12 @@ tonic              = { workspace = true, features = ["transport", "tls", "tls-ro
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
-chain-utils     = { workspace = true }
-contracts       = { workspace = true }
-serde-utils     = { workspace = true }
-ucs01-relay     = { workspace = true, features = ["library"] }
-ucs01-relay-api = { workspace = true }
-unionlabs       = { workspace = true, features = ["ethabi"] }
-uuid            = { version = "1.5.0", features = ["serde", "v4"] }
+block-poll-message.workspace = true
+chain-utils                  = { workspace = true }
+contracts                    = { workspace = true }
+queue-msg.workspace          = true
+serde-utils                  = { workspace = true }
+ucs01-relay                  = { workspace = true, features = ["library"] }
+ucs01-relay-api              = { workspace = true }
+unionlabs                    = { workspace = true, features = ["ethabi"] }
+uuid                         = { version = "1.5.0", features = ["serde", "v4"] }

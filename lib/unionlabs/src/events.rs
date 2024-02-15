@@ -445,6 +445,32 @@ event! {
     }
 }
 
+impl<ClientId, ClientType, CounterpartyClientId>
+    IbcEvent<ClientId, ClientType, CounterpartyClientId>
+{
+    pub fn name(&self) -> &'static str {
+        match self {
+            IbcEvent::CreateClient(_) => "CreateClient",
+            IbcEvent::UpdateClient(_) => "UpdateClient",
+            IbcEvent::ClientMisbehaviour(_) => "ClientMisbehaviour",
+            IbcEvent::SubmitEvidence(_) => "SubmitEvidence",
+            IbcEvent::ConnectionOpenInit(_) => "ConnectionOpenInit",
+            IbcEvent::ConnectionOpenTry(_) => "ConnectionOpenTry",
+            IbcEvent::ConnectionOpenAck(_) => "ConnectionOpenAck",
+            IbcEvent::ConnectionOpenConfirm(_) => "ConnectionOpenConfirm",
+            IbcEvent::ChannelOpenInit(_) => "ChannelOpenInit",
+            IbcEvent::ChannelOpenTry(_) => "ChannelOpenTry",
+            IbcEvent::ChannelOpenAck(_) => "ChannelOpenAck",
+            IbcEvent::ChannelOpenConfirm(_) => "ChannelOpenConfirm",
+            IbcEvent::WriteAcknowledgement(_) => "WriteAcknowledgement",
+            IbcEvent::RecvPacket(_) => "RecvPacket",
+            IbcEvent::SendPacket(_) => "SendPacket",
+            IbcEvent::AcknowledgePacket(_) => "AcknowledgePacket",
+            IbcEvent::TimeoutPacket(_) => "TimeoutPacket",
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     mod event_conversion {

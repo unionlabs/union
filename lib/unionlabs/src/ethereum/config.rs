@@ -81,7 +81,7 @@ macro_rules! consts_traits {
             pub trait $CONST: 'static {
                 // Extra traits are required because the builtin derives bound all generic
                 // types unconditionally
-                type $CONST: Unsigned + Debug + Clone + PartialEq + Send + Sync;
+                type $CONST: Unsigned + Debug + Clone + PartialEq + Send + Sync + Unpin;
             }
 
             impl $CONST for Minimal {
@@ -93,7 +93,7 @@ macro_rules! consts_traits {
             }
         )+
 
-        pub trait ChainSpec: 'static + crate::MaybeArbitrary + FromStrExact + Debug + Clone + PartialEq + Default + Send + Sync + $($CONST+)+ {
+        pub trait ChainSpec: 'static + crate::MaybeArbitrary + FromStrExact + Debug + Clone + PartialEq + Default + Send + Sync + Unpin + $($CONST+)+ {
             const PRESET: preset::Preset;
             const PRESET_BASE_KIND: PresetBaseKind;
 

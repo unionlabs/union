@@ -3,6 +3,7 @@ use std::{
     marker::PhantomData,
 };
 
+use chain_utils::GetChain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use futures::Future;
 use macros::apply;
@@ -20,7 +21,7 @@ use crate::{
     any_enum,
     data::{AnyData, Data, PacketAcknowledgement, SelfClientState, SelfConsensusState},
     identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, GetChain, Identified, RelayerMsg, RelayerMsgTypes,
+    DoFetchUpdateHeaders, Identified, RelayerMsg, RelayerMsgTypes,
 };
 
 #[apply(any_enum)]
@@ -158,7 +159,7 @@ pub struct FetchLatestClientState<Hc: ChainExt, Tr: ChainExt> {
     arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
 )]
 pub struct FetchPacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
-    pub block_hash: H256,
+    pub tx_hash: H256,
     pub destination_port_id: PortId,
     pub destination_channel_id: ChannelId,
     pub sequence: u64,
@@ -242,7 +243,7 @@ where
                 ))
             }
             Fetch::PacketAcknowledgement(FetchPacketAcknowledgement {
-                block_hash,
+                tx_hash,
                 destination_port_id,
                 destination_channel_id,
                 sequence,
@@ -250,7 +251,7 @@ where
             }) => {
                 let ack = c
                     .read_ack(
-                        block_hash.clone(),
+                        tx_hash.clone(),
                         destination_channel_id.clone(),
                         destination_port_id.clone(),
                         sequence,
@@ -261,7 +262,7 @@ where
                     c.chain_id(),
                     PacketAcknowledgement {
                         fetched_by: FetchPacketAcknowledgement {
-                            block_hash,
+                            tx_hash,
                             destination_port_id,
                             destination_channel_id,
                             sequence,

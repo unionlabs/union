@@ -1352,6 +1352,8 @@ pub mod ibc_connection {
         Hash,
     )]
     #[ethevent(name = "ConnectionOpenAck", abi = "ConnectionOpenAck(string)")]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct ConnectionOpenAckFilter {
         pub connection_id: ::std::string::String,
     }
@@ -1366,6 +1368,8 @@ pub mod ibc_connection {
         Hash,
     )]
     #[ethevent(name = "ConnectionOpenConfirm", abi = "ConnectionOpenConfirm(string)")]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct ConnectionOpenConfirmFilter {
         pub connection_id: ::std::string::String,
     }
@@ -1380,6 +1384,8 @@ pub mod ibc_connection {
         Hash,
     )]
     #[ethevent(name = "ConnectionOpenInit", abi = "ConnectionOpenInit(string)")]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct ConnectionOpenInitFilter {
         pub connection_id: ::std::string::String,
     }
@@ -1394,6 +1400,8 @@ pub mod ibc_connection {
         Hash,
     )]
     #[ethevent(name = "ConnectionOpenTry", abi = "ConnectionOpenTry(string)")]
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
     pub struct ConnectionOpenTryFilter {
         pub connection_id: ::std::string::String,
     }

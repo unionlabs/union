@@ -85,76 +85,49 @@ pub mod from_str_exact {
     }
 }
 
+pub trait Member = Debug
+    + Clone
+    + PartialEq
+    + Serialize
+    + for<'de> Deserialize<'de>
+    + Send
+    + Sync
+    + Unpin
+    + MaybeArbitrary
+    + 'static;
+
 /// Represents a chain. One [`Chain`] may have many related [`LightClient`]s for connecting to
 /// various other [`Chain`]s, all sharing a common config.
 pub trait Chain: Sized + Send + Sync + 'static {
     /// Expected to be unique across all implementations. Note that Wasm<_> implements this by passing through to the host chain, as `Wasm<A> <-> Wasm<B>` and `A <-> B` simultaneously is not currently supported.
     type ChainType: FromStrExact;
-    type SelfClientState: Debug
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
+    type SelfClientState: Member
         + crate::IntoProto // hack
         + TypeUrl // hack
         // TODO: Bound ChainId in the same way
-        + ClientState<Height = Self::Height>
-        + MaybeArbitrary;
-    type SelfConsensusState: ConsensusState
-        + Debug
-        + Clone
-        + PartialEq
+        + ClientState<Height = Self::Height>;
+    type SelfConsensusState: Member
+        + ConsensusState
         + crate::IntoProto // hack
-        + TypeUrl // hack
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + MaybeArbitrary;
+        + TypeUrl; // hack
 
-    type StoredClientState<Tr: Chain>: Debug
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + ClientState<ChainId = ChainIdOf<Tr>, Height = Tr::Height>
-        + MaybeArbitrary
-        + 'static;
-    type StoredConsensusState<Tr: Chain>: Debug
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + MaybeArbitrary
-        + 'static;
+    type StoredClientState<Tr: Chain>: Member
+        + ClientState<ChainId = ChainIdOf<Tr>, Height = Tr::Height>;
+    type StoredConsensusState<Tr: Chain>: Member;
 
-    type Header: Header
-        + Debug
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + MaybeArbitrary;
+    type Header: Member + Header;
 
     // this is just Height
-    type Height: IsHeight + MaybeArbitrary;
+    type Height: Member + IsHeight + MaybeArbitrary;
 
-    type ClientId: Id + MaybeArbitrary;
+    type ClientId: Member + Id + MaybeArbitrary;
 
     type IbcStateEncoding: Encoding;
 
-    type StateProof: Debug
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + MaybeArbitrary;
+    type StateProof: Member;
 
     /// Available client types for this chain.
-    type ClientType: Debug
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + MaybeArbitrary;
+    type ClientType: Member + Id;
 
     type Error: Debug;
 
@@ -184,24 +157,22 @@ pub trait Chain: Sized + Send + Sync + 'static {
 
     fn read_ack(
         &self,
-        block_hash: H256,
+        tx_hash: H256,
         destination_channel_id: ChannelId,
         destination_port_id: PortId,
         sequence: u64,
     ) -> impl Future<Output = Vec<u8>> + '_;
+
+    // fn fetch_ibc_state<P: IbcPath<Self, Tr>, Tr: Chain>(
+    //     &self,
+    //     path: P,
+    //     height: Self::Height,
+    // ) -> impl Future<Output = P::Output>;
 }
 
 pub trait ClientState {
-    type ChainId: Debug
-        + Display
-        + PartialEq
-        + Eq
-        + Hash
-        + Clone
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + MaybeArbitrary;
-    type Height: IsHeight + MaybeArbitrary;
+    type ChainId: Member + Display + Eq + Hash;
+    type Height: Member + IsHeight + MaybeArbitrary;
 
     fn height(&self) -> Self::Height;
     fn chain_id(&self) -> Self::ChainId;

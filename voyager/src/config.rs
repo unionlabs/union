@@ -2,29 +2,30 @@ use std::collections::BTreeMap;
 
 use chain_utils::private_key::PrivateKey;
 use ethers::prelude::k256::ecdsa;
-use queue_msg::Queue;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::WebSocketClientUrl;
 use unionlabs::{ethereum::config::PresetBaseKind, hash::H160};
-use voyager_message::RelayerMsgTypes;
 
-use crate::chain::{AnyChain, AnyChainTryFromConfigError};
+use crate::{
+    chain::{AnyChain, AnyChainTryFromConfigError},
+    queue::AnyQueueConfig,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub struct Config<Q: Queue<RelayerMsgTypes>> {
+pub struct Config {
     /// Map of chain name to it's respective config.
     pub chain: BTreeMap<String, ChainConfig>,
-    pub voyager: VoyagerConfig<Q>,
+    pub voyager: VoyagerConfig,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct VoyagerConfig<Q: Queue<RelayerMsgTypes>> {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VoyagerConfig {
     pub num_workers: u16,
-    pub queue: Q::Config,
+    pub queue: AnyQueueConfig,
 }
 
-impl<Q: Queue<RelayerMsgTypes>> Config<Q> {
+impl Config {
     pub async fn get_chain(&self, name: &str) -> Result<AnyChain, GetChainError> {
         match self.chain.get(name) {
             Some(config) => Ok(AnyChain::try_from_config(config.ty.clone()).await?),
