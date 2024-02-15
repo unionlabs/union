@@ -372,6 +372,7 @@
           name = "rust-proto-is-committed";
           description = "check that rust protos in git repo are the same as those that are generated in rust-proto derivation";
           src = ../.;
+          buildInputs = [ pkgs.git self'.packages.rust-proto ];
           doCheck = true;
           checkPhase = ''
             echo ${self'.packages.rust-proto}
