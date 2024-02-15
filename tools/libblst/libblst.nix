@@ -3,7 +3,8 @@
     let
       enableShared = !pkgs.stdenv.hostPlatform.isStatic
         && !pkgs.stdenv.hostPlatform.isWindows;
-    in with pkgs; {
+    in
+    with pkgs; {
       packages.libblst = stdenv.mkDerivation rec {
         pname = "blst";
         version = inputs.blst.shortRev;
@@ -32,7 +33,7 @@
               cp $lib $out/bin/
             fi
           done
-        '' + ''
+
           mkdir -p $out/lib/pkgconfig
           cat <<EOF > $out/lib/pkgconfig/libblst.pc
           prefix=$out

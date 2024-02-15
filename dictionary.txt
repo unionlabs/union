@@ -440,6 +440,7 @@ imap
 impls
 incentivized
 incentivizes
+includedir
 infima
 informations
 interchain
@@ -471,6 +472,7 @@ kwallet
 laddr
 lahcen
 launchbadge
+lblst
 lcfur
 lcgadget
 ldflags
@@ -478,6 +480,7 @@ leapwallet
 legendres
 libblst
 libcxx
+libdir
 libexec
 libfuzzer
 libiconv
