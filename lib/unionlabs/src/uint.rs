@@ -52,6 +52,13 @@ impl From<primitive_types::U256> for U256 {
 
 impl U256 {
     #[must_use]
+    pub fn to_little_endian(&self) -> [u8; 32] {
+        let mut buf = [0; 32];
+        self.0.to_little_endian(&mut buf);
+        buf
+    }
+
+    #[must_use]
     pub fn to_big_endian(&self) -> [u8; 32] {
         let mut buf = [0; 32];
         self.0.to_big_endian(&mut buf);
