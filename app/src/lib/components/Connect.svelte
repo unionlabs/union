@@ -25,6 +25,7 @@
     getUnoERC20Balance,
     unionBalanceStore,
     getUnoUnionBalance,
+    sendAssetFromEthereumToUnion,
     _getOfflineSigner,
     sendUnoFromUnionToSepolia
   } from '$/lib/union-actions'
@@ -54,9 +55,8 @@
     const unoERC20Balance = $wallet.address ? await getUnoERC20Balance($wallet.address) : null
     if (unoERC20Balance) erc20balanceStore.set(unoERC20Balance)
 
-    // TODO: CORS issue
-    // const unoUnionBalance = $unionAddress ? await getUnoUnionBalance($unionAddress) : null
-    // if (unoUnionBalance) unionBalanceStore.set(unoUnionBalance)
+    const unoUnionBalance = $unionAddress ? await getUnoUnionBalance($unionAddress) : null
+    if (unoUnionBalance) unionBalanceStore.set(unoUnionBalance)
 
     await _getOfflineSigner()
   })
@@ -116,7 +116,13 @@
           >
         {/if}
       </div>
-      <button>
+      <button
+        on:click={() =>
+          sendAssetFromEthereumToUnion({
+            receiver: $unionAddress,
+            amount: 3n
+          })}
+      >
         Send UNO from Sepolia to Union
       </button>
     </div>
