@@ -234,7 +234,8 @@ macro_rules! wrapper_enum {
             )+
         }
     ) => {
-        #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+        #[serde(rename_all = "snake_case")]
         $(#[$meta])*
         #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
         pub enum $Enum {
@@ -242,70 +243,6 @@ macro_rules! wrapper_enum {
                 $(#[$inner_meta])*
                 $Variant = $discriminant,
             )+
-        }
-
-        impl<'de> serde::Deserialize<'de> for $Enum {
-            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct Visitor;
-
-                impl<'de> serde::de::Visitor<'de> for Visitor {
-                    type Value = $Enum;
-
-                    fn expecting(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                        fmt.write_str("integer or string")
-                    }
-
-                    fn visit_i32<E>(self, val: i32) -> Result<Self::Value, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match <$Proto>::try_from(val).map($Enum::try_from) {
-                            Ok(Ok(val)) => Ok(val),
-                            Err(err) => Err(E::custom(format!("{err:?}"))),
-                            Ok(Err(err)) => Err(E::custom(format!("{err:?}"))),
-                        }
-                    }
-
-                    fn visit_i64<E>(self, val: i64) -> Result<Self::Value, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match <$Proto>::try_from(i32::try_from(val).map_err(|err| E::custom(format!("invalid i32: {err}")))?).map($Enum::try_from) {
-                            Ok(Ok(val)) => Ok(val),
-                            Err(err) => Err(E::custom(format!("{err:?}"))),
-                            Ok(Err(err)) => Err(E::custom(format!("{err:?}"))),
-                        }
-                    }
-
-                    fn visit_u64<E>(self, val: u64) -> Result<Self::Value, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match <$Proto>::try_from(i32::try_from(val).map_err(|err| E::custom(format!("invalid i32: {err}")))?).map($Enum::try_from) {
-                            Ok(Ok(val)) => Ok(val),
-                            Err(err) => Err(E::custom(format!("{err:?}"))),
-                            Ok(Err(err)) => Err(E::custom(format!("{err:?}"))),
-                        }
-                    }
-
-                    fn visit_str<E>(self, val: &str) -> Result<Self::Value, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match val {
-                            $(
-                                stringify!($Variant) => Ok($Enum::$Variant),
-                            )+
-                            _ => Err(E::custom(format!("unknown variant: {val}"))),
-                        }
-                    }
-                }
-
-                deserializer.deserialize_any(Visitor)
-            }
         }
 
         mod ensure_enum_values_are_same_as_proto {
