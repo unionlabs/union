@@ -16,10 +16,10 @@
     "versions": [
       {
         "identifier": "1",
-        "features": ["Ordered", "Unordered"]
+        "features": ["ordered", "unordered"]
       }
     ],
-    "state": "Open",
+    "state": "open",
     "counterparty": {
       "client_id": "08-wasm-15",
       "connection_id": "connection-20",
