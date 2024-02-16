@@ -47,10 +47,14 @@ export async function _getOfflineSigner() {
 }
 
 export async function sendUnoFromUnionToSepolia(signer: CosmjsOfflineSigner, recipient: Address) {
+  const offlineSigner = new CosmjsOfflineSigner('union-testnet-6')
+
   const tendermintClient = await Comet38Client.connect('https://union-testnet-rpc.polkachu.com')
-  const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(tendermintClient, signer, {
-    gasPrice: GasPrice.fromString('0.001muno')
-  })
+  const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(
+    tendermintClient,
+    offlineSigner,
+    { gasPrice: GasPrice.fromString('0.001muno') }
+  )
 
   const [account] = await signer.getAccounts()
   const address = account?.address
