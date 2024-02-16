@@ -235,6 +235,7 @@ macro_rules! wrapper_enum {
         }
     ) => {
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
+        #[serde(rename_all = "snake_case")]
         $(#[$meta])*
         #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
         pub enum $Enum {
