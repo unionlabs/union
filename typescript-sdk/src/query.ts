@@ -73,17 +73,11 @@ export async function getBalanceOnUnion({
 }: GetBalanceOnUnion): Promise<bigint> {
   try {
     try {
-      const client = await StargateClient.connect(unionRpcUrl)
-      const { amount } = await client.getBalance(address, assetId)
-      return BigInt(amount)
-    } catch (error) {
-      console.log('Failed to get balance using StargateClient', error)
       const { balances } = await fetcher<{ balances: Array<{ amount: string; denom: string }> }>(
         `${process.env.UNION_REST_URL || 'https://union-testnet-api.polkachu.com'}/cosmos/bank/v1beta1/balances/${address}`,
         {
           mode: 'cors',
           headers: {
-            
             // no-cors
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
@@ -93,6 +87,11 @@ export async function getBalanceOnUnion({
       )
       const balance = balances.find(({ denom }) => denom === assetId)
       return BigInt(balance?.amount ?? 0)
+    } catch (error) {
+      console.log('Failed to get balance using StargateClient', error)
+      const client = await StargateClient.connect(unionRpcUrl)
+      const { amount } = await client.getBalance(address, assetId)
+      return BigInt(amount)
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : error

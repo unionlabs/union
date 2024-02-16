@@ -184,7 +184,6 @@ export async function sendAssetFromUnionToEthereum<
 ): Promise<ExecuteResult> {
   console.log(signer, assetId, amount, denom, receiver, gasPrice, rpcUrl, memo)
   const tendermintClient = await Comet38Client.connect(rpcUrl)
-  // console.log(await tendermintClient.status())
   const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(tendermintClient, signer, {
     gasPrice: GasPrice.fromString(gasPrice ?? `0.001${denom}`),
   })
