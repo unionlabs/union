@@ -1,6 +1,7 @@
 use std::{fmt::Display, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use macros::apply;
 use queue_msg::{defer, fetch, now, seq, wait, HandleWait, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -16,13 +17,12 @@ use crate::{
     RelayerMsgTypes,
 };
 
-any_enum! {
-    #[any = AnyWait]
-    pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
-        Block(WaitForBlock<Hc, Tr>),
-        Timestamp(WaitForTimestamp<Hc, Tr>),
-        TrustedHeight(WaitForTrustedHeight<Hc, Tr>),
-    }
+#[apply(any_enum)]
+#[any = AnyWait]
+pub enum Wait<Hc: ChainExt, Tr: ChainExt> {
+    Block(WaitForBlock<Hc, Tr>),
+    Timestamp(WaitForTimestamp<Hc, Tr>),
+    TrustedHeight(WaitForTrustedHeight<Hc, Tr>),
 }
 
 impl HandleWait<RelayerMsgTypes> for AnyLightClientIdentified<AnyWait> {

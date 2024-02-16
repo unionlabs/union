@@ -20,6 +20,7 @@ frame-support-procedural = { workspace = true }
 frunk                    = { workspace = true }
 futures                  = { workspace = true }
 hex                      = { workspace = true }
+macros.workspace         = true
 num-bigint               = { workspace = true }
 prost                    = { workspace = true }
 protos                   = { workspace = true, features = ["proto_full", "client"] }

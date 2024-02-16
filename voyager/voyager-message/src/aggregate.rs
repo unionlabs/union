@@ -2,6 +2,7 @@ use std::{collections::VecDeque, fmt::Display, marker::PhantomData};
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
+use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
@@ -59,44 +60,43 @@ use crate::{
     AnyLightClientIdentified, ChainExt, DoAggregate, Identified, RelayerMsg, RelayerMsgTypes,
 };
 
-any_enum! {
-    /// Aggregate data, using data from [`AggregateData`]
-    #[any = AnyAggregate]
-    pub enum Aggregate<Hc: ChainExt, Tr: ChainExt> {
-        ConnectionOpenTry(AggregateConnectionOpenTry<Hc, Tr>),
-        ConnectionOpenAck(AggregateConnectionOpenAck<Hc, Tr>),
-        ConnectionOpenConfirm(AggregateConnectionOpenConfirm<Hc, Tr>),
+#[apply(any_enum)]
+/// Aggregate data, using data from [`AggregateData`]
+#[any = AnyAggregate]
+pub enum Aggregate<Hc: ChainExt, Tr: ChainExt> {
+    ConnectionOpenTry(AggregateConnectionOpenTry<Hc, Tr>),
+    ConnectionOpenAck(AggregateConnectionOpenAck<Hc, Tr>),
+    ConnectionOpenConfirm(AggregateConnectionOpenConfirm<Hc, Tr>),
 
-        ChannelOpenTry(AggregateChannelOpenTry<Hc, Tr>),
-        ChannelOpenAck(AggregateChannelOpenAck<Hc, Tr>),
-        ChannelOpenConfirm(AggregateChannelOpenConfirm<Hc, Tr>),
+    ChannelOpenTry(AggregateChannelOpenTry<Hc, Tr>),
+    ChannelOpenAck(AggregateChannelOpenAck<Hc, Tr>),
+    ChannelOpenConfirm(AggregateChannelOpenConfirm<Hc, Tr>),
 
-        RecvPacket(AggregateRecvPacket<Hc, Tr>),
-        AckPacket(AggregateAckPacket<Hc, Tr>),
+    RecvPacket(AggregateRecvPacket<Hc, Tr>),
+    AckPacket(AggregateAckPacket<Hc, Tr>),
 
-        ConnectionFetchFromChannelEnd(AggregateConnectionFetchFromChannelEnd<Hc, Tr>),
+    ConnectionFetchFromChannelEnd(AggregateConnectionFetchFromChannelEnd<Hc, Tr>),
 
-        // Aggregate that fetches the connection info from the channel
-        ChannelHandshakeUpdateClient(AggregateChannelHandshakeUpdateClient<Hc, Tr>),
+    // Aggregate that fetches the connection info from the channel
+    ChannelHandshakeUpdateClient(AggregateChannelHandshakeUpdateClient<Hc, Tr>),
 
-        PacketUpdateClient(AggregatePacketUpdateClient<Hc, Tr>),
+    PacketUpdateClient(AggregatePacketUpdateClient<Hc, Tr>),
 
-        WaitForTrustedHeight(AggregateWaitForTrustedHeight<Hc, Tr>),
+    WaitForTrustedHeight(AggregateWaitForTrustedHeight<Hc, Tr>),
 
-        FetchCounterpartyStateproof(AggregateFetchCounterpartyStateProof<Hc, Tr>),
+    FetchCounterpartyStateproof(AggregateFetchCounterpartyStateProof<Hc, Tr>),
 
-        UpdateClientFromClientId(AggregateUpdateClientFromClientId<Hc, Tr>),
+    UpdateClientFromClientId(AggregateUpdateClientFromClientId<Hc, Tr>),
 
-        UpdateClient(AggregateUpdateClient<Hc, Tr>),
-        UpdateClientWithCounterpartyChainIdData(AggregateUpdateClientWithCounterpartyChainId<Hc, Tr>),
+    UpdateClient(AggregateUpdateClient<Hc, Tr>),
+    UpdateClientWithCounterpartyChainIdData(AggregateUpdateClientWithCounterpartyChainId<Hc, Tr>),
 
-        CreateClient(AggregateCreateClient<Hc, Tr>),
+    CreateClient(AggregateCreateClient<Hc, Tr>),
 
-        AggregateMsgAfterUpdate(AggregateMsgAfterUpdate<Hc, Tr>),
+    AggregateMsgAfterUpdate(AggregateMsgAfterUpdate<Hc, Tr>),
 
-        #[serde(untagged)]
-        LightClientSpecific(LightClientSpecificAggregate<Hc, Tr>),
-    }
+    #[serde(untagged)]
+    LightClientSpecific(LightClientSpecificAggregate<Hc, Tr>),
 }
 
 impl HandleAggregate<RelayerMsgTypes> for AnyLightClientIdentified<AnyAggregate> {
