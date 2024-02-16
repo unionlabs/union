@@ -104,6 +104,7 @@ Shallue
 Snapshotter
 Subdemom
 Sublist
+Subo
 TRYOPEN
 Tempdirs
 Tendermint
