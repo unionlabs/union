@@ -26,6 +26,7 @@ import {
   getOfflineSigner,
   experimentalSuggestChain
 } from '@leapwallet/cosmos-snap-provider'
+import { getDenomAddress } from '$/lib/union-actions'
 
 const ssr = !browser
 
@@ -140,6 +141,7 @@ export async function checkConnectedToUnion() {
 
 export async function addUnoERC20() {
   try {
+    const denomAddress = await getDenomAddress()
     const hasBeenAdded = await window.ethereum.request({
       method: 'wallet_watchAsset',
       params: {
@@ -148,7 +150,7 @@ export async function addUnoERC20() {
           /**
            * TODO: THIS SHOULD NOT BE HARDCODED. INSTEAD CALL unionWalletClient().getDenomAddress()
            */
-          address: '0x465F49DE53eDDAc9635C4Cc941F442C12bE351B0',
+          address: denomAddress,
           /**
            * TODO: this should be UNO but our latest deployment to Sepolia has this as symbol
            */
