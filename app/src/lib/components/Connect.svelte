@@ -25,9 +25,9 @@
     getUnoERC20Balance,
     unionBalanceStore,
     getUnoUnionBalance,
-    sendAssetFromEthereumToUnion,
     _getOfflineSigner,
-    sendUnoFromUnionToSepolia
+    sendUnoFromUnionToSepolia,
+    sendAssetFromEthereumToUnion
   } from '$/lib/union-actions'
 
   let error: any
@@ -93,13 +93,13 @@
         >
           Switch Chain
         </button>
-        <div class="my-3">
+        <!-- <div class="my-3">
           {#if $unoTokenAddedToMetaMask}
             <div>✅ UNO Token Added to Metamask</div>
           {:else}
             <button on:click={addUnoERC20}>OPTIONAL: Track UNO to Metamask</button>
           {/if}
-        </div>
+        </div> -->
         <div class="my-4">
           {#if $connectedToUnion}
             <div>✅ Connected to Union</div>

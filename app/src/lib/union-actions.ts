@@ -146,14 +146,17 @@ export async function getDenomAddress(): Promise<Address> {
   })
 }
 
-export const unionBalanceStore: Writable<bigint | null> = writable(null)
+export const unionBalanceStore: Writable<string | null> = writable(null)
 
 export async function getUnoUnionBalance(address: string) {
   const signer = get(cosmjsSigner)
   const tendermintClient = await Comet38Client.connect('https://union-testnet-rpc.polkachu.com')
-  const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(tendermintClient, signer, {
-    gasPrice: GasPrice.fromString('0.001muno')
-  })
+  const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(
+    tendermintClient,
+    // @ts-expect-error
+    signer,
+    { gasPrice: GasPrice.fromString('0.001muno') }
+  )
   const { amount } = await cosmwasmClient.getBalance(address, 'muno')
   return amount
 }
