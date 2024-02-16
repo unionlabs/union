@@ -1,0 +1,12 @@
+[package]
+authors = ["Automata Team", "Union.fi Labs"]
+edition = "2021"
+license = "Apache-2.0"
+name    = "zktrie"
+version = "0.1.0"
+
+[dependencies]
+hex         = { workspace = true }
+lazy_static = { workspace = true }
+poseidon-rs = { workspace = true }
+unionlabs   = { workspace = true }

@@ -39,3 +39,9 @@ impl From<primitive_types::H160> for H160 {
         Self(value.0)
     }
 }
+
+impl From<H160> for H256 {
+    fn from(value: H160) -> Self {
+        (&value.0[..]).try_into().expect("impossible")
+    }
+}
