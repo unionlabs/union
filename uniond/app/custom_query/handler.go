@@ -8,7 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //lint:ignore SA1019 not using gov types
 )
 
 const (
