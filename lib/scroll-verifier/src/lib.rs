@@ -12,26 +12,18 @@ use unionlabs::{
 };
 use zktrie::{decode_smt_proofs, Byte32, Database, Hash, MemDB, PoseidonHash, TrieData, ZkTrie};
 
-#[derive(Debug, PartialEq)]
+#[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
+    #[error("invalid rollup or ibc contract address")]
     InvalidContractAddress,
-    InvalidContractAddressProof(VerifyAccountStorageRootError),
-    InvalidRollupProof(VerifyStorageProofError),
+    #[error("{0}")]
+    InvalidContractAddressProof(#[from] VerifyAccountStorageRootError),
+    #[error("{0}")]
+    InvalidRollupProof(#[from] VerifyStorageProofError),
+    #[error("invalid zktrie")]
     ZkTrie(zktrie::Error),
-    RlpDecode,
+    #[error("node value mismatch")]
     ValueMismatch,
-}
-
-impl From<VerifyAccountStorageRootError> for Error {
-    fn from(value: VerifyAccountStorageRootError) -> Self {
-        Self::InvalidContractAddressProof(value)
-    }
-}
-
-impl From<VerifyStorageProofError> for Error {
-    fn from(value: VerifyStorageProofError) -> Self {
-        Self::InvalidRollupProof(value)
-    }
 }
 
 pub fn scroll_verify_header(
@@ -65,7 +57,7 @@ pub fn scroll_verify_header(
             &scroll_header.finalized_proof.proof,
         )?;
         // Verify that the ibc account root is part of the rollup root
-        verify_zktrie_account_storage_root(
+        scroll_verify_zktrie_account_storage_root(
             scroll_header.finalized_proof.finalized_state_root,
             &scroll_client_state.ibc_contract_address,
             &scroll_header.ibc_account_proof.proof,
@@ -99,7 +91,30 @@ pub fn get_zktrie_node(
         .map_err(Error::ZkTrie)
 }
 
-pub fn verify_zktrie_account_storage_root(
+pub fn scroll_verify_zktrie_storage_proof(
+    root: H256,
+    key: H256,
+    expected_value: &[u8],
+    proof: &[impl AsRef<[u8]>],
+) -> Result<(), Error> {
+    match get_zktrie_node(root, key.as_ref(), proof)? {
+        TrieData::Node(node) if node.data() == expected_value => Ok(()),
+        _ => Err(Error::ValueMismatch),
+    }
+}
+
+pub fn scroll_verify_zktrie_storage_absence(
+    root: H256,
+    key: H256,
+    proof: &[impl AsRef<[u8]>],
+) -> Result<(), Error> {
+    match get_zktrie_node(root, key.as_ref(), proof)? {
+        TrieData::NotFound => Ok(()),
+        _ => Err(Error::ValueMismatch),
+    }
+}
+
+pub fn scroll_verify_zktrie_account_storage_root(
     root: H256,
     address: &H160,
     proof: &[impl AsRef<[u8]>],
@@ -139,14 +154,20 @@ mod tests {
         hash::{H160, H256},
         ibc::{
             core::client::height::Height,
-            lightclients::scroll::{client_state::ClientState, header::Header},
+            lightclients::{
+                ethereum::proof::Proof,
+                scroll::{client_state::ClientState, header::Header},
+            },
         },
     };
 
-    use crate::scroll_verify_header;
+    use crate::{
+        scroll_verify_header, scroll_verify_zktrie_storage_absence,
+        scroll_verify_zktrie_storage_proof,
+    };
 
     #[test]
-    fn test_scrollproof() {
+    fn test_scroll_header() {
         let scroll_client_state = ClientState {
             l1_client_id: "blabla".into(),
             chain_id: 0.into(),
@@ -164,17 +185,55 @@ mod tests {
             ibc_commitment_slot: 0.into(),
         };
         let scroll_header: Header =
-            serde_json::from_str(&std::fs::read_to_string("tests/scroll_proof.json").unwrap())
+            serde_json::from_str(&std::fs::read_to_string("tests/scroll_header.json").unwrap())
                 .unwrap();
         let l1_state_root = H256::try_from(
             hex::decode("d36f51bb31957a627d91ca2e9a8f7d8fe0f527293135a4ee177406c78960437d")
                 .unwrap(),
         )
         .unwrap();
-        println!("{:?}", scroll_header);
         assert_eq!(
             scroll_verify_header(scroll_client_state, scroll_header, l1_state_root),
             Ok(())
         );
+    }
+
+    #[test]
+    fn test_scroll_l2_contract_slot_exist() {
+        let proof: Proof =
+            serde_json::from_str(&std::fs::read_to_string("tests/scroll_proof.json").unwrap())
+                .unwrap();
+        assert_eq!(
+            scroll_verify_zktrie_storage_proof(
+                H256::try_from(
+                    hex::decode("1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0")
+                        .unwrap()
+                )
+                .unwrap(),
+                proof.key.to_big_endian().into(),
+                &proof.value.to_big_endian(),
+                &proof.proof
+            ),
+            Ok(())
+        )
+    }
+
+    #[test]
+    fn test_scroll_l2_contract_slot_absent() {
+        let proof: Proof =
+            serde_json::from_str(&std::fs::read_to_string("tests/scroll_absent.json").unwrap())
+                .unwrap();
+        assert_eq!(
+            scroll_verify_zktrie_storage_absence(
+                H256::try_from(
+                    hex::decode("1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0")
+                        .unwrap()
+                )
+                .unwrap(),
+                proof.key.to_big_endian().into(),
+                &proof.proof
+            ),
+            Ok(())
+        )
     }
 }

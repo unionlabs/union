@@ -273,7 +273,7 @@ fn test_zktrie_impl_delete() {
     }
 
     {
-        // Test equivalen trees after deletion
+        // Test equivalent trees after deletion
         let keys = [k1, k2, k3, k4];
         let mut mt1 = TestTrie::new(10);
         for (i, key) in keys.iter().enumerate() {

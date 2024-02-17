@@ -1,0 +1,25 @@
+[package]
+authors      = ["Union Labs"]
+edition      = "2021"
+license-file = { workspace = true }
+name         = "scroll-light-client"
+publish      = false
+version      = "0.1.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cosmwasm-std       = { workspace = true, features = ["abort"] }
+ethereum-verifier  = { workspace = true }
+ics008-wasm-client = { workspace = true }
+protos             = { workspace = true, default-features = false }
+rlp                = { workspace = true }
+schemars           = { workspace = true }
+scroll-verifier    = { workspace = true }
+serde              = { workspace = true, features = ["derive"] }
+serde-json-wasm    = { workspace = true }
+sha3               = { workspace = true }
+thiserror          = { workspace = true }
+tiny-keccak        = { version = "2.0.2", default-features = false, features = ["keccak"] }
+unionlabs          = { workspace = true, default-features = false, features = ["ethabi"] }

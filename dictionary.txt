@@ -334,7 +334,6 @@ endianness
 endraw
 enim
 enumorph
-equivalen
 errorsmod
 errortype
 esac

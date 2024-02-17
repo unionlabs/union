@@ -5152,6 +5152,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
+name = "scroll-light-client"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std",
+ "ethereum-verifier",
+ "ics008-wasm-client",
+ "protos",
+ "rlp",
+ "schemars",
+ "scroll-verifier",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "sha3",
+ "thiserror",
+ "tiny-keccak",
+ "unionlabs",
+]
+
+[[package]]
 name = "scroll-verifier"
 version = "0.1.0"
 dependencies = [
@@ -5162,6 +5181,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha3",
+ "thiserror",
  "unionlabs",
  "zktrie",
 ]
