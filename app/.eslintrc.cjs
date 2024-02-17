@@ -65,11 +65,13 @@ module.exports = {
         }
       }
     ],
+    'no-ex-assign': ['off'],
     'no-mixed-operators': ['off'],
     'no-multiple-empty-lines': ['off'],
     'no-unexpected-multiline': ['off'],
     '@typescript-eslint/triple-slash-reference': ['off'],
     '@typescript-eslint/no-var-requires': ['off'],
+    '@typescript-eslint/no-explicit-any': ['off'],
     '@typescript-eslint/prefer-namespace-keyword': ['off'],
     '@typescript-eslint/no-empty-interface': ['off'],
     '@typescript-eslint/consistent-type-imports': [

@@ -3,14 +3,12 @@
   import '$styles/reset.css'
   import '$styles/tailwind.css'
   import { browser } from '$app/environment'
-  import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query'
   import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools'
+  import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query'
 
   const queryClient = new QueryClient({
     defaultOptions: {
-      queries: {
-        enabled: browser
-      }
+      queries: { enabled: browser }
     }
   })
 </script>

@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "test": "vitest",
+    "test": "vitest --run",
     "lint": "eslint --fix . --ext='js,cjs,mjs,ts,d.ts,json,svelte' --report-unused-disable-directives --max-warnings=0 --cache",
     "format": "prettier --write . --ignore-path='.eslintignore' --ignore-unknown --cache",
     "typecheck": "tsc --project tsconfig.json --noEmit",

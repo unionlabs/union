@@ -10,7 +10,7 @@ declare global {
   }
   interface Window {
     EventEmitter: typeof EventEmitter
-    ethereum: { request(...args: any): Promise<any> }
+    ethereum: { request(...arguments_: any): Promise<any> }
   }
 }
 

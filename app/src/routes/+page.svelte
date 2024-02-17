@@ -86,14 +86,10 @@
       <br />
       <div>
         {#if $cosmosOfflineSigner}
-          <button on:click={sendUnoFromUnionToSepolia}
-            >Send UNO from Union to Sepolia</button
-          >
+          <button on:click={sendUnoFromUnionToSepolia}>Send UNO from Union to Sepolia</button>
         {/if}
       </div>
-      <button
-        on:click={() => sendAssetFromEthereumToUnion({ receiver: $unionAddress, amount: 3n })}
-      >
+      <button on:click={() => sendAssetFromEthereumToUnion({ amount: 3n })}>
         Send UNO from Sepolia to Union
       </button>
     </div>

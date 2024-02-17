@@ -1,16 +1,10 @@
 import { fetcher } from './utilities'
 
 export async function getUnoFromFaucet({ address }: { address: string }) {
-  console.log('getUnoFromFaucet', { address }, address.length)
   const response = await fetcher<
     | { data: { union: { send: undefined } } }
-    | {
-        errors: Array<{
-          message: string
-          extensions: { path: string; code: string }
-        }>
-      }
-  >('https://noble-pika-27.hasura.app/v1/graphql', {
+    | { errors: Array<{ message: string; extensions: { path: string; code: string } }> }
+  >('https://graphql.union.build/v1/graphql', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -1,24 +1,14 @@
-import { sepolia } from 'viem/chains'
-import { type Address, type Hash, bytesToHex, erc20Abi } from 'viem'
-import {
-  getKey,
-  getSnap,
-  getSnaps,
-  connectSnap,
-  suggestChain,
-  signArbitrary,
-  getOfflineSigner,
-  CosmjsOfflineSigner,
-  experimentalSuggestChain
-} from '@leapwallet/cosmos-snap-provider'
 import { usc01relayAbi } from '$/lib/abi'
-import { config, unionAddress, wallet } from '$/lib/wallet/config'
 import { fromBech32 } from '@cosmjs/encoding'
-import { Comet38Client, Tendermint37Client } from '@cosmjs/tendermint-rpc'
 import { writable, type Writable, get } from 'svelte/store'
+import { CHAIN, CONTRACT, UNO, URLS } from '$/lib/constants.ts'
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
+import { config, unionAddress, wallet } from '$/lib/wallet/config'
 import { GasPrice, SigningStargateClient } from '@cosmjs/stargate'
+import { CosmjsOfflineSigner } from '@leapwallet/cosmos-snap-provider'
+import { Comet38Client, Tendermint37Client } from '@cosmjs/tendermint-rpc'
 import { readContract, simulateContract, writeContract } from '@wagmi/core'
+import { type Address, type Hash, bytesToHex, erc20Abi, getAddress } from 'viem'
 
 export const erc20balanceStore: Writable<bigint | null> = writable(null)
 export async function getUnoERC20Balance(address: Address) {
@@ -35,14 +25,14 @@ export async function getUnoERC20Balance(address: Address) {
 
 export const cosmosOfflineSigner = writable<CosmjsOfflineSigner | null>(null)
 export async function initiateCosmosOfflineSigner() {
-  const offlineSigner = new CosmjsOfflineSigner('union-testnet-6')
+  const offlineSigner = new CosmjsOfflineSigner(CHAIN.UNION.ID)
   cosmosOfflineSigner.set(offlineSigner)
 }
 
+/**
+ * TODO: figure out why .execute doesn't run
+ */
 export async function sendUnoFromUnionToSepolia() {
-  setTimeout(() => {
-    console.log('sending uno from union to sepolia.')
-  })
   const offlineSigner = get(cosmosOfflineSigner)
   const ethereumAddress = get(wallet).address
   console.log({ offlineSigner, ethereumAddress })
@@ -55,35 +45,25 @@ export async function sendUnoFromUnionToSepolia() {
   //   { gasPrice: GasPrice.fromString('0.001muno') }
   // )
 
-  const tendermintClient = await Tendermint37Client.connect(
-    // 'https://rpc.testnet.bonlulu.uno'
-    'https://union-testnet-rpc.polkachu.com'
-  )
+  const tendermintClient = await Tendermint37Client.connect(URLS.UNION.RPC)
   const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(
     tendermintClient,
     offlineSigner,
-    { gasPrice: GasPrice.fromString('0.001muno') }
+    { gasPrice: GasPrice.fromString(`0.001${UNO.NATIVE_DENOM}`) }
   )
   const stargateClient = await SigningStargateClient.createWithSigner(
     tendermintClient,
     offlineSigner,
-    { gasPrice: GasPrice.fromString('0.001muno') }
+    { gasPrice: GasPrice.fromString(`0.001${UNO.NATIVE_DENOM}`) }
   )
 
   const address = account?.address
-  const txResponse = await stargateClient.sendTokens(
-    address,
-    'union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv',
-    [{ denom: 'muno', amount: '1000' }],
-    'auto'
-  )
-  console.log(JSON.stringify({ txResponse }, undefined, 2))
   const result = await cosmwasmClient.execute(
     address,
-    'union14pfzjnvzacqsmgjyf0avksc8cr70hsyt5epzcp66tmjpswf8sq8sn5meuy',
+    CONTRACT.UNION.ADDRESS,
     {
       transfer: {
-        channel: 'channel-0',
+        channel: CONTRACT.UNION.SOURCE_CHANNEL,
         receiver: ethereumAddress?.slice(2),
         timeout: null,
         memo: "random more than four characters I'm transferring."
@@ -91,21 +71,16 @@ export async function sendUnoFromUnionToSepolia() {
     },
     'auto',
     undefined,
-    [{ denom: 'muno', amount: '1000' }]
+    [{ denom: UNO.NATIVE_DENOM, amount: '1000' }]
   )
   console.log(JSON.stringify({ result }, undefined, 2))
 }
 
 export async function sendAssetFromEthereumToUnion({
   amount,
-  portId = 'ucs01-relay',
-  channelId = 'channel-0',
   simulate = true
 }: {
-  receiver: string
   amount: bigint
-  portId?: string
-  channelId?: string
   simulate?: boolean
 }): Promise<Hash> {
   // TODO: make dynamic?
@@ -118,12 +93,12 @@ export async function sendAssetFromEthereumToUnion({
     const writeContractParameters = {
       abi: usc01relayAbi,
       functionName: 'send',
-      address: '0x7f7AC7d5a1a2bD54dBA53a22209C3f96699Ed63c',
+      address: getAddress(CONTRACT.SEPOLIA.ADDRESS),
       args: [
-        portId,
-        channelId,
+        CONTRACT.SEPOLIA.PORT_ID,
+        CONTRACT.SEPOLIA.SOURCE_CHANNEL,
         bytesToHex(fromBech32(get(unionAddress)).data),
-        [{ denom: denomAddress, amount: 3n }],
+        [{ denom: denomAddress, amount }],
         counterpartyTimeoutRevisionNumber,
         counterpartyTimeoutRevisionHeight
       ]
@@ -144,19 +119,16 @@ export async function sendAssetFromEthereumToUnion({
 
 export async function getDenomAddress(): Promise<Address> {
   const [sourcePort, sourceChannel, denom] = [
-    process.env.UCS01_SEPOLIA_PORT_ID || 'ucs01-relay',
-    process.env.UCS01_SEPOLIA_SOURCE_CHANNEL || 'channel-0',
-    process.env.UNION_NATIVE_DENOM || 'muno'
+    CONTRACT.SEPOLIA.PORT_ID,
+    CONTRACT.SEPOLIA.SOURCE_CHANNEL,
+    UNO.NATIVE_DENOM || 'muno'
   ]
-  const UNION_CONTRACT_ADDRESS =
-    process.env.UCS01_UNION_ADDRESS ||
-    'union14pfzjnvzacqsmgjyf0avksc8cr70hsyt5epzcp66tmjpswf8sq8sn5meuy'
 
   return readContract(config, {
     abi: usc01relayAbi,
-    address: '0x7f7AC7d5a1a2bD54dBA53a22209C3f96699Ed63c',
+    address: getAddress(CONTRACT.SEPOLIA.ADDRESS),
     functionName: 'getDenomAddress',
-    args: [sourcePort, sourceChannel, `wasm.${UNION_CONTRACT_ADDRESS}/${sourceChannel}/${denom}`]
+    args: [sourcePort, sourceChannel, `wasm.${CONTRACT.UNION.ADDRESS}/${sourceChannel}/${denom}`]
   })
 }
 
@@ -164,13 +136,13 @@ export const unionBalanceStore: Writable<string | null> = writable(null)
 
 export async function getUnoUnionBalance(address: string) {
   const signer = get(cosmosOfflineSigner)
-  const tendermintClient = await Comet38Client.connect('https://union-testnet-rpc.polkachu.com')
+  const tendermintClient = await Comet38Client.connect(URLS.UNION.RPC)
   const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(
     tendermintClient,
     // @ts-expect-error
     signer,
-    { gasPrice: GasPrice.fromString('0.001muno') }
+    { gasPrice: GasPrice.fromString(`0.001${UNO.NATIVE_DENOM}`) }
   )
-  const { amount } = await cosmwasmClient.getBalance(address, 'muno')
+  const { amount } = await cosmwasmClient.getBalance(address, UNO.NATIVE_DENOM)
   return amount
 }
