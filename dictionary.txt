@@ -94,6 +94,7 @@ Repr
 Roboto
 Rushi
 Rustup
+SEPOLIA
 SIGINT
 SSWU
 SVDW
@@ -264,6 +265,7 @@ cosmosgen
 cosmosproto
 cosmossdk
 cosmrs
+cosmsnap
 cosmwasm
 cosmwasmclient
 counterparty
@@ -493,6 +495,7 @@ lightclient
 lightclients
 linkmode
 lmfao
+lnxk
 loaderreact
 lockb
 logformat
@@ -638,6 +641,7 @@ pvalue
 pxplusqx
 pxqx
 pxrx
+qemq
 qxpx
 qxrx
 qypy

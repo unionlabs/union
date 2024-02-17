@@ -1,46 +1,55 @@
 #!/usr/bin/env bun
-import '#/patch.ts'
-import { raise } from '#/utilities'
-import { unionActions } from '#/actions.ts'
-import { http, publicActions, createWalletClient, fallback } from 'viem'
-import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
-import { privateKeyToAccount, mnemonicToAccount } from 'viem/accounts'
-import { UCS01_EVM_ADDRESS, demoPrivateKey, demoMnemonic, chain } from '#/constants'
+import "#/patch.ts";
+import { raise } from "#/utilities";
+import { unionActions } from "#/actions.ts";
+import { http, publicActions, createWalletClient, fallback } from "viem";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { privateKeyToAccount, mnemonicToAccount } from "viem/accounts";
+import {
+  UCS01_EVM_ADDRESS,
+  demoPrivateKey,
+  demoMnemonic,
+  chain,
+} from "#/constants";
 
-main().catch(_ => {
-  console.error(_)
-  process.exit(1)
-})
+main().catch((_) => {
+  console.error(_);
+  process.exit(1);
+});
 
 async function main() {
   // const demoEthereumAccount = privateKeyToAccount(demoPrivateKey)
-  const demoEthereumAccount = mnemonicToAccount(demoMnemonic)
+  const demoEthereumAccount = mnemonicToAccount(demoMnemonic);
   // 0x3a7c1964ea700Ee19887c747C72e68F84Cb9C5DD
-  const demoEthereumAddress = demoEthereumAccount.address
-  const demoUnionAccount = await DirectSecp256k1HdWallet.fromMnemonic(demoMnemonic, {
-    prefix: 'union',
-  })
-  const [demoUnionAccountData] = await demoUnionAccount.getAccounts()
-  const demoUnionAddress = demoUnionAccountData?.address ?? raise('demoUnionAddress is undefined')
-  console.log(demoUnionAddress, demoEthereumAddress)
+  const demoEthereumAddress = demoEthereumAccount.address;
+  const demoUnionAccount = await DirectSecp256k1HdWallet.fromMnemonic(
+    demoMnemonic,
+    {
+      prefix: "union",
+    }
+  );
+  const [demoUnionAccountData] = await demoUnionAccount.getAccounts();
+  const demoUnionAddress =
+    demoUnionAccountData?.address ?? raise("demoUnionAddress is undefined");
+  console.log(demoUnionAddress, demoEthereumAddress);
 
-  const SEPOILIA_RPC_URL = process.env.SEPOLIA_RPC_URL
-  const { sepolia } = chain.ethereum
-  const { testnet: unionTestnet } = chain.union
+  const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
+  const { sepolia } = chain.ethereum;
+  const { testnet: unionTestnet } = chain.union;
 
   const client = createWalletClient({
     chain: sepolia,
     account: demoEthereumAccount,
     transport: fallback([
-      http(process.env.SEPOLIA_RPC_URL),
-      http('https://ethereum-sepolia.publicnode.com'),
+      http(SEPOLIA_RPC_URL),
+      http("https://ethereum-sepolia.publicnode.com"),
     ]),
   })
     .extend(publicActions)
-    .extend(unionActions)
+    .extend(unionActions);
 
-  const denomAddress = await client.getDenomAddress()
-  console.log({ denomAddress })
+  const denomAddress = await client.getDenomAddress();
+  console.log({ denomAddress });
 
   // await client
   //   .getBalance({

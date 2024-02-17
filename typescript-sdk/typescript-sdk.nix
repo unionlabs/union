@@ -17,7 +17,7 @@
           installPhase = ''
             mkdir -p $out
             cp -r ./dist/* $out
-          ''; 
+          '';
           doDist = false;
         };
       };
