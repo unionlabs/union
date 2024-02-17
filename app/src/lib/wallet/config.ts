@@ -120,7 +120,7 @@ export async function connectToUnion() {
       chainId: 'union-testnet-6',
       chainName: 'union-testnet',
       bip44: { coinType: 118 },
-      bech32Config: { bech32PrefixAccAddr: 'union' }
+      bech32Config: { bech32PrefixAccAddr: 'union', }
     },
     { force: false }
   )

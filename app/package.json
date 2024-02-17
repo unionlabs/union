@@ -16,6 +16,11 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.32.2",
+    "@cosmjs/encoding": "^0.32.2",
+    "@cosmjs/stargate": "^0.32.2",
+    "@cosmjs/tendermint-rpc": "^0.32.2",
+    "@cosmsnap/snap": "^0.1.17",
     "@leapwallet/cosmos-snap-provider": "^0.1.25",
     "@tanstack/query-async-storage-persister": "^5.20.5",
     "@tanstack/query-broadcast-client-experimental": "^5.20.5",
@@ -25,18 +30,14 @@
     "@wagmi/core": "^2.6.5",
     "bits-ui": "^0.18.1",
     "unstorage": "^1.10.1",
-    "@cosmjs/cosmwasm-stargate": "^0.32.2",
-    "@cosmjs/encoding": "^0.32.2",
-    "@cosmjs/stargate": "^0.32.2",
-    "@cosmjs/tendermint-rpc": "^0.32.2",
     "vaul-svelte": "^0.2.3",
     "viem": "^2.7.10"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240208.0",
-    "@melt-ui/pp": "^0.3.0",
     "@cosmjs/amino": "^0.32.2",
     "@cosmjs/proto-signing": "^0.32.2",
+    "@melt-ui/pp": "^0.3.0",
     "@melt-ui/svelte": "^0.74.0",
     "@sveltejs/adapter-static": "^3.0.1",
     "@sveltejs/kit": "^2.5.0",
