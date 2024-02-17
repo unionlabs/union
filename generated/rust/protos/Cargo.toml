@@ -271,7 +271,7 @@ proto_full = [
   "union+galois+api+v2",
   "union+ibc+lightclients+cometbls+v1",
   "union+ibc+lightclients+ethereum+v1",
-  "union+union",
+  "union+ibc+lightclients+scroll+v1",
 ]
 "tendermint+abci" = ["google+protobuf", "tendermint+crypto", "tendermint+types"]
 "tendermint+blocksync" = ["tendermint+types"]
@@ -301,7 +301,7 @@ proto_full = [
   "tendermint+types",
 ]
 "union+ibc+lightclients+ethereum+v1" = ["ibc+core+client+v1", "ibc+lightclients+tendermint+v1"]
-"union+union" = []
+"union+ibc+lightclients+scroll+v1" = ["ibc+core+client+v1", "union+ibc+lightclients+ethereum+v1"]
 ## @@protoc_insertion_point(features)
 client      = ["tonic"]
 default     = ["proto_full", "std"]

@@ -1,7 +1,0 @@
-syntax = "proto3";
-package union.union;
-
-option go_package = "union/x/union/types";
-
-// Msg defines the Msg service.
-service Msg {}

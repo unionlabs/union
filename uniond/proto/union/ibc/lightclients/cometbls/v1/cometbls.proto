@@ -5,10 +5,7 @@ package union.ibc.lightclients.cometbls.v1;
 option go_package = "union/app/ibc/cometbls/02-client/keeper";
 
 import "tendermint/types/types.proto";
-import "google/protobuf/duration.proto";
-import "google/protobuf/timestamp.proto";
 import "ibc/core/client/v1/client.proto";
-import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "ibc/core/commitment/v1/commitment.proto";
 import "gogoproto/gogo.proto";
 
