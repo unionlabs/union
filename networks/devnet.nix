@@ -24,6 +24,7 @@
         lightClients = [
           self'.packages.ethereum-light-client-minimal
           self'.packages.ethereum-light-client-mainnet
+          self'.packages.scroll-light-client
         ];
         cosmwasmContracts = [
           self'.packages.ucs00-pingpong

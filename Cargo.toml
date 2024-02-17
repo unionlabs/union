@@ -16,6 +16,7 @@ members = [
   "light-clients/cometbls-light-client",
   "light-clients/ethereum-light-client",
   "light-clients/tendermint-light-client",
+  "light-clients/scroll-light-client",
   "e2e/ensure-blocks",
   "generated/rust/protos",
   "generated/rust/contracts",
@@ -62,6 +63,7 @@ pg-queue                  = { path = "lib/pg-queue", default-features = false }
 poseidon-rs               = { path = "lib/poseidon-rs" }
 protos                    = { path = "generated/rust/protos", default-features = false }
 queue-msg                 = { path = "lib/queue-msg", default-features = false }
+scroll-verifier           = { path = "lib/scroll-verifier", default-features = false }
 serde-utils               = { path = "lib/serde-utils", default-features = false }
 tendermint-verifier       = { path = "lib/tendermint-verifier", default-features = false }
 token-factory-api         = { path = "cosmwasm/token-factory-api", default-features = false }
