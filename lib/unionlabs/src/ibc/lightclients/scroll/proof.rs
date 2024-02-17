@@ -54,7 +54,7 @@ impl TryFrom<protos::union::ibc::lightclients::scroll::v1::ScrollFinalizedProof>
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             batch_index: value.batch_index,
-            finalized_state_root: H256::try_from(value.finalized_state_root.as_ref())
+            finalized_state_root: TryFrom::<&[u8]>::try_from(value.finalized_state_root.as_ref())
                 .map_err(TryFromScrollFinalizedProofError::Value)?,
             proof: value.proof,
         })
