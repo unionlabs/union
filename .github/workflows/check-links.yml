@@ -1,0 +1,51 @@
+name: Links Checker
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+  schedule:
+    - cron: '00 18 * * *'
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  NIX_VERSION: nix-2.13.2
+  NIXPKGS_CHANNEL: nixos-22.11
+  ACTIONS_RUNNER_DEBUG: true
+
+jobs:
+  link-checker:
+    name: '🔗 Check Links'
+    runs-on: ['ubuntu-latest']
+    permissions: 'write-all'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
+        with:
+          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
+          github_access_token: ${{ github.token }}
+
+      - name: Add & Update nix-channel
+        run: |
+          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
+          nix-channel --update
+
+      - name: Comment on Pull Request
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const content = fs.readFileSync('./lychee/out.md', 'utf8');
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: content
+            });
