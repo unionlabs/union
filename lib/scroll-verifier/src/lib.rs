@@ -7,7 +7,7 @@ use ethereum_verifier::{
 use sha3::Digest;
 use unionlabs::{
     hash::{H160, H256},
-    ibc::lightclients::ethereum::account_proof::AccountProof,
+    ibc::lightclients::scroll::{client_state::ClientState, header::Header},
     uint::U256,
 };
 use zktrie::{decode_smt_proofs, Byte32, Database, Hash, MemDB, PoseidonHash, TrieData, ZkTrie};
@@ -34,85 +34,42 @@ impl From<VerifyStorageProofError> for Error {
     }
 }
 
-#[derive(Debug, serde::Deserialize)]
-pub struct ScrollProof {
-    pub account_proof: AccountProof,
-    pub rollup_proof: ScrollRollupProof,
-    pub rollup_ibc_account_proof: AccountProof,
-}
-
-impl ScrollProof {
-    pub fn verify(
-        &self,
-        l1_state_root: H256,
-        expected_rollup_contract_address: H160,
-        finalized_state_roots_slot: U256,
-        expected_rollup_ibc_contract_address: H160,
-    ) -> Result<(), Error> {
-        // TODO: account_proof.contract_address should be removed
-        if expected_rollup_contract_address != self.account_proof.contract_address
-            || expected_rollup_ibc_contract_address
-                != self.rollup_ibc_account_proof.contract_address
-        {
-            Err(Error::InvalidContractAddress)
-        } else {
-            verify_account_storage_root(
-                l1_state_root,
-                &expected_rollup_contract_address,
-                &self.account_proof.proof,
-                &self.account_proof.storage_root,
-            )?;
-            self.rollup_proof.verify(
-                self.account_proof.storage_root.clone(),
-                finalized_state_roots_slot,
-            )?;
-            verify_zktrie_account_storage_root(
-                self.rollup_proof.finalized_state_root.clone(),
-                &expected_rollup_ibc_contract_address,
-                &self.rollup_ibc_account_proof.proof,
-                &self.rollup_ibc_account_proof.storage_root,
-            )?;
-            Ok(())
-        }
-    }
-}
-
-#[derive(serde::Deserialize)]
-pub struct ScrollRollupProof {
-    pub batch_index: U256,
-    pub finalized_state_root: H256,
-    #[serde(with = "::serde_utils::hex_string_list")]
-    pub proof: Vec<Vec<u8>>,
-}
-
-impl Debug for ScrollRollupProof {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ScrollRollupProof")
-            .field("batch_index", &self.batch_index)
-            .field("finalized_state_root", &self.finalized_state_root)
-            .field(
-                "proof",
-                &self
-                    .proof
-                    .iter()
-                    .map(serde_utils::to_hex)
-                    .collect::<Vec<_>>(),
-            )
-            .finish()
-    }
-}
-
-impl ScrollRollupProof {
-    pub fn verify(
-        &self,
-        rollup_contract_root: H256,
-        finalized_state_roots_slot: U256,
-    ) -> Result<(), Error> {
+pub fn scroll_verify_header(
+    scroll_client_state: ClientState,
+    scroll_header: Header,
+    l1_state_root: H256,
+) -> Result<(), Error> {
+    // TODO: account_proof.contract_address should be removed entirely from ethereum LC
+    if scroll_client_state.rollup_contract_address
+        != scroll_header.l1_account_proof.contract_address
+        || scroll_client_state.ibc_contract_address
+            != scroll_header.ibc_account_proof.contract_address
+    {
+        Err(Error::InvalidContractAddress)
+    } else {
+        // Verify that the rollup account root is part of the L1 root
+        verify_account_storage_root(
+            l1_state_root,
+            &scroll_client_state.rollup_contract_address,
+            &scroll_header.l1_account_proof.proof,
+            &scroll_header.l1_account_proof.storage_root,
+        )?;
+        // Verify that the rollup finalized state root is part of the rollup account root
         verify_storage_proof(
-            rollup_contract_root,
-            finalized_state_root_key(finalized_state_roots_slot, self.batch_index),
-            &rlp::encode(&self.finalized_state_root),
-            &self.proof,
+            scroll_header.l1_account_proof.storage_root,
+            finalized_state_root_key(
+                scroll_client_state.rollup_finalized_state_roots_slot,
+                scroll_header.finalized_proof.batch_index.into(),
+            ),
+            &rlp::encode(&scroll_header.finalized_proof.finalized_state_root),
+            &scroll_header.finalized_proof.proof,
+        )?;
+        // Verify that the ibc account root is part of the rollup root
+        verify_zktrie_account_storage_root(
+            scroll_header.finalized_proof.finalized_state_root,
+            &scroll_client_state.ibc_contract_address,
+            &scroll_header.ibc_account_proof.proof,
+            &scroll_header.ibc_account_proof.storage_root,
         )?;
         Ok(())
     }
@@ -178,29 +135,45 @@ pub fn verify_zktrie_account_storage_root(
 
 #[cfg(test)]
 mod tests {
-    use unionlabs::hash::{H160, H256};
+    use unionlabs::{
+        hash::{H160, H256},
+        ibc::{
+            core::client::height::Height,
+            lightclients::scroll::{client_state::ClientState, header::Header},
+        },
+    };
 
-    use crate::ScrollProof;
+    use crate::scroll_verify_header;
 
     #[test]
     fn test_scrollproof() {
-        let proof: ScrollProof =
+        let scroll_client_state = ClientState {
+            l1_client_id: "blabla".into(),
+            chain_id: 0.into(),
+            latest_batch_index: 65031,
+            frozen_height: Height::default(),
+            rollup_contract_address: H160::try_from(
+                hex::decode("2d567ece699eabe5afcd141edb7a4f2d0d6ce8a0").unwrap(),
+            )
+            .unwrap(),
+            rollup_finalized_state_roots_slot: 158.into(),
+            ibc_contract_address: H160::try_from(
+                hex::decode("E52c957533bd932E357046bF721D2Bf2368ef1B7").unwrap(),
+            )
+            .unwrap(),
+            ibc_commitment_slot: 0.into(),
+        };
+        let scroll_header: Header =
             serde_json::from_str(&std::fs::read_to_string("tests/scroll_proof.json").unwrap())
                 .unwrap();
-        println!("{:?}", proof);
-        assert_eq!(
-            proof.verify(
-                H256::try_from(
-                    hex::decode("d36f51bb31957a627d91ca2e9a8f7d8fe0f527293135a4ee177406c78960437d")
-                        .unwrap(),
-                )
+        let l1_state_root = H256::try_from(
+            hex::decode("d36f51bb31957a627d91ca2e9a8f7d8fe0f527293135a4ee177406c78960437d")
                 .unwrap(),
-                H160::try_from(hex::decode("2d567ece699eabe5afcd141edb7a4f2d0d6ce8a0").unwrap())
-                    .unwrap(),
-                158.into(),
-                H160::try_from(hex::decode("E52c957533bd932E357046bF721D2Bf2368ef1B7").unwrap())
-                    .unwrap(),
-            ),
+        )
+        .unwrap();
+        println!("{:?}", scroll_header);
+        assert_eq!(
+            scroll_verify_header(scroll_client_state, scroll_header, l1_state_root),
             Ok(())
         );
     }
