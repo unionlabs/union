@@ -14,6 +14,7 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["@cloudflare/workers-types", "typed-query-selector/strict"]
   },
+  "include": ["./src"],
   "files": [
     "reset.d.ts",
     ".eslintrc.cjs",

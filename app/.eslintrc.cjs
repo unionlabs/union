@@ -28,13 +28,14 @@ module.exports = {
     }
   ],
   rules: {
-    'unicorn/no-keyword-prefix': ['error', { disallowedPrefixes: ['new', 'for'] }],
+    'unicorn/no-null': ['off'],
     'unicorn/filename-case': ['off'],
     'unicorn/prefer-module': ['off'],
     'unicorn/prefer-includes': ['off'],
-    'unicorn/no-null': ['off'],
     'unicorn/no-array-reduce': ['off'],
     'unicorn/new-for-builtins': ['off'],
+    'unicorn/prefer-node-protocol': ['off'],
+    'unicorn/no-keyword-prefix': ['error', { disallowedPrefixes: ['new', 'for'] }],
     'unicorn/consistent-function-scoping': ['off', { checkArrowFunctions: false }],
     'unicorn/prefer-top-level-await': ['off'],
     'unicorn/prefer-event-target': ['off'],
