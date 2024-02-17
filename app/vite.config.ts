@@ -15,6 +15,6 @@ export default defineConfig({
   },
   test: { include: ['src/**/*.{test,spec}.{js,ts}'] },
   // Node polyfills
-  define: { 'proccess.env': {} },
+  define: { 'process.env': {} },
   resolve: { alias: { 'node:buffer': 'buffer' } }
 })

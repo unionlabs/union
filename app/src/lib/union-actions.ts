@@ -104,9 +104,8 @@ export async function sendAssetFromEthereumToUnion({
       ]
     } as const
 
-    if (!simulate) {
-      return await writeContract(config, writeContractParameters)
-    }
+    if (!simulate) return await writeContract(config, writeContractParameters)
+
     const { request } = await simulateContract(config, writeContractParameters)
     const transactionHash = await writeContract(config, request)
     console.log(JSON.stringify({ transactionHash }, undefined, 2))

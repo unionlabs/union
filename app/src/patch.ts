@@ -9,3 +9,8 @@ if (browser) {
   window.EventEmitter = EventEmitter
   window.global = window
 }
+
+// @ts-expect-error
+BigInt['prototype'].toJSON = function () {
+  return this.toString()
+}
