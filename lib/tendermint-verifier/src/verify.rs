@@ -283,9 +283,7 @@ pub fn verify_commit_light_trusting<V: HostFns>(
         .unsigned_abs()
         .checked_mul(trust_level.numerator)
         .ok_or(Error::IntegerOverflow)?;
-    let voting_power_needed = total_voting_power_mul_by_numerator
-        .checked_div(trust_level.denominator)
-        .ok_or(Error::TrustLevelZeroDenominator)?;
+    let voting_power_needed = total_voting_power_mul_by_numerator / trust_level.denominator;
 
     // only use the commit signatures
     let filter_commit = |commit_sig: &CommitSig| -> Option<(H160, Timestamp, H512)> {
@@ -528,6 +526,7 @@ fn should_batch_verify(signatures_len: usize) -> bool {
 #[cfg(test)]
 mod tests {
     use std::fs;
+    use std::num::NonZeroU64;
 
     use ed25519_dalek::{Signature, Verifier, VerifyingKey};
     use unionlabs::{
@@ -591,7 +590,7 @@ mod tests {
             Duration::new(100_000_000, 0).unwrap(),
             Fraction {
                 numerator: 1,
-                denominator: 3,
+                denominator: NonZeroU64::new(3).unwrap(),
             },
             &SignatureVerifier::new(EdVerifier),
         )
