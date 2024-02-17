@@ -11,11 +11,11 @@ export const URLS = {
      * TODO: add array of RPCs and pass to `viem`'s `fallback` array
      */
     RPC: 'https://union-testnet-rpc.polkachu.com',
-    REST: import.meta.env.VITE_UNION_REST_URL,
+    REST: import.meta.env.VITE_UNION_REST_URL || 'https://union-testnet-api.polkachu.com',
     GRAPHQL: import.meta.env.VITE_UNION_GRAPHQL_URL
   },
   SEPOLIA: {
-    RPC: import.meta.env.VITE_UCS01_EVM_ADDRESS
+    RPC: 'https://rpc.ankr.com/eth_sepolia/6c72c8d164912bed4694cb882fc4ca55574126511a4f5f66828a53fa2448a20a'
   }
 } as const
 
@@ -28,12 +28,14 @@ export const CHAIN = {
 
 export const CONTRACT = {
   UNION: {
-    ADDRESS: import.meta.env.VITE_UCS01_UNION_ADDRESS,
-    SOURCE_CHANNEL: import.meta.env.VITE_UCS01_UNION_SOURCE_CHANNEL
+    ADDRESS:
+      import.meta.env.VITE_UCS01_UNION_ADDRESS ||
+      'union14pfzjnvzacqsmgjyf0avksc8cr70hsyt5epzcp66tmjpswf8sq8sn5meuy',
+    SOURCE_CHANNEL: import.meta.env.VITE_UCS01_UNION_SOURCE_CHANNEL || 'channel-0'
   },
   SEPOLIA: {
-    ADDRESS: import.meta.env.VITE_UCS01_EVM_ADDRESS,
-    PORT_ID: import.meta.env.VITE_UCS01_SEPOLIA_PORT_ID,
-    SOURCE_CHANNEL: import.meta.env.VITE_UCS01_SEPOLIA_SOURCE_CHANNEL
+    ADDRESS: import.meta.env.VITE_UCS01_EVM_ADDRESS || '0x7f7AC7d5a1a2bD54dBA53a22209C3f96699Ed63c',
+    PORT_ID: import.meta.env.VITE_UCS01_SEPOLIA_PORT_ID || 'ucs01-relay',
+    SOURCE_CHANNEL: import.meta.env.VITE_UCS01_SEPOLIA_SOURCE_CHANNEL || 'channel-0'
   }
 } as const
