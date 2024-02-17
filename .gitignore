@@ -46,7 +46,9 @@ bun.lockb
 ._*
 .wrangler
 .nfs*
-
+cache
+.svelte-kit
+build
 .eslintcache
 .prettiercache
 .code-workspace
