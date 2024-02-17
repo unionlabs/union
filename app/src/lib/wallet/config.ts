@@ -1,8 +1,5 @@
 import '$/patch.ts'
 import { browser } from '$app/environment'
-import { mainnet, sepolia } from '@wagmi/core/chains'
-import { writable, type Writable } from 'svelte/store'
-import { walletConnect, injected, metaMask } from '@wagmi/connectors'
 import {
   http,
   fallback,
@@ -16,17 +13,12 @@ import {
   switchChain as _switchChain,
   type GetAccountReturnType
 } from '@wagmi/core'
-import {
-  getKey,
-  getSnap,
-  getSnaps,
-  connectSnap,
-  suggestChain,
-  signArbitrary,
-  getOfflineSigner,
-  experimentalSuggestChain
-} from '@leapwallet/cosmos-snap-provider'
+import { CHAIN, UNO } from '$/lib/constants'
 import { getDenomAddress } from '$/lib/union-actions'
+import { mainnet, sepolia } from '@wagmi/core/chains'
+import { writable, type Writable } from 'svelte/store'
+import { injected, metaMask } from '@wagmi/connectors'
+import { getKey, getSnap, connectSnap, suggestChain } from '@leapwallet/cosmos-snap-provider'
 
 const ssr = !browser
 
@@ -117,10 +109,10 @@ export async function connectLeapSnap() {
 export async function connectToUnion() {
   await suggestChain(
     {
-      chainId: 'union-testnet-6',
-      chainName: 'union-testnet',
-      bip44: { coinType: 118 },
-      bech32Config: { bech32PrefixAccAddr: 'union', }
+      chainId: CHAIN.UNION.ID,
+      chainName: CHAIN.UNION.NAME,
+      bip44: { coinType: UNO.COIN_TYPE },
+      bech32Config: { bech32PrefixAccAddr: UNO.ADDRESS_PREFIX }
     },
     { force: false }
   )
@@ -129,7 +121,7 @@ export async function connectToUnion() {
 
 export async function checkConnectedToUnion() {
   try {
-    const key = await getKey('union-testnet-6')
+    const key = await getKey(CHAIN.UNION.ID)
     connectedToUnion.set(key !== undefined)
     unionAddress.set(key?.address)
   } catch (error) {

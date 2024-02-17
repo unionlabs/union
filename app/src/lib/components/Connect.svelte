@@ -1,6 +1,7 @@
 <script lang="ts">
   import clsx from 'clsx'
   import { Button } from 'bits-ui'
+  import { sepolia } from 'viem/chains'
   import { wallet, connect, type ConnectorType } from '$lib/wallet/config.ts'
 
   let error: any
@@ -10,11 +11,12 @@
   async function connectWallet(type: ConnectorType) {
     error = undefined
     try {
-      const connection = await connect(type, 11_155_111)
+      const connection = await connect(type, sepolia.id)
       if (!connection) throw new Error(`No matching connector found: ${type}`)
     } catch (error) {
-      console.error(error)
-      error = error
+      var _error = error instanceof Error ? error.message : error
+      console.error(_error)
+      error = _error
     }
   }
 </script>
