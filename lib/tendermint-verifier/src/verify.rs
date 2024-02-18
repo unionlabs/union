@@ -525,8 +525,7 @@ fn should_batch_verify(signatures_len: usize) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-    use std::num::NonZeroU64;
+    use std::{fs, num::NonZeroU64};
 
     use ed25519_dalek::{Signature, Verifier, VerifyingKey};
     use unionlabs::{

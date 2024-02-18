@@ -1,5 +1,7 @@
-use std::{num::ParseIntError, sync::Arc};
-use std::num::NonZeroU64;
+use std::{
+    num::{NonZeroU64, ParseIntError},
+    sync::Arc,
+};
 
 use bip32::secp256k1::ecdsa;
 use futures::{stream, Future, FutureExt, Stream, StreamExt};
