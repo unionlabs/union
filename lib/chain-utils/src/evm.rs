@@ -1,5 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData, ops::Div, str::FromStr, sync::Arc};
-use std::num::NonZeroU64;
+use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64, ops::Div, str::FromStr, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
