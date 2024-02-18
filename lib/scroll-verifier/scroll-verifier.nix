@@ -1,14 +1,14 @@
 { ... }: {
   perSystem = { self', pkgs, system, config, crane, stdenv, dbg, lib, ... }:
     let
-      ethereum-verifier-all = (crane.buildWorkspaceMember {
-        crateDirFromRoot = "lib/ethereum-verifier";
+      scroll-verifier-all = (crane.buildWorkspaceMember {
+        crateDirFromRoot = "lib/scroll-verifier";
         additionalTestSrcFilter = path: _:
-          (lib.hasPrefix "lib/ethereum-verifier/src/test" path)
+          (lib.hasPrefix "lib/scroll-verifier/tests" path)
           && (lib.strings.hasSuffix ".json" path);
       });
     in
     {
-      inherit (ethereum-verifier-all) checks;
+      inherit (scroll-verifier-all) checks;
     };
 }

@@ -569,7 +569,7 @@ fn test_zktrie_prove_and_prove_with_deletion() {
 #[test]
 fn test_zktrie_statedb() {
     type H = PoseidonHash;
-    let mut db = <MemDB<H>>::new();
+    let mut db = <MemDB<H>>::default();
     let db = &mut db;
 
     for bts in EXAMPLE {
