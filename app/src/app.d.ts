@@ -10,8 +10,16 @@ declare global {
   }
   interface Window {
     EventEmitter: typeof EventEmitter
-    ethereum: { request(...arguments_: any): Promise<any> }
+    ethereum: {
+      request(args: { method: EthereumRequestMethod; params?: Record<string, any> }): Promise<any>
+    }
   }
 }
+
+type EthereumRequestMethod =
+  | 'wallet_getSnaps'
+  | 'wallet_requestSnaps'
+  | 'wallet_invokeSnap'
+  | 'wallet_watchAsset'
 
 export {}
