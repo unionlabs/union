@@ -22,6 +22,7 @@
     "@cosmjs/tendermint-rpc": "^0.32.2",
     "@cosmsnap/snap": "^0.1.17",
     "@leapwallet/cosmos-snap-provider": "^0.1.25",
+    "@leapwallet/metamask-cosmos-snap": "^0.1.18",
     "@tanstack/query-async-storage-persister": "^5.20.5",
     "@tanstack/query-broadcast-client-experimental": "^5.20.5",
     "@tanstack/svelte-query": "^5.20.5",
@@ -29,6 +30,7 @@
     "@wagmi/connectors": "^4.1.14",
     "@wagmi/core": "^2.6.5",
     "bits-ui": "^0.18.1",
+    "cosmjs-types": "^0.9.0",
     "unstorage": "^1.10.1",
     "vaul-svelte": "^0.2.3",
     "viem": "^2.7.10"
