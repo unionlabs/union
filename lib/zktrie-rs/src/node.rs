@@ -17,7 +17,7 @@ impl<H: HashScheme> Clone for Node<H> {
     fn clone(&self) -> Self {
         Node {
             value: self.value.clone(),
-            hash: self.hash.clone(),
+            hash: self.hash,
             _phantom: self._phantom,
         }
     }
@@ -128,7 +128,7 @@ impl BranchHash {
 
 impl<H: HashScheme> Node<H> {
     pub fn from_bytes(mut b: &[u8]) -> Result<Self, Error> {
-        if b.len() < 1 {
+        if b.is_empty() {
             return Err(Error::NodeBytesBadSize);
         }
         let ty = b[0];
@@ -155,7 +155,7 @@ impl<H: HashScheme> Node<H> {
                         BranchHash::Branch(hash)
                     }
                 };
-                return Self::new_branch(left, right);
+                Self::new_branch(left, right)
             }
             1 | 4 => {
                 // leaf
@@ -206,7 +206,7 @@ impl<H: HashScheme> Node<H> {
                 Self::new_leaf(node_key, compressed_flags, value_preimage, key_preimage)
             }
             2 | 5 => Ok(Node::new_empty()),
-            ty => return Err(Error::InvalidNodeFound(ty)),
+            ty => Err(Error::InvalidNodeFound(ty)),
         }
     }
 
@@ -333,17 +333,16 @@ impl<H: HashScheme> Node<H> {
     }
 
     pub fn bytes(&self) -> Vec<u8> {
-        let val = self.leaf().map(|n| n.key_preimage).flatten();
-        node_bytes(self, val)
+        node_bytes(self, self.leaf().and_then(|n| n.key_preimage))
     }
 }
 
 pub fn node_bytes<H: HashScheme>(n: &Node<H>, key_preimage: Option<Byte32>) -> Vec<u8> {
     let mut data = n.canonical_value();
     if let Some(key) = &key_preimage {
-        assert!(data.len() > 0);
+        assert!(!data.is_empty());
         *data.last_mut().unwrap() = key.len() as u8;
-        data.extend_from_slice(&key.bytes()[..]);
+        data.extend_from_slice(key.bytes());
     }
     data
 }

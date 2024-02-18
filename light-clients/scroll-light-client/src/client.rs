@@ -317,10 +317,11 @@ fn do_verify_membership(
     scroll_verify_zktrie_storage_proof(
         storage_root,
         storage_proof.key.to_big_endian().into(),
-        &storage_proof.value.to_big_endian().as_ref(),
+        storage_proof.value.to_big_endian().as_ref(),
         &storage_proof.proof,
-    )
-    .map_err(Into::into)
+    )?;
+
+    Ok(())
 }
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.

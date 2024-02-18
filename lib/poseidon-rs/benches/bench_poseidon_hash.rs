@@ -17,7 +17,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut big_arr: Vec<Fr> = Vec::new();
     big_arr.push(b1.clone());
     big_arr.push(b2.clone());
-    let poseidon = Poseidon::new();
+    let poseidon = Poseidon::default();
 
     c.bench_function("hash", |b| {
         b.iter(|| poseidon.hash_fixed(&big_arr.clone()).unwrap())

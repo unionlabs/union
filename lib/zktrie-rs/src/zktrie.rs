@@ -62,10 +62,10 @@ impl<H: HashScheme> ZkTrie<H> {
     {
         let path = get_path(self.max_level, node_key.raw_bytes());
         let mut next_hash = self.root;
-        for i in 0..self.max_level {
+        for (level, direction) in path.iter().take(self.max_level).enumerate() {
             let n = self
                 .get_node(db, &next_hash)?
-                .ok_or(Error::NodeNotFound((i, next_hash)))?;
+                .ok_or(Error::NodeNotFound((level, next_hash)))?;
             match n.value() {
                 NodeValue::Empty => return Err(Error::KeyNotFound),
                 NodeValue::Leaf(leaf) => {
@@ -75,7 +75,7 @@ impl<H: HashScheme> ZkTrie<H> {
                     return Err(Error::KeyNotFound);
                 }
                 NodeValue::Branch(branch) => {
-                    if path[i] {
+                    if *direction {
                         next_hash = *branch.right.hash();
                     } else {
                         next_hash = *branch.left.hash();
@@ -83,7 +83,7 @@ impl<H: HashScheme> ZkTrie<H> {
                 }
             }
         }
-        return Err(Error::ReachedMaxLevel);
+        Err(Error::ReachedMaxLevel)
     }
 
     pub fn delete<D>(&mut self, db: &mut D, key: &[u8]) -> Result<(), Error>
@@ -137,7 +137,7 @@ impl<H: HashScheme> ZkTrie<H> {
                 }
             }
         }
-        return Err(Error::KeyNotFound);
+        Err(Error::KeyNotFound)
     }
 
     fn rm_and_upload<D>(
@@ -150,7 +150,7 @@ impl<H: HashScheme> ZkTrie<H> {
     where
         D: Database<Node = Node<H>>,
     {
-        if siblings.len() == 0 {
+        if siblings.is_empty() {
             self.root = *(ZERO_HASH.as_ref());
             return Ok(self.root);
         }
@@ -187,7 +187,8 @@ impl<H: HashScheme> ZkTrie<H> {
         }
 
         self.root = *to_upload;
-        return Ok(self.root);
+
+        Ok(self.root)
     }
 
     pub fn update<D>(
@@ -226,10 +227,10 @@ impl<H: HashScheme> ZkTrie<H> {
     where
         D: Database<Node = Node<H>>,
     {
-        let new_leaf_node = <Node<H>>::new_leaf(key.clone(), v_flag, v_preimage, None)?;
+        let new_leaf_node = <Node<H>>::new_leaf(*key, v_flag, v_preimage, None)?;
         let path = get_path(self.max_level, key.raw_bytes());
 
-        let root = self.root.clone();
+        let root = self.root;
         let new_root_result = self.add_leaf(db, new_leaf_node, &root, 0, &path, true);
         let new_root = match new_root_result {
             Err(Error::EntryIndexAlreadyExists) => {
@@ -252,10 +253,7 @@ impl<H: HashScheme> ZkTrie<H> {
         if hash.is_zero() {
             return Ok(Some(<Node<H>>::empty()));
         }
-        Ok(match db.get_node(hash)? {
-            Some(node) => Some(node),
-            None => None,
-        })
+        db.get_node(hash)
     }
 
     fn recalculate_path_until_root<D>(
@@ -307,7 +305,7 @@ impl<H: HashScheme> ZkTrie<H> {
         match n.value() {
             NodeValue::Empty => {
                 let nn = self.add_node(db, &new_leaf)?;
-                return Ok(BranchHash::Terminal(nn));
+                Ok(BranchHash::Terminal(nn))
             }
             NodeValue::Leaf(old_leaf) => {
                 let new_leaf_value = new_leaf.leaf().unwrap();
@@ -321,8 +319,8 @@ impl<H: HashScheme> ZkTrie<H> {
                     return Err(Error::EntryIndexAlreadyExists);
                 }
                 let path_old_leaf = get_path(self.max_level, old_leaf.key.raw_bytes());
-                let hash = self.push_leaf(db, new_leaf, &n, lvl, &path, &path_old_leaf)?;
-                return Ok(BranchHash::Branch(hash));
+                let hash = self.push_leaf(db, new_leaf, &n, lvl, path, &path_old_leaf)?;
+                Ok(BranchHash::Branch(hash))
             }
             NodeValue::Branch(branch) => {
                 let new_parent_node = if path[lvl] {
@@ -459,7 +457,7 @@ impl<H: HashScheme> ZkTrie<H> {
         let path = get_path(self.max_level, key_hash.raw_bytes());
         let mut nodes = Vec::new();
         let mut tn = self.root;
-        for i in 0..self.max_level {
+        for direction in path.iter().take(self.max_level) {
             let n = match self.get_node(db, &tn) {
                 Ok(Some(n)) => n,
                 Ok(None) => return Err(Error::KeyNotFound),
@@ -471,7 +469,7 @@ impl<H: HashScheme> ZkTrie<H> {
                 NodeValue::Leaf(_) => {}
                 NodeValue::Branch(branch) => {
                     finished = false;
-                    tn = if path[i] {
+                    tn = if *direction {
                         *branch.right.hash()
                     } else {
                         *branch.left.hash()
@@ -522,7 +520,7 @@ impl<H: HashScheme> ZkTrie<H> {
         F: FnMut(&mut D, Arc<Node<H>>) -> Result<(), Error>,
     {
         type N<H> = fn(Arc<Node<H>>, Option<Arc<Node<H>>>);
-        return self.prove_with_deletion::<D, F, N<H>>(db, key, from_level, write_node, None);
+        self.prove_with_deletion::<D, F, N<H>>(db, key, from_level, write_node, None)
     }
 
     // ProveWithDeletion constructs a merkle proof for key. The result contains all encoded nodes
@@ -590,7 +588,8 @@ impl<H: HashScheme> ZkTrie<H> {
             }
 
             prev = Some(node.clone());
-            return write_node(db, node);
+
+            write_node(db, node)
         })
     }
 }

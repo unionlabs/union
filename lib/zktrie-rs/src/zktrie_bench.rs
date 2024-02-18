@@ -32,7 +32,7 @@ use crate::{byte32_test::TestHash, to_secure_key, Byte32, Hash, MemDB, ZkTrie};
 
 #[bench]
 fn bench_trie_add(b: &mut test::Bencher) {
-    let mut db = MemDB::new();
+    let mut db = MemDB::default();
     let db = &mut db;
     let mut trie = <ZkTrie<TestHash>>::new(248, Hash::default());
     let mut ds = Datasource::new(102400);
@@ -46,7 +46,7 @@ fn bench_trie_add(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_trie_get(b: &mut test::Bencher) {
-    let mut db = MemDB::new();
+    let mut db = MemDB::default();
     let db = &mut db;
     let mut ds = Datasource::new(102400);
 
@@ -72,7 +72,7 @@ fn bench_trie_get(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_trie_deletion(b: &mut test::Bencher) {
-    let mut db = MemDB::new();
+    let mut db = MemDB::default();
     let db = &mut db;
     let mut ds = Datasource::new(102400);
 

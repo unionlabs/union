@@ -10,7 +10,7 @@ pub const HASH_BYTE_LEN: usize = 32;
 
 lazy_static::lazy_static! {
     pub static ref ZERO_HASH: Arc<Hash> = Arc::new(Hash::default());
-    pub static ref POSEIDON: Poseidon = Poseidon::new();
+    pub static ref POSEIDON: Poseidon = Poseidon::default();
 }
 
 pub fn copy_truncated(dst: &mut [u8], src: &[u8]) {
