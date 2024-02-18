@@ -11,7 +11,7 @@ pub struct TestTrie(ZkTrie<TestHash>, MemDB<TestHash>);
 
 impl TestTrie {
     pub fn new(max_level: usize) -> Self {
-        let db = MemDB::new();
+        let db = MemDB::default();
         let root = Hash::default();
         let trie = <ZkTrie<TestHash>>::new(max_level, root);
         Self(trie, db)
@@ -468,7 +468,7 @@ fn test_new_zktrie() {
 #[test]
 fn test_zktrie_random() {
     let root = Hash::default();
-    let mut db = MemDB::new();
+    let mut db = MemDB::default();
     let db = &mut db;
     let mut trie = <ZkTrie<TestHash>>::new(248, root);
 
@@ -513,7 +513,7 @@ fn test_zktrie_random() {
 
 #[test]
 fn test_zktrie_get_update_delete() {
-    let mut db = MemDB::new();
+    let mut db = MemDB::default();
     let db = &mut db;
     let root = Hash::default();
     let mut trie = <ZkTrie<TestHash>>::new(248, root);
@@ -543,7 +543,7 @@ fn test_zktrie_get_update_delete() {
 
 #[test]
 fn test_zktrie_prove_and_prove_with_deletion() {
-    let mut db = MemDB::new();
+    let mut db = MemDB::default();
     let db = &mut db;
     let mut trie = <ZkTrie<TestHash>>::new(248, Hash::default());
 

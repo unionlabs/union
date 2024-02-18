@@ -16,21 +16,21 @@ pub struct Constants {
 pub fn load_constants() -> Constants {
     let (c_str, m_str) = constants::constants();
     let mut c: Vec<Vec<Fr>> = Vec::new();
-    for i in 0..c_str.len() {
+    for s in c_str {
         let mut cci: Vec<Fr> = Vec::new();
-        for j in 0..c_str[i].len() {
-            let b: Fr = Fr::from_str(c_str[i][j]).unwrap();
+        for c in s {
+            let b: Fr = Fr::from_str(c).unwrap();
             cci.push(b);
         }
         c.push(cci);
     }
     let mut m: Vec<Vec<Vec<Fr>>> = Vec::new();
-    for i in 0..m_str.len() {
+    for i in m_str {
         let mut mi: Vec<Vec<Fr>> = Vec::new();
-        for j in 0..m_str[i].len() {
+        for j in i {
             let mut mij: Vec<Fr> = Vec::new();
-            for k in 0..m_str[i][j].len() {
-                let b: Fr = Fr::from_str(m_str[i][j][k]).unwrap();
+            for k in j {
+                let b: Fr = Fr::from_str(k).unwrap();
                 mij.push(b);
             }
             mi.push(mij);
@@ -50,25 +50,29 @@ pub fn load_constants() -> Constants {
 pub struct Poseidon {
     constants: Constants,
 }
-impl Poseidon {
-    pub fn new() -> Poseidon {
-        Poseidon {
+
+impl Default for Poseidon {
+    fn default() -> Self {
+        Self {
             constants: load_constants(),
         }
     }
-    pub fn ark(&self, state: &mut Vec<Fr>, c: &Vec<Fr>, it: usize) {
+}
+
+impl Poseidon {
+    pub fn ark(&self, state: &mut [Fr], c: &[Fr], it: usize) {
         for i in 0..state.len() {
             state[i].add_assign(&c[it + i]);
         }
     }
 
-    pub fn sbox(&self, n_rounds_f: usize, n_rounds_p: usize, state: &mut Vec<Fr>, i: usize) {
+    pub fn sbox(&self, n_rounds_f: usize, n_rounds_p: usize, state: &mut [Fr], i: usize) {
         if i < n_rounds_f / 2 || i >= n_rounds_f / 2 + n_rounds_p {
-            for j in 0..state.len() {
-                let aux = state[j];
-                state[j].square();
-                state[j].square();
-                state[j].mul_assign(&aux);
+            for s in state {
+                let aux = *s;
+                s.square();
+                s.square();
+                s.mul_assign(&aux);
             }
         } else {
             let aux = state[0];
@@ -78,13 +82,13 @@ impl Poseidon {
         }
     }
 
-    pub fn mix(&self, state: &Vec<Fr>, m: &Vec<Vec<Fr>>) -> Vec<Fr> {
+    pub fn mix(&self, state: &[Fr], m: &[Vec<Fr>]) -> Vec<Fr> {
         let mut new_state: Vec<Fr> = Vec::new();
         for i in 0..state.len() {
             new_state.push(Fr::zero());
-            for j in 0..state.len() {
+            for (j, s) in state.iter().enumerate() {
                 let mut mij = m[i][j];
-                mij.mul_assign(&state[j]);
+                mij.mul_assign(s);
                 new_state[i].add_assign(&mij);
             }
         }
@@ -97,7 +101,6 @@ impl Poseidon {
 
     pub fn hash_fixed_with_domain(&self, inp: &[Fr], domain: Fr) -> Result<Fr, String> {
         let t = inp.len() + 1;
-        // if inp.len() == 0 || inp.len() >= self.constants.n_rounds_p.len() - 1 {
         if inp.is_empty() || inp.len() > self.constants.n_rounds_p.len() {
             return Err("Wrong inputs length".to_string());
         }
@@ -152,8 +155,8 @@ impl Poseidon {
     }
 
     fn permute(&self, mut state: Vec<Fr>, t: usize) -> Vec<Fr> {
-        let n_rounds_f = self.constants.n_rounds_f.clone();
-        let n_rounds_p = self.constants.n_rounds_p[t - 2].clone();
+        let n_rounds_f = self.constants.n_rounds_f;
+        let n_rounds_p = self.constants.n_rounds_p[t - 2];
         for i in 0..(n_rounds_f + n_rounds_p) {
             self.ark(&mut state, &self.constants.c[t - 2], i * t);
             self.sbox(n_rounds_f, n_rounds_p, &mut state, i);

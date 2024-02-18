@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use ethereum_types::U256;
 use ff::*;
 

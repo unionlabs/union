@@ -4,7 +4,7 @@ use crate::{
 };
 
 pub fn fr_from_big_endian(buf: &[u8]) -> Result<Fr, String> {
-    match Fr::from_big_endian(&buf) {
+    match Fr::from_big_endian(buf) {
         Ok(val) => Ok(val),
         Err(PrimeFieldDecodingError::NotInField(val)) => Err(val),
     }
@@ -66,7 +66,7 @@ pub fn hash_elems_with_domain<H: HashScheme>(
         if (i + 1) * 2 > l {
             tmp.push(elems[i * 2])
         } else {
-            tmp.push(H::hash_scheme(&elems[i * 2..(i + 1) * 2], &domain));
+            tmp.push(H::hash_scheme(&elems[i * 2..(i + 1) * 2], domain));
         }
     }
     hash_elems_with_domain::<H>(domain, &base_h, &tmp[0], &tmp[1..])

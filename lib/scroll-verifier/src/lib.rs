@@ -80,8 +80,8 @@ pub fn get_zktrie_node(
     key: impl AsRef<[u8]>,
     proof: &[impl AsRef<[u8]>],
 ) -> Result<TrieData<PoseidonHash>, Error> {
-    let mut db = MemDB::<PoseidonHash>::new();
-    for raw_proof in proof.into_iter() {
+    let mut db = MemDB::<PoseidonHash>::default();
+    for raw_proof in proof.iter() {
         if let Some(node) = decode_smt_proofs(raw_proof.as_ref()).map_err(Error::ZkTrie)? {
             db.update_node(node).map_err(Error::ZkTrie)?;
         }

@@ -20,11 +20,11 @@ pub struct MemDB<H: HashScheme> {
     preimages: BTreeMap<Fr, Vec<u8>>,
 }
 
-impl<H: HashScheme> MemDB<H> {
-    pub fn new() -> Self {
+impl<H: HashScheme> Default for MemDB<H> {
+    fn default() -> Self {
         Self {
-            map: BTreeMap::new(),
-            preimages: BTreeMap::new(),
+            map: Default::default(),
+            preimages: Default::default(),
         }
     }
 }
@@ -45,7 +45,7 @@ impl<H: HashScheme> PreimageDatabase for MemDB<H> {
 impl<H: HashScheme> Database for MemDB<H> {
     type Node = Node<H>;
     fn get_node(&self, key: &Hash) -> Result<Option<Arc<Self::Node>>, Error> {
-        Ok(self.map.get(key).map(|n| n.clone()))
+        Ok(self.map.get(key).cloned())
     }
 
     fn update_node(&mut self, node: Self::Node) -> Result<Arc<Self::Node>, Error> {

@@ -30,7 +30,7 @@ impl Byte32 {
             let len = bytes.len();
             bytes = &bytes[len - 32..];
         }
-        out.0[32 - bytes.len()..].copy_from_slice(&bytes);
+        out.0[32 - bytes.len()..].copy_from_slice(bytes);
         out
     }
 
@@ -47,6 +47,10 @@ impl Byte32 {
 
     pub fn len(&self) -> usize {
         self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn bytes(&self) -> &[u8] {
