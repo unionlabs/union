@@ -21,7 +21,6 @@
     "@urql/svelte": "^4.0.4",
     "astro": "^4.3.6",
     "astro-capo": "^0.0.1",
-    "astro-diagram": "^0.7.0",
     "astro-font": "^0.0.77",
     "astro-seo": "^0.8.0",
     "echarts": "^5.4.3",
