@@ -1,4 +1,5 @@
 use std::{fmt::Debug, marker::PhantomData, ops::Div, str::FromStr, sync::Arc};
+use std::num::NonZeroU64;
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
@@ -293,7 +294,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 min_sync_committee_participants: 0,
                 trust_level: Fraction {
                     numerator: 1,
-                    denominator: 3,
+                    denominator: NonZeroU64::new(3).unwrap(),
                 },
                 frozen_height: Height {
                     revision_number: 0,
