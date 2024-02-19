@@ -22,9 +22,6 @@
   })
 </script>
 
-<img
-  {src}
-  style:filter
-  class="mt-8"
-  alt="diagram"
-/>
+<div style:filter class="mt-8">
+  {@html src}
+</div>
