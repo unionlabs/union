@@ -11,7 +11,10 @@ declare global {
   interface Window {
     EventEmitter: typeof EventEmitter
     ethereum: {
-      request(args: { method: EthereumRequestMethod; params?: Record<string, any> }): Promise<any>
+      request(arguments_: {
+        method: EthereumRequestMethod
+        params?: Record<string, any>
+      }): Promise<any>
     }
   }
 }

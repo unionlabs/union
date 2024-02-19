@@ -25,7 +25,7 @@
   on:click={() => connectWallet('injected')}
   disabled={error}
   class={clsx([
-    'shadow-mini hover:bg-dark/95 active:scale-98 rounded-lg bg-stone-50 text-black',
+    'rounded-lg bg-stone-50 text-black shadow-mini hover:bg-dark/95 active:scale-98',
     'inline-flex h-12 items-center justify-center px-[21px]',
     'text-[15px] font-semibold active:transition-all'
   ])}

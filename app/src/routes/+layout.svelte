@@ -17,6 +17,3 @@
   <slot />
   <SvelteQueryDevtools initialIsOpen={false} />
 </QueryClientProvider>
-
-<style>
-</style>

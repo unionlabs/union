@@ -45,6 +45,7 @@ export async function initCosmWasmClient() {
   cosmWasmClient.set(cosmwasmClient)
 }
 
+export const sepoliaTransactions = writable<Array<string>>([])
 export async function sendAssetFromEthereumToUnion({
   amount,
   simulate = true
@@ -79,7 +80,7 @@ export async function sendAssetFromEthereumToUnion({
 
     const { request } = await simulateContract(config, writeContractParameters)
     const transactionHash = await writeContract(config, request)
-    console.log(JSON.stringify({ transactionHash }, undefined, 2))
+    sepoliaTransactions.update(transactions => [...transactions, transactionHash])
     return transactionHash
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : error

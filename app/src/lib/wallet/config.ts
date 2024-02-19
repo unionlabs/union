@@ -18,7 +18,13 @@ import { getDenomAddress } from '$/lib/union-actions'
 import { mainnet, sepolia } from '@wagmi/core/chains'
 import { writable, type Writable } from 'svelte/store'
 import { injected, metaMask } from '@wagmi/connectors'
-import { getKey, getSnap, connectSnap, suggestChain,signArbitrary } from '@leapwallet/cosmos-snap-provider'
+import {
+  getKey,
+  getSnap,
+  connectSnap,
+  suggestChain,
+  signArbitrary
+} from '@leapwallet/cosmos-snap-provider'
 
 const ssr = !browser
 
