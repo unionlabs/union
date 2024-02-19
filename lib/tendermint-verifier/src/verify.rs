@@ -529,7 +529,8 @@ mod tests {
 
     use ed25519_dalek::{Signature, Verifier, VerifyingKey};
     use unionlabs::{
-        ibc::lightclients::tendermint::header::Header, tendermint::crypto::public_key::PublicKey,
+        ibc::lightclients::tendermint::header::Header, option_unwrap, promote,
+        tendermint::crypto::public_key::PublicKey,
     };
 
     use super::*;
@@ -589,7 +590,7 @@ mod tests {
             Duration::new(100_000_000, 0).unwrap(),
             Fraction {
                 numerator: 1,
-                denominator: NonZeroU64::new(3).unwrap(),
+                denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
             },
             &SignatureVerifier::new(EdVerifier),
         )
