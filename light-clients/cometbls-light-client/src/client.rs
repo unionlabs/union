@@ -5,7 +5,7 @@ use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
     },
-    IbcClient, Status, StorageState,
+    IbcClient, Status, StorageState, ZERO_HEIGHT,
 };
 use ics23::ibc_api::SDK_SPECS;
 use prost::Message;
@@ -347,7 +347,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
     ) -> Result<Status, Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        if client_state.data.frozen_height != Default::default() {
+        if client_state.data.frozen_height != ZERO_HEIGHT {
             return Ok(Status::Frozen);
         }
 

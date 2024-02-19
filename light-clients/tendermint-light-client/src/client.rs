@@ -3,7 +3,7 @@ use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
     },
-    IbcClient, Status, StorageState,
+    IbcClient, Status, StorageState, ZERO_HEIGHT,
 };
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_verifier::types::SignatureVerifier;
@@ -291,8 +291,11 @@ impl IbcClient for TendermintLightClient {
     ) -> Result<Status, Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        if client_state.data.frozen_height != Default::default() {
-            return Ok(Status::Frozen);
+        // TODO(aeryz): when refactoring the tm client, we should consider making this non-optional
+        // because otherwise we always have to check if the inner height is zero.
+        match client_state.data.frozen_height {
+            Some(h) if h != ZERO_HEIGHT => return Ok(Status::Frozen),
+            _ => {}
         }
 
         let Some(consensus_state) = read_consensus_state::<Self::CustomQuery, ConsensusState>(
