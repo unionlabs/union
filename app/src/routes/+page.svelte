@@ -30,6 +30,7 @@
   } from '$/lib/snap.ts'
   import { sleep } from '$/lib/utilities'
   import { getBalance } from '@wagmi/core'
+  import toast, { Toaster } from 'svelte-french-toast'
 
   /**
    * TODO: Set polled fetching using @tanstack/svelte-query
@@ -135,8 +136,13 @@
         <div>
           <Button.Root
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
-            on:click={() => sendAssetFromUnionToEthereum({ amount: '100' })}
-            disabled={unoUnionBalance === '0'}
+            on:click={() => {
+              if (unoUnionBalance !== '0') sendAssetFromUnionToEthereum({ amount: '100' })
+              else
+                toast.error('$UNO balance on Union is 0\nUse faucet button to get sum', {
+                  position: 'bottom-center'
+                })
+            }}
           >
             Send UNO from Union to Sepolia
           </Button.Root>
@@ -158,7 +164,15 @@
         <div>
           <Button.Root
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
-            on:click={async () => await sendAssetFromEthereumToUnion({ amount: 3n })}
+            on:click={() => {
+              if (sepoliaEthBalance !== '0' && unoERC20Balance !== 0n)
+                sendAssetFromEthereumToUnion({ amount: 5n })
+              else
+                toast.error(
+                  `Sepolia ETH balance is ${sepoliaEthBalance} and Sepolia $UNO balance is ${unoERC20Balance}`,
+                  { position: 'bottom-center' }
+                )
+            }}
             disabled={sepoliaEthBalance === '0' || unoERC20Balance === 0n}
           >
             Send UNO from Sepolia to Union
