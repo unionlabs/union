@@ -70,6 +70,24 @@ If you're running a node with a Docker container, your `validator.json` will nee
 
 If you've followed our instructions for setting up either of our Docker images, you should be able to place this file under `/.unionvisor` (for Unionvisor containers) or under `/.union` (for union-release containers).
 
+For example, when creating a validator with `unionvisor`, you can
+
+```sh frame="none"
+touch ~/.unionvisor/validator.json
+
+# Then after editing the json content
+
+uniond tx staking create-validator /.unionvisor/validator.json \
+	--from $KEY_NAME \
+	--chain-id union-testnet-6
+```
+
+:::
+
+:::note
+
+If your keys are stored on a machine other than your node, you can pass the `--node-id` flag to override the node ID ensuring it's the one from the node you're making into a validator.
+
 :::
 
 :::note
