@@ -9,14 +9,6 @@ import {
   suggestChain
 } from '@leapwallet/cosmos-snap-provider'
 import { GasPrice, SigningStargateClient, StargateClient } from '@cosmjs/stargate'
-import { MsgExecuteContract } from 'cosmjs-types/cosmwasm/wasm/v1/tx'
-import { Registry, makeAuthInfoBytes } from '@cosmjs/proto-signing'
-import { TxBody } from 'cosmjs-types/cosmos/tx/v1beta1/tx'
-import Long from 'long'
-import { SignMode } from 'cosmjs-types/cosmos/tx/signing/v1beta1/signing'
-import { toUtf8 } from '@cosmjs/encoding'
-import { Any } from 'cosmjs-types/google/protobuf/any'
-import { PublicKey } from 'cosmjs-types/tendermint/crypto/keys'
 import { Tendermint37Client } from '@cosmjs/tendermint-rpc'
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 
