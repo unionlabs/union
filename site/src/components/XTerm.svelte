@@ -97,7 +97,7 @@
 </script>
 
 <section
-  class="font-mono h-[332px] md:h-[432px] max-h-[432px] my-8 mx-auto w-6xl min-w-4xl bg-black"
+  class="font-mono h-[332px] md:h-[432px] max-h-[432px] my-8 mx-auto w-6xl min-w-4xl bg-[#1e1e1e]"
 >
   <div
     class="flex max-w-4xl p-4 md:shadow-2xl md:right-[16px] bg-black text-xs sm:text-sm font-jetbrains overflow-auto max-h-[432px] mx-auto flex-col-reverse"
