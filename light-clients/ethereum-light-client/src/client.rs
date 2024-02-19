@@ -169,7 +169,7 @@ impl IbcClient for EthereumLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
-        panic!("Not implemented")
+        Err(Error::Unimplemented)
     }
 
     fn update_state(
@@ -298,7 +298,7 @@ impl IbcClient for EthereumLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<bool, Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn verify_upgrade_and_update_state(
@@ -308,12 +308,12 @@ impl IbcClient for EthereumLightClient {
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(), Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
         // migration from previous client to self, so unimplemented now
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, Self::Error> {
