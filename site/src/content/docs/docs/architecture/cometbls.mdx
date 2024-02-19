@@ -2,6 +2,8 @@
 title: "CometBLS"
 ---
 
+import Mermaid from "#/components/Mermaid.astro";
+
 # Introduction
 
 Proving a blockchain's state and finality lies at the root of secure bridging and consensus verification. [Tendermint](https://github.com/cometbft/cometbft), although designed for fast, single-slot finality, is not suited for bridging to block space-restricted chains, such as Ethereum. It requires too much computation to verify, and even creating zero-knowledge proofs of the verification is expensive, slow, and scales poorly with the number of validators. Most attempts to bridge to Ethereum before Union are centralized and not based on consensus verification.
@@ -28,7 +30,16 @@ Under CometBLS, the Union network can scale to over a hundred validators without
 
 We can scale the validator set using [distributed validator tech](https://figment.io/distributed-validator-technology-and-infrastructure-resilience/) (DVT) even more, allowing the Union network to effectively support thousands of validators. The foundation for this scaling is once again BLS signatures, which allows us to aggregate signed votes in smaller steps:
 
-![cometbls mermaid](../../../../assets/images/cometbls.svg)
+<Mermaid
+  content={`
+    erDiagram
+      Galois }|--|| Union : proves
+      Validator }|--|| Union : "transitions state"
+      DVT-1 }|..|| Validator : shards
+      DVT-2 }|..|| Validator : shards
+      DVT-3 }|..|| Validator : shards
+  `}
+/>
 
 The network can handle a hybrid set of regular and distributed validators, and recursively expand the DVT set without incurring any extra cost on the consensus or prover.
 

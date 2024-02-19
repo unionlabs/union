@@ -1,14 +1,14 @@
 { ... }: {
   perSystem = { pkgs, nodePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
-      pkgsDeps = with pkgs; [ pkg-config chromium ];
+      pkgsDeps = with pkgs; [ pkg-config ];
       nodeDeps = with nodePkgs; [ vips nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
     in
     {
       packages = {
         site = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-IRXT3Ai0DOFm3xqbArz7+1mu/dmUmZnD9fKhq5uPq3s=";
+          npmDepsHash = "";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";
@@ -22,7 +22,6 @@
           '';
           doDist = false;
           PUPPETEER_SKIP_DOWNLOAD = 1;
-          PUPPETEER_EXECUTABLE_PATH = "${pkgs.chromium.outPath}/bin/chromium";
         };
       };
 
@@ -37,7 +36,6 @@
               cd site/
 
               export PUPPETEER_SKIP_DOWNLOAD=1 
-              export PUPPETEER_EXECUTABLE_PATH="${pkgs.chromium.outPath}/bin/chromium";
               npm install
               npm run dev
             '';
