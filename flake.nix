@@ -407,7 +407,6 @@
             buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
               cargo-fuzz
               cargo-llvm-cov
-              # chromium # needed for astro mermaid
               bacon
               cargo-nextest
               jq
