@@ -421,6 +421,7 @@
               self'.packages.tdc
               yq
             ] ++ (with nodePkgs; [
+              bun # for running TypeScript files on the fly
               nodejs_21
               nodePackages.graphqurl
               nodePackages.svelte-language-server

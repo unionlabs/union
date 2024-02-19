@@ -1,24 +1,25 @@
 import {
   erc20Abi,
-  bytesToHex,
   type Hash,
+  bytesToHex,
   type Account,
   type Address,
   type TransportConfig,
+  type FallbackTransport,
 } from "viem";
-import { raise } from "#/utilities";
-import { usc01relayAbi } from "#/abi";
+import { raise } from "./utilities";
+import { usc01relayAbi } from "./abi";
 import { GasPrice } from "@cosmjs/stargate";
 import { fromBech32 } from "@cosmjs/encoding";
-import type { UnionClient } from "#/actions.ts";
-import { Tendermint37Client } from "@cosmjs/tendermint-rpc";
-import { UNION_RPC_URL, UCS01_EVM_ADDRESS } from "#/constants";
-import { chainIds, type ChainId, chain } from "#/constants/chain.ts";
+import type { UnionClient } from "./actions.ts";
+import { Comet38Client } from "@cosmjs/tendermint-rpc";
+import { UNION_RPC_URL, UCS01_EVM_ADDRESS } from "./constants";
+import { chainIds, type ChainId, chain } from "./constants/chain.ts";
 import type { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import type { CosmjsOfflineSigner } from "@leapwallet/cosmos-snap-provider";
 import {
-  SigningCosmWasmClient,
   type ExecuteResult,
+  SigningCosmWasmClient,
 } from "@cosmjs/cosmwasm-stargate";
 
 export interface ApproveAssetParameters {
@@ -34,7 +35,7 @@ export async function approveAsset(
   client: UnionClient,
   {
     signer,
-    assetId = chain.ethereum.sepolia.token.address,
+    assetId,
     amount,
     spender = UCS01_EVM_ADDRESS,
     simulate = true,
@@ -47,14 +48,11 @@ export async function approveAsset(
       functionName: "approve",
       address: assetId,
       args: [spender, amount],
+      chain: client.chain,
     } as const;
 
-    if (!simulate) {
-      return await client.writeContract({
-        ...writeContractParameters,
-        chain: client.chain,
-      });
-    }
+    if (!simulate) return await client.writeContract(writeContractParameters);
+
     const { request } = await client.simulateContract(writeContractParameters);
     const transactionHash = await client.writeContract(request);
     return transactionHash;
@@ -68,17 +66,15 @@ export async function approveAsset(
 
 export type SendAssetParameters<
   TChainId extends ChainId,
-  TDenom extends string | undefined = TChainId extends "32382"
-    ? string
-    : undefined,
-  TGas extends `${string}${TDenom}` | undefined = TChainId extends "32382"
+  TDenom extends string | undefined = TChainId extends "6" ? string : undefined,
+  TGas extends `${string}${TDenom}` | undefined = TChainId extends "6"
     ? `${string}${TDenom}`
     : undefined,
   TTransportConfigType extends
     | TransportConfig["type"]
-    | undefined = TChainId extends "32382" ? TransportConfig["type"] : undefined
+    | undefined = TChainId extends "6" ? TransportConfig["type"] : undefined
 > =
-  | ({ chainId: "32382" } & SendAssetFromUnionToEthereum<
+  | ({ chainId: "6" } & SendAssetFromUnionToEthereum<
       TDenom,
       TGas,
       TTransportConfigType
@@ -96,9 +92,11 @@ export async function sendAsset<
 ) {
   if (!chainIds.includes(args.chainId))
     throw new Error(`Invalid chainId: ${args.chainId}`);
-  if (args.chainId === "32382")
+  else if (args.chainId === "6")
     return await sendAssetFromUnionToEthereum(client, args);
-  return await sendAssetFromEthereumToUnion(client, args);
+  else if (args.chainId === "11155111")
+    return await sendAssetFromEthereumToUnion(client, args);
+  else raise(`[sendAsset] chainId ${args.chainId} is not supported`);
 }
 
 interface SendAssetFromEthereumToUnion {
@@ -113,28 +111,28 @@ interface SendAssetFromEthereumToUnion {
 
 /**
  * Contract arguments:
- * @link https://github.com/unionlabs/union/blob/b72a0e58888392903c1f45b7d8e4ce0070708d93/evm/contracts/apps/ucs/01-relay/Relay.sol#L221-L226
- * - `string calldata portId`,
- * - `string calldata channelId`,
+ * @reference https://github.com/unionlabs/union/blob/main/evm/contracts/apps/ucs/01-relay/Relay.sol#L439-L444
+ * - 'string calldata sourcePort',
+ * - 'string calldata sourceChannel',
  * - `string calldata receiver`,
  * - `LocalToken[] calldata tokens`,
  * - `uint64 counterpartyTimeoutRevisionNumber`,
  * - `uint64 counterpartyTimeoutRevisionHeight`
  */
-async function sendAssetFromEthereumToUnion(
+export async function sendAssetFromEthereumToUnion(
   client: UnionClient,
   {
     receiver,
     signer,
     amount,
-    assetId = chain.ethereum.sepolia.token.address,
+    assetId, // denomAddress
     portId = chain.ethereum.sepolia.portId,
     channelId = chain.ethereum.sepolia.channelId,
     simulate = true,
   }: SendAssetFromEthereumToUnion
 ): Promise<Hash> {
   // TODO: make dynamic?
-  const counterpartyTimeoutRevisionNumber = 4n;
+  const counterpartyTimeoutRevisionNumber = BigInt(chain.union.testnet.id);
   // TODO: make dynamic?
   const counterpartyTimeoutRevisionHeight = 800_000_000n;
   try {
@@ -151,33 +149,30 @@ async function sendAssetFromEthereumToUnion(
         counterpartyTimeoutRevisionNumber,
         counterpartyTimeoutRevisionHeight,
       ],
+      chain: client.chain,
     } as const;
 
     if (!simulate) {
-      return await client.writeContract({
-        ...writeContractParameters,
-        chain: client.chain,
-      });
+      return await client.writeContract(writeContractParameters);
     }
-
     const { request } = await client.simulateContract(writeContractParameters);
     const transactionHash = await client.writeContract(request);
     return transactionHash;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : error;
     raise(
-      `[sendAssetFromEthereumToUnion] error while sending ${amount} muno to ${receiver}: ${errorMessage}`
+      `[sendAssetFromEthereumToUnion] error while sending ${amount} muno to ${receiver} on ${client.transport.name} request: ${errorMessage}`
     );
   }
 }
 
 type OfflineSignerType<
-  TransportConfigType extends TransportConfig["type"] | undefined
-> = TransportConfigType extends "custom"
-  ? CosmjsOfflineSigner
-  : TransportConfigType extends "http"
-  ? DirectSecp256k1HdWallet
-  : never;
+  TransportConfigType extends
+    | TransportConfig["type"]
+    | FallbackTransport
+    | undefined
+> = CosmjsOfflineSigner | DirectSecp256k1HdWallet;
+//TransportConfigType extends 'custom' ? CosmjsOfflineSigner : DirectSecp256k1HdWallet
 
 type SendAssetFromUnionToEthereum<
   TDenom extends string | undefined,
@@ -194,7 +189,7 @@ type SendAssetFromUnionToEthereum<
   signer: OfflineSignerType<TransportConfigType>;
 };
 
-async function sendAssetFromUnionToEthereum<
+export async function sendAssetFromUnionToEthereum<
   TDenom extends string | undefined,
   TGas extends `${string}${TDenom}` | undefined,
   TransportConfigType extends TransportConfig["type"] | undefined
@@ -207,12 +202,12 @@ async function sendAssetFromUnionToEthereum<
     denom,
     receiver,
     gasPrice,
-    rpcUrl = UNION_RPC_URL,
+    rpcUrl = UNION_RPC_URL || "https://union-testnet-rpc.polkachu.com",
     memo = "random more than four characters I'm transferring.",
   }: SendAssetFromUnionToEthereum<TDenom, TGas, TransportConfigType>
 ): Promise<ExecuteResult> {
-  const tendermintClient = await Tendermint37Client.connect(rpcUrl);
-
+  console.log(signer, assetId, amount, denom, receiver, gasPrice, rpcUrl, memo);
+  const tendermintClient = await Comet38Client.connect(rpcUrl);
   const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(
     tendermintClient,
     signer,
@@ -225,19 +220,19 @@ async function sendAssetFromUnionToEthereum<
   const address = account?.address ?? raise("address is undefined");
 
   const result = await cosmwasmClient.execute(
-    address,
+    "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
     assetId,
     {
       transfer: {
-        channel: chain.union.testnet.channelId,
-        receiver: receiver.slice(2),
+        channel: "channel-0",
+        receiver: "0xCa091fE8005596E64ba9Cf028a75755a2380021A".slice(2),
         timeout: null,
-        memo,
+        memo: "random more than four characters I'm transferring.",
       },
     },
     "auto",
     undefined,
-    [{ denom: chain.union.testnet.token.denom, amount }]
+    [{ denom: "muno", amount: "1000" }]
   );
 
   return result;

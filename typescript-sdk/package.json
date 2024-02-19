@@ -26,32 +26,37 @@
   ],
   "scripts": {
     "build": "tsup --config=tsup.config.ts",
-    "faucet": "bun ./scripts/faucet.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "demo": "node --import=tsx --env-file=.env ./scripts/demo.ts",
+    "demo": "bun ./scripts/demo.ts",
     "release": "bumpp package.json --commit --push --tag",
     "prebuild": "rm -rf dist",
     "check-package": "npx publint@latest --public --strict && npm pack && attw --pack",
-    "clean": "rm -rf dist node_modules"
+    "faucet": "bun ./scripts/faucet.ts",
+    "balance": "bun ./scripts/balance.ts",
+    "transfer": "bun ./scripts/transfer.ts",
+    "clean": "rm -rf dist node_modules",
+    "pack": "rm -rf dist *.tgz && npm run build && npm pack",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.32.2",
     "@cosmjs/encoding": "^0.32.2",
     "@cosmjs/stargate": "^0.32.2",
     "@cosmjs/tendermint-rpc": "^0.32.2",
-    "viem": "^2.7.8"
+    "viem": "^2.7.9"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.13.8",
+    "@arethetypeswrong/cli": "^0.13.10",
     "@cosmjs/amino": "^0.32.2",
     "@cosmjs/proto-signing": "^0.32.2",
     "@leapwallet/cosmos-snap-provider": "^0.1.25",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/node": "^20.11.17",
     "bumpp": "^9.3.0",
+    "patch-package": "^8.0.0",
     "publint": "^0.2.7",
-    "tsup": "^8.0.1",
-    "tsx": "^4.7.0",
+    "tsup": "^8.0.2",
+    "tsx": "^4.7.1",
     "typescript": "^5.3.3",
     "vitest": "^1.2.2"
   },

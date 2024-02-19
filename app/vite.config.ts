@@ -3,12 +3,7 @@ import { sveltekit } from '@sveltejs/kit/vite'
 
 export default defineConfig({
   plugins: [sveltekit()],
-  // Node polyfills
-  resolve: {
-    alias: {
-      'node:buffer': 'buffer'
-    }
-  },
+
   server: {
     port: Number(process.env.PORT || 5173),
     /**
@@ -18,5 +13,8 @@ export default defineConfig({
      */
     hmr: { overlay: false }
   },
-  test: { include: ['src/**/*.{test,spec}.{js,ts}'] }
+  test: { include: ['src/**/*.{test,spec}.{js,ts}'] },
+  // Node polyfills
+  define: { 'process.env': {} },
+  resolve: { alias: { 'node:buffer': 'buffer' } }
 })

@@ -1,5 +1,5 @@
 export * from "./chain.ts";
-import { raise } from "#/utilities";
+import { raise } from "../utilities";
 
 const CLIENT_MODE = process.env.CLIENT_MODE;
 
@@ -21,5 +21,6 @@ export const demoUnionAddress = "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv";
  * In case user elects to provide a custom RPC URL, they can set it via environment variable
  */
 export const UNION_RPC_URL = process.env.UNION_RPC_URL;
+export const UNION_REST_URL = process.env.UNION_REST_URL;
 export const UNION_GRAPHQL_API = process.env.UNION_GRAPHQL_API;
 export const UCS01_EVM_ADDRESS = process.env.UCS01_EVM_ADDRESS;

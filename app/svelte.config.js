@@ -10,9 +10,7 @@ export default {
     preprocessMeltUI()
   ]),
   kit: {
-    adapter: adapter({
-      strict: true
-    }),
+    adapter: adapter({ strict: true }),
     /** @note `$` is a svelte path alias convention */
     alias: {
       $: './src/',

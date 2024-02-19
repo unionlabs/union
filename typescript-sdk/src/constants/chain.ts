@@ -1,8 +1,14 @@
 import type { Chain } from "viem";
 import { sepolia } from "viem/chains";
 
-export const chainIds = ["1", "32382", "11155111"] as const;
+/**
+ * Union chain ID is `6` on testnet: 'union-testnet-6'
+ */
+export const chainIds = ["1", "6", "11155111"] as const;
 export type ChainId = (typeof chainIds)[number];
+
+export const isValidChainId = (chainId: string): chainId is ChainId =>
+  chainIds.includes(chainId);
 
 /**
  * TODO: Add `ethereum.mainnet` and `union.mainnet` info on launch
@@ -11,21 +17,22 @@ export const chain = {
   ethereum: {
     sepolia: {
       ...sepolia,
-      portId: process.env.UCS01_SEPOLIA_PORT_ID,
-      channelId: process.env.UCS01_SEPOLIA_SOURCE_CHANNEL,
+      portId: process.env.UCS01_SEPOLIA_PORT_ID || "ucs01-relay",
+      channelId: process.env.UCS01_SEPOLIA_SOURCE_CHANNEL || "channel-0",
       token: {
         name: "Union",
         symbol: "UNO",
         denom: "muno",
-        decimals: 6,
-        address: process.env.MUNO_ERC20_ADDRESS,
+        decimals: 18,
+        address: "0x",
       },
     },
   },
   union: {
     testnet: {
-      name: "union-testnet-5",
-      id: 32_382,
+      name: process.env.UNION_CHAIN_ID || "union-testnet-6",
+      // id: Number(process.env?.UNION_CHAIN_ID.split('-')?.at(-1) || 6) || 6,
+      id: 6,
       channelId: process.env.UCS01_UNION_SOURCE_CHANNEL,
       rpcUrls: {
         default: {
@@ -48,7 +55,9 @@ export const chain = {
         symbol: "UNO",
         denom: "muno",
         decimals: 6,
-        address: process.env.UCS01_UNION_ADDRESS,
+        address:
+          process.env.UCS01_UNION_ADDRESS ||
+          "union14pfzjnvzacqsmgjyf0avksc8cr70hsyt5epzcp66tmjpswf8sq8sn5meuy",
       },
     },
   },

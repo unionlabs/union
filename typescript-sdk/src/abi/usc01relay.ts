@@ -51,6 +51,16 @@ export const usc01relayAbi = <const>[
     name: "getDenomAddress",
     inputs: [
       {
+        name: "sourcePort",
+        type: "string",
+        internalType: "string",
+      },
+      {
+        name: "sourceChannel",
+        type: "string",
+        internalType: "string",
+      },
+      {
         name: "denom",
         type: "string",
         internalType: "string",
@@ -701,7 +711,7 @@ export const usc01relayAbi = <const>[
   },
   {
     type: "event",
-    name: "Sent",
+    name: "Refunded",
     inputs: [
       {
         name: "sender",
@@ -738,7 +748,7 @@ export const usc01relayAbi = <const>[
   },
   {
     type: "event",
-    name: "Timeout",
+    name: "Sent",
     inputs: [
       {
         name: "sender",

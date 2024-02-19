@@ -11,9 +11,9 @@ export default defineConfig({
   shims: true,
   bundle: true,
   outDir: "dist",
-  target: "node20",
-  platform: "node",
+  target: "esnext",
+  platform: "browser",
+  format: ["esm", "cjs"],
   treeshake: "recommended",
   entry: ["./src/index.ts"],
-  format: ["esm", "cjs"],
 });

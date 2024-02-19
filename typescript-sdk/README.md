@@ -1,5 +1,4 @@
-> [!NOTE]
-> Work in progress
+> [!NOTE] Work in progress
 
 <br />
 
@@ -18,6 +17,10 @@ Union Labs TypeScript SDK providing utilities for cross-chain transfers and more
 ```sh
 yarn add @unionlabs/client
 ```
+
+### Patched dependencies:
+
+- `@cosmjs/tendermint-rpc`, `@cosmjs/amino`, and `@cosmjs/stargate`. See [./patches](./patches) for details.
 
 ```ts
 import { unionActions, chain, UCS01_EVM_ADDRESS } from "@unionlabs/client";
@@ -77,7 +80,7 @@ console.log(JSON.stringify({ ethereumToUnionTransfer }, undefined, 2));
 
 // Send 500 muno from Union chain to Sepolia. Returns transaction hash
 const unionToEthereumTransfer = await client.sendAsset({
-  chainId: "32382",
+  chainId: "6",
   signer: demoUnionAccount,
   assetId: unionTestnet.token.address,
   amount: "100",
@@ -103,7 +106,7 @@ console.log(JSON.stringify({ balanceOnEthereum }, undefined, 2));
 
 // Returns balance of muno on Union chain as string
 const balanceOnUnion = await client.getBalance({
-  chainId: "32382",
+  chainId: "6",
   address: demoUnionAddress,
   assetId: unionTestnet.token.denom,
 });

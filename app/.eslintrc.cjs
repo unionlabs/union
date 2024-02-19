@@ -28,13 +28,14 @@ module.exports = {
     }
   ],
   rules: {
-    'unicorn/no-keyword-prefix': ['error', { disallowedPrefixes: ['new', 'for'] }],
+    'unicorn/no-null': ['off'],
     'unicorn/filename-case': ['off'],
     'unicorn/prefer-module': ['off'],
     'unicorn/prefer-includes': ['off'],
-    'unicorn/no-null': ['off'],
     'unicorn/no-array-reduce': ['off'],
     'unicorn/new-for-builtins': ['off'],
+    'unicorn/prefer-node-protocol': ['off'],
+    'unicorn/no-keyword-prefix': ['error', { disallowedPrefixes: ['new', 'for'] }],
     'unicorn/consistent-function-scoping': ['off', { checkArrowFunctions: false }],
     'unicorn/prefer-top-level-await': ['off'],
     'unicorn/prefer-event-target': ['off'],
@@ -65,11 +66,13 @@ module.exports = {
         }
       }
     ],
+    'no-ex-assign': ['off'],
     'no-mixed-operators': ['off'],
     'no-multiple-empty-lines': ['off'],
     'no-unexpected-multiline': ['off'],
     '@typescript-eslint/triple-slash-reference': ['off'],
     '@typescript-eslint/no-var-requires': ['off'],
+    '@typescript-eslint/no-explicit-any': ['off'],
     '@typescript-eslint/prefer-namespace-keyword': ['off'],
     '@typescript-eslint/no-empty-interface': ['off'],
     '@typescript-eslint/consistent-type-imports': [
