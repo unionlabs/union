@@ -1,4 +1,4 @@
-use std::num::NonZeroU64;
+use std::num::{NonZeroU64, TryFromIntError};
 
 use serde::{Deserialize, Serialize};
 
@@ -19,12 +19,29 @@ impl From<Fraction> for protos::ibc::lightclients::tendermint::v1::Fraction {
     }
 }
 
-impl From<protos::ibc::lightclients::tendermint::v1::Fraction> for Fraction {
-    fn from(value: protos::ibc::lightclients::tendermint::v1::Fraction) -> Self {
-        Self {
+// Expect non-zero denominator.
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+#[error("zero denominator")]
+pub struct ZeroDenominatorError {
+    cause: TryFromIntError,
+}
+
+impl From<TryFromIntError> for ZeroDenominatorError {
+    fn from(value: TryFromIntError) -> Self {
+        ZeroDenominatorError { cause: value }
+    }
+}
+
+impl TryFrom<protos::ibc::lightclients::tendermint::v1::Fraction> for Fraction {
+    type Error = ZeroDenominatorError;
+
+    fn try_from(
+        value: protos::ibc::lightclients::tendermint::v1::Fraction,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
             numerator: value.numerator,
-            denominator: NonZeroU64::new(value.denominator).expect("non-zero denominator"),
-        }
+            denominator: NonZeroU64::try_from(value.denominator)?,
+        })
     }
 }
 
