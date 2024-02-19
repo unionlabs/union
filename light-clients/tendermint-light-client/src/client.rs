@@ -162,7 +162,7 @@ impl IbcClient for TendermintLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
-        panic!("Not implemented")
+        Err(Error::Unimplemented)
     }
 
     fn update_state(
@@ -212,7 +212,7 @@ impl IbcClient for TendermintLightClient {
         _env: Env,
         _client_message: Vec<u8>,
     ) -> Result<(), Self::Error> {
-        panic!("not implemented")
+        Err(Error::Unimplemented)
     }
 
     fn check_for_misbehaviour_on_header(
@@ -268,7 +268,7 @@ impl IbcClient for TendermintLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<bool, Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn verify_upgrade_and_update_state(
@@ -278,11 +278,11 @@ impl IbcClient for TendermintLightClient {
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(), Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn status(
