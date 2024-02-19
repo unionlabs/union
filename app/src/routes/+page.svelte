@@ -169,11 +169,10 @@
                 sendAssetFromEthereumToUnion({ amount: 5n })
               else
                 toast.error(
-                  `Sepolia ETH balance is ${sepoliaEthBalance} and Sepolia $UNO balance is ${unoERC20Balance}`,
+                  `Sepolia ETH balance is ${sepoliaEthBalance}\nSepolia $UNO balance is ${unoERC20Balance}`,
                   { position: 'bottom-center' }
                 )
             }}
-            disabled={sepoliaEthBalance === '0' || unoERC20Balance === 0n}
           >
             Send UNO from Sepolia to Union
           </Button.Root>
