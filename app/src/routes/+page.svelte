@@ -64,6 +64,7 @@
     if (!$snapAddress) return
     await sleep(2500)
     unoUnionBalance = await getUnoUnionBalance($snapAddress)
+    console.log('unoUnionBalance', unoUnionBalance)
     unionBalanceStore.update(_ => unoUnionBalance)
   })
 
@@ -81,10 +82,6 @@
   <p>Status: {$wallet.status}</p>
   {#if $wallet.isConnected}
     <div>
-      <p>EVM Address: {$wallet.address}</p>
-      <p>EVM Chain ID: {$wallet.chainId}</p>
-      <p>UNO ERC20 Balance: {unoERC20Balance}</p>
-      <p>Sepolia ETH Balance: {sepoliaEthBalance}</p>
       <a
         class={clsx(['rounded-md border-[1px] border-gray-200 px-4 py-2 text-blue-500 underline'])}
         href="https://www.alchemy.com/faucets/ethereum-sepolia"
@@ -93,6 +90,10 @@
       >
         Sepolia ETH Faucet
       </a>
+      <p>EVM Address: {$wallet.address}</p>
+      <p>EVM Chain ID: {$wallet.chainId}</p>
+      <p>UNO ERC20 Balance: {unoERC20Balance}</p>
+      <p>Sepolia ETH Balance: {sepoliaEthBalance}</p>
       <br />
       <p>Union Address: {$snapAddress}</p>
       <p>Union Chain ID: union-testnet-6</p>
@@ -137,7 +138,7 @@
           <Button.Root
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
             on:click={() => {
-              if (unoUnionBalance !== '0') sendAssetFromUnionToEthereum({ amount: '1' })
+              if (unoUnionBalance !== '0') sendAssetFromUnionToEthereum({ amount: '100' })
               else
                 toast.error('$UNO balance on Union is 0\nUse faucet button to get sum', {
                   position: 'bottom-center'
@@ -166,7 +167,7 @@
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
             on:click={() => {
               if (sepoliaEthBalance !== '0' && unoERC20Balance !== 0n)
-                sendAssetFromEthereumToUnion({ amount: 1n })
+                sendAssetFromEthereumToUnion({ amount: 25n })
               else
                 toast.error(
                   `Sepolia ETH balance is ${sepoliaEthBalance}\nSepolia $UNO balance is ${unoERC20Balance}`,
