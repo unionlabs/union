@@ -21,3 +21,7 @@ export async function fetcher<T>(url: string, options?: RequestInit) {
   const data = (await response.json()) as T
   return data
 }
+
+export async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}

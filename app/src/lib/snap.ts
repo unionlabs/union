@@ -8,7 +8,7 @@ import {
   getSnap,
   suggestChain
 } from '@leapwallet/cosmos-snap-provider'
-import { GasPrice, SigningStargateClient, StargateClient } from '@cosmjs/stargate'
+import { GasPrice, SigningStargateClient, type StargateClient } from '@cosmjs/stargate'
 import { Tendermint37Client } from '@cosmjs/tendermint-rpc'
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 
@@ -145,8 +145,8 @@ export async function initializeSigningCosmWasmClient() {
   signingCosmWasmClient.set(_signingCosmWasmClient)
 }
 
-export const snapTransaction = writable<string | null>(null)
-export async function sendSnapTransaction() {
+export const unionTransactions = writable<Array<string>>([])
+export async function sendAssetFromUnionToEthereum({ amount }: { amount: string }) {
   if (!get(snapConnected)) return
   if (!get(snapChainInitialized)) return
   const ethereumAddress = get(wallet).address
@@ -167,7 +167,7 @@ export async function sendSnapTransaction() {
 
   const [{ address: unionAddress }] = await offlineSigner.getAccounts()
 
-  return signingCosmWasmClient.execute(
+  const result = await signingCosmWasmClient.execute(
     unionAddress,
     CONTRACT.UNION.ADDRESS,
     {
@@ -180,95 +180,8 @@ export async function sendSnapTransaction() {
     },
     'auto',
     undefined,
-    [{ denom: UNO.NATIVE_DENOM, amount: '1000' }]
+    [{ denom: UNO.NATIVE_DENOM, amount }]
   )
 
-  // const stargateClient = await StargateClient.connect(URLS.UNION.RPC)
-  // const account = await stargateClient.getAccount(accountData.address)
-  // const [accountNumber, sequence] = [account?.accountNumber, account?.sequence]
-  // console.log(JSON.stringify({ accountNumber, sequence }, undefined, 2))
+  unionTransactions.update(transactions => [...transactions, result.transactionHash])
 }
-// export async function sendSnapTransaction() {
-//   if (!get(snapConnected)) return
-//   if (!get(snapChainInitialized)) return
-//   const ethereumAddress = get(wallet).address
-//   if (!ethereumAddress) return
-//   const offlineSigner = get(snapOfflineSigner)
-//   if (!offlineSigner) return
-
-//   const [accountData] = await offlineSigner.getAccounts()
-
-//   const stargateClient = await StargateClient.connect(URLS.UNION.RPC)
-//   const account = await stargateClient.getAccount(accountData.address)
-//   const [accountNumber, sequence] = [account?.accountNumber, account?.sequence]
-//   // console.log(JSON.stringify({ accountNumber, sequence }, undefined, 2))
-
-//   const message = {
-//     typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
-//     value: MsgExecuteContract.fromPartial({
-//       sender: accountData.address,
-//       contract: CONTRACT.UNION.ADDRESS,
-//       msg: Buffer.from(
-//         JSON.stringify({
-//           transfer: {
-//             channel: CONTRACT.UNION.SOURCE_CHANNEL,
-//             receiver: '0xCa091fE8005596E64ba9Cf028a75755a2380021A'.slice(2),
-//             timeout: null,
-//             memo: "random more than four characters I'm transferring."
-//           }
-//         }),
-//         'utf-8'
-//       ),
-//       funds: [{ denom: UNO.NATIVE_DENOM, amount: '1000' }]
-//     })
-//   }
-
-//   const registry = new Registry()
-//   registry.register('/cosmwasm.wasm.v1.MsgExecuteContract', MsgExecuteContract)
-
-//   const transactionBody = TxBody.fromPartial({
-//     messages: [
-//       {
-//         typeUrl: message.typeUrl,
-//         value: message.value
-//       }
-//     ]
-//   })
-
-//   const bodyBytes = TxBody.encode(transactionBody).finish()
-
-//   const fee = {
-//     amount: [{ denom: UNO.NATIVE_DENOM, amount: '1000' }],
-//     gas: 200000
-//   }
-
-//   const gasPrice = GasPrice.fromString('0.001muno')
-
-//   const signer = [{ pubkey: accountData.pubkey, sequence: sequence }]
-
-//   //
-//   const authInfoBytes = makeAuthInfoBytes(
-//     Any.fromPartial({
-//       typeUrl: '/cosmos.crypto.secp256k1.PubKey',
-//       value: PublicKey.encode(accountData.pubkey).finish()
-//     }),
-//     fee.amount,
-//     fee.gas,
-//     undefined,
-//     undefined,
-//     SignMode.SIGN_MODE_DIRECT
-//   )
-
-//   const signed = await offlineSigner.signDirect(accountData.address, {
-//     chainId: CHAIN.UNION.ID,
-//     // account_number is the account number of the account in state
-//     accountNumber: Long.fromValue(accountNumber!),
-
-//     // auth_info_bytes is a protobuf serialization of an AuthInfo that matches the representation in TxRaw.
-//     authInfoBytes,
-//     // body_bytes is protobuf serialization of a TxBody that matches the representation in TxRaw.
-//     bodyBytes
-//   })
-
-//   console.log('wallet_invokeSnap - signDirect', JSON.stringify(signed, undefined, 2))
-// }
