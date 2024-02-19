@@ -8,7 +8,10 @@ use crate::{
     hash::{H160, H256},
     ibc::{
         core::client::height::Height,
-        lightclients::{ethereum::fork_parameters::ForkParameters, tendermint::fraction::Fraction},
+        lightclients::{
+            ethereum::fork_parameters::ForkParameters,
+            tendermint::fraction::{Fraction, ZeroDenominatorError},
+        },
     },
     uint::U256,
     Proto, TryFromProtoErrorOf, TypeUrl,
@@ -72,6 +75,7 @@ pub enum TryFromClientStateError {
     ForkParameters(TryFromProtoErrorOf<ForkParameters>),
     GenesisValidatorsRoot(InvalidLength),
     CounterpartyCommitmentSlot(InvalidLength),
+    TrustLevel(ZeroDenominatorError),
     IbcContractAddress(InvalidLength),
 }
 
@@ -95,7 +99,9 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
             seconds_per_slot: value.seconds_per_slot,
             slots_per_epoch: value.slots_per_epoch,
             epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,
-            trust_level: required!(value.trust_level)?.into(),
+            trust_level: required!(value.trust_level)?
+                .try_into()
+                .map_err(TryFromClientStateError::TrustLevel)?,
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: value.frozen_height.unwrap_or_default().into(),
