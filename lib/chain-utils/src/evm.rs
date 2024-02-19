@@ -46,6 +46,7 @@ use unionlabs::{
         lightclients::{cometbls, ethereum, tendermint::fraction::Fraction},
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
+    option_unwrap, promote,
     proof::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath,
@@ -293,7 +294,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 min_sync_committee_participants: 0,
                 trust_level: Fraction {
                     numerator: 1,
-                    denominator: NonZeroU64::new(3).unwrap(),
+                    denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
                 },
                 frozen_height: Height {
                     revision_number: 0,
