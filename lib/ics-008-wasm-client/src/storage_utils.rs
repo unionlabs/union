@@ -118,7 +118,7 @@ pub fn update_client_state<C: CustomQuery, CS: IntoProto>(
     latest_height: u64,
 ) {
     wasm_client_state.latest_height = Height {
-        revision_number: 0,
+        revision_number: wasm_client_state.latest_height.revision_number,
         revision_height: latest_height,
     };
 
