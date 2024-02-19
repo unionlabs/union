@@ -146,6 +146,8 @@
                 <a
                   href={`https://testnet.union.explorers.guru/transaction/${transactionHash}`}
                   class="text-blue-100 underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   {transactionHash}
                 </a>
@@ -167,6 +169,8 @@
                 <a
                   href={`https://11155111.testnet.routescan.io/tx/${transactionHash}`}
                   class="text-blue-200 underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   {transactionHash}
                 </a>
