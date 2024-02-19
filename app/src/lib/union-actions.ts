@@ -36,15 +36,15 @@ export async function approveUnoERC20Spending({ amount }: { amount: bigint }) {
   const denomAddress = await getDenomAddress()
   if (BigInt(denomAddress) === 0n) return
 
-  const contractParamteres = {
+  const contractParameters = {
     abi: erc20Abi,
     functionName: 'approve',
     address: denomAddress,
-    args: [getAddress(CONTRACT.SEPOLIA.ADDRESS), 69420n],
+    args: [getAddress(CONTRACT.SEPOLIA.ADDRESS), 69_420n],
     account: get(wallet) as unknown as Account
   } as const
 
-  const { request } = await simulateContract(config, contractParamteres)
+  const { request } = await simulateContract(config, contractParameters)
   return writeContract(config, request)
 }
 
