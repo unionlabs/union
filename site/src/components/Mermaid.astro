@@ -9,14 +9,23 @@ const { content } = Astro.props
 <section class="mermaid" data-content={content}></section>
 
 <script>
-  const currentTheme = document.documentElement.getAttribute('data-theme')
+  import mermaid from 'mermaid'
+  import { onThemeChange } from '#/lib/on-theme-change'
 
-  async function renderDiagrams(graphs: HTMLCollectionOf<Element>): Promise<void> {
-    const { default: mermaid } = await import('mermaid')
+  const initialTheme = document.documentElement.getAttribute('data-theme') as 'dark' | 'light'
+
+  async function renderDiagrams({
+    graphs,
+    theme,
+  }: {
+    graphs: HTMLCollectionOf<Element>
+    theme: 'dark' | 'light'
+  }): Promise<void> {
     mermaid.initialize({
+      // keep false otherwise it sometimes breaks the rendering
       startOnLoad: false,
       fontFamily: 'var(--sans-font)',
-      theme: currentTheme === 'dark' ? 'dark' : 'default',
+      theme: theme === 'dark' ? 'dark' : 'default',
     })
 
     for (const graph of graphs) {
@@ -31,7 +40,9 @@ const { content } = Astro.props
     }
   }
   const graphs = document.getElementsByClassName('mermaid')
-  if (document.getElementsByClassName('mermaid').length > 0) {
-    renderDiagrams(graphs)
-  }
+  if (graphs.length > 0) renderDiagrams({ graphs, theme: initialTheme })
+
+  onThemeChange(newTheme => {
+    renderDiagrams({ graphs, theme: newTheme })
+  })
 </script>

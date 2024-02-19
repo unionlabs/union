@@ -24,31 +24,30 @@ Union is developed to be a scalable powerhouse:
 ## Architecture
 
 <Mermaid
-  content={
-`
-classDiagram
-class Chain {
-    <<interface>>
+  content={`
+    classDiagram
+      class Chain {
+          <<interface>>
 
-    +create_client(...State)
-    +update_client(...State)
+          +create_client(...State)
+          +update_client(...State)
 
-    +connection_open_init(MsgConnection0penInit)
-    +connection_open_try(MsgConnection0penTry)
-    +connection_open_ack(MsgConnection0penAck)
-    +connection_open_confirm(MsgConnection0penConfirm)
+          +connection_open_init(MsgConnection0penInit)
+          +connection_open_try(MsgConnection0penTry)
+          +connection_open_ack(MsgConnection0penAck)
+          +connection_open_confirm(MsgConnection0penConfirm)
 
-    +channel_open_init(MsgChannelOpenInit)
-    +channel_open_try(MsgChannelOpenTry)
-    +channel_open_ack(MsgChannelOpenAck)
-    +channel_open_confirm(MsgChannel0penConfirm)
+          +channel_open_init(MsgChannelOpenInit)
+          +channel_open_try(MsgChannelOpenTry)
+          +channel_open_ack(MsgChannelOpenAck)
+          +channel_open_confirm(MsgChannel0penConfirm)
 
-    +recv_packet(Packet)
+          +recv_packet(Packet)
 
-}
+      }
 
-Chain <|.. Cosmos
-Chain <|.. Evm
-`
-}
+      Chain <|.. Cosmos
+      Chain <|.. Evm
+
+`}
 />

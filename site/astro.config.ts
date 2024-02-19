@@ -74,7 +74,7 @@ export default defineConfig({
           lang: "en",
         },
       },
-      defaultLocale: "en",
+      defaultLocale: "root",
       logo: {
         alt: "Union Logo",
         dark: "./src/assets/union-logo/union-logo-transparent.svg",
