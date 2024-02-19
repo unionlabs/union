@@ -11,7 +11,7 @@ export const URLS = {
      * TODO: add array of RPCs and pass to `viem`'s `fallback` array
      */
     RPC: 'https://union-testnet-rpc.polkachu.com',
-    REST: import.meta.env.VITE_UNION_REST_URL || 'https://union-testnet-api.polkachu.com',
+    REST: 'https://union-testnet-api.polkachu.com',
     GRAPHQL: import.meta.env.VITE_UNION_GRAPHQL_URL
   },
   SEPOLIA: {

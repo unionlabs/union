@@ -3,19 +3,15 @@ import { fromBech32 } from '@cosmjs/encoding'
 import { writable, type Writable, get } from 'svelte/store'
 import { CHAIN, CONTRACT, UNO, URLS } from '$/lib/constants.ts'
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
-import { config, unionAddress, wallet } from '$/lib/wallet/config'
-import { GasPrice, SigningStargateClient, StargateClient } from '@cosmjs/stargate'
+import { config, unionAddress } from '$/lib/wallet/config'
+import { GasPrice } from '@cosmjs/stargate'
 
-import { Comet38Client, Tendermint37Client } from '@cosmjs/tendermint-rpc'
+import { Tendermint37Client } from '@cosmjs/tendermint-rpc'
 import { readContract, simulateContract, writeContract } from '@wagmi/core'
 import { type Address, type Hash, bytesToHex, erc20Abi, getAddress } from 'viem'
-import { isOfflineDirectSigner } from '@cosmjs/proto-signing'
 import { snapAddress } from '$/lib/snap'
-import {
-  CosmjsOfflineSigner,
-  signArbitrary,
-  requestSignature
-} from '@leapwallet/cosmos-snap-provider'
+import { CosmjsOfflineSigner } from '@leapwallet/cosmos-snap-provider'
+
 export const erc20balanceStore: Writable<bigint | null> = writable(null)
 export async function getUnoERC20Balance(address: Address) {
   const denomAddress = await getDenomAddress()
@@ -47,64 +43,6 @@ export async function initCosmWasmClient() {
     { gasPrice: GasPrice.fromString(`0.001${UNO.NATIVE_DENOM}`) }
   )
   cosmWasmClient.set(cosmwasmClient)
-}
-
-/**
- * TODO: figure out why .execute doesn't run
- */
-export async function sendUnoFromUnionToSepolia() {
-  // const offlineSigner = get(cosmosOfflineSigner)
-  // const ethereumAddress = get(wallet).address
-
-  // if (!offlineSigner) throw new Error('cosmos offline signer not initiated')
-  // const [account] = await offlineSigner.getAccounts()
-
-  // const signed = await signArbitrary(CHAIN.UNION.ID, offlineSigner, '{}', {
-  //   enableExtraEntropy: true
-  // })
-  // console.log('signed', JSON.stringify(signed, undefined, 2))
-  // const stargateClient = await SigningStargateClient.connectWithSigner(
-  //   'https://union-testnet-rpc.polkachu.com',
-  //   offlineSigner,
-  //   { gasPrice: GasPrice.fromString('0.001muno') }
-  // )
-
-  const uAddress = get(unionAddress)
-  const cosmwasmClient = get(cosmWasmClient)
-  if (!cosmwasmClient) throw new Error('cosmwasm client not initiated')
-  const eAddress = get(wallet).address
-
-  // const tendermintClient = await Tendermint37Client.connect(URLS.UNION.RPC)
-  // const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(
-  //   tendermintClient,
-  //   offlineSigner,
-  //   { gasPrice: GasPrice.fromString(`0.001${UNO.NATIVE_DENOM}`) }
-  // )
-  // const stargateClient = await SigningStargateClient.createWithSigner(
-  //   tendermintClient,
-  //   offlineSigner,
-  //   { gasPrice: GasPrice.fromString(`0.001${UNO.NATIVE_DENOM}`) }
-  // )
-
-  // stargateClient.sign()
-
-  // const address = account?.address
-  const result = await cosmwasmClient.execute(
-    uAddress,
-    CONTRACT.UNION.ADDRESS,
-    {
-      transfer: {
-        channel: CONTRACT.UNION.SOURCE_CHANNEL,
-        receiver: eAddress?.slice(2),
-        timeout: null,
-        memo: "random more than four characters I'm transferring."
-      }
-    },
-    'auto',
-    undefined,
-    [{ denom: UNO.NATIVE_DENOM, amount: '1000' }]
-  )
-  console.log(JSON.stringify({ result }, undefined, 2))
 }
 
 export async function sendAssetFromEthereumToUnion({
@@ -167,8 +105,9 @@ export async function getDenomAddress(): Promise<Address> {
 export const unionBalanceStore: Writable<string | null> = writable(null)
 
 export async function getUnoUnionBalance(address: string) {
-  const client = await StargateClient.connect(URLS.UNION.RPC)
-
-  const { amount } = await client.getBalance(address, UNO.NATIVE_DENOM)
-  return amount
+  const response = await fetch(`${URLS.UNION.REST}/cosmos/bank/v1beta1/balances/${address}`)
+  const data = (await response.json()) as { balances: Array<{ amount: string; denom: string }> }
+  const unoBalance = data.balances.find(({ denom }) => denom === UNO.NATIVE_DENOM)
+  if (!unoBalance) return '0'
+  return unoBalance.amount
 }

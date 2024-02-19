@@ -8,7 +8,7 @@ import {
   getSnap,
   suggestChain
 } from '@leapwallet/cosmos-snap-provider'
-import { GasPrice, StargateClient } from '@cosmjs/stargate'
+import { GasPrice, SigningStargateClient, StargateClient } from '@cosmjs/stargate'
 import { MsgExecuteContract } from 'cosmjs-types/cosmwasm/wasm/v1/tx'
 import { Registry, makeAuthInfoBytes } from '@cosmjs/proto-signing'
 import { TxBody } from 'cosmjs-types/cosmos/tx/v1beta1/tx'
@@ -17,6 +17,8 @@ import { SignMode } from 'cosmjs-types/cosmos/tx/signing/v1beta1/signing'
 import { toUtf8 } from '@cosmjs/encoding'
 import { Any } from 'cosmjs-types/google/protobuf/any'
 import { PublicKey } from 'cosmjs-types/tendermint/crypto/keys'
+import { Tendermint37Client } from '@cosmjs/tendermint-rpc'
+import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 
 export const snapInstalled = writable(false)
 export async function ensureSnapInstalled() {
@@ -48,16 +50,10 @@ export const snapAddress = writable<string | null>(null)
 const pubKey = writable<Uint8Array | null>(null)
 export async function getSnapAddress() {
   if (!get(snapConnected)) return
-  if (get(snapAddress)?.length) return
 
   const chainAddressRequest = await getKey(CHAIN.UNION.ID)
-  console.log(
-    'wallet_invokeSnap - getChainAddressRequest',
-    JSON.stringify(chainAddressRequest, undefined, 2)
-  )
   const chainAddress = chainAddressRequest?.address
   pubKey.set(chainAddressRequest?.pubkey)
-  console.log('wallet_invokeSnap - getChainAddress', JSON.stringify(chainAddress, undefined, 2))
   snapAddress.set(chainAddress)
 }
 
@@ -108,88 +104,179 @@ export async function initializeSnapOfflineSigner() {
   snapOfflineSigner.set(offlineSigner)
 }
 
+export const tendermintClient = writable<Tendermint37Client | null>(null)
+export async function initializeTendermintClient() {
+  if (!get(snapConnected)) return
+  if (!get(snapChainInitialized)) return
+
+  const _tendermintClient = await Tendermint37Client.connect(URLS.UNION.RPC)
+  tendermintClient.set(_tendermintClient)
+}
+
+export const stargateOfflineSigner = writable<StargateClient | null>(null)
+export async function initializeStargateClient() {
+  if (!get(snapConnected)) return
+  if (!get(snapChainInitialized)) return
+
+  const offlineSigner = get(snapOfflineSigner)
+  if (!offlineSigner) return
+
+  const _tendermintClient = get(tendermintClient)
+  if (!_tendermintClient) return
+
+  const stargateClient = await SigningStargateClient.createWithSigner(
+    _tendermintClient,
+    offlineSigner,
+    { gasPrice: GasPrice.fromString(`0.001${UNO.NATIVE_DENOM}`) }
+  )
+  stargateOfflineSigner.set(stargateClient)
+}
+
+export const signingCosmWasmClient = writable<SigningCosmWasmClient | null>(null)
+export async function initializeSigningCosmWasmClient() {
+  if (!get(snapConnected)) return
+  if (!get(snapChainInitialized)) return
+
+  const offlineSigner = get(snapOfflineSigner)
+  if (!offlineSigner) return
+
+  const _tendermintClient = get(tendermintClient)
+  if (!_tendermintClient) return
+
+  const _signingCosmWasmClient = await SigningCosmWasmClient.createWithSigner(
+    _tendermintClient,
+    offlineSigner,
+    {
+      gasPrice: GasPrice.fromString(`0.001${UNO.NATIVE_DENOM}`)
+    }
+  )
+  signingCosmWasmClient.set(_signingCosmWasmClient)
+}
+
 export const snapTransaction = writable<string | null>(null)
 export async function sendSnapTransaction() {
   if (!get(snapConnected)) return
   if (!get(snapChainInitialized)) return
   const ethereumAddress = get(wallet).address
-  if (!ethereumAddress) return
-  const offlineSigner = get(snapOfflineSigner)
-  if (!offlineSigner) return
 
-  const [accountData] = await offlineSigner.getAccounts()
-
-  const stargateClient = await StargateClient.connect(URLS.UNION.RPC)
-  const account = await stargateClient.getAccount(accountData.address)
-  const [accountNumber, sequence] = [account?.accountNumber, account?.sequence]
-  console.log(JSON.stringify({ accountNumber, sequence }, undefined, 2))
-
-  const message = {
-    typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
-    value: MsgExecuteContract.fromPartial({
-      sender: accountData.address,
-      contract: CONTRACT.UNION.ADDRESS,
-      msg: Buffer.from(
-        JSON.stringify({
-          transfer: {
-            channel: CONTRACT.UNION.SOURCE_CHANNEL,
-            receiver: '0xCa091fE8005596E64ba9Cf028a75755a2380021A'.slice(2),
-            timeout: null,
-            memo: "random more than four characters I'm transferring."
-          }
-        }),
-        'utf-8'
-      ),
-      funds: [{ denom: UNO.NATIVE_DENOM, amount: '1000' }]
-    })
+  if (!ethereumAddress) {
+    console.error('[sendSnapTransaction] missing data. Initialize the client and signer first.')
+    return
   }
 
-  const registry = new Registry()
-  registry.register('/cosmwasm.wasm.v1.MsgExecuteContract', MsgExecuteContract)
+  const offlineSigner = new CosmjsOfflineSigner(CHAIN.UNION.ID)
+  const tendermintClient = await Tendermint37Client.connect(URLS.UNION.RPC)
 
-  const transactionBody = TxBody.fromPartial({
-    messages: [
-      {
-        typeUrl: message.typeUrl,
-        value: message.value
-      }
-    ]
-  })
-
-  const bodyBytes = TxBody.encode(transactionBody).finish()
-
-  const fee = {
-    amount: [{ denom: UNO.NATIVE_DENOM, amount: '1000' }],
-    gas: 200000
-  }
-
-  const gasPrice = GasPrice.fromString('0.001muno')
-
-  const signer = [{ pubkey: accountData.pubkey, sequence: sequence }]
-
-  //
-  const authInfoBytes = makeAuthInfoBytes(
-    Any.fromPartial({
-      typeUrl: '/cosmos.crypto.secp256k1.PubKey',
-      value: PublicKey.encode(accountData.pubkey).finish()
-    }),
-    fee.amount,
-    fee.gas,
-    undefined,
-    undefined,
-    SignMode.SIGN_MODE_DIRECT
+  const signingCosmWasmClient = await SigningCosmWasmClient.createWithSigner(
+    tendermintClient,
+    offlineSigner,
+    { gasPrice: GasPrice.fromString(`0.001${UNO.NATIVE_DENOM}`) }
   )
 
-  const signed = await offlineSigner.signDirect(accountData.address, {
-    chainId: CHAIN.UNION.ID,
-    // account_number is the account number of the account in state
-    accountNumber: Long.fromValue(accountNumber!),
+  const [{ address: unionAddress }] = await offlineSigner.getAccounts()
 
-    // auth_info_bytes is a protobuf serialization of an AuthInfo that matches the representation in TxRaw.
-    authInfoBytes,
-    // body_bytes is protobuf serialization of a TxBody that matches the representation in TxRaw.
-    bodyBytes
-  })
+  return signingCosmWasmClient.execute(
+    unionAddress,
+    CONTRACT.UNION.ADDRESS,
+    {
+      transfer: {
+        channel: CONTRACT.UNION.SOURCE_CHANNEL,
+        receiver: ethereumAddress.slice(2),
+        timeout: null,
+        memo: 'random more than four characters I am transferring.'
+      }
+    },
+    'auto',
+    undefined,
+    [{ denom: UNO.NATIVE_DENOM, amount: '1000' }]
+  )
 
-  console.log('wallet_invokeSnap - signDirect', JSON.stringify(signed, undefined, 2))
+  // const stargateClient = await StargateClient.connect(URLS.UNION.RPC)
+  // const account = await stargateClient.getAccount(accountData.address)
+  // const [accountNumber, sequence] = [account?.accountNumber, account?.sequence]
+  // console.log(JSON.stringify({ accountNumber, sequence }, undefined, 2))
 }
+// export async function sendSnapTransaction() {
+//   if (!get(snapConnected)) return
+//   if (!get(snapChainInitialized)) return
+//   const ethereumAddress = get(wallet).address
+//   if (!ethereumAddress) return
+//   const offlineSigner = get(snapOfflineSigner)
+//   if (!offlineSigner) return
+
+//   const [accountData] = await offlineSigner.getAccounts()
+
+//   const stargateClient = await StargateClient.connect(URLS.UNION.RPC)
+//   const account = await stargateClient.getAccount(accountData.address)
+//   const [accountNumber, sequence] = [account?.accountNumber, account?.sequence]
+//   // console.log(JSON.stringify({ accountNumber, sequence }, undefined, 2))
+
+//   const message = {
+//     typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
+//     value: MsgExecuteContract.fromPartial({
+//       sender: accountData.address,
+//       contract: CONTRACT.UNION.ADDRESS,
+//       msg: Buffer.from(
+//         JSON.stringify({
+//           transfer: {
+//             channel: CONTRACT.UNION.SOURCE_CHANNEL,
+//             receiver: '0xCa091fE8005596E64ba9Cf028a75755a2380021A'.slice(2),
+//             timeout: null,
+//             memo: "random more than four characters I'm transferring."
+//           }
+//         }),
+//         'utf-8'
+//       ),
+//       funds: [{ denom: UNO.NATIVE_DENOM, amount: '1000' }]
+//     })
+//   }
+
+//   const registry = new Registry()
+//   registry.register('/cosmwasm.wasm.v1.MsgExecuteContract', MsgExecuteContract)
+
+//   const transactionBody = TxBody.fromPartial({
+//     messages: [
+//       {
+//         typeUrl: message.typeUrl,
+//         value: message.value
+//       }
+//     ]
+//   })
+
+//   const bodyBytes = TxBody.encode(transactionBody).finish()
+
+//   const fee = {
+//     amount: [{ denom: UNO.NATIVE_DENOM, amount: '1000' }],
+//     gas: 200000
+//   }
+
+//   const gasPrice = GasPrice.fromString('0.001muno')
+
+//   const signer = [{ pubkey: accountData.pubkey, sequence: sequence }]
+
+//   //
+//   const authInfoBytes = makeAuthInfoBytes(
+//     Any.fromPartial({
+//       typeUrl: '/cosmos.crypto.secp256k1.PubKey',
+//       value: PublicKey.encode(accountData.pubkey).finish()
+//     }),
+//     fee.amount,
+//     fee.gas,
+//     undefined,
+//     undefined,
+//     SignMode.SIGN_MODE_DIRECT
+//   )
+
+//   const signed = await offlineSigner.signDirect(accountData.address, {
+//     chainId: CHAIN.UNION.ID,
+//     // account_number is the account number of the account in state
+//     accountNumber: Long.fromValue(accountNumber!),
+
+//     // auth_info_bytes is a protobuf serialization of an AuthInfo that matches the representation in TxRaw.
+//     authInfoBytes,
+//     // body_bytes is protobuf serialization of a TxBody that matches the representation in TxRaw.
+//     bodyBytes
+//   })
+
+//   console.log('wallet_invokeSnap - signDirect', JSON.stringify(signed, undefined, 2))
+// }
