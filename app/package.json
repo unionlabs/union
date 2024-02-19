@@ -16,10 +16,10 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@cosmjs/cosmwasm-stargate": "^0.32.2",
-    "@cosmjs/encoding": "^0.32.2",
-    "@cosmjs/stargate": "^0.32.2",
-    "@cosmjs/tendermint-rpc": "^0.32.2",
+    "@cosmjs/cosmwasm-stargate": "^0.31.1",
+    "@cosmjs/encoding": "^0.31.1",
+    "@cosmjs/stargate": "^0.31.1",
+    "@cosmjs/tendermint-rpc": "^0.31.1",
     "@cosmsnap/snap": "^0.1.17",
     "@leapwallet/cosmos-snap-provider": "^0.1.25",
     "@leapwallet/metamask-cosmos-snap": "^0.1.18",
@@ -37,8 +37,8 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240208.0",
-    "@cosmjs/amino": "^0.32.2",
-    "@cosmjs/proto-signing": "^0.32.2",
+    "@cosmjs/amino": "^0.31.1",
+    "@cosmjs/proto-signing": "^0.31.1",
     "@melt-ui/pp": "^0.3.0",
     "@melt-ui/svelte": "^0.74.0",
     "@sveltejs/adapter-static": "^3.0.1",

@@ -1,16 +1,11 @@
 <script lang="ts">
   import { wallet, switchChain } from '$lib/wallet/config.ts'
   import {
-    // cosmosOfflineSigner,
     erc20balanceStore,
     unionBalanceStore,
     getUnoERC20Balance,
     getUnoUnionBalance,
-    // sendUnoFromUnionToSepolia,
-    initCosmWasmClient,
-    // initiateCosmosOfflineSigner,
-    sendAssetFromEthereumToUnion,
-    sendUnoFromUnionToSepolia
+    sendAssetFromEthereumToUnion
   } from '$/lib/union-actions'
   import clsx from 'clsx'
   import { onMount } from 'svelte'
@@ -21,12 +16,9 @@
     snapAddress,
     snapInstalled,
     getSnapAddress,
-    snapChainInitialized,
     snapChainConnected,
-    snapOfflineSigner,
     suggestSnapChain,
     ensureSnapInstalled,
-    initializeSnapOfflineSigner,
     snapConnected,
     ensureSnapConnected,
     sendSnapTransaction,
@@ -36,25 +28,25 @@
   let error: any
 
   onMount(async () => {
+    // await initializeStargateClient()
     await ensureSnapInstalled()
     await ensureSnapConnected()
     await getSnapAddress()
     await ensureSnapChainInitialized()
-    await initializeSnapOfflineSigner()
 
-    const unoERC20Balance = $wallet.address ? await getUnoERC20Balance($wallet.address) : null
-    if (unoERC20Balance) erc20balanceStore.set(unoERC20Balance)
-
-    const unoUnionBalance = $snapAddress ? await getUnoUnionBalance($snapAddress) : null
-    if (unoUnionBalance) unionBalanceStore.set(unoUnionBalance)
+    const unoUnionBalance = $snapAddress ? await getUnoUnionBalance($snapAddress) : '0'
+    unionBalanceStore.set(unoUnionBalance)
+    const unoERC20Balance = $wallet.address ? await getUnoERC20Balance($wallet.address) : 0n
+    erc20balanceStore.set(unoERC20Balance)
   })
+
+  onMount(async () => {})
 </script>
 
 <main
   class="mx-auto mt-12 flex min-h-full min-w-full flex-col items-center justify-center space-y-6"
 >
   <p class="mb-12">Status: {$wallet.status}</p>
-  <button on:click={() => sendUnoFromUnionToSepolia()}>send it</button>
   {#if $wallet.isConnected}
     <div>
       <p>EVM Address: {$wallet.address}</p>
