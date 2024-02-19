@@ -137,7 +137,7 @@
           <Button.Root
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
             on:click={() => {
-              if (unoUnionBalance !== '0') sendAssetFromUnionToEthereum({ amount: '100' })
+              if (unoUnionBalance !== '0') sendAssetFromUnionToEthereum({ amount: '1' })
               else
                 toast.error('$UNO balance on Union is 0\nUse faucet button to get sum', {
                   position: 'bottom-center'
@@ -166,7 +166,7 @@
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
             on:click={() => {
               if (sepoliaEthBalance !== '0' && unoERC20Balance !== 0n)
-                sendAssetFromEthereumToUnion({ amount: 5n })
+                sendAssetFromEthereumToUnion({ amount: 1n })
               else
                 toast.error(
                   `Sepolia ETH balance is ${sepoliaEthBalance}\nSepolia $UNO balance is ${unoERC20Balance}`,
