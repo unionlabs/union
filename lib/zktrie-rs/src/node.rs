@@ -1,5 +1,4 @@
 use core::marker::PhantomData;
-use std::sync::Arc;
 
 use crate::{
     handling_elems_and_byte32, hash_elems_with_domain, Byte32, Error, Fr, Hash, HashScheme,
@@ -225,11 +224,8 @@ impl<H: HashScheme> Node<H> {
         })
     }
 
-    pub fn empty() -> Arc<Self> {
-        lazy_static::lazy_static! {
-            static ref EMPTY: Arc<Node<()>> = Arc::new(<Node<()>>::new_empty());
-        }
-        unsafe { std::mem::transmute(EMPTY.clone()) }
+    pub fn empty() -> Self {
+        Self::new_empty()
     }
 
     pub fn new_empty() -> Self {

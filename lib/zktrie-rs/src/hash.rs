@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use poseidon_rs::{Fr, Poseidon};
 
 use crate::{fr_from_little_endian, reverse_byte_order, Byte32};
@@ -8,8 +6,9 @@ pub const HASH_DOMAIN_ELEMS_BASE: usize = 256;
 pub const HASH_DOMAIN_BYTE32: usize = 2 * HASH_DOMAIN_ELEMS_BASE;
 pub const HASH_BYTE_LEN: usize = 32;
 
+pub const ZERO_HASH: Hash = Hash([0u8; 32]);
+
 lazy_static::lazy_static! {
-    pub static ref ZERO_HASH: Arc<Hash> = Arc::new(Hash::default());
     pub static ref POSEIDON: Poseidon = Poseidon::default();
 }
 
@@ -27,7 +26,6 @@ impl HashScheme for () {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PoseidonHash;
 impl HashScheme for PoseidonHash {
     fn hash_scheme(arr: &[Fr], domain: &Fr) -> Fr {
@@ -39,7 +37,7 @@ impl HashScheme for PoseidonHash {
         }
     }
 }
-pub trait HashScheme: PartialEq + Clone + std::fmt::Debug {
+pub trait HashScheme {
     fn hash_scheme(arr: &[Fr], domain: &Fr) -> Fr;
 }
 
@@ -48,7 +46,7 @@ pub struct Hash([u8; 32]);
 
 impl Hash {
     pub fn is_zero(&self) -> bool {
-        self == ZERO_HASH.as_ref()
+        self == &ZERO_HASH
     }
 
     pub fn raw_bytes(&self) -> &[u8] {

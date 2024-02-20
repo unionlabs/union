@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
 
 use unionlabs::hash::H256;
 
@@ -47,7 +47,7 @@ impl TestTrie {
     pub fn get_leaf_node_by_word(
         &mut self,
         key_preimage: &Byte32,
-    ) -> Result<Arc<Node<TestHash>>, Error> {
+    ) -> Result<Node<TestHash>, Error> {
         self.0
             .try_get_node(&mut self.1, &Hash::from_bytes(key_preimage.bytes()))
     }
@@ -247,7 +247,7 @@ fn test_zktrie_impl_delete() {
         let mut mt1 = TestTrie::new(10);
         mt1.add_word(k1, byte32_from_byte(1)).unwrap();
         mt1.delete_word(&k1).unwrap();
-        assert_eq!(mt1.root(), ZERO_HASH.as_ref());
+        assert_eq!(mt1.root(), &ZERO_HASH);
         assert_eq!(empty_mt.root(), mt1.root());
 
         let keys = [k1, k2, k3, k4];
@@ -258,7 +258,7 @@ fn test_zktrie_impl_delete() {
         for key in keys {
             mt2.delete_word(&key).unwrap();
         }
-        assert_eq!(mt2.root(), ZERO_HASH.as_ref());
+        assert_eq!(mt2.root(), &ZERO_HASH);
         assert_eq!(empty_mt.root(), mt2.root());
 
         let mut mt3 = TestTrie::new(10);
@@ -268,7 +268,7 @@ fn test_zktrie_impl_delete() {
         for key in keys.iter().rev() {
             mt3.delete_word(key).unwrap();
         }
-        assert_eq!(ZERO_HASH.as_ref(), mt3.root());
+        assert_eq!(&ZERO_HASH, mt3.root());
         assert_eq!(empty_mt.root(), mt3.root());
     }
 
@@ -462,7 +462,7 @@ fn test_merkle_tree_deletion() {
 fn test_new_zktrie() {
     let root = Hash::default();
     let trie = <ZkTrie<TestHash>>::new(248, root);
-    assert_eq!(trie.hash(), ZERO_HASH.as_ref());
+    assert_eq!(trie.hash(), &ZERO_HASH);
 }
 
 #[test]
@@ -520,7 +520,7 @@ fn test_zktrie_get_update_delete() {
 
     let val = trie.get_data(db, b"key").unwrap();
     assert_eq!(val, TrieData::NotFound);
-    assert_eq!(trie.hash(), ZERO_HASH.as_ref());
+    assert_eq!(trie.hash(), &ZERO_HASH);
 
     trie.update(db, b"key", 1, vec![Byte32::from_bytes_padding(&[1])])
         .unwrap();
@@ -535,7 +535,7 @@ fn test_zktrie_get_update_delete() {
     assert_eq!(val.get(), &Byte32::from_bytes_padding(&[1]).bytes()[..]);
 
     trie.delete(db, b"key").unwrap();
-    assert_eq!(trie.hash(), ZERO_HASH.as_ref());
+    assert_eq!(trie.hash(), &ZERO_HASH);
 
     let val = trie.get_data(db, b"key").unwrap();
     assert_eq!(TrieData::NotFound, val);
