@@ -1,16 +1,6 @@
 <script lang="ts">
-  import clsx from 'clsx'
-  import { onMount } from 'svelte'
-  import { Button } from 'bits-ui'
-  import { sepolia } from 'viem/chains'
-  import Faucet from '$/lib/components/Faucet.svelte'
-  import Connect from '$lib/components/Connect.svelte'
-  import { wallet, switchChain, config } from '$lib/wallet/config.ts'
   import {
-    erc20balanceStore,
-    unionBalanceStore,
     getUnoERC20Balance,
-    getUnoUnionBalance,
     sepoliaTransactions,
     sendAssetFromEthereumToUnion
   } from '$/lib/union-actions'
@@ -28,51 +18,69 @@
     ensureSnapChainInitialized,
     sendAssetFromUnionToEthereum
   } from '$/lib/snap.ts'
-  import { sleep } from '$/lib/utilities'
+  import clsx from 'clsx'
+  import { onMount } from 'svelte'
+  import { Button } from 'bits-ui'
+  import { sepolia } from 'viem/chains'
+  import toast from 'svelte-french-toast'
   import { getBalance } from '@wagmi/core'
-  import toast, { Toaster } from 'svelte-french-toast'
-
-  /**
-   * TODO: Set polled fetching using @tanstack/svelte-query
-   * @see https://github.com/TanStack/query/blob/main/examples/svelte/auto-refetching/src/routes/%2Bpage.svelte
-   */
+  import { fetcher } from '$/lib/utilities'
+  import Faucet from '$/lib/components/Faucet.svelte'
+  import Connect from '$lib/components/Connect.svelte'
+  import { wallet, switchChain, config } from '$lib/wallet/config.ts'
+  import { useQueryClient, createQuery, createMutation } from '@tanstack/svelte-query'
 
   let error: any
 
-  $: sepoliaEthBalance = '0'
-  $: unoUnionBalance = $unionBalanceStore || '0'
-  $: unoERC20Balance = $erc20balanceStore || 0n
+  /**
+   * TODO:-
+   *  - turn `send*` functions into mutations,
+   *  - invalidate all queries in this page on success
+   */
+
+  let pollingIntervalMS = 2500
 
   onMount(async () => {
     await ensureSnapInstalled()
     await ensureSnapConnected()
     await getSnapAddress()
     await ensureSnapChainInitialized()
-
-    unoUnionBalance = $snapAddress ? await getUnoUnionBalance($snapAddress) : '0'
-    unionBalanceStore.set(unoUnionBalance)
-    unoERC20Balance = $wallet.address ? await getUnoERC20Balance($wallet.address) : 0n
-    erc20balanceStore.set(unoERC20Balance)
-
-    const ethBalance = $wallet.address
-      ? await getBalance(config, { address: $wallet.address, chainId: sepolia.id })
-      : undefined
-    sepoliaEthBalance = ethBalance ? ethBalance.formatted : '0'
   })
 
-  unionTransactions.subscribe(async _ => {
-    if (!$snapAddress) return
-    await sleep(2500)
-    unoUnionBalance = await getUnoUnionBalance($snapAddress)
-    console.log('unoUnionBalance', unoUnionBalance)
-    unionBalanceStore.update(_ => unoUnionBalance)
+  const queryClient = useQueryClient()
+
+  $: unoUnionBalance = createQuery<string>({
+    // eslint-disable-next-line @tanstack/query/exhaustive-deps
+    queryKey: ['balance-union-uno'],
+    queryFn: async () => {
+      const url = `/api/balance?chain=union-testnet-6&address=${$snapAddress}`
+      const result = await fetcher<string>(url)
+      return result
+    },
+    placeholderData: '0',
+    enabled: !!$snapAddress,
+    refetchInterval: pollingIntervalMS
   })
 
-  sepoliaTransactions.subscribe(async _ => {
-    if (!$wallet.address) return
-    await sleep(2000)
-    unoERC20Balance = await getUnoERC20Balance($wallet.address)
-    erc20balanceStore.update(_ => unoERC20Balance)
+  $: unoERC20Balance = createQuery<bigint>({
+    queryKey: ['balance-sepolia-uno', $wallet.address],
+    queryFn: async () => getUnoERC20Balance(`${$wallet.address}`),
+    placeholderData: 0n,
+    enabled: !!$wallet.address,
+    refetchInterval: pollingIntervalMS
+  })
+
+  $: sepoliaEthBalance = createQuery<string>({
+    // eslint-disable-next-line @tanstack/query/exhaustive-deps
+    queryKey: ['balance-sepolia-eth', $wallet.address],
+    queryFn: async () => {
+      if (!$wallet.address) return '0'
+      const balance = await getBalance(config, { address: $wallet.address, chainId: sepolia.id })
+      return balance.formatted
+    },
+    placeholderData: '0',
+    enabled: !!$wallet.address,
+    refetchInterval: pollingIntervalMS * 1.5
   })
 </script>
 
@@ -92,12 +100,12 @@
       </a>
       <p>EVM Address: {$wallet.address}</p>
       <p>EVM Chain ID: {$wallet.chainId}</p>
-      <p>UNO ERC20 Balance: {unoERC20Balance}</p>
-      <p>Sepolia ETH Balance: {sepoliaEthBalance}</p>
+      <p>UNO ERC20 Balance: {$unoERC20Balance.data}</p>
+      <p>Sepolia ETH Balance: {$sepoliaEthBalance.data}</p>
       <br />
       <p>Union Address: {$snapAddress}</p>
       <p>Union Chain ID: union-testnet-6</p>
-      <p>UNO Union Balance: {unoUnionBalance}</p>
+      <p>UNO Union Balance: {$unoUnionBalance.data}</p>
       <div>
         <p>SNAP INSTALLED: {$snapInstalled}</p>
         <p>SNAP CONNECTED: {$snapConnected}</p>
@@ -138,7 +146,7 @@
           <Button.Root
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
             on:click={() => {
-              if (unoUnionBalance === '0') {
+              if ($unoUnionBalance?.data === '0') {
                 toast.error('$UNO balance on Union is 0\nUse faucet button to get sum', {
                   position: 'bottom-center'
                 })
@@ -168,7 +176,7 @@
           <Button.Root
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
             on:click={() => {
-              if (sepoliaEthBalance !== '0' && unoERC20Balance !== 0n)
+              if ($sepoliaEthBalance.data !== '0' && $unoERC20Balance.data !== 0n)
                 sendAssetFromEthereumToUnion({ amount: 25n })
               else
                 toast.error(

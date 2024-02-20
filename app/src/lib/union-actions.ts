@@ -1,24 +1,24 @@
-import { usc01relayAbi } from '$/lib/abi'
-import { fromBech32 } from '@cosmjs/encoding'
-import { snapAddress } from '$/lib/snap'
-import { CONTRACT, UNO, URLS } from '$/lib/constants.ts'
-import { writable, type Writable, get } from 'svelte/store'
-import { config, unionAddress, wallet } from '$/lib/wallet/config'
-import { readContract, simulateContract, writeContract } from '@wagmi/core'
 import {
-  type Address,
-  type Hash,
-  bytesToHex,
   erc20Abi,
-  getAddress,
   BaseError,
-  ContractFunctionRevertedError,
-  type Account
+  type Hash,
+  getAddress,
+  bytesToHex,
+  type Address,
+  type Account,
+  ContractFunctionRevertedError
 } from 'viem'
 import toast from 'svelte-french-toast'
+import { snapAddress } from '$/lib/snap'
+import { usc01relayAbi } from '$/lib/abi'
+import { writable, get } from 'svelte/store'
+import { fromBech32 } from '@cosmjs/encoding'
+import { CONTRACT, UNO } from '$/lib/constants.ts'
+import { config, unionAddress, wallet } from '$/lib/wallet/config'
+import { readContract, simulateContract, writeContract } from '@wagmi/core'
 
-export const erc20balanceStore: Writable<bigint | null> = writable(null)
-export async function getUnoERC20Balance(address: Address) {
+export async function getUnoERC20Balance(address: string) {
+  const passedAddress = getAddress(address)
   const denomAddress = await getDenomAddress()
   if (BigInt(denomAddress) === 0n) return 0n
 
@@ -26,7 +26,7 @@ export async function getUnoERC20Balance(address: Address) {
     abi: erc20Abi,
     functionName: 'balanceOf',
     address: denomAddress,
-    args: [address]
+    args: [passedAddress]
   })
 }
 
@@ -61,7 +61,7 @@ export async function sendAssetFromEthereumToUnion({
   const ethereumAddress = get(wallet).address
   if (!ethereumAddress) throw new Error('ethereum address not set')
 
-  const approvalResult = await approveUnoERC20Spending({ amount })
+  const _approvalResult = await approveUnoERC20Spending({ amount })
   // TODO: make dynamic?
   const counterpartyTimeoutRevisionNumber = 6n
   // TODO: make dynamic?
@@ -115,7 +115,7 @@ export async function getDenomAddress(): Promise<Address> {
   const [sourcePort, sourceChannel, denom] = [
     CONTRACT.SEPOLIA.PORT_ID,
     CONTRACT.SEPOLIA.SOURCE_CHANNEL,
-    'muno'
+    UNO.NATIVE_DENOM
   ]
 
   return readContract(config, {
@@ -124,14 +124,4 @@ export async function getDenomAddress(): Promise<Address> {
     functionName: 'getDenomAddress',
     args: [sourcePort, sourceChannel, `wasm.${CONTRACT.UNION.ADDRESS}/${sourceChannel}/${denom}`]
   })
-}
-
-export const unionBalanceStore: Writable<string | null> = writable(null)
-
-export async function getUnoUnionBalance(address: string) {
-  const response = await fetch(`${URLS.UNION.REST}/cosmos/bank/v1beta1/balances/${address}`)
-  const data = (await response.json()) as { balances: Array<{ amount: string; denom: string }> }
-  const unoBalance = data.balances.find(({ denom }) => denom === UNO.NATIVE_DENOM)
-  if (!unoBalance) return '0'
-  return unoBalance.amount
 }

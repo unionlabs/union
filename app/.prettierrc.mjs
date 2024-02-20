@@ -11,11 +11,17 @@ export default {
   trailingComma: 'none',
   bracketSameLine: false,
   singleAttributePerLine: true,
-  plugins: ['prettier-plugin-svelte', 'prettier-plugin-tailwindcss'],
+  plugins: [
+    'prettier-plugin-svelte',
+    'prettier-plugin-tailwindcss' // must come last
+  ],
   overrides: [
     {
       files: '*.svelte',
-      options: { parser: 'svelte' }
+      options: {
+        parser: 'svelte',
+        plugins: ['prettier-plugin-svelte', 'prettier-plugin-tailwindcss']
+      }
     }
   ]
 }
