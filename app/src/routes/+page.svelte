@@ -24,9 +24,9 @@
   import { sepolia } from 'viem/chains'
   import toast from 'svelte-french-toast'
   import { getBalance } from '@wagmi/core'
-  import { fetcher } from '$/lib/utilities'
   import Faucet from '$/lib/components/Faucet.svelte'
   import Connect from '$lib/components/Connect.svelte'
+  import { fetchUnionUnoBalance } from '$/lib/fetchers/balance'
   import { wallet, switchChain, config } from '$lib/wallet/config.ts'
   import { useQueryClient, createQuery, createMutation } from '@tanstack/svelte-query'
 
@@ -53,9 +53,8 @@
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
     queryKey: ['balance-union-uno'],
     queryFn: async () => {
-      const url = `/api/balance?chain=union-testnet-6&address=${$snapAddress}`
-      const result = await fetcher<string>(url)
-      return result
+      if (!$snapAddress) return '0'
+      return await fetchUnionUnoBalance($snapAddress)
     },
     placeholderData: '0',
     enabled: !!$snapAddress,
@@ -124,7 +123,7 @@
           on:click={() => switchChain(sepolia.id)}
           class={clsx([
             'my-5',
-            'rounded-lg bg-stone-50 text-black shadow-mini hover:bg-dark/95 active:scale-98',
+            'shadow-mini hover:bg-dark/95 active:scale-98 rounded-lg bg-stone-50 text-black',
             'inline-flex h-12 items-center justify-center px-[21px]',
             'text-[15px] font-semibold active:transition-all',
             $wallet.chainId === sepolia.id ? 'hidden' : ''
