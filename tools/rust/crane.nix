@@ -372,6 +372,10 @@
               (ensureDirectoryIncluded {
                 path' = path;
                 pathToInclude = "lib/tendermint-verifier/src/test";
+              }) ||
+              (ensureDirectoryIncluded {
+                path' = path;
+                pathToInclude = "lib/scroll-verifier/tests";
               });
         };
     in
