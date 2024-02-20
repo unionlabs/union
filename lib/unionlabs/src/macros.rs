@@ -367,6 +367,22 @@ macro_rules! result_try {
 }
 
 pub(crate) use result_try;
+// Useful in const contexts in place of `.unwrap()`
+#[macro_export]
+macro_rules! option_unwrap {
+    ($expr:expr) => {{
+        // assign to a const here so this can't be called in non-const contexts
+        const _: () = match $expr {
+            Some(_) => {}
+            None => panic!("called `Option::unwrap()` on a `None` value"),
+        };
+
+        match $expr {
+            Some(value) => value,
+            None => panic!("called `Option::unwrap()` on a `None` value"),
+        }
+    }};
+}
 
 // Useful in const contexts in place of `.unwrap()`
 #[macro_export]

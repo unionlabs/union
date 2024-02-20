@@ -4,7 +4,10 @@ use crate::{
     cosmos::ics23::proof_spec::ProofSpec,
     errors::{required, MissingField},
     google::protobuf::duration::Duration,
-    ibc::{core::client::height::Height, lightclients::tendermint::fraction::Fraction},
+    ibc::{
+        core::client::height::Height,
+        lightclients::tendermint::fraction::{Fraction, TryFromFractionError},
+    },
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
@@ -55,6 +58,7 @@ impl Proto for ClientState {
 #[derive(Debug)]
 pub enum TryFromClientStateError {
     MissingField(MissingField),
+    TrustLevel(TryFromFractionError),
     TrustingPeriod(TryFromProtoErrorOf<Duration>),
     UnbondingPeriod(TryFromProtoErrorOf<Duration>),
     MaxClockDrift(TryFromProtoErrorOf<Duration>),
@@ -70,7 +74,9 @@ impl TryFrom<protos::ibc::lightclients::tendermint::v1::ClientState> for ClientS
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             chain_id: value.chain_id,
-            trust_level: required!(value.trust_level)?.into(),
+            trust_level: required!(value.trust_level)?
+                .try_into()
+                .map_err(TryFromClientStateError::TrustLevel)?,
             trusting_period: required!(value.trusting_period)?
                 .try_into()
                 .map_err(TryFromClientStateError::TrustingPeriod)?,

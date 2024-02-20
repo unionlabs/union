@@ -6,8 +6,6 @@ use unionlabs::{
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("trust level has zero denominator")]
-    TrustLevelZeroDenominator,
     #[error("integer overflow")]
     IntegerOverflow,
     #[error("invalid header")]
