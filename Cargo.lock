@@ -5155,8 +5155,10 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 name = "scroll-light-client"
 version = "0.1.0"
 dependencies = [
+ "base64 0.21.7",
  "cosmwasm-std",
  "ethereum-verifier",
+ "hex",
  "ics008-wasm-client",
  "protos",
  "rlp",
@@ -5164,6 +5166,7 @@ dependencies = [
  "scroll-verifier",
  "serde",
  "serde-json-wasm 1.0.1",
+ "serde_json",
  "sha3",
  "thiserror",
  "tiny-keccak",
@@ -6677,9 +6680,9 @@ dependencies = [
 
 [[package]]
 name = "trie-db"
-version = "0.27.1"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "767abe6ffed88a1889671a102c2861ae742726f52e0a5a425b92c9fbfa7e9c85"
+checksum = "ff28e0f815c2fea41ebddf148e008b077d2faddb026c9555b29696114d602642"
 dependencies = [
  "hash-db",
  "hashbrown 0.13.2",
