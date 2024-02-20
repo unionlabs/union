@@ -69,8 +69,11 @@ pub enum Error {
     #[error("the given contract address ({given}) doesn't match the stored value ({expected})")]
     IbcContractAddressMismatch { given: H160, expected: H160 },
 
-    #[error("failed to verify scroll header {0}")]
+    #[error("failed to verify scroll header: {0}")]
     Verifier(#[from] scroll_verifier::Error),
+
+    #[error("the operation has not been implemented yet")]
+    Unimplemented,
 }
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header>>> for Error {
