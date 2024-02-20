@@ -12,7 +12,7 @@ import { usc01relayAbi } from "./abi";
 import { GasPrice } from "@cosmjs/stargate";
 import { fromBech32 } from "@cosmjs/encoding";
 import type { UnionClient } from "./actions.ts";
-import { Comet38Client } from "@cosmjs/tendermint-rpc";
+import { Tendermint37Client } from "@cosmjs/tendermint-rpc";
 import { UNION_RPC_URL, UCS01_EVM_ADDRESS } from "./constants";
 import { chainIds, type ChainId, chain } from "./constants/chain.ts";
 import type { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
@@ -74,11 +74,7 @@ export type SendAssetParameters<
     | TransportConfig["type"]
     | undefined = TChainId extends "6" ? TransportConfig["type"] : undefined
 > =
-  | ({ chainId: "6" } & SendAssetFromUnionToEthereum<
-      TDenom,
-      TGas,
-      TTransportConfigType
-    >)
+  | ({ chainId: "6" } & SendAssetFromUnionToEthereum<TDenom, TGas>)
   | ({ chainId: "1" | "11155111" } & SendAssetFromEthereumToUnion);
 
 export async function sendAsset<
@@ -100,12 +96,12 @@ export async function sendAsset<
 }
 
 interface SendAssetFromEthereumToUnion {
-  assetId: Address;
+  denomAddress: Address;
   receiver: string;
   amount: bigint;
   signer: Account | Address;
-  portId?: string;
-  channelId?: string;
+  portId: string;
+  channelId: string;
   simulate?: boolean;
 }
 
@@ -125,9 +121,9 @@ export async function sendAssetFromEthereumToUnion(
     receiver,
     signer,
     amount,
-    assetId, // denomAddress
-    portId = chain.ethereum.sepolia.portId,
-    channelId = chain.ethereum.sepolia.channelId,
+    denomAddress,
+    portId,
+    channelId,
     simulate = true,
   }: SendAssetFromEthereumToUnion
 ): Promise<Hash> {
@@ -145,7 +141,7 @@ export async function sendAssetFromEthereumToUnion(
         portId,
         channelId,
         bytesToHex(fromBech32(receiver).data),
-        [{ denom: assetId, amount }],
+        [{ denom: denomAddress, amount }],
         counterpartyTimeoutRevisionNumber,
         counterpartyTimeoutRevisionHeight,
       ],
@@ -166,73 +162,57 @@ export async function sendAssetFromEthereumToUnion(
   }
 }
 
-type OfflineSignerType<
-  TransportConfigType extends
-    | TransportConfig["type"]
-    | FallbackTransport
-    | undefined
-> = CosmjsOfflineSigner | DirectSecp256k1HdWallet;
-//TransportConfigType extends 'custom' ? CosmjsOfflineSigner : DirectSecp256k1HdWallet
+type OfflineSignerType = CosmjsOfflineSigner | DirectSecp256k1HdWallet;
 
 type SendAssetFromUnionToEthereum<
   TDenom extends string | undefined,
-  TGas extends `${string}${TDenom}` | undefined,
-  TransportConfigType extends TransportConfig["type"] | undefined
+  TGas extends `${string}${TDenom}` | undefined
 > = {
-  assetId: string;
+  contractAddress: string;
   receiver: string;
   amount: string;
   denom: `${TDenom}`;
   gasPrice?: TGas;
-  rpcUrl?: string;
+  rpcUrl: string;
   memo?: string;
-  signer: OfflineSignerType<TransportConfigType>;
+  offlineSigner: OfflineSignerType;
+  channel: string;
 };
 
 export async function sendAssetFromUnionToEthereum<
   TDenom extends string | undefined,
-  TGas extends `${string}${TDenom}` | undefined,
-  TransportConfigType extends TransportConfig["type"] | undefined
+  TGas extends `${string}${TDenom}` | undefined
 >(
   _client: UnionClient,
   {
-    signer,
-    assetId = chain.union.testnet.token.address,
+    offlineSigner,
+    contractAddress,
     amount,
     denom,
     receiver,
     gasPrice,
-    rpcUrl = UNION_RPC_URL || "https://union-testnet-rpc.polkachu.com",
-    memo = "random more than four characters I'm transferring.",
-  }: SendAssetFromUnionToEthereum<TDenom, TGas, TransportConfigType>
+    channel,
+    rpcUrl,
+    memo,
+  }: SendAssetFromUnionToEthereum<TDenom, TGas>
 ): Promise<ExecuteResult> {
-  console.log(signer, assetId, amount, denom, receiver, gasPrice, rpcUrl, memo);
-  const tendermintClient = await Comet38Client.connect(rpcUrl);
+  const tendermintClient = await Tendermint37Client.connect(rpcUrl);
   const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(
     tendermintClient,
-    signer,
-    {
-      gasPrice: GasPrice.fromString(gasPrice ?? `0.001${denom}`),
-    }
+    offlineSigner,
+    { gasPrice: GasPrice.fromString(gasPrice ?? `0.001${denom}`) }
   );
 
-  const [account] = await signer.getAccounts();
+  const [account] = await offlineSigner.getAccounts();
   const address = account?.address ?? raise("address is undefined");
 
   const result = await cosmwasmClient.execute(
-    "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    assetId,
-    {
-      transfer: {
-        channel: "channel-0",
-        receiver: "0xCa091fE8005596E64ba9Cf028a75755a2380021A".slice(2),
-        timeout: null,
-        memo: "random more than four characters I'm transferring.",
-      },
-    },
+    address,
+    contractAddress,
+    { transfer: { channel, receiver: receiver.slice(2), timeout: null, memo } },
     "auto",
     undefined,
-    [{ denom: "muno", amount: "1000" }]
+    [{ denom, amount }]
   );
 
   return result;
