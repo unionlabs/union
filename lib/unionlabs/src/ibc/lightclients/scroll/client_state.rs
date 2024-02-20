@@ -38,9 +38,12 @@ impl From<ClientState> for protos::union::ibc::lightclients::scroll::v1::ClientS
             latest_batch_index: value.latest_batch_index,
             frozen_height: Some(value.frozen_height.into()),
             rollup_contract_address: value.rollup_contract_address.into(),
-            rollup_finalized_state_roots_slot: value.rollup_finalized_state_roots_slot.into(),
+            rollup_finalized_state_roots_slot: value
+                .rollup_finalized_state_roots_slot
+                .to_big_endian()
+                .into(),
             ibc_contract_address: value.ibc_contract_address.into(),
-            ibc_commitment_slot: value.ibc_commitment_slot.into(),
+            ibc_commitment_slot: value.ibc_commitment_slot.to_big_endian().into(),
         }
     }
 }
