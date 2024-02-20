@@ -556,7 +556,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             ) {
                 revert IBCPacketLib.ErrInvalidProof();
             }
-            channel.state == IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED;
+            channel.state = IbcCoreChannelV1GlobalEnums.State.STATE_CLOSED;
         } else if (isUnordered) {
             if (
                 !verifyAbsentCommitment(
