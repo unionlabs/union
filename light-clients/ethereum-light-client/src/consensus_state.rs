@@ -1,7 +1,7 @@
 use cosmwasm_std::Deps;
 use unionlabs::{
     bls::BlsPublicKey,
-    cosmwasm::wasm::custom_query::{query_aggregate_public_keys, UnionCustomQuery},
+    cosmwasm::wasm::union::custom_query::{query_aggregate_public_keys, UnionCustomQuery},
     ethereum::config::ChainSpec,
     ibc::lightclients::ethereum::{
         consensus_state::ConsensusState, trusted_sync_committee::ActiveSyncCommittee,

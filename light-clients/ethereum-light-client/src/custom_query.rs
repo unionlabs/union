@@ -2,7 +2,7 @@ use cosmwasm_std::{Binary, Deps};
 use ethereum_verifier::BlsVerify;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
-    cosmwasm::wasm::custom_query::{query_fast_aggregate_verify, UnionCustomQuery},
+    cosmwasm::wasm::union::custom_query::{query_fast_aggregate_verify, UnionCustomQuery},
 };
 
 pub struct VerificationContext<'a> {

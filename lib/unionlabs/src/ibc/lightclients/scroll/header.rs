@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use super::proof::{ScrollFinalizedProof, TryFromScrollFinalizedProofError};
 use crate::{
     errors::{required, MissingField},
     ibc::{
         core::client::height::Height,
-        lightclients::ethereum::account_proof::{AccountProof, TryFromAccountProofError},
+        lightclients::{
+            ethereum::account_proof::{AccountProof, TryFromAccountProofError},
+            scroll::proof::{ScrollFinalizedProof, TryFromScrollFinalizedProofError},
+        },
     },
     Proto, TypeUrl,
 };

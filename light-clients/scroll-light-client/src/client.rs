@@ -8,7 +8,7 @@ use ics008_wasm_client::{
 };
 use sha3::Digest;
 use unionlabs::{
-    cosmwasm::wasm::custom_query::{query_consensus_state, UnionCustomQuery},
+    cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::Proto,
     google::protobuf::any::Any,
     hash::H256,
