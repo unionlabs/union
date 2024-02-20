@@ -2,9 +2,8 @@
  * Add target="_blank" to all external links
  */
 
-const externalLinks = document.querySelectorAll('a[href^="http"]');
-
 window.addEventListener("DOMContentLoaded", () => {
+  const externalLinks = document.querySelectorAll('a[href^="http"]');
   try {
     for (const link of externalLinks) {
       link.setAttribute("target", "_blank");
