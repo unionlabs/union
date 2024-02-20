@@ -8,6 +8,7 @@ use crate::{bls::BlsPublicKey, errors::InvalidLength, hash::H256, Proto, TypeUrl
 pub struct ConsensusState {
     // REVIEW: Remove this field as this height is what is used to query the consensus state?
     pub slot: u64,
+    pub state_root: H256,
     pub storage_root: H256,
     pub timestamp: u64,
     /// aggregate public key of current sync committee
@@ -20,6 +21,7 @@ impl From<ConsensusState> for protos::union::ibc::lightclients::ethereum::v1::Co
     fn from(value: ConsensusState) -> Self {
         Self {
             slot: value.slot,
+            state_root: value.state_root.into(),
             storage_root: value.storage_root.into(),
             timestamp: value.timestamp,
             current_sync_committee: value.current_sync_committee.into(),
@@ -36,6 +38,7 @@ pub enum TryFromConsensusStateError {
     CurrentSyncCommittee(InvalidLength),
     NextSyncCommittee(InvalidLength),
     StorageRoot(InvalidLength),
+    StateRoot(InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ConsensusState> for ConsensusState {
@@ -46,6 +49,10 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ConsensusState> for
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             slot: value.slot,
+            state_root: value
+                .state_root
+                .try_into()
+                .map_err(TryFromConsensusStateError::StorageRoot)?,
             storage_root: value
                 .storage_root
                 .try_into()
