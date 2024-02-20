@@ -39,16 +39,16 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@cosmjs/cosmwasm-stargate": "^0.32.2",
-    "@cosmjs/encoding": "^0.32.2",
-    "@cosmjs/stargate": "^0.32.2",
-    "@cosmjs/tendermint-rpc": "^0.32.2",
+    "@cosmjs/cosmwasm-stargate": "^0.31.1",
+    "@cosmjs/encoding": "^0.31.1",
+    "@cosmjs/stargate": "^0.31.1",
+    "@cosmjs/tendermint-rpc": "^0.31.1",
     "viem": "^2.7.9"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.13.10",
-    "@cosmjs/amino": "^0.32.2",
-    "@cosmjs/proto-signing": "^0.32.2",
+    "@cosmjs/amino": "^0.31.1",
+    "@cosmjs/proto-signing": "^0.31.1",
     "@leapwallet/cosmos-snap-provider": "^0.1.25",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/node": "^20.11.17",

@@ -70,7 +70,7 @@ export const config = createConfig({
      * - https://wagmi.sh/core/api/transports/custom#custom
      * - https://viem.sh/docs/clients/transports/custom.html
      */
-  }
+  },
   /**
    * TODO: add custom client for Union chain.
    * @see
