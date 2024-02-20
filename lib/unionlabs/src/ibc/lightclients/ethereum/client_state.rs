@@ -10,7 +10,7 @@ use crate::{
         core::client::height::Height,
         lightclients::{
             ethereum::fork_parameters::ForkParameters,
-            tendermint::fraction::{Fraction, ZeroDenominatorError},
+            tendermint::fraction::{Fraction, TryFromFractionError},
         },
     },
     uint::U256,
@@ -75,7 +75,7 @@ pub enum TryFromClientStateError {
     ForkParameters(TryFromProtoErrorOf<ForkParameters>),
     GenesisValidatorsRoot(InvalidLength),
     CounterpartyCommitmentSlot(InvalidLength),
-    TrustLevel(ZeroDenominatorError),
+    TrustLevel(TryFromFractionError),
     IbcContractAddress(InvalidLength),
 }
 
