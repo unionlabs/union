@@ -93,7 +93,7 @@ impl<H: HashScheme> ZkTrie<H> {
         let k = to_secure_key::<H>(key)?;
         let key_hash = k.into();
 
-        //mitigate the create-delete issue: do not delete unexisted key
+        //mitigate the create-delete issue: do not delete non-existent key
         match self.try_get_node(db, &key_hash) {
             Ok(_) => {}
             Err(Error::KeyNotFound) => return Ok(()),
@@ -507,7 +507,7 @@ impl<H: HashScheme> ZkTrie<H> {
         Ok(proof)
     }
 
-    // Prove is a simlified calling of ProveWithDeletion
+    // Prove is a simplified calling of ProveWithDeletion
     pub fn prove<D, F>(
         &self,
         db: &mut D,
@@ -532,7 +532,7 @@ impl<H: HashScheme> ZkTrie<H> {
     // with the node that proves the absence of the key.
     //
     // If the trie contain value for key, the onHit is called BEFORE writeNode being called,
-    // both the hitted leaf node and its sibling node is provided as arguments so caller
+    // both the hit leaf node and its sibling node is provided as arguments so caller
     // would receive enough information for launch a deletion and calculate the new root
     // base on the proof data
     // Also notice the sibling can be nil if the trie has only one leaf

@@ -1,27 +1,12 @@
-use cosmwasm_std::{Binary, Deps, QueryRequest};
+use cosmwasm_std::{Binary, Deps};
 use ethereum_verifier::BlsVerify;
-use unionlabs::bls::{BlsPublicKey, BlsSignature};
-
-use crate::errors::{CustomQueryError, Error};
-
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-#[serde(rename_all = "snake_case")]
-pub enum CustomQuery {
-    AggregateVerify {
-        public_keys: Vec<Binary>,
-        message: Binary,
-        signature: Binary,
-    },
-
-    Aggregate {
-        public_keys: Vec<Binary>,
-    },
-}
-
-impl cosmwasm_std::CustomQuery for CustomQuery {}
+use unionlabs::{
+    bls::{BlsPublicKey, BlsSignature},
+    cosmwasm::wasm::custom_query::{query_fast_aggregate_verify, UnionCustomQuery},
+};
 
 pub struct VerificationContext<'a> {
-    pub deps: Deps<'a, CustomQuery>,
+    pub deps: Deps<'a, UnionCustomQuery>,
 }
 
 impl<'a> BlsVerify for VerificationContext<'a> {
@@ -54,41 +39,4 @@ impl<'a> BlsVerify for VerificationContext<'a> {
             )))
         }
     }
-}
-
-pub fn query_fast_aggregate_verify(
-    deps: Deps<CustomQuery>,
-    public_keys: Vec<Binary>,
-    message: Binary,
-    signature: Binary,
-) -> Result<bool, Error> {
-    let request: QueryRequest<CustomQuery> = QueryRequest::Custom(CustomQuery::AggregateVerify {
-        public_keys,
-        message,
-        signature,
-    });
-
-    deps.querier
-        .query(&request)
-        .map_err(|e| CustomQueryError::FastAggregateVerify(e.to_string()).into())
-}
-
-pub fn query_aggregate_public_keys(
-    deps: Deps<CustomQuery>,
-    public_keys: Vec<BlsPublicKey>,
-) -> Result<BlsPublicKey, Error> {
-    let request: QueryRequest<CustomQuery> = QueryRequest::Custom(CustomQuery::Aggregate {
-        public_keys: public_keys.into_iter().map(|x| Binary(x.into())).collect(),
-    });
-
-    let response: Binary = deps
-        .querier
-        .query(&request)
-        .map_err(|e| CustomQueryError::AggregatePublicKeys(e.to_string()))?;
-
-    response
-        .0
-        .as_slice()
-        .try_into()
-        .map_err(|_| CustomQueryError::InvalidAggregatePublicKey.into())
 }

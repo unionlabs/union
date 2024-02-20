@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, QueryRequest};
+use cosmwasm_std::{Deps, DepsMut, Env};
 use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
@@ -8,6 +8,7 @@ use ics008_wasm_client::{
 };
 use sha3::Digest;
 use unionlabs::{
+    cosmwasm::wasm::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::Proto,
     google::protobuf::any::Any,
     hash::H256,
@@ -30,13 +31,6 @@ use unionlabs::{
 
 use crate::{errors::Error, eth_encoding::generate_commitment_key};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
-#[serde(rename_all = "snake_case")]
-pub enum CustomQuery {
-    ConsensusState { client_id: String, height: Height },
-}
-impl cosmwasm_std::CustomQuery for CustomQuery {}
-
 type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
 type WasmConsensusState =
     unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
@@ -49,7 +43,7 @@ pub struct ScrollLightClient;
 impl IbcClient for ScrollLightClient {
     type Error = Error;
 
-    type CustomQuery = CustomQuery;
+    type CustomQuery = UnionCustomQuery;
 
     type Header = Header;
 
@@ -116,25 +110,15 @@ impl IbcClient for ScrollLightClient {
         header: Self::Header,
     ) -> Result<(), Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
-        let l1_consensus_state_data =
-            deps.querier
-                .query::<Binary>(&QueryRequest::Custom(CustomQuery::ConsensusState {
-                    client_id: client_state.data.l1_client_id.clone(),
-                    height: header.l1_height,
-                }))?;
-        let l1_consensus_state = Any::<WasmL1ConsensusState>::try_from_proto_bytes(
-            &l1_consensus_state_data,
-        )
-        .map_err(|_| Error::DecodeFromProto {
-            reason: format!(
-                "verify_header: failed to decode L1 consensus: {}",
-                hex::encode(l1_consensus_state_data.0)
-            ),
-        })?;
+        let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
+            deps,
+            client_state.data.l1_client_id.clone(),
+            header.l1_height,
+        )?;
         scroll_verifier::verify_header(
             client_state.data,
             header,
-            l1_consensus_state.0.data.state_root,
+            l1_consensus_state.data.state_root,
         )?;
         Ok(())
     }
@@ -152,21 +136,11 @@ impl IbcClient for ScrollLightClient {
         header: Self::Header,
     ) -> Result<Vec<Height>, Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-        let l1_consensus_state_data =
-            deps.querier
-                .query::<Binary>(&QueryRequest::Custom(CustomQuery::ConsensusState {
-                    client_id: client_state.data.l1_client_id.clone(),
-                    height: header.l1_height,
-                }))?;
-        let l1_consensus_state = Any::<WasmL1ConsensusState>::try_from_proto_bytes(
-            &l1_consensus_state_data,
-        )
-        .map_err(|_| Error::DecodeFromProto {
-            reason: format!(
-                "update_state: failed to decode L1 consensus: {}",
-                hex::encode(l1_consensus_state_data.0)
-            ),
-        })?;
+        let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
+            deps.as_ref(),
+            client_state.data.l1_client_id.clone(),
+            header.l1_height,
+        )?;
         if client_state.data.latest_batch_index < header.finalized_proof.batch_index {
             client_state.data.latest_batch_index = header.finalized_proof.batch_index;
             update_client_state(
@@ -183,7 +157,7 @@ impl IbcClient for ScrollLightClient {
             data: ConsensusState {
                 batch_index: header.finalized_proof.batch_index,
                 ibc_storage_root: header.ibc_account_proof.storage_root,
-                timestamp: l1_consensus_state.0.data.timestamp,
+                timestamp: l1_consensus_state.data.timestamp,
             },
         };
         save_consensus_state(deps, consensus_state, &updated_height);
