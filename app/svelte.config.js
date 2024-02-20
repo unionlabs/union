@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-static'
+import adapter from '@sveltejs/adapter-cloudflare'
 import { preprocessMeltUI, sequence } from '@melt-ui/pp'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 
@@ -6,11 +6,10 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 export default {
   preprocess: sequence([
     vitePreprocess(),
-    // has to be last
-    preprocessMeltUI()
+    preprocessMeltUI() // has to be last
   ]),
   kit: {
-    adapter: adapter({ strict: true }),
+    adapter: adapter(),
     /** @note `$` is a svelte path alias convention */
     alias: {
       $: './src/',

@@ -1,10 +1,8 @@
-export const prerender = true
-
 import { json } from '@sveltejs/kit'
-import type { RequestHandler } from '@sveltejs/kit'
+import type { RequestHandler } from './$types.ts'
 import { getUnoFromFaucet } from '$/lib/fetchers/faucet.ts'
 
-export const GET: RequestHandler = async request => {
+export const GET = (async request => {
   const address = request.url.searchParams.get('address')
 
   try {
@@ -21,4 +19,4 @@ export const GET: RequestHandler = async request => {
     console.error(errorMessage)
     return json({ error: errorMessage }, { status: 500 })
   }
-}
+}) satisfies RequestHandler
