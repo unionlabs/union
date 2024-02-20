@@ -1,15 +1,18 @@
 <script lang="ts">
   import clsx from 'clsx'
   import { Button } from 'bits-ui'
-  import { fetcher } from '$/lib/utilities'
   import { snapAddress } from '$/lib/snap.ts'
+  import { getUnoFromFaucet } from '$/lib/fetchers/faucet'
   import { createMutation, useQueryClient } from '@tanstack/svelte-query'
 
   const queryClient = useQueryClient()
 
   const unoFromFaucetMutation = createMutation({
-    mutationFn: () => fetcher(`/api/faucet?address=${$snapAddress}`),
-    onSuccess: async () =>
+    mutationFn: async () => {
+      if (!$snapAddress) return
+      return await getUnoFromFaucet({ address: $snapAddress })
+    },
+    onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['balance-sepolia-uno'] }),
         queryClient.invalidateQueries({ queryKey: ['balance-union-uno'] })

@@ -26,6 +26,5 @@ export async function getUnoFromFaucet({ address }: { address: string }) {
     throw new Error(error?.message)
   }
 
-  console.log(response)
   return response?.data
 }
