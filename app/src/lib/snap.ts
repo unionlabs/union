@@ -1,16 +1,16 @@
-import { CHAIN, CONTRACT, UNO, URLS } from '$/lib/constants'
-import { get, writable } from 'svelte/store'
-import { wallet } from '$/lib/wallet/config'
 import {
-  CosmjsOfflineSigner,
-  connectSnap,
   getKey,
   getSnap,
-  suggestChain
+  connectSnap,
+  suggestChain,
+  CosmjsOfflineSigner
 } from '@leapwallet/cosmos-snap-provider'
-import { GasPrice, SigningStargateClient, type StargateClient } from '@cosmjs/stargate'
+import { get, writable } from 'svelte/store'
+import { wallet } from '$/lib/wallet/config'
 import { Tendermint37Client } from '@cosmjs/tendermint-rpc'
+import { CHAIN, CONTRACT, UNO, URLS } from '$/lib/constants'
 import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
+import { GasPrice, SigningStargateClient, type StargateClient } from '@cosmjs/stargate'
 
 export const snapInstalled = writable(false)
 export async function ensureSnapInstalled() {
@@ -18,7 +18,6 @@ export async function ensureSnapInstalled() {
 
   const currentSnaps = await window.ethereum?.request({ method: 'wallet_getSnaps' })
   const installed = Object.hasOwn(currentSnaps, 'npm:@leapwallet/metamask-cosmos-snap')
-  console.info('wallet_getSnaps - installed', installed)
   snapInstalled.set(installed)
 
   if (installed) return
@@ -39,18 +38,15 @@ export async function ensureSnapConnected() {
 }
 
 export const snapAddress = writable<string | null>(null)
-const pubKey = writable<Uint8Array | null>(null)
+
 export async function getSnapAddress() {
   if (!get(snapConnected)) return
 
   const chainAddressRequest = await getKey(CHAIN.UNION.ID)
-  const chainAddress = chainAddressRequest?.address
-  pubKey.set(chainAddressRequest?.pubkey)
-  snapAddress.set(chainAddress)
+  snapAddress.set(chainAddressRequest?.address)
 }
 
 export const snapChainConnected = writable(false)
-
 export const snapChainInitialized = writable(false)
 export async function ensureSnapChainInitialized() {
   if (!get(snapConnected)) return
@@ -166,7 +162,6 @@ export async function sendAssetFromUnionToEthereum({ amount }: { amount: string 
   )
 
   const [{ address: unionAddress }] = await offlineSigner.getAccounts()
-
   const result = await signingCosmWasmClient.execute(
     unionAddress,
     CONTRACT.UNION.ADDRESS,
