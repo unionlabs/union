@@ -350,7 +350,8 @@ impl<C: ChainSpec> Chain for Evm<C> {
             let timestamp = bootstrap.header.execution.timestamp;
             ethereum::consensus_state::ConsensusState {
                 slot: bootstrap.header.beacon.slot,
-                // REVIEW: Should this be default?
+                state_root: bootstrap.header.execution.state_root,
+                // TODO: Should this shouldn't be the default but fetched via eth_getProof
                 storage_root: H256::default(),
                 timestamp,
                 current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,

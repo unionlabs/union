@@ -853,12 +853,14 @@ pub mod union {
                     // @@protoc_insertion_point(union.ibc.lightclients.ethereum.v1)
                 }
             }
+            pub mod scroll {
+                #[cfg(feature = "union+ibc+lightclients+scroll+v1")]
+                // @@protoc_insertion_point(attribute:union.ibc.lightclients.scroll.v1)
+                pub mod v1 {
+                    include!("union.ibc.lightclients.scroll.v1.rs");
+                    // @@protoc_insertion_point(union.ibc.lightclients.scroll.v1)
+                }
+            }
         }
-    }
-    #[cfg(feature = "union+union")]
-    // @@protoc_insertion_point(attribute:union.union)
-    pub mod union {
-        include!("union.union.rs");
-        // @@protoc_insertion_point(union.union)
     }
 }

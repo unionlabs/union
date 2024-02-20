@@ -1,0 +1,20 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "scroll-verifier"
+repository.workspace   = true
+version                = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ethereum-verifier = { workspace = true }
+hex               = { workspace = true }
+rlp               = { workspace = true }
+serde             = { workspace = true }
+serde-utils       = { workspace = true }
+serde_json        = { workspace = true }
+sha3              = { workspace = true }
+thiserror         = { workspace = true }
+unionlabs         = { workspace = true }
+zktrie            = { workspace = true }

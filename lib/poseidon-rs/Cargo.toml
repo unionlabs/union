@@ -1,0 +1,23 @@
+[package]
+authors     = ["arnaucube <root@arnaucube.com>"]
+description = "Poseidon hash implementation"
+edition     = "2018"
+license     = "Apache-2.0"
+name        = "poseidon-rs"
+readme      = "README.md"
+repository  = "https://github.com/arnaucube/poseidon-rs"
+version     = "0.0.10"
+
+[dependencies]
+ethereum-types = { version = "0.14", default-features = false }
+ff             = { package = "ff_ce", version = "0.14", default-features = false, features = ["derive"] }
+rand           = { version = "0.4", default-features = false }
+serde          = { workspace = true, default-features = false, features = ["derive"] }
+serde_json     = { workspace = true, default-features = false, features = ["std"] }
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+harness = false
+name    = "bench_poseidon_hash"

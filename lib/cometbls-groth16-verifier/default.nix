@@ -6,6 +6,6 @@
       });
     in
     {
-      inherit (workspace) packages checks;
+      inherit (workspace) checks;
     };
 }

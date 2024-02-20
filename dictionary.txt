@@ -14,6 +14,7 @@ CFLAGS
 CMOV
 Celestia
 Chainer
+Codehash
 Coeff
 Cofactor
 Configurator
@@ -22,12 +23,14 @@ Cosmoverse
 Counterparty
 DATADIR
 DYLD
+Datasource
 Denoms
 Devconnect
 Devs
 Disket
 Distinctio
 Djuric
+Fatalf
 Feegrant
 Feiock
 Frontmatter
@@ -92,6 +95,7 @@ Redelegation
 Redelegations
 Repr
 Roboto
+Rollup
 Rushi
 Rustup
 SEPOLIA
@@ -109,6 +113,7 @@ Subo
 TRYOPEN
 Tempdirs
 Tendermint
+Testcase
 Timestamptz
 Tioga
 UDHC
@@ -129,6 +134,7 @@ Woestijne
 Wrapf
 XMSB
 YMSB
+ZKTRIE
 Zerg
 aarch
 abci
@@ -163,6 +169,7 @@ arbtest
 arethetypeswrong
 arion
 arkworks
+arnaucube
 astro
 astrojs
 attrsets
@@ -222,6 +229,7 @@ chainid
 chainsafe
 chevdor
 chrono
+circom
 clientkeeper
 clienttypes
 clippy
@@ -279,6 +287,7 @@ crisistypes
 crossorigin
 cryptware
 ctypes
+curr
 dalek
 dasel
 dasharray
@@ -326,6 +335,7 @@ endraw
 enim
 enumorph
 errorsmod
+errortype
 esac
 ethabi
 ethabicodec
@@ -344,6 +354,7 @@ feegrantmodule
 fermentum
 fetchurl
 fetchzip
+fields
 fkey
 fksmg
 floorlog
@@ -471,6 +482,7 @@ keyframes
 keygen
 keypair
 keypairs
+keypreimage
 kwallet
 laddr
 lahcen
@@ -545,6 +557,7 @@ neondb
 netgo
 netutil
 networkid
+newacc
 nextest
 nextval
 nixbuildnet
@@ -612,6 +625,7 @@ posthandler
 precommit
 prehash
 preimage
+preimages
 preprocessors
 prevote
 println
@@ -650,6 +664,7 @@ rawfile
 rclone
 readarray
 receiveds
+recursiving
 redelegate
 redelegating
 redelegation
@@ -668,6 +683,7 @@ ripemd
 rlib
 rlpdump
 roadmap
+rollup
 rollups
 rpath
 rsplit
@@ -680,9 +696,11 @@ rustfmt
 rustlib
 rustls
 rustup
+sbox
 schemars
 schnorr
 scrollbars
+scrollproof
 sdkerrors
 secp
 sepolia
@@ -690,6 +708,7 @@ sequi
 serde
 serverconfig
 servertypes
+sgxlib
 shacham
 shallue
 shazow
@@ -720,6 +739,7 @@ stakingtypes
 stargate
 starport
 starsd
+statedb
 statemachine
 stateproof
 statesync
@@ -826,6 +846,7 @@ unionp
 unionsimulation
 unionvisor
 unionvisorbn
+unittests
 unjail
 unjailed
 unmarshal
@@ -895,5 +916,6 @@ zellij
 zerg
 zerolog
 zkps
+zktrie
 zstd
 λpxrx

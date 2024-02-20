@@ -42,6 +42,9 @@ pub mod ethereum;
 /// Types specific to the union protocol.
 pub mod union;
 
+/// Types specific to the scroll protocol.
+pub mod scroll;
+
 /// Wrapper types around [`milagro_bls`] types, providing more conversions and a simpler signing interface.
 pub mod bls;
 
@@ -364,6 +367,7 @@ pub enum WasmClientType {
     EthereumMainnet,
     Cometbls,
     Tendermint,
+    Scroll,
 }
 
 impl FromStr for WasmClientType {
@@ -375,6 +379,7 @@ impl FromStr for WasmClientType {
             "EthereumMainnet" => Ok(WasmClientType::EthereumMainnet),
             "Cometbls" => Ok(WasmClientType::Cometbls),
             "Tendermint" => Ok(WasmClientType::Tendermint),
+            "Scroll" => Ok(WasmClientType::Scroll),
             _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
         }
     }

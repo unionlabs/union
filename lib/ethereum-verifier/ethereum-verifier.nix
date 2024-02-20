@@ -9,6 +9,6 @@
       });
     in
     {
-      inherit (ethereum-verifier-all) packages checks;
+      inherit (ethereum-verifier-all) checks;
     };
 }

@@ -1,16 +1,15 @@
 use cosmwasm_std::Deps;
 use unionlabs::{
     bls::BlsPublicKey,
+    cosmwasm::wasm::union::custom_query::{query_aggregate_public_keys, UnionCustomQuery},
     ethereum::config::ChainSpec,
     ibc::lightclients::ethereum::{
         consensus_state::ConsensusState, trusted_sync_committee::ActiveSyncCommittee,
     },
 };
 
-use crate::{
-    custom_query::{query_aggregate_public_keys, CustomQuery},
-    errors::Error,
-};
+use crate::errors::Error;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct TrustedConsensusState<C: ChainSpec> {
     pub state: ConsensusState,
@@ -25,7 +24,7 @@ pub struct TrustedConsensusState<C: ChainSpec> {
 
 impl<C: ChainSpec> TrustedConsensusState<C> {
     pub fn new(
-        deps: Deps<CustomQuery>,
+        deps: Deps<UnionCustomQuery>,
         consensus_state: ConsensusState,
         sync_committee: ActiveSyncCommittee<C>,
     ) -> Result<Self, Error> {

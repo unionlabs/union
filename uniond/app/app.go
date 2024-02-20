@@ -630,7 +630,7 @@ func NewUnionApp(
 	)
 
 	querierOption := ibcwasmkeeper.WithQueryPlugins(&ibcwasmtypes.QueryPlugins{
-		Custom: unioncustomquery.CustomQuerier(),
+		Custom: unioncustomquery.CustomQuerier(&ibcKeeper.ClientKeeper),
 	})
 	app.WasmClientKeeper = ibcwasmkeeper.NewKeeperWithVM(
 		appCodec,

@@ -120,7 +120,12 @@
         }
         {
           network = "testnet";
-          rpc-url = "https://rpc-sepolia.rockx.com/";
+          rpc-url = "https://rpc-sepolia.rockx.com";
+          private-key = ''"$1"'';
+        }
+        {
+          network = "scroll-testnet";
+          rpc-url = "https://sepolia-rpc.scroll.io";
           private-key = ''"$1"'';
         }
       ];
