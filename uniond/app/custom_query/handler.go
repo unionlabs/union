@@ -72,15 +72,16 @@ func CustomQuerier(clientKeeper *clientkeeper.Keeper) func(sdk.Context, json.Raw
 				return json.Marshal(false)
 			}
 		} else if customQuery.ConsensusState != nil {
+			ctx.Logger().Debug("Querying consensus state", customQuery.ConsensusState.ClientID, customQuery.ConsensusState.Height)
 			consensusState, ok := clientKeeper.GetClientConsensusState(ctx, customQuery.ConsensusState.ClientID, customQuery.ConsensusState.Height)
 			if !ok {
-				return nil, fmt.Errorf("failed to query consensus state")
+				return nil, fmt.Errorf("failed to query consensus state %s %d", customQuery.ConsensusState.ClientID, customQuery.ConsensusState.Height.RevisionHeight)
 			}
 			return json.Marshal(clientKeeper.MustMarshalConsensusState(consensusState))
 		} else if customQuery.ClientState != nil {
 			clientState, ok := clientKeeper.GetClientState(ctx, customQuery.ClientState.ClientID)
 			if !ok {
-				return nil, fmt.Errorf("failed to query client state")
+				return nil, fmt.Errorf("failed to query client state %s", customQuery.ClientState.ClientID)
 			}
 			return json.Marshal(clientKeeper.MustMarshalClientState(clientState))
 		} else {
