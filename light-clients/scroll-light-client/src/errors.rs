@@ -76,7 +76,7 @@ pub enum Error {
     Unimplemented,
 
     #[error("error while calling custom query: {0}")]
-    CustomQuery(#[from] unionlabs::cosmwasm::wasm::custom_query::Error),
+    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
 }
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header>>> for Error {
