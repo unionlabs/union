@@ -55,7 +55,7 @@ pub fn query_fast_aggregate_verify(
         });
     deps.querier
         .query(&request)
-        .map_err(|e| Error::FastAggregateVerify(e.to_string()).into())
+        .map_err(|e| Error::FastAggregateVerify(e.to_string()))
 }
 
 pub fn query_aggregate_public_keys(
@@ -74,7 +74,7 @@ pub fn query_aggregate_public_keys(
         .0
         .as_slice()
         .try_into()
-        .map_err(|_| Error::InvalidAggregatePublicKey.into())
+        .map_err(|_| Error::InvalidAggregatePublicKey)
 }
 
 pub fn query_consensus_state<T>(
@@ -92,8 +92,8 @@ where
             client_id,
             height,
         }))
-        .map_err(|e| Error::ConsensusState(e.to_string()).into())?;
+        .map_err(|e| Error::ConsensusState(e.to_string()))?;
     let Any(consensus_state) = Any::<T>::try_from_proto_bytes(&consensus_state_data)
-        .map_err(|e| Error::ConsensusState(format!("{:?}", e)).into())?;
+        .map_err(|e| Error::ConsensusState(format!("{e:?}")))?;
     Ok(consensus_state)
 }
