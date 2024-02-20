@@ -75,9 +75,6 @@ pub enum Error {
     #[error("expected value ({expected}) and stored value ({stored}) don't match")]
     StoredValueMismatch { expected: H256, stored: H256 },
 
-    #[error("custom query ({0})")]
-    CustomQuery(CustomQueryError),
-
     #[error("storage root mismatch, expected `{expected}` but found `{found}`")]
     StorageRootMismatch { expected: H256, found: H256 },
 
@@ -95,6 +92,9 @@ pub enum Error {
 
     #[error("the given contract address ({given}) doesn't match the stored value ({expected})")]
     IbcContractAddressMismatch { given: H160, expected: H160 },
+
+    #[error("error while calling custom query: {0}")]
+    CustomQuery(#[from] unionlabs::cosmwasm::wasm::custom_query::Error),
 }
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {
@@ -120,21 +120,5 @@ impl From<ics008_wasm_client::storage_utils::Error> for Error {
                 }
             }
         }
-    }
-}
-
-#[derive(ThisError, Debug, PartialEq)]
-pub enum CustomQueryError {
-    #[error("error while running `fast_aggregate_verify` query ({0})")]
-    FastAggregateVerify(String),
-    #[error("error while running `aggregate_public_keys` query ({0})")]
-    AggregatePublicKeys(String),
-    #[error("invalid public key is returned from `aggregate_public_key`")]
-    InvalidAggregatePublicKey,
-}
-
-impl From<CustomQueryError> for Error {
-    fn from(value: CustomQueryError) -> Self {
-        Error::CustomQuery(value)
     }
 }

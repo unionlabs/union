@@ -45,7 +45,7 @@ pub fn handling_elems_and_byte32<H: HashScheme>(
 }
 
 // HashElemsWithDomain performs a recursive poseidon hash over the array of ElemBytes, each hash
-// reduce 2 fieds into one, with a specified domain field which would be used in
+// reduce 2 fields into one, with a specified domain field which would be used in
 // every recursiving call
 pub fn hash_elems_with_domain<H: HashScheme>(
     domain: &Fr,

@@ -354,7 +354,7 @@ feegrantmodule
 fermentum
 fetchurl
 fetchzip
-fieds
+fields
 fkey
 fksmg
 floorlog
@@ -410,7 +410,6 @@ healthz
 heredocs
 herumi
 hexlify
-hitted
 hlist
 hmac
 holiman
@@ -719,7 +718,6 @@ sigint
 sigtypes
 simapp
 simd
-simlified
 simtestutil
 simtypes
 slashingkeeper
@@ -835,7 +833,6 @@ undelegate
 undelegations
 unergonomic
 unescrow
-unexisted
 uninit
 unionbuild
 unionbundle

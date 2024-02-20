@@ -12,6 +12,7 @@ use ics008_wasm_client::{
 };
 use sha3::Digest;
 use unionlabs::{
+    cosmwasm::wasm::custom_query::UnionCustomQuery,
     encoding::Proto,
     google::protobuf::any::Any,
     hash::H256,
@@ -35,11 +36,8 @@ use unionlabs::{
 };
 
 use crate::{
-    consensus_state::TrustedConsensusState,
-    context::LightClientContext,
-    custom_query::{CustomQuery, VerificationContext},
-    errors::Error,
-    eth_encoding::generate_commitment_key,
+    consensus_state::TrustedConsensusState, context::LightClientContext,
+    custom_query::VerificationContext, errors::Error, eth_encoding::generate_commitment_key,
     Config,
 };
 
@@ -52,7 +50,7 @@ pub struct EthereumLightClient;
 impl IbcClient for EthereumLightClient {
     type Error = Error;
 
-    type CustomQuery = CustomQuery;
+    type CustomQuery = UnionCustomQuery;
 
     type Header = Header<Config>;
 
@@ -271,7 +269,7 @@ impl IbcClient for EthereumLightClient {
         let height = Height::new(0, header.consensus_update.attested_header.beacon.slot);
 
         if let Some(consensus_state) =
-            read_consensus_state::<CustomQuery, ConsensusState>(deps, &height)?
+            read_consensus_state::<Self::CustomQuery, Self::ConsensusState>(deps, &height)?
         {
             // New header is given with the same height but the storage roots don't match.
             if consensus_state.data.storage_root != header.account_update.account_proof.storage_root
@@ -325,8 +323,10 @@ impl IbcClient for EthereumLightClient {
             return Ok(Status::Frozen);
         }
 
-        let Some(consensus_state) =
-            read_consensus_state::<CustomQuery, ConsensusState>(deps, &client_state.latest_height)?
+        let Some(consensus_state) = read_consensus_state::<Self::CustomQuery, Self::ConsensusState>(
+            deps,
+            &client_state.latest_height,
+        )?
         else {
             return Ok(Status::Expired);
         };
@@ -354,7 +354,7 @@ impl IbcClient for EthereumLightClient {
         height: Height,
     ) -> Result<u64, Self::Error> {
         Ok(
-            read_consensus_state::<CustomQuery, ConsensusState>(deps, &height)?
+            read_consensus_state::<Self::CustomQuery, Self::ConsensusState>(deps, &height)?
                 .ok_or(Error::ConsensusStateNotFound(height))?
                 .data
                 .timestamp,
@@ -558,10 +558,11 @@ mod test {
 
     #[test]
     fn query_status_returns_active() {
-        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+        let mut deps = OwnedDeps::<_, _, _, UnionCustomQuery> {
             storage: MockStorage::default(),
             api: MockApi::default(),
-            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            querier: MockQuerier::<UnionCustomQuery>::new(&[])
+                .with_custom_handler(custom_query_handler),
             custom_query_type: PhantomData,
         };
 
@@ -590,10 +591,11 @@ mod test {
 
     #[test]
     fn query_status_returns_frozen() {
-        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+        let mut deps = OwnedDeps::<_, _, _, UnionCustomQuery> {
             storage: MockStorage::default(),
             api: MockApi::default(),
-            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            querier: MockQuerier::<UnionCustomQuery>::new(&[])
+                .with_custom_handler(custom_query_handler),
             custom_query_type: PhantomData,
         };
 
@@ -615,10 +617,11 @@ mod test {
 
     #[test]
     fn query_status_returns_expired() {
-        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+        let mut deps = OwnedDeps::<_, _, _, UnionCustomQuery> {
             storage: MockStorage::default(),
             api: MockApi::default(),
-            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            querier: MockQuerier::<UnionCustomQuery>::new(&[])
+                .with_custom_handler(custom_query_handler),
             custom_query_type: PhantomData,
         };
 
@@ -665,10 +668,11 @@ mod test {
 
     #[test]
     fn verify_and_update_header_works_with_good_data() {
-        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+        let mut deps = OwnedDeps::<_, _, _, UnionCustomQuery> {
             storage: MockStorage::default(),
             api: MockApi::default(),
-            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            querier: MockQuerier::<UnionCustomQuery>::new(&[])
+                .with_custom_handler(custom_query_handler),
             custom_query_type: PhantomData,
         };
 
@@ -754,9 +758,9 @@ mod test {
         }
     }
 
-    fn custom_query_handler(query: &CustomQuery) -> MockQuerierCustomHandlerResult {
+    fn custom_query_handler(query: &UnionCustomQuery) -> MockQuerierCustomHandlerResult {
         match query {
-            CustomQuery::AggregateVerify {
+            UnionCustomQuery::AggregateVerify {
                 public_keys,
                 message,
                 signature,
@@ -776,7 +780,7 @@ mod test {
                     serde_json::to_vec(&res.is_ok()).unwrap().into(),
                 ))
             }
-            CustomQuery::Aggregate { public_keys } => {
+            UnionCustomQuery::Aggregate { public_keys } => {
                 let pubkey = eth_aggregate_public_keys_unchecked(
                     public_keys
                         .iter()
@@ -790,19 +794,21 @@ mod test {
                     serde_json::to_vec(&Binary(pubkey.into())).unwrap().into(),
                 ))
             }
+            _ => unimplemented!(),
         }
     }
 
     #[allow(clippy::type_complexity)]
     fn prepare_test_data() -> (
-        OwnedDeps<MockStorage, MockApi, MockQuerier<CustomQuery>, CustomQuery>,
+        OwnedDeps<MockStorage, MockApi, MockQuerier<UnionCustomQuery>, UnionCustomQuery>,
         ethereum::header::Header<Mainnet>,
         Env,
     ) {
-        let mut deps = OwnedDeps::<_, _, _, CustomQuery> {
+        let mut deps = OwnedDeps::<_, _, _, UnionCustomQuery> {
             storage: MockStorage::default(),
             api: MockApi::default(),
-            querier: MockQuerier::<CustomQuery>::new(&[]).with_custom_handler(custom_query_handler),
+            querier: MockQuerier::<UnionCustomQuery>::new(&[])
+                .with_custom_handler(custom_query_handler),
             custom_query_type: PhantomData,
         };
 
