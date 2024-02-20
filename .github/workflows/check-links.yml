@@ -11,8 +11,6 @@ defaults:
     shell: bash
 
 env:
-  NIX_VERSION: nix-2.13.2
-  NIXPKGS_CHANNEL: nixos-22.11
   ACTIONS_RUNNER_DEBUG: true
 
 jobs:
@@ -25,27 +23,22 @@ jobs:
         with:
           lfs: true
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v25
-        with:
-          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
-          github_access_token: ${{ github.token }}
+      - name: Link Check
+        id: lychee
+        uses: lycheeverse/lychee-action@v1.9.3
 
-      - name: Add & Update nix-channel
-        run: |
-          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
-          nix-channel --update
-
-      - name: Comment on Pull Request
+      - name: Create Issue From File
         uses: actions/github-script@v7
+        if: env.lychee_exit_code != 0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
-            const content = fs.readFileSync('./lychee/out.md', 'utf8');
-            github.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
+            const fs = require('node:fs');
+            const content = fs.readFileSync('./lychee/out.md', { encoding: 'utf8' });
+            github.issues.create({
               repo: context.repo.repo,
-              body: content
+              owner: context.repo.owner,
+              title: 'Link Checker Report',
+              body: content,
+              labels: ['report', 'automated issue']
             });
