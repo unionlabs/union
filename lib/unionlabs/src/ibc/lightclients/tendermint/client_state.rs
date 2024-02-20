@@ -6,7 +6,7 @@ use crate::{
     google::protobuf::duration::Duration,
     ibc::{
         core::client::height::Height,
-        lightclients::tendermint::fraction::{Fraction, ZeroDenominatorError},
+        lightclients::tendermint::fraction::{Fraction, TryFromFractionError},
     },
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
@@ -58,7 +58,7 @@ impl Proto for ClientState {
 #[derive(Debug)]
 pub enum TryFromClientStateError {
     MissingField(MissingField),
-    TrustLevel(ZeroDenominatorError),
+    TrustLevel(TryFromFractionError),
     TrustingPeriod(TryFromProtoErrorOf<Duration>),
     UnbondingPeriod(TryFromProtoErrorOf<Duration>),
     MaxClockDrift(TryFromProtoErrorOf<Duration>),

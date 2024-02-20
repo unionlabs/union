@@ -374,12 +374,12 @@ macro_rules! option_unwrap {
         // assign to a const here so this can't be called in non-const contexts
         const _: () = match $expr {
             Some(_) => {}
-            None => panic!("called `Option::unwrap()` on an `None` value"),
+            None => panic!("called `Option::unwrap()` on a `None` value"),
         };
 
         match $expr {
             Some(value) => value,
-            None => panic!("called `Option::unwrap()` on an `None` value"),
+            None => panic!("called `Option::unwrap()` on a `None` value"),
         }
     }};
 }
