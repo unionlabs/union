@@ -8,7 +8,7 @@
     {
       packages = {
         site = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-GN8jf/3CKiyy3DpDTdzWS+PvoLLYevrRBX27csljLHs=";
+          npmDepsHash = "sha256-+W5oASWX4HOHSJ4ScBSkU9SEQvanq3M4gGTaIAtb27o=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";
@@ -21,6 +21,8 @@
             cp -r ./dist/* $out
           '';
           doDist = false;
+          PUPPETEER_SKIP_DOWNLOAD = 1;
+          NODE_OPTIONS = "--no-warnings";
         };
       };
 
@@ -34,6 +36,7 @@
               ${ensureAtRepositoryRoot}
               cd site/
 
+              export PUPPETEER_SKIP_DOWNLOAD=1 
               npm install
               npm run dev
             '';

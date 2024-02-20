@@ -55,9 +55,11 @@ export default defineConfig({
         },
         {
           tag: "script",
-          attrs: {
-            src: "/anchor-targets.js",
-          },
+          attrs: { src: "/scripts/anchor-targets.js" },
+        },
+        {
+          tag: "script",
+          attrs: { src: "/scripts/edit-page-link.js" },
         },
         {
           // math rendering breaks without this
@@ -69,12 +71,12 @@ export default defineConfig({
         },
       ],
       locales: {
-        root: {
-          label: "English",
-          lang: "en",
-        },
+        root: { label: "English", lang: "en" },
       },
-      defaultLocale: "en",
+      defaultLocale: "root",
+      editLink: {
+        baseUrl: "https://discord.union.build",
+      },
       logo: {
         alt: "Union Logo",
         dark: "./src/assets/union-logo/union-logo-transparent.svg",
