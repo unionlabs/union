@@ -48,11 +48,12 @@ message ClientState {
 
 message ConsensusState {
   uint64 slot = 1;
-  bytes storage_root = 2;
+  bytes state_root = 2;
+  bytes storage_root = 3;
   // FIXME: isn't it already defined in ibc.lightclients.wasm.v1?
-  uint64 timestamp = 3;
-  bytes current_sync_committee = 4;
-  bytes next_sync_committee = 5;
+  uint64 timestamp = 4;
+  bytes current_sync_committee = 5;
+  bytes next_sync_committee = 6;
 }
 
 // TODO: This should be an enum containing either sync committee update or finality update.

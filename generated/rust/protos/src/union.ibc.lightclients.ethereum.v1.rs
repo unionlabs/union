@@ -81,13 +81,15 @@ pub struct ConsensusState {
     #[prost(uint64, tag = "1")]
     pub slot: u64,
     #[prost(bytes = "vec", tag = "2")]
+    pub state_root: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "3")]
     pub storage_root: ::prost::alloc::vec::Vec<u8>,
     /// FIXME: isn't it already defined in ibc.lightclients.wasm.v1?
-    #[prost(uint64, tag = "3")]
+    #[prost(uint64, tag = "4")]
     pub timestamp: u64,
-    #[prost(bytes = "vec", tag = "4")]
-    pub current_sync_committee: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "5")]
+    pub current_sync_committee: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "6")]
     pub next_sync_committee: ::prost::alloc::vec::Vec<u8>,
 }
 /// TODO: This should be an enum containing either sync committee update or finality update.

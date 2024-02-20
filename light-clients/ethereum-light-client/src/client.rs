@@ -225,6 +225,7 @@ impl IbcClient for EthereumLightClient {
         if consensus_update.attested_header.beacon.slot > consensus_state.data.slot {
             consensus_state.data.slot = consensus_update.attested_header.beacon.slot;
 
+            consensus_state.data.state_root = consensus_update.attested_header.execution.state_root;
             consensus_state.data.storage_root = account_update.account_proof.storage_root;
 
             consensus_state.data.timestamp = compute_timestamp_at_slot::<Config>(
