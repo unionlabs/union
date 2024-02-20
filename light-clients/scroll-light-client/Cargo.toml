@@ -12,6 +12,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 cosmwasm-std       = { workspace = true, features = ["abort"] }
 ethereum-verifier  = { workspace = true }
+hex                = { workspace = true }
 ics008-wasm-client = { workspace = true }
 protos             = { workspace = true, default-features = false }
 rlp                = { workspace = true }
@@ -23,3 +24,8 @@ sha3               = { workspace = true }
 thiserror          = { workspace = true }
 tiny-keccak        = { version = "2.0.2", default-features = false, features = ["keccak"] }
 unionlabs          = { workspace = true, default-features = false, features = ["ethabi"] }
+
+[dev-dependencies]
+base64     = { workspace = true }
+hex        = { workspace = true }
+serde_json = { workspace = true }
