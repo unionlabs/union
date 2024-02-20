@@ -30,7 +30,7 @@ ics23              = { workspace = true }
 unionlabs          = { workspace = true, default-features = false }
 
 [dev-dependencies]
-base64      = "0.21"
+base64      = { workspace = true }
 lazy_static = "1.4.0"
 serde_json  = { workspace = true }
 
