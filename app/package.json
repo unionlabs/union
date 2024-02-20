@@ -27,6 +27,7 @@
     "@wagmi/connectors": "^4.1.14",
     "@wagmi/core": "^2.6.5",
     "bits-ui": "^0.18.1",
+    "svelte-french-toast": "^1.2.0",
     "unstorage": "^1.10.1",
     "vaul-svelte": "^0.2.3",
     "viem": "^2.7.10"

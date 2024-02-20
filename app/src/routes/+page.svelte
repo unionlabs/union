@@ -5,7 +5,7 @@
   import { sepolia } from 'viem/chains'
   import Faucet from '$/lib/components/Faucet.svelte'
   import Connect from '$lib/components/Connect.svelte'
-  import { wallet, switchChain } from '$lib/wallet/config.ts'
+  import { wallet, switchChain, config } from '$lib/wallet/config.ts'
   import {
     erc20balanceStore,
     unionBalanceStore,
@@ -29,6 +29,8 @@
     sendAssetFromUnionToEthereum
   } from '$/lib/snap.ts'
   import { sleep } from '$/lib/utilities'
+  import { getBalance } from '@wagmi/core'
+  import toast, { Toaster } from 'svelte-french-toast'
 
   /**
    * TODO: Set polled fetching using @tanstack/svelte-query
@@ -37,6 +39,7 @@
 
   let error: any
 
+  $: sepoliaEthBalance = '0'
   $: unoUnionBalance = $unionBalanceStore || '0'
   $: unoERC20Balance = $erc20balanceStore || 0n
 
@@ -50,12 +53,18 @@
     unionBalanceStore.set(unoUnionBalance)
     unoERC20Balance = $wallet.address ? await getUnoERC20Balance($wallet.address) : 0n
     erc20balanceStore.set(unoERC20Balance)
+
+    const ethBalance = $wallet.address
+      ? await getBalance(config, { address: $wallet.address, chainId: sepolia.id })
+      : undefined
+    sepoliaEthBalance = ethBalance ? ethBalance.formatted : '0'
   })
 
   unionTransactions.subscribe(async _ => {
     if (!$snapAddress) return
     await sleep(2500)
     unoUnionBalance = await getUnoUnionBalance($snapAddress)
+    console.log('unoUnionBalance', unoUnionBalance)
     unionBalanceStore.update(_ => unoUnionBalance)
   })
 
@@ -73,9 +82,18 @@
   <p>Status: {$wallet.status}</p>
   {#if $wallet.isConnected}
     <div>
+      <a
+        class={clsx(['rounded-md border-[1px] border-gray-200 px-4 py-2 text-blue-500 underline'])}
+        href="https://www.alchemy.com/faucets/ethereum-sepolia"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Sepolia ETH Faucet
+      </a>
       <p>EVM Address: {$wallet.address}</p>
       <p>EVM Chain ID: {$wallet.chainId}</p>
       <p>UNO ERC20 Balance: {unoERC20Balance}</p>
+      <p>Sepolia ETH Balance: {sepoliaEthBalance}</p>
       <br />
       <p>Union Address: {$snapAddress}</p>
       <p>Union Chain ID: union-testnet-6</p>
@@ -119,7 +137,15 @@
         <div>
           <Button.Root
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
-            on:click={() => sendAssetFromUnionToEthereum({ amount: '100' })}
+            on:click={() => {
+              if (unoUnionBalance === '0') {
+                toast.error('$UNO balance on Union is 0\nUse faucet button to get sum', {
+                  position: 'bottom-center'
+                })
+              } else {
+                sendAssetFromUnionToEthereum({ amount: '100' })
+              }
+            }}
           >
             Send UNO from Union to Sepolia
           </Button.Root>
@@ -129,6 +155,8 @@
                 <a
                   href={`https://testnet.union.explorers.guru/transaction/${transactionHash}`}
                   class="text-blue-100 underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   {transactionHash}
                 </a>
@@ -139,7 +167,15 @@
         <div>
           <Button.Root
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
-            on:click={async () => await sendAssetFromEthereumToUnion({ amount: 3n })}
+            on:click={() => {
+              if (sepoliaEthBalance !== '0' && unoERC20Balance !== 0n)
+                sendAssetFromEthereumToUnion({ amount: 25n })
+              else
+                toast.error(
+                  `Sepolia ETH balance is ${sepoliaEthBalance}\nSepolia $UNO balance is ${unoERC20Balance}`,
+                  { position: 'bottom-center' }
+                )
+            }}
           >
             Send UNO from Sepolia to Union
           </Button.Root>
@@ -149,6 +185,8 @@
                 <a
                   href={`https://11155111.testnet.routescan.io/tx/${transactionHash}`}
                   class="text-blue-200 underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   {transactionHash}
                 </a>
