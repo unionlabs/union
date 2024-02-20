@@ -1,13 +1,10 @@
-use cosmwasm_std::{Deps, DepsMut, Env, QueryRequest};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, QueryRequest};
 use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
         update_client_state,
     },
     IbcClient, Status, StorageState,
-};
-use scroll_verifier::{
-    scroll_verify_header, scroll_verify_zktrie_storage_absence, scroll_verify_zktrie_storage_proof,
 };
 use sha3::Digest;
 use unionlabs::{
@@ -119,18 +116,25 @@ impl IbcClient for ScrollLightClient {
         header: Self::Header,
     ) -> Result<(), Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
-        let l1_consensus_state =
+        let l1_consensus_state_data =
             deps.querier
-                .query::<WasmL1ConsensusState>(&QueryRequest::Custom(
-                    CustomQuery::ConsensusState {
-                        client_id: client_state.data.l1_client_id.clone(),
-                        height: header.l1_height,
-                    },
-                ))?;
-        scroll_verify_header(
+                .query::<Binary>(&QueryRequest::Custom(CustomQuery::ConsensusState {
+                    client_id: client_state.data.l1_client_id.clone(),
+                    height: header.l1_height,
+                }))?;
+        let l1_consensus_state = Any::<WasmL1ConsensusState>::try_from_proto_bytes(
+            &l1_consensus_state_data,
+        )
+        .map_err(|_| Error::DecodeFromProto {
+            reason: format!(
+                "verify_header: failed to decode L1 consensus: {}",
+                hex::encode(l1_consensus_state_data.0)
+            ),
+        })?;
+        scroll_verifier::verify_header(
             client_state.data,
             header,
-            l1_consensus_state.data.storage_root,
+            l1_consensus_state.0.data.state_root,
         )?;
         Ok(())
     }
@@ -139,7 +143,7 @@ impl IbcClient for ScrollLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
-        panic!("Not implemented")
+        Err(Error::Unimplemented)
     }
 
     fn update_state(
@@ -148,14 +152,21 @@ impl IbcClient for ScrollLightClient {
         header: Self::Header,
     ) -> Result<Vec<Height>, Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-        let l1_consensus_state =
+        let l1_consensus_state_data =
             deps.querier
-                .query::<WasmL1ConsensusState>(&QueryRequest::Custom(
-                    CustomQuery::ConsensusState {
-                        client_id: client_state.data.l1_client_id.clone(),
-                        height: header.l1_height,
-                    },
-                ))?;
+                .query::<Binary>(&QueryRequest::Custom(CustomQuery::ConsensusState {
+                    client_id: client_state.data.l1_client_id.clone(),
+                    height: header.l1_height,
+                }))?;
+        let l1_consensus_state = Any::<WasmL1ConsensusState>::try_from_proto_bytes(
+            &l1_consensus_state_data,
+        )
+        .map_err(|_| Error::DecodeFromProto {
+            reason: format!(
+                "update_state: failed to decode L1 consensus: {}",
+                hex::encode(l1_consensus_state_data.0)
+            ),
+        })?;
         if client_state.data.latest_batch_index < header.finalized_proof.batch_index {
             client_state.data.latest_batch_index = header.finalized_proof.batch_index;
             update_client_state(
@@ -172,7 +183,7 @@ impl IbcClient for ScrollLightClient {
             data: ConsensusState {
                 batch_index: header.finalized_proof.batch_index,
                 ibc_storage_root: header.ibc_account_proof.storage_root,
-                timestamp: l1_consensus_state.data.timestamp,
+                timestamp: l1_consensus_state.0.data.timestamp,
             },
         };
         save_consensus_state(deps, consensus_state, &updated_height);
@@ -204,7 +215,7 @@ impl IbcClient for ScrollLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<bool, Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn verify_upgrade_and_update_state(
@@ -214,12 +225,11 @@ impl IbcClient for ScrollLightClient {
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(), Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
-        // migration from previous client to self, so unimplemented now
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn status(deps: Deps<Self::CustomQuery>, _env: &Env) -> Result<Status, Self::Error> {
@@ -314,7 +324,7 @@ fn do_verify_membership(
         });
     }
 
-    scroll_verify_zktrie_storage_proof(
+    scroll_verifier::verify_zktrie_storage_proof(
         storage_root,
         storage_proof.key.to_big_endian().into(),
         storage_proof.value.to_big_endian().as_ref(),
@@ -336,7 +346,7 @@ fn do_verify_non_membership(
         counterparty_commitment_slot,
         H256(storage_proof.key.to_big_endian()),
     )?;
-    scroll_verify_zktrie_storage_absence(
+    scroll_verifier::verify_zktrie_storage_absence(
         storage_root,
         H256(storage_proof.key.to_big_endian()),
         &storage_proof.proof,

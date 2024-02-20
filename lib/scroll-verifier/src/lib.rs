@@ -26,7 +26,7 @@ pub enum Error {
     ValueMismatch,
 }
 
-pub fn scroll_verify_header(
+pub fn verify_header(
     scroll_client_state: ClientState,
     scroll_header: Header,
     l1_state_root: H256,
@@ -91,7 +91,7 @@ pub fn get_zktrie_node(
         .map_err(Error::ZkTrie)
 }
 
-pub fn scroll_verify_zktrie_storage_proof(
+pub fn verify_zktrie_storage_proof(
     root: H256,
     key: H256,
     expected_value: &[u8],
@@ -103,7 +103,7 @@ pub fn scroll_verify_zktrie_storage_proof(
     }
 }
 
-pub fn scroll_verify_zktrie_storage_absence(
+pub fn verify_zktrie_storage_absence(
     root: H256,
     key: H256,
     proof: &[impl AsRef<[u8]>],
@@ -150,6 +150,8 @@ pub fn scroll_verify_zktrie_account_storage_root(
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use unionlabs::{
         hash::{H160, H256},
         ibc::{
@@ -161,50 +163,41 @@ mod tests {
         },
     };
 
-    use crate::{
-        scroll_verify_header, scroll_verify_zktrie_storage_absence,
-        scroll_verify_zktrie_storage_proof,
-    };
+    use crate::{verify_header, verify_zktrie_storage_absence, verify_zktrie_storage_proof};
 
     #[test]
-    fn test_scroll_header() {
+    fn test_update_header() {
         let scroll_client_state = ClientState {
-            l1_client_id: "blabla".into(),
-            chain_id: 0.into(),
+            l1_client_id: "08-wasm-0".into(),
+            chain_id: 534351.into(),
             latest_batch_index: 65031,
             frozen_height: Height::default(),
-            rollup_contract_address: H160::try_from(
-                hex::decode("2d567ece699eabe5afcd141edb7a4f2d0d6ce8a0").unwrap(),
-            )
-            .unwrap(),
+            rollup_contract_address: H160::from_str("0x2D567EcE699Eabe5afCd141eDB7A4f2D0D6ce8a0")
+                .unwrap(),
             rollup_finalized_state_roots_slot: 158.into(),
-            ibc_contract_address: H160::try_from(
-                hex::decode("E52c957533bd932E357046bF721D2Bf2368ef1B7").unwrap(),
-            )
-            .unwrap(),
+            ibc_contract_address: H160::from_str("0xE52c957533bd932E357046bF721D2Bf2368ef1B7")
+                .unwrap(),
             ibc_commitment_slot: 0.into(),
         };
         let scroll_header: Header =
             serde_json::from_str(&std::fs::read_to_string("tests/scroll_header.json").unwrap())
                 .unwrap();
-        let l1_state_root = H256::try_from(
-            hex::decode("d36f51bb31957a627d91ca2e9a8f7d8fe0f527293135a4ee177406c78960437d")
-                .unwrap(),
-        )
-        .unwrap();
+        let l1_state_root =
+            H256::from_str("0x4d47173201f8ded2c250d7f7f572a22d13061ed83009f451d271e0fabfa44425")
+                .unwrap();
         assert_eq!(
-            scroll_verify_header(scroll_client_state, scroll_header, l1_state_root),
+            verify_header(scroll_client_state, scroll_header, l1_state_root),
             Ok(())
         );
     }
 
     #[test]
-    fn test_scroll_l2_contract_slot_exist() {
+    fn test_l2_contract_slot_exist() {
         let proof: Proof =
             serde_json::from_str(&std::fs::read_to_string("tests/scroll_proof.json").unwrap())
                 .unwrap();
         assert_eq!(
-            scroll_verify_zktrie_storage_proof(
+            verify_zktrie_storage_proof(
                 H256::try_from(
                     hex::decode("1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0")
                         .unwrap()
@@ -219,12 +212,12 @@ mod tests {
     }
 
     #[test]
-    fn test_scroll_l2_contract_slot_absent() {
+    fn test_l2_contract_slot_absent() {
         let proof: Proof =
             serde_json::from_str(&std::fs::read_to_string("tests/scroll_absent.json").unwrap())
                 .unwrap();
         assert_eq!(
-            scroll_verify_zktrie_storage_absence(
+            verify_zktrie_storage_absence(
                 H256::try_from(
                     hex::decode("1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0")
                         .unwrap()
