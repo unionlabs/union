@@ -1,15 +1,13 @@
-export const prerender = true
-
 import { json } from '@sveltejs/kit'
+import type { RequestHandler } from './$types.ts'
 import { fetcher } from '$/lib/utilities/index.ts'
-import type { RequestHandler } from '@sveltejs/kit'
 import { CHAIN, UNO, URLS } from '$/lib/constants.ts'
 
 /**
  * Only supports UNION chain for now
  */
 
-export const GET: RequestHandler = async request => {
+export const GET = (async request => {
   const chain = request.url.searchParams.get('chain')
   if (chain !== CHAIN.UNION.ID) return json({ error: 'chain not supported' }, { status: 400 })
 
@@ -25,4 +23,4 @@ export const GET: RequestHandler = async request => {
   if ('code' in response) return json({ error: response.message }, { status: 400 })
 
   return new Response(response.balance.amount, { status: 200 })
-}
+}) satisfies RequestHandler

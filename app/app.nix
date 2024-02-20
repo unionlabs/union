@@ -8,7 +8,7 @@
     {
       packages = {
         app = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-xC6agKG4ihZ27qvSIECmju65c45D0UAEDhK58pstdtY=";
+          npmDepsHash = "sha256-bv/ypQHuk6SiE/WJxKfQXQ7fbYtAfLQ5oCi7Q0HHCuU=";
           src = ./.;
           sourceRoot = "app";
           pname = "app";
@@ -17,9 +17,10 @@
           buildInputs = combinedDeps;
           installPhase = ''
             mkdir -p $out
-            cp -r ./build/* $out
+            cp -r ./.svelte-kit/cloudflare/* $out
           '';
           doDist = false;
+          NODE_OPTIONS = "--no-warnings";
         };
       };
 

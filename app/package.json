@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "wrangler pages dev .svelte-kit/cloudflare",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "vitest --run",
@@ -45,6 +45,7 @@
     "@tailwindcss/typography": "^0.5.10",
     "@tanstack/eslint-plugin-query": "^5.20.1",
     "@tanstack/svelte-query-devtools": "^5.21.0",
+    "@sveltejs/adapter-cloudflare": "^4.1.0",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/eslint": "8.56.2",
     "@typescript-eslint/eslint-plugin": "^7.0.1",
