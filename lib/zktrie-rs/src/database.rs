@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
 
 use poseidon_rs::Fr;
 
@@ -6,8 +6,8 @@ use crate::{Error, Hash, HashScheme, Node};
 
 pub trait Database {
     type Node;
-    fn get_node(&self, key: &Hash) -> Result<Option<Arc<Self::Node>>, Error>;
-    fn update_node(&mut self, node: Self::Node) -> Result<Arc<Self::Node>, Error>;
+    fn get_node(&self, key: &Hash) -> Result<Option<Self::Node>, Error>;
+    fn update_node(&mut self, node: Self::Node) -> Result<Self::Node, Error>;
 }
 
 pub trait PreimageDatabase: Database {
@@ -16,7 +16,7 @@ pub trait PreimageDatabase: Database {
 }
 
 pub struct MemDB<H: HashScheme> {
-    map: BTreeMap<Hash, Arc<Node<H>>>,
+    map: BTreeMap<Hash, Node<H>>,
     preimages: BTreeMap<Fr, Vec<u8>>,
 }
 
@@ -44,13 +44,12 @@ impl<H: HashScheme> PreimageDatabase for MemDB<H> {
 
 impl<H: HashScheme> Database for MemDB<H> {
     type Node = Node<H>;
-    fn get_node(&self, key: &Hash) -> Result<Option<Arc<Self::Node>>, Error> {
+    fn get_node(&self, key: &Hash) -> Result<Option<Self::Node>, Error> {
         Ok(self.map.get(key).cloned())
     }
 
-    fn update_node(&mut self, node: Self::Node) -> Result<Arc<Self::Node>, Error> {
-        let node = Arc::new(node);
+    fn update_node(&mut self, node: Self::Node) -> Result<Self::Node, Error> {
         self.map.insert(*node.hash(), node.clone());
-        Ok(node.clone())
+        Ok(node)
     }
 }

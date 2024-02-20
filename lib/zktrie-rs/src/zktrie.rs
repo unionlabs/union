@@ -1,5 +1,4 @@
 use core::marker::PhantomData;
-use std::sync::Arc;
 
 use poseidon_rs::Fr;
 
@@ -18,7 +17,7 @@ pub struct ZkTrie<H: HashScheme> {
 #[derive(Debug, PartialEq, Eq)]
 pub enum TrieData<H: HashScheme> {
     NotFound,
-    Node(Arc<Node<H>>),
+    Node(Node<H>),
 }
 
 impl<H: HashScheme> TrieData<H> {
@@ -56,7 +55,7 @@ impl<H: HashScheme> ZkTrie<H> {
         }
     }
 
-    pub fn try_get_node<D>(&self, db: &mut D, node_key: &Hash) -> Result<Arc<Node<H>>, Error>
+    pub fn try_get_node<D>(&self, db: &mut D, node_key: &Hash) -> Result<Node<H>, Error>
     where
         D: Database<Node = Node<H>>,
     {
@@ -151,7 +150,7 @@ impl<H: HashScheme> ZkTrie<H> {
         D: Database<Node = Node<H>>,
     {
         if siblings.is_empty() {
-            self.root = *(ZERO_HASH.as_ref());
+            self.root = ZERO_HASH;
             return Ok(self.root);
         }
 
@@ -246,7 +245,7 @@ impl<H: HashScheme> ZkTrie<H> {
     // GetNode gets a node by node hash from the MT.  Empty nodes are not stored in the
     // tree; they are all the same and assumed to always exist.
     // <del>for non exist key, return (NewEmptyNode(), nil)</del>
-    pub(crate) fn get_node<D>(&self, db: &mut D, hash: &Hash) -> Result<Option<Arc<Node<H>>>, Error>
+    pub(crate) fn get_node<D>(&self, db: &mut D, hash: &Hash) -> Result<Option<Node<H>>, Error>
     where
         D: Database<Node = Node<H>>,
     {
@@ -417,7 +416,7 @@ impl<H: HashScheme> ZkTrie<H> {
 
         match db.get_node(hash)? {
             Some(old) => {
-                if old.as_ref() != n {
+                if &old != n {
                     return Err(Error::NodeKeyAlreadyExists);
                 }
                 Ok(*hash)
@@ -452,7 +451,7 @@ impl<H: HashScheme> ZkTrie<H> {
     ) -> Result<(), Error>
     where
         D: Database<Node = Node<H>>,
-        F: FnMut(&mut D, Arc<Node<H>>) -> Result<(), Error>,
+        F: FnMut(&mut D, Node<H>) -> Result<(), Error>,
     {
         let path = get_path(self.max_level, key_hash.raw_bytes());
         let mut nodes = Vec::new();
@@ -517,9 +516,9 @@ impl<H: HashScheme> ZkTrie<H> {
     ) -> Result<(), Error>
     where
         D: Database<Node = Node<H>>,
-        F: FnMut(&mut D, Arc<Node<H>>) -> Result<(), Error>,
+        F: FnMut(&mut D, Node<H>) -> Result<(), Error>,
     {
-        type N<H> = fn(Arc<Node<H>>, Option<Arc<Node<H>>>);
+        type N<H> = fn(Node<H>, Option<Node<H>>);
         self.prove_with_deletion::<D, F, N<H>>(db, key, from_level, write_node, None)
     }
 
@@ -546,8 +545,8 @@ impl<H: HashScheme> ZkTrie<H> {
     ) -> Result<(), Error>
     where
         D: Database<Node = Node<H>>,
-        F: FnMut(&mut D, Arc<Node<H>>) -> Result<(), Error>,
-        N: Fn(Arc<Node<H>>, Option<Arc<Node<H>>>),
+        F: FnMut(&mut D, Node<H>) -> Result<(), Error>,
+        N: Fn(Node<H>, Option<Node<H>>),
     {
         if key.len() != 32 {
             return Err(Error::InvalidField);
@@ -555,7 +554,7 @@ impl<H: HashScheme> ZkTrie<H> {
 
         let k = Hash::from_bytes(key);
 
-        let mut prev: Option<Arc<Node<H>>> = None;
+        let mut prev: Option<Node<H>> = None;
         self.walk(db, &k, from_level, |db, node| {
             let prev_branch_node = prev
                 .as_ref()

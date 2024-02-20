@@ -13,7 +13,7 @@ fn test_new_node() {
     type Node = crate::Node<TestHash>;
     {
         let node = Node::new_empty();
-        assert_eq!(node.hash(), ZERO_HASH.as_ref());
+        assert_eq!(node.hash(), &ZERO_HASH);
     }
 
     {
@@ -138,7 +138,7 @@ fn test_new_node_from_bytes() {
         let node = Node::from_bytes(&b).unwrap();
         assert!(node.is_empty());
 
-        assert_eq!(node.hash(), ZERO_HASH.as_ref());
+        assert_eq!(node.hash(), &ZERO_HASH);
     }
 
     {
