@@ -14,24 +14,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    uses: unionlabs/workflows/.github/workflows/build.yml@d0880ca9903bd66043d640f531f046bf76129668
+  packages:
+    uses: unionlabs/workflows/.github/workflows/build.yml@329b802dafe949a7a93b6e6a5bf5065c3a81ab30
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
       eval_target: 'build'
       eval_top_attr: 'packages'
-  dev:
-    uses: unionlabs/workflows/.github/workflows/build.yml@d0880ca9903bd66043d640f531f046bf76129668
+  devShells:
+    uses: unionlabs/workflows/.github/workflows/build.yml@329b802dafe949a7a93b6e6a5bf5065c3a81ab30
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
       eval_target: 'dev'
       eval_top_attr: 'devShells'
-  test:
-    uses: unionlabs/workflows/.github/workflows/build.yml@d0880ca9903bd66043d640f531f046bf76129668
+  checks:
+    uses: unionlabs/workflows/.github/workflows/build.yml@329b802dafe949a7a93b6e6a5bf5065c3a81ab30
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
