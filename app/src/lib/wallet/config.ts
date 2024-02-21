@@ -1,5 +1,4 @@
 import '$/patch.ts'
-import { browser } from '$app/environment'
 import {
   http,
   fallback,
@@ -14,19 +13,11 @@ import {
   type GetAccountReturnType
 } from '@wagmi/core'
 import { CHAIN, UNO } from '$/lib/constants'
+import { injected } from '@wagmi/connectors'
 import { getDenomAddress } from '$/lib/union-actions'
 import { mainnet, sepolia } from '@wagmi/core/chains'
 import { writable, type Writable } from 'svelte/store'
-import { injected, metaMask } from '@wagmi/connectors'
-import {
-  getKey,
-  getSnap,
-  connectSnap,
-  suggestChain,
-  signArbitrary
-} from '@leapwallet/cosmos-snap-provider'
-
-const ssr = !browser
+import { getKey, getSnap, connectSnap, suggestChain } from '@leapwallet/cosmos-snap-provider'
 
 const projectId = '640277c8235dc052b811d0cb88515fa5'
 
@@ -70,7 +61,7 @@ export const config = createConfig({
      * - https://wagmi.sh/core/api/transports/custom#custom
      * - https://viem.sh/docs/clients/transports/custom.html
      */
-  },
+  }
   /**
    * TODO: add custom client for Union chain.
    * @see

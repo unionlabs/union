@@ -6,8 +6,7 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 export default {
   preprocess: sequence([
     vitePreprocess(),
-    // has to be last
-    preprocessMeltUI()
+    preprocessMeltUI() // has to be last
   ]),
   kit: {
     adapter: adapter({ strict: true }),
