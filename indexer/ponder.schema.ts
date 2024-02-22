@@ -1,6 +1,6 @@
-import { createSchema } from '@ponder/core'
+import { createSchema } from "@ponder/core";
 
-export default createSchema(p => ({
+export default createSchema((p) => ({
   SentEvent: p.createTable({
     id: p.hex(),
     sender: p.hex(),
@@ -37,4 +37,4 @@ export default createSchema(p => ({
     token: p.hex(),
     timestamp: p.bigint(),
   }),
-}))
+}));
