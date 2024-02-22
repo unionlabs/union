@@ -11,6 +11,7 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@cosmjs/encoding": "^0.32.2",
     "@ponder/core": "^0.2.8",
     "viem": "^2.7.12"
   },
