@@ -5,7 +5,11 @@ on:
   repository_dispatch:
   # fail fast
   push:
+    branches:
+    - main
   pull_request:
+    branches:
+    - main
   # daily check
   schedule:
     - cron: '00 18 * * *'
