@@ -19,7 +19,7 @@ ponder.on("UCS01_RELAY:Received", async ({ event, context }) => {
   await context.db.ReceivedEvent.create({
     id: event.transaction.hash,
     data: {
-      sender: event.args.sender,
+      sender: evmDecodeUnionAddress(event.args.sender),
       receiver: event.args.receiver,
       denom: event.args.denom,
       token: event.args.token,

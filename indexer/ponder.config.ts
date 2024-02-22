@@ -1,8 +1,11 @@
-import { fallback, http } from "viem";
 import { ucs01relayAbi } from "./src/abi";
 import { createConfig } from "@ponder/core";
+import { fallback, getAddress, http } from "viem";
 
 export default createConfig({
+  options: {
+    maxHealthcheckDuration: 240, // default is 240
+  },
   networks: {
     sepolia: {
       chainId: 11155111,
@@ -20,8 +23,8 @@ export default createConfig({
     UCS01_RELAY: {
       network: "sepolia",
       abi: ucs01relayAbi,
-      address: process.env.UCS01_EVM_ADDRESS,
-      startBlock: 5320122,
+      address: getAddress(process.env.UCS01_EVM_ADDRESS),
+      startBlock: Number(process.env.INDEX_START_BLOCK),
     },
   },
 });

@@ -10,7 +10,7 @@ interface EnvironmentVariables {
     | "info"
     | "debug"
     | "trace";
-  readonly INDEX_START_BLOCK: number;
+  readonly INDEX_START_BLOCK: string;
 }
 
 declare module "bun" {
