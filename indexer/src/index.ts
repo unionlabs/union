@@ -1,7 +1,7 @@
 import { ponder } from "@/generated";
 
 ponder.on("UCS01_RELAY:Sent", async ({ event, context }) => {
-  await context.db.Sent.create({
+  await context.db.SentEvent.create({
     id: event.transaction.hash,
     data: {
       sender: event.args.sender,
@@ -9,6 +9,39 @@ ponder.on("UCS01_RELAY:Sent", async ({ event, context }) => {
       denom: event.args.denom,
       token: event.args.token,
       amount: event.args.amount,
+      timestamp: event.block.timestamp,
+    },
+  });
+
+  await context.db.ReceivedEvent.create({
+    id: event.transaction.hash,
+    data: {
+      sender: event.args.sender,
+      receiver: event.args.receiver,
+      denom: event.args.denom,
+      token: event.args.token,
+      amount: event.args.amount,
+      timestamp: event.block.timestamp,
+    },
+  });
+
+  await context.db.RefundedEvent.create({
+    id: event.transaction.hash,
+    data: {
+      sender: event.args.sender,
+      receiver: event.args.receiver,
+      denom: event.args.denom,
+      token: event.args.token,
+      amount: event.args.amount,
+      timestamp: event.block.timestamp,
+    },
+  });
+
+  await context.db.DenomCreatedEvent.create({
+    id: event.transaction.hash,
+    data: {
+      denom: event.args.denom,
+      token: event.args.token,
       timestamp: event.block.timestamp,
     },
   });
