@@ -52,3 +52,6 @@ bun.lockb
 .code-workspace
 
 .idea
+*.log
+.ponder
+indexer/generated
