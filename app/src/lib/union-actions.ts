@@ -10,7 +10,7 @@ import {
 } from 'viem'
 import toast from 'svelte-french-toast'
 import { snapAddress } from '$/lib/snap'
-import { usc01relayAbi } from '$/lib/abi'
+import { ucs01relayAbi } from '$/lib/abi'
 import { writable, get } from 'svelte/store'
 import { fromBech32 } from '@cosmjs/encoding'
 import { CONTRACT, UNO } from '$/lib/constants.ts'
@@ -77,7 +77,7 @@ export async function sendAssetFromEthereumToUnion({
     const denomAddress = await getDenomAddress()
 
     const writeContractParameters = {
-      abi: usc01relayAbi,
+      abi: ucs01relayAbi,
       functionName: 'send',
       address: getAddress(CONTRACT.SEPOLIA.ADDRESS),
       args: [
@@ -119,7 +119,7 @@ export async function getDenomAddress(): Promise<Address> {
   ]
 
   return readContract(config, {
-    abi: usc01relayAbi,
+    abi: ucs01relayAbi,
     address: getAddress(CONTRACT.SEPOLIA.ADDRESS),
     functionName: 'getDenomAddress',
     args: [sourcePort, sourceChannel, `wasm.${CONTRACT.UNION.ADDRESS}/${sourceChannel}/${denom}`]

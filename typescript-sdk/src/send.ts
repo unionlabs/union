@@ -5,10 +5,9 @@ import {
   type Account,
   type Address,
   type TransportConfig,
-  type FallbackTransport,
 } from "viem";
 import { raise } from "./utilities";
-import { usc01relayAbi } from "./abi";
+import { ucs01relayAbi } from "./abi";
 import { GasPrice } from "@cosmjs/stargate";
 import { fromBech32 } from "@cosmjs/encoding";
 import type { UnionClient } from "./actions.ts";
@@ -134,7 +133,7 @@ export async function sendAssetFromEthereumToUnion(
   try {
     const writeContractParameters = {
       account: signer,
-      abi: usc01relayAbi,
+      abi: ucs01relayAbi,
       functionName: "send",
       address: UCS01_EVM_ADDRESS,
       args: [
