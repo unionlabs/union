@@ -20,10 +20,10 @@
   } from '$/lib/snap.ts'
   import clsx from 'clsx'
   import { onMount } from 'svelte'
-  import { Button } from 'bits-ui'
   import { sepolia } from 'viem/chains'
   import toast from 'svelte-french-toast'
   import { getBalance } from '@wagmi/core'
+  import { Button } from '$lib/components/ui/button'
   import Faucet from '$/lib/components/Faucet.svelte'
   import Connect from '$lib/components/Connect.svelte'
   import { generateRandomInteger } from '$/lib/utilities'
@@ -143,7 +143,7 @@
 
       <section class="my-3 flex max-w-72 flex-col space-y-2">
         <div>
-          <Button.Root
+          <Button
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
             on:click={() => {
               if ($unoUnionBalance?.data === '0') {
@@ -156,7 +156,7 @@
             }}
           >
             Send UNO from Union to Sepolia
-          </Button.Root>
+          </Button>
           <ol>
             {#each $unionTransactions as transactionHash}
               <li>
@@ -173,7 +173,8 @@
           </ol>
         </div>
         <div>
-          <Button.Root
+          <Button
+
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
             on:click={() => {
               if ($sepoliaEthBalance.data !== '0' && $unoERC20Balance.data !== 0n)
@@ -186,7 +187,7 @@
             }}
           >
             Send UNO from Sepolia to Union
-          </Button.Root>
+          </Button>
           <ol>
             {#each $sepoliaTransactions as transactionHash}
               <li>
