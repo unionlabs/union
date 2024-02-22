@@ -1,7 +1,7 @@
 import { createSchema } from "@ponder/core";
 
 export default createSchema((p) => ({
-  Sent: p.createTable({
+  SentEvent: p.createTable({
     id: p.hex(),
     sender: p.hex(),
     receiver: p.string(),
@@ -11,7 +11,7 @@ export default createSchema((p) => ({
     timestamp: p.bigint(),
   }),
 
-  Received: p.createTable({
+  ReceivedEvent: p.createTable({
     id: p.hex(),
     sender: p.hex(),
     receiver: p.string(),
@@ -21,7 +21,7 @@ export default createSchema((p) => ({
     timestamp: p.bigint(),
   }),
 
-  Refunded: p.createTable({
+  RefundedEvent: p.createTable({
     id: p.hex(),
     sender: p.hex(),
     receiver: p.string(),
@@ -31,7 +31,7 @@ export default createSchema((p) => ({
     timestamp: p.bigint(),
   }),
 
-  DenomCreated: p.createTable({
+  DenomCreatedEvent: p.createTable({
     id: p.hex(),
     denom: p.string(),
     token: p.hex(),
