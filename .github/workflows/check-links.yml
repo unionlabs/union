@@ -22,7 +22,9 @@ jobs:
   link-checker:
     name: '🔗 Check Links'
     runs-on: ['ubuntu-latest']
-    permissions: 'write-all'
+    permissions:
+      contents: read
+      pull-request: write
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +54,9 @@ jobs:
   daily-link-checker:
     name: '🔗 Check Links'
     runs-on: ['ubuntu-latest']
-    permissions: 'write-all'
+    permissions:
+      contents: read
+      issues: write
     if: github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v4
