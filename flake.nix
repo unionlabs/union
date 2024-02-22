@@ -447,6 +447,8 @@
             GOPRIVATE = "github.com/unionlabs/*";
             PUPPETEER_SKIP_DOWNLOAD = 1; # avoid npm install downloading chromium
             NODE_OPTIONS = "--no-warnings"; # avoid useless warnings from nodejs
+            ASTRO_TELEMETRY_DISABLED = 1;
+            PONDER_TELEMETRY_DISABLED = true;
 
             shellHook = ''
               alias voy-send-msg='curl localhost:65534/msg -H "content-type: application/json" -d'

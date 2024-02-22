@@ -1,4 +1,4 @@
-import { usc01relayAbi } from "./abi";
+import { ucs01relayAbi } from "./abi";
 import { erc20Abi, type Address } from "viem";
 import type { UnionClient } from "./actions.ts";
 import { chainIds } from "./constants/chain.ts";
@@ -24,7 +24,7 @@ export async function getDenomAddress(client: UnionClient): Promise<Address> {
     "union14pfzjnvzacqsmgjyf0avksc8cr70hsyt5epzcp66tmjpswf8sq8sn5meuy";
 
   return client.readContract({
-    abi: usc01relayAbi,
+    abi: ucs01relayAbi,
     address: UCS01_EVM_ADDRESS || "0x7f7AC7d5a1a2bD54dBA53a22209C3f96699Ed63c",
     functionName: "getDenomAddress",
     args: [

@@ -1,0 +1,26 @@
+{
+  "name": "union-transfers-indexer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "ponder dev",
+    "start": "ponder start",
+    "codegen": "ponder codegen",
+    "lint": "eslint --fix . --ext='js,cjs,mjs,ts,d.ts' --report-unused-disable-directives --max-warnings=0 --ignore-path='../.eslintignore' --cache",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@ponder/core": "^0.2.8",
+    "viem": "^2.7.12"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "@wagmi/core": "^2.6.5",
+    "eslint": "^8.56.0",
+    "eslint-config-ponder": "^0.2.8",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.14"
+  }
+}
