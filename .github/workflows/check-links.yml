@@ -38,6 +38,8 @@ jobs:
       - name: Link Check
         id: lychee
         uses: lycheeverse/lychee-action@v1.9.3
+        with:
+          args: --base . --no-progress
 
       - name: Comment On Pull Request
         uses: actions/github-script@v7
@@ -70,6 +72,8 @@ jobs:
       - name: Link Check
         id: lychee
         uses: lycheeverse/lychee-action@v1.9.3
+        with:
+          args: --base . --no-progress
 
       - name: Create Issue From File
         uses: actions/github-script@v7

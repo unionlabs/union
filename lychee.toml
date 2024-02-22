@@ -1,0 +1,1 @@
+exclude_path = [ "uniond/vendor", "galoisd/vendor", "tools/vendor", "target/*" ]
