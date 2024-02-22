@@ -4,29 +4,29 @@ import unionLogo from '#/assets/union-logo/logo.svg'
 import discordIcon from '#/assets/images/discord.svg'
 ---
 
-<header class='flex justify-around pt-3 px-2 sm:px-4'>
-  <div class='max-w-7xl flex flex-1 items-center p-3 sm:p-4'>
+<header class='flex justify-around pt-3 px-4 py-3'>
+  <div class='max-w-5xl flex flex-1 items-center'>
     <a
-      class='flex items-center gap-3 decoration-transparent visited:text-white'
+      class='flex items-center gap-2 decoration-transparent visited:text-white'
       href='/'
     >
       <img
-        class='w-12 h-12 my-auto'
+        class='w-8 h-8 my-auto'
         src={unionLogo.src}
         alt='Union Logo'
       />
       <p
-        class='min-[420px]:block font-semibold text-4xl sm:text-5xl py-0 my-0 mb-0.5 sm:block hidden'
+        class='font-semibold text-3xl py-0 my-0 mb-0.5'
       >
         Union
       </p>
     </a>
     <nav class='flex flex-1 justify-end'>
-      <ul class='flex gap-4 !text-xl! !md:text-2xl font-normal list-none align-middle my-auto'>
+      <ul class='flex items-center gap-4 !text-xl! !md:text-2xl font-normal list-none align-middle my-auto'>
         <li>
           <a
             href='/blog'
-            class='text-2xl'
+            class='text-xl'
           >
             Blog
           </a>
@@ -34,25 +34,20 @@ import discordIcon from '#/assets/images/discord.svg'
         <li>
           <a
             href='/docs'
-            class='text-2xl'
+            class='text-xl'
           >
             Docs
           </a>
         </li>
-
-        <li class='my-auto'>
+        <li>
           <a
-            target='_blank'
-            rel='noopener noreferrer'
-            href='https://x.com/union_build'
+            href='/team'
+            class='text-xl'
           >
-            <img
-              alt='x.com'
-              src={xIcon.src}
-              class='w-6 h-6'
-            />
+            Team
           </a>
         </li>
+
         <li>
           <a
             target='_blank'
@@ -62,7 +57,20 @@ import discordIcon from '#/assets/images/discord.svg'
             <img
               alt='discord'
               src={discordIcon.src}
-              class='w-8 h-8 my-auto'
+              class='w-4 h-4 my-auto'
+            />
+          </a>
+        </li>
+        <li class=''>
+          <a
+            target='_blank'
+            rel='noopener noreferrer'
+            href='https://x.com/union_build'
+          >
+            <img
+              alt='x.com'
+              src={xIcon.src}
+              class='w-4 h-4'
             />
           </a>
         </li>
