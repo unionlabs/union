@@ -1,0 +1,9 @@
+base = "result"
+exclude = [
+  '^https://x.com/',
+  '.woff2$', 
+  '^https://statesync.testnet.bonlulu.uno/', 
+  '^https://grpc.testnet.bonlulu.uno/',
+  '^http://myserver.com:1111/'
+]
+exclude_all_private = true
