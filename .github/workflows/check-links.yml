@@ -24,7 +24,7 @@ jobs:
     runs-on: ['ubuntu-latest']
     permissions:
       contents: read
-      pull-request: write
+      pull-requests: write
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
