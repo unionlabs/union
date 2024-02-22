@@ -40,9 +40,6 @@ jobs:
         with:
           nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
           github_access_token: ${{ github.token }}
-      - run: |
-          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
-          nix-channel --update
 
       - name: Build Site
         run: nix build .#site
@@ -87,9 +84,6 @@ jobs:
         with:
           nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
           github_access_token: ${{ github.token }}
-      - run: |
-          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
-          nix-channel --update
 
       - name: Build Site
         run: nix build .#site
