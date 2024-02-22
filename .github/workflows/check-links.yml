@@ -42,7 +42,7 @@ jobs:
           github_access_token: ${{ github.token }}
 
       - name: Build Site
-        run: nix build .#site
+        run: nix build .#site --accept-flake-config
 
       - name: Link Check
         id: lychee
@@ -86,7 +86,7 @@ jobs:
           github_access_token: ${{ github.token }}
 
       - name: Build Site
-        run: nix build .#site
+        run: nix build .#site --accept-flake-config
 
       - name: Link Check
         id: lychee
