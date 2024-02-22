@@ -2,42 +2,39 @@
   perSystem = { pkgs, nodePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with nodePkgs; [ vips nodejs_21 ];
+      nodeDeps = with nodePkgs; [ nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
     in
     {
       packages = {
-        site = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-+W5oASWX4HOHSJ4ScBSkU9SEQvanq3M4gGTaIAtb27o=";
+        indexer = nodePkgs.buildNpmPackage {
+          npmDepsHash = "sha256-3P5MJUo1o+dQL1pwDfSMSnnKzdSONKkPA5IUrS7CAFI=";
           src = ./.;
-          srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
-          sourceRoot = "site";
-          pname = "site";
-          version = "0.0.1";
+          sourceRoot = "indexer";
+          pname = "union-transfers-indexer";
+          version = "0.0.0";
           nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
+          dontNpmBuild = true;
           installPhase = ''
             mkdir -p $out
-            cp -r ./dist/* $out
+            cp -r ./* $out
           '';
           doDist = false;
-          PUPPETEER_SKIP_DOWNLOAD = 1;
           NODE_OPTIONS = "--no-warnings";
-          ASTRO_TELEMETRY_DISABLED = 1;
         };
       };
 
       apps = {
-        site-dev-server = {
+        app-dev-server = {
           type = "app";
           program = pkgs.writeShellApplication {
-            name = "site-dev-server";
+            name = "app-dev-server";
             runtimeInputs = combinedDeps;
             text = ''
               ${ensureAtRepositoryRoot}
-              cd site/
+              cd app/
 
-              export PUPPETEER_SKIP_DOWNLOAD=1 
               npm install
               npm run dev
             '';

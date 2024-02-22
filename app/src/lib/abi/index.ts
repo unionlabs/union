@@ -1,2 +1,2 @@
 export * from './ibcHandler.ts'
-export * from './usc01relay.ts'
+export * from './ucs01relay.ts'
