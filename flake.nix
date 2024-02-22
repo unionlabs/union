@@ -171,6 +171,7 @@
         ./typescript-sdk/typescript-sdk.nix
         ./app/app.nix
         ./site/site.nix
+        ./indexer/indexer.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./light-clients/scroll-light-client/scroll-light-client.nix
