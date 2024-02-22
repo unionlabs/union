@@ -35,12 +35,24 @@ jobs:
         with:
           lfs: true
 
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
+        with:
+          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
+          github_access_token: ${{ github.token }}
+      - run: |
+          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
+          nix-channel --update
+
+      - name: Build Site
+        run: nix build .#site
+
       - name: Link Check
         id: lychee
         uses: lycheeverse/lychee-action@v1.9.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --base . --no-progress './**/*.md' './**/*.mdx' './**/*.txt' './**/*.html' './**/*.astro''./**/*.svelte' 
+          args: result/**/index.html
 
       - name: Comment On Pull Request
         uses: actions/github-script@v7
@@ -70,12 +82,24 @@ jobs:
         with:
           lfs: true
 
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
+        with:
+          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
+          github_access_token: ${{ github.token }}
+      - run: |
+          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
+          nix-channel --update
+
+      - name: Build Site
+        run: nix build .#site
+
       - name: Link Check
         id: lychee
         uses: lycheeverse/lychee-action@v1.9.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --base . --no-progress './**/*.md' './**/*.html' './**/*.rst' './**/*.svelte'
+          args: result/**/index.html
 
       - name: Create Issue From File
         uses: actions/github-script@v7
