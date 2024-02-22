@@ -47,7 +47,7 @@ jobs:
           nix-channel --update
 
       - name: Build Site
-        run: nix build .#site
+        run: nix build .#site --accept-flake-config
 
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         env:
