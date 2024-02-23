@@ -111,10 +111,10 @@ let profiles = [
     <main class="max-w-6xl w-full">
       <h2 class="2xl text-center my-4">Core Union Labs Team</h2>
 
-        <ul class="list-none grid grid-cols-3 gap-2">
+        <ul class="list-none grid grid-cols-3 divide divide-[#1f1f1f] divide-x divide-y">
           {
             profiles.map(person => (
-              <li class="border border-gray-500 p-4 box flex flex-col gap-2">
+              <li class="p-4 box flex flex-col gap-2">
                 <div class="flex gap-2 items-center">
                   <img class="w-16 h-16" src={person.profile_pic.src}/>
                   <div class="leading-tight">
