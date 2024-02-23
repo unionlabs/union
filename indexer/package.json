@@ -13,6 +13,7 @@
   "dependencies": {
     "@cosmjs/encoding": "^0.32.2",
     "@ponder/core": "^0.2.8",
+    "ulidx": "^2.3.0",
     "viem": "^2.7.12"
   },
   "devDependencies": {

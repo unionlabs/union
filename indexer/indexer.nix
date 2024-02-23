@@ -8,7 +8,7 @@
     {
       packages = {
         indexer = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-3P5MJUo1o+dQL1pwDfSMSnnKzdSONKkPA5IUrS7CAFI=";
+          npmDepsHash = "sha256-LIG/5rwLcYvGDKdsUgsPYn4ElsOeVdYage9VJqLAkWU=";
           src = ./.;
           sourceRoot = "indexer";
           pname = "union-transfers-indexer";

@@ -1,8 +1,12 @@
 import { createSchema } from "@ponder/core";
 
 export default createSchema((p) => ({
+  /**
+   * UCS01_RELAY
+   */
   SentEvent: p.createTable({
-    id: p.hex(),
+    id: p.string(),
+    transactionHash: p.hex(),
     sender: p.hex(),
     receiver: p.string(),
     denom: p.string(),
@@ -12,7 +16,8 @@ export default createSchema((p) => ({
   }),
 
   ReceivedEvent: p.createTable({
-    id: p.hex(),
+    id: p.string(),
+    transactionHash: p.hex(),
     sender: p.string(),
     receiver: p.hex(),
     denom: p.string(),
@@ -22,7 +27,8 @@ export default createSchema((p) => ({
   }),
 
   RefundedEvent: p.createTable({
-    id: p.hex(),
+    id: p.string(),
+    transactionHash: p.hex(),
     sender: p.hex(),
     receiver: p.string(),
     denom: p.string(),
@@ -32,9 +38,31 @@ export default createSchema((p) => ({
   }),
 
   DenomCreatedEvent: p.createTable({
-    id: p.hex(),
+    id: p.string(),
+    transactionHash: p.hex(),
     denom: p.string(),
     token: p.hex(),
+    timestamp: p.bigint(),
+  }),
+
+  /**
+   * UNO_ERC20
+   */
+  TransferEvent: p.createTable({
+    id: p.string(),
+    transactionHash: p.hex(),
+    sender: p.hex(),
+    receiver: p.hex(),
+    amount: p.bigint(),
+    timestamp: p.bigint(),
+  }),
+
+  ApprovalEvent: p.createTable({
+    id: p.string(),
+    transactionHash: p.hex(),
+    owner: p.hex(),
+    spender: p.hex(),
+    amount: p.bigint(),
     timestamp: p.bigint(),
   }),
 }));
