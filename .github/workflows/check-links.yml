@@ -42,10 +42,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: |
             site/src app/src --config ${{ github.workspace }}/lychee.toml --github-token ${{ secrets.GITHUB_TOKEN }}
-              
+
       - name: Comment On Pull Request
         uses: actions/github-script@v7
-        if: env.lychee_exit_code != 0
+        # only comment if there are errors and it's a pull request
+        if: env.lychee_exit_code != 0 && github.event_name == 'pull_request'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
