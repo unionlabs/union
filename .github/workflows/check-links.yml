@@ -48,9 +48,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: |
-            site/src app/src \
-              --config ./lychee.toml \
-              --github-token ${{ secrets.GITHUB_TOKEN }}
+            site/src app/src --config ${{ github.workspace }}/lychee.toml --github-token ${{ secrets.GITHUB_TOKEN }}
               
       - name: Comment On Pull Request
         uses: actions/github-script@v7
