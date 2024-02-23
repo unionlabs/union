@@ -49,7 +49,8 @@ jobs:
         uses: lycheeverse/lychee-action@v1.9.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: result/**/index.html --dump-inputs
+          args: |
+            'result/**/index.html' --dump-inputs
 
       - name: Comment On Pull Request
         uses: actions/github-script@v7
