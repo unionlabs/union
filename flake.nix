@@ -414,6 +414,7 @@
               jq
               go-ethereum
               marksman
+              lychee
               nil
               nixfmt
               nix-tree

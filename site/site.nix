@@ -8,7 +8,7 @@
     {
       packages = {
         site = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-+W5oASWX4HOHSJ4ScBSkU9SEQvanq3M4gGTaIAtb27o=";
+          npmDepsHash = "sha256-a70Glp6WGVhBI5qcGouZDkeKwow6I0a/B+RpOtaPsiQ=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";

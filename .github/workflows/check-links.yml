@@ -20,6 +20,7 @@ defaults:
 
 env:
   ACTIONS_RUNNER_DEBUG: true
+  NIXPKGS_CHANNEL: nixos-22.11
 
 jobs:
   # runs on push and pull request
@@ -35,22 +36,20 @@ jobs:
         with:
           lfs: true
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v25
-        with:
-          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
-          github_access_token: ${{ github.token }}
-
-      - name: Build Site
-        run: nix build .#site --accept-flake-config
-
       - name: Link Check
         id: lychee
         uses: lycheeverse/lychee-action@v1.9.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: |
-            'result/**/index.html'
+            --base . \
+              --no-progress \
+                './**/*.md' \
+                './**/*.mdx' \
+                './**/*.txt' \
+                './**/*.html' \
+                './**/*.astro' \
+                './**/*.svelte' 
 
       - name: Comment On Pull Request
         uses: actions/github-script@v7
