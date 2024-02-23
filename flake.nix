@@ -414,7 +414,6 @@
               cargo-nextest
               jq
               go-ethereum
-              railway
               marksman
               nil
               nixfmt
