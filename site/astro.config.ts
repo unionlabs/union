@@ -3,7 +3,7 @@ import tailwind from "@astrojs/tailwind";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import { markdownConfiguration } from "./markdown.config.ts";
-import starlightLinksValidator from 'starlight-links-validator'
+import starlightLinksValidator from "starlight-links-validator";
 
 const SITE_URL = "https://union.build";
 
