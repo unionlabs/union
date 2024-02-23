@@ -25,3 +25,6 @@ export async function fetcher<T>(url: string, options?: RequestInit) {
 export async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
+
+export const generateRandomInteger = (min: number, max: number) =>
+  Math.floor(Math.random() * (max - min + 1)) + min

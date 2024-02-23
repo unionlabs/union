@@ -142,7 +142,7 @@ export async function initializeSigningCosmWasmClient() {
 }
 
 export const unionTransactions = writable<Array<string>>([])
-export async function sendAssetFromUnionToEthereum({ amount }: { amount: string }) {
+export async function sendAssetFromUnionToEthereum({ amount }: { amount: bigint }) {
   if (!get(snapConnected)) return
   if (!get(snapChainInitialized)) return
   const ethereumAddress = get(wallet).address
@@ -175,7 +175,7 @@ export async function sendAssetFromUnionToEthereum({ amount }: { amount: string 
     },
     'auto',
     undefined,
-    [{ denom: UNO.NATIVE_DENOM, amount }]
+    [{ denom: UNO.NATIVE_DENOM, amount: amount.toString() }]
   )
 
   unionTransactions.update(transactions => [...transactions, result.transactionHash])

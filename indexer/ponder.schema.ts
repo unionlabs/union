@@ -6,7 +6,6 @@ export default createSchema((p) => ({
    */
   SentEvent: p.createTable({
     id: p.string(),
-    transactionHash: p.hex(),
     sender: p.hex(),
     receiver: p.string(),
     denom: p.string(),
@@ -17,7 +16,6 @@ export default createSchema((p) => ({
 
   ReceivedEvent: p.createTable({
     id: p.string(),
-    transactionHash: p.hex(),
     sender: p.string(),
     receiver: p.hex(),
     denom: p.string(),
@@ -28,7 +26,6 @@ export default createSchema((p) => ({
 
   RefundedEvent: p.createTable({
     id: p.string(),
-    transactionHash: p.hex(),
     sender: p.hex(),
     receiver: p.string(),
     denom: p.string(),
@@ -39,7 +36,6 @@ export default createSchema((p) => ({
 
   DenomCreatedEvent: p.createTable({
     id: p.string(),
-    transactionHash: p.hex(),
     denom: p.string(),
     token: p.hex(),
     timestamp: p.bigint(),
@@ -50,7 +46,6 @@ export default createSchema((p) => ({
    */
   TransferEvent: p.createTable({
     id: p.string(),
-    transactionHash: p.hex(),
     sender: p.hex(),
     receiver: p.hex(),
     amount: p.bigint(),
@@ -59,7 +54,6 @@ export default createSchema((p) => ({
 
   ApprovalEvent: p.createTable({
     id: p.string(),
-    transactionHash: p.hex(),
     owner: p.hex(),
     spender: p.hex(),
     amount: p.bigint(),
