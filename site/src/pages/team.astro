@@ -2,6 +2,12 @@
 import Layout from '#/layouts/Layout.astro';
 import headshot_cor from '#/assets/images/headshots/cor.jpg';
 
+import vc_galileo from '#/assets/images/investors/galileo.svg';
+import vc_nascent from '#/assets/images/investors/nascent.svg';
+import vc_tioga from '#/assets/images/investors/tioga.png';
+import vc_semantic from '#/assets/images/investors/semantic.png';
+import vc_lightshift from '#/assets/images/investors/lightshift.png';
+
 let profiles = [
   {
     name: "Karel", 
@@ -126,6 +132,42 @@ let profiles = [
           }
 
         </ul>
+
+        <h2 class="2xl text-center my-4">Supporting Teams</h2>
+        <ul class="list-none grid grid-cols-3 gap-2">
+          <li class="border border-gray-500 p-4 box flex flex-col gap-2">
+            <h3>Spearbit</h3>
+            <p>Code auditing</p>
+          </li>
+          <li class="border border-gray-500 p-4 box flex flex-col gap-2">
+            <h3>Groomlake</h3>
+            <p>Security</p>
+          </li>
+          <li class="border border-gray-500 p-4 box flex flex-col gap-2">
+            <h3>Horizons Law</h3>
+            <p>Legal</p>
+          </li>
+
+        </ul>
+
+        <h2 class="2xl text-center my-4">Investors</h2>
+        <section class="flex flex-col items-center">
+
+      		<div class="flex flex-col md:flex-row gap-[24px] mt-[24px] items-center">
+      			<img class="block w-[200px]" src={vc_galileo.src} alt="Galileo"/>
+      			<img class="block w-[60px] mx-8" src={vc_nascent.src} alt="Nascent"/>
+      			<img class="block w-[200px]" src={vc_tioga.src} alt="Tioga"/>
+      		</div>
+
+      		<div class="flex flex-col md:flex-row gap-[24px] mt-[24px] items-center ">
+      			<img class="block w-[220px]" src={vc_semantic.src} alt="Semantic"/>
+      			<img class="block w-[220px]" src={vc_lightshift.src} alt="Lightshift"/>
+      		</div>
+      		<div class="mt-4">
+      			<a class="skew-button" href="/blog/seed-raise"><span>READ THE ANNOUNCEMENT -&gt;</span></a>
+      		</div>
+      	</section>
+
 
 
     </main>
