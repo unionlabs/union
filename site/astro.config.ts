@@ -3,6 +3,7 @@ import tailwind from "@astrojs/tailwind";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import { markdownConfiguration } from "./markdown.config.ts";
+import starlightLinksValidator from "starlight-links-validator";
 
 const SITE_URL = "https://union.build";
 
@@ -16,6 +17,9 @@ export default defineConfig({
   server: (_options) => ({
     port: PORT,
   }),
+  redirects: {
+    "/logo": "/union-logo.zip",
+  },
   markdown: markdownConfiguration,
   devToolbar: { enabled: false },
   integrations: [
@@ -30,6 +34,9 @@ export default defineConfig({
         github: "https://github.com/unionlabs",
         discord: "https://discord.union.build",
         "x.com": "https://x.com/union_build",
+      },
+      components: {
+        EditLink: "./src/components/EditLink.astro",
       },
       head: [
         {
@@ -58,10 +65,6 @@ export default defineConfig({
           attrs: { src: "/scripts/anchor-targets.js" },
         },
         {
-          tag: "script",
-          attrs: { src: "/scripts/edit-page-link.js" },
-        },
-        {
           // math rendering breaks without this
           tag: "link",
           attrs: {
@@ -74,9 +77,6 @@ export default defineConfig({
         root: { label: "English", lang: "en" },
       },
       defaultLocale: "root",
-      editLink: {
-        baseUrl: "https://discord.union.build",
-      },
       logo: {
         alt: "Union Logo",
         dark: "./src/assets/union-logo/union-logo-transparent.svg",
@@ -130,7 +130,7 @@ export default defineConfig({
           },
         },
       ],
-      plugins: [],
+      plugins: [starlightLinksValidator()],
       customCss: [
         "./src/styles/fonts.css",
         "./src/styles/tailwind.css",

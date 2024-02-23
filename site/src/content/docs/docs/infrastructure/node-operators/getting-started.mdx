@@ -8,7 +8,7 @@ import Version from "#/components/ChainVersions.svelte";
 import DownloadFile from "#/components/DownloadFile.astro";
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
-This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](../nixos) and the [Kubernetes](../kubernetes) guide for more production-ready deployments.
+This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](/docs/infrastructure/node-operators/nixos/) and the [Kubernetes](/docs/infrastructure/node-operators/kubernetes/) guide for more production-ready deployments.
 
 Validators are the backbone of the network. Becoming one requires significant token bonding and delegations, and is not intended for non-power users.
 
@@ -69,7 +69,7 @@ docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 
 _Where `UNIOND_VERSION` is <Version chainId="union-testnet-6" genesis="false"/>_
 
-When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](../docker-compose) section is more suited for docker users.
+When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](/docs/infrastructure/node-operators/docker-compose/) section is more suited for docker users.
 
 :::caution
 
