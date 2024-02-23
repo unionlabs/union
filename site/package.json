@@ -52,6 +52,7 @@
     "@tailwindcss/typography": "^0.5.10",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/node": "^20.11.19",
+    "starlight-links-validator": "^0.5.3",
     "tailwindcss-animate": "1.0.7",
     "typed-query-selector": "^2.11.0",
     "typescript": "^5.3.3"
