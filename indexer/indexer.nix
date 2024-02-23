@@ -22,6 +22,7 @@
           '';
           doDist = false;
           NODE_OPTIONS = "--no-warnings";
+          PONDER_TELEMETRY_DISABLED = true;
         };
       };
 
