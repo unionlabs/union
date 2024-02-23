@@ -4,7 +4,7 @@ import headshot_cor from '#/assets/images/headshots/cor.jpg';
 
 let profiles = [
   {
-    name: "Karel Kubat", 
+    name: "Karel", 
     title: "CEO", 
     x_name: "0xkaiserkarel", 
     profile_pic: headshot_cor,
@@ -15,44 +15,111 @@ let profiles = [
     ]
   },
   { 
-    name: "Cor Pruijs", 
+    name: "Cor", 
     title: "CTO", 
     x_name: "corcoder", 
     profile_pic: headshot_cor,
     description: [ 
-      "Rust and Go Software Engineer", 
-      "Developed IBC on Substrate", 
-      "Grew Composable to 450M valuation"
+      "Full-stack polyglot Software Engineer", 
+      "Decade of experience, focus on Rust, Nix & Go", 
+      "Developed Cross-ecosystem VM"
+    ]
+  },
+  {
+    name: "Emir",
+    title: "Head of BD",
+    x_name: "EBeriker",
+    profile_pic: headshot_cor,
+    description: [
+      "Ex-ConsenSys monetization strategy lead (2019-2023)",
+      "Advisor to crypto startups and VCs",
+    ]
+  },
+  {
+    name: "Sarah",
+    title: "Head of Operations",
+    x_name: "sarahkc07",
+    profile_pic: headshot_cor,
+    description: [
+      "Nuclear Surface Warfare Officer, US Navy",
+      "Prev. Director of Compliance and Ops at TokenSoft.",
     ]
   },
   { 
-    name: "Hussein Ait-Lachen ", 
+    name: "Hussein", 
     title: "Principal Engineer", 
     x_name: "0xc0dejug", 
     profile_pic: headshot_cor,
     description: [ 
-      "Rust and Go Software Engineer", 
-      "Developed IBC on Substrate", 
-      "Grew Composable to 450M valuation"
+      "IBC expert, Gnark contributor", 
+      "Built dhall-to-gnark compiler and Substrate-IBC", 
+    ]
+  },
+  { 
+    name: "Abdullah", 
+    title: "Founding Engineer", 
+    x_name: "PoisonPhang", 
+    profile_pic: headshot_cor,
+    description: [ 
+      "Rust and CosmWasm Engineer", 
+      "Systems Engineer", 
+      "Developed the Substrate CosmWasm-VM"
+    ]
+  },
+  { 
+    name: "Ben", 
+    title: "Founding Engineer", 
+    x_name: "0xbonlulu", 
+    profile_pic: headshot_cor,
+    description: [ 
+      "Rust Software Engineer Substrate and CosmosSDK", 
+      "Developer Designer of staking, DEXes and fee systems",
+    ]
+  },
+  { 
+    name: "Connor", 
+    title: "Founding Engineer", 
+    x_name: "PoisonPhang", 
+    profile_pic: headshot_cor,
+    description: [ 
+      "CosmosSDK contributor", 
+      "CI and build systems expert", 
+      "Polkadot blockchain academy mentor", 
+    ]
+  },
+  { 
+    name: "Omar", 
+    title: "Full Stack Engineer", 
+    x_name: "awkroot", 
+    profile_pic: headshot_cor,
+    description: [ 
+      "CI and build systems expert", 
+      
+      "Polkadot blockchain academy mentor", 
     ]
   }
 ]
 ---
 <Layout>
   <div class="flex flex-col flex-1 items-center px-4">
-    <main class="max-w-5xl w-full">
-      <h2 class="2xl">Team</h2>
+    <main class="max-w-6xl w-full">
+      <h2 class="2xl text-center my-4">Core Union Labs Team</h2>
 
-        <ul class="list-none">
+        <ul class="list-none grid grid-cols-3 gap-2">
           {
             profiles.map(person => (
-              <li>
-                <img class="w-12 h-12" src={person.profile_pic.src}/>
-                <h3>{person.name}</h3>
-                <div>{person.title}</div>
-                <div>{person.description.map(line => (
-                  <div>{line}</div>
-                ))}</div>
+              <li class="border border-gray-500 p-4 box flex flex-col gap-2">
+                <div class="flex gap-2 items-center">
+                  <img class="w-16 h-16" src={person.profile_pic.src}/>
+                  <div class="leading-tight">
+                    <h3 class="text-xl">{person.name}</h3>
+                    <div class="text-gray-300">{person.title}</div>
+                    <a class="text-accent" href={`https://x.com/${person.x_name}`}>@{person.x_name}</a>
+                  </div>
+                </div>
+                <ul class="list-inside list-none m-0 p-0">{person.description.map(line => (
+                  <li>{line}</li>
+                ))}</ul>
               </a>
               </li>
             ))
