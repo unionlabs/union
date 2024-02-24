@@ -1,6 +1,13 @@
 ---
 import Layout from '#/layouts/Layout.astro';
+import headshot_karel from '#/assets/images/headshots/karel.jpg';
 import headshot_cor from '#/assets/images/headshots/cor.jpg';
+import headshot_emir from '#/assets/images/headshots/emir.jpeg';
+import headshot_sarah from '#/assets/images/headshots/sarah.jpg';
+import headshot_abdullah from '#/assets/images/headshots/abdullah.jpeg';
+import headshot_connor from '#/assets/images/headshots/connor.jpg';
+import headshot_omar from '#/assets/images/headshots/omar.jpeg';
+import headshot_hussein from '#/assets/images/headshots/hussein.jpeg';
 
 import vc_galileo from '#/assets/images/investors/galileo.svg';
 import vc_nascent from '#/assets/images/investors/nascent.svg';
@@ -8,151 +15,119 @@ import vc_tioga from '#/assets/images/investors/tioga.png';
 import vc_semantic from '#/assets/images/investors/semantic.png';
 import vc_lightshift from '#/assets/images/investors/lightshift.png';
 
+import team_spearbit from "#/assets/images/partners/spearbit.svg";
+import team_groomlake from "#/assets/images/partners/groomlake.png";
+
 let profiles = [
   {
     name: "Karel", 
     title: "CEO", 
     x_name: "0xkaiserkarel", 
-    profile_pic: headshot_cor,
-    description: [ 
-      "Rust and Go Software Engineer", 
-      "Developed IBC on Substrate", 
-      "Grew Composable to 450M valuation"
-    ]
+    profile_pic: headshot_karel
   },
   { 
     name: "Cor", 
     title: "CTO", 
     x_name: "corcoder", 
-    profile_pic: headshot_cor,
-    description: [ 
-      "Full-stack polyglot Software Engineer", 
-      "Decade of experience, focus on Rust, Nix & Go", 
-      "Developed Cross-ecosystem VM"
-    ]
+    profile_pic: headshot_cor
   },
   {
     name: "Emir",
     title: "Head of BD",
     x_name: "EBeriker",
-    profile_pic: headshot_cor,
-    description: [
-      "Ex-ConsenSys monetization strategy lead (2019-2023)",
-      "Advisor to crypto startups and VCs",
-    ]
+    profile_pic: headshot_emir
   },
   {
     name: "Sarah",
     title: "Head of Operations",
     x_name: "sarahkc07",
-    profile_pic: headshot_cor,
-    description: [
-      "Nuclear Surface Warfare Officer, US Navy",
-      "Prev. Director of Compliance and Ops at TokenSoft.",
-    ]
+    profile_pic: headshot_sarah
   },
   { 
     name: "Hussein", 
     title: "Principal Engineer", 
     x_name: "0xc0dejug", 
-    profile_pic: headshot_cor,
-    description: [ 
-      "IBC expert, Gnark contributor", 
-      "Built dhall-to-gnark compiler and Substrate-IBC", 
-    ]
+    profile_pic: headshot_hussein
   },
   { 
     name: "Abdullah", 
     title: "Founding Engineer", 
-    x_name: "PoisonPhang", 
-    profile_pic: headshot_cor,
-    description: [ 
-      "Rust and CosmWasm Engineer", 
-      "Systems Engineer", 
-      "Developed the Substrate CosmWasm-VM"
-    ]
+    x_name: "aeryz2", 
+    profile_pic: headshot_abdullah
   },
   { 
     name: "Ben", 
     title: "Founding Engineer", 
     x_name: "0xbonlulu", 
-    profile_pic: headshot_cor,
-    description: [ 
-      "Rust Software Engineer Substrate and CosmosSDK", 
-      "Developer Designer of staking, DEXes and fee systems",
-    ]
+    profile_pic: headshot_cor
   },
   { 
     name: "Connor", 
     title: "Founding Engineer", 
     x_name: "PoisonPhang", 
-    profile_pic: headshot_cor,
-    description: [ 
-      "CosmosSDK contributor", 
-      "CI and build systems expert", 
-      "Polkadot blockchain academy mentor", 
-    ]
+    profile_pic: headshot_connor,
   },
   { 
     name: "Omar", 
     title: "Full Stack Engineer", 
     x_name: "awkroot", 
-    profile_pic: headshot_cor,
-    description: [ 
-      "CI and build systems expert", 
-      
-      "Polkadot blockchain academy mentor", 
-    ]
+    profile_pic: headshot_omar,
   }
 ]
+
+
+let vcs = [
+  vc_galileo ,
+  vc_nascent ,
+  vc_tioga ,
+  vc_semantic ,
+  vc_lightshift 
+]; 
 ---
 <Layout>
   <div class="flex flex-col flex-1 items-center px-4">
-    <main class="max-w-6xl w-full">
-      <h2 class="2xl text-center my-4">Core Union Labs Team</h2>
-
+    <main class="max-w-5xl w-full">
         <ul class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 bg-[#1f1f1f] gap-px p-px">
           {
             profiles.map(person => (
-              <li class="p-4 box flex flex-col gap-2 bg-black">
-                <div class="flex gap-2 items-center">
-                  <img class="w-16 h-16" src={person.profile_pic.src}/>
-                  <div class="leading-tight">
-                    <h3 class="text-xl">{person.name}</h3>
-                    <div class="text-gray-300">{person.title}</div>
-                    <a class="text-accent" href={`https://x.com/${person.x_name}`}>@{person.x_name}</a>
-                  </div>
-                </div>
-                <ul class="list-inside list-none m-0 p-0">{person.description.map(line => (
-                  <li>{line}</li>
-                ))}</ul>
-              </a>
+              <li>
+                <a class="block w-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-gray-900" href={`https://x.com/${person.x_name}`}>
+
+                    <img class="w-20 h-20" src={person.profile_pic.src}/>
+                    <div class="leading-tight">
+                      <h3 class="text-2xl">{person.name}</h3>
+                      <div class="text-gray-300 -mt-1 text-lg">{person.title}</div>
+                      <div class="text-accent text-lg -mt-1 block"}>@{person.x_name}</div>
+                    </div>
+                </a>
               </li>
             ))
           }
-
         </ul>
+        <div class="grid grid-cols-1 sm:grid-cols-2 bg-[#1f1f1f] gap-px p-px pt-0">
+          <div class="flex flex-col py-4 items-center justify-center bg-black">
+            <img class="w-60 -mb-1" src={team_spearbit.src}/>
+            <p class="text-xl text-gray-300">Audit Team</p>
+          </div>
+          <div class="flex flex-col py-4 items-center justify-center bg-black">
+            <img class="w-60 " src={team_groomlake.src}/>
+            <p class="text-xl text-gray-300">Security Team</p>
+          </div>
+        </div>
 
-<!--
-        <h2 class="2xl text-center my-4">Supporting Teams</h2>
-        <ul class="list-none grid grid-cols-3 gap-2">
-          <li class="border border-gray-500 p-4 box flex flex-col gap-2">
-            <h3>Spearbit</h3>
-            <p>Code auditing</p>
-          </li>
-          <li class="border border-gray-500 p-4 box flex flex-col gap-2">
-            <h3>Groomlake</h3>
-            <p>Security</p>
-          </li>
-          <li class="border border-gray-500 p-4 box flex flex-col gap-2">
-            <h3>Horizons Law</h3>
-            <p>Legal</p>
-          </li>
+        <div class="grid grid-cols-1 sm:grid-cols-2 bg-[#1f1f1f] gap-px p-px pt-0">
+          <div class="flex flex-col py-4 items-center justify-center bg-black">
+      			<img class="block w-[200px]" src={vc_galileo.src} alt="Galileo"/>
+          </div>
+          <div class="flex flex-col py-4 items-center justify-center bg-black">
+      			<img class="block w-[200px]" src={vc_galileo.src} alt="Galileo"/>
+          </div>
+          <div class="flex flex-col py-4 items-center justify-center bg-black">
+      			<img class="block w-[200px]" src={vc_tioga.src} alt="Tioga"/>
+          </div>
+        </div>
 
-        </ul>
-        !-->
 
-        <h2 class="2xl text-center my-4">Investors</h2>
         <section class="flex flex-col items-center">
 
       		<div class="flex flex-col md:flex-row gap-[24px] mt-[24px] items-center">
