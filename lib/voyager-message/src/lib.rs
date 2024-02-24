@@ -50,7 +50,7 @@ impl FromQueueMsg<RelayerMsgTypes> for VoyagerMessageTypes {
             QueueMsg::Fetch(fetch) => QueueMsg::Fetch(VoyagerFetch::Relay(fetch)),
             QueueMsg::Msg(msg) => QueueMsg::Msg(VoyagerMsg::Relay(msg)),
             QueueMsg::Wait(wait) => QueueMsg::Wait(VoyagerWait::Relay(wait)),
-            QueueMsg::DeferUntil { point, seconds } => QueueMsg::DeferUntil { point, seconds },
+            QueueMsg::Defer(defer) => QueueMsg::Defer(defer),
             QueueMsg::Repeat { times, msg } => QueueMsg::Repeat {
                 times,
                 msg: Box::new(Self::from_queue_msg(*msg)),
@@ -92,7 +92,7 @@ impl FromQueueMsg<BlockPollingTypes> for VoyagerMessageTypes {
             QueueMsg::Data(data) => QueueMsg::Data(VoyagerData::Block(data)),
             QueueMsg::Fetch(fetch) => QueueMsg::Fetch(VoyagerFetch::Block(fetch)),
             QueueMsg::Wait(wait) => QueueMsg::Wait(VoyagerWait::Block(wait)),
-            QueueMsg::DeferUntil { point, seconds } => QueueMsg::DeferUntil { point, seconds },
+            QueueMsg::Defer(defer) => QueueMsg::Defer(defer),
             QueueMsg::Repeat { times, msg } => QueueMsg::Repeat {
                 times,
                 msg: Box::new(Self::from_queue_msg(*msg)),
@@ -856,7 +856,7 @@ mod tests {
         println!("Eth - Union (Sending to Eth) Update Client: ");
         println!("---------------------------------------");
         print_json::<RelayerMsgTypes>(repeat(
-            u64::MAX,
+            None,
             seq([
                 event(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
                     eth_chain_id,
@@ -873,7 +873,7 @@ mod tests {
         println!("Eth - Union (Sending to Union) Update Client: ");
         println!("---------------------------------------");
         print_json::<RelayerMsgTypes>(repeat(
-            u64::MAX,
+            None,
             seq([
                 event(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
                     union_chain_id.clone(),
@@ -890,7 +890,7 @@ mod tests {
         println!("Cosmos - Union (Sending to Cosmos) Update Client: ");
         println!("---------------------------------------");
         print_json::<RelayerMsgTypes>(repeat(
-            u64::MAX,
+            None,
             seq([
                 event(relay_message::id::<Wasm<Cosmos>, Union, _>(
                     cosmos_chain_id.clone(),
@@ -907,7 +907,7 @@ mod tests {
         println!("Cosmos - Union (Sending to Union) Update Client: ");
         println!("---------------------------------------");
         print_json::<RelayerMsgTypes>(repeat(
-            u64::MAX,
+            None,
             seq([
                 event(relay_message::id::<Union, Wasm<Cosmos>, _>(
                     union_chain_id.clone(),

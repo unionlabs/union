@@ -25,7 +25,7 @@ use ethers::{
     utils::secret_key_to_address,
 };
 use futures::StreamExt;
-use queue_msg::{InMemoryQueue, Queue, Reactor};
+use queue_msg::{Engine, InMemoryQueue, Queue};
 use tendermint_rpc::Client;
 use tokio::sync::Mutex;
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
@@ -342,7 +342,7 @@ impl Context {
     }
 
     pub async fn listen(&self) {
-        let reactor = Reactor::new(Arc::new(Chains {
+        let reactor = Engine::new(Arc::new(Chains {
             union: [(self.union.chain_id(), self.union.clone())]
                 .into_iter()
                 .collect(),
@@ -352,8 +352,10 @@ impl Context {
             ..Default::default()
         }));
 
+        let mut queue = InMemoryQueue::<BlockPollingTypes>::new(()).await.unwrap();
+
         reactor
-            .run(InMemoryQueue::<BlockPollingTypes>::new(()).await.unwrap())
+            .run(&mut queue)
             .for_each(|event| async {
                 match event {
                     Ok(AnyChainIdentified::Union(Identified {

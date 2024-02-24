@@ -2,7 +2,9 @@ use std::fmt::Display;
 
 use chain_utils::{Chains, GetChain};
 use macros::apply;
-use queue_msg::{data, defer, msg_struct, now, seq, wait, HandleWait, QueueError, QueueMsg};
+use queue_msg::{
+    data, defer_absolute, msg_struct, now, seq, wait, HandleWait, QueueError, QueueMsg,
+};
 use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
 
 use crate::{
@@ -43,7 +45,7 @@ where
                 } else {
                     seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
-                        defer(now() + 1),
+                        defer_absolute(now() + 1),
                         wait(Identified::<C, _>::new(
                             c.chain_id(),
                             WaitForHeight { height },

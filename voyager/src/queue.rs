@@ -16,7 +16,7 @@ use axum::{
 use chain_utils::Chains;
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt};
-use queue_msg::{InMemoryQueue, Queue, QueueMsg, QueueMsgTypes, Reactor};
+use queue_msg::{Engine, InMemoryQueue, Queue, QueueMsg, QueueMsgTypes};
 use relay_message::RelayerMsgTypes;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -201,8 +201,8 @@ impl Voyager {
         })
     }
 
-    pub fn worker(&self) -> Reactor<RelayerMsgTypes> {
-        Reactor::new(self.chains.clone())
+    pub fn worker(&self) -> Engine<RelayerMsgTypes> {
+        Engine::new(self.chains.clone())
     }
 
     pub async fn run(self) -> Result<(), RunError> {
@@ -271,12 +271,12 @@ impl Voyager {
         for i in 0..self.num_workers {
             tracing::info!("spawning worker {i}");
 
-            let reactor = Reactor::new(self.chains.clone());
-            let q = self.queue.clone();
+            let reactor = Engine::new(self.chains.clone());
+            let mut q = self.queue.clone();
 
             join_set.spawn(async move {
                 reactor
-                    .run(q)
+                    .run(&mut q)
                     .for_each(|x| async {
                         let _msg = x.unwrap();
                     })

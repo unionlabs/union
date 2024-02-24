@@ -3,7 +3,8 @@ use std::fmt::Display;
 use chain_utils::{ChainNotFoundError, GetChain};
 use macros::apply;
 use queue_msg::{
-    defer, fetch, msg_struct, now, seq, wait, HandleWait, QueueError, QueueMsg, QueueMsgTypes,
+    defer_absolute, fetch, msg_struct, now, seq, wait, HandleWait, QueueError, QueueMsg,
+    QueueMsgTypes,
 };
 use unionlabs::{
     ibc::core::client::height::IsHeight,
@@ -66,7 +67,7 @@ where
                 } else {
                     seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
-                        defer(now() + 1),
+                        defer_absolute(now() + 1),
                         wait(id::<Hc, Tr, _>(
                             c.chain_id(),
                             WaitForBlock { height, __marker }.into(),
@@ -85,7 +86,7 @@ where
                 } else {
                     seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
-                        defer(now() + 1),
+                        defer_absolute(now() + 1),
                         wait(id::<Hc, Tr, _>(
                             c.chain_id(),
                             WaitForTimestamp {
@@ -128,7 +129,7 @@ where
                 } else {
                     seq([
                         // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would require a new method on chain
-                        defer(now() + 1),
+                        defer_absolute(now() + 1),
                         wait(id(
                             c.chain_id(),
                             WaitForTrustedHeight {
