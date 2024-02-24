@@ -191,6 +191,7 @@ where
         }
     }
 }
+
 pub mod fetch {
     use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
     use serde::{Deserialize, Serialize};

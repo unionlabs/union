@@ -6,7 +6,8 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use chain_utils::{cosmos_sdk::CosmosSdkChainExt, EventSource};
+use block_poll_message::{data::Data, AnyChainIdentified, BlockPollingTypes, Identified};
+use chain_utils::{cosmos_sdk::CosmosSdkChainExt, Chains};
 use contracts::{
     erc20,
     ibc_packet::SendPacketFilter,
@@ -25,6 +26,7 @@ use ethers::{
     utils::secret_key_to_address,
 };
 use futures::StreamExt;
+use queue_msg::{InMemoryQueue, Queue, Reactor};
 use tendermint_rpc::Client;
 use tokio::sync::Mutex;
 use ucs01_relay::msg::{ExecuteMsg, TransferMsg};
@@ -332,112 +334,115 @@ impl Context {
         }
     }
 
-    pub async fn listen_union(&self) {
-        let mut events = Box::pin(self.union.clone().events(()));
+    pub async fn listen(&self) {
+        let reactor = Reactor::new(Arc::new(Chains {
+            union: [(self.union.chain_id(), self.union.clone())]
+                .into_iter()
+                .collect(),
+            evm_minimal: [(self.evm.chain_id(), self.evm.clone())]
+                .into_iter()
+                .collect(),
+            ..Default::default()
+        }));
 
-        loop {
-            tracing::info!("Union: Listening for IBC events...");
-
-            match events.next().await {
-                Some(Ok(event)) => match event.event {
-                    IbcEvent::SendPacket(_) => {
-                        tracing::info!("Union: SendPacket observed!");
-                    }
-                    IbcEvent::RecvPacket(e) => {
-                        tracing::info!("Union: RecvPacket observed!");
-                        let evm_txs = self.evm_txs.lock().await;
-                        let uuid = match evm_txs.get(&e.packet_sequence) {
-                            Some(uuid) => uuid.to_owned(),
-                            None => {
-                                tracing::warn!(
-                                    "Union: no matching uuid for packet sequence: {}",
-                                    e.packet_sequence
-                                );
-                                uuid::Uuid::new_v4()
-                            }
-                        };
-                        self.append_record(Event::create_recv_event(
-                            event.chain_id,
-                            uuid,
-                            e,
-                            None,
-                            None,
-                        ))
-                        .await;
-                    }
-                    _ => {
-                        tracing::debug!("Union: Untracked event observed: {:?}", event.event);
-                    }
-                },
-                Some(Err(e)) => {
-                    tracing::error!("Union: Skipping events due to error: {:?}", e);
-                }
-                None => {
-                    tracing::debug!("Union: No events...");
-                }
-            }
-        }
-    }
-
-    pub async fn listen_eth(&self) {
-        let mut events = Box::pin(self.evm.clone().events(()));
-
-        loop {
-            tracing::info!("Evm: Listening for IBC events...");
-
-            match events.next().await {
-                Some(Ok(event)) => {
-                    let block = self
-                        .evm
-                        .provider
-                        .get_block(ethers::types::H256(event.block_hash.into()))
-                        .await
-                        .unwrap()
-                        .unwrap();
-                    let timestamp = block.timestamp.as_u64();
-
-                    match event.event {
-                        IbcEvent::SendPacket(_e) => {
-                            tracing::info!("Evm: SendPacket observed!");
+        reactor
+            .run(InMemoryQueue::<BlockPollingTypes>::new(()).await.unwrap())
+            .for_each(|event| async {
+                match event {
+                    Ok(AnyChainIdentified::Union(Identified {
+                        chain_id,
+                        t: Data::IbcEvent(event),
+                    })) => match event.event {
+                        IbcEvent::SendPacket(_) => {
+                            tracing::info!("Union: SendPacket observed!");
                         }
                         IbcEvent::RecvPacket(e) => {
-                            tracing::info!("Evm: RecvPacket observed!");
-                            let union_txs = self.union_txs.lock().await;
-                            let uuid = match union_txs.get(&e.packet_sequence) {
+                            tracing::info!("Union: RecvPacket observed!");
+                            let evm_txs = self.evm_txs.lock().await;
+                            let uuid = match evm_txs.get(&e.packet_sequence) {
                                 Some(uuid) => uuid.to_owned(),
                                 None => {
                                     tracing::warn!(
-                                        "Evm: no matching uuid for packet sequence: {}.",
+                                        "Union: no matching uuid for packet sequence: {}",
                                         e.packet_sequence
                                     );
                                     uuid::Uuid::new_v4()
                                 }
                             };
                             self.append_record(Event::create_recv_event(
-                                event.chain_id.to_string(),
-                                uuid,
-                                e.clone(),
-                                Some(timestamp),
-                                None,
+                                chain_id, uuid, e, None, None,
                             ))
                             .await;
-                            if self.is_rush {
-                                tokio::spawn(self.clone().send_from_eth(e));
-                            }
                         }
                         _ => {
-                            tracing::debug!("Evm: Untracked event observed: {:?}", event.event)
+                            tracing::debug!("Union: Untracked event observed: {:?}", event);
+                        }
+                    },
+                    Ok(AnyChainIdentified::EvmMinimal(Identified {
+                        chain_id,
+                        t: Data::IbcEvent(event),
+                    })) => {
+                        let block = self
+                            .evm
+                            .provider
+                            .get_block(
+                                self.evm
+                                    .provider
+                                    .get_transaction(event.tx_hash.0)
+                                    .await
+                                    .unwrap()
+                                    .unwrap()
+                                    .block_hash
+                                    .unwrap(),
+                            )
+                            .await
+                            .unwrap()
+                            .unwrap();
+                        let timestamp = block.timestamp.as_u64();
+
+                        match event.event {
+                            IbcEvent::SendPacket(_e) => {
+                                tracing::info!("Evm: SendPacket observed!");
+                            }
+                            IbcEvent::RecvPacket(e) => {
+                                tracing::info!("Evm: RecvPacket observed!");
+                                let union_txs = self.union_txs.lock().await;
+                                let uuid = match union_txs.get(&e.packet_sequence) {
+                                    Some(uuid) => uuid.to_owned(),
+                                    None => {
+                                        tracing::warn!(
+                                            "Evm: no matching uuid for packet sequence: {}.",
+                                            e.packet_sequence
+                                        );
+                                        uuid::Uuid::new_v4()
+                                    }
+                                };
+                                self.append_record(Event::create_recv_event(
+                                    chain_id.to_string(),
+                                    uuid,
+                                    e.clone(),
+                                    Some(timestamp),
+                                    None,
+                                ))
+                                .await;
+                                if self.is_rush {
+                                    tokio::spawn(self.clone().send_from_eth(e));
+                                }
+                            }
+                            _ => {
+                                tracing::debug!("Evm: Untracked event observed: {:?}", event)
+                            }
                         }
                     }
+                    Ok(msg) => {
+                        tracing::error!(?msg, "unsupported");
+                    }
+                    Err(e) => {
+                        tracing::error!("Union: Skipping events due to error: {:?}", e);
+                    }
                 }
-                Some(Err(e)) => {
-                    tracing::error!(error = %e, "Evm: Skipping events due to error.");
-                }
-                None => {
-                    tracing::debug!("Evm: No events...");
-                }
-            }
-        }
+            })
+            .await;
     }
 
     /// Appends a comma separated line to the `output_file` provided by the context.

@@ -43,10 +43,11 @@
           for target in $(cargo fuzz list); do
               cargo fuzz run \
                 "$target" \
+                --features="arbitrary" \
                 -- \
                 -max_total_time=${max_total_time}
 
-              cargo fuzz coverage "$target"
+              cargo fuzz coverage "$target" --features="arbitrary"
           done
 
           echo "merging profdata"

@@ -7,6 +7,7 @@ use std::{
 use chain_utils::{
     cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
     union::Union,
+    wasm::Wraps,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
@@ -80,7 +81,6 @@ use crate::{
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
     DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, RelayerMsgTypes, Wasm, WasmConfig,
-    Wraps,
 };
 
 impl ChainExt for Union {
@@ -103,7 +103,7 @@ impl ChainExt for Wasm<Union> {
     type Config = WasmConfig;
 }
 
-impl<Tr: ChainExt, Hc: Wraps<Self>> DoMsg<Hc, Tr> for Union
+impl<Tr: ChainExt, Hc: ChainExt + Wraps<Self>> DoMsg<Hc, Tr> for Union
 where
     ConsensusStateOf<Tr>: IntoProto,
     <ConsensusStateOf<Tr> as Proto>::Proto: TypeUrl,
@@ -266,8 +266,10 @@ where
     }
 }
 
-impl<Tr: ChainExt, Hc: Wraps<Self, StateProof = MerkleProof, Fetch<Tr> = UnionFetch<Hc, Tr>>>
-    DoFetchState<Hc, Tr> for Union
+impl<
+        Tr: ChainExt,
+        Hc: ChainExt<StateProof = MerkleProof, Fetch<Tr> = UnionFetch<Hc, Tr>> + Wraps<Self>,
+    > DoFetchState<Hc, Tr> for Union
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -327,7 +329,8 @@ where
     }
 }
 
-impl<Tr: ChainExt, Hc: Wraps<Self, Fetch<Tr> = UnionFetch<Hc, Tr>>> DoFetchProof<Hc, Tr> for Union
+impl<Tr: ChainExt, Hc: ChainExt<Fetch<Tr> = UnionFetch<Hc, Tr>> + Wraps<Self>> DoFetchProof<Hc, Tr>
+    for Union
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -358,7 +361,8 @@ where
 impl<Tr, Hc> DoFetchUpdateHeaders<Hc, Tr> for Union
 where
     Tr: ChainExt,
-    Hc: Wraps<Self, Fetch<Tr> = UnionFetch<Hc, Tr>, Aggregate<Tr> = UnionAggregateMsg<Hc, Tr>>,
+    Hc: ChainExt<Fetch<Tr> = UnionFetch<Hc, Tr>, Aggregate<Tr> = UnionAggregateMsg<Hc, Tr>>
+        + Wraps<Self>,
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,

@@ -3,6 +3,7 @@ use std::{collections::VecDeque, fmt::Debug, marker::PhantomData};
 use chain_utils::{
     cosmos::Cosmos,
     cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
+    wasm::Wraps,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
@@ -62,7 +63,6 @@ use crate::{
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
     DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, RelayerMsgTypes, Wasm, WasmConfig,
-    Wraps,
 };
 
 impl ChainExt for Cosmos {
@@ -85,7 +85,7 @@ impl ChainExt for Wasm<Cosmos> {
     type Config = WasmConfig;
 }
 
-impl<Tr: ChainExt, Hc: Wraps<Self>> DoMsg<Hc, Tr> for Cosmos
+impl<Tr: ChainExt, Hc: ChainExt + Wraps<Self>> DoMsg<Hc, Tr> for Cosmos
 where
     ConsensusStateOf<Tr>: IntoProto,
     <ConsensusStateOf<Tr> as Proto>::Proto: TypeUrl,
@@ -248,8 +248,10 @@ where
     }
 }
 
-impl<Tr: ChainExt, Hc: Wraps<Self, StateProof = MerkleProof, Fetch<Tr> = CosmosFetch<Hc, Tr>>>
-    DoFetchState<Hc, Tr> for Cosmos
+impl<
+        Tr: ChainExt,
+        Hc: Wraps<Self> + ChainExt<StateProof = MerkleProof, Fetch<Tr> = CosmosFetch<Hc, Tr>>,
+    > DoFetchState<Hc, Tr> for Cosmos
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -307,7 +309,8 @@ where
     }
 }
 
-impl<Tr: ChainExt, Hc: Wraps<Self, Fetch<Tr> = CosmosFetch<Hc, Tr>>> DoFetchProof<Hc, Tr> for Cosmos
+impl<Tr: ChainExt, Hc: Wraps<Self> + ChainExt<Fetch<Tr> = CosmosFetch<Hc, Tr>>> DoFetchProof<Hc, Tr>
+    for Cosmos
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -337,7 +340,8 @@ where
 impl<Tr, Hc> DoFetchUpdateHeaders<Hc, Tr> for Cosmos
 where
     Tr: ChainExt,
-    Hc: Wraps<Self, Fetch<Tr> = CosmosFetch<Hc, Tr>, Aggregate<Tr> = CosmosAggregateMsg<Hc, Tr>>,
+    Hc: Wraps<Self>
+        + ChainExt<Fetch<Tr> = CosmosFetch<Hc, Tr>, Aggregate<Tr> = CosmosAggregateMsg<Hc, Tr>>,
 
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -919,10 +923,10 @@ where
     AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Hc>)>,
 {
     type AggregatedData = HList![
-    Identified<Hc, Tr, TrustedCommit<Tr>>,
-    Identified<Hc, Tr, UntrustedCommit<Tr>>,
-    Identified<Hc, Tr, TrustedValidators<Tr>>,
-    Identified<Hc, Tr, UntrustedValidators<Tr>>,
+        Identified<Hc, Tr, TrustedCommit<Tr>>,
+        Identified<Hc, Tr, UntrustedCommit<Tr>>,
+        Identified<Hc, Tr, TrustedValidators<Tr>>,
+        Identified<Hc, Tr, UntrustedValidators<Tr>>,
     ];
 
     fn aggregate(

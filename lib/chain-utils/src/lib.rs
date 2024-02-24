@@ -5,16 +5,16 @@
 )]
 #![feature(trait_alias)]
 
-use std::{fmt::Debug, sync::Arc};
+use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use crossbeam_queue::ArrayQueue;
-use futures::{Future, Stream};
+use futures::Future;
 use unionlabs::{
-    events::IbcEvent,
-    hash::H256,
-    ibc::core::client::height::Height,
-    traits::{Chain, ClientState},
+    ethereum::config::{Mainnet, Minimal},
+    traits::{Chain, ChainIdOf},
 };
+
+use crate::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm};
 
 pub mod cosmos;
 pub mod evm;
@@ -22,26 +22,9 @@ pub mod union;
 
 pub mod cosmos_sdk;
 
+pub mod wasm;
+
 pub mod private_key;
-
-pub trait EventSource {
-    type Event;
-    type Error: Debug;
-    /// The initial state of this event source, if any.
-    type Seed;
-
-    fn events(self, seed: Self::Seed) -> impl Stream<Item = Result<Self::Event, Self::Error>>;
-}
-
-// Serialize, Deserialize
-#[derive(Debug, Clone, PartialEq)]
-pub struct ChainEvent<C: Chain> {
-    /// The chain this event originated from.
-    pub chain_id: <C::SelfClientState as ClientState>::ChainId,
-    pub block_hash: H256,
-    pub height: Height,
-    pub event: IbcEvent<C::ClientId, C::ClientType, String>,
-}
 
 #[derive(Debug, Clone)]
 pub struct Pool<T> {
@@ -91,5 +74,54 @@ impl<T: Clone> Pool<T> {
             .expect("no additional items are added; qed;");
 
         r
+    }
+}
+
+pub trait GetChain<C: Chain> {
+    fn get_chain(&self, chain_id: &ChainIdOf<C>) -> C;
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Chains {
+    // TODO: Use some sort of typemap here instead of individual fields
+    pub evm_minimal: HashMap<ChainIdOf<Evm<Minimal>>, Evm<Minimal>>,
+    pub evm_mainnet: HashMap<ChainIdOf<Evm<Mainnet>>, Evm<Mainnet>>,
+    pub union: HashMap<ChainIdOf<Union>, Union>,
+    pub cosmos: HashMap<ChainIdOf<Cosmos>, Cosmos>,
+}
+
+impl GetChain<Union> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Union>) -> Union {
+        self.union.get(chain_id).unwrap().clone()
+    }
+}
+
+impl GetChain<Cosmos> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Cosmos>) -> Cosmos {
+        self.cosmos.get(chain_id).unwrap().clone()
+    }
+}
+
+impl GetChain<Wasm<Union>> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Union>>) -> Wasm<Union> {
+        Wasm(self.union.get(chain_id).unwrap().clone())
+    }
+}
+
+impl GetChain<Wasm<Cosmos>> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Cosmos>>) -> Wasm<Cosmos> {
+        Wasm(self.cosmos.get(chain_id).unwrap().clone())
+    }
+}
+
+impl GetChain<Evm<Minimal>> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Minimal>>) -> Evm<Minimal> {
+        self.evm_minimal.get(chain_id).unwrap().clone()
+    }
+}
+
+impl GetChain<Evm<Mainnet>> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Mainnet>>) -> Evm<Mainnet> {
+        self.evm_mainnet.get(chain_id).unwrap().clone()
     }
 }

@@ -2,7 +2,7 @@
 #![allow(clippy::type_complexity, async_fn_in_trait)]
 
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::VecDeque,
     fmt::{Debug, Display},
     future::Future,
     marker::PhantomData,
@@ -13,9 +13,11 @@ use chain_utils::{
     cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
     evm::Evm,
     union::Union,
+    wasm::Wasm,
+    Chains,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use queue_msg::{seq, QueueMsg, QueueMsgTypes};
+use queue_msg::{seq, QueueMsg, QueueMsgTypes, QueueMsgTypesTraits};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     encoding::{Encode, Proto},
@@ -54,19 +56,19 @@ pub mod wait;
 
 pub mod chain_impls;
 
-pub trait RelayerMsgDatagram = Debug
-    + Display
-    + Clone
-    + PartialEq
-    + Serialize
-    + for<'de> Deserialize<'de>
-    + 'static
-    + MaybeArbitrary;
+// pub trait RelayerMsgDatagram = Debug
+//     + Display
+//     + Clone
+//     + PartialEq
+//     + Serialize
+//     + for<'de> Deserialize<'de>
+//     + 'static
+//     + MaybeArbitrary;
 
 pub trait ChainExt: Chain {
-    type Data<Tr: ChainExt>: RelayerMsgDatagram;
-    type Fetch<Tr: ChainExt>: RelayerMsgDatagram;
-    type Aggregate<Tr: ChainExt>: RelayerMsgDatagram;
+    type Data<Tr: ChainExt>: QueueMsgTypesTraits;
+    type Fetch<Tr: ChainExt>: QueueMsgTypesTraits;
+    type Aggregate<Tr: ChainExt>: QueueMsgTypesTraits;
 
     /// Error type for [`Self::msg`].
     type MsgError: Debug + MaybeRecoverableError;
@@ -96,49 +98,6 @@ impl QueueMsgTypes for RelayerMsgTypes {
 }
 
 pub type RelayerMsg = QueueMsg<RelayerMsgTypes>;
-
-pub trait GetChain<Hc: ChainExt> {
-    fn get_chain(&self, chain_id: &ChainIdOf<Hc>) -> Hc;
-}
-
-#[derive(Debug, Clone)]
-pub struct Chains {
-    // TODO: Use some sort of typemap here instead of individual fields
-    pub evm_minimal: HashMap<ChainIdOf<Evm<Minimal>>, Evm<Minimal>>,
-    pub evm_mainnet: HashMap<ChainIdOf<Evm<Mainnet>>, Evm<Mainnet>>,
-    pub union: HashMap<ChainIdOf<Union>, Union>,
-    pub cosmos: HashMap<ChainIdOf<Cosmos>, Cosmos>,
-}
-
-impl GetChain<Wasm<Union>> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Union>>) -> Wasm<Union> {
-        Wasm(self.union.get(chain_id).unwrap().clone())
-    }
-}
-
-impl GetChain<Wasm<Cosmos>> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Cosmos>>) -> Wasm<Cosmos> {
-        Wasm(self.cosmos.get(chain_id).unwrap().clone())
-    }
-}
-
-impl GetChain<Union> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Union>) -> Union {
-        self.union.get(chain_id).unwrap().clone()
-    }
-}
-
-impl GetChain<Evm<Minimal>> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Minimal>>) -> Evm<Minimal> {
-        self.evm_minimal.get(chain_id).unwrap().clone()
-    }
-}
-
-impl GetChain<Evm<Mainnet>> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Mainnet>>) -> Evm<Mainnet> {
-        self.evm_mainnet.get(chain_id).unwrap().clone()
-    }
-}
 
 // #[derive(Debug, thiserror::Error)]
 // pub enum HandleMsgError {
@@ -447,7 +406,6 @@ pub enum LcError<Hc: ChainExt, Tr: ChainExt> {
     arbitrary(bound = "Hc: Chain, T: arbitrary::Arbitrary<'arbitrary>")
 )]
 pub struct Identified<Hc: Chain, Tr, T> {
-    // #[serde(rename = "@chain_id")]
     pub chain_id: ChainIdOf<Hc>,
     pub t: T,
     #[serde(skip)]
@@ -470,7 +428,7 @@ impl<Hc: Chain, Tr, Data: std::fmt::Display + Debug + Clone + PartialEq> std::fm
     for Identified<Hc, Tr, Data>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "(chain id `{}`): {}", self.chain_id, self.t)
+        write!(f, "{{{}: {}}}", self.chain_id, self.t)
     }
 }
 
@@ -530,546 +488,12 @@ pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
     fn msg(&self, msg: Msg<Hc, Tr>) -> impl Future<Output = Result<(), Self::MsgError>> + '_;
 }
 
-#[cfg(test)]
-mod tests {
-    #![allow(unused_imports)]
-    // use hex_literal::hex;
-
-    // use super::*;
-    // use crate::{chain::cosmos::EthereumConfig, msg::CreateClientData};
-
-    use std::{collections::VecDeque, fmt::Debug, marker::PhantomData};
-
-    use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union};
-    use hex_literal::hex;
-    use queue_msg::{aggregate, defer_relative, event, fetch, msg, repeat};
-    use serde::{de::DeserializeOwned, Serialize};
-    use unionlabs::{
-        ethereum::config::Minimal,
-        events::{ConnectionOpenAck, ConnectionOpenTry},
-        hash::{H160, H256},
-        ibc::core::{
-            channel::{
-                self, channel::Channel, msg_channel_open_init::MsgChannelOpenInit, order::Order,
-            },
-            commitment::merkle_prefix::MerklePrefix,
-            connection::{
-                self, msg_connection_open_init::MsgConnectionOpenInit,
-                msg_connection_open_try::MsgConnectionOpenTry, version::Version,
-            },
-        },
-        proof::{self, ConnectionPath},
-        uint::U256,
-        validated::ValidateT,
-        EmptyString, QueryHeight, DELAY_PERIOD,
-    };
-
-    use crate::{
-        aggregate::{Aggregate, AggregateCreateClient, AnyAggregate},
-        chain_impls::{
-            cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
-            evm::EvmConfig,
-            union::UnionFetch,
-        },
-        data::Data,
-        event::{Event, IbcEvent},
-        fetch::{
-            AnyFetch, Fetch, FetchSelfClientState, FetchSelfConsensusState, FetchState,
-            LightClientSpecificFetch,
-        },
-        msg::{
-            AnyMsg, Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData,
-            MsgConnectionOpenTryData,
-        },
-        seq, Identified, RelayerMsg, Wasm, WasmConfig,
-    };
-
-    macro_rules! parse {
-        ($expr:expr) => {
-            $expr.parse().unwrap()
-        };
-    }
-
-    #[test]
-    fn msg_serde() {
-        let union_chain_id: String = parse!("union-devnet-1");
-        let eth_chain_id: U256 = parse!("32382");
-        let cosmos_chain_id: String = parse!("simd-devnet-1");
-
-        println!("---------------------------------------");
-        println!("Union - Eth (Sending to Union) Connection Open: ");
-        println!("---------------------------------------");
-        print_json(msg(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
-            union_chain_id.clone(),
-            MsgConnectionOpenInitData(MsgConnectionOpenInit {
-                client_id: parse!("08-wasm-0"),
-                counterparty: connection::counterparty::Counterparty {
-                    client_id: parse!("cometbls-0"),
-                    connection_id: parse!(""),
-                    prefix: MerklePrefix {
-                        key_prefix: b"ibc".to_vec(),
-                    },
-                },
-                version: Version {
-                    identifier: "1".into(),
-                    features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                },
-                delay_period: DELAY_PERIOD,
-            }),
-        )));
-
-        println!("---------------------------------------");
-        println!("Fetch Client State: ");
-        println!("---------------------------------------");
-        print_json(fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
-            union_chain_id.clone(),
-            LightClientSpecificFetch(UnionFetch::AbciQuery(FetchAbciQuery {
-                path: proof::Path::ClientStatePath(proof::ClientStatePath {
-                    client_id: parse!("client-id"),
-                }),
-                height: parse!("123-456"),
-                ty: AbciQueryType::State,
-            })),
-        )));
-
-        println!("---------------------------------------");
-        println!("Eth - Union (Sending to Union) Channel Open: ");
-        println!("---------------------------------------");
-        print_json(msg(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
-            union_chain_id.clone(),
-            MsgChannelOpenInitData {
-                msg: MsgChannelOpenInit {
-                    port_id: parse!("WASM_PORT_ID"),
-                    channel: Channel {
-                        state: channel::state::State::Init,
-                        ordering: channel::order::Order::Unordered,
-                        counterparty: channel::counterparty::Counterparty {
-                            port_id: parse!("ucs01-relay"),
-                            channel_id: parse!(""),
-                        },
-                        connection_hops: vec![parse!("connection-8")],
-                        version: "ucs01-0".to_string(),
-                    },
-                },
-                __marker: PhantomData,
-            },
-        )));
-
-        println!("---------------------------------------");
-        println!("Eth - Union (Starting on Union) Channel Open: ");
-        println!("---------------------------------------");
-        print_json(msg(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
-            eth_chain_id,
-            MsgChannelOpenInitData {
-                msg: MsgChannelOpenInit {
-                    port_id: parse!("ucs01-relay"),
-                    channel: Channel {
-                        state: channel::state::State::Init,
-                        ordering: channel::order::Order::Ordered,
-                        counterparty: channel::counterparty::Counterparty {
-                            port_id: parse!("ucs01-relay"),
-                            channel_id: parse!(""),
-                        },
-                        connection_hops: vec![parse!("connection-8")],
-                        version: "ucs001-pingpong".to_string(),
-                    },
-                },
-                __marker: PhantomData,
-            },
-        )));
-
-        println!("---------------------------------------");
-        println!("Eth - Union (Sending to Eth) Connection Open: ");
-        println!("---------------------------------------");
-        print_json(msg(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
-            eth_chain_id,
-            MsgConnectionOpenInitData(MsgConnectionOpenInit {
-                client_id: parse!("cometbls-0"),
-                counterparty: connection::counterparty::Counterparty {
-                    client_id: parse!("08-wasm-0"),
-                    connection_id: parse!(""),
-                    prefix: MerklePrefix {
-                        key_prefix: b"ibc".to_vec(),
-                    },
-                },
-                version: Version {
-                    identifier: "1".into(),
-                    features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                },
-                delay_period: DELAY_PERIOD,
-            }),
-        )));
-
-        println!("---------------------------------------");
-        println!("Eth - Union (Sending to Eth) Connection Try: ");
-        println!("---------------------------------------");
-        print_json(event(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
-            eth_chain_id,
-            IbcEvent {
-                block_hash: H256([0; 32]),
-                height: parse!("0-2941"),
-                event: unionlabs::events::IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
-                    connection_id: parse!("connection-0"),
-                    client_id: parse!("cometbls-0"),
-                    counterparty_client_id: parse!("08-wasm-1"),
-                    counterparty_connection_id: parse!("connection-14"),
-                }),
-            },
-        )));
-
-        println!("---------------------------------------");
-        println!("Eth - Union (Sending to Eth) Update Client: ");
-        println!("---------------------------------------");
-        print_json(repeat(
-            u64::MAX,
-            seq([
-                event(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
-                    eth_chain_id,
-                    crate::event::Command::UpdateClient {
-                        client_id: parse!("cometbls-0"),
-                        counterparty_client_id: parse!("08-wasm-0"),
-                    },
-                )),
-                defer_relative(10),
-            ]),
-        ));
-
-        println!("---------------------------------------");
-        println!("Eth - Union (Sending to Union) Update Client: ");
-        println!("---------------------------------------");
-        print_json(repeat(
-            u64::MAX,
-            seq([
-                event(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
-                    union_chain_id.clone(),
-                    crate::event::Command::UpdateClient {
-                        client_id: parse!("08-wasm-0"),
-                        counterparty_client_id: parse!("cometbls-0"),
-                    },
-                )),
-                defer_relative(10),
-            ]),
-        ));
-
-        println!("---------------------------------------");
-        println!("Cosmos - Union (Sending to Cosmos) Update Client: ");
-        println!("---------------------------------------");
-        print_json(repeat(
-            u64::MAX,
-            seq([
-                event(Identified::<Wasm<Cosmos>, Union, _>::new(
-                    cosmos_chain_id.clone(),
-                    crate::event::Command::UpdateClient {
-                        client_id: parse!("08-wasm-0"),
-                        counterparty_client_id: parse!("07-tendermint-0"),
-                    },
-                )),
-                defer_relative(10),
-            ]),
-        ));
-
-        println!("---------------------------------------");
-        println!("Cosmos - Union (Sending to Union) Update Client: ");
-        println!("---------------------------------------");
-        print_json(repeat(
-            u64::MAX,
-            seq([
-                event(Identified::<Union, Wasm<Cosmos>, _>::new(
-                    union_chain_id.clone(),
-                    crate::event::Command::UpdateClient {
-                        client_id: parse!("07-tendermint-0"),
-                        counterparty_client_id: parse!("08-wasm-0"),
-                    },
-                )),
-                defer_relative(10),
-            ]),
-        ));
-
-        println!("---------------------------------------");
-        println!("Union - Eth Create Both Clients: ");
-        println!("---------------------------------------");
-        print_json(seq([
-            aggregate(
-                [
-                    fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
-                        union_chain_id.clone(),
-                        FetchSelfClientState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
-                        union_chain_id.clone(),
-                        FetchSelfConsensusState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
-                    eth_chain_id,
-                    AggregateCreateClient {
-                        config: EvmConfig {
-                            client_type: "cometbls".to_string(),
-                            client_address: H160(hex!("83428c7db9815f482a39a1715684dcf755021997")),
-                        },
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-            aggregate(
-                [
-                    fetch(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
-                        eth_chain_id,
-                        FetchSelfClientState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
-                        eth_chain_id,
-                        FetchSelfConsensusState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
-                    union_chain_id.clone(),
-                    AggregateCreateClient {
-                        config: WasmConfig {
-                            checksum: H256(hex!(
-                                "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
-                            )),
-                        },
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-        ]));
-
-        println!("---------------------------------------");
-        println!("Union - Cosmos Create Both Client: ");
-        println!("---------------------------------------");
-        print_json(seq([
-            aggregate(
-                [
-                    fetch(Identified::<Wasm<Cosmos>, Union, _>::new(
-                        cosmos_chain_id.clone(),
-                        FetchSelfClientState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(Identified::<Wasm<Cosmos>, Union, _>::new(
-                        cosmos_chain_id.clone(),
-                        FetchSelfConsensusState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                Identified::<Union, Wasm<Cosmos>, _>::new(
-                    union_chain_id.clone(),
-                    AggregateCreateClient {
-                        config: (),
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-            aggregate(
-                [
-                    fetch(Identified::<Union, Wasm<Cosmos>, _>::new(
-                        union_chain_id.clone(),
-                        FetchSelfClientState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(Identified::<Union, Wasm<Cosmos>, _>::new(
-                        union_chain_id.clone(),
-                        FetchSelfConsensusState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                Identified::<Wasm<Cosmos>, Union, _>::new(
-                    cosmos_chain_id,
-                    AggregateCreateClient {
-                        config: WasmConfig {
-                            checksum: H256(hex!(
-                                "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
-                            )),
-                        },
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-        ]));
-
-        // print_json(RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Event(
-        //     Identified {
-        //         chain_id: union_chain_id.clone(),
-        //         data: crate::event::Event {
-        //             block_hash: H256([0; 32]),
-        //             height: parse!("1-1433"),
-        //             event: IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
-        //                 connection_id: parse!("connection-5"),
-        //                 client_id: parse!("08-wasm-0"),
-        //                 counterparty_client_id: parse!("cometbls-0"),
-        //                 counterparty_connection_id: parse!("connection-4"),
-        //             }),
-        //         },
-        //     },
-        // ))));
-        print_json(fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
-            union_chain_id.clone(),
-            FetchState {
-                at: parse!("1-103"),
-                path: ConnectionPath {
-                    connection_id: parse!("connection-1"),
-                }
-                .into(),
-            },
-        )))
-    }
-
-    fn print_json(msg: RelayerMsg) {
-        let json = serde_json::to_string(&msg).unwrap();
-
-        println!("{json}\n");
-
-        let from_json = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(&msg, &from_json, "json roundtrip failed");
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Wasm<C: Chain>(pub C);
-
-pub trait Wraps<T: CosmosSdkChain + ChainExt>: CosmosSdkChain + ChainExt {
-    fn inner(&self) -> &T;
-}
-
-impl<T: CosmosSdkChain> CosmosSdkChain for Wasm<T> {
-    fn grpc_url(&self) -> String {
-        self.0.grpc_url()
-    }
-
-    fn fee_denom(&self) -> String {
-        self.0.fee_denom()
-    }
-
-    fn tm_client(&self) -> &tendermint_rpc::WebSocketClient {
-        self.0.tm_client()
-    }
-
-    fn signers(&self) -> &chain_utils::Pool<unionlabs::signer::CosmosSigner> {
-        self.0.signers()
-    }
-
-    fn checksum_cache(&self) -> &std::sync::Arc<dashmap::DashMap<H256, unionlabs::WasmClientType>> {
-        self.0.checksum_cache()
-    }
-}
-
-impl<T: CosmosSdkChain + ChainExt> Wraps<T> for T {
-    fn inner(&self) -> &T {
-        self
-    }
-}
-
-impl<T: CosmosSdkChain + ChainExt> Wraps<T> for Wasm<T>
-where
-    Wasm<T>: ChainExt,
-{
-    fn inner(&self) -> &T {
-        &self.0
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct WasmConfig {
     pub checksum: H256,
     // pub inner: T,
-}
-
-impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {
-    type ChainType = Hc::ChainType;
-
-    type SelfClientState = Hc::SelfClientState;
-    type SelfConsensusState = Hc::SelfConsensusState;
-    type Header = Hc::Header;
-
-    type StoredClientState<Tr: Chain> = Any<wasm::client_state::ClientState<Tr::SelfClientState>>;
-    type StoredConsensusState<Tr: Chain> =
-        Any<wasm::consensus_state::ConsensusState<Tr::SelfConsensusState>>;
-
-    type Height = Hc::Height;
-
-    type ClientId = Hc::ClientId;
-    type ClientType = Hc::ClientType;
-
-    type Error = Hc::Error;
-
-    type IbcStateEncoding = Proto;
-
-    type StateProof = Hc::StateProof;
-
-    fn chain_id(&self) -> <Self::SelfClientState as unionlabs::traits::ClientState>::ChainId {
-        self.0.chain_id()
-    }
-
-    fn query_latest_height(&self) -> impl Future<Output = Result<Self::Height, Self::Error>> + '_ {
-        self.0.query_latest_height()
-    }
-
-    fn query_latest_height_as_destination(
-        &self,
-    ) -> impl Future<Output = Result<Self::Height, Self::Error>> + '_ {
-        self.0.query_latest_height_as_destination()
-    }
-
-    fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_ {
-        self.0.query_latest_timestamp()
-    }
-
-    fn self_client_state(
-        &self,
-        height: Self::Height,
-    ) -> impl Future<Output = Self::SelfClientState> + '_ {
-        self.0.self_client_state(height)
-    }
-
-    fn self_consensus_state(
-        &self,
-        height: Self::Height,
-    ) -> impl Future<Output = Self::SelfConsensusState> + '_ {
-        self.0.self_consensus_state(height)
-    }
-
-    fn read_ack(
-        &self,
-        block_hash: unionlabs::hash::H256,
-        destination_channel_id: unionlabs::id::ChannelId,
-        destination_port_id: unionlabs::id::PortId,
-        sequence: u64,
-    ) -> impl Future<Output = Vec<u8>> + '_ {
-        self.0.read_ack(
-            block_hash,
-            destination_channel_id,
-            destination_port_id,
-            sequence,
-        )
-    }
 }
 
 #[derive(

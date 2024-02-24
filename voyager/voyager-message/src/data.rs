@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
+use queue_msg::{data, HandleData, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     self,
@@ -12,7 +13,10 @@ use unionlabs::{
     traits::{ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
-use crate::{any_enum, fetch::FetchPacketAcknowledgement, ChainExt};
+use crate::{
+    any_enum, fetch::FetchPacketAcknowledgement, AnyLightClientIdentified, ChainExt,
+    RelayerMsgTypes,
+};
 
 #[apply(any_enum)]
 /// Data that will likely be used in a [`RelayerMsg::Aggregate`].
@@ -39,6 +43,13 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
 
     #[serde(untagged)]
     LightClientSpecific(LightClientSpecificData<Hc, Tr>),
+}
+
+// Passthrough since we don't want to handle any top-level data, just bubble it up to the top level.
+impl HandleData<RelayerMsgTypes> for AnyLightClientIdentified<AnyData> {
+    fn handle(self, _: &<RelayerMsgTypes as QueueMsgTypes>::Store) -> QueueMsg<RelayerMsgTypes> {
+        data(self)
+    }
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> std::fmt::Display for Data<Hc, Tr> {

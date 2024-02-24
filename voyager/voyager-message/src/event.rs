@@ -1,5 +1,6 @@
 use std::{fmt::Display, marker::PhantomData};
 
+use chain_utils::GetChain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
 use queue_msg::{aggregate, fetch, wait, HandleEvent, QueueMsg, QueueMsgTypes};
@@ -22,7 +23,7 @@ use crate::{
     fetch::{AnyFetch, Fetch, FetchLatestClientState, FetchState},
     identified, seq,
     wait::{AnyWait, Wait, WaitForBlock},
-    AnyLightClientIdentified, ChainExt, GetChain, Identified, RelayerMsg, RelayerMsgTypes,
+    AnyLightClientIdentified, ChainExt, Identified, RelayerMsg, RelayerMsgTypes,
 };
 
 #[apply(any_enum)]
@@ -37,6 +38,8 @@ impl HandleEvent<RelayerMsgTypes> for AnyLightClientIdentified<AnyEvent> {
         self,
         store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
     ) -> QueueMsg<RelayerMsgTypes> {
+        dbg!(&self);
+
         let event = self;
 
         any_lc! {
@@ -261,7 +264,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         AggregatePacketUpdateClient {
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
-                            block_hash: ibc_event.block_hash,
+                            tx_hash: ibc_event.tx_hash,
                             packet_event: PacketEvent::Recv(packet),
                             __marker: PhantomData,
                         },
@@ -284,7 +287,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         AggregatePacketUpdateClient {
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
-                            block_hash: ibc_event.block_hash,
+                            tx_hash: ibc_event.tx_hash,
                             packet_event: PacketEvent::Send(packet),
                             __marker: PhantomData,
                         },
@@ -348,34 +351,14 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Event<Hc, Tr> {
     arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
 )]
 pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
-    pub block_hash: H256,
+    pub tx_hash: H256,
     pub height: HeightOf<Hc>,
     pub event: unionlabs::events::IbcEvent<ClientIdOf<Hc>, ClientTypeOf<Hc>, ClientIdOf<Tr>>,
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> Display for IbcEvent<Hc, Tr> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use unionlabs::events::IbcEvent::*;
-
-        match self.event {
-            CreateClient(_) => write!(f, "Ibc::CreateClient"),
-            UpdateClient(_) => write!(f, "Ibc::UpdateClient"),
-            ClientMisbehaviour(_) => write!(f, "Ibc::ClientMisbehaviour"),
-            SubmitEvidence(_) => write!(f, "Ibc::SubmitEvidence"),
-            ConnectionOpenInit(_) => write!(f, "Ibc::ConnectionOpenInit"),
-            ConnectionOpenTry(_) => write!(f, "Ibc::ConnectionOpenTry"),
-            ConnectionOpenAck(_) => write!(f, "Ibc::ConnectionOpenAck"),
-            ConnectionOpenConfirm(_) => write!(f, "Ibc::ConnectionOpenConfirm"),
-            ChannelOpenInit(_) => write!(f, "Ibc::ChannelOpenInit"),
-            ChannelOpenTry(_) => write!(f, "Ibc::ChannelOpenTry"),
-            ChannelOpenAck(_) => write!(f, "Ibc::ChannelOpenAck"),
-            ChannelOpenConfirm(_) => write!(f, "Ibc::ChannelOpenConfirm"),
-            WriteAcknowledgement(_) => write!(f, "Ibc::WriteAcknowledgement"),
-            RecvPacket(_) => write!(f, "Ibc::RecvPacket"),
-            SendPacket(_) => write!(f, "Ibc::SendPacket"),
-            AcknowledgePacket(_) => write!(f, "Ibc::AcknowledgePacket"),
-            TimeoutPacket(_) => write!(f, "Ibc::TimeoutPacket"),
-        }
+        f.write_str(self.event.name())
     }
 }
 
