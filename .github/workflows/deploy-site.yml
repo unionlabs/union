@@ -26,7 +26,9 @@ env:
 jobs:
   deploy-preview:
     runs-on: ['ubuntu-latest']
-    permissions: write-all
+    permissions:
+      contents: read
+      pull-requests: write
     env:
       npm_config_yes: true
     environment: 'site-preview'
@@ -54,6 +56,32 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="site" deploy result >> /tmp/site_deploy.txt
+
+      - name: Link Check
+        id: lychee
+        uses: lycheeverse/lychee-action@v1.9.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: |
+            'result/**/index.html'
+
+      - name: Comment On Pull Request
+        uses: actions/github-script@v7
+        # only comment if there are errors and it's a pull request
+        if: env.lychee_exit_code != 0
+        # temporarily allow this to fail until we're able to handle these two links: https://github.com/unionlabs/union/actions/runs/8014925873/attempts/1#summary-21894317581
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('node:fs');
+            const content = fs.readFileSync('./lychee/out.md', { encoding: 'utf8' });
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: content
+            });
 
       - name: Set Deploy Output
         run: |
