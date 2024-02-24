@@ -2,6 +2,7 @@
 import Layout from '#/layouts/Layout.astro';
 import headshot_karel from '#/assets/images/headshots/karel.jpg';
 import headshot_cor from '#/assets/images/headshots/cor.jpg';
+import headshot_ben from '#/assets/images/headshots/ben.jpeg';
 import headshot_emir from '#/assets/images/headshots/emir.jpeg';
 import headshot_sarah from '#/assets/images/headshots/sarah.jpg';
 import headshot_abdullah from '#/assets/images/headshots/abdullah.jpeg';
@@ -17,6 +18,7 @@ import vc_lightshift from '#/assets/images/investors/lightshift.png';
 
 import team_spearbit from "#/assets/images/partners/spearbit.svg";
 import team_groomlake from "#/assets/images/partners/groomlake.png";
+import team_horizons from "#/assets/images/partners/horizons.svg";
 
 let profiles = [
   {
@@ -59,7 +61,7 @@ let profiles = [
     name: "Ben", 
     title: "Founding Engineer", 
     x_name: "0xbonlulu", 
-    profile_pic: headshot_cor
+    profile_pic: headshot_ben
   },
   { 
     name: "Connor", 
@@ -75,76 +77,106 @@ let profiles = [
   }
 ]
 
+let teams = [
+  {
+    name: "Spearbit",
+    logo: team_spearbit,
+    url: "https://spearbit.com"
+  },
+  {
+    name: "Groomlake",
+    logo: team_groomlake,
+    url: "https://groomla.ke"
+  },
+  {
+    name: "Horizons Law",
+    logo: team_horizons,
+    url: "https://www.horizonslaw.io/"
+  }
+]
+
 let vcs = [
-  vc_galileo ,
-  vc_nascent ,
-  vc_tioga ,
-  vc_semantic ,
-  vc_lightshift 
+  {
+    name: "Galileo",
+    logo: vc_galileo,
+    url: ""
+  },
+  {
+    name: "Nascent",
+    logo: vc_nascent,
+    url: ""
+  },
+  {
+    name: "Tioga",
+    logo: vc_tioga,
+    url: ""
+  },
+  {
+    name: "Semantic",
+    logo: vc_semantic,
+    url: ""
+  },
+  {
+    name: "Lightshift",
+    logo: vc_lightshift,
+    url: ""
+  }
 ]; 
 ---
 <Layout>
   <div class="flex flex-col flex-1 items-center px-4">
-    <main class="max-w-5xl w-full bg-[#1f1f1f] p-px">
-        <h2 class="bg-black text-center p-2 mb-px">Union Labs Team</h2>
-        <ul class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-px p-0">
-          {
-            profiles.map(person => (
-              <li>
-                <a class="block w-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-gray-900" href={`https://x.com/${person.x_name}`}>
+    <main class="max-w-5xl w-full bg-[#1f1f1f] p-px flex flex-col gap-px">
+      <!--
+      <h2 class="bg-black text-center p-4 mb-px">Union Labs Team</h2>
+      !-->
+      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-px p-0">
+        {
+          profiles.map(person => (
+            <li>
+              <a class="block w-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-gray-900" href={`https://x.com/${person.x_name}`}>
 
-                    <img class="w-20 h-20" src={person.profile_pic.src}/>
-                    <div class="leading-tight">
-                      <h3 class="text-2xl">{person.name}</h3>
-                      <div class="text-gray-300 -mt-1 text-lg">{person.title}</div>
-                      <div class="text-accent text-lg -mt-1 block"}>@{person.x_name}</div>
-                    </div>
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-        <h2 class="bg-black text-center p-2 my-px">Supporting Teams</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 bg-[#1f1f1f] gap-px p-px pt-0">
-          <div class="flex flex-col py-4 items-center justify-center bg-black">
-            <img class="w-60 -mb-1" src={team_spearbit.src}/>
-            <p class="text-xl text-gray-300">Audit Team</p>
-          </div>
-          <div class="flex flex-col py-4 items-center justify-center bg-black">
-            <img class="w-60 " src={team_groomlake.src}/>
-            <p class="text-xl text-gray-300">Security Team</p>
-          </div>
-        </div>
+                  <img class="w-20 h-20" src={person.profile_pic.src}/>
+                  <div class="leading-tight">
+                    <h3 class="text-2xl">{person.name}</h3>
+                    <div class="text-gray-300 -mt-1 text-lg">{person.title}</div>
+                    <div class="text-accent text-lg -mt-1 block"}>@{person.x_name}</div>
+                  </div>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <!--
+      <h2 class="bg-black text-center p-4 my-px">Supporting Teams</h2>
+      !-->
+      <ul class="list-none grid grid-cols-1  md:grid-cols-3 gap-px p-0">
+        {
+          teams.map(team=> (
+            <li>
+              <a class="block w-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-gray-900 justify-center" href={team.url}>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 bg-[#1f1f1f] gap-px p-px pt-0">
-          <div class="flex flex-col py-4 items-center justify-center bg-black">
-      			<img class="block w-[200px]" src={vc_galileo.src} alt="Galileo"/>
-          </div>
-          <div class="flex flex-col py-4 items-center justify-center bg-black">
-      			<img class="block w-[200px]" src={vc_galileo.src} alt="Galileo"/>
-          </div>
-          <div class="flex flex-col py-4 items-center justify-center bg-black">
-      			<img class="block w-[200px]" src={vc_tioga.src} alt="Tioga"/>
-          </div>
-        </div>
+                  <img class="p-4 h-16" src={team.logo.src} alt={team.name}/>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <!--
+      <h2 class="bg-black text-center p-4 my-px">Investors</h2>
+      !-->
+      <ul class="list-none grid grid-cols-1  md:grid-cols-3 gap-px p-0">
+        {
+          vcs.map(vc=> (
+            <li>
+              <a class="block w-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-gray-900 justify-center" href={vc.url}>
 
+                  <img class="p-4 h-16" src={vc.logo.src} alt={vc.name}/>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
 
-        <section class="flex flex-col items-center">
-
-      		<div class="flex flex-col md:flex-row gap-[24px] mt-[24px] items-center">
-      			<img class="block w-[200px]" src={vc_galileo.src} alt="Galileo"/>
-      			<img class="block w-[60px] mx-8" src={vc_nascent.src} alt="Nascent"/>
-      			<img class="block w-[200px]" src={vc_tioga.src} alt="Tioga"/>
-      		</div>
-
-      		<div class="flex flex-col md:flex-row gap-[24px] mt-[24px] items-center ">
-      			<img class="block w-[220px]" src={vc_semantic.src} alt="Semantic"/>
-      			<img class="block w-[220px]" src={vc_lightshift.src} alt="Lightshift"/>
-      		</div>
-      		<div class="mt-4">
-      			<a class="skew-button" href="/blog/seed-raise"><span>READ THE ANNOUNCEMENT -&gt;</span></a>
-      		</div>
-      	</section>
 
 
 
