@@ -9,6 +9,7 @@ import headshot_abdullah from '#/assets/images/headshots/abdullah.jpeg';
 import headshot_connor from '#/assets/images/headshots/connor.jpg';
 import headshot_omar from '#/assets/images/headshots/omar.jpeg';
 import headshot_hussein from '#/assets/images/headshots/hussein.jpeg';
+import headshot_valentin from '#/assets/images/headshots/valentin.jpeg';
 
 import vc_galileo from '#/assets/images/investors/galileo.svg';
 import vc_nascent from '#/assets/images/investors/nascent.svg';
@@ -74,6 +75,12 @@ let profiles = [
     title: "Full Stack Engineer", 
     x_name: "awkroot", 
     profile_pic: headshot_omar,
+  },
+  { 
+    name: "Valentin", 
+    title: "Advisor", 
+    x_name: "valeyo", 
+    profile_pic: headshot_valentin,
   }
 ]
 
@@ -97,29 +104,29 @@ let teams = [
 
 let vcs = [
   {
+    name: "Lightshift",
+    logo: vc_lightshift,
+    url: "https://www.semantic.vc/"
+  },
+  {
     name: "Galileo",
     logo: vc_galileo,
-    url: ""
+    url: "https://www.galileogroup.xyz/"
   },
   {
     name: "Nascent",
     logo: vc_nascent,
-    url: ""
+    url: "https://www.nascent.xyz/"
   },
   {
     name: "Tioga",
     logo: vc_tioga,
-    url: ""
+    url: "https://tioga.capital/"
   },
   {
     name: "Semantic",
     logo: vc_semantic,
-    url: ""
-  },
-  {
-    name: "Lightshift",
-    logo: vc_lightshift,
-    url: ""
+    url: "https://www.semantic.vc/"
   }
 ]; 
 ---
@@ -129,11 +136,11 @@ let vcs = [
       <!--
       <h2 class="bg-black text-center p-4 mb-px">Union Labs Team</h2>
       !-->
-      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-px p-0">
+      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 min-[880px]:grid-cols-3 gap-px p-0 auto-rows-[1fr]">
         {
           profiles.map(person => (
             <li>
-              <a class="block w-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-gray-900" href={`https://x.com/${person.x_name}`}>
+              <a class="block w-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-accent-950" href={`https://x.com/${person.x_name}`}>
 
                   <img class="w-20 h-20" src={person.profile_pic.src}/>
                   <div class="leading-tight">
@@ -145,30 +152,20 @@ let vcs = [
             </li>
           ))
         }
-      </ul>
-      <!--
-      <h2 class="bg-black text-center p-4 my-px">Supporting Teams</h2>
-      !-->
-      <ul class="list-none grid grid-cols-1  md:grid-cols-3 gap-px p-0">
         {
           teams.map(team=> (
             <li>
-              <a class="block w-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-gray-900 justify-center" href={team.url}>
+              <a class="block w-full h-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-accent-950 justify-center" href={team.url}>
 
                   <img class="p-4 h-16" src={team.logo.src} alt={team.name}/>
               </a>
             </li>
           ))
         }
-      </ul>
-      <!--
-      <h2 class="bg-black text-center p-4 my-px">Investors</h2>
-      !-->
-      <ul class="list-none grid grid-cols-1  md:grid-cols-3 gap-px p-0">
         {
           vcs.map(vc=> (
             <li>
-              <a class="block w-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-gray-900 justify-center" href={vc.url}>
+              <a class="block w-full h-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-accent-950 justify-center" href={vc.url}>
 
                   <img class="p-4 h-16" src={vc.logo.src} alt={vc.name}/>
               </a>
@@ -176,10 +173,6 @@ let vcs = [
           ))
         }
       </ul>
-
-
-
-
     </main>
   </div>
 </Layout>
