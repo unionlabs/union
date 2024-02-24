@@ -24,11 +24,7 @@ const { Content } = await entry.render()
   <main
     class="sm:text-xl flex-grow mt-2 sm:mt-12 pb-16 max-w-2xl self-center flex flex-col pt-6 sm:pt-0 mx-4"
   >
-    <h1 class="text-3xl sm:text-5xl font-extrabold max-w-xl">
-      {entry.data.title}
-    </h1>
-
-    <div class="font-mono text-lg uppercase tracking-widest mt-1 mb-6">
+    <div class="text-lg text-gray-300">
       <time datetime={entry.data.date.toISOString()}>
         {
           entry.data.date.toLocaleDateString('fr-CA', {
@@ -37,9 +33,12 @@ const { Content } = await entry.render()
             day: 'numeric',
           })
         }
-      </time>-
-      <a href="https://x.com/union_build" class="hover:underline text-accent-400">@union_build</a>
+      </time>
     </div>
+    <h1 class="text-3xl sm:text-4xl font-extrabold mb-0">
+      {entry.data.title}
+    </h1>
+
     <Content />
   </main>
   <Socials />
@@ -52,10 +51,12 @@ const { Content } = await entry.render()
     text-decoration: underline;
     text-decoration-color: #A0ECFD !important;
     transition: border-bottom-color 0.2s ease-in-out;
+    color: #A0ECFD !important;
   }
 
   p {
     margin-bottom: 1rem;
+    color: rgb(209, 213, 219);
   }
 
   p > a:hover {
@@ -79,9 +80,9 @@ const { Content } = await entry.render()
 
   h2,h3,h4,h5 {
     margin-top: 1rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0rem;
     font-size: 1.87rem;
-    color: #A0ECFD;
+    color: #ffffff;
   }
 
   h2::after, h3::after, h4::after, h5::after {
