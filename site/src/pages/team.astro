@@ -10,12 +10,15 @@ import headshot_connor from '#/assets/images/headshots/connor.jpg';
 import headshot_omar from '#/assets/images/headshots/omar.jpeg';
 import headshot_hussein from '#/assets/images/headshots/hussein.jpeg';
 import headshot_valentin from '#/assets/images/headshots/valentin.jpeg';
+import headshot_boris from '#/assets/images/headshots/boris.jpeg';
 
 import vc_galileo from '#/assets/images/investors/galileo.svg';
 import vc_nascent from '#/assets/images/investors/nascent.svg';
 import vc_tioga from '#/assets/images/investors/tioga.png';
 import vc_semantic from '#/assets/images/investors/semantic.png';
 import vc_lightshift from '#/assets/images/investors/lightshift.png';
+import vc_udhc from '#/assets/images/investors/udhc.svg';
+import vc_founderheads from '#/assets/images/investors/founderheads.svg';
 
 import team_spearbit from "#/assets/images/partners/spearbit.svg";
 import team_groomlake from "#/assets/images/partners/groomlake.png";
@@ -81,6 +84,12 @@ let profiles = [
     title: "Advisor", 
     x_name: "valeyo", 
     profile_pic: headshot_valentin,
+  },
+  { 
+    name: "Boris", 
+    title: "Advisor", 
+    x_name: "sprembo", 
+    profile_pic: headshot_boris,
   }
 ]
 
@@ -88,7 +97,7 @@ let teams = [
   {
     name: "Spearbit",
     logo: team_spearbit,
-    url: "https://spearbit.com"
+    url: "https://spearbit.com",
   },
   {
     name: "Groomlake",
@@ -99,34 +108,48 @@ let teams = [
     name: "Horizons Law",
     logo: team_horizons,
     url: "https://www.horizonslaw.io/"
-  }
-]
-
-let vcs = [
+  },
   {
     name: "Lightshift",
     logo: vc_lightshift,
-    url: "https://www.semantic.vc/"
+    url: "https://www.semantic.vc/",
+    clazz: "h-[44px]"
   },
   {
     name: "Galileo",
     logo: vc_galileo,
-    url: "https://www.galileogroup.xyz/"
+    url: "https://www.galileogroup.xyz/",
+    clazz: "h-[28px]"
   },
   {
     name: "Nascent",
     logo: vc_nascent,
-    url: "https://www.nascent.xyz/"
+    url: "https://www.nascent.xyz/",
+    clazz: "h-16"
   },
   {
     name: "Tioga",
     logo: vc_tioga,
-    url: "https://tioga.capital/"
+    url: "https://tioga.capital/",
+    clazz: "h-16"
   },
   {
     name: "Semantic",
     logo: vc_semantic,
-    url: "https://www.semantic.vc/"
+    url: "https://www.semantic.vc/",
+    clazz: "h-[38px]"
+  },
+  {
+    name: "UDHC",
+    logo: vc_udhc,
+    url: "https://www.udhc.finance/",
+    clazz: "h-[38px]"
+  },
+  {
+    name: "Founderheads",
+    logo: vc_founderheads,
+    url: "https://founderheads.com/",
+    clazz: "h-[38px]"
   }
 ]; 
 ---
@@ -151,18 +174,8 @@ let vcs = [
         {
           teams.map(team=> (
             <li>
-              <a class="block w-full h-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-[#152325]  justify-center" href={team.url}>
-                  <img class="p-4 h-16" src={team.logo.src} alt={team.name}/>
-              </a>
-            </li>
-          ))
-        }
-        {
-          vcs.map(vc=> (
-            <li>
-              <a class="block w-full h-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-[#152325]  justify-center" href={vc.url}>
-
-                  <img class="p-4 h-16" src={vc.logo.src} alt={vc.name}/>
+              <a class="block w-full h-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-[#152325] justify-center" href={team.url}>
+                  <img class={team.clazz ? team.clazz : "p-4 h-16"} src={team.logo.src} alt={team.name}/>
               </a>
             </li>
           ))
