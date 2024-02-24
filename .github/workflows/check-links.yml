@@ -29,6 +29,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      issues: write
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
