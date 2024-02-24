@@ -41,7 +41,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: |
-            site/src app/src --config ${{ github.workspace }}/lychee.toml --github-token ${{ secrets.GITHUB_TOKEN }}
+            'result/**/index.html'
 
       - name: Comment On Pull Request
         uses: actions/github-script@v7
@@ -80,7 +80,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: |
-            site/src app/src --config ${{ github.workspace }}/lychee.toml --github-token ${{ secrets.GITHUB_TOKEN }}
+            --no-progress
+            'result/**/index.html'
 
       - name: Create Issue From File
         if: env.lychee_exit_code != 0
