@@ -109,6 +109,13 @@ impl<C: Chain, T: Debug + Clone + PartialEq> Identified<C, T> {
     }
 }
 
+pub fn id<C: Chain, T: Debug + Clone + PartialEq>(
+    chain_id: ChainIdOf<C>,
+    t: T,
+) -> Identified<C, T> {
+    Identified::new(chain_id, t)
+}
+
 impl<C: Chain, Data: std::fmt::Display + Debug + Clone + PartialEq> std::fmt::Display
     for Identified<C, Data>
 {

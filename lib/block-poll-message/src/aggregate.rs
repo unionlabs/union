@@ -14,7 +14,7 @@ use crate::{
     any_enum,
     data::{AnyData, LatestHeight},
     fetch::{AnyFetch, Fetch, FetchBlockRange},
-    AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 #[apply(any_enum)]
@@ -64,13 +64,11 @@ impl<C: ChainExt> Identified<C, Aggregate<C>> {
         match self.t {
             Aggregate::ChainSpecific(ChainSpecificAggregate(aggregate)) => {
                 <Identified<_, C::Aggregate> as DoAggregate>::do_aggregate(
-                    Identified::new(chain_id, aggregate),
+                    id(chain_id, aggregate),
                     data,
                 )
             }
-            Aggregate::FetchBlockRange(aggregate) => {
-                do_aggregate(Identified::new(chain_id, aggregate), data)
-            }
+            Aggregate::FetchBlockRange(aggregate) => do_aggregate(id(chain_id, aggregate), data),
         }
     }
 }

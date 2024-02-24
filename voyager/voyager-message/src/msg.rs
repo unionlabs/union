@@ -1,7 +1,6 @@
 use std::{fmt::Display, marker::PhantomData};
 
 use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, GetChain};
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
 use queue_msg::{BoxDynError, HandleMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
@@ -25,10 +24,11 @@ use unionlabs::{
     traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
-use crate::{any_enum, AnyLightClientIdentified, ChainExt, DoMsg, RelayerMsgTypes, Wasm};
+use crate::{
+    any_enum, msg_struct, AnyLightClientIdentified, ChainExt, DoMsg, RelayerMsgTypes, Wasm,
+};
 
 #[apply(any_enum)]
-/// Defines messages that are sent *to* the lightclient `L`.
 #[any = AnyMsg]
 pub enum Msg<Hc: ChainExt, Tr: ChainExt> {
     ConnectionOpenInit(MsgConnectionOpenInitData<Hc, Tr>),
@@ -109,24 +109,12 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Msg<Hc, Tr> {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct MsgConnectionOpenInitData<Hc: ChainExt, Tr: ChainExt>(
     pub MsgConnectionOpenInit<ClientIdOf<Hc>, ClientIdOf<Tr>>,
 );
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt>(
     pub  MsgConnectionOpenTry<
         Tr::StoredClientState<Hc>,
@@ -140,13 +128,7 @@ pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt>(
     >,
 );
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt>(
     pub  MsgConnectionOpenAck<
         Tr::StoredClientState<Hc>,
@@ -156,123 +138,55 @@ pub struct MsgConnectionOpenAckData<Hc: ChainExt, Tr: ChainExt>(
     >,
 );
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Hc)]
 pub struct MsgConnectionOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgConnectionOpenConfirm<HeightOf<Tr>, Tr::StateProof>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Hc>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Hc, Tr)]
 pub struct MsgChannelOpenInitData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenInit,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Hc)]
 pub struct MsgChannelOpenTryData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenTry<Tr::StateProof>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Hc)]
 pub struct MsgChannelOpenAckData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenAck<Tr::StateProof, Tr::Height>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Hc)]
 pub struct MsgChannelOpenConfirmData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgChannelOpenConfirm<Tr::StateProof>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Hc)]
 pub struct MsgRecvPacketData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgRecvPacket<Tr::StateProof, Tr::Height>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Hc)]
 pub struct MsgAckPacketData<Hc: ChainExt, Tr: ChainExt> {
     pub msg: MsgAcknowledgement<Tr::StateProof, Tr::Height>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct MsgCreateClientData<Hc: ChainExt, Tr: ChainExt> {
     pub config: Hc::Config,
     pub msg: MsgCreateClient<ClientStateOf<Tr>, ConsensusStateOf<Tr>>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), transparent)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct MsgUpdateClientData<Hc: ChainExt, Tr: ChainExt>(
     pub MsgUpdateClient<ClientIdOf<Hc>, HeaderOf<Tr>>,
 );

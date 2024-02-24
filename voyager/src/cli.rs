@@ -78,20 +78,20 @@ pub async fn any_state_proof_to_json<Hc, Tr>(
 where
     Hc: ChainExt + DoFetchState<Hc, Tr> + DoFetchProof<Hc, Tr>,
     Tr: ChainExt,
-    Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
-    Identified<Hc, Tr, IbcProof<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
-    Identified<Hc, Tr, IbcState<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>>:
+    Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>>:
         IsAggregateData,
-    Identified<Hc, Tr, IbcProof<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>>:
+    Identified<Hc, Tr, IbcProof<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>>:
         IsAggregateData,
-    Identified<Hc, Tr, IbcState<Hc, Tr, ConnectionPath>>: IsAggregateData,
-    Identified<Hc, Tr, IbcProof<Hc, Tr, ConnectionPath>>: IsAggregateData,
-    Identified<Hc, Tr, IbcState<Hc, Tr, ChannelEndPath>>: IsAggregateData,
-    Identified<Hc, Tr, IbcProof<Hc, Tr, ChannelEndPath>>: IsAggregateData,
-    Identified<Hc, Tr, IbcState<Hc, Tr, CommitmentPath>>: IsAggregateData,
-    Identified<Hc, Tr, IbcProof<Hc, Tr, CommitmentPath>>: IsAggregateData,
-    Identified<Hc, Tr, IbcState<Hc, Tr, AcknowledgementPath>>: IsAggregateData,
-    Identified<Hc, Tr, IbcProof<Hc, Tr, AcknowledgementPath>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<ConnectionPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<ChannelEndPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<ChannelEndPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<CommitmentPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<CommitmentPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<AcknowledgementPath, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<AcknowledgementPath, Hc, Tr>>: IsAggregateData,
 {
     use serde_json::to_string_pretty as json;
 
@@ -213,11 +213,11 @@ struct FetchStateProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
 impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>>
     UseAggregate<RelayerMsgTypes, StateProof<Hc, Tr, P>> for FetchStateProof<Hc, Tr, P>
 where
-    Identified<Hc, Tr, IbcState<Hc, Tr, P>>: IsAggregateData,
-    Identified<Hc, Tr, IbcProof<Hc, Tr, P>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<P, Hc, Tr>>: IsAggregateData,
+    Identified<Hc, Tr, IbcProof<P, Hc, Tr>>: IsAggregateData,
 {
     type AggregatedData =
-        HList![Identified<Hc, Tr, IbcState<Hc, Tr, P>>, Identified<Hc, Tr, IbcProof<Hc, Tr, P>>];
+        HList![Identified<Hc, Tr, IbcState<P, Hc, Tr>>, Identified<Hc, Tr, IbcProof<P, Hc, Tr>>];
 
     fn aggregate(
         this: Self,

@@ -366,7 +366,7 @@ mod tests {
             AnyMsg, Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData,
             MsgConnectionOpenTryData,
         },
-        Identified, RelayerMsg, RelayerMsgTypes, WasmConfig,
+        Identified, RelayerMsgTypes, WasmConfig,
     };
 
     use crate::queue::{FromQueueMsg, VoyagerMessageTypes};
@@ -386,7 +386,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Union - Eth (Sending to Union) Connection Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+        print_json::<RelayerMsgTypes>(msg(voyager_message::id::<Wasm<Union>, Evm<Minimal>, _>(
             union_chain_id.clone(),
             MsgConnectionOpenInitData(MsgConnectionOpenInit {
                 client_id: parse!("08-wasm-0"),
@@ -408,7 +408,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Fetch Client State: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+        print_json::<RelayerMsgTypes>(fetch(voyager_message::id::<Wasm<Union>, Evm<Minimal>, _>(
             union_chain_id.clone(),
             LightClientSpecificFetch(UnionFetch::AbciQuery(FetchAbciQuery {
                 path: proof::Path::ClientStatePath(proof::ClientStatePath {
@@ -422,7 +422,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Union) Channel Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+        print_json::<RelayerMsgTypes>(msg(voyager_message::id::<Wasm<Union>, Evm<Minimal>, _>(
             union_chain_id.clone(),
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
@@ -445,7 +445,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Eth - Union (Starting on Union) Channel Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
+        print_json::<RelayerMsgTypes>(msg(voyager_message::id::<Evm<Minimal>, Wasm<Union>, _>(
             eth_chain_id,
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
@@ -468,7 +468,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Eth) Connection Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
+        print_json::<RelayerMsgTypes>(msg(voyager_message::id::<Evm<Minimal>, Wasm<Union>, _>(
             eth_chain_id,
             MsgConnectionOpenInitData(MsgConnectionOpenInit {
                 client_id: parse!("cometbls-0"),
@@ -490,7 +490,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Eth) Connection Try: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(event(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
+        print_json::<RelayerMsgTypes>(event(voyager_message::id::<Evm<Minimal>, Wasm<Union>, _>(
             eth_chain_id,
             IbcEvent {
                 tx_hash: H256([0; 32]),
@@ -510,7 +510,7 @@ mod tests {
         print_json::<RelayerMsgTypes>(repeat(
             u64::MAX,
             seq([
-                event(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
+                event(voyager_message::id::<Evm<Minimal>, Wasm<Union>, _>(
                     eth_chain_id,
                     voyager_message::event::Command::UpdateClient {
                         client_id: parse!("cometbls-0"),
@@ -527,7 +527,7 @@ mod tests {
         print_json::<RelayerMsgTypes>(repeat(
             u64::MAX,
             seq([
-                event(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+                event(voyager_message::id::<Wasm<Union>, Evm<Minimal>, _>(
                     union_chain_id.clone(),
                     voyager_message::event::Command::UpdateClient {
                         client_id: parse!("08-wasm-0"),
@@ -544,7 +544,7 @@ mod tests {
         print_json::<RelayerMsgTypes>(repeat(
             u64::MAX,
             seq([
-                event(Identified::<Wasm<Cosmos>, Union, _>::new(
+                event(voyager_message::id::<Wasm<Cosmos>, Union, _>(
                     cosmos_chain_id.clone(),
                     voyager_message::event::Command::UpdateClient {
                         client_id: parse!("08-wasm-0"),
@@ -561,7 +561,7 @@ mod tests {
         print_json::<RelayerMsgTypes>(repeat(
             u64::MAX,
             seq([
-                event(Identified::<Union, Wasm<Cosmos>, _>::new(
+                event(voyager_message::id::<Union, Wasm<Cosmos>, _>(
                     union_chain_id.clone(),
                     voyager_message::event::Command::UpdateClient {
                         client_id: parse!("07-tendermint-0"),
@@ -578,14 +578,14 @@ mod tests {
         print_json::<RelayerMsgTypes>(seq([
             aggregate(
                 [
-                    fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+                    fetch(voyager_message::id::<Wasm<Union>, Evm<Minimal>, _>(
                         union_chain_id.clone(),
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
                     )),
-                    fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+                    fetch(voyager_message::id::<Wasm<Union>, Evm<Minimal>, _>(
                         union_chain_id.clone(),
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
@@ -594,7 +594,7 @@ mod tests {
                     )),
                 ],
                 [],
-                Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
+                voyager_message::id::<Evm<Minimal>, Wasm<Union>, _>(
                     eth_chain_id,
                     AggregateCreateClient {
                         config: EvmConfig {
@@ -607,14 +607,14 @@ mod tests {
             ),
             aggregate(
                 [
-                    fetch(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
+                    fetch(voyager_message::id::<Evm<Minimal>, Wasm<Union>, _>(
                         eth_chain_id,
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
                     )),
-                    fetch(Identified::<Evm<Minimal>, Wasm<Union>, _>::new(
+                    fetch(voyager_message::id::<Evm<Minimal>, Wasm<Union>, _>(
                         eth_chain_id,
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
@@ -623,7 +623,7 @@ mod tests {
                     )),
                 ],
                 [],
-                Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+                voyager_message::id::<Wasm<Union>, Evm<Minimal>, _>(
                     union_chain_id.clone(),
                     AggregateCreateClient {
                         config: WasmConfig {
@@ -643,14 +643,14 @@ mod tests {
         print_json::<RelayerMsgTypes>(seq([
             aggregate(
                 [
-                    fetch(Identified::<Wasm<Cosmos>, Union, _>::new(
+                    fetch(voyager_message::id::<Wasm<Cosmos>, Union, _>(
                         cosmos_chain_id.clone(),
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
                     )),
-                    fetch(Identified::<Wasm<Cosmos>, Union, _>::new(
+                    fetch(voyager_message::id::<Wasm<Cosmos>, Union, _>(
                         cosmos_chain_id.clone(),
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
@@ -659,7 +659,7 @@ mod tests {
                     )),
                 ],
                 [],
-                Identified::<Union, Wasm<Cosmos>, _>::new(
+                voyager_message::id::<Union, Wasm<Cosmos>, _>(
                     union_chain_id.clone(),
                     AggregateCreateClient {
                         config: (),
@@ -669,14 +669,14 @@ mod tests {
             ),
             aggregate(
                 [
-                    fetch(Identified::<Union, Wasm<Cosmos>, _>::new(
+                    fetch(voyager_message::id::<Union, Wasm<Cosmos>, _>(
                         union_chain_id.clone(),
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
                     )),
-                    fetch(Identified::<Union, Wasm<Cosmos>, _>::new(
+                    fetch(voyager_message::id::<Union, Wasm<Cosmos>, _>(
                         union_chain_id.clone(),
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
@@ -685,7 +685,7 @@ mod tests {
                     )),
                 ],
                 [],
-                Identified::<Wasm<Cosmos>, Union, _>::new(
+                voyager_message::id::<Wasm<Cosmos>, Union, _>(
                     cosmos_chain_id,
                     AggregateCreateClient {
                         config: WasmConfig {
@@ -699,7 +699,7 @@ mod tests {
             ),
         ]));
 
-        print_json::<BlockPollingTypes>(fetch(block_poll_message::Identified::<Cosmos, _>::new(
+        print_json::<BlockPollingTypes>(fetch(block_poll_message::id::<Cosmos, _>(
             "simd-devnet-1".parse().unwrap(),
             block_poll_message::fetch::FetchBlock {
                 height: unionlabs::ibc::core::client::height::Height {
@@ -709,7 +709,7 @@ mod tests {
             },
         )));
 
-        print_json::<BlockPollingTypes>(fetch(block_poll_message::Identified::<Union, _>::new(
+        print_json::<BlockPollingTypes>(fetch(block_poll_message::id::<Union, _>(
             "union-devnet-1".parse().unwrap(),
             block_poll_message::fetch::FetchBlock {
                 height: unionlabs::ibc::core::client::height::Height {
@@ -734,7 +734,7 @@ mod tests {
         //         },
         //     },
         // ))));
-        print_json::<RelayerMsgTypes>(fetch(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+        print_json::<RelayerMsgTypes>(fetch(voyager_message::id::<Wasm<Union>, Evm<Minimal>, _>(
             union_chain_id.clone(),
             FetchState {
                 at: parse!("1-103"),

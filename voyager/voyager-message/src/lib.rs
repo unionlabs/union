@@ -76,7 +76,10 @@ pub trait ChainExt: Chain {
     /// The config required to construct this light client.
     type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de> + MaybeArbitrary;
 
-    fn do_fetch<Tr: ChainExt>(&self, msg: Self::Fetch<Tr>) -> impl Future<Output = RelayerMsg> + '_
+    fn do_fetch<Tr: ChainExt>(
+        &self,
+        msg: Self::Fetch<Tr>,
+    ) -> impl Future<Output = QueueMsg<RelayerMsgTypes>> + '_
     where
         Self::Fetch<Tr>: DoFetch<Self>,
     {
@@ -97,36 +100,12 @@ impl QueueMsgTypes for RelayerMsgTypes {
     type Store = Chains;
 }
 
-pub type RelayerMsg = QueueMsg<RelayerMsgTypes>;
+impl TryFrom<QueueMsg<RelayerMsgTypes>> for AnyLightClientIdentified<AnyData> {
+    type Error = QueueMsg<RelayerMsgTypes>;
 
-// #[derive(Debug, thiserror::Error)]
-// pub enum HandleMsgError {
-//     #[error(transparent)]
-//     Lc(#[from] AnyLightClientIdentified<AnyLcError>),
-// }
-
-// pub enum AnyLcError {}
-// impl AnyLightClient for AnyLcError {
-//     type Inner<Hc: ChainExt, Tr: ChainExt> = LcError<Hc, Tr>;
-// }
-
-// pub enum AnyLcError {
-//     #[error(transparent)]
-//     EthereumMainnet(identified!(LcError<Wasm<Union>, Evm<Mainnet>>)),
-//     #[error(transparent)]
-//     CometblsMainnet(identified!(LcError<Evm<Mainnet>, Wasm<Union>>)),
-//     #[error(transparent)]
-//     EthereumMinimal(identified!(LcError<Wasm<Union>, Evm<Minimal>>)),
-//     #[error(transparent)]
-//     CometblsMinimal(identified!(LcError<Evm<Minimal>, Wasm<Union>>)),
-// }
-
-impl TryFrom<RelayerMsg> for AnyLightClientIdentified<AnyData> {
-    type Error = RelayerMsg;
-
-    fn try_from(value: RelayerMsg) -> Result<Self, Self::Error> {
+    fn try_from(value: QueueMsg<RelayerMsgTypes>) -> Result<Self, Self::Error> {
         match value {
-            RelayerMsg::Data(data) => Ok(data),
+            QueueMsg::Data(data) => Ok(data),
             _ => Err(value),
         }
     }
@@ -201,7 +180,7 @@ macro_rules! any_enum {
                             __marker: _,
                         }: Identified<Hc, Tr, $VariantInner>,
                     ) -> Self {
-                        Self::from(Identified::new(
+                        Self::from(crate::id(
                             chain_id,
                             <$Enum<Hc, Tr>>::from(t),
                         ))
@@ -223,10 +202,10 @@ macro_rules! any_enum {
                             __marker: _,
                         } = <Identified<Hc, Tr, $Enum<Hc, Tr>>>::try_from(value)?;
 
-                        Ok(Identified::new(
+                        Ok(crate::id(
                             chain_id.clone(),
                             <$VariantInner>::try_from(t).map_err(|x: $Enum<Hc, Tr>| {
-                                Into::<AnyLightClientIdentified<_>>::into(Identified::new(chain_id, x))
+                                Into::<AnyLightClientIdentified<_>>::into(crate::id(chain_id, x))
                             })?,
                         ))
                     }
@@ -419,14 +398,9 @@ impl<Hc: Chain, Tr, Data: PartialEq> PartialEq for Identified<Hc, Tr, Data> {
     }
 }
 
-impl<Hc: Chain, Tr, Data: std::error::Error + Debug + Clone + PartialEq> std::error::Error
-    for Identified<Hc, Tr, Data>
-{
-}
+impl<Hc: Chain, Tr, Data: std::error::Error> std::error::Error for Identified<Hc, Tr, Data> {}
 
-impl<Hc: Chain, Tr, Data: std::fmt::Display + Debug + Clone + PartialEq> std::fmt::Display
-    for Identified<Hc, Tr, Data>
-{
+impl<Hc: Chain, Tr, Data: std::fmt::Display> std::fmt::Display for Identified<Hc, Tr, Data> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{{}: {}}}", self.chain_id, self.t)
     }
@@ -451,22 +425,23 @@ impl<Hc: Chain, Tr, Data: Clone> Clone for Identified<Hc, Tr, Data> {
     }
 }
 
-impl<Hc: Chain, Tr, Data: Debug + Clone + PartialEq> Identified<Hc, Tr, Data> {
-    pub fn new(chain_id: ChainIdOf<Hc>, data: Data) -> Self {
-        Self {
-            chain_id,
-            t: data,
-            __marker: PhantomData,
-        }
+pub fn id<Hc: Chain, Tr, T>(chain_id: ChainIdOf<Hc>, t: T) -> Identified<Hc, Tr, T> {
+    Identified {
+        chain_id,
+        t,
+        __marker: PhantomData,
     }
 }
 
 pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
-    fn do_aggregate(_: Self, _: VecDeque<AnyLightClientIdentified<AnyData>>) -> RelayerMsg;
+    fn do_aggregate(
+        _: Self,
+        _: VecDeque<AnyLightClientIdentified<AnyData>>,
+    ) -> QueueMsg<RelayerMsgTypes>;
 }
 
 pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> RelayerMsg;
+    fn state(hc: &Hc, at: Hc::Height, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes>;
 
     #[deprecated = "will be removed in favor of an aggregation with state"]
     fn query_client_state(
@@ -477,11 +452,14 @@ pub trait DoFetchState<Hc: ChainExt, Tr: ChainExt>: ChainExt {
 }
 
 pub trait DoFetchProof<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> RelayerMsg;
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes>;
 }
 
 pub trait DoFetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt>: ChainExt {
-    fn fetch_update_headers(hc: &Hc, update_info: FetchUpdateHeaders<Hc, Tr>) -> RelayerMsg;
+    fn fetch_update_headers(
+        hc: &Hc,
+        update_info: FetchUpdateHeaders<Hc, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes>;
 }
 
 pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
@@ -521,7 +499,10 @@ impl<Hc: CosmosSdkChain + ChainExt, Tr: ChainExt> DoAggregate for identified!(Wa
 where
     Identified<Hc, Tr, Hc::Aggregate<Tr>>: DoAggregate,
 {
-    fn do_aggregate(i: Self, v: VecDeque<AnyLightClientIdentified<AnyData>>) -> RelayerMsg {
+    fn do_aggregate(
+        i: Self,
+        v: VecDeque<AnyLightClientIdentified<AnyData>>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         <Identified<_, _, Hc::Aggregate<Tr>>>::do_aggregate(
             Identified {
                 chain_id: i.chain_id,
@@ -734,7 +715,11 @@ where
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Wasm<Hc>, Tr>)>,
     Wasm<Hc>: ChainExt,
 {
-    fn proof(hc: &Self, at: HeightOf<Self>, path: PathOf<Wasm<Hc>, Tr>) -> RelayerMsg {
+    fn proof(
+        hc: &Self,
+        at: HeightOf<Self>,
+        path: PathOf<Wasm<Hc>, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         Hc::proof(hc, at, path)
     }
 }
@@ -745,7 +730,11 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Wasm<Hc>, Tr>)>,
     Wasm<Hc>: ChainExt,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Wasm<Hc>, Tr>) -> RelayerMsg {
+    fn state(
+        hc: &Self,
+        at: HeightOf<Self>,
+        path: PathOf<Wasm<Hc>, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         Hc::state(hc, at, path)
     }
 
@@ -763,7 +752,10 @@ impl<Hc: ChainExt + CosmosSdkChain + DoFetchUpdateHeaders<Self, Tr>, Tr: ChainEx
 where
     Wasm<Hc>: ChainExt,
 {
-    fn fetch_update_headers(hc: &Self, update_info: FetchUpdateHeaders<Self, Tr>) -> RelayerMsg {
+    fn fetch_update_headers(
+        hc: &Self,
+        update_info: FetchUpdateHeaders<Self, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         Hc::fetch_update_headers(
             hc,
             FetchUpdateHeaders {
@@ -801,12 +793,6 @@ impl<Hc: Chain, Tr: Chain, S> Inner<Hc, Tr, S> {
     }
 }
 
-// #[test]
-// fn test_tester() {
-//     let json = serde_json::to_string_pretty(&Tester::AB(Struct { field: 1 })).unwrap();
-//     println!("{json}");
-// }
-
 macro_rules! any_lc {
     (|$msg:ident| $expr:expr) => {
         match $msg {
@@ -820,3 +806,102 @@ macro_rules! any_lc {
     };
 }
 pub(crate) use any_lc;
+
+macro_rules! msg_struct {
+    (
+        $(#[cover($($CoverTy:ty),+)])?
+        pub struct $Struct:ident$(<$($generics:ident: $bound:ident$(<$($boundT:ident),+>)?),+>)? {
+            $(
+                pub $field:ident: $FieldTy:ty,
+            )*
+        }
+    ) => {
+        #[derive(Serialize, Deserialize)]
+        #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+        #[cfg_attr(
+            feature = "arbitrary",
+            derive(arbitrary::Arbitrary),
+            arbitrary(bound = "")
+        )]
+        pub struct $Struct$(<$($generics: $bound$(<$($boundT),+>)?),+>)? {
+            $(
+                pub $field: $FieldTy,
+            )*
+            $(
+                #[serde(skip)]
+                #[cfg_attr(feature = "arbitrary", arbitrary(default))]
+                pub __marker: PhantomData<fn() -> ($($CoverTy,)+)>,
+            )?
+        }
+        const _: () = {
+            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::fmt::Debug
+            for $Struct$(<$($generics),+>)? {
+                fn fmt(&self, fmt: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+                    fmt.debug_struct(stringify!($Struct))
+                        $(.field(stringify!($field), &self.$field))*
+                        .finish()
+                }
+            }
+
+            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::clone::Clone
+            for $Struct$(<$($generics),+>)? {
+                fn clone(&self) -> Self {
+                    Self {
+                        $($field: ::core::clone::Clone::clone(&self.$field),)*
+                        $(
+                            __marker: PhantomData::<fn() -> ($($CoverTy,)+)>,
+                        )?
+                    }
+                }
+            }
+
+            impl$(<$($generics: $bound$(<$($boundT),+>)?),+>)? ::core::cmp::PartialEq
+            for $Struct $(<$($generics),+>)? {
+                fn eq(&self, other: &Self) -> bool {
+                    let _other = other;
+                    true $(&& self.$field == _other.$field)*
+                }
+            }
+        };
+    };
+
+    (
+        $(#[cover($($CoverTy:ty),+)])?
+        pub struct $Struct:ident<$($generics:ident: $bound:ident$(<$($boundT:ident),+>)?),+>(pub $FieldTy:ty$(,)?);
+    ) => {
+        #[derive(Serialize, Deserialize)]
+        #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields, transparent)]
+        #[cfg_attr(
+            feature = "arbitrary",
+            derive(arbitrary::Arbitrary),
+            arbitrary(bound = "")
+        )]
+        pub struct $Struct<$($generics: $bound$(<$($boundT),+>)?),+> (pub $FieldTy);
+        const _: () = {
+            impl<$($generics: $bound$(<$($boundT),+>)?),+> ::core::fmt::Debug
+            for $Struct<$($generics),+> {
+                fn fmt(&self, fmt: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+                    fmt.debug_tuple(stringify!($Struct))
+                        .field(&self.0)
+                        .finish()
+                }
+            }
+
+            impl<$($generics: $bound$(<$($boundT),+>)?),+> ::core::clone::Clone
+            for $Struct<$($generics),+> {
+                fn clone(&self) -> Self {
+                    Self(::core::clone::Clone::clone(&self.0))
+                }
+            }
+
+            impl<$($generics: $bound$(<$($boundT),+>)?),+> ::core::cmp::PartialEq
+            for $Struct<$($generics),+> {
+                fn eq(&self, other: &Self) -> bool {
+                    self.0 == other.0
+                }
+            }
+        };
+
+    };
+}
+pub(crate) use msg_struct;

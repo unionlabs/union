@@ -6,8 +6,8 @@ use cosmwasm_std::{
 
 use crate::{msg::UCS00PingPong, state::CONFIG, ContractError};
 
-pub const PINGPONG_VERSION: &str = "ucs00-pingpong-1";
-pub const PINGPONG_ORDERING: IbcOrder = IbcOrder::Unordered;
+pub const PROTOCOL_VERSION: &str = "ucs00-pingpong-1";
+pub const PROTOCOL_ORDERING: IbcOrder = IbcOrder::Unordered;
 
 fn ack_success() -> Binary {
     [1].into()
@@ -46,19 +46,19 @@ fn enforce_order_and_version(
     channel: &IbcChannel,
     counterparty_version: Option<&str>,
 ) -> Result<(), ContractError> {
-    if channel.version != PINGPONG_VERSION {
+    if channel.version != PROTOCOL_VERSION {
         return Err(ContractError::InvalidIbcVersion {
             version: channel.version.clone(),
         });
     }
     if let Some(version) = counterparty_version {
-        if version != PINGPONG_VERSION {
+        if version != PROTOCOL_VERSION {
             return Err(ContractError::InvalidIbcVersion {
                 version: version.to_string(),
             });
         }
     }
-    if channel.order != PINGPONG_ORDERING {
+    if channel.order != PROTOCOL_ORDERING {
         return Err(ContractError::OnlyOrderedChannel {});
     }
     Ok(())
@@ -80,7 +80,7 @@ pub fn ibc_packet_receive(
     msg: IbcPacketReceiveMsg,
 ) -> Result<IbcReceiveResponse, ContractError> {
     let packet = msg.packet;
-    let ping_packet: UCS00PingPong = packet.data.try_into()?;
+    let ping_packet = UCS00PingPong::decode(packet.data)?;
     do_ibc_packet_receive(deps, env, packet.dest.channel_id, ping_packet).or_else(|err| {
         Ok(IbcReceiveResponse::new()
             .set_ack(ack_fail())

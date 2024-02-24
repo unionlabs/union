@@ -31,7 +31,7 @@ use crate::{
     aggregate::{AnyAggregate, ChainSpecificAggregate},
     data::{AnyData, ChainEvent, ChainSpecificData, Data},
     fetch::{AnyFetch, ChainSpecificFetch, DoFetch, DoFetchBlockRange, FetchBlockRange},
-    AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 pub(crate) trait CosmosSdkChainSealed: CosmosSdkChain {}
@@ -58,7 +58,7 @@ where
             to_height,
         }: FetchBlockRange<C>,
     ) -> QueueMsg<BlockPollingTypes> {
-        fetch(Identified::new(
+        fetch(id(
             c.chain_id(),
             ChainSpecificFetch::<C>(CosmosSdkFetch::from(FetchBlocks {
                 from_height,
@@ -161,7 +161,7 @@ where
                                     ref client_id,
                                     ..
                                 }) => aggregate(
-                                    [fetch(Identified::new(
+                                    [fetch(id(
                                         c.chain_id(),
                                         ChainSpecificFetch::<C>(CosmosSdkFetch::from(
                                             ClientTypeFromClientId {
@@ -170,7 +170,7 @@ where
                                         )),
                                     ))],
                                     [],
-                                    Identified::new(
+                                    id(
                                         c.chain_id(),
                                         ChainSpecificAggregate::<C>(CosmosSdkAggregate::from(
                                             AggregateEventWithClientType::<C> {
@@ -219,7 +219,7 @@ where
                                     ref connection_id,
                                     ..
                                 }) => aggregate(
-                                    [fetch(Identified::new(
+                                    [fetch(id(
                                         c.chain_id(),
                                         ChainSpecificFetch(
                                             CosmosSdkFetch::FetchClientTypeFromConnectionId(
@@ -230,7 +230,7 @@ where
                                         ),
                                     ))],
                                     [],
-                                    Identified::new(
+                                    id(
                                         c.chain_id(),
                                         ChainSpecificAggregate::<C>(CosmosSdkAggregate::from(
                                             AggregateEventWithClientType {
@@ -247,7 +247,7 @@ where
                             }
                         })
                         .chain(((page.get() * PER_PAGE_LIMIT) < response.total).then(|| {
-                            queue_msg::fetch(Identified::new(
+                            queue_msg::fetch(id(
                                 c.chain_id(),
                                 ChainSpecificFetch(CosmosSdkFetch::from(FetchTransactions {
                                     height,
@@ -259,7 +259,7 @@ where
             }
             CosmosSdkFetch::FetchClientTypeFromConnectionId(ClientTypeFromConnectionId {
                 connection_id,
-            }) => fetch(Identified::new(
+            }) => fetch(id(
                 c.chain_id(),
                 ChainSpecificFetch(CosmosSdkFetch::FetchClientTypeFromClientId(
                     ClientTypeFromClientId {
@@ -268,7 +268,7 @@ where
                 )),
             )),
             CosmosSdkFetch::FetchClientTypeFromClientId(ClientTypeFromClientId { client_id }) => {
-                data(Identified::new(
+                data(id(
                     c.chain_id(),
                     ChainSpecificData::<C>(CosmosSdkData::ClientType(ClientType {
                         client_type: match client_id.to_string().rsplit_once('-').unwrap().0 {
@@ -293,7 +293,7 @@ where
                 let new_from_height = from_height.increment();
 
                 if to_height.revision_height() - from_height.revision_height() == 1 {
-                    fetch(Identified::new(
+                    fetch(id(
                         c.chain_id(),
                         ChainSpecificFetch::<C>(
                             FetchTransactions {
@@ -308,7 +308,7 @@ where
                     // is exclusive on `to`, so fetch the `from` block and "discard" the `to` block
                     // the assumption is that another message with `to..N` will be queued, which then following
                     // this logic will fetch `to`.
-                    seq([fetch(Identified::new(
+                    seq([fetch(id(
                         c.chain_id(),
                         ChainSpecificFetch::<C>(
                             FetchTransactions {
@@ -321,7 +321,7 @@ where
                     ))]
                     .into_iter()
                     .chain((new_from_height != to_height).then(|| {
-                        fetch(Identified::new(
+                        fetch(id(
                             c.chain_id(),
                             ChainSpecificFetch::<C>(CosmosSdkFetch::from(FetchBlocks {
                                 from_height: new_from_height,

@@ -49,7 +49,7 @@ use crate::{
     aggregate::{Aggregate, AnyAggregate, ChainSpecificAggregate},
     data::{AnyData, ChainEvent, ChainSpecificData, Data},
     fetch::{AnyFetch, ChainSpecificFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
-    AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
+    id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
 impl<C: ChainSpec> ChainExt for Evm<C> {
@@ -66,12 +66,15 @@ where
         c: &Evm<C>,
         range: FetchBlockRange<Evm<C>>,
     ) -> QueueMsg<BlockPollingTypes> {
-        fetch(Identified::new(
+        fetch(id(
             c.chain_id(),
-            ChainSpecificFetch::<Evm<C>>(EvmFetch::FetchEvents(FetchEvents {
-                from_height: range.from_height,
-                to_height: range.to_height,
-            })),
+            ChainSpecificFetch::<Evm<C>>(
+                FetchEvents {
+                    from_height: range.from_height,
+                    to_height: range.to_height,
+                }
+                .into(),
+            ),
         ))
     }
 }
@@ -87,14 +90,15 @@ where
             EvmFetch::FetchEvents(FetchEvents {
                 from_height,
                 to_height,
-            }) => fetch(Identified::new(
+            }) => fetch(id(
                 c.chain_id(),
-                ChainSpecificFetch::<Evm<C>>(EvmFetch::FetchBeaconBlockRange(
+                ChainSpecificFetch::<Evm<C>>(
                     FetchBeaconBlockRange {
                         from_slot: from_height.revision_height,
                         to_slot: to_height.revision_height,
-                    },
-                )),
+                    }
+                    .into(),
+                ),
             )),
             EvmFetch::FetchGetLogs(FetchGetLogs { from_slot, to_slot }) => {
                 let event_height = Height {
@@ -345,7 +349,7 @@ where
                 assert!(from_slot < to_slot);
 
                 if to_slot - from_slot == 1 {
-                    fetch(Identified::new(
+                    fetch(id(
                         c.chain_id(),
                         ChainSpecificFetch::<Evm<C>>(EvmFetch::FetchGetLogs(FetchGetLogs {
                             from_slot,
@@ -375,7 +379,7 @@ where
                             }
                             Ok(_) => {
                                 return seq([
-                                    fetch(Identified::new(
+                                    fetch(id(
                                         c.chain_id(),
                                         ChainSpecificFetch::<Evm<C>>(EvmFetch::FetchGetLogs(
                                             FetchGetLogs {
@@ -384,7 +388,7 @@ where
                                             },
                                         )),
                                     )),
-                                    fetch(Identified::new(
+                                    fetch(id(
                                         c.chain_id(),
                                         ChainSpecificFetch::<Evm<C>>(
                                             EvmFetch::FetchBeaconBlockRange(
@@ -407,7 +411,7 @@ where
                     )
                 }
             }
-            EvmFetch::FetchChannel(FetchChannel { height, path }) => data(Identified::new(
+            EvmFetch::FetchChannel(FetchChannel { height, path }) => data(id(
                 c.chain_id(),
                 ChainSpecificData::<Evm<C>>(
                     ChannelData(
@@ -427,7 +431,7 @@ where
                     .into(),
                 ),
             )),
-            EvmFetch::FetchConnection(FetchConnection { height, path }) => data(Identified::new(
+            EvmFetch::FetchConnection(FetchConnection { height, path }) => data(id(
                 c.chain_id(),
                 ChainSpecificData::<Evm<C>>(
                     ConnectionData(
@@ -465,7 +469,7 @@ where
     AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
 {
     aggregate(
-        [fetch(Identified::new(
+        [fetch(id(
             chain_id,
             ChainSpecificFetch::<Evm<C>>(
                 FetchChannel {
@@ -508,7 +512,7 @@ where
     AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
 {
     aggregate(
-        [fetch(Identified::new(
+        [fetch(id(
             chain_id,
             ChainSpecificFetch::<Evm<C>>(
                 FetchConnection {

@@ -7,11 +7,12 @@ use chain_utils::{
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
+use macros::apply;
 use protos::ibc::core::connection::v1::MsgConnectionOpenInit;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, fetch, msg, wait,
+    data, fetch, msg, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
@@ -53,16 +54,16 @@ use crate::{
     },
     data::{AnyData, Data, IbcState, LightClientSpecificData},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
-    identified,
+    id, identified,
     msg::{
         AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
         MsgUpdateClientData,
     },
-    seq,
+    msg_struct, seq,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, RelayerMsgTypes, Wasm, WasmConfig,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsgTypes, Wasm, WasmConfig,
 };
 
 impl ChainExt for Cosmos {
@@ -264,18 +265,18 @@ where
     Hc::StoredConsensusState<Tr>: TryFromProto,
     TryFromProtoErrorOf<Hc::StoredClientState<Tr>>: Debug,
     TryFromProtoErrorOf<Hc::StoredConsensusState<Tr>>: Debug,
-    Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> RelayerMsg {
+    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes> {
         seq([
-            wait(Identified::new(
+            wait(id(
                 hc.chain_id(),
                 WaitForBlock {
                     height: at,
                     __marker: PhantomData,
                 },
             )),
-            fetch(Identified::<Hc, Tr, _>::new(
+            fetch(id::<Hc, Tr, _>(
                 hc.chain_id(),
                 LightClientSpecificFetch(CosmosFetch::AbciQuery(FetchAbciQuery {
                     path,
@@ -291,7 +292,7 @@ where
         client_id: Hc::ClientId,
         height: Hc::Height,
     ) -> Hc::StoredClientState<Tr> {
-        let RelayerMsg::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
+        let QueueMsg::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
             hc,
             ClientStatePath { client_id }.into(),
             height,
@@ -302,7 +303,7 @@ where
             panic!()
         };
 
-        Identified::<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>::try_from(relayer_msg)
+        Identified::<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>::try_from(relayer_msg)
             .unwrap()
             .t
             .state
@@ -315,16 +316,16 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 {
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> RelayerMsg {
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes> {
         seq([
-            wait(Identified::new(
+            wait(id(
                 hc.chain_id(),
                 WaitForBlock {
                     height: at,
                     __marker: PhantomData,
                 },
             )),
-            fetch(Identified::<Hc, Tr, _>::new(
+            fetch(id::<Hc, Tr, _>(
                 hc.chain_id(),
                 LightClientSpecificFetch(CosmosFetch::AbciQuery(FetchAbciQuery::<Hc, Tr> {
                     path,
@@ -347,9 +348,12 @@ where
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
-    fn fetch_update_headers(hc: &Hc, update_info: FetchUpdateHeaders<Hc, Tr>) -> RelayerMsg {
+    fn fetch_update_headers(
+        hc: &Hc,
+        update_info: FetchUpdateHeaders<Hc, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         seq([
-            wait(Identified::new(
+            wait(id(
                 hc.chain_id(),
                 WaitForBlock {
                     height: update_info.update_to,
@@ -358,7 +362,7 @@ where
             )),
             aggregate(
                 [
-                    fetch(Identified::<Hc, Tr, _>::new(
+                    fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         LightClientSpecificFetch(CosmosFetch::FetchTrustedCommit(
                             FetchTrustedCommit {
@@ -367,7 +371,7 @@ where
                         ))
                         .into(),
                     )),
-                    fetch(Identified::<Hc, Tr, _>::new(
+                    fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         LightClientSpecificFetch(CosmosFetch::FetchUntrustedCommit(
                             FetchUntrustedCommit {
@@ -376,7 +380,7 @@ where
                         ))
                         .into(),
                     )),
-                    fetch(Identified::<Hc, Tr, _>::new(
+                    fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         LightClientSpecificFetch(CosmosFetch::FetchTrustedValidators(
                             FetchTrustedValidators {
@@ -385,7 +389,7 @@ where
                         ))
                         .into(),
                     )),
-                    fetch(Identified::<Hc, Tr, _>::new(
+                    fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         LightClientSpecificFetch(CosmosFetch::FetchUntrustedValidators(
                             FetchUntrustedValidators {
@@ -396,7 +400,7 @@ where
                     )),
                 ],
                 [],
-                Identified::new(
+                id(
                     hc.chain_id(),
                     LightClientSpecificAggregate(CosmosAggregateMsg::AggregateHeader(
                         AggregateHeader { req: update_info },
@@ -433,64 +437,32 @@ pub enum CosmosDataMsg<Tr: ChainExt> {
     UntrustedValidators(UntrustedValidators<Tr>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct UntrustedCommit<Tr: ChainExt> {
     pub height: Height,
     pub signed_header: SignedHeader,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct TrustedCommit<Tr: ChainExt> {
     pub height: Height,
     pub signed_header: SignedHeader,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct TrustedValidators<Tr: ChainExt> {
     pub height: Height,
     pub validators: Vec<Validator>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct UntrustedValidators<Tr: ChainExt> {
     pub height: Height,
     pub validators: Vec<Validator>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
 #[derive(
@@ -541,9 +513,9 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 
-    Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> RelayerMsg {
+    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayerMsgTypes> {
         match msg {
             CosmosFetch::FetchTrustedCommit(FetchTrustedCommit { height }) => {
                 let commit = hc
@@ -564,10 +536,7 @@ where
                     __marker: PhantomData,
                 });
 
-                data(Identified::<Hc, Tr, _>::new(
-                    hc.chain_id(),
-                    LightClientSpecificData(msg),
-                ))
+                data(id::<Hc, Tr, _>(hc.chain_id(), LightClientSpecificData(msg)))
             }
             CosmosFetch::FetchUntrustedCommit(FetchUntrustedCommit { height }) => {
                 let commit = hc
@@ -588,10 +557,7 @@ where
                     __marker: PhantomData,
                 });
 
-                data(Identified::<Hc, Tr, _>::new(
-                    hc.chain_id(),
-                    LightClientSpecificData(msg),
-                ))
+                data(id::<Hc, Tr, _>(hc.chain_id(), LightClientSpecificData(msg)))
             }
             CosmosFetch::FetchTrustedValidators(FetchTrustedValidators { height }) => {
                 let validators = hc
@@ -614,10 +580,7 @@ where
                     __marker: PhantomData,
                 });
 
-                data(Identified::<Hc, Tr, _>::new(
-                    hc.chain_id(),
-                    LightClientSpecificData(msg),
-                ))
+                data(id::<Hc, Tr, _>(hc.chain_id(), LightClientSpecificData(msg)))
             }
             CosmosFetch::FetchUntrustedValidators(FetchUntrustedValidators { height }) => {
                 let validators = hc
@@ -640,10 +603,7 @@ where
                     __marker: PhantomData,
                 });
 
-                data(Identified::<Hc, Tr, _>::new(
-                    hc.chain_id(),
-                    LightClientSpecificData(msg),
-                ))
+                data(id::<Hc, Tr, _>(hc.chain_id(), LightClientSpecificData(msg)))
             }
             CosmosFetch::AbciQuery(FetchAbciQuery { path, height, ty }) => {
                 fetch_abci_query::<Hc, Tr>(hc, path, height, ty).await
@@ -823,10 +783,10 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> RelayerMsg {
+    ) -> QueueMsg<RelayerMsgTypes> {
         match data {
             CosmosAggregateMsg::AggregateHeader(data) => {
-                do_aggregate(Identified::new(chain_id, data), aggregate_data)
+                do_aggregate(id(chain_id, data), aggregate_data)
             }
         }
     }
@@ -858,41 +818,27 @@ const _: () = {
     }
 };
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[apply(msg_struct)]
 pub struct FetchTrustedCommit {
     pub height: Height,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[apply(msg_struct)]
 pub struct FetchUntrustedCommit {
     pub height: Height,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[apply(msg_struct)]
 pub struct FetchTrustedValidators {
     pub height: Height,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[apply(msg_struct)]
 pub struct FetchUntrustedValidators {
     pub height: Height,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
@@ -973,7 +919,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> RelayerMsg {
+    ) -> QueueMsg<RelayerMsgTypes> {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
         let trusted_valset = mk_valset(
@@ -986,7 +932,7 @@ where
             untrusted_signed_header.header.proposer_address.clone(),
         );
 
-        msg(Identified::<Tr, Hc, _>::new(
+        msg(id::<Tr, Hc, _>(
             req.counterparty_chain_id,
             MsgUpdateClientData(MsgUpdateClient {
                 client_id: req.counterparty_client_id.clone(),
