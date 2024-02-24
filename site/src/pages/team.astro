@@ -75,7 +75,6 @@ let profiles = [
   }
 ]
 
-
 let vcs = [
   vc_galileo ,
   vc_nascent ,
@@ -86,8 +85,9 @@ let vcs = [
 ---
 <Layout>
   <div class="flex flex-col flex-1 items-center px-4">
-    <main class="max-w-5xl w-full">
-        <ul class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 bg-[#1f1f1f] gap-px p-px">
+    <main class="max-w-5xl w-full bg-[#1f1f1f] p-px">
+        <h2 class="bg-black text-center p-2 mb-px">Union Labs Team</h2>
+        <ul class="list-none grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-px p-0">
           {
             profiles.map(person => (
               <li>
@@ -104,6 +104,7 @@ let vcs = [
             ))
           }
         </ul>
+        <h2 class="bg-black text-center p-2 my-px">Supporting Teams</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 bg-[#1f1f1f] gap-px p-px pt-0">
           <div class="flex flex-col py-4 items-center justify-center bg-black">
             <img class="w-60 -mb-1" src={team_spearbit.src}/>
