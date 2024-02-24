@@ -21,9 +21,9 @@ use crate::{
     },
     any_enum, any_lc,
     fetch::{AnyFetch, Fetch, FetchLatestClientState, FetchState},
-    identified, seq,
+    id, identified, seq,
     wait::{AnyWait, Wait, WaitForBlock},
-    AnyLightClientIdentified, ChainExt, Identified, RelayerMsg, RelayerMsgTypes,
+    AnyLightClientIdentified, ChainExt, RelayerMsgTypes,
 };
 
 #[apply(any_enum)]
@@ -49,7 +49,7 @@ impl HandleEvent<RelayerMsgTypes> for AnyLightClientIdentified<AnyEvent> {
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
-    pub fn handle(self, hc: Hc) -> RelayerMsg
+    pub fn handle(self, hc: Hc) -> QueueMsg<RelayerMsgTypes>
     where
         AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
         AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
@@ -60,7 +60,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                 unionlabs::events::IbcEvent::CreateClient(e) => {
                     println!("client created: {e:#?}");
 
-                    RelayerMsg::Noop
+                    QueueMsg::Noop
                 }
                 unionlabs::events::IbcEvent::UpdateClient(e) => {
                     println!(
@@ -68,14 +68,14 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         e.client_id, e.consensus_heights
                     );
 
-                    RelayerMsg::Noop
+                    QueueMsg::Noop
                 }
 
                 unionlabs::events::IbcEvent::ClientMisbehaviour(_) => unimplemented!(),
                 unionlabs::events::IbcEvent::SubmitEvidence(_) => unimplemented!(),
 
                 unionlabs::events::IbcEvent::ConnectionOpenInit(init) => seq([
-                    wait(Identified::new(
+                    wait(id(
                         hc.chain_id(),
                         WaitForBlock {
                             height: ibc_event.height,
@@ -90,7 +90,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             ibc_event.height,
                         )],
                         [],
-                        Identified::new(
+                        id(
                             hc.chain_id(),
                             AggregateMsgAfterUpdate::ConnectionOpenTry(
                                 AggregateConnectionOpenTry {
@@ -109,7 +109,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         ibc_event.height,
                     )],
                     [],
-                    Identified::new(
+                    id(
                         hc.chain_id(),
                         AggregateMsgAfterUpdate::ConnectionOpenAck(AggregateConnectionOpenAck {
                             event_height: ibc_event.height,
@@ -125,7 +125,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         ibc_event.height,
                     )],
                     [],
-                    Identified::new(
+                    id(
                         hc.chain_id(),
                         AggregateMsgAfterUpdate::ConnectionOpenConfirm(
                             AggregateConnectionOpenConfirm {
@@ -138,12 +138,12 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                 unionlabs::events::IbcEvent::ConnectionOpenConfirm(confirm) => {
                     println!("connection opened: {confirm:#?}");
 
-                    RelayerMsg::Noop
+                    QueueMsg::Noop
                 }
 
                 unionlabs::events::IbcEvent::ChannelOpenInit(init) => aggregate(
                     [aggregate(
-                        [fetch(Identified::<Hc, Tr, _>::new(
+                        [fetch(id::<Hc, Tr, _>(
                             hc.chain_id(),
                             FetchState {
                                 at: ibc_event.height,
@@ -155,7 +155,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             },
                         ))],
                         [],
-                        Identified::new(
+                        id(
                             hc.chain_id(),
                             AggregateConnectionFetchFromChannelEnd {
                                 at: ibc_event.height,
@@ -164,7 +164,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         ),
                     )],
                     [],
-                    Identified::new(
+                    id(
                         hc.chain_id(),
                         AggregateChannelHandshakeUpdateClient {
                             update_to: ibc_event.height,
@@ -176,7 +176,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                 ),
                 unionlabs::events::IbcEvent::ChannelOpenTry(try_) => aggregate(
                     [aggregate(
-                        [fetch(Identified::<Hc, Tr, _>::new(
+                        [fetch(id::<Hc, Tr, _>(
                             hc.chain_id(),
                             FetchState {
                                 at: ibc_event.height,
@@ -188,7 +188,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             },
                         ))],
                         [],
-                        Identified::new(
+                        id(
                             hc.chain_id(),
                             Aggregate::ConnectionFetchFromChannelEnd(
                                 AggregateConnectionFetchFromChannelEnd {
@@ -199,7 +199,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         ),
                     )],
                     [],
-                    Identified::new(
+                    id(
                         hc.chain_id(),
                         AggregateChannelHandshakeUpdateClient {
                             update_to: ibc_event.height,
@@ -211,7 +211,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                 ),
                 unionlabs::events::IbcEvent::ChannelOpenAck(ack) => aggregate(
                     [aggregate(
-                        [fetch(Identified::<Hc, Tr, _>::new(
+                        [fetch(id::<Hc, Tr, _>(
                             hc.chain_id(),
                             FetchState {
                                 at: ibc_event.height,
@@ -223,7 +223,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                             },
                         ))],
                         [],
-                        Identified::new(
+                        id(
                             hc.chain_id(),
                             AggregateConnectionFetchFromChannelEnd {
                                 at: ibc_event.height,
@@ -232,7 +232,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         ),
                     )],
                     [],
-                    Identified::new(
+                    id(
                         hc.chain_id(),
                         AggregateChannelHandshakeUpdateClient {
                             update_to: ibc_event.height,
@@ -245,10 +245,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                 unionlabs::events::IbcEvent::ChannelOpenConfirm(confirm) => {
                     println!("channel opened: {confirm:#?}");
 
-                    RelayerMsg::Noop
+                    QueueMsg::Noop
                 }
                 unionlabs::events::IbcEvent::RecvPacket(packet) => aggregate(
-                    [fetch(Identified::<Hc, Tr, _>::new(
+                    [fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         FetchState {
                             at: ibc_event.height,
@@ -259,7 +259,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         },
                     ))],
                     [],
-                    Identified::new(
+                    id(
                         hc.chain_id(),
                         AggregatePacketUpdateClient {
                             update_to: ibc_event.height,
@@ -271,7 +271,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     ),
                 ),
                 unionlabs::events::IbcEvent::SendPacket(packet) => aggregate(
-                    [fetch(Identified::<Hc, Tr, _>::new(
+                    [fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         FetchState {
                             at: ibc_event.height,
@@ -282,7 +282,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         },
                     ))],
                     [],
-                    Identified::new(
+                    id(
                         hc.chain_id(),
                         AggregatePacketUpdateClient {
                             update_to: ibc_event.height,
@@ -295,15 +295,15 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                 ),
                 unionlabs::events::IbcEvent::AcknowledgePacket(ack) => {
                     tracing::info!(?ack, "packet acknowledged");
-                    RelayerMsg::Noop
+                    QueueMsg::Noop
                 }
                 unionlabs::events::IbcEvent::TimeoutPacket(timeout) => {
                     tracing::error!(?timeout, "packet timed out");
-                    RelayerMsg::Noop
+                    QueueMsg::Noop
                 }
                 unionlabs::events::IbcEvent::WriteAcknowledgement(write_ack) => {
                     tracing::info!(?write_ack, "packet acknowledgement written");
-                    RelayerMsg::Noop
+                    QueueMsg::Noop
                 }
             },
             Event::Command(command) => match command {
@@ -311,7 +311,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     client_id,
                     counterparty_client_id,
                 } => aggregate(
-                    [fetch(crate::Identified::<Hc, Tr, _>::new(
+                    [fetch(crate::id::<Hc, Tr, _>(
                         hc.chain_id(),
                         FetchLatestClientState {
                             path: ClientStatePath {
@@ -321,7 +321,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         },
                     ))],
                     [],
-                    Identified::new(
+                    id(
                         hc.chain_id(),
                         AggregateUpdateClientFromClientId {
                             client_id,
@@ -381,6 +381,7 @@ pub enum Command<Hc: ChainExt, Tr: ChainExt> {
     #[display(fmt = "UpdateClient({client_id}, {counterparty_client_id})")]
     UpdateClient {
         client_id: ClientIdOf<Hc>,
+        // TODO: This should only take a counterparty chain id, since light clients track chains, not each other, and it should be possible to update a client without it having a counterparty.
         counterparty_client_id: ClientIdOf<Tr>,
     },
 }

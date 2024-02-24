@@ -37,7 +37,7 @@ use unionlabs::{
     traits::{Chain, ClientIdOf, ClientState, FromStrExact},
     WasmClientType,
 };
-use voyager_message::{ChainExt, Identified, RelayerMsgTypes};
+use voyager_message::{ChainExt, RelayerMsgTypes};
 
 use crate::{
     chain::{AnyChain, AnyChainTryFromConfigError},
@@ -809,11 +809,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
                     match ibc_event.client_type {
                         unionlabs::ClientType::Wasm(unionlabs::WasmClientType::Cometbls) => {
-                            event::<RelayerMsgTypes>(voyager_message::Identified::<
-                                Wasm<Cosmos>,
-                                Union,
-                                _,
-                            >::new(
+                            event::<RelayerMsgTypes>(voyager_message::id::<Wasm<Cosmos>, Union, _>(
                                 chain_id,
                                 voyager_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
@@ -835,7 +831,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
                     match ibc_event.client_type {
                         unionlabs::ClientType::Wasm(unionlabs::WasmClientType::EthereumMinimal) => {
-                            event(Identified::<Wasm<Union>, Evm<Minimal>, _>::new(
+                            event(voyager_message::id::<Wasm<Union>, Evm<Minimal>, _>(
                                 chain_id,
                                 voyager_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
@@ -847,7 +843,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                             ))
                         }
                         unionlabs::ClientType::Wasm(unionlabs::WasmClientType::EthereumMainnet) => {
-                            event(Identified::<Wasm<Union>, Evm<Mainnet>, _>::new(
+                            event(voyager_message::id::<Wasm<Union>, Evm<Mainnet>, _>(
                                 chain_id,
                                 voyager_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
@@ -859,7 +855,7 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                             ))
                         }
                         unionlabs::ClientType::Tendermint => {
-                            event(Identified::<Union, Wasm<Cosmos>, _>::new(
+                            event(voyager_message::id::<Union, Wasm<Cosmos>, _>(
                                 chain_id,
                                 voyager_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,

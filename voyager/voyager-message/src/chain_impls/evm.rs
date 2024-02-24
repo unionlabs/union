@@ -15,10 +15,11 @@ use ethers::{
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
+use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, fetch, msg, wait,
+    data, fetch, msg, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
@@ -52,16 +53,16 @@ use crate::{
     aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
     data::{AnyData, Data, IbcProof, IbcState, LightClientSpecificData},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
-    identified,
+    id, identified,
     msg::{
         AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
         MsgUpdateClientData,
     },
-    seq,
+    msg_struct, seq,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForTimestamp},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, RelayerMsgTypes,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsgTypes,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -302,8 +303,8 @@ impl<C: ChainSpec, Tr: ChainExt> DoFetchProof<Self, Tr> for Evm<C>
 where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
 {
-    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> RelayerMsg {
-        fetch(Identified::<Self, Tr, _>::new(
+    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> QueueMsg<RelayerMsgTypes> {
+        fetch(id::<Self, Tr, _>(
             c.chain_id(),
             LightClientSpecificFetch::<Self, Tr>(EvmFetchMsg::FetchGetProof(GetProof {
                 path,
@@ -324,8 +325,8 @@ where
     Tr::SelfClientState: TryFrom<<Tr::SelfClientState as unionlabs::EthAbi>::EthAbi>,
     <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> RelayerMsg {
-        fetch(Identified::<Self, Tr, _>::new(
+    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> QueueMsg<RelayerMsgTypes> {
+        fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             LightClientSpecificFetch::<Self, Tr>(EvmFetchMsg::FetchIbcState(FetchIbcState {
                 path,
@@ -351,14 +352,17 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
 {
-    fn fetch_update_headers(c: &Self, update_info: FetchUpdateHeaders<Self, Tr>) -> RelayerMsg {
+    fn fetch_update_headers(
+        c: &Self,
+        update_info: FetchUpdateHeaders<Self, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         aggregate(
-            [fetch(Identified::<Evm<C>, Tr, _>::new(
+            [fetch(id::<Evm<C>, Tr, _>(
                 c.chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::FetchFinalityUpdate(PhantomData)).into(),
             ))],
             [],
-            Identified::new(
+            id(
                 c.chain_id,
                 LightClientSpecificAggregate(EvmAggregateMsg::MakeCreateUpdates(
                     MakeCreateUpdatesData { req: update_info },
@@ -378,7 +382,7 @@ where
     Tr::SelfClientState: unionlabs::EthAbi,
     <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
-    async fn do_fetch(c: &Evm<C>, msg: Self) -> RelayerMsg {
+    async fn do_fetch(c: &Evm<C>, msg: Self) -> QueueMsg<RelayerMsgTypes> {
         let msg: EvmFetchMsg<C, Tr> = msg;
         let msg = match msg {
             EvmFetchMsg::FetchFinalityUpdate(PhantomData {}) => {
@@ -390,7 +394,6 @@ where
             EvmFetchMsg::FetchLightClientUpdates(FetchLightClientUpdates {
                 trusted_period,
                 target_period,
-                __marker: PhantomData,
             }) => EvmDataMsg::LightClientUpdates(LightClientUpdates {
                 light_client_updates: c
                     .beacon_api_client
@@ -403,24 +406,23 @@ where
                     .collect(),
                 __marker: PhantomData,
             }),
-            EvmFetchMsg::FetchLightClientUpdate(FetchLightClientUpdate {
-                period,
-                __marker: PhantomData,
-            }) => EvmDataMsg::LightClientUpdate(LightClientUpdate {
-                update: c
-                    .beacon_api_client
-                    .light_client_updates(period, 1)
-                    .await
-                    .unwrap()
-                    .0
-                    .into_iter()
-                    .map(|x| x.data)
-                    .collect::<Vec<light_client_update::LightClientUpdate<_>>>()
-                    .pop()
-                    .unwrap(),
-                __marker: PhantomData,
-            }),
-            EvmFetchMsg::FetchBootstrap(FetchBootstrap { slot, __marker: _ }) => {
+            EvmFetchMsg::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
+                EvmDataMsg::LightClientUpdate(LightClientUpdate {
+                    update: c
+                        .beacon_api_client
+                        .light_client_updates(period, 1)
+                        .await
+                        .unwrap()
+                        .0
+                        .into_iter()
+                        .map(|x| x.data)
+                        .collect::<Vec<light_client_update::LightClientUpdate<_>>>()
+                        .pop()
+                        .unwrap(),
+                    __marker: PhantomData,
+                })
+            }
+            EvmFetchMsg::FetchBootstrap(FetchBootstrap { slot }) => {
                 // NOTE(benluelo): While this is technically two actions, I consider it to be one
                 // action - if the beacon chain doesn't have the header, it won't have the bootstrap
                 // either. It would be nice if the beacon chain exposed "fetch bootstrap by slot"
@@ -483,7 +485,7 @@ where
                     __marker: PhantomData,
                 })
             }
-            EvmFetchMsg::FetchAccountUpdate(FetchAccountUpdate { slot, __marker: _ }) => {
+            EvmFetchMsg::FetchAccountUpdate(FetchAccountUpdate { slot }) => {
                 let execution_height = c
                     .execution_height(Height {
                         revision_number: EVM_REVISION_NUMBER,
@@ -567,54 +569,54 @@ where
                 };
 
                 return match get_proof.path {
-                    Path::ClientStatePath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::ClientStatePath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
-                        IbcProof::<Evm<C>, Tr, _> {
+                        IbcProof::<_, Evm<C>, Tr> {
                             proof,
                             height: get_proof.height,
                             path,
                             __marker: PhantomData,
                         },
                     )),
-                    Path::ClientConsensusStatePath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::ClientConsensusStatePath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
-                        IbcProof::<Evm<C>, Tr, _> {
+                        IbcProof::<_, Evm<C>, Tr> {
                             proof,
                             height: get_proof.height,
                             path,
                             __marker: PhantomData,
                         },
                     )),
-                    Path::ConnectionPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::ConnectionPath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
-                        IbcProof::<Evm<C>, Tr, _> {
+                        IbcProof::<_, Evm<C>, Tr> {
                             proof,
                             height: get_proof.height,
                             path,
                             __marker: PhantomData,
                         },
                     )),
-                    Path::ChannelEndPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::ChannelEndPath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
-                        IbcProof::<Evm<C>, Tr, _> {
+                        IbcProof::<_, Evm<C>, Tr> {
                             proof,
                             height: get_proof.height,
                             path,
                             __marker: PhantomData,
                         },
                     )),
-                    Path::CommitmentPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::CommitmentPath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
-                        IbcProof::<Evm<C>, Tr, _> {
+                        IbcProof::<_, Evm<C>, Tr> {
                             proof,
                             height: get_proof.height,
                             path,
                             __marker: PhantomData,
                         },
                     )),
-                    Path::AcknowledgementPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::AcknowledgementPath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
-                        IbcProof::<Evm<C>, Tr, _> {
+                        IbcProof::<_, Evm<C>, Tr> {
                             proof,
                             height: get_proof.height,
                             path,
@@ -625,7 +627,7 @@ where
             }
             EvmFetchMsg::FetchIbcState(get_storage_at) => {
                 return match get_storage_at.path {
-                    Path::ClientStatePath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::ClientStatePath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -636,7 +638,7 @@ where
                             path,
                         },
                     )),
-                    Path::ClientConsensusStatePath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::ClientConsensusStatePath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -647,7 +649,7 @@ where
                             path,
                         },
                     )),
-                    Path::ConnectionPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::ConnectionPath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -658,7 +660,7 @@ where
                             path,
                         },
                     )),
-                    Path::ChannelEndPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::ChannelEndPath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -669,7 +671,7 @@ where
                             path,
                         },
                     )),
-                    Path::CommitmentPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::CommitmentPath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -680,7 +682,7 @@ where
                             path,
                         },
                     )),
-                    Path::AcknowledgementPath(path) => data(Identified::<Evm<C>, Tr, _>::new(
+                    Path::AcknowledgementPath(path) => data(id::<Evm<C>, Tr, _>(
                         c.chain_id,
                         IbcState {
                             state: c
@@ -695,20 +697,14 @@ where
             }
         };
 
-        data(Identified::<Evm<C>, Tr, _>::new(
+        data(id::<Evm<C>, Tr, _>(
             c.chain_id,
             LightClientSpecificData(msg),
         ))
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Evm<C>, Tr>,
     pub currently_trusted_slot: u64,
@@ -716,144 +712,61 @@ pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
     pub is_next: bool,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 
 pub struct MakeCreateUpdatesData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Evm<C>, Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct MakeCreateUpdatesFromLightClientUpdatesData<C: ChainSpec, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Evm<C>, Tr>,
     pub trusted_height: Height,
     pub finality_update: LightClientFinalityUpdate<C>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec")
-)]
-pub struct FetchLightClientUpdate<C: ChainSpec> {
+#[apply(msg_struct)]
+pub struct FetchLightClientUpdate {
     pub period: u64,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> C>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec")
-)]
-pub struct FetchLightClientUpdates<C: ChainSpec> {
+#[apply(msg_struct)]
+pub struct FetchLightClientUpdates {
     pub trusted_period: u64,
     pub target_period: u64,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> C>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec")
-)]
-pub struct FetchBootstrap<C: ChainSpec> {
+#[apply(msg_struct)]
+pub struct FetchBootstrap {
     pub slot: u64,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> C>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec")
-)]
-pub struct FetchAccountUpdate<C: ChainSpec> {
+#[apply(msg_struct)]
+pub struct FetchAccountUpdate {
     pub slot: u64,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> C>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec")
-)]
-pub struct FetchBeaconGenesis<C: ChainSpec> {
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> C>,
-}
+#[apply(msg_struct)]
+pub struct FetchBeaconGenesis {}
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct BootstrapData<C: ChainSpec, Tr: ChainExt> {
     pub slot: u64,
     pub bootstrap: LightClientBootstrap<C>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(C, Tr)]
 pub struct AccountUpdateData<C: ChainSpec, Tr: ChainExt> {
     pub slot: u64,
-    // pub ibc_handler_address: H160,
     pub update: AccountUpdate,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (C, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(C, Tr)]
 pub struct BeaconGenesisData<C: ChainSpec, Tr: ChainExt> {
-    genesis: GenesisData,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (C, Tr)>,
+    pub genesis: GenesisData,
 }
 
 try_from_relayer_msg! {
@@ -887,15 +800,15 @@ pub enum EvmFetchMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "FinalityUpdate")]
     FetchFinalityUpdate(PhantomData<C>),
     #[display(fmt = "LightClientUpdates")]
-    FetchLightClientUpdates(FetchLightClientUpdates<C>),
+    FetchLightClientUpdates(FetchLightClientUpdates),
     #[display(fmt = "LightClientUpdate")]
-    FetchLightClientUpdate(FetchLightClientUpdate<C>),
+    FetchLightClientUpdate(FetchLightClientUpdate),
     #[display(fmt = "Bootstrap")]
-    FetchBootstrap(FetchBootstrap<C>),
+    FetchBootstrap(FetchBootstrap),
     #[display(fmt = "AccountUpdate")]
-    FetchAccountUpdate(FetchAccountUpdate<C>),
+    FetchAccountUpdate(FetchAccountUpdate),
     #[display(fmt = "BeaconGenesis")]
-    FetchBeaconGenesis(FetchBeaconGenesis<C>),
+    FetchBeaconGenesis(FetchBeaconGenesis),
     #[display(fmt = "GetProof::{}", "_0.path")]
     FetchGetProof(GetProof<C, Tr>),
     #[display(fmt = "IbcState::{}", "_0.path")]
@@ -956,49 +869,22 @@ pub enum EvmAggregateMsg<C: ChainSpec, Tr: ChainExt> {
     MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdatesData<C, Tr>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
-
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct FinalityUpdate<C: ChainSpec, Tr: ChainExt> {
     pub finality_update: LightClientFinalityUpdate<C>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
-
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct LightClientUpdates<C: ChainSpec, Tr: ChainExt> {
     pub light_client_updates: Vec<light_client_update::LightClientUpdate<C>>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
-
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct LightClientUpdate<C: ChainSpec, Tr: ChainExt> {
     pub update: light_client_update::LightClientUpdate<C>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
 impl<C, Tr> DoAggregate for Identified<Evm<C>, Tr, EvmAggregateMsg<C, Tr>>
@@ -1030,16 +916,14 @@ where
             __marker: _,
         }: Self,
         aggregated_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> RelayerMsg {
+    ) -> QueueMsg<RelayerMsgTypes> {
         match data {
-            EvmAggregateMsg::CreateUpdate(msg) => {
-                do_aggregate(Identified::new(chain_id, msg), aggregated_data)
-            }
+            EvmAggregateMsg::CreateUpdate(msg) => do_aggregate(id(chain_id, msg), aggregated_data),
             EvmAggregateMsg::MakeCreateUpdates(msg) => {
-                do_aggregate(Identified::new(chain_id, msg), aggregated_data)
+                do_aggregate(id(chain_id, msg), aggregated_data)
             }
             EvmAggregateMsg::MakeCreateUpdatesFromLightClientUpdates(msg) => {
-                do_aggregate(Identified::new(chain_id, msg), aggregated_data)
+                do_aggregate(id(chain_id, msg), aggregated_data)
             }
         }
     }
@@ -1051,7 +935,7 @@ fn make_create_update<C, Tr>(
     currently_trusted_slot: u64,
     light_client_update: light_client_update::LightClientUpdate<C>,
     is_next: bool,
-) -> RelayerMsg
+) -> QueueMsg<RelayerMsgTypes>
 where
     C: ChainSpec,
     Tr: ChainExt,
@@ -1068,31 +952,27 @@ where
 
     aggregate(
         [
-            fetch(Identified::<Evm<C>, Tr, _>::new(
+            fetch(id::<Evm<C>, Tr, _>(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::FetchLightClientUpdate(
                     FetchLightClientUpdate {
                         period: previous_period,
-                        __marker: PhantomData,
                     },
                 )),
             )),
-            fetch(Identified::<Evm<C>, Tr, _>::new(
+            fetch(id::<Evm<C>, Tr, _>(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::FetchAccountUpdate(FetchAccountUpdate {
                     slot: light_client_update.attested_header.beacon.slot,
-                    __marker: PhantomData,
                 })),
             )),
-            fetch(Identified::<Evm<C>, Tr, _>::new(
+            fetch(id::<Evm<C>, Tr, _>(
                 chain_id,
-                LightClientSpecificFetch(EvmFetchMsg::FetchBeaconGenesis(FetchBeaconGenesis {
-                    __marker: PhantomData,
-                })),
+                LightClientSpecificFetch(EvmFetchMsg::FetchBeaconGenesis(FetchBeaconGenesis {})),
             )),
         ],
         [],
-        Identified::new(
+        id(
             chain_id,
             LightClientSpecificAggregate(EvmAggregateMsg::CreateUpdate(CreateUpdateData {
                 req,
@@ -1134,30 +1014,16 @@ fn mk_function_call<Call: EthCall>(
         .expect("method selector is generated; qed;")
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
-
+#[apply(msg_struct)]
 pub struct GetProof<C: ChainSpec, Tr: ChainExt> {
-    path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
-    height: HeightOf<Evm<C>>,
+    pub path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
+    pub height: HeightOf<Evm<C>>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
-)]
-
+#[apply(msg_struct)]
 pub struct FetchIbcState<C: ChainSpec, Tr: ChainExt> {
-    path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
-    height: HeightOf<Evm<C>>,
+    pub path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
+    pub height: HeightOf<Evm<C>>,
 }
 
 impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Evm<C>, Tr, CreateUpdateData<C, Tr>>
@@ -1221,7 +1087,7 @@ where
                 __marker: _,
             }
         ]: Self::AggregatedData,
-    ) -> RelayerMsg {
+    ) -> QueueMsg<RelayerMsgTypes> {
         assert_eq!(light_client_update_chain_id, account_update_chain_id);
         assert_eq!(chain_id, account_update_chain_id);
         assert_eq!(chain_id, beacon_api_chain_id);
@@ -1243,7 +1109,7 @@ where
         };
 
         seq([
-            wait(Identified::new(
+            wait(id(
                 req.counterparty_chain_id.clone(),
                 WaitForTimestamp {
                     timestamp: (genesis.genesis_time
@@ -1253,7 +1119,7 @@ where
                     __marker: PhantomData,
                 },
             )),
-            msg(Identified::<Tr, Evm<C>, _>::new(
+            msg(id::<Tr, Evm<C>, _>(
                 req.counterparty_chain_id,
                 MsgUpdateClientData(MsgUpdateClient {
                     client_id: req.counterparty_client_id,
@@ -1291,7 +1157,7 @@ where
             },
             __marker: _,
         },]: Self::AggregatedData,
-    ) -> RelayerMsg {
+    ) -> QueueMsg<RelayerMsgTypes> {
         assert_eq!(chain_id, bootstrap_chain_id);
 
         let target_period =
@@ -1307,18 +1173,17 @@ where
         // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
         // updates until we reach the `target_period - 1`.
         aggregate(
-            [fetch(Identified::<Evm<C>, Tr, _>::new(
+            [fetch(id::<Evm<C>, Tr, _>(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::FetchLightClientUpdates(
                     FetchLightClientUpdates {
                         trusted_period,
                         target_period,
-                        __marker: PhantomData,
                     },
                 )),
             ))],
             [],
-            Identified::new(
+            id(
                 chain_id,
                 LightClientSpecificAggregate(
                     EvmAggregateMsg::MakeCreateUpdatesFromLightClientUpdates(
@@ -1375,7 +1240,7 @@ where
             },
             __marker: _,
         },]: Self::AggregatedData,
-    ) -> RelayerMsg {
+    ) -> QueueMsg<RelayerMsgTypes> {
         assert_eq!(chain_id, light_client_updates_chain_id);
 
         let target_period = sync_committee_period::<_, C>(finality_update.signature_slot);

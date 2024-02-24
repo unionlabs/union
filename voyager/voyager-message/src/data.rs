@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
 use queue_msg::{data, HandleData, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
@@ -14,12 +13,12 @@ use unionlabs::{
 };
 
 use crate::{
-    any_enum, fetch::FetchPacketAcknowledgement, AnyLightClientIdentified, ChainExt,
+    any_enum, fetch::FetchPacketAcknowledgement, msg_struct, AnyLightClientIdentified, ChainExt,
     RelayerMsgTypes,
 };
 
 #[apply(any_enum)]
-/// Data that will likely be used in a [`RelayerMsg::Aggregate`].
+/// Data that will likely be used in a [`QueueMsg::Aggregate`].
 #[any = AnyData]
 pub enum Data<Hc: ChainExt, Tr: ChainExt> {
     SelfClientState(SelfClientState<Hc, Tr>),
@@ -27,19 +26,19 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
 
     PacketAcknowledgement(PacketAcknowledgement<Hc, Tr>),
 
-    ClientStateProof(IbcProof<Hc, Tr, ClientStatePath<Hc::ClientId>>),
-    ClientConsensusStateProof(IbcProof<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>),
-    ConnectionProof(IbcProof<Hc, Tr, ConnectionPath>),
-    ChannelEndProof(IbcProof<Hc, Tr, ChannelEndPath>),
-    CommitmentProof(IbcProof<Hc, Tr, CommitmentPath>),
-    AcknowledgementProof(IbcProof<Hc, Tr, AcknowledgementPath>),
+    ClientStateProof(IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>),
+    ClientConsensusStateProof(IbcProof<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>),
+    ConnectionProof(IbcProof<ConnectionPath, Hc, Tr>),
+    ChannelEndProof(IbcProof<ChannelEndPath, Hc, Tr>),
+    CommitmentProof(IbcProof<CommitmentPath, Hc, Tr>),
+    AcknowledgementProof(IbcProof<AcknowledgementPath, Hc, Tr>),
 
-    ClientState(IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>),
-    ClientConsensusState(IbcState<Hc, Tr, ClientConsensusStatePath<Hc::ClientId, Tr::Height>>),
-    Connection(IbcState<Hc, Tr, ConnectionPath>),
-    ChannelEnd(IbcState<Hc, Tr, ChannelEndPath>),
-    Commitment(IbcState<Hc, Tr, CommitmentPath>),
-    Acknowledgement(IbcState<Hc, Tr, AcknowledgementPath>),
+    ClientState(IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>),
+    ClientConsensusState(IbcState<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>),
+    Connection(IbcState<ConnectionPath, Hc, Tr>),
+    ChannelEnd(IbcState<ChannelEndPath, Hc, Tr>),
+    Commitment(IbcState<CommitmentPath, Hc, Tr>),
+    Acknowledgement(IbcState<AcknowledgementPath, Hc, Tr>),
 
     #[serde(untagged)]
     LightClientSpecific(LightClientSpecificData<Hc, Tr>),
@@ -75,94 +74,44 @@ impl<Hc: ChainExt, Tr: ChainExt> std::fmt::Display for Data<Hc, Tr> {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct SelfClientState<Hc: ChainExt, Tr: ChainExt> {
     pub self_client_state: ClientStateOf<Hc>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct SelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
     pub self_consensus_state: ConsensusStateOf<Hc>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct Header<Hc: ChainExt, Tr: ChainExt> {
     pub header: HeaderOf<Hc>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>")
-)]
-pub struct IbcState<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
+#[apply(msg_struct)]
+pub struct IbcState<P: IbcPath<Hc, Tr>, Hc: ChainExt, Tr: ChainExt> {
     pub path: P,
     pub height: HeightOf<Hc>,
     pub state: P::Output,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>")
-)]
-pub struct IbcProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
+#[apply(msg_struct)]
+#[cover(Tr)]
+pub struct IbcProof<P: IbcPath<Hc, Tr>, Hc: ChainExt, Tr: ChainExt> {
     pub path: P,
     pub height: HeightOf<Hc>,
     pub proof: Hc::StateProof,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct PacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
     pub fetched_by: FetchPacketAcknowledgement<Hc, Tr>,
     pub ack: Vec<u8>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct LightClientSpecificData<Hc: ChainExt, Tr: ChainExt>(pub Hc::Data<Tr>);

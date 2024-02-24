@@ -1,7 +1,6 @@
 use std::{fmt::Display, marker::PhantomData};
 
 use chain_utils::GetChain;
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
 use queue_msg::{defer, fetch, now, seq, wait, HandleWait, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
@@ -14,8 +13,7 @@ use unionlabs::{
 use crate::{
     any_enum,
     fetch::{AnyFetch, Fetch, FetchState},
-    identified, AnyLightClientIdentified, ChainExt, DoFetchState, Identified, RelayerMsg,
-    RelayerMsgTypes,
+    id, identified, msg_struct, AnyLightClientIdentified, ChainExt, DoFetchState, RelayerMsgTypes,
 };
 
 #[apply(any_enum)]
@@ -46,7 +44,7 @@ where
     Hc: ChainExt + DoFetchState<Hc, Tr>,
     Tr: ChainExt,
 {
-    pub async fn handle(self, c: Hc) -> RelayerMsg {
+    pub async fn handle(self, c: Hc) -> QueueMsg<RelayerMsgTypes> {
         match self {
             Wait::Block(WaitForBlock { height, __marker }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
@@ -58,12 +56,12 @@ where
                 );
 
                 if chain_height.revision_height() >= height.revision_height() {
-                    RelayerMsg::Noop
+                    QueueMsg::Noop
                 } else {
                     seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
                         defer(now() + 1),
-                        wait(Identified::<Hc, Tr, _>::new(
+                        wait(id::<Hc, Tr, _>(
                             c.chain_id(),
                             WaitForBlock { height, __marker }.into(),
                         )),
@@ -77,12 +75,12 @@ where
                 let chain_ts = c.query_latest_timestamp().await.unwrap();
 
                 if chain_ts >= timestamp {
-                    RelayerMsg::Noop
+                    QueueMsg::Noop
                 } else {
                     seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new method on chain
                         defer(now() + 1),
-                        wait(Identified::<Hc, Tr, _>::new(
+                        wait(id::<Hc, Tr, _>(
                             c.chain_id(),
                             WaitForTimestamp {
                                 timestamp,
@@ -111,7 +109,7 @@ where
                         height
                     );
 
-                    fetch(Identified::<Tr, Hc, _>::new(
+                    fetch(id::<Tr, Hc, _>(
                         counterparty_chain_id,
                         FetchState {
                             at: trusted_client_state.height(),
@@ -125,14 +123,14 @@ where
                     seq([
                         // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would require a new method on chain
                         defer(now() + 1),
-                        wait(Identified::new(
+                        wait(id(
                             c.chain_id(),
-                            Wait::TrustedHeight(WaitForTrustedHeight {
+                            WaitForTrustedHeight {
                                 client_id,
                                 height,
                                 counterparty_client_id,
                                 counterparty_chain_id,
-                            }),
+                            },
                         )),
                     ])
                 }
@@ -151,41 +149,19 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Wait<Hc, Tr> {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct WaitForBlock<Hc: ChainExt, Tr: ChainExt> {
     pub height: HeightOf<Hc>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Hc, Tr)]
 pub struct WaitForTimestamp<Hc: ChainExt, Tr: ChainExt> {
     pub timestamp: i64,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct WaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
     pub client_id: Hc::ClientId,
     pub counterparty_client_id: Tr::ClientId,

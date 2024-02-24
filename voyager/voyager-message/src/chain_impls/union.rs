@@ -11,6 +11,7 @@ use chain_utils::{
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
+use macros::apply;
 use num_bigint::BigUint;
 use protos::{
     ibc::core::connection::v1::MsgConnectionOpenInit,
@@ -19,7 +20,7 @@ use protos::{
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, defer_relative, fetch, msg, wait,
+    data, defer_relative, fetch, msg, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
@@ -71,16 +72,16 @@ use crate::{
     },
     data::{AnyData, Data, IbcState, LightClientSpecificData},
     fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
-    identified,
+    id, identified,
     msg::{
         AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
         MsgUpdateClientData,
     },
-    seq,
+    msg_struct, seq,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsg, RelayerMsgTypes, Wasm, WasmConfig,
+    DoFetchUpdateHeaders, DoMsg, Identified, PathOf, RelayerMsgTypes, Wasm, WasmConfig,
 };
 
 impl ChainExt for Union {
@@ -283,11 +284,11 @@ where
     TryFromProtoErrorOf<Hc::StoredClientState<Tr>>: Debug,
     TryFromProtoErrorOf<Hc::StoredConsensusState<Tr>>: Debug,
 
-    Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> RelayerMsg {
+    fn state(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes> {
         seq([
-            wait(Identified::new(
+            wait(id(
                 hc.chain_id(),
                 WaitForBlock {
                     // height: at.increment(),
@@ -295,7 +296,7 @@ where
                     __marker: PhantomData,
                 },
             )),
-            fetch(Identified::<Hc, Tr, _>::new(
+            fetch(id::<Hc, Tr, _>(
                 hc.chain_id(),
                 LightClientSpecificFetch(UnionFetch::AbciQuery(FetchAbciQuery {
                     path,
@@ -311,7 +312,7 @@ where
         client_id: Hc::ClientId,
         height: Hc::Height,
     ) -> Hc::StoredClientState<Tr> {
-        let RelayerMsg::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
+        let QueueMsg::Data(relayer_msg) = fetch_abci_query::<Hc, Tr>(
             hc,
             ClientStatePath { client_id }.into(),
             height,
@@ -322,7 +323,7 @@ where
             panic!()
         };
 
-        Identified::<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>::try_from(relayer_msg)
+        Identified::<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>::try_from(relayer_msg)
             .unwrap()
             .t
             .state
@@ -335,9 +336,9 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 {
-    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> RelayerMsg {
+    fn proof(hc: &Hc, at: HeightOf<Hc>, path: PathOf<Hc, Tr>) -> QueueMsg<RelayerMsgTypes> {
         seq([
-            wait(Identified::new(
+            wait(id(
                 hc.chain_id(),
                 WaitForBlock {
                     // height: at.increment(),
@@ -345,7 +346,7 @@ where
                     __marker: PhantomData,
                 },
             )),
-            fetch(Identified::<Hc, Tr, _>::new(
+            fetch(id::<Hc, Tr, _>(
                 hc.chain_id(),
                 LightClientSpecificFetch(UnionFetch::AbciQuery(FetchAbciQuery::<Hc, Tr> {
                     path,
@@ -368,9 +369,12 @@ where
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
-    fn fetch_update_headers(hc: &Hc, update_info: FetchUpdateHeaders<Hc, Tr>) -> RelayerMsg {
+    fn fetch_update_headers(
+        hc: &Hc,
+        update_info: FetchUpdateHeaders<Hc, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         seq([
-            wait(Identified::new(
+            wait(id(
                 hc.chain_id(),
                 WaitForBlock {
                     height: update_info.update_to,
@@ -379,7 +383,7 @@ where
             )),
             aggregate(
                 [
-                    fetch(Identified::<Hc, Tr, _>::new(
+                    fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         LightClientSpecificFetch(UnionFetch::FetchUntrustedCommit(
                             FetchUntrustedCommit {
@@ -388,14 +392,14 @@ where
                         ))
                         .into(),
                     )),
-                    fetch(Identified::<Hc, Tr, _>::new(
+                    fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         LightClientSpecificFetch(UnionFetch::FetchValidators(FetchValidators {
                             height: update_info.update_from.into(),
                         }))
                         .into(),
                     )),
-                    fetch(Identified::<Hc, Tr, _>::new(
+                    fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         LightClientSpecificFetch(UnionFetch::FetchValidators(FetchValidators {
                             height: update_info.update_to.into(),
@@ -404,7 +408,7 @@ where
                     )),
                 ],
                 [],
-                Identified::new(
+                id(
                     hc.chain_id(),
                     LightClientSpecificAggregate(UnionAggregateMsg::AggregateProveRequest(
                         AggregateProveRequest { req: update_info },
@@ -492,9 +496,9 @@ where
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
 
-    Identified<Hc, Tr, IbcState<Hc, Tr, ClientStatePath<Hc::ClientId>>>: IsAggregateData,
+    Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
-    async fn do_fetch(hc: &Hc, msg: Self) -> RelayerMsg {
+    async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayerMsgTypes> {
         match msg {
             UnionFetch::FetchUntrustedCommit(FetchUntrustedCommit { height }) => {
                 let commit = hc
@@ -664,10 +668,7 @@ where
                     __marker: PhantomData,
                 });
 
-                data(Identified::<Hc, Tr, _>::new(
-                    hc.chain_id(),
-                    LightClientSpecificData(msg),
-                ))
+                data(id::<Hc, Tr, _>(hc.chain_id(), LightClientSpecificData(msg)))
             }
             UnionFetch::FetchValidators(FetchValidators { height }) => {
                 let validators = hc
@@ -701,10 +702,7 @@ where
                     __marker: PhantomData,
                 });
 
-                data(Identified::<Hc, Tr, _>::new(
-                    hc.chain_id(),
-                    LightClientSpecificData(msg),
-                ))
+                data(id::<Hc, Tr, _>(hc.chain_id(), LightClientSpecificData(msg)))
             }
             UnionFetch::FetchProveRequest(FetchProveRequest { request }) => {
                 let response = union_prover_api_client::UnionProverApiClient::connect(
@@ -725,7 +723,7 @@ where
                     seq([
                         // REVIEW: How long should we wait between polls?
                         defer_relative(3),
-                        fetch(Identified::<Hc, Tr, _>::new(
+                        fetch(id::<Hc, Tr, _>(
                             hc.chain_id(),
                             LightClientSpecificFetch(UnionFetch::FetchProveRequest(
                                 FetchProveRequest { request },
@@ -742,15 +740,13 @@ where
                         tracing::error!(%message, "prove request failed");
                         panic!()
                     }
-                    Ok(PollResponse::Done(ProveRequestDone { response })) => {
-                        data(Identified::<Hc, Tr, _>::new(
-                            hc.chain_id(),
-                            LightClientSpecificData(UnionDataMsg::ProveResponse(ProveResponse {
-                                prove_response: response,
-                                __marker: PhantomData,
-                            })),
-                        ))
-                    }
+                    Ok(PollResponse::Done(ProveRequestDone { response })) => data(id::<Hc, Tr, _>(
+                        hc.chain_id(),
+                        LightClientSpecificData(UnionDataMsg::ProveResponse(ProveResponse {
+                            prove_response: response,
+                            __marker: PhantomData,
+                        })),
+                    )),
                 }
             }
             UnionFetch::AbciQuery(FetchAbciQuery { path, height, ty }) => {
@@ -803,13 +799,13 @@ where
             __marker: _,
         }: Self,
         aggregate_data: VecDeque<AnyLightClientIdentified<AnyData>>,
-    ) -> RelayerMsg {
+    ) -> QueueMsg<RelayerMsgTypes> {
         match data {
             UnionAggregateMsg::AggregateProveRequest(data) => {
-                do_aggregate(Identified::new(chain_id, data), aggregate_data)
+                do_aggregate(id(chain_id, data), aggregate_data)
             }
             UnionAggregateMsg::AggregateHeader(data) => {
-                do_aggregate(Identified::new(chain_id, data), aggregate_data)
+                do_aggregate(id(chain_id, data), aggregate_data)
             }
         }
     }
@@ -839,91 +835,49 @@ const _: () = {
     }
 };
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct UntrustedCommit<Tr: ChainExt> {
     pub height: Height,
     pub signed_header: SignedHeader,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct Validators<Tr: ChainExt> {
     pub height: Height,
     // TODO: Use non-`tendermint-rs` type here
     pub validators: Vec<unionlabs::tendermint::types::validator::Validator>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct ProveResponse<Tr: ChainExt> {
     pub prove_response: prove_response::ProveResponse,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[apply(msg_struct)]
 pub struct FetchUntrustedCommit {
     pub height: Height,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[apply(msg_struct)]
 pub struct FetchValidators {
     pub height: Height,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[apply(msg_struct)]
 pub struct FetchProveRequest {
     pub request: ProveRequest,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub signed_header: SignedHeader,
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct AggregateProveRequest<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
 }
@@ -993,7 +947,7 @@ where
                 __marker: _,
             },
         ]: Self::AggregatedData,
-    ) -> RelayerMsg {
+    ) -> QueueMsg<RelayerMsgTypes> {
         assert_eq!(untrusted_commit_chain_id, untrusted_validators_chain_id);
         assert_eq!(chain_id, trusted_validators_chain_id);
         assert_eq!(chain_id, untrusted_validators_chain_id);
@@ -1093,7 +1047,7 @@ where
         let untrusted_validators_commit = make_validators_commit(untrusted_validators);
 
         aggregate(
-            [fetch(Identified::<Hc, Tr, _>::new(
+            [fetch(id::<Hc, Tr, _>(
                 chain_id.clone(),
                 LightClientSpecificFetch(UnionFetch::FetchProveRequest(FetchProveRequest {
                     request: ProveRequest {
@@ -1124,7 +1078,7 @@ where
                 .into(),
             ))],
             [],
-            Identified::new(
+            id(
                 chain_id,
                 LightClientSpecificAggregate(UnionAggregateMsg::AggregateHeader(AggregateHeader {
                     signed_header,
@@ -1165,14 +1119,14 @@ where
             },
             __marker: _,
         }]: Self::AggregatedData,
-    ) -> RelayerMsg {
+    ) -> QueueMsg<RelayerMsgTypes> {
         assert_eq!(chain_id, untrusted_commit_chain_id);
 
         // TODO: maybe introduce a new commit for union signed header as we don't need the signatures but the ZKP only
         // Keeping this signatures significantly increase the size of the structure and the associated gas cost in EVM (calldata).
         signed_header.commit.signatures.clear();
 
-        msg(Identified::<Tr, Hc, _>::new(
+        msg(id::<Tr, Hc, _>(
             req.counterparty_chain_id,
             MsgUpdateClientData(MsgUpdateClient {
                 client_id: req.counterparty_client_id.clone(),

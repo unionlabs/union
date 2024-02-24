@@ -4,7 +4,6 @@ use std::{
 };
 
 use chain_utils::GetChain;
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use futures::Future;
 use macros::apply;
 use queue_msg::{data, fetch, HandleFetch, QueueMsg, QueueMsgTypes};
@@ -20,12 +19,12 @@ use unionlabs::{
 use crate::{
     any_enum,
     data::{AnyData, Data, PacketAcknowledgement, SelfClientState, SelfConsensusState},
-    identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
-    DoFetchUpdateHeaders, Identified, RelayerMsg, RelayerMsgTypes,
+    id, identified, msg_struct, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
+    DoFetchUpdateHeaders, RelayerMsgTypes,
 };
 
 #[apply(any_enum)]
-/// Fetch some data that will likely be used in a [`RelayerMsg::Aggregate`].
+/// Fetch some data that will likely be used in a [`QueueMsg::Aggregate`].
 #[any = AnyFetch]
 pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
     State(FetchState<Hc, Tr>),
@@ -58,7 +57,7 @@ impl HandleFetch<RelayerMsgTypes> for AnyLightClientIdentified<AnyFetch> {
 }
 
 pub trait DoFetch<Hc: ChainExt>: Sized + Debug + Clone + PartialEq {
-    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = RelayerMsg>;
+    fn do_fetch(c: &Hc, _: Self) -> impl Future<Output = QueueMsg<RelayerMsgTypes>>;
 }
 
 impl<Hc: ChainExt, Tr: ChainExt> Display for Fetch<Hc, Tr> {
@@ -85,96 +84,45 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Fetch<Hc, Tr> {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct FetchSelfClientState<Hc: ChainExt, Tr: ChainExt> {
     pub at: QueryHeight<HeightOf<Hc>>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct FetchSelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
     pub at: QueryHeight<HeightOf<Hc>>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
-
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct FetchProof<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
     pub path: proof::Path<Hc::ClientId, Tr::Height>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct FetchState<Hc: ChainExt, Tr: ChainExt> {
     pub at: HeightOf<Hc>,
     pub path: proof::Path<Hc::ClientId, Tr::Height>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Tr)]
 pub struct FetchLatestClientState<Hc: ChainExt, Tr: ChainExt> {
     pub path: ClientStatePath<Hc::ClientId>,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> Tr>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
+#[cover(Hc, Tr)]
 pub struct FetchPacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
     pub tx_hash: H256,
     pub destination_port_id: PortId,
     pub destination_channel_id: ChannelId,
     pub sequence: u64,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> (Hc, Tr)>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
     pub client_id: ClientIdOf<Hc>,
     pub counterparty_chain_id: ChainIdOf<Tr>,
@@ -184,13 +132,7 @@ pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
     pub update_to: HeightOf<Hc>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct LightClientSpecificFetch<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
 
 impl<Hc, Tr> Fetch<Hc, Tr>
@@ -201,7 +143,7 @@ where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
 {
-    pub async fn handle(self, c: Hc) -> RelayerMsg {
+    pub async fn handle(self, c: Hc) -> QueueMsg<RelayerMsgTypes> {
         match self {
             Fetch::Proof(msg) => Hc::proof(&c, msg.at, msg.path),
             Fetch::State(msg) => Hc::state(&c, msg.at, msg.path),
@@ -215,13 +157,12 @@ where
                     QueryHeight::Specific(h) => h,
                 };
 
-                data(Identified::<Hc, Tr, Data<Hc, Tr>>::new(
+                data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     SelfClientState {
                         self_client_state: c.self_client_state(height).await,
                         __marker: PhantomData,
-                    }
-                    .into(),
+                    },
                 ))
             }
             Fetch::SelfConsensusState(FetchSelfConsensusState {
@@ -234,7 +175,7 @@ where
                     QueryHeight::Specific(h) => h,
                 };
 
-                data(Identified::<Hc, Tr, _>::new(
+                data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     SelfConsensusState {
                         self_consensus_state: c.self_consensus_state(height).await,
@@ -258,7 +199,7 @@ where
                     )
                     .await;
 
-                data(Identified::<Hc, Tr, _>::new(
+                data(id::<Hc, Tr, _>(
                     c.chain_id(),
                     PacketAcknowledgement {
                         fetched_by: FetchPacketAcknowledgement {
@@ -277,7 +218,7 @@ where
             }
             Fetch::LightClientSpecific(LightClientSpecificFetch(fetch)) => c.do_fetch(fetch).await,
             Fetch::LatestClientState(FetchLatestClientState { path, __marker }) => {
-                fetch(Identified::<Hc, Tr, _>::new(
+                fetch(id::<Hc, Tr, _>(
                     c.chain_id(),
                     FetchState {
                         at: c.query_latest_height().await.unwrap(),

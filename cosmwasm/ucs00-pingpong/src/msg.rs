@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, IbcMsg, IbcTimeout, IbcTimeoutBlock};
+use cosmwasm_std::{IbcMsg, IbcTimeout, IbcTimeoutBlock};
 use ethabi::{ParamType, Token};
 
 use crate::{state::Config, ContractError};
@@ -12,41 +12,10 @@ pub struct UCS00PingPong {
 }
 
 impl UCS00PingPong {
-    pub fn reverse(&self, config: &Config, current_block: u64, channel_id: String) -> IbcMsg {
-        let counterparty_packet = UCS00PingPong {
-            ping: !self.ping,
-            counterparty_timeout_revision_number: config.revision_number,
-            counterparty_timeout_revision_height: config.number_of_block_before_pong_timeout
-                + current_block,
-        };
-        IbcMsg::SendPacket {
-            channel_id,
-            data: counterparty_packet.into(),
-            timeout: IbcTimeout::with_block(IbcTimeoutBlock {
-                revision: self.counterparty_timeout_revision_number,
-                height: self.counterparty_timeout_revision_height,
-            }),
-        }
-    }
-}
-
-impl From<UCS00PingPong> for Binary {
-    fn from(value: UCS00PingPong) -> Self {
-        ethabi::encode(&[
-            Token::Bool(value.ping),
-            Token::Int(value.counterparty_timeout_revision_number.into()),
-            Token::Int(value.counterparty_timeout_revision_height.into()),
-        ])
-        .into()
-    }
-}
-
-impl TryFrom<Binary> for UCS00PingPong {
-    type Error = ContractError;
-    fn try_from(value: Binary) -> Result<Self, Self::Error> {
+    pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self, ContractError> {
         let values = ethabi::decode(
             &[ParamType::Bool, ParamType::Int(64), ParamType::Int(64)],
-            &value.0,
+            bz.as_ref(),
         )
         .map_err(|_| ContractError::EthAbiDecoding)?;
         match &values[..] {
@@ -58,6 +27,33 @@ impl TryFrom<Binary> for UCS00PingPong {
                 })
             }
             _ => Err(ContractError::EthAbiDecoding),
+        }
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        ethabi::encode(&[
+            Token::Bool(self.ping),
+            Token::Int(self.counterparty_timeout_revision_number.into()),
+            Token::Int(self.counterparty_timeout_revision_height.into()),
+        ])
+    }
+}
+
+impl UCS00PingPong {
+    pub fn reverse(&self, config: &Config, current_block: u64, channel_id: String) -> IbcMsg {
+        let counterparty_packet = UCS00PingPong {
+            ping: !self.ping,
+            counterparty_timeout_revision_number: config.revision_number,
+            counterparty_timeout_revision_height: config.number_of_block_before_pong_timeout
+                + current_block,
+        };
+        IbcMsg::SendPacket {
+            channel_id,
+            data: counterparty_packet.encode().into(),
+            timeout: IbcTimeout::with_block(IbcTimeoutBlock {
+                revision: self.counterparty_timeout_revision_number,
+                height: self.counterparty_timeout_revision_height,
+            }),
         }
     }
 }
