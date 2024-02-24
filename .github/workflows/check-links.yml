@@ -83,17 +83,11 @@ jobs:
             site/src app/src --config ${{ github.workspace }}/lychee.toml --github-token ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Issue From File
-        uses: actions/github-script@v7
         if: env.lychee_exit_code != 0
+        uses: peter-evans/create-issue-from-file@v5
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('node:fs');
-            const content = fs.readFileSync('./lychee/out.md', { encoding: 'utf8' });
-            github.issues.create({
-              repo: context.repo.repo,
-              owner: context.repo.owner,
-              title: 'Link Checker Report',
-              body: content,
-              labels: ['report', 'automated issue']
-            });
+          title: Link Checker Report
+          content-filepath: ./lychee/out.md
+          labels: |
+            documentation
+            dead-links
