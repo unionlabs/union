@@ -6,6 +6,7 @@ Acks
 Anys
 Axelar
 Bech
+Beriker
 Bitvector
 Blcok
 Boneh
@@ -18,8 +19,10 @@ Codehash
 Coeff
 Cofactor
 Configurator
+Connor
 Cosm
 Cosmoverse
+Counterparties
 Counterparty
 DATADIR
 DYLD
@@ -33,12 +36,14 @@ Djuric
 Fatalf
 Feegrant
 Feiock
+Founderheads
 Frontmatter
 Fuga
 GOARCH
 GOPATH
 GOPRIVATE
 Getenv
+Groomlake
 HKTs
 HMAC
 Hashable
@@ -70,6 +75,7 @@ Mgoogle
 Mimc
 Misbehaviour
 Monaspace
+Multichain
 NIXBUILDNET
 Neue
 Nonexist
@@ -96,6 +102,7 @@ Redelegations
 Repr
 Roboto
 Rollup
+Ronin
 Rushi
 Rustup
 SEPOLIA
@@ -107,6 +114,7 @@ Segoe
 Shacham
 Shallue
 Snapshotter
+Spearbit
 Subdemom
 Sublist
 Subo
@@ -186,6 +194,7 @@ authzkeeper
 authzmodule
 autocli
 autocliv
+awkroot
 axelar
 bankkeeper
 banktypes
@@ -230,6 +239,7 @@ chainsafe
 chevdor
 chrono
 circom
+clazz
 clientkeeper
 clienttypes
 clippy
@@ -251,11 +261,13 @@ cometbls
 cometbn
 commitizen
 commitmenttypes
+composability
 concat
 configurator
 confix
 confixcmd
 connectiontypes
+connor
 consectetur
 consensuskeeper
 consensusparamkeeper
@@ -264,6 +276,7 @@ consensys
 consts
 conv
 converstion
+corcoder
 corestoretypes
 coreutils
 corsdomain
@@ -361,6 +374,7 @@ floorlog
 fmtlib
 foldl
 fontsource
+founderheads
 frunk
 fubar
 fucynrfkrt
@@ -397,14 +411,18 @@ govkeeper
 govtypes
 govv
 graphqurl
+groomlake
 groth
 groupkeeper
 groupmodule
 harum
+hases
 hasher
 hastscript
 hasura
 hdata
+headshot
+headshots
 healthcheck
 healthz
 heredocs
@@ -675,6 +693,7 @@ reflectionv
 regclass
 regen
 rehype
+rekt
 repellendus
 repr
 reqwest
@@ -697,6 +716,7 @@ rustfmt
 rustlib
 rustls
 rustup
+sarahkc
 sbox
 schemars
 schnorr
@@ -726,9 +746,11 @@ slashingtypes
 snapshotter
 snapshottypes
 solomachine
+spearbit
 spents
 splitn
 spotlightjs
+sprembo
 sqlx
 squoosh
 srcs
@@ -811,6 +833,7 @@ tonumber
 treefmt
 treeshake
 trustlessly
+trustlessness
 tryopen
 tsconfigs
 tsdb
@@ -848,6 +871,7 @@ unionp
 unionsimulation
 unionvisor
 unionvisorbn
+unionxsecret
 unittests
 unjail
 unjailed
@@ -872,6 +896,7 @@ utilising
 valbz
 valcons
 valconspub
+valeyo
 valgentx
 validatordata
 validatorsets
@@ -910,6 +935,8 @@ wght
 whistleblower
 withdrawability
 woestijne
+xbonlulu
+xkaiserkarel
 xprv
 xqxp
 ypyp

@@ -13,4 +13,3 @@ Boneh–Lynn–Shacham (BLS) signatures form the foundation of [CometBLS](/docs/
 - Allows for [distributed validator tech](/docs/concepts/distributed-validator-tech)
 
 Note that the Union validators do not produce zkps directly. This function is performed by [galois](/docs/architecture/cometbls). Relayers can produce proofs themselves, or use Union as a distributed sequencing layer through the use of [proof claims](https://github.com/unionlabs/union/discussions/41).
-

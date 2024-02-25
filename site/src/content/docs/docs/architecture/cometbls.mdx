@@ -24,16 +24,13 @@ Note that the Union validators do not produce zkps directly. This function is pe
 
 Under CometBLS, the Union network can scale to hundreds of validators without impacting performance or bridging latency. Furthermore, because BLS signatures can be aggregated, we can employ [Distributed Validator Tech](/docs/concepts/distributed-validator-tech) in order to scale to **thousands of validators**.
 
-
 ## MiMC Hashing
 
 SHA-256 is used across Tendermint for storage proofs and more. The security of SHA-256 over alternatives like BLAKE is questionable, the main downside is the high cost within [Zero-Knowledge circuits](/docs/concepts/zero-knowledge-cryptography) to prove the hashing. [MiMC](https://eprint.iacr.org/2016/492.pdf) is an alternative that provides great security and decreases the number of constraints in Galois significantly. CometBLS V3 introduced the use of these MiMC hases, bringing [significant performance enhancements](https://unionlabs.github.io/galois-benchmark/).
 
-
 ## Epoch-based Validator Rotation
 
 Reducing the number of light client updates required for the secure operation of the bridge is crucial to relayer profitability and economic feasibility of light clients in gas constrained environments. which in turn reduces fees for regular users. [Epoch Staking](https://github.com/unionlabs/union/discussions/14) is our current effort to minimize 'useless' light client updates and proof generation. It combines designs from Polkadot consensus with Cosmos' governance and security models.
-
 
 ## Pending Improvements
 

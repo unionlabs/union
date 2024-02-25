@@ -3,71 +3,73 @@ import xIcon from '#/assets/images/x.svg'
 import unionLogo from '#/assets/union-logo/logo.svg'
 import discordIcon from '#/assets/images/discord.svg'
 
-
 let menuItems = [
   {
-    url: "/blog",
-    name: "Blog",
+    url: '/blog',
+    name: 'Blog',
   },
   {
-    url: "/docs",
-    name: "Docs",
+    url: '/docs',
+    name: 'Docs',
   },
   {
-    url: "/team",
-    name: "Team",
+    url: '/team',
+    name: 'Team',
   },
   {
-    url: "/brand-kit",
-    name: "Branding",
-  }
-
-];
+    url: '/brand-kit',
+    name: 'Branding',
+  },
+]
 ---
 
-
 <script>
-let menuOpen = false;
+  let menuOpen = false
 
-let menuButton = document.getElementById("menu-button");
-let menuItemsList = document.getElementById("menu-items-list");
+  let menuButton = document.getElementById('menu-button')
+  let menuItemsList = document.getElementById('menu-items-list')
 
-menuButton.addEventListener('click', () => {
-  menuOpen = !menuOpen;
-  console.log(menuOpen);
-  menuItemsList.style.display = menuOpen ? "flex" : "none";
-});
-
+  menuButton?.addEventListener('click', () => {
+    menuOpen = !menuOpen
+    if (menuItemsList) menuItemsList.style.display = menuOpen ? 'flex' : 'none'
+  })
 </script>
 
-<header class='flex justify-around pt-3 px-4 py-3'>
-  <div class='max-w-5xl flex flex-1 items-center'>
-    <a
-      class='flex items-center gap-2 decoration-transparent visited:text-white'
-      href='/'
-    >
-      <img
-        class='w-8 h-8 my-auto'
-        src={unionLogo.src}
-        alt='Union Logo'
-      />
-      <p
-        class='font-semibold text-3xl py-0 my-0 mb-0.5'
-      >
-        Union
-      </p>
+<header class="flex justify-around pt-3 px-4 py-3">
+  <div class="max-w-5xl flex flex-1 items-center">
+    <a class="flex items-center gap-2 decoration-transparent visited:text-white" href="/">
+      <img class="w-8 h-8 my-auto" src={unionLogo.src} alt="Union Logo" />
+      <p class="font-semibold text-3xl py-0 my-0 mb-0.5">Union</p>
     </a>
-    <nav class='flex flex-1 justify-end'>
-    <button class="bg-white rounded-full h-[32px] w-[32px] flex items-center justify-center cursor-pointer" id="menu-button"> <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#000" style="--sl-icon-size: 1em;"><path d="M3 8h18a1 1 0 1 0 0-2H3a1 1 0 0 0 0 2Zm18 8H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Zm0-5H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Z"></path></svg></button>
+    <nav class="flex flex-1 justify-end">
+      <button
+        class="bg-white rounded-full h-[32px] w-[32px] flex items-center justify-center cursor-pointer"
+        id="menu-button"
+      >
+        <svg
+          aria-hidden="true"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="#000"
+          style="--sl-icon-size: 1em;"
+        >
+          <path
+            d="M3 8h18a1 1 0 1 0 0-2H3a1 1 0 0 0 0 2Zm18 8H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Zm0-5H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Z"
+          >
+          </path>
+        </svg>
+      </button>
 
-      <ul id="menu-items-list" style="display: none"; class='absolute w-screen flex-col bg-black left-0 top-[62px] border-y border-[#1F1F1F] shadow-3xl divide-y divide-[#1F1F1F] p-0 m-0  font-normal list-none md:align-middle'>
+      <ul
+        id="menu-items-list"
+        style="display: none"
+        class="absolute w-screen flex-col bg-black left-0 top-[62px] border-y border-[#1F1F1F] shadow-3xl divide-y divide-[#1F1F1F] p-0 m-0 font-normal list-none md:align-middle"
+      >
         {
           menuItems.map(menuItem => (
             <li class="py-2 px-4">
-              <a
-                href={menuItem.url}
-                class='text-white !text-lg text-normal flex flex-col flex-1'
-              >
+              <a href={menuItem.url} class="text-white !text-lg text-normal flex flex-col flex-1">
                 {menuItem.name}
               </a>
             </li>
@@ -75,36 +77,24 @@ menuButton.addEventListener('click', () => {
         }
         <li>
           <a
-            target='_blank'
-            rel='noopener noreferrer'
-            href='https://discord.union.build'
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://discord.union.build"
             class="flex gap-2 text-lg px-4 py-2"
           >
-            <label>
-              Discord
-            </label>
-            <img
-              alt='discord'
-              src={discordIcon.src}
-              class='w-4 h-4 my-auto'
-            />
+            <label> Discord</label>
+            <img alt="discord" src={discordIcon.src} class="w-4 h-4 my-auto" />
           </a>
         </li>
-        <li class=''>
+        <li class="">
           <a
-            target='_blank'
-            rel='noopener noreferrer'
-            href='https://x.com/union_build'
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://x.com/union_build"
             class="flex gap-2 text-lg px-4 py-2"
           >
-            <label>
-              X.com
-            </label>
-            <img
-              alt='x.com'
-              src={xIcon.src}
-              class='w-4 h-4 my-auto'
-            />
+            <label> X.com</label>
+            <img alt="x.com" src={xIcon.src} class="w-4 h-4 my-auto" />
           </a>
         </li>
       </ul>
