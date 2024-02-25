@@ -22,7 +22,7 @@
 </script>
 
 <Button
-  class={clsx('rounded-md border-[1px] px-4 py-2')}
+  class={clsx('rounded-md px-4 py-2')}
   on:click={() => {
     if (!$snapAddress) return
     $unoFromFaucetMutation.mutate()

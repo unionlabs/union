@@ -29,6 +29,7 @@
   import { generateRandomInteger } from '$/lib/utilities'
   import { fetchUnionUnoBalance } from '$/lib/fetchers/balance'
   import { wallet, switchChain, config } from '$lib/wallet/config.ts'
+  import { fetchUserTransfers, type TransferEvent } from '$/lib/fetchers/transfers'
   import { useQueryClient, createQuery, createMutation } from '@tanstack/svelte-query'
 
   let error: any
@@ -82,6 +83,19 @@
     enabled: !!$wallet.address,
     refetchInterval: pollingIntervalMS * 1.5
   })
+
+  $: _userTransfers = createQuery<TransferEvent[]>({
+    queryKey: ['user-transfers', $wallet.address],
+    queryFn: async () => {
+      if (!$wallet.address) return []
+      return await fetchUserTransfers({ address: $wallet.address })
+    },
+    placeholderData: [],
+    enabled: !!$wallet.address,
+    refetchInterval: pollingIntervalMS * 2.5
+  })
+
+  const userTransfers = $_userTransfers?.data ?? []
 </script>
 
 <main
@@ -124,7 +138,7 @@
           on:click={() => switchChain(sepolia.id)}
           class={clsx([
             'my-5',
-            'rounded-lg bg-stone-50 text-black shadow-mini hover:bg-dark/95 active:scale-98',
+            'shadow-mini hover:bg-dark/95 active:scale-98 rounded-lg bg-stone-50 text-black',
             'inline-flex h-12 items-center justify-center px-[21px]',
             'text-[15px] font-semibold active:transition-all',
             $wallet.chainId === sepolia.id ? 'hidden' : ''
@@ -144,7 +158,7 @@
       <section class="my-3 flex max-w-72 flex-col space-y-2">
         <div>
           <Button
-            class={clsx(['rounded-md border-[1px] px-4 py-2'])}
+            class={clsx(['rounded-md px-4 py-2'])}
             on:click={() => {
               if ($unoUnionBalance?.data === '0') {
                 toast.error('$UNO balance on Union is 0\nUse faucet button to get sum', {
@@ -174,8 +188,7 @@
         </div>
         <div>
           <Button
-
-            class={clsx(['rounded-md border-[1px] px-4 py-2'])}
+            class={clsx(['rounded-md px-4 py-2'])}
             on:click={() => {
               if ($sepoliaEthBalance.data !== '0' && $unoERC20Balance.data !== 0n)
                 sendAssetFromEthereumToUnion({ amount: BigInt(generateRandomInteger(1, 99)) })
@@ -206,6 +219,14 @@
         <div class="w-full">
           <Faucet />
         </div>
+      </section>
+
+      <section class="my-3 max-w-[600px]">
+        {#each userTransfers as transfer}
+          <div class="flex justify-between">
+            <pre>{JSON.stringify(transfer, null, 2)}</pre>
+          </div>
+        {/each}
       </section>
     </div>
   {:else}
