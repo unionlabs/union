@@ -2,6 +2,27 @@
 import xIcon from '#/assets/images/x.svg'
 import unionLogo from '#/assets/union-logo/logo.svg'
 import discordIcon from '#/assets/images/discord.svg'
+
+
+let menuItems = [
+  {
+    url: "/blog",
+    name: "Blog",
+  },
+  {
+    url: "/docs",
+    name: "Docs",
+  },
+  {
+    url: "/team",
+    name: "Team",
+  },
+  {
+    url: "/brand-kit",
+    name: "Branding",
+  }
+
+];
 ---
 
 
@@ -9,10 +30,14 @@ import discordIcon from '#/assets/images/discord.svg'
 let menuOpen = false;
 
 let menuButton = document.getElementById("menu-button");
+let menuItemsList = document.getElementById("menu-items-list");
 
 menuButton.addEventListener('click', () => {
-  menuOpen = true;
+  menuOpen = !menuOpen;
+  console.log(menuOpen);
+  menuItemsList.style.display = menuOpen ? "flex" : "none";
 });
+
 </script>
 
 <header class='flex justify-around pt-3 px-4 py-3'>
@@ -33,50 +58,31 @@ menuButton.addEventListener('click', () => {
       </p>
     </a>
     <nav class='flex flex-1 justify-end'>
-    <!--
-    <button class="bg-white rounded-full" id="menu-button"> <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#000" style="--sl-icon-size: 1em;"><path d="M3 8h18a1 1 0 1 0 0-2H3a1 1 0 0 0 0 2Zm18 8H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Zm0-5H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Z"></path></svg></button>
-    !-->
+    <button class="bg-white rounded-full h-[32px] w-[32px] flex items-center justify-center cursor-pointer" id="menu-button"> <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#000" style="--sl-icon-size: 1em;"><path d="M3 8h18a1 1 0 1 0 0-2H3a1 1 0 0 0 0 2Zm18 8H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Zm0-5H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Z"></path></svg></button>
 
-      <ul class='flex items-center gap-4 !text-xl! !md:text-2xl font-normal list-none align-middle my-auto'>
-        <li>
-          <a
-            href='/blog'
-            class='text-xl'
-          >
-            Blog
-          </a>
-        </li>
-        <li>
-          <a
-            href='/docs'
-            class='text-xl'
-          >
-            Docs
-          </a>
-        </li>
-        <li>
-          <a
-            href='/team'
-            class='text-xl'
-          >
-            Team
-          </a>
-        </li>
-        <li>
-          <a
-            href='/brand-kit'
-            class='text-xl'
-          >
-            Branding
-          </a>
-        </li>
-
+      <ul id="menu-items-list" style="display: none"; class='absolute w-screen flex-col bg-black left-0 top-[62px] border-y border-[#1F1F1F] shadow-3xl divide-y divide-[#1F1F1F] p-0 m-0  font-normal list-none md:align-middle'>
+        {
+          menuItems.map(menuItem => (
+            <li class="py-2 px-4">
+              <a
+                href={menuItem.url}
+                class='text-white !text-lg text-normal flex flex-col flex-1'
+              >
+                {menuItem.name}
+              </a>
+            </li>
+          ))
+        }
         <li>
           <a
             target='_blank'
             rel='noopener noreferrer'
             href='https://discord.union.build'
+            class="flex gap-2 text-lg px-4 py-2"
           >
+            <label>
+              Discord
+            </label>
             <img
               alt='discord'
               src={discordIcon.src}
@@ -89,11 +95,15 @@ menuButton.addEventListener('click', () => {
             target='_blank'
             rel='noopener noreferrer'
             href='https://x.com/union_build'
+            class="flex gap-2 text-lg px-4 py-2"
           >
+            <label>
+              X.com
+            </label>
             <img
               alt='x.com'
               src={xIcon.src}
-              class='w-4 h-4'
+              class='w-4 h-4 my-auto'
             />
           </a>
         </li>
