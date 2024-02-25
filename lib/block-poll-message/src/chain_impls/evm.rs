@@ -334,8 +334,12 @@ where
                             raw_event,
                         ),
                         IBCHandlerEvents::PacketEvent(
-                            IBCPacketEvents::WriteAcknowledgementFilter(_),
-                        ) => todo!(),
+                            IBCPacketEvents::WriteAcknowledgementFilter(raw_event),
+                        ) => {
+                            // TODO: Build write ack
+                            println!("{raw_event:?}");
+                            QueueMsg::Noop
+                        }
                         IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(_)) => {
                             todo!()
                         }

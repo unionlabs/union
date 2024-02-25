@@ -1,17 +1,17 @@
-use std::{collections::VecDeque, marker::PhantomData, num::NonZeroU64};
+use std::{collections::VecDeque, marker::PhantomData, num::NonZeroU32};
 
 use chain_utils::cosmos_sdk::{CosmosSdkChain, CosmosSdkChainExt};
 use enumorph::Enumorph;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use futures::FutureExt;
-use protos::cosmos::tx::v1beta1::GetTxsEventRequest;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
     conc, data, fetch, seq, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
+use tendermint_rpc::Client;
 use unionlabs::{
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
@@ -68,7 +68,7 @@ where
     }
 }
 
-const PER_PAGE_LIMIT: u64 = 10;
+const PER_PAGE_LIMIT: u8 = 10;
 
 impl<C> DoFetch<C> for CosmosSdkFetch<C>
 where
@@ -88,32 +88,29 @@ where
             CosmosSdkFetch::FetchTransactions(FetchTransactions { height, page }) => {
                 tracing::info!(%height, %page, "fetching block");
 
-                let response = protos::cosmos::tx::v1beta1::service_client::ServiceClient::connect(
-                    c.grpc_url(),
-                )
-                .await
-                .unwrap()
-                .get_txs_event(GetTxsEventRequest {
-                    query: format!("tx.height = {}", height.revision_height()),
-                    page: page.get(),
-                    limit: PER_PAGE_LIMIT,
-                    ..Default::default()
-                })
-                .await
-                .unwrap()
-                .into_inner();
+                let response = c
+                    .tm_client()
+                    .tx_search(
+                        tendermint_rpc::query::Query::eq("tx.height", height.revision_height()),
+                        false,
+                        page.get(),
+                        PER_PAGE_LIMIT,
+                        tendermint_rpc::Order::Descending,
+                    )
+                    .await
+                    .unwrap();
 
                 conc(
                     response
-                        .tx_responses
+                        .txs
                         .into_iter()
                         // .inspect(|x| {
                         //     dbg!(x);
                         // })
                         .flat_map(|txr| {
-                            txr.events.into_iter().filter_map(move |event| {
+                            txr.tx_result.events.into_iter().filter_map(move |event| {
                                 IbcEvent::<ClientIdOf<C>, _, _>::try_from_tendermint_event(Event {
-                                    ty: event.r#type,
+                                    ty: event.kind,
                                     attributes: event
                                         .attributes
                                         .into_iter()
@@ -126,7 +123,7 @@ where
                                 })
                                 .transpose()
                                 .unwrap()
-                                .map(|x: IbcEvent<_, _, _>| (x, txr.txhash.clone()))
+                                .map(|x: IbcEvent<_, _, _>| (x, txr.hash))
                             })
                         })
                         .map(|(ibc_event, tx_hash)| {
@@ -174,10 +171,7 @@ where
                                         c.chain_id(),
                                         ChainSpecificAggregate::<C>(CosmosSdkAggregate::from(
                                             AggregateEventWithClientType::<C> {
-                                                tx_hash: hex::decode(&tx_hash)
-                                                    .unwrap()
-                                                    .try_into()
-                                                    .unwrap(),
+                                                tx_hash: tendermint_hash_to_h256(tx_hash),
                                                 height,
                                                 event: ibc_event,
                                             },
@@ -221,23 +215,18 @@ where
                                 }) => aggregate(
                                     [fetch(id(
                                         c.chain_id(),
-                                        ChainSpecificFetch(
-                                            CosmosSdkFetch::FetchClientTypeFromConnectionId(
-                                                ClientTypeFromConnectionId {
-                                                    connection_id: connection_id.clone(),
-                                                },
-                                            ),
-                                        ),
+                                        ChainSpecificFetch(CosmosSdkFetch::from(
+                                            ClientTypeFromConnectionId {
+                                                connection_id: connection_id.clone(),
+                                            },
+                                        )),
                                     ))],
                                     [],
                                     id(
                                         c.chain_id(),
                                         ChainSpecificAggregate::<C>(CosmosSdkAggregate::from(
                                             AggregateEventWithClientType {
-                                                tx_hash: hex::decode(&tx_hash)
-                                                    .unwrap()
-                                                    .try_into()
-                                                    .unwrap(),
+                                                tx_hash: tendermint_hash_to_h256(tx_hash),
                                                 height,
                                                 event: ibc_event,
                                             },
@@ -246,15 +235,21 @@ where
                                 ),
                             }
                         })
-                        .chain(((page.get() * PER_PAGE_LIMIT) < response.total).then(|| {
-                            queue_msg::fetch(id(
-                                c.chain_id(),
-                                ChainSpecificFetch(CosmosSdkFetch::from(FetchTransactions {
-                                    height,
-                                    page: page.checked_add(1).unwrap(),
-                                })),
-                            ))
-                        })),
+                        .chain(
+                            ((page.get() * PER_PAGE_LIMIT as u32) < response.total_count).then(
+                                || {
+                                    queue_msg::fetch(id(
+                                        c.chain_id(),
+                                        ChainSpecificFetch(CosmosSdkFetch::from(
+                                            FetchTransactions {
+                                                height,
+                                                page: page.checked_add(1).unwrap(),
+                                            },
+                                        )),
+                                    ))
+                                },
+                            ),
+                        ),
                 )
             }
             CosmosSdkFetch::FetchClientTypeFromConnectionId(ClientTypeFromConnectionId {
@@ -299,7 +294,7 @@ where
                             FetchTransactions {
                                 height: from_height,
                                 // who needs const blocks
-                                page: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(1_u64))),
+                                page: promote!(NonZeroU32: option_unwrap!(NonZeroU32::new(1_u32))),
                             }
                             .into(),
                         ),
@@ -314,7 +309,7 @@ where
                             FetchTransactions {
                                 height: from_height,
                                 // who needs const blocks
-                                page: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(1_u64))),
+                                page: promote!(NonZeroU32: option_unwrap!(NonZeroU32::new(1_u32))),
                             }
                             .into(),
                         ),
@@ -423,7 +418,7 @@ pub struct FetchBlocks<C: CosmosSdkChain + ChainExt> {
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchTransactions<C: CosmosSdkChain + ChainExt> {
     height: HeightOf<C>,
-    page: NonZeroU64,
+    page: NonZeroU32,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -512,7 +507,8 @@ where
             ChainEvent {
                 client_type,
                 tx_hash,
-                height,
+                // don't ask
+                height: height.increment(),
                 event,
             },
         ))
@@ -537,5 +533,12 @@ where
                 do_aggregate(Identified::<C, _>::new(chain_id, data), aggregate_data)
             }
         }
+    }
+}
+
+fn tendermint_hash_to_h256(hash: tendermint::Hash) -> H256 {
+    match hash {
+        tendermint::Hash::Sha256(hash) => hash.into(),
+        tendermint::Hash::None => panic!("empty hash???"),
     }
 }
