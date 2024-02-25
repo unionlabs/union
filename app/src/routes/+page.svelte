@@ -84,7 +84,7 @@
     refetchInterval: pollingIntervalMS * 1.5
   })
 
-  $: _userTransfers = createQuery<TransferEvent[]>({
+  $: userTransfers = createQuery<TransferEvent[]>({
     queryKey: ['user-transfers', $wallet.address],
     queryFn: async () => {
       if (!$wallet.address) return []
@@ -95,7 +95,7 @@
     refetchInterval: pollingIntervalMS * 2.5
   })
 
-  const userTransfers = $_userTransfers?.data ?? []
+
 </script>
 
 <main
@@ -222,7 +222,7 @@
       </section>
 
       <section class="my-3 max-w-[600px]">
-        {#each userTransfers as transfer}
+        {#each $userTransfers?.data as transfer}
           <div class="flex justify-between">
             <pre>{JSON.stringify(transfer, null, 2)}</pre>
           </div>
