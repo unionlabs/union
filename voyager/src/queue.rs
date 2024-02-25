@@ -869,6 +869,50 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                         _ => unimplemented!(),
                     },
                 ),
+                QueueMsg::Data(block_poll_message::AnyChainIdentified::EvmMainnet(
+                    block_poll_message::Identified {
+                        chain_id,
+                        t: block_poll_message::data::Data::IbcEvent(ibc_event),
+                    },
+                )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
+                    match ibc_event.client_type {
+                        unionlabs::ClientType::Cometbls => {
+                            event(voyager_message::id::<Evm<Mainnet>, Wasm<Union>, _>(
+                                chain_id,
+                                voyager_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Evm<Mainnet>, Wasm<Union>>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
+                        _ => unimplemented!(),
+                    },
+                ),
+                QueueMsg::Data(block_poll_message::AnyChainIdentified::EvmMinimal(
+                    block_poll_message::Identified {
+                        chain_id,
+                        t: block_poll_message::data::Data::IbcEvent(ibc_event),
+                    },
+                )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
+                    match ibc_event.client_type {
+                        unionlabs::ClientType::Cometbls => {
+                            event(voyager_message::id::<Evm<Minimal>, Wasm<Union>, _>(
+                                chain_id,
+                                voyager_message::event::IbcEvent {
+                                    tx_hash: ibc_event.tx_hash,
+                                    height: ibc_event.height,
+                                    event: chain_event_to_lc_event::<Evm<Minimal>, Wasm<Union>>(
+                                        ibc_event.event,
+                                    ),
+                                },
+                            ))
+                        }
+                        _ => unimplemented!(),
+                    },
+                ),
                 msg => {
                     <VoyagerMessageTypes as FromQueueMsg<BlockPollingTypes>>::from_queue_msg(msg)
                 }
