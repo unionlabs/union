@@ -1,27 +1,10 @@
-accept = [200, 429, 307]
+base = "result"
 exclude = [
   '^https://x.com/',
   '.woff2$',
   '^https://statesync.testnet.bonlulu.uno/',
   '^https://grpc.testnet.bonlulu.uno/',
   '^http://myserver.com:1111/',
-  '^https://github.com/unionlabs/union/',    # validated by astro
-  # too stubborn of a page but we manually validated it
-  '^https://math.mit.edu/research/highschool/primes/materials/2018/Kuszmaul.pdf',
-  '^CHANGELOG.md$',
-  '^**/node_modules$',
-  '^node_modules$',
 ]
+
 exclude_all_private = true
-exclude_path = [
-  "result",
-  "node_modules",
-  "build",
-  "dist",
-  "target",
-  "**/node_modules",
-  "**/build",
-  "**/dist",
-  "**/target",
-]
-timeout = 20
