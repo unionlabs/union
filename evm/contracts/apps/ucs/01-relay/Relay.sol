@@ -76,24 +76,24 @@ library RelayLib {
 
     event DenomCreated(string denom, address token);
     event Received(
-        string sender,
-        address receiver,
+        string indexed sender,
+        address indexed receiver,
         string denom,
-        address token,
+        address indexed token,
         uint256 amount
     );
     event Sent(
-        address sender,
-        string receiver,
+        address indexed sender,
+        string indexed receiver,
         string denom,
-        address token,
+        address indexed token,
         uint256 amount
     );
     event Refunded(
-        address sender,
-        string receiver,
+        address indexed sender,
+        string indexed receiver,
         string denom,
-        address token,
+        address indexed token,
         uint256 amount
     );
 
