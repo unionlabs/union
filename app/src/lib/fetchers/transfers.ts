@@ -48,7 +48,7 @@ export async function fetchUserTransfers({
     data: {
       transferEvents: { items: Array<TransferEvent> }
     }
-  }>('http://localhost:42069', {
+  }>('https://union.up.railway.app', {
     method: 'POST',
     body: JSON.stringify({
       query: transfersQuery,
