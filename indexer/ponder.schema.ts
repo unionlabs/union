@@ -1,24 +1,14 @@
 import { createSchema } from "@ponder/core";
 
 export default createSchema((p) => ({
-  /**
-   * UCS01_RELAY
-   */
-  SentEvent: p.createTable({
-    id: p.string(),
-    sender: p.hex(),
-    receiver: p.string(),
-    denom: p.string(),
-    token: p.hex(),
-    amount: p.bigint(),
-    timestamp: p.bigint(),
-  }),
-
-  ReceivedEvent: p.createTable({
+  TransferEvent: p.createTable({
+    sourceChainId: p.string(), // '11155111' or 'union-testnet-6'
+    targetChainId: p.string(), // '11155111' or 'union-testnet-6'
+    event: p.string(), // 'UCS01_RELAY:Sent', 'UCS01_RELAY:Received', or 'UNO_ERC20:Transfer'
     id: p.string(),
     sender: p.string(),
-    receiver: p.hex(),
-    denom: p.string(),
+    receiver: p.string(),
+    denom: p.string().optional(),
     token: p.hex(),
     amount: p.bigint(),
     timestamp: p.bigint(),
@@ -41,18 +31,8 @@ export default createSchema((p) => ({
     timestamp: p.bigint(),
   }),
 
-  /**
-   * UNO_ERC20
-   */
-  TransferEvent: p.createTable({
-    id: p.string(),
-    sender: p.hex(),
-    receiver: p.hex(),
-    amount: p.bigint(),
-    timestamp: p.bigint(),
-  }),
-
   ApprovalEvent: p.createTable({
+    sourceChainId: p.string(), // '11155111'
     id: p.string(),
     owner: p.hex(),
     spender: p.hex(),

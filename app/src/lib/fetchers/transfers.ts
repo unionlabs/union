@@ -2,37 +2,35 @@ import { fetcher } from '$/lib/utilities'
 
 const transfersQuery = /* GraphQL */ `
   query TransfersQuery($address: String!) {
-    sentEvents(
-      orderBy: "timestamp"
-      orderDirection: "desc"
-      where: { OR: [{ sender: $address }, { receiver: $address }] }
-    ) {
-      items {
-        id
-        sender
-        receiver
-        token
-        timestamp
-        amount
-      }
-    }
     transferEvents(
       orderBy: "timestamp"
       orderDirection: "desc"
       where: { OR: [{ sender: $address }, { receiver: $address }] }
     ) {
       items {
+        timestamp
         id
+        event
+        sourceChainId
+        targetChainId
         sender
         receiver
-        timestamp
+        token
         amount
       }
     }
   }
 `
 
+type ChainId = '11155111' | 'union-testnet-6'
+
 export interface TransferEvent {
+  sourceChainId: ChainId
+  targetChainId: ChainId
+  event:
+    | 'UCS01_RELAY:Sent' // Union to Sepolia
+    | 'UCS01_RELAY:Received' // Sepolia to Union
+    | 'UNO_ERC20:Transfer' // Sepolia to Sepolia
   id: string
   sender: string
   receiver: string
@@ -48,23 +46,15 @@ export async function fetchUserTransfers({
 }): Promise<TransferEvent[]> {
   const response = await fetcher<{
     data: {
-      sentEvents: { items: Array<{ token: string } & TransferEvent> }
       transferEvents: { items: Array<TransferEvent> }
     }
-  }>('https://union.up.railway.app', {
+  }>('http://localhost:42069', {
     method: 'POST',
     body: JSON.stringify({
       query: transfersQuery,
-      variables: { address: address.toLowerCase() },
+      variables: { address: address },
       operationName: 'TransfersQuery'
     })
   })
-
-  const sepoliaUnionTransfers = response.data.sentEvents.items
-  const sepoliaTransfers = response.data.transferEvents.items.map(transfer => ({
-    ...transfer,
-    token: '0x465F49DE53eDDAc9635C4Cc941F442C12bE351B0'
-  }))
-
-  return [...sepoliaUnionTransfers, ...sepoliaTransfers].sort((a, b) => +b.timestamp - +a.timestamp)
+  return response.data.transferEvents.items
 }

@@ -4,14 +4,15 @@
       pkgsDeps = with pkgs; [ pkg-config ];
       nodeDeps = with nodePkgs; [ nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
+      packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
         typescript-sdk = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-CqVLuCPSWVFywT63xiDiVvtm1Af/oyPZMbC5dtq23c8=";
+          npmDepsHash = "sha256-gERPCJE54DLGc0LSqlFLxCeC8mI5W2mCJcnaO6fkFmk=";
           src = ./.;
-          pname = "@unionlabs/client";
-          version = "0.0.0";
+          pname = packageJSON.name;
+          version = packageJSON.version;
           nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
           installPhase = ''

@@ -1,10 +1,17 @@
 import { ucs01relayAbi } from "./abi";
+import { fetcher, raise } from "./utilities";
 import { erc20Abi, type Address } from "viem";
 import type { UnionClient } from "./actions.ts";
 import { chainIds } from "./constants/chain.ts";
 import { StargateClient } from "@cosmjs/stargate";
 import { UCS01_EVM_ADDRESS, UNION_RPC_URL } from "./constants";
-import { fetcher, raise } from "./utilities";
+
+export async function getCurrentHeight() {
+  const client = await StargateClient.connect(
+    UNION_RPC_URL || "https://union-testnet-rpc.polkachu.com"
+  );
+  return client.getHeight();
+}
 
 /**
  * Contract arguments:
@@ -15,17 +22,15 @@ import { fetcher, raise } from "./utilities";
  */
 export async function getDenomAddress(client: UnionClient): Promise<Address> {
   const [sourcePort, sourceChannel, denom] = [
-    process.env.UCS01_SEPOLIA_PORT_ID || "ucs01-relay",
-    process.env.UCS01_SEPOLIA_SOURCE_CHANNEL || "channel-0",
-    process.env.UNION_NATIVE_DENOM || "muno",
+    process.env.UCS01_SEPOLIA_PORT_ID,
+    process.env.UCS01_SEPOLIA_SOURCE_CHANNEL,
+    process.env.UNION_NATIVE_DENOM,
   ];
-  const UNION_CONTRACT_ADDRESS =
-    process.env.UCS01_UNION_ADDRESS ||
-    "union14pfzjnvzacqsmgjyf0avksc8cr70hsyt5epzcp66tmjpswf8sq8sn5meuy";
+  const UNION_CONTRACT_ADDRESS = process.env.UCS01_UNION_ADDRESS;
 
   return client.readContract({
     abi: ucs01relayAbi,
-    address: UCS01_EVM_ADDRESS || "0x7f7AC7d5a1a2bD54dBA53a22209C3f96699Ed63c",
+    address: UCS01_EVM_ADDRESS,
     functionName: "getDenomAddress",
     args: [
       sourcePort,
@@ -77,30 +82,16 @@ interface GetBalanceOnUnion {
 export async function getBalanceOnUnion({
   address,
   assetId = "muno",
-  unionRpcUrl = UNION_RPC_URL || "https://union-testnet-rpc.polkachu.com",
+  unionRpcUrl = UNION_RPC_URL,
 }: GetBalanceOnUnion): Promise<bigint> {
   try {
     try {
       const { balances } = await fetcher<{
         balances: Array<{ amount: string; denom: string }>;
-      }>(
-        `${
-          process.env.UNION_REST_URL || "https://union-testnet-api.polkachu.com"
-        }/cosmos/bank/v1beta1/balances/${address}`,
-        {
-          mode: "cors",
-          headers: {
-            // no-cors
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          },
-        }
-      );
+      }>(`${unionRpcUrl}/cosmos/bank/v1beta1/balances/${address}`);
       const balance = balances.find(({ denom }) => denom === assetId);
       return BigInt(balance?.amount ?? 0);
     } catch (error) {
-      console.log("Failed to get balance using StargateClient", error);
       const client = await StargateClient.connect(unionRpcUrl);
       const { amount } = await client.getBalance(address, assetId);
       return BigInt(amount);
