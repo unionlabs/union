@@ -1,7 +1,7 @@
 ---
 import Layout from '#/layouts/Layout.astro'
 import { getCollection } from 'astro:content'
-import Socials from '#/components/Socials.astro'
+import SocialsGrid from '#/components/SocialsGrid.astro'
 import CodeSnippet from '#/components/CodeSnippet.astro'
 import { codeSnippets } from '#/content/_snippets/landing.ts'
 import { Tabs, TabItem } from '@astrojs/starlight/components'
@@ -224,8 +224,8 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
         </div>
       </section>
 
-      <section class="bg-black py-16">
-        <Socials />
+      <section>
+        <SocialsGrid />
       </section>
     </div>
   </main>
