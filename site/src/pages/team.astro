@@ -82,7 +82,7 @@ let profiles = [
   { 
     name: "Valentin", 
     title: "Advisor", 
-    x_name: "valeyo", 
+    x_name: "valeyo777", 
     profile_pic: headshot_valentin,
   },
   { 
@@ -156,21 +156,32 @@ let teams = [
 <Layout>
   <div class="flex flex-col flex-1 items-center px-4">
     <main class="max-w-5xl w-full bg-[#1f1f1f] p-px flex flex-col gap-px">
+      <div class="bg-black py-20">
+        <h1 class="text-4xl md:text-5xl lg:text-6xl sm:text-4xl text-white text-center font-semibold px-4">Meet Union Labs</h1>
+        <p class="text-gray-400 text-xl text-center mt-6">We're a collective of engineers and researchers building the final state of interoperability.</p>
+      </div>
       <ul class="list-none grid grid-cols-1 sm:grid-cols-2 min-[880px]:grid-cols-3 gap-px p-0 auto-rows-[1fr]">
         {
           profiles.map(person => (
             <li>
-              <a class="block w-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-[#152325] transition-colors" href={`https://x.com/${person.x_name}`}>
+              <a class="block w-full gap-4 items-center flex-1 flex flex-row p-4 gap-2 bg-black hover:bg-[#152325] transition-colors" href={`https://x.com/${person.x_name}`}>
                   <img class="w-20 h-20" src={person.profile_pic.src}/>
                   <div class="leading-tight">
                     <h3 class="text-2xl">{person.name}</h3>
-                    <div class="text-gray-300 -mt-1 text-lg">{person.title}</div>
+                    <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
                     <div class="text-accent text-lg -mt-1 block"}>@{person.x_name}</div>
                   </div>
               </a>
             </li>
           ))
         }
+        <div class="bg-black h-full w-full hidden sm:block"/>
+      </ul>
+      <div class="bg-black py-16">
+        <h2 class="text-4xl md:text-4xl sm:text-4xl text-white text-center font-semibold px-4">Supporting Teams</h2>
+        <p class="text-gray-400 text-xl text-center mt-4">Auditing, security, legal, funding.</p>
+      </div>
+      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 min-[880px]:grid-cols-3 gap-px p-0 auto-rows-[1fr]">
         {
           teams.map(team=> (
             <li>
@@ -180,7 +191,8 @@ let teams = [
             </li>
           ))
         }
-        <div class="bg-black h-full w-full hidden sm:block min-[880px]:hidden"/>
+        <div class="bg-black h-full w-full hidden min-[880px]:block"/>
+        <div class="bg-black h-full w-full hidden min-[880px]:block"/>
       </ul>
     </main>
   </div>
