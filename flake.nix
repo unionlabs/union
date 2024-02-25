@@ -74,7 +74,7 @@
       flake = false;
     };
     nix-filter.url = "github:numtide/nix-filter?rev=3449dc925982ad46246cfc36469baf66e1b64f17";
-    get-flake.url = "github:ursi/get-flake?rev=e0917b6f564aa5acefb1484b5baf76da21746c3c";
+    get-flake.url = "github:ursi/get-flake";
     wasmvm = {
       url = "github:CosmWasm/wasmvm/v1.5.2";
       flake = false;
