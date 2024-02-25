@@ -1,6 +1,5 @@
 base = "result"
 exclude = [
-  '^https://x.com/',
   '.woff2$',
   '^https://statesync.testnet.bonlulu.uno/',
   '^https://grpc.testnet.bonlulu.uno/',

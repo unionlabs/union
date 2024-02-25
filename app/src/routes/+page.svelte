@@ -26,6 +26,7 @@
   import { getBalance } from '@wagmi/core'
   import Faucet from '$/lib/components/Faucet.svelte'
   import Connect from '$lib/components/Connect.svelte'
+  import { generateRandomInteger } from '$/lib/utilities'
   import { fetchUnionUnoBalance } from '$/lib/fetchers/balance'
   import { wallet, switchChain, config } from '$lib/wallet/config.ts'
   import { useQueryClient, createQuery, createMutation } from '@tanstack/svelte-query'
@@ -150,7 +151,7 @@
                   position: 'bottom-center'
                 })
               } else {
-                sendAssetFromUnionToEthereum({ amount: '100' })
+                sendAssetFromUnionToEthereum({ amount: BigInt(generateRandomInteger(1, 99)) })
               }
             }}
           >
@@ -176,7 +177,7 @@
             class={clsx(['rounded-md border-[1px] px-4 py-2'])}
             on:click={() => {
               if ($sepoliaEthBalance.data !== '0' && $unoERC20Balance.data !== 0n)
-                sendAssetFromEthereumToUnion({ amount: 25n })
+                sendAssetFromEthereumToUnion({ amount: BigInt(generateRandomInteger(1, 99)) })
               else
                 toast.error(
                   `Sepolia ETH balance is ${sepoliaEthBalance}\nSepolia $UNO balance is ${unoERC20Balance}`,

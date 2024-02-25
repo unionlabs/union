@@ -827,6 +827,7 @@ typesparams
 uatom
 ucli
 ucosm
+ulidx
 unbond
 unbonded
 unbonding

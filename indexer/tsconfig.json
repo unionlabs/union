@@ -3,7 +3,6 @@
     // Type checking
     "strict": true,
     "noUncheckedIndexedAccess": true,
-
     // Interop constraints
     "verbatimModuleSyntax": false,
     "esModuleInterop": true,
@@ -17,9 +16,11 @@
     "noEmit": true,
     "lib": ["ES2022"],
     "target": "ES2022",
-
     // Skip type checking for node modules
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "#/*": ["./src/*"]
+    }
   },
   "include": ["./**/*.ts"],
   "files": ["environment.d.ts", ".eslintrc.cjs"],
