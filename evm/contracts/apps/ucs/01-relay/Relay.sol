@@ -74,7 +74,7 @@ library RelayLib {
     bytes1 public constant ACK_FAILURE = 0x00;
     uint256 public constant ACK_LENGTH = 1;
 
-    event DenomCreated(string denom, address token);
+    event DenomCreated(string indexed denom, address indexed token);
     event Received(
         string indexed sender,
         address indexed receiver,
