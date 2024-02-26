@@ -9,10 +9,15 @@ import ConnectedVisual from '#/components/ConnectedVisual.svelte'
 import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
 
-const publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
+let publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
   if (data.hidden) return false
   return { slug, data }
 })
+
+
+// @ts-ignore
+publishedBlogPosts.sort((a, b) => a.data.date - b.data.date);
+
 const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
 ---
 
