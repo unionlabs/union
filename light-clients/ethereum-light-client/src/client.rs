@@ -8,7 +8,7 @@ use ics008_wasm_client::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
         update_client_state,
     },
-    IbcClient, Status, StorageState,
+    IbcClient, Status, StorageState, FROZEN_HEIGHT, ZERO_HEIGHT,
 };
 use sha3::Digest;
 use unionlabs::{
@@ -169,7 +169,7 @@ impl IbcClient for EthereumLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
-        panic!("Not implemented")
+        Err(Error::Unimplemented)
     }
 
     fn update_state(
@@ -249,14 +249,11 @@ impl IbcClient for EthereumLightClient {
 
     fn update_state_on_misbehaviour(
         deps: DepsMut<Self::CustomQuery>,
-        env: Env,
+        _env: Env,
         _client_message: Vec<u8>,
     ) -> Result<(), Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-        client_state.data.frozen_height = Height {
-            revision_number: client_state.latest_height.revision_number,
-            revision_height: env.block.height,
-        };
+        client_state.data.frozen_height = FROZEN_HEIGHT;
         save_client_state(deps, client_state);
 
         Ok(())
@@ -298,7 +295,7 @@ impl IbcClient for EthereumLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<bool, Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn verify_upgrade_and_update_state(
@@ -308,18 +305,18 @@ impl IbcClient for EthereumLightClient {
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(), Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
         // migration from previous client to self, so unimplemented now
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        if client_state.data.frozen_height != Height::default() {
+        if client_state.data.frozen_height != ZERO_HEIGHT {
             return Ok(Status::Frozen);
         }
 
@@ -602,10 +599,7 @@ mod test {
         let mut wasm_client_state: WasmClientState =
             serde_json::from_str(include_str!("./test/client_state.json")).unwrap();
 
-        wasm_client_state.data.frozen_height = Height {
-            revision_number: 1,
-            revision_height: 1,
-        };
+        wasm_client_state.data.frozen_height = FROZEN_HEIGHT;
 
         save_client_state(deps.as_mut(), wasm_client_state);
 

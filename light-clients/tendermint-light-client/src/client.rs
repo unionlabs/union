@@ -3,7 +3,7 @@ use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
     },
-    IbcClient, Status, StorageState,
+    IbcClient, Status, StorageState, ZERO_HEIGHT,
 };
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_verifier::types::SignatureVerifier;
@@ -162,7 +162,7 @@ impl IbcClient for TendermintLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
-        panic!("Not implemented")
+        Err(Error::Unimplemented)
     }
 
     fn update_state(
@@ -212,7 +212,7 @@ impl IbcClient for TendermintLightClient {
         _env: Env,
         _client_message: Vec<u8>,
     ) -> Result<(), Self::Error> {
-        panic!("not implemented")
+        Err(Error::Unimplemented)
     }
 
     fn check_for_misbehaviour_on_header(
@@ -268,7 +268,7 @@ impl IbcClient for TendermintLightClient {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<bool, Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn verify_upgrade_and_update_state(
@@ -278,11 +278,11 @@ impl IbcClient for TendermintLightClient {
         _proof_upgrade_client: Vec<u8>,
         _proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(), Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
-        unimplemented!()
+        Err(Error::Unimplemented)
     }
 
     fn status(
@@ -291,7 +291,9 @@ impl IbcClient for TendermintLightClient {
     ) -> Result<Status, Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
 
-        if client_state.data.frozen_height != Default::default() {
+        // TODO(aeryz): when refactoring the tm client, we should consider making this non-optional
+        // because otherwise we always have to check if the inner height is zero.
+        if client_state.data.frozen_height.unwrap_or(ZERO_HEIGHT) != ZERO_HEIGHT {
             return Ok(Status::Frozen);
         }
 

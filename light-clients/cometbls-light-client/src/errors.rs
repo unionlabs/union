@@ -48,7 +48,7 @@ pub enum Error {
     #[error("error while decoding proto ({reason})")]
     DecodeFromProto { reason: String },
 
-    #[error("Unimplemented")]
+    #[error("unimplemented feature")]
     Unimplemented,
 
     #[error("Decode error: {0}")]
