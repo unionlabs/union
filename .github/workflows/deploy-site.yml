@@ -60,6 +60,8 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="site" deploy result >> /tmp/site_deploy.txt
 
+      - name: Remove Lychee Cache
+        run: rm -rf .lycheecache
       - name: Link Check
         id: lychee
         uses: lycheeverse/lychee-action@v1.9.3
@@ -89,9 +91,9 @@ jobs:
         with:
           message: |
             # Site/Docs 🤠
-            ${process.env.DEPLOY_OUTPUT}
+            ${{ process.env.DEPLOY_OUTPUT }}
 
-            **${process.env.LAST_UPDATED_AT}**
+            **${{ process.env.LAST_UPDATED_AT }}**
           comment_tag: link-checker
 
   deploy-manual:
