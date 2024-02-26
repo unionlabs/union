@@ -21,3 +21,8 @@ criterion = "0.3"
 [[bench]]
 harness = false
 name    = "bench_poseidon_hash"
+
+[build-dependencies]
+primitive-types = "0.12.2"
+serde           = { workspace = true, features = ["derive", "std", "alloc"] }
+serde_json      = { workspace = true, features = ["std"] }

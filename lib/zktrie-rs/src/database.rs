@@ -23,8 +23,8 @@ pub struct MemDB<H: HashScheme> {
 impl<H: HashScheme> Default for MemDB<H> {
     fn default() -> Self {
         Self {
-            map: Default::default(),
-            preimages: Default::default(),
+            map: BTreeMap::default(),
+            preimages: BTreeMap::default(),
         }
     }
 }

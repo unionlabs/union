@@ -20,7 +20,7 @@ pub fn fr_from_little_endian(buf: &[u8]) -> Result<Fr, String> {
 pub fn reverse_byte_order(dst: &mut [u8], src: &[u8]) {
     assert_eq!(dst.len(), src.len());
     for i in 0..src.len() {
-        dst[src.len() - 1 - i] = src[i]
+        dst[src.len() - 1 - i] = src[i];
     }
 }
 
@@ -38,7 +38,10 @@ pub fn handling_elems_and_byte32<H: HashScheme>(
     }
 
     if ret.len() < 2 {
-        return Ok(ret.first().map(|fr| fr.into()).unwrap_or_default());
+        return Ok(ret
+            .first()
+            .map(std::convert::Into::into)
+            .unwrap_or_default());
     }
 
     Ok(hash_elems::<H>(&ret[0], &ret[1], &ret[2..]))
@@ -47,6 +50,7 @@ pub fn handling_elems_and_byte32<H: HashScheme>(
 // HashElemsWithDomain performs a recursive poseidon hash over the array of ElemBytes, each hash
 // reduce 2 fields into one, with a specified domain field which would be used in
 // every recursiving call
+#[must_use]
 pub fn hash_elems_with_domain<H: HashScheme>(
     domain: &Fr,
     fst: &Fr,
@@ -64,7 +68,7 @@ pub fn hash_elems_with_domain<H: HashScheme>(
     let mut tmp = Vec::with_capacity((l + 1) / 2);
     for i in 0..(l + 1) / 2 {
         if (i + 1) * 2 > l {
-            tmp.push(elems[i * 2])
+            tmp.push(elems[i * 2]);
         } else {
             tmp.push(H::hash_scheme(&elems[i * 2..(i + 1) * 2], domain));
         }
@@ -73,16 +77,19 @@ pub fn hash_elems_with_domain<H: HashScheme>(
 }
 
 // HashElems call HashElemsWithDomain with a domain of HASH_DOMAIN_ELEMS_BASE(256)*<element counts>
+#[must_use]
 pub fn hash_elems<H: HashScheme>(fst: &Fr, snd: &Fr, elems: &[Fr]) -> Hash {
     let domain = elems.len() * HASH_DOMAIN_ELEMS_BASE + HASH_DOMAIN_BYTE32;
     let domain = Fr::from_usize(domain);
     hash_elems_with_domain::<H>(&domain, fst, snd, elems)
 }
 
+#[must_use]
 pub fn test_bit(bitmap: &[u8], n: usize) -> bool {
     bitmap[n / 8] & (1 << (n % 8)) != 0
 }
 
+#[must_use]
 pub fn test_bit_big_endian(bitmap: &[u8], n: usize) -> bool {
     bitmap[bitmap.len() - n / 8 - 1] & (1 << (n % 8)) != 0
 }

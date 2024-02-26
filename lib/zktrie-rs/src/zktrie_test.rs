@@ -116,17 +116,15 @@ fn test_zktrie_impl_update() {
         let mut mt1 = TestTrie::new(10);
         let mut mt2 = TestTrie::new(10);
         let keys = [k1, k2, k3];
-        for (i, key) in keys.into_iter().enumerate() {
-            mt1.add_word(key, byte32_from_byte(i as u8)).unwrap();
+        for (key, i) in keys.iter().zip(0..) {
+            mt1.add_word(*key, byte32_from_byte(i)).unwrap();
         }
-        for (i, key) in keys.into_iter().enumerate() {
-            mt2.add_word(key, byte32_from_byte((i + 3) as u8)).unwrap();
+        for (key, i) in keys.iter().zip(0..) {
+            mt2.add_word(*key, byte32_from_byte(i + 3)).unwrap();
         }
-        for (i, key) in keys.into_iter().enumerate() {
-            mt1.update_word(key, byte32_from_byte((i + 6) as u8))
-                .unwrap();
-            mt2.update_word(key, byte32_from_byte((i + 6) as u8))
-                .unwrap();
+        for (key, i) in keys.iter().zip(0..) {
+            mt1.update_word(*key, byte32_from_byte(i + 6)).unwrap();
+            mt2.update_word(*key, byte32_from_byte(i + 6)).unwrap();
         }
         let root1 = mt1.root().bytes();
         let root2 = mt2.root().bytes();
@@ -188,7 +186,7 @@ fn test_zktrie_impl_add() {
             let mut trie = TestTrie::new(10);
             for key in order {
                 let value = kv_map.get(&key).unwrap();
-                trie.add_word(key, value.clone()).unwrap();
+                trie.add_word(key, *value).unwrap();
             }
             roots.push(trie.0.hash().bytes());
         }
@@ -276,8 +274,8 @@ fn test_zktrie_impl_delete() {
         // Test equivalent trees after deletion
         let keys = [k1, k2, k3, k4];
         let mut mt1 = TestTrie::new(10);
-        for (i, key) in keys.iter().enumerate() {
-            mt1.add_word(*key, byte32_from_byte(i as u8 + 1)).unwrap();
+        for (key, i) in keys.iter().zip(0..) {
+            mt1.add_word(*key, byte32_from_byte(i + 1)).unwrap();
         }
         mt1.delete_word(&k1).unwrap();
         mt1.delete_word(&k2).unwrap();
@@ -288,8 +286,8 @@ fn test_zktrie_impl_delete() {
         assert_eq!(mt1.root(), mt2.root());
 
         let mut mt3 = TestTrie::new(10);
-        for (i, key) in keys.into_iter().enumerate() {
-            mt3.add_word(key, byte32_from_byte(i as u8 + 1)).unwrap();
+        for (key, i) in keys.iter().zip(0..) {
+            mt3.add_word(*key, byte32_from_byte(i + 1)).unwrap();
         }
         mt3.delete_word(&k1).unwrap();
         mt3.delete_word(&k3).unwrap();
@@ -393,7 +391,9 @@ fn test_merkle_tree_deletion() {
         for i in 0..6 {
             let key = Byte32::from_bytes(&{
                 let mut t = tmp;
-                t.last_mut().map(|v| *v = i);
+                if let Some(v) = t.last_mut() {
+                    *v = i;
+                }
                 t
             });
             let value = Byte32::from_bytes(&{
@@ -402,7 +402,7 @@ fn test_merkle_tree_deletion() {
                 t
             });
             trie.add_word(key, value).unwrap();
-            hashes.push(trie.0.hash().bytes())
+            hashes.push(trie.0.hash().bytes());
         }
         for i in (0..6).rev() {
             let key = Byte32::from_bytes(&[i]);
@@ -532,7 +532,7 @@ fn test_zktrie_get_update_delete() {
     assert_eq!(trie.hash(), &expect);
 
     let val = trie.get_data(db, b"key").unwrap();
-    assert_eq!(val.get(), &Byte32::from_bytes_padding(&[1]).bytes()[..]);
+    assert_eq!(val.get(), Byte32::from_bytes_padding(&[1]).bytes());
 
     trie.delete(db, b"key").unwrap();
     assert_eq!(trie.hash(), &ZERO_HASH);
@@ -658,7 +658,7 @@ fn test_zktrie_statedb() {
     );
 
     zktrie.delete(db, &acc_key).unwrap();
-    assert!(zktrie.get_data(db, &acc_key).unwrap().get().len() == 0);
+    assert!(zktrie.get_data(db, &acc_key).unwrap().get().is_empty());
 
     zktrie.update(db, &acc_key, 8, newacc).unwrap();
     assert_eq!(zktrie.hash(), &root);
@@ -666,8 +666,8 @@ fn test_zktrie_statedb() {
 
 fn hex_root(d: &str) -> Result<Hash, String> {
     let mut data = hex::decode(d.as_bytes())
-        .map_err(|d| format!("{:?}", d))?
-        .to_vec();
+        .map_err(|d| format!("{d:?}"))?
+        .clone();
     data.reverse();
     Ok(Hash::from_bytes(&data))
 }

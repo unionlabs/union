@@ -13,7 +13,7 @@ pub fn test_hash_to_fr() {
         let k1 = gen_key('a');
         let h1 = Hash::from_bytes(&k1);
         let f1 = h1.fr().unwrap();
-        let nh1 = f1.into();
+        let nh1 = f1;
         assert_eq!(f1, nh1);
     }
 

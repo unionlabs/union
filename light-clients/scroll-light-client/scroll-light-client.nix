@@ -11,6 +11,8 @@
             }}
           '')
         ];
+        additionalSrcFilter = path: _:
+          (lib.hasPrefix "lib/poseidon-rs/constants.json" path);
         additionalTestSrcFilter = path: _:
           (lib.hasPrefix "light-clients/scroll-light-client/src/test" path)
           && (lib.strings.hasSuffix ".json" path);

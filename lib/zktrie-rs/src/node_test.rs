@@ -210,9 +210,9 @@ fn test_node_value_and_data() {
             0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61
         ]
     );
-    assert!(parent_node.data().len() == 0);
+    assert!(parent_node.data().is_empty());
 
     let empty = Node::empty();
     assert_eq!(empty.canonical_value(), &[5]);
-    assert!(empty.data().len() == 0);
+    assert!(empty.data().is_empty());
 }
