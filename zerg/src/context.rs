@@ -220,7 +220,7 @@ impl Context {
                                 }).expect("Tx totally exists, QED");
                                 let mut union_txs = self.union_txs.lock().await;
                                 tracing::info!("Union: Transaction sent with packet sequence: {}", event.packet_sequence);
-                                union_txs.insert(event.packet_sequence, uuid);
+                                union_txs.insert(event.packet_sequence.get(), uuid);
                                 self.append_record(Event::create_send_event(self.union.chain_id.clone(), uuid, signer.to_string(), Some(timestamp), None)).await;
                             }
                             Err(e) => {
@@ -359,7 +359,7 @@ impl Context {
                         IbcEvent::RecvPacket(e) => {
                             tracing::info!("Union: RecvPacket observed!");
                             let evm_txs = self.evm_txs.lock().await;
-                            let uuid = match evm_txs.get(&e.packet_sequence) {
+                            let uuid = match evm_txs.get(&e.packet_sequence.get()) {
                                 Some(uuid) => uuid.to_owned(),
                                 None => {
                                     tracing::warn!(
@@ -407,7 +407,7 @@ impl Context {
                             IbcEvent::RecvPacket(e) => {
                                 tracing::info!("Evm: RecvPacket observed!");
                                 let union_txs = self.union_txs.lock().await;
-                                let uuid = match union_txs.get(&e.packet_sequence) {
+                                let uuid = match union_txs.get(&e.packet_sequence.get()) {
                                     Some(uuid) => uuid.to_owned(),
                                     None => {
                                         tracing::warn!(

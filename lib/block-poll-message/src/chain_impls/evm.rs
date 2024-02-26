@@ -731,7 +731,7 @@ where
                 event: IbcEvent::AcknowledgePacket(AcknowledgePacket {
                     packet_timeout_height: raw_event.packet.timeout_height.into(),
                     packet_timeout_timestamp: raw_event.packet.timeout_timestamp,
-                    packet_sequence: raw_event.packet.sequence,
+                    packet_sequence: raw_event.packet.sequence.try_into().unwrap(),
                     packet_src_port: raw_event.packet.source_port.parse().unwrap(),
                     packet_src_channel: raw_event.packet.source_channel.parse().unwrap(),
                     packet_dst_port: raw_event.packet.destination_port.parse().unwrap(),
@@ -753,7 +753,7 @@ where
                         packet_data_hex: raw_event.data.to_vec(),
                         packet_timeout_height: raw_event.timeout_height.into(),
                         packet_timeout_timestamp: raw_event.timeout_timestamp,
-                        packet_sequence: raw_event.sequence,
+                        packet_sequence: raw_event.sequence.try_into().unwrap(),
                         packet_src_port: raw_event.source_port.parse().unwrap(),
                         packet_src_channel: raw_event.source_channel.parse().unwrap(),
                         // REVIEW: Should we query the packet instead? Or is that the same info? Is it even possible to
@@ -777,7 +777,8 @@ where
                     packet_data_hex: raw_event.packet.data.to_vec(),
                     packet_timeout_height: raw_event.packet.timeout_height.into(),
                     packet_timeout_timestamp: raw_event.packet.timeout_timestamp,
-                    packet_sequence: raw_event.packet.sequence,
+                    packet_sequence: raw_event.packet.sequence.try_into().unwrap(),
+
                     packet_src_port: raw_event.packet.source_port.parse().unwrap(),
                     packet_src_channel: raw_event.packet.source_channel.parse().unwrap(),
                     packet_dst_port: raw_event.packet.destination_port.parse().unwrap(),

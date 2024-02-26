@@ -1,3 +1,5 @@
+use std::num::{NonZeroU64, TryFromIntError};
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -12,8 +14,7 @@ use crate::{
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Packet {
-    // REVIEW: Is this nonzero?
-    pub sequence: u64,
+    pub sequence: NonZeroU64,
     pub source_port: PortId,
     pub source_channel: ChannelId,
     pub destination_port: PortId,
@@ -35,7 +36,7 @@ impl TypeUrl for protos::ibc::core::channel::v1::Packet {
 impl From<Packet> for protos::ibc::core::channel::v1::Packet {
     fn from(value: Packet) -> Self {
         Self {
-            sequence: value.sequence,
+            sequence: value.sequence.get(),
             source_port: value.source_port.to_string(),
             source_channel: value.source_channel.to_string(),
             destination_port: value.destination_port.to_string(),
@@ -50,6 +51,7 @@ impl From<Packet> for protos::ibc::core::channel::v1::Packet {
 #[derive(Debug)]
 pub enum TryFromPacketError {
     MissingField(MissingField),
+    Sequence(TryFromIntError),
     SourceChannel(<ChannelIdValidator as Validate<String>>::Error),
     DestinationChannel(<ChannelIdValidator as Validate<String>>::Error),
     SourcePort(<PortIdValidator as Validate<String>>::Error),
@@ -61,7 +63,10 @@ impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {
 
     fn try_from(proto: protos::ibc::core::channel::v1::Packet) -> Result<Self, Self::Error> {
         Ok(Packet {
-            sequence: proto.sequence,
+            sequence: proto
+                .sequence
+                .try_into()
+                .map_err(TryFromPacketError::Sequence)?,
             source_port: proto
                 .source_port
                 .validate()
@@ -97,7 +102,7 @@ pub enum TryFromEthAbiPacketError {
 impl From<Packet> for contracts::ibc_handler::IbcCoreChannelV1PacketData {
     fn from(value: Packet) -> Self {
         Self {
-            sequence: value.sequence,
+            sequence: value.sequence.get(),
             source_port: value.source_port.to_string(),
             source_channel: value.source_channel.to_string(),
             destination_port: value.destination_port.to_string(),

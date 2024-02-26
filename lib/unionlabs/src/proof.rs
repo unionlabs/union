@@ -1,5 +1,6 @@
 use std::{
     fmt::{Debug, Display},
+    num::NonZeroU64,
     str::FromStr,
 };
 
@@ -224,7 +225,7 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ChannelEndPath {
 pub struct CommitmentPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub sequence: u64,
+    pub sequence: NonZeroU64,
 }
 
 impl FromStr for CommitmentPath {
@@ -260,7 +261,7 @@ impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for CommitmentPath {
 pub struct AcknowledgementPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub sequence: u64,
+    pub sequence: NonZeroU64,
 }
 
 impl FromStr for AcknowledgementPath {
@@ -388,7 +389,7 @@ mod tests {
             Path::CommitmentPath(CommitmentPath {
                 port_id: "port".to_string().validate().unwrap(),
                 channel_id: "channel-0".to_string().validate().unwrap(),
-                sequence: 1
+                sequence: 1.try_into().unwrap()
             })
         );
         assert_eq!(
@@ -398,7 +399,7 @@ mod tests {
             Path::AcknowledgementPath(AcknowledgementPath {
                 port_id: "port".to_string().validate().unwrap(),
                 channel_id: "channel-0".to_string().validate().unwrap(),
-                sequence: 1
+                sequence: 1.try_into().unwrap()
             })
         );
     }

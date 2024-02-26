@@ -1,4 +1,5 @@
 use core::str::FromStr;
+use std::num::NonZeroU64;
 
 use crate::{
     ibc::core::{channel::order::Order, client::height::Height},
@@ -322,8 +323,8 @@ event! {
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,
-            #[parse(u64::from_str)]
-            packet_sequence: u64,
+            #[parse(NonZeroU64::from_str)]
+            packet_sequence: NonZeroU64,
             #[parse(PortId::from_str)]
             packet_src_port: PortId,
             #[parse(ChannelId::from_str)]
@@ -350,8 +351,8 @@ event! {
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,
-            #[parse(u64::from_str)]
-            packet_sequence: u64,
+            #[parse(NonZeroU64::from_str)]
+            packet_sequence: NonZeroU64,
             #[parse(PortId::from_str)]
             packet_src_port: PortId,
             #[parse(ChannelId::from_str)]
@@ -380,8 +381,8 @@ event! {
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,
-            #[parse(u64::from_str)]
-            packet_sequence: u64,
+            #[parse(NonZeroU64::from_str)]
+            packet_sequence: NonZeroU64,
             #[parse(PortId::from_str)]
             packet_src_port: PortId,
             #[parse(ChannelId::from_str)]
@@ -405,8 +406,8 @@ event! {
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,
-            #[parse(u64::from_str)]
-            packet_sequence: u64,
+            #[parse(NonZeroU64::from_str)]
+            packet_sequence: NonZeroU64,
             #[parse(PortId::from_str)]
             packet_src_port: PortId,
             #[parse(ChannelId::from_str)]
@@ -427,8 +428,8 @@ event! {
             packet_timeout_height: Height,
             #[parse(u64::from_str)]
             packet_timeout_timestamp: u64,
-            #[parse(u64::from_str)]
-            packet_sequence: u64,
+            #[parse(NonZeroU64::from_str)]
+            packet_sequence: NonZeroU64,
             #[parse(PortId::from_str)]
             packet_src_port: PortId,
             #[parse(ChannelId::from_str)]

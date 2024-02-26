@@ -1,4 +1,8 @@
-use std::{fmt::Debug, num::ParseIntError, sync::Arc};
+use std::{
+    fmt::Debug,
+    num::{NonZeroU64, ParseIntError},
+    sync::Arc,
+};
 
 use dashmap::DashMap;
 use ethers::prelude::k256::ecdsa;
@@ -211,7 +215,7 @@ impl Chain for Union {
         tx_hash: H256,
         destination_channel_id: unionlabs::id::ChannelId,
         destination_port_id: unionlabs::id::PortId,
-        sequence: u64,
+        sequence: NonZeroU64,
     ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
             tracing::info!(
