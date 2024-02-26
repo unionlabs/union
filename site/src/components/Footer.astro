@@ -1,0 +1,45 @@
+---
+let menuItems = [
+  {
+    url: '/blog',
+    name: 'Blog',
+  },
+  {
+    url: '/docs',
+    name: 'Docs',
+  },
+  {
+    url: '/team',
+    name: 'Team',
+  },
+  {
+    url: '/brand-kit',
+    name: 'Brand Kit',
+  },
+  {
+    url: 'https://discord.union.build',
+    name: 'Discord',
+  },
+  {
+    url: 'https://discord.union.build',
+    name: 'X',
+  }
+]
+---
+  
+  <footer
+    class='flex flex-col p-4 sm:items-center mt-4 text-white py-4 gap-2 justify-center text-lg font-normal bottom-0'
+  >
+    <ul class="list-none p-0 flex flex-col justify-center flex-cols-3 sm:flex-row">
+        {
+          menuItems.map(menuItem => (
+            <li>
+              <a href={menuItem.url} class="border-b border-[#1f1f1f] px-4 py-2 !text-md text-normal flex flex-col flex-1">
+                {menuItem.name}
+              </a>
+            </li>
+          ))
+        }
+    </ul>
+    <p class="text-center block text-neutral-600 mt-2">&copy; Union.fi Labs, Inc.</p>
+  </footer>

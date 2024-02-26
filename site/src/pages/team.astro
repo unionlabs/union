@@ -1,0 +1,199 @@
+---
+import Layout from '#/layouts/Layout.astro';
+import headshot_karel from '#/assets/images/headshots/karel.jpg';
+import headshot_cor from '#/assets/images/headshots/cor.jpg';
+import headshot_ben from '#/assets/images/headshots/ben.jpeg';
+import headshot_emir from '#/assets/images/headshots/emir.jpeg';
+import headshot_sarah from '#/assets/images/headshots/sarah.jpg';
+import headshot_abdullah from '#/assets/images/headshots/abdullah.jpeg';
+import headshot_connor from '#/assets/images/headshots/connor.jpg';
+import headshot_omar from '#/assets/images/headshots/omar.jpeg';
+import headshot_hussein from '#/assets/images/headshots/hussein.jpeg';
+import headshot_valentin from '#/assets/images/headshots/valentin.jpeg';
+import headshot_boris from '#/assets/images/headshots/boris.jpeg';
+
+import vc_galileo from '#/assets/images/investors/galileo.svg';
+import vc_nascent from '#/assets/images/investors/nascent.svg';
+import vc_tioga from '#/assets/images/investors/tioga.png';
+import vc_semantic from '#/assets/images/investors/semantic.png';
+import vc_lightshift from '#/assets/images/investors/lightshift.png';
+import vc_udhc from '#/assets/images/investors/udhc.svg';
+import vc_founderheads from '#/assets/images/investors/founderheads.svg';
+
+import team_spearbit from "#/assets/images/partners/spearbit.svg";
+import team_groomlake from "#/assets/images/partners/groomlake.png";
+import team_horizons from "#/assets/images/partners/horizons.svg";
+
+let profiles = [
+  {
+    name: "Karel", 
+    title: "CEO", 
+    x_name: "0xkaiserkarel", 
+    profile_pic: headshot_karel
+  },
+  { 
+    name: "Cor", 
+    title: "CTO", 
+    x_name: "corcoder", 
+    profile_pic: headshot_cor
+  },
+  {
+    name: "Emir",
+    title: "Head of BD",
+    x_name: "EBeriker",
+    profile_pic: headshot_emir
+  },
+  {
+    name: "Sarah",
+    title: "Head of Operations",
+    x_name: "sarahkc07",
+    profile_pic: headshot_sarah
+  },
+  { 
+    name: "Hussein", 
+    title: "Principal Engineer", 
+    x_name: "0xc0dejug", 
+    profile_pic: headshot_hussein
+  },
+  { 
+    name: "Abdullah", 
+    title: "Founding Engineer", 
+    x_name: "aeryz2", 
+    profile_pic: headshot_abdullah
+  },
+  { 
+    name: "Ben", 
+    title: "Founding Engineer", 
+    x_name: "0xbonlulu", 
+    profile_pic: headshot_ben
+  },
+  { 
+    name: "Connor", 
+    title: "Founding Engineer", 
+    x_name: "PoisonPhang", 
+    profile_pic: headshot_connor,
+  },
+  { 
+    name: "Omar", 
+    title: "Full Stack Engineer", 
+    x_name: "awkroot", 
+    profile_pic: headshot_omar,
+  },
+  { 
+    name: "Valentin", 
+    title: "Advisor", 
+    x_name: "valeyo777", 
+    profile_pic: headshot_valentin,
+  },
+  { 
+    name: "Boris", 
+    title: "Advisor", 
+    x_name: "sprembo", 
+    profile_pic: headshot_boris,
+  }
+]
+
+let teams = [
+  {
+    name: "Spearbit",
+    logo: team_spearbit,
+    url: "https://spearbit.com",
+  },
+  {
+    name: "Groomlake",
+    logo: team_groomlake,
+    url: "https://groomla.ke"
+  },
+  {
+    name: "Horizons Law",
+    logo: team_horizons,
+    url: "https://www.horizonslaw.io/"
+  },
+  {
+    name: "Lightshift",
+    logo: vc_lightshift,
+    url: "https://www.semantic.vc/",
+    clazz: "h-[44px]"
+  },
+  {
+    name: "Galileo",
+    logo: vc_galileo,
+    url: "https://www.galileogroup.xyz/",
+    clazz: "h-[28px]"
+  },
+  {
+    name: "Nascent",
+    logo: vc_nascent,
+    url: "https://www.nascent.xyz/",
+    clazz: "h-16"
+  },
+  {
+    name: "Tioga",
+    logo: vc_tioga,
+    url: "https://tioga.capital/",
+    clazz: "h-16"
+  },
+  {
+    name: "Semantic",
+    logo: vc_semantic,
+    url: "https://www.semantic.vc/",
+    clazz: "h-[38px]"
+  },
+  {
+    name: "UDHC",
+    logo: vc_udhc,
+    url: "https://www.udhc.finance/",
+    clazz: "h-[38px]"
+  },
+  {
+    name: "Founderheads",
+    logo: vc_founderheads,
+    url: "https://founderheads.com/",
+    clazz: "h-[38px]"
+  }
+]; 
+---
+<Layout>
+  <div class="flex flex-col flex-1 items-center px-4">
+    <main class="max-w-5xl w-full bg-[#1f1f1f] p-px flex flex-col gap-px">
+      <div class="bg-black py-12 md:py-20 px-4">
+        <h1 class="text-4xl md:text-5xl text-white text-center font-semibold px-4">Meet Union Labs</h1>
+        <p class="text-gray-400 text-xl text-center mt-2">We're a collective of engineers and researchers building the final state of interoperability.</p>
+      </div>
+      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 min-[884px]:grid-cols-3 gap-px p-0 auto-rows-[1fr]">
+        {
+          profiles.map(person => (
+            <li>
+              <a class="block w-full gap-4 items-center flex-1 flex flex-row p-4 gap-2 bg-black hover:bg-[#152325] transition-colors" href={`https://x.com/${person.x_name}`}>
+                  <img class="w-20 h-20" src={person.profile_pic.src}/>
+                  <div class="leading-tight">
+                    <h3 class="text-2xl">{person.name}</h3>
+                    <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
+                    <div class="text-accent text-lg -mt-1 block"}>@{person.x_name}</div>
+                  </div>
+              </a>
+            </li>
+          ))
+        }
+        <div class="bg-black h-full w-full hidden sm:block"></div>
+      </ul>
+      <div class="bg-black py-12 md:py-20 px-4">
+        <h2 class="text-3xl md:text-4xl text-white text-center font-semibold px-4">Supporting Teams</h2>
+        <p class="text-gray-400 text-xl text-center mt-2">Auditing, security, legal, funding.</p>
+      </div>
+      <ul class="list-none grid grid-cols-1 sm:grid-cols-2 min-[884px]:grid-cols-3 gap-px p-0 auto-rows-[1fr]">
+        {
+          teams.map(team=> (
+            <li>
+              <a class="block w-full h-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-[#152325] justify-center" href={team.url}>
+                  <img class={team.clazz ? team.clazz : "p-4 h-16"} src={team.logo.src} alt={team.name}/>
+              </a>
+            </li>
+          ))
+        }
+        <div class="bg-black h-full w-full hidden min-[884px]:block"/>
+        <div class="bg-black h-full w-full hidden min-[884px]:block"/>
+      </ul>
+    </main>
+  </div>
+</Layout>
