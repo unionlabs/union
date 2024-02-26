@@ -83,41 +83,16 @@ jobs:
             echo 'EOF'
           } >> $GITHUB_ENV
 
-      - name: Comment on Pull Request
-        uses: actions/github-script@v7
-        env:
-          LAST_UPDATED_AT: ${{ github.event.repository.updated_at }}
+      - name: Comment Site Deploy Results
+        if: env.lychee_exit_code != 0
+        uses: thollander/actions-comment-pull-request@v2
         with:
-          debug: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const commentBody = `
-              <h1>Site/Docs 🤠</h1>
-              ${process.env.DEPLOY_OUTPUT}
+          message: |
+            # Site/Docs 🤠
+            ${process.env.DEPLOY_OUTPUT}
 
-              **${process.env.LAST_UPDATED_AT}**
-            `
-            const prComments = await github.rest.issues.listComments({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            })
-            const [botDeploymentComment] = prComments.data.filter(comment => comment.body.includes('Site/Docs 🤠'))
-            if (!botDeploymentComment) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: commentBody
-              })
-            } else {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botDeploymentComment.id,
-                body: commentBody
-              })
-            }
+            **${process.env.LAST_UPDATED_AT}**
+          comment_tag: link-checker
 
   deploy-manual:
     runs-on: ['ubuntu-latest']
