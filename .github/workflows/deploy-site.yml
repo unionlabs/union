@@ -94,7 +94,7 @@ jobs:
             ${{ env.DEPLOY_OUTPUT }}
 
             **${{ env.LAST_UPDATED_AT }}**
-          comment_tag: link-checker
+          comment_tag: deploy-preview-result
 
   deploy-manual:
     runs-on: ['ubuntu-latest']
