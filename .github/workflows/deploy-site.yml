@@ -31,6 +31,8 @@ jobs:
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
     with:
       filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux") and (.attr == "site")'
+      eval_target: 'site'
+      eval_top_attr: 'packages'
     
   deploy-preview:
     runs-on: ['ubuntu-latest']
@@ -43,15 +45,15 @@ jobs:
     environment: 'site-preview'
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          name: packages.x86_64-linux.site
+          lfs: true
       - uses: nixbuild/nix-quick-install-action@v26
       - uses: nixbuild/nixbuild-action@master
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir dump
-      - run: nix copy --to file://`pwd`/dump --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."x86_64-linux".site.outputs.out'` --extra-experimental-features nix-command
+      - run: nix copy --to file://`pwd`/dump --from ssh-ng://eu.nixbuild.net `nix eval --json .#packages.x86_64-linux.site` --extra-experimental-features nix-command
       - run: cat dump/nar/*.nar.xz | xz -dc | nix-store --restore result
 
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
