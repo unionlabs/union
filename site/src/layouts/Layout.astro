@@ -1,6 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro'
 import Header from '#/components/Header.astro'
+import Footer from '#/components/Footer.astro'
 
 interface Props {
   url?: string
@@ -19,12 +20,6 @@ const { url, title, image, description } = Astro.props
   {description}
 >
   <Header />
-
   <slot />
-
-  <footer
-    class='flex items-center pt-8 p-4 gap-4 justify-center text-lg font-normal bottom-0 mx-auto w-full'
-  >
-    <p>&copy; Union.fi Labs, Inc.</p>
-  </footer>
+  <Footer />
 </BaseLayout>
