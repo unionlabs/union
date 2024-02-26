@@ -41,7 +41,43 @@ let menuItems = [
       <img class="w-8 h-8 my-auto" src={unionLogo.src} alt="Union Logo" />
       <p class="font-semibold text-3xl py-0 my-0 mb-0.5">Union</p>
     </a>
-    <nav class="flex flex-1 justify-end">
+    <nav class="hidden md:block flex flex-1 justify-end">
+      <ul
+        class="flex flex-row gap-4 justify-end items-center bg-black left-0 top-[62px] shadow-3xl p-0 m-0 font-normal list-none md:align-middle"
+      >
+        {
+          menuItems.map(menuItem => (
+            <li>
+              <a href={menuItem.url} class="text-white !text-lg text-normal flex flex-col flex-1">
+                {menuItem.name}
+              </a>
+            </li>
+          ))
+        }
+        <li>
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://discord.union.build"
+            class="flex gap-2 text-lg"
+          >
+            <img alt="discord" src={discordIcon.src} class="w-4 h-4" />
+          </a>
+        </li>
+        <li class="">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://x.com/union_build"
+            class="flex gap-2 text-lg"
+          >
+            <img alt="x.com" src={xIcon.src} class="w-4 h-4" />
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <nav class="md:hidden flex flex-1 justify-end">
       <button
         class="bg-white rounded-full h-[32px] w-[32px] flex items-center justify-center cursor-pointer"
         id="menu-button"
@@ -82,7 +118,7 @@ let menuItems = [
             href="https://discord.union.build"
             class="flex gap-2 text-lg px-4 py-2"
           >
-            <label> Discord</label>
+            <label>Discord</label>
             <img alt="discord" src={discordIcon.src} class="w-4 h-4 my-auto" />
           </a>
         </li>
@@ -93,7 +129,7 @@ let menuItems = [
             href="https://x.com/union_build"
             class="flex gap-2 text-lg px-4 py-2"
           >
-            <label> X.com</label>
+            <label>X.com</label>
             <img alt="x.com" src={xIcon.src} class="w-4 h-4 my-auto" />
           </a>
         </li>
