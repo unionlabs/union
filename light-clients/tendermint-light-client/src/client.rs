@@ -293,9 +293,8 @@ impl IbcClient for TendermintLightClient {
 
         // TODO(aeryz): when refactoring the tm client, we should consider making this non-optional
         // because otherwise we always have to check if the inner height is zero.
-        match client_state.data.frozen_height {
-            Some(h) if h != ZERO_HEIGHT => return Ok(Status::Frozen),
-            _ => {}
+        if client_state.data.frozen_height.unwrap_or(ZERO_HEIGHT) != ZERO_HEIGHT {
+            return Ok(Status::Frozen);
         }
 
         let Some(consensus_state) = read_consensus_state::<Self::CustomQuery, ConsensusState>(
