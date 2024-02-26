@@ -6,10 +6,10 @@ import Mermaid from "#/components/Mermaid.astro";
 
 Galois is Union's **Zero-Knowledge [Consensus](/docs/concepts/consensus-verification) Proving system**. We've built Galois around three fundamental principles:
 
-1. **Extremely fast**: fast proving times equate to fast bridging and good user experience. Galois is able to generate consensus proofs for 128 validators [within seven seconds](/docs/architecture/galois/#benchmarks).
-2. **Low-cost**: Burning millions of dollars in cloud infrastructure costs every month just to generate ZK proofs is not a sustainable model. Generating proofs should be super cheap.
-3. **Censorship-resistance**: in order to combat censorship attacks, _anyone should be able to generate consensus proofs_ on their own machines. Galois is so efficient that proof generation only consumes 5GB RAM for 128 validators, enabling the generation of proofs for mainnet on entry level consumer laptops.
-4. **Decentralized**: infrastructure operators do not need complex cloud architecture to operate a relayer and prover. Anyone can participate in the system. Because of this we focused on efficient CPU-based generation of ZKPs, as we don't want to depend on specific GPU vendors.[^1]
+1. **Extremely fast**: fast proving times equate to fast bridging and good user experience. Galois can generate consensus proofs for 128 validators [within seven seconds](/docs/architecture/galois/#benchmarks).
+2. **Low-cost**: Burning millions of dollars in monthly cloud infrastructure costs to generate ZK proofs is not a sustainable model. Generating proofs should be super cheap.
+3. **Censorship-resistance**: in order to combat censorship attacks, _anyone should be able to generate consensus proofs_ on their own machines. Galois is so efficient that proof generation only consumes 5GB RAM for 128 validators, enabling the generation of proofs for mainnet on entry-level consumer laptops.
+4. **Decentralized**: infrastructure operators do not need complex cloud architecture to operate a relayer and prover. Anyone can participate in the system. Because of this, we focused on efficient CPU-based generation of ZKPs, as we don't want to depend on specific GPU vendors.[^1]
 
 ## Architecture
 
@@ -29,7 +29,7 @@ Transactions through Union to other Counterparties _(L1s, L2s, and (sovereign) R
   `}
 />
 
-Galois is built using [Gnark](https://github.com/ConsenSys/gnark), the best performing zk-SNARK library. And communicates over [gRPC](https://grpc.io/), a high-performance, open source universal RPC framework.
+Galois is built using [Gnark](https://github.com/ConsenSys/gnark), the best-performing zk-SNARK library, and communicates over [gRPC](https://grpc.io/), a high-performance, open-source universal RPC framework.
 
 :::note
 
@@ -39,16 +39,16 @@ Depending on validator set drift, Galois may need to generate multiple proofs. T
 
 ## Benchmarks
 
-Galois benchmarks extremely well. All of our benchmarks are 100% reproducibly generated with [Nix](https://nixos.org) so that anyone can verify them. Third-party validation of these benchmarks has been conducted by Lightshift View the latest [Galois V3 benchmarks here](https://unionlabs.github.io/galois-benchmark/c6i.x32large.v3/report.html) and in order to see our progress, you can see [historical Galois benchmarks for older versions here](https://unionlabs.github.io/galois-benchmark/).
+Galois benchmarks exceptionally well. Our benchmarks are 100% reproducibly generated with [Nix](https://nixos.org), so anyone can verify them. Third-party validation of these benchmarks has been conducted by Lightshift. View the latest [Galois V3 benchmarks here](https://unionlabs.github.io/galois-benchmark/c6i.x32large.v3/report.html) and to see our progress, you can see [historical Galois benchmarks for older versions here](https://unionlabs.github.io/galois-benchmark/).
 
 ## Future Roadmap
 
-Galois is fully functional, production ready, extremely reliable and performant. However, there's always further improvements to be made:
+Galois is fully functional, production-ready, extremely reliable, and performant. However, there are always further improvements:
 
 - Verkle tree support.
 - Formal verification with [Lean](https://leanprover.github.io/).
-- [Proof caching](https://github.com/unionlabs/union/discussions/41) ensures that the network does not perform redundant work and incentivizes decentralized proving, effectively using Union as a decentralized sequencers orchestration layer.
+- Proof caching ensures that the network does not perform redundant work and incentivizes decentralized proving, effectively using Union as a decentralized sequencers orchestration layer.
 
 ---
 
-[^1]: Note that Galois' tech stack also supports GPU-based zkp generation, but we designed the system such that it does not depend on GPUs for good performance.
+[^1]: Note that Galois' tech stack also supports GPU-based zkp generation, but we designed the system to be independent of GPUs for good performance.
