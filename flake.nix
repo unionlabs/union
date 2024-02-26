@@ -159,8 +159,8 @@
             aarch64-linux = filterAttrs isCi self.devShells.aarch64-linux;
           };
           site = {
-            x86_64-linux = self.packages.x86_64-linux.site;
-            aarch64-linux = self.packages.aarch64-linux.site;
+            x86_64-linux = { site = self.packages.x86_64-linux.site; app = self.packages.x86_64-linux.app; };
+            aarch64-linux = { site = self.packages.aarch64-linux.site; app = self.packages.aarch64-linux.app; };
           };
         };
       systems =
