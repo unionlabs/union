@@ -353,12 +353,14 @@
         mkCleanSrc {
           name = "cargo-workspace-src";
           srcFilter =
-            path: _type: (pkgs.lib.hasPrefix "hubble/src/graphql/" path || pkgs.lib.hasPrefix ".sqlx" path) ||
-              (pkgs.lib.hasPrefix "unionvisor/src/testdata/" path) ||
-              (pkgs.lib.hasPrefix ".sqlx" path) ||
-              (pkgs.lib.hasPrefix "lib/pg-queue/.sqlx" path) ||
-              (pkgs.lib.hasPrefix "hubble/src/graphql" path) ||
-              ((lib.hasPrefix "lib/ethereum-verifier/src/test" path)
+            with { inherit (lib) hasPrefix; };
+            path: _type: (hasPrefix "hubble/src/graphql/" path || hasPrefix ".sqlx" path) ||
+              (hasPrefix "unionvisor/src/testdata/" path) ||
+              (hasPrefix ".sqlx" path) ||
+              (hasPrefix "lib/pg-queue/.sqlx" path) ||
+              (hasPrefix "hubble/src/graphql" path) ||
+              (hasPrefix "lib/poseidon-rs/constants.json" path) ||
+              ((hasPrefix "lib/ethereum-verifier/src/test" path)
                 && (lib.strings.hasSuffix ".json" path)) ||
               (ensureDirectoryIncluded {
                 path' = path;

@@ -45,6 +45,7 @@ pub enum BranchType {
 }
 
 impl BranchType {
+    #[must_use]
     pub fn left(&self, hash: Hash) -> BranchHash {
         match self {
             Self::BothTerminal | Self::LeftTerminal => BranchHash::Terminal(hash),
@@ -52,6 +53,7 @@ impl BranchType {
         }
     }
 
+    #[must_use]
     pub fn right(&self, hash: Hash) -> BranchHash {
         match self {
             Self::BothTerminal | Self::RightTerminal => BranchHash::Terminal(hash),
@@ -59,6 +61,7 @@ impl BranchType {
         }
     }
 
+    #[must_use]
     pub fn deduce_upgrade(&self, go_right: bool) -> Self {
         if go_right {
             match self {
@@ -75,13 +78,14 @@ impl BranchType {
         }
     }
 
+    #[must_use]
     pub fn deduce_downgrade(&self, at_right: bool) -> Self {
         if at_right {
             match &self {
                 Self::LeftTerminal => Self::BothTerminal,
                 Self::BothBranch => Self::RightTerminal,
                 Self::BothTerminal | Self::RightTerminal => {
-                    panic!("can not downgrade a node with terminal child ({:?})", self)
+                    panic!("can not downgrade a node with terminal child ({self:?})")
                 }
             }
         } else {
@@ -89,7 +93,7 @@ impl BranchType {
                 Self::BothBranch => Self::LeftTerminal,
                 Self::RightTerminal => Self::BothTerminal,
                 Self::BothTerminal | Self::LeftTerminal => {
-                    panic!("can not downgrade a node with terminal child ({:?})", self)
+                    panic!("can not downgrade a node with terminal child ({self:?})")
                 }
             }
         }
@@ -109,6 +113,7 @@ impl Default for BranchHash {
 }
 
 impl BranchHash {
+    #[must_use]
     pub fn empty() -> Self {
         Self::default()
     }
@@ -117,6 +122,7 @@ impl BranchHash {
         self.hash().fr().map_err(Error::NotInField)
     }
 
+    #[must_use]
     pub fn hash(&self) -> &Hash {
         match self {
             BranchHash::Branch(n) => n,
@@ -224,10 +230,12 @@ impl<H: HashScheme> Node<H> {
         })
     }
 
+    #[must_use]
     pub fn empty() -> Self {
         Self::new_empty()
     }
 
+    #[must_use]
     pub fn new_empty() -> Self {
         let value = NodeValue::Empty;
         Self {
@@ -237,6 +245,7 @@ impl<H: HashScheme> Node<H> {
         }
     }
 
+    #[must_use]
     pub fn branch(&self) -> Option<&BranchNode> {
         match &self.value {
             NodeValue::Branch(node) => Some(node),
@@ -244,6 +253,7 @@ impl<H: HashScheme> Node<H> {
         }
     }
 
+    #[must_use]
     pub fn leaf(&self) -> Option<&LeafNode> {
         match &self.value {
             NodeValue::Leaf(node) => Some(node),
@@ -251,6 +261,7 @@ impl<H: HashScheme> Node<H> {
         }
     }
 
+    #[must_use]
     pub fn match_leaf_key(&self, k: &Hash) -> bool {
         match self.leaf() {
             Some(leaf) => &leaf.key == k,
@@ -277,30 +288,37 @@ impl<H: HashScheme> Node<H> {
         })
     }
 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         matches!(&self.value, NodeValue::Empty)
     }
 
+    #[must_use]
     pub fn is_branch(&self) -> bool {
         matches!(&self.value, NodeValue::Branch(_))
     }
 
+    #[must_use]
     pub fn is_leaf(&self) -> bool {
         matches!(&self.value, NodeValue::Leaf(_))
     }
 
+    #[must_use]
     pub fn is_terminal(&self) -> bool {
         matches!(self.value, NodeValue::Empty | NodeValue::Leaf(_))
     }
 
+    #[must_use]
     pub fn value(&self) -> &NodeValue {
         &self.value
     }
 
+    #[must_use]
     pub fn hash(&self) -> &Hash {
         &self.hash
     }
 
+    #[must_use]
     pub fn data(&self) -> &[u8] {
         match &self.value {
             NodeValue::Leaf(leaf) => leaf.data(),
@@ -320,6 +338,7 @@ impl<H: HashScheme> Node<H> {
         }
     }
 
+    #[must_use]
     pub fn canonical_value(&self) -> Vec<u8> {
         match &self.value {
             NodeValue::Empty => vec![5],
@@ -328,16 +347,18 @@ impl<H: HashScheme> Node<H> {
         }
     }
 
+    #[must_use]
     pub fn bytes(&self) -> Vec<u8> {
         node_bytes(self, self.leaf().and_then(|n| n.key_preimage))
     }
 }
 
+#[must_use]
 pub fn node_bytes<H: HashScheme>(n: &Node<H>, key_preimage: Option<Byte32>) -> Vec<u8> {
     let mut data = n.canonical_value();
     if let Some(key) = &key_preimage {
         assert!(!data.is_empty());
-        *data.last_mut().unwrap() = key.len() as u8;
+        *data.last_mut().unwrap() = u8::try_from(key.len()).unwrap();
         data.extend_from_slice(key.bytes());
     }
     data
@@ -364,15 +385,18 @@ impl LeafNode {
             .map_err(Error::NotInField)
     }
 
+    #[must_use]
     pub fn data(&self) -> &[u8] {
-        let ptr = self.value_preimage.as_ptr() as *const u8;
+        let ptr = self.value_preimage.as_ptr().cast::<u8>();
         unsafe { std::slice::from_raw_parts(ptr, self.value_preimage.len() * 32) }
     }
 
+    #[must_use]
     pub fn ty() -> u8 {
         4
     }
 
+    #[must_use]
     pub fn canonical_value(&self) -> Vec<u8> {
         let size = 1
             + 32
@@ -384,7 +408,8 @@ impl LeafNode {
         val.push(Self::ty());
         val.extend_from_slice(&self.key.bytes());
 
-        let compressed_flag = (self.compressed_flags << 8) + self.value_preimage.len() as u32;
+        let compressed_flag =
+            (self.compressed_flags << 8) + u32::try_from(self.value_preimage.len()).unwrap();
         val.extend_from_slice(&compressed_flag.to_le_bytes());
         for elm in &self.value_preimage {
             val.extend_from_slice(elm.bytes());
@@ -412,10 +437,12 @@ pub struct BranchNode {
 }
 
 impl BranchNode {
+    #[must_use]
     pub fn new(left: BranchHash, right: BranchHash) -> Self {
         BranchNode { left, right }
     }
 
+    #[must_use]
     pub fn ty(&self) -> BranchType {
         match (&self.left, &self.right) {
             (BranchHash::Terminal(_), BranchHash::Terminal(_)) => BranchType::BothTerminal,
@@ -425,6 +452,7 @@ impl BranchNode {
         }
     }
 
+    #[must_use]
     pub fn canonical_value(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(32 * 2 + 1);
         out.push(self.ty() as u8);

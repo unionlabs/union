@@ -16,7 +16,7 @@ pub fn copy_truncated(dst: &mut [u8], src: &[u8]) {
     if dst.len() >= src.len() {
         dst[..src.len()].copy_from_slice(src);
     } else {
-        dst.copy_from_slice(&src[..dst.len()])
+        dst.copy_from_slice(&src[..dst.len()]);
     }
 }
 
@@ -32,7 +32,7 @@ impl HashScheme for PoseidonHash {
         match POSEIDON.hash_fixed_with_domain(arr, *domain) {
             Ok(output) => output,
             Err(err) => {
-                panic!("inp: {:?}, domain: {:?}, err: {:?}", arr, domain, err);
+                panic!("inp: {arr:?}, domain: {domain:?}, err: {err:?}");
             }
         }
     }
@@ -45,10 +45,12 @@ pub trait HashScheme {
 pub struct Hash([u8; 32]);
 
 impl Hash {
+    #[must_use]
     pub fn is_zero(&self) -> bool {
         self == &ZERO_HASH
     }
 
+    #[must_use]
     pub fn raw_bytes(&self) -> &[u8] {
         &self.0[..]
     }
@@ -57,11 +59,13 @@ impl Hash {
         fr_from_little_endian(&self.0)
     }
 
+    #[must_use]
     pub fn hex(&self) -> String {
         hex::encode(self.bytes())
     }
 
     #[cfg(test)]
+    #[must_use]
     pub fn from_hex(val: &str) -> Option<Self> {
         let mut tmp = [0_u8; 32];
         hex::decode_to_slice(val, &mut tmp).ok()?;
@@ -70,16 +74,19 @@ impl Hash {
     }
 
     #[cfg(test)]
+    #[must_use]
     pub fn to_hex(&self) -> String {
-        hex::encode(&self.bytes())
+        hex::encode(self.bytes())
     }
 
+    #[must_use]
     pub fn bytes(&self) -> [u8; 32] {
         let mut dst = [0_u8; 32];
         reverse_byte_order(&mut dst, self.raw_bytes());
         dst
     }
 
+    #[must_use]
     pub fn from_bytes(b: &[u8]) -> Self {
         let mut h = Hash::default();
         copy_truncated(&mut h.0, b);

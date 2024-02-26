@@ -1,3 +1,5 @@
+// #![warn(clippy::pedantic)]
+
 pub use poseidon_rs::{Field, Fr, FrRepr, PrimeField, PrimeFieldDecodingError};
 
 mod util;

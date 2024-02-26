@@ -21,6 +21,7 @@ pub enum TrieData<H: HashScheme> {
 }
 
 impl<H: HashScheme> TrieData<H> {
+    #[must_use]
     pub fn get(&self) -> &[u8] {
         match self {
             Self::Node(node) => node.data(),
@@ -30,6 +31,7 @@ impl<H: HashScheme> TrieData<H> {
 }
 
 impl<H: HashScheme> ZkTrie<H> {
+    #[must_use]
     pub fn new(max_level: usize, root: Hash) -> Self {
         Self {
             root,
@@ -38,6 +40,7 @@ impl<H: HashScheme> ZkTrie<H> {
         }
     }
 
+    #[must_use]
     pub fn hash(&self) -> &Hash {
         &self.root
     }
@@ -110,9 +113,8 @@ impl<H: HashScheme> ZkTrie<H> {
         let mut next_hash = self.root;
         let mut siblings = Vec::new();
         for i in 0..self.max_level {
-            let n = match self.get_node(db, &next_hash)? {
-                Some(n) => n,
-                None => return Err(Error::KeyNotFound),
+            let Some(n) = self.get_node(db, &next_hash)? else {
+                return Err(Error::KeyNotFound);
             };
 
             match n.value() {
@@ -201,19 +203,14 @@ impl<H: HashScheme> ZkTrie<H> {
         D: PreimageDatabase<Node = Node<H>>,
     {
         let k = to_secure_key::<H>(key)?;
-        self.update_preimage(db, key, &k);
+        Self::update_preimage(db, key, &k);
         let key_hash = k.into();
         self.try_update(db, &key_hash, v_flag, v_preimage)?;
         Ok(())
     }
 
-    fn update_preimage<D: PreimageDatabase>(
-        &mut self,
-        db: &mut D,
-        preimage: &[u8],
-        hash_field: &Fr,
-    ) {
-        db.update_preimage(preimage, hash_field)
+    fn update_preimage<D: PreimageDatabase>(db: &mut D, preimage: &[u8], hash_field: &Fr) {
+        db.update_preimage(preimage, hash_field);
     }
 
     pub(crate) fn try_update<D>(
@@ -297,10 +294,11 @@ impl<H: HashScheme> ZkTrie<H> {
         if lvl > self.max_level - 1 {
             return Err(Error::ReachedMaxLevel);
         }
-        let n = match self.get_node(db, curr_node_hash)? {
-            Some(node) => node,
-            None => return Err(Error::NodeNotFound((lvl, *curr_node_hash))),
+
+        let Some(n) = self.get_node(db, curr_node_hash)? else {
+            return Err(Error::NodeNotFound((lvl, *curr_node_hash)));
         };
+
         match n.value() {
             NodeValue::Empty => {
                 let nn = self.add_node(db, &new_leaf)?;
@@ -414,17 +412,14 @@ impl<H: HashScheme> ZkTrie<H> {
             return Ok(*hash);
         }
 
-        match db.get_node(hash)? {
-            Some(old) => {
-                if &old != n {
-                    return Err(Error::NodeKeyAlreadyExists);
-                }
-                Ok(*hash)
+        if let Some(old) = db.get_node(hash)? {
+            if &old != n {
+                return Err(Error::NodeKeyAlreadyExists);
             }
-            None => {
-                let n = db.update_node(n.clone())?;
-                Ok(*n.hash())
-            }
+            Ok(*hash)
+        } else {
+            let n = db.update_node(n.clone())?;
+            Ok(*n.hash())
         }
     }
 
@@ -464,8 +459,7 @@ impl<H: HashScheme> ZkTrie<H> {
             };
             let mut finished = true;
             match n.value() {
-                NodeValue::Empty => {}
-                NodeValue::Leaf(_) => {}
+                NodeValue::Leaf(_) | NodeValue::Empty => {}
                 NodeValue::Branch(branch) => {
                     finished = false;
                     tn = if *direction {
@@ -560,12 +554,9 @@ impl<H: HashScheme> ZkTrie<H> {
                 .as_ref()
                 .map(|n| n.branch().expect("unexpected behavior in prove"));
 
-            let on_hit = match &mut on_hit {
-                Some(on_hit) => on_hit,
-                None => {
-                    prev = Some(node.clone());
-                    return write_node(db, node);
-                }
+            let Some(on_hit) = &mut on_hit else {
+                prev = Some(node.clone());
+                return write_node(db, node);
             };
 
             if node.match_leaf_key(&k) {
@@ -593,6 +584,7 @@ impl<H: HashScheme> ZkTrie<H> {
     }
 }
 
+#[must_use]
 pub fn get_path(num_level: usize, k: &[u8]) -> Vec<bool> {
     let mut path = Vec::with_capacity(num_level);
     for n in 0..num_level {
