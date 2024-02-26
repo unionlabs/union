@@ -91,9 +91,9 @@ jobs:
         with:
           message: |
             # Site/Docs 🤠
-            ${{ process.env.DEPLOY_OUTPUT }}
+            ${{ env.DEPLOY_OUTPUT }}
 
-            **${{ process.env.LAST_UPDATED_AT }}**
+            **${{ env.LAST_UPDATED_AT }}**
           comment_tag: link-checker
 
   deploy-manual:
