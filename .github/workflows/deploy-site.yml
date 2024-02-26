@@ -66,25 +66,14 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: |
-            'result/**/index.html'
+            'result/**/index.html' --no-progress
 
-      - name: Comment On Pull Request
-        uses: actions/github-script@v7
-        # only comment if there are errors and it's a pull request
+      - name: Comment Link Checker Results
         if: env.lychee_exit_code != 0
-        # temporarily allow this to fail until we're able to handle these two links: https://github.com/unionlabs/union/actions/runs/8014925873/attempts/1#summary-21894317581
-        continue-on-error: true
+        uses: thollander/actions-comment-pull-request@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('node:fs');
-            const content = fs.readFileSync('./lychee/out.md', { encoding: 'utf8' });
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: content
-            });
+          filePath: ./lychee/out.md
+          comment_tag: link-checker
 
       - name: Set Deploy Output
         run: |
