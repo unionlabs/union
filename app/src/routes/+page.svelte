@@ -31,6 +31,7 @@
   import { wallet, switchChain, config } from '$lib/wallet/config.ts'
   import { fetchUserTransfers, type TransferEvent } from '$/lib/fetchers/transfers'
   import { useQueryClient, createQuery, createMutation } from '@tanstack/svelte-query'
+  import Header from '$lib/components/Header.svelte'
 
   let error: any
 
@@ -98,8 +99,10 @@
 
 </script>
 
+<Header/>
+
 <main
-  class="mx-auto mt-12 flex min-h-full min-w-full flex-col items-center justify-center space-y-6"
+  class="border-2 mx-auto mt-12 flex min-h-full min-w-full flex-col items-center justify-center space-y-6"
 >
   <p>Status: {$wallet.status}</p>
   {#if $wallet.isConnected}
