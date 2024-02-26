@@ -51,7 +51,7 @@ jobs:
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir dump
-      - run: nix copy --to file://`pwd`/dump --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages.x86_64-linux.site.outputs.out'` --extra-experimental-features nix-command
+      - run: nix copy --to file://`pwd`/dump --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."x86_64-linux".site.outputs.out'` --extra-experimental-features nix-command
       - run: cat dump/nar/*.nar.xz | xz -dc | nix-store --restore packages.x86_64-linux.site
 
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
