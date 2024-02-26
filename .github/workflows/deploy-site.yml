@@ -88,7 +88,6 @@ jobs:
           } >> $GITHUB_ENV
 
       - name: Comment Site Deploy Results
-        if: env.lychee_exit_code != 0
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
