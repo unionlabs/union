@@ -1,4 +1,4 @@
-base = "result"
+base = "packages.x86_64-linux.site"
 exclude = [
   '.woff2$',
   '^https://statesync.testnet.bonlulu.uno/',
