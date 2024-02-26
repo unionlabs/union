@@ -106,22 +106,16 @@ jobs:
       npm_config_yes: true
     if: github.event_name == 'workflow_dispatch'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           lfs: true
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v25
+      - uses: nixbuild/nix-quick-install-action@v26
+      - uses: nixbuild/nixbuild-action@master
         with:
-          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
-          github_access_token: ${{ github.token }}
-      - run: |
-          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
-          nix-channel --update
-
-      - name: Build Site
-        run: nix build .#site
+          nixbuild_token: ${{ secrets.nixbuild_token }}
+      - run: mkdir dump
+      - run: nix copy --to file://`pwd`/dump --from ssh-ng://eu.nixbuild.net `nix eval --raw .#packages.x86_64-linux.site` --extra-experimental-features nix-command
+      - run: cat dump/nar/*.nar.xz | xz -dc | nix-store --restore result
 
         # create preview deployment when trigger is workflow_dispatch && branch is not main
       - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
@@ -129,6 +123,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="site" deploy result
+
 
   deploy-production:
     runs-on: ['ubuntu-latest']
@@ -139,22 +134,16 @@ jobs:
     environment: 'site-production'
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           lfs: true
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v25
+      - uses: nixbuild/nix-quick-install-action@v26
+      - uses: nixbuild/nixbuild-action@master
         with:
-          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
-          github_access_token: ${{ github.token }}
-      - run: |
-          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
-          nix-channel --update
-
-      - name: Build Site
-        run: nix build .#site
+          nixbuild_token: ${{ secrets.nixbuild_token }}
+      - run: mkdir dump
+      - run: nix copy --to file://`pwd`/dump --from ssh-ng://eu.nixbuild.net `nix eval --raw .#packages.x86_64-linux.site` --extra-experimental-features nix-command
+      - run: cat dump/nar/*.nar.xz | xz -dc | nix-store --restore result
 
       - name: '[production] 🔶 Publish to Cloudflare Pages'
         env:
