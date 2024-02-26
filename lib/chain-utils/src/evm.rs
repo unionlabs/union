@@ -374,7 +374,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
         tx_hash: H256,
         destination_channel_id: ChannelId,
         destination_port_id: PortId,
-        sequence: u64,
+        sequence: NonZeroU64,
     ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
             self.provider
@@ -393,7 +393,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
                         acknowledgement,
                     }) if ack_dst_port_id == destination_port_id.to_string()
                         && destination_channel == destination_channel_id.to_string()
-                        && sequence == ack_sequence =>
+                        && Some(sequence) == NonZeroU64::new(ack_sequence) =>
                     {
                         Some(acknowledgement)
                     }
@@ -865,7 +865,7 @@ impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for CommitmentPath {
         Self::EthCall {
             port_id: self.port_id.to_string(),
             channel_id: self.channel_id.to_string(),
-            sequence: self.sequence,
+            sequence: self.sequence.get(),
         }
     }
 
@@ -881,7 +881,7 @@ impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for AcknowledgementPath {
         Self::EthCall {
             port_id: self.port_id.to_string(),
             channel_id: self.channel_id.to_string(),
-            sequence: self.sequence,
+            sequence: self.sequence.get(),
         }
     }
 

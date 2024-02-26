@@ -1,6 +1,7 @@
 use std::{
     fmt::{Debug, Display},
     marker::PhantomData,
+    num::NonZeroU64,
 };
 
 use chain_utils::GetChain;
@@ -119,7 +120,7 @@ pub struct FetchPacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
     pub tx_hash: H256,
     pub destination_port_id: PortId,
     pub destination_channel_id: ChannelId,
-    pub sequence: u64,
+    pub sequence: NonZeroU64,
 }
 
 #[apply(msg_struct)]

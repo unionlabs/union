@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use futures::Future;
 use unionlabs::{encoding::Proto, google::protobuf::any::Any, hash::H256, traits::Chain};
 
@@ -108,7 +110,7 @@ impl<Hc: CosmosSdkChain> Chain for Wasm<Hc> {
         tx_hash: unionlabs::hash::H256,
         destination_channel_id: unionlabs::id::ChannelId,
         destination_port_id: unionlabs::id::PortId,
-        sequence: u64,
+        sequence: NonZeroU64,
     ) -> impl Future<Output = Vec<u8>> + '_ {
         self.0.read_ack(
             tx_hash,

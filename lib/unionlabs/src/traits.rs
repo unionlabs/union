@@ -3,6 +3,7 @@ use std::{
     fmt::{Debug, Display},
     future::Future,
     hash::Hash,
+    num::NonZeroU64,
     str::FromStr,
 };
 
@@ -160,7 +161,7 @@ pub trait Chain: Sized + Send + Sync + 'static {
         tx_hash: H256,
         destination_channel_id: ChannelId,
         destination_port_id: PortId,
-        sequence: u64,
+        sequence: NonZeroU64,
     ) -> impl Future<Output = Vec<u8>> + '_;
 
     // fn fetch_ibc_state<P: IbcPath<Self, Tr>, Tr: Chain>(

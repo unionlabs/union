@@ -263,7 +263,7 @@ impl Chain for Cosmos {
         block_hash: H256,
         destination_channel_id: unionlabs::id::ChannelId,
         destination_port_id: unionlabs::id::PortId,
-        sequence: u64,
+        sequence: NonZeroU64,
     ) -> impl Future<Output = Vec<u8>> + '_ {
         async move {
             let block_height = self
