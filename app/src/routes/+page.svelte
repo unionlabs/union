@@ -32,6 +32,7 @@
   import { fetchUserTransfers, type TransferEvent } from '$/lib/fetchers/transfers'
   import { useQueryClient, createQuery, createMutation } from '@tanstack/svelte-query'
   import Header from '$lib/components/Header.svelte'
+  import Status from '$/lib/components/Status.svelte'
 
   let error: any
 
@@ -104,24 +105,15 @@
 <main
   class="mt-12 flex min-h-full min-w-full flex-col items-center justify-center space-y-6"
 >
-  <p>Status: {$wallet.status}</p>
   {#if $wallet.isConnected}
     <div>
-      <a
-        class={clsx(['rounded-md border-[1px] border-gray-200 px-4 py-2 text-blue-500 underline'])}
-        href="https://www.alchemy.com/faucets/ethereum-sepolia"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Sepolia ETH Faucet
-      </a>
-      <p>EVM Address: {$wallet.address}</p>
-      <p>EVM Chain ID: {$wallet.chainId}</p>
+      <Status/>
+
+
+      
       <p>UNO ERC20 Balance: {$unoERC20Balance.data}</p>
       <p>Sepolia ETH Balance: {$sepoliaEthBalance.data}</p>
-      <br />
-      <p>Union Address: {$snapAddress}</p>
-      <p>Union Chain ID: union-testnet-6</p>
+
       <p>UNO Union Balance: {$unoUnionBalance.data}</p>
       <div>
         <p>SNAP INSTALLED: {$snapInstalled}</p>
@@ -222,6 +214,14 @@
         <div class="w-full">
           <Faucet />
         </div>
+      <a
+        class={clsx(['rounded-md border-[1px] border-gray-200 px-4 py-2 text-blue-500 underline'])}
+        href="https://www.alchemy.com/faucets/ethereum-sepolia"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Sepolia ETH Faucet
+      </a>
       </section>
 
       <section class="my-3 max-w-[600px] overflow-x-auto border-2 border-neutral-900 p-4 border-solid">

@@ -28,5 +28,5 @@
     $unoFromFaucetMutation.mutate()
   }}
 >
-  get UNO from faucet
+  Get UNO from faucet
 </Button>
