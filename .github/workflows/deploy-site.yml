@@ -52,13 +52,13 @@ jobs:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir dump
       - run: nix copy --to file://`pwd`/dump --from ssh-ng://eu.nixbuild.net `cat result.json | jq -r '.packages."x86_64-linux".site.outputs.out'` --extra-experimental-features nix-command
-      - run: cat dump/nar/*.nar.xz | xz -dc | nix-store --restore packages.x86_64-linux.site
+      - run: cat dump/nar/*.nar.xz | xz -dc | nix-store --restore result
 
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="site" deploy packages.x86_64-linux.site >> /tmp/site_deploy.txt
+        run: npx --yes wrangler@latest pages --project-name="site" deploy result >> /tmp/site_deploy.txt
 
       - name: Link Check
         id: lychee
@@ -66,7 +66,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: |
-            'packages.x86_64-linux.site/**/index.html'
+            'result/**/index.html'
 
       - name: Comment On Pull Request
         uses: actions/github-script@v7
