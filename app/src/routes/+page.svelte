@@ -102,7 +102,7 @@
 <Header/>
 
 <main
-  class="border-2 mx-auto mt-12 flex min-h-full min-w-full flex-col items-center justify-center space-y-6"
+  class="mt-12 flex min-h-full min-w-full flex-col items-center justify-center space-y-6"
 >
   <p>Status: {$wallet.status}</p>
   {#if $wallet.isConnected}
@@ -158,7 +158,7 @@
         </div>
       </div>
 
-      <section class="my-3 flex max-w-72 flex-col space-y-2">
+      <section class="my-3 flex flex-col space-y-2">
         <div>
           <Button
             class={clsx(['rounded-md px-4 py-2'])}
@@ -224,7 +224,7 @@
         </div>
       </section>
 
-      <section class="my-3 max-w-[600px]">
+      <section class="my-3 max-w-[600px] overflow-x-auto border-2 border-neutral-900 p-4 border-solid">
         {#each $userTransfers?.data as transfer}
           <div class="flex justify-between">
             <pre>{JSON.stringify(transfer, null, 2)}</pre>
