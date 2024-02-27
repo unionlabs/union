@@ -23,6 +23,7 @@ generic-array          = "0.14.7"
 hex                    = { workspace = true }
 hex-literal            = { workspace = true }
 k256                   = { version = "0.13.1", default-features = false, features = ["schnorr"] }           # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
+macros.workspace       = true
 milagro_bls            = { workspace = true, default-features = false }
 paste                  = { version = "1.0" }
 primitive-types        = { workspace = true, features = ["serde_no_std"] }
