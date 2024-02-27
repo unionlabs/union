@@ -5,6 +5,7 @@ use trie_db::{Trie, TrieDBBuilder};
 use typenum::Unsigned;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
+    ensure,
     ethereum::{
         config::{
             consts::{
@@ -33,6 +34,9 @@ use crate::{
     VerifyStorageAbsenceError, VerifyStorageProofError,
 };
 
+type MinSyncCommitteeParticipants<Ctx> =
+    <<Ctx as LightClientContext>::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS;
+
 pub trait BlsVerify {
     fn fast_aggregate_verify<'pk>(
         &self,
@@ -59,27 +63,25 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 ) -> Result<(), ValidateLightClientError> {
     // Verify sync committee has sufficient participants
     let sync_aggregate = &update.sync_aggregate;
-    if sync_aggregate.sync_committee_bits.num_set_bits()
-        < <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE
-    {
-        Err(Error::InsufficientSyncCommitteeParticipants {
-            min_limit: <Ctx::ChainSpec as MIN_SYNC_COMMITTEE_PARTICIPANTS>::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE,
-            participants:
-            sync_aggregate.sync_committee_bits.num_set_bits()
-        })?;
-    }
+    ensure(
+        sync_aggregate.sync_committee_bits.num_set_bits()
+            >= MinSyncCommitteeParticipants::<Ctx>::USIZE,
+        Error::InsufficientSyncCommitteeParticipants(
+            sync_aggregate.sync_committee_bits.num_set_bits(),
+        ),
+    )?;
 
     // Verify update does not skip a sync committee period
     is_valid_light_client_header(ctx.fork_parameters(), &update.attested_header)?;
     let update_attested_slot = update.attested_header.beacon.slot;
     let update_finalized_slot = update.finalized_header.beacon.slot;
 
-    if !(current_slot >= update.signature_slot
-        && update.signature_slot > update_attested_slot
-        && update_attested_slot >= update_finalized_slot)
-    {
-        Err(Error::InvalidSlots)?;
-    }
+    ensure(
+        current_slot >= update.signature_slot
+            && update.signature_slot > update_attested_slot
+            && update_attested_slot >= update_finalized_slot,
+        Error::InvalidSlots,
+    )?;
 
     let stored_period =
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(ctx.finalized_slot());
@@ -87,14 +89,16 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(update.signature_slot);
 
     if ctx.next_sync_committee().is_some() {
-        if signature_period != stored_period && signature_period != stored_period + 1 {
-            Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeExists {
+        ensure(
+            signature_period == stored_period || signature_period == stored_period + 1,
+            Error::InvalidSignaturePeriodWhenNextSyncCommitteeExists {
                 signature_period,
                 stored_period,
-            })?;
-        }
-    } else if signature_period != stored_period {
-        Err(
+            },
+        )?;
+    } else {
+        ensure(
+            signature_period == stored_period,
             Error::InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist {
                 signature_period,
                 stored_period,
@@ -106,13 +110,13 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     let update_attested_period =
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(update_attested_slot);
 
-    if !(update_attested_slot > ctx.finalized_slot()
-        || (update_attested_period == stored_period
-            && update.next_sync_committee.is_some()
-            && ctx.next_sync_committee().is_none()))
-    {
-        Err(Error::IrrelevantUpdate)?;
-    }
+    ensure(
+        update_attested_slot > ctx.finalized_slot()
+            || (update_attested_period == stored_period
+                && update.next_sync_committee.is_some()
+                && ctx.next_sync_committee().is_none()),
+        Error::IrrelevantUpdate,
+    )?;
 
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
     // to match the finalized checkpoint root saved in the state of `attested_header`.
@@ -129,25 +133,26 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify that the `next_sync_committee`, if present, actually is the next sync committee saved in the
     // state of the `attested_header` if the store period is equal to the attested period
-    if let Some(next_sync_committee) = &update.next_sync_committee {
-        if let Some(current_next_sync_committee) = ctx.next_sync_committee() {
-            if update_attested_period == stored_period
-                && next_sync_committee != current_next_sync_committee
-            {
-                Err(Error::NextSyncCommitteeMismatch {
-                    expected: current_next_sync_committee.aggregate_pubkey.clone(),
-                    got: next_sync_committee.aggregate_pubkey.clone(),
-                })?;
+    match (&update.next_sync_committee, ctx.next_sync_committee()) {
+        (Some(next_sync_committee), Some(current_next_sync_committee)) => {
+            if update_attested_period == stored_period {
+                ensure(
+                    next_sync_committee == current_next_sync_committee,
+                    Error::NextSyncCommitteeMismatch {
+                        expected: current_next_sync_committee.aggregate_pubkey.clone(),
+                        got: next_sync_committee.aggregate_pubkey.clone(),
+                    },
+                )?;
             }
+            validate_merkle_branch(
+                &next_sync_committee.tree_hash_root().into(),
+                &update.next_sync_committee_branch.unwrap_or_default(),
+                floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
+                get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
+                &update.attested_header.beacon.state_root,
+            )?;
         }
-
-        validate_merkle_branch(
-            &next_sync_committee.tree_hash_root().into(),
-            &update.next_sync_committee_branch.unwrap_or_default(),
-            floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
-            get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
-            &update.attested_header.beacon.state_root,
-        )?;
+        _ => {}
     }
 
     // Verify sync committee aggregate signature
@@ -223,11 +228,8 @@ pub fn verify_account_storage_root(
     match verify_state(root, address.as_ref(), proof)? {
         Some(account) => {
             let account = rlp::decode::<Account>(account.as_ref()).map_err(Error::RlpDecode)?;
-            if &account.storage_root == storage_root {
-                Ok(())
-            } else {
-                Err(Error::ValueMismatch)?
-            }
+            ensure(&account.storage_root == storage_root, Error::ValueMismatch)?;
+            Ok(())
         }
         None => Err(Error::ValueMismatch)?,
     }
@@ -298,15 +300,17 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 ) -> Result<(), Error> {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
 
-    if epoch < fork_parameters.deneb.epoch
-        && (header.execution.blob_gas_used != 0 || header.execution.excess_blob_gas != 0)
-    {
-        return Err(Error::MustBeDeneb);
+    if epoch >= fork_parameters.deneb.epoch {
+        ensure(
+            header.execution.blob_gas_used != 0 && header.execution.excess_blob_gas != 0,
+            Error::MustBeDeneb,
+        )?;
     }
 
-    if epoch < fork_parameters.capella.epoch {
-        return Err(Error::InvalidChainVersion);
-    }
+    ensure(
+        epoch >= fork_parameters.capella.epoch,
+        Error::InvalidChainVersion,
+    )?;
 
     validate_merkle_branch(
         &get_lc_execution_root(fork_parameters, header),
