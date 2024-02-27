@@ -125,7 +125,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
     // to match the finalized checkpoint root saved in the state of `attested_header`.
-    // NOTE(aeryz): We always expect to get `finalized_haeder` and it's embedded into the type definition.
+    // NOTE(aeryz): We always expect to get `finalized_header` and it's embedded into the type definition.
     is_valid_light_client_header(ctx.fork_parameters(), &update.finalized_header)?;
     let finalized_root = update.finalized_header.beacon.tree_hash_root();
 
