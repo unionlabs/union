@@ -27,14 +27,16 @@ jobs:
         with:
           lfs: true
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v25
+      - uses: nixbuild/nix-quick-install-action@v26
         with:
-          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
-          github_access_token: ${{ github.token }}
+          nix_on_tmpfs: false
+          nix_conf: |
+            experimental-features = nix-command flakes
+            access-tokens = ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Site
-        run: nix build .#site
+      - run: mkdir dump
+      - run: nix copy --to file://`pwd`/dump --from ssh-ng://eu.nixbuild.net `nix eval --raw .#packages.x86_64-linux.site` --extra-experimental-features nix-command
+      - run: cat dump/nar/*.nar.xz | xz -dc | nix-store --restore result
 
       - name: Link Check
         id: lychee
