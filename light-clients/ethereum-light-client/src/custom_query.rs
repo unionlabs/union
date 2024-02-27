@@ -3,6 +3,7 @@ use ethereum_verifier::BlsVerify;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     cosmwasm::wasm::union::custom_query::{query_fast_aggregate_verify, UnionCustomQuery},
+    ensure,
 };
 
 pub struct VerificationContext<'a> {
@@ -30,13 +31,12 @@ impl<'a> BlsVerify for VerificationContext<'a> {
         )
         .map_err(|e| ethereum_verifier::Error::CustomError(e.to_string()))?;
 
-        if is_valid {
-            Ok(())
-        } else {
-            Err(ethereum_verifier::Error::CustomError(format!(
+        ensure(
+            is_valid,
+            ethereum_verifier::Error::CustomError(format!(
                 "signature cannot be verified: public_keys: {:#?}, msg: {:#?}, signature: {}",
                 public_keys_, msg, signature
-            )))
-        }
+            )),
+        )
     }
 }

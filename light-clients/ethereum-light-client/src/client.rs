@@ -15,6 +15,7 @@ use sha3::Digest;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::Proto,
+    ensure,
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -88,9 +89,7 @@ impl IbcClient for EthereumLightClient {
                     reason: format!("when decoding storage proof: {e:#?}"),
                 })?
                 .proofs;
-            if proofs.len() > 1 {
-                return Err(Error::BatchingProofsNotSupported);
-            }
+            ensure(proofs.len() == 1, Error::BatchingProofsNotSupported)?;
             proofs.pop().ok_or(Error::EmptyProof)?
         };
 
@@ -205,22 +204,23 @@ impl IbcClient for EthereumLightClient {
             consensus_update.attested_header.beacon.slot,
         );
 
-        match consensus_state.data.next_sync_committee {
-            None if update_finalized_period != store_period => {
-                return Err(Error::StorePeriodMustBeEqualToFinalizedPeriod)
-            }
-            None => {
-                consensus_state.data.next_sync_committee = consensus_update
-                    .next_sync_committee
-                    .map(|c| c.aggregate_pubkey);
-            }
-            Some(ref next_sync_committee) if update_finalized_period == store_period + 1 => {
+        if let Some(ref next_sync_committee) = consensus_state.data.next_sync_committee {
+            // sync committee only changes when the period change
+            if update_finalized_period == store_period + 1 {
                 consensus_state.data.current_sync_committee = next_sync_committee.clone();
                 consensus_state.data.next_sync_committee = consensus_update
                     .next_sync_committee
                     .map(|c| c.aggregate_pubkey);
             }
-            _ => {}
+        } else {
+            // if the finalized period is greater, we have to have a next sync committee
+            ensure(
+                update_finalized_period == store_period,
+                Error::StorePeriodMustBeEqualToFinalizedPeriod,
+            )?;
+            consensus_state.data.next_sync_committee = consensus_update
+                .next_sync_committee
+                .map(|c| c.aggregate_pubkey);
         }
 
         // Some updates can be only for updating the sync committee, therefore the slot number can be
@@ -279,17 +279,19 @@ impl IbcClient for EthereumLightClient {
             read_consensus_state::<Self::CustomQuery, Self::ConsensusState>(deps, &height)?
         {
             // New header is given with the same height but the storage roots don't match.
-            if consensus_state.data.storage_root != header.account_update.account_proof.storage_root
-            {
-                return Err(Error::StorageRootMismatch {
+            ensure(
+                consensus_state.data.storage_root
+                    == header.account_update.account_proof.storage_root,
+                Error::StorageRootMismatch {
                     expected: consensus_state.data.storage_root,
                     found: header.account_update.account_proof.storage_root,
-                });
-            }
+                },
+            )?;
 
-            if consensus_state.data.slot != header.consensus_update.attested_header.beacon.slot {
-                return Err(Error::SlotCannotBeModified);
-            }
+            ensure(
+                consensus_state.data.slot == header.consensus_update.attested_header.beacon.slot,
+                Error::SlotCannotBeModified,
+            )?;
 
             // NOTE(aeryz): we don't check the timestamp here since it is calculated based on the
             // thn slot and we already check the slot.

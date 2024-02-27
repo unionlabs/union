@@ -28,8 +28,8 @@ mod tests {
                 0,
             ),
             (
-                hex!("1c88d50be829300c4b7ae8cca3894ad830043b9e9004e81af6b7d1d36eb80611"),
-                "hellowolddd",
+                hex!("f39538e1f0ca1c5f5ecdf1bb05f67c173f2d0f75b41fbb5be884f6aab2ebae91"),
+                "connection-1",
                 5,
             ),
         ];
