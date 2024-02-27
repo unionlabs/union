@@ -19,13 +19,11 @@ message Proof {
 }
 
 message AccountProof {
-  // NOTE: 20 bytes
-  bytes contract_address = 1;
   // NOTE: H256
   // NOTE: eth_getProof.storageHash
-  bytes storage_root = 2;
+  bytes storage_root = 1;
   // NOTE: eth_getProof.accountProof
-  repeated bytes proof = 3;
+  repeated bytes proof = 2;
 }
 
 message ClientState {

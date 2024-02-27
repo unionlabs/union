@@ -15,8 +15,6 @@ use zktrie::{decode_smt_proofs, Byte32, Database, Hash, MemDB, PoseidonHash, Tri
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
-    #[error("invalid rollup or ibc contract address")]
-    InvalidContractAddress,
     #[error("{0}")]
     InvalidContractAddressProof(#[from] VerifyAccountStorageRootError),
     #[error("{0}")]
@@ -32,40 +30,31 @@ pub fn verify_header(
     scroll_header: Header,
     l1_state_root: H256,
 ) -> Result<(), Error> {
-    // TODO: account_proof.contract_address should be removed entirely from ethereum LC
-    if scroll_client_state.rollup_contract_address
-        != scroll_header.l1_account_proof.contract_address
-        || scroll_client_state.ibc_contract_address
-            != scroll_header.ibc_account_proof.contract_address
-    {
-        Err(Error::InvalidContractAddress)
-    } else {
-        // Verify that the rollup account root is part of the L1 root
-        verify_account_storage_root(
-            l1_state_root,
-            &scroll_client_state.rollup_contract_address,
-            &scroll_header.l1_account_proof.proof,
-            &scroll_header.l1_account_proof.storage_root,
-        )?;
-        // Verify that the rollup finalized state root is part of the rollup account root
-        verify_storage_proof(
-            scroll_header.l1_account_proof.storage_root,
-            finalized_state_root_key(
-                scroll_client_state.rollup_finalized_state_roots_slot,
-                scroll_header.finalized_proof.batch_index.into(),
-            ),
-            &rlp::encode(&scroll_header.finalized_proof.finalized_state_root),
-            &scroll_header.finalized_proof.proof,
-        )?;
-        // Verify that the ibc account root is part of the rollup root
-        scroll_verify_zktrie_account_storage_root(
-            scroll_header.finalized_proof.finalized_state_root,
-            &scroll_client_state.ibc_contract_address,
-            &scroll_header.ibc_account_proof.proof,
-            &scroll_header.ibc_account_proof.storage_root,
-        )?;
-        Ok(())
-    }
+    // Verify that the rollup account root is part of the L1 root
+    verify_account_storage_root(
+        l1_state_root,
+        &scroll_client_state.rollup_contract_address,
+        &scroll_header.l1_account_proof.proof,
+        &scroll_header.l1_account_proof.storage_root,
+    )?;
+    // Verify that the rollup finalized state root is part of the rollup account root
+    verify_storage_proof(
+        scroll_header.l1_account_proof.storage_root,
+        finalized_state_root_key(
+            scroll_client_state.rollup_finalized_state_roots_slot,
+            scroll_header.finalized_proof.batch_index.into(),
+        ),
+        &rlp::encode(&scroll_header.finalized_proof.finalized_state_root),
+        &scroll_header.finalized_proof.proof,
+    )?;
+    // Verify that the ibc account root is part of the rollup root
+    scroll_verify_zktrie_account_storage_root(
+        scroll_header.finalized_proof.finalized_state_root,
+        &scroll_client_state.ibc_contract_address,
+        &scroll_header.ibc_account_proof.proof,
+        &scroll_header.ibc_account_proof.storage_root,
+    )?;
+    Ok(())
 }
 
 pub fn finalized_state_root_key(slot: U256, batch_index: U256) -> H256 {

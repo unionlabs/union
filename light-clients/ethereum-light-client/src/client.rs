@@ -157,16 +157,9 @@ impl IbcClient for EthereumLightClient {
 
         let proof_data = header.account_update.account_proof;
 
-        if proof_data.contract_address != wasm_client_state.data.ibc_contract_address {
-            return Err(Error::IbcContractAddressMismatch {
-                given: proof_data.contract_address,
-                expected: wasm_client_state.data.ibc_contract_address,
-            });
-        }
-
         verify_account_storage_root(
             header.consensus_update.attested_header.execution.state_root,
-            &proof_data.contract_address,
+            &wasm_client_state.data.ibc_contract_address,
             &proof_data.proof,
             &proof_data.storage_root,
         )?;
@@ -839,15 +832,6 @@ mod test {
             cosmwasm_std::Timestamp::from_seconds(wasm_consensus_state.data.timestamp + 60 * 5);
 
         (deps, update, env)
-    }
-
-    #[test]
-    fn verify_header_fails_when_ibc_contract_address_is_different() {
-        let (deps, mut update, env) = prepare_test_data();
-
-        update.account_update.account_proof.contract_address.0[0] ^= u8::MAX;
-
-        assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
     #[test]
