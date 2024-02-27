@@ -1,7 +1,6 @@
 ---
-import xIcon from '#/assets/images/x.svg'
 import unionLogo from '#/assets/union-logo/logo.svg'
-import discordIcon from '#/assets/images/discord.svg'
+import { Icon } from '@astrojs/starlight/components'
 
 let menuItems = [
   {
@@ -15,29 +14,61 @@ let menuItems = [
   {
     url: '/team',
     name: 'Team',
-  }
+  },
 ]
 ---
 
 <script>
   let menuOpen = false
 
+  let overlay = document.getElementById('overlay')
   let menuButton = document.getElementById('menu-button')
   let menuItemsList = document.getElementById('menu-items-list')
 
   menuButton?.addEventListener('click', () => {
     menuOpen = !menuOpen
-    if (menuItemsList) menuItemsList.style.display = menuOpen ? 'flex' : 'none'
+    if (!menuItemsList || !overlay) return
+    menuItemsList.style.display = menuOpen ? 'flex' : 'none'
+    menuItemsList.style.maxHeight = menuOpen ? menuItemsList.scrollHeight + 'px' : '0'
+
+    if (menuOpen) {
+      overlay.classList.add('show')
+      overlay.style.visibility = 'visible'
+    } else {
+      overlay.classList.remove('show')
+      overlay.style.visibility = 'hidden'
+    }
+  })
+
+  overlay?.addEventListener('click', () => {
+    menuOpen = false
+    if (!menuItemsList || !overlay) return
+    menuItemsList.style.display = 'none'
+    menuItemsList.style.maxHeight = '0'
+
+    overlay.classList.toggle('show', menuOpen)
   })
 </script>
 
 <header class="flex justify-around pt-3 px-4 py-3">
   <div class="max-w-5xl flex flex-1 items-center">
-    <a class="flex items-center gap-2 decoration-transparent visited:text-white" href="/">
+    <a
+      href="/"
+      id="union-logo"
+      class="flex items-center gap-2 decoration-transparent visited:text-white"
+    >
       <img class="w-8 h-8 my-auto" src={unionLogo.src} alt="Union Logo" />
       <p class="font-semibold text-3xl py-0 my-0 mb-0.5">Union</p>
     </a>
-    <nav class="hidden sm:block flex flex-1 justify-end">
+
+    <div
+      id="overlay"
+      class="overlay"
+      data-description="Overlay to blur the background when the menu is open"
+    >
+    </div>
+
+    <nav class="hidden sm:block flex-1 justify-end">
       <ul
         class="flex flex-row gap-4 justify-end items-center bg-black left-0 top-[62px] shadow-3xl p-0 m-0 font-normal list-none sm:align-middle"
       >
@@ -57,17 +88,17 @@ let menuItems = [
             href="https://discord.union.build"
             class="flex gap-2 text-lg"
           >
-            <img alt="discord" src={discordIcon.src} class="w-4 h-4" />
+            <Icon name="discord" color="#fff" size="1rem" />
           </a>
         </li>
-        <li class="">
+        <li>
           <a
             target="_blank"
             rel="noopener noreferrer"
             href="https://x.com/union_build"
             class="flex gap-2 text-lg"
           >
-            <img alt="x.com" src={xIcon.src} class="w-4 h-4" />
+            <Icon name="x.com" color="#fff" size="1.1rem" />
           </a>
         </li>
       </ul>
@@ -75,21 +106,10 @@ let menuItems = [
 
     <nav class="sm:hidden flex flex-1 justify-end">
       <button
-        class="bg-white rounded-full h-[32px] w-[32px] flex items-center justify-center cursor-pointer"
         id="menu-button"
+        class="bg-white rounded-full h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
       >
-        <svg
-          aria-hidden="true"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="#000"
-        >
-          <path
-            d="M3 8h18a1 1 0 1 0 0-2H3a1 1 0 0 0 0 2Zm18 8H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Zm0-5H3a1 1 0 0 0 0 2h18a1 1 0 0 0 0-2Z"
-          >
-          </path>
-        </svg>
+        <Icon name="bars" color="#000000" size="1.2rem" />
       </button>
 
       <ul
@@ -114,7 +134,7 @@ let menuItems = [
             class="flex gap-2 text-lg px-4 py-2"
           >
             <label>Discord</label>
-            <img alt="discord" src={discordIcon.src} class="w-4 h-4 my-auto" />
+            <Icon name="discord" color="#fff" size="1rem" class="my-auto" />
           </a>
         </li>
         <li class="">
@@ -125,10 +145,46 @@ let menuItems = [
             class="flex gap-2 text-lg px-4 py-2"
           >
             <label>X.com</label>
-            <img alt="x.com" src={xIcon.src} class="w-4 h-4 my-auto" />
+            <Icon name="x.com" color="#fff" size="1.1rem" class="my-auto" />
           </a>
         </li>
       </ul>
     </nav>
   </div>
 </header>
+
+<style is:inline>
+  #menu-items-list {
+    display: none;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.2s ease-out;
+  }
+
+  #union-logo,
+  #menu-button,
+  #menu-items-list {
+    z-index: 1000;
+  }
+
+  .overlay {
+    z-index: 999;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7); /* Adjust color and opacity as needed */
+    visibility: hidden;
+    opacity: 0;
+    transition:
+      opacity 0.3s ease,
+      visibility 0s 0.3s; /* Add transition for visibility */
+  }
+
+  .overlay.show {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.3s ease; /* No delay needed when showing */
+  }
+</style>
