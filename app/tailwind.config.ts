@@ -1,11 +1,11 @@
 import plugin from 'tailwindcss/plugin'
 import type { Config } from 'tailwindcss'
 import tailwindAnimate from 'tailwindcss-animate'
-import { fontFamily } from 'tailwindcss/defaultTheme'
 import typographyPlugin from '@tailwindcss/typography'
 import tailwindScrollbarPlugin from 'tailwind-scrollbar'
 import aspectRatioPlugin from '@tailwindcss/aspect-ratio'
 import containerQueriesPlugin from '@tailwindcss/container-queries'
+import defaultTheme from 'tailwindcss/defaultTheme'
 
 export default <Config>{
   darkMode: ['class'],
@@ -20,7 +20,24 @@ export default <Config>{
       }
     },
     extend: {
+      fontSize: {
+        md: ['1rem', { lineHeight: '1.5rem' }]
+      },
       colors: {
+        accent: {
+          DEFAULT: '#A0ECFD',
+          50: '#FAFEFF',
+          100: '#F0FCFF',
+          200: '#DCF8FE',
+          300: '#C8F4FE',
+          400: '#B4F0FD',
+          500: '#A0ECFD',
+          600: '#5FDFFC',
+          700: '#1ED2FA',
+          800: '#04ACD2',
+          900: '#037791',
+          950: '#025C70'
+        },
         border: 'hsl(var(--border) / <alpha-value>)',
         input: 'hsl(var(--input) / <alpha-value>)',
         ring: 'hsl(var(--ring) / <alpha-value>)',
@@ -42,10 +59,10 @@ export default <Config>{
           DEFAULT: 'hsl(var(--muted) / <alpha-value>)',
           foreground: 'hsl(var(--muted-foreground) / <alpha-value>)'
         },
-        accent: {
-          DEFAULT: 'hsl(var(--accent) / <alpha-value>)',
-          foreground: 'hsl(var(--accent-foreground) / <alpha-value>)'
-        },
+        // accent: {
+        //   DEFAULT: 'hsl(var(--accent) / <alpha-value>)',
+        //   foreground: 'hsl(var(--accent-foreground) / <alpha-value>)'
+        // },
         popover: {
           DEFAULT: 'hsl(var(--popover) / <alpha-value>)',
           foreground: 'hsl(var(--popover-foreground) / <alpha-value>)'
@@ -61,7 +78,15 @@ export default <Config>{
         sm: 'calc(var(--radius) - 4px)'
       },
       fontFamily: {
-        sans: [...fontFamily.sans]
+        sans: [
+          'Inter var',
+          {
+            fontFeatureSettings: '"cv11", "ss01"',
+            fontVariationSettings: '"opsz" 32'
+          }
+        ],
+        mono: ['JetBrains Mono', ...defaultTheme.fontFamily.mono],
+        jetbrains: ['JetBrains Mono', ...defaultTheme.fontFamily.mono]
       }
     }
   },

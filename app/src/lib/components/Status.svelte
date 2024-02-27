@@ -15,9 +15,8 @@
     sendAssetFromUnionToEthereum
   } from '$/lib/snap.ts'
 </script>
-      
 
-<div class="p-4 font-mono border-neutral-900 border border-solid border-2">
+<div class="border-2 border-solid border-neutral-900 p-4 font-mono">
   <p>Wallet status: {$wallet.status}</p>
   <p>EVM Address: {$wallet.address}</p>
   <p>EVM Chain ID: {$wallet.chainId}</p>

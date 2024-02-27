@@ -4,15 +4,16 @@
       pkgsDeps = with pkgs; [ pkg-config ];
       nodeDeps = with nodePkgs; [ nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
+      packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
         app = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-u/tJNGhjErbSlokOcv2HMSvmbCRy8LdY3NLRlAO/bNw=";
+          npmDepsHash = "sha256-hx5y0HrREkKPfHU02CR32ZvLaPOHmGEtqPUluTuFXwo=";
           src = ./.;
           sourceRoot = "app";
-          pname = "app";
-          version = "0.0.0";
+          pname = packageJSON.name;
+          version = packageJSON.version;
           nativeBuildInputs = combinedDeps ++ [ pkgs.python3 ];
           buildInputs = combinedDeps;
           installPhase = ''

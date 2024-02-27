@@ -24,15 +24,15 @@
   import toast from 'svelte-french-toast'
   import { getBalance } from '@wagmi/core'
   import { Button } from '$lib/components/ui/button'
+  import Header from '$lib/components/Header.svelte'
   import Faucet from '$/lib/components/Faucet.svelte'
+  import Status from '$/lib/components/Status.svelte'
   import Connect from '$lib/components/Connect.svelte'
   import { generateRandomInteger } from '$/lib/utilities'
   import { fetchUnionUnoBalance } from '$/lib/fetchers/balance'
   import { wallet, switchChain, config } from '$lib/wallet/config.ts'
   import { fetchUserTransfers, type TransferEvent } from '$/lib/fetchers/transfers'
   import { useQueryClient, createQuery, createMutation } from '@tanstack/svelte-query'
-  import Header from '$lib/components/Header.svelte'
-  import Status from '$/lib/components/Status.svelte'
 
   let error: any
 
@@ -86,7 +86,7 @@
     refetchInterval: pollingIntervalMS * 1.5
   })
 
-  $: userTransfers = createQuery<TransferEvent[]>({
+  $: userTransfersQuery = createQuery<TransferEvent[]>({
     queryKey: ['user-transfers', $wallet.address],
     queryFn: async () => {
       if (!$wallet.address) return []
@@ -97,20 +97,16 @@
     refetchInterval: pollingIntervalMS * 2.5
   })
 
-
+  const userTransfers = $userTransfersQuery?.data ?? []
 </script>
 
-<Header/>
+<Header />
 
-<main
-  class="mt-12 flex min-h-full min-w-full flex-col items-center justify-center space-y-6"
->
+<main class="mt-12 flex min-h-full min-w-full flex-col items-center justify-center space-y-6">
   {#if $wallet.isConnected}
     <div>
-      <Status/>
+      <Status />
 
-
-      
       <p>UNO ERC20 Balance: {$unoERC20Balance.data}</p>
       <p>Sepolia ETH Balance: {$sepoliaEthBalance.data}</p>
 
@@ -214,18 +210,22 @@
         <div class="w-full">
           <Faucet />
         </div>
-      <a
-        class={clsx(['rounded-md border-[1px] border-gray-200 px-4 py-2 text-blue-500 underline'])}
-        href="https://www.alchemy.com/faucets/ethereum-sepolia"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Sepolia ETH Faucet
-      </a>
+        <a
+          class={clsx([
+            'rounded-md border-[1px] border-gray-200 px-4 py-2 text-blue-500 underline'
+          ])}
+          href="https://www.alchemy.com/faucets/ethereum-sepolia"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Sepolia ETH Faucet
+        </a>
       </section>
 
-      <section class="my-3 max-w-[600px] overflow-x-auto border-2 border-neutral-900 p-4 border-solid">
-        {#each $userTransfers?.data as transfer}
+      <section
+        class="my-3 max-w-[600px] overflow-x-auto border-2 border-solid border-neutral-900 p-4"
+      >
+        {#each userTransfers as transfer}
           <div class="flex justify-between">
             <pre>{JSON.stringify(transfer, null, 2)}</pre>
           </div>

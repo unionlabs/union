@@ -1,3 +1,8 @@
-<header class="p-4 text-red border-neutral-900 border-solid border-b-2">
-  <h1 class="text-xl text-white">Union App <span class="uppercase text-sm font-bold ml-2 px-2 py-1 bg-white text-black rounded">Beta<span></h1>
+<script lang="ts">
+  import { Badge } from '$lib/components/ui/badge'
+</script>
+
+<header class="text-red flex space-x-3 border-b-2 border-solid border-neutral-900 p-4">
+  <h1 class="text-xl text-white">Union App</h1>
+  <Badge class="text-sm">BETA</Badge>
 </header>
