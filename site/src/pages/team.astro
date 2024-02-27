@@ -164,7 +164,7 @@ let teams = [
         {
           profiles.map(person => (
             <li>
-              <a class="block w-full gap-4 items-center flex-1 flex flex-row p-4 gap-2 bg-black hover:bg-[#152325] transition-colors" href={`https://x.com/${person.x_name}`}>
+              <a class="w-full gap-4 items-center flex-1 flex flex-row p-4 bg-black hover:bg-[#152325] transition-colors" href={`https://x.com/${person.x_name}`}>
                   <img class="w-20 h-20" src={person.profile_pic.src}/>
                   <div class="leading-tight">
                     <h3 class="text-2xl">{person.name}</h3>
@@ -185,7 +185,7 @@ let teams = [
         {
           teams.map(team=> (
             <li>
-              <a class="block w-full h-full gap-3 items-center flex-1 flex flex-row p-3 gap-2 bg-black hover:bg-[#152325] justify-center" href={team.url}>
+              <a class="w-full h-full gap-3 items-center flex-1 flex flex-row p-3 bg-black hover:bg-[#152325] justify-center" href={team.url}>
                   <img class={team.clazz ? team.clazz : "p-4 h-16"} src={team.logo.src} alt={team.name}/>
               </a>
             </li>
