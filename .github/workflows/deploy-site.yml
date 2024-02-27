@@ -100,7 +100,6 @@ jobs:
   deploy-manual:
     runs-on: ['ubuntu-latest']
     needs: [build]
-    permissions: write-all
     env:
       npm_config_yes: true
     if: github.event_name == 'workflow_dispatch'
@@ -127,7 +126,6 @@ jobs:
   deploy-production:
     runs-on: ['ubuntu-latest']
     needs: [build]
-    permissions: write-all
     env:
       npm_config_yes: true
     environment: 'site-production'
