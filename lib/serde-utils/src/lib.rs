@@ -335,6 +335,38 @@ pub mod string {
     }
 }
 
+pub mod string_opt {
+    use std::{fmt, str::FromStr};
+
+    use serde::de::Deserialize;
+
+    pub fn serialize<S, T>(data: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+        T: fmt::Display,
+    {
+        if let Some(data) = data {
+            serializer.collect_str(&data)
+        } else {
+            serializer.serialize_none()
+        }
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        T: FromStr,
+    {
+        String::deserialize(deserializer).and_then(|s| {
+            s.parse()
+                .map(Some)
+                // TODO fix error situation
+                // FromStr::Err has no bounds
+                .map_err(|_| serde::de::Error::custom("failure to parse string data"))
+        })
+    }
+}
+
 pub mod u256_from_dec_str {
     use primitive_types::U256;
     use serde::de::Deserialize;

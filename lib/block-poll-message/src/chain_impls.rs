@@ -44,7 +44,7 @@ macro_rules! try_from_block_poll_msg {
                                                     ChainSpecificData($d Enum::$d Variant(
                                                     t,
                                                 ))) => Ok(Identified::new(chain_id, t)),
-                                                _ => Err(QueueMsg::Data(Into::<AnyChainIdentified<AnyData>>::into(Identified::new(chain_id, t))))
+                                                _ => Err(QueueMsg::Data(Into::<AnyChainIdentified<AnyData>>::into(Identified::<$d Chain, _>::new(chain_id, t))))
                                             }
 
                                         },
@@ -57,9 +57,9 @@ macro_rules! try_from_block_poll_msg {
                             where
                                 AnyChainIdentified<AnyData>: From<Identified<$d Chain, Data<$d Chain>>>,
                                 $($($where)+)?
-                            {
+                           {
                                 fn from(Identified { chain_id, t, }: Identified<$d Chain, $d Ty>) -> crate::AnyChainIdentified<crate::data::AnyData> {
-                                    crate::AnyChainIdentified::from(Identified::new(
+                                    crate::AnyChainIdentified::<crate::data::AnyData>::from(Identified::<$d Chain, _>::new(
                                         chain_id,
                                         Data::ChainSpecific(ChainSpecificData($d Enum::$d Variant(
                                             t,
@@ -76,7 +76,7 @@ macro_rules! try_from_block_poll_msg {
                                 type Error = crate::AnyChainIdentified<crate::data::AnyData>;
 
                                 fn try_from(value: crate::AnyChainIdentified<crate::data::AnyData>) -> Result<Identified<$d Chain, $d Ty>, crate::AnyChainIdentified<crate::data::AnyData>> {
-                                    let Identified {
+                                    let Identified::<$d Chain, _> {
                                         chain_id,
                                         t,
                                     } = value.try_into()?;
@@ -112,6 +112,7 @@ macro_rules! try_from_block_poll_msg {
 
 pub mod cosmos;
 pub mod evm;
+pub mod scroll;
 pub mod union;
 
 pub mod cosmos_sdk;

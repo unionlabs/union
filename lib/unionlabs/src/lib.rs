@@ -5,6 +5,7 @@
 
 use std::{
     fmt::{Debug, Display},
+    ptr::addr_of,
     str::FromStr,
 };
 
@@ -512,4 +513,41 @@ pub mod never {
 
 pub fn ensure<E>(expr: bool, err: E) -> Result<(), E> {
     expr.then_some(()).ok_or(err)
+}
+
+pub trait ByteArrayExt<const N: usize> {
+    /// Slice into an array at `FROM..(FROM + LEN)`, returning an array of length `LEN`. This will fail to compile if the equivalent slicing would panic at runtime.
+    ///
+    /// ```compile_fail
+    /// let arr = [1, 2, 3, 4, 5];
+    ///
+    /// // attempt to read `arr[4..(4 + 2)]`
+    /// arr.array_slice::<4, 2>();
+    /// ```
+    ///
+    /// ```rust
+    /// # let arr = [1, 2, 3, 4, 5];
+    /// // checked at compile time!
+    /// assert_eq!(arr.array_slice::<0, 2>(), [1, 2]);
+    /// ```
+    fn array_slice<const FROM: usize, const LEN: usize>(&self) -> [u8; LEN];
+}
+
+impl<const N: usize> ByteArrayExt<N> for [u8; N] {
+    fn array_slice<const FROM: usize, const LEN: usize>(&self) -> [u8; LEN] {
+        const_assert!(FROM: usize, LEN: usize, N: usize => FROM + LEN <= N);
+
+        unsafe { *addr_of!(self[FROM..(FROM + LEN)]).cast::<[u8; LEN]>() }
+    }
+}
+
+#[test]
+fn array_slice() {
+    let arr = [1, 2, 3, 4, 5];
+
+    assert_eq!(arr.array_slice::<0, 2>(), [1, 2]);
+    assert_eq!(arr.array_slice::<1, 1>(), [2]);
+    assert_eq!(arr.array_slice::<4, 1>(), [5]);
+    assert_eq!(arr.array_slice::<0, 0>(), [0; 0]);
+    assert_eq!(arr.array_slice::<5, 0>(), [0; 0]);
 }

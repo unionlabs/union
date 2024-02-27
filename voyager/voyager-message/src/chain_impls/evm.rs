@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
 use beacon_api::errors::{InternalServerError, NotFoundError};
-use chain_utils::evm::{CometblsMiddleware, Evm, IbcHandlerErrors, EVM_REVISION_NUMBER};
+use chain_utils::evm::{Evm, EvmSignerMiddleware, IbcHandlerErrors, EVM_REVISION_NUMBER};
 use contracts::ibc_handler::{
     self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall, ChannelOpenInitCall,
     ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall, ConnectionOpenInitCall,
@@ -990,7 +990,7 @@ fn sync_committee_period<H: Into<u64>, C: ChainSpec>(height: H) -> u64 {
 #[derive(Debug, thiserror::Error)]
 pub enum TxSubmitError {
     #[error(transparent)]
-    Contract(#[from] ContractError<CometblsMiddleware>),
+    Contract(#[from] ContractError<EvmSignerMiddleware>),
     #[error(transparent)]
     Provider(#[from] ProviderError),
     #[error("no tx receipt from tx")]
@@ -1005,9 +1005,9 @@ impl MaybeRecoverableError for TxSubmitError {
 }
 
 fn mk_function_call<Call: EthCall>(
-    ibc_handler: IBCHandler<CometblsMiddleware>,
+    ibc_handler: IBCHandler<EvmSignerMiddleware>,
     data: Call,
-) -> ethers::contract::FunctionCall<Arc<CometblsMiddleware>, CometblsMiddleware, ()> {
+) -> ethers::contract::FunctionCall<Arc<EvmSignerMiddleware>, EvmSignerMiddleware, ()> {
     ibc_handler
         .method_hash(<Call as EthCall>::selector(), data)
         .expect("method selector is generated; qed;")

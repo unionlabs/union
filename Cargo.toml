@@ -39,6 +39,7 @@ members = [
   "lib/zktrie-rs",
   "lib/scroll-verifier",
   "lib/block-poll-message",
+  "lib/scroll-api",
 ]
 
 [workspace.package]
@@ -64,6 +65,7 @@ pg-queue                  = { path = "lib/pg-queue", default-features = false }
 poseidon-rs               = { path = "lib/poseidon-rs" }
 protos                    = { path = "generated/rust/protos", default-features = false }
 queue-msg                 = { path = "lib/queue-msg", default-features = false }
+scroll-api                = { path = "lib/scroll-api", default-features = false }
 scroll-verifier           = { path = "lib/scroll-verifier", default-features = false }
 serde-utils               = { path = "lib/serde-utils", default-features = false }
 tendermint-verifier       = { path = "lib/tendermint-verifier", default-features = false }

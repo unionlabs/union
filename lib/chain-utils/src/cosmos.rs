@@ -107,13 +107,11 @@ impl Chain for Cosmos {
         self.chain_id.clone()
     }
 
-    fn query_latest_height(&self) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
-        async move {
-            self.tm_client
-                .latest_block()
-                .await
-                .map(|height| self.make_height(height.block.header.height.value()))
-        }
+    async fn query_latest_height(&self) -> Result<Height, Self::Error> {
+        self.tm_client
+            .latest_block()
+            .await
+            .map(|height| self.make_height(height.block.header.height.value()))
     }
 
     fn query_latest_height_as_destination(
@@ -122,170 +120,157 @@ impl Chain for Cosmos {
         self.query_latest_height()
     }
 
-    fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_ {
-        async move {
-            let height = self.query_latest_height().await?;
-            Ok(self
-                .tm_client
-                .block(u32::try_from(height.revision_height).unwrap())
-                .await?
-                .block
-                .header
-                .time
-                .unix_timestamp())
-        }
+    async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
+        let height = self.query_latest_height().await?;
+        Ok(self
+            .tm_client
+            .block(u32::try_from(height.revision_height).unwrap())
+            .await?
+            .block
+            .header
+            .time
+            .unix_timestamp())
     }
 
-    fn self_client_state(
-        &self,
-        height: Height,
-    ) -> impl Future<Output = Self::SelfClientState> + '_ {
-        async move {
-            let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
-                self.grpc_url.clone(),
-            )
+    async fn self_client_state(&self, height: Height) -> Self::SelfClientState {
+        let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
+            self.grpc_url.clone(),
+        )
+        .await
+        .unwrap()
+        .params(protos::cosmos::staking::v1beta1::QueryParamsRequest {})
+        .await
+        .unwrap()
+        .into_inner()
+        .params
+        .unwrap();
+
+        let commit = self
+            .tm_client
+            .commit(u32::try_from(height.revision_height).unwrap())
             .await
-            .unwrap()
-            .params(protos::cosmos::staking::v1beta1::QueryParamsRequest {})
-            .await
-            .unwrap()
-            .into_inner()
-            .params
             .unwrap();
 
-            let commit = self
-                .tm_client
-                .commit(u32::try_from(height.revision_height).unwrap())
-                .await
-                .unwrap();
+        let height = commit.signed_header.header.height;
 
-            let height = commit.signed_header.header.height;
+        let unbonding_period = std::time::Duration::new(
+            params
+                .unbonding_time
+                .clone()
+                .unwrap()
+                .seconds
+                .try_into()
+                .unwrap(),
+            params
+                .unbonding_time
+                .clone()
+                .unwrap()
+                .nanos
+                .try_into()
+                .unwrap(),
+        );
 
-            let unbonding_period = std::time::Duration::new(
-                params
-                    .unbonding_time
-                    .clone()
-                    .unwrap()
-                    .seconds
+        tendermint::client_state::ClientState {
+            chain_id: self.chain_id(),
+            // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
+            trust_level: Fraction {
+                numerator: 1,
+                denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
+            },
+            // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+            trusting_period: unionlabs::google::protobuf::duration::Duration::new(
+                (unbonding_period * 85 / 100).as_secs().try_into().unwrap(),
+                (unbonding_period * 85 / 100)
+                    .subsec_nanos()
                     .try_into()
                     .unwrap(),
-                params
-                    .unbonding_time
-                    .clone()
-                    .unwrap()
-                    .nanos
-                    .try_into()
-                    .unwrap(),
-            );
-
-            tendermint::client_state::ClientState {
-                chain_id: self.chain_id(),
-                // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
-                trust_level: Fraction {
-                    numerator: 1,
-                    denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
-                },
-                // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                trusting_period: unionlabs::google::protobuf::duration::Duration::new(
-                    (unbonding_period * 85 / 100).as_secs().try_into().unwrap(),
-                    (unbonding_period * 85 / 100)
-                        .subsec_nanos()
-                        .try_into()
-                        .unwrap(),
-                )
+            )
+            .unwrap(),
+            unbonding_period: unionlabs::google::protobuf::duration::Duration::new(
+                unbonding_period.as_secs().try_into().unwrap(),
+                unbonding_period.subsec_nanos().try_into().unwrap(),
+            )
+            .unwrap(),
+            // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+            max_clock_drift: unionlabs::google::protobuf::duration::Duration::new(60 * 10, 0)
                 .unwrap(),
-                unbonding_period: unionlabs::google::protobuf::duration::Duration::new(
-                    unbonding_period.as_secs().try_into().unwrap(),
-                    unbonding_period.subsec_nanos().try_into().unwrap(),
-                )
-                .unwrap(),
-                // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                max_clock_drift: unionlabs::google::protobuf::duration::Duration::new(60 * 10, 0)
-                    .unwrap(),
-                frozen_height: None,
-                latest_height: Height {
-                    revision_number: self.chain_revision,
-                    revision_height: height.value(),
-                },
-                proof_specs: SDK_SPECS.into(),
-                upgrade_path: vec!["upgrade".into(), "upgradedIBCState".into()],
-                allow_update_after_expiry: false,
-                allow_update_after_misbehavior: false,
-            }
+            frozen_height: None,
+            latest_height: Height {
+                revision_number: self.chain_revision,
+                revision_height: height.value(),
+            },
+            proof_specs: SDK_SPECS.into(),
+            upgrade_path: vec!["upgrade".into(), "upgradedIBCState".into()],
+            allow_update_after_expiry: false,
+            allow_update_after_misbehavior: false,
         }
     }
 
-    fn self_consensus_state(
-        &self,
-        height: Height,
-    ) -> impl Future<Output = Self::SelfConsensusState> + '_ {
-        async move {
-            let commit = self
-                .tm_client
-                .commit(u32::try_from(height.revision_height).unwrap())
-                .await
-                .unwrap();
+    async fn self_consensus_state(&self, height: Height) -> Self::SelfConsensusState {
+        let commit = self
+            .tm_client
+            .commit(u32::try_from(height.revision_height).unwrap())
+            .await
+            .unwrap();
 
-            tendermint::consensus_state::ConsensusState {
-                root: MerkleRoot {
-                    hash: commit
-                        .signed_header
-                        .header
-                        .app_hash
-                        .as_bytes()
-                        .to_vec()
-                        .try_into()
-                        .unwrap(),
-                },
-                next_validators_hash: commit
+        tendermint::consensus_state::ConsensusState {
+            root: MerkleRoot {
+                hash: commit
                     .signed_header
                     .header
-                    .next_validators_hash
+                    .app_hash
                     .as_bytes()
                     .to_vec()
                     .try_into()
                     .unwrap(),
-                timestamp: {
-                    let timestamp_nanos = commit.signed_header.header.time.unix_timestamp_nanos();
-                    let seconds = timestamp_nanos / NANOS_PER_SECOND as i128;
-                    let nanos = timestamp_nanos % NANOS_PER_SECOND as i128;
-                    unionlabs::google::protobuf::timestamp::Timestamp {
-                        seconds: BoundedI64::new(seconds.try_into().unwrap()).unwrap(),
-                        nanos: BoundedI32::new(nanos.try_into().unwrap()).unwrap(),
-                    }
-                },
-            }
+            },
+            next_validators_hash: commit
+                .signed_header
+                .header
+                .next_validators_hash
+                .as_bytes()
+                .to_vec()
+                .try_into()
+                .unwrap(),
+            timestamp: {
+                let timestamp_nanos = commit.signed_header.header.time.unix_timestamp_nanos();
+                let seconds = timestamp_nanos / NANOS_PER_SECOND as i128;
+                let nanos = timestamp_nanos % NANOS_PER_SECOND as i128;
+                unionlabs::google::protobuf::timestamp::Timestamp {
+                    seconds: BoundedI64::new(seconds.try_into().unwrap()).unwrap(),
+                    nanos: BoundedI32::new(nanos.try_into().unwrap()).unwrap(),
+                }
+            },
         }
     }
 
-    fn read_ack(
+    async fn read_ack(
         &self,
         block_hash: H256,
         destination_channel_id: unionlabs::id::ChannelId,
         destination_port_id: unionlabs::id::PortId,
         sequence: NonZeroU64,
-    ) -> impl Future<Output = Vec<u8>> + '_ {
-        async move {
-            let block_height = self
-                .tm_client
-                .block_by_hash(block_hash.0.to_vec().try_into().unwrap())
-                .await
-                .unwrap()
-                .block
-                .unwrap()
-                .header
-                .height;
+    ) -> Vec<u8> {
+        let block_height = self
+            .tm_client
+            .block_by_hash(block_hash.0.to_vec().try_into().unwrap())
+            .await
+            .unwrap()
+            .block
+            .unwrap()
+            .header
+            .height;
 
-            tracing::info!(
-                "Querying ack for {}/{}/{} at {}",
-                destination_port_id,
-                destination_channel_id,
-                sequence,
-                block_height
-            );
+        tracing::info!(
+            "Querying ack for {}/{}/{} at {}",
+            destination_port_id,
+            destination_channel_id,
+            sequence,
+            block_height
+        );
 
-            let wa = self
-                .tm_client
+        let wa =
+            self.tm_client
                 .tx_search(
                     tendermint_rpc::query::Query::eq("tx.height", u64::from(block_height)),
                     false,
@@ -332,8 +317,7 @@ impl Chain for Cosmos {
                 })
                 .unwrap();
 
-            wa.packet_ack_hex
-        }
+        wa.packet_ack_hex
     }
 }
 

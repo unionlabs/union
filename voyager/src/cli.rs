@@ -39,8 +39,19 @@ pub struct AppArgs {
         default_value = "~/.config/voyager/config.json"
     )]
     pub config_file_path: OsString,
+    #[arg(long, short = 'l', env, global = true, default_value_t = LogFormat::default())]
+    pub log_format: LogFormat,
     #[command(subcommand)]
     pub command: Command,
+}
+
+#[derive(Debug, Clone, PartialEq, Default, clap::ValueEnum, derive_more::Display)]
+pub enum LogFormat {
+    #[default]
+    #[display(fmt = "text")]
+    Text,
+    #[display(fmt = "json")]
+    Json,
 }
 
 #[derive(Debug, Subcommand)]

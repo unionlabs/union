@@ -14,6 +14,7 @@ use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm};
 use clap::Parser;
 use sqlx::PgPool;
 use tikv_jemallocator::Jemalloc;
+use tracing_subscriber::EnvFilter;
 use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
 
 #[global_allocator]
@@ -37,9 +38,20 @@ pub mod chain;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> ExitCode {
-    tracing_subscriber::fmt().json().init();
-
     let args = AppArgs::parse();
+    match args.log_format {
+        cli::LogFormat::Text => {
+            tracing_subscriber::fmt()
+                .with_env_filter(EnvFilter::from_default_env())
+                .init();
+        }
+        cli::LogFormat::Json => {
+            tracing_subscriber::fmt()
+                .with_env_filter(EnvFilter::from_default_env())
+                .json()
+                .init();
+        }
+    }
 
     match do_main(args).await {
         Ok(()) => ExitCode::SUCCESS,

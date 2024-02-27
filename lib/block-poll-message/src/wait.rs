@@ -72,6 +72,7 @@ impl HandleWait<BlockPollingTypes> for AnyChainIdentified<AnyWait> {
             AnyChainIdentified::Union(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
             AnyChainIdentified::EvmMainnet(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
             AnyChainIdentified::EvmMinimal(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
+            AnyChainIdentified::Scroll(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
         }
     }
 }

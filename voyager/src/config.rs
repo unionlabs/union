@@ -1,9 +1,8 @@
 use std::collections::BTreeMap;
 
-use chain_utils::private_key::PrivateKey;
+use chain_utils::{cosmos, private_key::PrivateKey, scroll, union};
 use ethers::prelude::k256::ecdsa;
 use serde::{Deserialize, Serialize};
-use tendermint_rpc::WebSocketClientUrl;
 use unionlabs::{ethereum::config::PresetBaseKind, hash::H160};
 
 use crate::{
@@ -47,9 +46,10 @@ pub enum GetChainError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "chain_type")]
 pub enum ChainConfigType {
+    Union(union::Config),
+    Cosmos(cosmos::Config),
     Evm(EvmChainConfig),
-    Union(UnionChainConfig),
-    Cosmos(CosmosChainConfig),
+    Scroll(scroll::Config),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,23 +75,6 @@ pub struct EvmChainConfig {
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UnionChainConfig {
-    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
-    pub fee_denom: String,
-    pub ws_url: WebSocketClientUrl,
-    pub prover_endpoint: String,
-    pub grpc_url: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CosmosChainConfig {
-    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
-    pub fee_denom: String,
-    pub ws_url: WebSocketClientUrl,
-    pub grpc_url: String,
 }
 
 // pub mod private_key {

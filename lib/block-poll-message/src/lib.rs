@@ -5,7 +5,7 @@ use std::{
     fmt::{Debug, Display},
 };
 
-use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, Chains};
+use chain_utils::{cosmos::Cosmos, evm::Evm, scroll::Scroll, union::Union, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use queue_msg::{QueueMsg, QueueMsgTypes, QueueMsgTypesTraits};
 use serde::{Deserialize, Serialize};
@@ -71,6 +71,7 @@ pub enum AnyChainIdentified<T: AnyChain> {
     Cosmos(Identified<Cosmos, InnerOf<T, Cosmos>>),
     EvmMainnet(Identified<Evm<Mainnet>, InnerOf<T, Evm<Mainnet>>>),
     EvmMinimal(Identified<Evm<Minimal>, InnerOf<T, Evm<Minimal>>>),
+    Scroll(Identified<Scroll, InnerOf<T, Scroll>>),
 }
 
 pub trait AnyChain {

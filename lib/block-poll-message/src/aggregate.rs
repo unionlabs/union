@@ -46,6 +46,7 @@ impl HandleAggregate<BlockPollingTypes> for AnyChainIdentified<AnyAggregate> {
             AnyChainIdentified::Union(aggregate) => aggregate.handle(data),
             AnyChainIdentified::EvmMainnet(aggregate) => aggregate.handle(data),
             AnyChainIdentified::EvmMinimal(aggregate) => aggregate.handle(data),
+            AnyChainIdentified::Scroll(aggregate) => aggregate.handle(data),
         }
     }
 }
