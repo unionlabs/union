@@ -508,7 +508,6 @@ where
                     slot,
                     update: AccountUpdate {
                         account_proof: AccountProof {
-                            contract_address: c.readonly_ibc_handler.address().0.into(),
                             storage_root: account_update.storage_hash.into(),
                             proof: account_update
                                 .account_proof
