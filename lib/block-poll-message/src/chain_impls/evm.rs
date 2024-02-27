@@ -355,12 +355,14 @@ where
                 if to_slot - from_slot == 1 {
                     fetch(id(
                         c.chain_id(),
-                        ChainSpecificFetch::<Evm<C>>(EvmFetch::FetchGetLogs(FetchGetLogs {
+                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(FetchGetLogs {
                             from_slot,
                             to_slot,
                         })),
                     ))
                 } else {
+                    // attempt to shrink from..to
+                    // note that this is *exclusive* on the `to`
                     for slot in (from_slot + 1)..to_slot {
                         tracing::info!("querying slot {slot}");
                         match c
@@ -385,7 +387,7 @@ where
                                 return seq([
                                     fetch(id(
                                         c.chain_id(),
-                                        ChainSpecificFetch::<Evm<C>>(EvmFetch::FetchGetLogs(
+                                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(
                                             FetchGetLogs {
                                                 from_slot,
                                                 to_slot: slot,
@@ -394,25 +396,26 @@ where
                                     )),
                                     fetch(id(
                                         c.chain_id(),
-                                        ChainSpecificFetch::<Evm<C>>(
-                                            EvmFetch::FetchBeaconBlockRange(
-                                                FetchBeaconBlockRange {
-                                                    from_slot: slot,
-                                                    to_slot,
-                                                },
-                                            ),
-                                        ),
+                                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(
+                                            FetchBeaconBlockRange {
+                                                from_slot: slot,
+                                                to_slot,
+                                            },
+                                        )),
                                     )),
                                 ])
                             }
                         }
                     }
 
-                    panic!(
-                        "no slots in (from_slot + 1)..to_slot are available. \
-                        `FetchBeaconBlockRange` assumes that both from_slot and \
-                        to_slot are valid beacon slots (i.e. they have not been missed)."
-                    )
+                    // if the range is not shrinkable (i.e. all blocks between `from` and `to` are missing, but `from` and `to` both exist), fetch logs between `from` and `to`
+                    fetch(id(
+                        c.chain_id(),
+                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(FetchGetLogs {
+                            from_slot,
+                            to_slot,
+                        })),
+                    ))
                 }
             }
             EvmFetch::FetchChannel(FetchChannel { height, path }) => data(id(
