@@ -139,26 +139,25 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify that the `next_sync_committee`, if present, actually is the next sync committee saved in the
     // state of the `attested_header` if the store period is equal to the attested period
-    match (&update.next_sync_committee, ctx.next_sync_committee()) {
-        (Some(next_sync_committee), Some(current_next_sync_committee)) => {
-            if update_attested_period == stored_period {
-                ensure(
-                    next_sync_committee == current_next_sync_committee,
-                    Error::NextSyncCommitteeMismatch {
-                        expected: current_next_sync_committee.aggregate_pubkey.clone(),
-                        got: next_sync_committee.aggregate_pubkey.clone(),
-                    },
-                )?;
-            }
-            validate_merkle_branch(
-                &next_sync_committee.tree_hash_root().into(),
-                &update.next_sync_committee_branch.unwrap_or_default(),
-                floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
-                get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
-                &update.attested_header.beacon.state_root,
+    if let (Some(next_sync_committee), Some(current_next_sync_committee)) =
+        (&update.next_sync_committee, ctx.next_sync_committee())
+    {
+        if update_attested_period == stored_period {
+            ensure(
+                next_sync_committee == current_next_sync_committee,
+                Error::NextSyncCommitteeMismatch {
+                    expected: current_next_sync_committee.aggregate_pubkey.clone(),
+                    got: next_sync_committee.aggregate_pubkey.clone(),
+                },
             )?;
         }
-        _ => {}
+        validate_merkle_branch(
+            &next_sync_committee.tree_hash_root().into(),
+            &update.next_sync_committee_branch.unwrap_or_default(),
+            floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
+            get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
+            &update.attested_header.beacon.state_root,
+        )?;
     }
 
     // Verify sync committee aggregate signature
