@@ -882,20 +882,6 @@ mod test {
         assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
-    #[test]
-    fn gen_commitment_key() {
-        let key = generate_commitment_key(
-            &ConnectionPath {
-                connection_id: unionlabs::validated::Validated::new("connection-100".into())
-                    .unwrap(),
-            }
-            .to_string(),
-            U256::from(0),
-        );
-
-        println!("KEY: {}", hex::encode(key));
-    }
-
     // TODO(aeryz): These won't work now since they now eth abi encoded
     // #[test]
     // fn membership_verification_works_for_client_state() {
