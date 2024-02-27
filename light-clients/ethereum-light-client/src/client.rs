@@ -1,7 +1,8 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_verifier::{
-    compute_sync_committee_period_at_slot, compute_timestamp_at_slot, validate_light_client_update,
-    verify_account_storage_root, verify_storage_absence, verify_storage_proof,
+    compute_slot_at_timestamp, compute_sync_committee_period_at_slot, compute_timestamp_at_slot,
+    validate_light_client_update, validate_signature_supermajority, verify_account_storage_root,
+    verify_storage_absence, verify_storage_proof,
 };
 use ics008_wasm_client::{
     storage_utils::{
@@ -134,9 +135,11 @@ impl IbcClient for EthereumLightClient {
 
         // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
         // at the current timestamp.
-        let current_slot = (env.block.time.seconds() - wasm_client_state.data.genesis_time)
-            / wasm_client_state.data.seconds_per_slot
-            + wasm_client_state.data.fork_parameters.genesis_slot;
+        let current_slot = compute_slot_at_timestamp::<Config>(
+            wasm_client_state.data.genesis_time,
+            env.block.time.seconds(),
+        )
+        .ok_or(Error::IntegerOverflow)?;
 
         validate_light_client_update::<LightClientContext<Config>, VerificationContext>(
             &ctx,
@@ -145,6 +148,13 @@ impl IbcClient for EthereumLightClient {
             wasm_client_state.data.genesis_validators_root.clone(),
             VerificationContext { deps },
         )?;
+
+        // check whether at least 2/3 of the sync committee signed
+        if !validate_signature_supermajority::<Config>(
+            &header.consensus_update.sync_aggregate.sync_committee_bits,
+        ) {
+            return Err(Error::NotEnoughSignature);
+        }
 
         let proof_data = header.account_update.account_proof;
 

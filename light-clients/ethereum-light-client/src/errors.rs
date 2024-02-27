@@ -98,6 +98,12 @@ pub enum Error {
 
     #[error("error while calling custom query: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
+
+    #[error("not enough signature")]
+    NotEnoughSignature,
+
+    #[error("integer arithmetic overflow")]
+    IntegerOverflow,
 }
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {
