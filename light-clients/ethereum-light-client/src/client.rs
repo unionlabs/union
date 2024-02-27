@@ -500,7 +500,6 @@ mod test {
         ethereum::config::Mainnet,
         ibc::{core::connection::connection_end::ConnectionEnd, lightclients::ethereum},
         id::ClientId,
-        proof::ConnectionPath,
         IntoProto,
     };
 
@@ -844,7 +843,7 @@ mod test {
     fn verify_header_fails_when_ibc_contract_address_is_different() {
         let (deps, mut update, env) = prepare_test_data();
 
-        update.account_update.account_proof.contract_address.0[0] += 1;
+        update.account_update.account_proof.contract_address.0[0] ^= u8::MAX;
 
         assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
@@ -859,7 +858,7 @@ mod test {
             .get()
             .aggregate_pubkey
             .clone();
-        pubkey.0[0] += 1;
+        pubkey.0[0] ^= u8::MAX;
         update
             .trusted_sync_committee
             .sync_committee
@@ -871,14 +870,14 @@ mod test {
     #[test]
     fn verify_header_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
         let (deps, mut update, env) = prepare_test_data();
-        update.consensus_update.finalized_header.execution_branch[0].0[0] += 1;
+        update.consensus_update.finalized_header.execution_branch[0].0[0] ^= u8::MAX;
         assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
     #[test]
     fn verify_header_fails_when_finality_branch_merkle_is_invalid() {
         let (deps, mut update, env) = prepare_test_data();
-        update.consensus_update.finality_branch[0].0[0] += 1;
+        update.consensus_update.finality_branch[0].0[0] ^= u8::MAX;
         assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
@@ -956,16 +955,11 @@ mod test {
         let proofs = vec![
             {
                 let mut proof = proof.clone();
-                proof.key = U256(proof.key.0 - U256::from(10).0); // Makes sure that produced value is always valid and different
+                proof.key.0 .0[0] ^= u64::MAX;
                 proof
             },
             {
-                let mut proof = proof.clone();
-                proof.key = U256(proof.key.0 - U256::from(1).0);
-                proof
-            },
-            {
-                proof.proof[0][10] = u8::MAX - proof.proof[0][10];
+                proof.proof[0][10] ^= u8::MAX;
                 proof
             },
         ];
@@ -989,7 +983,7 @@ mod test {
                 "src/test/memberships/valid_connection_end.json",
             );
 
-        storage_root.0[10] = u8::MAX - storage_root.0[10];
+        storage_root.0[10] ^= u8::MAX;
 
         assert!(do_verify_membership(
             commitment_path,
