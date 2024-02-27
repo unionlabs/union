@@ -36,12 +36,7 @@ export type UnionActions<
     TDenom extends string | undefined,
     TGas extends `${string}${TDenom}` | undefined
   >(
-    args: SendAssetParameters<
-      ChainId,
-      TDenom,
-      TGas,
-      ReturnType<TTransport>["config"]["type"]
-    >
+    args: SendAssetParameters<ChainId>
   ) => Promise<ExecuteResult | Hash>;
 };
 

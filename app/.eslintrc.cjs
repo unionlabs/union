@@ -36,6 +36,7 @@ module.exports = {
     'unicorn/new-for-builtins': ['off'],
     'unicorn/prefer-node-protocol': ['off'],
     'unicorn/numeric-separators-style': ['warn'],
+    'unicorn/no-object-as-default-parameter': ['off'],
     'unicorn/no-keyword-prefix': ['error', { disallowedPrefixes: ['new', 'for'] }],
     'unicorn/consistent-function-scoping': ['off', { checkArrowFunctions: false }],
     'unicorn/prefer-top-level-await': ['off'],

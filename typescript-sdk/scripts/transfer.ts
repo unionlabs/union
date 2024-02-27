@@ -110,14 +110,14 @@ async function main() {
     const result = await client.sendAsset({
       chainId: "6",
       signer: unionAccount,
-      assetId: chain.union.testnet.token.address,
-      amount,
+      rpcUrl: "https://union-testnet-rpc.polkachu.com",
+      channel: chain.union.testnet.channelId,
+      contractAddress: chain.union.testnet.token.address,
+      amount: BigInt(amount),
       denom: "muno",
       receiver: ethereumAddress,
       gasPrice: "0.001muno",
     });
-
-    // console.log(JSON.stringify(result, undefined, 2))
 
     console.log(
       "SUCCESS. Transaction hash:\n",
@@ -131,8 +131,9 @@ async function main() {
   const result = await client.sendAsset({
     chainId: "11155111",
     signer: ethereumAccount,
-    portId: chain.ethereum.sepolia.portId,
-    assetId: denomAddress,
+    port: chain.ethereum.sepolia.portId,
+    denomAddress,
+    channel: chain.ethereum.sepolia.channelId,
     amount: BigInt(amount),
     receiver: unionAddress,
   });

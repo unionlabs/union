@@ -1,17 +1,10 @@
-import {
-  erc20Abi,
-  type Hash,
-  bytesToHex,
-  type Account,
-  type Address,
-  type TransportConfig,
-} from "viem";
+import { erc20Abi, type Hash, type Account, type Address } from "viem";
 import { raise } from "./utilities";
 import { ucs01relayAbi } from "./abi";
 import { GasPrice } from "@cosmjs/stargate";
-import { fromBech32 } from "@cosmjs/encoding";
 import type { UnionClient } from "./actions.ts";
 import { Tendermint37Client } from "@cosmjs/tendermint-rpc";
+import { evmEncodeUnionAddress } from "#/utilities/codec.ts";
 import { UNION_RPC_URL, UCS01_EVM_ADDRESS } from "./constants";
 import { chainIds, type ChainId, chain } from "./constants/chain.ts";
 import type { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
@@ -63,27 +56,13 @@ export async function approveAsset(
   }
 }
 
-export type SendAssetParameters<
-  TChainId extends ChainId,
-  TDenom extends string | undefined = TChainId extends "6" ? string : undefined,
-  TGas extends `${string}${TDenom}` | undefined = TChainId extends "6"
-    ? `${string}${TDenom}`
-    : undefined,
-  TTransportConfigType extends
-    | TransportConfig["type"]
-    | undefined = TChainId extends "6" ? TransportConfig["type"] : undefined
-> =
-  | ({ chainId: "6" } & SendAssetFromUnionToEthereum<TDenom, TGas>)
-  | ({ chainId: "1" | "11155111" } & SendAssetFromEthereumToUnion);
+export type SendAssetParameters<TChainId extends ChainId> = TChainId extends "6"
+  ? { chainId: "6" } & SendAssetFromUnionToEthereum
+  : { chainId: "1" | "11155111" } & SendAssetFromEthereumToUnion;
 
-export async function sendAsset<
-  TChainId extends ChainId,
-  TDenom extends string | undefined,
-  TGas extends `${string}${TDenom}` | undefined,
-  TTransportConfigType extends TransportConfig["type"] | undefined
->(
+export async function sendAsset<TChainId extends ChainId>(
   client: UnionClient,
-  args: SendAssetParameters<TChainId, TDenom, TGas, TTransportConfigType>
+  args: SendAssetParameters<TChainId>
 ) {
   if (!chainIds.includes(args.chainId))
     throw new Error(`Invalid chainId: ${args.chainId}`);
@@ -99,8 +78,8 @@ interface SendAssetFromEthereumToUnion {
   receiver: string;
   amount: bigint;
   signer: Account | Address;
-  portId: string;
-  channelId: string;
+  port: string;
+  channel: string;
   simulate?: boolean;
 }
 
@@ -121,15 +100,14 @@ export async function sendAssetFromEthereumToUnion(
     signer,
     amount,
     denomAddress,
-    portId,
-    channelId,
+    port,
+    channel,
     simulate = true,
   }: SendAssetFromEthereumToUnion
 ): Promise<Hash> {
-  // TODO: make dynamic?
   const counterpartyTimeoutRevisionNumber = BigInt(chain.union.testnet.id);
   // TODO: make dynamic?
-  const counterpartyTimeoutRevisionHeight = 800_000_000n;
+  const counterpartyTimeoutRevisionHeight = 800_000_000n; // anything > current height
   try {
     const writeContractParameters = {
       account: signer,
@@ -137,9 +115,9 @@ export async function sendAssetFromEthereumToUnion(
       functionName: "send",
       address: UCS01_EVM_ADDRESS,
       args: [
-        portId,
-        channelId,
-        bytesToHex(fromBech32(receiver).data),
+        port,
+        channel,
+        evmEncodeUnionAddress(receiver),
         [{ denom: denomAddress, amount }],
         counterpartyTimeoutRevisionNumber,
         counterpartyTimeoutRevisionHeight,
@@ -163,28 +141,22 @@ export async function sendAssetFromEthereumToUnion(
 
 type OfflineSignerType = CosmjsOfflineSigner | DirectSecp256k1HdWallet;
 
-type SendAssetFromUnionToEthereum<
-  TDenom extends string | undefined,
-  TGas extends `${string}${TDenom}` | undefined
-> = {
+type SendAssetFromUnionToEthereum = {
   contractAddress: string;
   receiver: string;
-  amount: string;
-  denom: `${TDenom}`;
-  gasPrice?: TGas;
+  amount: bigint;
+  denom: string;
+  gasPrice?: string;
   rpcUrl: string;
   memo?: string;
-  offlineSigner: OfflineSignerType;
+  signer: OfflineSignerType;
   channel: string;
 };
 
-export async function sendAssetFromUnionToEthereum<
-  TDenom extends string | undefined,
-  TGas extends `${string}${TDenom}` | undefined
->(
-  _client: UnionClient,
+export async function sendAssetFromUnionToEthereum(
+  _client: UnionClient | undefined,
   {
-    offlineSigner,
+    signer,
     contractAddress,
     amount,
     denom,
@@ -192,17 +164,19 @@ export async function sendAssetFromUnionToEthereum<
     gasPrice,
     channel,
     rpcUrl,
-    memo,
-  }: SendAssetFromUnionToEthereum<TDenom, TGas>
+    memo = "random more than four characters I am transferring.",
+  }: SendAssetFromUnionToEthereum
 ): Promise<ExecuteResult> {
   const tendermintClient = await Tendermint37Client.connect(rpcUrl);
   const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(
     tendermintClient,
-    offlineSigner,
-    { gasPrice: GasPrice.fromString(gasPrice ?? `0.001${denom}`) }
+    signer,
+    {
+      gasPrice: GasPrice.fromString(gasPrice ?? `0.001${denom}`),
+    }
   );
 
-  const [account] = await offlineSigner.getAccounts();
+  const [account] = await signer.getAccounts();
   const address = account?.address ?? raise("address is undefined");
 
   const result = await cosmwasmClient.execute(
@@ -211,7 +185,7 @@ export async function sendAssetFromUnionToEthereum<
     { transfer: { channel, receiver: receiver.slice(2), timeout: null, memo } },
     "auto",
     undefined,
-    [{ denom, amount }]
+    [{ denom, amount: amount.toString() }]
   );
 
   return result;

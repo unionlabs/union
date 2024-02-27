@@ -731,6 +731,7 @@ serverconfig
 servertypes
 sgxlib
 shacham
+shadcn
 shallue
 shazow
 shiki

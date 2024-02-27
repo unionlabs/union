@@ -1,7 +1,8 @@
 <script lang="ts">
   import clsx from 'clsx'
-  import { Button } from 'bits-ui'
+
   import { snapAddress } from '$/lib/snap.ts'
+  import { Button } from '$lib/components/ui/button'
   import { getUnoFromFaucet } from '$/lib/fetchers/faucet'
   import { createMutation, useQueryClient } from '@tanstack/svelte-query'
 
@@ -20,12 +21,12 @@
   })
 </script>
 
-<Button.Root
-  class={clsx('rounded-md border-[1px] px-4 py-2')}
+<Button
+  class={clsx('rounded-md px-4 py-2')}
   on:click={() => {
     if (!$snapAddress) return
     $unoFromFaucetMutation.mutate()
   }}
 >
-  get UNO from faucet
-</Button.Root>
+  Get UNO from faucet
+</Button>

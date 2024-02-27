@@ -15,6 +15,7 @@
     "types": ["@cloudflare/workers-types", "typed-query-selector/strict"]
   },
   "include": ["./src"],
+  "exclude": ["./src/lib/components/ui"],
   "files": [
     "reset.d.ts",
     ".eslintrc.cjs",
