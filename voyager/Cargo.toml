@@ -52,7 +52,7 @@ tokio-stream             = { workspace = true }
 tokio-util               = "0.7.9"
 tonic                    = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 tracing                  = { workspace = true }
-tracing-subscriber       = { workspace = true, features = ["env-filter"] }
+tracing-subscriber       = { workspace = true, features = ["env-filter", "json"] }
 typenum                  = { workspace = true }
 unionlabs                = { workspace = true, features = ["ethabi"] }
 voyager-message          = { workspace = true }

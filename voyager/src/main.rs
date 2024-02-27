@@ -37,7 +37,7 @@ pub mod chain;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> ExitCode {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt().json().init();
 
     let args = AppArgs::parse();
 
