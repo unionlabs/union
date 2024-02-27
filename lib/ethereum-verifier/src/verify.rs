@@ -24,7 +24,7 @@ use unionlabs::{
 };
 
 use crate::{
-    primitives::Account,
+    primitives::{Account, GENESIS_SLOT},
     rlp_node_codec::{keccak_256, EthLayout, KeccakHasher},
     utils::{
         compute_domain, compute_epoch_at_slot, compute_fork_version, compute_signing_root,
@@ -77,6 +77,11 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     let update_finalized_slot = update.finalized_header.beacon.slot;
 
     ensure(
+        update_finalized_slot != GENESIS_SLOT,
+        Error::FinalizedSlotIsGenesis,
+    )?;
+
+    ensure(
         current_slot >= update.signature_slot
             && update.signature_slot > update_attested_slot
             && update_attested_slot >= update_finalized_slot,
@@ -120,6 +125,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
 
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
     // to match the finalized checkpoint root saved in the state of `attested_header`.
+    // NOTE(aeryz): We always expect to get `finalized_haeder` and it's embedded into the type definition.
     is_valid_light_client_header(ctx.fork_parameters(), &update.finalized_header)?;
     let finalized_root = update.finalized_header.beacon.tree_hash_root();
 

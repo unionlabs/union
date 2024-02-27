@@ -68,6 +68,8 @@ pub enum Error {
     CustomError(String),
     #[error("update header contains deneb specific informations")]
     MustBeDeneb,
+    #[error("finalized slot cannot be the genesis slot")]
+    FinalizedSlotIsGenesis,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq)]
