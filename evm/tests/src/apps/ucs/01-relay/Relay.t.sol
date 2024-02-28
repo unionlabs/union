@@ -4,6 +4,7 @@ import "forge-std/Test.sol";
 import "solidity-stringutils/strings.sol";
 import "solady/utils/LibString.sol";
 import "@openzeppelin/token/ERC20/IERC20.sol";
+import "../../../../../contracts/lib/Hex.sol";
 import "../../../../../contracts/apps/Base.sol";
 import "../../../../../contracts/apps/ucs/01-relay/Relay.sol";
 import "../../../../../contracts/apps/ucs/01-relay/ERC20Denom.sol";
@@ -235,7 +236,7 @@ contract RelayTests is Test {
     }
 
     function test_hexToAddress(address addr) public {
-        assertEq(RelayLib.hexToAddress(addr.toHexString()), addr);
+        assertEq(Hex.hexToAddress(addr.toHexString()), addr);
     }
 
     function test_openInit_onlyIBC(

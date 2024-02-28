@@ -1,5 +1,6 @@
 pragma solidity ^0.8.23;
 
+import "solady/utils/LibString.sol";
 import "@openzeppelin/access/Ownable.sol";
 import "./25-handler/IBCHandler.sol";
 
@@ -7,6 +8,8 @@ import "./25-handler/IBCHandler.sol";
  * @dev OwnableIBCHandler is a contract that implements [ICS-25](https://github.com/cosmos/ibc/tree/main/spec/core/ics-025-handler-interface).
  */
 contract OwnableIBCHandler is IBCHandler, Ownable {
+    using LibString for *;
+
     /**
      * @dev The arguments of constructor must satisfy the followings:
      * @param ibcClient is the address of a contract that implements `IIBCClient`.
@@ -32,15 +35,5 @@ contract OwnableIBCHandler is IBCHandler, Ownable {
         ILightClient client
     ) public override onlyOwner {
         super.registerClient(clientType, client);
-    }
-
-    /**
-     * @dev bindPort binds to an unallocated port, failing if the port has already been allocated.
-     */
-    function bindPort(
-        string calldata portId,
-        address moduleAddress
-    ) public override onlyOwner {
-        super.bindPort(portId, moduleAddress);
     }
 }
