@@ -305,9 +305,9 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 ) -> Result<(), Error> {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
 
-    if epoch >= fork_parameters.deneb.epoch {
+    if epoch < fork_parameters.deneb.epoch {
         ensure(
-            header.execution.blob_gas_used != 0 && header.execution.excess_blob_gas != 0,
+            header.execution.blob_gas_used == 0 && header.execution.excess_blob_gas == 0,
             Error::MustBeDeneb,
         )?;
     }

@@ -96,8 +96,8 @@ pub enum Error {
     #[error("error while calling custom query: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
 
-    #[error("not enough signature")]
-    NotEnoughSignature,
+    #[error("not enough signatures")]
+    NotEnoughSignatures,
 
     #[error("integer arithmetic overflow")]
     IntegerOverflow,

@@ -149,11 +149,12 @@ impl IbcClient for EthereumLightClient {
         )?;
 
         // check whether at least 2/3 of the sync committee signed
-        if !validate_signature_supermajority::<Config>(
-            &header.consensus_update.sync_aggregate.sync_committee_bits,
-        ) {
-            return Err(Error::NotEnoughSignature);
-        }
+        ensure(
+            validate_signature_supermajority::<Config>(
+                &header.consensus_update.sync_aggregate.sync_committee_bits,
+            ),
+            Error::NotEnoughSignatures,
+        )?;
 
         let proof_data = header.account_update.account_proof;
 
