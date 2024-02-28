@@ -6921,6 +6921,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "k256",
+ "macros",
  "milagro_bls",
  "paste",
  "primitive-types",
