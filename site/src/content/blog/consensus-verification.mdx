@@ -1,17 +1,18 @@
 ---
 title: ZK-Powered Consensus Verification
 date: 2024-02-26
-author: "union_build"
+author: 'union_build'
 description: "Union democratizes fundamental web3 ethos' desired mechanism of cross-ecosystem connection."
 hidden: false
+imagePath: '/src/assets/images/consensus-verification-blog/header.svg'
 ---
 
-import header from "#/assets/images/consensus-verification-blog/header.svg";
-import packetPassing from "#/assets/images/consensus-verification-blog/packet-passing.svg";
-import merkleTree1 from "#/assets/images/consensus-verification-blog/merkle-tree-1.svg";
-import merkleTree2 from "#/assets/images/consensus-verification-blog/merkle-tree-2.svg";
-import crossChainMessageVerification from "#/assets/images/consensus-verification-blog/cross-chain-message-verification.svg";
-import processMap from "#/assets/images/consensus-verification-blog/process-map.svg";
+import header from '#/assets/images/consensus-verification-blog/header.svg'
+import processMap from '#/assets/images/consensus-verification-blog/process-map.svg'
+import merkleTree1 from '#/assets/images/consensus-verification-blog/merkle-tree-1.svg'
+import merkleTree2 from '#/assets/images/consensus-verification-blog/merkle-tree-2.svg'
+import packetPassing from '#/assets/images/consensus-verification-blog/packet-passing.svg'
+import crossChainMessageVerification from '#/assets/images/consensus-verification-blog/cross-chain-message-verification.svg'
 
 _Union democratizes fundamental web3 ethos' desired mechanism of cross-ecosystem connection._
 
@@ -61,10 +62,7 @@ While IBC is a promising solution to overcome the existing friction between bloc
 
 The gas limitations of EMV execution have led to a myriad of approaches aiming to enable scalable means of verifying a certain consensus having been reached across heterogeneous blockchains. Using off-chain committees performing multisig-based message verification, PoS validator sets, or fraud-proving mechanisms have proven to be popular choices. While these have been a feasible way to enable interoperability quickly, they also introduce significant additional trust assumptions outside the security guarantees the underlying blockchains provide. These external trust assumptions can pose risks and require the user to trust potentially centralized operators.
 
-<img
-  alt="Cross-chain Message Verification"
-  src={crossChainMessageVerification.src}
-/>
+<img alt="Cross-chain Message Verification" src={crossChainMessageVerification.src} />
 
 These before-mentioned solutions, further referred to as "trusted," introduce some degree of centralization or human element. Consequently, attack vectors arise that have historically made these interoperability solutions, or more specifically the bridging protocols built on top of them, very prone to hacks or other forms of malicious value extraction. [This is made evident by many large-scale exploits in the past (including Ronin, Multichain, Horizon, and Wormhole)](https://rekt.news/leaderboard/).
 
