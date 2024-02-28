@@ -50,7 +50,7 @@ let menuItems = [
   })
 </script>
 
-<header class="fixed z-[100] w-full backdrop-blur-lg bg-black/60 flex justify-around pt-3 px-4 py-3">
+<header class="z-[100] w-full bg-black/60 flex justify-around pt-3 px-4 sticky top-0 py-3">
   <div class="max-w-5xl flex flex-1 items-center">
     <a
       href="/"
@@ -63,7 +63,7 @@ let menuItems = [
 
     <div
       id="overlay"
-      class="overlay"
+      class="overlay sm:hidden"
       data-description="Overlay to blur the background when the menu is open"
     >
     </div>
@@ -152,9 +152,18 @@ let menuItems = [
     </nav>
   </div>
 </header>
-<div class="h-[62px]"></div>
 
 <style is:inline>
+  header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    backdrop-filter: blur(20px);
+    z-index: -1;
+  }
   #menu-items-list {
     display: none;
     overflow: hidden;
