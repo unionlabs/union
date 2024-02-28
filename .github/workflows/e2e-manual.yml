@@ -1,0 +1,11 @@
+name: e2e Manual
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:    
+    uses: ./.github/workflows/e2e.yml
+    secrets:
+      nixbuild_token: ${{ secrets.nixbuild_token }}
+      github-token: ${{ secrets.GITHUB_TOKEN }}
