@@ -50,7 +50,7 @@ let menuItems = [
   })
 </script>
 
-<header class="flex justify-around pt-3 px-4 py-3">
+<header class="fixed z-[100] w-full backdrop-blur-lg bg-black/60 flex justify-around pt-3 px-4 py-3">
   <div class="max-w-5xl flex flex-1 items-center">
     <a
       href="/"
@@ -70,7 +70,7 @@ let menuItems = [
 
     <nav class="hidden sm:block flex-1 justify-end">
       <ul
-        class="flex flex-row gap-4 justify-end items-center bg-black left-0 top-[62px] shadow-3xl p-0 m-0 font-normal list-none sm:align-middle"
+        class="flex flex-row gap-4 justify-end items-center left-0 top-[62px] shadow-3xl p-0 m-0 font-normal list-none sm:align-middle"
       >
         {
           menuItems.map(menuItem => (
@@ -152,6 +152,7 @@ let menuItems = [
     </nav>
   </div>
 </header>
+<div class="h-[62px]"></div>
 
 <style is:inline>
   #menu-items-list {

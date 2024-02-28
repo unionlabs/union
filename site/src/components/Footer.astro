@@ -18,13 +18,17 @@ let menuItems = [
   },
   {
     url: 'https://discord.union.build',
-    name: 'Discord',
+    name: 'Discord'
   },
   {
     url: 'https://discord.union.build',
-    name: '𝕏',
+    name: '𝕏'
   },
 ]
+
+function isInternal(menuItem: { url: string }): boolean {
+  return menuItem.url[0] === '/'
+}
 ---
 
 <footer
@@ -34,10 +38,11 @@ let menuItems = [
     {
       menuItems.map(menuItem => (
         <li>
+          
           <a
             href={menuItem.url}
-            target="_blank"
-            rel="noopener noreferrer"
+            target={isInternal(menuItem) ? "" : "_blank"}
+            rel={isInternal(menuItem) ? "" : "noopener noreferrer"}
             class="border-b border-[#1f1f1f] px-4 py-2 !text-md text-normal flex flex-col flex-1"
           >
             {menuItem.name}
