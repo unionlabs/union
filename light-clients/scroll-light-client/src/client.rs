@@ -106,12 +106,13 @@ impl IbcClient for ScrollLightClient {
 
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
-        _env: Env,
+        env: Env,
         header: Self::Header,
     ) -> Result<(), Self::Error> {
         let client_state: WasmClientState = read_client_state(deps)?;
         let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
             deps,
+            &env,
             client_state.data.l1_client_id.clone(),
             header.l1_height,
         )?;
@@ -132,12 +133,13 @@ impl IbcClient for ScrollLightClient {
 
     fn update_state(
         mut deps: DepsMut<Self::CustomQuery>,
-        _env: Env,
+        env: Env,
         header: Self::Header,
     ) -> Result<Vec<Height>, Self::Error> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
             deps.as_ref(),
+            &env,
             client_state.data.l1_client_id.clone(),
             header.l1_height,
         )?;

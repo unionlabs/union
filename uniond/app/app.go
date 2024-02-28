@@ -630,7 +630,10 @@ func NewUnionApp(
 	)
 
 	querierOption := ibcwasmkeeper.WithQueryPlugins(&ibcwasmtypes.QueryPlugins{
-		Custom: unioncustomquery.CustomQuerier(&ibcKeeper.ClientKeeper),
+		Custom: unioncustomquery.CustomQuerier(),
+		Stargate: ibcwasmtypes.AcceptListStargateQuerier([]string{
+			"/cosmos.base.tendermint.v1beta1.Service/ABCIQuery",
+		}),
 	})
 	app.WasmClientKeeper = ibcwasmkeeper.NewKeeperWithVM(
 		appCodec,

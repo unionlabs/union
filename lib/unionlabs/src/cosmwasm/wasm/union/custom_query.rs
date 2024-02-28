@@ -1,10 +1,15 @@
 use std::fmt::Debug;
 
-use cosmwasm_std::{Binary, Deps, QueryRequest};
+use cosmwasm_std::{to_json_vec, Binary, ContractResult, Deps, Env, QueryRequest, SystemResult};
+use prost::Message;
+use protos::cosmos::base::tendermint::v1beta1::AbciQueryResponse;
 
 use crate::{
-    bls::BlsPublicKey, google::protobuf::any::Any, ibc::core::client::height::Height, TryFromProto,
-    TryFromProtoBytesError, TryFromProtoErrorOf,
+    bls::BlsPublicKey,
+    google::protobuf::any::Any,
+    ibc::core::client::height::Height,
+    proof::{ClientConsensusStatePath, Path},
+    TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf,
 };
 
 #[derive(thiserror::Error, Debug, PartialEq)]
@@ -77,8 +82,10 @@ pub fn query_aggregate_public_keys(
         .map_err(|_| Error::InvalidAggregatePublicKey)
 }
 
+#[allow(clippy::missing_panics_doc)]
 pub fn query_consensus_state<T>(
     deps: Deps<UnionCustomQuery>,
+    env: &Env,
     client_id: String,
     height: Height,
 ) -> Result<T, Error>
@@ -86,14 +93,36 @@ where
     Any<T>: TryFromProto,
     TryFromProtoBytesError<TryFromProtoErrorOf<Any<T>>>: Debug,
 {
-    let consensus_state_data = deps
-        .querier
-        .query::<Binary>(&QueryRequest::Custom(UnionCustomQuery::ConsensusState {
-            client_id,
-            height,
-        }))
-        .map_err(|e| Error::ConsensusState(e.to_string()))?;
-    let Any(consensus_state) = Any::<T>::try_from_proto_bytes(&consensus_state_data)
+    let query = protos::cosmos::base::tendermint::v1beta1::AbciQueryRequest {
+        data: Path::ClientConsensusStatePath(ClientConsensusStatePath { client_id, height })
+            .to_string()
+            .into_bytes(),
+        path: "store/ibc/key".to_string(),
+        height: env
+            .block
+            .height
+            .wrapping_sub(1)
+            .try_into()
+            .expect("impossible"),
+        prove: false,
+    };
+    let raw = to_json_vec(&QueryRequest::<UnionCustomQuery>::Stargate {
+        path: "/cosmos.base.tendermint.v1beta1.Service/ABCIQuery".into(),
+        data: query.encode_to_vec().into(),
+    })
+    .map_err(|e| Error::ConsensusState(format!("{e:?}")))?;
+    let abci_response_data = match deps.querier.raw_query(&raw) {
+        SystemResult::Err(system_err) => Err(Error::ConsensusState(format!(
+            "Querier system error: {system_err}"
+        ))),
+        SystemResult::Ok(ContractResult::Err(contract_err)) => Err(Error::ConsensusState(format!(
+            "Querier contract error: {contract_err}"
+        ))),
+        SystemResult::Ok(ContractResult::Ok(value)) => Ok(value),
+    }?;
+    let abci_response = AbciQueryResponse::decode(abci_response_data.as_ref())
         .map_err(|e| Error::ConsensusState(format!("{e:?}")))?;
-    Ok(consensus_state)
+    let Any(value) = Any::<T>::try_from_proto_bytes(&abci_response.value)
+        .map_err(|e| Error::ConsensusState(format!("{e:?}")))?;
+    Ok(value)
 }
