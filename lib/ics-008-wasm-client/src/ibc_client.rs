@@ -153,8 +153,7 @@ where {
                 to_json_binary(&EmptyResult {})
             }
             SudoMsg::MigrateClientStore {} => {
-                Self::migrate_client_store(deps.as_ref())
-                    .map_err(IbcClientError::ClientSpecific)?;
+                Self::migrate_client_store(deps).map_err(IbcClientError::ClientSpecific)?;
                 to_json_binary(&EmptyResult {})
             }
         }
@@ -277,7 +276,7 @@ where {
         proof_upgrade_consensus_state: Vec<u8>,
     ) -> Result<(), Self::Error>;
 
-    fn migrate_client_store(deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error>;
+    fn migrate_client_store(deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error>;
 
     fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, Self::Error>;
 
