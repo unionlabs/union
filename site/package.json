@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "NODE_ENV='development' astro dev",
     "start": "astro dev",
     "build": "SHARP_IGNORE_GLOBAL_LIBVIPS=1 astro build",
     "preview": "astro preview",
