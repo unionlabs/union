@@ -1,9 +1,13 @@
 use sha2::{Digest, Sha256};
+use ssz_types::BitVector;
 use tree_hash::TreeHash;
 use typenum::Unsigned;
 use unionlabs::{
     ethereum::{
-        config::{EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH},
+        config::{
+            EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
+            SYNC_COMMITTEE_SIZE,
+        },
         Domain, DomainType, ForkData, SigningData, Version,
     },
     hash::H256,
@@ -106,6 +110,26 @@ pub fn compute_signing_root<T: TreeHash>(ssz_object: &T, domain: Domain) -> prim
         domain,
     }
     .tree_hash_root()
+}
+
+/// Return the slot at timestamp with respect to the genesis time
+pub fn compute_slot_at_timestamp<C: SECONDS_PER_SLOT>(
+    genesis_time: u64,
+    timestamp_seconds: u64,
+) -> Option<u64> {
+    timestamp_seconds
+        .checked_sub(genesis_time)?
+        .checked_div(C::SECONDS_PER_SLOT::U64)?
+        .checked_add(GENESIS_SLOT)
+}
+
+// Returns if at least 2/3 of the sync committee signed
+//
+// https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#process_light_client_update
+pub fn validate_signature_supermajority<C: SYNC_COMMITTEE_SIZE>(
+    sync_committee_bits: &BitVector<C::SYNC_COMMITTEE_SIZE>,
+) -> bool {
+    sync_committee_bits.num_set_bits() * 3 >= sync_committee_bits.len() * 2
 }
 
 /// Check if `leaf` at `index` verifies against the Merkle `root` and `branch`.

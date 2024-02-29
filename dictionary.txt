@@ -789,6 +789,7 @@ subsec
 substituters
 substores
 sumbitter
+supermajority
 svrcmd
 symlinker
 syncmode

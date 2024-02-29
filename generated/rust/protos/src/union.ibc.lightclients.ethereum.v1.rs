@@ -27,15 +27,12 @@ pub struct Proof {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccountProof {
-    /// NOTE: 20 bytes
-    #[prost(bytes = "vec", tag = "1")]
-    pub contract_address: ::prost::alloc::vec::Vec<u8>,
     /// NOTE: H256
     /// NOTE: eth_getProof.storageHash
-    #[prost(bytes = "vec", tag = "2")]
+    #[prost(bytes = "vec", tag = "1")]
     pub storage_root: ::prost::alloc::vec::Vec<u8>,
     /// NOTE: eth_getProof.accountProof
-    #[prost(bytes = "vec", repeated, tag = "3")]
+    #[prost(bytes = "vec", repeated, tag = "2")]
     pub proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]

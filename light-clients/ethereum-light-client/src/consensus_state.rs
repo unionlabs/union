@@ -2,6 +2,7 @@ use cosmwasm_std::Deps;
 use unionlabs::{
     bls::BlsPublicKey,
     cosmwasm::wasm::union::custom_query::{query_aggregate_public_keys, UnionCustomQuery},
+    ensure,
     ethereum::config::ChainSpec,
     ibc::lightclients::ethereum::{
         consensus_state::ConsensusState, trusted_sync_committee::ActiveSyncCommittee,
@@ -46,19 +47,19 @@ impl<C: ChainSpec> TrustedConsensusState<C> {
 
         // We are making sure that the given trusted sync committee actually matches
         // the sync committee that we stored
-        if active_sync_committee != given_committee.aggregate_pubkey
-            || given_committee.aggregate_pubkey != aggregate_public_key
-        {
-            Err(Error::TrustedSyncCommitteeMismatch {
+        ensure(
+            active_sync_committee == given_committee.aggregate_pubkey
+                && given_committee.aggregate_pubkey == aggregate_public_key,
+            Error::TrustedSyncCommitteeMismatch {
                 stored_aggregate: active_sync_committee,
                 given_aggregate: given_committee.aggregate_pubkey.clone(),
-            })
-        } else {
-            Ok(TrustedConsensusState {
-                state: consensus_state,
-                sync_committee,
-            })
-        }
+            },
+        )?;
+
+        Ok(TrustedConsensusState {
+            state: consensus_state,
+            sync_committee,
+        })
     }
 
     pub fn current_sync_committee_aggregate_key(&self) -> BlsPublicKey {

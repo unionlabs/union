@@ -1,7 +1,8 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_verifier::{
-    compute_sync_committee_period_at_slot, compute_timestamp_at_slot, validate_light_client_update,
-    verify_account_storage_root, verify_storage_absence, verify_storage_proof,
+    compute_slot_at_timestamp, compute_sync_committee_period_at_slot, compute_timestamp_at_slot,
+    validate_light_client_update, validate_signature_supermajority, verify_account_storage_root,
+    verify_storage_absence, verify_storage_proof,
 };
 use ics008_wasm_client::{
     storage_utils::{
@@ -14,6 +15,7 @@ use sha3::Digest;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::Proto,
+    ensure,
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -87,9 +89,7 @@ impl IbcClient for EthereumLightClient {
                     reason: format!("when decoding storage proof: {e:#?}"),
                 })?
                 .proofs;
-            if proofs.len() > 1 {
-                return Err(Error::BatchingProofsNotSupported);
-            }
+            ensure(proofs.len() == 1, Error::BatchingProofsNotSupported)?;
             proofs.pop().ok_or(Error::EmptyProof)?
         };
 
@@ -134,9 +134,11 @@ impl IbcClient for EthereumLightClient {
 
         // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
         // at the current timestamp.
-        let current_slot = (env.block.time.seconds() - wasm_client_state.data.genesis_time)
-            / wasm_client_state.data.seconds_per_slot
-            + wasm_client_state.data.fork_parameters.genesis_slot;
+        let current_slot = compute_slot_at_timestamp::<Config>(
+            wasm_client_state.data.genesis_time,
+            env.block.time.seconds(),
+        )
+        .ok_or(Error::IntegerOverflow)?;
 
         validate_light_client_update::<LightClientContext<Config>, VerificationContext>(
             &ctx,
@@ -146,18 +148,19 @@ impl IbcClient for EthereumLightClient {
             VerificationContext { deps },
         )?;
 
-        let proof_data = header.account_update.account_proof;
+        // check whether at least 2/3 of the sync committee signed
+        ensure(
+            validate_signature_supermajority::<Config>(
+                &header.consensus_update.sync_aggregate.sync_committee_bits,
+            ),
+            Error::NotEnoughSignatures,
+        )?;
 
-        if proof_data.contract_address != wasm_client_state.data.ibc_contract_address {
-            return Err(Error::IbcContractAddressMismatch {
-                given: proof_data.contract_address,
-                expected: wasm_client_state.data.ibc_contract_address,
-            });
-        }
+        let proof_data = header.account_update.account_proof;
 
         verify_account_storage_root(
             header.consensus_update.attested_header.execution.state_root,
-            &proof_data.contract_address,
+            &wasm_client_state.data.ibc_contract_address,
             &proof_data.proof,
             &proof_data.storage_root,
         )?;
@@ -195,22 +198,23 @@ impl IbcClient for EthereumLightClient {
             consensus_update.attested_header.beacon.slot,
         );
 
-        match consensus_state.data.next_sync_committee {
-            None if update_finalized_period != store_period => {
-                return Err(Error::StorePeriodMustBeEqualToFinalizedPeriod)
-            }
-            None => {
-                consensus_state.data.next_sync_committee = consensus_update
-                    .next_sync_committee
-                    .map(|c| c.aggregate_pubkey);
-            }
-            Some(ref next_sync_committee) if update_finalized_period == store_period + 1 => {
+        if let Some(ref next_sync_committee) = consensus_state.data.next_sync_committee {
+            // sync committee only changes when the period change
+            if update_finalized_period == store_period + 1 {
                 consensus_state.data.current_sync_committee = next_sync_committee.clone();
                 consensus_state.data.next_sync_committee = consensus_update
                     .next_sync_committee
                     .map(|c| c.aggregate_pubkey);
             }
-            _ => {}
+        } else {
+            // if the finalized period is greater, we have to have a next sync committee
+            ensure(
+                update_finalized_period == store_period,
+                Error::StorePeriodMustBeEqualToFinalizedPeriod,
+            )?;
+            consensus_state.data.next_sync_committee = consensus_update
+                .next_sync_committee
+                .map(|c| c.aggregate_pubkey);
         }
 
         // Some updates can be only for updating the sync committee, therefore the slot number can be
@@ -269,17 +273,19 @@ impl IbcClient for EthereumLightClient {
             read_consensus_state::<Self::CustomQuery, Self::ConsensusState>(deps, &height)?
         {
             // New header is given with the same height but the storage roots don't match.
-            if consensus_state.data.storage_root != header.account_update.account_proof.storage_root
-            {
-                return Err(Error::StorageRootMismatch {
+            ensure(
+                consensus_state.data.storage_root
+                    == header.account_update.account_proof.storage_root,
+                Error::StorageRootMismatch {
                     expected: consensus_state.data.storage_root,
                     found: header.account_update.account_proof.storage_root,
-                });
-            }
+                },
+            )?;
 
-            if consensus_state.data.slot != header.consensus_update.attested_header.beacon.slot {
-                return Err(Error::SlotCannotBeModified);
-            }
+            ensure(
+                consensus_state.data.slot == header.consensus_update.attested_header.beacon.slot,
+                Error::SlotCannotBeModified,
+            )?;
 
             // NOTE(aeryz): we don't check the timestamp here since it is calculated based on the
             // thn slot and we already check the slot.
@@ -490,7 +496,6 @@ mod test {
         ethereum::config::Mainnet,
         ibc::{core::connection::connection_end::ConnectionEnd, lightclients::ethereum},
         id::ClientId,
-        proof::ConnectionPath,
         IntoProto,
     };
 
@@ -831,15 +836,6 @@ mod test {
     }
 
     #[test]
-    fn verify_header_fails_when_ibc_contract_address_is_different() {
-        let (deps, mut update, env) = prepare_test_data();
-
-        update.account_update.account_proof.contract_address.0[0] += 1;
-
-        assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
-    }
-
-    #[test]
     fn verify_header_fails_when_sync_committee_aggregate_pubkey_is_incorrect() {
         let (deps, mut update, env) = prepare_test_data();
 
@@ -849,7 +845,7 @@ mod test {
             .get()
             .aggregate_pubkey
             .clone();
-        pubkey.0[0] += 1;
+        pubkey.0[0] ^= u8::MAX;
         update
             .trusted_sync_committee
             .sync_committee
@@ -861,29 +857,15 @@ mod test {
     #[test]
     fn verify_header_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
         let (deps, mut update, env) = prepare_test_data();
-        update.consensus_update.finalized_header.execution_branch[0].0[0] += 1;
+        update.consensus_update.finalized_header.execution_branch[0].0[0] ^= u8::MAX;
         assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
     #[test]
     fn verify_header_fails_when_finality_branch_merkle_is_invalid() {
         let (deps, mut update, env) = prepare_test_data();
-        update.consensus_update.finality_branch[0].0[0] += 1;
+        update.consensus_update.finality_branch[0].0[0] ^= u8::MAX;
         assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
-    }
-
-    #[test]
-    fn gen_commitment_key() {
-        let key = generate_commitment_key(
-            &ConnectionPath {
-                connection_id: unionlabs::validated::Validated::new("connection-100".into())
-                    .unwrap(),
-            }
-            .to_string(),
-            U256::from(0),
-        );
-
-        println!("KEY: {}", hex::encode(key));
     }
 
     // TODO(aeryz): These won't work now since they now eth abi encoded
@@ -960,16 +942,11 @@ mod test {
         let proofs = vec![
             {
                 let mut proof = proof.clone();
-                proof.key = U256(proof.key.0 - U256::from(10).0); // Makes sure that produced value is always valid and different
+                proof.key.0 .0[0] ^= u64::MAX;
                 proof
             },
             {
-                let mut proof = proof.clone();
-                proof.key = U256(proof.key.0 - U256::from(1).0);
-                proof
-            },
-            {
-                proof.proof[0][10] = u8::MAX - proof.proof[0][10];
+                proof.proof[0][10] ^= u8::MAX;
                 proof
             },
         ];
@@ -993,7 +970,7 @@ mod test {
                 "src/test/memberships/valid_connection_end.json",
             );
 
-        storage_root.0[10] = u8::MAX - storage_root.0[10];
+        storage_root.0[10] ^= u8::MAX;
 
         assert!(do_verify_membership(
             commitment_path,

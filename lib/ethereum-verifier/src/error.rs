@@ -54,13 +54,8 @@ pub enum Error {
         expected: BlsPublicKey,
         got: BlsPublicKey,
     },
-    #[error(
-        "insufficient number of sync committee participants, expected it to be at least ({min_limit}) but got ({participants})",
-    )]
-    InsufficientSyncCommitteeParticipants {
-        min_limit: usize,
-        participants: usize,
-    },
+    #[error("insufficient number of sync committee participants ({0})")]
+    InsufficientSyncCommitteeParticipants(usize),
     #[error("bls error ({0:?})")]
     Bls(AmclError),
     #[error("proof is invalid due to value mismatch")]
@@ -73,6 +68,8 @@ pub enum Error {
     CustomError(String),
     #[error("update header contains deneb specific informations")]
     MustBeDeneb,
+    #[error("finalized slot cannot be the genesis slot")]
+    FinalizedSlotIsGenesis,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq)]
