@@ -38,7 +38,7 @@ jobs:
         nix_conf: |
           experimental-features = nix-command flakes
           access-tokens = ${{ secrets.GITHUB_TOKEN }}
-    - uses: nixbuild/nixbuild-action@968e447093b702c0ab3e78d53eea1c38da1b1d0a
+    - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
       with:
         nixbuild_token: ${{secrets.nixbuild_token}}
     - name: Build site
@@ -67,7 +67,7 @@ jobs:
         with:
           lfs: true
       - uses: nixbuild/nix-quick-install-action@v26
-      - uses: nixbuild/nixbuild-action@master
+      - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir dump
@@ -126,7 +126,7 @@ jobs:
         with:
           lfs: true
       - uses: nixbuild/nix-quick-install-action@v26
-      - uses: nixbuild/nixbuild-action@master
+      - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir dump
@@ -153,7 +153,7 @@ jobs:
         with:
           lfs: true
       - uses: nixbuild/nix-quick-install-action@v26
-      - uses: nixbuild/nixbuild-action@master
+      - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir dump
