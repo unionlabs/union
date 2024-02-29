@@ -35,7 +35,6 @@ contract DevnetIBCHandlerInit is IBCHost {
             keccak256(IBCCommitment.channelPath(portId, channelId))
         ] = keccak256(IbcCoreChannelV1Channel.encode(channel));
 
-        bindPort(portId, moduleAddress);
         IIBCModule module = lookupModuleByPort(portId);
         module.onChanOpenInit(
             channel.ordering,

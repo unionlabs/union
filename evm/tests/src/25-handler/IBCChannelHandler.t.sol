@@ -1,11 +1,11 @@
 pragma solidity ^0.8.23;
 
 import "solidity-bytes-utils/BytesLib.sol";
+import "solady/utils/LibString.sol";
 
 import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
 import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
-
 import {IBCChannelLib} from "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
@@ -74,8 +74,9 @@ contract TestMembershipVerifier is IMembershipVerifier {
 }
 
 contract IBCChannelHandlerTest is TestPlus {
-    using BytesLib for bytes;
-    using ConnectionCounterparty for ConnectionCounterparty.Data;
+    using BytesLib for *;
+    using ConnectionCounterparty for *;
+    using LibString for *;
 
     string constant CLIENT_TYPE = "mock";
 
@@ -87,6 +88,7 @@ contract IBCChannelHandlerTest is TestPlus {
     TestVerifier verifier;
     TestMembershipVerifier membershipVerifier;
     MockApp app;
+    string portId;
 
     event ChannelOpenInit(
         string channelId,
@@ -114,6 +116,7 @@ contract IBCChannelHandlerTest is TestPlus {
         );
         handler.registerClient(CLIENT_TYPE, client);
         app = new MockApp();
+        portId = address(app).toHexString();
     }
 
     function getValidHeader()
@@ -187,13 +190,8 @@ contract IBCChannelHandlerTest is TestPlus {
         return handler.createClient(m);
     }
 
-    function test_handshake_init_ack_ok(
-        uint64 proofHeight,
-        string memory portId
-    ) public {
+    function test_handshake_init_ack_ok(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
             connId,
@@ -217,13 +215,8 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenAck(msg_ack);
     }
 
-    function test_handshake_init_ack_invalidProof(
-        uint64 proofHeight,
-        string memory portId
-    ) public {
+    function test_handshake_init_ack_invalidProof(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
             connId,
@@ -247,12 +240,8 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenAck(msg_ack);
     }
 
-    function test_handshake_init_noHop(
-        uint64 proofHeight,
-        string memory portId
-    ) public {
+    function test_handshake_init_noHop(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
             connId,
@@ -268,7 +257,6 @@ contract IBCChannelHandlerTest is TestPlus {
         string memory portId
     ) public {
         vm.assume(proofHeight > 0);
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
             "invalid-connection",
@@ -278,12 +266,8 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenInit(msg_init);
     }
 
-    function test_handshake_init_unsupportedFeature(
-        uint64 proofHeight,
-        string memory portId
-    ) public {
+    function test_handshake_init_unsupportedFeature(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
             connId,
@@ -294,13 +278,9 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenInit(msg_init);
     }
 
-    function test_handshake_init_notInit(
-        uint64 proofHeight,
-        string memory portId
-    ) public {
+    function test_handshake_init_notInit(uint64 proofHeight) public {
         vm.assume(proofHeight > 0);
         (, string memory connId) = setupConnection(proofHeight);
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
             connId,
@@ -312,11 +292,9 @@ contract IBCChannelHandlerTest is TestPlus {
     }
 
     function test_handshake_init_nonEmptyCounterpartyChannel(
-        uint64 proofHeight,
-        string memory portId
+        uint64 proofHeight
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
             connId,
@@ -327,13 +305,8 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenInit(msg_init);
     }
 
-    function test_handshake_init_ack_close_init_ok(
-        uint64 proofHeight,
-        string memory portId
-    ) public {
+    function test_handshake_init_ack_close_init_ok(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
             connId,
@@ -362,12 +335,9 @@ contract IBCChannelHandlerTest is TestPlus {
     }
 
     function test_handshake_init_ack_close_confirm_ok(
-        uint64 proofHeight,
-        string memory portId
+        uint64 proofHeight
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
             connId,
@@ -397,12 +367,9 @@ contract IBCChannelHandlerTest is TestPlus {
     }
 
     function test_handshake_init_ack_close_confirm_invalidProof(
-        uint64 proofHeight,
-        string memory portId
+        uint64 proofHeight
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
             connId,
@@ -431,13 +398,8 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelCloseConfirm(msg_close);
     }
 
-    function test_handshake_try_confirm_ok(
-        uint64 proofHeight,
-        string memory portId
-    ) public {
+    function test_handshake_try_confirm_ok(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
             connId,
@@ -461,12 +423,9 @@ contract IBCChannelHandlerTest is TestPlus {
     }
 
     function test_handshake_try_confirm_invalidProof(
-        uint64 proofHeight,
-        string memory portId
+        uint64 proofHeight
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
             connId,
@@ -489,13 +448,8 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenConfirm(msg_confirm);
     }
 
-    function test_handshake_try_invalidProof(
-        uint64 proofHeight,
-        string memory portId
-    ) public {
+    function test_handshake_try_invalidProof(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
             connId,
@@ -512,8 +466,6 @@ contract IBCChannelHandlerTest is TestPlus {
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        handler.bindPort(portId, address(app));
-
         IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
             connId,
             portId,
@@ -527,12 +479,9 @@ contract IBCChannelHandlerTest is TestPlus {
     }
 
     function test_handshake_try_confirm_close_init_ok(
-        uint64 proofHeight,
-        string memory portId
+        uint64 proofHeight
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
             connId,
@@ -560,12 +509,9 @@ contract IBCChannelHandlerTest is TestPlus {
     }
 
     function test_handshake_try_confirm_close_confirm_ok(
-        uint64 proofHeight,
-        string memory portId
+        uint64 proofHeight
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
             connId,
@@ -595,12 +541,9 @@ contract IBCChannelHandlerTest is TestPlus {
     }
 
     function test_handshake_try_confirm_close_confirm_invalidProof(
-        uint64 proofHeight,
-        string memory portId
+        uint64 proofHeight
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
-
-        handler.bindPort(portId, address(app));
 
         IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
             connId,

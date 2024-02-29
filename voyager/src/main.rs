@@ -142,24 +142,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             queue.run().await?;
         }
         Command::Setup(cmd) => match cmd {
-            // TODO(aeryz): this might go into channel as well, since it's highly coupled with it
-            cli::SetupCmd::BindPort {
-                on,
-                module_address,
-                port_id,
-            } => {
-                let chain = voyager_config.get_chain(&on).await?;
-
-                match chain {
-                    AnyChain::EvmMinimal(evm) => {
-                        chain_utils::evm::bind_port(&evm, module_address.into(), port_id).await
-                    }
-                    AnyChain::EvmMainnet(evm) => {
-                        chain_utils::evm::bind_port(&evm, module_address.into(), port_id).await
-                    }
-                    _ => panic!("Not supported"),
-                };
-            }
             cli::SetupCmd::InitialChannel {
                 on,
                 counterparty_port_id,
@@ -184,7 +166,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 }
             }
             cli::SetupCmd::Transfer { .. } => {}
-            _ => panic!("not supported"),
         },
         Command::Query {
             on,

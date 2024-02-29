@@ -89,33 +89,6 @@ pub mod ibc_handler {
                     ],
                 ),
                 (
-                    ::std::borrow::ToOwned::to_owned("bindPort"),
-                    ::std::vec![
-                        ::ethers::core::abi::ethabi::Function {
-                            name: ::std::borrow::ToOwned::to_owned("bindPort"),
-                            inputs: ::std::vec![
-                                ::ethers::core::abi::ethabi::Param {
-                                    name: ::std::borrow::ToOwned::to_owned("portId"),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::String,
-                                    internal_type: ::core::option::Option::Some(
-                                        ::std::borrow::ToOwned::to_owned("string"),
-                                    ),
-                                },
-                                ::ethers::core::abi::ethabi::Param {
-                                    name: ::std::borrow::ToOwned::to_owned("moduleAddress"),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::Address,
-                                    internal_type: ::core::option::Option::Some(
-                                        ::std::borrow::ToOwned::to_owned("address"),
-                                    ),
-                                },
-                            ],
-                            outputs: ::std::vec![],
-                            constant: ::core::option::Option::None,
-                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::NonPayable,
-                        },
-                    ],
-                ),
-                (
                     ::std::borrow::ToOwned::to_owned("capabilities"),
                     ::std::vec![
                         ::ethers::core::abi::ethabi::Function {
@@ -1551,34 +1524,6 @@ pub mod ibc_handler {
                     ],
                 ),
                 (
-                    ::std::borrow::ToOwned::to_owned("portCapabilityPath"),
-                    ::std::vec![
-                        ::ethers::core::abi::ethabi::Function {
-                            name: ::std::borrow::ToOwned::to_owned("portCapabilityPath"),
-                            inputs: ::std::vec![
-                                ::ethers::core::abi::ethabi::Param {
-                                    name: ::std::borrow::ToOwned::to_owned("portId"),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::String,
-                                    internal_type: ::core::option::Option::Some(
-                                        ::std::borrow::ToOwned::to_owned("string"),
-                                    ),
-                                },
-                            ],
-                            outputs: ::std::vec![
-                                ::ethers::core::abi::ethabi::Param {
-                                    name: ::std::string::String::new(),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::String,
-                                    internal_type: ::core::option::Option::Some(
-                                        ::std::borrow::ToOwned::to_owned("string"),
-                                    ),
-                                },
-                            ],
-                            constant: ::core::option::Option::None,
-                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::Pure,
-                        },
-                    ],
-                ),
-                (
                     ::std::borrow::ToOwned::to_owned("recvPacket"),
                     ::std::vec![
                         ::ethers::core::abi::ethabi::Function {
@@ -1843,17 +1788,6 @@ pub mod ibc_handler {
             events: ::std::collections::BTreeMap::new(),
             errors: ::core::convert::From::from([
                 (
-                    ::std::borrow::ToOwned::to_owned("ErrCapabilityAlreadyClaimed"),
-                    ::std::vec![
-                        ::ethers::core::abi::ethabi::AbiError {
-                            name: ::std::borrow::ToOwned::to_owned(
-                                "ErrCapabilityAlreadyClaimed",
-                            ),
-                            inputs: ::std::vec![],
-                        },
-                    ],
-                ),
-                (
                     ::std::borrow::ToOwned::to_owned("ErrClientNotFound"),
                     ::std::vec![
                         ::ethers::core::abi::ethabi::AbiError {
@@ -1929,16 +1863,6 @@ pub mod ibc_handler {
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
                 .method_hash([89, 243, 121, 118], (msg,))
-                .expect("method not found (this should never happen)")
-        }
-        ///Calls the contract's `bindPort` (0x117e886a) function
-        pub fn bind_port(
-            &self,
-            port_id: ::std::string::String,
-            module_address: ::ethers::core::types::Address,
-        ) -> ::ethers::contract::builders::ContractCall<M, ()> {
-            self.0
-                .method_hash([17, 126, 136, 106], (port_id, module_address))
                 .expect("method not found (this should never happen)")
         }
         ///Calls the contract's `capabilities` (0x5717bcf5) function
@@ -2287,15 +2211,6 @@ pub mod ibc_handler {
                 .method_hash([38, 7, 132, 55], (p0, p1, p2))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `portCapabilityPath` (0x2570dae0) function
-        pub fn port_capability_path(
-            &self,
-            port_id: ::std::string::String,
-        ) -> ::ethers::contract::builders::ContractCall<M, ::std::string::String> {
-            self.0
-                .method_hash([37, 112, 218, 224], port_id)
-                .expect("method not found (this should never happen)")
-        }
         ///Calls the contract's `recvPacket` (0x236ebd70) function
         pub fn recv_packet(
             &self,
@@ -2382,22 +2297,6 @@ pub mod ibc_handler {
             Self::new(contract.address(), contract.client())
         }
     }
-    ///Custom Error type `ErrCapabilityAlreadyClaimed` with signature `ErrCapabilityAlreadyClaimed()` and selector `0x463eec90`
-    #[derive(
-        Clone,
-        ::ethers::contract::EthError,
-        ::ethers::contract::EthDisplay,
-        Default,
-        Debug,
-        PartialEq,
-        Eq,
-        Hash,
-    )]
-    #[etherror(
-        name = "ErrCapabilityAlreadyClaimed",
-        abi = "ErrCapabilityAlreadyClaimed()"
-    )]
-    pub struct ErrCapabilityAlreadyClaimed;
     ///Custom Error type `ErrClientNotFound` with signature `ErrClientNotFound()` and selector `0xb6c71f7d`
     #[derive(
         Clone,
@@ -2411,91 +2310,6 @@ pub mod ibc_handler {
     )]
     #[etherror(name = "ErrClientNotFound", abi = "ErrClientNotFound()")]
     pub struct ErrClientNotFound;
-    ///Container type for all of the contract's custom errors
-    #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
-    pub enum IBCHandlerErrors {
-        ErrCapabilityAlreadyClaimed(ErrCapabilityAlreadyClaimed),
-        ErrClientNotFound(ErrClientNotFound),
-        /// The standard solidity revert string, with selector
-        /// Error(string) -- 0x08c379a0
-        RevertString(::std::string::String),
-    }
-    impl ::ethers::core::abi::AbiDecode for IBCHandlerErrors {
-        fn decode(
-            data: impl AsRef<[u8]>,
-        ) -> ::core::result::Result<Self, ::ethers::core::abi::AbiError> {
-            let data = data.as_ref();
-            if let Ok(decoded) =
-                <::std::string::String as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
-                return Ok(Self::RevertString(decoded));
-            }
-            if let Ok(decoded) =
-                <ErrCapabilityAlreadyClaimed as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
-                return Ok(Self::ErrCapabilityAlreadyClaimed(decoded));
-            }
-            if let Ok(decoded) = <ErrClientNotFound as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
-                return Ok(Self::ErrClientNotFound(decoded));
-            }
-            Err(::ethers::core::abi::Error::InvalidData.into())
-        }
-    }
-    impl ::ethers::core::abi::AbiEncode for IBCHandlerErrors {
-        fn encode(self) -> ::std::vec::Vec<u8> {
-            match self {
-                Self::ErrCapabilityAlreadyClaimed(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::ErrClientNotFound(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::RevertString(s) => ::ethers::core::abi::AbiEncode::encode(s),
-            }
-        }
-    }
-    impl ::ethers::contract::ContractRevert for IBCHandlerErrors {
-        fn valid_selector(selector: [u8; 4]) -> bool {
-            match selector {
-                [0x08, 0xc3, 0x79, 0xa0] => true,
-                _ if selector
-                    == <ErrCapabilityAlreadyClaimed as ::ethers::contract::EthError>::selector(
-                    ) =>
-                {
-                    true
-                }
-                _ if selector
-                    == <ErrClientNotFound as ::ethers::contract::EthError>::selector() =>
-                {
-                    true
-                }
-                _ => false,
-            }
-        }
-    }
-    impl ::core::fmt::Display for IBCHandlerErrors {
-        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-            match self {
-                Self::ErrCapabilityAlreadyClaimed(element) => ::core::fmt::Display::fmt(element, f),
-                Self::ErrClientNotFound(element) => ::core::fmt::Display::fmt(element, f),
-                Self::RevertString(s) => ::core::fmt::Display::fmt(s, f),
-            }
-        }
-    }
-    impl ::core::convert::From<::std::string::String> for IBCHandlerErrors {
-        fn from(value: String) -> Self {
-            Self::RevertString(value)
-        }
-    }
-    impl ::core::convert::From<ErrCapabilityAlreadyClaimed> for IBCHandlerErrors {
-        fn from(value: ErrCapabilityAlreadyClaimed) -> Self {
-            Self::ErrCapabilityAlreadyClaimed(value)
-        }
-    }
-    impl ::core::convert::From<ErrClientNotFound> for IBCHandlerErrors {
-        fn from(value: ErrClientNotFound) -> Self {
-            Self::ErrClientNotFound(value)
-        }
-    }
     ///Container type for all input parameters for the `COMMITMENT_PREFIX` function with signature `COMMITMENT_PREFIX()` and selector `0xa9550dac`
     #[derive(
         Clone,
@@ -2526,22 +2340,6 @@ pub mod ibc_handler {
     )]
     pub struct AcknowledgePacketCall {
         pub msg: MsgPacketAcknowledgement,
-    }
-    ///Container type for all input parameters for the `bindPort` function with signature `bindPort(string,address)` and selector `0x117e886a`
-    #[derive(
-        Clone,
-        ::ethers::contract::EthCall,
-        ::ethers::contract::EthDisplay,
-        Default,
-        Debug,
-        PartialEq,
-        Eq,
-        Hash,
-    )]
-    #[ethcall(name = "bindPort", abi = "bindPort(string,address)")]
-    pub struct BindPortCall {
-        pub port_id: ::std::string::String,
-        pub module_address: ::ethers::core::types::Address,
     }
     ///Container type for all input parameters for the `capabilities` function with signature `capabilities(string)` and selector `0x5717bcf5`
     #[derive(
@@ -3099,21 +2897,6 @@ pub mod ibc_handler {
         pub ::std::string::String,
         pub u64,
     );
-    ///Container type for all input parameters for the `portCapabilityPath` function with signature `portCapabilityPath(string)` and selector `0x2570dae0`
-    #[derive(
-        Clone,
-        ::ethers::contract::EthCall,
-        ::ethers::contract::EthDisplay,
-        Default,
-        Debug,
-        PartialEq,
-        Eq,
-        Hash,
-    )]
-    #[ethcall(name = "portCapabilityPath", abi = "portCapabilityPath(string)")]
-    pub struct PortCapabilityPathCall {
-        pub port_id: ::std::string::String,
-    }
     ///Container type for all input parameters for the `recvPacket` function with signature `recvPacket(((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,(uint64,uint64)))` and selector `0x236ebd70`
     #[derive(
         Clone,
@@ -3229,7 +3012,6 @@ pub mod ibc_handler {
     pub enum IBCHandlerCalls {
         CommitmentPrefix(CommitmentPrefixCall),
         AcknowledgePacket(AcknowledgePacketCall),
-        BindPort(BindPortCall),
         Capabilities(CapabilitiesCall),
         ChannelCapabilityPath(ChannelCapabilityPathCall),
         ChannelCloseConfirm(ChannelCloseConfirmCall),
@@ -3265,7 +3047,6 @@ pub mod ibc_handler {
         NextSequenceRecvs(NextSequenceRecvsCall),
         NextSequenceSends(NextSequenceSendsCall),
         PacketReceipts(PacketReceiptsCall),
-        PortCapabilityPath(PortCapabilityPathCall),
         RecvPacket(RecvPacketCall),
         RegisterClient(RegisterClientCall),
         SendPacket(SendPacketCall),
@@ -3287,9 +3068,6 @@ pub mod ibc_handler {
                 <AcknowledgePacketCall as ::ethers::core::abi::AbiDecode>::decode(data)
             {
                 return Ok(Self::AcknowledgePacket(decoded));
-            }
-            if let Ok(decoded) = <BindPortCall as ::ethers::core::abi::AbiDecode>::decode(data) {
-                return Ok(Self::BindPort(decoded));
             }
             if let Ok(decoded) = <CapabilitiesCall as ::ethers::core::abi::AbiDecode>::decode(data)
             {
@@ -3449,11 +3227,6 @@ pub mod ibc_handler {
             {
                 return Ok(Self::PacketReceipts(decoded));
             }
-            if let Ok(decoded) =
-                <PortCapabilityPathCall as ::ethers::core::abi::AbiDecode>::decode(data)
-            {
-                return Ok(Self::PortCapabilityPath(decoded));
-            }
             if let Ok(decoded) = <RecvPacketCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::RecvPacket(decoded));
             }
@@ -3486,7 +3259,6 @@ pub mod ibc_handler {
             match self {
                 Self::CommitmentPrefix(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::AcknowledgePacket(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::BindPort(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::Capabilities(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::ChannelCapabilityPath(element) => {
                     ::ethers::core::abi::AbiEncode::encode(element)
@@ -3544,9 +3316,6 @@ pub mod ibc_handler {
                 Self::NextSequenceRecvs(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::NextSequenceSends(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::PacketReceipts(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::PortCapabilityPath(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
                 Self::RecvPacket(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::RegisterClient(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::SendPacket(element) => ::ethers::core::abi::AbiEncode::encode(element),
@@ -3563,7 +3332,6 @@ pub mod ibc_handler {
             match self {
                 Self::CommitmentPrefix(element) => ::core::fmt::Display::fmt(element, f),
                 Self::AcknowledgePacket(element) => ::core::fmt::Display::fmt(element, f),
-                Self::BindPort(element) => ::core::fmt::Display::fmt(element, f),
                 Self::Capabilities(element) => ::core::fmt::Display::fmt(element, f),
                 Self::ChannelCapabilityPath(element) => ::core::fmt::Display::fmt(element, f),
                 Self::ChannelCloseConfirm(element) => ::core::fmt::Display::fmt(element, f),
@@ -3601,7 +3369,6 @@ pub mod ibc_handler {
                 Self::NextSequenceRecvs(element) => ::core::fmt::Display::fmt(element, f),
                 Self::NextSequenceSends(element) => ::core::fmt::Display::fmt(element, f),
                 Self::PacketReceipts(element) => ::core::fmt::Display::fmt(element, f),
-                Self::PortCapabilityPath(element) => ::core::fmt::Display::fmt(element, f),
                 Self::RecvPacket(element) => ::core::fmt::Display::fmt(element, f),
                 Self::RegisterClient(element) => ::core::fmt::Display::fmt(element, f),
                 Self::SendPacket(element) => ::core::fmt::Display::fmt(element, f),
@@ -3619,11 +3386,6 @@ pub mod ibc_handler {
     impl ::core::convert::From<AcknowledgePacketCall> for IBCHandlerCalls {
         fn from(value: AcknowledgePacketCall) -> Self {
             Self::AcknowledgePacket(value)
-        }
-    }
-    impl ::core::convert::From<BindPortCall> for IBCHandlerCalls {
-        fn from(value: BindPortCall) -> Self {
-            Self::BindPort(value)
         }
     }
     impl ::core::convert::From<CapabilitiesCall> for IBCHandlerCalls {
@@ -3799,11 +3561,6 @@ pub mod ibc_handler {
     impl ::core::convert::From<PacketReceiptsCall> for IBCHandlerCalls {
         fn from(value: PacketReceiptsCall) -> Self {
             Self::PacketReceipts(value)
-        }
-    }
-    impl ::core::convert::From<PortCapabilityPathCall> for IBCHandlerCalls {
-        fn from(value: PortCapabilityPathCall) -> Self {
-            Self::PortCapabilityPath(value)
         }
     }
     impl ::core::convert::From<RecvPacketCall> for IBCHandlerCalls {
@@ -4209,18 +3966,6 @@ pub mod ibc_handler {
         Hash,
     )]
     pub struct PacketReceiptsReturn(pub u8);
-    ///Container type for all return fields from the `portCapabilityPath` function with signature `portCapabilityPath(string)` and selector `0x2570dae0`
-    #[derive(
-        Clone,
-        ::ethers::contract::EthAbiType,
-        ::ethers::contract::EthAbiCodec,
-        Default,
-        Debug,
-        PartialEq,
-        Eq,
-        Hash,
-    )]
-    pub struct PortCapabilityPathReturn(pub ::std::string::String);
     ///Container type for all return fields from the `sendPacket` function with signature `sendPacket(string,string,(uint64,uint64),uint64,bytes)` and selector `0xae4cd201`
     #[derive(
         Clone,

@@ -279,18 +279,6 @@ pub enum SetupCmd {
         #[arg(long)]
         denom: String,
     },
-    SetOperator {
-        #[arg(long)]
-        on: String,
-    },
-    BindPort {
-        #[arg(long)]
-        on: String,
-        #[arg(long)]
-        module_address: Address,
-        #[arg(long)]
-        port_id: String,
-    },
     InitialChannel {
         #[arg(long)]
         on: String,

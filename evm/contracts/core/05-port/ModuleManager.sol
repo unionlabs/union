@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 import "@openzeppelin/utils/Context.sol";
 import "./IIBCModule.sol";
 import "../24-host/IBCStore.sol";
+import "../../lib/Hex.sol";
 
 library ModuleManagerLib {
     error ErrModuleNotFound();
@@ -14,27 +15,12 @@ library ModuleManagerLib {
  */
 abstract contract ModuleManager is IBCStore, Context {
     /**
-     * @dev bindPort binds to an unallocated port, failing if the port has already been allocated.
-     */
-    function bindPort(
-        string calldata portId,
-        address moduleAddress
-    ) public virtual {
-        require(address(moduleAddress) != address(this));
-        claimCapability(portCapabilityPath(portId), moduleAddress);
-    }
-
-    /**
      * @dev lookupModuleByPort will return the IBCModule along with the capability associated with a given portID
      */
     function lookupModuleByPort(
         string memory portId
     ) internal view virtual returns (IIBCModule) {
-        address module = lookupModule(portCapabilityPath(portId));
-        if (module == address(0)) {
-            revert ModuleManagerLib.ErrModuleNotFound();
-        }
-        return IIBCModule(module);
+        return IIBCModule(Hex.hexToAddress(portId));
     }
 
     /**
@@ -49,15 +35,6 @@ abstract contract ModuleManager is IBCStore, Context {
             revert ModuleManagerLib.ErrModuleNotFound();
         }
         return IIBCModule(module);
-    }
-
-    /**
-     * @dev portCapabilityPath returns the path under which owner module address associated with a port should be stored.
-     */
-    function portCapabilityPath(
-        string memory portId
-    ) public pure returns (string memory) {
-        return portId;
     }
 
     /**
