@@ -38,7 +38,7 @@ let
 
     union.wait_until_succeeds("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- query gov proposal ${toString (height / 10)} --home ./home --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.status == \"PROPOSAL_STATUS_VOTING_PERIOD\"') == true ]]", timeout=30)
 
-    ${forEachNode (id: "print(union.succeed('docker exec devnet-union-minimal-union-minimal-union-${id}-1 ${unionvisorBin} --root . call --bundle /bundle -- tx gov vote ${toString (height / 10)} yes --keyring-backend test --from val-${id} --home ./home -y'))")}
+    ${forEachNode (id: "print(union.succeed('docker exec devnet-union-minimal-union-minimal-${id}-1 ${unionvisorBin} --root . call --bundle /bundle -- tx gov vote ${toString (height / 10)} yes --keyring-backend test --from val-${id} --home ./home -y'))")}
 
     union.wait_until_succeeds("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root . call --bundle /bundle -- query gov proposal ${toString (height / 10)} --home ./home --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.status == \"PROPOSAL_STATUS_PASSED\"') == true ]]", timeout=30)
 
@@ -53,7 +53,7 @@ in
       import time
       union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
-      ${forEachNode (id: "union.succeed('docker cp ${bundle} devnet-union-minimal-union-minimal-union-${id}-1:/bundle')")}
+      ${forEachNode (id: "union.succeed('docker cp ${bundle} devnet-union-minimal-union-minimal-${id}-1:/bundle')")}
 
       # Ensure the union network commits more than one block
       union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
@@ -73,7 +73,7 @@ in
       import time
       union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
-      ${forEachNode (id: "union.succeed('docker cp ${bundle} devnet-union-minimal-union-minimal-union-${id}-1:/bundle')")}
+      ${forEachNode (id: "union.succeed('docker cp ${bundle} devnet-union-minimal-union-minimal-${id}-1:/bundle')")}
 
       # Ensure the union network commits more than one block
       union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
