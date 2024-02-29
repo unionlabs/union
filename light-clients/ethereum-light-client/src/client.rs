@@ -6,7 +6,9 @@ use ethereum_verifier::{
 };
 use ics008_wasm_client::{
     storage_utils::{
-        read_client_state, read_consensus_state, save_client_state, save_consensus_state,
+        read_client_state, read_consensus_state, read_subject_client_state,
+        read_substitute_client_state, read_substitute_consensus_state, save_client_state,
+        save_consensus_state, save_subject_client_state, save_subject_consensus_state,
         update_client_state,
     },
     IbcClient, Status, StorageState, FROZEN_HEIGHT, ZERO_HEIGHT,
@@ -314,9 +316,50 @@ impl IbcClient for EthereumLightClient {
         Err(Error::Unimplemented)
     }
 
-    fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
-        // migration from previous client to self, so unimplemented now
-        Err(Error::Unimplemented)
+    fn migrate_client_store(mut deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error> {
+        let mut subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
+        let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
+
+        ensure(
+            substitute_client_state.data.frozen_height == ZERO_HEIGHT,
+            Error::SubstituteClientFrozen,
+        )?;
+
+        ensure(
+            migrate_check_allowed_fields(&subject_client_state.data, &substitute_client_state.data),
+            Error::MigrateFieldsChanged,
+        )?;
+
+        let substitute_consensus_state: WasmConsensusState =
+            read_substitute_consensus_state(deps.as_ref(), &substitute_client_state.latest_height)?
+                .ok_or(Error::ConsensusStateNotFound(
+                    substitute_client_state.latest_height,
+                ))?;
+
+        save_subject_consensus_state(
+            deps.branch(),
+            substitute_consensus_state,
+            &substitute_client_state.latest_height,
+        );
+
+        subject_client_state.latest_height = substitute_client_state.latest_height;
+        subject_client_state.data.latest_slot = substitute_client_state.data.latest_slot;
+        subject_client_state.data.chain_id = substitute_client_state.data.chain_id;
+        subject_client_state.data.min_sync_committee_participants =
+            substitute_client_state.data.min_sync_committee_participants;
+        subject_client_state.data.fork_parameters = substitute_client_state.data.fork_parameters;
+        subject_client_state.data.trust_level = substitute_client_state.data.trust_level;
+        subject_client_state.data.trusting_period = substitute_client_state.data.trusting_period;
+        subject_client_state.data.counterparty_commitment_slot =
+            substitute_client_state.data.counterparty_commitment_slot;
+        subject_client_state.data.ibc_contract_address =
+            substitute_client_state.data.ibc_contract_address;
+
+        subject_client_state.data.frozen_height = ZERO_HEIGHT;
+
+        save_subject_client_state(deps, subject_client_state);
+
+        Ok(())
     }
 
     fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, Self::Error> {
@@ -363,6 +406,17 @@ impl IbcClient for EthereumLightClient {
                 .timestamp,
         )
     }
+}
+
+fn migrate_check_allowed_fields(
+    subject_client_state: &ClientState,
+    substitute_client_state: &ClientState,
+) -> bool {
+    subject_client_state.genesis_time == substitute_client_state.genesis_time
+        && subject_client_state.seconds_per_slot == substitute_client_state.seconds_per_slot
+        && subject_client_state.slots_per_epoch == substitute_client_state.slots_per_epoch
+        && subject_client_state.epochs_per_sync_committee_period
+            == substitute_client_state.epochs_per_sync_committee_period
 }
 
 fn do_verify_membership(

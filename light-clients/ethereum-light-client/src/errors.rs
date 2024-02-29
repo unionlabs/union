@@ -101,6 +101,12 @@ pub enum Error {
 
     #[error("integer arithmetic overflow")]
     IntegerOverflow,
+
+    #[error("unallowed fields have been changed during state migration")]
+    MigrateFieldsChanged,
+
+    #[error("substitute client is frozen")]
+    SubstituteClientFrozen,
 }
 
 impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {

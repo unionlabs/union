@@ -337,7 +337,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         Err(Error::Unimplemented)
     }
 
-    fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
+    fn migrate_client_store(_deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error> {
         Err(Error::Unimplemented)
     }
 
