@@ -102,7 +102,7 @@ pub enum Error {
     #[error("integer arithmetic overflow")]
     IntegerOverflow,
 
-    #[error("unallowed fields have been changed during state migration")]
+    #[error("forbidden fields have been changed during state migration")]
     MigrateFieldsChanged,
 
     #[error("substitute client is frozen")]

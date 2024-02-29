@@ -1,0 +1,48 @@
+{
+  "data": {
+    "chain_id": "11155112",
+    "genesis_validators_root": "0xd8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078",
+    "min_sync_committee_participants": 0,
+    "genesis_time": 1655733600,
+    "fork_parameters": {
+      "genesis_fork_version": "0x90000069",
+      "genesis_slot": 0,
+      "altair": {
+        "version": "0x90000070",
+        "epoch": 50
+      },
+      "bellatrix": {
+        "version": "0x90000071",
+        "epoch": 100
+      },
+      "capella": {
+        "version": "0x90000072",
+        "epoch": 56832
+      },
+      "deneb": {
+        "version": "0x04000000",
+        "epoch": 123123123
+      }
+    },
+    "seconds_per_slot": 12,
+    "slots_per_epoch": 32,
+    "epochs_per_sync_committee_period": 256,
+    "trust_level": {
+      "numerator": 1,
+      "denominator": 5
+    },
+    "trusting_period": 100000000,
+    "latest_slot": 3577184,
+    "frozen_height": {
+      "revision_number": 0,
+      "revision_height": 0
+    },
+    "counterparty_commitment_slot": "0",
+    "ibc_contract_address": "0x971a9631b0a4e0e78954c764c7060e9d95d5cfd8"
+  },
+  "checksum": "0xfa19d6ccbe4bde2d6a205136e65089460c4d9781a918add0e9dd3a0b9a2d73cb",
+  "latest_height": {
+    "revision_number": 0,
+    "revision_height": 3577200
+  }
+}
