@@ -8,6 +8,8 @@ interface EventTarget {
 interface EnvironmentVariables {
   readonly NODE_ENV: "development" | "production" | "test";
   readonly PORT: string;
+  /* These are injected by default by Cloudflare Pages */
+  readonly CF_PAGES_COMMIT_SHA: string;
 }
 // Node.js environment variables types
 declare module NodeJS {

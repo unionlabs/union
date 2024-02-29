@@ -6,6 +6,8 @@ import { SEO } from 'astro-seo'
 import { Head } from 'astro-capo'
 import { AstroFont } from 'astro-font'
 
+const COMMIT_SHA = import.meta.env.CF_PAGES_COMMIT_SHA
+
 interface Props {
   url?: string
   title?: string
@@ -22,7 +24,7 @@ const {
   description = 'The Sovereign Interoperability Layer',
   loadFonts = true,
 } = Astro.props
-console.log({ image })
+
 const fullImagePath = `${import.meta.env.SITE}${image}`
 
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
@@ -71,6 +73,7 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           { name: 'twitter:url', content: url },
           { name: 'twitter:title', content: title },
           { name: 'twitter:description', content: description },
+          { name: 'commit-sha', content: COMMIT_SHA },
         ],
       }}
     />
