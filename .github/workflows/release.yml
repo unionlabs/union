@@ -26,7 +26,7 @@ jobs:
         with:
           name: packages.${{ matrix.system }}.${{ matrix.package }}-image
       - uses: nixbuild/nix-quick-install-action@v26
-      - uses: nixbuild/nixbuild-action@master
+      - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir ${{ matrix.system }}
@@ -50,7 +50,7 @@ jobs:
         with:
           name: packages.${{ matrix.system }}.${{ matrix.package }}
       - uses: nixbuild/nix-quick-install-action@v26
-      - uses: nixbuild/nixbuild-action@master
+      - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - run: mkdir ${{ matrix.system }}
