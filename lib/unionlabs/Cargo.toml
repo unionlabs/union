@@ -16,6 +16,7 @@ cosmwasm-std           = { workspace = true, features = ["stargate"] }
 derive_more            = { workspace = true, features = ["display"] }
 either                 = { workspace = true }
 enumorph               = { workspace = true }
+ethers                 = { workspace = true, optional = true }
 ethers-contract-derive = { workspace = true, optional = true }
 ethers-core            = { workspace = true, optional = true }
 frunk.workspace        = true
@@ -52,11 +53,11 @@ serde_json = { workspace = true }
 # unionlabs  = { path = ".", features = ["arbitrary"] } # enable the "arbitrary" feature for tests
 
 [features]
-default = ["ethabi", "std"]
+default = ["ethabi", "std", "ethabi"]
 
-ethabi = ["contracts", "ethers-core", "ethers-contract-derive"]
+ethabi = ["contracts", "ethers-core", "ethers-contract-derive", "ethers"]
 grpc   = ["protos/client"]
-std    = ["tree_hash/detect-cpufeatures"]
+std    = ["tree_hash/detect-cpufeatures", "ethers-core/std"]
 
 arbitrary = ["dep:arbitrary", "primitive-types/arbitrary", "ssz_types/arbitrary"]
 fuzzing   = ["arbitrary", "serde_json"]

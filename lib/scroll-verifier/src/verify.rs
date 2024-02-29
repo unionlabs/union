@@ -113,7 +113,7 @@ pub fn scroll_verify_zktrie_account_storage_root(
     match get_zktrie_node(root, address.as_ref(), proof)? {
         TrieData::NotFound => Err(Error::ValueMismatch),
         TrieData::Node(node) => {
-            let account = Account::try_from(node.data()).map_err(|_| Error::ValueMismatch)?;
+            let account = Account::decode(node.data()).map_err(|_| Error::ValueMismatch)?;
             if &account.storage_root == expected_storage_root {
                 Ok(())
             } else {

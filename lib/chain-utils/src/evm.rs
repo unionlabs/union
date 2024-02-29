@@ -13,7 +13,7 @@ use contracts::{
         GetHashedPacketAcknowledgementCommitmentReturn, GetHashedPacketCommitmentCall,
         GetHashedPacketCommitmentReturn, IBCHandler,
     },
-    ibc_packet::{IBCPacket, IBCPacketErrors, IBCPacketEvents, WriteAcknowledgementFilter},
+    ibc_packet::{IBCPacketErrors, IBCPacketEvents, WriteAcknowledgementFilter},
     shared_types::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
 };
 use ethers::{
@@ -25,7 +25,7 @@ use ethers::{
     signers::{LocalWallet, Wallet},
     utils::secret_key_to_address,
 };
-use futures::Future;
+use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
@@ -54,19 +54,16 @@ use unionlabs::{
 
 use crate::{private_key::PrivateKey, Pool};
 
-pub type CometblsMiddleware =
+pub type EvmSignerMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
 
 // TODO(benluelo): Generic over middleware?
-#[derive(Debug, Clone)]
+#[derive(DebugNoBound, CloneNoBound)]
 pub struct Evm<C: ChainSpec> {
     pub chain_id: U256,
 
     pub readonly_ibc_handler: DevnetOwnableIBCHandler<Provider<Ws>>,
-    pub readonly_ibc_packet: IBCPacket<Provider<Ws>>,
-
-    // pub wallet: LocalWallet,
-    pub ibc_handlers: Pool<IBCHandler<CometblsMiddleware>>,
+    pub ibc_handlers: Pool<IBCHandler<EvmSignerMiddleware>>,
     pub provider: Provider<Ws>,
     pub beacon_api_client: BeaconApiClient<C>,
 }
@@ -77,6 +74,7 @@ pub struct Config {
     pub ibc_handler_address: H160,
 
     /// The signer that will be used to submit transactions by voyager.
+    #[serde(default)]
     pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
 
     /// The RPC endpoint for the execution chain.
@@ -201,197 +199,177 @@ impl<C: ChainSpec> Chain for Evm<C> {
         self.chain_id
     }
 
-    fn query_latest_height(&self) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
-        async move {
-            self.beacon_api_client
-                .finality_update()
-                .await
-                .map(|response| self.make_height(response.data.attested_header.beacon.slot))
-        }
+    async fn query_latest_height(&self) -> Result<Height, Self::Error> {
+        self.beacon_api_client
+            .finality_update()
+            .await
+            .map(|response| self.make_height(response.data.attested_header.beacon.slot))
     }
 
-    fn query_latest_height_as_destination(
-        &self,
-    ) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
-        async move {
-            let height = self
+    async fn query_latest_height_as_destination(&self) -> Result<Height, Self::Error> {
+        let height = self
+            .beacon_api_client
+            .block(beacon_api::client::BlockId::Head)
+            .await?
+            .data
+            .message
+            .slot;
+
+        // HACK: we introduced this because we were using alchemy for the
+        // execution endpoint and our custom beacon endpoint that rely on
+        // its own execution chain. Alchemy was a bit delayed and the
+        // execution height for the beacon head wasn't existing for few
+        // secs. We wait for an extra beacon head to let alchemy catch up.
+        // We should be able to remove that once we rely on an execution
+        // endpoint that is itself used by the beacon endpoint (no different
+        // POV).
+        loop {
+            let next_height = self
                 .beacon_api_client
                 .block(beacon_api::client::BlockId::Head)
                 .await?
                 .data
                 .message
                 .slot;
-
-            // HACK: we introduced this because we were using alchemy for the
-            // execution endpoint and our custom beacon endpoint that rely on
-            // its own execution chain. Alchemy was a bit delayed and the
-            // execution height for the beacon head wasn't existing for few
-            // secs. We wait for an extra beacon head to let alchemy catch up.
-            // We should be able to remove that once we rely on an execution
-            // endpoint that is itself used by the beacon endpoint (no different
-            // POV).
-            loop {
-                let next_height = self
-                    .beacon_api_client
-                    .block(beacon_api::client::BlockId::Head)
-                    .await?
-                    .data
-                    .message
-                    .slot;
-                if next_height > height {
-                    break;
-                }
-
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            if next_height > height {
+                break;
             }
 
-            Ok(self.make_height(height))
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         }
+
+        Ok(self.make_height(height))
     }
 
-    fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_ {
-        async move {
-            Ok(self
+    async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
+        Ok(self
+            .beacon_api_client
+            .finality_update()
+            .await?
+            .data
+            .attested_header
+            .execution
+            .timestamp
+            .try_into()
+            .unwrap())
+    }
+
+    async fn self_client_state(&self, beacon_height: Height) -> Self::SelfClientState {
+        let genesis = self.beacon_api_client.genesis().await.unwrap().data;
+
+        ethereum::client_state::ClientState {
+            chain_id: self.chain_id,
+            genesis_validators_root: genesis.genesis_validators_root,
+            genesis_time: genesis.genesis_time,
+            fork_parameters: self
                 .beacon_api_client
-                .finality_update()
-                .await?
+                .spec()
+                .await
+                .unwrap()
                 .data
-                .attested_header
-                .execution
-                .timestamp
-                .try_into()
-                .unwrap())
+                .into_fork_parameters(),
+            // REVIEW: Is this a preset config param? Or a per-chain config?
+            seconds_per_slot: C::SECONDS_PER_SLOT::U64,
+            slots_per_epoch: C::SLOTS_PER_EPOCH::U64,
+            epochs_per_sync_committee_period: C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64,
+            trusting_period: 100_000_000,
+            latest_slot: beacon_height.revision_height,
+            min_sync_committee_participants: 0,
+            trust_level: Fraction {
+                numerator: 1,
+                denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
+            },
+            frozen_height: Height {
+                revision_number: 0,
+                revision_height: 0,
+            },
+            counterparty_commitment_slot: U256::from(0),
+            ibc_contract_address: self.readonly_ibc_handler.address().into(),
         }
     }
 
-    fn self_client_state(
-        &self,
-        beacon_height: Height,
-    ) -> impl Future<Output = Self::SelfClientState> + '_ {
-        async move {
-            let genesis = self.beacon_api_client.genesis().await.unwrap().data;
+    async fn self_consensus_state(&self, beacon_height: Height) -> Self::SelfConsensusState {
+        let trusted_header = self
+            .beacon_api_client
+            .header(beacon_api::client::BlockId::Slot(
+                beacon_height.revision_height,
+            ))
+            .await
+            .unwrap()
+            .data;
 
-            ethereum::client_state::ClientState {
-                chain_id: self.chain_id,
-                genesis_validators_root: genesis.genesis_validators_root,
-                genesis_time: genesis.genesis_time,
-                fork_parameters: self
-                    .beacon_api_client
-                    .spec()
-                    .await
-                    .unwrap()
-                    .data
-                    .into_fork_parameters(),
-                // REVIEW: Is this a preset config param? Or a per-chain config?
-                seconds_per_slot: C::SECONDS_PER_SLOT::U64,
-                slots_per_epoch: C::SLOTS_PER_EPOCH::U64,
-                epochs_per_sync_committee_period: C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64,
-                trusting_period: 100_000_000,
-                latest_slot: beacon_height.revision_height,
-                min_sync_committee_participants: 0,
-                trust_level: Fraction {
-                    numerator: 1,
-                    denominator: promote!(NonZeroU64: option_unwrap!(NonZeroU64::new(3))),
-                },
-                frozen_height: Height {
-                    revision_number: 0,
-                    revision_height: 0,
-                },
-                counterparty_commitment_slot: U256::from(0),
-                ibc_contract_address: self.readonly_ibc_handler.address().into(),
-            }
-        }
-    }
+        let bootstrap = self
+            .beacon_api_client
+            .bootstrap(trusted_header.root)
+            .await
+            .unwrap()
+            .data;
 
-    fn self_consensus_state(
-        &self,
-        beacon_height: Height,
-    ) -> impl Future<Output = Self::SelfConsensusState> + '_ {
-        async move {
-            let trusted_header = self
+        assert!(bootstrap.header.beacon.slot == beacon_height.revision_height);
+
+        let light_client_update = {
+            let current_period = beacon_height.revision_height.div(C::PERIOD::U64);
+
+            tracing::info!(%current_period);
+
+            let light_client_updates = self
                 .beacon_api_client
-                .header(beacon_api::client::BlockId::Slot(
-                    beacon_height.revision_height,
-                ))
+                .light_client_updates(current_period, 1)
                 .await
-                .unwrap()
-                .data;
+                .unwrap();
 
-            let bootstrap = self
-                .beacon_api_client
-                .bootstrap(trusted_header.root)
-                .await
-                .unwrap()
-                .data;
-
-            assert!(bootstrap.header.beacon.slot == beacon_height.revision_height);
-
-            let light_client_update = {
-                let current_period = beacon_height.revision_height.div(C::PERIOD::U64);
-
-                tracing::info!(%current_period);
-
-                let light_client_updates = self
-                    .beacon_api_client
-                    .light_client_updates(current_period, 1)
-                    .await
-                    .unwrap();
-
-                let [light_client_update] = &*light_client_updates.0 else {
-                    panic!()
-                };
-
-                light_client_update.data.clone()
+            let [light_client_update] = &*light_client_updates.0 else {
+                panic!()
             };
 
-            let timestamp = bootstrap.header.execution.timestamp;
-            ethereum::consensus_state::ConsensusState {
-                slot: bootstrap.header.beacon.slot,
-                state_root: bootstrap.header.execution.state_root,
-                // TODO: Should this shouldn't be the default but fetched via eth_getProof
-                storage_root: H256::default(),
-                timestamp,
-                current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
-                next_sync_committee: light_client_update
-                    .next_sync_committee
-                    .map(|nsc| nsc.aggregate_pubkey),
-            }
+            light_client_update.data.clone()
+        };
+
+        let timestamp = bootstrap.header.execution.timestamp;
+        ethereum::consensus_state::ConsensusState {
+            slot: bootstrap.header.beacon.slot,
+            state_root: bootstrap.header.execution.state_root,
+            // TODO: Should this shouldn't be the default but fetched via eth_getProof
+            storage_root: H256::default(),
+            timestamp,
+            current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
+            next_sync_committee: light_client_update
+                .next_sync_committee
+                .map(|nsc| nsc.aggregate_pubkey),
         }
     }
 
-    fn read_ack(
+    async fn read_ack(
         &self,
         tx_hash: H256,
         destination_channel_id: ChannelId,
         destination_port_id: PortId,
         sequence: NonZeroU64,
-    ) -> impl Future<Output = Vec<u8>> + '_ {
-        async move {
-            self.provider
-                .get_transaction_receipt(tx_hash.clone())
-                .await
-                .unwrap()
-                .unwrap()
-                .logs
-                .into_iter()
-                .map(|log| <WriteAcknowledgementFilter as EthLogDecode>::decode_log(&log.into()))
-                .find_map(|e| match e {
-                    Ok(WriteAcknowledgementFilter {
-                        destination_port: ack_dst_port_id,
-                        destination_channel,
-                        sequence: ack_sequence,
-                        acknowledgement,
-                    }) if ack_dst_port_id == destination_port_id.to_string()
-                        && destination_channel == destination_channel_id.to_string()
-                        && Some(sequence) == NonZeroU64::new(ack_sequence) =>
-                    {
-                        Some(acknowledgement)
-                    }
-                    _ => None,
-                })
-                .unwrap_or_default()
-                .to_vec()
-        }
+    ) -> Vec<u8> {
+        self.provider
+            .get_transaction_receipt(tx_hash.clone())
+            .await
+            .unwrap()
+            .unwrap()
+            .logs
+            .into_iter()
+            .map(|log| <WriteAcknowledgementFilter as EthLogDecode>::decode_log(&log.into()))
+            .find_map(|e| match e {
+                Ok(WriteAcknowledgementFilter {
+                    destination_port: ack_dst_port_id,
+                    destination_channel,
+                    sequence: ack_sequence,
+                    acknowledgement,
+                }) if ack_dst_port_id == destination_port_id.to_string()
+                    && destination_channel == destination_channel_id.to_string()
+                    && Some(sequence) == NonZeroU64::new(ack_sequence) =>
+                {
+                    Some(acknowledgement)
+                }
+                _ => None,
+            })
+            .unwrap_or_default()
+            .to_vec()
     }
 }
 
@@ -433,15 +411,31 @@ impl<C: ChainSpec> Evm<C> {
                 config.ibc_handler_address.clone(),
                 provider.clone().into(),
             ),
-            readonly_ibc_packet: IBCPacket::new(
-                config.ibc_handler_address,
-                provider.clone().into(),
-            ),
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
         })
     }
+}
 
+// impl<C: ChainSpec> ReadonlyEvm<C> {
+//     pub async fn new(config: ReadonlyConfig) -> Result<Self, EvmInitError> {
+//         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
+
+//         let chain_id = provider.get_chainid().await?;
+
+//         Ok(Self {
+//             chain_id: U256(chain_id),
+//             readonly_ibc_handler: DevnetOwnableIBCHandler::new(
+//                 config.ibc_handler_address.clone(),
+//                 provider.clone().into(),
+//             ),
+//             provider,
+//             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
+//         })
+//     }
+// }
+
+impl<C: ChainSpec> Evm<C> {
     // TODO: Change to take a beacon slot instead of a height
     pub async fn execution_height(&self, beacon_height: Height) -> u64 {
         let response = self

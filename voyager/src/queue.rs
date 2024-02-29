@@ -337,6 +337,7 @@ pub async fn chains_from_config(
     let mut cosmos = HashMap::new();
     let mut evm_minimal = HashMap::new();
     let mut evm_mainnet = HashMap::new();
+    let mut scroll = HashMap::new();
 
     fn insert_into_chain_map<C: Chain>(
         map: &mut HashMap<<<C as Chain>::SelfClientState as ClientState>::ChainId, C>,
@@ -373,10 +374,14 @@ pub async fn chains_from_config(
             AnyChain::EvmMinimal(c) => {
                 insert_into_chain_map(&mut evm_minimal, c);
             }
+            AnyChain::Scroll(c) => {
+                insert_into_chain_map(&mut scroll, c);
+            }
         }
     }
 
     Ok(Chains {
+        scroll,
         evm_minimal,
         evm_mainnet,
         union,

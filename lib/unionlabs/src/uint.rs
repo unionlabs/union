@@ -44,6 +44,18 @@ impl From<u64> for U256 {
     }
 }
 
+impl TryFrom<U256> for u64 {
+    type Error = ();
+
+    fn try_from(value: U256) -> Result<Self, Self::Error> {
+        if value > U256::from(u64::MAX) {
+            Err(())
+        } else {
+            Ok(value.0.as_u64())
+        }
+    }
+}
+
 impl From<primitive_types::U256> for U256 {
     fn from(value: primitive_types::U256) -> Self {
         Self(value)

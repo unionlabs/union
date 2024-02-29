@@ -55,6 +55,9 @@ impl HandleFetch<BlockPollingTypes> for AnyChainIdentified<AnyFetch> {
             AnyChainIdentified::EvmMinimal(fetch) => {
                 fetch.t.handle(store.get_chain(&fetch.chain_id)).await
             }
+            AnyChainIdentified::Scroll(fetch) => {
+                fetch.t.handle(store.get_chain(&fetch.chain_id)).await
+            }
         }
     }
 }

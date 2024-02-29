@@ -1,6 +1,7 @@
 use chain_utils::{
     cosmos::{Cosmos, CosmosInitError},
     evm::{Evm, EvmInitError},
+    scroll::{Scroll, ScrollInitError},
     union::{Union, UnionInitError},
 };
 use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
@@ -12,6 +13,7 @@ pub enum AnyChain {
     Cosmos(Cosmos),
     EvmMainnet(Evm<Mainnet>),
     EvmMinimal(Evm<Minimal>),
+    Scroll(Scroll),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -22,6 +24,8 @@ pub enum AnyChainTryFromConfigError {
     Cosmos(#[from] CosmosInitError),
     #[error("error initializing an ethereum chain")]
     Evm(#[from] EvmInitError),
+    #[error("error initializing a scroll chain")]
+    Scroll(#[from] ScrollInitError),
 }
 
 impl AnyChain {
@@ -29,6 +33,8 @@ impl AnyChain {
         config: ChainConfigType,
     ) -> Result<Self, AnyChainTryFromConfigError> {
         Ok(match config {
+            ChainConfigType::Union(union) => Self::Union(Union::new(union).await?),
+            ChainConfigType::Cosmos(cosmos) => Self::Cosmos(Cosmos::new(cosmos).await?),
             ChainConfigType::Evm(evm) => {
                 let config = chain_utils::evm::Config {
                     ibc_handler_address: evm.ibc_handler_address,
@@ -41,25 +47,7 @@ impl AnyChain {
                     PresetBaseKind::Mainnet => Self::EvmMainnet(Evm::<Mainnet>::new(config).await?),
                 }
             }
-            ChainConfigType::Union(union) => Self::Union(
-                Union::new(chain_utils::union::Config {
-                    signers: union.signers,
-                    ws_url: union.ws_url,
-                    prover_endpoint: union.prover_endpoint,
-                    grpc_url: union.grpc_url,
-                    fee_denom: union.fee_denom,
-                })
-                .await?,
-            ),
-            ChainConfigType::Cosmos(cosmos) => Self::Cosmos(
-                Cosmos::new(chain_utils::cosmos::Config {
-                    signers: cosmos.signers,
-                    ws_url: cosmos.ws_url,
-                    grpc_url: cosmos.grpc_url,
-                    fee_denom: cosmos.fee_denom,
-                })
-                .await?,
-            ),
+            ChainConfigType::Scroll(scroll) => Self::Scroll(Scroll::new(scroll).await?),
         })
     }
 }

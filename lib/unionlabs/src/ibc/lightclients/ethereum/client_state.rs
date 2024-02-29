@@ -34,6 +34,7 @@ pub struct ClientState {
     pub latest_slot: u64,
     // even though it would be better to have option, ethabicodec don't handle it as zero struct...
     pub frozen_height: Height,
+    // TODO: Rename this to `ibc_commitment_slot`?
     pub counterparty_commitment_slot: U256,
     /// the ibc contract on the counterparty chain that contains the ICS23 commitments
     pub ibc_contract_address: H160,

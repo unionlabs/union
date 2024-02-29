@@ -1,8 +1,4 @@
 // #![warn(clippy::pedantic)]
-#![allow(
-     // required due to return_position_impl_trait_in_trait false positives
-    clippy::manual_async_fn,
-)]
 #![feature(trait_alias)]
 
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
@@ -14,10 +10,11 @@ use unionlabs::{
     traits::{Chain, ChainIdOf},
 };
 
-use crate::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm};
+use crate::{cosmos::Cosmos, evm::Evm, scroll::Scroll, union::Union, wasm::Wasm};
 
 pub mod cosmos;
 pub mod evm;
+pub mod scroll;
 pub mod union;
 
 pub mod cosmos_sdk;
@@ -88,6 +85,7 @@ pub struct Chains {
     pub evm_mainnet: HashMap<ChainIdOf<Evm<Mainnet>>, Evm<Mainnet>>,
     pub union: HashMap<ChainIdOf<Union>, Union>,
     pub cosmos: HashMap<ChainIdOf<Cosmos>, Cosmos>,
+    pub scroll: HashMap<ChainIdOf<Scroll>, Scroll>,
 }
 
 impl GetChain<Union> for Chains {
@@ -99,6 +97,12 @@ impl GetChain<Union> for Chains {
 impl GetChain<Cosmos> for Chains {
     fn get_chain(&self, chain_id: &ChainIdOf<Cosmos>) -> Cosmos {
         self.cosmos.get(chain_id).unwrap().clone()
+    }
+}
+
+impl GetChain<Scroll> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Scroll>) -> Scroll {
+        self.scroll.get(chain_id).unwrap().clone()
     }
 }
 

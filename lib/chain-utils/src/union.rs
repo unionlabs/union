@@ -6,7 +6,6 @@ use std::{
 
 use dashmap::DashMap;
 use ethers::prelude::k256::ecdsa;
-use futures::Future;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
@@ -88,188 +87,170 @@ impl Chain for Union {
         self.chain_id.clone()
     }
 
-    fn query_latest_height(&self) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
-        async move {
-            self.tm_client
-                .latest_block()
-                .await
-                .map(|height| self.make_height(height.block.header.height.value()))
-        }
-    }
-
-    fn query_latest_height_as_destination(
-        &self,
-    ) -> impl Future<Output = Result<Height, Self::Error>> + '_ {
-        self.query_latest_height()
-    }
-
-    fn query_latest_timestamp(&self) -> impl Future<Output = Result<i64, Self::Error>> + '_ {
-        async move {
-            let height = self.query_latest_height().await?;
-            Ok(self
-                .tm_client
-                .block(u32::try_from(height.revision_height).unwrap())
-                .await?
-                .block
-                .header
-                .time
-                .unix_timestamp())
-        }
-    }
-
-    fn self_client_state(
-        &self,
-        height: Height,
-    ) -> impl Future<Output = Self::SelfClientState> + '_ {
-        async move {
-            let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
-                self.grpc_url.clone(),
-            )
+    async fn query_latest_height(&self) -> Result<Height, Self::Error> {
+        self.tm_client
+            .latest_block()
             .await
-            .unwrap()
-            .params(protos::cosmos::staking::v1beta1::QueryParamsRequest {})
+            .map(|height| self.make_height(height.block.header.height.value()))
+    }
+
+    async fn query_latest_height_as_destination(&self) -> Result<Height, Self::Error> {
+        self.query_latest_height().await
+    }
+
+    async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
+        let height = self.query_latest_height().await?;
+        Ok(self
+            .tm_client
+            .block(u32::try_from(height.revision_height).unwrap())
+            .await?
+            .block
+            .header
+            .time
+            .unix_timestamp())
+    }
+
+    async fn self_client_state(&self, height: Height) -> Self::SelfClientState {
+        let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
+            self.grpc_url.clone(),
+        )
+        .await
+        .unwrap()
+        .params(protos::cosmos::staking::v1beta1::QueryParamsRequest {})
+        .await
+        .unwrap()
+        .into_inner()
+        .params
+        .unwrap();
+
+        let commit = self
+            .tm_client
+            .commit(u32::try_from(height.revision_height).unwrap())
             .await
-            .unwrap()
-            .into_inner()
-            .params
             .unwrap();
 
-            let commit = self
-                .tm_client
-                .commit(u32::try_from(height.revision_height).unwrap())
-                .await
-                .unwrap();
+        let height = commit.signed_header.header.height;
 
-            let height = commit.signed_header.header.height;
+        let unbonding_period: u64 = params
+            .unbonding_time
+            .clone()
+            .unwrap()
+            .seconds
+            .try_into()
+            .unwrap();
 
-            let unbonding_period: u64 = params
-                .unbonding_time
-                .clone()
-                .unwrap()
-                .seconds
-                .try_into()
-                .unwrap();
-
-            cometbls::client_state::ClientState {
-                chain_id: self.chain_id.clone(),
-                // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                trusting_period: unbonding_period * 85 / 100,
-                unbonding_period,
-                // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-                max_clock_drift: 60 * 20,
-                frozen_height: Height {
-                    revision_number: 0,
-                    revision_height: 0,
-                },
-                latest_height: Height {
-                    revision_number: self.chain_id.split('-').last().unwrap().parse().unwrap(),
-                    revision_height: height.value(),
-                },
-            }
+        cometbls::client_state::ClientState {
+            chain_id: self.chain_id.clone(),
+            // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+            trusting_period: unbonding_period * 85 / 100,
+            unbonding_period,
+            // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+            max_clock_drift: 60 * 20,
+            frozen_height: Height {
+                revision_number: 0,
+                revision_height: 0,
+            },
+            latest_height: Height {
+                revision_number: self.chain_id.split('-').last().unwrap().parse().unwrap(),
+                revision_height: height.value(),
+            },
         }
     }
 
-    fn self_consensus_state(
-        &self,
-        height: Height,
-    ) -> impl Future<Output = Self::SelfConsensusState> + '_ {
-        async move {
-            let commit = self
-                .tm_client
-                .commit(u32::try_from(height.revision_height).unwrap())
-                .await
-                .unwrap();
+    async fn self_consensus_state(&self, height: Height) -> Self::SelfConsensusState {
+        let commit = self
+            .tm_client
+            .commit(u32::try_from(height.revision_height).unwrap())
+            .await
+            .unwrap();
 
-            cometbls::consensus_state::ConsensusState {
-                timestamp: commit
+        cometbls::consensus_state::ConsensusState {
+            timestamp: commit
+                .signed_header
+                .header
+                .time
+                .unix_timestamp()
+                .try_into()
+                .unwrap(),
+            app_hash: MerkleRoot {
+                hash: commit
                     .signed_header
                     .header
-                    .time
-                    .unix_timestamp()
-                    .try_into()
-                    .unwrap(),
-                app_hash: MerkleRoot {
-                    hash: commit
-                        .signed_header
-                        .header
-                        .app_hash
-                        .as_bytes()
-                        .to_vec()
-                        .try_into()
-                        .unwrap(),
-                },
-                next_validators_hash: commit
-                    .signed_header
-                    .header
-                    .next_validators_hash
+                    .app_hash
                     .as_bytes()
                     .to_vec()
                     .try_into()
                     .unwrap(),
-            }
+            },
+            next_validators_hash: commit
+                .signed_header
+                .header
+                .next_validators_hash
+                .as_bytes()
+                .to_vec()
+                .try_into()
+                .unwrap(),
         }
     }
 
-    fn read_ack(
+    async fn read_ack(
         &self,
         tx_hash: H256,
         destination_channel_id: unionlabs::id::ChannelId,
         destination_port_id: unionlabs::id::PortId,
         sequence: NonZeroU64,
-    ) -> impl Future<Output = Vec<u8>> + '_ {
-        async move {
-            tracing::info!(
-                "Querying ack for {}/{}/{} from tx {tx_hash}",
-                destination_port_id,
-                destination_channel_id,
-                sequence,
-            );
+    ) -> Vec<u8> {
+        tracing::info!(
+            "Querying ack for {}/{}/{} from tx {tx_hash}",
+            destination_port_id,
+            destination_channel_id,
+            sequence,
+        );
 
-            self.tm_client
-                // TODO: Use tx_search here
-                .tx(tx_hash.0.to_vec().try_into().unwrap(), false)
-                .await
-                .unwrap()
-                .tx_result
-                .events
-                .into_iter()
-                .find_map(|event| {
-                    let maybe_ack =
-                        WriteAcknowledgement::try_from(unionlabs::tendermint::abci::event::Event {
-                            ty: event.kind,
-                            attributes: event
-                                .attributes
-                                .into_iter()
-                                .map(|attr| {
-                                    unionlabs::tendermint::abci::event_attribute::EventAttribute {
-                                        key: attr.key,
-                                        value: attr.value,
-                                        index: attr.index,
-                                    }
-                                })
-                                .collect(),
-                        });
-                    match maybe_ack {
-                        Ok(ok)
-                            if ok.packet_sequence == sequence
-                                && ok.packet_dst_port == destination_port_id
-                                && ok.packet_dst_channel == destination_channel_id =>
-                        {
-                            Some(ok)
-                        }
-                        Ok(ok) => {
-                            tracing::debug!("Found ack not matching our packet {:?}", ok);
-                            None
-                        }
-                        Err(TryFromTendermintEventError::IncorrectType { .. }) => None,
-                        Err(err) => {
-                            panic!("{err:#?}")
-                        }
+        self.tm_client
+            // TODO: Use tx_search here
+            .tx(tx_hash.0.to_vec().try_into().unwrap(), false)
+            .await
+            .unwrap()
+            .tx_result
+            .events
+            .into_iter()
+            .find_map(|event| {
+                let maybe_ack =
+                    WriteAcknowledgement::try_from(unionlabs::tendermint::abci::event::Event {
+                        ty: event.kind,
+                        attributes: event
+                            .attributes
+                            .into_iter()
+                            .map(|attr| {
+                                unionlabs::tendermint::abci::event_attribute::EventAttribute {
+                                    key: attr.key,
+                                    value: attr.value,
+                                    index: attr.index,
+                                }
+                            })
+                            .collect(),
+                    });
+                match maybe_ack {
+                    Ok(ok)
+                        if ok.packet_sequence == sequence
+                            && ok.packet_dst_port == destination_port_id
+                            && ok.packet_dst_channel == destination_channel_id =>
+                    {
+                        Some(ok)
                     }
-                })
-                .unwrap()
-                .packet_ack_hex
-        }
+                    Ok(ok) => {
+                        tracing::debug!("Found ack not matching our packet {:?}", ok);
+                        None
+                    }
+                    Err(TryFromTendermintEventError::IncorrectType { .. }) => None,
+                    Err(err) => {
+                        panic!("{err:#?}")
+                    }
+                }
+            })
+            .unwrap()
+            .packet_ack_hex
     }
 }
 

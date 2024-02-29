@@ -15,6 +15,7 @@
         rust-docs = "rust-docs";
         rust-analyzer = "rust-analyzer";
         clippy = "clippy";
+        miri = "miri";
         rust-src = "rust-src";
         llvm-tools-preview = "llvm-tools-preview";
       };

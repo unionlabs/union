@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{hash::H256, uint::U256};
+use crate::{
+    errors::{ExpectedLength, InvalidLength},
+    hash::H256,
+    uint::U256,
+    ByteArrayExt,
+};
 
 /*
 (The following scheme assumes the big-endian encoding)
@@ -27,17 +32,19 @@ pub struct Account {
     pub poseidon_code_hash: H256,
 }
 
-impl TryFrom<&[u8]> for Account {
-    type Error = ();
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let value = <[u8; 160]>::try_from(value).map_err(|_| ())?;
+impl Account {
+    pub fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength> {
+        let value = <[u8; 160]>::try_from(value.as_ref()).map_err(|_| InvalidLength {
+            expected: ExpectedLength::Exact(160),
+            found: value.as_ref().len(),
+        })?;
         Ok(Account {
-            code_size: u64::from_be_bytes(value[16..24].try_into().expect("impossible")),
-            nonce: u64::from_be_bytes(value[24..32].try_into().expect("impossible")),
-            balance: U256::from_big_endian(value[32..64].try_into().expect("impossible")),
-            storage_root: H256(value[64..96].try_into().expect("impossible")),
-            keccak_code_hash: H256(value[96..128].try_into().expect("impossible")),
-            poseidon_code_hash: H256(value[128..160].try_into().expect("impossible")),
+            code_size: u64::from_be_bytes(value.array_slice::<16, 8>()),
+            nonce: u64::from_be_bytes(value.array_slice::<24, 8>()),
+            balance: U256::from_big_endian(value.array_slice::<32, 32>()),
+            storage_root: H256(value.array_slice::<64, 32>()),
+            keccak_code_hash: H256(value.array_slice::<96, 32>()),
+            poseidon_code_hash: H256(value.array_slice::<128, 32>()),
         })
     }
 }
