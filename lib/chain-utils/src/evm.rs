@@ -154,7 +154,6 @@ impl EthLogDecode for IBCHandlerEvents {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum IbcHandlerErrors {
-    HandlerError(contracts::ibc_handler::IBCHandlerErrors),
     PacketEvent(IBCPacketErrors),
     ConnectionEvent(IBCConnectionErrors),
     ChannelEvent(IBCChannelHandshakeErrors),
@@ -168,19 +167,10 @@ impl AbiDecode for IbcHandlerErrors {
         let chan_error =
             IBCChannelHandshakeErrors::decode(&bytes).map(IbcHandlerErrors::ChannelEvent);
         let client_error = IBCClientErrors::decode(&bytes).map(IbcHandlerErrors::ClientEvent);
-        let handler_error = contracts::ibc_handler::IBCHandlerErrors::decode(&bytes)
-            .map(IbcHandlerErrors::HandlerError);
-
-        [
-            packet_error,
-            conn_error,
-            chan_error,
-            client_error,
-            handler_error,
-        ]
-        .into_iter()
-        .find(|error| error.is_ok())
-        .ok_or(ethers::abi::Error::InvalidData)?
+        [packet_error, conn_error, chan_error, client_error]
+            .into_iter()
+            .find(|error| error.is_ok())
+            .ok_or(ethers::abi::Error::InvalidData)?
     }
 }
 
@@ -888,23 +878,6 @@ impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for AcknowledgementPath {
     fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
         encoded.0.into()
     }
-}
-
-pub async fn bind_port<C: ChainSpec>(this: &Evm<C>, module_address: H160, port_id: String) {
-    // HACK: This will pop the top item out of the queue, but binding the port requires the contract owner;
-    // this will work as long as the first signer in the list is the owner.
-    this.ibc_handlers
-        .with(|ibc_handler| async move {
-            let bind_port_result = ibc_handler.bind_port(port_id, module_address.into());
-
-            match bind_port_result.send().await {
-                Ok(ok) => {
-                    ok.await.unwrap().unwrap();
-                }
-                Err(why) => eprintln!("{:?}", why.decode_revert::<String>()),
-            };
-        })
-        .await
 }
 
 #[allow(unused_variables)]

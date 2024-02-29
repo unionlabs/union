@@ -1,3 +1,5 @@
+pragma solidity ^0.8.23;
+
 library Hex {
     error ErrInvalidHexAddress();
 
