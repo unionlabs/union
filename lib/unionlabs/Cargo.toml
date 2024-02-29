@@ -12,7 +12,7 @@ bitvec                 = { workspace = true }
 chrono                 = { workspace = true, features = ["alloc"] }
 clap                   = { workspace = true, features = ["derive"] }
 contracts              = { workspace = true, optional = true }
-cosmwasm-std           = { workspace = true }
+cosmwasm-std           = { workspace = true, features = ["stargate"] }
 derive_more            = { workspace = true, features = ["display"] }
 either                 = { workspace = true }
 enumorph               = { workspace = true }

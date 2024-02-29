@@ -6,9 +6,6 @@ import (
 	"encoding/json"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //lint:ignore SA1019 not using gov types
 )
 
 const (
@@ -18,8 +15,6 @@ const (
 type CustomQuery struct {
 	AggregateVerify *QueryAggregateVerify `json:"aggregate_verify,omitempty"`
 	Aggregate       *QueryAggregate       `json:"aggregate,omitempty"`
-	ConsensusState  *QueryConsensusState  `json:"consensus_state,omitempty"`
-	ClientState     *QueryClientState     `json:"client_state,omitempty"`
 }
 
 type QueryAggregate struct {
@@ -32,16 +27,7 @@ type QueryAggregateVerify struct {
 	Message    []byte   `json:"message"`
 }
 
-type QueryConsensusState struct {
-	ClientID string             `json:"client_id"`
-	Height   clienttypes.Height `json:"height"`
-}
-
-type QueryClientState struct {
-	ClientID string `json:"client_id"`
-}
-
-func CustomQuerier(clientKeeper *clientkeeper.Keeper) func(sdk.Context, json.RawMessage) ([]byte, error) {
+func CustomQuerier() func(sdk.Context, json.RawMessage) ([]byte, error) {
 	return func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
 		var customQuery CustomQuery
 		err := json.Unmarshal([]byte(request), &customQuery)
@@ -71,19 +57,6 @@ func CustomQuerier(clientKeeper *clientkeeper.Keeper) func(sdk.Context, json.Raw
 			} else {
 				return json.Marshal(false)
 			}
-		} else if customQuery.ConsensusState != nil {
-			ctx.Logger().Debug("Querying consensus state", customQuery.ConsensusState.ClientID, customQuery.ConsensusState.Height)
-			consensusState, ok := clientKeeper.GetClientConsensusState(ctx, customQuery.ConsensusState.ClientID, customQuery.ConsensusState.Height)
-			if !ok {
-				return nil, fmt.Errorf("failed to query consensus state %s %d", customQuery.ConsensusState.ClientID, customQuery.ConsensusState.Height.RevisionHeight)
-			}
-			return json.Marshal(clientKeeper.MustMarshalConsensusState(consensusState))
-		} else if customQuery.ClientState != nil {
-			clientState, ok := clientKeeper.GetClientState(ctx, customQuery.ClientState.ClientID)
-			if !ok {
-				return nil, fmt.Errorf("failed to query client state %s", customQuery.ClientState.ClientID)
-			}
-			return json.Marshal(clientKeeper.MustMarshalClientState(clientState))
 		} else {
 			return nil, fmt.Errorf("unknown custom query %v", request)
 		}
