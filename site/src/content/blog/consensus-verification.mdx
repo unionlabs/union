@@ -4,9 +4,10 @@ date: 2024-02-26
 author: "union_build"
 description: "Union democratizes fundamental web3 ethos' desired mechanism of cross-ecosystem connection."
 hidden: false
-imagePath: "/src/assets/images/consensus-verification-blog/header.svg"
+cover: "/src/assets/images/consensus-verification-blog/header.svg"
 ---
 
+import { Image } from "astro:assets";
 import header from "#/assets/images/consensus-verification-blog/header.svg";
 import processMap from "#/assets/images/consensus-verification-blog/process-map.svg";
 import merkleTree1 from "#/assets/images/consensus-verification-blog/merkle-tree-1.svg";
@@ -16,7 +17,7 @@ import crossChainMessageVerification from "#/assets/images/consensus-verificatio
 
 _Union democratizes fundamental web3 ethos' desired mechanism of cross-ecosystem connection._
 
-<img alt="Consensus Verification Header" src={header.src} />
+<Image alt="Consensus Verification Header" src={header} height="auto" />
 
 Users and liquidity are becoming increasingly fragmented across many L1 and L2 execution layers in Web3. A secure means of interoperability to enable communication among these isolated systems is critical.
 
@@ -30,7 +31,7 @@ _IBC and its Limitations_
 
 IBC exemplifies state verification across isolated blockchains, minimizing the need for trust in external entities. [IBC](https://arxiv.org/pdf/2006.15918.pdf), designed as a consensus-agnostic, cross-chain messaging protocol for heterogeneous blockchains, aims to be the trust-minimized cross-chain consensus verification standard. Rooted in the Cosmos ecosystem, IBC serves as the native interoperability solution for Cosmos SDK-based chains and has garnered widespread adoption and continues to grow at an impressive rate.
 
-<img alt="Packet Passing" src={packetPassing.src} />
+<Image alt="Packet Passing" src={packetPassing} />
 
 To understand how IBC works, you must know some basic principles of how blockchains handle state data. Ideally, you would want to store everything on-chain, secured on thousands of computers across the globe, with extremely high availability and integrity guarantees.
 
@@ -38,11 +39,11 @@ Unfortunately, it is often not feasible due to the scarcity of block space as a 
 
 More specifically, blockchains like Ethereum use a tree data structure (Merkle Tree) where each node is a hash of the nodes below it to hash different subsets of the data repeatedly. Merkle Trees enables you to send a hash instead of the whole data you are looking to prove inclusion/exclusion of by using [Merkle inclusion proofs](https://ethereum.org/developers/tutorials/merkle-proofs-for-offline-data-integrity).
 
-<img alt="Merkle Tree" src={merkleTree1.src} />
+<Image alt="Merkle Tree" src={merkleTree1} />
 
 The top-of-the-tree root hash is the only on-chain storage necessity within a light client. Proving a particular value involves presenting all associated hashes for combination towards the root. For instance, demonstrating C entails providing D, H(A-B), and H(E-H), significantly trimming the data required to verify a blockchain's state.
 
-<img alt="Merkle Tree Continued" src={merkleTree2.src} />
+<Image alt="Merkle Tree Continued" src={merkleTree2} />
 
 Blockchains are cryptographically connected and secured data structures. The data is stored in blocks, each having a unique block header consisting of:
 
@@ -62,9 +63,9 @@ While IBC is a promising solution to overcome the existing friction between bloc
 
 The gas limitations of EMV execution have led to a myriad of approaches aiming to enable scalable means of verifying a certain consensus having been reached across heterogeneous blockchains. Using off-chain committees performing multisig-based message verification, PoS validator sets, or fraud-proving mechanisms have proven to be popular choices. While these have been a feasible way to enable interoperability quickly, they also introduce significant additional trust assumptions outside the security guarantees the underlying blockchains provide. These external trust assumptions can pose risks and require the user to trust potentially centralized operators.
 
-<img
+<Image
   alt="Cross-chain Message Verification"
-  src={crossChainMessageVerification.src}
+  src={crossChainMessageVerification}
 />
 
 These before-mentioned solutions, further referred to as "trusted," introduce some degree of centralization or human element. Consequently, attack vectors arise that have historically made these interoperability solutions, or more specifically the bridging protocols built on top of them, very prone to hacks or other forms of malicious value extraction. [This is made evident by many large-scale exploits in the past (including Ronin, Multichain, Horizon, and Wormhole)](https://rekt.news/leaderboard/).
@@ -79,7 +80,7 @@ More specifically, Union's permissionless relayer (Voyager) fetches block header
 
 The Union state is also stored in the Merkle tree structure discussed earlier. However, there is one key distinction of the specialized consensus mechanism Union is using. Instead of a set of Ed25519 signatures, as is the case in the context of CometBFT-based Cosmos chains, Union block headers contain a BLS (Boneh–Lynn–Shacham) signature. A key advantage of BLS signatures is the ability to aggregate signatures. Signature aggregation means multiple signatures can be combined into a single signature, while the combined signature provides the same level of security as validating all the individual signatures. Signature aggregation also means BLS signatures are computationally much less expensive to prove within a Zero Knowledge (ZK) circuit. The resulting succinct ZK proofs are small and quick to verify - their size and verification time are constant, regardless of the data being proven. These quick-to-verify proofs are the key differentiator of Union's interoperability framework. As mentioned earlier, direct signature verification within Ethereum's execution environment is not feasible. Proving multiple Ed25519 signatures is possible but expensive and slow.
 
-<img alt="Verification Process" src={processMap.src} />
+<Image alt="Verification Process" src={processMap} />
 
 Union overcomes these limitations and introduces a novel, ZK-powered approach to making IBC interoperability possible across all blockchains globally. Once consensus on Union has been reached, the permissionless proving layer (Galois) produces a proof of consensus of the Union block header it received from Voyager. The resulting ZK proof (Groth16) is then relayed to the connected chains, where Union Light Clients verify the consensus proof. Union's zkIBC unlocks robust cross-chain use cases, as the ability to prove Union consensus in the execution environments of the connected networks means the connected networks are all aware of each other's state. Any statement about account balances, contract interactions, or other state, can be proven by verifying a succinct proof, resulting in seamless cross-chain composability - all without trusting any centralized third party. As a user, you only trust the code, a.k.a. the consensus protocols of the connected chains.
 

@@ -15,7 +15,7 @@ let publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
 })
 
 
-// @ts-ignore
+// @ts-expect-error
 publishedBlogPosts.sort((a, b) => a.data.date - b.data.date);
 
 const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()

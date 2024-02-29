@@ -1,4 +1,5 @@
 import svelte from "@astrojs/svelte";
+import sitemap from "@astrojs/sitemap";
 import tailwind from "@astrojs/tailwind";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
@@ -148,6 +149,7 @@ export default defineConfig({
       configFile: "tailwind.config.ts",
     }),
     svelte(),
+    sitemap(),
   ],
   vite: {
     optimizeDeps: {

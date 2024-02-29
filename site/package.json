@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^4.2.1",
+    "@astrojs/sitemap": "^3.1.1",
     "@astrojs/starlight": "^0.20.1",
     "@astrojs/starlight-tailwind": "^2.0.1",
     "@astrojs/svelte": "^5.1.0",
