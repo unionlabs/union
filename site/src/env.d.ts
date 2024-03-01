@@ -11,6 +11,7 @@ interface EnvironmentVariables {
   /* https://union.build in production, http://localhost:${PORT} in development */
   readonly SITE_URL: string;
   /* These are injected by default by Cloudflare Pages */
+  readonly CF_PAGES_URL: string;
   readonly CF_PAGES_COMMIT_SHA: string;
 }
 

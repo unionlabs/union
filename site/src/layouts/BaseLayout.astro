@@ -25,7 +25,9 @@ const {
   loadFonts = true,
 } = Astro.props
 
-const fullImagePath = `${import.meta.env.SITE}${image}`
+const BASE_URL = import.meta.env.SITE_URL || import.meta.env.CF_PAGES_URL || import.meta.env.SITE
+
+const fullImagePath = `${BASE_URL}${image}`
 
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 ---
