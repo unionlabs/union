@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use macros::apply;
-use queue_msg::{data, HandleData, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, msg_struct, HandleData, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     self,
@@ -13,7 +13,7 @@ use unionlabs::{
 };
 
 use crate::{
-    any_enum, fetch::FetchPacketAcknowledgement, msg_struct, AnyLightClientIdentified, ChainExt,
+    any_enum, fetch::FetchPacketAcknowledgement, AnyLightClientIdentified, ChainExt,
     RelayerMsgTypes,
 };
 

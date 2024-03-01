@@ -14,7 +14,7 @@ beacon-api               = { workspace = true, default-features = false }
 bech32                   = "0.9.1"
 bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }
-block-poll-message       = { workspace = true }
+block-message            = { workspace = true }
 chain-utils              = { workspace = true }
 clap                     = { workspace = true, features = ["default", "derive", "env", "error-context"] }
 contracts                = { workspace = true }
@@ -34,6 +34,7 @@ pin-utils                = "0.1.0"
 prost                    = { workspace = true }
 protos                   = { workspace = true, features = ["proto_full", "client"] }
 queue-msg.workspace      = true
+relay-message            = { workspace = true }
 reqwest                  = { workspace = true, features = ["tokio-rustls"] }
 ripemd                   = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
@@ -55,15 +56,14 @@ tracing                  = { workspace = true, features = ["max_level_trace"] }
 tracing-subscriber       = { workspace = true, features = ["env-filter", "json"] }
 typenum                  = { workspace = true }
 unionlabs                = { workspace = true, features = ["ethabi"] }
-voyager-message          = { workspace = true }
 
 [features]
 default = []
 
 arbitrary = [
   "dep:arbitrary",
-  "voyager-message/arbitrary",
-  "block-poll-message/arbitrary",
+  "relay-message/arbitrary",
+  "block-message/arbitrary",
   "unionlabs/arbitrary",
   "chain-utils/arbitrary",
   "queue-msg/arbitrary",

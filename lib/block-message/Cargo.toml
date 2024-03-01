@@ -1,15 +1,16 @@
 [package]
-edition      = { workspace = true }
-license-file = { workspace = true }
-name         = "voyager-message"
-repository   = { workspace = true }
-version      = "0.1.0"
+edition.workspace      = true
+license-file.workspace = true
+name                   = "block-message"
+repository.workspace   = true
+resolver               = "2"
+version                = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
-beacon-api               = { workspace = true, default-features = false }
+beacon-api               = { workspace = true }
 chain-utils              = { workspace = true }
 contracts                = { workspace = true, features = ["providers"] }
 dashmap                  = { workspace = true }
@@ -47,9 +48,10 @@ default = []
 
 arbitrary = [
   "dep:arbitrary",
+  "queue-msg/arbitrary",
   "tendermint/arbitrary",
   "tendermint/std",
   "unionlabs/arbitrary",
   "chain-utils/arbitrary",
-  "queue-msg/arbitrary",
+  "contracts/arbitrary",
 ]

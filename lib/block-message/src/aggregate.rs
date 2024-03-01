@@ -1,11 +1,10 @@
 use std::{collections::VecDeque, fmt::Display};
 
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use macros::apply;
 use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
-    fetch, HandleAggregate, QueueMsg, QueueMsgTypes,
+    fetch, msg_struct, HandleAggregate, QueueMsg, QueueMsgTypes,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::IsHeight;
@@ -44,8 +43,8 @@ impl HandleAggregate<BlockPollingTypes> for AnyChainIdentified<AnyAggregate> {
         match self {
             AnyChainIdentified::Cosmos(aggregate) => aggregate.handle(data),
             AnyChainIdentified::Union(aggregate) => aggregate.handle(data),
-            AnyChainIdentified::EvmMainnet(aggregate) => aggregate.handle(data),
-            AnyChainIdentified::EvmMinimal(aggregate) => aggregate.handle(data),
+            AnyChainIdentified::EthMainnet(aggregate) => aggregate.handle(data),
+            AnyChainIdentified::EthMinimal(aggregate) => aggregate.handle(data),
             AnyChainIdentified::Scroll(aggregate) => aggregate.handle(data),
         }
     }
@@ -74,22 +73,10 @@ impl<C: ChainExt> Identified<C, Aggregate<C>> {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct ChainSpecificAggregate<C: ChainExt>(pub C::Aggregate);
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct AggregateFetchBlockRange<C: ChainExt> {
     pub from_height: C::Height,
 }

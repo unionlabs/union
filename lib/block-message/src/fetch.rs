@@ -1,10 +1,9 @@
 use std::fmt::{Debug, Display};
 
 use chain_utils::GetChain;
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use futures::Future;
 use macros::apply;
-use queue_msg::{aggregate, fetch, seq, wait, HandleFetch, QueueMsg, QueueMsgTypes};
+use queue_msg::{aggregate, fetch, msg_struct, seq, wait, HandleFetch, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::IsHeight;
 
@@ -49,10 +48,10 @@ impl HandleFetch<BlockPollingTypes> for AnyChainIdentified<AnyFetch> {
             AnyChainIdentified::Union(fetch) => {
                 fetch.t.handle(store.get_chain(&fetch.chain_id)).await
             }
-            AnyChainIdentified::EvmMainnet(fetch) => {
+            AnyChainIdentified::EthMainnet(fetch) => {
                 fetch.t.handle(store.get_chain(&fetch.chain_id)).await
             }
-            AnyChainIdentified::EvmMinimal(fetch) => {
+            AnyChainIdentified::EthMinimal(fetch) => {
                 fetch.t.handle(store.get_chain(&fetch.chain_id)).await
             }
             AnyChainIdentified::Scroll(fetch) => {
@@ -110,32 +109,16 @@ pub trait DoFetchBlockRange<C: ChainExt>: ChainExt {
     fn fetch_block_range(c: &C, range: FetchBlockRange<C>) -> QueueMsg<BlockPollingTypes>;
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct FetchBlockRange<C: ChainExt> {
     pub from_height: C::Height,
     pub to_height: C::Height,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct FetchBlock<C: ChainExt> {
     pub height: C::Height,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainExt")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct ChainSpecificFetch<C: ChainExt>(pub C::Fetch);

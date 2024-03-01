@@ -194,18 +194,14 @@ where
 
 pub mod fetch {
     use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+    use macros::apply;
+    use queue_msg::msg_struct;
     use serde::{Deserialize, Serialize};
     use unionlabs::traits::HeightOf;
 
     use crate::{ChainExt, PathOf};
 
-    #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-    #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-    #[cfg_attr(
-        feature = "arbitrary",
-        derive(arbitrary::Arbitrary),
-        arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-    )]
+    #[apply(msg_struct)]
     pub struct FetchAbciQuery<Hc: ChainExt, Tr: ChainExt> {
         pub path: PathOf<Hc, Tr>,
         pub height: HeightOf<Hc>,

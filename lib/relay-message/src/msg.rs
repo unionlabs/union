@@ -2,7 +2,7 @@ use std::{fmt::Display, marker::PhantomData};
 
 use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, GetChain};
 use macros::apply;
-use queue_msg::{BoxDynError, HandleMsg, QueueMsgTypes};
+use queue_msg::{msg_struct, BoxDynError, HandleMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
@@ -24,9 +24,7 @@ use unionlabs::{
     traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
-use crate::{
-    any_enum, msg_struct, AnyLightClientIdentified, ChainExt, DoMsg, RelayerMsgTypes, Wasm,
-};
+use crate::{any_enum, AnyLightClientIdentified, ChainExt, DoMsg, RelayerMsgTypes, Wasm};
 
 #[apply(any_enum)]
 #[any = AnyMsg]

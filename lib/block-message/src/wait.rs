@@ -1,9 +1,8 @@
 use std::fmt::Display;
 
 use chain_utils::{Chains, GetChain};
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
-use queue_msg::{data, defer, now, seq, wait, HandleWait, QueueMsg};
+use queue_msg::{data, defer, msg_struct, now, seq, wait, HandleWait, QueueMsg};
 use serde::{Deserialize, Serialize};
 use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
 
@@ -70,20 +69,14 @@ impl HandleWait<BlockPollingTypes> for AnyChainIdentified<AnyWait> {
         match self {
             AnyChainIdentified::Cosmos(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
             AnyChainIdentified::Union(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
-            AnyChainIdentified::EvmMainnet(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
-            AnyChainIdentified::EvmMinimal(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
+            AnyChainIdentified::EthMainnet(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
+            AnyChainIdentified::EthMinimal(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
             AnyChainIdentified::Scroll(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
         }
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct WaitForHeight<C: ChainExt> {
     pub height: HeightOf<C>,
 }

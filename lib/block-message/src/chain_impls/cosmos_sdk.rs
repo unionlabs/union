@@ -5,10 +5,11 @@ use enumorph::Enumorph;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use futures::FutureExt;
+use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, data, fetch, seq, QueueMsg,
+    conc, data, fetch, msg_struct, seq, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
@@ -34,7 +35,7 @@ use crate::{
     id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
-pub(crate) trait CosmosSdkChainSealed: CosmosSdkChain {}
+pub trait CosmosSdkChainSealed: CosmosSdkChain + ChainExt {}
 
 impl<C: CosmosSdkChainSealed> ChainExt for C {
     type Data = CosmosSdkData<C>;
@@ -46,7 +47,7 @@ const _: fn() = || {
     unionlabs::impl_maybe_arbitrary::<CosmosSdkAggregate<chain_utils::cosmos::Cosmos>>();
 };
 
-impl<C: ChainExt<Fetch = CosmosSdkFetch<C>> + CosmosSdkChain> DoFetchBlockRange<C> for C
+impl<C: CosmosSdkChainSealed<Fetch = CosmosSdkFetch<C>>> DoFetchBlockRange<C> for C
 where
     AnyChainIdentified<AnyFetch>: From<Identified<C, ChainSpecificFetch<C>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<C, FetchBlockRange<C>>>,
@@ -72,12 +73,11 @@ const PER_PAGE_LIMIT: u8 = 10;
 
 impl<C> DoFetch<C> for CosmosSdkFetch<C>
 where
-    C: CosmosSdkChain
-        + ChainExt<
-            Fetch = CosmosSdkFetch<C>,
-            Aggregate = CosmosSdkAggregate<C>,
-            Data = CosmosSdkData<C>,
-        >,
+    C: CosmosSdkChainSealed<
+        Fetch = CosmosSdkFetch<C>,
+        Aggregate = CosmosSdkAggregate<C>,
+        Data = CosmosSdkData<C>,
+    >,
 
     AnyChainIdentified<AnyFetch>: From<Identified<C, ChainSpecificFetch<C>>>,
     AnyChainIdentified<AnyData>: From<Identified<C, ChainSpecificData<C>>>,
@@ -336,10 +336,10 @@ where
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: CosmosSdkChain + ChainExt")
+    arbitrary(bound = "C: CosmosSdkChainSealed")
 )]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub enum CosmosSdkData<C: CosmosSdkChain + ChainExt> {
+pub enum CosmosSdkData<C: CosmosSdkChainSealed> {
     #[display(fmt = "ClientType")]
     ClientType(ClientType<C>),
 }
@@ -347,7 +347,7 @@ pub enum CosmosSdkData<C: CosmosSdkChain + ChainExt> {
 const _: () = {
     try_from_block_poll_msg! {
         chain = C,
-        generics = (C: CosmosSdkChain + ChainExt),
+        generics = (C: CosmosSdkChainSealed),
         msgs = CosmosSdkData(
             ClientType(ClientType<C>),
         ),
@@ -355,18 +355,10 @@ const _: () = {
     }
 };
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: CosmosSdkChain + ChainExt")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub struct ClientType<C: CosmosSdkChain + ChainExt> {
+#[apply(msg_struct)]
+#[cover(C)]
+pub struct ClientType<C: CosmosSdkChainSealed> {
     pub client_type: unionlabs::ClientType,
-    #[serde(skip)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(default))]
-    pub __marker: PhantomData<fn() -> C>,
 }
 
 // FETCH
@@ -383,10 +375,10 @@ pub struct ClientType<C: CosmosSdkChain + ChainExt> {
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: CosmosSdkChain + ChainExt")
+    arbitrary(bound = "C: CosmosSdkChainSealed")
 )]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub enum CosmosSdkFetch<C: CosmosSdkChain + ChainExt> {
+pub enum CosmosSdkFetch<C: CosmosSdkChainSealed> {
     #[display(fmt = "FetchBlocks({}..{})", "_0.from_height", "_0.to_height")]
     FetchBlocks(FetchBlocks<C>),
     #[display(fmt = "FetchTransactions({}, {})", "_0.height", "_0.page")]
@@ -397,46 +389,26 @@ pub enum CosmosSdkFetch<C: CosmosSdkChain + ChainExt> {
     FetchClientTypeFromClientId(ClientTypeFromClientId<C>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: CosmosSdkChain + ChainExt")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub struct FetchBlocks<C: CosmosSdkChain + ChainExt> {
-    from_height: HeightOf<C>,
-    to_height: HeightOf<C>,
+#[apply(msg_struct)]
+pub struct FetchBlocks<C: CosmosSdkChainSealed> {
+    pub from_height: HeightOf<C>,
+    pub to_height: HeightOf<C>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: CosmosSdkChain + ChainExt")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub struct FetchTransactions<C: CosmosSdkChain + ChainExt> {
-    height: HeightOf<C>,
-    page: NonZeroU32,
+#[apply(msg_struct)]
+pub struct FetchTransactions<C: CosmosSdkChain> {
+    pub height: HeightOf<C>,
+    pub page: NonZeroU32,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct ClientTypeFromConnectionId {
-    connection_id: ConnectionId,
+    pub connection_id: ConnectionId,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: CosmosSdkChain + ChainExt")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub struct ClientTypeFromClientId<C: CosmosSdkChain + ChainExt> {
-    client_id: C::ClientId,
+#[apply(msg_struct)]
+pub struct ClientTypeFromClientId<C: CosmosSdkChain> {
+    pub client_id: C::ClientId,
 }
 
 #[derive(
@@ -459,13 +431,7 @@ pub enum CosmosSdkAggregate<C: CosmosSdkChain> {
     AggregateEventWithClientType(AggregateEventWithClientType<C>),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: CosmosSdkChain")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct AggregateEventWithClientType<C: CosmosSdkChain> {
     pub tx_hash: H256,
     pub height: C::Height,
@@ -474,7 +440,7 @@ pub struct AggregateEventWithClientType<C: CosmosSdkChain> {
 
 impl<C> UseAggregate<BlockPollingTypes> for Identified<C, AggregateEventWithClientType<C>>
 where
-    C: CosmosSdkChain + ChainExt,
+    C: CosmosSdkChainSealed,
     Identified<C, ClientType<C>>: IsAggregateData,
     AnyChainIdentified<AnyData>: From<Identified<C, Data<C>>>,
 {
@@ -517,7 +483,7 @@ where
 
 impl<C> DoAggregate for Identified<C, CosmosSdkAggregate<C>>
 where
-    C: ChainExt + CosmosSdkChain,
+    C: CosmosSdkChainSealed,
 
     Identified<C, ClientType<C>>: IsAggregateData,
 
