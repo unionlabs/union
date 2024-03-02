@@ -275,22 +275,37 @@ where
                 ),
             };
 
-            let result = msg.send().await;
-
-            match result {
-                Ok(ok) => {
-                    tracing::info!("evm tx {:?} => {:?}", ok.tx_hash(), msg);
-                    let tx_rcp = ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
-                    tracing::info!(?tx_rcp, "evm transaction submitted");
-                    Ok(())
+            match msg.estimate_gas().await {
+                Ok(estimated_gas) => {
+                    // TODO: config
+                    let msg = msg.gas(estimated_gas + (estimated_gas / 10));
+                    let result = msg.send().await;
+                    match result {
+                        Ok(ok) => {
+                            tracing::info!("evm tx {:?} => {:?}", ok.tx_hash(), msg);
+                            let tx_rcp = ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
+                            tracing::info!(?tx_rcp, "evm transaction submitted");
+                            Ok(())
+                        }
+                        Err(ContractError::Revert(revert)) => {
+                            let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(
+                                revert.clone(),
+                            );
+                            tracing::error!(?revert, ?err, "evm transaction failed");
+                            Ok(())
+                        }
+                        _ => {
+                            panic!("evm transaction non-recoverable failure");
+                        }
+                    }
                 }
                 Err(ContractError::Revert(revert)) => {
                     let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone());
-                    tracing::error!(?revert, ?err, "evm transaction failed");
+                    tracing::error!(?revert, ?err, "evm estimation failed");
                     Ok(())
                 }
                 _ => {
-                    panic!("evm transaction non-recoverable failure");
+                    panic!("evm estimation non-recoverable failure");
                 }
             }
         };
