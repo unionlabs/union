@@ -11,11 +11,11 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 bytes                     = { workspace = true }
-cometbls-groth16-verifier = { workspace = true, default-features = false }
+cometbls-groth16-verifier = { workspace = true }
 cosmwasm-std              = { workspace = true, features = ["abort", "iterator"] }
 hex                       = { workspace = true }
 prost                     = { workspace = true }
-protos                    = { workspace = true, default-features = false, features = ["proto_full", "std"] }
+protos                    = { workspace = true, features = ["proto_full", "std"] }
 ripemd                    = { workspace = true }
 schemars                  = { workspace = true }
 serde                     = { workspace = true, features = ["derive"] }
@@ -27,7 +27,7 @@ thiserror                 = { workspace = true }
 
 ics008-wasm-client = { workspace = true }
 ics23              = { workspace = true }
-unionlabs          = { workspace = true, default-features = false }
+unionlabs          = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }

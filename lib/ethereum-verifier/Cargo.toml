@@ -10,7 +10,7 @@ ssz_types = { workspace = true }
 tree_hash = { workspace = true }
 
 serde-utils = { workspace = true }
-unionlabs   = { workspace = true, default-features = false }
+unionlabs   = { workspace = true }
 
 bytes              = { workspace = true }
 hash-db            = { version = "0.16.0", default-features = false }
@@ -18,7 +18,7 @@ hash256-std-hasher = { version = "0.15.2", default-features = false }
 hex                = { workspace = true, features = ["alloc"] }
 lazy_static        = { workspace = true }
 memory-db          = { version = "0.32.0", default-features = false }
-milagro_bls        = { workspace = true, default-features = false }
+milagro_bls        = { workspace = true }
 primitive-types    = { workspace = true, features = ["rlp"] }
 rlp                = { workspace = true, features = ["derive"] }
 serde              = { workspace = true, features = ["derive"] }

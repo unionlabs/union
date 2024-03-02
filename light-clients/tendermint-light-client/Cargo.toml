@@ -14,7 +14,7 @@ bytes           = { workspace = true }
 cosmwasm-std    = { workspace = true, features = ["abort", "iterator"] }
 hex             = { workspace = true }
 prost           = { workspace = true }
-protos          = { workspace = true, default-features = false, features = ["proto_full", "std"] }
+protos          = { workspace = true, features = ["proto_full", "std"] }
 schemars        = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }
 serde-json-wasm = { workspace = true }
@@ -26,7 +26,7 @@ thiserror       = { workspace = true }
 ics008-wasm-client  = { workspace = true }
 ics23               = { workspace = true }
 tendermint-verifier = { workspace = true }
-unionlabs           = { workspace = true, default-features = false }
+unionlabs           = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }

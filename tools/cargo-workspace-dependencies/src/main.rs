@@ -5,7 +5,7 @@ use std::{
 };
 
 use cargo_metadata::MetadataCommand;
-use cargo_util_schemas::manifest::{InheritableDependency, TomlManifest};
+use cargo_util_schemas::manifest::{InheritableDependency, TomlInheritedDependency, TomlManifest};
 use clap::Parser;
 
 #[derive(Parser)]
@@ -50,12 +50,27 @@ fn main() -> ExitCode {
 
                         tracing::error!(
                             member = %member.name,
-                            "`{}` exists in workspace.dependencies and should be used instead",
-                            dep_name
+                            "`{dep_name}` exists in workspace.dependencies and should be used instead",
                         );
                     }
                 }
-                InheritableDependency::Inherit(_) => {}
+                InheritableDependency::Inherit(inherit) => {
+                    if matches!(
+                        inherit,
+                        TomlInheritedDependency {
+                            default_features: Some(false),
+                            ..
+                        } | TomlInheritedDependency {
+                            default_features2: Some(false),
+                            ..
+                        }
+                    ) {
+                        tracing::error!(
+                            member = %member.name,
+                            "specifying `default-features = false` for `{dep_name}` has no effect as it is a workspace dependency",
+                        );
+                    }
+                }
             }
         }
     }
