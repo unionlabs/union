@@ -9,24 +9,24 @@ version  = "0.0.0"
 cargo-fuzz = true
 
 [dependencies]
-block-poll-message = { workspace = true }
-libfuzzer-sys      = "0.4"
-queue-msg          = { workspace = true }
-unionlabs          = { workspace = true }
-voyager-message    = { workspace = true }
+block-message = { workspace = true }
+libfuzzer-sys = "0.4"
+queue-msg     = { workspace = true }
+relay-message = { workspace = true }
+unionlabs     = { workspace = true }
 
 [features]
 arbitrary = [
   "queue-msg/arbitrary",
   "unionlabs/fuzzing",
-  "voyager-message/arbitrary",
-  "block-poll-message/arbitrary",
+  "relay-message/arbitrary",
+  "block-message/arbitrary",
 ]
 
 [[bin]]
 doc               = false
 name              = "voyager_message_roundtrip"
-path              = "../voyager/voyager-message/fuzz_targets/serde_roundtrip.rs"
+path              = "../lib/relay-message/fuzz_targets/serde_roundtrip.rs"
 required-features = ["arbitrary"]
 test              = false
 

@@ -19,7 +19,7 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, fetch, msg, wait, QueueMsg,
+    data, fetch, msg, msg_struct, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
@@ -58,7 +58,7 @@ use crate::{
         AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
         MsgUpdateClientData,
     },
-    msg_struct, seq,
+    seq,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForTimestamp},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,

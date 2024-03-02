@@ -6,7 +6,7 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    fetch, msg, wait, HandleAggregate, QueueMsg, QueueMsgTypes,
+    fetch, msg, msg_struct, wait, HandleAggregate, QueueMsg, QueueMsgTypes,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -55,7 +55,6 @@ use crate::{
         MsgChannelOpenTryData, MsgConnectionOpenAckData, MsgConnectionOpenConfirmData,
         MsgConnectionOpenTryData, MsgCreateClientData, MsgRecvPacketData,
     },
-    msg_struct,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForTrustedHeight},
     AnyLightClientIdentified, ChainExt, DoAggregate, Identified, RelayerMsgTypes,

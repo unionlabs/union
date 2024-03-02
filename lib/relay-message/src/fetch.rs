@@ -7,7 +7,7 @@ use std::{
 use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
-use queue_msg::{data, fetch, HandleFetch, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, fetch, msg_struct, HandleFetch, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
@@ -20,7 +20,7 @@ use unionlabs::{
 use crate::{
     any_enum,
     data::{AnyData, Data, PacketAcknowledgement, SelfClientState, SelfConsensusState},
-    id, identified, msg_struct, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
+    id, identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
     DoFetchUpdateHeaders, RelayerMsgTypes,
 };
 

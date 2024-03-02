@@ -20,9 +20,7 @@ use crate::{aggregate::AnyAggregate, data::AnyData, fetch::AnyFetch, wait::AnyWa
 
 pub mod aggregate;
 pub mod data;
-pub mod event;
 pub mod fetch;
-pub mod msg;
 pub mod wait;
 
 pub mod chain_impls;
@@ -63,14 +61,14 @@ impl QueueMsgTypes for BlockPollingTypes {
 #[serde(
     tag = "@type",
     content = "@value",
-    rename_all = "snake_case",
+    rename_all = "kebab-case",
     bound(serialize = "", deserialize = "")
 )]
 pub enum AnyChainIdentified<T: AnyChain> {
     Union(Identified<Union, InnerOf<T, Union>>),
     Cosmos(Identified<Cosmos, InnerOf<T, Cosmos>>),
-    EvmMainnet(Identified<Evm<Mainnet>, InnerOf<T, Evm<Mainnet>>>),
-    EvmMinimal(Identified<Evm<Minimal>, InnerOf<T, Evm<Minimal>>>),
+    EthMainnet(Identified<Evm<Mainnet>, InnerOf<T, Evm<Mainnet>>>),
+    EthMinimal(Identified<Evm<Minimal>, InnerOf<T, Evm<Minimal>>>),
     Scroll(Identified<Scroll, InnerOf<T, Scroll>>),
 }
 

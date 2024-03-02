@@ -20,7 +20,7 @@ use protos::{
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, defer_relative, fetch, msg, wait, QueueMsg,
+    data, defer_relative, fetch, msg, msg_struct, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
@@ -77,7 +77,7 @@ use crate::{
         AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
         MsgUpdateClientData,
     },
-    msg_struct, seq,
+    seq,
     use_aggregate::IsAggregateData,
     wait::{AnyWait, Wait, WaitForBlock},
     AnyLightClientIdentified, ChainExt, DoAggregate, DoFetchProof, DoFetchState,

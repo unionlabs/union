@@ -6,7 +6,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use block_poll_message::{data::Data, AnyChainIdentified, BlockPollingTypes, Identified};
+use block_message::{data::Data, AnyChainIdentified, BlockPollingTypes, Identified};
 use chain_utils::{cosmos_sdk::CosmosSdkChainExt, Chains};
 use contracts::{
     erc20,
@@ -378,7 +378,7 @@ impl Context {
                             tracing::debug!("Union: Untracked event observed: {:?}", event);
                         }
                     },
-                    Ok(AnyChainIdentified::EvmMinimal(Identified {
+                    Ok(AnyChainIdentified::EthMinimal(Identified {
                         chain_id,
                         t: Data::IbcEvent(event),
                     })) => {

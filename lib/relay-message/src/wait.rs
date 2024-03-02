@@ -2,7 +2,7 @@ use std::{fmt::Display, marker::PhantomData};
 
 use chain_utils::GetChain;
 use macros::apply;
-use queue_msg::{defer, fetch, now, seq, wait, HandleWait, QueueMsg, QueueMsgTypes};
+use queue_msg::{defer, fetch, msg_struct, now, seq, wait, HandleWait, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ibc::core::client::height::IsHeight,
@@ -13,7 +13,7 @@ use unionlabs::{
 use crate::{
     any_enum,
     fetch::{AnyFetch, Fetch, FetchState},
-    id, identified, msg_struct, AnyLightClientIdentified, ChainExt, DoFetchState, RelayerMsgTypes,
+    id, identified, AnyLightClientIdentified, ChainExt, DoFetchState, RelayerMsgTypes,
 };
 
 #[apply(any_enum)]

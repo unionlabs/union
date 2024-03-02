@@ -696,7 +696,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "block-poll-message"
+name = "block-message"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
@@ -2894,11 +2894,11 @@ dependencies = [
 name = "fuzz"
 version = "0.0.0"
 dependencies = [
- "block-poll-message",
+ "block-message",
  "libfuzzer-sys",
  "queue-msg",
+ "relay-message",
  "unionlabs",
- "voyager-message",
 ]
 
 [[package]]
@@ -4899,6 +4899,42 @@ name = "regex-syntax"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
+
+[[package]]
+name = "relay-message"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "beacon-api",
+ "chain-utils",
+ "contracts",
+ "dashmap",
+ "derive_more",
+ "enumorph",
+ "ethers",
+ "frame-support-procedural 22.0.0",
+ "frunk",
+ "futures",
+ "hex",
+ "hex-literal",
+ "macros",
+ "num-bigint",
+ "prost",
+ "protos",
+ "queue-msg",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "tendermint",
+ "tendermint-proto",
+ "tendermint-rpc",
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tracing",
+ "typenum",
+ "unionlabs",
+]
 
 [[package]]
 name = "reqwest"
@@ -7142,7 +7178,7 @@ dependencies = [
  "bech32",
  "bip32",
  "bitvec",
- "block-poll-message",
+ "block-message",
  "chain-utils",
  "clap 4.5.1",
  "contracts",
@@ -7162,6 +7198,7 @@ dependencies = [
  "prost",
  "protos",
  "queue-msg",
+ "relay-message",
  "reqwest",
  "ripemd",
  "serde",
@@ -7181,43 +7218,6 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
- "typenum",
- "unionlabs",
- "voyager-message",
-]
-
-[[package]]
-name = "voyager-message"
-version = "0.1.0"
-dependencies = [
- "arbitrary",
- "beacon-api",
- "chain-utils",
- "contracts",
- "dashmap",
- "derive_more",
- "enumorph",
- "ethers",
- "frame-support-procedural 22.0.0",
- "frunk",
- "futures",
- "hex",
- "hex-literal",
- "macros",
- "num-bigint",
- "prost",
- "protos",
- "queue-msg",
- "serde",
- "serde-utils",
- "serde_json",
- "tendermint",
- "tendermint-proto",
- "tendermint-rpc",
- "thiserror",
- "tokio",
- "tonic",
- "tracing",
  "typenum",
  "unionlabs",
 ]
@@ -7640,7 +7640,7 @@ checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
 name = "zerg"
 version = "0.1.0"
 dependencies = [
- "block-poll-message",
+ "block-message",
  "chain-utils",
  "clap 4.5.1",
  "contracts",

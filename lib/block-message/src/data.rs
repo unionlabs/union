@@ -1,8 +1,7 @@
 use std::fmt::Display;
 
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
-use queue_msg::{data, HandleData, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, msg_struct, HandleData, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{events::IbcEvent, hash::H256, ClientType};
 
@@ -38,22 +37,10 @@ impl<C: ChainExt> Display for Data<C> {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainExt")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct ChainSpecificData<C: ChainExt>(pub C::Data);
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainExt")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct ChainEvent<C: ChainExt> {
     pub client_type: ClientType,
     pub tx_hash: H256,
@@ -61,11 +48,5 @@ pub struct ChainEvent<C: ChainExt> {
     pub event: IbcEvent<C::ClientId, C::ClientType, String>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainExt")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct LatestHeight<C: ChainExt>(pub C::Height);

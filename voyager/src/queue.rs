@@ -14,7 +14,7 @@ use axum::{
     routing::{get, post},
     Json,
 };
-use block_poll_message::BlockPollingTypes;
+use block_message::BlockPollingTypes;
 use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt};
@@ -22,6 +22,7 @@ use queue_msg::{
     event, HandleAggregate, HandleData, HandleEvent, HandleFetch, HandleMsg, HandleWait,
     InMemoryQueue, Queue, QueueMsg, QueueMsgTypes, Reactor,
 };
+use relay_message::{ChainExt, RelayerMsgTypes};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
@@ -37,7 +38,6 @@ use unionlabs::{
     traits::{Chain, ClientIdOf, ClientState, FromStrExact},
     WasmClientType,
 };
-use voyager_message::{ChainExt, RelayerMsgTypes};
 
 use crate::{
     chain::{AnyChain, AnyChainTryFromConfigError},
@@ -806,17 +806,17 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
     ) -> QueueMsg<VoyagerMessageTypes> {
         match self {
             Self::Block(data) => match data.handle(store) {
-                QueueMsg::Data(block_poll_message::AnyChainIdentified::Cosmos(
-                    block_poll_message::Identified {
+                QueueMsg::Data(block_message::AnyChainIdentified::Cosmos(
+                    block_message::Identified {
                         chain_id,
-                        t: block_poll_message::data::Data::IbcEvent(ibc_event),
+                        t: block_message::data::Data::IbcEvent(ibc_event),
                     },
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
                     match ibc_event.client_type {
                         unionlabs::ClientType::Wasm(unionlabs::WasmClientType::Cometbls) => {
-                            event::<RelayerMsgTypes>(voyager_message::id::<Wasm<Cosmos>, Union, _>(
+                            event::<RelayerMsgTypes>(relay_message::id::<Wasm<Cosmos>, Union, _>(
                                 chain_id,
-                                voyager_message::event::IbcEvent {
+                                relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
                                     event: chain_event_to_lc_event::<Wasm<Cosmos>, Union>(
@@ -828,17 +828,17 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                         _ => unimplemented!(),
                     },
                 ),
-                QueueMsg::Data(block_poll_message::AnyChainIdentified::Union(
-                    block_poll_message::Identified {
+                QueueMsg::Data(block_message::AnyChainIdentified::Union(
+                    block_message::Identified {
                         chain_id,
-                        t: block_poll_message::data::Data::IbcEvent(ibc_event),
+                        t: block_message::data::Data::IbcEvent(ibc_event),
                     },
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
                     match ibc_event.client_type {
                         unionlabs::ClientType::Wasm(unionlabs::WasmClientType::EthereumMinimal) => {
-                            event(voyager_message::id::<Wasm<Union>, Evm<Minimal>, _>(
+                            event(relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
                                 chain_id,
-                                voyager_message::event::IbcEvent {
+                                relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
                                     event: chain_event_to_lc_event::<Union, Evm<Minimal>>(
@@ -848,9 +848,9 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                             ))
                         }
                         unionlabs::ClientType::Wasm(unionlabs::WasmClientType::EthereumMainnet) => {
-                            event(voyager_message::id::<Wasm<Union>, Evm<Mainnet>, _>(
+                            event(relay_message::id::<Wasm<Union>, Evm<Mainnet>, _>(
                                 chain_id,
-                                voyager_message::event::IbcEvent {
+                                relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
                                     event: chain_event_to_lc_event::<Union, Evm<Mainnet>>(
@@ -860,9 +860,9 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                             ))
                         }
                         unionlabs::ClientType::Tendermint => {
-                            event(voyager_message::id::<Union, Wasm<Cosmos>, _>(
+                            event(relay_message::id::<Union, Wasm<Cosmos>, _>(
                                 chain_id,
-                                voyager_message::event::IbcEvent {
+                                relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
                                     event: chain_event_to_lc_event::<Union, Wasm<Cosmos>>(
@@ -874,17 +874,17 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                         _ => unimplemented!(),
                     },
                 ),
-                QueueMsg::Data(block_poll_message::AnyChainIdentified::EvmMainnet(
-                    block_poll_message::Identified {
+                QueueMsg::Data(block_message::AnyChainIdentified::EthMainnet(
+                    block_message::Identified {
                         chain_id,
-                        t: block_poll_message::data::Data::IbcEvent(ibc_event),
+                        t: block_message::data::Data::IbcEvent(ibc_event),
                     },
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
                     match ibc_event.client_type {
                         unionlabs::ClientType::Cometbls => {
-                            event(voyager_message::id::<Evm<Mainnet>, Wasm<Union>, _>(
+                            event(relay_message::id::<Evm<Mainnet>, Wasm<Union>, _>(
                                 chain_id,
-                                voyager_message::event::IbcEvent {
+                                relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
                                     event: chain_event_to_lc_event::<Evm<Mainnet>, Wasm<Union>>(
@@ -896,17 +896,17 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                         _ => unimplemented!(),
                     },
                 ),
-                QueueMsg::Data(block_poll_message::AnyChainIdentified::EvmMinimal(
-                    block_poll_message::Identified {
+                QueueMsg::Data(block_message::AnyChainIdentified::EthMinimal(
+                    block_message::Identified {
                         chain_id,
-                        t: block_poll_message::data::Data::IbcEvent(ibc_event),
+                        t: block_message::data::Data::IbcEvent(ibc_event),
                     },
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
                     match ibc_event.client_type {
                         unionlabs::ClientType::Cometbls => {
-                            event(voyager_message::id::<Evm<Minimal>, Wasm<Union>, _>(
+                            event(relay_message::id::<Evm<Minimal>, Wasm<Union>, _>(
                                 chain_id,
-                                voyager_message::event::IbcEvent {
+                                relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
                                     event: chain_event_to_lc_event::<Evm<Minimal>, Wasm<Union>>(
