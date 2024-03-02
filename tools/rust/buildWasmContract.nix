@@ -67,8 +67,6 @@ in
   buildWasmContract =
     { crateDirFromRoot
     , features ? null
-    , additionalSrcFilter ? _: _: false
-    , additionalTestSrcFilter ? _: _: false
       # list of fns taking the file path as an argument and producing arbitrary shell script
     , checks ? [ ]
     }:
@@ -81,7 +79,7 @@ in
           # extraEnv = {
           #   nativeBuildInputs = [ pkgs.breakpointHook ];
           # };
-          inherit crateDirFromRoot additionalSrcFilter additionalTestSrcFilter;
+          inherit crateDirFromRoot;
           buildStdTarget = CARGO_BUILD_TARGET;
           pnameSuffix = featuresString features;
 

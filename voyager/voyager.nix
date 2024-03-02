@@ -3,12 +3,6 @@
     let
       voyager = crane.buildWorkspaceMember {
         crateDirFromRoot = "voyager";
-        additionalSrcFilter = path: _:
-          (pkgs.lib.hasPrefix ".sqlx" path) ||
-          (pkgs.lib.hasPrefix "lib/pg-queue/.sqlx" path) ||
-          (pkgs.lib.hasPrefix "lib/pg-queue/migrations" path);
-        additionalTestSrcFilter = path: _:
-          pkgs.lib.hasPrefix "hubble/src/graphql" path;
         # temporarily, to keep warnings in-editor until i fix them
         cargoClippyExtraArgs = "--allow deprecated";
         extraEnv = {

@@ -6,6 +6,9 @@ publish      = false
 repository   = { workspace = true }
 version      = "0.1.0"
 
+[package.metadata.crane]
+test-include = ["unionvisor/src/testdata/"]
+
 [dependencies]
 clap               = { workspace = true, features = ["derive", "env", "default"] }
 color-eyre         = { workspace = true, features = ["default"] }

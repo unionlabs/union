@@ -5,7 +5,8 @@ name                   = "scroll-verifier"
 repository.workspace   = true
 version                = "0.1.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.crane]
+test-include = ["lib/scroll-verifier/tests"]
 
 [dependencies]
 ethereum-verifier = { workspace = true }
