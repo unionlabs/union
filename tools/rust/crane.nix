@@ -74,18 +74,6 @@
           # the directory that contains the Cargo.toml and src/ for the crate,
           # relative to the repository root.
           crateDirFromRoot
-        , # additional source filtering, for including non-rust files in the build.
-          #
-          # additionalSrcFilter :: string -> path -> bool
-          #
-          # where path is the path of the file, relative to the repository root.
-          additionalSrcFilter ? _: _: false
-        , # additional source filtering, for including non-rust files for tests.
-          #
-          # additionalTestSrcFilter :: string -> path -> bool
-          #
-          # where path is the path of the file, relative to the repository root.
-          additionalTestSrcFilter ? _: _: false
         , # extra attributes to be passed to craneLib.cargoNextest.
           cargoTestExtraAttrs ? { }
         , # extra args to be passed to cargo build.
@@ -159,6 +147,8 @@
           # apparently nix doesn't cache calls to builtins.readFile (which importTOML calls internally), so we cache the cargo tomls here
           # this saves ~2-3 minutes in evaluation time
           workspaceDepsForCrateCargoTomls = builtins.listToAttrs (map (dep: lib.attrsets.nameValuePair dep (lib.trivial.importTOML "${root}/${dep}/Cargo.toml")) workspaceDepsForCrate);
+          extraIncludePathsForCrate = dbg (lib.unique (lib.flatten (builtins.map (toml: pkgs.lib.attrsets.attrByPath [ "package" "metadata" "crane" "include" ] [ ] toml) (builtins.attrValues workspaceDepsForCrateCargoTomls))));
+          extraTestIncludePathsForCrate = dbg (lib.unique (lib.flatten (builtins.map (toml: pkgs.lib.attrsets.attrByPath [ "package" "metadata" "crane" "test-include" ] [ ] toml) (builtins.attrValues workspaceDepsForCrateCargoTomls))));
 
           crateSrc =
             let
@@ -178,6 +168,8 @@
                         workspaceDepsForCrate)
                     )
                 );
+              additionalSrcFilter = path': type: (builtins.any (include: pkgs.lib.hasPrefix include path') extraIncludePathsForCrate);
+              additionalTestSrcFilter = path': type: (builtins.any (include: pkgs.lib.hasPrefix include path') extraTestIncludePathsForCrate);
             in
             mkCleanSrc {
               name = cratePname;

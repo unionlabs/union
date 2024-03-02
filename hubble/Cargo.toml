@@ -6,6 +6,9 @@ publish      = false
 repository   = { workspace = true }
 version      = "0.1.0"
 
+[package.metadata.crane]
+include = ["hubble/src/graphql/", ".sqlx"]
+
 [lib]
 name = "hubble"
 path = "src/lib.rs"

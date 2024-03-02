@@ -12,9 +12,6 @@
             }}
           '')
         ];
-        additionalTestSrcFilter = path: _:
-          (lib.hasPrefix "light-clients/ethereum-light-client/src/test" path)
-          && (lib.strings.hasSuffix ".json" path);
       };
 
       minimal = mkEthLc "Minimal";

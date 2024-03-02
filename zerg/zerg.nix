@@ -5,8 +5,6 @@
 
       zerg = crane.buildWorkspaceMember {
         crateDirFromRoot = "zerg";
-        additionalTestSrcFilter = path: _:
-          pkgs.lib.hasPrefix "hubble/src/graphql" path;
         cargoTestExtraAttrs = {
           partitions = 1;
           partitionType = "count";

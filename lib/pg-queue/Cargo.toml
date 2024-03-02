@@ -1,9 +1,10 @@
 [package]
-edition = "2021"
+edition = { workspace = true }
 name    = "pg-queue"
 version = "0.1.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.crane]
+include = ["lib/pg-queue/.sqlx", "lib/pg-queue/migrations"]
 
 [dependencies]
 serde      = { workspace = true }

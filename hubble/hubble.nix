@@ -3,7 +3,6 @@
     let
       hubble = crane.buildWorkspaceMember {
         crateDirFromRoot = "hubble";
-        additionalSrcFilter = path: _type: pkgs.lib.hasPrefix "hubble/src/graphql/" path || pkgs.lib.hasPrefix ".sqlx" path;
         cargoTestExtraAttrs = {
           partitions = 1;
           partitionType = "count";

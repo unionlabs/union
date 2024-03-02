@@ -8,6 +8,9 @@ readme      = "README.md"
 repository  = "https://github.com/arnaucube/poseidon-rs"
 version     = "0.0.10"
 
+[package.metadata.crane]
+include = ["lib/poseidon-rs/constants.json"]
+
 [dependencies]
 ethereum-types = { version = "0.14", default-features = false }
 ff             = { package = "ff_ce", version = "0.14", default-features = false, features = ["derive"] }

@@ -5,8 +5,6 @@
 
       unionvisorAll = crane.buildWorkspaceMember {
         crateDirFromRoot = "unionvisor";
-        additionalTestSrcFilter = path: _type:
-          pkgs.lib.hasPrefix "unionvisor/src/testdata/" path;
         cargoTestExtraAttrs = {
           partitions = 1;
           partitionType = "count";
