@@ -10,7 +10,7 @@ version      = "0.1.0"
 [dependencies]
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 axum                     = { workspace = true, features = ["macros", "tokio", "json"] }
-beacon-api               = { workspace = true, default-features = false }
+beacon-api               = { workspace = true }
 bech32                   = "0.9.1"
 bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }

@@ -14,7 +14,7 @@ serde      = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tokio      = { workspace = true, features = ["macros"] }
 
-beacon-api     = { workspace = true, default-features = false }
+beacon-api     = { workspace = true }
 chain-utils    = { workspace = true }
 contracts      = { workspace = true }
 tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }

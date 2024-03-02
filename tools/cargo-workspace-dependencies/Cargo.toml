@@ -11,7 +11,7 @@ version      = "0.1.0"
 [dependencies]
 cargo-util-schemas = "0.1.0"
 cargo_metadata     = "0.18.1"
-clap               = { workspace = true, features = ["derive"] }
+clap               = { workspace = true, features = ["derive", "default"] }
 toml               = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["fmt"] }
