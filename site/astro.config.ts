@@ -7,17 +7,16 @@ import { markdownConfiguration } from "./markdown.config.ts";
 import starlightLinksValidator from "starlight-links-validator";
 
 const SITE_URL = "https://union.build";
-
-const PORT = Number(process.env.PORT || import.meta.env.PORT || 4321);
+const PORT = Number(process.env.PORT || 4321);
 
 // https://astro.build/config
 export default defineConfig({
   site: SITE_URL,
   output: "static",
   trailingSlash: "ignore",
-  server: (_options) => ({
-    port: PORT,
-  }),
+  server: ({ command }) => {
+    return { port: PORT };
+  },
   redirects: {
     "/logo": "/union-logo.zip",
   },

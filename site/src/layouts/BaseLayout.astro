@@ -25,10 +25,6 @@ const {
   loadFonts = true,
 } = Astro.props
 
-const BASE_URL = import.meta.env.SITE_URL || import.meta.env.CF_PAGES_URL || import.meta.env.SITE
-
-const fullImagePath = `${BASE_URL}${image}`
-
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 ---
 
@@ -43,7 +39,7 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
         basic: {
           url,
           title,
-          image: fullImagePath,
+          image,
           type: 'website',
         },
         optional: {
@@ -51,11 +47,11 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           siteName: 'Union',
           description,
         },
-        image: { url: fullImagePath, alt: 'Union Logo' },
+        image: { url: image, alt: 'Union Logo' },
       }}
       twitter={{
         title,
-        image: fullImagePath,
+        image,
         site: url,
         description,
         imageAlt: 'Union Logo',
