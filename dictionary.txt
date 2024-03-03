@@ -732,6 +732,7 @@ sequi
 serde
 serverconfig
 servertypes
+seti
 sgxlib
 shacham
 shadcn
