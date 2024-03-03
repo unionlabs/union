@@ -1,3 +1,0 @@
----
-title: Zero-Knowledge Cryptography
----
