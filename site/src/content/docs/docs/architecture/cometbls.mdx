@@ -26,7 +26,7 @@ Under CometBLS, the Union network can scale to hundreds of validators without im
 
 ## MiMC Hashing
 
-SHA-256 is used across Tendermint for storage proofs and more. The security of SHA-256 over alternatives like BLAKE is questionable; the main downside is the high cost within [Zero-Knowledge circuits](/docs/concepts/zero-knowledge-cryptography) to prove the hashing. [MiMC](https://eprint.iacr.org/2016/492.pdf) is an alternative that provides excellent security and significantly decreases the number of constraints in Galois. CometBLS V3 introduced these MiMC hases, bringing [significant performance enhancements](https://unionlabs.github.io/galois-benchmark/).
+SHA-256 is used across Tendermint for storage proofs and more. The security of SHA-256 over alternatives like BLAKE is questionable; the main downside is the high cost within Zero-Knowledge circuits to prove the hashing. [MiMC](https://eprint.iacr.org/2016/492.pdf) is an alternative that provides excellent security and significantly decreases the number of constraints in Galois. CometBLS V3 introduced these MiMC hases, bringing [significant performance enhancements](https://unionlabs.github.io/galois-benchmark/).
 
 ## Epoch-based Validator Rotation
 
