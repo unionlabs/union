@@ -2075,6 +2075,8 @@ where
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(this_chain_id, commitment_proof_chain_id);
 
+        tracing::debug!("aggregate recv_packet");
+
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
         msg(id::<Tr, Hc, _>(
@@ -2160,6 +2162,8 @@ where
         assert_eq!(this_chain_id, trusted_client_state_chain_id);
         assert_eq!(this_chain_id, packet_acknowledgement_chain_id);
         assert_eq!(commitment_proof_chain_id, this_chain_id);
+
+        tracing::debug!("aggregate ack_packet");
 
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
