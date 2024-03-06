@@ -4,7 +4,7 @@ use unionlabs::{
     tendermint::types::block_id::BlockId,
 };
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, PartialEq)]
 pub enum Error {
     #[error("integer overflow")]
     IntegerOverflow,
@@ -73,7 +73,4 @@ pub enum Error {
     NegativeVotingPower(i64),
     #[error("signature count ({count}) is below the batch verify threshold ({threshold})")]
     SignatureCountBelowBatchVerifyThreshold { threshold: usize, count: usize },
-
-    #[error("batch verification ({0})")]
-    BatchVerification(Box<dyn std::error::Error>),
 }
