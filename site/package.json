@@ -21,6 +21,7 @@
     "@astrojs/svelte": "^5.2.0",
     "@astrojs/tailwind": "^5.1.0",
     "@expressive-code/plugin-collapsible-sections": "^0.33.5",
+    "@splinetool/runtime": "^1.0.59",
     "@urql/svelte": "^4.1.0",
     "astro": "^4.5.4",
     "astro-capo": "^0.0.1",
