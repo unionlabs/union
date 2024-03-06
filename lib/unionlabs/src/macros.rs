@@ -1,7 +1,7 @@
 macro_rules! hex_string_array_wrapper {
     (
         $(
-            pub struct $Struct:ident(pub [u8; $N:literal]);
+            pub struct $Struct:ident(pub [u8; $N:expr]);
         )+
     ) => {
         $(

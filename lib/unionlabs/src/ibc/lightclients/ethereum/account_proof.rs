@@ -1,32 +1,16 @@
-use std::fmt::Debug;
-
+use custom_debug_derive::Debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, hash::H256};
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct AccountProof {
     pub storage_root: H256,
     #[serde(with = "::serde_utils::hex_string_list")]
+    #[debug(with = "::serde_utils::fmt::hex_list")]
     pub proof: Vec<Vec<u8>>,
-}
-
-impl Debug for AccountProof {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AccountProof")
-            .field("storage_root", &self.storage_root)
-            .field(
-                "proof",
-                &self
-                    .proof
-                    .iter()
-                    .map(serde_utils::to_hex)
-                    .collect::<Vec<_>>(),
-            )
-            .finish()
-    }
 }
 
 #[derive(Debug)]

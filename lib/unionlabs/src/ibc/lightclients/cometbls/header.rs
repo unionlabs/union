@@ -1,5 +1,4 @@
-use std::fmt::Debug;
-
+use custom_debug_derive::Debug;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ethabi")]
@@ -11,27 +10,15 @@ use crate::{
     Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Header {
     pub signed_header: SignedHeader,
     pub trusted_height: Height,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(with = "::serde_utils::fmt::hex")]
     pub zero_knowledge_proof: Vec<u8>,
-}
-
-impl Debug for Header {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Header")
-            .field("signed_header", &self.signed_header)
-            .field("trusted_height", &self.trusted_height)
-            .field(
-                "zero_knowledge_proof",
-                &serde_utils::to_hex(&self.zero_knowledge_proof),
-            )
-            .finish()
-    }
 }
 
 impl From<Header> for protos::union::ibc::lightclients::cometbls::v1::Header {

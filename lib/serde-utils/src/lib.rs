@@ -426,6 +426,56 @@ pub mod bitvec_string {
     }
 }
 
+pub mod fmt {
+    use core::fmt::Display;
+    use std::fmt::Write;
+
+    use bitvec::{order::BitOrder, view::AsBits};
+
+    use crate::to_hex;
+
+    pub fn hex<T: AsRef<[u8]>>(data: &T, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        write!(f, "{}", to_hex(data))
+    }
+
+    #[allow(clippy::ptr_arg)] // signature required by custom_debug_derive
+    pub fn hex_list<T: AsRef<[u8]>>(
+        data: &Vec<T>,
+        f: &mut core::fmt::Formatter,
+    ) -> core::fmt::Result {
+        struct DebugAsHex<T>(T);
+
+        impl<T: AsRef<[u8]>> core::fmt::Debug for DebugAsHex<T> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{}", to_hex(&self.0))
+            }
+        }
+
+        f.debug_list().entries(data.iter().map(DebugAsHex)).finish()
+    }
+
+    pub fn bits<B: BitOrder>(bitmap: &Vec<u8>, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        for bit in bitmap.as_bits::<B>().iter().by_refs() {
+            // REVIEW: Is string literal or char more efficient?
+            f.write_char(if *bit { '1' } else { '0' })?
+        }
+
+        Ok(())
+    }
+
+    pub fn display<T: Display>(t: &T, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        struct DebugAsDisplay<T>(T);
+
+        impl<T: Display> core::fmt::Debug for DebugAsDisplay<T> {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", self.0)
+            }
+        }
+
+        write!(f, "{t}")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,3 +1,4 @@
+use custom_debug_derive::Debug;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use ssz_types::{fixed_vector, variable_list, FixedVector, VariableList};
@@ -11,7 +12,7 @@ use crate::{
     Proto, TypeUrl,
 };
 
-#[derive(Clone, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
@@ -20,6 +21,7 @@ pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DAT
     pub state_root: H256,
     pub receipts_root: H256,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(with = "::serde_utils::fmt::hex")]
     pub logs_bloom: FixedVector<u8, C::BYTES_PER_LOGS_BLOOM>,
     pub prev_randao: H256,
     #[serde(with = "::serde_utils::string")]
@@ -31,6 +33,7 @@ pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DAT
     #[serde(with = "::serde_utils::string")]
     pub timestamp: u64,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(with = "::serde_utils::fmt::hex")]
     pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
     pub base_fee_per_gas: U256,
     pub block_hash: H256,
@@ -64,7 +67,7 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader
     }
 }
 
-#[derive(Clone, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
@@ -73,6 +76,7 @@ pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES
     pub state_root: H256,
     pub receipts_root: H256,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(with = "::serde_utils::fmt::hex")]
     pub logs_bloom: FixedVector<u8, C::BYTES_PER_LOGS_BLOOM>,
     pub prev_randao: H256,
     #[serde(with = "::serde_utils::string")]
@@ -84,6 +88,7 @@ pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES
     #[serde(with = "::serde_utils::string")]
     pub timestamp: u64,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(with = "::serde_utils::fmt::hex")]
     pub extra_data: VariableList<u8, C::MAX_EXTRA_DATA_BYTES>,
     pub base_fee_per_gas: U256,
     pub block_hash: H256,
@@ -97,32 +102,6 @@ pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES
     // excess_blob_gas: uint64  # [New in Deneb:EIP4844]
     #[serde(default, with = "::serde_utils::string")]
     pub excess_blob_gas: u64,
-}
-
-impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES + std::fmt::Debug> std::fmt::Debug
-    for ExecutionPayloadHeader<C>
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ExecutionPayloadHeader")
-            .field("parent_hash", &self.parent_hash)
-            .field("fee_recipient", &self.fee_recipient)
-            .field("state_root", &self.state_root)
-            .field("receipts_root", &self.receipts_root)
-            .field("logs_bloom", &serde_utils::to_hex(&self.logs_bloom))
-            .field("prev_randao", &self.prev_randao)
-            .field("block_number", &self.block_number)
-            .field("gas_limit", &self.gas_limit)
-            .field("gas_used", &self.gas_used)
-            .field("timestamp", &self.timestamp)
-            .field("extra_data", &serde_utils::to_hex(&self.extra_data))
-            .field("base_fee_per_gas", &self.base_fee_per_gas)
-            .field("block_hash", &self.block_hash)
-            .field("transactions_root", &self.transactions_root)
-            .field("withdrawals_root", &self.withdrawals_root)
-            .field("blob_gas_used", &self.blob_gas_used)
-            .field("excess_blob_gas", &self.excess_blob_gas)
-            .finish()
-    }
 }
 
 impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader<C>>
