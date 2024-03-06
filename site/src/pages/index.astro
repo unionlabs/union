@@ -23,22 +23,29 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
   <main class="flex flex-col flex-1 items-center px-4">
     <div class="w-full flex flex-col max-w-5xl p-px bg-[#1f1f1f]">
       <section
-        class="flex flex-col items-center sm:py-16 py-10 md:py-20 gap-2 md:gap-6 grid-effect-bg antialiased bg-black mb-px p-4 md:p-8"
+        class="grid grid-cols-2 items-center gap-2 md:gap-6 grid-effect-bg antialiased bg-black mb-px"
       >
-        <div
-          class="text-4xl md:text-5xl lg:text-6xl sm:text-4xl text-white text-center font-semibold px-4"
-        >
-          The Sovereign<br />Interoperability Layer
+        <div class="py-32 px-4">
+          <div
+            class="text-4xl text-white font-semibold"
+          >
+            The Sovereign<br />Interoperability Layer
+          </div>
+          <div class="text-lg sm:text-xl max-w-lg font-normal antialiased text-gray-400">
+            By using consensus verification, Union builds unstoppable and decentralized connections to
+            enable anyone to transfer assets and data.
+          </div>
+          <div>
+            <a class="mt-16 underline text-lg uppercase text-accent font-semibold" href="/docs">
+              Start building -&gt;
+            </a>
+          </div>
         </div>
-        <div class="text-lg sm:text-xl max-w-lg font-normal text-center antialiased text-gray-400">
-          By using consensus verification, Union builds unstoppable and decentralized connections to
-          enable anyone to transfer assets and data.
+        <div class="h-full">
+          <script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.55/build/spline-viewer.js"></script>
+          <spline-viewer url="https://prod.spline.design/AGnrviaGeEXf-Lu2/scene.splinecode"></spline-viewer>
         </div>
-        <div>
-          <a class="mt-16 underline text-lg uppercase text-accent font-semibold" href="/docs">
-            Start building -&gt;
-          </a>
-        </div>
+
       </section>
 
       <section class="bg-black text-white flex flex-col items-center mb-px">
@@ -60,7 +67,9 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
           </h2>
         </div>
         <div class="w-full min-w-full h-full min-h-full">
-          <ConnectedVisual client:load />
+          <script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.55/build/spline-viewer.js"></script>
+          <spline-viewer url="https://prod.spline.design/7jrnongQ5D2qO8fu/scene.splinecode"></spline-viewer>
+
         </div>
       </section>
 
