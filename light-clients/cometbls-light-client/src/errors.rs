@@ -143,6 +143,12 @@ pub enum Error {
 
     #[error("verify membership error: {0}")]
     VerifyMembership(#[from] ics23::ibc_api::VerifyMembershipError),
+
+    #[error("substitute client is frozen")]
+    SubstituteClientFrozen,
+
+    #[error("forbidden fields have been changed during state migration")]
+    MigrateFieldsChanged,
 }
 
 impl Error {

@@ -3,7 +3,9 @@ use std::marker::PhantomData;
 use cosmwasm_std::{Deps, DepsMut, Empty, Env};
 use ics008_wasm_client::{
     storage_utils::{
-        read_client_state, read_consensus_state, save_client_state, save_consensus_state,
+        read_client_state, read_consensus_state, read_subject_client_state,
+        read_substitute_client_state, read_substitute_consensus_state, save_client_state,
+        save_consensus_state, save_subject_client_state, save_subject_consensus_state,
     },
     IbcClient, Status, StorageState, ZERO_HEIGHT,
 };
@@ -11,6 +13,7 @@ use ics23::ibc_api::SDK_SPECS;
 use prost::Message;
 use unionlabs::{
     encoding::Proto,
+    ensure,
     hash::H256,
     ibc::{
         core::{
@@ -337,8 +340,55 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         Err(Error::Unimplemented)
     }
 
-    fn migrate_client_store(_deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+    fn migrate_client_store(mut deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error> {
+        let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
+        let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
+
+        ensure(
+            substitute_client_state.data.frozen_height == ZERO_HEIGHT,
+            Error::SubstituteClientFrozen,
+        )?;
+
+        ensure(
+            migrate_check_allowed_fields(&subject_client_state.data, &substitute_client_state.data),
+            Error::MigrateFieldsChanged,
+        )?;
+
+        let substitute_consensus_state: WasmConsensusState =
+            read_substitute_consensus_state(deps.as_ref(), &substitute_client_state.latest_height)?
+                .ok_or(Error::ConsensusStateNotFound(
+                    substitute_client_state.latest_height,
+                ))?;
+
+        save_consensus_state_metadata(
+            deps.branch(),
+            substitute_consensus_state.data.timestamp.clone(),
+            substitute_client_state.latest_height,
+        );
+
+        save_subject_consensus_state(
+            deps.branch(),
+            substitute_consensus_state,
+            &substitute_client_state.latest_height,
+        );
+
+        let scs = substitute_client_state.data;
+        save_subject_client_state(
+            deps,
+            WasmClientState {
+                data: ClientState {
+                    chain_id: scs.chain_id,
+                    trusting_period: scs.trusting_period,
+                    latest_height: scs.latest_height,
+                    frozen_height: ZERO_HEIGHT,
+                    ..subject_client_state.data
+                },
+                checksum: subject_client_state.checksum,
+                latest_height: scs.latest_height,
+            },
+        );
+
+        Ok(())
     }
 
     fn status(
@@ -390,6 +440,14 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
     }
 }
 
+fn migrate_check_allowed_fields(
+    subject_client_state: &ClientState,
+    substitute_client_state: &ClientState,
+) -> bool {
+    subject_client_state.unbonding_period == substitute_client_state.unbonding_period
+        && subject_client_state.max_clock_drift == substitute_client_state.max_clock_drift
+}
+
 fn is_client_expired(
     consensus_state_timestamp: u64,
     trusting_period: u64,
@@ -435,5 +493,204 @@ fn height_from_header(header: &Header) -> Height {
         revision_number: header.trusted_height.revision_number,
         // SAFETY: height's bounds are [0..i64::MAX]
         revision_height: header.signed_header.header.height.inner() as u64,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use cosmwasm_std::{
+        testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
+        OwnedDeps,
+    };
+    use ics008_wasm_client::{
+        storage_utils::{
+            consensus_db_key, read_subject_consensus_state, HOST_CLIENT_STATE_KEY,
+            SUBJECT_CLIENT_STORE_PREFIX, SUBSTITUTE_CLIENT_STORE_PREFIX,
+        },
+        FROZEN_HEIGHT,
+    };
+    use unionlabs::{google::protobuf::any::Any, IntoProto};
+
+    use super::*;
+
+    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
+        revision_number: 1,
+        revision_height: 1124,
+    };
+
+    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height {
+        revision_number: 1,
+        revision_height: 1200,
+    };
+
+    fn save_states_to_migrate_store(
+        deps: DepsMut,
+        subject_client_state: &WasmClientState,
+        substitute_client_state: &WasmClientState,
+        subject_consensus_state: &WasmConsensusState,
+        substitute_consensus_state: &WasmConsensusState,
+    ) {
+        deps.storage.set(
+            format!("{SUBJECT_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
+            &Any(subject_client_state.clone()).into_proto_bytes(),
+        );
+        deps.storage.set(
+            format!(
+                "{SUBJECT_CLIENT_STORE_PREFIX}{}",
+                consensus_db_key(&INITIAL_CONSENSUS_STATE_HEIGHT)
+            )
+            .as_bytes(),
+            &Any(subject_consensus_state.clone()).into_proto_bytes(),
+        );
+        deps.storage.set(
+            format!("{SUBSTITUTE_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
+            &Any(substitute_client_state.clone()).into_proto_bytes(),
+        );
+        deps.storage.set(
+            format!(
+                "{SUBSTITUTE_CLIENT_STORE_PREFIX}{}",
+                consensus_db_key(&INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT)
+            )
+            .as_bytes(),
+            &Any(substitute_consensus_state.clone()).into_proto_bytes(),
+        );
+    }
+
+    fn prepare_migrate_tests() -> (
+        OwnedDeps<MockStorage, MockApi, MockQuerier, Empty>,
+        WasmClientState,
+        WasmConsensusState,
+        WasmClientState,
+        WasmConsensusState,
+    ) {
+        (
+            mock_dependencies(),
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap(),
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap(),
+            serde_json::from_str(
+                &fs::read_to_string("src/test/substitute_client_state.json").unwrap(),
+            )
+            .unwrap(),
+            serde_json::from_str(
+                &fs::read_to_string("src/test/substitute_consensus_state.json").unwrap(),
+            )
+            .unwrap(),
+        )
+    }
+
+    #[test]
+    fn migrate_client_store_works() {
+        let (
+            mut deps,
+            mut wasm_client_state,
+            wasm_consensus_state,
+            substitute_wasm_client_state,
+            substitute_wasm_consensus_state,
+        ) = prepare_migrate_tests();
+
+        wasm_client_state.data.frozen_height = FROZEN_HEIGHT;
+
+        save_states_to_migrate_store(
+            deps.as_mut(),
+            &wasm_client_state,
+            &substitute_wasm_client_state,
+            &wasm_consensus_state,
+            &substitute_wasm_consensus_state,
+        );
+
+        CometblsLightClient::<()>::migrate_client_store(deps.as_mut()).unwrap();
+
+        let wasm_client_state: WasmClientState = read_subject_client_state(deps.as_ref()).unwrap();
+        // we didn't miss updating any fields
+        assert_eq!(wasm_client_state, substitute_wasm_client_state);
+        // client is unfrozen
+        assert_eq!(wasm_client_state.data.frozen_height, ZERO_HEIGHT);
+
+        // the new consensus state is saved under the correct height
+        assert_eq!(
+            read_subject_consensus_state(deps.as_ref(), &INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT)
+                .unwrap()
+                .unwrap(),
+            substitute_wasm_consensus_state
+        );
+
+        // the new consensus state metadata is saved under substitute's latest height
+        assert_eq!(
+            get_or_next_consensus_state_meta(
+                deps.as_ref(),
+                INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT
+            )
+            .unwrap()
+            .unwrap()
+            .0,
+            substitute_wasm_client_state.latest_height
+        );
+    }
+
+    #[test]
+    fn migrate_client_store_fails_when_invalid_change() {
+        let (
+            mut deps,
+            wasm_client_state,
+            wasm_consensus_state,
+            substitute_wasm_client_state,
+            substitute_wasm_consensus_state,
+        ) = prepare_migrate_tests();
+
+        macro_rules! modify_fns {
+            ($param:ident, $($m:expr), + $(,)?) => ([$(|$param: &mut ClientState| $m),+])
+        }
+
+        let modifications = modify_fns! { s,
+            s.unbonding_period ^= u64::MAX,
+            s.max_clock_drift ^= u64::MAX,
+        };
+
+        for m in modifications {
+            let mut state = substitute_wasm_client_state.clone();
+            m(&mut state.data);
+
+            save_states_to_migrate_store(
+                deps.as_mut(),
+                &wasm_client_state,
+                &state,
+                &wasm_consensus_state,
+                &substitute_wasm_consensus_state,
+            );
+            assert_eq!(
+                CometblsLightClient::<()>::migrate_client_store(deps.as_mut()),
+                Err(Error::MigrateFieldsChanged)
+            );
+        }
+    }
+
+    #[test]
+    fn migrate_client_store_fails_when_substitute_client_frozen() {
+        let (
+            mut deps,
+            wasm_client_state,
+            wasm_consensus_state,
+            mut substitute_wasm_client_state,
+            substitute_wasm_consensus_state,
+        ) = prepare_migrate_tests();
+
+        substitute_wasm_client_state.data.frozen_height = FROZEN_HEIGHT;
+
+        save_states_to_migrate_store(
+            deps.as_mut(),
+            &wasm_client_state,
+            &substitute_wasm_client_state,
+            &wasm_consensus_state,
+            &substitute_wasm_consensus_state,
+        );
+
+        assert_eq!(
+            CometblsLightClient::<()>::migrate_client_store(deps.as_mut()),
+            Err(Error::SubstituteClientFrozen)
+        );
     }
 }
