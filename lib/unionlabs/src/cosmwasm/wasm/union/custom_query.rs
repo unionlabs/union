@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use cosmwasm_std::{to_json_vec, Binary, ContractResult, Deps, Env, QueryRequest, SystemResult};
 use prost::Message;

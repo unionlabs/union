@@ -1,4 +1,4 @@
-use std::{self, fmt::Display};
+use core::{self, fmt::Display};
 
 use bip32::{
     secp256k1::{ecdsa, ecdsa::Signature, schnorr::signature::Signer},
@@ -38,7 +38,7 @@ impl CosmosSigner {
 }
 
 impl Display for CosmosSigner {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         // TODO: benchmark this, and consider caching it in the struct
         // bech32(prefix, ripemd(sha256(pubkey)))
         let encoded = subtle_encoding::bech32::encode(

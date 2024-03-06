@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use prost::Message;
 use serde::{Deserialize, Serialize};

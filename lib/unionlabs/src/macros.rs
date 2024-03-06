@@ -33,7 +33,7 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
-            impl std::str::FromStr for $Struct {
+            impl core::str::FromStr for $Struct {
                 type Err = serde_utils::FromHexStringError;
 
                 fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -93,13 +93,13 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
-            impl ::std::fmt::Debug for $Struct {
+            impl ::core::fmt::Debug for $Struct {
                 fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                     write!(f, "{}({self})", stringify!($Struct))
                 }
             }
 
-            impl ::std::fmt::Display for $Struct {
+            impl ::core::fmt::Display for $Struct {
                 fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                     write!(f, "0x{}", hex::encode(self.0).as_str())
                 }
@@ -207,9 +207,9 @@ macro_rules! hex_string_array_wrapper {
                 fn decode(rlp: &rlp::Rlp) -> Result<Self, ::rlp::DecoderError> {
                     rlp.decoder()
                         .decode_value(|bytes| match bytes.len().cmp(&$N) {
-                            ::std::cmp::Ordering::Less => Err(::rlp::DecoderError::RlpIsTooShort),
-                            ::std::cmp::Ordering::Greater => Err(::rlp::DecoderError::RlpIsTooBig),
-                            ::std::cmp::Ordering::Equal => {
+                            ::core::cmp::Ordering::Less => Err(::rlp::DecoderError::RlpIsTooShort),
+                            ::core::cmp::Ordering::Greater => Err(::rlp::DecoderError::RlpIsTooBig),
+                            ::core::cmp::Ordering::Equal => {
                                 Ok($Struct(bytes.try_into().expect("size is checked; qed;")))
                             }
                         })
@@ -254,7 +254,7 @@ macro_rules! wrapper_enum {
             )+
         }
 
-        impl std::str::FromStr for $Enum {
+        impl core::str::FromStr for $Enum {
             type Err = crate::errors::UnknownEnumVariant<String>;
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -279,8 +279,8 @@ macro_rules! wrapper_enum {
             }
         }
 
-        impl std::fmt::Display for $Enum {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        impl core::fmt::Display for $Enum {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 f.write_str(<&'static str>::from(*self))
             }
         }

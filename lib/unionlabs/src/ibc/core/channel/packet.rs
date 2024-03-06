@@ -1,4 +1,4 @@
-use std::num::{NonZeroU64, TryFromIntError};
+use core::num::{NonZeroU64, TryFromIntError};
 
 use serde::{Deserialize, Serialize};
 

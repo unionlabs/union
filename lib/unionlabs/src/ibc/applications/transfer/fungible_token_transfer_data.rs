@@ -1,4 +1,4 @@
-use std::num::ParseIntError;
+use core::num::ParseIntError;
 
 use crate::{Proto, TypeUrl};
 

@@ -1,5 +1,4 @@
-use core::num::TryFromIntError;
-use std::{cmp::Ordering, fmt::Display, ops::Neg, str::FromStr};
+use core::{cmp::Ordering, fmt::Display, num::TryFromIntError, ops::Neg, str::FromStr};
 
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
 use serde::{
@@ -120,7 +119,7 @@ impl Timestamp {
 }
 
 impl Display for Timestamp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_str(&DateTime::<Utc>::from(*self).to_rfc3339_opts(
             SecondsFormat::Nanos,
             // use_z
@@ -301,7 +300,7 @@ impl From<Timestamp> for contracts::glue::GoogleProtobufTimestampData {
 pub enum TryFromEthAbiTimestampError {
     Seconds(BoundedIntError<i64>),
     Nanos(BoundedIntError<i32>),
-    NanosTryFromI64(std::num::TryFromIntError),
+    NanosTryFromI64(core::num::TryFromIntError),
 }
 
 #[cfg(feature = "ethabi")]

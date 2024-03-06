@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use hex_literal::hex;
 use serde::{Deserialize, Serialize};

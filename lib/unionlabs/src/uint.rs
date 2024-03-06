@@ -1,4 +1,4 @@
-use std::{fmt::Display, str::FromStr};
+use core::{fmt::Display, str::FromStr};
 
 use custom_debug_derive::Debug;
 use serde::{Deserialize, Serialize};
@@ -210,14 +210,14 @@ impl FromStr for U256 {
 }
 
 impl Display for U256 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_fmt(format_args!("{}", self.0))
     }
 }
 
 #[cfg(test)]
 mod u256_tests {
-    use std::str::FromStr;
+    use core::str::FromStr;
 
     use serde::{Deserialize, Serialize};
 

@@ -1,4 +1,4 @@
-use std::num::NonZeroU64;
+use core::num::NonZeroU64;
 
 use serde::{Deserialize, Serialize};
 

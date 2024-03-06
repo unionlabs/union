@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use crate::{
     const_assert,
@@ -144,7 +144,7 @@ impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize>
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
+    use alloc::borrow::Cow;
 
     use super::*;
     use crate::validated::{ValidateT, Validated};

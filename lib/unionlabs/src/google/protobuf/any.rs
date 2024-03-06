@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData};
+use core::{fmt::Debug, marker::PhantomData};
 
 use serde::{
     de::{self, Visitor},
@@ -54,7 +54,7 @@ where
         {
             type Value = Any<T>;
 
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
                 write!(
                     formatter,
                     "a google.protobuf.Any containing {}",
