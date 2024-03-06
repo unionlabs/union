@@ -1,4 +1,4 @@
-use std::{
+use core::{
     fmt::{self, Debug, Display},
     num::ParseIntError,
     ops::{Mul, Neg},
@@ -354,7 +354,7 @@ impl TryFrom<contracts::glue::GoogleProtobufDurationData> for Duration {
 
 #[cfg(test)]
 mod tests {
-    use std::cmp::Ordering;
+    use core::cmp::Ordering;
 
     use super::*;
     use crate::test_utils::{assert_json_roundtrip, assert_proto_roundtrip};

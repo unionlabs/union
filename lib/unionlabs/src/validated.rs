@@ -1,4 +1,4 @@
-use std::{fmt::Display, marker::PhantomData, ops::Deref, str::FromStr};
+use core::{fmt::Display, marker::PhantomData, ops::Deref, str::FromStr};
 
 use custom_debug_derive::Debug;
 use either::Either;
@@ -39,7 +39,7 @@ pub trait ValidateT: Sized {
 impl<T> ValidateT for T {}
 
 impl<T: Display, V: Validate<T>> Display for Validated<T, V> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
@@ -154,7 +154,7 @@ impl<T> ValidateExt<T> for () {
 
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
+    use core::marker::PhantomData;
 
     use either::Either;
 

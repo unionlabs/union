@@ -1,11 +1,11 @@
-use std::{
-    error::Error,
+use core::{
     fmt::{Debug, Display},
     future::Future,
     hash::Hash,
     num::NonZeroU64,
     str::FromStr,
 };
+use std::error::Error;
 
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +42,7 @@ pub trait Id:
 
 impl Id for String {
     // type FromStrErr = <String as FromStr>::Err;
-    type FromStrErr = std::string::ParseError;
+    type FromStrErr = alloc::string::ParseError;
 }
 
 impl<T: Id, V: Validate<T> + 'static> Id for Validated<T, V>

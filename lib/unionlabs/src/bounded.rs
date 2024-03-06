@@ -14,8 +14,8 @@ macro_rules! bounded_int {
                 }
             }
 
-            impl<const MIN: $ty, const MAX: $ty> std::fmt::Debug for $Struct<MIN, MAX> {
-                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            impl<const MIN: $ty, const MAX: $ty> core::fmt::Debug for $Struct<MIN, MAX> {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                     f.write_fmt(format_args!("{}<{MIN}, {MAX}>({})", stringify!($Struct), self.0))
                 }
             }
@@ -87,7 +87,7 @@ macro_rules! bounded_int {
                 }
             }
 
-            impl<const MIN: $ty, const MAX: $ty> std::str::FromStr for $Struct<MIN, MAX> {
+            impl<const MIN: $ty, const MAX: $ty> core::str::FromStr for $Struct<MIN, MAX> {
                 type Err = BoundedIntParseError<$ty>;
 
                 fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -97,8 +97,8 @@ macro_rules! bounded_int {
                 }
             }
 
-            impl<const MIN: $ty, const MAX: $ty> std::fmt::Display for $Struct<MIN, MAX> {
-                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            impl<const MIN: $ty, const MAX: $ty> core::fmt::Display for $Struct<MIN, MAX> {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                     write!(f, "{}", self.0)
                 }
             }
@@ -148,7 +148,7 @@ pub struct BoundedIntError<T> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BoundedIntParseError<T> {
-    Parse(std::num::ParseIntError),
+    Parse(core::num::ParseIntError),
     Value(BoundedIntError<T>),
 }
 
@@ -159,19 +159,19 @@ bounded_int! {
     pub BoundedI64(i64);
     pub BoundedI128(i128);
 
-    #[non_zero(std::num::NonZeroU8)]
+    #[non_zero(core::num::NonZeroU8)]
     pub BoundedU8(u8);
-    #[non_zero(std::num::NonZeroU16)]
+    #[non_zero(core::num::NonZeroU16)]
     pub BoundedU16(u16);
-    #[non_zero(std::num::NonZeroU32)]
+    #[non_zero(core::num::NonZeroU32)]
     pub BoundedU32(u32);
-    #[non_zero(std::num::NonZeroU64)]
+    #[non_zero(core::num::NonZeroU64)]
     pub BoundedU64(u64);
-    #[non_zero(std::num::NonZeroU128)]
+    #[non_zero(core::num::NonZeroU128)]
     pub BoundedU128(u128);
 
     pub BoundedIsize(isize);
-    #[non_zero(std::num::NonZeroUsize)]
+    #[non_zero(core::num::NonZeroUsize)]
     pub BoundedUsize(usize);
 }
 

@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 #[cfg(feature = "ethabi")]
 use crate::{IntoEthAbi, TryFromEthAbi, TryFromEthAbiBytesError, TryFromEthAbiErrorOf};

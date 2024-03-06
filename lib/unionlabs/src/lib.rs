@@ -1,9 +1,16 @@
 #![doc = include_str!("../README.md")]
-#![deny(clippy::pedantic)]
+#![deny(
+    clippy::pedantic,
+    clippy::std_instead_of_core,
+    clippy::std_instead_of_alloc,
+    clippy::alloc_instead_of_core
+)]
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
 #![feature(trait_alias)]
 
-use std::{
+extern crate alloc;
+
+use core::{
     fmt::{Debug, Display},
     ptr::addr_of,
     str::FromStr,
@@ -76,13 +83,13 @@ pub mod uint;
 pub(crate) mod macros;
 
 pub mod errors {
-    use std::fmt::{Debug, Display};
+    use core::fmt::{Debug, Display};
 
     #[derive(Debug, Clone)]
     pub struct UnknownEnumVariant<T>(pub T);
 
     impl<T: Display> Display for UnknownEnumVariant<T> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             f.write_fmt(format_args!("unknown enum variant: {}", self.0))
         }
     }
@@ -204,7 +211,7 @@ where
 #[cfg(any(feature = "fuzzing", test))]
 #[allow(clippy::missing_panics_doc)]
 pub mod test_utils {
-    use std::{
+    use core::{
         fmt::{Debug, Display},
         str::FromStr,
     };
@@ -438,7 +445,7 @@ pub enum QueryHeight<H: IsHeight> {
 }
 
 impl<H: IsHeight> Display for QueryHeight<H> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             QueryHeight::Latest => f.write_str("latest"),
             QueryHeight::Specific(height) => f.write_fmt(format_args!("{height}")),
@@ -492,11 +499,11 @@ where
     T: ToOwned + ?Sized,
     T::Owned: for<'a> arbitrary::Arbitrary<'a>,
 {
-    u.arbitrary::<T::Owned>().map(std::borrow::Cow::Owned)
+    u.arbitrary::<T::Owned>().map(alloc::borrow::Cow::Owned)
 }
 
 pub mod never {
-    use std::{self, fmt::Display};
+    use core::{self, fmt::Display};
 
     use serde::{Deserialize, Serialize};
 
@@ -505,7 +512,7 @@ pub mod never {
     pub enum Never {}
 
     impl Display for Never {
-        fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, _: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             match *self {}
         }
     }

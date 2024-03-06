@@ -1,5 +1,4 @@
-use core::str::FromStr;
-use std::num::NonZeroU64;
+use core::{num::NonZeroU64, str::FromStr};
 
 use macros::apply;
 

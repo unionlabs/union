@@ -1,5 +1,4 @@
-use core::fmt::Debug;
-use std::str::FromStr;
+use core::{fmt::Debug, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;

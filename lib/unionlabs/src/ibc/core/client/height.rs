@@ -1,4 +1,4 @@
-use std::{
+use core::{
     fmt::{Debug, Display},
     num::ParseIntError,
     str::FromStr,
@@ -26,7 +26,7 @@ pub struct Height {
 }
 
 impl Debug for Height {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Height({self})")
     }
 }
@@ -63,7 +63,7 @@ pub enum HeightFromStrError {
 }
 
 impl Display for HeightFromStrError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             HeightFromStrError::ParseIntError(e) => write!(f, "invalid height string: {e}"),
             HeightFromStrError::Invalid => write!(f, "invalid height string"),
@@ -100,17 +100,17 @@ impl From<Height> for protos::ibc::core::client::v1::Height {
 
 // REVIEW(benluelo): Ordering for heights with different revision numbers?
 impl PartialOrd for Height {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(match self.revision_number.cmp(&other.revision_number) {
-            std::cmp::Ordering::Less => std::cmp::Ordering::Less,
-            std::cmp::Ordering::Equal => self.revision_height.cmp(&other.revision_height),
-            std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
+            core::cmp::Ordering::Less => core::cmp::Ordering::Less,
+            core::cmp::Ordering::Equal => self.revision_height.cmp(&other.revision_height),
+            core::cmp::Ordering::Greater => core::cmp::Ordering::Greater,
         })
     }
 }
 
-impl std::fmt::Display for Height {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for Height {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}-{}", self.revision_number, self.revision_height)
     }
 }

@@ -16,8 +16,8 @@ pub struct SyncAggregate<C: SYNC_COMMITTEE_SIZE> {
     pub sync_committee_signature: BlsSignature,
 }
 
-impl<C: SYNC_COMMITTEE_SIZE + std::fmt::Debug> std::fmt::Debug for SyncAggregate<C> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<C: SYNC_COMMITTEE_SIZE + core::fmt::Debug> core::fmt::Debug for SyncAggregate<C> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("SyncAggregate")
             .field(
                 "sync_committee_bits",

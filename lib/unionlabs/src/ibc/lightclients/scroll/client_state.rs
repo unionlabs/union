@@ -1,4 +1,4 @@
-use std::{fmt::Debug, str::FromStr};
+use core::{fmt::Debug, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 use uint::FromDecStrErr;
