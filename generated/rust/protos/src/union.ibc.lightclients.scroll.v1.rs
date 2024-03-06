@@ -41,7 +41,7 @@ pub struct Header {
     #[prost(bytes = "vec", tag = "3")]
     pub l2_state_root: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "4")]
-    pub finalized_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
+    pub l2_state_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
     #[prost(uint64, tag = "5")]
     pub last_batch_index: u64,
     #[prost(message, optional, tag = "6")]
