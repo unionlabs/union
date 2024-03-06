@@ -362,7 +362,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
 
         save_consensus_state_metadata(
             deps.branch(),
-            substitute_consensus_state.data.timestamp.clone(),
+            substitute_consensus_state.data.timestamp,
             substitute_client_state.latest_height,
         );
 

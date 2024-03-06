@@ -365,6 +365,10 @@
               }) ||
               (ensureDirectoryIncluded {
                 path' = path;
+                pathToInclude = "light-clients/tendermint-light-client/src/test";
+              }) ||
+              (ensureDirectoryIncluded {
+                path' = path;
                 pathToInclude = "lib/tendermint-verifier/src/test";
               }) ||
               (ensureDirectoryIncluded {
