@@ -42,17 +42,17 @@ pub fn verify_header(
         scroll_header.l1_account_proof.storage_root,
         finalized_state_root_key(
             scroll_client_state.rollup_finalized_state_roots_slot,
-            scroll_header.finalized_proof.batch_index.into(),
+            scroll_header.l2_state_proof.batch_index.into(),
         ),
-        &rlp::encode(&scroll_header.finalized_proof.finalized_state_root),
-        &scroll_header.finalized_proof.proof,
+        &rlp::encode(&scroll_header.l2_state_proof.finalized_state_root),
+        &scroll_header.l2_state_proof.proof,
     )?;
     // Verify that the ibc account root is part of the rollup root
     scroll_verify_zktrie_account_storage_root(
-        scroll_header.finalized_proof.finalized_state_root,
+        scroll_header.l2_state_proof.finalized_state_root,
         &scroll_client_state.ibc_contract_address,
-        &scroll_header.ibc_account_proof.proof,
-        &scroll_header.ibc_account_proof.storage_root,
+        &scroll_header.l2_ibc_account_proof.proof,
+        &scroll_header.l2_ibc_account_proof.storage_root,
     )?;
     Ok(())
 }

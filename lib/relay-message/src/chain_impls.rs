@@ -115,3 +115,4 @@ pub mod cosmos;
 pub mod union;
 
 pub mod evm;
+pub mod scroll;

@@ -2,11 +2,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
+    hash::H256,
     ibc::{
         core::client::height::Height,
         lightclients::{
-            ethereum::account_proof::{AccountProof, TryFromAccountProofError},
-            scroll::proof::{ScrollFinalizedProof, TryFromScrollFinalizedProofError},
+            ethereum::{
+                account_proof::{AccountProof, TryFromAccountProofError},
+                storage_proof::StorageProof,
+            },
+            scroll::finalized_proof::{FinalizedProof, TryFromScrollFinalizedProofError},
         },
     },
     Proto, TypeUrl,
@@ -18,8 +22,11 @@ use crate::{
 pub struct Header {
     pub l1_height: Height,
     pub l1_account_proof: AccountProof,
-    pub finalized_proof: ScrollFinalizedProof,
-    pub ibc_account_proof: AccountProof,
+    pub l2_state_root: H256,
+    pub finalized_proof: AccountProof,
+    pub last_batch_index: u64,
+    pub last_batch_index_proof: StorageProof,
+    pub l2_ibc_account_proof: AccountProof,
 }
 
 impl Proto for Header {
@@ -36,7 +43,7 @@ impl From<Header> for protos::union::ibc::lightclients::scroll::v1::Header {
             l1_height: Some(value.l1_height.into()),
             l1_account_proof: Some(value.l1_account_proof.into()),
             finalized_proof: Some(value.finalized_proof.into()),
-            ibc_account_proof: Some(value.ibc_account_proof.into()),
+            ibc_account_proof: Some(value.l2_ibc_account_proof.into()),
         }
     }
 }
@@ -63,7 +70,7 @@ impl TryFrom<protos::union::ibc::lightclients::scroll::v1::Header> for Header {
             finalized_proof: required!(value.finalized_proof)?
                 .try_into()
                 .map_err(TryFromHeaderError::FinalizedProof)?,
-            ibc_account_proof: required!(value.ibc_account_proof)?
+            l2_ibc_account_proof: required!(value.ibc_account_proof)?
                 .try_into()
                 .map_err(TryFromHeaderError::IbcAccountProof)?,
         })

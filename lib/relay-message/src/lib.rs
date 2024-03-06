@@ -12,6 +12,7 @@ use chain_utils::{
     cosmos::Cosmos,
     cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
     evm::Evm,
+    scroll::Scroll,
     union::Union,
     wasm::Wasm,
     Chains,
@@ -269,6 +270,13 @@ pub enum AnyLightClientIdentified<T: AnyLightClient> {
     CosmosOnUnion(Identified<Union, Wasm<Cosmos>, InnerOf<T, Union, Wasm<Cosmos>>>),
     #[display(fmt = "UnionOnCosmos({}, {})", "_0.chain_id", "_0.t")]
     UnionOnCosmos(Identified<Wasm<Cosmos>, Union, InnerOf<T, Wasm<Cosmos>, Union>>),
+
+    // The 08-wasm client tracking the state of Scroll.
+    #[display(fmt = "ScrollOnUnion({}, {})", "_0.chain_id", "_0.t")]
+    ScrollOnUnion(Identified<Wasm<Union>, Scroll, InnerOf<T, Wasm<Union>, Scroll>>),
+    // The solidity client on Scroll tracking the state of Wasm<Union>.
+    #[display(fmt = "UnionOnScroll({}, {})", "_0.chain_id", "_0.t")]
+    UnionOnScroll(Identified<Scroll, Wasm<Union>, InnerOf<T, Scroll, Wasm<Union>>>),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -319,6 +327,21 @@ enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
             Identified<Wasm<Cosmos>, Union, InnerOf<T, Wasm<Cosmos>, Union>>,
         >,
     ),
+
+    ScrollOnUnion(
+        Inner<
+            Wasm<Union>,
+            Scroll,
+            Identified<Wasm<Union>, Scroll, InnerOf<T, Wasm<Union>, Scroll>>,
+        >,
+    ),
+    UnionOnScroll(
+        Inner<
+            Scroll,
+            Wasm<Union>,
+            Identified<Scroll, Wasm<Union>, InnerOf<T, Scroll, Wasm<Union>>>,
+        >,
+    ),
 }
 
 impl<T: AnyLightClient> From<AnyLightClientIdentified<T>> for AnyLightClientIdentifiedSerde<T> {
@@ -338,6 +361,8 @@ impl<T: AnyLightClient> From<AnyLightClientIdentified<T>> for AnyLightClientIden
             }
             AnyLightClientIdentified::CosmosOnUnion(t) => Self::CosmosOnUnion(Inner::new(t)),
             AnyLightClientIdentified::UnionOnCosmos(t) => Self::UnionOnCosmos(Inner::new(t)),
+            AnyLightClientIdentified::ScrollOnUnion(t) => Self::ScrollOnUnion(Inner::new(t)),
+            AnyLightClientIdentified::UnionOnScroll(t) => Self::UnionOnScroll(Inner::new(t)),
         }
     }
 }
@@ -351,6 +376,8 @@ impl<T: AnyLightClient> From<AnyLightClientIdentifiedSerde<T>> for AnyLightClien
             AnyLightClientIdentifiedSerde::UnionOnEvmMinimal(t) => Self::UnionOnEvmMinimal(t.inner),
             AnyLightClientIdentifiedSerde::CosmosOnUnion(t) => Self::CosmosOnUnion(t.inner),
             AnyLightClientIdentifiedSerde::UnionOnCosmos(t) => Self::UnionOnCosmos(t.inner),
+            AnyLightClientIdentifiedSerde::ScrollOnUnion(t) => Self::ScrollOnUnion(t.inner),
+            AnyLightClientIdentifiedSerde::UnionOnScroll(t) => Self::UnionOnScroll(t.inner),
         }
     }
 }
@@ -802,6 +829,8 @@ macro_rules! any_lc {
             AnyLightClientIdentified::UnionOnEvmMinimal($msg) => $expr,
             AnyLightClientIdentified::CosmosOnUnion($msg) => $expr,
             AnyLightClientIdentified::UnionOnCosmos($msg) => $expr,
+            AnyLightClientIdentified::ScrollOnUnion($msg) => $expr,
+            AnyLightClientIdentified::UnionOnScroll($msg) => $expr,
         }
     };
 }

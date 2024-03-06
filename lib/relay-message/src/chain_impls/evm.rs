@@ -7,6 +7,7 @@ use contracts::ibc_handler::{
     ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall, ConnectionOpenInitCall,
     ConnectionOpenTryCall, CreateClientCall, IBCHandler, RecvPacketCall, UpdateClientCall,
 };
+use enumorph::Enumorph;
 use ethers::{
     abi::AbiEncode,
     contract::{ContractError, EthCall},
@@ -379,9 +380,9 @@ where
             [],
             id(
                 c.chain_id,
-                LightClientSpecificAggregate(EvmAggregateMsg::MakeCreateUpdates(
-                    MakeCreateUpdatesData { req: update_info },
-                )),
+                LightClientSpecificAggregate(EvmAggregateMsg::from(MakeCreateUpdatesData {
+                    req: update_info,
+                })),
             ),
         )
     }
@@ -797,7 +798,13 @@ try_from_relayer_msg! {
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound,
+    CloneNoBound,
+    PartialEqNoBound,
+    Serialize,
+    Deserialize,
+    derive_more::Display,
+    Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -808,7 +815,7 @@ try_from_relayer_msg! {
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+    arbitrary(bound = "")
 )]
 pub enum EvmFetchMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "FinalityUpdate")]
@@ -841,7 +848,7 @@ pub enum EvmFetchMsg<C: ChainSpec, Tr: ChainExt> {
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+    arbitrary(bound = "")
 )]
 #[allow(clippy::large_enum_variant)]
 pub enum EvmDataMsg<C: ChainSpec, Tr: ChainExt> {
@@ -860,7 +867,13 @@ pub enum EvmDataMsg<C: ChainSpec, Tr: ChainExt> {
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound,
+    CloneNoBound,
+    PartialEqNoBound,
+    Serialize,
+    Deserialize,
+    derive_more::Display,
+    Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -871,7 +884,7 @@ pub enum EvmDataMsg<C: ChainSpec, Tr: ChainExt> {
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
+    arbitrary(bound = "")
 )]
 #[allow(clippy::large_enum_variant)]
 pub enum EvmAggregateMsg<C: ChainSpec, Tr: ChainExt> {
@@ -968,27 +981,25 @@ where
         [
             fetch(id::<Evm<C>, Tr, _>(
                 chain_id,
-                LightClientSpecificFetch(EvmFetchMsg::FetchLightClientUpdate(
-                    FetchLightClientUpdate {
-                        period: previous_period,
-                    },
-                )),
+                LightClientSpecificFetch(EvmFetchMsg::from(FetchLightClientUpdate {
+                    period: previous_period,
+                })),
             )),
             fetch(id::<Evm<C>, Tr, _>(
                 chain_id,
-                LightClientSpecificFetch(EvmFetchMsg::FetchAccountUpdate(FetchAccountUpdate {
+                LightClientSpecificFetch(EvmFetchMsg::from(FetchAccountUpdate {
                     slot: light_client_update.attested_header.beacon.slot,
                 })),
             )),
             fetch(id::<Evm<C>, Tr, _>(
                 chain_id,
-                LightClientSpecificFetch(EvmFetchMsg::FetchBeaconGenesis(FetchBeaconGenesis {})),
+                LightClientSpecificFetch(EvmFetchMsg::from(FetchBeaconGenesis {})),
             )),
         ],
         [],
         id(
             chain_id,
-            LightClientSpecificAggregate(EvmAggregateMsg::CreateUpdate(CreateUpdateData {
+            LightClientSpecificAggregate(EvmAggregateMsg::from(CreateUpdateData {
                 req,
                 currently_trusted_slot,
                 light_client_update,
@@ -1189,25 +1200,21 @@ where
         aggregate(
             [fetch(id::<Evm<C>, Tr, _>(
                 chain_id,
-                LightClientSpecificFetch(EvmFetchMsg::FetchLightClientUpdates(
-                    FetchLightClientUpdates {
-                        trusted_period,
-                        target_period,
-                    },
-                )),
+                LightClientSpecificFetch(EvmFetchMsg::from(FetchLightClientUpdates {
+                    trusted_period,
+                    target_period,
+                })),
             ))],
             [],
             id(
                 chain_id,
-                LightClientSpecificAggregate(
-                    EvmAggregateMsg::MakeCreateUpdatesFromLightClientUpdates(
-                        MakeCreateUpdatesFromLightClientUpdatesData {
-                            req: req.clone(),
-                            trusted_height: req.update_from,
-                            finality_update,
-                        },
-                    ),
-                ),
+                LightClientSpecificAggregate(EvmAggregateMsg::from(
+                    MakeCreateUpdatesFromLightClientUpdatesData {
+                        req: req.clone(),
+                        trusted_height: req.update_from,
+                        finality_update,
+                    },
+                )),
             ),
         )
     }

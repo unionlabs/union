@@ -29,7 +29,7 @@ use unionlabs::{
     cometbls::types::canonical_vote::CanonicalVote,
     encoding::{Decode, Encode},
     google::protobuf::{
-        any::{mk_any, Any},
+        any::{mk_any, Any, IntoAny},
         timestamp::Timestamp,
     },
     hash::H256,
@@ -122,7 +122,7 @@ where
     <ClientStateOf<Hc> as Proto>::Proto: TypeUrl,
     // HeaderOf<Hc>: IntoProto,
     // <HeaderOf<Hc> as Proto>::Proto: TypeUrl,
-    Tr::StoredClientState<Hc>: IntoProto<Proto = protos::google::protobuf::Any>,
+    Tr::StoredClientState<Hc>: IntoAny,
     Tr::StateProof: Encode<unionlabs::encoding::Proto>,
 {
     async fn msg(&self, msg: Msg<Hc, Tr>) -> Result<(), BroadcastTxCommitError> {
@@ -144,7 +144,7 @@ where
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                             client_id: data.client_id.to_string(),
                             previous_connection_id: String::new(),
-                            client_state: Some(data.client_state.into_proto()),
+                            client_state: Some(data.client_state.into_any().into()),
                             counterparty: Some(data.counterparty.into()),
                             delay_period: data.delay_period,
                             counterparty_versions: data
@@ -163,7 +163,7 @@ where
                     }
                     Msg::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
-                            client_state: Some(data.client_state.into()),
+                            client_state: Some(data.client_state.into_any().into()),
                             proof_height: Some(data.proof_height.into_height().into()),
                             proof_client: data.proof_client.encode(),
                             proof_consensus: data.proof_consensus.encode(),

@@ -1,6 +1,6 @@
 use std::{fmt::Display, marker::PhantomData};
 
-use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, GetChain};
+use chain_utils::{cosmos::Cosmos, evm::Evm, scroll::Scroll, union::Union, GetChain};
 use macros::apply;
 use queue_msg::{msg_struct, BoxDynError, HandleMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
@@ -79,6 +79,16 @@ impl HandleMsg<RelayerMsgTypes> for AnyLightClientIdentified<AnyMsg> {
             }
             AnyLightClientIdentified::UnionOnCosmos(msg) => {
                 GetChain::<Wasm<Cosmos>>::get_chain(store, &msg.chain_id)
+                    .msg(msg.t)
+                    .await?;
+            }
+            AnyLightClientIdentified::ScrollOnUnion(msg) => {
+                GetChain::<Union>::get_chain(store, &msg.chain_id)
+                    .msg(msg.t)
+                    .await?;
+            }
+            AnyLightClientIdentified::UnionOnScroll(msg) => {
+                GetChain::<Scroll>::get_chain(store, &msg.chain_id)
                     .msg(msg.t)
                     .await?;
             }
