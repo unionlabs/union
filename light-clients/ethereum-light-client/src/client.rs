@@ -317,7 +317,7 @@ impl IbcClient for EthereumLightClient {
     }
 
     fn migrate_client_store(mut deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error> {
-        let mut subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
+        let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
         let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
 
         ensure(
@@ -342,22 +342,27 @@ impl IbcClient for EthereumLightClient {
             &substitute_client_state.latest_height,
         );
 
-        subject_client_state.latest_height = substitute_client_state.latest_height;
-        subject_client_state.data.latest_slot = substitute_client_state.data.latest_slot;
-        subject_client_state.data.chain_id = substitute_client_state.data.chain_id;
-        subject_client_state.data.min_sync_committee_participants =
-            substitute_client_state.data.min_sync_committee_participants;
-        subject_client_state.data.fork_parameters = substitute_client_state.data.fork_parameters;
-        subject_client_state.data.trust_level = substitute_client_state.data.trust_level;
-        subject_client_state.data.trusting_period = substitute_client_state.data.trusting_period;
-        subject_client_state.data.counterparty_commitment_slot =
-            substitute_client_state.data.counterparty_commitment_slot;
-        subject_client_state.data.ibc_contract_address =
-            substitute_client_state.data.ibc_contract_address;
+        let scs = substitute_client_state.data;
+        save_subject_client_state(
+            deps,
+            WasmClientState {
+                data: ClientState {
+                    chain_id: scs.chain_id,
+                    min_sync_committee_participants: scs.min_sync_committee_participants,
+                    fork_parameters: scs.fork_parameters,
 
-        subject_client_state.data.frozen_height = ZERO_HEIGHT;
-
-        save_subject_client_state(deps, subject_client_state);
+                    trust_level: scs.trust_level,
+                    trusting_period: scs.trusting_period,
+                    latest_slot: scs.latest_slot,
+                    counterparty_commitment_slot: scs.counterparty_commitment_slot,
+                    ibc_contract_address: scs.ibc_contract_address,
+                    frozen_height: ZERO_HEIGHT,
+                    ..subject_client_state.data
+                },
+                latest_height: substitute_client_state.latest_height,
+                checksum: subject_client_state.checksum,
+            },
+        );
 
         Ok(())
     }
