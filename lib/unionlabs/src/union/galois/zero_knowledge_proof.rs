@@ -1,36 +1,25 @@
-use std::fmt::Debug;
-
+use custom_debug_derive::Debug;
 use serde::{Deserialize, Serialize};
 
 use crate::{Proto, TypeUrl};
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 // REVIEW: Are these fields fixed size?
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct ZeroKnowledgeProof {
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(with = "::serde_utils::fmt::hex")]
     pub content: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(with = "::serde_utils::fmt::hex")]
     pub compressed_content: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(with = "::serde_utils::fmt::hex")]
     pub evm_proof: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(with = "::serde_utils::fmt::hex")]
     pub public_inputs: Vec<u8>,
-}
-
-impl Debug for ZeroKnowledgeProof {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ZeroKnowledgeProof")
-            .field("content", &serde_utils::to_hex(&self.content))
-            .field(
-                "compressed_content",
-                &serde_utils::to_hex(&self.compressed_content),
-            )
-            .field("evm_proof", &serde_utils::to_hex(&self.evm_proof))
-            .field("public_inputs", &serde_utils::to_hex(&self.public_inputs))
-            .finish()
-    }
 }
 
 impl Proto for ZeroKnowledgeProof {

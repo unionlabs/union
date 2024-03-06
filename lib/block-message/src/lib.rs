@@ -95,7 +95,7 @@ pub type InnerOf<T, C> = <T as AnyChain>::Inner<C>;
 #[cfg_attr(
     feature = "arbitrary",
     derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: Chain, T: Debug + Clone + PartialEq + for<'a> arbitrary::Arbitrary<'a>")
+    arbitrary(bound = "")
 )]
 pub struct Identified<C: Chain, T: Debug + Clone + PartialEq> {
     pub chain_id: ChainIdOf<C>,

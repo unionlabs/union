@@ -1,19 +1,20 @@
-use std::{
-    fmt::{Debug, Display},
-    marker::PhantomData,
-    ops::Deref,
-    str::FromStr,
-};
+use std::{fmt::Display, marker::PhantomData, ops::Deref, str::FromStr};
 
+use custom_debug_derive::Debug;
 use either::Either;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(
     bound(serialize = "T: Serialize", deserialize = "T: for<'d> Deserialize<'d>"),
     transparent
 )]
-pub struct Validated<T, V: Validate<T>>(T, #[serde(skip)] PhantomData<fn() -> V>);
+pub struct Validated<T, V: Validate<T>>(
+    T,
+    #[serde(skip)]
+    #[debug(skip)]
+    PhantomData<fn() -> V>,
+);
 
 #[cfg(feature = "arbitrary")]
 impl<'a, T: arbitrary::Arbitrary<'a>, V: ValidateExt<T>> arbitrary::Arbitrary<'a>
@@ -36,12 +37,6 @@ pub trait ValidateT: Sized {
 }
 
 impl<T> ValidateT for T {}
-
-impl<T: Debug, V: Validate<T>> Debug for Validated<T, V> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Validated").field(&self.0).finish()
-    }
-}
 
 impl<T: Display, V: Validate<T>> Display for Validated<T, V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -159,7 +154,11 @@ impl<T> ValidateExt<T> for () {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::marker::PhantomData;
+
+    use either::Either;
+
+    use crate::validated::{Validate, Validated};
 
     #[derive(Debug, PartialEq)]
     struct NonZero;

@@ -13,6 +13,7 @@ chrono                 = { workspace = true, features = ["alloc"] }
 clap                   = { workspace = true, features = ["derive"] }
 contracts              = { workspace = true, optional = true }
 cosmwasm-std           = { workspace = true, features = ["stargate"] }
+custom_debug_derive    = "0.6.1"
 derive_more            = { workspace = true, features = ["display"] }
 either                 = { workspace = true }
 enumorph               = { workspace = true }

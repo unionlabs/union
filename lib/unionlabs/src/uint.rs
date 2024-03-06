@@ -1,8 +1,6 @@
-use std::{
-    fmt::{Debug, Display},
-    str::FromStr,
-};
+use std::{fmt::Display, str::FromStr};
 
+use custom_debug_derive::Debug;
 use serde::{Deserialize, Serialize};
 use serde_utils::HEX_ENCODING_PREFIX;
 use tree_hash::TreeHash;
@@ -14,6 +12,7 @@ use crate::{
 
 /// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
 #[derive(
+    Debug,
     Clone,
     Copy,
     Hash,
@@ -36,7 +35,11 @@ use crate::{
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[ssz(struct_behaviour = "transparent")]
 #[repr(transparent)]
-pub struct U256(#[serde(with = "::serde_utils::u256_from_dec_str")] pub primitive_types::U256);
+pub struct U256(
+    #[serde(with = "::serde_utils::u256_from_dec_str")]
+    #[debug(with = "::serde_utils::fmt::display")]
+    pub primitive_types::U256,
+);
 
 impl From<u64> for U256 {
     fn from(value: u64) -> Self {
@@ -152,12 +155,6 @@ pub mod u256_big_endian_hex {
     }
 }
 
-impl Debug for U256 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("U256({self})"))
-    }
-}
-
 impl Proto for U256 {
     type Proto = Vec<u8>;
 }
@@ -220,17 +217,21 @@ impl Display for U256 {
 
 #[cfg(test)]
 mod u256_tests {
-    use super::*;
+    use std::str::FromStr;
+
+    use serde::{Deserialize, Serialize};
+
     use crate::{
         hash::H256,
         test_utils::{assert_json_roundtrip, assert_proto_roundtrip, assert_string_roundtrip},
+        uint::U256,
     };
 
     #[test]
     fn hex_string() {
         #[derive(Debug, Deserialize, Serialize)]
         struct T {
-            #[serde(with = "u256_big_endian_hex")]
+            #[serde(with = "super::u256_big_endian_hex")]
             u256: U256,
         }
 
