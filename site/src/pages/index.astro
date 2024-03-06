@@ -1,13 +1,14 @@
 ---
-import Layout from "#/layouts/Layout.astro"
-import { getCollection } from "astro:content"
-import SocialsGrid from "#/components/SocialsGrid.astro"
-import CodeSnippet from "#/components/CodeSnippet.astro"
-import { codeSnippets } from "#/content/_snippets/landing.ts"
-import { Tabs, TabItem } from "@astrojs/starlight/components"
-import ConnectedVisual from "#/components/ConnectedVisual.svelte"
-import PerformanceGraph from "#/components/graphs/ValidatorPerformance.svelte"
-import AppleGraphContainer from "#/components/graphs/AppleGraphContainer.svelte"
+import Layout from '#/layouts/Layout.astro'
+import { getCollection } from 'astro:content'
+import SocialsGrid from '#/components/SocialsGrid.astro'
+import CodeSnippet from '#/components/CodeSnippet.astro'
+import { codeSnippets } from '#/content/_snippets/landing.ts'
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+import ConnectedVisual from '#/components/ConnectedVisual.svelte'
+import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
+import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
+import Cube from '#/components/Cube.svelte'
 
 const publishedBlogPosts = await getCollection("blog", ({ slug, data }) => {
   if (data.hidden) return false
@@ -25,7 +26,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
       <section
         class="grid grid-cols-2 items-center gap-2 md:gap-6 grid-effect-bg antialiased bg-black mb-px"
       >
-        <div class="py-32 px-4">
+        <div class="py-64 px-4">
           <div
             class="text-4xl text-white font-semibold"
           >
@@ -41,10 +42,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
             </a>
           </div>
         </div>
-        <div class="h-full">
-          <script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.55/build/spline-viewer.js"></script>
-          <spline-viewer url="https://prod.spline.design/AGnrviaGeEXf-Lu2/scene.splinecode"></spline-viewer>
-        </div>
+        <Cube client:only/>
 
       </section>
 
