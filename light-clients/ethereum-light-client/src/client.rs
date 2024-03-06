@@ -6,7 +6,9 @@ use ethereum_verifier::{
 };
 use ics008_wasm_client::{
     storage_utils::{
-        read_client_state, read_consensus_state, save_client_state, save_consensus_state,
+        read_client_state, read_consensus_state, read_subject_client_state,
+        read_substitute_client_state, read_substitute_consensus_state, save_client_state,
+        save_consensus_state, save_subject_client_state, save_subject_consensus_state,
         update_client_state,
     },
     IbcClient, Status, StorageState, FROZEN_HEIGHT, ZERO_HEIGHT,
@@ -314,9 +316,55 @@ impl IbcClient for EthereumLightClient {
         Err(Error::Unimplemented)
     }
 
-    fn migrate_client_store(_deps: Deps<Self::CustomQuery>) -> Result<(), Self::Error> {
-        // migration from previous client to self, so unimplemented now
-        Err(Error::Unimplemented)
+    fn migrate_client_store(mut deps: DepsMut<Self::CustomQuery>) -> Result<(), Self::Error> {
+        let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
+        let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
+
+        ensure(
+            substitute_client_state.data.frozen_height == ZERO_HEIGHT,
+            Error::SubstituteClientFrozen,
+        )?;
+
+        ensure(
+            migrate_check_allowed_fields(&subject_client_state.data, &substitute_client_state.data),
+            Error::MigrateFieldsChanged,
+        )?;
+
+        let substitute_consensus_state: WasmConsensusState =
+            read_substitute_consensus_state(deps.as_ref(), &substitute_client_state.latest_height)?
+                .ok_or(Error::ConsensusStateNotFound(
+                    substitute_client_state.latest_height,
+                ))?;
+
+        save_subject_consensus_state(
+            deps.branch(),
+            substitute_consensus_state,
+            &substitute_client_state.latest_height,
+        );
+
+        let scs = substitute_client_state.data;
+        save_subject_client_state(
+            deps,
+            WasmClientState {
+                data: ClientState {
+                    chain_id: scs.chain_id,
+                    min_sync_committee_participants: scs.min_sync_committee_participants,
+                    fork_parameters: scs.fork_parameters,
+
+                    trust_level: scs.trust_level,
+                    trusting_period: scs.trusting_period,
+                    latest_slot: scs.latest_slot,
+                    counterparty_commitment_slot: scs.counterparty_commitment_slot,
+                    ibc_contract_address: scs.ibc_contract_address,
+                    frozen_height: ZERO_HEIGHT,
+                    ..subject_client_state.data
+                },
+                latest_height: substitute_client_state.latest_height,
+                checksum: subject_client_state.checksum,
+            },
+        );
+
+        Ok(())
     }
 
     fn status(deps: Deps<Self::CustomQuery>, env: &Env) -> Result<Status, Self::Error> {
@@ -363,6 +411,19 @@ impl IbcClient for EthereumLightClient {
                 .timestamp,
         )
     }
+}
+
+fn migrate_check_allowed_fields(
+    subject_client_state: &ClientState,
+    substitute_client_state: &ClientState,
+) -> bool {
+    subject_client_state.genesis_time == substitute_client_state.genesis_time
+        && subject_client_state.genesis_validators_root
+            == substitute_client_state.genesis_validators_root
+        && subject_client_state.seconds_per_slot == substitute_client_state.seconds_per_slot
+        && subject_client_state.slots_per_epoch == substitute_client_state.slots_per_epoch
+        && subject_client_state.epochs_per_sync_committee_period
+            == substitute_client_state.epochs_per_sync_committee_period
 }
 
 fn do_verify_membership(
@@ -489,7 +550,10 @@ mod test {
     use ethereum_verifier::crypto::{
         eth_aggregate_public_keys_unchecked, fast_aggregate_verify_unchecked,
     };
-    use ics008_wasm_client::storage_utils::save_client_state;
+    use ics008_wasm_client::storage_utils::{
+        consensus_db_key, read_subject_consensus_state, save_client_state, HOST_CLIENT_STATE_KEY,
+        SUBJECT_CLIENT_STORE_PREFIX, SUBSTITUTE_CLIENT_STORE_PREFIX,
+    };
     use serde::Deserialize;
     use unionlabs::{
         bls::BlsPublicKey,
@@ -518,6 +582,11 @@ mod test {
     const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
         revision_number: 0,
         revision_height: 3577152,
+    };
+
+    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height {
+        revision_number: 0,
+        revision_height: 3577200,
     };
 
     lazy_static::lazy_static! {
@@ -1033,6 +1102,172 @@ mod test {
         assert_eq!(
             EthereumLightClient::status(deps.as_ref(), &env),
             Ok(Status::Frozen)
+        );
+    }
+
+    fn save_states_to_migrate_store(
+        deps: DepsMut<UnionCustomQuery>,
+        subject_client_state: &WasmClientState,
+        substitute_client_state: &WasmClientState,
+        subject_consensus_state: &WasmConsensusState,
+        substitute_consensus_state: &WasmConsensusState,
+    ) {
+        deps.storage.set(
+            format!("{SUBJECT_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
+            &Any(subject_client_state.clone()).into_proto_bytes(),
+        );
+        deps.storage.set(
+            format!(
+                "{SUBJECT_CLIENT_STORE_PREFIX}{}",
+                consensus_db_key(&INITIAL_CONSENSUS_STATE_HEIGHT)
+            )
+            .as_bytes(),
+            &Any(subject_consensus_state.clone()).into_proto_bytes(),
+        );
+        deps.storage.set(
+            format!("{SUBSTITUTE_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
+            &Any(substitute_client_state.clone()).into_proto_bytes(),
+        );
+        deps.storage.set(
+            format!(
+                "{SUBSTITUTE_CLIENT_STORE_PREFIX}{}",
+                consensus_db_key(&INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT)
+            )
+            .as_bytes(),
+            &Any(substitute_consensus_state.clone()).into_proto_bytes(),
+        );
+    }
+
+    fn prepare_migrate_tests() -> (
+        OwnedDeps<MockStorage, MockApi, MockQuerier<UnionCustomQuery>, UnionCustomQuery>,
+        WasmClientState,
+        WasmConsensusState,
+        WasmClientState,
+        WasmConsensusState,
+    ) {
+        (
+            OwnedDeps::<_, _, _, UnionCustomQuery> {
+                storage: MockStorage::default(),
+                api: MockApi::default(),
+                querier: MockQuerier::<UnionCustomQuery>::new(&[])
+                    .with_custom_handler(custom_query_handler),
+                custom_query_type: PhantomData,
+            },
+            serde_json::from_str(&fs::read_to_string("src/test/client_state.json").unwrap())
+                .unwrap(),
+            serde_json::from_str(&fs::read_to_string("src/test/consensus_state.json").unwrap())
+                .unwrap(),
+            serde_json::from_str(
+                &fs::read_to_string("src/test/substitute_client_state.json").unwrap(),
+            )
+            .unwrap(),
+            serde_json::from_str(
+                &fs::read_to_string("src/test/substitute_consensus_state.json").unwrap(),
+            )
+            .unwrap(),
+        )
+    }
+
+    #[test]
+    fn migrate_client_store_works() {
+        let (
+            mut deps,
+            mut wasm_client_state,
+            wasm_consensus_state,
+            substitute_wasm_client_state,
+            substitute_wasm_consensus_state,
+        ) = prepare_migrate_tests();
+
+        wasm_client_state.data.frozen_height = FROZEN_HEIGHT;
+
+        save_states_to_migrate_store(
+            deps.as_mut(),
+            &wasm_client_state,
+            &substitute_wasm_client_state,
+            &wasm_consensus_state,
+            &substitute_wasm_consensus_state,
+        );
+
+        EthereumLightClient::migrate_client_store(deps.as_mut()).unwrap();
+
+        let wasm_client_state: WasmClientState = read_subject_client_state(deps.as_ref()).unwrap();
+        // we didn't miss updating any fields
+        assert_eq!(wasm_client_state, substitute_wasm_client_state);
+        // client is unfrozen
+        assert_eq!(wasm_client_state.data.frozen_height, ZERO_HEIGHT);
+
+        // the new consensus state is saved under the correct height
+        assert_eq!(
+            read_subject_consensus_state(deps.as_ref(), &INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT)
+                .unwrap()
+                .unwrap(),
+            substitute_wasm_consensus_state
+        )
+    }
+
+    #[test]
+    fn migrate_client_store_fails_when_invalid_change() {
+        let (
+            mut deps,
+            wasm_client_state,
+            wasm_consensus_state,
+            substitute_wasm_client_state,
+            substitute_wasm_consensus_state,
+        ) = prepare_migrate_tests();
+
+        macro_rules! modify_fns {
+            ($param:ident, $($m:expr), + $(,)?) => ([$(|$param: &mut ClientState| $m),+])
+        }
+
+        let modifications = modify_fns! { s,
+            s.genesis_time ^= u64::MAX,
+            s.genesis_validators_root.0[0] ^= u8::MAX,
+            s.seconds_per_slot ^= u64::MAX,
+            s.slots_per_epoch ^= u64::MAX,
+            s.epochs_per_sync_committee_period ^= u64::MAX,
+        };
+
+        for m in modifications {
+            let mut state = substitute_wasm_client_state.clone();
+            m(&mut state.data);
+
+            save_states_to_migrate_store(
+                deps.as_mut(),
+                &wasm_client_state,
+                &state,
+                &wasm_consensus_state,
+                &substitute_wasm_consensus_state,
+            );
+            assert_eq!(
+                EthereumLightClient::migrate_client_store(deps.as_mut()),
+                Err(Error::MigrateFieldsChanged)
+            );
+        }
+    }
+
+    #[test]
+    fn migrate_client_store_fails_when_substitute_client_frozen() {
+        let (
+            mut deps,
+            wasm_client_state,
+            wasm_consensus_state,
+            mut substitute_wasm_client_state,
+            substitute_wasm_consensus_state,
+        ) = prepare_migrate_tests();
+
+        substitute_wasm_client_state.data.frozen_height = FROZEN_HEIGHT;
+
+        save_states_to_migrate_store(
+            deps.as_mut(),
+            &wasm_client_state,
+            &substitute_wasm_client_state,
+            &wasm_consensus_state,
+            &substitute_wasm_consensus_state,
+        );
+
+        assert_eq!(
+            EthereumLightClient::migrate_client_store(deps.as_mut()),
+            Err(Error::SubstituteClientFrozen)
         );
     }
 }
