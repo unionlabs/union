@@ -5,12 +5,9 @@ use crate::{
     hash::H256,
     ibc::{
         core::client::height::Height,
-        lightclients::{
-            ethereum::{
-                account_proof::{AccountProof, TryFromAccountProofError},
-                storage_proof::StorageProof,
-            },
-            scroll::finalized_proof::{FinalizedProof, TryFromScrollFinalizedProofError},
+        lightclients::ethereum::{
+            account_proof::{AccountProof, TryFromAccountProofError},
+            storage_proof::StorageProof,
         },
     },
     Proto, TypeUrl,
@@ -42,8 +39,11 @@ impl From<Header> for protos::union::ibc::lightclients::scroll::v1::Header {
         Self {
             l1_height: Some(value.l1_height.into()),
             l1_account_proof: Some(value.l1_account_proof.into()),
+            l2_state_root: value.l2_state_root.into(),
             finalized_proof: Some(value.finalized_proof.into()),
-            ibc_account_proof: Some(value.l2_ibc_account_proof.into()),
+            last_batch_index: value.last_batch_index,
+            last_batch_index_proof: Some(value.last_batch_index_proof.into()),
+            l2_ibc_account_proof: Some(value.l2_ibc_account_proof.into()),
         }
     }
 }
@@ -52,7 +52,7 @@ impl From<Header> for protos::union::ibc::lightclients::scroll::v1::Header {
 pub enum TryFromHeaderError {
     MissingField(MissingField),
     L1AccountProof(TryFromAccountProofError),
-    FinalizedProof(TryFromScrollFinalizedProofError),
+    L2StateProof(TryFromAccountProofError),
     IbcAccountProof(TryFromAccountProofError),
 }
 
@@ -67,12 +67,20 @@ impl TryFrom<protos::union::ibc::lightclients::scroll::v1::Header> for Header {
             l1_account_proof: required!(value.l1_account_proof)?
                 .try_into()
                 .map_err(TryFromHeaderError::L1AccountProof)?,
+            l2_state_root: value
+                .l2_state_root
+                .try_into()
+                .map_err(TryFromHeaderError::L2StateRoot)?,
             finalized_proof: required!(value.finalized_proof)?
                 .try_into()
-                .map_err(TryFromHeaderError::FinalizedProof)?,
-            l2_ibc_account_proof: required!(value.ibc_account_proof)?
+                .map_err(TryFromHeaderError::L2StateProof)?,
+            last_batch_index: value.last_batch_index,
+            last_batch_index_proof: required!(value.last_batch_index_proof)?
                 .try_into()
-                .map_err(TryFromHeaderError::IbcAccountProof)?,
+                .map_err(TryFromHeaderError::L2StateProof)?,
+            l2_ibc_account_proof: required!(value.l2_ibc_account_proof)?
+                .try_into()
+                .map_err(TryFromHeaderError::L2StateProof)?,
         })
     }
 }

@@ -23,12 +23,12 @@ message ConsensusState {
 }
 
 message Header {
-  .ibc.core.client.v1.Height l1_height = 1,
-  .union.ibc.lightclients.ethereum.v1.AccountProof l1_account_proof = 2,
-  bytes l2_state_root = 3,
-  .union.ibc.lightclients.ethereum.v1.AccountProof finalized_proof = 4,
-  uint64 last_batch_index = 5,
-  .union.ibc.lightclients.ethereum.v1.StorageProof last_batch_index_proof = 6,
-  .union.ibc.lightclients.ethereum.v1.AccountProof l2_ibc_account_proof = 7,
+  .ibc.core.client.v1.Height l1_height = 1;
+  .union.ibc.lightclients.ethereum.v1.AccountProof l1_account_proof = 2;
+  bytes l2_state_root = 3;
+  .union.ibc.lightclients.ethereum.v1.AccountProof l2_state_proof = 4;
+  uint64 last_batch_index = 5;
+  .union.ibc.lightclients.ethereum.v1.StorageProof last_batch_index_proof = 6;
+  .union.ibc.lightclients.ethereum.v1.AccountProof l2_ibc_account_proof = 7;
 }
 

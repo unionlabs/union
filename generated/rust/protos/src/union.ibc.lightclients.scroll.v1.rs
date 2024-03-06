@@ -1,16 +1,6 @@
 // @generated
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ScrollFinalizedProof {
-    #[prost(uint64, tag = "1")]
-    pub batch_index: u64,
-    #[prost(bytes = "vec", tag = "2")]
-    pub finalized_state_root: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", repeated, tag = "3")]
-    pub proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
     #[prost(string, tag = "1")]
     pub l1_client_id: ::prost::alloc::string::String,
@@ -48,9 +38,15 @@ pub struct Header {
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     #[prost(message, optional, tag = "2")]
     pub l1_account_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
-    #[prost(message, optional, tag = "3")]
-    pub finalized_proof: ::core::option::Option<ScrollFinalizedProof>,
+    #[prost(bytes = "vec", tag = "3")]
+    pub l2_state_root: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "4")]
-    pub ibc_account_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
+    pub finalized_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
+    #[prost(uint64, tag = "5")]
+    pub last_batch_index: u64,
+    #[prost(message, optional, tag = "6")]
+    pub last_batch_index_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
+    #[prost(message, optional, tag = "7")]
+    pub l2_ibc_account_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
 }
 // @@protoc_insertion_point(module)
