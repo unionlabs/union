@@ -11,6 +11,7 @@ use ethers::{
     abi::AbiEncode,
     contract::{ContractError, EthCall},
     providers::{Middleware, ProviderError},
+    types::Bytes,
     utils::keccak256,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -290,7 +291,8 @@ where
                         Err(ContractError::Revert(revert)) => {
                             let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(
                                 revert.clone(),
-                            );
+                            )
+                            .map_err(|_| TxSubmitError::InvalidRevert(revert.clone()))?;
                             tracing::error!(?revert, ?err, "evm transaction failed");
                             Ok(())
                         }
@@ -300,7 +302,8 @@ where
                     }
                 }
                 Err(ContractError::Revert(revert)) => {
-                    let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone());
+                    let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone())
+                        .map_err(|_| TxSubmitError::InvalidRevert(revert.clone()))?;
                     tracing::error!(?revert, ?err, "evm estimation failed");
                     Ok(())
                 }
@@ -1010,6 +1013,8 @@ pub enum TxSubmitError {
     Provider(#[from] ProviderError),
     #[error("no tx receipt from tx")]
     NoTxReceipt,
+    #[error("invalid revert code: {0}")]
+    InvalidRevert(Bytes),
 }
 
 impl MaybeRecoverableError for TxSubmitError {
