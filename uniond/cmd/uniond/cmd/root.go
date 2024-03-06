@@ -46,6 +46,7 @@ import (
 
 	"union/app"
 	appparams "union/app/params"
+	"union/x/staking"
 )
 
 // AppOptionsMap is a stub implementing AppOptions which can get data from a map
@@ -197,6 +198,7 @@ func initRootCmd(
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(newApp, app.DefaultNodeHome),
 		snapshot.Cmd(newApp),
+		staking.NewTxCmd(addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())),
 	)
 
 	// add server commands

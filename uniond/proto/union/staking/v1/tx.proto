@@ -1,0 +1,26 @@
+syntax = "proto3";
+package union.staking.v1;
+
+option go_package = "union/staking";
+import "cosmos/staking/v1beta1/tx.proto";
+import "cosmos/msg/v1/msg.proto";
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  rpc CreateUnionValidator(MsgCreateUnionValidator) returns (.cosmos.staking.v1beta1.MsgCreateValidatorResponse);
+}
+
+message MsgCreateUnionValidator {
+  option (cosmos.msg.v1.signer) = "validator_address";
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  .cosmos.staking.v1beta1.MsgCreateValidator underlying = 1;
+  string validator_address = 2 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  bytes proof_of_possession = 3;
+}
+

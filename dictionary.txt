@@ -241,6 +241,7 @@ chrono
 circom
 clazz
 clientkeeper
+clienttx
 clienttypes
 clippy
 clsx
@@ -560,6 +561,7 @@ mollitia
 monitonically
 monniker
 moreutils
+msgservice
 muldefs
 multisigs
 multistep
@@ -723,6 +725,7 @@ schnorr
 scrollbars
 scrollproof
 sdkerrors
+sdkmath
 secp
 sepolia
 sequi
@@ -758,6 +761,7 @@ srcs
 sslmode
 stablecoins
 stakeflow
+stakingcli
 stakingkeeper
 stakingtypes
 stargate
@@ -872,6 +876,7 @@ unionmodulekeeper
 unionmoduletypes
 unionp
 unionsimulation
+unionstaking
 unionvisor
 unionvisorbn
 unionxsecret

@@ -145,6 +145,8 @@ import (
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //lint:ignore SA1019 not using gov types
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	"union/docs"
+
+	unionstaking "union/x/staking"
 )
 
 const (
@@ -685,23 +687,28 @@ func NewUnionApp(
 
 	app.setupUpgradeStoreLoaders()
 
+	/**** Module Options ****/
+
+	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
+	// we prefer to be more strict in what arguments the modules expect.
+	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+
 	/**** Module Hooks ****/
 
 	// register hooks after all modules have been initialized
+	unionStaking := unionstaking.NewMsgServerImpl(app.BaseApp, stakingkeeper.NewMsgServerImpl(app.StakingKeeper))
+
+	unionstaking.RegisterInterfaces(interfaceRegistry)
+	unionstaking.RegisterMsgServer(app.MsgServiceRouter(), unionStaking)
 
 	app.StakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(
 			// insert staking hooks receivers here
 			app.DistrKeeper.Hooks(),
 			app.SlashingKeeper.Hooks(),
+			unionStaking.StakingHooks,
 		),
 	)
-
-	/**** Module Options ****/
-
-	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
-	// we prefer to be more strict in what arguments the modules expect.
-	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
