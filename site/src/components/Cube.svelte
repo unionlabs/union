@@ -11,4 +11,6 @@
   })
 </script>
 
-<canvas bind:this={canvas}></canvas>
+<div class="h-[800px] p-16">
+  <canvas bind:this={canvas}></canvas>
+</div>
