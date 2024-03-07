@@ -6,7 +6,7 @@ use unionlabs::{
     TryFromProtoBytesError, TryFromProtoErrorOf,
 };
 
-#[derive(ThisError, Debug)]
+#[derive(ThisError, Debug, PartialEq)]
 pub enum InvalidHeaderError {
     #[error("signed header's height ({signed_height}) must be greater than trusted height ({trusted_height})")]
     SignedHeaderHeightMustBeMoreRecent {
@@ -34,7 +34,7 @@ pub enum InvalidHeaderError {
     },
 }
 
-#[derive(ThisError, Debug)]
+#[derive(ThisError, Debug, PartialEq)]
 pub enum Error {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -158,6 +158,12 @@ pub enum Error {
 
     #[error("invalid timestamp from the host ({0})")]
     InvalidHostTimestamp(cosmwasm_std::Timestamp),
+
+    #[error("substitute client is frozen")]
+    SubstituteClientFrozen,
+
+    #[error("forbidden fields have been changed during state migration")]
+    MigrateFieldsChanged,
 }
 
 impl Error {

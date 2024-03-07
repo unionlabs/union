@@ -1,0 +1,67 @@
+{
+  "data": {
+    "chain_id": "test-chain-2",
+    "trust_level": {
+      "numerator": 1,
+      "denominator": 10
+    },
+    "trusting_period": "2.000000001s",
+    "unbonding_period": "1.000000001s",
+    "max_clock_drift": "1.000000001s",
+    "frozen_height": null,
+    "latest_height": {
+      "revision_number": 1,
+      "revision_height": 12
+    },
+    "proof_specs": [
+      {
+        "leaf_spec": {
+          "hash": "sha256",
+          "prehash_key": "no_hash",
+          "prehash_value": "sha256",
+          "length": "var_proto",
+          "prefix": "0x00"
+        },
+        "inner_spec": {
+          "child_order": [0, 1],
+          "child_size": 32,
+          "min_prefix_length": 1,
+          "max_prefix_length": 1,
+          "empty_child": "0x0",
+          "hash": "sha256"
+        },
+        "max_depth": null,
+        "min_depth": null,
+        "prehash_key_before_comparison": false
+      },
+      {
+        "leaf_spec": {
+          "hash": "sha256",
+          "prehash_key": "no_hash",
+          "prehash_value": "sha256",
+          "length": "var_proto",
+          "prefix": "0x00"
+        },
+        "inner_spec": {
+          "child_order": [0, 1],
+          "child_size": 33,
+          "min_prefix_length": 4,
+          "max_prefix_length": 12,
+          "empty_child": "0x0",
+          "hash": "sha256"
+        },
+        "max_depth": null,
+        "min_depth": null,
+        "prehash_key_before_comparison": false
+      }
+    ],
+    "upgrade_path": ["first", "second"],
+    "allow_update_after_expiry": true,
+    "allow_update_after_misbehavior": true
+  },
+  "latest_height": {
+    "revision_number": 1,
+    "revision_height": 12
+  },
+  "checksum": "0xfa19d6ccbe4bde2d6a205136e65089460c4d9781a918add0e9dd3a0b9a2d73cb"
+}

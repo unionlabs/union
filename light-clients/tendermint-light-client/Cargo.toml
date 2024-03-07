@@ -6,6 +6,9 @@ name    = "tendermint-light-client"
 publish = false
 version = "0.1.0"
 
+[package.metadata.crane]
+test-include = ["light-clients/tendermint-light-client/src/test"]
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
