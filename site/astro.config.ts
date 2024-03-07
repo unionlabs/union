@@ -129,6 +129,12 @@ export default defineConfig({
             directory: "/docs/joining-testnet",
           },
         },
+        {
+          label: "Style Guide",
+          autogenerate: {
+            directory: "/docs/style-guide",
+          },
+        },
       ],
       plugins: [starlightLinksValidator()],
       customCss: [
