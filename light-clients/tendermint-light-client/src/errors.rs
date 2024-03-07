@@ -173,6 +173,12 @@ pub enum Error {
 
     #[error("trusting period is expired")]
     TrustingPeriodExpired,
+
+    #[error("header1 height is less than header2 height")]
+    InvalidHeaderOrdering,
+
+    #[error("misbehaviour header cannot have zero revision number")]
+    MisbehaviourZeroHeight,
 }
 
 impl Error {
