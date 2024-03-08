@@ -1,6 +1,8 @@
 use std::{collections::VecDeque, fmt::Debug};
 
-use chain_utils::evm::{Evm, IBCHandlerEvents, EVM_REVISION_NUMBER};
+use chain_utils::evm::{
+    Ethereum, EvmSignersConfig, HasIbcHandler, IBCHandlerEvents, IbcHandlerExt, EVM_REVISION_NUMBER,
+};
 use contracts::{
     ibc_channel_handshake::{
         ChannelOpenAckFilter, ChannelOpenConfirmFilter, ChannelOpenInitFilter,
@@ -11,7 +13,7 @@ use contracts::{
         ConnectionOpenAckFilter, ConnectionOpenConfirmFilter, ConnectionOpenInitFilter,
         ConnectionOpenTryFilter, IBCConnectionEvents,
     },
-    ibc_handler::{GetChannelCall, GetConnectionCall},
+    ibc_handler::{GetChannelCall, GetConnectionCall, IBCHandler},
     ibc_packet::{AcknowledgePacketFilter, IBCPacketEvents, RecvPacketFilter, SendPacketFilter},
 };
 use enumorph::Enumorph;
@@ -26,6 +28,7 @@ use queue_msg::{
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
+    encoding::{Decode, EthAbi},
     ethereum::config::ChainSpec,
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
@@ -52,23 +55,24 @@ use crate::{
     id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
-impl<C: ChainSpec> ChainExt for Evm<C> {
+impl<C: ChainSpec, S: EvmSignersConfig> ChainExt for Ethereum<C, S> {
     type Data = EvmData<C>;
     type Fetch = EvmFetch<C>;
     type Aggregate = EvmAggregate;
 }
 
-impl<C: ChainSpec> DoFetchBlockRange<Evm<C>> for Evm<C>
+impl<C: ChainSpec, S: EvmSignersConfig> DoFetchBlockRange<Ethereum<C, S>> for Ethereum<C, S>
 where
-    AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, ChainSpecificFetch<Evm<C>>>>,
+    AnyChainIdentified<AnyFetch>:
+        From<Identified<Ethereum<C, S>, ChainSpecificFetch<Ethereum<C, S>>>>,
 {
     fn fetch_block_range(
-        c: &Evm<C>,
-        range: FetchBlockRange<Evm<C>>,
+        c: &Ethereum<C, S>,
+        range: FetchBlockRange<Ethereum<C, S>>,
     ) -> QueueMsg<BlockPollingTypes> {
         fetch(id(
             c.chain_id(),
-            ChainSpecificFetch::<Evm<C>>(
+            ChainSpecificFetch::<Ethereum<C, S>>(
                 FetchEvents {
                     from_height: range.from_height,
                     to_height: range.to_height,
@@ -79,20 +83,20 @@ where
     }
 }
 
-impl<C: ChainSpec> DoFetch<Evm<C>> for EvmFetch<C>
+impl<C: ChainSpec> DoFetch<Ethereum<C>> for EvmFetch<C>
 where
-    AnyChainIdentified<AnyData>: From<Identified<Evm<C>, Data<Evm<C>>>>,
-    AnyChainIdentified<AnyAggregate>: From<Identified<Evm<C>, Aggregate<Evm<C>>>>,
-    AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
+    AnyChainIdentified<AnyData>: From<Identified<Ethereum<C>, Data<Ethereum<C>>>>,
+    AnyChainIdentified<AnyAggregate>: From<Identified<Ethereum<C>, Aggregate<Ethereum<C>>>>,
+    AnyChainIdentified<AnyFetch>: From<Identified<Ethereum<C>, Fetch<Ethereum<C>>>>,
 {
-    async fn do_fetch(c: &Evm<C>, msg: Self) -> QueueMsg<BlockPollingTypes> {
+    async fn do_fetch(c: &Ethereum<C>, msg: Self) -> QueueMsg<BlockPollingTypes> {
         match msg {
             EvmFetch::FetchEvents(FetchEvents {
                 from_height,
                 to_height,
             }) => fetch(id(
                 c.chain_id(),
-                ChainSpecificFetch::<Evm<C>>(
+                ChainSpecificFetch::<Ethereum<C>>(
                     FetchBeaconBlockRange {
                         from_slot: from_height.revision_height,
                         to_slot: to_height.revision_height,
@@ -107,18 +111,21 @@ where
                 };
 
                 let from_block = c
-                    .execution_height(Height {
-                        revision_number: EVM_REVISION_NUMBER,
-                        revision_height: from_slot,
-                    })
-                    .await;
-                let to_block = c.execution_height(event_height).await;
+                    .beacon_api_client
+                    .execution_height(beacon_api::client::BlockId::Slot(from_slot))
+                    .await
+                    .unwrap();
+                let to_block = c
+                    .beacon_api_client
+                    .execution_height(beacon_api::client::BlockId::Slot(to_slot))
+                    .await
+                    .unwrap();
 
                 seq(futures::stream::iter(
                     c.provider
                         .get_logs(
                             &Filter::new()
-                                .address(c.readonly_ibc_handler.address())
+                                .address(ethers::types::H160(c.ibc_handler_address.0))
                                 .from_block(from_block)
                                 // NOTE: This -1 is very important, else events will be double fetched
                                 .to_block(to_block - 1),
@@ -234,14 +241,13 @@ where
                         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientCreatedFilter(
                             ClientCreatedFilter(client_id),
                         )) => {
-                            let client_type = c
-                                .readonly_ibc_handler
-                                .client_types(client_id.clone())
-                                .await
-                                .unwrap();
+                            let ibc_handler =
+                                IBCHandler::new(c.ibc_handler_address.clone(), c.provider.clone());
 
-                            let (client_state, success) = c
-                                .readonly_ibc_handler
+                            let client_type =
+                                ibc_handler.client_types(client_id.clone()).await.unwrap();
+
+                            let (client_state, success) = ibc_handler
                                 .get_client_state(client_id.clone())
                                 .await
                                 .unwrap();
@@ -250,13 +256,12 @@ where
 
                             dbg!(hex::encode(&client_state));
 
-                            let client_state =
-                                cometbls::client_state::ClientState::try_from_eth_abi_bytes(
-                                    &client_state,
-                                )
-                                .unwrap();
+                            let client_state = <cometbls::client_state::ClientState as Decode<
+                                EthAbi,
+                            >>::decode(&client_state)
+                            .unwrap();
 
-                            data(Identified::<Evm<C>, _>::new(
+                            data(Identified::<Ethereum<C>, _>::new(
                                 c.chain_id(),
                                 ChainEvent {
                                     client_type: unionlabs::ClientType::Cometbls,
@@ -276,22 +281,18 @@ where
                         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(
                             ClientUpdatedFilter(client_id),
                         )) => {
-                            let client_type = c
-                                .readonly_ibc_handler
-                                .client_types(client_id.clone())
-                                .await
-                                .unwrap();
+                            let ibc_handler =
+                                IBCHandler::new(c.ibc_handler_address.clone(), c.provider.clone());
 
-                            let (client_state, success) = c
-                                .readonly_ibc_handler
+                            let client_type =
+                                ibc_handler.client_types(client_id.clone()).await.unwrap();
+
+                            let (client_state, success) = ibc_handler
                                 .get_client_state(client_id.clone())
-                                .block(c.execution_height(event_height).await)
                                 .await
                                 .unwrap();
 
                             assert!(success);
-
-                            dbg!(hex::encode(&client_state));
 
                             let client_state =
                                 cometbls::client_state::ClientState::try_from_eth_abi_bytes(
@@ -299,7 +300,7 @@ where
                                 )
                                 .unwrap();
 
-                            data(Identified::<Evm<C>, _>::new(
+                            data(Identified::<Ethereum<C>, _>::new(
                                 c.chain_id(),
                                 ChainEvent {
                                     client_type: unionlabs::ClientType::Cometbls,
@@ -355,7 +356,7 @@ where
                 if to_slot - from_slot == 1 {
                     fetch(id(
                         c.chain_id(),
-                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(FetchGetLogs {
+                        ChainSpecificFetch::<Ethereum<C>>(EvmFetch::from(FetchGetLogs {
                             from_slot,
                             to_slot,
                         })),
@@ -387,7 +388,7 @@ where
                                 return seq([
                                     fetch(id(
                                         c.chain_id(),
-                                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(
+                                        ChainSpecificFetch::<Ethereum<C>>(EvmFetch::from(
                                             FetchGetLogs {
                                                 from_slot,
                                                 to_slot: slot,
@@ -396,7 +397,7 @@ where
                                     )),
                                     fetch(id(
                                         c.chain_id(),
-                                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(
+                                        ChainSpecificFetch::<Ethereum<C>>(EvmFetch::from(
                                             FetchBeaconBlockRange {
                                                 from_slot: slot,
                                                 to_slot,
@@ -411,7 +412,7 @@ where
                     // if the range is not shrinkable (i.e. all blocks between `from` and `to` are missing, but `from` and `to` both exist), fetch logs between `from` and `to`
                     fetch(id(
                         c.chain_id(),
-                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(FetchGetLogs {
+                        ChainSpecificFetch::<Ethereum<C>>(EvmFetch::from(FetchGetLogs {
                             from_slot,
                             to_slot,
                         })),
@@ -420,39 +421,51 @@ where
             }
             EvmFetch::FetchChannel(FetchChannel { height, path }) => data(id(
                 c.chain_id(),
-                ChainSpecificData::<Evm<C>>(
+                ChainSpecificData::<Ethereum<C>>(
                     ChannelData(
-                        c.ibc_state_read_at_execution_height(
-                            GetChannelCall {
-                                port_id: path.port_id.to_string(),
-                                channel_id: path.channel_id.to_string(),
-                            },
-                            c.execution_height(height).await,
-                        )
-                        .await
-                        .unwrap()
-                        .unwrap()
-                        .try_into()
-                        .unwrap(),
+                        c.ibc_handler()
+                            .eth_call(
+                                GetChannelCall {
+                                    port_id: path.port_id.to_string(),
+                                    channel_id: path.channel_id.to_string(),
+                                },
+                                c.beacon_api_client
+                                    .execution_height(beacon_api::client::BlockId::Slot(
+                                        height.revision_height,
+                                    ))
+                                    .await
+                                    .unwrap(),
+                            )
+                            .await
+                            .unwrap()
+                            .unwrap()
+                            .try_into()
+                            .unwrap(),
                     )
                     .into(),
                 ),
             )),
             EvmFetch::FetchConnection(FetchConnection { height, path }) => data(id(
                 c.chain_id(),
-                ChainSpecificData::<Evm<C>>(
+                ChainSpecificData::<Ethereum<C>>(
                     ConnectionData(
-                        c.ibc_state_read_at_execution_height(
-                            GetConnectionCall {
-                                connection_id: path.connection_id.to_string(),
-                            },
-                            c.execution_height(height).await,
-                        )
-                        .await
-                        .unwrap()
-                        .unwrap()
-                        .try_into()
-                        .unwrap(),
+                        c.ibc_handler()
+                            .eth_call(
+                                GetConnectionCall {
+                                    connection_id: path.connection_id.to_string(),
+                                },
+                                c.beacon_api_client
+                                    .execution_height(beacon_api::client::BlockId::Slot(
+                                        height.revision_height,
+                                    ))
+                                    .await
+                                    .unwrap(),
+                            )
+                            .await
+                            .unwrap()
+                            .unwrap()
+                            .try_into()
+                            .unwrap(),
                     )
                     .into(),
                 ),
@@ -462,23 +475,23 @@ where
 }
 
 fn with_channel<C: ChainSpec, T>(
-    chain_id: ChainIdOf<Evm<C>>,
+    chain_id: ChainIdOf<Ethereum<C>>,
     port_id: String,
     channel_id: String,
-    event_height: HeightOf<Evm<C>>,
+    event_height: HeightOf<Ethereum<C>>,
     tx_hash: H256,
     raw_event: T,
 ) -> QueueMsg<BlockPollingTypes>
 where
     EventInfo<T>: Into<AggregateWithChannel>,
 
-    AnyChainIdentified<AnyAggregate>: From<Identified<Evm<C>, Aggregate<Evm<C>>>>,
-    AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
+    AnyChainIdentified<AnyAggregate>: From<Identified<Ethereum<C>, Aggregate<Ethereum<C>>>>,
+    AnyChainIdentified<AnyFetch>: From<Identified<Ethereum<C>, Fetch<Ethereum<C>>>>,
 {
     aggregate(
         [fetch(id(
             chain_id,
-            ChainSpecificFetch::<Evm<C>>(
+            ChainSpecificFetch::<Ethereum<C>>(
                 FetchChannel {
                     height: event_height,
                     path: ChannelEndPath {
@@ -490,7 +503,7 @@ where
             ),
         ))],
         [],
-        Identified::<Evm<C>, _>::new(
+        Identified::<Ethereum<C>, _>::new(
             chain_id,
             ChainSpecificAggregate(EvmAggregate::AggregateWithChannel(
                 EventInfo {
@@ -505,9 +518,9 @@ where
 }
 
 fn with_connection<C, T>(
-    chain_id: ChainIdOf<Evm<C>>,
+    chain_id: ChainIdOf<Ethereum<C>>,
     connection_id: String,
-    event_height: HeightOf<Evm<C>>,
+    event_height: HeightOf<Ethereum<C>>,
     tx_hash: H256,
     raw_event: T,
 ) -> QueueMsg<BlockPollingTypes>
@@ -515,13 +528,13 @@ where
     C: ChainSpec,
     EventInfo<T>: Into<AggregateWithConnection>,
 
-    AnyChainIdentified<AnyAggregate>: From<Identified<Evm<C>, Aggregate<Evm<C>>>>,
-    AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
+    AnyChainIdentified<AnyAggregate>: From<Identified<Ethereum<C>, Aggregate<Ethereum<C>>>>,
+    AnyChainIdentified<AnyFetch>: From<Identified<Ethereum<C>, Fetch<Ethereum<C>>>>,
 {
     aggregate(
         [fetch(id(
             chain_id,
-            ChainSpecificFetch::<Evm<C>>(
+            ChainSpecificFetch::<Ethereum<C>>(
                 FetchConnection {
                     height: event_height,
                     path: ConnectionPath {
@@ -532,7 +545,7 @@ where
             ),
         ))],
         [],
-        Identified::<Evm<C>, _>::new(
+        Identified::<Ethereum<C>, _>::new(
             chain_id,
             ChainSpecificAggregate(EvmAggregate::AggregateWithConnection(
                 EventInfo {
@@ -583,8 +596,8 @@ pub enum EvmFetch<C: ChainSpec> {
 )]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct FetchEvents<C: ChainSpec> {
-    pub from_height: HeightOf<Evm<C>>,
-    pub to_height: HeightOf<Evm<C>>,
+    pub from_height: HeightOf<Ethereum<C>>,
+    pub to_height: HeightOf<Ethereum<C>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
@@ -639,12 +652,12 @@ pub enum EvmAggregate {
     AggregateWithConnection(AggregateWithConnection),
 }
 
-impl<C: ChainSpec> DoAggregate for Identified<Evm<C>, EvmAggregate>
+impl<C: ChainSpec> DoAggregate for Identified<Ethereum<C>, EvmAggregate>
 where
-    AnyChainIdentified<AnyData>: From<Identified<Evm<C>, ChainEvent<Evm<C>>>>,
+    AnyChainIdentified<AnyData>: From<Identified<Ethereum<C>, ChainEvent<Ethereum<C>>>>,
 
-    Identified<Evm<C>, ChannelData>: IsAggregateData,
-    Identified<Evm<C>, ConnectionData<C>>: IsAggregateData,
+    Identified<Ethereum<C>, ChannelData>: IsAggregateData,
+    Identified<Ethereum<C>, ConnectionData<C>>: IsAggregateData,
 {
     fn do_aggregate(
         Identified { chain_id, t }: Self,
@@ -652,10 +665,10 @@ where
     ) -> QueueMsg<BlockPollingTypes> {
         match t {
             EvmAggregate::AggregateWithChannel(msg) => {
-                do_aggregate(Identified::<Evm<C>, _>::new(chain_id, msg), data)
+                do_aggregate(Identified::<Ethereum<C>, _>::new(chain_id, msg), data)
             }
             EvmAggregate::AggregateWithConnection(msg) => {
-                do_aggregate(Identified::<Evm<C>, _>::new(chain_id, msg), data)
+                do_aggregate(Identified::<Ethereum<C>, _>::new(chain_id, msg), data)
             }
         }
     }
@@ -705,13 +718,13 @@ pub struct EventInfo<T> {
     raw_event: T,
 }
 
-impl<C: ChainSpec> UseAggregate<BlockPollingTypes> for Identified<Evm<C>, AggregateWithChannel>
+impl<C: ChainSpec> UseAggregate<BlockPollingTypes> for Identified<Ethereum<C>, AggregateWithChannel>
 where
-    Identified<Evm<C>, ChannelData>: IsAggregateData,
+    Identified<Ethereum<C>, ChannelData>: IsAggregateData,
 
-    AnyChainIdentified<AnyData>: From<Identified<Evm<C>, ChainEvent<Evm<C>>>>,
+    AnyChainIdentified<AnyData>: From<Identified<Ethereum<C>, ChainEvent<Ethereum<C>>>>,
 {
-    type AggregatedData = HList![Identified<Evm<C>, ChannelData>];
+    type AggregatedData = HList![Identified<Ethereum<C>, ChannelData>];
 
     fn aggregate(
         Identified { t: msg, chain_id }: Self,
@@ -781,7 +794,6 @@ where
                     packet_timeout_height: raw_event.packet.timeout_height.into(),
                     packet_timeout_timestamp: raw_event.packet.timeout_timestamp,
                     packet_sequence: raw_event.packet.sequence.try_into().unwrap(),
-
                     packet_src_port: raw_event.packet.source_port.parse().unwrap(),
                     packet_src_channel: raw_event.packet.source_channel.parse().unwrap(),
                     packet_dst_port: raw_event.packet.destination_port.parse().unwrap(),
@@ -857,17 +869,18 @@ where
             },
         };
 
-        data(Identified::<Evm<C>, _>::new(chain_id, event))
+        data(Identified::<Ethereum<C>, _>::new(chain_id, event))
     }
 }
 
-impl<C: ChainSpec> UseAggregate<BlockPollingTypes> for Identified<Evm<C>, AggregateWithConnection>
+impl<C: ChainSpec> UseAggregate<BlockPollingTypes>
+    for Identified<Ethereum<C>, AggregateWithConnection>
 where
-    Identified<Evm<C>, ConnectionData<C>>: IsAggregateData,
+    Identified<Ethereum<C>, ConnectionData<C>>: IsAggregateData,
 
-    AnyChainIdentified<AnyData>: From<Identified<Evm<C>, ChainEvent<Evm<C>>>>,
+    AnyChainIdentified<AnyData>: From<Identified<Ethereum<C>, ChainEvent<Ethereum<C>>>>,
 {
-    type AggregatedData = HList![Identified<Evm<C>, ConnectionData<C>>];
+    type AggregatedData = HList![Identified<Ethereum<C>, ConnectionData<C>>];
 
     fn aggregate(
         Identified { t: msg, chain_id }: Self,
@@ -952,7 +965,7 @@ where
             },
         };
 
-        data(Identified::<Evm<C>, _>::new(chain_id, event))
+        data(Identified::<Ethereum<C>, _>::new(chain_id, event))
     }
 }
 
@@ -980,7 +993,7 @@ pub enum EvmData<C: ChainSpec> {
 
 const _: () = {
     try_from_block_poll_msg! {
-        chain = Evm<C>,
+        chain = Ethereum<C>,
         generics = (C: ChainSpec),
         msgs = EvmData(
             Channel(ChannelData),
@@ -1002,4 +1015,4 @@ pub struct ChannelData(pub Channel);
 )]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 // REVIEW: Use something other than string here?
-pub struct ConnectionData<C: ChainSpec>(pub ConnectionEnd<ClientIdOf<Evm<C>>, String, String>);
+pub struct ConnectionData<C: ChainSpec>(pub ConnectionEnd<ClientIdOf<Ethereum<C>>, String, String>);

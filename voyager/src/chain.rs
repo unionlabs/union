@@ -1,6 +1,6 @@
 use chain_utils::{
     cosmos::{Cosmos, CosmosInitError},
-    evm::{Evm, EvmInitError},
+    evm::{Ethereum, EvmInitError},
     scroll::{Scroll, ScrollInitError},
     union::{Union, UnionInitError},
 };
@@ -11,8 +11,8 @@ use crate::config::ChainConfigType;
 pub enum AnyChain {
     Union(Union),
     Cosmos(Cosmos),
-    EvmMainnet(Evm<Mainnet>),
-    EvmMinimal(Evm<Minimal>),
+    EvmMainnet(Ethereum<Mainnet>),
+    EvmMinimal(Ethereum<Minimal>),
     Scroll(Scroll),
 }
 
@@ -43,8 +43,12 @@ impl AnyChain {
                     eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
                 };
                 match evm.preset_base {
-                    PresetBaseKind::Minimal => Self::EvmMinimal(Evm::<Minimal>::new(config).await?),
-                    PresetBaseKind::Mainnet => Self::EvmMainnet(Evm::<Mainnet>::new(config).await?),
+                    PresetBaseKind::Minimal => {
+                        Self::EvmMinimal(Ethereum::<Minimal>::new(config).await?)
+                    }
+                    PresetBaseKind::Mainnet => {
+                        Self::EvmMainnet(Ethereum::<Mainnet>::new(config).await?)
+                    }
                 }
             }
             ChainConfigType::Scroll(scroll) => Self::Scroll(Scroll::new(scroll).await?),

@@ -15,6 +15,7 @@ pub struct ClientState {
     pub l1_client_id: String,
     pub chain_id: U256,
     pub latest_batch_index: u64,
+    pub latest_batch_index_slot: U256,
     pub frozen_height: Height,
     pub rollup_contract_address: H160,
     pub rollup_finalized_state_roots_slot: U256,
@@ -36,6 +37,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::scroll::v1::ClientS
             l1_client_id: value.l1_client_id,
             chain_id: value.chain_id.to_string(),
             latest_batch_index: value.latest_batch_index,
+            latest_batch_index_slot: value.latest_batch_index_slot.to_big_endian().to_vec(),
             frozen_height: Some(value.frozen_height.into()),
             rollup_contract_address: value.rollup_contract_address.into(),
             rollup_finalized_state_roots_slot: value
@@ -52,6 +54,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::scroll::v1::ClientS
 pub enum TryFromClientStateError {
     L1ClientId(FromDecStrErr),
     ChainId(FromDecStrErr),
+    LatestBatchIndexSlot(InvalidLength),
     RollupContractAddress(InvalidLength),
     RollupFinalizedStateRootsSlot(InvalidLength),
     IbcContractAddress(InvalidLength),
@@ -68,6 +71,8 @@ impl TryFrom<protos::union::ibc::lightclients::scroll::v1::ClientState> for Clie
             l1_client_id: value.l1_client_id,
             chain_id: U256::from_str(&value.chain_id).map_err(TryFromClientStateError::ChainId)?,
             latest_batch_index: value.latest_batch_index,
+            latest_batch_index_slot: U256::try_from_big_endian(&value.latest_batch_index_slot)
+                .map_err(TryFromClientStateError::LatestBatchIndexSlot)?,
             frozen_height: value.frozen_height.unwrap_or_default().into(),
             rollup_contract_address: value
                 .rollup_contract_address

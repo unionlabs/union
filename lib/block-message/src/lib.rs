@@ -5,7 +5,7 @@ use std::{
     fmt::{Debug, Display},
 };
 
-use chain_utils::{cosmos::Cosmos, evm::Evm, scroll::Scroll, union::Union, Chains};
+use chain_utils::{cosmos::Cosmos, evm::Ethereum, scroll::Scroll, union::Union, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use queue_msg::{QueueMsg, QueueMsgTypes, QueueMsgTypesTraits};
 use serde::{Deserialize, Serialize};
@@ -67,8 +67,8 @@ impl QueueMsgTypes for BlockPollingTypes {
 pub enum AnyChainIdentified<T: AnyChain> {
     Union(Identified<Union, InnerOf<T, Union>>),
     Cosmos(Identified<Cosmos, InnerOf<T, Cosmos>>),
-    EthMainnet(Identified<Evm<Mainnet>, InnerOf<T, Evm<Mainnet>>>),
-    EthMinimal(Identified<Evm<Minimal>, InnerOf<T, Evm<Minimal>>>),
+    EthMainnet(Identified<Ethereum<Mainnet>, InnerOf<T, Ethereum<Mainnet>>>),
+    EthMinimal(Identified<Ethereum<Minimal>, InnerOf<T, Ethereum<Minimal>>>),
     Scroll(Identified<Scroll, InnerOf<T, Scroll>>),
 }
 

@@ -114,6 +114,22 @@ impl<C: ChainSpec> BeaconApiClient<C> {
     //     .await
     // }
 
+    /// Convenience method to fetch the execution height of a beacon height.
+    pub async fn execution_height(&self, block_id: BlockId) -> Result<u64> {
+        let height = self
+            .block(block_id.clone())
+            .await?
+            .data
+            .message
+            .body
+            .execution_payload
+            .block_number;
+
+        tracing::debug!("beacon height {block_id} is execution height {height}");
+
+        Ok(height)
+    }
+
     // Helper functions
 
     async fn get_json<T: DeserializeOwned>(&self, path: impl Into<String>) -> Result<T> {
@@ -170,6 +186,7 @@ pub struct Response<Data, Extra = Nil> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+// REVIEW: Use `unionlabs::Never` here?
 pub struct Nil {}
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -190,7 +207,7 @@ pub struct BeaconBlockExtra {
     pub version: EthConsensusVersion,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum BlockId {
     Head,
     Genesis,

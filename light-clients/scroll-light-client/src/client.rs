@@ -143,21 +143,17 @@ impl IbcClient for ScrollLightClient {
             client_state.data.l1_client_id.clone(),
             header.l1_height,
         )?;
-        if client_state.data.latest_batch_index < header.l2_state_proof.batch_index {
-            client_state.data.latest_batch_index = header.l2_state_proof.batch_index;
-            update_client_state(
-                deps.branch(),
-                client_state,
-                header.l2_state_proof.batch_index,
-            );
+        if client_state.data.latest_batch_index < header.last_batch_index {
+            client_state.data.latest_batch_index = header.last_batch_index;
+            update_client_state(deps.branch(), client_state, header.last_batch_index);
         }
         let updated_height = Height {
             revision_number: 0,
-            revision_height: header.l2_state_proof.batch_index,
+            revision_height: header.last_batch_index,
         };
         let consensus_state = WasmConsensusState {
             data: ConsensusState {
-                batch_index: header.l2_state_proof.batch_index,
+                batch_index: header.last_batch_index,
                 ibc_storage_root: header.l2_ibc_account_proof.storage_root,
                 timestamp: l1_consensus_state.data.timestamp,
             },

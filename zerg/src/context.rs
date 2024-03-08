@@ -49,7 +49,7 @@ pub struct Context {
     pub is_rush: bool,
     pub writer: Arc<Mutex<File>>,
     pub union: chain_utils::union::Union,
-    pub evm: chain_utils::evm::Evm<Minimal>,
+    pub evm: chain_utils::evm::Ethereum<Minimal>,
     pub evm_accounts: HashMap<String, Wallet<SigningKey>>,
     pub denom_address: Address,
     pub union_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
@@ -68,7 +68,7 @@ impl Context {
             .await
             .unwrap();
         tracing::debug!("Created Union instance.");
-        let evm = chain_utils::evm::Evm::new(zerg_config.clone().evm)
+        let evm = chain_utils::evm::Ethereum::new(zerg_config.clone().evm)
             .await
             .unwrap();
         tracing::debug!("Created Evm instance.");
@@ -76,10 +76,8 @@ impl Context {
         let mut evm_accounts = HashMap::new();
 
         let chain_id = evm.chain_id().0.as_u64();
-        let ucs01_relay = ucs01relay::UCS01Relay::new(
-            zerg_config.evm_contract.clone(),
-            evm.provider.clone().into(),
-        );
+        let ucs01_relay =
+            ucs01relay::UCS01Relay::new(zerg_config.evm_contract.clone(), evm.provider.clone());
         tracing::debug!("Created usc01 relay.");
         let denom = format!(
             "wasm.{}/{}/{}",

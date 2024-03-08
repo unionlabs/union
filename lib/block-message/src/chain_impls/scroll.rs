@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, fmt::Debug};
 
 use chain_utils::{
-    evm::IBCHandlerEvents,
+    evm::{HasIbcHandler, IBCHandlerEvents},
     scroll::{Scroll, SCROLL_REVISION_NUMBER},
 };
 use contracts::{
@@ -137,7 +137,7 @@ where
                         c.provider
                             .get_logs(
                                 &Filter::new()
-                                    .address(c.readonly_ibc_handler.address())
+                                    .address(ethers::types::H160(c.ibc_handler_address.0))
                                     .from_block(from_scroll_height)
                                     // NOTE: This -1 is very important, else events will be double fetched
                                     .to_block(to_scroll_height - 1),
@@ -256,13 +256,13 @@ where
                                 )),
                             ) => {
                                 let client_type = c
-                                    .readonly_ibc_handler
+                                    .ibc_handler()
                                     .client_types(client_id.clone())
                                     .await
                                     .unwrap();
 
                                 let (client_state, success) = c
-                                    .readonly_ibc_handler
+                                    .ibc_handler()
                                     .get_client_state(client_id.clone())
                                     .await
                                     .unwrap();
@@ -300,13 +300,13 @@ where
                                 )),
                             ) => {
                                 let client_type = c
-                                    .readonly_ibc_handler
+                                    .ibc_handler()
                                     .client_types(client_id.clone())
                                     .await
                                     .unwrap();
 
                                 let (client_state, success) = c
-                                    .readonly_ibc_handler
+                                    .ibc_handler()
                                     .get_client_state(client_id.clone())
                                     .block(c.scroll_height_of_batch_index(to_batch_index).await)
                                     .await
@@ -392,7 +392,7 @@ where
                     for slot in (from_slot + 1)..to_slot {
                         tracing::info!("querying slot {slot}");
                         match c
-                            .evm
+                            .l1
                             .beacon_api_client
                             .block(beacon_api::client::BlockId::Slot(slot))
                             .await

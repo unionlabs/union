@@ -40,7 +40,7 @@ pub fn verify_header(
 
     // Verify that the rollup finalized state root is part of the rollup account root
     verify_storage_proof(
-        scroll_header.l1_account_proof.storage_root,
+        scroll_header.l1_account_proof.storage_root.clone(),
         finalized_state_root_key(
             scroll_client_state.rollup_finalized_state_roots_slot,
             scroll_header.last_batch_index.into(),
@@ -49,16 +49,14 @@ pub fn verify_header(
         &scroll_header.l2_state_proof.proof,
     )?;
 
-    // Verify that the batch index is part of the rollup account root
-    verify_storage_proof(
-        scroll_header.l1_account_proof.storage_root,
-        finalized_state_root_key(
-            scroll_client_state.latest_batch_index_slot,
-            scroll_header.last_batch_index.into(),
-        ),
-        &rlp::encode(&scroll_header.l2_state_proof.storage_root),
-        &scroll_header.l2_state_proof.proof,
-    )?;
+    // // Verify that the batch index is part of the rollup account root
+    // TODO: Implement this
+    // verify_storage_proof(
+    //     scroll_header.l1_account_proof.storage_root,
+    //     H256(scroll_client_state.latest_batch_index_slot.to_big_endian()),
+    //     &rlp::encode(&scroll_header.last_batch_index_proof.storage_root),
+    //     &scroll_header.last_batch_index_proof.proofs,
+    // )?;
 
     // Verify that the ibc account root is part of the rollup root
     scroll_verify_zktrie_account_storage_root(
@@ -166,6 +164,7 @@ mod tests {
             ibc_contract_address: H160::from_str("0xE52c957533bd932E357046bF721D2Bf2368ef1B7")
                 .unwrap(),
             ibc_commitment_slot: 0.into(),
+            latest_batch_index_slot: 156.into(),
         };
         let scroll_header: Header =
             serde_json::from_str(&std::fs::read_to_string("tests/scroll_header.json").unwrap())

@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64, ops::Div, str::FromStr, sync::Arc};
+use std::{fmt::Debug, future::Future, marker::PhantomData, num::NonZeroU64, ops::Div, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
@@ -26,7 +26,7 @@ use ethers::{
     utils::secret_key_to_address,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
     self,
@@ -34,22 +34,20 @@ use unionlabs::{
     ethereum::config::ChainSpec,
     hash::{H160, H256},
     ibc::{
-        core::{
-            channel::channel::Channel,
-            client::height::{Height, IsHeight},
-            connection::connection_end::ConnectionEnd,
-        },
+        core::client::height::{Height, IsHeight},
         lightclients::{ethereum, tendermint::fraction::Fraction},
     },
-    id::{ChannelId, ClientId, ConnectionId, PortId},
+    id::{ChannelId, ClientId, PortId},
     option_unwrap, promote,
     proof::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath,
     },
-    traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf, FromStrExact},
+    traits::{
+        Chain, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, FromStrExact, HeightOf,
+        IbcStateEncodingOf,
+    },
     uint::U256,
-    EmptyString, TryFromEthAbiErrorOf,
 };
 
 use crate::{private_key::PrivateKey, Pool};
@@ -59,28 +57,88 @@ pub type EvmSignerMiddleware =
 
 // TODO(benluelo): Generic over middleware?
 #[derive(DebugNoBound, CloneNoBound)]
-pub struct Evm<C: ChainSpec> {
+pub struct Ethereum<C: ChainSpec, S: EvmSignersConfig = ReadWrite> {
     pub chain_id: U256,
 
-    pub readonly_ibc_handler: DevnetOwnableIBCHandler<Provider<Ws>>,
-    pub ibc_handlers: Pool<IBCHandler<EvmSignerMiddleware>>,
-    pub provider: Provider<Ws>,
+    pub ibc_handlers: S::Out,
+    pub provider: Arc<Provider<Ws>>,
     pub beacon_api_client: BeaconApiClient<C>,
+    /// The address of the `IBCHandler` smart contract.
+    pub ibc_handler_address: H160,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
+pub trait EthereumChain: Chain<IbcStateEncoding = EthAbi> {}
+impl<C: ChainSpec> EthereumChain for Ethereum<C> {}
+
+#[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct Config<S: EvmSignersConfig = ReadWrite> {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
     /// The signer that will be used to submit transactions by voyager.
-    #[serde(default)]
-    pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
+    pub signers: S::Config,
 
     /// The RPC endpoint for the execution chain.
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
+}
+
+pub trait EvmSignersConfig: Send + Sync + 'static {
+    type Config: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
+    type Out: Debug + Clone + Send + Sync + 'static;
+
+    fn new(
+        config: Self::Config,
+        ibc_handler_address: H160,
+        chain_id: u64,
+        provider: Provider<Ws>,
+    ) -> Self::Out;
+}
+
+pub enum Readonly {}
+
+impl EvmSignersConfig for Readonly {
+    type Config = ();
+    type Out = ();
+
+    fn new(
+        config: Self::Config,
+        ibc_handler_address: H160,
+        chain_id: u64,
+        provider: Provider<Ws>,
+    ) -> Self::Out {
+        config
+    }
+}
+
+pub enum ReadWrite {}
+
+impl EvmSignersConfig for ReadWrite {
+    type Config = Vec<PrivateKey<ecdsa::SigningKey>>;
+    type Out = Pool<IBCHandler<EvmSignerMiddleware>>;
+
+    fn new(
+        config: Self::Config,
+        ibc_handler_address: H160,
+        chain_id: u64,
+        provider: Provider<Ws>,
+    ) -> Self::Out {
+        Pool::new(config.into_iter().map(|signer| {
+            let signing_key: ecdsa::SigningKey = signer.value();
+            let address = secret_key_to_address(&signing_key);
+
+            let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id);
+
+            let signer_middleware = Arc::new(SignerMiddleware::new(
+                NonceManagerMiddleware::new(provider.clone(), address),
+                wallet.clone(),
+            ));
+
+            IBCHandler::new(ibc_handler_address.clone(), signer_middleware.clone())
+        }))
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -124,28 +182,29 @@ pub enum IBCHandlerEvents {
     OwnableEvent(OwnershipTransferredFilter),
 }
 
-macro_rules! try_decode {
-    ($($expr:expr),+) => {
-        $(
-            if let Ok(ok) = $expr {
-                return Ok(ok);
-            }
-        )+
-    };
-}
-
 impl EthLogDecode for IBCHandlerEvents {
     fn decode_log(log: &ethers::abi::RawLog) -> Result<Self, ethers::abi::Error>
     where
         Self: Sized,
     {
-        try_decode!(
+        macro_rules! try_decode {
+            ($($expr:expr),+) => {
+                $(
+                    if let Ok(ok) = $expr {
+                        return Ok(ok);
+                    }
+                )+
+            };
+        }
+
+        try_decode! {
             IBCPacketEvents::decode_log(log).map(IBCHandlerEvents::PacketEvent),
             IBCConnectionEvents::decode_log(log).map(IBCHandlerEvents::ConnectionEvent),
             IBCChannelHandshakeEvents::decode_log(log).map(IBCHandlerEvents::ChannelEvent),
             IBCClientEvents::decode_log(log).map(IBCHandlerEvents::ClientEvent),
             OwnershipTransferredFilter::decode_log(log).map(IBCHandlerEvents::OwnableEvent)
-        );
+        }
+
         Err(ethers::abi::Error::InvalidData)
     }
 }
@@ -172,7 +231,7 @@ impl AbiDecode for IbcHandlerErrors {
     }
 }
 
-impl<C: ChainSpec> Chain for Evm<C> {
+impl<C: ChainSpec, S: EvmSignersConfig> Chain for Ethereum<C, S> {
     type ChainType = EvmChainType<C>;
 
     type SelfClientState = ethereum::client_state::ClientState;
@@ -185,7 +244,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
 
     type Height = Height;
 
-    type ClientId = EvmClientId;
+    type ClientId = ClientId;
 
     type IbcStateEncoding = EthAbi;
 
@@ -284,7 +343,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 revision_height: 0,
             },
             counterparty_commitment_slot: U256::from(0),
-            ibc_contract_address: self.readonly_ibc_handler.address().into(),
+            ibc_contract_address: self.ibc_handler_address.clone(),
         }
     }
 
@@ -346,30 +405,14 @@ impl<C: ChainSpec> Chain for Evm<C> {
         destination_port_id: PortId,
         sequence: NonZeroU64,
     ) -> Vec<u8> {
-        self.provider
-            .get_transaction_receipt(tx_hash.clone())
-            .await
-            .unwrap()
-            .unwrap()
-            .logs
-            .into_iter()
-            .map(|log| <WriteAcknowledgementFilter as EthLogDecode>::decode_log(&log.into()))
-            .find_map(|e| match e {
-                Ok(WriteAcknowledgementFilter {
-                    destination_port: ack_dst_port_id,
-                    destination_channel,
-                    sequence: ack_sequence,
-                    acknowledgement,
-                }) if ack_dst_port_id == destination_port_id.to_string()
-                    && destination_channel == destination_channel_id.to_string()
-                    && Some(sequence) == NonZeroU64::new(ack_sequence) =>
-                {
-                    Some(acknowledgement)
-                }
-                _ => None,
-            })
-            .unwrap_or_default()
-            .to_vec()
+        evm_read_ack(
+            &self.provider,
+            tx_hash,
+            destination_port_id,
+            destination_channel_id,
+            sequence,
+        )
+        .await
     }
 }
 
@@ -381,169 +424,147 @@ pub enum EvmInitError {
     Provider(#[from] ProviderError),
 }
 
-impl<C: ChainSpec> Evm<C> {
-    pub async fn new(config: Config) -> Result<Self, EvmInitError> {
+impl<C: ChainSpec, S: EvmSignersConfig> Ethereum<C, S> {
+    pub async fn new(config: Config<S>) -> Result<Self, EvmInitError> {
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
 
         let chain_id = provider.get_chainid().await?;
 
-        let ibc_handlers = config.signers.into_iter().map(|signer| {
-            let signing_key: ecdsa::SigningKey = signer.value();
-            let address = secret_key_to_address(&signing_key);
-
-            let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id.as_u64());
-
-            let signer_middleware = Arc::new(SignerMiddleware::new(
-                NonceManagerMiddleware::new(provider.clone(), address),
-                wallet.clone(),
-            ));
-
-            IBCHandler::new(
-                config.ibc_handler_address.clone(),
-                signer_middleware.clone(),
-            )
-        });
-
         Ok(Self {
             chain_id: U256(chain_id),
-            ibc_handlers: Pool::new(ibc_handlers),
-            readonly_ibc_handler: DevnetOwnableIBCHandler::new(
+            ibc_handlers: S::new(
+                config.signers,
                 config.ibc_handler_address.clone(),
-                provider.clone().into(),
+                chain_id.as_u64(),
+                provider.clone(),
             ),
-            provider,
+            ibc_handler_address: config.ibc_handler_address,
+            provider: Arc::new(provider),
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
         })
     }
 }
 
-// impl<C: ChainSpec> ReadonlyEvm<C> {
-//     pub async fn new(config: ReadonlyConfig) -> Result<Self, EvmInitError> {
-//         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
+async fn evm_read_ack(
+    provider: &Provider<Ws>,
+    tx_hash: H256,
+    destination_port_id: PortId,
+    destination_channel_id: ChannelId,
+    sequence: NonZeroU64,
+) -> Vec<u8> {
+    provider
+        .get_transaction_receipt(tx_hash.clone())
+        .await
+        .unwrap()
+        .unwrap()
+        .logs
+        .into_iter()
+        .map(|log| <WriteAcknowledgementFilter as EthLogDecode>::decode_log(&log.into()))
+        .find_map(|e| match e {
+            Ok(WriteAcknowledgementFilter {
+                destination_port: ack_dst_port_id,
+                destination_channel,
+                sequence: ack_sequence,
+                acknowledgement,
+            }) if ack_dst_port_id == destination_port_id.to_string()
+                && destination_channel == destination_channel_id.to_string()
+                && Some(sequence) == NonZeroU64::new(ack_sequence) =>
+            {
+                Some(acknowledgement)
+            }
+            _ => None,
+        })
+        .unwrap_or_default()
+        .to_vec()
+}
 
-//         let chain_id = provider.get_chainid().await?;
-
-//         Ok(Self {
-//             chain_id: U256(chain_id),
-//             readonly_ibc_handler: DevnetOwnableIBCHandler::new(
-//                 config.ibc_handler_address.clone(),
-//                 provider.clone().into(),
-//             ),
-//             provider,
-//             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
-//         })
-//     }
-// }
-
-impl<C: ChainSpec> Evm<C> {
-    // TODO: Change to take a beacon slot instead of a height
-    pub async fn execution_height(&self, beacon_height: Height) -> u64 {
-        let response = self
-            .beacon_api_client
-            .block(beacon_api::client::BlockId::Slot(
-                beacon_height.revision_height,
-            ))
-            .await;
-
-        let height = response
-            .unwrap()
-            .data
-            .message
-            .body
-            .execution_payload
-            .block_number;
-
-        tracing::debug!("beacon height {beacon_height} is execution height {height}");
-
-        height
-    }
-
+impl<C: ChainSpec, S: EvmSignersConfig> Ethereum<C, S> {
     pub fn make_height(&self, height: impl Into<u64>) -> Height {
         // NOTE: Revision is always 0 for EVM
         // REVIEW: Consider using the fork revision?
         {
             Height {
-                revision_number: 0,
+                revision_number: EVM_REVISION_NUMBER,
                 revision_height: height.into(),
             }
         }
     }
+}
 
-    pub async fn ibc_state_read_at_execution_height<Call>(
+pub trait HasIbcHandler {
+    fn ibc_handler(&self) -> IBCHandler<Provider<Ws>>;
+}
+
+impl<C: ChainSpec, S: EvmSignersConfig> HasIbcHandler for Ethereum<C, S> {
+    fn ibc_handler(&self) -> IBCHandler<Provider<Ws>> {
+        IBCHandler::new(self.ibc_handler_address.clone(), self.provider.clone())
+    }
+}
+
+pub trait IbcHandlerExt<M: Middleware> {
+    fn ibc_state_read<P, Hc, Tr>(
+        &self,
+        execution_block_number: u64,
+        path: P,
+    ) -> impl Future<Output = Result<P::Output, ContractError<M>>> + Send
+    where
+        P: EthereumStateRead<Hc, Tr> + 'static,
+        Hc: EthereumChain,
+        Tr: Chain;
+
+    fn eth_call<Call>(
         &self,
         call: Call,
         at_execution_height: u64,
-    ) -> Result<
-        Option<<<Call as EthCallExt>::Return as TupleToOption>::Inner>,
-        ContractError<Provider<Ws>>,
-    >
+    ) -> impl Future<
+        Output = Result<
+            Option<<<Call as EthCallExt>::Return as TupleToOption>::Inner>,
+            ContractError<M>,
+        >,
+    > + Send
+    where
+        Call: EthCallExt + 'static,
+        Call::Return: TupleToOption;
+}
+
+impl<M: Middleware> IbcHandlerExt<M> for IBCHandler<M> {
+    async fn ibc_state_read<P, Hc, Tr>(
+        &self,
+        execution_block_number: u64,
+        path: P,
+    ) -> Result<P::Output, ContractError<M>>
+    where
+        P: EthereumStateRead<Hc, Tr> + 'static,
+        Hc: EthereumChain,
+        Tr: Chain,
+    {
+        self.method_hash::<P::EthCall, <P::EthCall as EthCallExt>::Return>(
+            P::EthCall::selector(),
+            path.into_eth_call(),
+        )
+        .expect("valid contract selector")
+        .block(execution_block_number)
+        .call()
+        .await
+        .map(P::decode_ibc_state)
+    }
+
+    async fn eth_call<Call>(
+        &self,
+        call: Call,
+        at_execution_height: u64,
+    ) -> Result<Option<<<Call as EthCallExt>::Return as TupleToOption>::Inner>, ContractError<M>>
     where
         Call: EthCallExt + 'static,
         Call::Return: TupleToOption,
     {
-        self.readonly_ibc_handler
-            .method_hash::<Call, Call::Return>(Call::selector(), call)
+        self.method_hash::<Call, Call::Return>(Call::selector(), call)
             .expect("valid contract selector")
             .block(at_execution_height)
             .call()
             .await
             .map(Call::Return::tuple_to_option)
     }
-
-    pub async fn ibc_state_read<P, Tracking>(
-        &self,
-        at: Height,
-        path: P,
-    ) -> Result<P::Output, ContractError<Provider<Ws>>>
-    where
-        P: EthereumStateRead<C, Tracking> + 'static,
-        Tracking: Chain,
-    {
-        let execution_block_number = self.execution_height(at).await;
-
-        self.readonly_ibc_handler
-            .method_hash::<P::EthCall, <P::EthCall as EthCallExt>::Return>(
-                P::EthCall::selector(),
-                path.into_eth_call(),
-            )
-            .expect("valid contract selector")
-            .block(execution_block_number)
-            .call()
-            .await
-            .map(P::decode_ibc_state)
-    }
-}
-
-pub type EvmClientId = ClientId;
-
-// TODO: Don't use debug here, instead impl Error for all error types
-#[derive(Debug, thiserror::Error)]
-pub enum EvmEventSourceError {
-    #[error(transparent)]
-    Contract(#[from] ContractError<Provider<Ws>>),
-    #[error("channel `{channel_id}/{port_id}` not found")]
-    ChannelNotFound { port_id: String, channel_id: String },
-    #[error("{0:?}")]
-    ChannelConversion(TryFromEthAbiErrorOf<Channel>),
-    #[error("channel `{connection_id}` not found")]
-    ConnectionNotFound { connection_id: String },
-    #[error("{0:?}")]
-    ConnectionConversion(TryFromEthAbiErrorOf<ConnectionEnd<EvmClientId, String>>),
-    // this is a mess, should be cleaned up
-    #[error("{0:?}")]
-    ConnectionOpenInitConnectionConversion(
-        TryFromEthAbiErrorOf<ConnectionEnd<EvmClientId, String, EmptyString>>,
-    ),
-    #[error(transparent)]
-    ClientIdParse(<ClientId as FromStr>::Err),
-    #[error(transparent)]
-    ConnectionIdParse(<ConnectionId as FromStr>::Err),
-    #[error(transparent)]
-    ChannelIdParse(<ChannelId as FromStr>::Err),
-    #[error(transparent)]
-    PortIdParse(<PortId as FromStr>::Err),
-    #[error(transparent)]
-    EthAbi(#[from] ethers::core::abi::Error),
 }
 
 /// Many contract calls return some form of [`(bool, T)`] as a way to emulate nullable/[`Option`].
@@ -605,7 +626,7 @@ impl TupleToOption for GetHashedPacketAcknowledgementCommitmentReturn {
 /// Wrapper trait for a contract call's signature, to map the input type to the return type.
 /// `ethers` generates both of these types, but doesn't correlate them.
 pub trait EthCallExt: EthCall {
-    type Return: Tokenizable;
+    type Return: Send + Sync + Tokenizable;
 }
 
 macro_rules! impl_eth_call_ext {
@@ -627,139 +648,10 @@ impl_eth_call_ext! {
     GetHashedPacketAcknowledgementCommitmentCall -> GetHashedPacketAcknowledgementCommitmentReturn;
 }
 
-pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> u64 {
-    let next_epoch_slot = slot + (C::SLOTS_PER_EPOCH::U64 - (slot % C::SLOTS_PER_EPOCH::U64));
-    genesis_timestamp + (next_epoch_slot * C::SECONDS_PER_SLOT::U64)
-}
-
-// impl<C: ChainSpec> IbcStateRead for Evm<C> {
-//     fn client_state<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ClientStatePath<ClientIdOf<Self>>,
-//     ) -> impl Future<Output = <ClientStatePath<ClientIdOf<Self>> as IbcPath<Self, Tracking>>::Output>
-//     where
-//         <ClientStatePath<ClientIdOf<Self>> as IbcPath<Self, Tracking>>::Output:
-//             Decode<Self::IbcStateEncoding>,
-//     {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//             .map(|x| x.unwrap())
-//     }
-
-//     fn client_consensus_state<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>>,
-//     ) -> impl Future<
-//         Output = <ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>> as IbcPath<
-//             Self,
-//             Tracking,
-//         >>::Output,
-//     >
-//     where
-//         ConsensusStateOf<Tracking>: Decode<Self::IbcStateEncoding>,
-//     {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//             .map(|x| x.unwrap())
-//     }
-
-//     fn connection<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ConnectionPath,
-//     ) -> impl Future<Output = <ConnectionPath as IbcPath<Self, Tracking>>::Output> {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//             .map(|x| x.unwrap())
-//     }
-
-//     fn channel_end<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ChannelEndPath,
-//     ) -> impl Future<Output = <ChannelEndPath as IbcPath<Self, Tracking>>::Output> {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//             .map(|x| x.unwrap())
-//     }
-
-//     fn commitment<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: CommitmentPath,
-//     ) -> impl Future<Output = <CommitmentPath as IbcPath<Self, Tracking>>::Output> {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//             .map(|x| x.unwrap())
-//     }
-
-//     fn acknowledgement<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: AcknowledgementPath,
-//     ) -> impl Future<Output = <AcknowledgementPath as IbcPath<Self, Tracking>>::Output> {
-//         self.ibc_state_read::<_, Tracking>(at, path)
-//             .map(|x| x.unwrap())
-//     }
-// }
-
-// impl<C: ChainSpec> IbcStateProve for Evm<C> {
-//     fn client_state<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ClientStatePath<ClientIdOf<Self>>,
-//     ) -> impl Future<Output = Vec<u8>>
-//     where
-//         ClientStateOf<Tracking>: Decode<Self::IbcStateEncoding>,
-//     {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-
-//     fn client_consensus_state<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ClientConsensusStatePath<ClientIdOf<Self>, HeightOf<Tracking>>,
-//     ) -> impl Future<Output = Vec<u8>>
-//     where
-//         ConsensusStateOf<Tracking>: Decode<Self::IbcStateEncoding>,
-//     {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-
-//     fn connection<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ConnectionPath,
-//     ) -> impl Future<Output = Vec<u8>> {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-
-//     fn channel_end<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: ChannelEndPath,
-//     ) -> impl Future<Output = Vec<u8>> {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-
-//     fn commitment<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: CommitmentPath,
-//     ) -> impl Future<Output = Vec<u8>> {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-
-//     fn acknowledgement<Tracking: Chain>(
-//         &self,
-//         at: Height,
-//         path: AcknowledgementPath,
-//     ) -> impl Future<Output = Vec<u8>> {
-//         self.ibc_state_proof::<_, Tracking>(at, path)
-//     }
-// }
-
-pub trait EthereumStateRead<C, Tr>: IbcPath<Evm<C>, Tr>
+pub trait EthereumStateRead<Hc, Tr>: IbcPath<Hc, Tr>
 where
+    Hc: EthereumChain,
     Tr: Chain,
-    C: ChainSpec,
 {
     type EthCall: EthCallExt + 'static;
 
@@ -768,14 +660,16 @@ where
     fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output;
 }
 
-impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr>
-    for ClientStatePath<<Evm<C> as Chain>::ClientId>
+impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ClientStatePath<ClientIdOf<Hc>>
 where
-    ClientStateOf<Tr>: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
-    Tr::SelfClientState: Decode<EthAbi>,
-    Tr::SelfClientState: Decode<EthAbi>,
-    Tr::SelfClientState: unionlabs::EthAbi,
+    Hc: EthereumChain,
+    Tr: Chain,
+    ClientStateOf<Tr>: Decode<IbcStateEncodingOf<Hc>>,
+    Tr::SelfClientState: Decode<EthAbi> + unionlabs::EthAbi,
     <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
+    <Hc as Chain>::StoredClientState<Tr>: unionlabs::EthAbi,
+    <Hc as Chain>::StoredClientState<Tr>:
+        From<<<Hc as Chain>::StoredClientState<Tr> as unionlabs::EthAbi>::EthAbi>,
 {
     type EthCall = GetClientStateCall;
 
@@ -790,13 +684,16 @@ where
     }
 }
 
-impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr>
-    for ClientConsensusStatePath<<Evm<C> as Chain>::ClientId, <Tr as Chain>::Height>
+impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ClientConsensusStatePath<ClientIdOf<Hc>, HeightOf<Tr>>
 where
+    Hc: EthereumChain,
+    Tr: Chain,
     ConsensusStateOf<Tr>: Decode<EthAbi>,
-    Tr::SelfClientState: Decode<EthAbi>,
-    Tr::SelfClientState: unionlabs::EthAbi,
+    Tr::SelfClientState: Decode<EthAbi> + unionlabs::EthAbi,
     <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
+    <Hc as Chain>::StoredConsensusState<Tr>: unionlabs::EthAbi,
+    <Hc as Chain>::StoredConsensusState<Tr>:
+        From<<<Hc as Chain>::StoredConsensusState<Tr> as unionlabs::EthAbi>::EthAbi>,
 {
     type EthCall = GetConsensusStateCall;
 
@@ -808,12 +705,11 @@ where
     }
 
     fn decode_ibc_state(encoded: <Self::EthCall as EthCallExt>::Return) -> Self::Output {
-        dbg!(hex::encode(&encoded.consensus_state_bytes));
         <Self::Output as Decode<EthAbi>>::decode(&encoded.consensus_state_bytes).unwrap()
     }
 }
 
-impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for ConnectionPath {
+impl<Hc: EthereumChain, Tr: Chain> EthereumStateRead<Hc, Tr> for ConnectionPath {
     type EthCall = GetConnectionCall;
 
     fn into_eth_call(self) -> Self::EthCall {
@@ -827,7 +723,7 @@ impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for ConnectionPath {
     }
 }
 
-impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for ChannelEndPath {
+impl<Hc: EthereumChain, Tr: Chain> EthereumStateRead<Hc, Tr> for ChannelEndPath {
     type EthCall = GetChannelCall;
 
     fn into_eth_call(self) -> Self::EthCall {
@@ -842,7 +738,7 @@ impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for ChannelEndPath {
     }
 }
 
-impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for CommitmentPath {
+impl<Hc: EthereumChain, Tr: Chain> EthereumStateRead<Hc, Tr> for CommitmentPath {
     type EthCall = GetHashedPacketCommitmentCall;
 
     fn into_eth_call(self) -> Self::EthCall {
@@ -858,7 +754,7 @@ impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for CommitmentPath {
     }
 }
 
-impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for AcknowledgementPath {
+impl<Hc: EthereumChain, Tr: Chain> EthereumStateRead<Hc, Tr> for AcknowledgementPath {
     type EthCall = GetHashedPacketAcknowledgementCommitmentCall;
 
     fn into_eth_call(self) -> Self::EthCall {
@@ -876,7 +772,7 @@ impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for AcknowledgementPath {
 
 #[allow(unused_variables)]
 pub async fn setup_initial_channel<C: ChainSpec>(
-    this: &Evm<C>,
+    this: &Ethereum<C, ReadWrite>,
     module_address: H160,
     channel_id: String,
     port_id: String,
@@ -937,11 +833,11 @@ pub async fn setup_initial_channel<C: ChainSpec>(
 #[test]
 fn eth_chain_type() {
     assert_eq!(
-        <<Evm<unionlabs::ethereum::config::Mainnet> as Chain>::ChainType as FromStrExact>::EXPECTING,
+        <<Ethereum<unionlabs::ethereum::config::Mainnet, Readonly> as Chain>::ChainType as FromStrExact>::EXPECTING,
         "eth-mainnet",
     );
     assert_eq!(
-        <<Evm<unionlabs::ethereum::config::Minimal> as Chain>::ChainType as FromStrExact>::EXPECTING,
+        <<Ethereum<unionlabs::ethereum::config::Minimal, Readonly> as Chain>::ChainType as FromStrExact>::EXPECTING,
         "eth-minimal",
     );
 }

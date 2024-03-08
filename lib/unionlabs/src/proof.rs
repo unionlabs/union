@@ -80,6 +80,8 @@ pub trait IbcPath<Hc: Chain, Tr: Chain>:
     + TryFrom<Path<ClientIdOf<Hc>, HeightOf<Tr>>, Error = Path<ClientIdOf<Hc>, HeightOf<Tr>>>
     + Into<Path<ClientIdOf<Hc>, HeightOf<Tr>>>
     + MaybeArbitrary
+    + Send
+    + Sync
 {
     type Output: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de> + MaybeArbitrary;
 }

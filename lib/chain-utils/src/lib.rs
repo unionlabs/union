@@ -10,7 +10,13 @@ use unionlabs::{
     traits::{Chain, ChainIdOf},
 };
 
-use crate::{cosmos::Cosmos, evm::Evm, scroll::Scroll, union::Union, wasm::Wasm};
+use crate::{
+    cosmos::Cosmos,
+    evm::{Ethereum, ReadWrite},
+    scroll::Scroll,
+    union::Union,
+    wasm::Wasm,
+};
 
 pub mod cosmos;
 pub mod evm;
@@ -81,8 +87,8 @@ pub trait GetChain<C: Chain> {
 #[derive(Debug, Clone, Default)]
 pub struct Chains {
     // TODO: Use some sort of typemap here instead of individual fields
-    pub evm_minimal: HashMap<ChainIdOf<Evm<Minimal>>, Evm<Minimal>>,
-    pub evm_mainnet: HashMap<ChainIdOf<Evm<Mainnet>>, Evm<Mainnet>>,
+    pub evm_minimal: HashMap<ChainIdOf<Ethereum<Minimal>>, Ethereum<Minimal>>,
+    pub evm_mainnet: HashMap<ChainIdOf<Ethereum<Mainnet>>, Ethereum<Mainnet>>,
     pub union: HashMap<ChainIdOf<Union>, Union>,
     pub cosmos: HashMap<ChainIdOf<Cosmos>, Cosmos>,
     pub scroll: HashMap<ChainIdOf<Scroll>, Scroll>,
@@ -118,14 +124,14 @@ impl GetChain<Wasm<Cosmos>> for Chains {
     }
 }
 
-impl GetChain<Evm<Minimal>> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Minimal>>) -> Evm<Minimal> {
+impl GetChain<Ethereum<Minimal>> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Ethereum<Minimal>>) -> Ethereum<Minimal> {
         self.evm_minimal.get(chain_id).unwrap().clone()
     }
 }
 
-impl GetChain<Evm<Mainnet>> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Mainnet>>) -> Evm<Mainnet> {
+impl GetChain<Ethereum<Mainnet>> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Ethereum<Mainnet>>) -> Ethereum<Mainnet> {
         self.evm_mainnet.get(chain_id).unwrap().clone()
     }
 }

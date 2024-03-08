@@ -1,7 +1,10 @@
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
 use beacon_api::errors::{InternalServerError, NotFoundError};
-use chain_utils::evm::{Evm, EvmSignerMiddleware, IbcHandlerErrors, EVM_REVISION_NUMBER};
+use chain_utils::evm::{
+    Ethereum, EthereumChain, EvmSignerMiddleware, HasIbcHandler, IbcHandlerErrors, IbcHandlerExt,
+    EVM_REVISION_NUMBER,
+};
 use contracts::ibc_handler::{
     self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall, ChannelOpenInitCall,
     ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall, ConnectionOpenInitCall,
@@ -11,7 +14,7 @@ use enumorph::Enumorph;
 use ethers::{
     abi::AbiEncode,
     contract::{ContractError, EthCall},
-    providers::{Middleware, ProviderError},
+    providers::{Middleware, Provider, ProviderError, Ws},
     utils::keccak256,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
@@ -45,7 +48,10 @@ use unionlabs::{
         },
     },
     proof::{ClientStatePath, Path},
-    traits::{Chain, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
+    traits::{
+        Chain, ChainIdOf, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf,
+        HeightOf,
+    },
     uint::U256,
     IntoEthAbi, MaybeRecoverableError,
 };
@@ -74,7 +80,7 @@ pub struct EvmConfig {
     pub client_address: H160,
 }
 
-impl<C: ChainSpec> ChainExt for Evm<C> {
+impl<C: ChainSpec> ChainExt for Ethereum<C> {
     type Data<Tr: ChainExt> = EvmDataMsg<C, Tr>;
     type Fetch<Tr: ChainExt> = EvmFetchMsg<C, Tr>;
     type Aggregate<Tr: ChainExt> = EvmAggregateMsg<C, Tr>;
@@ -84,271 +90,284 @@ impl<C: ChainSpec> ChainExt for Evm<C> {
     type Config = EvmConfig;
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoMsg<Self, Tr> for Evm<C>
+impl<C: ChainSpec, Tr: ChainExt> DoMsg<Self, Tr> for Ethereum<C>
 where
     ConsensusStateOf<Tr>: IntoEthAbi,
     ClientStateOf<Tr>: IntoEthAbi,
     HeaderOf<Tr>: IntoEthAbi,
 
-    ClientStateOf<Evm<C>>: Encode<Tr::IbcStateEncoding>,
-    Tr::StoredClientState<Evm<C>>: Encode<Tr::IbcStateEncoding>,
+    ClientStateOf<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
+    Tr::StoredClientState<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
     Tr::StateProof: Encode<EthAbi>,
 {
     async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
-        let f = |ibc_handler| async move {
-            let msg: ethers::contract::FunctionCall<_, _, ()> = match msg.clone() {
-                Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => mk_function_call(
-                    ibc_handler,
-                    ConnectionOpenInitCall {
-                        msg: contracts::ibc_handler::MsgConnectionOpenInit {
-                            client_id: data.client_id.to_string(),
-                            counterparty: data.counterparty.into(),
-                            delay_period: data.delay_period,
-                        },
-                    },
-                ),
-                Msg::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => mk_function_call(
-                    ibc_handler,
-                    ConnectionOpenTryCall {
-                        msg: contracts::ibc_handler::MsgConnectionOpenTry {
-                            counterparty: data.counterparty.into(),
-                            delay_period: data.delay_period,
-                            client_id: data.client_id.to_string(),
-                            // needs to be encoded how the counterparty is encoding it
-                            client_state_bytes: Encode::<Tr::IbcStateEncoding>::encode(
-                                data.client_state,
-                            )
-                            .into(),
-                            counterparty_versions: data
-                                .counterparty_versions
-                                .into_iter()
-                                .map(Into::into)
-                                .collect(),
-                            proof_init: data.proof_init.encode().into(),
-                            proof_client: data.proof_client.encode().into(),
-                            proof_consensus: data.proof_consensus.encode().into(),
-                            proof_height: data.proof_height.into_height().into(),
-                            consensus_height: data.consensus_height.into(),
-                        },
-                    },
-                ),
-                Msg::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => mk_function_call(
-                    ibc_handler,
-                    ConnectionOpenAckCall {
-                        msg: contracts::ibc_handler::MsgConnectionOpenAck {
-                            connection_id: data.connection_id.to_string(),
-                            counterparty_connection_id: data.counterparty_connection_id.to_string(),
-                            version: data.version.into(),
-                            // needs to be encoded how the counterparty is encoding it
-                            client_state_bytes: Encode::<Tr::IbcStateEncoding>::encode(
-                                data.client_state,
-                            )
-                            .into(),
-                            proof_height: data.proof_height.into(),
-                            proof_try: data.proof_try.encode().into(),
-                            proof_client: data.proof_client.encode().into(),
-                            proof_consensus: data.proof_consensus.encode().into(),
-                            consensus_height: data.consensus_height.into(),
-                        },
-                    },
-                ),
-                Msg::ConnectionOpenConfirm(data) => mk_function_call(
-                    ibc_handler,
-                    ConnectionOpenConfirmCall {
-                        msg: contracts::ibc_handler::MsgConnectionOpenConfirm {
-                            connection_id: data.msg.connection_id.to_string(),
-                            proof_ack: data.msg.proof_ack.encode().into(),
-                            proof_height: data.msg.proof_height.into_height().into(),
-                        },
-                    },
-                ),
-                Msg::ChannelOpenInit(data) => mk_function_call(
-                    ibc_handler,
-                    ChannelOpenInitCall {
-                        msg: contracts::ibc_handler::MsgChannelOpenInit {
-                            port_id: data.msg.port_id.to_string(),
-                            channel: data.msg.channel.into(),
-                        },
-                    },
-                ),
-                Msg::ChannelOpenTry(data) => mk_function_call(
-                    ibc_handler,
-                    ChannelOpenTryCall {
-                        msg: contracts::ibc_handler::MsgChannelOpenTry {
-                            port_id: data.msg.port_id.to_string(),
-                            channel: data.msg.channel.into(),
-                            counterparty_version: data.msg.counterparty_version,
-                            proof_init: data.msg.proof_init.encode().into(),
-                            proof_height: data.msg.proof_height.into(),
-                        },
-                    },
-                ),
-                Msg::ChannelOpenAck(data) => mk_function_call(
-                    ibc_handler,
-                    ChannelOpenAckCall {
-                        msg: contracts::ibc_handler::MsgChannelOpenAck {
-                            port_id: data.msg.port_id.to_string(),
-                            channel_id: data.msg.channel_id.to_string(),
-                            counterparty_version: data.msg.counterparty_version,
-                            counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
-                            proof_try: data.msg.proof_try.encode().into(),
-                            proof_height: data.msg.proof_height.into_height().into(),
-                        },
-                    },
-                ),
-                Msg::ChannelOpenConfirm(data) => mk_function_call(
-                    ibc_handler,
-                    ChannelOpenConfirmCall {
-                        msg: contracts::ibc_handler::MsgChannelOpenConfirm {
-                            port_id: data.msg.port_id.to_string(),
-                            channel_id: data.msg.channel_id.to_string(),
-                            proof_ack: data.msg.proof_ack.encode().into(),
-                            proof_height: data.msg.proof_height.into_height().into(),
-                        },
-                    },
-                ),
-                Msg::RecvPacket(data) => mk_function_call(
-                    ibc_handler,
-                    RecvPacketCall {
-                        msg: contracts::ibc_handler::MsgPacketRecv {
-                            packet: data.msg.packet.into(),
-                            proof: data.msg.proof_commitment.encode().into(),
-                            proof_height: data.msg.proof_height.into_height().into(),
-                        },
-                    },
-                ),
-                Msg::AckPacket(data) => mk_function_call(
-                    ibc_handler,
-                    AcknowledgePacketCall {
-                        msg: contracts::ibc_handler::MsgPacketAcknowledgement {
-                            packet: data.msg.packet.into(),
-                            acknowledgement: data.msg.acknowledgement.into(),
-                            proof: data.msg.proof_acked.encode().into(),
-                            proof_height: data.msg.proof_height.into_height().into(),
-                        },
-                    },
-                ),
-                Msg::CreateClient(data) => {
-                    let register_client_result = ibc_handler.register_client(
-                        data.config.client_type.clone(),
-                        data.config.client_address.clone().into(),
-                    );
-
-                    // TODO(benluelo): Better way to check if client type has already been registered?
-                    match register_client_result.send().await {
-                        Ok(ok) => {
-                            ok.await.unwrap().unwrap();
-                        }
-
-                        Err(why) => tracing::info!(
-                            "error registering client type, it is likely already registered: {:?}",
-                            why
-                        ),
-                    }
-
-                    mk_function_call(
-                        ibc_handler,
-                        CreateClientCall {
-                            msg: contracts::shared_types::MsgCreateClient {
-                                client_type: data.config.client_type,
-                                client_state_bytes: data
-                                    .msg
-                                    .client_state
-                                    .into_eth_abi_bytes()
-                                    .into(),
-                                consensus_state_bytes: data
-                                    .msg
-                                    .consensus_state
-                                    .into_eth_abi_bytes()
-                                    .into(),
-                            },
-                        },
-                    )
-                }
-                Msg::UpdateClient(MsgUpdateClientData(data)) => mk_function_call(
-                    ibc_handler,
-                    UpdateClientCall {
-                        msg: ibc_handler::MsgUpdateClient {
-                            client_id: data.client_id.to_string(),
-                            client_message: data.client_message.clone().into_eth_abi_bytes().into(),
-                        },
-                    },
-                ),
-            };
-
-            match msg.estimate_gas().await {
-                Ok(estimated_gas) => {
-                    // TODO: config
-                    let msg = msg.gas(estimated_gas + (estimated_gas / 10));
-                    let result = msg.send().await;
-                    match result {
-                        Ok(ok) => {
-                            tracing::info!("evm tx {:?} => {:?}", ok.tx_hash(), msg);
-                            let tx_rcp = ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
-                            tracing::info!(?tx_rcp, "evm transaction submitted");
-                            Ok(())
-                        }
-                        Err(ContractError::Revert(revert)) => {
-                            let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(
-                                revert.clone(),
-                            );
-                            tracing::error!(?revert, ?err, "evm transaction failed");
-                            Ok(())
-                        }
-                        _ => {
-                            panic!("evm transaction non-recoverable failure");
-                        }
-                    }
-                }
-                Err(ContractError::Revert(revert)) => {
-                    let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone());
-                    tracing::error!(?revert, ?err, "evm estimation failed");
-                    Ok(())
-                }
-                _ => {
-                    panic!("evm estimation non-recoverable failure");
-                }
-            }
-        };
-
-        self.ibc_handlers.with(f).await
+        do_msg(&self.ibc_handlers, msg).await
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetchProof<Self, Tr> for Evm<C>
+pub(crate) async fn do_msg<EthHc: ChainExt<Config = EvmConfig>, Tr: ChainExt>(
+    ibc_handlers: &chain_utils::Pool<IBCHandler<EvmSignerMiddleware>>,
+    msg: Msg<EthHc, Tr>,
+) -> Result<(), TxSubmitError>
 where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
+    ConsensusStateOf<Tr>: IntoEthAbi,
+    ClientStateOf<Tr>: IntoEthAbi,
+    HeaderOf<Tr>: IntoEthAbi,
+    ClientStateOf<EthHc>: Encode<Tr::IbcStateEncoding>,
+    Tr::StoredClientState<EthHc>: Encode<Tr::IbcStateEncoding>,
+    Tr::StateProof: Encode<EthAbi>,
 {
-    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    let f = |ibc_handler| async move {
+        let msg: ethers::contract::FunctionCall<_, _, ()> = match msg.clone() {
+            Msg::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => mk_function_call(
+                ibc_handler,
+                ConnectionOpenInitCall {
+                    msg: contracts::ibc_handler::MsgConnectionOpenInit {
+                        client_id: data.client_id.to_string(),
+                        counterparty: data.counterparty.into(),
+                        delay_period: data.delay_period,
+                    },
+                },
+            ),
+            Msg::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => mk_function_call(
+                ibc_handler,
+                ConnectionOpenTryCall {
+                    msg: contracts::ibc_handler::MsgConnectionOpenTry {
+                        counterparty: data.counterparty.into(),
+                        delay_period: data.delay_period,
+                        client_id: data.client_id.to_string(),
+                        // needs to be encoded how the counterparty is encoding it
+                        client_state_bytes: Encode::<Tr::IbcStateEncoding>::encode(
+                            data.client_state,
+                        )
+                        .into(),
+                        counterparty_versions: data
+                            .counterparty_versions
+                            .into_iter()
+                            .map(Into::into)
+                            .collect(),
+                        proof_init: data.proof_init.encode().into(),
+                        proof_client: data.proof_client.encode().into(),
+                        proof_consensus: data.proof_consensus.encode().into(),
+                        proof_height: data.proof_height.into_height().into(),
+                        consensus_height: data.consensus_height.into_height().into(),
+                    },
+                },
+            ),
+            Msg::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => mk_function_call(
+                ibc_handler,
+                ConnectionOpenAckCall {
+                    msg: contracts::ibc_handler::MsgConnectionOpenAck {
+                        connection_id: data.connection_id.to_string(),
+                        counterparty_connection_id: data.counterparty_connection_id.to_string(),
+                        version: data.version.into(),
+                        // needs to be encoded how the counterparty is encoding it
+                        client_state_bytes: Encode::<Tr::IbcStateEncoding>::encode(
+                            data.client_state,
+                        )
+                        .into(),
+                        proof_height: data.proof_height.into(),
+                        proof_try: data.proof_try.encode().into(),
+                        proof_client: data.proof_client.encode().into(),
+                        proof_consensus: data.proof_consensus.encode().into(),
+                        consensus_height: data.consensus_height.into(),
+                    },
+                },
+            ),
+            Msg::ConnectionOpenConfirm(data) => mk_function_call(
+                ibc_handler,
+                ConnectionOpenConfirmCall {
+                    msg: contracts::ibc_handler::MsgConnectionOpenConfirm {
+                        connection_id: data.msg.connection_id.to_string(),
+                        proof_ack: data.msg.proof_ack.encode().into(),
+                        proof_height: data.msg.proof_height.into_height().into(),
+                    },
+                },
+            ),
+            Msg::ChannelOpenInit(data) => mk_function_call(
+                ibc_handler,
+                ChannelOpenInitCall {
+                    msg: contracts::ibc_handler::MsgChannelOpenInit {
+                        port_id: data.msg.port_id.to_string(),
+                        channel: data.msg.channel.into(),
+                    },
+                },
+            ),
+            Msg::ChannelOpenTry(data) => mk_function_call(
+                ibc_handler,
+                ChannelOpenTryCall {
+                    msg: contracts::ibc_handler::MsgChannelOpenTry {
+                        port_id: data.msg.port_id.to_string(),
+                        channel: data.msg.channel.into(),
+                        counterparty_version: data.msg.counterparty_version,
+                        proof_init: data.msg.proof_init.encode().into(),
+                        proof_height: data.msg.proof_height.into(),
+                    },
+                },
+            ),
+            Msg::ChannelOpenAck(data) => mk_function_call(
+                ibc_handler,
+                ChannelOpenAckCall {
+                    msg: contracts::ibc_handler::MsgChannelOpenAck {
+                        port_id: data.msg.port_id.to_string(),
+                        channel_id: data.msg.channel_id.to_string(),
+                        counterparty_version: data.msg.counterparty_version,
+                        counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
+                        proof_try: data.msg.proof_try.encode().into(),
+                        proof_height: data.msg.proof_height.into_height().into(),
+                    },
+                },
+            ),
+            Msg::ChannelOpenConfirm(data) => mk_function_call(
+                ibc_handler,
+                ChannelOpenConfirmCall {
+                    msg: contracts::ibc_handler::MsgChannelOpenConfirm {
+                        port_id: data.msg.port_id.to_string(),
+                        channel_id: data.msg.channel_id.to_string(),
+                        proof_ack: data.msg.proof_ack.encode().into(),
+                        proof_height: data.msg.proof_height.into_height().into(),
+                    },
+                },
+            ),
+            Msg::RecvPacket(data) => mk_function_call(
+                ibc_handler,
+                RecvPacketCall {
+                    msg: contracts::ibc_handler::MsgPacketRecv {
+                        packet: data.msg.packet.into(),
+                        proof: data.msg.proof_commitment.encode().into(),
+                        proof_height: data.msg.proof_height.into_height().into(),
+                    },
+                },
+            ),
+            Msg::AckPacket(data) => mk_function_call(
+                ibc_handler,
+                AcknowledgePacketCall {
+                    msg: contracts::ibc_handler::MsgPacketAcknowledgement {
+                        packet: data.msg.packet.into(),
+                        acknowledgement: data.msg.acknowledgement.into(),
+                        proof: data.msg.proof_acked.encode().into(),
+                        proof_height: data.msg.proof_height.into_height().into(),
+                    },
+                },
+            ),
+            Msg::CreateClient(data) => {
+                let register_client_result = ibc_handler.register_client(
+                    data.config.client_type.clone(),
+                    data.config.client_address.clone().into(),
+                );
+
+                // TODO(benluelo): Better way to check if client type has already been registered?
+                match register_client_result.send().await {
+                    Ok(ok) => {
+                        ok.await.unwrap().unwrap();
+                    }
+
+                    Err(why) => tracing::info!(
+                        "error registering client type, it is likely already registered: {:?}",
+                        why
+                    ),
+                }
+
+                mk_function_call(
+                    ibc_handler,
+                    CreateClientCall {
+                        msg: contracts::shared_types::MsgCreateClient {
+                            client_type: data.config.client_type,
+                            client_state_bytes: data.msg.client_state.into_eth_abi_bytes().into(),
+                            consensus_state_bytes: data
+                                .msg
+                                .consensus_state
+                                .into_eth_abi_bytes()
+                                .into(),
+                        },
+                    },
+                )
+            }
+            Msg::UpdateClient(MsgUpdateClientData(data)) => mk_function_call(
+                ibc_handler,
+                UpdateClientCall {
+                    msg: ibc_handler::MsgUpdateClient {
+                        client_id: data.client_id.to_string(),
+                        client_message: data.client_message.clone().into_eth_abi_bytes().into(),
+                    },
+                },
+            ),
+        };
+
+        match msg.estimate_gas().await {
+            Ok(estimated_gas) => {
+                // TODO: config
+                let msg = msg.gas(estimated_gas + (estimated_gas / 10));
+                let result = msg.send().await;
+                match result {
+                    Ok(ok) => {
+                        tracing::info!("evm tx {:?} => {:?}", ok.tx_hash(), msg);
+                        let tx_rcp = ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
+                        tracing::info!(?tx_rcp, "evm transaction submitted");
+                        Ok(())
+                    }
+                    Err(ContractError::Revert(revert)) => {
+                        let err =
+                            <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone());
+                        tracing::error!(?revert, ?err, "evm transaction failed");
+                        Ok(())
+                    }
+                    _ => {
+                        panic!("evm transaction non-recoverable failure");
+                    }
+                }
+            }
+            Err(ContractError::Revert(revert)) => {
+                let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone());
+                tracing::error!(?revert, ?err, "evm estimation failed");
+                Ok(())
+            }
+            _ => {
+                panic!("evm estimation non-recoverable failure");
+            }
+        }
+    };
+
+    ibc_handlers.with(f).await
+}
+
+impl<C: ChainSpec, Tr: ChainExt> DoFetchProof<Self, Tr> for Ethereum<C>
+where
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+{
+    fn proof(
+        c: &Self,
+        at: HeightOf<Self>,
+        path: PathOf<Ethereum<C>, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         fetch(id::<Self, Tr, _>(
             c.chain_id(),
-            LightClientSpecificFetch::<Self, Tr>(EvmFetchMsg::FetchGetProof(GetProof {
-                path,
-                height: at,
-            }))
-            .into(),
+            LightClientSpecificFetch::<Self, Tr>(EvmFetchMsg::from(GetProof { path, height: at })),
         ))
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetchState<Self, Tr> for Evm<C>
+impl<C: ChainSpec, Tr: ChainExt> DoFetchState<Self, Tr> for Ethereum<C>
 where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    Tr::SelfClientState: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    Tr::SelfClientState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
 
     Tr::SelfClientState: Encode<EthAbi>,
     Tr::SelfClientState: unionlabs::EthAbi,
     Tr::SelfClientState: TryFrom<<Tr::SelfClientState as unionlabs::EthAbi>::EthAbi>,
     <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn state(
+        hc: &Self,
+        at: HeightOf<Self>,
+        path: PathOf<Ethereum<C>, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
-            LightClientSpecificFetch::<Self, Tr>(EvmFetchMsg::FetchIbcState(FetchIbcState {
+            LightClientSpecificFetch::<Self, Tr>(EvmFetchMsg::from(FetchIbcState {
                 path,
                 height: at,
-            }))
-            .into(),
+            })),
         ))
     }
 
@@ -357,23 +376,30 @@ where
         client_id: Self::ClientId,
         height: Self::Height,
     ) -> Tr::SelfClientState {
-        hc.ibc_state_read::<_, Tr>(height, ClientStatePath { client_id })
+        let execution_height = hc
+            .beacon_api_client
+            .execution_height(beacon_api::client::BlockId::Slot(height.revision_height))
+            .await
+            .unwrap();
+
+        hc.ibc_handler()
+            .ibc_state_read::<_, Hc, Tr>(execution_height, ClientStatePath { client_id })
             .await
             .unwrap()
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetchUpdateHeaders<Self, Tr> for Evm<C>
+impl<C: ChainSpec, Tr: ChainExt> DoFetchUpdateHeaders<Self, Tr> for Ethereum<C>
 where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 {
     fn fetch_update_headers(
         c: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
     ) -> QueueMsg<RelayerMsgTypes> {
         aggregate(
-            [fetch(id::<Evm<C>, Tr, _>(
+            [fetch(id::<Ethereum<C>, Tr, _>(
                 c.chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::FetchFinalityUpdate(PhantomData)).into(),
             ))],
@@ -388,29 +414,27 @@ where
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetch<Evm<C>> for EvmFetchMsg<C, Tr>
+impl<C: ChainSpec, Tr: ChainExt> DoFetch<Ethereum<C>> for EvmFetchMsg<C, Tr>
 where
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
 
-    Tr::SelfClientState: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
-    Tr::SelfConsensusState: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
+    Tr::SelfClientState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
+    Tr::SelfConsensusState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
 
     Tr::SelfClientState: unionlabs::EthAbi,
     <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
-    async fn do_fetch(c: &Evm<C>, msg: Self) -> QueueMsg<RelayerMsgTypes> {
-        let msg: EvmFetchMsg<C, Tr> = msg;
-        let msg = match msg {
-            EvmFetchMsg::FetchFinalityUpdate(PhantomData {}) => {
-                EvmDataMsg::FinalityUpdate(FinalityUpdate {
-                    finality_update: c.beacon_api_client.finality_update().await.unwrap().data,
-                    __marker: PhantomData,
-                })
+    async fn do_fetch(c: &Ethereum<C>, msg: Self) -> QueueMsg<RelayerMsgTypes> {
+        let msg: EvmDataMsg<C, Tr> = match msg {
+            EvmFetchMsg::FetchFinalityUpdate(PhantomData {}) => FinalityUpdate {
+                finality_update: c.beacon_api_client.finality_update().await.unwrap().data,
+                __marker: PhantomData,
             }
+            .into(),
             EvmFetchMsg::FetchLightClientUpdates(FetchLightClientUpdates {
                 trusted_period,
                 target_period,
-            }) => EvmDataMsg::LightClientUpdates(LightClientUpdates {
+            }) => LightClientUpdates {
                 light_client_updates: c
                     .beacon_api_client
                     .light_client_updates(trusted_period + 1, target_period - trusted_period)
@@ -421,9 +445,10 @@ where
                     .map(|x| x.data)
                     .collect(),
                 __marker: PhantomData,
-            }),
+            }
+            .into(),
             EvmFetchMsg::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
-                EvmDataMsg::LightClientUpdate(LightClientUpdate {
+                LightClientUpdate {
                     update: c
                         .beacon_api_client
                         .light_client_updates(period, 1)
@@ -436,7 +461,8 @@ where
                         .pop()
                         .unwrap(),
                     __marker: PhantomData,
-                })
+                }
+                .into()
             }
             EvmFetchMsg::FetchBootstrap(FetchBootstrap { slot }) => {
                 // NOTE(benluelo): While this is technically two actions, I consider it to be one
@@ -453,12 +479,10 @@ where
                 tracing::info!("fetching bootstrap at {}", floored_slot);
 
                 let bootstrap = loop {
-                    let header_response = c
-                        .beacon_api_client
-                        .header(beacon_api::client::BlockId::Slot(
-                            floored_slot - amount_of_slots_back,
-                        ))
-                        .await;
+                    let block_id =
+                        beacon_api::client::BlockId::Slot(floored_slot - amount_of_slots_back);
+
+                    let header_response = c.beacon_api_client.header(block_id.clone()).await;
 
                     let header = match header_response {
                         Ok(header) => header,
@@ -466,11 +490,12 @@ where
                             status_code: _,
                             error: _,
                             message,
+                            // NOTE: I believe this message is specific to lodestar, if we ever plan on using other beacon chain implementations (if they ever get up to spec), we will need to figure out a better way to do this.
                         })) if message.starts_with("No block found for id") => {
+                            tracing::debug!(block_id = %block_id.clone(), "no block found for id");
                             amount_of_slots_back += 1;
                             continue;
                         }
-
                         Err(err) => panic!("{err}"),
                     };
 
@@ -481,38 +506,38 @@ where
 
                     match bootstrap_response {
                         Ok(ok) => break ok.data,
-                        Err(err) => match err {
-                            beacon_api::errors::Error::Internal(InternalServerError {
-                                status_code: _,
-                                error: _,
-                                message,
-                            }) if message.starts_with("syncCommitteeWitness not available") => {
-                                amount_of_slots_back += 1;
-                            }
-                            _ => panic!("{err}"),
-                        },
+                        Err(beacon_api::errors::Error::Internal(InternalServerError {
+                            status_code: _,
+                            error: _,
+                            message,
+                            // NOTE: I believe this message is specific to lodestar, if we ever plan on using other beacon chain implementations (if they ever get up to spec), we will need to figure out a better way to do this.
+                        })) if message.starts_with("syncCommitteeWitness not available") => {
+                            tracing::debug!(root = %header.data.root.clone(), %block_id, "sync commmittee witness not available for header");
+                            amount_of_slots_back += 1;
+                        }
+                        Err(err) => panic!("{err}"),
                     };
                 };
 
                 // bootstrap contains the current sync committee for the given height
-                EvmDataMsg::Bootstrap(BootstrapData {
+                BootstrapData {
                     slot,
                     bootstrap,
                     __marker: PhantomData,
-                })
+                }
+                .into()
             }
             EvmFetchMsg::FetchAccountUpdate(FetchAccountUpdate { slot }) => {
                 let execution_height = c
-                    .execution_height(Height {
-                        revision_number: EVM_REVISION_NUMBER,
-                        revision_height: slot,
-                    })
-                    .await;
+                    .beacon_api_client
+                    .execution_height(beacon_api::client::BlockId::Slot(slot))
+                    .await
+                    .unwrap();
 
                 let account_update = c
                     .provider
                     .get_proof(
-                        c.readonly_ibc_handler.address(),
+                        ethers::types::H160(c.ibc_handler_address.0),
                         vec![],
                         // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
                         Some(execution_height.into()),
@@ -520,7 +545,7 @@ where
                     .await
                     .unwrap();
 
-                EvmDataMsg::AccountUpdate(AccountUpdateData {
+                AccountUpdateData {
                     slot,
                     update: AccountUpdate {
                         account_proof: AccountProof {
@@ -533,195 +558,246 @@ where
                         },
                     },
                     __marker: PhantomData,
-                })
+                }
+                .into()
             }
-            EvmFetchMsg::FetchBeaconGenesis(_) => EvmDataMsg::BeaconGenesis(BeaconGenesisData {
+            EvmFetchMsg::FetchBeaconGenesis(_) => BeaconGenesisData {
                 genesis: c.beacon_api_client.genesis().await.unwrap().data,
                 __marker: PhantomData,
-            }),
-            EvmFetchMsg::FetchGetProof(get_proof) => {
-                let execution_height = c.execution_height(get_proof.height).await;
-
-                let path = get_proof.path.to_string();
-
-                let location = keccak256(
-                    keccak256(path.as_bytes())
-                        .into_iter()
-                        .chain(ethers::types::U256::from(0).encode())
-                        .collect::<Vec<_>>(),
-                );
-
-                let proof = c
-                    .provider
-                    .get_proof(
-                        c.readonly_ibc_handler.address(),
-                        vec![location.into()],
-                        Some(execution_height.into()),
-                    )
+            }
+            .into(),
+            EvmFetchMsg::FetchGetProof(GetProof { path, height }) => {
+                let execution_height = c
+                    .beacon_api_client
+                    .execution_height(beacon_api::client::BlockId::Slot(height.revision_height))
                     .await
                     .unwrap();
 
-                tracing::info!(?proof);
-
-                let proof = match <[_; 1]>::try_from(proof.storage_proof) {
-                    Ok([proof]) => proof,
-                    Err(invalid) => {
-                        panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
-                    }
-                };
-
-                let proof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
-                    proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                        key: U256::from_big_endian(proof.key.to_fixed_bytes()),
-                        value: proof.value.into(),
-                        proof: proof
-                            .proof
-                            .into_iter()
-                            .map(|bytes| bytes.to_vec())
-                            .collect(),
-                    }]
-                    .to_vec(),
-                };
-
-                return match get_proof.path {
-                    Path::ClientStatePath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcProof::<_, Evm<C>, Tr> {
-                            proof,
-                            height: get_proof.height,
-                            path,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    Path::ClientConsensusStatePath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcProof::<_, Evm<C>, Tr> {
-                            proof,
-                            height: get_proof.height,
-                            path,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    Path::ConnectionPath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcProof::<_, Evm<C>, Tr> {
-                            proof,
-                            height: get_proof.height,
-                            path,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    Path::ChannelEndPath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcProof::<_, Evm<C>, Tr> {
-                            proof,
-                            height: get_proof.height,
-                            path,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    Path::CommitmentPath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcProof::<_, Evm<C>, Tr> {
-                            proof,
-                            height: get_proof.height,
-                            path,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    Path::AcknowledgementPath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcProof::<_, Evm<C>, Tr> {
-                            proof,
-                            height: get_proof.height,
-                            path,
-                            __marker: PhantomData,
-                        },
-                    )),
-                };
+                return do_get_proof(
+                    path,
+                    c.ibc_handler_address.clone(),
+                    c.chain_id(),
+                    &c.provider,
+                    execution_height,
+                    height,
+                )
+                .await;
             }
-            EvmFetchMsg::FetchIbcState(get_storage_at) => {
-                return match get_storage_at.path {
-                    Path::ClientStatePath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcState {
-                            state: c
-                                .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                                .await
-                                .unwrap(),
-                            height: get_storage_at.height,
-                            path,
-                        },
-                    )),
-                    Path::ClientConsensusStatePath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcState {
-                            state: c
-                                .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                                .await
-                                .unwrap(),
-                            height: get_storage_at.height,
-                            path,
-                        },
-                    )),
-                    Path::ConnectionPath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcState {
-                            state: c
-                                .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                                .await
-                                .unwrap(),
-                            height: get_storage_at.height,
-                            path,
-                        },
-                    )),
-                    Path::ChannelEndPath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcState {
-                            state: c
-                                .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                                .await
-                                .unwrap(),
-                            height: get_storage_at.height,
-                            path,
-                        },
-                    )),
-                    Path::CommitmentPath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcState {
-                            state: c
-                                .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                                .await
-                                .unwrap(),
-                            height: get_storage_at.height,
-                            path,
-                        },
-                    )),
-                    Path::AcknowledgementPath(path) => data(id::<Evm<C>, Tr, _>(
-                        c.chain_id,
-                        IbcState {
-                            state: c
-                                .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                                .await
-                                .unwrap(),
-                            height: get_storage_at.height,
-                            path,
-                        },
-                    )),
-                };
+            EvmFetchMsg::FetchIbcState(FetchIbcState { path, height }) => {
+                let execution_height = c
+                    .beacon_api_client
+                    .execution_height(beacon_api::client::BlockId::Slot(height.revision_height))
+                    .await
+                    .unwrap();
+
+                return fun_name(path, c, execution_height, height).await;
             }
         };
 
-        data(id::<Evm<C>, Tr, _>(
+        data(id::<Ethereum<C>, Tr, _>(
             c.chain_id,
             LightClientSpecificData(msg),
         ))
     }
 }
 
+async fn fun_name<Hc: EthereumChain + ChainExt<Height = Height> + HasIbcHandler, Tr: ChainExt>(
+    path: Path<ClientIdOf<Hc>, HeightOf<Tr>>,
+    c: &Hc,
+    execution_height: u64,
+    height: Height,
+) -> QueueMsg<RelayerMsgTypes>
+where
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
+{
+    match path {
+        Path::ClientStatePath(path) => data(id::<Hc, Tr, _>(
+            c.chain_id(),
+            IbcState {
+                state: c
+                    .ibc_handler()
+                    .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                    .await
+                    .unwrap(),
+                height,
+                path,
+            },
+        )),
+        Path::ClientConsensusStatePath(path) => data(id::<Hc, Tr, _>(
+            c.chain_id(),
+            IbcState {
+                state: c
+                    .ibc_handler()
+                    .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                    .await
+                    .unwrap(),
+                height,
+                path,
+            },
+        )),
+        Path::ConnectionPath(path) => data(id::<Hc, Tr, _>(
+            c.chain_id(),
+            IbcState {
+                state: c
+                    .ibc_handler()
+                    .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                    .await
+                    .unwrap(),
+                height,
+                path,
+            },
+        )),
+        Path::ChannelEndPath(path) => data(id::<Hc, Tr, _>(
+            c.chain_id(),
+            IbcState {
+                state: c
+                    .ibc_handler()
+                    .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                    .await
+                    .unwrap(),
+                height,
+                path,
+            },
+        )),
+        Path::CommitmentPath(path) => data(id::<Hc, Tr, _>(
+            c.chain_id(),
+            IbcState {
+                state: c
+                    .ibc_handler()
+                    .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                    .await
+                    .unwrap(),
+                height,
+                path,
+            },
+        )),
+        Path::AcknowledgementPath(path) => data(id::<Hc, Tr, _>(
+            c.chain_id(),
+            IbcState {
+                state: c
+                    .ibc_handler()
+                    .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                    .await
+                    .unwrap(),
+                height,
+                path,
+            },
+        )),
+    }
+}
+
+pub(crate) async fn do_get_proof<
+    EthHc: ChainExt<
+        StateProof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof,
+        Height = Height,
+    >,
+    Tr: ChainExt,
+>(
+    path: Path<ClientIdOf<EthHc>, HeightOf<Tr>>,
+    ibc_handler_address: H160,
+    chain_id: ChainIdOf<EthHc>,
+    provider: &Provider<Ws>,
+    execution_height: u64,
+    height: Height,
+) -> QueueMsg<RelayerMsgTypes>
+where
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<EthHc, Tr>)>,
+{
+    let location = keccak256(
+        keccak256(path.to_string().as_bytes())
+            .into_iter()
+            .chain(ethers::types::U256::from(0).encode())
+            .collect::<Vec<_>>(),
+    );
+
+    let proof = provider
+        .get_proof(
+            ethers::types::H160(ibc_handler_address.0),
+            vec![location.into()],
+            Some(execution_height.into()),
+        )
+        .await
+        .unwrap();
+
+    tracing::debug!(?proof, "raw EIP1186ProofResponse");
+
+    let [proof] = &*proof.storage_proof else {
+        panic!(
+            "received invalid response from eth_getProof, expected length of 1 but got `{:#?}`",
+            proof.storage_proof
+        );
+    };
+
+    let proof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
+        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
+            key: U256::from_big_endian(proof.key.to_fixed_bytes()),
+            value: proof.value.into(),
+            proof: proof.proof.iter().map(|bytes| bytes.to_vec()).collect(),
+        }]
+        .to_vec(),
+    };
+
+    match path {
+        Path::ClientStatePath(path) => data(id::<EthHc, Tr, _>(
+            chain_id,
+            IbcProof::<_, EthHc, Tr> {
+                proof,
+                height,
+                path,
+                __marker: PhantomData,
+            },
+        )),
+        Path::ClientConsensusStatePath(path) => data(id::<EthHc, Tr, _>(
+            chain_id,
+            IbcProof::<_, EthHc, Tr> {
+                proof,
+                height,
+                path,
+                __marker: PhantomData,
+            },
+        )),
+        Path::ConnectionPath(path) => data(id::<EthHc, Tr, _>(
+            chain_id,
+            IbcProof::<_, EthHc, Tr> {
+                proof,
+                height,
+                path,
+                __marker: PhantomData,
+            },
+        )),
+        Path::ChannelEndPath(path) => data(id::<EthHc, Tr, _>(
+            chain_id,
+            IbcProof::<_, EthHc, Tr> {
+                proof,
+                height,
+                path,
+                __marker: PhantomData,
+            },
+        )),
+        Path::CommitmentPath(path) => data(id::<EthHc, Tr, _>(
+            chain_id,
+            IbcProof::<_, EthHc, Tr> {
+                proof,
+                height,
+                path,
+                __marker: PhantomData,
+            },
+        )),
+        Path::AcknowledgementPath(path) => data(id::<EthHc, Tr, _>(
+            chain_id,
+            IbcProof::<_, EthHc, Tr> {
+                proof,
+                height,
+                path,
+                __marker: PhantomData,
+            },
+        )),
+    }
+}
+
 #[apply(msg_struct)]
 pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
-    pub req: FetchUpdateHeaders<Evm<C>, Tr>,
+    pub req: FetchUpdateHeaders<Ethereum<C>, Tr>,
     pub currently_trusted_slot: u64,
     pub light_client_update: light_client_update::LightClientUpdate<C>,
     pub is_next: bool,
@@ -730,12 +806,12 @@ pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
 #[apply(msg_struct)]
 
 pub struct MakeCreateUpdatesData<C: ChainSpec, Tr: ChainExt> {
-    pub req: FetchUpdateHeaders<Evm<C>, Tr>,
+    pub req: FetchUpdateHeaders<Ethereum<C>, Tr>,
 }
 
 #[apply(msg_struct)]
 pub struct MakeCreateUpdatesFromLightClientUpdatesData<C: ChainSpec, Tr: ChainExt> {
-    pub req: FetchUpdateHeaders<Evm<C>, Tr>,
+    pub req: FetchUpdateHeaders<Ethereum<C>, Tr>,
     pub trusted_height: Height,
     pub finality_update: LightClientFinalityUpdate<C>,
 }
@@ -785,7 +861,7 @@ pub struct BeaconGenesisData<C: ChainSpec, Tr: ChainExt> {
 }
 
 try_from_relayer_msg! {
-    chain = Evm<C>,
+    chain = Ethereum<C>,
     generics = (C: ChainSpec, Tr: ChainExt),
     msgs = EvmDataMsg(
         FinalityUpdate(FinalityUpdate<C, Tr>),
@@ -837,7 +913,13 @@ pub enum EvmFetchMsg<C: ChainSpec, Tr: ChainExt> {
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound,
+    CloneNoBound,
+    PartialEqNoBound,
+    Serialize,
+    Deserialize,
+    derive_more::Display,
+    Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -914,24 +996,24 @@ pub struct LightClientUpdate<C: ChainSpec, Tr: ChainExt> {
     pub update: light_client_update::LightClientUpdate<C>,
 }
 
-impl<C, Tr> DoAggregate for Identified<Evm<C>, Tr, EvmAggregateMsg<C, Tr>>
+impl<C, Tr> DoAggregate for Identified<Ethereum<C>, Tr, EvmAggregateMsg<C, Tr>>
 where
     C: ChainSpec,
     Tr: ChainExt,
 
-    Identified<Evm<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, BootstrapData<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, BootstrapData<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Evm<C>>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Evm<C>>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
 
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 
     Tr::SelfClientState: unionlabs::EthAbi,
     <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
@@ -957,8 +1039,8 @@ where
 }
 
 fn make_create_update<C, Tr>(
-    req: FetchUpdateHeaders<Evm<C>, Tr>,
-    chain_id: <<Evm<C> as Chain>::SelfClientState as ClientState>::ChainId,
+    req: FetchUpdateHeaders<Ethereum<C>, Tr>,
+    chain_id: <<Ethereum<C> as Chain>::SelfClientState as ClientState>::ChainId,
     currently_trusted_slot: u64,
     light_client_update: light_client_update::LightClientUpdate<C>,
     is_next: bool,
@@ -966,8 +1048,8 @@ fn make_create_update<C, Tr>(
 where
     C: ChainSpec,
     Tr: ChainExt,
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 {
     // When we fetch the update at this height, the `next_sync_committee` will
     // be the current sync committee of the period that we want to update to.
@@ -979,19 +1061,19 @@ where
 
     aggregate(
         [
-            fetch(id::<Evm<C>, Tr, _>(
+            fetch(id::<Ethereum<C>, Tr, _>(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::from(FetchLightClientUpdate {
                     period: previous_period,
                 })),
             )),
-            fetch(id::<Evm<C>, Tr, _>(
+            fetch(id::<Ethereum<C>, Tr, _>(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::from(FetchAccountUpdate {
                     slot: light_client_update.attested_header.beacon.slot,
                 })),
             )),
-            fetch(id::<Evm<C>, Tr, _>(
+            fetch(id::<Ethereum<C>, Tr, _>(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::from(FetchBeaconGenesis {})),
             )),
@@ -1041,32 +1123,32 @@ fn mk_function_call<Call: EthCall>(
 
 #[apply(msg_struct)]
 pub struct GetProof<C: ChainSpec, Tr: ChainExt> {
-    pub path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
-    pub height: HeightOf<Evm<C>>,
+    pub path: Path<ClientIdOf<Ethereum<C>>, HeightOf<Tr>>,
+    pub height: HeightOf<Ethereum<C>>,
 }
 
 #[apply(msg_struct)]
 pub struct FetchIbcState<C: ChainSpec, Tr: ChainExt> {
-    pub path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
-    pub height: HeightOf<Evm<C>>,
+    pub path: Path<ClientIdOf<Ethereum<C>>, HeightOf<Tr>>,
+    pub height: HeightOf<Ethereum<C>>,
 }
 
-impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Evm<C>, Tr, CreateUpdateData<C, Tr>>
+impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Ethereum<C>, Tr, CreateUpdateData<C, Tr>>
 where
     C: ChainSpec,
     Tr: ChainExt,
 
-    Identified<Evm<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Evm<C>>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Evm<C>>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
 {
     type AggregatedData = HList![
-        Identified<Evm<C>, Tr, LightClientUpdate<C, Tr>>,
-        Identified<Evm<C>, Tr, AccountUpdateData<C, Tr>>,
-        Identified<Evm<C>, Tr, BeaconGenesisData<C, Tr>>
+        Identified<Ethereum<C>, Tr, LightClientUpdate<C, Tr>>,
+        Identified<Ethereum<C>, Tr, AccountUpdateData<C, Tr>>,
+        Identified<Ethereum<C>, Tr, BeaconGenesisData<C, Tr>>
     ];
 
     fn aggregate(
@@ -1144,7 +1226,7 @@ where
                     __marker: PhantomData,
                 },
             )),
-            msg(id::<Tr, Evm<C>, _>(
+            msg(id::<Tr, Ethereum<C>, _>(
                 req.counterparty_chain_id,
                 MsgUpdateClientData(MsgUpdateClient {
                     client_id: req.counterparty_client_id,
@@ -1155,18 +1237,19 @@ where
     }
 }
 
-impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Evm<C>, Tr, MakeCreateUpdatesData<C, Tr>>
+impl<C, Tr> UseAggregate<RelayerMsgTypes>
+    for Identified<Ethereum<C>, Tr, MakeCreateUpdatesData<C, Tr>>
 where
     C: ChainSpec,
 
     Tr: ChainExt,
 
-    Identified<Evm<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 {
-    type AggregatedData = HList![Identified<Evm<C>, Tr, FinalityUpdate<C, Tr>>];
+    type AggregatedData = HList![Identified<Ethereum<C>, Tr, FinalityUpdate<C, Tr>>];
 
     fn aggregate(
         Identified {
@@ -1198,7 +1281,7 @@ where
         // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
         // updates until we reach the `target_period - 1`.
         aggregate(
-            [fetch(id::<Evm<C>, Tr, _>(
+            [fetch(id::<Ethereum<C>, Tr, _>(
                 chain_id,
                 LightClientSpecificFetch(EvmFetchMsg::from(FetchLightClientUpdates {
                     trusted_period,
@@ -1221,26 +1304,27 @@ where
 }
 
 impl<C, Tr> UseAggregate<RelayerMsgTypes>
-    for Identified<Evm<C>, Tr, MakeCreateUpdatesFromLightClientUpdatesData<C, Tr>>
+    for Identified<Ethereum<C>, Tr, MakeCreateUpdatesFromLightClientUpdatesData<C, Tr>>
 where
     C: ChainSpec,
     Tr: ChainExt,
 
-    Identified<Evm<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Evm<C>>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Evm<C>>)>,
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 
-    Identified<Evm<C>, Tr, LightClientUpdates<C, Tr>>: TryFrom<AnyLightClientIdentified<AnyData>>,
+    Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>:
+        TryFrom<AnyLightClientIdentified<AnyData>>,
 
     Tr::SelfClientState: Encode<EthAbi>,
     Tr::SelfClientState: unionlabs::EthAbi,
     <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
-    type AggregatedData = HList![Identified<Evm<C>, Tr, LightClientUpdates<C, Tr>>];
+    type AggregatedData = HList![Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>];
 
     fn aggregate(
         Identified {

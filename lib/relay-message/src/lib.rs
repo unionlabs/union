@@ -11,7 +11,7 @@ use std::{
 use chain_utils::{
     cosmos::Cosmos,
     cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
-    evm::Evm,
+    evm::Ethereum,
     scroll::Scroll,
     union::Union,
     wasm::Wasm,
@@ -254,17 +254,25 @@ pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
 pub enum AnyLightClientIdentified<T: AnyLightClient> {
     // The 08-wasm client tracking the state of Evm<Mainnet>.
     #[display(fmt = "EvmMainnetOnUnion({}, {})", "_0.chain_id", "_0.t")]
-    EvmMainnetOnUnion(Identified<Wasm<Union>, Evm<Mainnet>, InnerOf<T, Wasm<Union>, Evm<Mainnet>>>),
+    EvmMainnetOnUnion(
+        Identified<Wasm<Union>, Ethereum<Mainnet>, InnerOf<T, Wasm<Union>, Ethereum<Mainnet>>>,
+    ),
     // The solidity client on Evm<Mainnet> tracking the state of Wasm<Union>.
     #[display(fmt = "UnionOnEvmMainnet({}, {})", "_0.chain_id", "_0.t")]
-    UnionOnEvmMainnet(Identified<Evm<Mainnet>, Wasm<Union>, InnerOf<T, Evm<Mainnet>, Wasm<Union>>>),
+    UnionOnEvmMainnet(
+        Identified<Ethereum<Mainnet>, Wasm<Union>, InnerOf<T, Ethereum<Mainnet>, Wasm<Union>>>,
+    ),
 
     // The 08-wasm client tracking the state of Evm<Minimal>.
     #[display(fmt = "EvmMinimalOnUnion({}, {})", "_0.chain_id", "_0.t")]
-    EvmMinimalOnUnion(Identified<Wasm<Union>, Evm<Minimal>, InnerOf<T, Wasm<Union>, Evm<Minimal>>>),
+    EvmMinimalOnUnion(
+        Identified<Wasm<Union>, Ethereum<Minimal>, InnerOf<T, Wasm<Union>, Ethereum<Minimal>>>,
+    ),
     // The solidity client on Evm<Minimal> tracking the state of Wasm<Union>.
     #[display(fmt = "UnionOnEvmMinimal({}, {})", "_0.chain_id", "_0.t")]
-    UnionOnEvmMinimal(Identified<Evm<Minimal>, Wasm<Union>, InnerOf<T, Evm<Minimal>, Wasm<Union>>>),
+    UnionOnEvmMinimal(
+        Identified<Ethereum<Minimal>, Wasm<Union>, InnerOf<T, Ethereum<Minimal>, Wasm<Union>>>,
+    ),
 
     #[display(fmt = "CosmosOnUnion({}, {})", "_0.chain_id", "_0.t")]
     CosmosOnUnion(Identified<Union, Wasm<Cosmos>, InnerOf<T, Union, Wasm<Cosmos>>>),
@@ -286,30 +294,30 @@ enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
     EvmMainnetOnUnion(
         Inner<
             Wasm<Union>,
-            Evm<Mainnet>,
-            Identified<Wasm<Union>, Evm<Mainnet>, InnerOf<T, Wasm<Union>, Evm<Mainnet>>>,
+            Ethereum<Mainnet>,
+            Identified<Wasm<Union>, Ethereum<Mainnet>, InnerOf<T, Wasm<Union>, Ethereum<Mainnet>>>,
         >,
     ),
     UnionOnEvmMainnet(
         Inner<
-            Evm<Mainnet>,
+            Ethereum<Mainnet>,
             Wasm<Union>,
-            Identified<Evm<Mainnet>, Wasm<Union>, InnerOf<T, Evm<Mainnet>, Wasm<Union>>>,
+            Identified<Ethereum<Mainnet>, Wasm<Union>, InnerOf<T, Ethereum<Mainnet>, Wasm<Union>>>,
         >,
     ),
 
     EvmMinimalOnUnion(
         Inner<
             Wasm<Union>,
-            Evm<Minimal>,
-            Identified<Wasm<Union>, Evm<Minimal>, InnerOf<T, Wasm<Union>, Evm<Minimal>>>,
+            Ethereum<Minimal>,
+            Identified<Wasm<Union>, Ethereum<Minimal>, InnerOf<T, Wasm<Union>, Ethereum<Minimal>>>,
         >,
     ),
     UnionOnEvmMinimal(
         Inner<
-            Evm<Minimal>,
+            Ethereum<Minimal>,
             Wasm<Union>,
-            Identified<Evm<Minimal>, Wasm<Union>, InnerOf<T, Evm<Minimal>, Wasm<Union>>>,
+            Identified<Ethereum<Minimal>, Wasm<Union>, InnerOf<T, Ethereum<Minimal>, Wasm<Union>>>,
         >,
     ),
 

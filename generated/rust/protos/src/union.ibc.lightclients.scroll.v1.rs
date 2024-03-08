@@ -8,16 +8,18 @@ pub struct ClientState {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(uint64, tag = "3")]
     pub latest_batch_index: u64,
-    #[prost(message, optional, tag = "4")]
+    #[prost(bytes = "vec", tag = "4")]
+    pub latest_batch_index_slot: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "5")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(bytes = "vec", tag = "5")]
-    pub rollup_contract_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "6")]
-    pub rollup_finalized_state_roots_slot: ::prost::alloc::vec::Vec<u8>,
+    pub rollup_contract_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "7")]
-    pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
+    pub rollup_finalized_state_roots_slot: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "8")]
+    pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "9")]
     pub ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
