@@ -9,7 +9,7 @@ export async function GET(context: APIContext) {
 
   return rss({
     site,
-    title: "Union's Blog",
+    title: "The Union Blog",
     description:
       "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks.",
     items: blog.map((post) => ({
@@ -18,7 +18,6 @@ export async function GET(context: APIContext) {
       author: post.data.author,
       link: `/blog/${post.slug}/`,
       description: post.data.description,
-      customData: `<image>${post.data.cover}</image>`,
     })),
     // (optional) inject custom xml
     customData: `<language>en-us</language>`,
