@@ -11,13 +11,13 @@ Union's underlying security model is based on consensus verification, which is t
 2. And we (receiving chain) have not processed it yet.
 3. Process the message.
 
-Consensus verification allows us to prove that _1_ is true without the need for trusted intermediaries.
+Consensus verification allows us to prove that **_1_** is true without the need for trusted intermediaries.
 
 ## Gradients of security
 
 We can categorize different bridging solutions based on a security/decentralization gradient (with bridging, more decentralized equates to more secure.)
 
-Protocols like LayerZero and CCTP use a set of private keys to 'prove' _1_. This is a **Proof of Authority** (PoA), as you need to trust LayerZero Labs or Circle with full power over token transfers, minting, locking, and message transfers.
+Protocols like LayerZero and CCTP use a set of private keys to 'prove' **_1_**. This is a **Proof of Authority** (PoA), as you need to trust LayerZero Labs or Circle with full power over token transfers, minting, locking, and message transfers.
 
 The next generation of bridging protocols attempts to distribute these private keys over network participants, often using [threshold signatures](https://link.springer.com/referenceworkentry/10.1007/0-387-23483-7_429), also called multi-party computation (MPC). Instead of trusting a single entity or a small group, we move the rights to produce a **PoA** to a larger group. MPC scales poorly to large numbers of validators, so instead of trusting 2 parties, we trust 10 to 20 parties. There are further downsides to this approach that we'll cover later as well.
 

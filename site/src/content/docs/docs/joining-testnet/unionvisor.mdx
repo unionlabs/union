@@ -66,7 +66,7 @@ Note the usage of the flags and arguments we pass to `docker run` run here:
 
 :::
 
-After the `unionvisor init` command is done running, you should have a `.unionvisor` folder with the following contents:
+After the above command is done running, you should have a `.unionvisor` folder with the following contents:
 
 <FileTree>
 
@@ -81,8 +81,7 @@ After the `unionvisor init` command is done running, you should have a `.unionvi
   - data
     - priv_validator_state.json
 - versions
-  - <Version chainId="union-testnet-6" genesis={false} />
-    - uniond
+  - <Version chainId="union-testnet-6" genesis={false} />- uniond
 
 </FileTree>
 
@@ -116,7 +115,7 @@ For example, in `zsh`, you can add the following alias to your `.zshrc`:
 alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION --log-level off call --'
 ```
 
-_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" genesis="false"/>_
+_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" genesis={false} />_
 
 :::note
 

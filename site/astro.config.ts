@@ -9,19 +9,19 @@ import starlightLinksValidator from "starlight-links-validator";
 const SITE_URL = "https://union.build";
 const PORT = Number(process.env.PORT || 4321);
 
+const ENABLE_DEV_TOOLBAR = process.env.ENABLE_DEV_TOOLBAR === "true";
+
 // https://astro.build/config
 export default defineConfig({
   site: SITE_URL,
   output: "static",
   trailingSlash: "ignore",
-  server: ({ command }) => {
-    return { port: PORT };
-  },
+  server: ({ command }) => ({ port: PORT }),
   redirects: {
     "/logo": "/union-logo.zip",
   },
   markdown: markdownConfiguration,
-  devToolbar: { enabled: false },
+  devToolbar: { enabled: ENABLE_DEV_TOOLBAR },
   integrations: [
     starlight({
       title: "Union",

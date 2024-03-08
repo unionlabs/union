@@ -2,6 +2,8 @@
 title: "Running the Union Devnet"
 ---
 
+import { Steps } from "@astrojs/starlight/components";
+
 The Union Devnet is used to run every component there is locally to be able to experiment with IBC between Ethereum and Union. The nice thing about the setup is that, it requires you to run only two commands and it will handle the rest. This document will explain every option to do the setup for your needs.
 
 ## Quick start
@@ -45,17 +47,23 @@ The setup might take some time based on your internet speed and computing power.
 
 There are plenty of things to make IBC work. To explain it briefly, the steps are:
 
+<Steps>
+
 1. If the prover is being run locally, it will first look for the files under `--circuit-path` and download or update them if necessary.
 2. It checks whether both of the chains are alive.
 3. It instantiates the following IBC apps to Union for you to try:
-   1. `ucs01-relay`: For cross-chain token transfers.
-   2. `ping-pong`: For starting endless ping-pong between Ethereum and Union.
+   <Steps>
+     1. `ucs01-relay`: For cross-chain token transfers. 2. `ping-pong`: For
+     starting endless ping-pong between Ethereum and Union.
+   </Steps>
 4. It deploys the IBC protocol contracts as well as `ICS20Transfer` contract for cross-chain transfers to Ethereum.
 5. It deploys the ping-pong contract on Ethereum.
 6. It starts the local prover in the background if the `--circuit-path` is provided.
 7. It sets up the initial channels for both `ICS20Transfer` and `PingPong` on Ethereum. Note that this is not being done in Union since this is handled at the genesis configuration.
 8. It creates light clients on both chains.
 9. It waits for the prover to be online, and then it starts Voyager to relay packets.
+
+</Steps>
 
 ## CLI options to customize the execution
 
