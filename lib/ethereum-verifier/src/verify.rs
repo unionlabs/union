@@ -673,7 +673,7 @@ mod tests {
         assert!(matches!(
             get_node(
                 VALID_PROOF.storage_root.clone(),
-                &proof_key,
+                proof_key,
                 VALID_PROOF.storage_proof.proof.iter()
             ),
             Err(Error::Trie(_))
