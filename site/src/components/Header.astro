@@ -50,20 +50,20 @@ let menuItems = [
   })
 </script>
 
-<header class="fixed z-[100] w-full backdrop-blur-lg bg-black/60 flex justify-around pt-3 px-4 py-3">
+<header class="z-[100] w-full bg-black/60 flex justify-around pt-3 px-4 sticky top-0 py-3">
   <div class="max-w-5xl flex flex-1 items-center">
     <a
       href="/"
       id="union-logo"
       class="flex items-center gap-2 decoration-transparent visited:text-white"
     >
-      <img class="w-8 h-8 my-auto" src={unionLogo.src} alt="Union Logo" />
+      <img class="w-8 h-8 my-auto object-contain" src={unionLogo.src} alt="Union Logo" />
       <p class="font-semibold text-3xl py-0 my-0 mb-0.5">Union</p>
     </a>
 
     <div
       id="overlay"
-      class="overlay"
+      class="overlay sm:hidden"
       data-description="Overlay to blur the background when the menu is open"
     >
     </div>
@@ -107,6 +107,7 @@ let menuItems = [
     <nav class="sm:hidden flex flex-1 justify-end">
       <button
         id="menu-button"
+        name="menu-button"
         class="bg-white rounded-full h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
       >
         <Icon name="bars" color="#000000" size="1.2rem" />
@@ -152,9 +153,18 @@ let menuItems = [
     </nav>
   </div>
 </header>
-<div class="h-[62px]"></div>
 
 <style is:inline>
+  header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    backdrop-filter: blur(20px);
+    z-index: -1;
+  }
   #menu-items-list {
     display: none;
     overflow: hidden;

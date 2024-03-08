@@ -1,52 +1,24 @@
 ---
-import xIcon from '#/assets/images/x.svg'
-import discordIcon from '#/assets/images/discord.svg'
-import calendarIcon from '#/assets/images/calendar.svg'
-
-let socialLinks = [
-  {
-    href: 'https://x.com/union_build',
-    iconSrc: xIcon.src,
-    cta: 'Join us on X'
-  },
-  {
-    href: 'https://discord.union.build',
-    iconSrc: discordIcon.src,
-    cta: 'Join our Discord'
-  },
-  {
-    href: 'https://x.com/union_build',
-    iconSrc: calendarIcon.src,
-    cta: 'Join our Events'
-  }
-]
-
+import { Icon } from '@astrojs/starlight/components'
+import { socialLinks } from '#/lib/constants/socials.ts'
 ---
 
-<section class='bg-black mb-px flex flex-col items-center justif-center'>
-<div class='flex-1 max-w-4xl'>
-  <p class='text-4xl mb-4 font-normal text-center text-white'>Join the Union</p>
-  <div class='grid grid-cols-1 md:grid-cols-3'>
-    {
-      socialLinks.map(socialLink => (
-        <a
-          href={socialLink.href}
-          class='flex flex-col flex-1 p-7 text-center'
-        >
-          <img
-            src={socialLink.iconSrc}
-            alt={socialLink.cta}
-            class='h-8'
-          />
-          <div class='mt-4'>
-            <span class='mt-16 border-b-[1px] uppercase border-white text-semibold'>
-              {socialLink.cta} -&gt;
-            </span>
-          </div>
-        </a>
-      ))
-    }
+<section class="bg-black mb-px flex flex-col items-center justif-center">
+  <div class="flex-1 max-w-4xl">
+    <p class="text-4xl mb-4 font-normal text-center text-white">Join the Union</p>
+    <div class="grid grid-cols-1 md:grid-cols-3">
+      {
+        socialLinks.map(socialLink => (
+          <a href={socialLink.href} class="flex flex-col flex-1 p-7 text-center">
+            <Icon name={socialLink.icon} class="mx-auto" size="2.5rem" />
+            <div class="mt-4">
+              <span class="mt-16 border-b-[1px] uppercase border-white text-semibold">
+                {socialLink.cta} -&gt;
+              </span>
+            </div>
+          </a>
+        ))
+      }
+    </div>
   </div>
-</div>
 </section>
-

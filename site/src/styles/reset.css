@@ -7,6 +7,12 @@
   box-sizing: border-box;
 }
 
+img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
 a,
 a:visited {
   text-decoration: none;

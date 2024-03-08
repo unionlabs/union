@@ -4,8 +4,10 @@ date: 2024-01-11
 author: "union_build"
 description: "Movement and Noble join forces with Union to transfer native assets across Celestia's modular stack"
 hidden: false
+cover: "/src/assets/images/noble-and-movement-partnership/cover.png"
 ---
 
+import { Image } from "astro:assets";
 import celestiaImage from "#/assets/images/layers.jpg";
 
 In the last few years, the emergence of optimistic rollups, zk-rollups, and side chains has increased fragmentation of protocol's total value locked (TVL) and inherent liquidity. This problem highlights the need for increased interoperability between layer-2 ecosystems.
@@ -14,8 +16,8 @@ While sovereign rollups are critical for innovation and scalability, their viabi
 
 Union, the sovereign interoperability protocol, will provide [M2](https://medium.com/movementlabsxyz/movement-celestia-an-open-protocol-to-build-modular-move-l2s-on-ethereum-b20ee7ca6edf) access to liquidity and connectivity to any IBC enabled chain, including Noble and Ethereum. With this integration, applications built on Movement will be able to securely transfer assets and messages to, from, and between other connected chains. This collaboration will enable Move VM rollups to communicate and exchange assets, such as Native USDC, directly with each other without relying on centralized or vulnerable bridge partners.
 
-<img
-  src={celestiaImage.src}
+<Image
+  src={celestiaImage}
   width="100%"
   alt="Celestia's modular stack"
   class="invert-1 my-4"
@@ -30,8 +32,7 @@ Union's trust-minimized zk bridge provides several benefits to Movement and Nobl
 
 ## The role of Movement
 
-Movement is building the first MoveVM zero-knowledge rollup on Ethereum, harnessing the functional advantages of Ethereum's settlement layer while utilizing Celestia's modular data availability (DA) infrastructure. To ensure a seamless flow of liquidity across Movement rollups, the broader Cosmos ecosystem, and Celestia's sovereign rollups, Movement will utilize Union's zero-knowledge IBC bridge for general message passing and asset transfers. This connection will not only allow Move VM rollups to inherit IBC interoperability but also provide them with trustless access to Ethereum liquidity.
-“Interoperability is a core aspect of Movement's mission. By partnering with Union and Noble, Movement is bringing the first IBC connection to the Move ecosystem. For the first time, Move apps can leverage Interchain assets natively within their interface including USDC powered by Noble which will jumpstart Move protocol adoption.” said Rushi Manche, Founder and CEO of Movement Labs.
+Movement is building the first MoveVM zero-knowledge rollup on Ethereum, harnessing the functional advantages of Ethereum's settlement layer while utilizing Celestia's modular data availability (DA) infrastructure. To ensure a seamless flow of liquidity across Movement rollups, the broader Cosmos ecosystem, and Celestia's sovereign rollups, Movement will utilize Union's zero-knowledge IBC bridge for general message passing and asset transfers. This connection will not only allow Move VM rollups to inherit IBC interoperability but also provide them with trustless access to Ethereum liquidity. “Interoperability is a core aspect of Movement's mission. By partnering with Union and Noble, Movement is bringing the first IBC connection to the Move ecosystem. For the first time, Move apps can leverage Interchain assets natively within their interface including USDC powered by Noble which will jumpstart Move protocol adoption.” said Rushi Manche, Founder and CEO of Movement Labs.
 
 ## The role of Noble
 

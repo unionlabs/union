@@ -13,12 +13,7 @@ interface Props {
 const { url, title, image, description } = Astro.props
 ---
 
-<BaseLayout
-  {url}
-  {title}
-  {image}
-  {description}
->
+<BaseLayout {url} {title} {image} {description}>
   <Header />
   <slot />
   <Footer />

@@ -6,6 +6,8 @@ import { SEO } from 'astro-seo'
 import { Head } from 'astro-capo'
 import { AstroFont } from 'astro-font'
 
+const COMMIT_SHA = import.meta.env.CF_PAGES_COMMIT_SHA
+
 interface Props {
   url?: string
   title?: string
@@ -20,16 +22,16 @@ const {
   title = 'Union',
   image = '/og.png',
   description = 'The Sovereign Interoperability Layer',
-  loadFonts = true
+  loadFonts = true,
 } = Astro.props
 
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 ---
 
 <!doctype html>
-<html lang='en'>
+<html lang="en">
   <Head>
-    <meta charset='utf-8' />
+    <meta charset="utf-8" />
     <SEO
       title={title}
       description={description}
@@ -38,29 +40,29 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           url,
           title,
           image,
-          type: 'website'
+          type: 'website',
         },
         optional: {
           locale: 'en_US',
           siteName: 'Union',
-          description
+          description,
         },
-        image: { url: image, alt: 'Union Logo' }
+        image: { url: image, alt: 'Union Logo' },
       }}
       twitter={{
         title,
         image,
-        site: url,
+        site: '@union_build',
         description,
         imageAlt: 'Union Logo',
         creator: '@union_build',
-        card: 'summary_large_image'
+        card: 'summary_large_image',
       }}
       extend={{
         link: [
           { rel: 'icon', href: '/favicon.ico' },
           { rel: 'canonical', href: Astro.url.href },
-          { rel: 'sitemap', href: '/sitemap-index.xml' }
+          { rel: 'sitemap', href: '/sitemap-index.xml' },
         ],
         meta: [
           { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
@@ -68,8 +70,9 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           { name: 'twitter:domain', content: 'union.build' },
           { name: 'twitter:url', content: url },
           { name: 'twitter:title', content: title },
-          { name: 'twitter:description', content: description }
-        ]
+          { name: 'twitter:description', content: description },
+          { name: 'commit-sha', content: COMMIT_SHA },
+        ],
       }}
     />
     {
@@ -81,30 +84,30 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
               src: fontWeights.map(weight => ({
                 path: '/fonts/InterVariable.woff2',
                 style: 'normal',
-                weight
+                weight,
               })),
               preload: true,
               display: 'swap',
-              fallback: 'sans-serif'
+              fallback: 'sans-serif',
             },
             {
               name: 'JetBrains Mono',
               src: fontWeights.map(weight => ({
                 path: '/fonts/JetBrainsMono[wght].woff2',
                 style: 'normal',
-                weight
+                weight,
               })),
               preload: true,
               display: 'swap',
-              fallback: 'sans-serif'
-            }
+              fallback: 'sans-serif',
+            },
           ]}
         />
       )
     }
   </Head>
   <body
-    class='font-sans flex flex-col items-stretch flex-1 shadow-effect-bg pb-12 bg-black text-white not-content'
+    class="font-sans flex flex-col items-stretch flex-1 shadow-effect-bg pb-12 bg-black text-white not-content"
   >
     <slot />
   </body>
