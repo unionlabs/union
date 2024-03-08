@@ -103,6 +103,7 @@
             echo "Generating go code based on ./uniond/proto"
             echo "Moving patched go sources to correct directories"
             cp -r ${generate-uniond-proto}/union/x/* ./x/
+            cp -r ${generate-uniond-proto}/union/staking/* ./x/staking
 
             cp ${generate-uniond-proto}/union/app/ibc/cometbls/02-client/keeper/* ./app/ibc/cometbls/02-client/keeper/
 
