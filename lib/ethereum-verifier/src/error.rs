@@ -58,8 +58,10 @@ pub enum Error {
     InsufficientSyncCommitteeParticipants(usize),
     #[error("bls error ({0:?})")]
     Bls(AmclError),
-    #[error("proof is invalid due to value mismatch")]
-    ValueMismatch,
+    #[error("proof is invalid due to value mismatch expected: {e}, actual: {a}", e = serde_utils::to_hex(expected), a = serde_utils::to_hex(actual))]
+    ValueMismatch { expected: Vec<u8>, actual: Vec<u8> },
+    #[error("proof is invalid due to missing value: {v}", v = serde_utils::to_hex(value))]
+    ValueMissing { value: Vec<u8> },
     #[error("trie error ({0:?})")]
     Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
     #[error("rlp decoding failed ({0:?})")]

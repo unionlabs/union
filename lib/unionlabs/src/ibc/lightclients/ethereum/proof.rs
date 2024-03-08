@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, uint::U256};
 
-// REVIEW: H256 or actual arbitrary bytes?
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
