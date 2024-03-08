@@ -1,0 +1,15 @@
+---
+import versions from '../../../versions/versions.json' with { type: 'json' }
+
+interface Props {
+  chainId?: string
+  genesis?: boolean
+}
+
+const chainId = Astro.props.chainId || `${Object.keys(versions).at(-1)}`
+const genesis = Astro.props.genesis || false
+
+const version = versions[chainId].at(genesis ? 0 : -1)
+---
+
+{version}

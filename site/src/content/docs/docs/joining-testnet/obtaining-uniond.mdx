@@ -4,8 +4,8 @@ sidebar:
   order: 1
 ---
 
-import FileTree from "#/components/FileTree.astro";
-import Version from "#/components/ChainVersions.svelte";
+import Version from "#/components/ChainVersion.astro";
+import { FileTree } from "@astrojs/starlight/components";
 import DownloadFile from "#/components/DownloadFile.astro";
 
 Currently, we are only officially supporting running the Union Testnet binary (`uniond`) as a Docker container.
@@ -22,7 +22,7 @@ To get the `uniond` image, you can visit [our container](https://github.com/orgs
 docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 ```
 
-_Where `UNIOND_VERSION` is <Version chainId="union-testnet-6" genesis="false"/>_
+_Where `UNIOND_VERSION` is <Version chainId="union-testnet-6" genesis={false} />_
 
 ## Running uniond
 

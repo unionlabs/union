@@ -4,8 +4,8 @@ sidebar:
   order: 2
 ---
 
-import FileTree from "#/components/FileTree.astro";
-import Version from "#/components/ChainVersions.svelte";
+import Version from "#/components/ChainVersion.astro";
+import { FileTree } from "@astrojs/starlight/components";
 
 Unionvisor is a utility for managing `uniond` deployments. It manages running, upgrading, and interacting with the node.
 
@@ -19,7 +19,7 @@ Alternatively, you can run the following command:
 docker pull ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION
 ```
 
-_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" genesis="false"/>_
+_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" genesis={false} />_
 
 ## Running Unionvisor
 
@@ -52,7 +52,7 @@ docker run \
   -it ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION \
   init --moniker $MONIKER \
   --network union-testnet-6 \
-  --seeds "b37de4c50e26f7cde4c7b6ce06046a6693ffef2c@union.testnet.4.seed.poisonphang.com:26656"
+  --seeds "b37de4c50e26f7cde4c7b6ce06046a6693ffef2c@union.testnet.6.seed.poisonphang.com:26656"
 ```
 
 _Where `MONIKER` is the preferred moniker you'd like to use on this node._
@@ -81,7 +81,9 @@ After the `uniond init` command is done running, you should have a `.unionvisor`
     - priv_validator_key.json
   - data/
     - priv_validator_state.json
-- uniond # versions/v0.18.0/uniond
+- versions/
+  - v0.18.0/
+    - uniond
 
 </FileTree>
 
