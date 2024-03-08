@@ -1134,6 +1134,7 @@ mod test {
         );
     }
 
+    #[allow(clippy::type_complexity)]
     fn prepare_migrate_tests() -> (
         OwnedDeps<MockStorage, MockApi, MockQuerier<UnionCustomQuery>, UnionCustomQuery>,
         WasmClientState,

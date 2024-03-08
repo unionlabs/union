@@ -57,12 +57,16 @@ pub fn verify_header(
     Ok(())
 }
 
-pub fn finalized_state_root_key(slot: U256, batch_index: U256) -> H256 {
-    sha3::Keccak256::new()
-        .chain_update(batch_index.to_big_endian())
-        .chain_update(slot.to_big_endian())
-        .finalize()
-        .into()
+pub fn finalized_state_root_key(slot: U256, batch_index: U256) -> U256 {
+    U256::from_big_endian(
+        H256::from(
+            sha3::Keccak256::new()
+                .chain_update(batch_index.to_big_endian())
+                .chain_update(slot.to_big_endian())
+                .finalize(),
+        )
+        .0,
+    )
 }
 
 pub fn get_zktrie_node(
