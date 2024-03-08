@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  fail_if_pull_request_is_draft:
+  fail-on-draft:
     if: github.event.pull_request.draft == true
     runs-on: ubuntu-latest
     steps:
