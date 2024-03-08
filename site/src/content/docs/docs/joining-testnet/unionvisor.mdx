@@ -66,23 +66,22 @@ Note the usage of the flags and arguments we pass to `docker run` run here:
 
 :::
 
-After the `uniond init` command is done running, you should have a `.unionvisor` folder with the following contents:
+After the `unionvisor init` command is done running, you should have a `.unionvisor` folder with the following contents:
 
 <FileTree>
 
-- ~/.unionvisor
-- home/
-  - config/
+- home
+  - config
     - app.toml
     - client.toml
     - config.toml
     - genesis.json
     - node_key.json
     - priv_validator_key.json
-  - data/
+  - data
     - priv_validator_state.json
-- versions/
-  - v0.18.0/
+- versions
+  - <Version chainId="union-testnet-6" genesis={false} />
     - uniond
 
 </FileTree>
