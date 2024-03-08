@@ -5,6 +5,7 @@ on:
     branches:
     - main
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
     - main
 
@@ -14,7 +15,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  fail_if_pull_request_is_draft:
+    if: github.event.pull_request.draft == true
+    runs-on: ...
+    steps:
+        run: exit 1
   packages:
+    if: github.event.pull_request.draft == false
     uses: unionlabs/workflows/.github/workflows/build.yml@329b802dafe949a7a93b6e6a5bf5065c3a81ab30
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
@@ -23,6 +30,7 @@ jobs:
       eval_target: 'build'
       eval_top_attr: 'packages'
   devShells:
+    if: github.event.pull_request.draft == false
     uses: unionlabs/workflows/.github/workflows/build.yml@329b802dafe949a7a93b6e6a5bf5065c3a81ab30
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
@@ -31,6 +39,7 @@ jobs:
       eval_target: 'dev'
       eval_top_attr: 'devShells'
   checks:
+    if: github.event.pull_request.draft == false
     uses: unionlabs/workflows/.github/workflows/build.yml@329b802dafe949a7a93b6e6a5bf5065c3a81ab30
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}

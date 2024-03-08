@@ -2,6 +2,7 @@ name: Check
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
     - main
 
@@ -12,7 +13,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  fail_if_pull_request_is_draft:
+    if: github.event.pull_request.draft == true
+    runs-on: ...
+    steps:
+        run: exit 1
   check:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
     steps:
