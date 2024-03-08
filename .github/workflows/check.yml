@@ -15,9 +15,9 @@ concurrency:
 jobs:
   fail_if_pull_request_is_draft:
     if: github.event.pull_request.draft == true
-    runs-on: ...
+    runs-on: ubuntu-latest
     steps:
-      run: exit 1
+    - run: exit 1
   check:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
