@@ -63,6 +63,7 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           { rel: 'icon', href: '/favicon.ico' },
           { rel: 'canonical', href: Astro.url.href },
           { rel: 'sitemap', href: '/sitemap-index.xml' },
+          { rel: 'alternate', type: 'application/rss+xml', title: 'Union', href: `${Astro.site}rss.xml` }
         ],
         meta: [
           { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
