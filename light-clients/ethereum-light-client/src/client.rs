@@ -482,8 +482,8 @@ fn do_verify_membership(
 
     verify_storage_proof(
         storage_root,
-        H256(storage_proof.key.to_big_endian()),
-        &rlp::encode(&storage_proof.value.to_big_endian().as_ref()),
+        storage_proof.key,
+        &rlp::encode(&storage_proof.value),
         &storage_proof.proof,
     )
     .map_err(Into::into)
@@ -502,11 +502,7 @@ fn do_verify_non_membership(
         H256(storage_proof.key.to_big_endian()),
     )?;
 
-    if verify_storage_absence(
-        storage_root,
-        H256(storage_proof.key.to_big_endian()),
-        &storage_proof.proof,
-    )? {
+    if verify_storage_absence(storage_root, storage_proof.key, &storage_proof.proof)? {
         Ok(())
     } else {
         Err(Error::CounterpartyStorageNotNil)

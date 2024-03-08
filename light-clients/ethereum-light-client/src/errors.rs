@@ -75,7 +75,7 @@ pub enum Error {
     #[error("batching proofs are not supported")]
     BatchingProofsNotSupported,
 
-    #[error("expected value ({expected}) and stored value ({stored}) don't match")]
+    #[error("expected value ({expected:?}) and stored value ({stored:?}) don't match")]
     StoredValueMismatch { expected: H256, stored: H256 },
 
     #[error("storage root mismatch, expected `{expected}` but found `{found}`")]

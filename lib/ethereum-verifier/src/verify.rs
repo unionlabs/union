@@ -21,6 +21,7 @@ use unionlabs::{
         execution_payload_header::CapellaExecutionPayloadHeader, fork_parameters::ForkParameters,
         light_client_header::LightClientHeader, light_client_update::LightClientUpdate,
     },
+    uint::U256,
 };
 
 use crate::{
@@ -200,7 +201,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     Ok(())
 }
 
-fn verify_state(
+fn get_node(
     root: H256,
     key: impl AsRef<[u8]>,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
@@ -212,7 +213,6 @@ fn verify_state(
 
     let root: primitive_types::H256 = root.into();
     let trie = TrieDBBuilder::<EthLayout>::new(&db, &root).build();
-    // REVIEW: Is this arbitrary bytes?
     Ok(trie.get(&keccak_256(key.as_ref()))?)
 }
 
@@ -230,13 +230,21 @@ pub fn verify_account_storage_root(
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
     storage_root: &H256,
 ) -> Result<(), VerifyAccountStorageRootError> {
-    match verify_state(root, address.as_ref(), proof)? {
+    match get_node(root, address.as_ref(), proof)? {
         Some(account) => {
             let account = rlp::decode::<Account>(account.as_ref()).map_err(Error::RlpDecode)?;
-            ensure(&account.storage_root == storage_root, Error::ValueMismatch)?;
+            ensure(
+                &account.storage_root == storage_root,
+                Error::ValueMismatch {
+                    expected: storage_root.as_ref().into(),
+                    actual: account.storage_root.into(),
+                },
+            )?;
             Ok(())
         }
-        None => Err(Error::ValueMismatch)?,
+        None => Err(Error::ValueMissing {
+            value: address.as_ref().into(),
+        })?,
     }
 }
 
@@ -250,13 +258,19 @@ pub fn verify_account_storage_root(
 /// NOTE: You must not trust the `root` unless you verified it by calling [`verify_account_storage_root`].
 pub fn verify_storage_proof(
     root: H256,
-    key: H256,
+    key: U256,
     expected_value: &[u8],
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
 ) -> Result<(), VerifyStorageProofError> {
-    match verify_state(root, key.as_ref(), proof)? {
+    match get_node(root, key.to_big_endian(), proof)? {
         Some(value) if value == expected_value => Ok(()),
-        _ => Err(Error::ValueMismatch)?,
+        Some(value) => Err(Error::ValueMismatch {
+            expected: expected_value.into(),
+            actual: value,
+        })?,
+        None => Err(Error::ValueMissing {
+            value: expected_value.into(),
+        })?,
     }
 }
 
@@ -269,10 +283,10 @@ pub fn verify_storage_proof(
 /// NOTE: You must not trust the `root` unless you verified it by calling [`verify_account_storage_root`].
 pub fn verify_storage_absence(
     root: H256,
-    key: H256,
+    key: U256,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
 ) -> Result<bool, VerifyStorageAbsenceError> {
-    Ok(verify_state(root, key.as_ref(), proof)?.is_none())
+    Ok(get_node(root, key.to_big_endian(), proof)?.is_none())
 }
 
 /// Computes the execution block root hash.
@@ -333,7 +347,7 @@ mod tests {
     use serde::Deserialize;
     use unionlabs::{
         ethereum::config::{Mainnet, SEPOLIA},
-        ibc::lightclients::ethereum::sync_committee::SyncCommittee,
+        ibc::lightclients::ethereum::{proof::Proof, sync_committee::SyncCommittee},
     };
 
     use super::*;
@@ -353,20 +367,16 @@ mod tests {
     }
 
     #[derive(Deserialize)]
-    struct Proof {
+    struct TestProof {
         pub storage_root: H256,
-        #[serde(with = "::serde_utils::hex_string")]
-        pub key: Vec<u8>,
-        #[serde(with = "::serde_utils::hex_string")]
-        pub value: Vec<u8>,
-        #[serde(with = "::serde_utils::hex_string_list")]
-        pub proof: Vec<Vec<u8>>,
+        pub storage_proof: Proof,
     }
 
     lazy_static::lazy_static! {
-        static ref VALID_PROOF: Proof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/valid_proof_1.json").unwrap()).unwrap();
+        static ref VALID_PROOF: TestProof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/valid_proof_1.json").unwrap()).unwrap();
+        static ref VALID_PROOF2: TestProof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/valid_proof_2.json").unwrap()).unwrap();
 
-        static ref ABSENT_PROOF: Proof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/absent_proof_1.json").unwrap()).unwrap();
+        static ref ABSENT_PROOF: TestProof = serde_json::from_str(&fs::read_to_string("src/test/state-proofs/absent_proof_1.json").unwrap()).unwrap();
 
         static ref INITIAL_DATA: InitialData = serde_json::from_str(&fs::read_to_string("src/test/initial_test_data.json").unwrap()).unwrap();
 
@@ -626,14 +636,14 @@ mod tests {
     #[test]
     fn verify_state_works() {
         assert_eq!(
-            verify_state(
+            get_node(
                 VALID_PROOF.storage_root.clone(),
-                &VALID_PROOF.key,
-                VALID_PROOF.proof.iter()
+                VALID_PROOF.storage_proof.key.to_big_endian(),
+                VALID_PROOF.storage_proof.proof.iter()
             )
             .unwrap()
             .as_ref(),
-            Some(VALID_PROOF.value.as_ref())
+            Some(&rlp::encode(&VALID_PROOF.storage_proof.value).to_vec())
         );
     }
 
@@ -646,33 +656,41 @@ mod tests {
         };
 
         assert!(matches!(
-            verify_state(storage_root, &VALID_PROOF.key, VALID_PROOF.proof.iter()),
+            get_node(
+                storage_root,
+                VALID_PROOF.storage_proof.key.to_big_endian(),
+                VALID_PROOF.storage_proof.proof.iter()
+            ),
             Err(Error::Trie(_))
         ));
     }
 
     #[test]
-    fn verify_state_returns_none_when_invalid_key() {
-        let mut proof_key = VALID_PROOF.key.clone();
+    fn verify_state_returns_fails_when_invalid_key() {
+        let mut proof_key = VALID_PROOF.storage_proof.key.to_big_endian();
         proof_key[0] = u8::MAX - proof_key[0];
 
-        assert_eq!(
-            verify_state(
+        assert!(matches!(
+            get_node(
                 VALID_PROOF.storage_root.clone(),
                 &proof_key,
-                VALID_PROOF.proof.iter()
+                VALID_PROOF.storage_proof.proof.iter()
             ),
-            Ok(None)
-        );
+            Err(Error::Trie(_))
+        ));
     }
 
     #[test]
     fn verify_state_fails_when_invalid_proof() {
-        let mut proof = VALID_PROOF.proof.clone();
+        let mut proof = VALID_PROOF.storage_proof.proof.clone();
         proof[0][0] = u8::MAX - proof[0][0];
 
         assert!(matches!(
-            verify_state(VALID_PROOF.storage_root.clone(), &VALID_PROOF.key, &proof),
+            get_node(
+                VALID_PROOF.storage_root.clone(),
+                VALID_PROOF.storage_proof.key.to_big_endian(),
+                &proof
+            ),
             Err(Error::Trie(_))
         ));
     }
@@ -682,8 +700,8 @@ mod tests {
         assert_eq!(
             verify_storage_absence(
                 ABSENT_PROOF.storage_root.clone(),
-                ABSENT_PROOF.key.clone().try_into().unwrap(),
-                ABSENT_PROOF.proof.iter()
+                ABSENT_PROOF.storage_proof.key,
+                ABSENT_PROOF.storage_proof.proof.iter()
             ),
             Ok(true)
         )
@@ -694,8 +712,8 @@ mod tests {
         assert_eq!(
             verify_storage_absence(
                 VALID_PROOF.storage_root.clone(),
-                VALID_PROOF.key.clone().try_into().unwrap(),
-                VALID_PROOF.proof.iter()
+                VALID_PROOF.storage_proof.key,
+                VALID_PROOF.storage_proof.proof.iter()
             ),
             Ok(false)
         );
@@ -706,9 +724,9 @@ mod tests {
         assert_eq!(
             verify_storage_proof(
                 VALID_PROOF.storage_root.clone(),
-                VALID_PROOF.key.clone().try_into().unwrap(),
-                VALID_PROOF.value.as_slice(),
-                VALID_PROOF.proof.iter()
+                VALID_PROOF.storage_proof.key,
+                &rlp::encode(&VALID_PROOF.storage_proof.value),
+                VALID_PROOF.storage_proof.proof.iter()
             ),
             Ok(())
         );
@@ -716,17 +734,30 @@ mod tests {
 
     #[test]
     fn verify_storage_proof_fails_when_incorrect_value() {
-        let mut proof_value = VALID_PROOF.value.clone();
+        let mut proof_value = VALID_PROOF.storage_proof.value.to_big_endian();
         proof_value[0] = u8::MAX - proof_value[0];
 
-        assert_eq!(
+        assert!(matches!(
             verify_storage_proof(
                 VALID_PROOF.storage_root.clone(),
-                VALID_PROOF.key.clone().try_into().unwrap(),
+                VALID_PROOF.storage_proof.key,
                 proof_value.as_ref(),
-                VALID_PROOF.proof.iter()
+                VALID_PROOF.storage_proof.proof.iter()
             ),
-            Err(Error::ValueMismatch.into())
+            Err(VerifyStorageProofError(Error::ValueMismatch { .. }))
+        ));
+    }
+
+    #[test]
+    fn verify_storage_proof_leading_zero_value_works() {
+        assert_eq!(
+            verify_storage_proof(
+                VALID_PROOF2.storage_root.clone(),
+                VALID_PROOF2.storage_proof.key,
+                &rlp::encode(&VALID_PROOF2.storage_proof.value),
+                VALID_PROOF2.storage_proof.proof.iter()
+            ),
+            Ok(())
         );
     }
 

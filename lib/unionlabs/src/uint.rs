@@ -1,6 +1,7 @@
 use core::{fmt::Display, str::FromStr};
 
 use custom_debug_derive::Debug;
+use rlp::Encodable;
 use serde::{Deserialize, Serialize};
 use serde_utils::HEX_ENCODING_PREFIX;
 use tree_hash::TreeHash;
@@ -67,6 +68,11 @@ impl From<primitive_types::U256> for U256 {
 
 impl U256 {
     #[must_use]
+    pub fn leading_zeros(&self) -> u32 {
+        self.0.leading_zeros()
+    }
+
+    #[must_use]
     pub fn to_little_endian(&self) -> [u8; 32] {
         let mut buf = [0; 32];
         self.0.to_little_endian(&mut buf);
@@ -80,14 +86,21 @@ impl U256 {
         buf
     }
 
+    #[must_use]
+    pub fn to_packed_big_endian(&self) -> Vec<u8> {
+        let buffer = self.to_big_endian();
+        let leading_empty_bytes = (self.leading_zeros() / 8) as usize;
+        buffer[leading_empty_bytes..].to_vec()
+    }
+
     pub fn try_from_big_endian(bz: &[u8]) -> Result<Self, InvalidLength> {
         let len = bz.len();
 
-        if (1..=32).contains(&len) {
+        if (0..=32).contains(&len) {
             Ok(Self(primitive_types::U256::from_big_endian(bz)))
         } else {
             Err(InvalidLength {
-                expected: ExpectedLength::Between(1, 32),
+                expected: ExpectedLength::Between(0, 32),
                 found: len,
             })
         }
@@ -212,6 +225,12 @@ impl FromStr for U256 {
 impl Display for U256 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_fmt(format_args!("{}", self.0))
+    }
+}
+
+impl Encodable for U256 {
+    fn rlp_append(&self, s: &mut rlp::RlpStream) {
+        s.encoder().encode_value(&self.to_packed_big_endian());
     }
 }
 
