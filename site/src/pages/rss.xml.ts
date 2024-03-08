@@ -17,7 +17,6 @@ export async function GET(context: APIContext) {
       pubDate: post.data.date,
       link: `/blog/${post.slug}/`,
       description: post.data.description,
-      author: `https://x.com/${post.data.author}`,
     })),
     // (optional) inject custom xml
     customData: `<language>en-us</language>`,
