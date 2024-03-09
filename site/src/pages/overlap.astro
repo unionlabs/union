@@ -10,7 +10,8 @@ import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
 import Cube from '#/components/Cube.svelte'
 
-const publishedBlogPosts = await getCollection("blog", ({ slug, data }) => {
+
+let publishedBlogPosts = await getCollection('blog', ({ slug, data }) => {
   if (data.hidden) return false
   return { slug, data }
 })
@@ -22,28 +23,30 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
 
 <Layout>
   <main class="flex flex-col flex-1 items-center px-4">
-    <div class="w-full flex flex-col max-w-6xl p-px bg-black">
+    <div class="w-full flex flex-col max-w-5xl p-px bg-black">
       <section
-        class="grid grid-cols-1 gap-2 md:gap-6 grid-effect-bg antialiased bg-black -mx-4 mb-16"
+        class="flex justify-center items-center gap-2 md:gap-6 grid-effect-bg antialiased bg-black mb-px"
       >
-        <Cube client:only />
-        <div class="bg-gradient-to-t from-black flex flex-col items-center text-center drop-shadow-2xl -mt-48 px-4">
+        <Cube client:only/>
+
+      </section>
+      <section>
+        <div class="px-8">
           <div
-            class="text-3xl text-white font-bold mt-24"
+            class="text-4xl text-white font-semibold"
           >
             The Sovereign<br />Interoperability Layer
           </div>
-          <div class="mt-2 text-lg sm:text-xl max-w-lg font-normal text-gray-400">
+          <div class="text-lg sm:text-xl max-w-lg font-normal antialiased text-gray-400">
             By using consensus verification, Union builds unstoppable and decentralized connections to
             enable anyone to transfer assets and data.
           </div>
-          <div class="mt-4">
-            <a class="font-bold text-accent  px-4 font-jetbrains py-2 rounded-sm font-semibold bg-black" href="/docs">
-              Start Building -&gt;
+          <div>
+            <a class="mt-16 underline text-lg uppercase text-accent font-semibold" href="/docs">
+              Start building -&gt;
             </a>
           </div>
         </div>
-
 
       </section>
 
