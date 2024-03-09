@@ -1,40 +1,40 @@
 ---
-import Layout from '#/layouts/Layout.astro';
-import headshot_karel from '#/assets/images/headshots/karel.jpg';
-import headshot_cor from '#/assets/images/headshots/cor.jpg';
-import headshot_ben from '#/assets/images/headshots/ben.jpeg';
-import headshot_emir from '#/assets/images/headshots/emir.jpeg';
-import headshot_sarah from '#/assets/images/headshots/sarah.jpg';
-import headshot_abdullah from '#/assets/images/headshots/abdullah.jpeg';
-import headshot_connor from '#/assets/images/headshots/connor.jpg';
-import headshot_omar from '#/assets/images/headshots/omar.jpeg';
-import headshot_hussein from '#/assets/images/headshots/hussein.jpeg';
-import headshot_valentin from '#/assets/images/headshots/valentin.jpeg';
-import headshot_boris from '#/assets/images/headshots/boris.jpeg';
+import Layout from "#/layouts/Layout.astro"
+import headshot_karel from "#/assets/images/headshots/karel.jpg"
+import headshot_cor from "#/assets/images/headshots/cor.jpg"
+import headshot_ben from "#/assets/images/headshots/ben.jpeg"
+import headshot_emir from "#/assets/images/headshots/emir.jpeg"
+import headshot_sarah from "#/assets/images/headshots/sarah.jpg"
+import headshot_abdullah from "#/assets/images/headshots/abdullah.jpeg"
+import headshot_connor from "#/assets/images/headshots/connor.jpg"
+import headshot_omar from "#/assets/images/headshots/omar.jpeg"
+import headshot_hussein from "#/assets/images/headshots/hussein.jpeg"
+import headshot_valentin from "#/assets/images/headshots/valentin.jpeg"
+import headshot_boris from "#/assets/images/headshots/boris.jpeg"
 
-import vc_galileo from '#/assets/images/investors/galileo.svg';
-import vc_nascent from '#/assets/images/investors/nascent.svg';
-import vc_tioga from '#/assets/images/investors/tioga.png';
-import vc_semantic from '#/assets/images/investors/semantic.png';
-import vc_lightshift from '#/assets/images/investors/lightshift.png';
-import vc_udhc from '#/assets/images/investors/udhc.svg';
-import vc_founderheads from '#/assets/images/investors/founderheads.svg';
+import vc_galileo from "#/assets/images/investors/galileo.svg"
+import vc_nascent from "#/assets/images/investors/nascent.svg"
+import vc_tioga from "#/assets/images/investors/tioga.png"
+import vc_semantic from "#/assets/images/investors/semantic.png"
+import vc_lightshift from "#/assets/images/investors/lightshift.png"
+import vc_udhc from "#/assets/images/investors/udhc.svg"
+import vc_founderheads from "#/assets/images/investors/founderheads.svg"
 
-import team_spearbit from "#/assets/images/partners/spearbit.svg";
-import team_groomlake from "#/assets/images/partners/groomlake.png";
-import team_horizons from "#/assets/images/partners/horizons.svg";
+import team_spearbit from "#/assets/images/partners/spearbit.svg"
+import team_groomlake from "#/assets/images/partners/groomlake.png"
+import team_horizons from "#/assets/images/partners/horizons.svg"
 
-let profiles = [
+const profiles = [
   {
-    name: "Karel", 
-    title: "CEO", 
-    x_name: "0xkaiserkarel", 
+    name: "Karel",
+    title: "CEO",
+    x_name: "0xkaiserkarel",
     profile_pic: headshot_karel
   },
-  { 
-    name: "Cor", 
-    title: "CTO", 
-    x_name: "corcoder", 
+  {
+    name: "Cor",
+    title: "CTO",
+    x_name: "corcoder",
     profile_pic: headshot_cor
   },
   {
@@ -49,55 +49,55 @@ let profiles = [
     x_name: "sarahkc07",
     profile_pic: headshot_sarah
   },
-  { 
-    name: "Hussein", 
-    title: "Principal Engineer", 
-    x_name: "0xc0dejug", 
+  {
+    name: "Hussein",
+    title: "Principal Engineer",
+    x_name: "0xc0dejug",
     profile_pic: headshot_hussein
   },
-  { 
-    name: "Abdullah", 
-    title: "Founding Engineer", 
-    x_name: "aeryz2", 
+  {
+    name: "Abdullah",
+    title: "Founding Engineer",
+    x_name: "aeryz2",
     profile_pic: headshot_abdullah
   },
-  { 
-    name: "Ben", 
-    title: "Founding Engineer", 
-    x_name: "0xbonlulu", 
+  {
+    name: "Ben",
+    title: "Founding Engineer",
+    x_name: "0xbonlulu",
     profile_pic: headshot_ben
   },
-  { 
-    name: "Connor", 
-    title: "Founding Engineer", 
-    x_name: "PoisonPhang", 
-    profile_pic: headshot_connor,
+  {
+    name: "Connor",
+    title: "Founding Engineer",
+    x_name: "PoisonPhang",
+    profile_pic: headshot_connor
   },
-  { 
-    name: "Omar", 
-    title: "Full Stack Engineer", 
-    x_name: "awkroot", 
-    profile_pic: headshot_omar,
+  {
+    name: "Omar",
+    title: "Full Stack Engineer",
+    x_name: "awkroot",
+    profile_pic: headshot_omar
   },
-  { 
-    name: "Valentin", 
-    title: "Advisor", 
-    x_name: "valeyo777", 
-    profile_pic: headshot_valentin,
+  {
+    name: "Valentin",
+    title: "Advisor",
+    x_name: "valeyo777",
+    profile_pic: headshot_valentin
   },
-  { 
-    name: "Boris", 
-    title: "Advisor", 
-    x_name: "sprembo", 
-    profile_pic: headshot_boris,
+  {
+    name: "Boris",
+    title: "Advisor",
+    x_name: "sprembo",
+    profile_pic: headshot_boris
   }
 ]
 
-let teams = [
+const teams = [
   {
     name: "Spearbit",
     logo: team_spearbit,
-    url: "https://spearbit.com",
+    url: "https://spearbit.com"
   },
   {
     name: "Groomlake",
@@ -151,7 +151,7 @@ let teams = [
     url: "https://founderheads.com/",
     clazz: "h-[38px]"
   }
-]; 
+]
 ---
 <Layout>
   <div class="flex flex-col flex-1 items-center px-4">

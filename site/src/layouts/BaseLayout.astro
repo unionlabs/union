@@ -1,10 +1,10 @@
 ---
-import '#/styles/fonts.css'
-import '#/styles/reset.css'
-import '#/styles/tailwind.css'
-import { SEO } from 'astro-seo'
-import { Head } from 'astro-capo'
-import { AstroFont } from 'astro-font'
+import "#/styles/fonts.css"
+import "#/styles/reset.css"
+import "#/styles/tailwind.css"
+import { SEO } from "astro-seo"
+import { Head } from "astro-capo"
+import { AstroFont } from "astro-font"
 
 const COMMIT_SHA = import.meta.env.CF_PAGES_COMMIT_SHA
 
@@ -18,11 +18,11 @@ interface Props {
 }
 
 const {
-  url = 'https://union.build',
-  title = 'Union',
-  image = '/og.png',
-  description = 'The Sovereign Interoperability Layer',
-  loadFonts = true,
+  url = "https://union.build",
+  title = "Union",
+  image = "/og.png",
+  description = "The Sovereign Interoperability Layer",
+  loadFonts = true
 } = Astro.props
 
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]

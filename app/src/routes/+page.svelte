@@ -1,103 +1,103 @@
 <script lang="ts">
-  import {
-    getUnoERC20Balance,
-    sepoliaTransactions,
-    sendAssetFromEthereumToUnion
-  } from '$/lib/union-actions'
-  import {
-    snapAddress,
-    snapInstalled,
-    snapConnected,
-    getSnapAddress,
-    suggestSnapChain,
-    unionTransactions,
-    snapChainConnected,
-    ensureSnapInstalled,
-    ensureSnapConnected,
-    snapChainInitialized,
-    ensureSnapChainInitialized,
-    sendAssetFromUnionToEthereum
-  } from '$/lib/snap.ts'
-  import clsx from 'clsx'
-  import { onMount } from 'svelte'
-  import { sepolia } from 'viem/chains'
-  import toast from 'svelte-french-toast'
-  import { getBalance } from '@wagmi/core'
-  import { Button } from '$lib/components/ui/button'
-  import Header from '$lib/components/Header.svelte'
-  import Faucet from '$/lib/components/Faucet.svelte'
-  import Status from '$/lib/components/Status.svelte'
-  import Connect from '$lib/components/Connect.svelte'
-  import { generateRandomInteger } from '$/lib/utilities'
-  import { fetchUnionUnoBalance } from '$/lib/fetchers/balance'
-  import { wallet, switchChain, config } from '$lib/wallet/config.ts'
-  import { fetchUserTransfers, type TransferEvent } from '$/lib/fetchers/transfers'
-  import { useQueryClient, createQuery, createMutation } from '@tanstack/svelte-query'
+import {
+  getUnoERC20Balance,
+  sepoliaTransactions,
+  sendAssetFromEthereumToUnion
+} from "$/lib/union-actions"
+import {
+  snapAddress,
+  snapInstalled,
+  snapConnected,
+  getSnapAddress,
+  suggestSnapChain,
+  unionTransactions,
+  snapChainConnected,
+  ensureSnapInstalled,
+  ensureSnapConnected,
+  snapChainInitialized,
+  ensureSnapChainInitialized,
+  sendAssetFromUnionToEthereum
+} from "$/lib/snap.ts"
+import clsx from "clsx"
+import { onMount } from "svelte"
+import { sepolia } from "viem/chains"
+import toast from "svelte-french-toast"
+import { getBalance } from "@wagmi/core"
+import { Button } from "$lib/components/ui/button"
+import Header from "$lib/components/Header.svelte"
+import Faucet from "$/lib/components/Faucet.svelte"
+import Status from "$/lib/components/Status.svelte"
+import Connect from "$lib/components/Connect.svelte"
+import { generateRandomInteger } from "$/lib/utilities"
+import { fetchUnionUnoBalance } from "$/lib/fetchers/balance"
+import { wallet, switchChain, config } from "$lib/wallet/config.ts"
+import { fetchUserTransfers, type TransferEvent } from "$/lib/fetchers/transfers"
+import { useQueryClient, createQuery, createMutation } from "@tanstack/svelte-query"
 
-  let error: any
+let error: any
 
-  /**
-   * TODO:-
-   *  - turn `send*` functions into mutations,
-   *  - invalidate all queries in this page on success
-   */
+/**
+ * TODO:-
+ *  - turn `send*` functions into mutations,
+ *  - invalidate all queries in this page on success
+ */
 
-  let pollingIntervalMS = 2500
+let pollingIntervalMS = 2500
 
-  onMount(async () => {
-    await ensureSnapInstalled()
-    await ensureSnapConnected()
-    await getSnapAddress()
-    await ensureSnapChainInitialized()
-  })
+onMount(async () => {
+  await ensureSnapInstalled()
+  await ensureSnapConnected()
+  await getSnapAddress()
+  await ensureSnapChainInitialized()
+})
 
-  const queryClient = useQueryClient()
+const queryClient = useQueryClient()
 
-  $: unoUnionBalance = createQuery<string>({
-    // eslint-disable-next-line @tanstack/query/exhaustive-deps
-    queryKey: ['balance-union-uno'],
-    queryFn: async () => {
-      if (!$snapAddress) return '0'
-      return await fetchUnionUnoBalance($snapAddress)
-    },
-    placeholderData: '0',
-    enabled: !!$snapAddress,
-    refetchInterval: pollingIntervalMS
-  })
+$: unoUnionBalance = createQuery<string>({
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  queryKey: ["balance-union-uno"],
+  queryFn: async () => {
+    if (!$snapAddress) return "0"
+    return await fetchUnionUnoBalance($snapAddress)
+  },
+  placeholderData: "0",
+  enabled: !!$snapAddress,
+  refetchInterval: pollingIntervalMS
+})
 
-  $: unoERC20Balance = createQuery<bigint>({
-    queryKey: ['balance-sepolia-uno', $wallet.address],
-    queryFn: async () => getUnoERC20Balance(`${$wallet.address}`),
-    placeholderData: 0n,
-    enabled: !!$wallet.address,
-    refetchInterval: pollingIntervalMS
-  })
+$: unoERC20Balance = createQuery<bigint>({
+  queryKey: ["balance-sepolia-uno", $wallet.address],
+  queryFn: async () => getUnoERC20Balance(`${$wallet.address}`),
+  placeholderData: 0n,
+  enabled: !!$wallet.address,
+  refetchInterval: pollingIntervalMS
+})
 
-  $: sepoliaEthBalance = createQuery<string>({
-    // eslint-disable-next-line @tanstack/query/exhaustive-deps
-    queryKey: ['balance-sepolia-eth', $wallet.address],
-    queryFn: async () => {
-      if (!$wallet.address) return '0'
-      const balance = await getBalance(config, { address: $wallet.address, chainId: sepolia.id })
-      return balance.formatted
-    },
-    placeholderData: '0',
-    enabled: !!$wallet.address,
-    refetchInterval: pollingIntervalMS * 1.5
-  })
+$: sepoliaEthBalance = createQuery<string>({
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  queryKey: ["balance-sepolia-eth", $wallet.address],
+  queryFn: async () => {
+    if (!$wallet.address) return "0"
+    const balance = await getBalance(config, { address: $wallet.address, chainId: sepolia.id })
+    return balance.formatted
+  },
+  placeholderData: "0",
+  enabled: !!$wallet.address,
+  refetchInterval: pollingIntervalMS * 1.5
+})
 
-  $: userTransfersQuery = createQuery<TransferEvent[]>({
-    queryKey: ['user-transfers', $wallet.address],
-    queryFn: async () => {
-      if (!$wallet.address) return []
-      return await fetchUserTransfers({ address: $wallet.address })
-    },
-    placeholderData: [],
-    enabled: !!$wallet.address,
-    refetchInterval: pollingIntervalMS * 2.5
-  })
+$: userTransfersQuery = createQuery<TransferEvent[]>({
+  queryKey: ["user-transfers", $wallet.address],
+  queryFn: async () => {
+    if (!$wallet.address) return []
+    return await fetchUserTransfers({ address: $wallet.address })
+  },
+  placeholderData: [],
+  enabled: !!$wallet.address,
+  refetchInterval: pollingIntervalMS * 2.5
+})
 
-  const userTransfers = $userTransfersQuery?.data ?? []
+const userTransfers = $userTransfersQuery?.data ?? []
 </script>
 
 <Header />

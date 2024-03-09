@@ -36,6 +36,7 @@ Djuric
 Fatalf
 Feegrant
 Feiock
+Filenaming
 Founderheads
 Frontmatter
 Fuga
@@ -501,6 +502,7 @@ keepertest
 keybase
 keyframes
 keygen
+keyof
 keypair
 keypairs
 keypreimage
@@ -519,6 +521,7 @@ libcxx
 libdir
 libexec
 libfuzzer
+libgit
 libiconv
 libmuslc
 libwasmvm

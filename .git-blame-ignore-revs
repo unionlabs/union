@@ -1,0 +1,7 @@
+# add commit SHA to ignore
+
+# GitHub can use this file to ignore certain commits when calculating the blame for a file.
+# This is useful for ignoring commits that are not relevant to the code,
+# such as large formatting changes: for example changing quotes from single to double.
+
+# Next 5 commits are part of migrating to biome linter and formatter for js,ts,tsx,astro,svelte files

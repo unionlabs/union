@@ -27,7 +27,7 @@ main().catch((_) => {
 async function main() {
   const [chainFlag, chainId, addressFlag, address] = process.argv.slice(2);
 
-  if (!chainFlag || !chainId || !addressFlag || !address)
+  if (!(chainFlag && chainId && addressFlag && address))
     throw new Error(
       "Usage: bun ./scripts/balance.ts --chain <chain> --address <address>"
     );

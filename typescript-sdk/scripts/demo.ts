@@ -4,13 +4,8 @@ import { raise } from "#/utilities";
 import { unionActions } from "#/actions.ts";
 import { http, publicActions, createWalletClient, fallback } from "viem";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import { privateKeyToAccount, mnemonicToAccount } from "viem/accounts";
-import {
-  UCS01_EVM_ADDRESS,
-  demoPrivateKey,
-  demoMnemonic,
-  chain,
-} from "#/constants";
+import { mnemonicToAccount } from "viem/accounts";
+import { demoMnemonic, chain } from "#/constants";
 
 main().catch((_) => {
   console.error(_);

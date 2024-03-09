@@ -1,25 +1,27 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
-  import { sleep } from '#/lib/utilities.ts'
-  import { gql, setContextClient } from '@urql/svelte'
-  import { client, getQueryStore } from '#/lib/graphql.ts'
+import { onMount } from "svelte"
+import { sleep } from "#/lib/utilities.ts"
+import { gql, setContextClient } from "@urql/svelte"
+import { client, getQueryStore } from "#/lib/graphql.ts"
 
-  const FETCH_INTERVAL = 2_000
+const FETCH_INTERVAL = 2_000
 
-  let terminalElement: HTMLDivElement
+let terminalElement: HTMLDivElement
 
-  type Network = 'union' | 'sepolia'
-  type Action = 'fetching' | 'observed event' | 'sending message'
-  type LogLine = {
-    network: Network | undefined
-    action: Action | undefined
-    logLine: string
-  }
+const errors: Array<string> = []
 
-  const replayOffset = 300
-  let logLines: Array<LogLine> = []
+type Network = "union" | "sepolia"
+type Action = "fetching" | "observed event" | "sending message"
+type LogLine = {
+  network: Network | undefined
+  action: Action | undefined
+  logLine: string
+}
 
-  const FETCH_EVENT = gql`
+const replayOffset = 300
+let logLines: Array<LogLine> = []
+
+const FETCH_EVENT = gql`
     query FetchEvent($id: Int!) {
       demo_txes_by_pk(id: $id) {
         data
@@ -28,7 +30,7 @@
     }
   `
 
-  const FETCH_LATEST_ID = gql`
+const FETCH_LATEST_ID = gql`
     query GetLatestId {
       demo_txes(limit: 1, order_by: { id: desc }) {
         id
@@ -36,64 +38,67 @@
     }
   `
 
-  function formatLogLine(queryResult: any): LogLine | undefined {
-    if (!queryResult.data.demo_txes_by_pk) return
-    const result = queryResult.data.demo_txes_by_pk.data
-    let [network, action, data] = ['', '', result] as unknown as [Network, Action, any]
+function formatLogLine(queryResult: any): LogLine | undefined {
+  if (!queryResult.data.demo_txes_by_pk) return
+  const result = queryResult.data.demo_txes_by_pk.data
+  let [network, action, data] = ["", "", result] as unknown as [Network, Action, any]
 
-    if ('EthereumMinimal' in data) {
-      network = 'union'
-      data = data['EthereumMinimal']
-    }
-
-    if ('CometblsMinimal' in data) {
-      network = 'sepolia'
-      data = data['CometblsMinimal']
-    }
-
-    if ('Fetch' in data) {
-      action = 'fetching'
-      data = data['Fetch']['data']
-    }
-
-    if ('Event' in data) {
-      action = 'observed event'
-      data = data['Event']['data']
-    }
-
-    if ('Msg' in data) {
-      action = 'sending message'
-      data = data['Msg']['data']
-    }
-
-    return { network, action, logLine: JSON.stringify(data) }
+  if ("EthereumMinimal" in data) {
+    network = "union"
+    data = data["EthereumMinimal"]
   }
 
-  // https://formidable.com/open-source/urql/docs/basics/svelte/#providing-the-client
-  setContextClient(client)
-  const latestIdQuery = getQueryStore(FETCH_LATEST_ID)
-
-  async function fetchDemoTransactions(latestIdWorker: number) {
-    const startHeight = latestIdWorker - replayOffset
-    let index = startHeight
-    for (;;) {
-      index++
-      await sleep(FETCH_INTERVAL)
-      const response = await client.query(FETCH_EVENT, { id: index }).toPromise()
-      const newLine = formatLogLine(response)
-      if (newLine) logLines = [newLine, ...logLines]
-      if (index > latestIdWorker - 10) index = startHeight
-    }
+  if ("CometblsMinimal" in data) {
+    network = "sepolia"
+    data = data["CometblsMinimal"]
   }
 
-  onMount(() => {
-    const unsubscribe = latestIdQuery.subscribe(({ data, error }) => {
-      if (error) console.error('error', error)
-      if (!data?.demo_txes) return
-      fetchDemoTransactions(1_502)
-    })
-    return () => unsubscribe()
+  if ("Fetch" in data) {
+    action = "fetching"
+    data = data["Fetch"]["data"]
+  }
+
+  if ("Event" in data) {
+    action = "observed event"
+    data = data["Event"]["data"]
+  }
+
+  if ("Msg" in data) {
+    action = "sending message"
+    data = data["Msg"]["data"]
+  }
+
+  return { network, action, logLine: JSON.stringify(data) }
+}
+
+// https://formidable.com/open-source/urql/docs/basics/svelte/#providing-the-client
+setContextClient(client)
+const latestIdQuery = getQueryStore(FETCH_LATEST_ID)
+
+async function fetchDemoTransactions(latestIdWorker: number) {
+  const startHeight = latestIdWorker - replayOffset
+  let index = startHeight
+  for (;;) {
+    index++
+    await sleep(FETCH_INTERVAL)
+    const response = await client.query(FETCH_EVENT, { id: index }).toPromise()
+    const newLine = formatLogLine(response)
+    if (newLine) logLines = [newLine, ...logLines]
+    if (index > latestIdWorker - 10) index = startHeight
+  }
+}
+
+onMount(() => {
+  const unsubscribe = latestIdQuery.subscribe(({ data, error }) => {
+    if (error) {
+      errors.push(error.message)
+      return
+    }
+    if (!data?.demo_txes) return
+    fetchDemoTransactions(1_502)
   })
+  return () => unsubscribe()
+})
 </script>
 
 <section

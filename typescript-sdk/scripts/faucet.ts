@@ -30,7 +30,7 @@ async function main() {
   } = await fetcher<{ balances: Array<Coin> }>(
     `${REST_API_URL}/cosmos/bank/v1beta1/balances/${address}`
   );
-  if (!balance || !balance.amount) {
+  if (!balance?.amount) {
     console.error(
       "Failed to get uno balance",
       JSON.stringify(balance, undefined, 2)

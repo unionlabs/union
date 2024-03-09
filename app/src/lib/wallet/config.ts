@@ -1,4 +1,4 @@
-import '$/patch.ts'
+import "$/patch.ts"
 import {
   http,
   fallback,
@@ -11,23 +11,23 @@ import {
   disconnect as _disconnect,
   switchChain as _switchChain,
   type GetAccountReturnType
-} from '@wagmi/core'
-import { CHAIN, UNO } from '$/lib/constants'
-import { injected } from '@wagmi/connectors'
-import { getDenomAddress } from '$/lib/union-actions'
-import { mainnet, sepolia } from '@wagmi/core/chains'
-import { writable, type Writable } from 'svelte/store'
-import { getKey, getSnap, connectSnap, suggestChain } from '@leapwallet/cosmos-snap-provider'
+} from "@wagmi/core"
+import { CHAIN, UNO } from "$/lib/constants"
+import { injected } from "@wagmi/connectors"
+import { getDenomAddress } from "$/lib/union-actions"
+import { mainnet, sepolia } from "@wagmi/core/chains"
+import { writable, type Writable } from "svelte/store"
+import { getKey, getSnap, connectSnap, suggestChain } from "@leapwallet/cosmos-snap-provider"
 
-const projectId = '640277c8235dc052b811d0cb88515fa5'
+const projectId = "640277c8235dc052b811d0cb88515fa5"
 
 const chains = [sepolia] as const
-export type ConfiguredChainId = (typeof chains)[number]['id']
+export type ConfiguredChainId = (typeof chains)[number]["id"]
 
 export type Wallet = GetAccountReturnType
-export type ConnectedWallet = Wallet & { status: 'connected' }
+export type ConnectedWallet = Wallet & { status: "connected" }
 
-export type ConnectorType = 'injected'
+export type ConnectorType = "injected"
 
 export const config = createConfig({
   chains: [mainnet, sepolia],
@@ -90,7 +90,7 @@ export const switchChain = (chainId: ConfiguredChainId) => _switchChain(config, 
 export const snapInstalled = writable(false) satisfies Writable<boolean>
 export const unoTokenAddedToMetaMask = writable(false) satisfies Writable<boolean>
 export const connectedToUnion = writable(false) satisfies Writable<boolean>
-export const unionAddress = writable('') satisfies Writable<string>
+export const unionAddress = writable("") satisfies Writable<string>
 
 export async function updateSnapInstalled() {
   const snap = await getSnap()
@@ -132,9 +132,9 @@ export async function addUnoERC20() {
   try {
     const denomAddress = await getDenomAddress()
     const hasBeenAdded = await window.ethereum.request({
-      method: 'wallet_watchAsset',
+      method: "wallet_watchAsset",
       params: {
-        type: 'ERC20',
+        type: "ERC20",
         options: {
           /**
            * TODO: THIS SHOULD NOT BE HARDCODED. INSTEAD CALL unionWalletClient().getDenomAddress()
@@ -143,9 +143,9 @@ export async function addUnoERC20() {
           /**
            * TODO: this should be UNO but our latest deployment to Sepolia has this as symbol
            */
-          symbol: 'UNO',
+          symbol: "UNO",
           decimals: 6,
-          image: 'https://union.build/logo.png'
+          image: "https://union.build/logo.png"
         }
       }
     })

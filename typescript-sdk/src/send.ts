@@ -5,7 +5,7 @@ import { GasPrice } from "@cosmjs/stargate";
 import type { UnionClient } from "./actions.ts";
 import { Tendermint37Client } from "@cosmjs/tendermint-rpc";
 import { evmEncodeUnionAddress } from "#/utilities/codec.ts";
-import { UNION_RPC_URL, UCS01_EVM_ADDRESS } from "./constants";
+import { UCS01_EVM_ADDRESS } from "./constants";
 import { chainIds, type ChainId, chain } from "./constants/chain.ts";
 import type { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import type { CosmjsOfflineSigner } from "@leapwallet/cosmos-snap-provider";
@@ -66,11 +66,11 @@ export async function sendAsset<TChainId extends ChainId>(
 ) {
   if (!chainIds.includes(args.chainId))
     throw new Error(`Invalid chainId: ${args.chainId}`);
-  else if (args.chainId === "6")
+  if (args.chainId === "6")
     return await sendAssetFromUnionToEthereum(client, args);
-  else if (args.chainId === "11155111")
+  if (args.chainId === "11155111")
     return await sendAssetFromEthereumToUnion(client, args);
-  else raise(`[sendAsset] chainId ${args.chainId} is not supported`);
+  raise(`[sendAsset] chainId ${args.chainId} is not supported`);
 }
 
 interface SendAssetFromEthereumToUnion {

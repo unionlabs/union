@@ -1,0 +1,247 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.6.1/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git"
+  },
+  "organizeImports": {
+    "enabled": false,
+    "include": [
+      "./**/*.ts",
+      "./**/*.js",
+      "./**/*.cjs",
+      "./**/*.jsx",
+      "./**/*.tsx",
+      "./**/*.d.ts",
+      "./**/*.json",
+      "./**/*.jsonc",
+      "./**/*.astro",
+      "./**/*.svelte"
+    ],
+    "ignore": [
+      "_",
+      "out",
+      "dist",
+      "build",
+      "result",
+      ".svelte-kit",
+      "node_modules"
+    ]
+  },
+  "css": {
+    "formatter": {
+      "enabled": true,
+
+      "indentWidth": 2,
+      "lineWidth": 100,
+      "quoteStyle": "single",
+      "indentStyle": "space"
+    },
+    "parser": {
+      "allowWrongLineComments": true
+    }
+  },
+  "files": {
+    "include": [
+      "./**/*.ts",
+      "./**/*.js",
+      "./**/*.cjs",
+      "./**/*.jsx",
+      "./**/*.tsx",
+      "./**/*.d.ts",
+      "./**/*.json",
+      "./**/*.jsonc",
+      "./**/*.astro",
+      "./**/*.svelte"
+    ],
+    "ignoreUnknown": true,
+    "ignore": [
+      "_",
+      "out",
+      "dist",
+      "build",
+      "result",
+      ".svelte-kit",
+      "node_modules"
+    ]
+  },
+  "json": {
+    "parser": {
+      "allowComments": true,
+      "allowTrailingCommas": true
+    },
+    "formatter": {
+      "enabled": true
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "indentStyle": "space",
+    "formatWithErrors": true,
+    "attributePosition": "auto",
+    "include": [
+      "./**/*.ts",
+      "./**/*.js",
+      "./**/*.cjs",
+      "./**/*.jsx",
+      "./**/*.tsx",
+      "./**/*.d.ts",
+      "./**/*.json",
+      "./**/*.jsonc",
+      "./**/*.astro",
+      "./**/*.svelte"
+    ],
+    "ignore": [
+      "_",
+      "out",
+      "dist",
+      "build",
+      "result",
+      ".svelte-kit",
+      "node_modules",
+      "unionvisor/src/testdata/"
+    ]
+  },
+  "linter": {
+    "rules": {
+      "all": true,
+      "style": {
+        "all": true,
+        "noNamespace": "off",
+        "noDefaultExport": "off",
+        "useFragmentSyntax": "off",
+        "useBlockStatements": "off",
+        "useNamingConvention": "off",
+        "useShorthandArrayType": "off",
+        "useSelfClosingElements": "off",
+        "noUnusedTemplateLiteral": "off",
+        "useConsistentArrayType": {
+          "level": "warn",
+          "options": { "syntax": "generic" }
+        }
+      },
+      "a11y": {
+        "all": true,
+        "noSvgWithoutTitle": "off",
+        "noDistractingElements": "off"
+      },
+      "nursery": {
+        "all": true,
+        "noBarrelFile": "off",
+        "noReExportAll": "off",
+        "noNodejsModules": "off",
+        "noUselessTernary": "off",
+        "useImportRestrictions": "off"
+      },
+      "performance": {
+        "all": true,
+        "noAccumulatingSpread": "off"
+      },
+      "correctness": {
+        "all": true,
+        "noUnusedVariables": "off",
+        "noUndeclaredVariables": "off"
+      },
+      "suspicious": {
+        "all": true,
+        "noConsoleLog": "off",
+        "noExplicitAny": "off",
+        "noEmptyInterface": "off"
+      },
+      "complexity": {
+        "all": true,
+        "noForEach": "off",
+        "noBannedTypes": "off",
+        "useLiteralKeys": "off",
+        "noUselessFragments": "off",
+        "noExcessiveCognitiveComplexity": "off"
+      }
+    },
+    "enabled": true,
+    "include": [
+      "./**/*.ts",
+      "./**/*.js",
+      "./**/*.cjs",
+      "./**/*.jsx",
+      "./**/*.tsx",
+      "./**/*.d.ts",
+      "./**/*.json",
+      "./**/*.jsonc",
+      "./**/*.astro",
+      "./**/*.svelte"
+    ],
+    "ignore": [
+      "_",
+      "out",
+      "dist",
+      "build",
+      "result",
+      ".svelte-kit",
+      "node_modules"
+    ]
+  },
+  "javascript": {
+    "globals": ["NodeJS", "Astro"],
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    },
+    "formatter": {
+      "enabled": true,
+      "lineWidth": 100,
+      "indentWidth": 2,
+      "indentStyle": "space",
+      "quoteStyle": "double",
+      "bracketSpacing": true,
+      "trailingComma": "none",
+      "semicolons": "asNeeded",
+      "bracketSameLine": false,
+      "jsxQuoteStyle": "double",
+      "attributePosition": "auto",
+      "quoteProperties": "asNeeded",
+      "arrowParentheses": "asNeeded"
+    }
+  },
+  "overrides": [
+    {
+      "include": ["./**/*.astro"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedImports": "off"
+          },
+          "style": {
+            "useImportType": "off",
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["./**/*.svelte"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedImports": "off"
+          },
+          "style": {
+            "useConst": "off",
+            "useImportType": "off",
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["scripts/**/*.ts", "scripts/**/*.js", "scripts/**/*.cjs"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "noConsole": "off"
+          }
+        }
+      }
+    }
+  ]
+}

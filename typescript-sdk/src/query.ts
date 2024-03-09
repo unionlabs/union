@@ -28,7 +28,7 @@ export async function getDenomAddress(client: UnionClient): Promise<Address> {
   ];
   const UNION_CONTRACT_ADDRESS = process.env.UCS01_UNION_ADDRESS;
 
-  return client.readContract({
+  return await client.readContract({
     abi: ucs01relayAbi,
     address: UCS01_EVM_ADDRESS,
     functionName: "getDenomAddress",
@@ -51,7 +51,7 @@ export async function getBalance(
   if (!chainIds.includes(args.chainId))
     throw new Error(`Invalid chainId: ${args.chainId}`);
   if (args.chainId === "6") return getBalanceOnUnion(args);
-  return getBalanceOnEthereum(client, args);
+  return await getBalanceOnEthereum(client, args);
 }
 
 interface GetBalanceOnEthereum {
@@ -98,7 +98,6 @@ export async function getBalanceOnUnion({
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : error;
-    console.error(errorMessage);
     raise(`Failed to get balance for ${address} on Union: ${errorMessage}`);
   }
 }

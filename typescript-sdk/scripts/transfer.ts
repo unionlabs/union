@@ -1,16 +1,7 @@
 import "#/patch.ts";
-import { getBalance } from "#/query.ts";
 import { unionActions } from "#/actions";
 import { chain, isValidChainId } from "#/constants";
-import {
-  createPublicClient,
-  createWalletClient,
-  fallback,
-  formatUnits,
-  http,
-  publicActions,
-  walletActions,
-} from "viem";
+import { createWalletClient, fallback, http, publicActions } from "viem";
 import { raise } from "#/utilities";
 import { mnemonicToAccount } from "viem/accounts";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
@@ -53,23 +44,25 @@ async function main() {
   ] = process.argv.slice(2);
 
   if (
-    !fromChainFlag ||
-    !fromChainId ||
-    !toChainFlag ||
-    !toChainId ||
-    !fromPrivateKeyFlag ||
-    !fromPrivateKey ||
-    !toAddressFlag ||
-    !toAddress ||
-    !amountFlag ||
-    !amount
+    !(
+      fromChainFlag &&
+      fromChainId &&
+      toChainFlag &&
+      toChainId &&
+      fromPrivateKeyFlag &&
+      fromPrivateKey &&
+      toAddressFlag &&
+      toAddress &&
+      amountFlag &&
+      amount
+    )
   ) {
     raise(
       "Usage: bun ./scripts/transfer.ts --fromChainId <chain> --toChainId <chain> --fromPrivateKey <privateKey | mnemonic> --toAddress <address>"
     );
   }
 
-  if (!isValidChainId(fromChainId) || !isValidChainId(toChainId)) {
+  if (!(isValidChainId(fromChainId) && isValidChainId(toChainId))) {
     raise(`Invalid chain: ${fromChainId} or ${toChainId}`);
   }
 

@@ -1,10 +1,10 @@
 ---
-import { Icon } from '@astrojs/starlight/components'
+import { Icon } from "@astrojs/starlight/components"
 
 interface Props {
   editUrl: string
   labels: {
-    'page.editLink': string
+    "page.editLink": string
   }
 }
 
@@ -12,7 +12,7 @@ interface Props {
  * The edit url is overridden to point to our discord until source code is public
  */
 
-const { editUrl = 'https://discord.union.build', labels } = Astro.props
+const { editUrl = "https://discord.union.build", labels } = Astro.props
 ---
 
 {

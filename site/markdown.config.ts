@@ -5,7 +5,7 @@ import remarkMathPlugin from "remark-math";
 import rehypeKatexPlugin from "rehype-katex";
 import rehypeMathjaxPlugin from "rehype-mathjax";
 import remarkSmartypants from "remark-smartypants";
-import { type AstroUserConfig } from "astro/config";
+import type { AstroUserConfig } from "astro/config";
 import { escapeHTML } from "astro/runtime/server/escape.js";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import { rehypeHeadingIds, type RemarkPlugin } from "@astrojs/markdown-remark";
@@ -30,7 +30,7 @@ export const markdownConfiguration = {
   ],
 } satisfies Markdown;
 
-export function mermaid(): RemarkPlugin<any[]> {
+export function mermaid(): RemarkPlugin<Array<any>> {
   return () => (tree) => {
     visit(tree, "code", (node) => {
       if (node.lang !== "mermaid") return;
