@@ -2,6 +2,7 @@ use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64, ops::Div, str::FromS
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
+    cometbls_client::CometblsClientErrors,
     devnet_ownable_ibc_handler::{DevnetOwnableIBCHandler, OwnershipTransferredFilter},
     ibc_channel_handshake::{IBCChannelHandshakeErrors, IBCChannelHandshakeEvents},
     ibc_client::{IBCClientErrors, IBCClientEvents},
@@ -152,23 +153,33 @@ impl EthLogDecode for IBCHandlerEvents {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum IbcHandlerErrors {
-    PacketEvent(IBCPacketErrors),
-    ConnectionEvent(IBCConnectionErrors),
-    ChannelEvent(IBCChannelHandshakeErrors),
-    ClientEvent(IBCClientErrors),
+    PacketErrors(IBCPacketErrors),
+    ConnectionErrors(IBCConnectionErrors),
+    ChannelErrors(IBCChannelHandshakeErrors),
+    ClientErrors(IBCClientErrors),
+    CometblsClientErrors(CometblsClientErrors),
 }
 
 impl AbiDecode for IbcHandlerErrors {
     fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ethers::abi::AbiError> {
-        let packet_error = IBCPacketErrors::decode(&bytes).map(IbcHandlerErrors::PacketEvent);
-        let conn_error = IBCConnectionErrors::decode(&bytes).map(IbcHandlerErrors::ConnectionEvent);
+        let packet_error = IBCPacketErrors::decode(&bytes).map(IbcHandlerErrors::PacketErrors);
+        let conn_error =
+            IBCConnectionErrors::decode(&bytes).map(IbcHandlerErrors::ConnectionErrors);
         let chan_error =
-            IBCChannelHandshakeErrors::decode(&bytes).map(IbcHandlerErrors::ChannelEvent);
-        let client_error = IBCClientErrors::decode(&bytes).map(IbcHandlerErrors::ClientEvent);
-        [packet_error, conn_error, chan_error, client_error]
-            .into_iter()
-            .find(|error| error.is_ok())
-            .ok_or(ethers::abi::Error::InvalidData)?
+            IBCChannelHandshakeErrors::decode(&bytes).map(IbcHandlerErrors::ChannelErrors);
+        let client_error = IBCClientErrors::decode(&bytes).map(IbcHandlerErrors::ClientErrors);
+        let cometbls_client_error =
+            CometblsClientErrors::decode(&bytes).map(IbcHandlerErrors::CometblsClientErrors);
+        [
+            packet_error,
+            conn_error,
+            chan_error,
+            client_error,
+            cometbls_client_error,
+        ]
+        .into_iter()
+        .find(|error| error.is_ok())
+        .ok_or(ethers::abi::Error::InvalidData)?
     }
 }
 
