@@ -6,11 +6,17 @@ description: "Union is partnering with Scroll to transfer assets and messages fr
 cover: "/src/assets/images/scroll/cover.png"
 ---
 
+import { Image } from "astro:assets";
 import unionScroll from "#/assets/images/partnerships/union_scroll.svg";
 
 Union is partnering with Scroll to transfer assets and messages from any IBC-enabled chain into Scroll through its fully trustless, decentralized, hyper-efficient zkIBC bridge. This collaboration positions Union as the pioneering IBC gateway in and out of Scroll’s Type 2 zkEVM.
 
-<img alt="Union Scroll Partnership" src={unionScroll.src} />
+<Image
+  alt="Union Scroll Partnership"
+  src={unionScroll}
+  class="mb-2"
+  loading="eager"
+/>
 
 [Scroll](https://scroll.io/), the zkEVM Layer 2 network, emerges as a beacon of innovation in the blockchain landscape by offering unparalleled scalability, fast transaction confirmations, and robust, trustless privacy. Its zero-knowledge EVM infrastructure allows for greater accessibility, improved responsiveness, and support for more users at once than Ethereum alone.
 

@@ -47,6 +47,12 @@ const { Content } = await entry.render()
 <script type="module" src="/scripts/anchor-targets.js"></script>
 
 <style is:inline lang="postcss">
+  img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
   p > a {
     text-decoration: underline;
     text-decoration-color: #A0ECFD !important;
@@ -54,7 +60,7 @@ const { Content } = await entry.render()
     color: #A0ECFD !important;
   }
 
-  p {
+  p, q, blockquote {
     margin-bottom: 1rem;
     color: #D1D5DB;
   }

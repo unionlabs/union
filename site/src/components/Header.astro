@@ -89,6 +89,7 @@ let menuItems = [
             class="flex gap-2 text-lg"
           >
             <Icon name="discord" color="#fff" size="1rem" />
+            <span class="sr-only">Discord</span>
           </a>
         </li>
         <li>
@@ -99,6 +100,7 @@ let menuItems = [
             class="flex gap-2 text-lg"
           >
             <Icon name="x.com" color="#fff" size="1.1rem" />
+            <span class="sr-only">X</span>
           </a>
         </li>
       </ul>
@@ -108,6 +110,8 @@ let menuItems = [
       <button
         id="menu-button"
         name="menu-button"
+        aria-label="Menu"
+        title="Menu"
         class="bg-white rounded-full h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
       >
         <Icon name="bars" color="#000000" size="1.2rem" />
@@ -184,7 +188,7 @@ let menuItems = [
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: 150%;
     background: rgba(0, 0, 0, 0.7); /* Adjust color and opacity as needed */
     visibility: hidden;
     opacity: 0;

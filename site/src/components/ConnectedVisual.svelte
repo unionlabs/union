@@ -51,7 +51,7 @@
   }
 
   const nodes: Record<string, Node> = {
-    union: { x: 9, y: 6, logo: union, scale: 2.0 },
+    union: { x: 9, y: 6, logo: union, scale: 2.0, url: 'https://union.build' },
     celestia: { x: 4, y: 4, logo: celestia, url: 'https://celestia.org/' },
     ethereum: { x: 8, y: 3, logo: ethereum, url: 'https://ethereum.org/', scale: 1.2 },
     movement: { x: 5, y: 8, logo: movement, url: 'https://movementlabs.xyz/' },
@@ -316,11 +316,7 @@
           />
         </radialGradient>
       </defs>
-      <a
-        href={url}
-        aria-label={id}
-        target="_blank"
-      >
+      <a href={url} aria-label={id} target="_blank" class={id === 'union' ? 'pointer-events-none' : ''}>
         <circle
           id="circle-{id}"
           cx={pos(x)}
