@@ -10,6 +10,13 @@ pub struct ModuleOptions {
     #[prost(message, optional, tag = "2")]
     pub query: ::core::option::Option<ServiceCommandDescriptor>,
 }
+impl ::prost::Name for ModuleOptions {
+    const NAME: &'static str = "ModuleOptions";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
+}
 /// ServiceCommandDescriptor describes a CLI command based on a protobuf service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -30,6 +37,13 @@ pub struct ServiceCommandDescriptor {
     #[prost(map = "string, message", tag = "3")]
     pub sub_commands:
         ::std::collections::HashMap<::prost::alloc::string::String, ServiceCommandDescriptor>,
+}
+impl ::prost::Name for ServiceCommandDescriptor {
+    const NAME: &'static str = "ServiceCommandDescriptor";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
 }
 /// RpcCommandOptions specifies options for commands generated from protobuf
 /// rpc methods.
@@ -84,6 +98,13 @@ pub struct RpcCommandOptions {
     #[prost(bool, tag = "12")]
     pub skip: bool,
 }
+impl ::prost::Name for RpcCommandOptions {
+    const NAME: &'static str = "RpcCommandOptions";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
+}
 /// FlagOptions are options for flags generated from rpc request fields.
 /// By default, all request fields are configured as flags based on the
 /// kebab-case name of the field. Fields can be turned into positional arguments
@@ -113,6 +134,13 @@ pub struct FlagOptions {
     #[prost(bool, tag = "8")]
     pub hidden: bool,
 }
+impl ::prost::Name for FlagOptions {
+    const NAME: &'static str = "FlagOptions";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
+}
 /// PositionalArgDescriptor describes a positional argument.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -127,10 +155,24 @@ pub struct PositionalArgDescriptor {
     #[prost(bool, tag = "2")]
     pub varargs: bool,
 }
+impl ::prost::Name for PositionalArgDescriptor {
+    const NAME: &'static str = "PositionalArgDescriptor";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
+}
 /// AppOptionsRequest is the RemoteInfoService/AppOptions request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppOptionsRequest {}
+impl ::prost::Name for AppOptionsRequest {
+    const NAME: &'static str = "AppOptionsRequest";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
+}
 /// AppOptionsResponse is the RemoteInfoService/AppOptions response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -138,6 +180,13 @@ pub struct AppOptionsResponse {
     /// module_options is a map of module name to autocli module options.
     #[prost(map = "string, message", tag = "1")]
     pub module_options: ::std::collections::HashMap<::prost::alloc::string::String, ModuleOptions>,
+}
+impl ::prost::Name for AppOptionsResponse {
+    const NAME: &'static str = "AppOptionsResponse";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
 }
 include!("cosmos.autocli.v1.tonic.rs");
 // @@protoc_insertion_point(module)

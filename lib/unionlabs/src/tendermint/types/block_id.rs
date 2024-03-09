@@ -1,25 +1,26 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{InvalidLength, MissingField},
     hash::H256,
-    tendermint::types::part_set_header::PartSetHeader,
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    tendermint::types::part_set_header::{PartSetHeader, TryFromPartSetHeaderError},
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::tendermint::types::BlockId, into, from)]
 pub struct BlockId {
     pub hash: H256,
     pub part_set_header: PartSetHeader,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromBlockIdError {
     MissingField(MissingField),
     Hash(InvalidLength),
-    PartSetHeader(TryFromProtoErrorOf<PartSetHeader>),
+    PartSetHeader(TryFromPartSetHeaderError),
 }
 
 impl TryFrom<protos::tendermint::types::BlockId> for BlockId {
@@ -46,14 +47,6 @@ impl From<BlockId> for protos::tendermint::types::BlockId {
             part_set_header: Some(value.part_set_header.into()),
         }
     }
-}
-
-impl Proto for BlockId {
-    type Proto = protos::tendermint::types::BlockId;
-}
-
-impl TypeUrl for protos::tendermint::types::BlockId {
-    const TYPE_URL: &'static str = "/tendermint.types.BlockId";
 }
 
 #[test]

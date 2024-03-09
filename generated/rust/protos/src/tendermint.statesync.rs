@@ -20,9 +20,23 @@ pub mod message {
         ChunkResponse(super::ChunkResponse),
     }
 }
+impl ::prost::Name for Message {
+    const NAME: &'static str = "Message";
+    const PACKAGE: &'static str = "tendermint.statesync";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.statesync.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotsRequest {}
+impl ::prost::Name for SnapshotsRequest {
+    const NAME: &'static str = "SnapshotsRequest";
+    const PACKAGE: &'static str = "tendermint.statesync";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.statesync.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotsResponse {
@@ -37,6 +51,13 @@ pub struct SnapshotsResponse {
     #[prost(bytes = "vec", tag = "5")]
     pub metadata: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for SnapshotsResponse {
+    const NAME: &'static str = "SnapshotsResponse";
+    const PACKAGE: &'static str = "tendermint.statesync";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.statesync.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChunkRequest {
@@ -46,6 +67,13 @@ pub struct ChunkRequest {
     pub format: u32,
     #[prost(uint32, tag = "3")]
     pub index: u32,
+}
+impl ::prost::Name for ChunkRequest {
+    const NAME: &'static str = "ChunkRequest";
+    const PACKAGE: &'static str = "tendermint.statesync";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.statesync.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -60,5 +88,12 @@ pub struct ChunkResponse {
     pub chunk: ::prost::alloc::vec::Vec<u8>,
     #[prost(bool, tag = "5")]
     pub missing: bool,
+}
+impl ::prost::Name for ChunkResponse {
+    const NAME: &'static str = "ChunkResponse";
+    const PACKAGE: &'static str = "tendermint.statesync";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.statesync.{}", Self::NAME)
+    }
 }
 // @@protoc_insertion_point(module)

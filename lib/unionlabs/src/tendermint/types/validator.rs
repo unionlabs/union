@@ -1,31 +1,23 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     bounded::{BoundedI64, BoundedIntError},
     errors::{required, InvalidLength, MissingField},
     hash::H160,
-    tendermint::{crypto::public_key::PublicKey, types::simple_validator::SimpleValidator},
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    tendermint::crypto::public_key::{PublicKey, TryFromPublicKeyError},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::tendermint::types::Validator, into, from)]
 pub struct Validator {
     #[serde(with = "::serde_utils::hex_upper_unprefixed")]
     pub address: H160,
     pub pub_key: PublicKey,
     pub voting_power: BoundedI64<0, { i64::MAX }>,
     pub proposer_priority: i64,
-}
-
-impl From<Validator> for SimpleValidator {
-    fn from(value: Validator) -> Self {
-        Self {
-            pub_key: value.pub_key,
-            voting_power: value.voting_power.inner(),
-        }
-    }
 }
 
 impl From<Validator> for protos::tendermint::types::Validator {
@@ -44,7 +36,7 @@ pub enum TryFromValidatorError {
     MissingField(MissingField),
     Address(InvalidLength),
     VotingPower(BoundedIntError<i64>),
-    PubKey(TryFromProtoErrorOf<PublicKey>),
+    PubKey(TryFromPublicKeyError),
 }
 
 impl TryFrom<protos::tendermint::types::Validator> for Validator {
@@ -66,12 +58,4 @@ impl TryFrom<protos::tendermint::types::Validator> for Validator {
             proposer_priority: value.proposer_priority,
         })
     }
-}
-
-impl Proto for Validator {
-    type Proto = protos::tendermint::types::Validator;
-}
-
-impl TypeUrl for protos::tendermint::types::Validator {
-    const TYPE_URL: &'static str = "/tendermint.types.Validator";
 }

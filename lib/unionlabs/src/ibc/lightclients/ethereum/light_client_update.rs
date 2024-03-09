@@ -1,5 +1,7 @@
 use core::fmt::Debug;
 
+use frame_support_procedural::DebugNoBound;
+use macros::proto;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 
@@ -11,19 +13,20 @@ use crate::{
     },
     hash::H256,
     ibc::lightclients::ethereum::{
-        light_client_header::LightClientHeader, sync_aggregate::SyncAggregate,
-        sync_committee::SyncCommittee,
+        light_client_header::{LightClientHeader, TryFromLightClientHeaderError},
+        sync_aggregate::{SyncAggregate, TryFromSyncAggregateError},
+        sync_committee::{SyncCommittee, TryFromSyncCommitteeError},
     },
-    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 /// TODO: Move these to a more central location
 pub type NextSyncCommitteeBranch = [H256; floorlog2(NEXT_SYNC_COMMITTEE_INDEX)];
 pub type FinalityBranch = [H256; floorlog2(FINALIZED_ROOT_INDEX)];
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate, into, from)]
 pub struct LightClientUpdate<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     /// Header attested to by the sync committee
     pub attested_header: LightClientHeader<C>,
@@ -72,24 +75,22 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
     }
 }
 
-#[derive(Debug)]
-pub enum TryFromLightClientUpdateError<
-    C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES,
-> {
+#[derive(DebugNoBound)]
+pub enum TryFromLightClientUpdateError {
     MissingField(MissingField),
-    AttestedHeader(TryFromProtoErrorOf<LightClientHeader<C>>),
-    NextSyncCommittee(TryFromProtoErrorOf<SyncCommittee<C>>),
+    AttestedHeader(TryFromLightClientHeaderError),
+    NextSyncCommittee(TryFromSyncCommitteeError),
     NextSyncCommitteeBranch(TryFromBranchError<NextSyncCommitteeBranch>),
     FinalityBranch(TryFromBranchError<FinalityBranch>),
-    SyncAggregate(TryFromProtoErrorOf<SyncAggregate<C>>),
-    FinalizedHeader(TryFromProtoErrorOf<LightClientHeader<C>>),
+    SyncAggregate(TryFromSyncAggregateError),
+    FinalizedHeader(TryFromLightClientHeaderError),
 }
 
 impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
     TryFrom<protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate>
     for LightClientUpdate<C>
 {
-    type Error = TryFromLightClientUpdateError<C>;
+    type Error = TryFromLightClientUpdateError;
 
     fn try_from(
         value: protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate,
@@ -134,16 +135,6 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
             signature_slot: value.signature_slot,
         })
     }
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.LightClientUpdate";
-}
-
-impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> Proto
-    for LightClientUpdate<C>
-{
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate;
 }
 
 fn try_from_proto_branch<T>(proto: Vec<Vec<u8>>) -> Result<T, TryFromBranchError<T>>

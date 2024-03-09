@@ -1,9 +1,9 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
-
-use crate::{Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[proto(raw = protos::ibc::core::commitment::v1::MerklePath, into, from)]
 pub struct MerklePath {
     pub key_path: Vec<String>,
 }
@@ -22,12 +22,4 @@ impl From<protos::ibc::core::commitment::v1::MerklePath> for MerklePath {
             key_path: value.key_path,
         }
     }
-}
-
-impl Proto for MerklePath {
-    type Proto = protos::ibc::core::commitment::v1::MerklePath;
-}
-
-impl TypeUrl for protos::ibc::core::commitment::v1::MerklePath {
-    const TYPE_URL: &'static str = "/ibc.core.commitment.v1.MerklePath";
 }

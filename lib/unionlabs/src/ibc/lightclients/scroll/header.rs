@@ -1,3 +1,4 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -9,25 +10,17 @@ use crate::{
             scroll::proof::{ScrollFinalizedProof, TryFromScrollFinalizedProofError},
         },
     },
-    Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::scroll::v1::Header, into, from)]
 pub struct Header {
     pub l1_height: Height,
     pub l1_account_proof: AccountProof,
     pub finalized_proof: ScrollFinalizedProof,
     pub ibc_account_proof: AccountProof,
-}
-
-impl Proto for Header {
-    type Proto = protos::union::ibc::lightclients::scroll::v1::Header;
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::scroll::v1::Header {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.scroll.v1.Header";
 }
 
 impl From<Header> for protos::union::ibc::lightclients::scroll::v1::Header {

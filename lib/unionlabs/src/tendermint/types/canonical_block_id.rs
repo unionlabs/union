@@ -1,23 +1,15 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    hash::H256, tendermint::types::canonical_block_header::CanonicalPartSetHeader, Proto, TypeUrl,
-};
+use crate::{hash::H256, tendermint::types::canonical_block_header::CanonicalPartSetHeader};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::tendermint::types::CanonicalBlockId, from)]
 pub struct CanonicalBlockId {
     pub hash: H256,
     pub part_set_header: CanonicalPartSetHeader,
-}
-
-impl Proto for CanonicalBlockId {
-    type Proto = protos::tendermint::types::CanonicalBlockId;
-}
-
-impl TypeUrl for protos::tendermint::types::CanonicalBlockId {
-    const TYPE_URL: &'static str = "/tendermint.types.CanonicalBlockId";
 }
 
 impl From<CanonicalBlockId> for protos::tendermint::types::CanonicalBlockId {

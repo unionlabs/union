@@ -1,15 +1,19 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     bounded::{BoundedI32, BoundedI64, BoundedIntError},
     errors::{required, MissingField},
-    tendermint::types::{block_id::BlockId, commit_sig::CommitSig},
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    tendermint::types::{
+        block_id::{BlockId, TryFromBlockIdError},
+        commit_sig::{CommitSig, TryFromCommitSigError},
+    },
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::tendermint::types::Commit, into, from)]
 pub struct Commit {
     pub height: BoundedI64<0, { i64::MAX }>,
     pub round: BoundedI32<0, { i32::MAX }>,
@@ -70,13 +74,13 @@ impl TryFrom<contracts::glue::TendermintTypesCommitData> for Commit {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromCommitError {
     Height(BoundedIntError<i64>),
     Round(BoundedIntError<i32>),
     MissingField(MissingField),
-    BlockId(TryFromProtoErrorOf<BlockId>),
-    Signatures,
+    BlockId(TryFromBlockIdError),
+    Signatures(TryFromCommitSigError),
 }
 
 impl TryFrom<protos::tendermint::types::Commit> for Commit {
@@ -97,7 +101,7 @@ impl TryFrom<protos::tendermint::types::Commit> for Commit {
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<Vec<_>, _>>()
-                .map_err(|_| TryFromCommitError::Signatures)?,
+                .map_err(TryFromCommitError::Signatures)?,
         })
     }
 }
@@ -112,12 +116,4 @@ impl From<Commit> for contracts::glue::TendermintTypesCommitData {
             signatures: value.signatures.into_iter().map(Into::into).collect(),
         }
     }
-}
-
-impl TypeUrl for protos::tendermint::types::Commit {
-    const TYPE_URL: &'static str = "/tendermint.types.Commit";
-}
-
-impl Proto for Commit {
-    type Proto = protos::tendermint::types::Commit;
 }

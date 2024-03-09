@@ -59,6 +59,13 @@ pub mod permissions {
         }
     }
 }
+impl ::prost::Name for Permissions {
+    const NAME: &'static str = "Permissions";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
 /// GenesisAccountPermissions is the account permissions for the circuit breaker in genesis
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -67,6 +74,13 @@ pub struct GenesisAccountPermissions {
     pub address: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub permissions: ::core::option::Option<Permissions>,
+}
+impl ::prost::Name for GenesisAccountPermissions {
+    const NAME: &'static str = "GenesisAccountPermissions";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
 }
 /// GenesisState is the state that must be provided at genesis.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -77,12 +91,26 @@ pub struct GenesisState {
     #[prost(string, repeated, tag = "2")]
     pub disabled_type_urls: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
 /// QueryAccountRequest is the request type for the Query/Account RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAccountRequest {
     #[prost(string, tag = "1")]
     pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryAccountRequest {
+    const NAME: &'static str = "QueryAccountRequest";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
 }
 /// AccountResponse is the response type for the Query/Account RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -91,6 +119,13 @@ pub struct AccountResponse {
     #[prost(message, optional, tag = "1")]
     pub permission: ::core::option::Option<Permissions>,
 }
+impl ::prost::Name for AccountResponse {
+    const NAME: &'static str = "AccountResponse";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
 /// QueryAccountsRequest is the request type for the Query/Accounts RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -98,6 +133,13 @@ pub struct QueryAccountsRequest {
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "1")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryAccountsRequest {
+    const NAME: &'static str = "QueryAccountsRequest";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
 }
 /// AccountsResponse is the response type for the Query/Accounts RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -109,16 +151,37 @@ pub struct AccountsResponse {
     #[prost(message, optional, tag = "2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
+impl ::prost::Name for AccountsResponse {
+    const NAME: &'static str = "AccountsResponse";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
 /// QueryDisableListRequest is the request type for the Query/DisabledList RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDisabledListRequest {}
+impl ::prost::Name for QueryDisabledListRequest {
+    const NAME: &'static str = "QueryDisabledListRequest";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
 /// DisabledListResponse is the response type for the Query/DisabledList RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DisabledListResponse {
     #[prost(string, repeated, tag = "1")]
     pub disabled_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for DisabledListResponse {
+    const NAME: &'static str = "DisabledListResponse";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
 }
 /// MsgAuthorizeCircuitBreaker defines the Msg/AuthorizeCircuitBreaker request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -137,12 +200,26 @@ pub struct MsgAuthorizeCircuitBreaker {
     #[prost(message, optional, tag = "3")]
     pub permissions: ::core::option::Option<Permissions>,
 }
+impl ::prost::Name for MsgAuthorizeCircuitBreaker {
+    const NAME: &'static str = "MsgAuthorizeCircuitBreaker";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
 /// MsgAuthorizeCircuitBreakerResponse defines the Msg/AuthorizeCircuitBreaker response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgAuthorizeCircuitBreakerResponse {
     #[prost(bool, tag = "1")]
     pub success: bool,
+}
+impl ::prost::Name for MsgAuthorizeCircuitBreakerResponse {
+    const NAME: &'static str = "MsgAuthorizeCircuitBreakerResponse";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
 }
 /// MsgTripCircuitBreaker defines the Msg/TripCircuitBreaker request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -159,12 +236,26 @@ pub struct MsgTripCircuitBreaker {
     #[prost(string, repeated, tag = "2")]
     pub msg_type_urls: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+impl ::prost::Name for MsgTripCircuitBreaker {
+    const NAME: &'static str = "MsgTripCircuitBreaker";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
 /// MsgTripCircuitBreakerResponse defines the Msg/TripCircuitBreaker response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgTripCircuitBreakerResponse {
     #[prost(bool, tag = "1")]
     pub success: bool,
+}
+impl ::prost::Name for MsgTripCircuitBreakerResponse {
+    const NAME: &'static str = "MsgTripCircuitBreakerResponse";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
 }
 /// MsgResetCircuitBreaker defines the Msg/ResetCircuitBreaker request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -179,12 +270,26 @@ pub struct MsgResetCircuitBreaker {
     #[prost(string, repeated, tag = "3")]
     pub msg_type_urls: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+impl ::prost::Name for MsgResetCircuitBreaker {
+    const NAME: &'static str = "MsgResetCircuitBreaker";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
 /// MsgResetCircuitBreakerResponse defines the Msg/ResetCircuitBreaker response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgResetCircuitBreakerResponse {
     #[prost(bool, tag = "1")]
     pub success: bool,
+}
+impl ::prost::Name for MsgResetCircuitBreakerResponse {
+    const NAME: &'static str = "MsgResetCircuitBreakerResponse";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
 }
 include!("cosmos.circuit.v1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -1,4 +1,5 @@
 use custom_debug_derive::Debug;
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ethabi")]
@@ -6,13 +7,13 @@ use crate::InlineFields;
 use crate::{
     errors::{InvalidLength, MissingField},
     ibc::core::client::height::Height,
-    tendermint::types::signed_header::SignedHeader,
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    tendermint::types::signed_header::{SignedHeader, TryFromSignedHeaderError},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::cometbls::v1::Header, into, from)]
 pub struct Header {
     pub signed_header: SignedHeader,
     pub trusted_height: Height,
@@ -54,10 +55,10 @@ impl crate::EthAbi for Header {
     type EthAbi = InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromHeaderError {
     MissingField(MissingField),
-    SignedHeader(TryFromProtoErrorOf<SignedHeader>),
+    SignedHeader(TryFromSignedHeaderError),
     UntrustedValidatorSetRoot(InvalidLength),
 }
 
@@ -84,12 +85,4 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header 
             zero_knowledge_proof: value.zero_knowledge_proof,
         })
     }
-}
-
-impl Proto for Header {
-    type Proto = protos::union::ibc::lightclients::cometbls::v1::Header;
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::cometbls::v1::Header {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.cometbls.v1.Header";
 }

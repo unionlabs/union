@@ -15,6 +15,13 @@ pub struct BaseAccount {
     #[prost(uint64, tag = "4")]
     pub sequence: u64,
 }
+impl ::prost::Name for BaseAccount {
+    const NAME: &'static str = "BaseAccount";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// ModuleAccount defines an account for modules that holds coins on a pool.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -26,6 +33,13 @@ pub struct ModuleAccount {
     pub name: ::prost::alloc::string::String,
     #[prost(string, repeated, tag = "3")]
     pub permissions: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for ModuleAccount {
+    const NAME: &'static str = "ModuleAccount";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
 }
 /// ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
 ///
@@ -41,6 +55,13 @@ pub struct ModuleCredential {
     /// adding more keys creates sub-account addresses (passed into address.Derive)
     #[prost(bytes = "vec", repeated, tag = "2")]
     pub derivation_keys: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+}
+impl ::prost::Name for ModuleCredential {
+    const NAME: &'static str = "ModuleCredential";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
 }
 /// Params defines the parameters for the auth module.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -58,6 +79,13 @@ pub struct Params {
     #[prost(uint64, tag = "5")]
     pub sig_verify_cost_secp256k1: u64,
 }
+impl ::prost::Name for Params {
+    const NAME: &'static str = "Params";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// GenesisState defines the auth module's genesis state.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -70,6 +98,13 @@ pub struct GenesisState {
     #[prost(message, repeated, tag = "2")]
     pub accounts: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryAccountsRequest is the request type for the Query/Accounts RPC method.
 ///
 /// Since: cosmos-sdk 0.43
@@ -80,6 +115,13 @@ pub struct QueryAccountsRequest {
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "1")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryAccountsRequest {
+    const NAME: &'static str = "QueryAccountsRequest";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
 }
 /// QueryAccountsResponse is the response type for the Query/Accounts RPC method.
 ///
@@ -95,6 +137,13 @@ pub struct QueryAccountsResponse {
     #[prost(message, optional, tag = "2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
+impl ::prost::Name for QueryAccountsResponse {
+    const NAME: &'static str = "QueryAccountsResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryAccountRequest is the request type for the Query/Account RPC method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -103,6 +152,13 @@ pub struct QueryAccountRequest {
     /// address defines the address to query for.
     #[prost(string, tag = "1")]
     pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryAccountRequest {
+    const NAME: &'static str = "QueryAccountRequest";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
 }
 /// QueryAccountResponse is the response type for the Query/Account RPC method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -113,11 +169,25 @@ pub struct QueryAccountResponse {
     #[prost(message, optional, tag = "1")]
     pub account: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
+impl ::prost::Name for QueryAccountResponse {
+    const NAME: &'static str = "QueryAccountResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsRequest {}
+impl ::prost::Name for QueryParamsRequest {
+    const NAME: &'static str = "QueryParamsRequest";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryParamsResponse is the response type for the Query/Params RPC method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -127,6 +197,13 @@ pub struct QueryParamsResponse {
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
 }
+impl ::prost::Name for QueryParamsResponse {
+    const NAME: &'static str = "QueryParamsResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryModuleAccountsRequest is the request type for the Query/ModuleAccounts RPC method.
 ///
 /// Since: cosmos-sdk 0.46
@@ -134,6 +211,13 @@ pub struct QueryParamsResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryModuleAccountsRequest {}
+impl ::prost::Name for QueryModuleAccountsRequest {
+    const NAME: &'static str = "QueryModuleAccountsRequest";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryModuleAccountsResponse is the response type for the Query/ModuleAccounts RPC method.
 ///
 /// Since: cosmos-sdk 0.46
@@ -144,6 +228,13 @@ pub struct QueryModuleAccountsResponse {
     #[prost(message, repeated, tag = "1")]
     pub accounts: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
+impl ::prost::Name for QueryModuleAccountsResponse {
+    const NAME: &'static str = "QueryModuleAccountsResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryModuleAccountByNameRequest is the request type for the Query/ModuleAccountByName RPC method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -151,6 +242,13 @@ pub struct QueryModuleAccountsResponse {
 pub struct QueryModuleAccountByNameRequest {
     #[prost(string, tag = "1")]
     pub name: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryModuleAccountByNameRequest {
+    const NAME: &'static str = "QueryModuleAccountByNameRequest";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
 }
 /// QueryModuleAccountByNameResponse is the response type for the Query/ModuleAccountByName RPC method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -160,6 +258,13 @@ pub struct QueryModuleAccountByNameResponse {
     #[prost(message, optional, tag = "1")]
     pub account: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
+impl ::prost::Name for QueryModuleAccountByNameResponse {
+    const NAME: &'static str = "QueryModuleAccountByNameResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// Bech32PrefixRequest is the request type for Bech32Prefix rpc method.
 ///
 /// Since: cosmos-sdk 0.46
@@ -167,6 +272,13 @@ pub struct QueryModuleAccountByNameResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Bech32PrefixRequest {}
+impl ::prost::Name for Bech32PrefixRequest {
+    const NAME: &'static str = "Bech32PrefixRequest";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// Bech32PrefixResponse is the response type for Bech32Prefix rpc method.
 ///
 /// Since: cosmos-sdk 0.46
@@ -176,6 +288,13 @@ pub struct Bech32PrefixRequest {}
 pub struct Bech32PrefixResponse {
     #[prost(string, tag = "1")]
     pub bech32_prefix: ::prost::alloc::string::String,
+}
+impl ::prost::Name for Bech32PrefixResponse {
+    const NAME: &'static str = "Bech32PrefixResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
 }
 /// AddressBytesToStringRequest is the request type for AddressString rpc method.
 ///
@@ -187,6 +306,13 @@ pub struct AddressBytesToStringRequest {
     #[prost(bytes = "vec", tag = "1")]
     pub address_bytes: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for AddressBytesToStringRequest {
+    const NAME: &'static str = "AddressBytesToStringRequest";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// AddressBytesToStringResponse is the response type for AddressString rpc method.
 ///
 /// Since: cosmos-sdk 0.46
@@ -196,6 +322,13 @@ pub struct AddressBytesToStringRequest {
 pub struct AddressBytesToStringResponse {
     #[prost(string, tag = "1")]
     pub address_string: ::prost::alloc::string::String,
+}
+impl ::prost::Name for AddressBytesToStringResponse {
+    const NAME: &'static str = "AddressBytesToStringResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
 }
 /// AddressStringToBytesRequest is the request type for AccountBytes rpc method.
 ///
@@ -207,6 +340,13 @@ pub struct AddressStringToBytesRequest {
     #[prost(string, tag = "1")]
     pub address_string: ::prost::alloc::string::String,
 }
+impl ::prost::Name for AddressStringToBytesRequest {
+    const NAME: &'static str = "AddressStringToBytesRequest";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// AddressStringToBytesResponse is the response type for AddressBytes rpc method.
 ///
 /// Since: cosmos-sdk 0.46
@@ -216,6 +356,13 @@ pub struct AddressStringToBytesRequest {
 pub struct AddressStringToBytesResponse {
     #[prost(bytes = "vec", tag = "1")]
     pub address_bytes: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for AddressStringToBytesResponse {
+    const NAME: &'static str = "AddressStringToBytesResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
 }
 /// QueryAccountAddressByIDRequest is the request type for AccountAddressByID rpc method
 ///
@@ -238,6 +385,13 @@ pub struct QueryAccountAddressByIdRequest {
     #[prost(uint64, tag = "2")]
     pub account_id: u64,
 }
+impl ::prost::Name for QueryAccountAddressByIdRequest {
+    const NAME: &'static str = "QueryAccountAddressByIDRequest";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryAccountAddressByIDResponse is the response type for AccountAddressByID rpc method
 ///
 /// Since: cosmos-sdk 0.46.2
@@ -247,6 +401,13 @@ pub struct QueryAccountAddressByIdRequest {
 pub struct QueryAccountAddressByIdResponse {
     #[prost(string, tag = "1")]
     pub account_address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryAccountAddressByIdResponse {
+    const NAME: &'static str = "QueryAccountAddressByIDResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
 }
 /// QueryAccountInfoRequest is the Query/AccountInfo request type.
 ///
@@ -259,6 +420,13 @@ pub struct QueryAccountInfoRequest {
     #[prost(string, tag = "1")]
     pub address: ::prost::alloc::string::String,
 }
+impl ::prost::Name for QueryAccountInfoRequest {
+    const NAME: &'static str = "QueryAccountInfoRequest";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryAccountInfoResponse is the Query/AccountInfo response type.
 ///
 /// Since: cosmos-sdk 0.47
@@ -269,6 +437,13 @@ pub struct QueryAccountInfoResponse {
     /// info is the account info which is represented by BaseAccount.
     #[prost(message, optional, tag = "1")]
     pub info: ::core::option::Option<BaseAccount>,
+}
+impl ::prost::Name for QueryAccountInfoResponse {
+    const NAME: &'static str = "QueryAccountInfoResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
 }
 /// MsgUpdateParams is the Msg/UpdateParams request type.
 ///
@@ -286,6 +461,13 @@ pub struct MsgUpdateParams {
     #[prost(message, optional, tag = "2")]
     pub params: ::core::option::Option<Params>,
 }
+impl ::prost::Name for MsgUpdateParams {
+    const NAME: &'static str = "MsgUpdateParams";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 /// MsgUpdateParamsResponse defines the response structure for executing a
 /// MsgUpdateParams message.
 ///
@@ -294,5 +476,12 @@ pub struct MsgUpdateParams {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParamsResponse {}
+impl ::prost::Name for MsgUpdateParamsResponse {
+    const NAME: &'static str = "MsgUpdateParamsResponse";
+    const PACKAGE: &'static str = "cosmos.auth.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
+    }
+}
 include!("cosmos.auth.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

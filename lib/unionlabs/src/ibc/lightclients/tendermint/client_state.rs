@@ -1,19 +1,20 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cosmos::ics23::proof_spec::ProofSpec,
+    cosmos::ics23::proof_spec::{ProofSpec, TryFromProofSpecError},
     errors::{required, MissingField},
-    google::protobuf::duration::Duration,
+    google::protobuf::duration::{Duration, DurationError},
     ibc::{
         core::client::height::Height,
         lightclients::tendermint::fraction::{Fraction, TryFromFractionError},
     },
-    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::lightclients::tendermint::v1::ClientState, into, from)]
 pub struct ClientState {
     pub chain_id: String,
     pub trust_level: Fraction,
@@ -47,22 +48,14 @@ impl From<ClientState> for protos::ibc::lightclients::tendermint::v1::ClientStat
     }
 }
 
-impl TypeUrl for protos::ibc::lightclients::tendermint::v1::ClientState {
-    const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ClientState";
-}
-
-impl Proto for ClientState {
-    type Proto = protos::ibc::lightclients::tendermint::v1::ClientState;
-}
-
 #[derive(Debug)]
 pub enum TryFromClientStateError {
     MissingField(MissingField),
     TrustLevel(TryFromFractionError),
-    TrustingPeriod(TryFromProtoErrorOf<Duration>),
-    UnbondingPeriod(TryFromProtoErrorOf<Duration>),
-    MaxClockDrift(TryFromProtoErrorOf<Duration>),
-    ProofSpecs(TryFromProtoErrorOf<ProofSpec>),
+    TrustingPeriod(DurationError),
+    UnbondingPeriod(DurationError),
+    MaxClockDrift(DurationError),
+    ProofSpecs(TryFromProofSpecError),
 }
 
 impl TryFrom<protos::ibc::lightclients::tendermint::v1::ClientState> for ClientState {

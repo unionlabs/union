@@ -1,22 +1,42 @@
 use core::str::FromStr;
 
+use frame_support_procedural::DebugNoBound;
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField, UnknownEnumVariant},
-    ibc::core::connection::{counterparty::Counterparty, state::State, version::Version},
+    ibc::core::connection::{
+        counterparty::{Counterparty, TryFromConnectionCounterpartyError},
+        state::State,
+        version::Version,
+    },
     id,
     traits::Id,
-    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(
+    bound(
+        serialize = "
+            ClientId: Id,
+            CounterpartyClientId: Id,
+            CounterpartyConnectionId: Id,
+        ",
+        deserialize = "
+            ClientId: Id,
+            CounterpartyClientId: Id,
+            CounterpartyConnectionId: Id,
+        ",
+    ),
+    deny_unknown_fields
+)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::core::connection::v1::ConnectionEnd, into, from)]
 pub struct ConnectionEnd<
-    ClientId,
-    CounterpartyClientId,
-    CounterpartyConnectionId = id::ConnectionId,
+    ClientId: Id,
+    CounterpartyClientId: Id,
+    CounterpartyConnectionId: Id = id::ConnectionId,
 > {
     pub client_id: ClientId,
     pub versions: Vec<Version>,
@@ -25,7 +45,7 @@ pub struct ConnectionEnd<
     pub delay_period: u64,
 }
 
-#[derive(Debug)]
+#[derive(DebugNoBound)]
 pub enum TryFromConnectionEndError<
     ClientId: Id,
     CounterpartyClientId: Id,
@@ -34,7 +54,9 @@ pub enum TryFromConnectionEndError<
     ClientId(<ClientId as FromStr>::Err),
     Version(UnknownEnumVariant<String>),
     State(UnknownEnumVariant<i32>),
-    Counterparty(TryFromProtoErrorOf<Counterparty<CounterpartyClientId, CounterpartyConnectionId>>),
+    Counterparty(
+        TryFromConnectionCounterpartyError<CounterpartyClientId, CounterpartyConnectionId>,
+    ),
     MissingField(MissingField),
 }
 
@@ -70,20 +92,11 @@ impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
     }
 }
 
-impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id> Proto
-    for ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>
-{
-    type Proto = protos::ibc::core::connection::v1::ConnectionEnd;
-}
-
-impl TypeUrl for protos::ibc::core::connection::v1::ConnectionEnd {
-    const TYPE_URL: &'static str = "/ibc.core.connection.v1.ConnectionEnd";
-}
-
-impl<ClientId: Id, CounterpartyClientId: Id> From<ConnectionEnd<ClientId, CounterpartyClientId>>
+impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
+    From<ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>>
     for protos::ibc::core::connection::v1::ConnectionEnd
 {
-    fn from(val: ConnectionEnd<ClientId, CounterpartyClientId>) -> Self {
+    fn from(val: ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>) -> Self {
         Self {
             client_id: val.client_id.to_string(),
             versions: val.versions.into_iter().map(Into::into).collect(),

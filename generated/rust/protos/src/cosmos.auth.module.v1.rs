@@ -13,6 +13,13 @@ pub struct Module {
     #[prost(string, tag = "3")]
     pub authority: ::prost::alloc::string::String,
 }
+impl ::prost::Name for Module {
+    const NAME: &'static str = "Module";
+    const PACKAGE: &'static str = "cosmos.auth.module.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.module.v1.{}", Self::NAME)
+    }
+}
 /// ModuleAccountPermission represents permissions for a module account.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -24,5 +31,12 @@ pub struct ModuleAccountPermission {
     /// values are minter, burner and staking.
     #[prost(string, repeated, tag = "2")]
     pub permissions: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for ModuleAccountPermission {
+    const NAME: &'static str = "ModuleAccountPermission";
+    const PACKAGE: &'static str = "cosmos.auth.module.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.auth.module.v1.{}", Self::NAME)
+    }
 }
 // @@protoc_insertion_point(module)

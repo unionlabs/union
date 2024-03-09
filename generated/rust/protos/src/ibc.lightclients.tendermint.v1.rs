@@ -36,7 +36,7 @@ pub struct ClientState {
     /// chained proof. NOTE: ClientState must stored under
     /// `{upgradePath}/{upgradeHeight}/clientState` ConsensusState must be stored
     /// under `{upgradepath}/{upgradeHeight}/consensusState` For SDK chains using
-    /// the default upgrade module, upgrade_path should be []string{"upgrade",
+    /// the default upgrade module, upgrade_path should be \[\]string{"upgrade",
     /// "upgradedIBCState"}`
     #[prost(string, repeated, tag = "9")]
     pub upgrade_path: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
@@ -48,6 +48,13 @@ pub struct ClientState {
     #[deprecated]
     #[prost(bool, tag = "11")]
     pub allow_update_after_misbehaviour: bool,
+}
+impl ::prost::Name for ClientState {
+    const NAME: &'static str = "ClientState";
+    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
+    }
 }
 /// ConsensusState defines the consensus state from Tendermint.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -63,6 +70,13 @@ pub struct ConsensusState {
     #[prost(bytes = "vec", tag = "3")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ConsensusState {
+    const NAME: &'static str = "ConsensusState";
+    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
+    }
+}
 /// Misbehaviour is a wrapper over two conflicting Headers
 /// that implements Misbehaviour interface expected by ICS-02
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -76,6 +90,13 @@ pub struct Misbehaviour {
     pub header_1: ::core::option::Option<Header>,
     #[prost(message, optional, tag = "3")]
     pub header_2: ::core::option::Option<Header>,
+}
+impl ::prost::Name for Misbehaviour {
+    const NAME: &'static str = "Misbehaviour";
+    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
+    }
 }
 /// Header defines the Tendermint client consensus Header.
 /// It encapsulates all the information necessary to update from a trusted
@@ -104,6 +125,13 @@ pub struct Header {
     pub trusted_validators:
         ::core::option::Option<super::super::super::super::tendermint::types::ValidatorSet>,
 }
+impl ::prost::Name for Header {
+    const NAME: &'static str = "Header";
+    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
+    }
+}
 /// Fraction defines the protobuf message type for tmmath.Fraction that only
 /// supports positive values.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -114,5 +142,12 @@ pub struct Fraction {
     pub numerator: u64,
     #[prost(uint64, tag = "2")]
     pub denominator: u64,
+}
+impl ::prost::Name for Fraction {
+    const NAME: &'static str = "Fraction";
+    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
+    }
 }
 // @@protoc_insertion_point(module)

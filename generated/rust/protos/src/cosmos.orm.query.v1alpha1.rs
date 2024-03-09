@@ -17,6 +17,13 @@ pub struct GetRequest {
     #[prost(message, repeated, tag = "3")]
     pub values: ::prost::alloc::vec::Vec<IndexValue>,
 }
+impl ::prost::Name for GetRequest {
+    const NAME: &'static str = "GetRequest";
+    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
+    }
+}
 /// GetResponse is the Query/Get response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -25,6 +32,13 @@ pub struct GetResponse {
     /// status code NOT_FOUND will be returned.
     #[prost(message, optional, tag = "1")]
     pub result: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
+}
+impl ::prost::Name for GetResponse {
+    const NAME: &'static str = "GetResponse";
+    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
+    }
 }
 /// ListRequest is the Query/List request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -58,6 +72,13 @@ pub mod list_request {
         #[prost(message, repeated, tag = "1")]
         pub values: ::prost::alloc::vec::Vec<super::IndexValue>,
     }
+    impl ::prost::Name for Prefix {
+        const NAME: &'static str = "Prefix";
+        const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!("cosmos.orm.query.v1alpha1.ListRequest.{}", Self::NAME)
+        }
+    }
     /// Range specifies the arguments to a range query.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -73,6 +94,13 @@ pub mod list_request {
         #[prost(message, repeated, tag = "2")]
         pub end: ::prost::alloc::vec::Vec<super::IndexValue>,
     }
+    impl ::prost::Name for Range {
+        const NAME: &'static str = "Range";
+        const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!("cosmos.orm.query.v1alpha1.ListRequest.{}", Self::NAME)
+        }
+    }
     /// query is the query expression corresponding to the provided index. If
     /// neither prefix nor range is specified, the query will list all the fields
     /// in the index.
@@ -87,6 +115,13 @@ pub mod list_request {
         Range(Range),
     }
 }
+impl ::prost::Name for ListRequest {
+    const NAME: &'static str = "ListRequest";
+    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
+    }
+}
 /// ListResponse is the Query/List response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -97,6 +132,13 @@ pub struct ListResponse {
     /// pagination is the pagination response.
     #[prost(message, optional, tag = "5")]
     pub pagination: ::core::option::Option<super::super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for ListResponse {
+    const NAME: &'static str = "ListResponse";
+    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
+    }
 }
 /// IndexValue represents the value of a field in an ORM index expression.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -138,6 +180,13 @@ pub mod index_value {
         /// duration specifies a value for a duration index field.
         #[prost(message, tag = "8")]
         Duration(super::super::super::super::super::google::protobuf::Duration),
+    }
+}
+impl ::prost::Name for IndexValue {
+    const NAME: &'static str = "IndexValue";
+    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
     }
 }
 include!("cosmos.orm.query.v1alpha1.tonic.rs");

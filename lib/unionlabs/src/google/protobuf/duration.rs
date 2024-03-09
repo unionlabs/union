@@ -5,6 +5,7 @@ use core::{
     str::FromStr,
 };
 
+use macros::proto;
 use serde::{
     de::{self, Unexpected},
     Deserialize, Serialize,
@@ -14,7 +15,6 @@ use crate::{
     bounded::{BoundedI128, BoundedI32, BoundedI64, BoundedIntError},
     constants::metric::NANOS_PER_SECOND,
     macros::result_try,
-    Proto, TypeUrl,
 };
 
 pub const DURATION_MAX_SECONDS: i64 = 315_576_000_000;
@@ -47,6 +47,7 @@ type PositiveNanos = BoundedI32<0, DURATION_MAX_NANOS>;
 ///   to +999,999,999 inclusive.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::google::protobuf::Duration, into, from)]
 pub struct Duration(
     BoundedI128<
         { (DURATION_MIN_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MIN_NANOS as i128 },
@@ -300,19 +301,15 @@ pub enum DurationError {
     Sign,
 }
 
-impl Proto for Duration {
-    type Proto = protos::google::protobuf::Duration;
-}
-
-impl TypeUrl for protos::google::protobuf::Duration {
-    const TYPE_URL: &'static str = "/google.protobuf.Duration";
-}
-
 impl Duration {
     #[must_use]
-    #[allow(clippy::too_many_lines)]
     pub fn checked_add(self, rhs: Duration) -> Option<Duration> {
-        (self.0.inner() + rhs.0.inner()).try_into().map(Self).ok()
+        self.0
+            .inner()
+            .checked_add(rhs.0.inner())?
+            .try_into()
+            .map(Self)
+            .ok()
     }
 }
 

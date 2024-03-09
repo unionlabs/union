@@ -1,4 +1,5 @@
 use custom_debug_derive::Debug;
+use macros::proto;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use ssz_types::{fixed_vector, variable_list, FixedVector, VariableList};
@@ -9,12 +10,12 @@ use crate::{
     ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
     hash::{H160, H256},
     uint::U256,
-    Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::AccountUpdate, into, from)]
 pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub parent_hash: H256,
     pub fee_recipient: H160,
@@ -120,7 +121,7 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader
             gas_used: value.gas_used,
             timestamp: value.timestamp,
             extra_data: value.extra_data.into(),
-            base_fee_per_gas: value.base_fee_per_gas.into(),
+            base_fee_per_gas: value.base_fee_per_gas.to_big_endian().into(),
             block_hash: value.block_hash.into(),
             transactions_root: value.transactions_root.into(),
             withdrawals_root: value.withdrawals_root.into(),
@@ -187,9 +188,7 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .extra_data
                 .try_into()
                 .map_err(TryFromExecutionPayloadHeaderError::ExtraData)?,
-            base_fee_per_gas: value
-                .base_fee_per_gas
-                .try_into()
+            base_fee_per_gas: U256::try_from_big_endian(&value.base_fee_per_gas)
                 .map_err(TryFromExecutionPayloadHeaderError::BaseFeePerGas)?,
             block_hash: value
                 .block_hash
@@ -207,12 +206,4 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
             excess_blob_gas: value.excess_blob_gas,
         })
     }
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader";
-}
-
-impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> Proto for ExecutionPayloadHeader<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader;
 }

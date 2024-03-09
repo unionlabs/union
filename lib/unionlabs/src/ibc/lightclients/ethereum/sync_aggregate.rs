@@ -1,15 +1,14 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
-use ssz::{Decode, Encode};
 use ssz_types::BitVector;
 use tree_hash::TreeHash;
 
-use crate::{
-    bls::BlsSignature, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE, Proto, TypeUrl,
-};
+use crate::{bls::BlsSignature, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 
-#[derive(Clone, PartialEq, Deserialize, Serialize, Encode, Decode, TreeHash)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, ssz::Encode, ssz::Decode, TreeHash)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::SyncAggregate, into, from)]
 pub struct SyncAggregate<C: SYNC_COMMITTEE_SIZE> {
     // TODO: Change debug print for this type in ssz_types
     pub sync_committee_bits: BitVector<C::SYNC_COMMITTEE_SIZE>,
@@ -31,8 +30,6 @@ impl<C: SYNC_COMMITTEE_SIZE + core::fmt::Debug> core::fmt::Debug for SyncAggrega
             .finish()
     }
 }
-
-impl<C: SYNC_COMMITTEE_SIZE> SyncAggregate<C> {}
 
 impl<C: SYNC_COMMITTEE_SIZE> From<SyncAggregate<C>>
     for protos::union::ibc::lightclients::ethereum::v1::SyncAggregate
@@ -69,12 +66,4 @@ impl<C: SYNC_COMMITTEE_SIZE> TryFrom<protos::union::ibc::lightclients::ethereum:
                 .map_err(TryFromSyncAggregateError::Signature)?,
         })
     }
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::SyncAggregate {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.SyncAggregate";
-}
-
-impl<C: SYNC_COMMITTEE_SIZE> Proto for SyncAggregate<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::SyncAggregate;
 }

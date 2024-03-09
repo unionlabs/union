@@ -23,6 +23,13 @@ pub struct ClientState {
     pub latest_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
 }
+impl ::prost::Name for ClientState {
+    const NAME: &'static str = "ClientState";
+    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
@@ -38,6 +45,13 @@ pub struct ConsensusState {
     #[prost(bytes = "vec", tag = "3")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ConsensusState {
+    const NAME: &'static str = "ConsensusState";
+    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Misbehaviour {
@@ -45,6 +59,13 @@ pub struct Misbehaviour {
     pub header_1: ::core::option::Option<Header>,
     #[prost(message, optional, tag = "2")]
     pub header_2: ::core::option::Option<Header>,
+}
+impl ::prost::Name for Misbehaviour {
+    const NAME: &'static str = "Misbehaviour";
+    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -57,5 +78,12 @@ pub struct Header {
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     #[prost(bytes = "vec", tag = "3")]
     pub zero_knowledge_proof: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for Header {
+    const NAME: &'static str = "Header";
+    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
+    }
 }
 // @@protoc_insertion_point(module)

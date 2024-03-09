@@ -1,9 +1,9 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
-    union::galois::prove_response::ProveResponse,
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    union::galois::prove_response::{ProveResponse, TryFromProveResponseError},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -13,6 +13,7 @@ use crate::{
     rename_all = "snake_case",
     deny_unknown_fields
 )]
+#[proto(raw = protos::union::galois::api::v2::PollResponse, into, from)]
 pub enum PollResponse {
     Pending,
     Failed(ProveRequestFailed),
@@ -27,14 +28,6 @@ pub struct ProveRequestFailed {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProveRequestDone {
     pub response: ProveResponse,
-}
-
-impl Proto for PollResponse {
-    type Proto = protos::union::galois::api::v2::PollResponse;
-}
-
-impl TypeUrl for protos::union::galois::api::v2::PollResponse {
-    const TYPE_URL: &'static str = "/union.galois.api.v2.PollResponse";
 }
 
 impl From<PollResponse> for protos::union::galois::api::v2::PollResponse {
@@ -68,7 +61,7 @@ impl From<PollResponse> for protos::union::galois::api::v2::PollResponse {
 #[derive(Debug)]
 pub enum TryFromPollResponseError {
     MissingField(MissingField),
-    ProveResponse(TryFromProtoErrorOf<ProveResponse>),
+    ProveResponse(TryFromProveResponseError),
 }
 
 impl TryFrom<protos::union::galois::api::v2::PollResponse> for PollResponse {

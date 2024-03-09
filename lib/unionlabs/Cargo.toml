@@ -6,47 +6,48 @@ resolver = "2"
 version  = "0.1.0"
 
 [dependencies]
-arbitrary              = { workspace = true, optional = true, features = ["derive"] }
-bip32                  = { workspace = true, features = ["secp256k1"] }
-bitvec                 = { workspace = true }
-chrono                 = { workspace = true, features = ["alloc"] }
-clap                   = { workspace = true, features = ["derive"] }
-contracts              = { workspace = true, optional = true }
-cosmwasm-std           = { workspace = true, features = ["stargate"] }
-custom_debug_derive    = "0.6.1"
-derive_more            = { workspace = true, features = ["display"] }
-either                 = { workspace = true }
-enumorph               = { workspace = true }
-ethers                 = { workspace = true, optional = true }
-ethers-contract-derive = { workspace = true, optional = true }
-ethers-core            = { workspace = true, optional = true }
-frunk.workspace        = true
-generic-array          = "0.14.7"
-hex                    = { workspace = true }
-hex-literal            = { workspace = true }
-k256                   = { version = "0.13.1", default-features = false, features = ["schnorr"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
-macros.workspace       = true
-milagro_bls            = { workspace = true }
-paste                  = { version = "1.0" }
-primitive-types        = { workspace = true, features = ["serde_no_std"] }
-prost                  = { workspace = true, features = ["std"] }
-protos                 = { workspace = true, features = ["proto_full", "serde"] }
-ripemd                 = { workspace = true }
-rlp                    = { workspace = true, features = ["derive"] }
-rs_merkle              = "1.4.1"
-serde                  = { workspace = true, features = ["derive"] }
-serde-utils            = { workspace = true }
-serde_json             = { workspace = true, optional = true }
-sha2                   = { workspace = true }
-ssz                    = { workspace = true }
-ssz_types              = { workspace = true }
-subtle-encoding        = { workspace = true, features = ["bech32-preview"] }
-thiserror              = { workspace = true }
-tracing                = { workspace = true }
-tree_hash              = { workspace = true }
-typenum                = { workspace = true, features = ["const-generics", "no_std"] }
-uint                   = "*"
-wasmparser             = { version = "0.113" }
+arbitrary                = { workspace = true, optional = true, features = ["derive"] }
+bip32                    = { workspace = true, features = ["secp256k1"] }
+bitvec                   = { workspace = true }
+chrono                   = { workspace = true, features = ["alloc"] }
+clap                     = { workspace = true, features = ["derive"] }
+contracts                = { workspace = true, optional = true }
+cosmwasm-std             = { workspace = true, features = ["stargate"] }
+custom_debug_derive      = "0.6.1"
+derive_more              = { workspace = true, features = ["display"] }
+either                   = { workspace = true }
+enumorph                 = { workspace = true }
+ethers                   = { workspace = true, optional = true }
+ethers-contract-derive   = { workspace = true, optional = true }
+ethers-core              = { workspace = true, optional = true }
+frame-support-procedural = { workspace = true }
+frunk.workspace          = true
+generic-array            = "0.14.7"
+hex                      = { workspace = true }
+hex-literal              = { workspace = true }
+k256                     = { version = "0.13.1", default-features = false, features = ["schnorr"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
+macros.workspace         = true
+milagro_bls              = { workspace = true }
+paste                    = { version = "1.0" }
+primitive-types          = { workspace = true, features = ["serde_no_std"] }
+prost                    = { workspace = true, features = ["std"] }
+protos                   = { workspace = true, features = ["proto_full", "serde"] }
+ripemd                   = { workspace = true }
+rlp                      = { workspace = true, features = ["derive"] }
+rs_merkle                = "1.4.1"
+serde                    = { workspace = true, features = ["derive"] }
+serde-utils              = { workspace = true }
+serde_json               = { workspace = true, optional = true }
+sha2                     = { workspace = true }
+ssz                      = { workspace = true }
+ssz_types                = { workspace = true }
+subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
+thiserror                = { workspace = true }
+tracing                  = { workspace = true }
+tree_hash                = { workspace = true }
+typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
+uint                     = "*"
+wasmparser               = { version = "0.113" }
 
 [dev-dependencies]
 rand       = "0.8.5"

@@ -14,6 +14,13 @@ pub struct Version {
     #[prost(string, optional, tag = "4")]
     pub suffix: ::core::option::Option<::prost::alloc::string::String>,
 }
+impl ::prost::Name for Version {
+    const NAME: &'static str = "Version";
+    const PACKAGE: &'static str = "google.protobuf.compiler";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("google.protobuf.compiler.{}", Self::NAME)
+    }
+}
 /// An encoded CodeGeneratorRequest is written to the plugin's stdin.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -45,6 +52,13 @@ pub struct CodeGeneratorRequest {
     /// The version number of protocol compiler.
     #[prost(message, optional, tag = "3")]
     pub compiler_version: ::core::option::Option<Version>,
+}
+impl ::prost::Name for CodeGeneratorRequest {
+    const NAME: &'static str = "CodeGeneratorRequest";
+    const PACKAGE: &'static str = "google.protobuf.compiler";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("google.protobuf.compiler.{}", Self::NAME)
+    }
 }
 /// The plugin writes an encoded CodeGeneratorResponse to stdout.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -134,6 +148,16 @@ pub mod code_generator_response {
         #[prost(message, optional, tag = "16")]
         pub generated_code_info: ::core::option::Option<super::super::GeneratedCodeInfo>,
     }
+    impl ::prost::Name for File {
+        const NAME: &'static str = "File";
+        const PACKAGE: &'static str = "google.protobuf.compiler";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "google.protobuf.compiler.CodeGeneratorResponse.{}",
+                Self::NAME
+            )
+        }
+    }
     /// Sync with code_generator.h.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
@@ -160,6 +184,13 @@ pub mod code_generator_response {
                 _ => None,
             }
         }
+    }
+}
+impl ::prost::Name for CodeGeneratorResponse {
+    const NAME: &'static str = "CodeGeneratorResponse";
+    const PACKAGE: &'static str = "google.protobuf.compiler";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("google.protobuf.compiler.{}", Self::NAME)
     }
 }
 // @@protoc_insertion_point(module)

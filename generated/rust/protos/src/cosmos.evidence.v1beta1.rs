@@ -1,12 +1,4 @@
 // @generated
-/// GenesisState defines the evidence module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// evidence defines all the evidence at genesis.
-    #[prost(message, repeated, tag = "1")]
-    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
-}
 /// Equivocation implements the Evidence interface and defines evidence of double
 /// signing misbehavior.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -25,6 +17,28 @@ pub struct Equivocation {
     #[prost(string, tag = "4")]
     pub consensus_address: ::prost::alloc::string::String,
 }
+impl ::prost::Name for Equivocation {
+    const NAME: &'static str = "Equivocation";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
+}
+/// GenesisState defines the evidence module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    /// evidence defines all the evidence at genesis.
+    #[prost(message, repeated, tag = "1")]
+    pub evidence: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+}
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryEvidenceRequest is the request type for the Query/Evidence RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -40,6 +54,13 @@ pub struct QueryEvidenceRequest {
     #[prost(string, tag = "2")]
     pub hash: ::prost::alloc::string::String,
 }
+impl ::prost::Name for QueryEvidenceRequest {
+    const NAME: &'static str = "QueryEvidenceRequest";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryEvidenceResponse is the response type for the Query/Evidence RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -47,6 +68,13 @@ pub struct QueryEvidenceResponse {
     /// evidence returns the requested evidence.
     #[prost(message, optional, tag = "1")]
     pub evidence: ::core::option::Option<super::super::super::google::protobuf::Any>,
+}
+impl ::prost::Name for QueryEvidenceResponse {
+    const NAME: &'static str = "QueryEvidenceResponse";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
 }
 /// QueryEvidenceRequest is the request type for the Query/AllEvidence RPC
 /// method.
@@ -56,6 +84,13 @@ pub struct QueryAllEvidenceRequest {
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "1")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryAllEvidenceRequest {
+    const NAME: &'static str = "QueryAllEvidenceRequest";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
 }
 /// QueryAllEvidenceResponse is the response type for the Query/AllEvidence RPC
 /// method.
@@ -69,6 +104,13 @@ pub struct QueryAllEvidenceResponse {
     #[prost(message, optional, tag = "2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
+impl ::prost::Name for QueryAllEvidenceResponse {
+    const NAME: &'static str = "QueryAllEvidenceResponse";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
+}
 /// MsgSubmitEvidence represents a message that supports submitting arbitrary
 /// Evidence of misbehavior such as equivocation or counterfactual signing.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -81,6 +123,13 @@ pub struct MsgSubmitEvidence {
     #[prost(message, optional, tag = "2")]
     pub evidence: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
+impl ::prost::Name for MsgSubmitEvidence {
+    const NAME: &'static str = "MsgSubmitEvidence";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
+}
 /// MsgSubmitEvidenceResponse defines the Msg/SubmitEvidence response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -88,6 +137,13 @@ pub struct MsgSubmitEvidenceResponse {
     /// hash defines the hash of the evidence.
     #[prost(bytes = "vec", tag = "4")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for MsgSubmitEvidenceResponse {
+    const NAME: &'static str = "MsgSubmitEvidenceResponse";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
 }
 include!("cosmos.evidence.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

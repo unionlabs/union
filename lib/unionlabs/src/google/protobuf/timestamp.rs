@@ -1,6 +1,7 @@
 use core::{cmp::Ordering, fmt::Display, num::TryFromIntError, ops::Neg, str::FromStr};
 
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
+use macros::proto;
 use serde::{
     de::{self, Unexpected},
     Deserialize, Serialize,
@@ -10,7 +11,6 @@ use crate::{
     bounded::{BoundedI32, BoundedI64, BoundedIntError},
     constants::metric::NANOS_PER_SECOND,
     google::protobuf::duration::Duration,
-    Proto, TypeUrl,
 };
 
 /// See <https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=c27d92ace805175896bb68664bb492b6>
@@ -21,6 +21,7 @@ const NANOS_MAX: i32 = NANOS_PER_SECOND - 1;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::google::protobuf::Timestamp, into, from)]
 pub struct Timestamp {
     /// As per the proto docs: "Must be from 0001-01-01T00:00:00Z to
     /// 9999-12-31T23:59:59Z inclusive."
@@ -198,14 +199,6 @@ impl FromStr for Timestamp {
     }
 }
 
-impl Proto for Timestamp {
-    type Proto = protos::google::protobuf::Timestamp;
-}
-
-impl TypeUrl for protos::google::protobuf::Timestamp {
-    const TYPE_URL: &'static str = "/google.protobuf.Timestamp";
-}
-
 #[derive(Debug)]
 pub enum TryFromCosmwasmTimestampError {
     Seconds(BoundedIntError<i64>),
@@ -262,7 +255,7 @@ impl From<Timestamp> for protos::google::protobuf::Timestamp {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromTimestampError {
     Seconds(BoundedIntError<i64>),
     Nanos(BoundedIntError<i32>),

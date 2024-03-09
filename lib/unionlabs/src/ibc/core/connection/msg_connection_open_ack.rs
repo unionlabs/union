@@ -1,16 +1,17 @@
 use core::fmt::Debug;
 
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     ibc::core::{client::height::Height, connection::version::Version},
     id::ConnectionId,
-    TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::core::connection::v1::MsgConnectionOpenAck)]
 pub struct MsgConnectionOpenAck<ClientState, ProofTry, ProofClient, ProofConsensus> {
     pub connection_id: ConnectionId,
     pub counterparty_connection_id: ConnectionId,
@@ -23,8 +24,4 @@ pub struct MsgConnectionOpenAck<ClientState, ProofTry, ProofClient, ProofConsens
     pub proof_consensus: ProofConsensus,
     // TODO: Make this type generic
     pub consensus_height: Height,
-}
-
-impl TypeUrl for protos::ibc::core::connection::v1::MsgConnectionOpenAck {
-    const TYPE_URL: &'static str = "/ibc.core.connection.v1.MsgConnectionOpenAck";
 }

@@ -16,7 +16,7 @@ use ics008_wasm_client::{
 use sha3::Digest;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::Proto,
+    encoding::{DecodeAs, Proto},
     ensure,
     google::protobuf::any::Any,
     hash::H256,
@@ -36,7 +36,7 @@ use unionlabs::{
     },
     proof::Path,
     uint::U256,
-    IntoEthAbi, TryFromProto,
+    IntoEthAbi,
 };
 
 use crate::{
@@ -86,7 +86,7 @@ impl IbcClient for EthereumLightClient {
         let storage_root = consensus_state.data.storage_root;
 
         let storage_proof = {
-            let mut proofs = StorageProof::try_from_proto_bytes(&proof)
+            let mut proofs = StorageProof::decode_as::<Proto>(&proof)
                 .map_err(|e| Error::DecodeFromProto {
                     reason: format!("when decoding storage proof: {e:#?}"),
                 })?
@@ -445,7 +445,7 @@ fn do_verify_membership(
 
     let canonical_value = match path {
         Path::ClientStatePath(_) => {
-            Any::<cometbls::client_state::ClientState>::try_from_proto_bytes(raw_value.as_ref())
+            Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(raw_value.as_ref())
                 .map_err(|e| Error::DecodeFromProto {
                     reason: format!("{e:?}"),
                 })?
@@ -454,7 +454,7 @@ fn do_verify_membership(
         }
         Path::ClientConsensusStatePath(_) => Any::<
             wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-        >::try_from_proto_bytes(raw_value.as_ref())
+        >::decode_as::<Proto>(raw_value.as_ref())
         .map_err(|e| Error::DecodeFromProto {
             reason: format!("{e:?}"),
         })?
@@ -553,10 +553,10 @@ mod test {
     use serde::Deserialize;
     use unionlabs::{
         bls::BlsPublicKey,
+        encoding::{Encode, EncodeAs},
         ethereum::config::Mainnet,
         ibc::{core::connection::connection_end::ConnectionEnd, lightclients::ethereum},
         id::ClientId,
-        IntoProto,
     };
 
     use super::*;
@@ -858,7 +858,6 @@ mod test {
                     serde_json::to_vec(&Binary(pubkey.into())).unwrap().into(),
                 ))
             }
-            _ => unimplemented!(),
         }
     }
 
@@ -975,7 +974,7 @@ mod test {
         )
     }
 
-    fn do_membership_test<T: serde::de::DeserializeOwned + IntoProto>(
+    fn do_membership_test<T: serde::de::DeserializeOwned + Encode<Proto>>(
         path: &str,
     ) -> Result<(), Error> {
         let (proof, commitment_path, slot, storage_root, expected_data) =
@@ -985,7 +984,7 @@ mod test {
             storage_root.as_ref().try_into().unwrap(),
             slot,
             proof,
-            expected_data.into_proto_bytes(),
+            expected_data.encode_as::<Proto>(),
         )
     }
 
@@ -1022,7 +1021,7 @@ mod test {
                 storage_root.clone(),
                 slot,
                 proof,
-                connection_end.clone().into_proto_bytes(),
+                connection_end.clone().encode_as::<Proto>(),
             )
             .is_err());
         }
@@ -1042,7 +1041,7 @@ mod test {
             storage_root,
             slot,
             proof,
-            connection_end.into_proto_bytes(),
+            connection_end.encode_as::<Proto>(),
         )
         .is_err());
     }
@@ -1062,7 +1061,7 @@ mod test {
             storage_root,
             slot,
             proof,
-            connection_end.into_proto_bytes(),
+            connection_end.encode_as::<Proto>(),
         )
         .is_err());
     }
@@ -1110,7 +1109,7 @@ mod test {
     ) {
         deps.storage.set(
             format!("{SUBJECT_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
-            &Any(subject_client_state.clone()).into_proto_bytes(),
+            &Any(subject_client_state.clone()).encode_as::<Proto>(),
         );
         deps.storage.set(
             format!(
@@ -1118,11 +1117,11 @@ mod test {
                 consensus_db_key(&INITIAL_CONSENSUS_STATE_HEIGHT)
             )
             .as_bytes(),
-            &Any(subject_consensus_state.clone()).into_proto_bytes(),
+            &Any(subject_consensus_state.clone()).encode_as::<Proto>(),
         );
         deps.storage.set(
             format!("{SUBSTITUTE_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
-            &Any(substitute_client_state.clone()).into_proto_bytes(),
+            &Any(substitute_client_state.clone()).encode_as::<Proto>(),
         );
         deps.storage.set(
             format!(
@@ -1130,7 +1129,7 @@ mod test {
                 consensus_db_key(&INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT)
             )
             .as_bytes(),
-            &Any(substitute_consensus_state.clone()).into_proto_bytes(),
+            &Any(substitute_consensus_state.clone()).encode_as::<Proto>(),
         );
     }
 

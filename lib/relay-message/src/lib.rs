@@ -30,7 +30,7 @@ use unionlabs::{
         Chain, ChainIdOf, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf,
         HeightOf,
     },
-    IntoProto, MaybeArbitrary, MaybeRecoverableError, TypeUrl,
+    MaybeArbitrary, MaybeRecoverableError, TypeUrl,
 };
 
 use crate::{
@@ -519,23 +519,13 @@ where
     Hc: ChainExt<MsgError = BroadcastTxCommitError> + CosmosSdkChain,
     Tr: ChainExt,
 
-    ConsensusStateOf<Tr>: IntoProto,
-    <ConsensusStateOf<Tr> as unionlabs::Proto>::Proto: TypeUrl,
+    ConsensusStateOf<Tr>: Encode<Proto> + TypeUrl,
+    ClientStateOf<Tr>: Encode<Proto> + TypeUrl,
+    HeaderOf<Tr>: Encode<Proto> + TypeUrl,
 
-    ClientStateOf<Tr>: IntoProto,
-    <ClientStateOf<Tr> as unionlabs::Proto>::Proto: TypeUrl,
+    ConsensusStateOf<Hc>: Encode<Proto> + TypeUrl,
 
-    HeaderOf<Tr>: IntoProto,
-    <HeaderOf<Tr> as unionlabs::Proto>::Proto: TypeUrl,
-
-    ConsensusStateOf<Hc>: IntoProto,
-    <ConsensusStateOf<Hc> as unionlabs::Proto>::Proto: TypeUrl,
-
-    ClientStateOf<Hc>: IntoProto,
-    <ClientStateOf<Hc> as unionlabs::Proto>::Proto: TypeUrl,
-
-    HeaderOf<Hc>: IntoProto,
-    <HeaderOf<Hc> as unionlabs::Proto>::Proto: TypeUrl,
+    ClientStateOf<Hc>: Encode<Proto> + TypeUrl,
 
     // TODO: Move this associated type to this trait
     Wasm<Hc>: ChainExt<
@@ -545,7 +535,7 @@ where
         Config = WasmConfig,
     >,
 
-    Tr::StoredClientState<Wasm<Hc>>: IntoProto + IntoAny,
+    Tr::StoredClientState<Wasm<Hc>>: Encode<Proto> + IntoAny,
     Tr::StateProof: Encode<Proto>,
 {
     async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {

@@ -1,5 +1,6 @@
 use prost::Message;
 use unionlabs::{
+    encoding::Encode,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::{H160, H256},
     tendermint::types::{
@@ -8,7 +9,6 @@ use unionlabs::{
         commit_sig::CommitSig, signed_header::SignedHeader, signed_msg_type::SignedMsgType,
         simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
     },
-    IntoProto,
 };
 
 use crate::merkle::calculate_merkle_root;
@@ -61,7 +61,13 @@ pub fn validators_hash(vals: &ValidatorSet) -> H256 {
     let raw_validators: Vec<Vec<u8>> = vals
         .validators
         .iter()
-        .map(|validator| SimpleValidator::from(validator.clone()).into_proto_bytes())
+        .map(|validator| {
+            SimpleValidator {
+                pub_key: validator.pub_key.clone(),
+                voting_power: validator.voting_power.inner(),
+            }
+            .encode()
+        })
         .collect();
 
     calculate_merkle_root(&raw_validators)

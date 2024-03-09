@@ -6,6 +6,13 @@ pub struct StorageProof {
     #[prost(message, repeated, tag = "1")]
     pub proofs: ::prost::alloc::vec::Vec<Proof>,
 }
+impl ::prost::Name for StorageProof {
+    const NAME: &'static str = "StorageProof";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 /// Value returned by eth_getProof
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -23,6 +30,13 @@ pub struct Proof {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
+impl ::prost::Name for Proof {
+    const NAME: &'static str = "Proof";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -34,6 +48,13 @@ pub struct AccountProof {
     /// NOTE: eth_getProof.accountProof
     #[prost(bytes = "vec", repeated, tag = "2")]
     pub proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+}
+impl ::prost::Name for AccountProof {
+    const NAME: &'static str = "AccountProof";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -71,6 +92,13 @@ pub struct ClientState {
     #[prost(bytes = "vec", tag = "14")]
     pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ClientState {
+    const NAME: &'static str = "ClientState";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -89,6 +117,13 @@ pub struct ConsensusState {
     #[prost(bytes = "vec", tag = "6")]
     pub next_sync_committee: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ConsensusState {
+    const NAME: &'static str = "ConsensusState";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 /// TODO: This should be an enum containing either sync committee update or finality update.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -101,6 +136,13 @@ pub struct Header {
     #[prost(message, optional, tag = "3")]
     pub account_update: ::core::option::Option<AccountUpdate>,
 }
+impl ::prost::Name for Header {
+    const NAME: &'static str = "Header";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -112,6 +154,13 @@ pub struct TrustedSyncCommittee {
     pub current_sync_committee: ::core::option::Option<SyncCommittee>,
     #[prost(message, optional, tag = "3")]
     pub next_sync_committee: ::core::option::Option<SyncCommittee>,
+}
+impl ::prost::Name for TrustedSyncCommittee {
+    const NAME: &'static str = "TrustedSyncCommittee";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -130,6 +179,13 @@ pub struct ForkParameters {
     #[prost(message, optional, tag = "6")]
     pub deneb: ::core::option::Option<Fork>,
 }
+impl ::prost::Name for ForkParameters {
+    const NAME: &'static str = "ForkParameters";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -138,6 +194,13 @@ pub struct Fork {
     pub version: ::prost::alloc::vec::Vec<u8>,
     #[prost(uint64, tag = "2")]
     pub epoch: u64,
+}
+impl ::prost::Name for Fork {
+    const NAME: &'static str = "Fork";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -160,6 +223,13 @@ pub struct LightClientUpdate {
     #[prost(uint64, tag = "9")]
     pub signature_slot: u64,
 }
+impl ::prost::Name for LightClientUpdate {
+    const NAME: &'static str = "LightClientUpdate";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -171,6 +241,13 @@ pub struct SyncCommittee {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub aggregate_pubkey: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for SyncCommittee {
+    const NAME: &'static str = "SyncCommittee";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -181,6 +258,13 @@ pub struct SyncAggregate {
     #[prost(bytes = "vec", tag = "2")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub sync_committee_signature: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for SyncAggregate {
+    const NAME: &'static str = "SyncAggregate";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -195,12 +279,26 @@ pub struct ExecutionUpdate {
     #[prost(bytes = "vec", repeated, tag = "4")]
     pub block_number_branch: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
+impl ::prost::Name for ExecutionUpdate {
+    const NAME: &'static str = "ExecutionUpdate";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AccountUpdate {
     #[prost(message, optional, tag = "1")]
     pub account_proof: ::core::option::Option<AccountProof>,
+}
+impl ::prost::Name for AccountUpdate {
+    const NAME: &'static str = "AccountUpdate";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -213,6 +311,13 @@ pub struct LightClientHeader {
     #[prost(bytes = "vec", repeated, tag = "3")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub execution_branch: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+}
+impl ::prost::Name for LightClientHeader {
+    const NAME: &'static str = "LightClientHeader";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -265,6 +370,13 @@ pub struct ExecutionPayloadHeader {
     #[prost(uint64, tag = "17")]
     pub excess_blob_gas: u64,
 }
+impl ::prost::Name for ExecutionPayloadHeader {
+    const NAME: &'static str = "ExecutionPayloadHeader";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -283,6 +395,13 @@ pub struct BeaconBlockHeader {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub body_root: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for BeaconBlockHeader {
+    const NAME: &'static str = "BeaconBlockHeader";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -296,6 +415,13 @@ pub struct FinalizedHeaderMisbehaviour {
     #[prost(message, optional, tag = "4")]
     pub consensus_update_2: ::core::option::Option<LightClientUpdate>,
 }
+impl ::prost::Name for FinalizedHeaderMisbehaviour {
+    const NAME: &'static str = "FinalizedHeaderMisbehaviour";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -308,5 +434,12 @@ pub struct NextSyncCommitteeMisbehaviour {
     pub consensus_update_1: ::core::option::Option<LightClientUpdate>,
     #[prost(message, optional, tag = "4")]
     pub consensus_update_2: ::core::option::Option<LightClientUpdate>,
+}
+impl ::prost::Name for NextSyncCommitteeMisbehaviour {
+    const NAME: &'static str = "NextSyncCommitteeMisbehaviour";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
 }
 // @@protoc_insertion_point(module)

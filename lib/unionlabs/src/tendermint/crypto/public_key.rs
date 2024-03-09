@@ -1,4 +1,5 @@
 use custom_debug_derive::Debug;
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::errors::{required, MissingField};
@@ -7,6 +8,7 @@ use crate::errors::{required, MissingField};
 // TODO: These are fixed sizes, not arbitrary bytes
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::tendermint::crypto::PublicKey, into, from)]
 pub enum PublicKey {
     Ed25519(
         #[serde(with = "::serde_utils::hex_string")]
@@ -23,10 +25,6 @@ pub enum PublicKey {
         #[debug(with = "::serde_utils::fmt::hex")]
         Vec<u8>,
     ),
-}
-
-impl crate::Proto for PublicKey {
-    type Proto = protos::tendermint::crypto::PublicKey;
 }
 
 impl From<PublicKey> for protos::tendermint::crypto::PublicKey {

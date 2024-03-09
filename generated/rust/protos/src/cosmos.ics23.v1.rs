@@ -36,6 +36,13 @@ pub struct ExistenceProof {
     #[cfg_attr(feature = "serde", serde(default))]
     pub path: ::prost::alloc::vec::Vec<InnerOp>,
 }
+impl ::prost::Name for ExistenceProof {
+    const NAME: &'static str = "ExistenceProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
 /// NonExistenceProof takes a proof of two neighbors, one left of the desired key,
 /// one right of the desired key. If both proofs are valid AND they are neighbors,
 /// then there is no valid proof for the given key.
@@ -50,6 +57,13 @@ pub struct NonExistenceProof {
     pub left: ::core::option::Option<ExistenceProof>,
     #[prost(message, optional, tag = "3")]
     pub right: ::core::option::Option<ExistenceProof>,
+}
+impl ::prost::Name for NonExistenceProof {
+    const NAME: &'static str = "NonExistenceProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
 }
 /// CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -73,6 +87,13 @@ pub mod commitment_proof {
         Batch(super::BatchProof),
         #[prost(message, tag = "4")]
         Compressed(super::CompressedBatchProof),
+    }
+}
+impl ::prost::Name for CommitmentProof {
+    const NAME: &'static str = "CommitmentProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
     }
 }
 /// *
@@ -113,6 +134,13 @@ pub struct LeafOp {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub prefix: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for LeafOp {
+    const NAME: &'static str = "LeafOp";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
 /// *
 /// InnerOp represents a merkle-proof step that is not a leaf.
 /// It represents concatenating two children and hashing them to provide the next result.
@@ -143,6 +171,13 @@ pub struct InnerOp {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     #[cfg_attr(feature = "serde", serde(default))]
     pub suffix: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for InnerOp {
+    const NAME: &'static str = "InnerOp";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
 }
 /// *
 /// ProofSpec defines what the expected parameters are for a given proof type.
@@ -180,6 +215,13 @@ pub struct ProofSpec {
     #[cfg_attr(feature = "serde", serde(default))]
     pub prehash_key_before_comparison: bool,
 }
+impl ::prost::Name for ProofSpec {
+    const NAME: &'static str = "ProofSpec";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
 /// InnerSpec contains all store-specific structure info to determine if two proofs from a
 /// given store are neighbors.
 ///
@@ -193,8 +235,8 @@ pub struct ProofSpec {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InnerSpec {
     /// Child order is the ordering of the children node, must count from 0
-    /// iavl tree is [0, 1] (left then right)
-    /// merk is [0, 2, 1] (left, right, here)
+    /// iavl tree is \[0, 1\] (left then right)
+    /// merk is \[0, 2, 1\] (left, right, here)
     #[prost(int32, repeated, tag = "1")]
     pub child_order: ::prost::alloc::vec::Vec<i32>,
     #[prost(int32, tag = "2")]
@@ -212,6 +254,13 @@ pub struct InnerSpec {
     #[prost(enumeration = "HashOp", tag = "6")]
     pub hash: i32,
 }
+impl ::prost::Name for InnerSpec {
+    const NAME: &'static str = "InnerSpec";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
 /// BatchProof is a group of multiple proof types than can be compressed
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -219,6 +268,13 @@ pub struct InnerSpec {
 pub struct BatchProof {
     #[prost(message, repeated, tag = "1")]
     pub entries: ::prost::alloc::vec::Vec<BatchEntry>,
+}
+impl ::prost::Name for BatchProof {
+    const NAME: &'static str = "BatchProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
 }
 /// Use BatchEntry not CommitmentProof, to avoid recursion
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -240,6 +296,13 @@ pub mod batch_entry {
         Nonexist(super::NonExistenceProof),
     }
 }
+impl ::prost::Name for BatchEntry {
+    const NAME: &'static str = "BatchEntry";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -248,6 +311,13 @@ pub struct CompressedBatchProof {
     pub entries: ::prost::alloc::vec::Vec<CompressedBatchEntry>,
     #[prost(message, repeated, tag = "2")]
     pub lookup_inners: ::prost::alloc::vec::Vec<InnerOp>,
+}
+impl ::prost::Name for CompressedBatchProof {
+    const NAME: &'static str = "CompressedBatchProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
 }
 /// Use BatchEntry not CommitmentProof, to avoid recursion
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -269,6 +339,13 @@ pub mod compressed_batch_entry {
         Nonexist(super::CompressedNonExistenceProof),
     }
 }
+impl ::prost::Name for CompressedBatchEntry {
+    const NAME: &'static str = "CompressedBatchEntry";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -283,6 +360,13 @@ pub struct CompressedExistenceProof {
     #[prost(int32, repeated, tag = "4")]
     pub path: ::prost::alloc::vec::Vec<i32>,
 }
+impl ::prost::Name for CompressedExistenceProof {
+    const NAME: &'static str = "CompressedExistenceProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -294,6 +378,13 @@ pub struct CompressedNonExistenceProof {
     pub left: ::core::option::Option<CompressedExistenceProof>,
     #[prost(message, optional, tag = "3")]
     pub right: ::core::option::Option<CompressedExistenceProof>,
+}
+impl ::prost::Name for CompressedNonExistenceProof {
+    const NAME: &'static str = "CompressedNonExistenceProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
 }
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]

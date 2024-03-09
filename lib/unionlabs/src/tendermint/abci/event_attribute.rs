@@ -1,19 +1,12 @@
-use crate::{Proto, TypeUrl};
+use macros::proto;
 
 #[derive(Debug, Clone, PartialEq)]
+#[proto(raw = protos::tendermint::abci::EventAttribute, into, from)]
 pub struct EventAttribute {
     pub key: String,
     pub value: String,
     /// nondeterministic
     pub index: bool,
-}
-
-impl Proto for EventAttribute {
-    type Proto = protos::tendermint::abci::EventAttribute;
-}
-
-impl TypeUrl for protos::tendermint::abci::EventAttribute {
-    const TYPE_URL: &'static str = "/tendermint.abci.EventAttribute";
 }
 
 impl From<protos::tendermint::abci::EventAttribute> for EventAttribute {

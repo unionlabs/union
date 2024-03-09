@@ -16,7 +16,7 @@ use unionlabs::{
         commitment_proof::CommitmentProof, hash_op::HashOp, inner_op::InnerOp,
         proof_spec::ProofSpec,
     },
-    TryFromProto,
+    encoding::Decode,
 };
 
 #[test]
@@ -491,7 +491,7 @@ impl Display for VectorTest {
 
 impl TestCase for VectorTest {
     fn run(self) -> anyhow::Result<()> {
-        match CommitmentProof::try_from_proto_bytes(self.data.proof.as_slice()) {
+        match CommitmentProof::decode(self.data.proof.as_slice()) {
             Ok(proof) => match (&proof, &self.data.value.len()) {
                 (CommitmentProof::Exist(existence_proof), 1..) => {
                     let root = calculate_root(existence_proof).context("calculating root")?;

@@ -103,14 +103,10 @@ pub trait Chain: Sized + Send + Sync + 'static {
     /// Expected to be unique across all implementations. Note that Wasm<_> implements this by passing through to the host chain, as `Wasm<A> <-> Wasm<B>` and `A <-> B` simultaneously is not currently supported.
     type ChainType: FromStrExact;
     type SelfClientState: Member
-        + crate::IntoProto // hack
         + TypeUrl // hack
         // TODO: Bound ChainId in the same way
         + ClientState<Height = Self::Height>;
-    type SelfConsensusState: Member
-        + ConsensusState
-        + crate::IntoProto // hack
-        + TypeUrl; // hack
+    type SelfConsensusState: Member + ConsensusState + TypeUrl; // hack
 
     type StoredClientState<Tr: Chain>: Member
         + ClientState<ChainId = ChainIdOf<Tr>, Height = Tr::Height>;

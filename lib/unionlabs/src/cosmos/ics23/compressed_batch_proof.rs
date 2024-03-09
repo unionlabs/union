@@ -1,26 +1,24 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    cosmos::ics23::{compressed_batch_entry::CompressedBatchEntry, inner_op::InnerOp},
-    TryFromProtoErrorOf,
+use crate::cosmos::ics23::{
+    compressed_batch_entry::{CompressedBatchEntry, TryFromCompressedBatchEntryProofError},
+    inner_op::{InnerOp, TryFromInnerOpError},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::cosmos::ics23::v1::CompressedBatchProof, into, from)]
 pub struct CompressedBatchProof {
     pub entries: Vec<CompressedBatchEntry>,
     pub lookup_inners: Vec<InnerOp>,
 }
 
-impl crate::Proto for CompressedBatchProof {
-    type Proto = protos::cosmos::ics23::v1::CompressedBatchProof;
-}
-
 #[derive(Debug)]
 pub enum TryFromCompressedBatchProofProofError {
-    Entries(TryFromProtoErrorOf<CompressedBatchEntry>),
-    LookupInners(TryFromProtoErrorOf<InnerOp>),
+    Entries(TryFromCompressedBatchEntryProofError),
+    LookupInners(TryFromInnerOpError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::CompressedBatchProof> for CompressedBatchProof {

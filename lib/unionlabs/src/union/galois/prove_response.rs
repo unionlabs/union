@@ -1,27 +1,20 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
     hash::H256,
     union::galois::zero_knowledge_proof::ZeroKnowledgeProof,
-    Proto, TypeUrl,
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::galois::api::v2::ProveResponse, into, from)]
 pub struct ProveResponse {
     pub proof: ZeroKnowledgeProof,
     pub trusted_validator_set_root: H256,
     pub untrusted_validator_set_root: H256,
-}
-
-impl Proto for ProveResponse {
-    type Proto = protos::union::galois::api::v2::ProveResponse;
-}
-
-impl TypeUrl for protos::union::galois::api::v2::ProveResponse {
-    const TYPE_URL: &'static str = "/union.galois.api.v2.ProveResponse";
 }
 
 impl From<ProveResponse> for protos::union::galois::api::v2::ProveResponse {

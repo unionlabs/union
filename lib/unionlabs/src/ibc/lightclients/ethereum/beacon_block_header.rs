@@ -1,12 +1,14 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
 
-use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
+use crate::{errors::InvalidLength, hash::H256};
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader, into, from)]
 pub struct BeaconBlockHeader {
     #[serde(with = "serde_utils::string")]
     pub slot: u64,
@@ -61,12 +63,4 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader>
                 .map_err(TryFromBeaconBlockHeaderError::BodyRoot)?,
         })
     }
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.BeaconBlockHeader";
-}
-
-impl Proto for BeaconBlockHeader {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader;
 }

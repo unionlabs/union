@@ -9,9 +9,9 @@ use protos::{
     },
 };
 use unionlabs::{
+    encoding::{Decode, Encode, Proto},
     google::protobuf::any::Any,
     ibc::{core::client::height::Height, lightclients::wasm},
-    IntoProto, Proto, TryFromProto, TryFromProtoErrorOf,
 };
 
 #[derive(thiserror::Error, Debug)]
@@ -50,9 +50,7 @@ pub fn read_client_state<C: CustomQuery, CS>(
     deps: Deps<C>,
 ) -> Result<wasm::client_state::ClientState<CS>, Error>
 where
-    wasm::client_state::ClientState<CS>: Proto + TryFromProto,
-    Any<wasm::client_state::ClientState<CS>>: TryFromProto,
-    TryFromProtoErrorOf<Any<wasm::client_state::ClientState<CS>>>: Debug,
+    Any<wasm::client_state::ClientState<CS>>: Decode<Proto>,
 {
     read_prefixed_client_state(deps, "")
 }
@@ -70,21 +68,19 @@ pub fn read_consensus_state<C: CustomQuery, CS>(
     height: &Height,
 ) -> Result<Option<wasm::consensus_state::ConsensusState<CS>>, Error>
 where
-    wasm::consensus_state::ConsensusState<CS>: Proto + TryFromProto,
-    Any<wasm::consensus_state::ConsensusState<CS>>: TryFromProto,
-    TryFromProtoErrorOf<Any<wasm::consensus_state::ConsensusState<CS>>>: Debug,
+    Any<wasm::consensus_state::ConsensusState<CS>>: Decode<Proto>,
 {
     read_prefixed_consensus_state(deps, height, "")
 }
 
-pub fn save_client_state<C: CustomQuery, CS: IntoProto>(
+pub fn save_client_state<C: CustomQuery, CS: Encode<Proto>>(
     deps: DepsMut<C>,
     wasm_client_state: wasm::client_state::ClientState<CS>,
 ) {
     let any_state = Any(wasm_client_state);
     deps.storage.set(
         HOST_CLIENT_STATE_KEY.as_bytes(),
-        any_state.into_proto_bytes().as_slice(),
+        any_state.encode().as_slice(),
     );
 }
 
@@ -93,7 +89,7 @@ pub fn save_proto_client_state<C: CustomQuery>(
     proto_wasm_state: ProtoClientState,
 ) {
     let any_state = ProtoAny {
-        type_url: <ProtoClientState as unionlabs::TypeUrl>::TYPE_URL.to_string(),
+        type_url: <ProtoClientState as ::prost::Name>::type_url(),
         value: proto_wasm_state.encode_to_vec(),
     };
 
@@ -104,7 +100,7 @@ pub fn save_proto_client_state<C: CustomQuery>(
 }
 
 /// Update the client state on the host store.
-pub fn update_client_state<C: CustomQuery, CS: IntoProto>(
+pub fn update_client_state<C: CustomQuery, CS: Encode<Proto>>(
     deps: DepsMut<C>,
     mut wasm_client_state: wasm::client_state::ClientState<CS>,
     latest_height: u64,
@@ -117,14 +113,14 @@ pub fn update_client_state<C: CustomQuery, CS: IntoProto>(
     save_client_state(deps, wasm_client_state);
 }
 
-pub fn save_consensus_state<C: CustomQuery, CS: IntoProto>(
+pub fn save_consensus_state<C: CustomQuery, CS: Encode<Proto>>(
     deps: DepsMut<C>,
     wasm_consensus_state: wasm::consensus_state::ConsensusState<CS>,
     height: &Height,
 ) {
     deps.storage.set(
         consensus_db_key(height).as_bytes(),
-        &Any(wasm_consensus_state).into_proto_bytes(),
+        &Any(wasm_consensus_state).encode(),
     );
 }
 
@@ -134,7 +130,7 @@ pub fn save_proto_consensus_state<C: CustomQuery>(
     height: &Height,
 ) {
     let any_state = ProtoAny {
-        type_url: <ProtoConsensusState as unionlabs::TypeUrl>::TYPE_URL.to_string(),
+        type_url: <ProtoConsensusState as ::prost::Name>::type_url(),
         value: proto_wasm_state.encode_to_vec(),
     };
 
@@ -149,9 +145,7 @@ pub fn read_subject_client_state<C: CustomQuery, CS>(
     deps: Deps<C>,
 ) -> Result<wasm::client_state::ClientState<CS>, Error>
 where
-    wasm::client_state::ClientState<CS>: Proto + TryFromProto,
-    Any<wasm::client_state::ClientState<CS>>: TryFromProto,
-    TryFromProtoErrorOf<Any<wasm::client_state::ClientState<CS>>>: Debug,
+    Any<wasm::client_state::ClientState<CS>>: Decode<Proto>,
 {
     read_prefixed_client_state(deps, SUBJECT_CLIENT_STORE_PREFIX)
 }
@@ -161,21 +155,19 @@ pub fn read_substitute_client_state<C: CustomQuery, CS>(
     deps: Deps<C>,
 ) -> Result<wasm::client_state::ClientState<CS>, Error>
 where
-    wasm::client_state::ClientState<CS>: Proto + TryFromProto,
-    Any<wasm::client_state::ClientState<CS>>: TryFromProto,
-    TryFromProtoErrorOf<Any<wasm::client_state::ClientState<CS>>>: Debug,
+    Any<wasm::client_state::ClientState<CS>>: Decode<Proto>,
 {
     read_prefixed_client_state(deps, SUBSTITUTE_CLIENT_STORE_PREFIX)
 }
 
-pub fn save_subject_client_state<C: CustomQuery, CS: IntoProto>(
+pub fn save_subject_client_state<C: CustomQuery, CS: Encode<Proto>>(
     deps: DepsMut<C>,
     wasm_client_state: wasm::client_state::ClientState<CS>,
 ) {
     let any_state = Any(wasm_client_state);
     deps.storage.set(
         format!("{SUBJECT_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
-        any_state.into_proto_bytes().as_slice(),
+        any_state.encode().as_slice(),
     );
 }
 
@@ -184,9 +176,7 @@ pub fn read_subject_consensus_state<C: CustomQuery, CS>(
     height: &Height,
 ) -> Result<Option<wasm::consensus_state::ConsensusState<CS>>, Error>
 where
-    wasm::consensus_state::ConsensusState<CS>: Proto + TryFromProto,
-    Any<wasm::consensus_state::ConsensusState<CS>>: TryFromProto,
-    TryFromProtoErrorOf<Any<wasm::consensus_state::ConsensusState<CS>>>: Debug,
+    Any<wasm::consensus_state::ConsensusState<CS>>: Decode<Proto>,
 {
     read_prefixed_consensus_state(deps, height, SUBJECT_CLIENT_STORE_PREFIX)
 }
@@ -196,21 +186,19 @@ pub fn read_substitute_consensus_state<C: CustomQuery, CS>(
     height: &Height,
 ) -> Result<Option<wasm::consensus_state::ConsensusState<CS>>, Error>
 where
-    wasm::consensus_state::ConsensusState<CS>: Proto + TryFromProto,
-    Any<wasm::consensus_state::ConsensusState<CS>>: TryFromProto,
-    TryFromProtoErrorOf<Any<wasm::consensus_state::ConsensusState<CS>>>: Debug,
+    Any<wasm::consensus_state::ConsensusState<CS>>: Decode<Proto>,
 {
     read_prefixed_consensus_state(deps, height, SUBSTITUTE_CLIENT_STORE_PREFIX)
 }
 
-pub fn save_subject_consensus_state<C: CustomQuery, CS: IntoProto>(
+pub fn save_subject_consensus_state<C: CustomQuery, CS: Encode<Proto>>(
     deps: DepsMut<C>,
     wasm_consensus_state: wasm::consensus_state::ConsensusState<CS>,
     height: &Height,
 ) {
     deps.storage.set(
         format!("{SUBJECT_CLIENT_STORE_PREFIX}{}", consensus_db_key(height)).as_bytes(),
-        &Any(wasm_consensus_state).into_proto_bytes(),
+        &Any(wasm_consensus_state).encode(),
     );
 }
 
@@ -219,16 +207,14 @@ fn read_prefixed_client_state<C: CustomQuery, CS>(
     prefix: &str,
 ) -> Result<wasm::client_state::ClientState<CS>, Error>
 where
-    wasm::client_state::ClientState<CS>: Proto + TryFromProto,
-    Any<wasm::client_state::ClientState<CS>>: TryFromProto,
-    TryFromProtoErrorOf<Any<wasm::client_state::ClientState<CS>>>: Debug,
+    Any<wasm::client_state::ClientState<CS>>: Decode<Proto>,
 {
     let any_state = deps
         .storage
         .get(format!("{prefix}{HOST_CLIENT_STATE_KEY}").as_bytes())
         .ok_or(Error::ClientStateNotFound)?;
 
-    Any::try_from_proto_bytes(any_state.as_slice())
+    Any::decode(any_state.as_slice())
         .map(|any| any.0)
         .map_err(|_| Error::ClientStateDecode)
 }
@@ -239,13 +225,11 @@ fn read_prefixed_consensus_state<C: CustomQuery, CS>(
     prefix: &str,
 ) -> Result<Option<wasm::consensus_state::ConsensusState<CS>>, Error>
 where
-    wasm::consensus_state::ConsensusState<CS>: Proto + TryFromProto,
-    Any<wasm::consensus_state::ConsensusState<CS>>: TryFromProto,
-    TryFromProtoErrorOf<Any<wasm::consensus_state::ConsensusState<CS>>>: Debug,
+    Any<wasm::consensus_state::ConsensusState<CS>>: Decode<Proto>,
 {
     deps.storage
         .get(format!("{prefix}{}", consensus_db_key(height)).as_bytes())
-        .map(|bytes| Any::try_from_proto_bytes(&bytes).map(|any| any.0))
+        .map(|bytes| Any::decode(&bytes).map(|any| any.0))
         .transpose()
         .map_err(|_| Error::ConsensusStateDecode)
 }

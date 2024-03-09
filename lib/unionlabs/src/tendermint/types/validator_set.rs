@@ -1,14 +1,15 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
-    tendermint::types::validator::Validator,
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    tendermint::types::validator::{TryFromValidatorError, Validator},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::tendermint::types::ValidatorSet, into, from)]
 pub struct ValidatorSet {
     pub validators: Vec<Validator>,
     pub proposer: Validator,
@@ -28,9 +29,9 @@ impl From<ValidatorSet> for protos::tendermint::types::ValidatorSet {
 
 #[derive(Debug)]
 pub enum TryFromValidatorSetError {
-    Validators(TryFromProtoErrorOf<Validator>),
+    Validators(TryFromValidatorError),
     MissingField(MissingField),
-    Proposer(TryFromProtoErrorOf<Validator>),
+    Proposer(TryFromValidatorError),
 }
 
 impl TryFrom<protos::tendermint::types::ValidatorSet> for ValidatorSet {
@@ -50,12 +51,4 @@ impl TryFrom<protos::tendermint::types::ValidatorSet> for ValidatorSet {
             total_voting_power: value.total_voting_power,
         })
     }
-}
-
-impl Proto for ValidatorSet {
-    type Proto = protos::tendermint::types::ValidatorSet;
-}
-
-impl TypeUrl for protos::tendermint::types::ValidatorSet {
-    const TYPE_URL: &'static str = "/tendermint.types.ValidatorSet";
 }

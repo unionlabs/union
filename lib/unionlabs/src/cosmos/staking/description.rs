@@ -1,9 +1,9 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
-
-use crate::{Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[proto(raw = protos::cosmos::staking::v1beta1::Description, into, from)]
 pub struct Description {
     /// moniker defines a human-readable name for the validator.
     pub moniker: String,
@@ -15,14 +15,6 @@ pub struct Description {
     pub security_contact: String,
     /// details define other optional details.
     pub details: String,
-}
-
-impl Proto for Description {
-    type Proto = protos::cosmos::staking::v1beta1::Description;
-}
-
-impl TypeUrl for protos::cosmos::staking::v1beta1::Description {
-    const TYPE_URL: &'static str = "/cosmos.staking.v1beta1.Description";
 }
 
 impl From<protos::cosmos::staking::v1beta1::Description> for Description {

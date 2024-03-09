@@ -4,14 +4,7 @@ use ethereum_verifier::{
     VerifyStorageProofError,
 };
 use thiserror::Error as ThisError;
-use unionlabs::{
-    bls::BlsPublicKey,
-    hash::H256,
-    ibc::{core::client::height::Height, lightclients::ethereum::header::Header},
-    TryFromProtoBytesError, TryFromProtoErrorOf,
-};
-
-use crate::Config;
+use unionlabs::{bls::BlsPublicKey, hash::H256, ibc::core::client::height::Height};
 
 #[derive(ThisError, Debug, PartialEq)]
 pub enum Error {
@@ -107,14 +100,6 @@ pub enum Error {
 
     #[error("substitute client is frozen")]
     SubstituteClientFrozen,
-}
-
-impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>> for Error {
-    fn from(value: TryFromProtoBytesError<TryFromProtoErrorOf<Header<Config>>>) -> Self {
-        Self::DecodeFromProto {
-            reason: format!("{:?}", value),
-        }
-    }
 }
 
 impl From<ics008_wasm_client::storage_utils::Error> for Error {

@@ -16,7 +16,6 @@ use core::{
     str::FromStr,
 };
 
-use prost::Message;
 use serde::{Deserialize, Serialize};
 pub use typenum;
 
@@ -85,7 +84,7 @@ pub(crate) mod macros;
 pub mod errors {
     use core::fmt::{Debug, Display};
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq)]
     pub struct UnknownEnumVariant<T>(pub T);
 
     impl<T: Display> Display for UnknownEnumVariant<T> {
@@ -95,7 +94,7 @@ pub mod errors {
     }
 
     /// A protobuf field was none unexpectedly.
-    #[derive(Debug)]
+    #[derive(Debug, Clone, PartialEq)]
     pub struct MissingField(pub &'static str);
 
     /// For fields that are "fake options" from prost, for use in `TryFrom<<Self as Proto>::Proto>`.
@@ -115,14 +114,14 @@ pub mod errors {
     pub(crate) use required;
 
     // Expected one length, but found another.
-    #[derive(Debug, PartialEq, Eq, thiserror::Error)]
+    #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
     #[error("invalid length: expected {expected}, found {found}")]
     pub struct InvalidLength {
         pub expected: ExpectedLength,
         pub found: usize,
     }
 
-    #[derive(Debug, PartialEq, Eq, derive_more::Display)]
+    #[derive(Debug, Clone, PartialEq, Eq, derive_more::Display)]
     pub enum ExpectedLength {
         #[display(fmt = "exactly {_0}")]
         Exact(usize),
@@ -140,72 +139,14 @@ pub mod errors {
     }
 }
 
-pub trait Proto {
-    // all prost generated code implements Default
-    type Proto: Message + Default;
-}
-
-pub trait IntoProto: Proto + Into<Self::Proto> {
-    fn into_proto(self) -> Self::Proto {
-        self.into()
-    }
-
-    fn into_proto_bytes(self) -> Vec<u8> {
-        self.into_proto().encode_to_vec()
-    }
-}
-
-/// A type that can be infallibly converted from it's protobuf representation.
-pub trait FromProto: Proto + From<Self::Proto> {
-    fn from_proto(proto: Self::Proto) -> Self {
-        proto.into()
-    }
-
-    fn from_proto_bytes(bytes: &[u8]) -> Result<Self, prost::DecodeError> {
-        <Self::Proto as Message>::decode(bytes).map(Into::into)
-    }
-}
-
-pub trait TryFromProto: Proto + TryFrom<<Self as Proto>::Proto> {
-    fn try_from_proto(proto: Self::Proto) -> Result<Self, TryFromProtoErrorOf<Self>> {
-        proto.try_into()
-    }
-
-    fn try_from_proto_bytes(
-        bytes: &[u8],
-    ) -> Result<Self, TryFromProtoBytesError<TryFromProtoErrorOf<Self>>> {
-        <Self::Proto as Message>::decode(bytes)
-            .map_err(TryFromProtoBytesError::Decode)
-            .and_then(|proto| {
-                proto
-                    .try_into()
-                    .map_err(TryFromProtoBytesError::TryFromProto)
-            })
-    }
-}
-
-impl<T> IntoProto for T where T: Proto + Into<T::Proto> {}
-impl<T> FromProto for T where T: Proto + From<T::Proto> {}
-impl<T> TryFromProto for T where T: Proto + TryFrom<T::Proto> {}
-
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromProtoBytesError<E> {
     TryFromProto(E),
     Decode(prost::DecodeError),
 }
 
-pub type TryFromProtoErrorOf<T> = <T as TryFrom<<T as Proto>::Proto>>::Error;
-
 pub trait TypeUrl {
-    const TYPE_URL: &'static str;
-}
-
-impl<T> TypeUrl for T
-where
-    T: Proto,
-    T::Proto: TypeUrl,
-{
-    const TYPE_URL: &'static str = T::Proto::TYPE_URL;
+    fn type_url() -> String;
 }
 
 #[cfg(any(feature = "fuzzing", test))]
@@ -216,14 +157,13 @@ pub mod test_utils {
         str::FromStr,
     };
 
-    use super::{IntoProto, TryFromProto, TryFromProtoErrorOf};
+    use crate::encoding::{Decode, Encode, Proto};
 
     pub fn assert_proto_roundtrip<T>(t: &T)
     where
-        T: IntoProto + TryFromProto + Debug + Clone + PartialEq,
-        TryFromProtoErrorOf<T>: Debug,
+        T: Encode<Proto> + Decode<Proto> + Debug + Clone + PartialEq,
     {
-        let try_from_proto = T::try_from_proto(t.clone().into_proto()).unwrap();
+        let try_from_proto = T::decode(&t.clone().encode()).unwrap();
 
         assert_eq!(t, &try_from_proto, "proto roundtrip failed");
     }

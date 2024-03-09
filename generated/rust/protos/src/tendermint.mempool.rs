@@ -5,6 +5,13 @@ pub struct Txs {
     #[prost(bytes = "vec", repeated, tag = "1")]
     pub txs: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
+impl ::prost::Name for Txs {
+    const NAME: &'static str = "Txs";
+    const PACKAGE: &'static str = "tendermint.mempool";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.mempool.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Message {
@@ -18,6 +25,13 @@ pub mod message {
     pub enum Sum {
         #[prost(message, tag = "1")]
         Txs(super::Txs),
+    }
+}
+impl ::prost::Name for Message {
+    const NAME: &'static str = "Message";
+    const PACKAGE: &'static str = "tendermint.mempool";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.mempool.{}", Self::NAME)
     }
 }
 // @@protoc_insertion_point(module)

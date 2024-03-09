@@ -1,10 +1,12 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use crate::{cosmos::base::coin::Coin, Proto, TypeUrl};
+use crate::cosmos::base::coin::Coin;
 
 /// `MsgExecuteContract` submits the given message data to a smart contract
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[proto(raw = protos::cosmwasm::wasm::v1::MsgExecuteContract, into, from)]
 pub struct MsgExecuteContract {
     /// Sender is the that actor that signed the messages
     // TODO: bech32 encoded address
@@ -16,14 +18,6 @@ pub struct MsgExecuteContract {
     pub msg: Vec<u8>,
     /// Funds coins that are transferred to the contract on execution
     pub funds: Vec<Coin>,
-}
-
-impl Proto for MsgExecuteContract {
-    type Proto = protos::cosmwasm::wasm::v1::MsgExecuteContract;
-}
-
-impl TypeUrl for protos::cosmwasm::wasm::v1::MsgExecuteContract {
-    const TYPE_URL: &'static str = "/cosmwasm.wasm.v1.MsgExecuteContract";
 }
 
 impl From<protos::cosmwasm::wasm::v1::MsgExecuteContract> for MsgExecuteContract {

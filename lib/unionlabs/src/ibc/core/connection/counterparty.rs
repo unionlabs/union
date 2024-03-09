@@ -1,5 +1,6 @@
 use core::str::FromStr;
 
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -7,13 +8,25 @@ use crate::{
     ibc::core::commitment::merkle_prefix::MerklePrefix,
     id,
     traits::Id,
-    Proto,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(
+    deny_unknown_fields,
+    bound(
+        serialize = "
+            ClientId: Id,
+            ConnectionId: Id,
+        ",
+        deserialize = "
+            ClientId: Id,
+            ConnectionId: Id,
+        ",
+    )
+)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-pub struct Counterparty<ClientId, ConnectionId = id::ConnectionId> {
+#[proto(raw = protos::ibc::core::connection::v1::Counterparty, into, from)]
+pub struct Counterparty<ClientId: Id, ConnectionId: Id = id::ConnectionId> {
     pub client_id: ClientId,
     pub connection_id: ConnectionId,
     pub prefix: MerklePrefix,
@@ -58,10 +71,6 @@ impl<ClientId: Id, ConnectionId: Id> TryFrom<protos::ibc::core::connection::v1::
             prefix: required!(value.prefix)?.into(),
         })
     }
-}
-
-impl<ClientId, ConnectionId> Proto for Counterparty<ClientId, ConnectionId> {
-    type Proto = protos::ibc::core::connection::v1::Counterparty;
 }
 
 #[cfg(feature = "ethabi")]
@@ -109,6 +118,6 @@ impl<ClientId: Id, ConnectionId: Id>
 }
 
 #[cfg(feature = "ethabi")]
-impl<ClientId, ConnectionId> crate::EthAbi for Counterparty<ClientId, ConnectionId> {
+impl<ClientId: Id, ConnectionId: Id> crate::EthAbi for Counterparty<ClientId, ConnectionId> {
     type EthAbi = contracts::ibc_handler::IbcCoreConnectionV1CounterpartyData;
 }

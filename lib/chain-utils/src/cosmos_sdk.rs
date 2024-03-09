@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use prost::Message;
+use prost::{Message, Name};
 use sha2::Digest;
 use tendermint_rpc::{Client, WebSocketClient};
 use unionlabs::{
     cosmos::auth::base_account::BaseAccount, google::protobuf::any::Any, hash::H256,
     ibc::core::client::height::IsHeight, id::ConnectionId, parse_wasm_client_type,
-    signer::CosmosSigner, traits::Chain, MaybeRecoverableError, TypeUrl, WasmClientType,
+    signer::CosmosSigner, traits::Chain, MaybeRecoverableError, WasmClientType,
 };
 
 use crate::{
@@ -83,7 +83,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
 
         // NOTE: We only need the checksum, so we don't need to decode the inner state
         assert!(
-            client_state.type_url == protos::ibc::lightclients::wasm::v1::ClientState::TYPE_URL
+            client_state.type_url == protos::ibc::lightclients::wasm::v1::ClientState::type_url()
         );
 
         protos::ibc::lightclients::wasm::v1::ClientState::decode(&*client_state.value)

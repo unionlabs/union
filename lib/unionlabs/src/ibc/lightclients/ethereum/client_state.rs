@@ -1,5 +1,6 @@
 use core::str::FromStr;
 
+use macros::proto;
 use serde::{Deserialize, Serialize};
 use uint::FromDecStrErr;
 
@@ -9,17 +10,17 @@ use crate::{
     ibc::{
         core::client::height::Height,
         lightclients::{
-            ethereum::fork_parameters::ForkParameters,
+            ethereum::fork_parameters::{ForkParameters, TryFromForkParametersError},
             tendermint::fraction::{Fraction, TryFromFractionError},
         },
     },
     uint::U256,
-    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::ClientState, into, from)]
 pub struct ClientState {
     pub chain_id: U256,
     pub genesis_validators_root: H256,
@@ -38,14 +39,6 @@ pub struct ClientState {
     pub counterparty_commitment_slot: U256,
     /// the ibc contract on the counterparty chain that contains the ICS23 commitments
     pub ibc_contract_address: H160,
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::ClientState {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.ClientState";
-}
-
-impl Proto for ClientState {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::ClientState;
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::ClientState {
@@ -73,7 +66,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
 pub enum TryFromClientStateError {
     MissingField(MissingField),
     ChainId(FromDecStrErr),
-    ForkParameters(TryFromProtoErrorOf<ForkParameters>),
+    ForkParameters(TryFromForkParametersError),
     GenesisValidatorsRoot(InvalidLength),
     CounterpartyCommitmentSlot(InvalidLength),
     TrustLevel(TryFromFractionError),

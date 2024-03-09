@@ -1,19 +1,25 @@
+use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use macros::proto;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
 
 use crate::{
-    errors::MissingField,
+    errors::{required, MissingField},
     ethereum::config::SYNC_COMMITTEE_SIZE,
-    ibc::{core::client::height::Height, lightclients::ethereum::sync_committee::SyncCommittee},
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    ibc::{
+        core::client::height::Height,
+        lightclients::ethereum::sync_committee::{SyncCommittee, TryFromSyncCommitteeError},
+    },
 };
 
 /// Sync committee that is going to be used to verify the update
 ///
 /// Note that the verifier uses one of them based on whether the signature slot
 /// is equal to the current slot or current slot + 1
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(
+    CloneNoBound, DebugNoBound, PartialEqNoBound, Encode, Decode, TreeHash, Serialize, Deserialize,
+)]
 #[ssz(enum_behaviour = "union")]
 #[tree_hash(enum_behaviour = "union")]
 #[serde(
@@ -49,9 +55,12 @@ impl<C: SYNC_COMMITTEE_SIZE> ActiveSyncCommittee<C> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(
+    CloneNoBound, DebugNoBound, PartialEqNoBound, Encode, Decode, TreeHash, Serialize, Deserialize,
+)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee, into, from)]
 pub struct TrustedSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     pub trusted_height: Height,
     pub sync_committee: ActiveSyncCommittee<C>,
@@ -76,28 +85,23 @@ impl<C: SYNC_COMMITTEE_SIZE> From<TrustedSyncCommittee<C>>
     }
 }
 
-#[derive(Debug)]
-pub enum TryFromTrustedSyncCommitteeError<C: SYNC_COMMITTEE_SIZE> {
+#[derive(DebugNoBound)]
+pub enum TryFromTrustedSyncCommitteeError {
     MissingField(MissingField),
-    SyncCommittee(TryFromProtoErrorOf<SyncCommittee<C>>),
+    SyncCommittee(TryFromSyncCommitteeError),
 }
 
 impl<C: SYNC_COMMITTEE_SIZE>
     TryFrom<protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee>
     for TrustedSyncCommittee<C>
 {
-    type Error = TryFromTrustedSyncCommitteeError<C>;
+    type Error = TryFromTrustedSyncCommitteeError;
 
     fn try_from(
         value: protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            trusted_height: value
-                .trusted_height
-                .ok_or(TryFromTrustedSyncCommitteeError::MissingField(
-                    MissingField("trusted_height"),
-                ))?
-                .into(),
+            trusted_height: required!(value.trusted_height)?.into(),
             sync_committee: match (value.current_sync_committee, value.next_sync_committee) {
                 (None, None) => {
                     return Err(TryFromTrustedSyncCommitteeError::MissingField(
@@ -117,12 +121,4 @@ impl<C: SYNC_COMMITTEE_SIZE>
             },
         })
     }
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.TrustedSyncCommittee";
-}
-
-impl<C: SYNC_COMMITTEE_SIZE> Proto for TrustedSyncCommittee<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee;
 }
