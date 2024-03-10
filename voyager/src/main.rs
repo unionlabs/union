@@ -314,10 +314,18 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 mod tests {
     #![allow(unused_imports)]
 
-    use std::{collections::VecDeque, fmt::Debug, marker::PhantomData};
+    use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, sync::Arc};
 
+    use bip32::{secp256k1::ecdsa, PrivateKey};
     use block_message::BlockPollingTypes;
     use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm};
+    use contracts::ibc_handler::{CreateClientCall, IBCHandler};
+    use ethers::{
+        middleware::{NonceManagerMiddleware, SignerMiddleware},
+        providers::{Provider, Ws},
+        signers::LocalWallet,
+        utils::secret_key_to_address,
+    };
     use hex_literal::hex;
     use queue_msg::{
         aggregate, defer_relative, event, fetch, msg, repeat, seq, QueueMsg, QueueMsgTypes,
@@ -326,7 +334,7 @@ mod tests {
         aggregate::{Aggregate, AggregateCreateClient, AnyAggregate},
         chain_impls::{
             cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
-            evm::EvmConfig,
+            evm::{mk_function_call, EvmConfig},
             union::UnionFetch,
         },
         data::Data,
@@ -339,10 +347,12 @@ mod tests {
             AnyMsg, Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData,
             MsgConnectionOpenTryData,
         },
-        Identified, RelayerMsgTypes, WasmConfig,
+        AnyLightClientIdentified, Identified, RelayerMsgTypes, WasmConfig,
     };
     use serde::{de::DeserializeOwned, Serialize};
+    use serde_json::json;
     use unionlabs::{
+        encoding::{Encode, EncodeAs, EthAbi},
         ethereum::config::Minimal,
         events::{ConnectionOpenAck, ConnectionOpenTry},
         hash::{H160, H256},
@@ -362,7 +372,7 @@ mod tests {
         EmptyString, QueryHeight, DELAY_PERIOD,
     };
 
-    use crate::queue::{FromQueueMsg, VoyagerMessageTypes};
+    use crate::queue::{FromQueueMsg, VoyagerMessageTypes, VoyagerMsg};
 
     macro_rules! parse {
         ($expr:expr) => {
@@ -697,7 +707,7 @@ mod tests {
             block_message::fetch::FetchBlock {
                 height: unionlabs::ibc::core::client::height::Height {
                     revision_number: 1,
-                    revision_height: 35000,
+                    revision_height: 1,
                 },
             },
         )));
@@ -707,36 +717,10 @@ mod tests {
             block_message::fetch::FetchBlock {
                 height: unionlabs::ibc::core::client::height::Height {
                     revision_number: 1,
-                    revision_height: 10000,
+                    revision_height: 1,
                 },
             },
         )));
-
-        // print_json(RelayerMsg::Lc(AnyLcMsg::EthereumMinimal(LcMsg::Event(
-        //     Identified {
-        //         chain_id: union_chain_id.clone(),
-        //         data: relay_message::event::Event {
-        //             block_hash: H256([0; 32]),
-        //             height: parse!("1-1433"),
-        //             event: IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
-        //                 connection_id: parse!("connection-5"),
-        //                 client_id: parse!("08-wasm-0"),
-        //                 counterparty_client_id: parse!("cometbls-0"),
-        //                 counterparty_connection_id: parse!("connection-4"),
-        //             }),
-        //         },
-        //     },
-        // ))));
-        print_json::<RelayerMsgTypes>(fetch(relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
-            union_chain_id.clone(),
-            FetchState {
-                at: parse!("1-103"),
-                path: ConnectionPath {
-                    connection_id: parse!("connection-1"),
-                }
-                .into(),
-            },
-        )))
     }
 
     fn print_json<T: QueueMsgTypes>(msg: QueueMsg<T>)

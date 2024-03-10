@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -22,7 +22,7 @@ use crate::{
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::connection::v1::MsgConnectionOpenInit)]
+#[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenInit)))]
 pub struct MsgConnectionOpenInit<ClientId: Id, CounterpartyClientId: Id> {
     pub client_id: ClientId,
     pub counterparty: Counterparty<CounterpartyClientId, EmptyString>,

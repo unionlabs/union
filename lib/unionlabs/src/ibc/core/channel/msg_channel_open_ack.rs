@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::channel::v1::MsgChannelOpenAck)]
+#[model(proto(raw(protos::ibc::core::channel::v1::MsgChannelOpenAck)))]
 pub struct MsgChannelOpenAck<ProofTry, ProofHeight: IsHeight> {
     pub port_id: PortId,
     pub channel_id: ChannelId,

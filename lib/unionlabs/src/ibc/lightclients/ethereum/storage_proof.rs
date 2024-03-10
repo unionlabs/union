@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::ibc::lightclients::ethereum::proof::{Proof, TryFromProofError};
@@ -6,7 +6,11 @@ use crate::ibc::lightclients::ethereum::proof::{Proof, TryFromProofError};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::StorageProof, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::StorageProof),
+    into,
+    from
+))]
 pub struct StorageProof {
     pub proofs: Vec<Proof>,
 }

@@ -1,6 +1,6 @@
 use core::str::FromStr;
 
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -25,7 +25,7 @@ use crate::{
     )
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::connection::v1::Counterparty, into, from)]
+#[model(proto(raw(protos::ibc::core::connection::v1::Counterparty), into, from))]
 pub struct Counterparty<ClientId: Id, ConnectionId: Id = id::ConnectionId> {
     pub client_id: ClientId,
     pub connection_id: ConnectionId,
@@ -115,9 +115,4 @@ impl<ClientId: Id, ConnectionId: Id>
             prefix: value.prefix.into(),
         })
     }
-}
-
-#[cfg(feature = "ethabi")]
-impl<ClientId: Id, ConnectionId: Id> crate::EthAbi for Counterparty<ClientId, ConnectionId> {
-    type EthAbi = contracts::ibc_handler::IbcCoreConnectionV1CounterpartyData;
 }

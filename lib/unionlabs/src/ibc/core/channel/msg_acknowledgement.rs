@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::ibc::core::{channel::packet::Packet, client::height::IsHeight};
@@ -12,7 +12,7 @@ use crate::ibc::core::{channel::packet::Packet, client::height::IsHeight};
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::channel::v1::MsgAcknowledgement)]
+#[model(proto(raw(protos::ibc::core::channel::v1::MsgAcknowledgement)))]
 pub struct MsgAcknowledgement<ProofAcked, ProofHeight: IsHeight> {
     pub packet: Packet,
     #[serde(with = "::serde_utils::hex_string")]

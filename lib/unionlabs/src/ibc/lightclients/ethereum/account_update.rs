@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -9,7 +9,11 @@ use crate::{
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::AccountUpdate, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::AccountUpdate),
+    into,
+    from
+))]
 pub struct AccountUpdate {
     pub account_proof: AccountProof,
 }

@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::ProofSpec, into, from)]
+#[model(proto(raw(protos::cosmos::ics23::v1::ProofSpec), into, from))]
 pub struct ProofSpec {
     pub leaf_spec: LeafOp,
     pub inner_spec: InnerSpec,

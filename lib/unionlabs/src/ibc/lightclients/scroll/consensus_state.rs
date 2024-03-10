@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, hash::H256};
@@ -6,7 +6,11 @@ use crate::{errors::InvalidLength, hash::H256};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::scroll::v1::ConsensusState, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::scroll::v1::ConsensusState),
+    into,
+    from
+))]
 pub struct ConsensusState {
     pub batch_index: u64,
     pub ibc_storage_root: H256,

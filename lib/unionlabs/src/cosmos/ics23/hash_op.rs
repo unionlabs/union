@@ -1,7 +1,7 @@
 use crate::macros::wrapper_enum;
 
 wrapper_enum! {
-    #[proto(protos::cosmos::ics23::v1::HashOp)]
+    #[model(proto(protos::cosmos::ics23::v1::HashOp))]
     #[derive(Default)]
     pub enum HashOp {
         #[default]

@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, hash::H256};
@@ -6,7 +6,7 @@ use crate::{errors::InvalidLength, hash::H256};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::PartSetHeader, into, from)]
+#[model(proto(raw(protos::tendermint::types::PartSetHeader), into, from))]
 pub struct PartSetHeader {
     pub total: u32,
     pub hash: H256,
@@ -41,11 +41,6 @@ impl From<PartSetHeader> for protos::tendermint::types::PartSetHeader {
 }
 
 #[cfg(feature = "ethabi")]
-impl crate::EthAbi for PartSetHeader {
-    type EthAbi = contracts::glue::TendermintTypesPartSetHeaderData;
-}
-
-#[cfg(feature = "ethabi")]
 impl From<PartSetHeader> for contracts::glue::TendermintTypesPartSetHeaderData {
     fn from(value: PartSetHeader) -> Self {
         Self {
@@ -56,7 +51,7 @@ impl From<PartSetHeader> for contracts::glue::TendermintTypesPartSetHeaderData {
 }
 
 #[cfg(feature = "ethabi")]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromEthAbiPartSetHeaderError {
     Hash(InvalidLength),
 }

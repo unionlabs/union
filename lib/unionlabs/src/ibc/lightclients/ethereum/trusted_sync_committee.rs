@@ -1,5 +1,5 @@
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
@@ -60,7 +60,11 @@ impl<C: SYNC_COMMITTEE_SIZE> ActiveSyncCommittee<C> {
 )]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee),
+    into,
+    from
+))]
 pub struct TrustedSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     pub trusted_height: Height,
     pub sync_committee: ActiveSyncCommittee<C>,

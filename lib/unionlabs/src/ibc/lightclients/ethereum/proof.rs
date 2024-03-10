@@ -1,5 +1,5 @@
 use custom_debug_derive::Debug;
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, uint::U256};
@@ -7,7 +7,7 @@ use crate::{errors::InvalidLength, uint::U256};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::Proof, into, from)]
+#[model(proto(raw(protos::union::ibc::lightclients::ethereum::v1::Proof), into, from))]
 pub struct Proof {
     #[serde(with = "crate::uint::u256_big_endian_hex")]
     pub key: U256,

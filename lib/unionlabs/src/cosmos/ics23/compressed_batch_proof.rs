@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::cosmos::ics23::{
@@ -9,7 +9,7 @@ use crate::cosmos::ics23::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::CompressedBatchProof, into, from)]
+#[model(proto(raw(protos::cosmos::ics23::v1::CompressedBatchProof), into, from))]
 pub struct CompressedBatchProof {
     pub entries: Vec<CompressedBatchEntry>,
     pub lookup_inners: Vec<InnerOp>,

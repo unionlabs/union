@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::ibc::core::{channel::packet::Packet, client::height::IsHeight};
@@ -12,7 +12,7 @@ use crate::ibc::core::{channel::packet::Packet, client::height::IsHeight};
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::channel::v1::MsgRecvPacket)]
+#[model(proto(raw(protos::ibc::core::channel::v1::MsgRecvPacket)))]
 pub struct MsgRecvPacket<ProofCommitment, ProofHeight: IsHeight> {
     pub packet: Packet,
     pub proof_commitment: ProofCommitment,

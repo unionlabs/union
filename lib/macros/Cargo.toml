@@ -12,5 +12,6 @@ workspace = true
 proc-macro = true
 
 [dependencies]
-quote = "1.0.35"
-syn   = { version = "2.0.52", default-features = false, features = ["quote", "clone-impls", "parsing", "printing", "proc-macro"] }
+proc-macro2 = "1.0.78"
+quote       = "1.0.35"
+syn         = { version = "2.0.52", default-features = false, features = ["quote", "clone-impls", "parsing", "printing", "proc-macro"] }

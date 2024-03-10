@@ -1,5 +1,5 @@
 use custom_debug_derive::Debug;
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use ssz_types::{fixed_vector, variable_list, FixedVector, VariableList};
@@ -15,7 +15,11 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::AccountUpdate, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::AccountUpdate),
+    into,
+    from
+))]
 pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub parent_hash: H256,
     pub fee_recipient: H160,

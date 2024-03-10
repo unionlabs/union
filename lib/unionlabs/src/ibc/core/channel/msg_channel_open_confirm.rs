@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::channel::v1::MsgChannelOpenConfirm)]
+#[model(proto(raw(protos::ibc::core::channel::v1::MsgChannelOpenConfirm)))]
 pub struct MsgChannelOpenConfirm<ProofAck> {
     pub port_id: PortId,
     pub channel_id: ChannelId,

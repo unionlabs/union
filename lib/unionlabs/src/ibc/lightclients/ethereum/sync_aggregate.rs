@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 use ssz_types::BitVector;
 use tree_hash::TreeHash;
@@ -8,7 +8,11 @@ use crate::{bls::BlsSignature, errors::InvalidLength, ethereum::config::SYNC_COM
 #[derive(Clone, PartialEq, Deserialize, Serialize, ssz::Encode, ssz::Decode, TreeHash)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::SyncAggregate, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::SyncAggregate),
+    into,
+    from
+))]
 pub struct SyncAggregate<C: SYNC_COMMITTEE_SIZE> {
     // TODO: Change debug print for this type in ssz_types
     pub sync_committee_bits: BitVector<C::SYNC_COMMITTEE_SIZE>,

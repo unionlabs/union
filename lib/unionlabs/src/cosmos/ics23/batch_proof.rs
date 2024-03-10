@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::cosmos::ics23::batch_entry::{BatchEntry, TryFromBatchEntryError};
@@ -6,7 +6,7 @@ use crate::cosmos::ics23::batch_entry::{BatchEntry, TryFromBatchEntryError};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::BatchProof, into, from)]
+#[model(proto(raw(protos::cosmos::ics23::v1::BatchProof), into, from))]
 pub struct BatchProof {
     pub entries: Vec<BatchEntry>,
 }

@@ -1,9 +1,9 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[proto(raw = protos::cosmos::base::v1beta1::Coin, into, from)]
+#[model(proto(raw(protos::cosmos::base::v1beta1::Coin), into, from))]
 pub struct Coin {
     // REVIEW: Is this bounded?
     pub denom: String,

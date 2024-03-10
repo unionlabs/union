@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::ValidatorSet, into, from)]
+#[model(proto(raw(protos::tendermint::types::ValidatorSet), into, from))]
 pub struct ValidatorSet {
     pub validators: Vec<Validator>,
     pub proposer: Validator,

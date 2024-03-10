@@ -16,7 +16,7 @@ use ics008_wasm_client::{
 use sha3::Digest;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{DecodeAs, Proto},
+    encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
     ensure,
     google::protobuf::any::Any,
     hash::H256,
@@ -36,7 +36,6 @@ use unionlabs::{
     },
     proof::Path,
     uint::U256,
-    IntoEthAbi,
 };
 
 use crate::{
@@ -450,7 +449,7 @@ fn do_verify_membership(
                     reason: format!("{e:?}"),
                 })?
                 .0
-                .into_eth_abi_bytes()
+                .encode_as::<EthAbi>()
         }
         Path::ClientConsensusStatePath(_) => Any::<
             wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
@@ -460,7 +459,7 @@ fn do_verify_membership(
         })?
         .0
         .data
-        .into_eth_abi_bytes(),
+        .encode_as::<EthAbi>(),
         _ => raw_value,
     };
 

@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::LegacyCanonicalVote, from)]
+#[model(proto(raw(protos::tendermint::types::LegacyCanonicalVote), from))]
 pub struct CanonicalVote {
     /// type alias for byte
     pub ty: SignedMsgType,

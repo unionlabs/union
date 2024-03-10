@@ -1,6 +1,10 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ethabi")]
+use crate::tendermint::types::{
+    commit::TryFromEthAbiCommitError, header::TryFromEthAbiHeaderError,
+};
 use crate::{
     errors::{required, MissingField},
     tendermint::types::{
@@ -12,7 +16,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::SignedHeader, into, from)]
+#[model(proto(raw(protos::tendermint::types::SignedHeader), into, from))]
 pub struct SignedHeader {
     pub header: Header,
     pub commit: Commit,
@@ -28,10 +32,10 @@ impl From<SignedHeader> for protos::tendermint::types::SignedHeader {
 }
 
 #[cfg(feature = "ethabi")]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromEthAbiSignedHeaderError {
-    Header(crate::TryFromEthAbiErrorOf<Header>),
-    Commit(crate::TryFromEthAbiErrorOf<Commit>),
+    Header(TryFromEthAbiHeaderError),
+    Commit(TryFromEthAbiCommitError),
 }
 
 #[cfg(feature = "ethabi")]

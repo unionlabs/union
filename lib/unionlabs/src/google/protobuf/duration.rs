@@ -5,7 +5,7 @@ use core::{
     str::FromStr,
 };
 
-use macros::proto;
+use macros::model;
 use serde::{
     de::{self, Unexpected},
     Deserialize, Serialize,
@@ -47,7 +47,7 @@ type PositiveNanos = BoundedI32<0, DURATION_MAX_NANOS>;
 ///   to +999,999,999 inclusive.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::google::protobuf::Duration, into, from)]
+#[model(proto(raw(protos::google::protobuf::Duration), into, from))]
 pub struct Duration(
     BoundedI128<
         { (DURATION_MIN_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MIN_NANOS as i128 },

@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 
@@ -18,7 +18,11 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::ForkParameters, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::ForkParameters),
+    into,
+    from
+))]
 pub struct ForkParameters {
     pub genesis_fork_version: Version,
     pub genesis_slot: u64,

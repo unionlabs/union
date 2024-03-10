@@ -1,11 +1,11 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, hash::H256};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[proto(raw = protos::cosmos::crypto::bn254::PubKey, into, from)]
+#[model(proto(raw(protos::cosmos::crypto::bn254::PubKey), into, from))]
 pub struct PubKey {
     #[serde(with = "::serde_utils::base64")]
     pub key: H256,

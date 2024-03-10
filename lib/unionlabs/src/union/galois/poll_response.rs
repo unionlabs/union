@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
     rename_all = "snake_case",
     deny_unknown_fields
 )]
-#[proto(raw = protos::union::galois::api::v2::PollResponse, into, from)]
+#[model(proto(raw(protos::union::galois::api::v2::PollResponse), into, from))]
 pub enum PollResponse {
     Pending,
     Failed(ProveRequestFailed),

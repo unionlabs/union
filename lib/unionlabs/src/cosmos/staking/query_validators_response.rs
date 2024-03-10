@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::cosmos::{
@@ -8,7 +8,7 @@ use crate::cosmos::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[proto(raw = protos::cosmos::staking::v1beta1::QueryValidatorsResponse, into)]
+#[model(proto(raw(protos::cosmos::staking::v1beta1::QueryValidatorsResponse), into))]
 pub struct QueryValidatorsResponse {
     pub validators: Vec<Validator>,
     pub pagination: Option<PageResponse>,

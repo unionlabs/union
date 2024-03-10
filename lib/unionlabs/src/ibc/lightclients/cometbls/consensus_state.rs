@@ -1,8 +1,8 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "ethabi")]
-use crate::InlineFields;
+// #[cfg(feature = "ethabi")]
+// use crate::InlineFields;
 use crate::{
     errors::{required, InvalidLength, MissingField},
     hash::H256,
@@ -12,7 +12,14 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::cometbls::v1::ConsensusState, into, from)]
+#[model(
+    proto(
+        raw(protos::union::ibc::lightclients::cometbls::v1::ConsensusState),
+        into,
+        from
+    ),
+    ethabi(raw(contracts::glue::OptimizedConsensusState), into, from)
+)]
 pub struct ConsensusState {
     pub timestamp: u64,
     pub app_hash: MerkleRoot,
@@ -45,11 +52,6 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ConsensusState> for
     }
 }
 
-#[cfg(feature = "ethabi")]
-impl crate::EthAbi for ConsensusState {
-    type EthAbi = contracts::glue::OptimizedConsensusState;
-}
-
 impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::ConsensusState {
     fn from(value: ConsensusState) -> Self {
         Self {
@@ -71,12 +73,12 @@ impl From<ConsensusState> for contracts::glue::OptimizedConsensusState {
     }
 }
 
-#[cfg(feature = "ethabi")]
-impl From<ConsensusState> for InlineFields<contracts::glue::OptimizedConsensusState> {
-    fn from(value: ConsensusState) -> Self {
-        Self(value.into())
-    }
-}
+// #[cfg(feature = "ethabi")]
+// impl From<ConsensusState> for InlineFields<contracts::glue::OptimizedConsensusState> {
+//     fn from(value: ConsensusState) -> Self {
+//         Self(value.into())
+//     }
+// }
 
 #[cfg(feature = "ethabi")]
 impl TryFrom<contracts::glue::OptimizedConsensusState> for ConsensusState {
@@ -93,13 +95,13 @@ impl TryFrom<contracts::glue::OptimizedConsensusState> for ConsensusState {
     }
 }
 
-#[cfg(feature = "ethabi")]
-impl TryFrom<InlineFields<contracts::glue::OptimizedConsensusState>> for ConsensusState {
-    type Error = TryFromConsensusStateError;
+// #[cfg(feature = "ethabi")]
+// impl TryFrom<InlineFields<contracts::glue::OptimizedConsensusState>> for ConsensusState {
+//     type Error = TryFromConsensusStateError;
 
-    fn try_from(
-        value: InlineFields<contracts::glue::OptimizedConsensusState>,
-    ) -> Result<Self, Self::Error> {
-        value.0.try_into()
-    }
-}
+//     fn try_from(
+//         value: InlineFields<contracts::glue::OptimizedConsensusState>,
+//     ) -> Result<Self, Self::Error> {
+//         value.0.try_into()
+//     }
+// }

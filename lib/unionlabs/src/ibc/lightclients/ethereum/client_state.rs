@@ -1,6 +1,6 @@
 use core::str::FromStr;
 
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 use uint::FromDecStrErr;
 
@@ -20,7 +20,11 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::ClientState, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::ClientState),
+    into,
+    from
+))]
 pub struct ClientState {
     pub chain_id: U256,
     pub genesis_validators_root: H256,

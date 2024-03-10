@@ -1,8 +1,8 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "ethabi")]
-use crate::InlineFields;
+// #[cfg(feature = "ethabi")]
+// use crate::InlineFields;
 use crate::{
     errors::{required, MissingField},
     ibc::core::client::height::Height,
@@ -11,7 +11,18 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::cometbls::v1::ClientState, into, from)]
+#[model(
+    proto(
+        raw(protos::union::ibc::lightclients::cometbls::v1::ClientState),
+        into,
+        from
+    ),
+    ethabi(
+        raw(crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>),
+        into,
+        from
+    )
+)]
 pub struct ClientState {
     pub chain_id: String,
     pub trusting_period: u64,
@@ -32,11 +43,6 @@ impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::Clien
             latest_height: Some(value.latest_height.into()),
         }
     }
-}
-
-#[cfg(feature = "ethabi")]
-impl crate::EthAbi for ClientState {
-    type EthAbi = InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>;
 }
 
 #[derive(Debug)]
@@ -77,7 +83,7 @@ impl From<ClientState> for contracts::glue::UnionIbcLightclientsCometblsV1Client
 
 #[cfg(feature = "ethabi")]
 impl From<ClientState>
-    for InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>
+    for crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>
 {
     fn from(value: ClientState) -> Self {
         Self(value.into())
@@ -103,13 +109,13 @@ impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData> for
 }
 
 #[cfg(feature = "ethabi")]
-impl TryFrom<InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>>
+impl TryFrom<crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>>
     for ClientState
 {
     type Error = TryFromClientStateError;
 
     fn try_from(
-        value: InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>,
+        value: crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>,
     ) -> Result<Self, Self::Error> {
         value.0.try_into()
     }

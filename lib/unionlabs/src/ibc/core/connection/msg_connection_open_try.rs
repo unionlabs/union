@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -34,7 +34,7 @@ use crate::{
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::connection::v1::MsgConnectionOpenTry)]
+#[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenTry)))]
 pub struct MsgConnectionOpenTry<
     ClientState,
     ClientId: Id,

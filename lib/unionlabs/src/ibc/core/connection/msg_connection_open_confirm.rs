@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{ibc::core::client::height::IsHeight, id::ConnectionId};
@@ -12,7 +12,7 @@ use crate::{ibc::core::client::height::IsHeight, id::ConnectionId};
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::connection::v1::MsgConnectionOpenConfirm)]
+#[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenConfirm)))]
 pub struct MsgConnectionOpenConfirm<ProofHeight: IsHeight, ProofAck> {
     pub connection_id: ConnectionId,
     pub proof_ack: ProofAck,

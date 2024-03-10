@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 
@@ -14,7 +14,7 @@ use crate::{errors::InvalidLength, ethereum::Version};
 #[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::Fork, into, from)]
+#[model(proto(raw(protos::union::ibc::lightclients::ethereum::v1::Fork), into, from))]
 pub struct Fork {
     pub version: Version,
     pub epoch: u64,

@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -17,7 +17,7 @@ use crate::{
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::BatchEntry, into, from)]
+#[model(proto(raw(protos::cosmos::ics23::v1::BatchEntry), into, from))]
 pub enum BatchEntry {
     Exist(ExistenceProof),
     Nonexist(NonExistenceProof),

@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -21,7 +21,7 @@ use crate::{
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::CompressedBatchEntry, into, from)]
+#[model(proto(raw(protos::cosmos::ics23::v1::CompressedBatchEntry), into, from))]
 pub enum CompressedBatchEntry {
     Exist(CompressedExistenceProof),
     Nonexist(CompressedNonExistenceProof),

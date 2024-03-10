@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -11,7 +11,11 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::CompressedNonExistenceProof, into, from)]
+#[model(proto(
+    raw(protos::cosmos::ics23::v1::CompressedNonExistenceProof),
+    into,
+    from
+))]
 pub struct CompressedNonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     pub key: Vec<u8>,

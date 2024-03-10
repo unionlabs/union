@@ -189,67 +189,11 @@ pub mod test_utils {
 }
 
 #[cfg(feature = "ethabi")]
-pub trait EthAbi {
-    type EthAbi: ethers_core::abi::AbiEncode + ethers_core::abi::AbiDecode;
-}
-
-#[cfg(feature = "ethabi")]
-pub trait IntoEthAbi: EthAbi + Into<Self::EthAbi> {
-    fn into_eth_abi(self) -> Self::EthAbi {
-        self.into()
-    }
-
-    fn into_eth_abi_bytes(self) -> Vec<u8> {
-        ethers_core::abi::AbiEncode::encode(self.into())
-    }
-}
-
-#[cfg(feature = "ethabi")]
-pub trait FromEthAbi: EthAbi + From<Self::EthAbi> {
-    fn from_eth_abi(proto: Self::EthAbi) -> Self {
-        proto.into()
-    }
-
-    fn from_eth_abi_bytes(bytes: &[u8]) -> Result<Self, ethers_core::abi::AbiError> {
-        <Self::EthAbi as ethers_core::abi::AbiDecode>::decode(bytes).map(Into::into)
-    }
-}
-
-#[cfg(feature = "ethabi")]
 #[derive(Debug)]
 pub enum TryFromEthAbiBytesError<E> {
     TryFromEthAbi(E),
     Decode(ethers_core::abi::AbiError),
 }
-
-#[cfg(feature = "ethabi")]
-pub type TryFromEthAbiErrorOf<T> = <T as TryFrom<<T as EthAbi>::EthAbi>>::Error;
-
-#[cfg(feature = "ethabi")]
-pub trait TryFromEthAbi: EthAbi + TryFrom<Self::EthAbi> {
-    fn try_from_eth_abi(proto: Self::EthAbi) -> Result<Self, TryFromEthAbiErrorOf<Self>> {
-        proto.try_into()
-    }
-
-    fn try_from_eth_abi_bytes(
-        bytes: &[u8],
-    ) -> Result<Self, TryFromEthAbiBytesError<TryFromEthAbiErrorOf<Self>>> {
-        <Self::EthAbi as ethers_core::abi::AbiDecode>::decode(bytes)
-            .map_err(TryFromEthAbiBytesError::Decode)
-            .and_then(|proto| {
-                proto
-                    .try_into()
-                    .map_err(TryFromEthAbiBytesError::TryFromEthAbi)
-            })
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl<T> IntoEthAbi for T where T: EthAbi + Into<T::EthAbi> {}
-#[cfg(feature = "ethabi")]
-impl<T> FromEthAbi for T where T: EthAbi + From<T::EthAbi> {}
-#[cfg(feature = "ethabi")]
-impl<T> TryFromEthAbi for T where T: EthAbi + TryFrom<T::EthAbi> {}
 
 /// Due to the broken eth abi rust library, some structures with dynamically
 /// sized types are incorrectly encoded (missing a dynamic tuple wrapper)

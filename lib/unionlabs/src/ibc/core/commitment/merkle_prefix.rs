@@ -1,12 +1,12 @@
 #[cfg(feature = "ethabi")]
 use contracts::ibc_handler::IbcCoreCommitmentV1MerklePrefixData;
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::commitment::v1::MerklePrefix, into, from)]
+#[model(proto(raw(protos::ibc::core::commitment::v1::MerklePrefix), into, from))]
 pub struct MerklePrefix {
     #[serde(with = "::serde_utils::hex_string")]
     pub key_prefix: Vec<u8>,

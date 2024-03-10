@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[proto(raw = protos::cosmos::auth::v1beta1::BaseAccount, into, from)]
+#[model(proto(raw(protos::cosmos::auth::v1beta1::BaseAccount), into, from))]
 pub struct BaseAccount {
     // REVIEW: is this a bech32 address?
     pub address: String,

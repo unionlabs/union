@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{errors::UnknownEnumVariant, ibc::core::channel::order::Order};
@@ -6,7 +6,7 @@ use crate::{errors::UnknownEnumVariant, ibc::core::channel::order::Order};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::connection::v1::Version, into, from)]
+#[model(proto(raw(protos::ibc::core::connection::v1::Version), into, from))]
 pub struct Version {
     // TODO(benluelo): "The identifier field specifies a unique version identifier. A value of "1" specifies IBC 1.0.0."
     pub identifier: String,

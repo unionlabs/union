@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::encoding::{Decode, DecodeErrorOf, Encode, Proto};
@@ -6,7 +6,7 @@ use crate::encoding::{Decode, DecodeErrorOf, Encode, Proto};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::lightclients::wasm::v1::ConsensusState, into, from)]
+#[model(proto(raw(protos::ibc::lightclients::wasm::v1::ConsensusState), into, from))]
 pub struct ConsensusState<Data> {
     pub data: Data,
 }

@@ -1,6 +1,6 @@
 use alloc::borrow::Cow;
 
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -14,7 +14,7 @@ pub type PositiveI32AsUsize = BoundedUsize<0, { i32::MAX as usize }>;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(deny_unknown_fields)]
-#[proto(raw = protos::cosmos::ics23::v1::InnerSpec, into, from)]
+#[model(proto(raw(protos::cosmos::ics23::v1::InnerSpec), into, from))]
 pub struct InnerSpec {
     #[cfg_attr(feature = "arbitrary", arbitrary(with = crate::arbitrary_cow_static))]
     pub child_order: Cow<'static, [PositiveI32AsUsize]>,

@@ -1,6 +1,6 @@
 use bitvec::prelude::Msb0;
 use custom_debug_derive::Debug;
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::tendermint::types::simple_validator::SimpleValidator;
@@ -8,7 +8,7 @@ use crate::tendermint::types::simple_validator::SimpleValidator;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::galois::api::v2::ValidatorSetCommit, from)]
+#[model(proto(raw(protos::union::galois::api::v2::ValidatorSetCommit), from))]
 pub struct ValidatorSetCommit {
     pub validators: Vec<SimpleValidator>,
     // REVIEW: Is this arbitrary bytes or strongly typed? (i.e. H512)

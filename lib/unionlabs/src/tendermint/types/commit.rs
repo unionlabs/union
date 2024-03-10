@@ -1,6 +1,10 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ethabi")]
+use crate::tendermint::types::{
+    block_id::TryFromEthAbiBlockIdError, commit_sig::TryFromEthAbiCommitSigError,
+};
 use crate::{
     bounded::{BoundedI32, BoundedI64, BoundedIntError},
     errors::{required, MissingField},
@@ -13,7 +17,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::Commit, into, from)]
+#[model(proto(raw(protos::tendermint::types::Commit), into, from))]
 pub struct Commit {
     pub height: BoundedI64<0, { i64::MAX }>,
     pub round: BoundedI32<0, { i32::MAX }>,
@@ -33,17 +37,12 @@ impl From<Commit> for protos::tendermint::types::Commit {
 }
 
 #[cfg(feature = "ethabi")]
-impl crate::EthAbi for Commit {
-    type EthAbi = contracts::glue::TendermintTypesCommitData;
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromEthAbiCommitError {
     Height(crate::bounded::BoundedIntError<i64>),
     Round(crate::bounded::BoundedIntError<i32>),
-    BlockId(crate::TryFromEthAbiErrorOf<BlockId>),
-    Signatures(crate::TryFromEthAbiErrorOf<CommitSig>),
+    BlockId(TryFromEthAbiBlockIdError),
+    Signatures(TryFromEthAbiCommitSigError),
 }
 
 #[cfg(feature = "ethabi")]

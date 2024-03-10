@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{hash::H256, tendermint::types::canonical_block_header::CanonicalPartSetHeader};
@@ -6,7 +6,7 @@ use crate::{hash::H256, tendermint::types::canonical_block_header::CanonicalPart
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::CanonicalBlockId, from)]
+#[model(proto(raw(protos::tendermint::types::CanonicalBlockId), from))]
 pub struct CanonicalBlockId {
     pub hash: H256,
     pub part_set_header: CanonicalPartSetHeader,

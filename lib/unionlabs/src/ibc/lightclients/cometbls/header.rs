@@ -1,11 +1,11 @@
 use custom_debug_derive::Debug;
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ethabi")]
-use crate::InlineFields;
+use crate::tendermint::types::signed_header::TryFromEthAbiSignedHeaderError;
 use crate::{
-    errors::{InvalidLength, MissingField},
+    errors::{required, MissingField},
     ibc::core::client::height::Height,
     tendermint::types::signed_header::{SignedHeader, TryFromSignedHeaderError},
 };
@@ -13,7 +13,18 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::cometbls::v1::Header, into, from)]
+#[model(
+    proto(
+        raw(protos::union::ibc::lightclients::cometbls::v1::Header),
+        into,
+        from
+    ),
+    ethabi(
+        raw(crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>),
+        into,
+        from
+    )
+)]
 pub struct Header {
     pub signed_header: SignedHeader,
     pub trusted_height: Height,
@@ -33,33 +44,28 @@ impl From<Header> for protos::union::ibc::lightclients::cometbls::v1::Header {
 }
 
 #[cfg(feature = "ethabi")]
-impl From<Header> for contracts::glue::UnionIbcLightclientsCometblsV1HeaderData {
+impl From<Header>
+    for crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>
+{
     fn from(value: Header) -> Self {
-        Self {
+        Self(contracts::glue::UnionIbcLightclientsCometblsV1HeaderData {
             signed_header: value.signed_header.into(),
             trusted_height: value.trusted_height.into(),
             zero_knowledge_proof: value.zero_knowledge_proof.into(),
-        }
+        })
     }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<Header> for InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData> {
-    fn from(value: Header) -> Self {
-        Self(value.into())
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl crate::EthAbi for Header {
-    type EthAbi = InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TryFromHeaderError {
     MissingField(MissingField),
     SignedHeader(TryFromSignedHeaderError),
-    UntrustedValidatorSetRoot(InvalidLength),
+}
+
+#[cfg(feature = "ethabi")]
+#[derive(Debug, Clone, PartialEq)]
+pub enum TryFromEthAbiHeaderError {
+    SignedHeader(TryFromEthAbiSignedHeaderError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header {
@@ -69,20 +75,32 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header 
         value: protos::union::ibc::lightclients::cometbls::v1::Header,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            signed_header: value
-                .signed_header
-                .ok_or(TryFromHeaderError::MissingField(MissingField(
-                    "signed header",
-                )))?
+            signed_header: required!(value.signed_header)?
                 .try_into()
                 .map_err(TryFromHeaderError::SignedHeader)?,
-            trusted_height: value
-                .trusted_height
-                .ok_or(TryFromHeaderError::MissingField(MissingField(
-                    "trusted height",
-                )))?
-                .into(),
+            trusted_height: required!(value.trusted_height)?.into(),
             zero_knowledge_proof: value.zero_knowledge_proof,
+        })
+    }
+}
+
+#[cfg(feature = "ethabi")]
+impl TryFrom<crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>>
+    for Header
+{
+    type Error = TryFromEthAbiHeaderError;
+
+    fn try_from(
+        value: crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1HeaderData>,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            signed_header: value
+                .0
+                .signed_header
+                .try_into()
+                .map_err(TryFromEthAbiHeaderError::SignedHeader)?,
+            trusted_height: value.0.trusted_height.into(),
+            zero_knowledge_proof: value.0.zero_knowledge_proof.to_vec(),
         })
     }
 }

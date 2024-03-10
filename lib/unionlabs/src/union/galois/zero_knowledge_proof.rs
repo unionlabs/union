@@ -1,12 +1,12 @@
 use custom_debug_derive::Debug;
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 // REVIEW: Are these fields fixed size?
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::galois::api::v2::ZeroKnowledgeProof, into, from)]
+#[model(proto(raw(protos::union::galois::api::v2::ZeroKnowledgeProof), into, from))]
 pub struct ZeroKnowledgeProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(with = "::serde_utils::fmt::hex")]

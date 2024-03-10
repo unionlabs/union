@@ -223,7 +223,7 @@ pub(crate) use hex_string_array_wrapper;
 
 macro_rules! wrapper_enum {
     (
-        #[proto($Proto:ty)]
+        #[model(proto($Proto:ty))]
         $(#[$meta:meta])*
         // NOTE: Currently there are no ethabi generated enums; use this if/when there are any.
         // $(#[ethabi($EthAbi:ty)])?

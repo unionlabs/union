@@ -1,5 +1,5 @@
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use ssz_types::{fixed_vector, FixedVector};
@@ -12,7 +12,11 @@ use crate::{bls::BlsPublicKey, errors::InvalidLength, ethereum::config::SYNC_COM
 )]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::SyncCommittee, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::SyncCommittee),
+    into,
+    from
+))]
 pub struct SyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     #[serde(with = "::serde_utils::hex_string_list")]
     pub pubkeys: FixedVector<BlsPublicKey, C::SYNC_COMMITTEE_SIZE>,

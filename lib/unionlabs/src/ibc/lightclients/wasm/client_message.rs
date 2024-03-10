@@ -1,11 +1,11 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::encoding::{Decode, DecodeErrorOf, Encode, Proto};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[proto(raw = protos::ibc::lightclients::wasm::v1::ClientMessage, into, from)]
+#[model(proto(raw(protos::ibc::lightclients::wasm::v1::ClientMessage), into, from))]
 pub struct ClientMessage<Data> {
     pub data: Data,
 }

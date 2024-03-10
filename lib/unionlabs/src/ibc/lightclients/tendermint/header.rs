@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::lightclients::tendermint::v1::Header, into, from)]
+#[model(proto(raw(protos::ibc::lightclients::tendermint::v1::Header), into, from))]
 pub struct Header {
     pub signed_header: SignedHeader,
     pub validator_set: ValidatorSet,

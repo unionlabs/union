@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use ssz_types::{fixed_vector, FixedVector};
@@ -21,7 +21,11 @@ use crate::{
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::LightClientHeader, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::LightClientHeader),
+    into,
+    from
+))]
 pub struct LightClientHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub beacon: BeaconBlockHeader,
     pub execution: ExecutionPayloadHeader<C>,

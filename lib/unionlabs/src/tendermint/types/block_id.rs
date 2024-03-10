@@ -1,6 +1,8 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ethabi")]
+use crate::tendermint::types::part_set_header::TryFromEthAbiPartSetHeaderError;
 use crate::{
     errors::{InvalidLength, MissingField},
     hash::H256,
@@ -10,7 +12,7 @@ use crate::{
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::BlockId, into, from)]
+#[model(proto(raw(protos::tendermint::types::BlockId), into, from))]
 pub struct BlockId {
     pub hash: H256,
     pub part_set_header: PartSetHeader,
@@ -62,11 +64,6 @@ fn proto_roundtrip() {
 }
 
 #[cfg(feature = "ethabi")]
-impl crate::EthAbi for BlockId {
-    type EthAbi = contracts::glue::TendermintTypesBlockIDData;
-}
-
-#[cfg(feature = "ethabi")]
 impl From<BlockId> for contracts::glue::TendermintTypesBlockIDData {
     fn from(value: BlockId) -> Self {
         Self {
@@ -77,10 +74,10 @@ impl From<BlockId> for contracts::glue::TendermintTypesBlockIDData {
 }
 
 #[cfg(feature = "ethabi")]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromEthAbiBlockIdError {
     Hash(crate::errors::InvalidLength),
-    PartSetHeader(crate::TryFromEthAbiErrorOf<PartSetHeader>),
+    PartSetHeader(TryFromEthAbiPartSetHeaderError),
 }
 
 #[cfg(feature = "ethabi")]

@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -14,7 +14,11 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::lightclients::tendermint::v1::ClientState, into, from)]
+#[model(proto(
+    raw(protos::ibc::lightclients::tendermint::v1::ClientState),
+    into,
+    from
+))]
 pub struct ClientState {
     pub chain_id: String,
     pub trust_level: Fraction,
