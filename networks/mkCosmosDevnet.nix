@@ -8,10 +8,12 @@
 , denom
 , keyType
 , validatorCount
+, portIncrease
 , genesisOverwrites ? { }
 , lightClients ? [ ]
 , cosmwasmContracts ? [ ]
-, portIncrease
+, startCommandOverwrite ? [ ]
+, extraPackages ? [ ]
 , ...
 }:
 assert (builtins.isString chainId);
@@ -625,7 +627,7 @@ let
           pkgs.coreutils
           node
           (mkValidatorHome idx)
-        ];
+        ] ++ (extraPackages);
       };
       service = {
         tty = true;
@@ -641,7 +643,7 @@ let
         command = [
           "sh"
           "-c"
-          ''
+          (''
             mkdir home
 
             cp --no-preserve=mode -RL ${mkValidatorHome idx}/* home
@@ -649,19 +651,26 @@ let
             mkdir ./tmp
             export TMPDIR=./tmp
 
-            ${nodeBin} comet show-node-id --home home
+          '' + (
+          if startCommandOverwrite == []
+          then
+              ''
+                ${nodeBin} comet show-node-id --home home
 
-            ${nodeBin} \
-              start \
-              --home home \
-              $$params \
-              --rpc.laddr tcp://0.0.0.0:26657 \
-              --api.enable true \
-              --rpc.unsafe \
-              --api.address tcp://0.0.0.0:1317 \
-              --grpc.address 0.0.0.0:9090
-          ''
-        ];
+                ${nodeBin} \
+                  start \
+                  --home home \
+                  $$params \
+                  --rpc.laddr tcp://0.0.0.0:26657 \
+                  --api.enable true \
+                  --rpc.unsafe \
+                  --api.address tcp://0.0.0.0:1317 \
+                  --grpc.address 0.0.0.0:9090
+              ''
+          else
+            startCommandOverwrite
+        ))
+        ] ;
         healthcheck = {
           interval = "5s";
           start_period = "20s";

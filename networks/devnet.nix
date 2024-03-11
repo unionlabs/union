@@ -5,7 +5,7 @@
 
       mkCosmosDevnet = import ./mkCosmosDevnet.nix { inherit pkgs dbg; };
 
-      devnet-union = mkCosmosDevnet {
+      devnet-union = dbg (mkCosmosDevnet {
         node = self'.packages.uniond;
         chainId = "union-devnet-1";
         chainName = "union";
@@ -31,7 +31,7 @@
           self'.packages.ucs01-relay
         ];
         portIncrease = 0;
-      };
+      });
 
       devnet-stargaze = mkCosmosDevnet {
         node = self'.packages.starsd;
@@ -75,6 +75,31 @@
         keyType = "bn254";
         validatorCount = 4;
         portIncrease = 0;
+        extraPackages = [self'.packages.unionvisor self'.packages.bundle-testnet-next ];
+        startCommandOverwrite =
+          ''
+            mkdir .unionvisor
+
+            export UNIONVISOR_ROOT=$(pwd)/.unionvisor
+            export UNIONVISOR_BUNDLE=${self'.packages.bundle-testnet-next}
+
+            ${pkgs.lib.getExe self'.packages.unionvisor} init \
+              --moniker union-devnet-minimal \
+              --network union-minimal-devnet-1 \
+              --seeds "" \
+
+            cp --no-preserve=mode -RL home/* .unionvisor/home
+
+            ${pkgs.lib.getExe self'.packages.unionvisor} run \
+              --poll-interval 1000 \
+              -- \
+              $$params \
+              --rpc.laddr tcp://0.0.0.0:26657 \
+              --api.enable true \
+              --rpc.unsafe \
+              --api.address tcp://0.0.0.0:1317 \
+              --grpc.address 0.0.0.0:9090
+          '';
       };
 
       services = {
@@ -154,6 +179,10 @@
           modules = [ (modules.devnet-union // { networks.devnet-union = { }; }) ];
         };
 
+        devnet-union-minimal = {
+          modules = [ (modules.devnet-union-minimal // { networks.devnet-union-minimal = {}; })];
+        };
+
         devnet-simd = {
           modules = [ (modules.devnet-simd // { networks.devnet-simd = { }; }) ];
         };
@@ -176,6 +205,8 @@
 
         devnet-union = arion.build specs.devnet-union;
 
+        devnet-union-minimal = arion.build specs.devnet-union-minimal;
+
         devnet-simd = arion.build specs.devnet-simd;
 
         devnet-stargaze = arion.build specs.devnet-stargaze;
@@ -196,13 +227,19 @@
     {
       packages = {
         full-dev-setup = mkCi (system == "x86_64-linux") (mkArionBuild build.full-dev-setup "full-dev-setup");
+
         devnet-union = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-union "devnet-union");
+
         devnet-union-home = mkCi false (devnet-union.devnet-home);
 
+        devnet-union-minimal = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-union-minimal "devnet-union-minimal");
+
         devnet-simd = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-simd "devnet-simd");
+
         devnet-simd-home = mkCi false (devnet-simd.devnet-home);
 
         devnet-stargaze = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-stargaze "devnet-stargaze");
+
         devnet-stargaze-home = mkCi false (devnet-stargaze.devnet-home);
 
         devnet-eth = mkCi (system == "x86_64-linux") (mkArionBuild build.devnet-eth "devnet-eth");
