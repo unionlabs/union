@@ -18,6 +18,7 @@ export default defineConfig({
   trailingSlash: "ignore",
   server: ({ command }) => ({ port: PORT }),
   redirects: {
+    "/feed": "/rss.xml",
     "/logo": "/union-logo.zip",
   },
   markdown: markdownConfiguration,
