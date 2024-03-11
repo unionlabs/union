@@ -173,6 +173,14 @@ impl IbcClient for EthereumLightClient {
         env: Env,
         misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
+        // There is no point to check for misbehaviour when the headers are not for the same height
+        // TODO(aeryz): this will be `finalized_header` when we implement tracking justified header
+        ensure(
+            misbehaviour.update_1.attested_header.beacon.slot
+                == misbehaviour.update_2.attested_header.beacon.slot,
+            Error::MisbehaviourCannotExist,
+        )?;
+
         let trusted_sync_committee = misbehaviour.trusted_sync_committee;
         let wasm_consensus_state =
             read_consensus_state(deps, &trusted_sync_committee.trusted_height)?.ok_or(

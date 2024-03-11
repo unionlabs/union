@@ -100,6 +100,9 @@ pub enum Error {
 
     #[error("substitute client is frozen")]
     SubstituteClientFrozen,
+
+    #[error("misbehaviour can only exist if there exists two conflicting headers, the provided headers are not at the same height")]
+    MisbehaviourCannotExist,
 }
 
 impl From<ics008_wasm_client::storage_utils::Error> for Error {
