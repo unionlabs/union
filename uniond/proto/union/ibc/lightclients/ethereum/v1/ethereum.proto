@@ -39,7 +39,7 @@ message ClientState {
   uint64 trusting_period = 10;
   uint64 latest_slot = 11;
   .ibc.core.client.v1.Height frozen_height = 12;
-  bytes counterparty_commitment_slot = 13;
+  bytes ibc_commitment_slot = 13;
   bytes ibc_contract_address = 14;
 }
 

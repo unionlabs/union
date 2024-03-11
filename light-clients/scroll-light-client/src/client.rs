@@ -249,13 +249,13 @@ impl IbcClient for ScrollLightClient {
 fn do_verify_membership(
     path: String,
     storage_root: H256,
-    counterparty_commitment_slot: U256,
+    ibc_commitment_slot: U256,
     storage_proof: Proof,
     raw_value: Vec<u8>,
 ) -> Result<(), Error> {
     check_commitment_key(
         &path,
-        counterparty_commitment_slot,
+        ibc_commitment_slot,
         H256(storage_proof.key.to_big_endian()),
     )?;
 
@@ -314,12 +314,12 @@ fn do_verify_membership(
 fn do_verify_non_membership(
     path: String,
     storage_root: H256,
-    counterparty_commitment_slot: U256,
+    ibc_commitment_slot: U256,
     storage_proof: Proof,
 ) -> Result<(), Error> {
     check_commitment_key(
         &path,
-        counterparty_commitment_slot,
+        ibc_commitment_slot,
         H256(storage_proof.key.to_big_endian()),
     )?;
     scroll_verifier::verify_zktrie_storage_absence(
@@ -330,12 +330,8 @@ fn do_verify_non_membership(
     Ok(())
 }
 
-fn check_commitment_key(
-    path: &str,
-    counterparty_commitment_slot: U256,
-    key: H256,
-) -> Result<(), Error> {
-    let expected_commitment_key = generate_commitment_key(path, counterparty_commitment_slot);
+fn check_commitment_key(path: &str, ibc_commitment_slot: U256, key: H256) -> Result<(), Error> {
+    let expected_commitment_key = generate_commitment_key(path, ibc_commitment_slot);
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {

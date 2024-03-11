@@ -97,14 +97,14 @@ impl IbcClient for EthereumLightClient {
             StorageState::Occupied(value) => do_verify_membership(
                 path,
                 storage_root,
-                client_state.data.counterparty_commitment_slot,
+                client_state.data.ibc_commitment_slot,
                 storage_proof,
                 value,
             )?,
             StorageState::Empty => do_verify_non_membership(
                 path,
                 storage_root,
-                client_state.data.counterparty_commitment_slot,
+                client_state.data.ibc_commitment_slot,
                 storage_proof,
             )?,
         }
@@ -412,7 +412,7 @@ impl IbcClient for EthereumLightClient {
                     trust_level: scs.trust_level,
                     trusting_period: scs.trusting_period,
                     latest_slot: scs.latest_slot,
-                    counterparty_commitment_slot: scs.counterparty_commitment_slot,
+                    ibc_commitment_slot: scs.ibc_commitment_slot,
                     ibc_contract_address: scs.ibc_contract_address,
                     frozen_height: ZERO_HEIGHT,
                     ..subject_client_state.data
@@ -487,13 +487,13 @@ fn migrate_check_allowed_fields(
 fn do_verify_membership(
     path: String,
     storage_root: H256,
-    counterparty_commitment_slot: U256,
+    ibc_commitment_slot: U256,
     storage_proof: Proof,
     raw_value: Vec<u8>,
 ) -> Result<(), Error> {
     check_commitment_key(
         &path,
-        counterparty_commitment_slot,
+        ibc_commitment_slot,
         H256(storage_proof.key.to_big_endian()),
     )?;
 
@@ -551,12 +551,12 @@ fn do_verify_membership(
 fn do_verify_non_membership(
     path: String,
     storage_root: H256,
-    counterparty_commitment_slot: U256,
+    ibc_commitment_slot: U256,
     storage_proof: Proof,
 ) -> Result<(), Error> {
     check_commitment_key(
         &path,
-        counterparty_commitment_slot,
+        ibc_commitment_slot,
         H256(storage_proof.key.to_big_endian()),
     )?;
 
@@ -567,12 +567,8 @@ fn do_verify_non_membership(
     }
 }
 
-fn check_commitment_key(
-    path: &str,
-    counterparty_commitment_slot: U256,
-    key: H256,
-) -> Result<(), Error> {
-    let expected_commitment_key = generate_commitment_key(path, counterparty_commitment_slot);
+fn check_commitment_key(path: &str, ibc_commitment_slot: U256, key: H256) -> Result<(), Error> {
+    let expected_commitment_key = generate_commitment_key(path, ibc_commitment_slot);
 
     // Data MUST be stored to the commitment path that is defined in ICS23.
     if expected_commitment_key != key {
