@@ -29,7 +29,7 @@ use unionlabs::{
             cometbls,
             ethereum::{
                 client_state::ClientState, consensus_state::ConsensusState, header::Header,
-                proof::Proof, storage_proof::StorageProof,
+                misbehaviour::Misbehaviour, proof::Proof, storage_proof::StorageProof,
             },
             wasm,
         },
@@ -57,8 +57,7 @@ impl IbcClient for EthereumLightClient {
 
     type Header = Header<Config>;
 
-    // TODO(aeryz): See #588
-    type Misbehaviour = Header<Config>;
+    type Misbehaviour = Misbehaviour<Config>;
 
     type ClientState = ClientState;
 
@@ -170,10 +169,49 @@ impl IbcClient for EthereumLightClient {
     }
 
     fn verify_misbehaviour(
-        _deps: Deps<Self::CustomQuery>,
-        _misbehaviour: Self::Misbehaviour,
+        deps: Deps<Self::CustomQuery>,
+        env: Env,
+        misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+        let trusted_sync_committee = misbehaviour.trusted_sync_committee;
+        let wasm_consensus_state =
+            read_consensus_state(deps, &trusted_sync_committee.trusted_height)?.ok_or(
+                Error::ConsensusStateNotFound(trusted_sync_committee.trusted_height),
+            )?;
+
+        let trusted_consensus_state = TrustedConsensusState::new(
+            deps,
+            wasm_consensus_state.data,
+            trusted_sync_committee.sync_committee,
+        )?;
+
+        let wasm_client_state = read_client_state(deps)?;
+        let ctx = LightClientContext::new(&wasm_client_state.data, trusted_consensus_state);
+
+        let current_slot = compute_slot_at_timestamp::<Config>(
+            wasm_client_state.data.genesis_time,
+            env.block.time.seconds(),
+        )
+        .ok_or(Error::IntegerOverflow)?;
+
+        // Make sure both headers would have been accepted by the light client
+        validate_light_client_update::<LightClientContext<Config>, VerificationContext>(
+            &ctx,
+            misbehaviour.update_1,
+            current_slot,
+            wasm_client_state.data.genesis_validators_root.clone(),
+            VerificationContext { deps },
+        )?;
+
+        validate_light_client_update::<LightClientContext<Config>, VerificationContext>(
+            &ctx,
+            misbehaviour.update_2,
+            current_slot,
+            wasm_client_state.data.genesis_validators_root.clone(),
+            VerificationContext { deps },
+        )?;
+
+        Ok(())
     }
 
     fn update_state(
@@ -303,9 +341,19 @@ impl IbcClient for EthereumLightClient {
 
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
-        _misbehaviour: Self::Misbehaviour,
+        misbehaviour: Self::Misbehaviour,
     ) -> Result<bool, Self::Error> {
-        Err(Error::Unimplemented)
+        if misbehaviour.update_1.attested_header.beacon.slot
+            == misbehaviour.update_2.attested_header.beacon.slot
+        {
+            // TODO(aeryz): this is gonna be the finalized header when we implement justified
+            // This ensures that there are no conflicting justified/finalized headers at the same height
+            if misbehaviour.update_1.attested_header != misbehaviour.update_2.attested_header {
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
     }
 
     fn verify_upgrade_and_update_state(

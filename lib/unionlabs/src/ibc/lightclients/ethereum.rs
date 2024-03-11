@@ -9,6 +9,7 @@ pub mod fork_parameters;
 pub mod header;
 pub mod light_client_header;
 pub mod light_client_update;
+pub mod misbehaviour;
 pub mod proof;
 pub mod storage_proof;
 pub mod sync_aggregate;

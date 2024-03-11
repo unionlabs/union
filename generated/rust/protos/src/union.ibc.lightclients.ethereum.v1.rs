@@ -146,6 +146,17 @@ impl ::prost::Name for Header {
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Misbehaviour {
+    #[prost(message, optional, tag = "1")]
+    pub trusted_sync_committee: ::core::option::Option<TrustedSyncCommittee>,
+    #[prost(message, optional, tag = "2")]
+    pub update_1: ::core::option::Option<LightClientUpdate>,
+    #[prost(message, optional, tag = "3")]
+    pub update_2: ::core::option::Option<LightClientUpdate>,
+}
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TrustedSyncCommittee {
     #[prost(message, optional, tag = "1")]
     pub trusted_height:

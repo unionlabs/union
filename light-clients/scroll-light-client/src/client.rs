@@ -125,6 +125,7 @@ impl IbcClient for ScrollLightClient {
 
     fn verify_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
+        _env: Env,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
         Err(Error::Unimplemented)

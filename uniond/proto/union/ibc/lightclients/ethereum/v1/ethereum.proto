@@ -61,6 +61,12 @@ message Header {
   AccountUpdate account_update = 3;
 }
 
+message Misbehaviour {
+  TrustedSyncCommittee trusted_sync_committee = 1;
+  LightClientUpdate update_1 = 2;
+  LightClientUpdate update_2 = 3;
+}
+
 message TrustedSyncCommittee {
   .ibc.core.client.v1.Height trusted_height = 1;
   SyncCommittee current_sync_committee = 2;
