@@ -1,19 +1,20 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
     ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
     ibc::lightclients::ethereum::{
-        account_update::AccountUpdate, light_client_update::LightClientUpdate,
-        trusted_sync_committee::TrustedSyncCommittee,
+        account_update::{AccountUpdate, TryFromAccountUpdateError},
+        light_client_update::{LightClientUpdate, TryFromLightClientUpdateError},
+        trusted_sync_committee::{TrustedSyncCommittee, TryFromTrustedSyncCommitteeError},
     },
-    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
-// trait alias would be nice
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::Header, into, from)]
 pub struct Header<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub trusted_sync_committee: TrustedSyncCommittee<C>,
     pub consensus_update: LightClientUpdate<C>,
@@ -33,17 +34,17 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<
 }
 
 #[derive(Debug)]
-pub enum TryFromHeaderError<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
+pub enum TryFromHeaderError {
     MissingField(MissingField),
-    TrustedSyncCommittee(TryFromProtoErrorOf<TrustedSyncCommittee<C>>),
-    ConsensusUpdate(TryFromProtoErrorOf<LightClientUpdate<C>>),
-    AccountUpdate(TryFromProtoErrorOf<AccountUpdate>),
+    TrustedSyncCommittee(TryFromTrustedSyncCommitteeError),
+    ConsensusUpdate(TryFromLightClientUpdateError),
+    AccountUpdate(TryFromAccountUpdateError),
 }
 
 impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
     TryFrom<protos::union::ibc::lightclients::ethereum::v1::Header> for Header<C>
 {
-    type Error = TryFromHeaderError<C>;
+    type Error = TryFromHeaderError;
 
     fn try_from(
         value: protos::union::ibc::lightclients::ethereum::v1::Header,
@@ -60,12 +61,4 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .map_err(TryFromHeaderError::AccountUpdate)?,
         })
     }
-}
-
-impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> Proto for Header<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::Header;
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::Header {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.Header";
 }

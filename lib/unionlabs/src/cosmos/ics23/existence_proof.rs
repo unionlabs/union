@@ -1,14 +1,18 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cosmos::ics23::{inner_op::InnerOp, leaf_op::LeafOp},
+    cosmos::ics23::{
+        inner_op::{InnerOp, TryFromInnerOpError},
+        leaf_op::{LeafOp, TryFromLeafOpError},
+    },
     errors::{required, MissingField},
-    TryFromProtoErrorOf,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::cosmos::ics23::v1::ExistenceProof, into, from)]
 pub struct ExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     pub key: Vec<u8>,
@@ -18,15 +22,11 @@ pub struct ExistenceProof {
     pub path: Vec<InnerOp>,
 }
 
-impl crate::Proto for ExistenceProof {
-    type Proto = protos::cosmos::ics23::v1::ExistenceProof;
-}
-
 #[derive(Debug)]
 pub enum TryFromExistenceProofError {
     MissingField(MissingField),
-    Leaf(TryFromProtoErrorOf<LeafOp>),
-    Path(TryFromProtoErrorOf<InnerOp>),
+    Leaf(TryFromLeafOpError),
+    Path(TryFromInnerOpError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::ExistenceProof> for ExistenceProof {
@@ -49,6 +49,17 @@ impl TryFrom<protos::cosmos::ics23::v1::ExistenceProof> for ExistenceProof {
     }
 }
 
+impl From<ExistenceProof> for protos::cosmos::ics23::v1::ExistenceProof {
+    fn from(value: ExistenceProof) -> Self {
+        Self {
+            key: value.key,
+            value: value.value,
+            leaf: Some(value.leaf.into()),
+            path: value.path.into_iter().map(Into::into).collect::<Vec<_>>(),
+        }
+    }
+}
+
 #[cfg(feature = "ethabi")]
 impl From<ExistenceProof> for contracts::glue::CosmosIcs23V1ExistenceProofData {
     fn from(value: ExistenceProof) -> Self {
@@ -56,17 +67,6 @@ impl From<ExistenceProof> for contracts::glue::CosmosIcs23V1ExistenceProofData {
             key: value.key.into(),
             value: value.value.into(),
             leaf: value.leaf.into(),
-            path: value.path.into_iter().map(Into::into).collect::<Vec<_>>(),
-        }
-    }
-}
-
-impl From<ExistenceProof> for protos::cosmos::ics23::v1::ExistenceProof {
-    fn from(value: ExistenceProof) -> Self {
-        Self {
-            key: value.key,
-            value: value.value,
-            leaf: Some(value.leaf.into()),
             path: value.path.into_iter().map(Into::into).collect::<Vec<_>>(),
         }
     }

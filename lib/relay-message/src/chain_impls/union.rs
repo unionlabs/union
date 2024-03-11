@@ -1,6 +1,5 @@
 use std::{
     collections::{HashMap, VecDeque},
-    fmt::Debug,
     marker::PhantomData,
 };
 
@@ -27,7 +26,7 @@ use tendermint_rpc::Client;
 use unionlabs::{
     bounded::BoundedI64,
     cometbls::types::canonical_vote::CanonicalVote,
-    encoding::{Decode, Encode},
+    encoding::{Decode, Encode, Proto},
     google::protobuf::{
         any::{mk_any, Any},
         timestamp::Timestamp,
@@ -61,7 +60,7 @@ use unionlabs::{
         prove_response,
         validator_set_commit::ValidatorSetCommit,
     },
-    IntoProto, Proto, TryFromProto, TryFromProtoErrorOf, TypeUrl,
+    TypeUrl,
 };
 
 use crate::{
@@ -104,26 +103,20 @@ impl ChainExt for Wasm<Union> {
     type Config = WasmConfig;
 }
 
+// TODO: Deduplicate this implementation between union and cosmos, its literally just a copy-paste right now
 impl<Tr: ChainExt, Hc: ChainExt + Wraps<Self>> DoMsg<Hc, Tr> for Union
 where
-    ConsensusStateOf<Tr>: IntoProto,
-    <ConsensusStateOf<Tr> as Proto>::Proto: TypeUrl,
+    ConsensusStateOf<Tr>: Encode<Proto> + TypeUrl,
+    ClientStateOf<Tr>: Encode<Proto> + TypeUrl,
+    HeaderOf<Tr>: Encode<Proto> + TypeUrl,
 
-    ClientStateOf<Tr>: IntoProto,
-    <ClientStateOf<Tr> as Proto>::Proto: TypeUrl,
+    ConsensusStateOf<Hc>: Encode<Proto> + TypeUrl,
 
-    HeaderOf<Tr>: IntoProto,
-    <HeaderOf<Tr> as Proto>::Proto: TypeUrl,
-
-    ConsensusStateOf<Hc>: IntoProto,
-    <ConsensusStateOf<Hc> as Proto>::Proto: TypeUrl,
-
-    ClientStateOf<Hc>: IntoProto,
-    <ClientStateOf<Hc> as Proto>::Proto: TypeUrl,
+    ClientStateOf<Hc>: Encode<Proto> + TypeUrl,
     // HeaderOf<Hc>: IntoProto,
     // <HeaderOf<Hc> as Proto>::Proto: TypeUrl,
-    Tr::StoredClientState<Hc>: IntoProto<Proto = protos::google::protobuf::Any>,
-    Tr::StateProof: Encode<unionlabs::encoding::Proto>,
+    Tr::StoredClientState<Hc>: Into<protos::google::protobuf::Any>,
+    Tr::StateProof: Encode<Proto>,
 {
     async fn msg(&self, msg: Msg<Hc, Tr>) -> Result<(), BroadcastTxCommitError> {
         self.signers
@@ -144,7 +137,7 @@ where
                         mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                             client_id: data.client_id.to_string(),
                             previous_connection_id: String::new(),
-                            client_state: Some(data.client_state.into_proto()),
+                            client_state: Some(data.client_state.into()),
                             counterparty: Some(data.counterparty.into()),
                             delay_period: data.delay_period,
                             counterparty_versions: data
@@ -276,13 +269,11 @@ where
     AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Hc, Tr>)>,
     // required by fetch_abci_query, can be removed once that's been been removed
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
-    Tr::SelfClientState: Decode<unionlabs::encoding::Proto>,
-    Tr::SelfConsensusState: Decode<unionlabs::encoding::Proto>,
+    Tr::SelfClientState: Decode<Proto>,
+    Tr::SelfConsensusState: Decode<Proto>,
 
-    Hc::StoredClientState<Tr>: TryFromProto,
-    Hc::StoredConsensusState<Tr>: TryFromProto,
-    TryFromProtoErrorOf<Hc::StoredClientState<Tr>>: Debug,
-    TryFromProtoErrorOf<Hc::StoredConsensusState<Tr>>: Debug,
+    Hc::StoredClientState<Tr>: Decode<Proto>,
+    Hc::StoredConsensusState<Tr>: Decode<Proto>,
 
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 {
@@ -487,10 +478,8 @@ where
         >,
     Tr: ChainExt,
 
-    Hc::StoredClientState<Tr>: TryFromProto,
-    Hc::StoredConsensusState<Tr>: TryFromProto,
-    TryFromProtoErrorOf<Hc::StoredClientState<Tr>>: Debug,
-    TryFromProtoErrorOf<Hc::StoredConsensusState<Tr>>: Debug,
+    Hc::StoredClientState<Tr>: Decode<Proto>,
+    Hc::StoredConsensusState<Tr>: Decode<Proto>,
 
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -710,12 +699,11 @@ where
                 )
                 .await
                 .unwrap()
-                .poll(
+                .poll(protos::union::galois::api::v2::PollRequest::from(
                     PollRequest {
                         request: request.clone(),
-                    }
-                    .into_proto(),
-                )
+                    },
+                ))
                 .await
                 .map(|x| x.into_inner().try_into().unwrap());
 

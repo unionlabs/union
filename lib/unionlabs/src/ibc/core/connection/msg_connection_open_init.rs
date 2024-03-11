@@ -1,8 +1,10 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     ibc::core::connection::{counterparty::Counterparty, version::Version},
-    EmptyString, TypeUrl,
+    traits::Id,
+    EmptyString,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -20,13 +22,10 @@ use crate::{
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-pub struct MsgConnectionOpenInit<ClientId, CounterpartyClientId> {
+#[proto(raw = protos::ibc::core::connection::v1::MsgConnectionOpenInit)]
+pub struct MsgConnectionOpenInit<ClientId: Id, CounterpartyClientId: Id> {
     pub client_id: ClientId,
     pub counterparty: Counterparty<CounterpartyClientId, EmptyString>,
     pub version: Version,
     pub delay_period: u64,
-}
-
-impl TypeUrl for protos::ibc::core::connection::v1::MsgConnectionOpenInit {
-    const TYPE_URL: &'static str = "/ibc.core.connection.v1.MsgConnectionOpenInit";
 }

@@ -1,16 +1,15 @@
 use core::{fmt::Debug, str::FromStr};
 
+use macros::proto;
 use serde::{Deserialize, Serialize};
 use uint::FromDecStrErr;
 
-use crate::{
-    errors::InvalidLength, hash::H160, ibc::core::client::height::Height, uint::U256, Proto,
-    TypeUrl,
-};
+use crate::{errors::InvalidLength, hash::H160, ibc::core::client::height::Height, uint::U256};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::scroll::v1::ClientState, into, from)]
 pub struct ClientState {
     pub l1_client_id: String,
     pub chain_id: U256,
@@ -20,14 +19,6 @@ pub struct ClientState {
     pub rollup_finalized_state_roots_slot: U256,
     pub ibc_contract_address: H160,
     pub ibc_commitment_slot: U256,
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::scroll::v1::ClientState {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.scroll.v1.ClientState";
-}
-
-impl Proto for ClientState {
-    type Proto = protos::union::ibc::lightclients::scroll::v1::ClientState;
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::scroll::v1::ClientState {

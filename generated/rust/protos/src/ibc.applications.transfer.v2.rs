@@ -22,4 +22,11 @@ pub struct FungibleTokenPacketData {
     #[prost(string, tag = "5")]
     pub memo: ::prost::alloc::string::String,
 }
+impl ::prost::Name for FungibleTokenPacketData {
+    const NAME: &'static str = "FungibleTokenPacketData";
+    const PACKAGE: &'static str = "ibc.applications.transfer.v2";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.transfer.v2.{}", Self::NAME)
+    }
+}
 // @@protoc_insertion_point(module)

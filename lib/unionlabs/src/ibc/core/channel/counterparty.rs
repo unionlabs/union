@@ -1,5 +1,6 @@
 use core::str::FromStr;
 
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::id::PortId;
@@ -7,6 +8,7 @@ use crate::id::PortId;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::core::channel::v1::Counterparty, into, from)]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: String,

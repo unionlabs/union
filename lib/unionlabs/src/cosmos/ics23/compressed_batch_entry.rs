@@ -1,12 +1,16 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     cosmos::ics23::{
-        compressed_existence_proof::CompressedExistenceProof,
-        compressed_non_existence_proof::CompressedNonExistenceProof,
+        compressed_existence_proof::{
+            CompressedExistenceProof, TryFromCompressedExistenceProofError,
+        },
+        compressed_non_existence_proof::{
+            CompressedNonExistenceProof, TryFromCompressedNonExistenceProofError,
+        },
     },
     errors::{required, MissingField},
-    TryFromProtoErrorOf,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -17,20 +21,34 @@ use crate::{
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::cosmos::ics23::v1::CompressedBatchEntry, into, from)]
 pub enum CompressedBatchEntry {
     Exist(CompressedExistenceProof),
     Nonexist(CompressedNonExistenceProof),
 }
 
-impl crate::Proto for CompressedBatchEntry {
-    type Proto = protos::cosmos::ics23::v1::CompressedBatchEntry;
+impl From<CompressedBatchEntry> for protos::cosmos::ics23::v1::CompressedBatchEntry {
+    fn from(value: CompressedBatchEntry) -> Self {
+        Self {
+            proof: Some(match value {
+                CompressedBatchEntry::Exist(exist) => {
+                    protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Exist(exist.into())
+                }
+                CompressedBatchEntry::Nonexist(nonexist) => {
+                    protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Nonexist(
+                        nonexist.into(),
+                    )
+                }
+            }),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum TryFromCompressedBatchEntryProofError {
     MissingField(MissingField),
-    Exist(TryFromProtoErrorOf<CompressedExistenceProof>),
-    Nonexist(TryFromProtoErrorOf<CompressedNonExistenceProof>),
+    Exist(TryFromCompressedExistenceProofError),
+    Nonexist(TryFromCompressedNonExistenceProofError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::CompressedBatchEntry> for CompressedBatchEntry {
@@ -72,23 +90,6 @@ impl From<CompressedBatchEntry> for contracts::glue::CosmosIcs23V1CompressedBatc
                     ..Default::default()
                 }
             }
-        }
-    }
-}
-
-impl From<CompressedBatchEntry> for protos::cosmos::ics23::v1::CompressedBatchEntry {
-    fn from(value: CompressedBatchEntry) -> Self {
-        Self {
-            proof: Some(match value {
-                CompressedBatchEntry::Exist(exist) => {
-                    protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Exist(exist.into())
-                }
-                CompressedBatchEntry::Nonexist(nonexist) => {
-                    protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Nonexist(
-                        nonexist.into(),
-                    )
-                }
-            }),
         }
     }
 }

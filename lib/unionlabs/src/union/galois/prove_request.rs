@@ -1,25 +1,19 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     cometbls::types::canonical_vote::CanonicalVote,
-    union::galois::validator_set_commit::ValidatorSetCommit, Proto, TypeUrl,
+    union::galois::validator_set_commit::ValidatorSetCommit,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::galois::api::v2::ProveRequest, from)]
 pub struct ProveRequest {
     pub vote: CanonicalVote,
     pub trusted_commit: ValidatorSetCommit,
     pub untrusted_commit: ValidatorSetCommit,
-}
-
-impl Proto for ProveRequest {
-    type Proto = protos::union::galois::api::v2::ProveRequest;
-}
-
-impl TypeUrl for protos::union::galois::api::v2::ProveRequest {
-    const TYPE_URL: &'static str = "/union.galois.api.v2.ProveRequest";
 }
 
 impl From<ProveRequest> for protos::union::galois::api::v2::ProveRequest {

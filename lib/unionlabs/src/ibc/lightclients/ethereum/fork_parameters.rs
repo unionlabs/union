@@ -1,11 +1,11 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 
 use crate::{
-    errors::{InvalidLength, MissingField},
+    errors::{required, InvalidLength, MissingField},
     ethereum::Version,
-    ibc::lightclients::ethereum::fork::Fork,
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    ibc::lightclients::ethereum::fork::{Fork, TryFromForkError},
 };
 
 #[cfg_attr(
@@ -18,6 +18,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::ForkParameters, into, from)]
 pub struct ForkParameters {
     pub genesis_fork_version: Version,
     pub genesis_slot: u64,
@@ -44,7 +45,10 @@ impl From<ForkParameters> for protos::union::ibc::lightclients::ethereum::v1::Fo
 pub enum TryFromForkParametersError {
     MissingField(MissingField),
     InvalidLength(InvalidLength),
-    Fork(TryFromProtoErrorOf<Fork>),
+    Altair(TryFromForkError),
+    Bellatrix(TryFromForkError),
+    Capella(TryFromForkError),
+    Deneb(TryFromForkError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ForkParameters> for ForkParameters {
@@ -59,42 +63,18 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ForkParameters> for
                 .try_into()
                 .map_err(TryFromForkParametersError::InvalidLength)?,
             genesis_slot: proto.genesis_slot,
-            altair: proto
-                .altair
-                .ok_or(TryFromForkParametersError::MissingField(MissingField(
-                    "altair",
-                )))?
+            altair: required!(proto.altair)?
                 .try_into()
-                .map_err(TryFromForkParametersError::Fork)?,
-            bellatrix: proto
-                .bellatrix
-                .ok_or(TryFromForkParametersError::MissingField(MissingField(
-                    "bellatrix",
-                )))?
+                .map_err(TryFromForkParametersError::Altair)?,
+            bellatrix: required!(proto.bellatrix)?
                 .try_into()
-                .map_err(TryFromForkParametersError::Fork)?,
-            capella: proto
-                .capella
-                .ok_or(TryFromForkParametersError::MissingField(MissingField(
-                    "capella",
-                )))?
+                .map_err(TryFromForkParametersError::Bellatrix)?,
+            capella: required!(proto.capella)?
                 .try_into()
-                .map_err(TryFromForkParametersError::Fork)?,
-            deneb: proto
-                .deneb
-                .ok_or(TryFromForkParametersError::MissingField(MissingField(
-                    "deneb",
-                )))?
+                .map_err(TryFromForkParametersError::Capella)?,
+            deneb: required!(proto.deneb)?
                 .try_into()
-                .map_err(TryFromForkParametersError::Fork)?,
+                .map_err(TryFromForkParametersError::Deneb)?,
         })
     }
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::ForkParameters {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.ForkParameters";
-}
-
-impl Proto for ForkParameters {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::ForkParameters;
 }

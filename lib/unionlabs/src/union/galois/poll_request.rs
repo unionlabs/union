@@ -1,19 +1,13 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use crate::{union::galois::prove_request::ProveRequest, Proto, TypeUrl};
+use crate::union::galois::prove_request::ProveRequest;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[proto(raw = protos::union::galois::api::v2::PollRequest, from)]
 pub struct PollRequest {
     pub request: ProveRequest,
-}
-
-impl Proto for PollRequest {
-    type Proto = protos::union::galois::api::v2::PollRequest;
-}
-
-impl TypeUrl for protos::union::galois::api::v2::PollRequest {
-    const TYPE_URL: &'static str = "/union.galois.api.v2.PollRequest";
 }
 
 impl From<PollRequest> for protos::union::galois::api::v2::PollRequest {

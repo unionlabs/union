@@ -1,14 +1,15 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     cosmos::staking::commission_rates::CommissionRates,
     errors::{required, MissingField},
-    google::protobuf::timestamp::Timestamp,
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[proto(raw = protos::cosmos::staking::v1beta1::Commission, into, from)]
 pub struct Commission {
     /// commission_rates defines the initial commission rates to be used for creating a validator.
     pub commission_rates: CommissionRates,
@@ -16,18 +17,10 @@ pub struct Commission {
     pub update_time: Timestamp,
 }
 
-impl Proto for Commission {
-    type Proto = protos::cosmos::staking::v1beta1::Commission;
-}
-
-impl TypeUrl for protos::cosmos::staking::v1beta1::Commission {
-    const TYPE_URL: &'static str = "/cosmos.staking.v1beta1.Commission";
-}
-
 #[derive(Debug)]
 pub enum TryFromCommissionError {
     MissingField(MissingField),
-    Timestamp(TryFromProtoErrorOf<Timestamp>),
+    Timestamp(TryFromTimestampError),
 }
 
 impl TryFrom<protos::cosmos::staking::v1beta1::Commission> for Commission {

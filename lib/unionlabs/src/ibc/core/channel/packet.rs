@@ -1,5 +1,6 @@
 use core::num::{NonZeroU64, TryFromIntError};
 
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -7,12 +8,12 @@ use crate::{
     ibc::core::client::height::{Height, IsHeight},
     id::{ChannelId, ChannelIdValidator, PortId, PortIdValidator},
     validated::{Validate, ValidateT},
-    Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::core::channel::v1::Packet, into, from)]
 pub struct Packet {
     pub sequence: NonZeroU64,
     pub source_port: PortId,
@@ -23,14 +24,6 @@ pub struct Packet {
     pub data: Vec<u8>,
     pub timeout_height: Height,
     pub timeout_timestamp: u64,
-}
-
-impl Proto for Packet {
-    type Proto = protos::ibc::core::channel::v1::Packet;
-}
-
-impl TypeUrl for protos::ibc::core::channel::v1::Packet {
-    const TYPE_URL: &'static str = "/ibc.core.channel.v1.Packet";
 }
 
 impl From<Packet> for protos::ibc::core::channel::v1::Packet {

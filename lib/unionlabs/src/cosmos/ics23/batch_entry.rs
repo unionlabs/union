@@ -1,9 +1,12 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cosmos::ics23::{existence_proof::ExistenceProof, non_existence_proof::NonExistenceProof},
+    cosmos::ics23::{
+        existence_proof::{ExistenceProof, TryFromExistenceProofError},
+        non_existence_proof::{NonExistenceProof, TryFromNonExistenceProofError},
+    },
     errors::{required, MissingField},
-    TryFromProtoErrorOf,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -14,20 +17,17 @@ use crate::{
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::cosmos::ics23::v1::BatchEntry, into, from)]
 pub enum BatchEntry {
     Exist(ExistenceProof),
     Nonexist(NonExistenceProof),
 }
 
-impl crate::Proto for BatchEntry {
-    type Proto = protos::cosmos::ics23::v1::BatchEntry;
-}
-
 #[derive(Debug)]
 pub enum TryFromBatchEntryError {
     MissingField(MissingField),
-    Exist(TryFromProtoErrorOf<ExistenceProof>),
-    Nonexist(TryFromProtoErrorOf<NonExistenceProof>),
+    Exist(TryFromExistenceProofError),
+    Nonexist(TryFromNonExistenceProofError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::BatchEntry> for BatchEntry {
@@ -49,6 +49,21 @@ impl TryFrom<protos::cosmos::ics23::v1::BatchEntry> for BatchEntry {
     }
 }
 
+impl From<BatchEntry> for protos::cosmos::ics23::v1::BatchEntry {
+    fn from(value: BatchEntry) -> Self {
+        Self {
+            proof: Some(match value {
+                BatchEntry::Exist(exist) => {
+                    protos::cosmos::ics23::v1::batch_entry::Proof::Exist(exist.into())
+                }
+                BatchEntry::Nonexist(nonexist) => {
+                    protos::cosmos::ics23::v1::batch_entry::Proof::Nonexist(nonexist.into())
+                }
+            }),
+        }
+    }
+}
+
 #[cfg(feature = "ethabi")]
 impl From<BatchEntry> for contracts::glue::CosmosIcs23V1BatchEntryData {
     fn from(value: BatchEntry) -> Self {
@@ -61,21 +76,6 @@ impl From<BatchEntry> for contracts::glue::CosmosIcs23V1BatchEntryData {
                 nonexist: nonexist.into(),
                 ..Default::default()
             },
-        }
-    }
-}
-
-impl From<BatchEntry> for protos::cosmos::ics23::v1::BatchEntry {
-    fn from(value: BatchEntry) -> Self {
-        Self {
-            proof: Some(match value {
-                BatchEntry::Exist(exist) => {
-                    protos::cosmos::ics23::v1::batch_entry::Proof::Exist(exist.into())
-                }
-                BatchEntry::Nonexist(nonexist) => {
-                    protos::cosmos::ics23::v1::batch_entry::Proof::Nonexist(nonexist.into())
-                }
-            }),
         }
     }
 }

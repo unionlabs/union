@@ -1,16 +1,18 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
+use crate::{errors::InvalidLength, hash::H256};
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::tendermint::types::PartSetHeader, into, from)]
 pub struct PartSetHeader {
     pub total: u32,
     pub hash: H256,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromPartSetHeaderError {
     Hash(InvalidLength),
 }
@@ -36,14 +38,6 @@ impl From<PartSetHeader> for protos::tendermint::types::PartSetHeader {
             hash: value.hash.into(),
         }
     }
-}
-
-impl Proto for PartSetHeader {
-    type Proto = protos::tendermint::types::PartSetHeader;
-}
-
-impl TypeUrl for protos::tendermint::types::PartSetHeader {
-    const TYPE_URL: &'static str = "/tendermint.types.PartSetHeader";
 }
 
 #[cfg(feature = "ethabi")]

@@ -1,11 +1,13 @@
+use macros::proto;
+
 use crate::{
     bounded::{BoundedI32, BoundedI64},
     google::protobuf::timestamp::Timestamp,
     hash::H160,
     tendermint::types::{block_id::BlockId, signed_msg_type::SignedMsgType},
-    Proto,
 };
 
+#[proto(raw = protos::tendermint::types::Vote, from)]
 pub struct Vote {
     pub ty: SignedMsgType,
     pub height: BoundedI64<0, { i64::MAX }>,
@@ -17,10 +19,6 @@ pub struct Vote {
     pub signature: Vec<u8>,
     pub extension: Vec<u8>,
     pub extension_signature: Vec<u8>,
-}
-
-impl Proto for Vote {
-    type Proto = protos::tendermint::types::Vote;
 }
 
 impl From<Vote> for protos::tendermint::types::Vote {

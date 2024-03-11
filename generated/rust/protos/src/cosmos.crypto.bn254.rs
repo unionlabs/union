@@ -10,6 +10,13 @@ pub struct PubKey {
     #[prost(bytes = "vec", tag = "1")]
     pub key: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for PubKey {
+    const NAME: &'static str = "PubKey";
+    const PACKAGE: &'static str = "cosmos.crypto.bn254";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.crypto.bn254.{}", Self::NAME)
+    }
+}
 /// Deprecated: PrivKey defines a bn254 private key.
 /// NOTE: bn254 keys must not be used in SDK apps except in a tendermint validator context.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -17,5 +24,12 @@ pub struct PubKey {
 pub struct PrivKey {
     #[prost(bytes = "vec", tag = "1")]
     pub key: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for PrivKey {
+    const NAME: &'static str = "PrivKey";
+    const PACKAGE: &'static str = "cosmos.crypto.bn254";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.crypto.bn254.{}", Self::NAME)
+    }
 }
 // @@protoc_insertion_point(module)

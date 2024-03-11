@@ -8,6 +8,13 @@ pub struct GenesisState {
     #[prost(message, optional, tag = "3")]
     pub constant_fee: ::core::option::Option<super::super::base::v1beta1::Coin>,
 }
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
+    const PACKAGE: &'static str = "cosmos.crisis.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.crisis.v1beta1.{}", Self::NAME)
+    }
+}
 /// MsgVerifyInvariant represents a message to verify a particular invariance.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -22,10 +29,24 @@ pub struct MsgVerifyInvariant {
     #[prost(string, tag = "3")]
     pub invariant_route: ::prost::alloc::string::String,
 }
+impl ::prost::Name for MsgVerifyInvariant {
+    const NAME: &'static str = "MsgVerifyInvariant";
+    const PACKAGE: &'static str = "cosmos.crisis.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.crisis.v1beta1.{}", Self::NAME)
+    }
+}
 /// MsgVerifyInvariantResponse defines the Msg/VerifyInvariant response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgVerifyInvariantResponse {}
+impl ::prost::Name for MsgVerifyInvariantResponse {
+    const NAME: &'static str = "MsgVerifyInvariantResponse";
+    const PACKAGE: &'static str = "cosmos.crisis.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.crisis.v1beta1.{}", Self::NAME)
+    }
+}
 /// MsgUpdateParams is the Msg/UpdateParams request type.
 ///
 /// Since: cosmos-sdk 0.47
@@ -39,6 +60,13 @@ pub struct MsgUpdateParams {
     #[prost(message, optional, tag = "2")]
     pub constant_fee: ::core::option::Option<super::super::base::v1beta1::Coin>,
 }
+impl ::prost::Name for MsgUpdateParams {
+    const NAME: &'static str = "MsgUpdateParams";
+    const PACKAGE: &'static str = "cosmos.crisis.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.crisis.v1beta1.{}", Self::NAME)
+    }
+}
 /// MsgUpdateParamsResponse defines the response structure for executing a
 /// MsgUpdateParams message.
 ///
@@ -46,5 +74,12 @@ pub struct MsgUpdateParams {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParamsResponse {}
+impl ::prost::Name for MsgUpdateParamsResponse {
+    const NAME: &'static str = "MsgUpdateParamsResponse";
+    const PACKAGE: &'static str = "cosmos.crisis.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.crisis.v1beta1.{}", Self::NAME)
+    }
+}
 include!("cosmos.crisis.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

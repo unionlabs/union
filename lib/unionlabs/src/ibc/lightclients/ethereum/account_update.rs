@@ -1,14 +1,15 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
     ibc::lightclients::ethereum::account_proof::{AccountProof, TryFromAccountProofError},
-    Proto, TypeUrl,
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::AccountUpdate, into, from)]
 pub struct AccountUpdate {
     pub account_proof: AccountProof,
 }
@@ -39,12 +40,4 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::AccountUpdate> for 
                 .map_err(TryFromAccountUpdateError::AccountProof)?,
         })
     }
-}
-
-impl Proto for AccountUpdate {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::AccountUpdate;
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::AccountUpdate {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.AccountUpdate";
 }

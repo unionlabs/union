@@ -1,13 +1,17 @@
 use alloc::borrow::Cow;
 
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use super::{hash_op::HashOp, length_op::LengthOp};
-use crate::{errors::UnknownEnumVariant, Proto, TypeUrl};
+use crate::{
+    cosmos::ics23::{hash_op::HashOp, length_op::LengthOp},
+    errors::UnknownEnumVariant,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::cosmos::ics23::v1::LeafOp, into, from)]
 pub struct LeafOp {
     pub hash: HashOp,
     pub prehash_key: HashOp,
@@ -16,14 +20,6 @@ pub struct LeafOp {
     #[serde(with = "::serde_utils::hex_string")]
     #[cfg_attr(feature = "arbitrary", arbitrary(with = crate::arbitrary_cow_static))]
     pub prefix: Cow<'static, [u8]>,
-}
-
-impl TypeUrl for protos::cosmos::ics23::v1::LeafOp {
-    const TYPE_URL: &'static str = "/cosmos.ics23.v1.LeafOp";
-}
-
-impl Proto for LeafOp {
-    type Proto = protos::cosmos::ics23::v1::LeafOp;
 }
 
 impl From<LeafOp> for protos::cosmos::ics23::v1::LeafOp {

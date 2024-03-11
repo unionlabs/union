@@ -1,12 +1,12 @@
 use custom_debug_derive::Debug;
+use macros::proto;
 use serde::{Deserialize, Serialize};
-
-use crate::{Proto, TypeUrl};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 // REVIEW: Are these fields fixed size?
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::galois::api::v2::ZeroKnowledgeProof, into, from)]
 pub struct ZeroKnowledgeProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(with = "::serde_utils::fmt::hex")]
@@ -20,14 +20,6 @@ pub struct ZeroKnowledgeProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(with = "::serde_utils::fmt::hex")]
     pub public_inputs: Vec<u8>,
-}
-
-impl Proto for ZeroKnowledgeProof {
-    type Proto = protos::union::galois::api::v2::ZeroKnowledgeProof;
-}
-
-impl TypeUrl for protos::union::galois::api::v2::ZeroKnowledgeProof {
-    const TYPE_URL: &'static str = "/union.galois.api.v2.ZeroKnowledgeProof";
 }
 
 impl From<ZeroKnowledgeProof> for protos::union::galois::api::v2::ZeroKnowledgeProof {

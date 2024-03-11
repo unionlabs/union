@@ -2,7 +2,6 @@ use core::fmt::Debug;
 
 #[cfg(feature = "ethabi")]
 use crate::{IntoEthAbi, TryFromEthAbi, TryFromEthAbiBytesError, TryFromEthAbiErrorOf};
-use crate::{IntoProto, TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf};
 
 pub trait Encoding {}
 
@@ -12,7 +11,7 @@ impl Encoding for EthAbi {}
 pub enum Proto {}
 impl Encoding for Proto {}
 
-pub trait Encode<Enc: Encoding> {
+pub trait Encode<Enc: Encoding>: Sized {
     fn encode(self) -> Vec<u8>;
 }
 
@@ -22,22 +21,7 @@ pub trait Decode<Enc: Encoding>: Sized {
     fn decode(bytes: &[u8]) -> Result<Self, Self::Error>;
 }
 
-impl<T: IntoProto> Encode<Proto> for T {
-    fn encode(self) -> Vec<u8> {
-        self.into_proto_bytes()
-    }
-}
-
-impl<T: TryFromProto> Decode<Proto> for T
-where
-    TryFromProtoBytesError<TryFromProtoErrorOf<T>>: Debug,
-{
-    type Error = TryFromProtoBytesError<TryFromProtoErrorOf<T>>;
-
-    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-        T::try_from_proto_bytes(bytes)
-    }
-}
+pub type DecodeErrorOf<Enc, T> = <T as Decode<Enc>>::Error;
 
 #[cfg(feature = "ethabi")]
 impl<T: IntoEthAbi> Encode<EthAbi> for T {
@@ -57,3 +41,25 @@ where
         T::try_from_eth_abi_bytes(bytes)
     }
 }
+
+pub trait EncodeAs {
+    fn encode_as<Enc: Encoding>(self) -> Vec<u8>
+    where
+        Self: Encode<Enc>,
+    {
+        Encode::<Enc>::encode(self)
+    }
+}
+
+impl<T> EncodeAs for T {}
+
+pub trait DecodeAs {
+    fn decode_as<Enc: Encoding>(bytes: &[u8]) -> Result<Self, Self::Error>
+    where
+        Self: Decode<Enc>,
+    {
+        Decode::<Enc>::decode(bytes)
+    }
+}
+
+impl<T> DecodeAs for T {}

@@ -1,53 +1,42 @@
-use core::fmt::Debug;
-
-use prost::Message;
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use crate::{encoding::Decode, IntoProto, Proto, TypeUrl};
+use crate::encoding::{Decode, DecodeErrorOf, Encode, Proto};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::lightclients::wasm::v1::ConsensusState, into, from)]
 pub struct ConsensusState<Data> {
     pub data: Data,
 }
 
-impl<Data: IntoProto> From<ConsensusState<Data>>
+impl<Data: Encode<Proto>> From<ConsensusState<Data>>
     for protos::ibc::lightclients::wasm::v1::ConsensusState
 {
     fn from(value: ConsensusState<Data>) -> Self {
         protos::ibc::lightclients::wasm::v1::ConsensusState {
-            data: value.data.into_proto().encode_to_vec(),
+            data: value.data.encode(),
         }
     }
 }
 
-impl TypeUrl for protos::ibc::lightclients::wasm::v1::ConsensusState {
-    const TYPE_URL: &'static str = "/ibc.lightclients.wasm.v1.ConsensusState";
-}
-
-impl<Data> Proto for ConsensusState<Data> {
-    type Proto = protos::ibc::lightclients::wasm::v1::ConsensusState;
-}
-
 #[derive(Debug)]
-pub enum TryFromWasmConsensusStateError<Err> {
-    TryFromProto(Err),
-    Prost(prost::DecodeError),
+pub enum TryFromWasmConsensusStateError<Data: Decode<Proto>> {
+    Data(DecodeErrorOf<Proto, Data>),
 }
 
 impl<Data> TryFrom<protos::ibc::lightclients::wasm::v1::ConsensusState> for ConsensusState<Data>
 where
-    Data: Decode<crate::encoding::Proto>,
+    Data: Decode<Proto>,
 {
-    type Error = TryFromWasmConsensusStateError<Data::Error>;
+    type Error = TryFromWasmConsensusStateError<Data>;
 
     fn try_from(
         value: protos::ibc::lightclients::wasm::v1::ConsensusState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            data: Data::decode(&value.data)
-                .map_err(TryFromWasmConsensusStateError::TryFromProto)?,
+            data: Data::decode(&value.data).map_err(TryFromWasmConsensusStateError::Data)?,
         })
     }
 }

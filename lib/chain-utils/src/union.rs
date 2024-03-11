@@ -27,7 +27,7 @@ use unionlabs::{
     },
     signer::CosmosSigner,
     traits::{Chain, ClientState, FromStrExact},
-    TryFromProto, WasmClientType,
+    WasmClientType,
 };
 
 use crate::{cosmos_sdk::CosmosSdkChain, private_key::PrivateKey, Pool};
@@ -382,7 +382,7 @@ where
     Tr: Chain,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
-        Self::Output::try_from_proto_bytes(&bytes).unwrap()
+        <Self::Output as Decode<Proto>>::decode(&bytes).unwrap()
     }
 }
 
@@ -391,7 +391,7 @@ where
     Tr: Chain,
 {
     fn from_abci_bytes(bytes: Vec<u8>) -> Self::Output {
-        Self::Output::try_from_proto_bytes(&bytes).unwrap()
+        <Self::Output as Decode<Proto>>::decode(&bytes).unwrap()
     }
 }
 

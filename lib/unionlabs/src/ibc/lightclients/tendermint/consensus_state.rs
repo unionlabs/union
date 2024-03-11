@@ -1,16 +1,17 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
-    google::protobuf::timestamp::Timestamp,
+    google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
     hash::H256,
-    ibc::core::commitment::merkle_root::MerkleRoot,
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    ibc::core::commitment::merkle_root::{MerkleRoot, TryFromMerkleRootError},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::lightclients::tendermint::v1::ConsensusState, into, from)]
 pub struct ConsensusState {
     pub timestamp: Timestamp,
     pub root: MerkleRoot,
@@ -20,9 +21,9 @@ pub struct ConsensusState {
 #[derive(Debug)]
 pub enum TryFromConsensusStateError {
     MissingField(MissingField),
-    Root(TryFromProtoErrorOf<MerkleRoot>),
+    Root(TryFromMerkleRootError),
     NextValidatorsHash(InvalidLength),
-    Timestamp(TryFromProtoErrorOf<Timestamp>),
+    Timestamp(TryFromTimestampError),
 }
 
 impl TryFrom<protos::ibc::lightclients::tendermint::v1::ConsensusState> for ConsensusState {
@@ -44,14 +45,6 @@ impl TryFrom<protos::ibc::lightclients::tendermint::v1::ConsensusState> for Cons
                 .map_err(TryFromConsensusStateError::NextValidatorsHash)?,
         })
     }
-}
-
-impl TypeUrl for protos::ibc::lightclients::tendermint::v1::ConsensusState {
-    const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ConsensusState";
-}
-
-impl Proto for ConsensusState {
-    type Proto = protos::ibc::lightclients::tendermint::v1::ConsensusState;
 }
 
 impl From<ConsensusState> for protos::ibc::lightclients::tendermint::v1::ConsensusState {

@@ -1,3 +1,4 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{cosmos::ics23::hash_op::HashOp, errors::UnknownEnumVariant};
@@ -5,6 +6,7 @@ use crate::{cosmos::ics23::hash_op::HashOp, errors::UnknownEnumVariant};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::cosmos::ics23::v1::InnerOp, into, from)]
 pub struct InnerOp {
     pub hash: HashOp,
     #[serde(with = "::serde_utils::hex_string")]
@@ -16,10 +18,6 @@ pub struct InnerOp {
 #[derive(Debug)]
 pub enum TryFromInnerOpError {
     Hash(UnknownEnumVariant<i32>),
-}
-
-impl crate::Proto for InnerOp {
-    type Proto = protos::cosmos::ics23::v1::InnerOp;
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::InnerOp> for InnerOp {

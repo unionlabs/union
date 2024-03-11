@@ -21,6 +21,7 @@ use unionlabs::{
             msg_connection_open_try::MsgConnectionOpenTry,
         },
     },
+    id::ConnectionId,
     traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
@@ -118,6 +119,7 @@ pub struct MsgConnectionOpenTryData<Hc: ChainExt, Tr: ChainExt>(
         Tr::StoredClientState<Hc>,
         ClientIdOf<Hc>,
         ClientIdOf<Tr>,
+        ConnectionId,
         Tr::Height,
         Hc::Height,
         Tr::StateProof,

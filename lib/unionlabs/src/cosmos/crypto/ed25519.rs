@@ -1,23 +1,14 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    errors::{ExpectedLength, InvalidLength},
-    Proto, TypeUrl,
-};
+use crate::errors::{ExpectedLength, InvalidLength};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[proto(raw = protos::cosmos::crypto::ed25519::PubKey, into, from)]
 pub struct PubKey {
     #[serde(with = "::serde_utils::base64")]
     pub key: [u8; 32],
-}
-
-impl Proto for PubKey {
-    type Proto = protos::cosmos::crypto::ed25519::PubKey;
-}
-
-impl TypeUrl for protos::cosmos::crypto::ed25519::PubKey {
-    const TYPE_URL: &'static str = "/cosmos.crypto.ed25519.PubKey";
 }
 
 impl TryFrom<protos::cosmos::crypto::ed25519::PubKey> for PubKey {

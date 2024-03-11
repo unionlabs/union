@@ -47,15 +47,36 @@ pub mod request {
         FinalizeBlock(super::RequestFinalizeBlock),
     }
 }
+impl ::prost::Name for Request {
+    const NAME: &'static str = "Request";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestEcho {
     #[prost(string, tag = "1")]
     pub message: ::prost::alloc::string::String,
 }
+impl ::prost::Name for RequestEcho {
+    const NAME: &'static str = "RequestEcho";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestFlush {}
+impl ::prost::Name for RequestFlush {
+    const NAME: &'static str = "RequestFlush";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestInfo {
@@ -67,6 +88,13 @@ pub struct RequestInfo {
     pub p2p_version: u64,
     #[prost(string, tag = "4")]
     pub abci_version: ::prost::alloc::string::String,
+}
+impl ::prost::Name for RequestInfo {
+    const NAME: &'static str = "RequestInfo";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -84,6 +112,13 @@ pub struct RequestInitChain {
     #[prost(int64, tag = "6")]
     pub initial_height: i64,
 }
+impl ::prost::Name for RequestInitChain {
+    const NAME: &'static str = "RequestInitChain";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestQuery {
@@ -96,6 +131,13 @@ pub struct RequestQuery {
     #[prost(bool, tag = "4")]
     pub prove: bool,
 }
+impl ::prost::Name for RequestQuery {
+    const NAME: &'static str = "RequestQuery";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestCheckTx {
@@ -104,13 +146,34 @@ pub struct RequestCheckTx {
     #[prost(enumeration = "CheckTxType", tag = "2")]
     pub r#type: i32,
 }
+impl ::prost::Name for RequestCheckTx {
+    const NAME: &'static str = "RequestCheckTx";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestCommit {}
+impl ::prost::Name for RequestCommit {
+    const NAME: &'static str = "RequestCommit";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 /// lists available snapshots
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestListSnapshots {}
+impl ::prost::Name for RequestListSnapshots {
+    const NAME: &'static str = "RequestListSnapshots";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 /// offers a snapshot to the application
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -121,6 +184,13 @@ pub struct RequestOfferSnapshot {
     /// light client-verified app hash for snapshot height
     #[prost(bytes = "vec", tag = "2")]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for RequestOfferSnapshot {
+    const NAME: &'static str = "RequestOfferSnapshot";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 /// loads a snapshot chunk
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -133,6 +203,13 @@ pub struct RequestLoadSnapshotChunk {
     #[prost(uint32, tag = "3")]
     pub chunk: u32,
 }
+impl ::prost::Name for RequestLoadSnapshotChunk {
+    const NAME: &'static str = "RequestLoadSnapshotChunk";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 /// Applies a snapshot chunk
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -143,6 +220,13 @@ pub struct RequestApplySnapshotChunk {
     pub chunk: ::prost::alloc::vec::Vec<u8>,
     #[prost(string, tag = "3")]
     pub sender: ::prost::alloc::string::String,
+}
+impl ::prost::Name for RequestApplySnapshotChunk {
+    const NAME: &'static str = "RequestApplySnapshotChunk";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -168,6 +252,13 @@ pub struct RequestPrepareProposal {
     #[prost(bytes = "vec", tag = "8")]
     pub proposer_address: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for RequestPrepareProposal {
+    const NAME: &'static str = "RequestPrepareProposal";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestProcessProposal {
@@ -189,6 +280,13 @@ pub struct RequestProcessProposal {
     /// address of the public key of the original proposer of the block.
     #[prost(bytes = "vec", tag = "8")]
     pub proposer_address: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for RequestProcessProposal {
+    const NAME: &'static str = "RequestProcessProposal";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 /// Extends a vote with application-injected data
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -215,6 +313,13 @@ pub struct RequestExtendVote {
     #[prost(bytes = "vec", tag = "8")]
     pub proposer_address: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for RequestExtendVote {
+    const NAME: &'static str = "RequestExtendVote";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 /// Verify the vote extension
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -229,6 +334,13 @@ pub struct RequestVerifyVoteExtension {
     pub height: i64,
     #[prost(bytes = "vec", tag = "4")]
     pub vote_extension: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for RequestVerifyVoteExtension {
+    const NAME: &'static str = "RequestVerifyVoteExtension";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -251,6 +363,13 @@ pub struct RequestFinalizeBlock {
     /// proposer_address is the address of the public key of the original proposer of the block.
     #[prost(bytes = "vec", tag = "8")]
     pub proposer_address: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for RequestFinalizeBlock {
+    const NAME: &'static str = "RequestFinalizeBlock";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -302,6 +421,13 @@ pub mod response {
         FinalizeBlock(super::ResponseFinalizeBlock),
     }
 }
+impl ::prost::Name for Response {
+    const NAME: &'static str = "Response";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 /// nondeterministic
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -309,15 +435,36 @@ pub struct ResponseException {
     #[prost(string, tag = "1")]
     pub error: ::prost::alloc::string::String,
 }
+impl ::prost::Name for ResponseException {
+    const NAME: &'static str = "ResponseException";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseEcho {
     #[prost(string, tag = "1")]
     pub message: ::prost::alloc::string::String,
 }
+impl ::prost::Name for ResponseEcho {
+    const NAME: &'static str = "ResponseEcho";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseFlush {}
+impl ::prost::Name for ResponseFlush {
+    const NAME: &'static str = "ResponseFlush";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseInfo {
@@ -332,6 +479,13 @@ pub struct ResponseInfo {
     #[prost(bytes = "vec", tag = "5")]
     pub last_block_app_hash: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ResponseInfo {
+    const NAME: &'static str = "ResponseInfo";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseInitChain {
@@ -341,6 +495,13 @@ pub struct ResponseInitChain {
     pub validators: ::prost::alloc::vec::Vec<ValidatorUpdate>,
     #[prost(bytes = "vec", tag = "3")]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ResponseInitChain {
+    const NAME: &'static str = "ResponseInitChain";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -368,6 +529,13 @@ pub struct ResponseQuery {
     #[prost(string, tag = "10")]
     pub codespace: ::prost::alloc::string::String,
 }
+impl ::prost::Name for ResponseQuery {
+    const NAME: &'static str = "ResponseQuery";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseCheckTx {
@@ -390,17 +558,38 @@ pub struct ResponseCheckTx {
     #[prost(string, tag = "8")]
     pub codespace: ::prost::alloc::string::String,
 }
+impl ::prost::Name for ResponseCheckTx {
+    const NAME: &'static str = "ResponseCheckTx";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseCommit {
     #[prost(int64, tag = "3")]
     pub retain_height: i64,
 }
+impl ::prost::Name for ResponseCommit {
+    const NAME: &'static str = "ResponseCommit";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseListSnapshots {
     #[prost(message, repeated, tag = "1")]
     pub snapshots: ::prost::alloc::vec::Vec<Snapshot>,
+}
+impl ::prost::Name for ResponseListSnapshots {
+    const NAME: &'static str = "ResponseListSnapshots";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -455,11 +644,25 @@ pub mod response_offer_snapshot {
         }
     }
 }
+impl ::prost::Name for ResponseOfferSnapshot {
+    const NAME: &'static str = "ResponseOfferSnapshot";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseLoadSnapshotChunk {
     #[prost(bytes = "vec", tag = "1")]
     pub chunk: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ResponseLoadSnapshotChunk {
+    const NAME: &'static str = "ResponseLoadSnapshotChunk";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -520,11 +723,25 @@ pub mod response_apply_snapshot_chunk {
         }
     }
 }
+impl ::prost::Name for ResponseApplySnapshotChunk {
+    const NAME: &'static str = "ResponseApplySnapshotChunk";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponsePrepareProposal {
     #[prost(bytes = "vec", repeated, tag = "1")]
     pub txs: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+}
+impl ::prost::Name for ResponsePrepareProposal {
+    const NAME: &'static str = "ResponsePrepareProposal";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -564,11 +781,25 @@ pub mod response_process_proposal {
         }
     }
 }
+impl ::prost::Name for ResponseProcessProposal {
+    const NAME: &'static str = "ResponseProcessProposal";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseExtendVote {
     #[prost(bytes = "vec", tag = "1")]
     pub vote_extension: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ResponseExtendVote {
+    const NAME: &'static str = "ResponseExtendVote";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -615,6 +846,13 @@ pub mod response_verify_vote_extension {
         }
     }
 }
+impl ::prost::Name for ResponseVerifyVoteExtension {
+    const NAME: &'static str = "ResponseVerifyVoteExtension";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseFinalizeBlock {
@@ -636,6 +874,13 @@ pub struct ResponseFinalizeBlock {
     #[prost(bytes = "vec", tag = "5")]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ResponseFinalizeBlock {
+    const NAME: &'static str = "ResponseFinalizeBlock";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommitInfo {
@@ -643,6 +888,13 @@ pub struct CommitInfo {
     pub round: i32,
     #[prost(message, repeated, tag = "2")]
     pub votes: ::prost::alloc::vec::Vec<VoteInfo>,
+}
+impl ::prost::Name for CommitInfo {
+    const NAME: &'static str = "CommitInfo";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 /// ExtendedCommitInfo is similar to CommitInfo except that it is only used in
 /// the PrepareProposal request such that CometBFT can provide vote extensions
@@ -658,6 +910,13 @@ pub struct ExtendedCommitInfo {
     #[prost(message, repeated, tag = "2")]
     pub votes: ::prost::alloc::vec::Vec<ExtendedVoteInfo>,
 }
+impl ::prost::Name for ExtendedCommitInfo {
+    const NAME: &'static str = "ExtendedCommitInfo";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 /// Event allows application developers to attach additional information to
 /// ResponseFinalizeBlock and ResponseCheckTx.
 /// Later, transactions may be queried using these events.
@@ -668,6 +927,13 @@ pub struct Event {
     pub r#type: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "2")]
     pub attributes: ::prost::alloc::vec::Vec<EventAttribute>,
+}
+impl ::prost::Name for Event {
+    const NAME: &'static str = "Event";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 /// EventAttribute is a single key-value pair, associated with an event.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -680,6 +946,13 @@ pub struct EventAttribute {
     /// nondeterministic
     #[prost(bool, tag = "3")]
     pub index: bool,
+}
+impl ::prost::Name for EventAttribute {
+    const NAME: &'static str = "EventAttribute";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 /// ExecTxResult contains results of executing one individual transaction.
 ///
@@ -707,6 +980,13 @@ pub struct ExecTxResult {
     #[prost(string, tag = "8")]
     pub codespace: ::prost::alloc::string::String,
 }
+impl ::prost::Name for ExecTxResult {
+    const NAME: &'static str = "ExecTxResult";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 /// TxResult contains results of executing the transaction.
 ///
 /// One usage is indexing transaction results.
@@ -722,6 +1002,13 @@ pub struct TxResult {
     #[prost(message, optional, tag = "4")]
     pub result: ::core::option::Option<ExecTxResult>,
 }
+impl ::prost::Name for TxResult {
+    const NAME: &'static str = "TxResult";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Validator {
@@ -734,6 +1021,13 @@ pub struct Validator {
     #[prost(int64, tag = "3")]
     pub power: i64,
 }
+impl ::prost::Name for Validator {
+    const NAME: &'static str = "Validator";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorUpdate {
@@ -742,6 +1036,13 @@ pub struct ValidatorUpdate {
     #[prost(int64, tag = "2")]
     pub power: i64,
 }
+impl ::prost::Name for ValidatorUpdate {
+    const NAME: &'static str = "ValidatorUpdate";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VoteInfo {
@@ -749,6 +1050,13 @@ pub struct VoteInfo {
     pub validator: ::core::option::Option<Validator>,
     #[prost(enumeration = "super::types::BlockIdFlag", tag = "3")]
     pub block_id_flag: i32,
+}
+impl ::prost::Name for VoteInfo {
+    const NAME: &'static str = "VoteInfo";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -765,6 +1073,13 @@ pub struct ExtendedVoteInfo {
     /// block_id_flag indicates whether the validator voted for a block, nil, or did not vote at all
     #[prost(enumeration = "super::types::BlockIdFlag", tag = "5")]
     pub block_id_flag: i32,
+}
+impl ::prost::Name for ExtendedVoteInfo {
+    const NAME: &'static str = "ExtendedVoteInfo";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -786,6 +1101,13 @@ pub struct Misbehavior {
     #[prost(int64, tag = "5")]
     pub total_voting_power: i64,
 }
+impl ::prost::Name for Misbehavior {
+    const NAME: &'static str = "Misbehavior";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Snapshot {
@@ -804,6 +1126,13 @@ pub struct Snapshot {
     /// Arbitrary application metadata
     #[prost(bytes = "vec", tag = "5")]
     pub metadata: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for Snapshot {
+    const NAME: &'static str = "Snapshot";
+    const PACKAGE: &'static str = "tendermint.abci";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.abci.{}", Self::NAME)
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]

@@ -34,7 +34,6 @@ use ucs01_relay_api::types::Ucs01TransferPacket;
 use unionlabs::{
     cosmos::base::coin::Coin, cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     ethereum::config::Minimal, events::IbcEvent, google::protobuf::any::Any, traits::Chain,
-    IntoProto,
 };
 
 use crate::{
@@ -180,7 +179,7 @@ impl Context {
                                 amount: "1".into(),
                             }],
                         })
-                        .into_proto();
+                        .into();
 
                         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
 

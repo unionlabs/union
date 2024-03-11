@@ -1,12 +1,12 @@
 use alloc::borrow::Cow;
 
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use super::hash_op::HashOp;
 use crate::{
     bounded::{BoundedIntError, BoundedUsize},
+    cosmos::ics23::hash_op::HashOp,
     errors::UnknownEnumVariant,
-    Proto, TypeUrl,
 };
 
 pub type PositiveI32AsUsize = BoundedUsize<0, { i32::MAX as usize }>;
@@ -14,6 +14,7 @@ pub type PositiveI32AsUsize = BoundedUsize<0, { i32::MAX as usize }>;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(deny_unknown_fields)]
+#[proto(raw = protos::cosmos::ics23::v1::InnerSpec, into, from)]
 pub struct InnerSpec {
     #[cfg_attr(feature = "arbitrary", arbitrary(with = crate::arbitrary_cow_static))]
     pub child_order: Cow<'static, [PositiveI32AsUsize]>,
@@ -24,14 +25,6 @@ pub struct InnerSpec {
     #[cfg_attr(feature = "arbitrary", arbitrary(with = crate::arbitrary_cow_static))]
     pub empty_child: Cow<'static, [u8]>,
     pub hash: HashOp,
-}
-
-impl TypeUrl for protos::cosmos::ics23::v1::InnerSpec {
-    const TYPE_URL: &'static str = "/cosmos.ics23.v1.InnerSpec";
-}
-
-impl Proto for InnerSpec {
-    type Proto = protos::cosmos::ics23::v1::InnerSpec;
 }
 
 impl From<InnerSpec> for protos::cosmos::ics23::v1::InnerSpec {

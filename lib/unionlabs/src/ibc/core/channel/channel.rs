@@ -1,3 +1,4 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -9,12 +10,12 @@ use crate::{
     },
     id::{ConnectionId, ConnectionIdValidator},
     validated::{Validate, ValidateT},
-    Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::core::channel::v1::Channel, into, from)]
 pub struct Channel {
     pub state: State,
     pub ordering: Order,
@@ -68,14 +69,6 @@ impl TryFrom<protos::ibc::core::channel::v1::Channel> for Channel {
             version: proto.version,
         })
     }
-}
-
-impl Proto for Channel {
-    type Proto = protos::ibc::core::channel::v1::Channel;
-}
-
-impl TypeUrl for protos::ibc::core::channel::v1::Channel {
-    const TYPE_URL: &'static str = "/ibc.core.channel.v1.ChannelEnd";
 }
 
 #[cfg(feature = "ethabi")]

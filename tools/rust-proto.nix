@@ -7,7 +7,7 @@
         doCheck = false;
         src = builtins.fetchGit {
           url = "https://github.com/neoeinstein/protoc-gen-prost";
-          rev = "1a6d3593622af18b75a4a79f545f8530cdaf444f";
+          rev = "0548ae244f5780cdf0790ebf48b497a5df1acfc4";
         };
       };
 
@@ -318,7 +318,7 @@
 
           protoc "''${protos[@]}" \
             --prost_out=./src \
-            --prost_opt=compile_well_known_types=true,${fold-opts prost-opts} \
+            --prost_opt=enable_type_names=true,compile_well_known_types=true,${fold-opts prost-opts} \
             --tonic_out=./src \
             --tonic_opt=compile_well_known_types=true,no_server=true,${fold-opts tonic-opts} \
             --prost-crate_out=. \

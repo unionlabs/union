@@ -6,8 +6,7 @@ use ethereum_verifier::{
 use thiserror::Error as ThisError;
 use unionlabs::{
     hash::{H160, H256},
-    ibc::{core::client::height::Height, lightclients::scroll::header::Header},
-    TryFromProtoBytesError, TryFromProtoErrorOf,
+    ibc::core::client::height::Height,
 };
 
 #[derive(ThisError, Debug, PartialEq)]
@@ -77,14 +76,6 @@ pub enum Error {
 
     #[error("error while calling custom query: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
-}
-
-impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header>>> for Error {
-    fn from(value: TryFromProtoBytesError<TryFromProtoErrorOf<Header>>) -> Self {
-        Self::DecodeFromProto {
-            reason: format!("{:?}", value),
-        }
-    }
 }
 
 impl From<ics008_wasm_client::storage_utils::Error> for Error {

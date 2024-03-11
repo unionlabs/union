@@ -24,6 +24,13 @@ pub struct ModuleDescriptor {
     #[prost(message, repeated, tag = "3")]
     pub can_migrate_from: ::prost::alloc::vec::Vec<MigrateFromInfo>,
 }
+impl ::prost::Name for ModuleDescriptor {
+    const NAME: &'static str = "ModuleDescriptor";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
+}
 /// PackageReference is a reference to a protobuf package used by a module.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -69,6 +76,13 @@ pub struct PackageReference {
     #[prost(uint32, tag = "2")]
     pub revision: u32,
 }
+impl ::prost::Name for PackageReference {
+    const NAME: &'static str = "PackageReference";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
+}
 /// MigrateFromInfo is information on a module version that a newer module
 /// can migrate from.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -78,6 +92,13 @@ pub struct MigrateFromInfo {
     /// for the previous module version, ex: "cosmos.group.module.v1.Module".
     #[prost(string, tag = "1")]
     pub module: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MigrateFromInfo {
+    const NAME: &'static str = "MigrateFromInfo";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Config represents the configuration for a Cosmos SDK ABCI app.
 /// It is intended that all state machine logic including the version of
@@ -97,6 +118,13 @@ pub struct Config {
     /// field's configuration is global (not module specific).
     #[prost(message, repeated, tag = "2")]
     pub golang_bindings: ::prost::alloc::vec::Vec<GolangBinding>,
+}
+impl ::prost::Name for Config {
+    const NAME: &'static str = "Config";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
 }
 /// ModuleConfig is a module configuration for an app.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -124,6 +152,13 @@ pub struct ModuleConfig {
     #[prost(message, repeated, tag = "3")]
     pub golang_bindings: ::prost::alloc::vec::Vec<GolangBinding>,
 }
+impl ::prost::Name for ModuleConfig {
+    const NAME: &'static str = "ModuleConfig";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
+}
 /// GolangBinding is an explicit interface type to implementing type binding for dependency injection.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -135,10 +170,24 @@ pub struct GolangBinding {
     #[prost(string, tag = "2")]
     pub implementation: ::prost::alloc::string::String,
 }
+impl ::prost::Name for GolangBinding {
+    const NAME: &'static str = "GolangBinding";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
+}
 /// QueryConfigRequest is the Query/Config request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConfigRequest {}
+impl ::prost::Name for QueryConfigRequest {
+    const NAME: &'static str = "QueryConfigRequest";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
+}
 /// QueryConfigRequest is the Query/Config response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -146,6 +195,13 @@ pub struct QueryConfigResponse {
     /// config is the current app config.
     #[prost(message, optional, tag = "1")]
     pub config: ::core::option::Option<Config>,
+}
+impl ::prost::Name for QueryConfigResponse {
+    const NAME: &'static str = "QueryConfigResponse";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
 }
 include!("cosmos.app.v1alpha1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -1,5 +1,6 @@
 use core::{fmt::Debug, marker::PhantomData};
 
+use prost::Message;
 use serde::{
     de::{self, Visitor},
     ser::SerializeStruct,
@@ -7,8 +8,8 @@ use serde::{
 };
 
 use crate::{
-    encoding::{Decode, Encode},
-    Proto, TypeUrl,
+    encoding::{Decode, DecodeErrorOf, Encode, Proto},
+    TryFromProtoBytesError, TypeUrl,
 };
 
 /// Wrapper type to indicate that a type is to be serialized as an Any.
@@ -58,7 +59,7 @@ where
                 write!(
                     formatter,
                     "a google.protobuf.Any containing {}",
-                    T::TYPE_URL
+                    T::type_url()
                 )
             }
 
@@ -110,26 +111,25 @@ where
         S: serde::Serializer,
     {
         let mut s = serializer.serialize_struct("Any", 2)?;
-        s.serialize_field("type_url", T::TYPE_URL)?;
+        s.serialize_field("type_url", &T::type_url())?;
         s.serialize_field("data", &self.0)?;
         s.end()
     }
 }
 
-impl<T> From<Any<T>> for protos::google::protobuf::Any
-where
-    T: Encode<crate::encoding::Proto> + TypeUrl,
-{
+impl<T: Encode<Proto> + TypeUrl> From<Any<T>> for protos::google::protobuf::Any {
     fn from(val: Any<T>) -> Self {
         protos::google::protobuf::Any {
-            type_url: T::TYPE_URL.to_string(),
+            type_url: T::type_url().to_string(),
             value: val.0.encode(),
         }
     }
 }
 
-impl<T> Proto for Any<T> {
-    type Proto = protos::google::protobuf::Any;
+impl<T: Encode<Proto> + TypeUrl> Encode<Proto> for Any<T> {
+    fn encode(self) -> Vec<u8> {
+        protos::google::protobuf::Any::from(self).encode_to_vec()
+    }
 }
 
 // NOTE: In order for IntoAny to work, Any cannot implement TypeUrl. If nested Anys are required, you're crazy and I'm not helping you
@@ -139,10 +139,7 @@ impl<T> Proto for Any<T> {
 
 #[derive(Debug)]
 pub enum TryFromAnyError<E> {
-    IncorrectTypeUrl {
-        found: String,
-        expected: &'static str,
-    },
+    IncorrectTypeUrl { found: String, expected: String },
     Decode(E),
 }
 
@@ -153,27 +150,42 @@ where
     type Error = TryFromAnyError<T::Error>;
 
     fn try_from(value: protos::google::protobuf::Any) -> Result<Self, Self::Error> {
-        if value.type_url == T::TYPE_URL {
+        if value.type_url == T::type_url() {
             T::decode(&value.value)
                 .map_err(TryFromAnyError::Decode)
                 .map(Any)
         } else {
             Err(TryFromAnyError::IncorrectTypeUrl {
                 found: value.type_url,
-                expected: T::TYPE_URL,
+                expected: T::type_url(),
             })
         }
     }
 }
 
-pub fn mk_any<T: TypeUrl + prost::Message>(t: &T) -> protos::google::protobuf::Any {
+impl<T: Decode<Proto> + TypeUrl> Decode<Proto> for Any<T> {
+    type Error = TryFromProtoBytesError<TryFromAnyError<DecodeErrorOf<Proto, T>>>;
+
+    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+        <protos::google::protobuf::Any as ::prost::Message>::decode(bytes)
+            .map_err(crate::TryFromProtoBytesError::Decode)
+            .and_then(|proto| {
+                proto
+                    .try_into()
+                    .map_err(crate::TryFromProtoBytesError::TryFromProto)
+            })
+    }
+}
+
+#[must_use]
+pub fn mk_any<T: prost::Name + prost::Message>(t: &T) -> protos::google::protobuf::Any {
     mk_any_from_bytes::<T>(t.encode_to_vec())
 }
 
 #[must_use]
-pub fn mk_any_from_bytes<T: TypeUrl>(bz: Vec<u8>) -> protos::google::protobuf::Any {
+pub fn mk_any_from_bytes<T: prost::Name>(bz: Vec<u8>) -> protos::google::protobuf::Any {
     protos::google::protobuf::Any {
-        type_url: T::TYPE_URL.to_string(),
+        type_url: T::type_url(),
         value: bz,
     }
 }

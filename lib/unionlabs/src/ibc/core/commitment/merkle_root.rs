@@ -1,19 +1,21 @@
 #[cfg(feature = "ethabi")]
 use contracts::glue::IbcCoreCommitmentV1MerkleRootData;
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::InvalidLength, hash::H256, Proto, TypeUrl};
+use crate::{errors::InvalidLength, hash::H256};
 
-#[cfg_attr(
-    feature = "ethabi",
-    derive(
-        ethers_contract_derive::EthAbiType,
-        ethers_contract_derive::EthAbiCodec
-    )
-)]
+// #[cfg_attr(
+//     feature = "ethabi",
+//     derive(
+//         ethers_contract_derive::EthAbiType,
+//         ethers_contract_derive::EthAbiCodec
+//     )
+// )]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::core::commitment::v1::MerkleRoot, into, from)]
 pub struct MerkleRoot {
     pub hash: H256,
 }
@@ -23,12 +25,6 @@ impl From<MerkleRoot> for protos::ibc::core::commitment::v1::MerkleRoot {
         Self {
             hash: value.hash.into(),
         }
-    }
-}
-
-impl From<H256> for MerkleRoot {
-    fn from(value: H256) -> Self {
-        Self { hash: value }
     }
 }
 
@@ -71,12 +67,4 @@ impl TryFrom<IbcCoreCommitmentV1MerkleRootData> for MerkleRoot {
                 .map_err(TryFromMerkleRootError::Hash)?,
         })
     }
-}
-
-impl Proto for MerkleRoot {
-    type Proto = protos::ibc::core::commitment::v1::MerkleRoot;
-}
-
-impl TypeUrl for protos::ibc::core::commitment::v1::MerkleRoot {
-    const TYPE_URL: &'static str = "/ibc.core.commitment.v1.MerkleRoot";
 }

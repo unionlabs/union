@@ -1,15 +1,19 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     bounded::BoundedUsize,
-    cosmos::ics23::{inner_spec::InnerSpec, leaf_op::LeafOp},
+    cosmos::ics23::{
+        inner_spec::{InnerSpec, TryFromInnerSpecError},
+        leaf_op::{LeafOp, TryFromLeafOpError},
+    },
     errors::{required, MissingField},
-    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::cosmos::ics23::v1::ProofSpec, into, from)]
 pub struct ProofSpec {
     pub leaf_spec: LeafOp,
     pub inner_spec: InnerSpec,
@@ -17,14 +21,6 @@ pub struct ProofSpec {
     pub max_depth: Option<BoundedUsize<1, { i32::MAX as usize }>>,
     pub min_depth: Option<BoundedUsize<1, { i32::MAX as usize }>>,
     pub prehash_key_before_comparison: bool,
-}
-
-impl TypeUrl for protos::cosmos::ics23::v1::ProofSpec {
-    const TYPE_URL: &'static str = "/cosmos.ics23.v1.ProofSpec";
-}
-
-impl Proto for ProofSpec {
-    type Proto = protos::cosmos::ics23::v1::ProofSpec;
 }
 
 impl From<ProofSpec> for protos::cosmos::ics23::v1::ProofSpec {
@@ -50,8 +46,8 @@ impl From<ProofSpec> for protos::cosmos::ics23::v1::ProofSpec {
 #[derive(Debug)]
 pub enum TryFromProofSpecError {
     MissingField(MissingField),
-    LeafSpec(TryFromProtoErrorOf<LeafOp>),
-    InnerSpec(TryFromProtoErrorOf<InnerSpec>),
+    LeafSpec(TryFromLeafOpError),
+    InnerSpec(TryFromInnerSpecError),
     NegativeMinDepth,
     NegativeMaxDepth,
 }

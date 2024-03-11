@@ -7,7 +7,10 @@ use ics008_wasm_client::{
 use protos::ibc::lightclients::wasm::v1::{
     ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
 };
-use unionlabs::{ibc::lightclients::cometbls::client_state::ClientState, TryFromProto};
+use unionlabs::{
+    encoding::{DecodeAs, Proto},
+    ibc::lightclients::cometbls::client_state::ClientState,
+};
 
 use crate::{client::CometblsLightClient, errors::Error};
 
@@ -21,11 +24,10 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, Error> {
-    let client_state = ClientState::try_from_proto_bytes(&msg.client_state).map_err(|e| {
-        Error::DecodeFromProto {
+    let client_state =
+        ClientState::decode_as::<Proto>(&msg.client_state).map_err(|e| Error::DecodeFromProto {
             reason: format!("{:?}", e),
-        }
-    })?;
+        })?;
 
     save_proto_consensus_state(
         deps.branch(),

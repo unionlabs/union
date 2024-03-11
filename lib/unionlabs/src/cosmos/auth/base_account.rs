@@ -1,9 +1,14 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use crate::{cosmos::crypto::AnyPubKey, errors::MissingField, Proto, TryFromProtoErrorOf, TypeUrl};
+use crate::{
+    cosmos::crypto::{AnyPubKey, TryFromAnyPubKeyError},
+    errors::MissingField,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[proto(raw = protos::cosmos::auth::v1beta1::BaseAccount, into, from)]
 pub struct BaseAccount {
     // REVIEW: is this a bech32 address?
     pub address: String,
@@ -14,18 +19,10 @@ pub struct BaseAccount {
     pub sequence: u64,
 }
 
-impl Proto for BaseAccount {
-    type Proto = protos::cosmos::auth::v1beta1::BaseAccount;
-}
-
-impl TypeUrl for protos::cosmos::auth::v1beta1::BaseAccount {
-    const TYPE_URL: &'static str = "/cosmos.auth.v1beta1.BaseAccount";
-}
-
 #[derive(Debug)]
 pub enum TryFromBaseAccountError {
     MissingField(MissingField),
-    PubKey(TryFromProtoErrorOf<AnyPubKey>),
+    PubKey(TryFromAnyPubKeyError),
 }
 
 impl TryFrom<protos::cosmos::auth::v1beta1::BaseAccount> for BaseAccount {

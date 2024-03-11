@@ -6,10 +6,10 @@ use protos::cosmos::base::tendermint::v1beta1::AbciQueryResponse;
 
 use crate::{
     bls::BlsPublicKey,
+    encoding::{Decode, DecodeAs, Proto},
     google::protobuf::any::Any,
     ibc::core::client::height::Height,
-    proof::{ClientConsensusStatePath, Path},
-    TryFromProto, TryFromProtoBytesError, TryFromProtoErrorOf,
+    proof::ClientConsensusStatePath,
 };
 
 #[derive(thiserror::Error, Debug, PartialEq)]
@@ -34,13 +34,6 @@ pub enum UnionCustomQuery {
     },
     Aggregate {
         public_keys: Vec<Binary>,
-    },
-    ConsensusState {
-        client_id: String,
-        height: Height,
-    },
-    ClientState {
-        client_id: String,
     },
 }
 
@@ -90,11 +83,10 @@ pub fn query_consensus_state<T>(
     height: Height,
 ) -> Result<T, Error>
 where
-    Any<T>: TryFromProto,
-    TryFromProtoBytesError<TryFromProtoErrorOf<Any<T>>>: Debug,
+    Any<T>: Decode<Proto>,
 {
     let query = protos::cosmos::base::tendermint::v1beta1::AbciQueryRequest {
-        data: Path::ClientConsensusStatePath(ClientConsensusStatePath { client_id, height })
+        data: ClientConsensusStatePath { client_id, height }
             .to_string()
             .into_bytes(),
         path: "store/ibc/key".to_string(),
@@ -122,7 +114,7 @@ where
     }?;
     let abci_response = AbciQueryResponse::decode(abci_response_data.as_ref())
         .map_err(|e| Error::ConsensusState(format!("{e:?}")))?;
-    let Any(value) = Any::<T>::try_from_proto_bytes(&abci_response.value)
+    let Any(value) = Any::<T>::decode_as::<Proto>(&abci_response.value)
         .map_err(|e| Error::ConsensusState(format!("{e:?}")))?;
     Ok(value)
 }

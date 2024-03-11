@@ -9,7 +9,7 @@ use ics008_wasm_client::{
 use sha3::Digest;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
-    encoding::Proto,
+    encoding::{Decode, Proto},
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
@@ -26,7 +26,7 @@ use unionlabs::{
     },
     proof::Path,
     uint::U256,
-    IntoEthAbi, TryFromProto,
+    IntoEthAbi,
 };
 
 use crate::{errors::Error, eth_encoding::generate_commitment_key};
@@ -74,7 +74,7 @@ impl IbcClient for ScrollLightClient {
         let storage_root = consensus_state.data.ibc_storage_root;
 
         let storage_proof = {
-            let mut proofs = StorageProof::try_from_proto_bytes(&proof)
+            let mut proofs = StorageProof::decode(&proof)
                 .map_err(|e| Error::DecodeFromProto {
                     reason: format!("when decoding storage proof: {e:#?}"),
                 })?
@@ -265,7 +265,7 @@ fn do_verify_membership(
 
     let canonical_value = match path {
         Path::ClientStatePath(_) => {
-            Any::<cometbls::client_state::ClientState>::try_from_proto_bytes(raw_value.as_ref())
+            Any::<cometbls::client_state::ClientState>::decode(raw_value.as_ref())
                 .map_err(|e| Error::DecodeFromProto {
                     reason: format!("{e:?}"),
                 })?
@@ -274,7 +274,7 @@ fn do_verify_membership(
         }
         Path::ClientConsensusStatePath(_) => Any::<
             wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-        >::try_from_proto_bytes(raw_value.as_ref())
+        >::decode(raw_value.as_ref())
         .map_err(|e| Error::DecodeFromProto {
             reason: format!("{e:?}"),
         })?

@@ -1,14 +1,13 @@
-use std::{fmt::Debug, marker::PhantomData};
+use std::marker::PhantomData;
 
 use chain_utils::cosmos_sdk::CosmosSdkChain;
 use prost::Message;
 use queue_msg::{data, QueueMsg};
 use unionlabs::{
-    encoding::Decode,
+    encoding::{Decode, Proto},
     ibc::core::{client::height::IsHeight, commitment::merkle_proof::MerkleProof},
     proof::{ClientStatePath, Path},
     traits::HeightOf,
-    TryFromProto,
 };
 
 use crate::{
@@ -31,14 +30,8 @@ where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 
-    Hc::StoredClientState<Tr>: TryFromProto,
-    Hc::StoredConsensusState<Tr>: TryFromProto,
-    <Hc::StoredClientState<Tr> as TryFrom<
-        <Hc::StoredClientState<Tr> as unionlabs::Proto>::Proto,
-    >>::Error: Debug,
-    <Hc::StoredConsensusState<Tr> as TryFrom<
-        <Hc::StoredConsensusState<Tr> as unionlabs::Proto>::Proto,
-    >>::Error: Debug,
+    Hc::StoredClientState<Tr>: Decode<Proto>,
+    Hc::StoredConsensusState<Tr>: Decode<Proto>,
 {
     let mut client =
         protos::cosmos::base::tendermint::v1beta1::service_client::ServiceClient::connect(
@@ -66,8 +59,7 @@ where
                 c.chain_id(),
                 IbcState::<ClientStatePath<Hc::ClientId>, Hc, Tr> {
                     height,
-                    state: Hc::StoredClientState::<Tr>::try_from_proto_bytes(&query_result.value)
-                        .unwrap(),
+                    state: Hc::StoredClientState::<Tr>::decode(&query_result.value).unwrap(),
                     path,
                 },
             )),
@@ -75,10 +67,7 @@ where
                 c.chain_id(),
                 IbcState {
                     height,
-                    state: Hc::StoredConsensusState::<Tr>::try_from_proto_bytes(
-                        &query_result.value,
-                    )
-                    .unwrap(),
+                    state: Hc::StoredConsensusState::<Tr>::decode(&query_result.value).unwrap(),
                     path,
                 },
             )),

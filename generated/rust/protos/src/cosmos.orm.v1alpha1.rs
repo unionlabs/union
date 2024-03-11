@@ -31,6 +31,20 @@ pub mod module_schema_descriptor {
         #[prost(enumeration = "super::StorageType", tag = "3")]
         pub storage_type: i32,
     }
+    impl ::prost::Name for FileEntry {
+        const NAME: &'static str = "FileEntry";
+        const PACKAGE: &'static str = "cosmos.orm.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!("cosmos.orm.v1alpha1.ModuleSchemaDescriptor.{}", Self::NAME)
+        }
+    }
+}
+impl ::prost::Name for ModuleSchemaDescriptor {
+    const NAME: &'static str = "ModuleSchemaDescriptor";
+    const PACKAGE: &'static str = "cosmos.orm.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.v1alpha1.{}", Self::NAME)
+    }
 }
 /// StorageType
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]

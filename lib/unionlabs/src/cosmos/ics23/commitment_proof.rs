@@ -1,12 +1,14 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     cosmos::ics23::{
-        batch_proof::BatchProof, compressed_batch_proof::CompressedBatchProof,
-        existence_proof::ExistenceProof, non_existence_proof::NonExistenceProof,
+        batch_proof::{BatchProof, TryFromBatchProofError},
+        compressed_batch_proof::{CompressedBatchProof, TryFromCompressedBatchProofProofError},
+        existence_proof::{ExistenceProof, TryFromExistenceProofError},
+        non_existence_proof::{NonExistenceProof, TryFromNonExistenceProofError},
     },
     errors::{required, MissingField},
-    TryFromProtoErrorOf,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -17,6 +19,7 @@ use crate::{
     deny_unknown_fields
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::cosmos::ics23::v1::CommitmentProof, into, from)]
 pub enum CommitmentProof {
     Exist(ExistenceProof),
     Nonexist(NonExistenceProof),
@@ -24,17 +27,13 @@ pub enum CommitmentProof {
     CompressedBatch(CompressedBatchProof),
 }
 
-impl crate::Proto for CommitmentProof {
-    type Proto = protos::cosmos::ics23::v1::CommitmentProof;
-}
-
 #[derive(Debug)]
 pub enum TryFromCommitmentProofError {
     MissingField(MissingField),
-    Exist(TryFromProtoErrorOf<ExistenceProof>),
-    Nonexist(TryFromProtoErrorOf<NonExistenceProof>),
-    Batch(TryFromProtoErrorOf<BatchProof>),
-    CompressedBatch(TryFromProtoErrorOf<CompressedBatchProof>),
+    Exist(TryFromExistenceProofError),
+    Nonexist(TryFromNonExistenceProofError),
+    Batch(TryFromBatchProofError),
+    CompressedBatch(TryFromCompressedBatchProofProofError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::CommitmentProof> for CommitmentProof {

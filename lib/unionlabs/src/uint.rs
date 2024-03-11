@@ -7,8 +7,8 @@ use serde_utils::HEX_ENCODING_PREFIX;
 use tree_hash::TreeHash;
 
 use crate::{
+    encoding::{Decode, Encode, Proto},
     errors::{ExpectedLength, InvalidLength},
-    Proto,
 };
 
 /// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
@@ -168,31 +168,42 @@ pub mod u256_big_endian_hex {
     }
 }
 
-impl Proto for U256 {
-    type Proto = Vec<u8>;
-}
+// impl TryFrom<Vec<u8>> for U256 {
+//     type Error = InvalidLength;
 
-impl TryFrom<Vec<u8>> for U256 {
-    type Error = InvalidLength;
+//     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+//         if value.len() > 32 {
+//             Err(InvalidLength {
+//                 expected: ExpectedLength::LessThan(32),
+//                 found: value.len(),
+//             })
+//         } else {
+//             // NOTE: This can panic if len > 32, hence the check above
+//             Ok(Self(primitive_types::U256::from_little_endian(&value)))
+//         }
+//     }
+// }
 
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        if value.len() > 32 {
-            Err(InvalidLength {
-                expected: ExpectedLength::LessThan(32),
-                found: value.len(),
-            })
-        } else {
-            // NOTE: This can panic if len > 32, hence the check above
-            Ok(Self(primitive_types::U256::from_little_endian(&value)))
-        }
+// // REVIEW: Should this trim leading zeros?
+// impl From<U256> for Vec<u8> {
+//     fn from(value: U256) -> Self {
+//         let mut slice = [0_u8; 32];
+//         value.0.to_little_endian(&mut slice);
+//         slice.into()
+//     }
+// }
+
+impl Encode<Proto> for U256 {
+    fn encode(self) -> Vec<u8> {
+        self.to_big_endian().into()
     }
 }
 
-impl From<U256> for Vec<u8> {
-    fn from(value: U256) -> Self {
-        let mut slice = [0_u8; 32];
-        value.0.to_little_endian(&mut slice);
-        slice.into()
+impl Decode<Proto> for U256 {
+    type Error = InvalidLength;
+
+    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+        Self::try_from_big_endian(bytes)
     }
 }
 

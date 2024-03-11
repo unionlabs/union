@@ -1,3 +1,4 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ethabi")]
@@ -5,12 +6,12 @@ use crate::InlineFields;
 use crate::{
     errors::{required, MissingField},
     ibc::core::client::height::Height,
-    Proto, TypeUrl,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::cometbls::v1::ClientState, into, from)]
 pub struct ClientState {
     pub chain_id: String,
     pub trusting_period: u64,
@@ -36,14 +37,6 @@ impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::Clien
 #[cfg(feature = "ethabi")]
 impl crate::EthAbi for ClientState {
     type EthAbi = InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1ClientStateData>;
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::cometbls::v1::ClientState {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.cometbls.v1.ClientState";
-}
-
-impl Proto for ClientState {
-    type Proto = protos::union::ibc::lightclients::cometbls::v1::ClientState;
 }
 
 #[derive(Debug)]

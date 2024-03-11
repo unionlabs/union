@@ -1,13 +1,17 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cosmos::ics23::compressed_existence_proof::CompressedExistenceProof, errors::MissingField,
-    TryFromProtoErrorOf,
+    cosmos::ics23::compressed_existence_proof::{
+        CompressedExistenceProof, TryFromCompressedExistenceProofError,
+    },
+    errors::MissingField,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::cosmos::ics23::v1::CompressedNonExistenceProof, into, from)]
 pub struct CompressedNonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     pub key: Vec<u8>,
@@ -15,15 +19,11 @@ pub struct CompressedNonExistenceProof {
     pub right: Option<CompressedExistenceProof>,
 }
 
-impl crate::Proto for CompressedNonExistenceProof {
-    type Proto = protos::cosmos::ics23::v1::CompressedNonExistenceProof;
-}
-
 #[derive(Debug)]
 pub enum TryFromCompressedNonExistenceProofError {
     MissingField(MissingField),
-    Left(TryFromProtoErrorOf<CompressedExistenceProof>),
-    Right(TryFromProtoErrorOf<CompressedExistenceProof>),
+    Left(TryFromCompressedExistenceProofError),
+    Right(TryFromCompressedExistenceProofError),
 }
 
 impl TryFrom<protos::cosmos::ics23::v1::CompressedNonExistenceProof>

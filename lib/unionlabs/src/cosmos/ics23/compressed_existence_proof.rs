@@ -1,15 +1,16 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     bounded::{BoundedI32, BoundedIntError},
-    cosmos::ics23::leaf_op::LeafOp,
+    cosmos::ics23::leaf_op::{LeafOp, TryFromLeafOpError},
     errors::{required, MissingField},
-    TryFromProtoErrorOf,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::cosmos::ics23::v1::CompressedExistenceProof, into, from)]
 pub struct CompressedExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     pub key: Vec<u8>,
@@ -20,14 +21,10 @@ pub struct CompressedExistenceProof {
     pub path: Vec<BoundedI32<0, { i32::MAX }>>,
 }
 
-impl crate::Proto for CompressedExistenceProof {
-    type Proto = protos::cosmos::ics23::v1::CompressedExistenceProof;
-}
-
 #[derive(Debug)]
 pub enum TryFromCompressedExistenceProofError {
     MissingField(MissingField),
-    Leaf(TryFromProtoErrorOf<LeafOp>),
+    Leaf(TryFromLeafOpError),
     Path(BoundedIntError<i32>),
 }
 

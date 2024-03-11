@@ -1,15 +1,19 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
     ibc::core::client::height::Height,
-    tendermint::types::{signed_header::SignedHeader, validator_set::ValidatorSet},
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    tendermint::types::{
+        signed_header::{SignedHeader, TryFromSignedHeaderError},
+        validator_set::{TryFromValidatorSetError, ValidatorSet},
+    },
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::lightclients::tendermint::v1::Header, into, from)]
 pub struct Header {
     pub signed_header: SignedHeader,
     pub validator_set: ValidatorSet,
@@ -31,9 +35,9 @@ impl From<Header> for protos::ibc::lightclients::tendermint::v1::Header {
 #[derive(Debug)]
 pub enum TryFromHeaderError {
     MissingField(MissingField),
-    SignedHeader(TryFromProtoErrorOf<SignedHeader>),
-    ValidatorSet(TryFromProtoErrorOf<ValidatorSet>),
-    TrustedValidators(TryFromProtoErrorOf<ValidatorSet>),
+    SignedHeader(TryFromSignedHeaderError),
+    ValidatorSet(TryFromValidatorSetError),
+    TrustedValidators(TryFromValidatorSetError),
 }
 
 impl TryFrom<protos::ibc::lightclients::tendermint::v1::Header> for Header {
@@ -59,12 +63,4 @@ impl TryFrom<protos::ibc::lightclients::tendermint::v1::Header> for Header {
                 .map_err(TryFromHeaderError::TrustedValidators)?,
         })
     }
-}
-
-impl Proto for Header {
-    type Proto = protos::ibc::lightclients::tendermint::v1::Header;
-}
-
-impl TypeUrl for protos::ibc::lightclients::tendermint::v1::Header {
-    const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.Header";
 }

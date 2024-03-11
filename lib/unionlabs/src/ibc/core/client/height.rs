@@ -4,6 +4,7 @@ use core::{
     str::FromStr,
 };
 
+use macros::proto;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
@@ -18,6 +19,7 @@ use tree_hash::TreeHash;
 #[derive(Clone, Copy, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(deny_unknown_fields)]
+#[proto(raw = protos::ibc::core::client::v1::Height)]
 pub struct Height {
     // REVIEW: Why default?
     #[serde(default)]

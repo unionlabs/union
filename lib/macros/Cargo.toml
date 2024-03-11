@@ -9,3 +9,5 @@ version                = "0.1.0"
 proc-macro = true
 
 [dependencies]
+quote = "1.0.35"
+syn   = { version = "2.0.52", default-features = false, features = ["quote", "clone-impls", "parsing", "printing", "proc-macro"] }

@@ -7,6 +7,13 @@ pub struct SignatureDescriptors {
     #[prost(message, repeated, tag = "1")]
     pub signatures: ::prost::alloc::vec::Vec<SignatureDescriptor>,
 }
+impl ::prost::Name for SignatureDescriptors {
+    const NAME: &'static str = "SignatureDescriptors";
+    const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.tx.signing.v1beta1.{}", Self::NAME)
+    }
+}
 /// SignatureDescriptor is a convenience type which represents the full data for
 /// a signature including the public key of the signer, signing modes and the
 /// signature itself. It is primarily used for coordinating signatures between
@@ -48,6 +55,16 @@ pub mod signature_descriptor {
             #[prost(bytes = "vec", tag = "2")]
             pub signature: ::prost::alloc::vec::Vec<u8>,
         }
+        impl ::prost::Name for Single {
+            const NAME: &'static str = "Single";
+            const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
+            fn full_name() -> ::prost::alloc::string::String {
+                ::prost::alloc::format!(
+                    "cosmos.tx.signing.v1beta1.SignatureDescriptor.Data.{}",
+                    Self::NAME
+                )
+            }
+        }
         /// Multi is the signature data for a multisig public key
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Message)]
@@ -61,6 +78,16 @@ pub mod signature_descriptor {
             #[prost(message, repeated, tag = "2")]
             pub signatures: ::prost::alloc::vec::Vec<super::Data>,
         }
+        impl ::prost::Name for Multi {
+            const NAME: &'static str = "Multi";
+            const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
+            fn full_name() -> ::prost::alloc::string::String {
+                ::prost::alloc::format!(
+                    "cosmos.tx.signing.v1beta1.SignatureDescriptor.Data.{}",
+                    Self::NAME
+                )
+            }
+        }
         /// sum is the oneof that specifies whether this represents single or multi-signature data
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -72,6 +99,23 @@ pub mod signature_descriptor {
             #[prost(message, tag = "2")]
             Multi(Multi),
         }
+    }
+    impl ::prost::Name for Data {
+        const NAME: &'static str = "Data";
+        const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "cosmos.tx.signing.v1beta1.SignatureDescriptor.{}",
+                Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for SignatureDescriptor {
+    const NAME: &'static str = "SignatureDescriptor";
+    const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.tx.signing.v1beta1.{}", Self::NAME)
     }
 }
 /// SignMode represents a signing mode with its own security guarantees.

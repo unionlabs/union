@@ -1,10 +1,10 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
-
-use crate::{Proto, TypeUrl};
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::tendermint::version::Consensus, into, from)]
 pub struct Consensus {
     #[serde(with = "::serde_utils::string")]
     pub block: u64,
@@ -29,14 +29,6 @@ impl From<Consensus> for protos::tendermint::version::Consensus {
             app: value.app,
         }
     }
-}
-
-impl Proto for Consensus {
-    type Proto = protos::tendermint::version::Consensus;
-}
-
-impl TypeUrl for protos::tendermint::version::Consensus {
-    const TYPE_URL: &'static str = "/tendermint.version.Consensus";
 }
 
 #[cfg(feature = "ethabi")]

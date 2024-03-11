@@ -1,21 +1,19 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
-use crate::{cosmos::ics23::commitment_proof::CommitmentProof, TryFromProtoErrorOf};
+use crate::cosmos::ics23::commitment_proof::{CommitmentProof, TryFromCommitmentProofError};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::ibc::core::commitment::v1::MerkleProof, into, from)]
 pub struct MerkleProof {
     pub proofs: Vec<CommitmentProof>,
 }
 
-impl crate::Proto for MerkleProof {
-    type Proto = protos::ibc::core::commitment::v1::MerkleProof;
-}
-
 #[derive(Debug)]
 pub enum TryFromMerkleProofError {
-    Proofs(TryFromProtoErrorOf<CommitmentProof>),
+    Proofs(TryFromCommitmentProofError),
 }
 
 impl TryFrom<protos::ibc::core::commitment::v1::MerkleProof> for MerkleProof {

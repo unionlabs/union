@@ -1,3 +1,4 @@
+use macros::proto;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use ssz_types::{fixed_vector, FixedVector};
@@ -12,14 +13,15 @@ use crate::{
     },
     hash::H256,
     ibc::lightclients::ethereum::{
-        beacon_block_header::BeaconBlockHeader, execution_payload_header::ExecutionPayloadHeader,
+        beacon_block_header::{BeaconBlockHeader, TryFromBeaconBlockHeaderError},
+        execution_payload_header::{ExecutionPayloadHeader, TryFromExecutionPayloadHeaderError},
     },
-    Proto, TryFromProtoErrorOf, TypeUrl,
 };
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::LightClientHeader, into, from)]
 pub struct LightClientHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub beacon: BeaconBlockHeader,
     pub execution: ExecutionPayloadHeader<C>,
@@ -42,10 +44,10 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<LightClientHeader<C>>
 }
 
 #[derive(Debug)]
-pub enum TryFromLightClientHeaderError<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
+pub enum TryFromLightClientHeaderError {
     MissingField(MissingField),
-    BeaconBlockHeader(TryFromProtoErrorOf<BeaconBlockHeader>),
-    ExecutionPayloadHeader(TryFromProtoErrorOf<ExecutionPayloadHeader<C>>),
+    BeaconBlockHeader(TryFromBeaconBlockHeaderError),
+    ExecutionPayloadHeader(TryFromExecutionPayloadHeaderError),
     ExecutionBranch(fixed_vector::TryFromVecError),
     ExecutionBranchNode(InvalidLength),
 }
@@ -54,7 +56,7 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
     TryFrom<protos::union::ibc::lightclients::ethereum::v1::LightClientHeader>
     for LightClientHeader<C>
 {
-    type Error = TryFromLightClientHeaderError<C>;
+    type Error = TryFromLightClientHeaderError;
 
     fn try_from(
         value: protos::union::ibc::lightclients::ethereum::v1::LightClientHeader,
@@ -84,12 +86,4 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .map_err(TryFromLightClientHeaderError::ExecutionBranch)?,
         })
     }
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::LightClientHeader {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.LightClientHeader";
-}
-
-impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> Proto for LightClientHeader<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::LightClientHeader;
 }

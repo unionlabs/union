@@ -1,3 +1,4 @@
+use macros::proto;
 use prost::Message;
 use protos::google::protobuf::{BytesValue, Int64Value, StringValue};
 use rs_merkle::{algorithms::Sha256, Hasher};
@@ -6,16 +7,19 @@ use serde::{Deserialize, Serialize};
 use crate::{
     bounded::{BoundedI64, BoundedIntError},
     errors::{required, InvalidLength, MissingField},
-    google::protobuf::timestamp::Timestamp,
+    google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
     hash::{H160, H256},
-    tendermint::{types::block_id::BlockId, version::consensus::Consensus},
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    tendermint::{
+        types::block_id::{BlockId, TryFromBlockIdError},
+        version::consensus::Consensus,
+    },
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 // REVIEW: Are all hashes here hex_upper_unprefixed?
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::tendermint::types::Header, into, from)]
 pub struct Header {
     /// basic block info
     pub version: Consensus,
@@ -190,12 +194,12 @@ impl From<Header> for protos::tendermint::types::Header {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromHeaderError {
     MissingField(MissingField),
-    LastBlockId(TryFromProtoErrorOf<BlockId>),
+    LastBlockId(TryFromBlockIdError),
     Height(BoundedIntError<i64>),
-    Timestamp(TryFromProtoErrorOf<Timestamp>),
+    Timestamp(TryFromTimestampError),
     LastCommitHash(InvalidLength),
     DataHash(InvalidLength),
     ValidatorsHash(InvalidLength),
@@ -262,14 +266,6 @@ impl TryFrom<protos::tendermint::types::Header> for Header {
                 .map_err(TryFromHeaderError::ProposerAddress)?,
         })
     }
-}
-
-impl Proto for Header {
-    type Proto = protos::tendermint::types::Header;
-}
-
-impl TypeUrl for protos::tendermint::types::Header {
-    const TYPE_URL: &'static str = "/tendermint.types.Header";
 }
 
 #[cfg(feature = "ethabi")]

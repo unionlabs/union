@@ -1,19 +1,24 @@
 use core::num::TryFromIntError;
 
+use macros::proto;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     cosmos::{
-        crypto::AnyPubKey,
-        staking::{bond_status::BondStatus, commission::Commission, description::Description},
+        crypto::{AnyPubKey, TryFromAnyPubKeyError},
+        staking::{
+            bond_status::BondStatus,
+            commission::{Commission, TryFromCommissionError},
+            description::Description,
+        },
     },
     errors::{required, MissingField, UnknownEnumVariant},
-    google::protobuf::timestamp::Timestamp,
-    Proto, TryFromProtoErrorOf, TypeUrl,
+    google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[proto(raw = protos::cosmos::staking::v1beta1::Validator, into, from)]
 pub struct Validator {
     /// operator_address defines the address of the validator's operator; bech encoded in JSON.
     pub operator_address: String,
@@ -48,22 +53,14 @@ pub struct Validator {
     pub unbonding_ids: Vec<u64>,
 }
 
-impl Proto for Validator {
-    type Proto = protos::cosmos::staking::v1beta1::Validator;
-}
-
-impl TypeUrl for protos::cosmos::staking::v1beta1::Validator {
-    const TYPE_URL: &'static str = "/cosmos.staking.v1beta1.Validator";
-}
-
 #[derive(Debug)]
 pub enum TryFromValidatorError {
     MissingField(MissingField),
-    ConsensusPubKey(TryFromProtoErrorOf<AnyPubKey>),
+    ConsensusPubKey(TryFromAnyPubKeyError),
     BondStatus(UnknownEnumVariant<i32>),
     UnbondingHeight(TryFromIntError),
-    Commission(TryFromProtoErrorOf<Commission>),
-    Timestamp(TryFromProtoErrorOf<Timestamp>),
+    Commission(TryFromCommissionError),
+    Timestamp(TryFromTimestampError),
 }
 
 impl TryFrom<protos::cosmos::staking::v1beta1::Validator> for Validator {

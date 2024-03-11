@@ -7,4 +7,11 @@ pub struct Module {
     #[prost(string, tag = "1")]
     pub authority: ::prost::alloc::string::String,
 }
+impl ::prost::Name for Module {
+    const NAME: &'static str = "Module";
+    const PACKAGE: &'static str = "cosmos.circuit.module.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.module.v1.{}", Self::NAME)
+    }
+}
 // @@protoc_insertion_point(module)

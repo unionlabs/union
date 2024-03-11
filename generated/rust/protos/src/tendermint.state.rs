@@ -13,12 +13,26 @@ pub struct LegacyAbciResponses {
     #[prost(message, optional, tag = "3")]
     pub begin_block: ::core::option::Option<ResponseBeginBlock>,
 }
+impl ::prost::Name for LegacyAbciResponses {
+    const NAME: &'static str = "LegacyABCIResponses";
+    const PACKAGE: &'static str = "tendermint.state";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.state.{}", Self::NAME)
+    }
+}
 /// ResponseBeginBlock is kept for backwards compatibility for versions prior to v0.38
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseBeginBlock {
     #[prost(message, repeated, tag = "1")]
     pub events: ::prost::alloc::vec::Vec<super::abci::Event>,
+}
+impl ::prost::Name for ResponseBeginBlock {
+    const NAME: &'static str = "ResponseBeginBlock";
+    const PACKAGE: &'static str = "tendermint.state";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.state.{}", Self::NAME)
+    }
 }
 /// ResponseEndBlock is kept for backwards compatibility for versions prior to v0.38
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -31,6 +45,13 @@ pub struct ResponseEndBlock {
     #[prost(message, repeated, tag = "3")]
     pub events: ::prost::alloc::vec::Vec<super::abci::Event>,
 }
+impl ::prost::Name for ResponseEndBlock {
+    const NAME: &'static str = "ResponseEndBlock";
+    const PACKAGE: &'static str = "tendermint.state";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.state.{}", Self::NAME)
+    }
+}
 /// ValidatorsInfo represents the latest validator set, or the last height it changed
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -40,6 +61,13 @@ pub struct ValidatorsInfo {
     #[prost(int64, tag = "2")]
     pub last_height_changed: i64,
 }
+impl ::prost::Name for ValidatorsInfo {
+    const NAME: &'static str = "ValidatorsInfo";
+    const PACKAGE: &'static str = "tendermint.state";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.state.{}", Self::NAME)
+    }
+}
 /// ConsensusParamsInfo represents the latest consensus params, or the last height it changed
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -48,6 +76,13 @@ pub struct ConsensusParamsInfo {
     pub consensus_params: ::core::option::Option<super::types::ConsensusParams>,
     #[prost(int64, tag = "2")]
     pub last_height_changed: i64,
+}
+impl ::prost::Name for ConsensusParamsInfo {
+    const NAME: &'static str = "ConsensusParamsInfo";
+    const PACKAGE: &'static str = "tendermint.state";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.state.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -59,6 +94,13 @@ pub struct AbciResponsesInfo {
     #[prost(message, optional, tag = "3")]
     pub response_finalize_block: ::core::option::Option<super::abci::ResponseFinalizeBlock>,
 }
+impl ::prost::Name for AbciResponsesInfo {
+    const NAME: &'static str = "ABCIResponsesInfo";
+    const PACKAGE: &'static str = "tendermint.state";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.state.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
@@ -66,6 +108,13 @@ pub struct Version {
     pub consensus: ::core::option::Option<super::version::Consensus>,
     #[prost(string, tag = "2")]
     pub software: ::prost::alloc::string::String,
+}
+impl ::prost::Name for Version {
+    const NAME: &'static str = "Version";
+    const PACKAGE: &'static str = "tendermint.state";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.state.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -110,5 +159,12 @@ pub struct State {
     /// the latest AppHash we've received from calling abci.Commit()
     #[prost(bytes = "vec", tag = "13")]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for State {
+    const NAME: &'static str = "State";
+    const PACKAGE: &'static str = "tendermint.state";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.state.{}", Self::NAME)
+    }
 }
 // @@protoc_insertion_point(module)

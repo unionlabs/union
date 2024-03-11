@@ -9,6 +9,13 @@ pub struct ScrollFinalizedProof {
     #[prost(bytes = "vec", repeated, tag = "3")]
     pub proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
+impl ::prost::Name for ScrollFinalizedProof {
+    const NAME: &'static str = "ScrollFinalizedProof";
+    const PACKAGE: &'static str = "union.ibc.lightclients.scroll.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.scroll.v1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
@@ -30,6 +37,13 @@ pub struct ClientState {
     #[prost(bytes = "vec", tag = "8")]
     pub ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ClientState {
+    const NAME: &'static str = "ClientState";
+    const PACKAGE: &'static str = "union.ibc.lightclients.scroll.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.scroll.v1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
@@ -39,6 +53,13 @@ pub struct ConsensusState {
     pub ibc_storage_root: ::prost::alloc::vec::Vec<u8>,
     #[prost(uint64, tag = "3")]
     pub timestamp: u64,
+}
+impl ::prost::Name for ConsensusState {
+    const NAME: &'static str = "ConsensusState";
+    const PACKAGE: &'static str = "union.ibc.lightclients.scroll.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.scroll.v1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -52,5 +73,12 @@ pub struct Header {
     pub finalized_proof: ::core::option::Option<ScrollFinalizedProof>,
     #[prost(message, optional, tag = "4")]
     pub ibc_account_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
+}
+impl ::prost::Name for Header {
+    const NAME: &'static str = "Header";
+    const PACKAGE: &'static str = "union.ibc.lightclients.scroll.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.scroll.v1.{}", Self::NAME)
+    }
 }
 // @@protoc_insertion_point(module)

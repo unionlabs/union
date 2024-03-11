@@ -1,15 +1,18 @@
+use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use macros::proto;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use ssz_types::{fixed_vector, FixedVector};
 use tree_hash::TreeHash;
 
-use crate::{
-    bls::BlsPublicKey, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE, Proto, TypeUrl,
-};
+use crate::{bls::BlsPublicKey, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
+#[derive(
+    CloneNoBound, DebugNoBound, PartialEqNoBound, Encode, Decode, TreeHash, Serialize, Deserialize,
+)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::SyncCommittee, into, from)]
 pub struct SyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     #[serde(with = "::serde_utils::hex_string_list")]
     pub pubkeys: FixedVector<BlsPublicKey, C::SYNC_COMMITTEE_SIZE>,
@@ -62,12 +65,4 @@ impl<C: SYNC_COMMITTEE_SIZE> TryFrom<protos::union::ibc::lightclients::ethereum:
                 .map_err(TryFromSyncCommitteeError::AggregatePubKey)?,
         })
     }
-}
-
-impl TypeUrl for protos::union::ibc::lightclients::ethereum::v1::SyncCommittee {
-    const TYPE_URL: &'static str = "/union.ibc.lightclients.ethereum.v1.SyncCommittee";
-}
-
-impl<C: SYNC_COMMITTEE_SIZE> Proto for SyncCommittee<C> {
-    type Proto = protos::union::ibc::lightclients::ethereum::v1::SyncCommittee;
 }

@@ -1,9 +1,9 @@
 use cosmwasm_std::StdError;
 use thiserror::Error as ThisError;
 use unionlabs::{
+    encoding::{DecodeErrorOf, Proto},
     hash::H256,
     ibc::{core::client::height::Height, lightclients::cometbls::header::Header},
-    TryFromProtoBytesError, TryFromProtoErrorOf,
 };
 
 #[derive(ThisError, Debug, PartialEq)]
@@ -51,8 +51,8 @@ pub enum Error {
     #[error("unimplemented feature")]
     Unimplemented,
 
-    #[error("Decode error: {0}")]
-    DecodeError(String),
+    #[error("Unable to decode header: {0:?}")]
+    HeaderDecode(DecodeErrorOf<Proto, Header>),
 
     #[error("Unknown type url")]
     UnknownTypeUrl,
@@ -167,10 +167,6 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn decode<S: Into<String>>(s: S) -> Error {
-        Error::DecodeError(s.into())
-    }
-
     pub fn invalid_public_key<S: ToString>(s: S) -> Error {
         Error::InvalidPublicKey(s.to_string())
     }
@@ -188,12 +184,6 @@ impl Error {
 
     pub fn custom_query<S: ToString>(s: S) -> Error {
         Error::CustomQuery(s.to_string())
-    }
-}
-
-impl From<TryFromProtoBytesError<TryFromProtoErrorOf<Header>>> for Error {
-    fn from(value: TryFromProtoBytesError<TryFromProtoErrorOf<Header>>) -> Self {
-        Self::DecodeError(format!("{:?}", value))
     }
 }
 

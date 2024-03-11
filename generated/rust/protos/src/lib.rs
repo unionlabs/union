@@ -863,4 +863,12 @@ pub mod union {
             }
         }
     }
+    pub mod staking {
+        #[cfg(feature = "union+staking+v1")]
+        // @@protoc_insertion_point(attribute:union.staking.v1)
+        pub mod v1 {
+            include!("union.staking.v1.rs");
+            // @@protoc_insertion_point(union.staking.v1)
+        }
+    }
 }

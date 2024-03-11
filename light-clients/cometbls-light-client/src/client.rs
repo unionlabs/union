@@ -12,7 +12,7 @@ use ics008_wasm_client::{
 use ics23::ibc_api::SDK_SPECS;
 use prost::Message;
 use unionlabs::{
-    encoding::Proto,
+    encoding::{Decode, Proto},
     ensure,
     hash::H256,
     ibc::{
@@ -27,7 +27,6 @@ use unionlabs::{
         },
     },
     tendermint::types::commit::Commit,
-    TryFromProto,
 };
 
 use crate::{
@@ -73,11 +72,10 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         let consensus_state: WasmConsensusState =
             read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
 
-        let merkle_proof = MerkleProof::try_from_proto_bytes(proof.as_ref()).map_err(|e| {
-            Error::DecodeFromProto {
+        let merkle_proof =
+            MerkleProof::decode(proof.as_ref()).map_err(|e| Error::DecodeFromProto {
                 reason: format!("{:?}", e),
-            }
-        })?;
+            })?;
 
         match value {
             StorageState::Occupied(value) => ics23::ibc_api::verify_membership(
@@ -511,7 +509,7 @@ mod tests {
         },
         FROZEN_HEIGHT,
     };
-    use unionlabs::{google::protobuf::any::Any, IntoProto};
+    use unionlabs::{encoding::Encode, google::protobuf::any::Any};
 
     use super::*;
 
@@ -534,7 +532,7 @@ mod tests {
     ) {
         deps.storage.set(
             format!("{SUBJECT_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
-            &Any(subject_client_state.clone()).into_proto_bytes(),
+            &Any(subject_client_state.clone()).encode(),
         );
         deps.storage.set(
             format!(
@@ -542,11 +540,11 @@ mod tests {
                 consensus_db_key(&INITIAL_CONSENSUS_STATE_HEIGHT)
             )
             .as_bytes(),
-            &Any(subject_consensus_state.clone()).into_proto_bytes(),
+            &Any(subject_consensus_state.clone()).encode(),
         );
         deps.storage.set(
             format!("{SUBSTITUTE_CLIENT_STORE_PREFIX}{HOST_CLIENT_STATE_KEY}").as_bytes(),
-            &Any(substitute_client_state.clone()).into_proto_bytes(),
+            &Any(substitute_client_state.clone()).encode(),
         );
         deps.storage.set(
             format!(
@@ -554,7 +552,7 @@ mod tests {
                 consensus_db_key(&INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT)
             )
             .as_bytes(),
-            &Any(substitute_consensus_state.clone()).into_proto_bytes(),
+            &Any(substitute_consensus_state.clone()).encode(),
         );
     }
 
