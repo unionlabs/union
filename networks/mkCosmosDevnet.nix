@@ -12,7 +12,7 @@
 , genesisOverwrites ? { }
 , lightClients ? [ ]
 , cosmwasmContracts ? [ ]
-, startCommandOverwrite ? [ ]
+, startCommandOverwrite ? null
 , extraPackages ? [ ]
 , ...
 }:
@@ -652,7 +652,7 @@ let
             export TMPDIR=./tmp
 
           '' + (
-            if startCommandOverwrite == [ ]
+            if startCommandOverwrite == null
             then
               ''
                 ${nodeBin} comet show-node-id --home home
