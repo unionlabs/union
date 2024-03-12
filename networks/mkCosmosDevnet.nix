@@ -652,8 +652,8 @@ let
             export TMPDIR=./tmp
 
           '' + (
-          if startCommandOverwrite == []
-          then
+            if startCommandOverwrite == [ ]
+            then
               ''
                 ${nodeBin} comet show-node-id --home home
 
@@ -667,10 +667,10 @@ let
                   --api.address tcp://0.0.0.0:1317 \
                   --grpc.address 0.0.0.0:9090
               ''
-          else
-            startCommandOverwrite
-        ))
-        ] ;
+            else
+              startCommandOverwrite
+          ))
+        ];
         healthcheck = {
           interval = "5s";
           start_period = "20s";

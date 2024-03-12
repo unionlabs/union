@@ -92,7 +92,7 @@
             };
           };
         };
-        extraPackages = [self'.packages.unionvisor self'.packages.bundle-testnet-next ];
+        extraPackages = [ self'.packages.unionvisor self'.packages.bundle-testnet-next ];
         startCommandOverwrite =
           ''
             mkdir .unionvisor
@@ -197,7 +197,7 @@
         };
 
         devnet-union-minimal = {
-          modules = [ (modules.devnet-union-minimal // { networks.devnet-union-minimal = {}; })];
+          modules = [ (modules.devnet-union-minimal // { networks.devnet-union-minimal = { }; }) ];
         };
 
         devnet-simd = {
