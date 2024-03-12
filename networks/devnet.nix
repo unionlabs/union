@@ -75,6 +75,23 @@
         keyType = "bn254";
         validatorCount = 4;
         portIncrease = 0;
+        genesisOverwrites = {
+          app_state = {
+            gov.params = {
+              max_deposit_period = "12s";
+              voting_period = "18s";
+              expedited_voting_period = "6s";
+            };
+            tokenfactory.params = {
+              denom_creation_fee = [
+                {
+                  denom = "muno";
+                  amount = "10000000";
+                }
+              ];
+            };
+          };
+        };
         extraPackages = [self'.packages.unionvisor self'.packages.bundle-testnet-next ];
         startCommandOverwrite =
           ''
