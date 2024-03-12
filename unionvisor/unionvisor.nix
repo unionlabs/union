@@ -85,7 +85,7 @@
 
         bundle-testnet-next =
           mkBundle {
-            name = "testnet-6";
+            name = "testnet-next";
             versions = uniondBundleVersions.complete;
             nextVersion = "v0.20.0";
             genesis = ../networks/genesis/union-testnet-6/genesis.json;
