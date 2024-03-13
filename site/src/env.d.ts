@@ -2,17 +2,17 @@
 /// <reference path="../.astro/types.d.ts" />
 
 interface EventTarget {
-  value?: string;
+  value?: string
 }
 
 interface EnvironmentVariables {
-  readonly NODE_ENV: "development" | "production" | "test";
-  readonly PORT: string;
+  readonly NODE_ENV: "development" | "production" | "test"
+  readonly PORT: string
   /* https://union.build in production, http://localhost:${PORT} in development */
-  readonly SITE_URL: string;
+  readonly SITE_URL: string
   /* These are injected by default by Cloudflare Pages */
-  readonly CF_PAGES_URL: string;
-  readonly CF_PAGES_COMMIT_SHA: string;
+  readonly CF_PAGES_URL: string
+  readonly CF_PAGES_COMMIT_SHA: string
 }
 
 // Node.js environment variables types
@@ -23,7 +23,7 @@ declare namespace NodeJS {
 // Vite & Astro environment variables types
 interface ImportMetaEnv extends EnvironmentVariables {}
 interface ImportMeta {
-  readonly env: ImportMetaEnv;
+  readonly env: ImportMetaEnv
 }
 
 // Cloudflare Pages/Workers

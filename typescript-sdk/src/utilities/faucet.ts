@@ -1,14 +1,14 @@
-import { fetcher } from "./index.ts";
-import { UNION_GRAPHQL_API } from "../constants";
+import { fetcher } from "./index.ts"
+import { UNION_GRAPHQL_API } from "../constants"
 
 export async function getUnoFromFaucet({ address }: { address: string }) {
   const response = await fetcher<
     | { data: { union: { send: undefined } } }
     | {
         errors: Array<{
-          message: string;
-          extensions: { path: string; code: string };
-        }>;
+          message: string
+          extensions: { path: string; code: string }
+        }>
       }
   >(UNION_GRAPHQL_API, {
     method: "POST",
@@ -22,14 +22,14 @@ export async function getUnoFromFaucet({ address }: { address: string }) {
         }
       `,
       variables: { address },
-      operationName: "GetUno",
-    }),
-  });
+      operationName: "GetUno"
+    })
+  })
 
   if ("errors" in response) {
-    const [error] = response.errors;
-    throw new Error(error?.message);
+    const [error] = response.errors
+    throw new Error(error?.message)
   }
 
-  return response.data;
+  return response.data
 }

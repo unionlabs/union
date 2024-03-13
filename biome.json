@@ -18,15 +18,7 @@
       "./**/*.astro",
       "./**/*.svelte"
     ],
-    "ignore": [
-      "_",
-      "out",
-      "dist",
-      "build",
-      "result",
-      ".svelte-kit",
-      "node_modules"
-    ]
+    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules"]
   },
   "css": {
     "formatter": {
@@ -55,15 +47,7 @@
       "./**/*.svelte"
     ],
     "ignoreUnknown": true,
-    "ignore": [
-      "_",
-      "out",
-      "dist",
-      "build",
-      "result",
-      ".svelte-kit",
-      "node_modules"
-    ]
+    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules"]
   },
   "json": {
     "parser": {
@@ -172,15 +156,7 @@
       "./**/*.astro",
       "./**/*.svelte"
     ],
-    "ignore": [
-      "_",
-      "out",
-      "dist",
-      "build",
-      "result",
-      ".svelte-kit",
-      "node_modules"
-    ]
+    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules"]
   },
   "javascript": {
     "globals": ["NodeJS", "Astro"],

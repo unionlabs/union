@@ -1,6 +1,6 @@
-import { createSchema } from "@ponder/core";
+import { createSchema } from "@ponder/core"
 
-export default createSchema((p) => ({
+export default createSchema(p => ({
   TransferEvent: p.createTable({
     sourceChainId: p.string(), // '11155111' or 'union-testnet-6'
     targetChainId: p.string(), // '11155111' or 'union-testnet-6'
@@ -11,7 +11,7 @@ export default createSchema((p) => ({
     denom: p.string().optional(),
     token: p.hex(),
     amount: p.bigint(),
-    timestamp: p.bigint(),
+    timestamp: p.bigint()
   }),
 
   RefundedEvent: p.createTable({
@@ -21,14 +21,14 @@ export default createSchema((p) => ({
     denom: p.string(),
     token: p.hex(),
     amount: p.bigint(),
-    timestamp: p.bigint(),
+    timestamp: p.bigint()
   }),
 
   DenomCreatedEvent: p.createTable({
     id: p.string(),
     denom: p.string(),
     token: p.hex(),
-    timestamp: p.bigint(),
+    timestamp: p.bigint()
   }),
 
   ApprovalEvent: p.createTable({
@@ -37,6 +37,6 @@ export default createSchema((p) => ({
     owner: p.hex(),
     spender: p.hex(),
     amount: p.bigint(),
-    timestamp: p.bigint(),
-  }),
-}));
+    timestamp: p.bigint()
+  })
+}))

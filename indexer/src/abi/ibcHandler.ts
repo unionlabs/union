@@ -7,10 +7,10 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -29,32 +29,32 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "sequence",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "source_port",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "source_channel",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "destination_port",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "destination_channel",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "data",
                 type: "bytes",
-                internalType: "bytes",
+                internalType: "bytes"
               },
               {
                 name: "timeout_height",
@@ -64,31 +64,31 @@ export const ibcHandlerAbi = <const>[
                   {
                     name: "revision_number",
                     type: "uint64",
-                    internalType: "uint64",
+                    internalType: "uint64"
                   },
                   {
                     name: "revision_height",
                     type: "uint64",
-                    internalType: "uint64",
-                  },
-                ],
+                    internalType: "uint64"
+                  }
+                ]
               },
               {
                 name: "timeout_timestamp",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
+                internalType: "uint64"
+              }
+            ]
           },
           {
             name: "acknowledgement",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proof",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofHeight",
@@ -98,20 +98,20 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
-          },
-        ],
-      },
+                internalType: "uint64"
+              }
+            ]
+          }
+        ]
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -120,16 +120,16 @@ export const ibcHandlerAbi = <const>[
       {
         name: "portId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "moduleAddress",
         type: "address",
-        internalType: "address",
-      },
+        internalType: "address"
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -138,17 +138,17 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "address",
-        internalType: "address",
-      },
+        internalType: "address"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -157,22 +157,22 @@ export const ibcHandlerAbi = <const>[
       {
         name: "portId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "channelId",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
-    stateMutability: "pure",
+    stateMutability: "pure"
   },
   {
     type: "function",
@@ -186,17 +186,17 @@ export const ibcHandlerAbi = <const>[
           {
             name: "portId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "channelId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "proofInit",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofHeight",
@@ -206,20 +206,20 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
-          },
-        ],
-      },
+                internalType: "uint64"
+              }
+            ]
+          }
+        ]
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -233,18 +233,18 @@ export const ibcHandlerAbi = <const>[
           {
             name: "portId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "channelId",
             type: "string",
-            internalType: "string",
-          },
-        ],
-      },
+            internalType: "string"
+          }
+        ]
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -258,27 +258,27 @@ export const ibcHandlerAbi = <const>[
           {
             name: "portId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "channelId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "counterpartyVersion",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "counterpartyChannelId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "proofTry",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofHeight",
@@ -288,20 +288,20 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
-          },
-        ],
-      },
+                internalType: "uint64"
+              }
+            ]
+          }
+        ]
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -315,17 +315,17 @@ export const ibcHandlerAbi = <const>[
           {
             name: "portId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "channelId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "proofAck",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofHeight",
@@ -335,20 +335,20 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
-          },
-        ],
-      },
+                internalType: "uint64"
+              }
+            ]
+          }
+        ]
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -362,7 +362,7 @@ export const ibcHandlerAbi = <const>[
           {
             name: "portId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "channel",
@@ -372,12 +372,12 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "state",
                 type: "uint8",
-                internalType: "enum IbcCoreChannelV1GlobalEnums.State",
+                internalType: "enum IbcCoreChannelV1GlobalEnums.State"
               },
               {
                 name: "ordering",
                 type: "uint8",
-                internalType: "enum IbcCoreChannelV1GlobalEnums.Order",
+                internalType: "enum IbcCoreChannelV1GlobalEnums.Order"
               },
               {
                 name: "counterparty",
@@ -387,38 +387,38 @@ export const ibcHandlerAbi = <const>[
                   {
                     name: "port_id",
                     type: "string",
-                    internalType: "string",
+                    internalType: "string"
                   },
                   {
                     name: "channel_id",
                     type: "string",
-                    internalType: "string",
-                  },
-                ],
+                    internalType: "string"
+                  }
+                ]
               },
               {
                 name: "connection_hops",
                 type: "string[]",
-                internalType: "string[]",
+                internalType: "string[]"
               },
               {
                 name: "version",
                 type: "string",
-                internalType: "string",
-              },
-            ],
-          },
-        ],
-      },
+                internalType: "string"
+              }
+            ]
+          }
+        ]
+      }
     ],
     outputs: [
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -432,7 +432,7 @@ export const ibcHandlerAbi = <const>[
           {
             name: "portId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "channel",
@@ -442,12 +442,12 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "state",
                 type: "uint8",
-                internalType: "enum IbcCoreChannelV1GlobalEnums.State",
+                internalType: "enum IbcCoreChannelV1GlobalEnums.State"
               },
               {
                 name: "ordering",
                 type: "uint8",
-                internalType: "enum IbcCoreChannelV1GlobalEnums.Order",
+                internalType: "enum IbcCoreChannelV1GlobalEnums.Order"
               },
               {
                 name: "counterparty",
@@ -457,36 +457,36 @@ export const ibcHandlerAbi = <const>[
                   {
                     name: "port_id",
                     type: "string",
-                    internalType: "string",
+                    internalType: "string"
                   },
                   {
                     name: "channel_id",
                     type: "string",
-                    internalType: "string",
-                  },
-                ],
+                    internalType: "string"
+                  }
+                ]
               },
               {
                 name: "connection_hops",
                 type: "string[]",
-                internalType: "string[]",
+                internalType: "string[]"
               },
               {
                 name: "version",
                 type: "string",
-                internalType: "string",
-              },
-            ],
+                internalType: "string"
+              }
+            ]
           },
           {
             name: "counterpartyVersion",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "proofInit",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofHeight",
@@ -496,26 +496,26 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
-          },
-        ],
-      },
+                internalType: "uint64"
+              }
+            ]
+          }
+        ]
+      }
     ],
     outputs: [
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -524,24 +524,24 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "state",
         type: "uint8",
-        internalType: "enum IbcCoreChannelV1GlobalEnums.State",
+        internalType: "enum IbcCoreChannelV1GlobalEnums.State"
       },
       {
         name: "ordering",
         type: "uint8",
-        internalType: "enum IbcCoreChannelV1GlobalEnums.Order",
+        internalType: "enum IbcCoreChannelV1GlobalEnums.Order"
       },
       {
         name: "counterparty",
@@ -551,22 +551,22 @@ export const ibcHandlerAbi = <const>[
           {
             name: "port_id",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "channel_id",
             type: "string",
-            internalType: "string",
-          },
-        ],
+            internalType: "string"
+          }
+        ]
       },
       {
         name: "version",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -575,17 +575,17 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "address",
-        internalType: "address",
-      },
+        internalType: "address"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -594,17 +594,17 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "address",
-        internalType: "address",
-      },
+        internalType: "address"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -613,17 +613,17 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -632,17 +632,17 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "bytes32",
-        internalType: "bytes32",
-      },
+        internalType: "bytes32"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "bytes32",
-        internalType: "bytes32",
-      },
+        internalType: "bytes32"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -656,12 +656,12 @@ export const ibcHandlerAbi = <const>[
           {
             name: "connectionId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "clientStateBytes",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "version",
@@ -671,34 +671,34 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "identifier",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "features",
                 type: "string[]",
-                internalType: "string[]",
-              },
-            ],
+                internalType: "string[]"
+              }
+            ]
           },
           {
             name: "counterpartyConnectionID",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "proofTry",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofClient",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofConsensus",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofHeight",
@@ -708,14 +708,14 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
+                internalType: "uint64"
+              }
+            ]
           },
           {
             name: "consensusHeight",
@@ -725,20 +725,20 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
-          },
-        ],
-      },
+                internalType: "uint64"
+              }
+            ]
+          }
+        ]
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -752,12 +752,12 @@ export const ibcHandlerAbi = <const>[
           {
             name: "connectionId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "proofAck",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofHeight",
@@ -767,20 +767,20 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
-          },
-        ],
-      },
+                internalType: "uint64"
+              }
+            ]
+          }
+        ]
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -794,7 +794,7 @@ export const ibcHandlerAbi = <const>[
           {
             name: "clientId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "counterparty",
@@ -804,12 +804,12 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "client_id",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "connection_id",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "prefix",
@@ -819,28 +819,28 @@ export const ibcHandlerAbi = <const>[
                   {
                     name: "key_prefix",
                     type: "bytes",
-                    internalType: "bytes",
-                  },
-                ],
-              },
-            ],
+                    internalType: "bytes"
+                  }
+                ]
+              }
+            ]
           },
           {
             name: "delayPeriod",
             type: "uint64",
-            internalType: "uint64",
-          },
-        ],
-      },
+            internalType: "uint64"
+          }
+        ]
+      }
     ],
     outputs: [
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -859,12 +859,12 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "client_id",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "connection_id",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "prefix",
@@ -874,26 +874,26 @@ export const ibcHandlerAbi = <const>[
                   {
                     name: "key_prefix",
                     type: "bytes",
-                    internalType: "bytes",
-                  },
-                ],
-              },
-            ],
+                    internalType: "bytes"
+                  }
+                ]
+              }
+            ]
           },
           {
             name: "delayPeriod",
             type: "uint64",
-            internalType: "uint64",
+            internalType: "uint64"
           },
           {
             name: "clientId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "clientStateBytes",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "counterpartyVersions",
@@ -903,29 +903,29 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "identifier",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "features",
                 type: "string[]",
-                internalType: "string[]",
-              },
-            ],
+                internalType: "string[]"
+              }
+            ]
           },
           {
             name: "proofInit",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofClient",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofConsensus",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofHeight",
@@ -935,14 +935,14 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
+                internalType: "uint64"
+              }
+            ]
           },
           {
             name: "consensusHeight",
@@ -952,26 +952,26 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
-          },
-        ],
-      },
+                internalType: "uint64"
+              }
+            ]
+          }
+        ]
+      }
     ],
     outputs: [
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -980,19 +980,19 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "client_id",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "state",
         type: "uint8",
-        internalType: "enum IbcCoreConnectionV1GlobalEnums.State",
+        internalType: "enum IbcCoreConnectionV1GlobalEnums.State"
       },
       {
         name: "counterparty",
@@ -1002,12 +1002,12 @@ export const ibcHandlerAbi = <const>[
           {
             name: "client_id",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "connection_id",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "prefix",
@@ -1017,19 +1017,19 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "key_prefix",
                 type: "bytes",
-                internalType: "bytes",
-              },
-            ],
-          },
-        ],
+                internalType: "bytes"
+              }
+            ]
+          }
+        ]
       },
       {
         name: "delay_period",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1043,29 +1043,29 @@ export const ibcHandlerAbi = <const>[
           {
             name: "clientType",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "clientStateBytes",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "consensusStateBytes",
             type: "bytes",
-            internalType: "bytes",
-          },
-        ],
-      },
+            internalType: "bytes"
+          }
+        ]
+      }
     ],
     outputs: [
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -1074,13 +1074,13 @@ export const ibcHandlerAbi = <const>[
       {
         name: "portId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "channelId",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
@@ -1091,12 +1091,12 @@ export const ibcHandlerAbi = <const>[
           {
             name: "state",
             type: "uint8",
-            internalType: "enum IbcCoreChannelV1GlobalEnums.State",
+            internalType: "enum IbcCoreChannelV1GlobalEnums.State"
           },
           {
             name: "ordering",
             type: "uint8",
-            internalType: "enum IbcCoreChannelV1GlobalEnums.Order",
+            internalType: "enum IbcCoreChannelV1GlobalEnums.Order"
           },
           {
             name: "counterparty",
@@ -1106,34 +1106,34 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "port_id",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "channel_id",
                 type: "string",
-                internalType: "string",
-              },
-            ],
+                internalType: "string"
+              }
+            ]
           },
           {
             name: "connection_hops",
             type: "string[]",
-            internalType: "string[]",
+            internalType: "string[]"
           },
           {
             name: "version",
             type: "string",
-            internalType: "string",
-          },
-        ],
+            internalType: "string"
+          }
+        ]
       },
       {
         name: "",
         type: "bool",
-        internalType: "bool",
-      },
+        internalType: "bool"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1142,17 +1142,17 @@ export const ibcHandlerAbi = <const>[
       {
         name: "clientId",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "address",
-        internalType: "contract ILightClient",
-      },
+        internalType: "contract ILightClient"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1161,22 +1161,22 @@ export const ibcHandlerAbi = <const>[
       {
         name: "clientId",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "bytes",
-        internalType: "bytes",
+        internalType: "bytes"
       },
       {
         name: "",
         type: "bool",
-        internalType: "bool",
-      },
+        internalType: "bool"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1185,8 +1185,8 @@ export const ibcHandlerAbi = <const>[
       {
         name: "connectionId",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
@@ -1197,7 +1197,7 @@ export const ibcHandlerAbi = <const>[
           {
             name: "client_id",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "versions",
@@ -1207,19 +1207,19 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "identifier",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "features",
                 type: "string[]",
-                internalType: "string[]",
-              },
-            ],
+                internalType: "string[]"
+              }
+            ]
           },
           {
             name: "state",
             type: "uint8",
-            internalType: "enum IbcCoreConnectionV1GlobalEnums.State",
+            internalType: "enum IbcCoreConnectionV1GlobalEnums.State"
           },
           {
             name: "counterparty",
@@ -1229,12 +1229,12 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "client_id",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "connection_id",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "prefix",
@@ -1244,26 +1244,26 @@ export const ibcHandlerAbi = <const>[
                   {
                     name: "key_prefix",
                     type: "bytes",
-                    internalType: "bytes",
-                  },
-                ],
-              },
-            ],
+                    internalType: "bytes"
+                  }
+                ]
+              }
+            ]
           },
           {
             name: "delay_period",
             type: "uint64",
-            internalType: "uint64",
-          },
-        ],
+            internalType: "uint64"
+          }
+        ]
       },
       {
         name: "",
         type: "bool",
-        internalType: "bool",
-      },
+        internalType: "bool"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1272,7 +1272,7 @@ export const ibcHandlerAbi = <const>[
       {
         name: "clientId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "height",
@@ -1282,29 +1282,29 @@ export const ibcHandlerAbi = <const>[
           {
             name: "revision_number",
             type: "uint64",
-            internalType: "uint64",
+            internalType: "uint64"
           },
           {
             name: "revision_height",
             type: "uint64",
-            internalType: "uint64",
-          },
-        ],
-      },
+            internalType: "uint64"
+          }
+        ]
+      }
     ],
     outputs: [
       {
         name: "consensusStateBytes",
         type: "bytes",
-        internalType: "bytes",
+        internalType: "bytes"
       },
       {
         name: "",
         type: "bool",
-        internalType: "bool",
-      },
+        internalType: "bool"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1313,32 +1313,32 @@ export const ibcHandlerAbi = <const>[
       {
         name: "portId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "channelId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "sequence",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "bytes32",
-        internalType: "bytes32",
+        internalType: "bytes32"
       },
       {
         name: "",
         type: "bool",
-        internalType: "bool",
-      },
+        internalType: "bool"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1347,32 +1347,32 @@ export const ibcHandlerAbi = <const>[
       {
         name: "portId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "channelId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "sequence",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "bytes32",
-        internalType: "bytes32",
+        internalType: "bytes32"
       },
       {
         name: "",
         type: "bool",
-        internalType: "bool",
-      },
+        internalType: "bool"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1381,22 +1381,22 @@ export const ibcHandlerAbi = <const>[
       {
         name: "portId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "channelId",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1405,27 +1405,27 @@ export const ibcHandlerAbi = <const>[
       {
         name: "portId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "channelId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "sequence",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "bool",
-        internalType: "bool",
-      },
+        internalType: "bool"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1435,10 +1435,10 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1448,10 +1448,10 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1461,10 +1461,10 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1473,22 +1473,22 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1497,22 +1497,22 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1521,22 +1521,22 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1545,27 +1545,27 @@ export const ibcHandlerAbi = <const>[
       {
         name: "",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "uint8",
-        internalType: "uint8",
-      },
+        internalType: "uint8"
+      }
     ],
-    stateMutability: "view",
+    stateMutability: "view"
   },
   {
     type: "function",
@@ -1574,17 +1574,17 @@ export const ibcHandlerAbi = <const>[
       {
         name: "portId",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "string",
-        internalType: "string",
-      },
+        internalType: "string"
+      }
     ],
-    stateMutability: "pure",
+    stateMutability: "pure"
   },
   {
     type: "function",
@@ -1603,32 +1603,32 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "sequence",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "source_port",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "source_channel",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "destination_port",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "destination_channel",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "data",
                 type: "bytes",
-                internalType: "bytes",
+                internalType: "bytes"
               },
               {
                 name: "timeout_height",
@@ -1638,26 +1638,26 @@ export const ibcHandlerAbi = <const>[
                   {
                     name: "revision_number",
                     type: "uint64",
-                    internalType: "uint64",
+                    internalType: "uint64"
                   },
                   {
                     name: "revision_height",
                     type: "uint64",
-                    internalType: "uint64",
-                  },
-                ],
+                    internalType: "uint64"
+                  }
+                ]
               },
               {
                 name: "timeout_timestamp",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
+                internalType: "uint64"
+              }
+            ]
           },
           {
             name: "proof",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofHeight",
@@ -1667,20 +1667,20 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
-          },
-        ],
-      },
+                internalType: "uint64"
+              }
+            ]
+          }
+        ]
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -1689,16 +1689,16 @@ export const ibcHandlerAbi = <const>[
       {
         name: "clientType",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "client",
         type: "address",
-        internalType: "contract ILightClient",
-      },
+        internalType: "contract ILightClient"
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -1707,12 +1707,12 @@ export const ibcHandlerAbi = <const>[
       {
         name: "sourcePort",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "sourceChannel",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "timeoutHeight",
@@ -1722,34 +1722,34 @@ export const ibcHandlerAbi = <const>[
           {
             name: "revision_number",
             type: "uint64",
-            internalType: "uint64",
+            internalType: "uint64"
           },
           {
             name: "revision_height",
             type: "uint64",
-            internalType: "uint64",
-          },
-        ],
+            internalType: "uint64"
+          }
+        ]
       },
       {
         name: "timeoutTimestamp",
         type: "uint64",
-        internalType: "uint64",
+        internalType: "uint64"
       },
       {
         name: "data",
         type: "bytes",
-        internalType: "bytes",
-      },
+        internalType: "bytes"
+      }
     ],
     outputs: [
       {
         name: "",
         type: "uint64",
-        internalType: "uint64",
-      },
+        internalType: "uint64"
+      }
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -1768,32 +1768,32 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "sequence",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "source_port",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "source_channel",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "destination_port",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "destination_channel",
                 type: "string",
-                internalType: "string",
+                internalType: "string"
               },
               {
                 name: "data",
                 type: "bytes",
-                internalType: "bytes",
+                internalType: "bytes"
               },
               {
                 name: "timeout_height",
@@ -1803,26 +1803,26 @@ export const ibcHandlerAbi = <const>[
                   {
                     name: "revision_number",
                     type: "uint64",
-                    internalType: "uint64",
+                    internalType: "uint64"
                   },
                   {
                     name: "revision_height",
                     type: "uint64",
-                    internalType: "uint64",
-                  },
-                ],
+                    internalType: "uint64"
+                  }
+                ]
               },
               {
                 name: "timeout_timestamp",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
+                internalType: "uint64"
+              }
+            ]
           },
           {
             name: "proof",
             type: "bytes",
-            internalType: "bytes",
+            internalType: "bytes"
           },
           {
             name: "proofHeight",
@@ -1832,25 +1832,25 @@ export const ibcHandlerAbi = <const>[
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64",
+                internalType: "uint64"
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64",
-              },
-            ],
+                internalType: "uint64"
+              }
+            ]
           },
           {
             name: "nextSequenceRecv",
             type: "uint64",
-            internalType: "uint64",
-          },
-        ],
-      },
+            internalType: "uint64"
+          }
+        ]
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -1864,18 +1864,18 @@ export const ibcHandlerAbi = <const>[
           {
             name: "clientId",
             type: "string",
-            internalType: "string",
+            internalType: "string"
           },
           {
             name: "clientMessage",
             type: "bytes",
-            internalType: "bytes",
-          },
-        ],
-      },
+            internalType: "bytes"
+          }
+        ]
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -1884,35 +1884,35 @@ export const ibcHandlerAbi = <const>[
       {
         name: "destinationPortId",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "destinationChannel",
         type: "string",
-        internalType: "string",
+        internalType: "string"
       },
       {
         name: "sequence",
         type: "uint64",
-        internalType: "uint64",
+        internalType: "uint64"
       },
       {
         name: "acknowledgement",
         type: "bytes",
-        internalType: "bytes",
-      },
+        internalType: "bytes"
+      }
     ],
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "nonpayable"
   },
   {
     type: "error",
     name: "ErrCapabilityAlreadyClaimed",
-    inputs: [],
+    inputs: []
   },
   {
     type: "error",
     name: "ErrClientNotFound",
-    inputs: [],
-  },
-];
+    inputs: []
+  }
+]

@@ -14,10 +14,7 @@
       }
     }
   },
-  "files": [
-    "dist",
-    "./package.json"
-  ],
+  "files": ["dist", "./package.json"],
   "scripts": {
     "build": "tsup --config=tsup.config.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit",

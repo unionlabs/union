@@ -1,4 +1,4 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from "tsup"
 
 /**
  * @see https://tsup.egoist.dev/#usage
@@ -15,5 +15,5 @@ export default defineConfig({
   target: "esnext",
   platform: "browser",
   treeshake: "recommended",
-  entry: ["./src/index.ts"],
-});
+  entry: ["./src/index.ts"]
+})

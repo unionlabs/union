@@ -1,37 +1,28 @@
-import { erc20Abi, type Hash, type Account, type Address } from "viem";
-import { raise } from "./utilities";
-import { ucs01relayAbi } from "./abi";
-import { GasPrice } from "@cosmjs/stargate";
-import type { UnionClient } from "./actions.ts";
-import { Tendermint37Client } from "@cosmjs/tendermint-rpc";
-import { evmEncodeUnionAddress } from "#/utilities/codec.ts";
-import { UCS01_EVM_ADDRESS } from "./constants";
-import { chainIds, type ChainId, chain } from "./constants/chain.ts";
-import type { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import type { CosmjsOfflineSigner } from "@leapwallet/cosmos-snap-provider";
-import {
-  type ExecuteResult,
-  SigningCosmWasmClient,
-} from "@cosmjs/cosmwasm-stargate";
+import { erc20Abi, type Hash, type Account, type Address } from "viem"
+import { raise } from "./utilities"
+import { ucs01relayAbi } from "./abi"
+import { GasPrice } from "@cosmjs/stargate"
+import type { UnionClient } from "./actions.ts"
+import { Tendermint37Client } from "@cosmjs/tendermint-rpc"
+import { evmEncodeUnionAddress } from "#/utilities/codec.ts"
+import { UCS01_EVM_ADDRESS } from "./constants"
+import { chainIds, type ChainId, chain } from "./constants/chain.ts"
+import type { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
+import type { CosmjsOfflineSigner } from "@leapwallet/cosmos-snap-provider"
+import { type ExecuteResult, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 
 export interface ApproveAssetParameters {
-  chainId: "1" | "11155111";
-  assetId: Address;
-  signer: Account | Address;
-  amount: bigint;
-  spender?: Address;
-  simulate?: boolean;
+  chainId: "1" | "11155111"
+  assetId: Address
+  signer: Account | Address
+  amount: bigint
+  spender?: Address
+  simulate?: boolean
 }
 
 export async function approveAsset(
   client: UnionClient,
-  {
-    signer,
-    assetId,
-    amount,
-    spender = UCS01_EVM_ADDRESS,
-    simulate = true,
-  }: ApproveAssetParameters
+  { signer, assetId, amount, spender = UCS01_EVM_ADDRESS, simulate = true }: ApproveAssetParameters
 ): Promise<Hash> {
   try {
     const writeContractParameters = {
@@ -40,47 +31,42 @@ export async function approveAsset(
       functionName: "approve",
       address: assetId,
       args: [spender, amount],
-      chain: client.chain,
-    } as const;
+      chain: client.chain
+    } as const
 
-    if (!simulate) return await client.writeContract(writeContractParameters);
+    if (!simulate) return await client.writeContract(writeContractParameters)
 
-    const { request } = await client.simulateContract(writeContractParameters);
-    const transactionHash = await client.writeContract(request);
-    return transactionHash;
+    const { request } = await client.simulateContract(writeContractParameters)
+    const transactionHash = await client.writeContract(request)
+    return transactionHash
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : error;
-    raise(
-      `[approveAsset] error while approving ${amount} muno to ${spender}: ${errorMessage}`
-    );
+    const errorMessage = error instanceof Error ? error.message : error
+    raise(`[approveAsset] error while approving ${amount} muno to ${spender}: ${errorMessage}`)
   }
 }
 
 export type SendAssetParameters<TChainId extends ChainId> = TChainId extends "6"
   ? { chainId: "6" } & SendAssetFromUnionToEthereum
-  : { chainId: "1" | "11155111" } & SendAssetFromEthereumToUnion;
+  : { chainId: "1" | "11155111" } & SendAssetFromEthereumToUnion
 
 export async function sendAsset<TChainId extends ChainId>(
   client: UnionClient,
   args: SendAssetParameters<TChainId>
 ) {
-  if (!chainIds.includes(args.chainId))
-    throw new Error(`Invalid chainId: ${args.chainId}`);
-  if (args.chainId === "6")
-    return await sendAssetFromUnionToEthereum(client, args);
-  if (args.chainId === "11155111")
-    return await sendAssetFromEthereumToUnion(client, args);
-  raise(`[sendAsset] chainId ${args.chainId} is not supported`);
+  if (!chainIds.includes(args.chainId)) throw new Error(`Invalid chainId: ${args.chainId}`)
+  if (args.chainId === "6") return await sendAssetFromUnionToEthereum(client, args)
+  if (args.chainId === "11155111") return await sendAssetFromEthereumToUnion(client, args)
+  raise(`[sendAsset] chainId ${args.chainId} is not supported`)
 }
 
 interface SendAssetFromEthereumToUnion {
-  denomAddress: Address;
-  receiver: string;
-  amount: bigint;
-  signer: Account | Address;
-  port: string;
-  channel: string;
-  simulate?: boolean;
+  denomAddress: Address
+  receiver: string
+  amount: bigint
+  signer: Account | Address
+  port: string
+  channel: string
+  simulate?: boolean
 }
 
 /**
@@ -102,12 +88,12 @@ export async function sendAssetFromEthereumToUnion(
     denomAddress,
     port,
     channel,
-    simulate = true,
+    simulate = true
   }: SendAssetFromEthereumToUnion
 ): Promise<Hash> {
-  const counterpartyTimeoutRevisionNumber = BigInt(chain.union.testnet.id);
+  const counterpartyTimeoutRevisionNumber = BigInt(chain.union.testnet.id)
   // TODO: make dynamic?
-  const counterpartyTimeoutRevisionHeight = 800_000_000n; // anything > current height
+  const counterpartyTimeoutRevisionHeight = 800_000_000n // anything > current height
   try {
     const writeContractParameters = {
       account: signer,
@@ -120,38 +106,38 @@ export async function sendAssetFromEthereumToUnion(
         evmEncodeUnionAddress(receiver),
         [{ denom: denomAddress, amount }],
         counterpartyTimeoutRevisionNumber,
-        counterpartyTimeoutRevisionHeight,
+        counterpartyTimeoutRevisionHeight
       ],
-      chain: client.chain,
-    } as const;
+      chain: client.chain
+    } as const
 
     if (!simulate) {
-      return await client.writeContract(writeContractParameters);
+      return await client.writeContract(writeContractParameters)
     }
-    const { request } = await client.simulateContract(writeContractParameters);
-    const transactionHash = await client.writeContract(request);
-    return transactionHash;
+    const { request } = await client.simulateContract(writeContractParameters)
+    const transactionHash = await client.writeContract(request)
+    return transactionHash
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : error;
+    const errorMessage = error instanceof Error ? error.message : error
     raise(
       `[sendAssetFromEthereumToUnion] error while sending ${amount} muno to ${receiver} on ${client.transport.name} request: ${errorMessage}`
-    );
+    )
   }
 }
 
-type OfflineSignerType = CosmjsOfflineSigner | DirectSecp256k1HdWallet;
+type OfflineSignerType = CosmjsOfflineSigner | DirectSecp256k1HdWallet
 
 type SendAssetFromUnionToEthereum = {
-  contractAddress: string;
-  receiver: string;
-  amount: bigint;
-  denom: string;
-  gasPrice?: string;
-  rpcUrl: string;
-  memo?: string;
-  signer: OfflineSignerType;
-  channel: string;
-};
+  contractAddress: string
+  receiver: string
+  amount: bigint
+  denom: string
+  gasPrice?: string
+  rpcUrl: string
+  memo?: string
+  signer: OfflineSignerType
+  channel: string
+}
 
 export async function sendAssetFromUnionToEthereum(
   _client: UnionClient | undefined,
@@ -164,20 +150,16 @@ export async function sendAssetFromUnionToEthereum(
     gasPrice,
     channel,
     rpcUrl,
-    memo = "random more than four characters I am transferring.",
+    memo = "random more than four characters I am transferring."
   }: SendAssetFromUnionToEthereum
 ): Promise<ExecuteResult> {
-  const tendermintClient = await Tendermint37Client.connect(rpcUrl);
-  const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(
-    tendermintClient,
-    signer,
-    {
-      gasPrice: GasPrice.fromString(gasPrice ?? `0.001${denom}`),
-    }
-  );
+  const tendermintClient = await Tendermint37Client.connect(rpcUrl)
+  const cosmwasmClient = await SigningCosmWasmClient.createWithSigner(tendermintClient, signer, {
+    gasPrice: GasPrice.fromString(gasPrice ?? `0.001${denom}`)
+  })
 
-  const [account] = await signer.getAccounts();
-  const address = account?.address ?? raise("address is undefined");
+  const [account] = await signer.getAccounts()
+  const address = account?.address ?? raise("address is undefined")
 
   const result = await cosmwasmClient.execute(
     address,
@@ -186,7 +168,7 @@ export async function sendAssetFromUnionToEthereum(
     "auto",
     undefined,
     [{ denom, amount: amount.toString() }]
-  );
+  )
 
-  return result;
+  return result
 }
