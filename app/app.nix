@@ -1,15 +1,15 @@
 { ... }: {
-  perSystem = { pkgs, nodePkgs, lib, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with nodePkgs; [ nodejs_21 ];
+      nodeDeps = with unstablePkgs; [ nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
-        app = nodePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-hx5y0HrREkKPfHU02CR32ZvLaPOHmGEtqPUluTuFXwo=";
+        app = unstablePkgs.buildNpmPackage {
+          npmDepsHash = "sha256-ewR+vT4zXtTL2t4QNIwKWKotd1cgOWnPpKwIrVfxxkQ=";
           src = ./.;
           sourceRoot = "app";
           pname = packageJSON.name;

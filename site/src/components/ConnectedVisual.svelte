@@ -1,146 +1,146 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
-  import tw from '~tailwind.config'
-  import skip from '#/assets/partners/skip.svelte?raw'
-  import noble from '#/assets/partners/noble.svelte?raw'
-  import quasar from '#/assets/partners/quasar.svelte?raw'
-  import celestia from '#/assets/partners/celestia.svelte?raw'
-  import ethereum from '#/assets/partners/ethereum.svelte?raw'
-  import movement from '#/assets/partners/movement.svelte?raw'
-  import union from '#/assets/union-logo/union-logo-transparent.svg?raw'
+import { onMount } from "svelte"
+import tw from "~tailwind.config"
+import skip from "#/assets/partners/skip.svelte?raw"
+import noble from "#/assets/partners/noble.svelte?raw"
+import quasar from "#/assets/partners/quasar.svelte?raw"
+import celestia from "#/assets/partners/celestia.svelte?raw"
+import ethereum from "#/assets/partners/ethereum.svelte?raw"
+import movement from "#/assets/partners/movement.svelte?raw"
+import union from "#/assets/union-logo/union-logo-transparent.svg?raw"
 
-  /* Define our media query and media query object */
-  let mq: MediaQueryList;
-  let svg: Element | null;
+/* Define our media query and media query object */
+let mq: MediaQueryList
+let svg: Element | null
 
-  onMount(() => {
-    mq = matchMedia('only screen and (max-width: 640px)');
-    svg = document.querySelector('#connected-visual')
+onMount(() => {
+  mq = matchMedia("only screen and (max-width: 640px)")
+  svg = document.querySelector("#connected-visual")
 
-    /* Store the original value in a variable */
-    const originalViewBox = svg?.getAttribute('viewBox');
+  /* Store the original value in a variable */
+  const originalViewBox = svg?.getAttribute("viewBox")
 
-    /* Define the handler */
-    const updateViewBox = () => {
-        if (mq.matches) {
-            /* Change the viewBox dimensions to show the hexagon */
-            svg?.setAttribute('viewBox', `64 0 ${(14 * 32) - 1} ${(11 * 32) - 1}`);
-        } else {
-            svg?.setAttribute('viewBox', originalViewBox!);
-        }
+  /* Define the handler */
+  const updateViewBox = () => {
+    if (mq.matches) {
+      /* Change the viewBox dimensions to show the hexagon */
+      svg?.setAttribute("viewBox", `64 0 ${14 * 32 - 1} ${11 * 32 - 1}`)
+    } else {
+      svg?.setAttribute("viewBox", `${originalViewBox}`)
     }
+  }
 
+  updateViewBox()
+
+  svg?.addEventListener("load", () => {
     updateViewBox()
-
-    svg?.addEventListener('load', () => {
-      updateViewBox()
-    });
-
-    /* Fire if the media condition changes */
-    mq.addEventListener('change', updateViewBox);
   })
 
-  const pos = (p: number) => p * 32
+  /* Fire if the media condition changes */
+  mq.addEventListener("change", updateViewBox)
+})
 
-  type Node = {
-    x: number
-    y: number
-    logo: string
-    url?: string
-    scale?: number
+const pos = (p: number) => p * 32
+
+type Node = {
+  x: number
+  y: number
+  logo: string
+  url?: string
+  scale?: number
+}
+
+const nodes: Record<string, Node> = {
+  union: { x: 9, y: 6, logo: union, scale: 2.0, url: "https://union.build" },
+  celestia: { x: 4, y: 4, logo: celestia, url: "https://celestia.org/" },
+  ethereum: { x: 8, y: 3, logo: ethereum, url: "https://ethereum.org/", scale: 1.2 },
+  movement: { x: 5, y: 8, logo: movement, url: "https://movementlabs.xyz/" },
+  noble: { x: 14, y: 8, logo: noble, url: "https://nobleassets.xyz/" },
+  quasar: { x: 10, y: 9, logo: quasar, url: "https://quasar.fi/" },
+  skip: { x: 13, y: 4, logo: skip, url: "https://skip.money/", scale: 1.2 }
+}
+
+const conns: Array<{ from: string; to: string; delay: number }> = [
+  { to: "celestia", from: "union", delay: 2 },
+  { to: "ethereum", from: "union", delay: 3 },
+  { to: "movement", from: "union", delay: 4 },
+  { to: "noble", from: "union", delay: 5 },
+  { to: "quasar", from: "union", delay: 6 },
+  { to: "skip", from: "union", delay: 7 },
+  { to: "union", from: "celestia", delay: 7 },
+  { to: "union", from: "ethereum", delay: 6 },
+  { to: "union", from: "movement", delay: 5 },
+  { to: "union", from: "noble", delay: 4 },
+  { to: "union", from: "quasar", delay: 3 },
+  { to: "union", from: "skip", delay: 2 }
+]
+
+const scale = (input: number, srcRange: [number, number], dstRange: [number, number]) => {
+  const [dstMin, dstMax] = dstRange
+  const [srcMin, srcMax] = srcRange
+
+  const percent = (input - srcMin) / (srcMax - srcMin)
+  const dstOutput = percent * (dstMax - dstMin) + dstMin
+
+  return dstOutput
+}
+
+const SECONDS_PER_CELL = 0.7
+
+const LOGO_SIZE = 28
+
+const connectionData = conns.map(({ from, to, delay }) => {
+  const { x: fromX, y: fromY } = nodes[from]
+  const { x: toX, y: toY } = nodes[to]
+
+  const dx = toX - fromX
+  const dy = toY - fromY
+
+  const totalDistance = Math.abs(dx) + Math.abs(dy)
+
+  // console.log(dx, dy, totalDistance)
+
+  const duration = totalDistance * SECONDS_PER_CELL
+
+  const totalTime = duration + delay
+
+  // console.log('dx', dx, 'dy', dy, 'duration', duration, 'totalTime', totalTime)
+
+  // time (clamped between [0, 1]) for the h and v components
+  const hTime = (Math.abs(dx) * SECONDS_PER_CELL) / totalTime
+  const vTime = (Math.abs(dy) * SECONDS_PER_CELL) / totalTime
+
+  // console.log('hTime', hTime, 'vTime', vTime)
+
+  // clamp between [0, (duration / totalTime)]
+  const radiusKeyTimes = [0, 0.1, 0.4, 0.5, 1]
+    .map(x => scale(x, [0, 1], [0, duration / totalTime]))
+    .join(";")
+
+  const cxKeyTimes = [0, 0.5, 1].map(x => scale(x, [0, 1], [0, hTime])).join(";")
+
+  const cyKeyTimes = [0, 0.5, 1]
+    .map(x => scale(x, [0, 1], [hTime, hTime + vTime]) - hTime / 2)
+    .join(";")
+
+  return {
+    from,
+    to,
+    dx,
+    dy,
+    fromX,
+    fromY,
+    toX,
+    toY,
+    totalTime,
+    cxKeyTimes,
+    cyKeyTimes,
+    radiusKeyTimes,
+    delay
   }
+})
 
-  const nodes: Record<string, Node> = {
-    union: { x: 9, y: 6, logo: union, scale: 2.0, url: 'https://union.build' },
-    celestia: { x: 4, y: 4, logo: celestia, url: 'https://celestia.org/' },
-    ethereum: { x: 8, y: 3, logo: ethereum, url: 'https://ethereum.org/', scale: 1.2 },
-    movement: { x: 5, y: 8, logo: movement, url: 'https://movementlabs.xyz/' },
-    noble: { x: 14, y: 8, logo: noble, url: 'https://nobleassets.xyz/' },
-    quasar: { x: 10, y: 9, logo: quasar, url: 'https://quasar.fi/' },
-    skip: { x: 13, y: 4, logo: skip, url: 'https://skip.money/', scale: 1.2 }
-  }
-
-  const conns: { from: string; to: string; delay: number }[] = [
-    { to: 'celestia', from: 'union', delay: 2 },
-    { to: 'ethereum', from: 'union', delay: 3 },
-    { to: 'movement', from: 'union', delay: 4 },
-    { to: 'noble', from: 'union', delay: 5 },
-    { to: 'quasar', from: 'union', delay: 6 },
-    { to: 'skip', from: 'union', delay: 7 },
-    { to: 'union', from: 'celestia', delay: 7 },
-    { to: 'union', from: 'ethereum', delay: 6 },
-    { to: 'union', from: 'movement', delay: 5 },
-    { to: 'union', from: 'noble', delay: 4 },
-    { to: 'union', from: 'quasar', delay: 3 },
-    { to: 'union', from: 'skip', delay: 2 }
-  ]
-
-  const scale = (input: number, srcRange: [number, number], dstRange: [number, number]) => {
-    const [dstMin, dstMax] = dstRange
-    const [srcMin, srcMax] = srcRange
-
-    const percent = (input - srcMin) / (srcMax - srcMin)
-    const dstOutput = percent * (dstMax - dstMin) + dstMin
-
-    return dstOutput
-  }
-
-  const SECONDS_PER_CELL = 0.7
-
-  const LOGO_SIZE = 28
-
-  let connectionData = conns.map(({ from, to, delay }) => {
-    const { x: fromX, y: fromY } = nodes[from]
-    const { x: toX, y: toY } = nodes[to]
-
-    let dx = toX - fromX
-    let dy = toY - fromY
-
-    let totalDistance = Math.abs(dx) + Math.abs(dy)
-
-    // console.log(dx, dy, totalDistance)
-
-    let duration = totalDistance * SECONDS_PER_CELL
-
-    let totalTime = duration + delay
-
-    // console.log('dx', dx, 'dy', dy, 'duration', duration, 'totalTime', totalTime)
-
-    // time (clamped between [0, 1]) for the h and v components
-    let hTime = (Math.abs(dx) * SECONDS_PER_CELL) / totalTime
-    let vTime = (Math.abs(dy) * SECONDS_PER_CELL) / totalTime
-
-    // console.log('hTime', hTime, 'vTime', vTime)
-
-    // clamp between [0, (duration / totalTime)]
-    let radiusKeyTimes = [0, 0.1, 0.4, 0.5, 1]
-      .map(x => scale(x, [0, 1], [0, duration / totalTime]))
-      .join(';')
-
-    let cxKeyTimes = [0, 0.5, 1].map(x => scale(x, [0, 1], [0, hTime])).join(';')
-
-    let cyKeyTimes = [0, 0.5, 1]
-      .map(x => scale(x, [0, 1], [hTime, hTime + vTime]) - hTime / 2)
-      .join(';')
-
-    return {
-      from,
-      to,
-      dx,
-      dy,
-      fromX,
-      fromY,
-      toX,
-      toY,
-      totalTime,
-      cxKeyTimes,
-      cyKeyTimes,
-      radiusKeyTimes,
-      delay
-    }
-  })
-
-  const smallViewBox = `0 0 ${(18 * 32) - 1} ${(11 * 32) - 1}`;
+const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
 </script>
 
 <svg

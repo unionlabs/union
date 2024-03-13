@@ -1,7 +1,7 @@
-import process from 'process'
-import { Buffer } from 'buffer'
-import EventEmitter from 'events'
-import { browser } from '$app/environment'
+import process from "process"
+import { Buffer } from "buffer"
+import EventEmitter from "events"
+import { browser } from "$app/environment"
 
 if (browser) {
   window.Buffer = Buffer
@@ -11,6 +11,6 @@ if (browser) {
 }
 
 // @ts-expect-error
-BigInt['prototype'].toJSON = function () {
+BigInt["prototype"].toJSON = function () {
   return this.toString()
 }

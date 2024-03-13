@@ -8,8 +8,8 @@
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
     # We need the latest nixpkgs for buildGo121Module, remove this once we upgrade nixpkgs
     nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-23.11";
-    # Track a separate nixpkgs for latest Node.js
-    nixpkgs-nodejs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Track a separate nixpkgs for unstable nixos
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -83,11 +83,10 @@
       url = "github:CosmWasm/wasmvm/v1.5.0";
       flake = false;
     };
-    oxlint = {
-      url = "github:web-infra-dev/oxc/oxlint_v0.2.6";
+    biome = {
+      url = "github:biomejs/biome/cli/v1.6.0";
       flake = false;
     };
-
     stargaze = {
       url = "git+https://github.com/public-awesome/stargaze?ref=feature/sdk-v050&submodules=1";
       flake = false;
@@ -196,7 +195,7 @@
         ./tools/rust/rust.nix
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
-        ./tools/oxlint/oxlint.nix
+        ./tools/biome/biome.nix
         ./tools/docgen/docgen.nix
         ./tools/hasura-cli/hasura-cli.nix
         ./tools/todo-comment.nix
@@ -225,7 +224,7 @@
         , crane
         , system
         , lib
-        , oxlint
+        , biome
         , cargo-fuzz
         , ...
         }:
@@ -250,12 +249,12 @@
           };
 
           goPkgs = import inputs.nixpkgs-go { inherit system; };
-          nodePkgs = import inputs.nixpkgs-nodejs { inherit system; };
+          unstablePkgs = import inputs.nixpkgs-unstable { inherit system; };
         in
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs nodePkgs mkCi;
+              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs unstablePkgs mkCi;
 
               gitRev =
                 if (builtins.hasAttr "rev" self) then self.rev else "dirty";
@@ -416,7 +415,10 @@
 
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
-            buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
+            buildInputs = [
+              rust.toolchains.dev
+              biome
+            ] ++ (with pkgs; [
               cargo-fuzz
               cargo-llvm-cov
               bacon
@@ -432,7 +434,7 @@
               protobuf
               self'.packages.tdc
               yq
-            ] ++ (with nodePkgs; [
+            ] ++ (with unstablePkgs; [
               bun # for running TypeScript files on the fly
               nodejs_21
               nodePackages.graphqurl
@@ -499,38 +501,28 @@
                   file = "dictionary.txt";
                 };
                 prettier = {
-                  enable = true;
+                  enable = false;
                   excludes = [ "./app/**/*" ];
-                };
-                taplo = { enable = true; };
-              };
-              settings = {
-                global.excludes = [ "**/vendor/**" ];
-                formatter.prettier = {
-                  # TODO: Use settings.pluginSearchDirs
-                  options = [ "--write" ] ++ (if pkgs.stdenv.isLinux then
-                    [ "--plugin-search-dir=${prettier-solidity}/lib" ]
-                  else
-                    [ ]);
                   includes = [
-                    "*.css"
-                    "*.html"
-                    "*.js"
-                    "*.cjs"
-                    "*.mjs"
-                    "*.json"
-                    "*.jsx"
                     "*.md"
                     "*.mdx"
-                    "*.scss"
-                    "*.ts"
-                    "*.tsx"
-                    "*.d.ts"
                     "*.yaml"
                     "*.yml"
                     "*.sol"
                   ];
+                  settings = {
+                    pluginSearchDirs = [ "${prettier-solidity}/lib" ];
+                  };
                 };
+                taplo = { enable = true; };
+                biome = {
+                  enable = true;
+                  package = biome;
+                  config-path = ./biome.json;
+                };
+              };
+              settings = {
+                global.excludes = [ "**/vendor/**" ];
               };
             };
         };

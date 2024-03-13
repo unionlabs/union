@@ -1,13 +1,13 @@
 <script lang="ts">
-  import AppleGraph from '#/components/graphs/AppleGraph.svelte'
+import AppleGraph from "#/components/graphs/AppleGraph.svelte"
 
-  type BarProps = {
-  	primary?: boolean,
-  	width: number,
-  	label: string,
-  }
+type BarProps = {
+  primary?: boolean
+  width: number
+  label: string
+}
 
-  export let bars: BarProps[];
+export let bars: Array<BarProps>
 </script>
 
 <div class="flex gap-8">

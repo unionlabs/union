@@ -23,6 +23,23 @@
         "type": "github"
       }
     },
+    "biome": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1709906449,
+        "narHash": "sha256-jiVPFHde2votioUn0n9RyBgyOBpATcTstcQAvWHItyo=",
+        "owner": "biomejs",
+        "repo": "biome",
+        "rev": "560628b380b0b1f61303c8e5ca2175d3b4794089",
+        "type": "github"
+      },
+      "original": {
+        "owner": "biomejs",
+        "ref": "cli/v1.6.0",
+        "repo": "biome",
+        "type": "github"
+      }
+    },
     "bls-eth-go": {
       "flake": false,
       "locked": {
@@ -371,22 +388,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-nodejs": {
-      "locked": {
-        "lastModified": 1707268954,
-        "narHash": "sha256-2en1kvde3cJVc3ZnTy8QeD2oKcseLFjYPLKhIGDanQ0=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "f8e2ebd66d097614d51a56a755450d4ae1632df1",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-solc": {
       "locked": {
         "lastModified": 1707268954,
@@ -403,20 +404,19 @@
         "type": "github"
       }
     },
-    "oxlint": {
-      "flake": false,
+    "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1706279735,
-        "narHash": "sha256-J4QDhb3C4ioJyD3345hyNRHsGyiJWuCxZ77auCg8joQ=",
-        "owner": "web-infra-dev",
-        "repo": "oxc",
-        "rev": "1b5bbb954c53b0461c2e1eebe56d8a1e60d745e7",
+        "lastModified": 1709703039,
+        "narHash": "sha256-6hqgQ8OK6gsMu1VtcGKBxKQInRLHtzulDo9Z5jxHEFY=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "9df3e30ce24fd28c7b3e2de0d986769db5d6225d",
         "type": "github"
       },
       "original": {
-        "owner": "web-infra-dev",
-        "ref": "oxlint_v0.2.6",
-        "repo": "oxc",
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
         "type": "github"
       }
     },
@@ -440,6 +440,7 @@
     "root": {
       "inputs": {
         "arion": "arion",
+        "biome": "biome",
         "bls-eth-go": "bls-eth-go",
         "blst": "blst",
         "cometbls": "cometbls",
@@ -456,9 +457,8 @@
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "nixpkgs-go": "nixpkgs-go",
-        "nixpkgs-nodejs": "nixpkgs-nodejs",
         "nixpkgs-solc": "nixpkgs-solc",
-        "oxlint": "oxlint",
+        "nixpkgs-unstable": "nixpkgs-unstable",
         "public-awesome-launchpad": "public-awesome-launchpad",
         "rust-overlay": "rust-overlay",
         "stargaze": "stargaze",
@@ -532,11 +532,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1706244383,
-        "narHash": "sha256-a0b838eZHJXDch2FQdppa0WzqkdXQ1ZCanO3cgk1mGI=",
+        "lastModified": 1710285259,
+        "narHash": "sha256-xFnn6CX5foWGkSoN7YEXef+RiTQM9aLCQxK5paCqgn4=",
         "owner": "unionlabs",
         "repo": "treefmt-nix",
-        "rev": "2262ef4435b313c0aae1defc6a0b5a952ec7c38b",
+        "rev": "7fce61d753dcfadec782a2e3be4edd7d786a1582",
         "type": "github"
       },
       "original": {

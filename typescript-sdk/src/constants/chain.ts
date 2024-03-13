@@ -1,14 +1,13 @@
-import type { Chain } from "viem";
-import { sepolia } from "viem/chains";
+import type { Chain } from "viem"
+import { sepolia } from "viem/chains"
 
 /**
  * Union chain ID is `6` on testnet: 'union-testnet-6'
  */
-export const chainIds = ["1", "6", "11155111"] as const;
-export type ChainId = (typeof chainIds)[number];
+export const chainIds = ["1", "6", "11155111"] as const
+export type ChainId = (typeof chainIds)[number]
 
-export const isValidChainId = (chainId: string): chainId is ChainId =>
-  chainIds.includes(chainId);
+export const isValidChainId = (chainId: string): chainId is ChainId => chainIds.includes(chainId)
 
 /**
  * TODO: Add `ethereum.mainnet` and `union.mainnet` info on launch
@@ -24,9 +23,9 @@ export const chain = {
         symbol: "UNO",
         denom: "muno",
         decimals: 18,
-        address: "0x",
-      },
-    },
+        address: "0x"
+      }
+    }
   },
   union: {
     testnet: {
@@ -39,16 +38,13 @@ export const chain = {
           /**
            * @see https://docs.union.build/joining_the_testnet/public_endpoints#rpc
            */
-          http: [
-            "https://rpc.testnet.bonlulu.uno",
-            "https://union-testnet-rpc.polkachu.com",
-          ],
-        },
+          http: ["https://rpc.testnet.bonlulu.uno", "https://union-testnet-rpc.polkachu.com"]
+        }
       },
       nativeCurrency: {
         name: "Union",
         symbol: "UNO",
-        decimals: 6,
+        decimals: 6
       },
       token: {
         name: "Union",
@@ -57,29 +53,23 @@ export const chain = {
         decimals: 6,
         address:
           process.env.UCS01_UNION_ADDRESS ||
-          "union14pfzjnvzacqsmgjyf0avksc8cr70hsyt5epzcp66tmjpswf8sq8sn5meuy",
-      },
-    },
-  },
-} as const satisfies TChain;
+          "union14pfzjnvzacqsmgjyf0avksc8cr70hsyt5epzcp66tmjpswf8sq8sn5meuy"
+      }
+    }
+  }
+} as const satisfies TChain
 
 type Token = {
-  name: string;
-  symbol: string;
-  denom: string;
-  decimals: number;
-  address: string;
-};
+  name: string
+  symbol: string
+  denom: string
+  decimals: number
+  address: string
+}
 
 type TChain =
   | Record<
       "ethereum",
-      Record<
-        "sepolia",
-        Chain & { token: Token; portId: string; channelId: string }
-      >
+      Record<"sepolia", Chain & { token: Token; portId: string; channelId: string }>
     >
-  | Record<
-      "union",
-      Record<"testnet", Chain & { token: Token; channelId: string }>
-    >;
+  | Record<"union", Record<"testnet", Chain & { token: Token; channelId: string }>>

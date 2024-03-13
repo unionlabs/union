@@ -1,33 +1,33 @@
 ---
-let menuItems = [
+const menuItems = [
   {
-    url: '/blog',
-    name: 'Blog',
+    url: "/blog",
+    name: "Blog"
   },
   {
-    url: '/docs',
-    name: 'Docs',
+    url: "/docs",
+    name: "Docs"
   },
   {
-    url: '/team',
-    name: 'Team',
+    url: "/team",
+    name: "Team"
   },
   {
-    url: '/brand-kit',
-    name: 'Brand Kit',
+    url: "/brand-kit",
+    name: "Brand Kit"
   },
   {
-    url: 'https://discord.union.build',
-    name: 'Discord',
+    url: "https://discord.union.build",
+    name: "Discord"
   },
   {
-    url: 'https://x.com/union_build',
-    name: '𝕏'
-  },
+    url: "https://x.com/union_build",
+    name: "𝕏"
+  }
 ]
 
 function isInternal(menuItem: { url: string }): boolean {
-  return menuItem.url[0] === '/'
+  return menuItem.url[0] === "/"
 }
 ---
 

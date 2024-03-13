@@ -1,9 +1,9 @@
 export function raise(error: unknown): never {
-  throw typeof error === "string" ? new Error(error) : error;
+  throw typeof error === "string" ? new Error(error) : error
 }
 
 export function munoToUno(muno: string | number) {
-  return (Number(muno) / 1e6).toFixed(6);
+  return (Number(muno) / 1e6).toFixed(6)
 }
 
 export async function fetcher<T>(url: string, options?: RequestInit) {
@@ -12,16 +12,16 @@ export async function fetcher<T>(url: string, options?: RequestInit) {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      ...options?.headers,
-    },
-  });
+      ...options?.headers
+    }
+  })
   if (!response.ok) {
     raise(
       `\n ${response.status} - Failed to fetch from ${url}:\n ${
         response.statusText
       }\n ${await response.text()}\n`
-    );
+    )
   }
-  const data = (await response.json()) as T;
-  return data;
+  const data = (await response.json()) as T
+  return data
 }

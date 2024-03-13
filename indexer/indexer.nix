@@ -1,13 +1,13 @@
 { ... }: {
-  perSystem = { pkgs, nodePkgs, lib, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with nodePkgs; [ nodejs_21 ];
+      nodeDeps = with unstablePkgs; [ nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
     in
     {
       packages = {
-        indexer = nodePkgs.buildNpmPackage {
+        indexer = unstablePkgs.buildNpmPackage {
           npmDepsHash = "sha256-LIG/5rwLcYvGDKdsUgsPYn4ElsOeVdYage9VJqLAkWU=";
           src = ./.;
           sourceRoot = "indexer";

@@ -1,13 +1,13 @@
 { ... }: {
-  perSystem = { pkgs, nodePkgs, lib, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with nodePkgs; [ vips nodejs_21 ];
+      nodeDeps = with unstablePkgs; [ vips nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
     in
     {
       packages = {
-        site = nodePkgs.buildNpmPackage {
+        site = unstablePkgs.buildNpmPackage {
           npmDepsHash = "sha256-mn2gmEKW3CD/liGiqqMwHxXbLyBAQg6tisTzyVFUK/k=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];

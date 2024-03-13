@@ -1,0 +1,8 @@
+# add commit SHA to ignore
+
+# GitHub can use this file to ignore certain commits when calculating the blame for a file.
+# This is useful for ignoring commits that are not relevant to the code,
+# such as large formatting changes: for example changing quotes from single to double.
+
+# format FE files with biome instead of prettier
+31561995a391dfb9de39ae0143cac7d6b680f1ab

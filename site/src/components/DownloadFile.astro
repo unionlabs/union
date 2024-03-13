@@ -12,7 +12,7 @@ interface Props {
 
 let { filepath, filename, class: suppliedClass } = Astro.props
 
-filename = filename || filepath.split('/').pop()
+filename = filename || filepath.split("/").pop()
 ---
 
 <a

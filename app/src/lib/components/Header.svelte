@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge } from '$lib/components/ui/badge'
+import { Badge } from "$lib/components/ui/badge"
 </script>
 
 <header class="text-red flex space-x-3 border-b-2 border-solid border-neutral-900 p-4">

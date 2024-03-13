@@ -1,42 +1,36 @@
 #!/usr/bin/env bun
-import { fetcher } from "#/utilities";
-import type { Coin } from "@cosmjs/amino";
-import { getUnoFromFaucet } from "#/utilities/faucet.ts";
+import { fetcher } from "#/utilities"
+import type { Coin } from "@cosmjs/amino"
+import { getUnoFromFaucet } from "#/utilities/faucet.ts"
 
 // bun ./scripts/faucet.ts --address union1rph0kfwlew2dqs78uydcs93pwza5qqnc22n6ln
 
-const REST_API_URL = "https://api.testnet.bonlulu.uno";
+const REST_API_URL = "https://api.testnet.bonlulu.uno"
 
-const [flag, address] = process.argv.slice(2);
+const [flag, address] = process.argv.slice(2)
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+main().catch(error => {
+  console.error(error)
+  process.exit(1)
+})
 
 async function main() {
   if (flag !== "--address" || !address) {
-    throw new Error("Usage: bun ./scripts/faucet.ts --address <address>");
+    throw new Error("Usage: bun ./scripts/faucet.ts --address <address>")
   }
-  const faucetResponse = await getUnoFromFaucet({ address });
+  const faucetResponse = await getUnoFromFaucet({ address })
   if (!Object.hasOwn(faucetResponse, "union")) {
-    console.error(
-      "Failed to get uno from faucet",
-      JSON.stringify(faucetResponse, undefined, 2)
-    );
+    console.error("Failed to get uno from faucet", JSON.stringify(faucetResponse, undefined, 2))
   }
   const {
-    balances: [balance],
+    balances: [balance]
   } = await fetcher<{ balances: Array<Coin> }>(
     `${REST_API_URL}/cosmos/bank/v1beta1/balances/${address}`
-  );
-  if (!balance || !balance.amount) {
-    console.error(
-      "Failed to get uno balance",
-      JSON.stringify(balance, undefined, 2)
-    );
+  )
+  if (!balance?.amount) {
+    console.error("Failed to get uno balance", JSON.stringify(balance, undefined, 2))
   }
   console.info(
     `Deposited a nice sum of ${balance?.denom} into ${address}.\nCurrent balance: ${balance?.amount}`
-  );
+  )
 }

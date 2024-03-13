@@ -1,7 +1,7 @@
-import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
-import { cubicOut } from 'svelte/easing'
-import type { TransitionConfig } from 'svelte/transition'
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+import { cubicOut } from "svelte/easing"
+import type { TransitionConfig } from "svelte/transition"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -16,10 +16,15 @@ type FlyAndScaleParameters = {
 
 export const flyAndScale = (
   node: Element,
-  parameters: FlyAndScaleParameters = { y: -8, x: 0, start: 0.95, duration: 150 }
+  parameters: FlyAndScaleParameters = {
+    y: -8,
+    x: 0,
+    start: 0.95,
+    duration: 150
+  }
 ): TransitionConfig => {
   const style = getComputedStyle(node)
-  const transform = style.transform === 'none' ? '' : style.transform
+  const transform = style.transform === "none" ? "" : style.transform
 
   const scaleConversion = (valueA: number, scaleA: [number, number], scaleB: [number, number]) => {
     const [minA, maxA] = scaleA
@@ -35,7 +40,7 @@ export const flyAndScale = (
     return Object.keys(style).reduce((string_, key) => {
       if (style[key] === undefined) return string_
       return string_ + `${key}:${style[key]};`
-    }, '')
+    }, "")
   }
 
   return {

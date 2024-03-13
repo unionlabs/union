@@ -1,13 +1,13 @@
 ---
-import Layout from '#/layouts/Layout.astro'
-import { getCollection } from 'astro:content'
-import Socials from '#/components/Socials.astro'
+import Layout from "#/layouts/Layout.astro"
+import { getCollection } from "astro:content"
+import Socials from "#/components/Socials.astro"
 
 export async function getStaticPaths() {
-  const blogEntries = await getCollection('blog')
+  const blogEntries = await getCollection("blog")
   return blogEntries.map(entry => ({
     params: { slug: entry.slug },
-    props: { entry },
+    props: { entry }
   }))
 }
 

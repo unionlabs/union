@@ -1,5 +1,5 @@
-import { ponder } from "@/generated";
-import { evmDecodeUnionAddress } from "./utilities/codec.ts";
+import { ponder } from "@/generated"
+import { evmDecodeUnionAddress } from "./utilities/codec.ts"
 
 /**
  * UCS01_RELAY
@@ -16,10 +16,10 @@ ponder.on("UCS01_RELAY:Sent", async ({ event, context }) => {
       denom: event.args.denom,
       token: event.args.token,
       amount: event.args.amount,
-      timestamp: event.block.timestamp,
-    },
-  });
-});
+      timestamp: event.block.timestamp
+    }
+  })
+})
 
 ponder.on("UCS01_RELAY:Received", async ({ event, context }) => {
   await context.db.TransferEvent.create({
@@ -33,10 +33,10 @@ ponder.on("UCS01_RELAY:Received", async ({ event, context }) => {
       denom: event.args.denom,
       token: event.args.token,
       amount: event.args.amount,
-      timestamp: event.block.timestamp,
-    },
-  });
-});
+      timestamp: event.block.timestamp
+    }
+  })
+})
 
 ponder.on("UCS01_RELAY:Refunded", async ({ event, context }) => {
   await context.db.RefundedEvent.create({
@@ -47,10 +47,10 @@ ponder.on("UCS01_RELAY:Refunded", async ({ event, context }) => {
       denom: event.args.denom,
       token: event.args.token,
       amount: event.args.amount,
-      timestamp: event.block.timestamp,
-    },
-  });
-});
+      timestamp: event.block.timestamp
+    }
+  })
+})
 
 ponder.on("UCS01_RELAY:DenomCreated", async ({ event, context }) => {
   await context.db.DenomCreatedEvent.create({
@@ -58,10 +58,10 @@ ponder.on("UCS01_RELAY:DenomCreated", async ({ event, context }) => {
     data: {
       denom: event.args.denom,
       token: event.args.token,
-      timestamp: event.block.timestamp,
-    },
-  });
-});
+      timestamp: event.block.timestamp
+    }
+  })
+})
 
 /**
  * UNO_ERC20
@@ -74,10 +74,10 @@ ponder.on("UNO_ERC20:Approval", async ({ event, context }) => {
       owner: event.args.owner,
       spender: event.args.spender,
       amount: event.args.value,
-      timestamp: event.block.timestamp,
-    },
-  });
-});
+      timestamp: event.block.timestamp
+    }
+  })
+})
 
 ponder.on("UNO_ERC20:Transfer", async ({ event, context }) => {
   await context.db.TransferEvent.create({
@@ -90,7 +90,7 @@ ponder.on("UNO_ERC20:Transfer", async ({ event, context }) => {
       token: context.contracts.UNO_ERC20.address,
       receiver: event.args.to,
       amount: event.args.value,
-      timestamp: event.block.timestamp,
-    },
-  });
-});
+      timestamp: event.block.timestamp
+    }
+  })
+})

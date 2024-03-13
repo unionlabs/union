@@ -1,7 +1,7 @@
 interface Snippet {
-  lang: string;
-  code: string;
-  title: string;
+  lang: string
+  code: string
+  title: string
 }
 
 export const codeSnippets = [
@@ -38,7 +38,7 @@ contract DexPortal is IBCAppBase {
   }
 }
 \`\`\`
-`,
+`
   },
   {
     lang: "rust",
@@ -75,6 +75,6 @@ fn swap(
         timeout: IbcTimeout::with_block(timeout),
     }))
 }
-`,
-  },
-] satisfies Array<Snippet>;
+`
+  }
+] satisfies Array<Snippet>

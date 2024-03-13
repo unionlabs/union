@@ -1,5 +1,5 @@
 interface EnvironmentVariables {
-  readonly NODE_ENV: 'development' | 'production' | 'test'
+  readonly NODE_ENV: "development" | "production" | "test"
   readonly PORT: string
   readonly VERSION: string // from package.json#version
   readonly COMMIT_SHA: string

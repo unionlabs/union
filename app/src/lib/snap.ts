@@ -4,27 +4,29 @@ import {
   connectSnap,
   suggestChain,
   CosmjsOfflineSigner
-} from '@leapwallet/cosmos-snap-provider'
-import { get, writable } from 'svelte/store'
-import { wallet } from '$/lib/wallet/config'
-import { Tendermint37Client } from '@cosmjs/tendermint-rpc'
-import { CHAIN, CONTRACT, UNO, URLS } from '$/lib/constants'
-import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
-import { GasPrice, SigningStargateClient, type StargateClient } from '@cosmjs/stargate'
+} from "@leapwallet/cosmos-snap-provider"
+import { get, writable } from "svelte/store"
+import { wallet } from "$/lib/wallet/config"
+import { Tendermint37Client } from "@cosmjs/tendermint-rpc"
+import { CHAIN, CONTRACT, UNO, URLS } from "$/lib/constants"
+import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { GasPrice, SigningStargateClient, type StargateClient } from "@cosmjs/stargate"
 
 export const snapInstalled = writable(false)
 export async function ensureSnapInstalled() {
   if (get(snapInstalled)) return
 
-  const currentSnaps = await window.ethereum?.request({ method: 'wallet_getSnaps' })
-  const installed = Object.hasOwn(currentSnaps, 'npm:@leapwallet/metamask-cosmos-snap')
+  const currentSnaps = await window.ethereum?.request({
+    method: "wallet_getSnaps"
+  })
+  const installed = Object.hasOwn(currentSnaps, "npm:@leapwallet/metamask-cosmos-snap")
   snapInstalled.set(installed)
 
   if (installed) return
 
   await window.ethereum.request({
-    method: 'wallet_requestSnaps',
-    params: { 'npm:@leapwallet/metamask-cosmos-snap': { version: '^0.1.18' } }
+    method: "wallet_requestSnaps",
+    params: { "npm:@leapwallet/metamask-cosmos-snap": { version: "^0.1.18" } }
   })
   ensureSnapInstalled()
 }
@@ -56,7 +58,7 @@ export async function ensureSnapChainInitialized() {
     snapChainConnected.set(true)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : error
-    console.error('wallet_invokeSnap - ensureSnapChainInitialized', errorMessage)
+    console.error("wallet_invokeSnap - ensureSnapChainInitialized", errorMessage)
     snapChainInitialized.set(false)
   }
 }
@@ -79,7 +81,7 @@ export async function suggestSnapChain() {
     { force: false }
   )
 
-  console.log('wallet_invokeSnap - addChain', JSON.stringify(suggestChain, undefined, 2))
+  console.log("wallet_invokeSnap - addChain", JSON.stringify(suggestChain, undefined, 2))
   snapChainConnected.set(suggestChainRequest.chainInfo !== undefined)
 }
 
@@ -148,7 +150,7 @@ export async function sendAssetFromUnionToEthereum({ amount }: { amount: bigint 
   const ethereumAddress = get(wallet).address
 
   if (!ethereumAddress) {
-    console.error('[sendSnapTransaction] missing data. Initialize the client and signer first.')
+    console.error("[sendSnapTransaction] missing data. Initialize the client and signer first.")
     return
   }
 
@@ -170,10 +172,10 @@ export async function sendAssetFromUnionToEthereum({ amount }: { amount: bigint 
         channel: CONTRACT.UNION.SOURCE_CHANNEL,
         receiver: ethereumAddress.slice(2),
         timeout: null,
-        memo: 'random more than four characters I am transferring.'
+        memo: "random more than four characters I am transferring."
       }
     },
-    'auto',
+    "auto",
     undefined,
     [{ denom: UNO.NATIVE_DENOM, amount: amount.toString() }]
   )

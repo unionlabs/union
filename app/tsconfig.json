@@ -18,9 +18,7 @@
   "exclude": ["./src/lib/components/ui"],
   "files": [
     "reset.d.ts",
-    ".eslintrc.cjs",
     "vite.config.ts",
-    ".prettierrc.mjs",
     "svelte.config.js",
     "environment.d.ts",
     "postcss.config.cjs",

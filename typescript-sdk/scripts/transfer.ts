@@ -1,20 +1,11 @@
-import "#/patch.ts";
-import { getBalance } from "#/query.ts";
-import { unionActions } from "#/actions";
-import { chain, isValidChainId } from "#/constants";
-import {
-  createPublicClient,
-  createWalletClient,
-  fallback,
-  formatUnits,
-  http,
-  publicActions,
-  walletActions,
-} from "viem";
-import { raise } from "#/utilities";
-import { mnemonicToAccount } from "viem/accounts";
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import type { ExecuteResult } from "@cosmjs/cosmwasm-stargate";
+import "#/patch.ts"
+import { unionActions } from "#/actions"
+import { chain, isValidChainId } from "#/constants"
+import { createWalletClient, fallback, http, publicActions } from "viem"
+import { raise } from "#/utilities"
+import { mnemonicToAccount } from "viem/accounts"
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
+import type { ExecuteResult } from "@cosmjs/cosmwasm-stargate"
 
 /**
  * bun ./scripts/transfer.ts \
@@ -33,10 +24,10 @@ bun ./scripts/transfer.ts \
   --amount 555
  */
 
-main().catch((_) => {
-  console.error(_);
-  process.exit(1);
-});
+main().catch(_ => {
+  console.error(_)
+  process.exit(1)
+})
 
 async function main() {
   const [
@@ -49,62 +40,60 @@ async function main() {
     toAddressFlag,
     toAddress,
     amountFlag,
-    amount,
-  ] = process.argv.slice(2);
+    amount
+  ] = process.argv.slice(2)
 
   if (
-    !fromChainFlag ||
-    !fromChainId ||
-    !toChainFlag ||
-    !toChainId ||
-    !fromPrivateKeyFlag ||
-    !fromPrivateKey ||
-    !toAddressFlag ||
-    !toAddress ||
-    !amountFlag ||
-    !amount
+    !(
+      fromChainFlag &&
+      fromChainId &&
+      toChainFlag &&
+      toChainId &&
+      fromPrivateKeyFlag &&
+      fromPrivateKey &&
+      toAddressFlag &&
+      toAddress &&
+      amountFlag &&
+      amount
+    )
   ) {
     raise(
       "Usage: bun ./scripts/transfer.ts --fromChainId <chain> --toChainId <chain> --fromPrivateKey <privateKey | mnemonic> --toAddress <address>"
-    );
+    )
   }
 
-  if (!isValidChainId(fromChainId) || !isValidChainId(toChainId)) {
-    raise(`Invalid chain: ${fromChainId} or ${toChainId}`);
+  if (!(isValidChainId(fromChainId) && isValidChainId(toChainId))) {
+    raise(`Invalid chain: ${fromChainId} or ${toChainId}`)
   }
 
-  const ethereumAccount = mnemonicToAccount(fromPrivateKey);
-  const ethereumAddress =
-    fromChainId === "11155111" ? ethereumAccount.address : toAddress;
+  const ethereumAccount = mnemonicToAccount(fromPrivateKey)
+  const ethereumAddress = fromChainId === "11155111" ? ethereumAccount.address : toAddress
 
-  const unionAccount = await DirectSecp256k1HdWallet.fromMnemonic(
-    fromPrivateKey,
-    {
-      prefix: "union",
-    }
-  );
-  const [unionAccountData] = await unionAccount.getAccounts();
+  const unionAccount = await DirectSecp256k1HdWallet.fromMnemonic(fromPrivateKey, {
+    prefix: "union"
+  })
+  const [unionAccountData] = await unionAccount.getAccounts()
   const unionAddress =
     fromChainId === "6"
       ? unionAccountData?.address ?? raise("unionAddress is undefined")
-      : toAddress;
+      : toAddress
 
-  const fromAddress = fromChainId === "6" ? unionAddress : ethereumAddress;
+  const fromAddress = fromChainId === "6" ? unionAddress : ethereumAddress
 
   console.info(
     `\nABOUT TO SEND ${amount} muno\nFROM CHAIN ID: ${fromChainId} - ADDRESS: ${fromAddress}\nTO CHAIN ID ${toChainId} - ADDRESS: ${toAddress}\n`
-  );
+  )
 
   const client = createWalletClient({
     chain: chain.ethereum.sepolia,
     account: ethereumAccount,
     transport: fallback([
       http(process.env.SEPOLIA_RPC_URL),
-      http("https://ethereum-sepolia.publicnode.com"),
-    ]),
+      http("https://ethereum-sepolia.publicnode.com")
+    ])
   })
     .extend(publicActions)
-    .extend(unionActions);
+    .extend(unionActions)
 
   if (fromChainId === "6") {
     const result = await client.sendAsset({
@@ -116,17 +105,17 @@ async function main() {
       amount: BigInt(amount),
       denom: "muno",
       receiver: ethereumAddress,
-      gasPrice: "0.001muno",
-    });
+      gasPrice: "0.001muno"
+    })
 
     console.log(
       "SUCCESS. Transaction hash:\n",
       fromChainId === "6" ? (result as ExecuteResult).transactionHash : result
-    );
-    return;
+    )
+    return
   }
 
-  const denomAddress = await client.getDenomAddress();
+  const denomAddress = await client.getDenomAddress()
 
   const result = await client.sendAsset({
     chainId: "11155111",
@@ -135,8 +124,8 @@ async function main() {
     denomAddress,
     channel: chain.ethereum.sepolia.channelId,
     amount: BigInt(amount),
-    receiver: unionAddress,
-  });
+    receiver: unionAddress
+  })
 
-  console.log("SUCCESS. Transaction hash:\n", result);
+  console.log("SUCCESS. Transaction hash:\n", result)
 }

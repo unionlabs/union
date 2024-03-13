@@ -20,9 +20,9 @@ declare global {
 }
 
 type EthereumRequestMethod =
-  | 'wallet_getSnaps'
-  | 'wallet_requestSnaps'
-  | 'wallet_invokeSnap'
-  | 'wallet_watchAsset'
+  | "wallet_getSnaps"
+  | "wallet_requestSnaps"
+  | "wallet_invokeSnap"
+  | "wallet_watchAsset"
 
 export {}

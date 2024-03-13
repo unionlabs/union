@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import { badgeVariants, type Variant } from '.'
+import { cn } from "$lib/utilities/shadcn.ts"
+import { badgeVariants, type Variant } from "."
 
-  let className: string | undefined | null
-  export let href: string | undefined
-  export let variant: Variant = 'default'
-  export { className as class }
+let className: string | undefined | null
+export let href: string | undefined
+export let variant: Variant = "default"
+export { className as class }
 </script>
 
 <svelte:element

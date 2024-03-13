@@ -7,15 +7,15 @@ import {
   type Address,
   type Account,
   ContractFunctionRevertedError
-} from 'viem'
-import toast from 'svelte-french-toast'
-import { snapAddress } from '$/lib/snap'
-import { ucs01relayAbi } from '$/lib/abi'
-import { writable, get } from 'svelte/store'
-import { fromBech32 } from '@cosmjs/encoding'
-import { CONTRACT, UNO } from '$/lib/constants.ts'
-import { config, unionAddress, wallet } from '$/lib/wallet/config'
-import { readContract, simulateContract, writeContract } from '@wagmi/core'
+} from "viem"
+import toast from "svelte-french-toast"
+import { snapAddress } from "$/lib/snap"
+import { ucs01relayAbi } from "$/lib/abi"
+import { writable, get } from "svelte/store"
+import { fromBech32 } from "@cosmjs/encoding"
+import { CONTRACT, UNO } from "$/lib/constants.ts"
+import { config, unionAddress, wallet } from "$/lib/wallet/config"
+import { readContract, simulateContract, writeContract } from "@wagmi/core"
 
 export async function getUnoERC20Balance(address: string) {
   const passedAddress = getAddress(address)
@@ -24,7 +24,7 @@ export async function getUnoERC20Balance(address: string) {
 
   return readContract(config, {
     abi: erc20Abi,
-    functionName: 'balanceOf',
+    functionName: "balanceOf",
     address: denomAddress,
     args: [passedAddress]
   })
@@ -38,7 +38,7 @@ export async function approveUnoERC20Spending({ amount }: { amount: bigint }) {
 
   const contractParameters = {
     abi: erc20Abi,
-    functionName: 'approve',
+    functionName: "approve",
     address: denomAddress,
     args: [getAddress(CONTRACT.SEPOLIA.ADDRESS), 69_420n],
     account: get(wallet) as unknown as Account
@@ -57,9 +57,9 @@ export async function sendAssetFromEthereumToUnion({
   simulate?: boolean
 }): Promise<Hash> {
   const _unionAddress = get(snapAddress)
-  if (!_unionAddress) throw new Error('snap address not set')
+  if (!_unionAddress) throw new Error("snap address not set")
   const ethereumAddress = get(wallet).address
-  if (!ethereumAddress) throw new Error('ethereum address not set')
+  if (!ethereumAddress) throw new Error("ethereum address not set")
 
   const _approvalResult = await approveUnoERC20Spending({ amount })
   // TODO: make dynamic?
@@ -78,7 +78,7 @@ export async function sendAssetFromEthereumToUnion({
 
     const writeContractParameters = {
       abi: ucs01relayAbi,
-      functionName: 'send',
+      functionName: "send",
       address: getAddress(CONTRACT.SEPOLIA.ADDRESS),
       args: [
         CONTRACT.SEPOLIA.PORT_ID,
@@ -100,9 +100,9 @@ export async function sendAssetFromEthereumToUnion({
     if (error instanceof BaseError) {
       const revertError = error.walk(error => error instanceof ContractFunctionRevertedError)
       if (revertError instanceof ContractFunctionRevertedError) {
-        const errorName = revertError.data?.errorName ?? ''
+        const errorName = revertError.data?.errorName ?? ""
         toast.error(`error while sending ${amount} UNO [${errorName}-${revertError?.signature}]`, {
-          position: 'bottom-center'
+          position: "bottom-center"
         })
       }
     }
@@ -121,7 +121,7 @@ export async function getDenomAddress(): Promise<Address> {
   return readContract(config, {
     abi: ucs01relayAbi,
     address: getAddress(CONTRACT.SEPOLIA.ADDRESS),
-    functionName: 'getDenomAddress',
+    functionName: "getDenomAddress",
     args: [sourcePort, sourceChannel, `wasm.${CONTRACT.UNION.ADDRESS}/${sourceChannel}/${denom}`]
   })
 }

@@ -21,11 +21,7 @@
         "name": "@astrojs/ts-plugin"
       }
     ],
-    "types": [
-      "node",
-      "@cloudflare/workers-types",
-      "typed-query-selector/strict"
-    ]
+    "types": ["node", "@cloudflare/workers-types", "typed-query-selector/strict"]
   },
   "include": ["src/**/*", "public/**/*"],
   "files": [

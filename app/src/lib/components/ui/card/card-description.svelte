@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { HTMLAttributes } from 'svelte/elements'
-  import { cn } from '$lib/utilities/shadcn.ts'
+import type { HTMLAttributes } from "svelte/elements"
+import { cn } from "$lib/utilities/shadcn.ts"
 
-  type $$Props = HTMLAttributes<HTMLParagraphElement>
+type $$Props = HTMLAttributes<HTMLParagraphElement>
 
-  let className: $$Props['class']
-  export { className as class }
+let className: $$Props["class"]
+export { className as class }
 </script>
 
 <p
