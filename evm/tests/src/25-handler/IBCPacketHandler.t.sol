@@ -4,25 +4,48 @@ import "solady/utils/LibString.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 
 import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
-import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
+import {IMembershipVerifier} from
+    "../../../contracts/core/IMembershipVerifier.sol";
 import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
-import {IBCConnection} from "../../../contracts/core/03-connection/IBCConnection.sol";
+import {IBCConnection} from
+    "../../../contracts/core/03-connection/IBCConnection.sol";
 import {IBCClient} from "../../../contracts/core/02-client/IBCClient.sol";
-import {IBCChannelHandshake} from "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
+import {IBCChannelHandshake} from
+    "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
 import {IIBCPacket} from "../../../contracts/core/04-channel/IIBCPacket.sol";
-import {IBCPacket, IBCPacketLib} from "../../../contracts/core/04-channel/IBCPacket.sol";
+import {
+    IBCPacket,
+    IBCPacketLib
+} from "../../../contracts/core/04-channel/IBCPacket.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
-import {IbcCoreClientV1Height as ClientHeight} from "../../../contracts/proto/MockClient.sol";
-import {IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
-import {IbcCoreChannelV1Packet} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
+import {IbcCoreClientV1Height as ClientHeight} from
+    "../../../contracts/proto/MockClient.sol";
+import {
+    IbcCoreConnectionV1ConnectionEnd as ConnectionEnd,
+    IbcCoreConnectionV1Counterparty as ConnectionCounterparty,
+    IbcCoreConnectionV1GlobalEnums as ConnectionEnums
+} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
+import {IbcCoreChannelV1Packet} from
+    "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
-import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
-import {IbcCoreClientV1Height} from "../../../contracts/proto/ibc/core/client/v1/client.sol";
-import {TendermintTypesSignedHeader} from "../../../contracts/proto/tendermint/types/canonical.sol";
-import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeader, TendermintVersionConsensus, TendermintTypesCommitSig, TendermintTypesBlockID, TendermintTypesPartSetHeader} from "../../../contracts/proto/tendermint/types/types.sol";
+import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
+    "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {IbcCoreClientV1Height} from
+    "../../../contracts/proto/ibc/core/client/v1/client.sol";
+import {TendermintTypesSignedHeader} from
+    "../../../contracts/proto/tendermint/types/canonical.sol";
+import {
+    TendermintTypesCommit,
+    TendermintTypesHeader,
+    TendermintTypesSignedHeader,
+    TendermintVersionConsensus,
+    TendermintTypesCommitSig,
+    TendermintTypesBlockID,
+    TendermintTypesPartSetHeader
+} from "../../../contracts/proto/tendermint/types/types.sol";
 
 import "../TestPlus.sol";
 
@@ -129,11 +152,8 @@ contract IBCPacketHandlerTest is TestPlus {
         handler = new IBCHandlerFake();
         membershipVerifier = new TestMembershipVerifier();
         verifier = new TestVerifier();
-        client = new CometblsClient(
-            address(handler),
-            verifier,
-            membershipVerifier
-        );
+        client =
+            new CometblsClient(address(handler), verifier, membershipVerifier);
         handler.registerClient(CLIENT_TYPE, client);
         app = new MockApp();
         createClient();
@@ -157,26 +177,22 @@ contract IBCPacketHandlerTest is TestPlus {
     }
 
     function setupConnection() internal {
-        IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
-            .connectionOpenInit(clientId);
+        IBCMsgs.MsgConnectionOpenInit memory msg_init =
+            MsgMocks.connectionOpenInit(clientId);
         connectionId = handler.connectionOpenInit(msg_init);
-        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
-            .connectionOpenAck(clientId, connectionId, LATEST_HEIGHT);
+        IBCMsgs.MsgConnectionOpenAck memory msg_ack =
+            MsgMocks.connectionOpenAck(clientId, connectionId, LATEST_HEIGHT);
         membershipVerifier.pushValid();
         membershipVerifier.pushValid();
         handler.connectionOpenAck(msg_ack);
     }
 
     function setupChannel() internal {
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connectionId,
-            address(app).toHexString()
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit(connectionId, address(app).toHexString());
         channelId = handler.channelOpenInit(msg_init);
         IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(
-            address(app).toHexString(),
-            channelId,
-            LATEST_HEIGHT
+            address(app).toHexString(), channelId, LATEST_HEIGHT
         );
         membershipVerifier.pushValid();
         handler.channelOpenAck(msg_ack);
@@ -208,22 +224,21 @@ contract IBCPacketHandlerTest is TestPlus {
             evidence_hash: hex"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
             proposer_address: hex"4CE57693C82B50F830731DAB14FA759327762456"
         });
-        return
-            TendermintTypesSignedHeader.Data({
-                header: header,
-                commit: TendermintTypesCommit.Data({
-                    height: header.height,
-                    round: 0,
-                    block_id: TendermintTypesBlockID.Data({
-                        hash: abi.encodePacked(header.merkleRoot()),
-                        part_set_header: TendermintTypesPartSetHeader.Data({
-                            total: 1,
-                            hash: hex"153E8B1F5B189A140FE5DA85DAB72FBD4A1DFA7E69C6FE5CE1FD66F0CCB5F6A1"
-                        })
-                    }),
-                    signatures: new TendermintTypesCommitSig.Data[](0)
-                })
-            });
+        return TendermintTypesSignedHeader.Data({
+            header: header,
+            commit: TendermintTypesCommit.Data({
+                height: header.height,
+                round: 0,
+                block_id: TendermintTypesBlockID.Data({
+                    hash: abi.encodePacked(header.merkleRoot()),
+                    part_set_header: TendermintTypesPartSetHeader.Data({
+                        total: 1,
+                        hash: hex"153E8B1F5B189A140FE5DA85DAB72FBD4A1DFA7E69C6FE5CE1FD66F0CCB5F6A1"
+                    })
+                }),
+                signatures: new TendermintTypesCommitSig.Data[](0)
+            })
+        });
     }
 
     function test_sendPacket_ok(
@@ -267,9 +282,7 @@ contract IBCPacketHandlerTest is TestPlus {
         assertEq(
             handler.commitments(
                 IBCCommitment.packetCommitmentKey(
-                    address(app).toHexString(),
-                    channelId,
-                    1
+                    address(app).toHexString(), channelId, 1
                 )
             ),
             keccak256(
@@ -317,10 +330,8 @@ contract IBCPacketHandlerTest is TestPlus {
     ) public {
         vm.assume(timeoutHeight > LATEST_HEIGHT);
         vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
-        uint64 sequenceBefore = handler.nextSequenceSends(
-            address(app).toHexString(),
-            channelId
-        );
+        uint64 sequenceBefore =
+            handler.nextSequenceSends(address(app).toHexString(), channelId);
         vm.prank(address(app));
         handler.sendPacket(
             address(app).toHexString(),
@@ -332,10 +343,8 @@ contract IBCPacketHandlerTest is TestPlus {
             timeoutTimestamp,
             payload
         );
-        uint64 sequenceAfter = handler.nextSequenceSends(
-            address(app).toHexString(),
-            channelId
-        );
+        uint64 sequenceAfter =
+            handler.nextSequenceSends(address(app).toHexString(), channelId);
         assertEq(sequenceAfter, sequenceBefore + 1);
     }
 
@@ -600,10 +609,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.assume(acknowledgement.length > 0);
         vm.prank(address(app));
         handler.writeAcknowledgement(
-            address(app).toHexString(),
-            channelId,
-            sequence,
-            acknowledgement
+            address(app).toHexString(), channelId, sequence, acknowledgement
         );
     }
 
@@ -615,31 +621,22 @@ contract IBCPacketHandlerTest is TestPlus {
         membershipVerifier.pushValid();
         vm.prank(address(app));
         handler.writeAcknowledgement(
-            address(app).toHexString(),
-            channelId,
-            sequence,
-            acknowledgement
+            address(app).toHexString(), channelId, sequence, acknowledgement
         );
         vm.prank(address(app));
         vm.expectRevert(IBCPacketLib.ErrAcknowledgementAlreadyExists.selector);
         handler.writeAcknowledgement(
-            address(app).toHexString(),
-            channelId,
-            sequence,
-            acknowledgement
+            address(app).toHexString(), channelId, sequence, acknowledgement
         );
     }
 
-    function test_writeAcknowledgement_emptyAcknowledgement(
-        uint64 sequence
-    ) public {
+    function test_writeAcknowledgement_emptyAcknowledgement(uint64 sequence)
+        public
+    {
         vm.prank(address(app));
         vm.expectRevert(IBCPacketLib.ErrAcknowledgementIsEmpty.selector);
         handler.writeAcknowledgement(
-            address(app).toHexString(),
-            channelId,
-            sequence,
-            bytes("")
+            address(app).toHexString(), channelId, sequence, bytes("")
         );
     }
 
@@ -653,10 +650,7 @@ contract IBCPacketHandlerTest is TestPlus {
         vm.prank(address(malicious));
         vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
         handler.writeAcknowledgement(
-            address(app).toHexString(),
-            channelId,
-            sequence,
-            acknowledgement
+            address(app).toHexString(), channelId, sequence, acknowledgement
         );
     }
 
@@ -977,12 +971,7 @@ contract IBCPacketHandlerTest is TestPlus {
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
         IBCMsgs.MsgPacketTimeout memory msg_ = MsgMocks.packetTimeout(
-            address(app).toHexString(),
-            channelId,
-            LATEST_HEIGHT,
-            0,
-            0,
-            payload
+            address(app).toHexString(), channelId, LATEST_HEIGHT, 0, 0, payload
         );
         msg_.packet.destination_port = "invalid";
         membershipVerifier.pushValid();
@@ -999,12 +988,7 @@ contract IBCPacketHandlerTest is TestPlus {
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
         IBCMsgs.MsgPacketTimeout memory msg_ = MsgMocks.packetTimeout(
-            address(app).toHexString(),
-            channelId,
-            LATEST_HEIGHT,
-            0,
-            0,
-            payload
+            address(app).toHexString(), channelId, LATEST_HEIGHT, 0, 0, payload
         );
         msg_.packet.destination_channel = "invalid";
         membershipVerifier.pushValid();

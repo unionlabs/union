@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 
@@ -26,7 +27,7 @@ library IbcApplicationsTransferV1MsgTransfer {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -36,7 +37,7 @@ library IbcApplicationsTransferV1MsgTransfer {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -54,7 +55,7 @@ library IbcApplicationsTransferV1MsgTransfer {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -62,10 +63,8 @@ library IbcApplicationsTransferV1MsgTransfer {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_source_port(pointer, bs, r);
@@ -84,11 +83,8 @@ library IbcApplicationsTransferV1MsgTransfer {
             } else if (fieldId == 8) {
                 pointer += _read_memo(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -107,7 +103,7 @@ library IbcApplicationsTransferV1MsgTransfer {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.source_port = x;
         return sz;
@@ -124,7 +120,7 @@ library IbcApplicationsTransferV1MsgTransfer {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.source_channel = x;
         return sz;
@@ -141,11 +137,9 @@ library IbcApplicationsTransferV1MsgTransfer {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            CosmosBaseV1beta1Coin.Data memory x,
-            uint256 sz
-        ) = _decode_CosmosBaseV1beta1Coin(p, bs);
+    ) internal pure returns (uint256) {
+        (CosmosBaseV1beta1Coin.Data memory x, uint256 sz) =
+            _decode_CosmosBaseV1beta1Coin(p, bs);
         r.token = x;
         return sz;
     }
@@ -161,7 +155,7 @@ library IbcApplicationsTransferV1MsgTransfer {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.sender = x;
         return sz;
@@ -178,7 +172,7 @@ library IbcApplicationsTransferV1MsgTransfer {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.receiver = x;
         return sz;
@@ -195,11 +189,9 @@ library IbcApplicationsTransferV1MsgTransfer {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcCoreClientV1Height.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1Height(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcCoreClientV1Height.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1Height(p, bs);
         r.timeout_height = x;
         return sz;
     }
@@ -215,7 +207,7 @@ library IbcApplicationsTransferV1MsgTransfer {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.timeout_timestamp = x;
         return sz;
@@ -232,7 +224,7 @@ library IbcApplicationsTransferV1MsgTransfer {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.memo = x;
         return sz;
@@ -249,18 +241,13 @@ library IbcApplicationsTransferV1MsgTransfer {
     function _decode_CosmosBaseV1beta1Coin(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (CosmosBaseV1beta1Coin.Data memory, uint) {
+    ) internal pure returns (CosmosBaseV1beta1Coin.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (CosmosBaseV1beta1Coin.Data memory r, ) = CosmosBaseV1beta1Coin._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (CosmosBaseV1beta1Coin.Data memory r,) =
+            CosmosBaseV1beta1Coin._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -274,18 +261,13 @@ library IbcApplicationsTransferV1MsgTransfer {
     function _decode_IbcCoreClientV1Height(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint) {
+    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (IbcCoreClientV1Height.Data memory r, ) = IbcCoreClientV1Height._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (IbcCoreClientV1Height.Data memory r,) =
+            IbcCoreClientV1Height._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -318,95 +300,59 @@ library IbcApplicationsTransferV1MsgTransfer {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.source_port).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.source_port,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.source_port, pointer, bs);
         }
         if (bytes(r.source_channel).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.source_channel,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.source_channel, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            3,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += CosmosBaseV1beta1Coin._encode_nested(r.token, pointer, bs);
 
         if (bytes(r.sender).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.sender, pointer, bs);
         }
         if (bytes(r.receiver).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                5,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                5, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.receiver, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            6,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            6, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcCoreClientV1Height._encode_nested(
-            r.timeout_height,
-            pointer,
-            bs
-        );
+        pointer +=
+            IbcCoreClientV1Height._encode_nested(r.timeout_height, pointer, bs);
 
         if (r.timeout_timestamp != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                7,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                7, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_uint64(
-                r.timeout_timestamp,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_uint64(r.timeout_timestamp, pointer, bs);
         }
         if (bytes(r.memo).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                8,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                8, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.memo, pointer, bs);
         }
@@ -426,7 +372,7 @@ library IbcApplicationsTransferV1MsgTransfer {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -451,20 +397,16 @@ library IbcApplicationsTransferV1MsgTransfer {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.source_port).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.source_channel).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
-                CosmosBaseV1beta1Coin._estimate(r.token)
-            );
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(CosmosBaseV1beta1Coin._estimate(r.token));
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.sender).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.receiver).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcCoreClientV1Height._estimate(r.timeout_height)
             );
         e += 1 + ProtoBufRuntime._sz_uint64(r.timeout_timestamp);
@@ -514,10 +456,7 @@ library IbcApplicationsTransferV1MsgTransfer {
         CosmosBaseV1beta1Coin.store(input.token, output.token);
         output.sender = input.sender;
         output.receiver = input.receiver;
-        IbcCoreClientV1Height.store(
-            input.timeout_height,
-            output.timeout_height
-        );
+        IbcCoreClientV1Height.store(input.timeout_height, output.timeout_height);
         output.timeout_timestamp = input.timeout_timestamp;
         output.memo = input.memo;
     }
@@ -561,7 +500,7 @@ library IbcApplicationsTransferV1MsgTransferResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -571,7 +510,7 @@ library IbcApplicationsTransferV1MsgTransferResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -589,7 +528,7 @@ library IbcApplicationsTransferV1MsgTransferResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -597,19 +536,14 @@ library IbcApplicationsTransferV1MsgTransferResponse {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_sequence(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -628,7 +562,7 @@ library IbcApplicationsTransferV1MsgTransferResponse {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.sequence = x;
         return sz;
@@ -663,16 +597,13 @@ library IbcApplicationsTransferV1MsgTransferResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.sequence != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.sequence, pointer, bs);
         }
@@ -692,7 +623,7 @@ library IbcApplicationsTransferV1MsgTransferResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -717,7 +648,7 @@ library IbcApplicationsTransferV1MsgTransferResponse {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint64(r.sequence);
         return e;

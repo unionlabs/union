@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
+
 import "../../ProtoBufRuntime.sol";
 import "../../GoogleProtobufAny.sol";
 
@@ -20,7 +21,7 @@ library TendermintCryptoProof {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -30,7 +31,7 @@ library TendermintCryptoProof {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -48,19 +49,17 @@ library TendermintCryptoProof {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[5] memory counters;
+        uint256[5] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_total(pointer, bs, r);
@@ -69,18 +68,11 @@ library TendermintCryptoProof {
             } else if (fieldId == 3) {
                 pointer += _read_leaf_hash(pointer, bs, r);
             } else if (fieldId == 4) {
-                pointer += _read_unpacked_repeated_aunts(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_aunts(pointer, bs, nil(), counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
@@ -90,24 +82,15 @@ library TendermintCryptoProof {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 4) {
-                pointer += _read_unpacked_repeated_aunts(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_aunts(pointer, bs, r, counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -126,7 +109,7 @@ library TendermintCryptoProof {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
         r.total = x;
         return sz;
@@ -143,7 +126,7 @@ library TendermintCryptoProof {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
         r.index = x;
         return sz;
@@ -160,7 +143,7 @@ library TendermintCryptoProof {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.leaf_hash = x;
         return sz;
@@ -178,8 +161,8 @@ library TendermintCryptoProof {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[5] memory counters
-    ) internal pure returns (uint) {
+        uint256[5] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
@@ -222,50 +205,35 @@ library TendermintCryptoProof {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.total != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_int64(r.total, pointer, bs);
         }
         if (r.index != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_int64(r.index, pointer, bs);
         }
         if (r.leaf_hash.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.leaf_hash, pointer, bs);
         }
         if (r.aunts.length != 0) {
             for (i = 0; i < r.aunts.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    4,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
-                pointer += ProtoBufRuntime._encode_bytes(
-                    r.aunts[i],
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._encode_bytes(r.aunts[i], pointer, bs);
             }
         }
         return pointer - offset;
@@ -284,7 +252,7 @@ library TendermintCryptoProof {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -309,7 +277,7 @@ library TendermintCryptoProof {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         e += 1 + ProtoBufRuntime._sz_int64(r.total);
@@ -414,7 +382,7 @@ library TendermintCryptoValueOp {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -424,7 +392,7 @@ library TendermintCryptoValueOp {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -442,7 +410,7 @@ library TendermintCryptoValueOp {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -450,21 +418,16 @@ library TendermintCryptoValueOp {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_key(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_proof(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -483,7 +446,7 @@ library TendermintCryptoValueOp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.key = x;
         return sz;
@@ -500,11 +463,9 @@ library TendermintCryptoValueOp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            TendermintCryptoProof.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintCryptoProof(p, bs);
+    ) internal pure returns (uint256) {
+        (TendermintCryptoProof.Data memory x, uint256 sz) =
+            _decode_TendermintCryptoProof(p, bs);
         r.proof = x;
         return sz;
     }
@@ -520,18 +481,13 @@ library TendermintCryptoValueOp {
     function _decode_TendermintCryptoProof(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (TendermintCryptoProof.Data memory, uint) {
+    ) internal pure returns (TendermintCryptoProof.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (TendermintCryptoProof.Data memory r, ) = TendermintCryptoProof._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (TendermintCryptoProof.Data memory r,) =
+            TendermintCryptoProof._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -564,25 +520,19 @@ library TendermintCryptoValueOp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.key.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.key, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += TendermintCryptoProof._encode_nested(r.proof, pointer, bs);
 
@@ -602,7 +552,7 @@ library TendermintCryptoValueOp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -627,14 +577,11 @@ library TendermintCryptoValueOp {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.key.length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
-                TendermintCryptoProof._estimate(r.proof)
-            );
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(TendermintCryptoProof._estimate(r.proof));
         return e;
     }
 
@@ -700,7 +647,7 @@ library TendermintCryptoDominoOp {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -710,7 +657,7 @@ library TendermintCryptoDominoOp {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -728,7 +675,7 @@ library TendermintCryptoDominoOp {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -736,10 +683,8 @@ library TendermintCryptoDominoOp {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_key(pointer, bs, r);
@@ -748,11 +693,8 @@ library TendermintCryptoDominoOp {
             } else if (fieldId == 3) {
                 pointer += _read_output(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -771,7 +713,7 @@ library TendermintCryptoDominoOp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.key = x;
         return sz;
@@ -788,7 +730,7 @@ library TendermintCryptoDominoOp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.input = x;
         return sz;
@@ -805,7 +747,7 @@ library TendermintCryptoDominoOp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.output = x;
         return sz;
@@ -840,34 +782,25 @@ library TendermintCryptoDominoOp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.key).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.key, pointer, bs);
         }
         if (bytes(r.input).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.input, pointer, bs);
         }
         if (bytes(r.output).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.output, pointer, bs);
         }
@@ -887,7 +820,7 @@ library TendermintCryptoDominoOp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -912,7 +845,7 @@ library TendermintCryptoDominoOp {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.key).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.input).length);
@@ -991,7 +924,7 @@ library TendermintCryptoProofOp {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1001,7 +934,7 @@ library TendermintCryptoProofOp {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1019,7 +952,7 @@ library TendermintCryptoProofOp {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1027,10 +960,8 @@ library TendermintCryptoProofOp {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_type(pointer, bs, r);
@@ -1039,11 +970,8 @@ library TendermintCryptoProofOp {
             } else if (fieldId == 3) {
                 pointer += _read_data(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1062,7 +990,7 @@ library TendermintCryptoProofOp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.ty = x;
         return sz;
@@ -1079,7 +1007,7 @@ library TendermintCryptoProofOp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.key = x;
         return sz;
@@ -1096,7 +1024,7 @@ library TendermintCryptoProofOp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.data = x;
         return sz;
@@ -1131,34 +1059,25 @@ library TendermintCryptoProofOp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.ty).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.ty, pointer, bs);
         }
         if (r.key.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.key, pointer, bs);
         }
         if (r.data.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.data, pointer, bs);
         }
@@ -1178,7 +1097,7 @@ library TendermintCryptoProofOp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1203,7 +1122,7 @@ library TendermintCryptoProofOp {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.ty).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(r.key.length);
@@ -1280,7 +1199,7 @@ library TendermintCryptoProofOps {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1290,7 +1209,7 @@ library TendermintCryptoProofOps {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1308,33 +1227,24 @@ library TendermintCryptoProofOps {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[2] memory counters;
+        uint256[2] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
-                pointer += _read_unpacked_repeated_ops(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_ops(pointer, bs, nil(), counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
@@ -1344,24 +1254,14 @@ library TendermintCryptoProofOps {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
-                pointer += _read_unpacked_repeated_ops(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer += _read_unpacked_repeated_ops(pointer, bs, r, counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1381,15 +1281,13 @@ library TendermintCryptoProofOps {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[2] memory counters
-    ) internal pure returns (uint) {
+        uint256[2] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            TendermintCryptoProofOp.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintCryptoProofOp(p, bs);
+        (TendermintCryptoProofOp.Data memory x, uint256 sz) =
+            _decode_TendermintCryptoProofOp(p, bs);
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -1410,15 +1308,13 @@ library TendermintCryptoProofOps {
     function _decode_TendermintCryptoProofOp(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (TendermintCryptoProofOp.Data memory, uint) {
+    ) internal pure returns (TendermintCryptoProofOp.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (TendermintCryptoProofOp.Data memory r, ) = TendermintCryptoProofOp
-            ._decode(pointer, bs, sz);
+        (TendermintCryptoProofOp.Data memory r,) =
+            TendermintCryptoProofOp._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1451,22 +1347,17 @@ library TendermintCryptoProofOps {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.ops.length != 0) {
             for (i = 0; i < r.ops.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += TendermintCryptoProofOp._encode_nested(
-                    r.ops[i],
-                    pointer,
-                    bs
+                    r.ops[i], pointer, bs
                 );
             }
         }
@@ -1486,7 +1377,7 @@ library TendermintCryptoProofOps {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1511,13 +1402,12 @@ library TendermintCryptoProofOps {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.ops.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     TendermintCryptoProofOp._estimate(r.ops[i])
                 );
         }
@@ -1559,10 +1449,8 @@ library TendermintCryptoProofOps {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        TendermintCryptoProofOp.Data[]
-            memory tmp = new TendermintCryptoProofOp.Data[](
-                self.ops.length + 1
-            );
+        TendermintCryptoProofOp.Data[] memory tmp =
+            new TendermintCryptoProofOp.Data[](self.ops.length + 1);
         for (uint256 i = 0; i < self.ops.length; i++) {
             tmp[i] = self.ops[i];
         }

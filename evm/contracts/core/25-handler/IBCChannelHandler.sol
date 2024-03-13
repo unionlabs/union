@@ -16,39 +16,47 @@ abstract contract IBCChannelHandler is IIBCChannelHandshake {
         ibcChannel = _ibcChannel;
     }
 
-    function channelOpenInit(
-        IBCMsgs.MsgChannelOpenInit calldata msg_
-    ) external override returns (string memory) {
+    function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata msg_)
+        external
+        override
+        returns (string memory)
+    {
         passthrough(ibcChannel);
     }
 
-    function channelOpenTry(
-        IBCMsgs.MsgChannelOpenTry calldata msg_
-    ) external override returns (string memory) {
+    function channelOpenTry(IBCMsgs.MsgChannelOpenTry calldata msg_)
+        external
+        override
+        returns (string memory)
+    {
         passthrough(ibcChannel);
     }
 
-    function channelOpenAck(
-        IBCMsgs.MsgChannelOpenAck calldata msg_
-    ) external override {
+    function channelOpenAck(IBCMsgs.MsgChannelOpenAck calldata msg_)
+        external
+        override
+    {
         passthrough(ibcChannel);
     }
 
-    function channelOpenConfirm(
-        IBCMsgs.MsgChannelOpenConfirm calldata msg_
-    ) external override {
+    function channelOpenConfirm(IBCMsgs.MsgChannelOpenConfirm calldata msg_)
+        external
+        override
+    {
         passthrough(ibcChannel);
     }
 
-    function channelCloseInit(
-        IBCMsgs.MsgChannelCloseInit calldata msg_
-    ) external override {
+    function channelCloseInit(IBCMsgs.MsgChannelCloseInit calldata msg_)
+        external
+        override
+    {
         passthrough(ibcChannel);
     }
 
-    function channelCloseConfirm(
-        IBCMsgs.MsgChannelCloseConfirm calldata msg_
-    ) external override {
+    function channelCloseConfirm(IBCMsgs.MsgChannelCloseConfirm calldata msg_)
+        external
+        override
+    {
         passthrough(ibcChannel);
     }
 }

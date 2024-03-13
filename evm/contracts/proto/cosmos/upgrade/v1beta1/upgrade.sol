@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
+
 import "../../../ProtoBufRuntime.sol";
 import "../../../GoogleProtobufAny.sol";
 import "../../../cosmos_proto/cosmos.sol";
@@ -22,7 +23,7 @@ library CosmosUpgradeV1beta1Plan {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -32,7 +33,7 @@ library CosmosUpgradeV1beta1Plan {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -50,7 +51,7 @@ library CosmosUpgradeV1beta1Plan {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -58,10 +59,8 @@ library CosmosUpgradeV1beta1Plan {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_name(pointer, bs, r);
@@ -74,11 +73,8 @@ library CosmosUpgradeV1beta1Plan {
             } else if (fieldId == 5) {
                 pointer += _read_upgraded_client_state(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -97,7 +93,7 @@ library CosmosUpgradeV1beta1Plan {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.name = x;
         return sz;
@@ -114,11 +110,9 @@ library CosmosUpgradeV1beta1Plan {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufTimestamp.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufTimestamp(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufTimestamp.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufTimestamp(p, bs);
         r.time = x;
         return sz;
     }
@@ -134,7 +128,7 @@ library CosmosUpgradeV1beta1Plan {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
         r.height = x;
         return sz;
@@ -151,7 +145,7 @@ library CosmosUpgradeV1beta1Plan {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.info = x;
         return sz;
@@ -168,11 +162,9 @@ library CosmosUpgradeV1beta1Plan {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufAny.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufAny(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufAny.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufAny(p, bs);
         r.upgraded_client_state = x;
         return sz;
     }
@@ -188,15 +180,13 @@ library CosmosUpgradeV1beta1Plan {
     function _decode_GoogleProtobufTimestamp(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufTimestamp.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufTimestamp.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufTimestamp.Data memory r, ) = GoogleProtobufTimestamp
-            ._decode(pointer, bs, sz);
+        (GoogleProtobufTimestamp.Data memory r,) =
+            GoogleProtobufTimestamp._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -210,18 +200,13 @@ library CosmosUpgradeV1beta1Plan {
     function _decode_GoogleProtobufAny(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufAny.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufAny.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufAny.Data memory r, ) = GoogleProtobufAny._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (GoogleProtobufAny.Data memory r,) =
+            GoogleProtobufAny._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -254,57 +239,40 @@ library CosmosUpgradeV1beta1Plan {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.name).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.name, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += GoogleProtobufTimestamp._encode_nested(r.time, pointer, bs);
 
         if (r.height != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_int64(r.height, pointer, bs);
         }
         if (bytes(r.info).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.info, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            5,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            5, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += GoogleProtobufAny._encode_nested(
-            r.upgraded_client_state,
-            pointer,
-            bs
+            r.upgraded_client_state, pointer, bs
         );
 
         return pointer - offset;
@@ -323,7 +291,7 @@ library CosmosUpgradeV1beta1Plan {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -348,19 +316,17 @@ library CosmosUpgradeV1beta1Plan {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.name).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufTimestamp._estimate(r.time)
             );
         e += 1 + ProtoBufRuntime._sz_int64(r.height);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.info).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufAny._estimate(r.upgraded_client_state)
             );
         return e;
@@ -396,8 +362,7 @@ library CosmosUpgradeV1beta1Plan {
         output.height = input.height;
         output.info = input.info;
         GoogleProtobufAny.store(
-            input.upgraded_client_state,
-            output.upgraded_client_state
+            input.upgraded_client_state, output.upgraded_client_state
         );
     }
 
@@ -442,7 +407,7 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -452,7 +417,7 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -470,7 +435,7 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -478,10 +443,8 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_title(pointer, bs, r);
@@ -490,11 +453,8 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
             } else if (fieldId == 3) {
                 pointer += _read_plan(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -513,7 +473,7 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.title = x;
         return sz;
@@ -530,7 +490,7 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.description = x;
         return sz;
@@ -547,11 +507,9 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            CosmosUpgradeV1beta1Plan.Data memory x,
-            uint256 sz
-        ) = _decode_CosmosUpgradeV1beta1Plan(p, bs);
+    ) internal pure returns (uint256) {
+        (CosmosUpgradeV1beta1Plan.Data memory x, uint256 sz) =
+            _decode_CosmosUpgradeV1beta1Plan(p, bs);
         r.plan = x;
         return sz;
     }
@@ -567,15 +525,13 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
     function _decode_CosmosUpgradeV1beta1Plan(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (CosmosUpgradeV1beta1Plan.Data memory, uint) {
+    ) internal pure returns (CosmosUpgradeV1beta1Plan.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (CosmosUpgradeV1beta1Plan.Data memory r, ) = CosmosUpgradeV1beta1Plan
-            ._decode(pointer, bs, sz);
+        (CosmosUpgradeV1beta1Plan.Data memory r,) =
+            CosmosUpgradeV1beta1Plan._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -608,38 +564,26 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.title).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.title, pointer, bs);
         }
         if (bytes(r.description).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.description,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.description, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            3,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += CosmosUpgradeV1beta1Plan._encode_nested(r.plan, pointer, bs);
 
@@ -659,7 +603,7 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -684,13 +628,12 @@ library CosmosUpgradeV1beta1SoftwareUpgradeProposal {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.title).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.description).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 CosmosUpgradeV1beta1Plan._estimate(r.plan)
             );
         return e;
@@ -762,7 +705,7 @@ library CosmosUpgradeV1beta1CancelSoftwareUpgradeProposal {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -772,7 +715,7 @@ library CosmosUpgradeV1beta1CancelSoftwareUpgradeProposal {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -790,7 +733,7 @@ library CosmosUpgradeV1beta1CancelSoftwareUpgradeProposal {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -798,21 +741,16 @@ library CosmosUpgradeV1beta1CancelSoftwareUpgradeProposal {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_title(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_description(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -831,7 +769,7 @@ library CosmosUpgradeV1beta1CancelSoftwareUpgradeProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.title = x;
         return sz;
@@ -848,7 +786,7 @@ library CosmosUpgradeV1beta1CancelSoftwareUpgradeProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.description = x;
         return sz;
@@ -883,31 +821,22 @@ library CosmosUpgradeV1beta1CancelSoftwareUpgradeProposal {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.title).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.title, pointer, bs);
         }
         if (bytes(r.description).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.description,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.description, pointer, bs);
         }
         return pointer - offset;
     }
@@ -925,7 +854,7 @@ library CosmosUpgradeV1beta1CancelSoftwareUpgradeProposal {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -950,7 +879,7 @@ library CosmosUpgradeV1beta1CancelSoftwareUpgradeProposal {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.title).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.description).length);
@@ -1022,7 +951,7 @@ library CosmosUpgradeV1beta1ModuleVersion {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1032,7 +961,7 @@ library CosmosUpgradeV1beta1ModuleVersion {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1050,7 +979,7 @@ library CosmosUpgradeV1beta1ModuleVersion {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1058,21 +987,16 @@ library CosmosUpgradeV1beta1ModuleVersion {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_name(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_version(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1091,7 +1015,7 @@ library CosmosUpgradeV1beta1ModuleVersion {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.name = x;
         return sz;
@@ -1108,7 +1032,7 @@ library CosmosUpgradeV1beta1ModuleVersion {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.version = x;
         return sz;
@@ -1143,25 +1067,19 @@ library CosmosUpgradeV1beta1ModuleVersion {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.name).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.name, pointer, bs);
         }
         if (r.version != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.version, pointer, bs);
         }
@@ -1181,7 +1099,7 @@ library CosmosUpgradeV1beta1ModuleVersion {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1206,7 +1124,7 @@ library CosmosUpgradeV1beta1ModuleVersion {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.name).length);
         e += 1 + ProtoBufRuntime._sz_uint64(r.version);

@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 
@@ -18,7 +19,7 @@ library IbcLightclientsSolomachineV3ClientState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -28,7 +29,7 @@ library IbcLightclientsSolomachineV3ClientState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -46,7 +47,7 @@ library IbcLightclientsSolomachineV3ClientState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -54,10 +55,8 @@ library IbcLightclientsSolomachineV3ClientState {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_sequence(pointer, bs, r);
@@ -66,11 +65,8 @@ library IbcLightclientsSolomachineV3ClientState {
             } else if (fieldId == 3) {
                 pointer += _read_consensus_state(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -89,7 +85,7 @@ library IbcLightclientsSolomachineV3ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.sequence = x;
         return sz;
@@ -106,7 +102,7 @@ library IbcLightclientsSolomachineV3ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bool x, uint256 sz) = ProtoBufRuntime._decode_bool(p, bs);
         r.is_frozen = x;
         return sz;
@@ -123,11 +119,9 @@ library IbcLightclientsSolomachineV3ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcLightclientsSolomachineV3ConsensusState.Data memory x,
-            uint256 sz
-        ) = _decode_IbcLightclientsSolomachineV3ConsensusState(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcLightclientsSolomachineV3ConsensusState.Data memory x, uint256 sz) =
+            _decode_IbcLightclientsSolomachineV3ConsensusState(p, bs);
         r.consensus_state = x;
         return sz;
     }
@@ -146,18 +140,17 @@ library IbcLightclientsSolomachineV3ClientState {
     )
         internal
         pure
-        returns (IbcLightclientsSolomachineV3ConsensusState.Data memory, uint)
+        returns (
+            IbcLightclientsSolomachineV3ConsensusState.Data memory,
+            uint256
+        )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcLightclientsSolomachineV3ConsensusState.Data memory r,
-
-        ) = IbcLightclientsSolomachineV3ConsensusState._decode(pointer, bs, sz);
+        (IbcLightclientsSolomachineV3ConsensusState.Data memory r,) =
+            IbcLightclientsSolomachineV3ConsensusState._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -190,39 +183,28 @@ library IbcLightclientsSolomachineV3ClientState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.sequence != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.sequence, pointer, bs);
         }
         if (r.is_frozen != false) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bool(r.is_frozen, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            3,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcLightclientsSolomachineV3ConsensusState._encode_nested(
-            r.consensus_state,
-            pointer,
-            bs
+            r.consensus_state, pointer, bs
         );
 
         return pointer - offset;
@@ -241,7 +223,7 @@ library IbcLightclientsSolomachineV3ClientState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -266,13 +248,12 @@ library IbcLightclientsSolomachineV3ClientState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint64(r.sequence);
         e += 1 + 1;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcLightclientsSolomachineV3ConsensusState._estimate(
                     r.consensus_state
                 )
@@ -304,8 +285,7 @@ library IbcLightclientsSolomachineV3ClientState {
         output.sequence = input.sequence;
         output.is_frozen = input.is_frozen;
         IbcLightclientsSolomachineV3ConsensusState.store(
-            input.consensus_state,
-            output.consensus_state
+            input.consensus_state, output.consensus_state
         );
     }
 
@@ -350,7 +330,7 @@ library IbcLightclientsSolomachineV3ConsensusState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -360,7 +340,7 @@ library IbcLightclientsSolomachineV3ConsensusState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -378,7 +358,7 @@ library IbcLightclientsSolomachineV3ConsensusState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -386,10 +366,8 @@ library IbcLightclientsSolomachineV3ConsensusState {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_public_key(pointer, bs, r);
@@ -398,11 +376,8 @@ library IbcLightclientsSolomachineV3ConsensusState {
             } else if (fieldId == 3) {
                 pointer += _read_timestamp(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -421,11 +396,9 @@ library IbcLightclientsSolomachineV3ConsensusState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufAny.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufAny(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufAny.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufAny(p, bs);
         r.public_key = x;
         return sz;
     }
@@ -441,7 +414,7 @@ library IbcLightclientsSolomachineV3ConsensusState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.diversifier = x;
         return sz;
@@ -458,7 +431,7 @@ library IbcLightclientsSolomachineV3ConsensusState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.timestamp = x;
         return sz;
@@ -475,18 +448,13 @@ library IbcLightclientsSolomachineV3ConsensusState {
     function _decode_GoogleProtobufAny(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufAny.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufAny.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufAny.Data memory r, ) = GoogleProtobufAny._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (GoogleProtobufAny.Data memory r,) =
+            GoogleProtobufAny._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -519,37 +487,25 @@ library IbcLightclientsSolomachineV3ConsensusState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += GoogleProtobufAny._encode_nested(r.public_key, pointer, bs);
 
         if (bytes(r.diversifier).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.diversifier,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.diversifier, pointer, bs);
         }
         if (r.timestamp != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.timestamp, pointer, bs);
         }
@@ -569,7 +525,7 @@ library IbcLightclientsSolomachineV3ConsensusState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -594,11 +550,10 @@ library IbcLightclientsSolomachineV3ConsensusState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufAny._estimate(r.public_key)
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.diversifier).length);
@@ -674,7 +629,7 @@ library IbcLightclientsSolomachineV3Header {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -684,7 +639,7 @@ library IbcLightclientsSolomachineV3Header {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -702,7 +657,7 @@ library IbcLightclientsSolomachineV3Header {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -710,10 +665,8 @@ library IbcLightclientsSolomachineV3Header {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_timestamp(pointer, bs, r);
@@ -724,11 +677,8 @@ library IbcLightclientsSolomachineV3Header {
             } else if (fieldId == 4) {
                 pointer += _read_new_diversifier(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -747,7 +697,7 @@ library IbcLightclientsSolomachineV3Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.timestamp = x;
         return sz;
@@ -764,7 +714,7 @@ library IbcLightclientsSolomachineV3Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.signature = x;
         return sz;
@@ -781,11 +731,9 @@ library IbcLightclientsSolomachineV3Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufAny.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufAny(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufAny.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufAny(p, bs);
         r.new_public_key = x;
         return sz;
     }
@@ -801,7 +749,7 @@ library IbcLightclientsSolomachineV3Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.new_diversifier = x;
         return sz;
@@ -818,18 +766,13 @@ library IbcLightclientsSolomachineV3Header {
     function _decode_GoogleProtobufAny(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufAny.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufAny.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufAny.Data memory r, ) = GoogleProtobufAny._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (GoogleProtobufAny.Data memory r,) =
+            GoogleProtobufAny._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -862,53 +805,35 @@ library IbcLightclientsSolomachineV3Header {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.timestamp != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.timestamp, pointer, bs);
         }
         if (r.signature.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.signature, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            3,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += GoogleProtobufAny._encode_nested(
-            r.new_public_key,
-            pointer,
-            bs
-        );
+        pointer +=
+            GoogleProtobufAny._encode_nested(r.new_public_key, pointer, bs);
 
         if (bytes(r.new_diversifier).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.new_diversifier,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.new_diversifier, pointer, bs);
         }
         return pointer - offset;
     }
@@ -926,7 +851,7 @@ library IbcLightclientsSolomachineV3Header {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -951,13 +876,12 @@ library IbcLightclientsSolomachineV3Header {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint64(r.timestamp);
         e += 1 + ProtoBufRuntime._sz_lendelim(r.signature.length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufAny._estimate(r.new_public_key)
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.new_diversifier).length);
@@ -1036,7 +960,7 @@ library IbcLightclientsSolomachineV3Misbehaviour {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1046,7 +970,7 @@ library IbcLightclientsSolomachineV3Misbehaviour {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1064,7 +988,7 @@ library IbcLightclientsSolomachineV3Misbehaviour {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1072,10 +996,8 @@ library IbcLightclientsSolomachineV3Misbehaviour {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_sequence(pointer, bs, r);
@@ -1084,11 +1006,8 @@ library IbcLightclientsSolomachineV3Misbehaviour {
             } else if (fieldId == 3) {
                 pointer += _read_signature_two(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1107,7 +1026,7 @@ library IbcLightclientsSolomachineV3Misbehaviour {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.sequence = x;
         return sz;
@@ -1124,11 +1043,9 @@ library IbcLightclientsSolomachineV3Misbehaviour {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcLightclientsSolomachineV3SignatureAndData.Data memory x,
-            uint256 sz
-        ) = _decode_IbcLightclientsSolomachineV3SignatureAndData(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcLightclientsSolomachineV3SignatureAndData.Data memory x, uint256 sz)
+        = _decode_IbcLightclientsSolomachineV3SignatureAndData(p, bs);
         r.signature_one = x;
         return sz;
     }
@@ -1144,11 +1061,9 @@ library IbcLightclientsSolomachineV3Misbehaviour {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcLightclientsSolomachineV3SignatureAndData.Data memory x,
-            uint256 sz
-        ) = _decode_IbcLightclientsSolomachineV3SignatureAndData(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcLightclientsSolomachineV3SignatureAndData.Data memory x, uint256 sz)
+        = _decode_IbcLightclientsSolomachineV3SignatureAndData(p, bs);
         r.signature_two = x;
         return sz;
     }
@@ -1167,22 +1082,17 @@ library IbcLightclientsSolomachineV3Misbehaviour {
     )
         internal
         pure
-        returns (IbcLightclientsSolomachineV3SignatureAndData.Data memory, uint)
+        returns (
+            IbcLightclientsSolomachineV3SignatureAndData.Data memory,
+            uint256
+        )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcLightclientsSolomachineV3SignatureAndData.Data memory r,
-
-        ) = IbcLightclientsSolomachineV3SignatureAndData._decode(
-                pointer,
-                bs,
-                sz
-            );
+        (IbcLightclientsSolomachineV3SignatureAndData.Data memory r,) =
+        IbcLightclientsSolomachineV3SignatureAndData._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1215,42 +1125,29 @@ library IbcLightclientsSolomachineV3Misbehaviour {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.sequence != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.sequence, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcLightclientsSolomachineV3SignatureAndData._encode_nested(
-            r.signature_one,
-            pointer,
-            bs
+            r.signature_one, pointer, bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
-            3,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcLightclientsSolomachineV3SignatureAndData._encode_nested(
-            r.signature_two,
-            pointer,
-            bs
+            r.signature_two, pointer, bs
         );
 
         return pointer - offset;
@@ -1269,7 +1166,7 @@ library IbcLightclientsSolomachineV3Misbehaviour {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1294,19 +1191,17 @@ library IbcLightclientsSolomachineV3Misbehaviour {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint64(r.sequence);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcLightclientsSolomachineV3SignatureAndData._estimate(
                     r.signature_one
                 )
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcLightclientsSolomachineV3SignatureAndData._estimate(
                     r.signature_two
                 )
@@ -1333,12 +1228,10 @@ library IbcLightclientsSolomachineV3Misbehaviour {
     function store(Data memory input, Data storage output) internal {
         output.sequence = input.sequence;
         IbcLightclientsSolomachineV3SignatureAndData.store(
-            input.signature_one,
-            output.signature_one
+            input.signature_one, output.signature_one
         );
         IbcLightclientsSolomachineV3SignatureAndData.store(
-            input.signature_two,
-            output.signature_two
+            input.signature_two, output.signature_two
         );
     }
 
@@ -1384,7 +1277,7 @@ library IbcLightclientsSolomachineV3SignatureAndData {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1394,7 +1287,7 @@ library IbcLightclientsSolomachineV3SignatureAndData {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1412,7 +1305,7 @@ library IbcLightclientsSolomachineV3SignatureAndData {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1420,10 +1313,8 @@ library IbcLightclientsSolomachineV3SignatureAndData {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_signature(pointer, bs, r);
@@ -1434,11 +1325,8 @@ library IbcLightclientsSolomachineV3SignatureAndData {
             } else if (fieldId == 4) {
                 pointer += _read_timestamp(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1457,7 +1345,7 @@ library IbcLightclientsSolomachineV3SignatureAndData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.signature = x;
         return sz;
@@ -1474,7 +1362,7 @@ library IbcLightclientsSolomachineV3SignatureAndData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.path = x;
         return sz;
@@ -1491,7 +1379,7 @@ library IbcLightclientsSolomachineV3SignatureAndData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.data = x;
         return sz;
@@ -1508,7 +1396,7 @@ library IbcLightclientsSolomachineV3SignatureAndData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.timestamp = x;
         return sz;
@@ -1543,43 +1431,31 @@ library IbcLightclientsSolomachineV3SignatureAndData {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.signature.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.signature, pointer, bs);
         }
         if (r.path.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.path, pointer, bs);
         }
         if (r.data.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.data, pointer, bs);
         }
         if (r.timestamp != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.timestamp, pointer, bs);
         }
@@ -1599,7 +1475,7 @@ library IbcLightclientsSolomachineV3SignatureAndData {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1624,7 +1500,7 @@ library IbcLightclientsSolomachineV3SignatureAndData {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.signature.length);
         e += 1 + ProtoBufRuntime._sz_lendelim(r.path.length);
@@ -1708,7 +1584,7 @@ library IbcLightclientsSolomachineV3TimestampedSignatureData {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1718,7 +1594,7 @@ library IbcLightclientsSolomachineV3TimestampedSignatureData {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1736,7 +1612,7 @@ library IbcLightclientsSolomachineV3TimestampedSignatureData {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1744,21 +1620,16 @@ library IbcLightclientsSolomachineV3TimestampedSignatureData {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_signature_data(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_timestamp(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1777,7 +1648,7 @@ library IbcLightclientsSolomachineV3TimestampedSignatureData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.signature_data = x;
         return sz;
@@ -1794,7 +1665,7 @@ library IbcLightclientsSolomachineV3TimestampedSignatureData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.timestamp = x;
         return sz;
@@ -1829,29 +1700,20 @@ library IbcLightclientsSolomachineV3TimestampedSignatureData {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.signature_data.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_bytes(
-                r.signature_data,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_bytes(r.signature_data, pointer, bs);
         }
         if (r.timestamp != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.timestamp, pointer, bs);
         }
@@ -1871,7 +1733,7 @@ library IbcLightclientsSolomachineV3TimestampedSignatureData {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1896,7 +1758,7 @@ library IbcLightclientsSolomachineV3TimestampedSignatureData {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.signature_data.length);
         e += 1 + ProtoBufRuntime._sz_uint64(r.timestamp);
@@ -1971,7 +1833,7 @@ library IbcLightclientsSolomachineV3SignBytes {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1981,7 +1843,7 @@ library IbcLightclientsSolomachineV3SignBytes {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1999,7 +1861,7 @@ library IbcLightclientsSolomachineV3SignBytes {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -2007,10 +1869,8 @@ library IbcLightclientsSolomachineV3SignBytes {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_sequence(pointer, bs, r);
@@ -2023,11 +1883,8 @@ library IbcLightclientsSolomachineV3SignBytes {
             } else if (fieldId == 5) {
                 pointer += _read_data(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -2046,7 +1903,7 @@ library IbcLightclientsSolomachineV3SignBytes {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.sequence = x;
         return sz;
@@ -2063,7 +1920,7 @@ library IbcLightclientsSolomachineV3SignBytes {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.timestamp = x;
         return sz;
@@ -2080,7 +1937,7 @@ library IbcLightclientsSolomachineV3SignBytes {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.diversifier = x;
         return sz;
@@ -2097,7 +1954,7 @@ library IbcLightclientsSolomachineV3SignBytes {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.path = x;
         return sz;
@@ -2114,7 +1971,7 @@ library IbcLightclientsSolomachineV3SignBytes {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.data = x;
         return sz;
@@ -2149,56 +2006,38 @@ library IbcLightclientsSolomachineV3SignBytes {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.sequence != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.sequence, pointer, bs);
         }
         if (r.timestamp != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.timestamp, pointer, bs);
         }
         if (bytes(r.diversifier).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.diversifier,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.diversifier, pointer, bs);
         }
         if (r.path.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.path, pointer, bs);
         }
         if (r.data.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                5,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                5, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.data, pointer, bs);
         }
@@ -2218,7 +2057,7 @@ library IbcLightclientsSolomachineV3SignBytes {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -2243,7 +2082,7 @@ library IbcLightclientsSolomachineV3SignBytes {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint64(r.sequence);
         e += 1 + ProtoBufRuntime._sz_uint64(r.timestamp);
@@ -2333,7 +2172,7 @@ library IbcLightclientsSolomachineV3HeaderData {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -2343,7 +2182,7 @@ library IbcLightclientsSolomachineV3HeaderData {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -2361,7 +2200,7 @@ library IbcLightclientsSolomachineV3HeaderData {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -2369,21 +2208,16 @@ library IbcLightclientsSolomachineV3HeaderData {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_new_pub_key(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_new_diversifier(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -2402,11 +2236,9 @@ library IbcLightclientsSolomachineV3HeaderData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufAny.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufAny(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufAny.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufAny(p, bs);
         r.new_pub_key = x;
         return sz;
     }
@@ -2422,7 +2254,7 @@ library IbcLightclientsSolomachineV3HeaderData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.new_diversifier = x;
         return sz;
@@ -2439,18 +2271,13 @@ library IbcLightclientsSolomachineV3HeaderData {
     function _decode_GoogleProtobufAny(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufAny.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufAny.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufAny.Data memory r, ) = GoogleProtobufAny._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (GoogleProtobufAny.Data memory r,) =
+            GoogleProtobufAny._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -2483,30 +2310,21 @@ library IbcLightclientsSolomachineV3HeaderData {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += GoogleProtobufAny._encode_nested(r.new_pub_key, pointer, bs);
 
         if (bytes(r.new_diversifier).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.new_diversifier,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.new_diversifier, pointer, bs);
         }
         return pointer - offset;
     }
@@ -2524,7 +2342,7 @@ library IbcLightclientsSolomachineV3HeaderData {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -2549,11 +2367,10 @@ library IbcLightclientsSolomachineV3HeaderData {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufAny._estimate(r.new_pub_key)
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.new_diversifier).length);

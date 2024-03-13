@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../ProtoBufRuntime.sol";
 import "../../GoogleProtobufAny.sol";
 
@@ -17,7 +18,7 @@ library GoogleApiHttp {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -27,7 +28,7 @@ library GoogleApiHttp {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -45,39 +46,26 @@ library GoogleApiHttp {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[3] memory counters;
+        uint256[3] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
-                pointer += _read_unpacked_repeated_rules(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_rules(pointer, bs, nil(), counters);
             } else if (fieldId == 2) {
-                pointer += _read_fully_decode_reserved_expansion(
-                    pointer,
-                    bs,
-                    r
-                );
+                pointer += _read_fully_decode_reserved_expansion(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
@@ -87,24 +75,15 @@ library GoogleApiHttp {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
-                pointer += _read_unpacked_repeated_rules(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_rules(pointer, bs, r, counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -124,15 +103,13 @@ library GoogleApiHttp {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[3] memory counters
-    ) internal pure returns (uint) {
+        uint256[3] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            GoogleApiHttpRule.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleApiHttpRule(p, bs);
+        (GoogleApiHttpRule.Data memory x, uint256 sz) =
+            _decode_GoogleApiHttpRule(p, bs);
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -153,7 +130,7 @@ library GoogleApiHttp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bool x, uint256 sz) = ProtoBufRuntime._decode_bool(p, bs);
         r.fully_decode_reserved_expansion = x;
         return sz;
@@ -170,18 +147,13 @@ library GoogleApiHttp {
     function _decode_GoogleApiHttpRule(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleApiHttpRule.Data memory, uint) {
+    ) internal pure returns (GoogleApiHttpRule.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleApiHttpRule.Data memory r, ) = GoogleApiHttpRule._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (GoogleApiHttpRule.Data memory r,) =
+            GoogleApiHttpRule._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -214,36 +186,25 @@ library GoogleApiHttp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.rules.length != 0) {
             for (i = 0; i < r.rules.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
-                pointer += GoogleApiHttpRule._encode_nested(
-                    r.rules[i],
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    GoogleApiHttpRule._encode_nested(r.rules[i], pointer, bs);
             }
         }
         if (r.fully_decode_reserved_expansion != false) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bool(
-                r.fully_decode_reserved_expansion,
-                pointer,
-                bs
+                r.fully_decode_reserved_expansion, pointer, bs
             );
         }
         return pointer - offset;
@@ -262,7 +223,7 @@ library GoogleApiHttp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -287,13 +248,12 @@ library GoogleApiHttp {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.rules.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     GoogleApiHttpRule._estimate(r.rules[i])
                 );
         }
@@ -326,8 +286,8 @@ library GoogleApiHttp {
             output.rules.push(input.rules[i1]);
         }
 
-        output.fully_decode_reserved_expansion = input
-            .fully_decode_reserved_expansion;
+        output.fully_decode_reserved_expansion =
+            input.fully_decode_reserved_expansion;
     }
 
     //array helpers for Rules
@@ -343,9 +303,8 @@ library GoogleApiHttp {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        GoogleApiHttpRule.Data[] memory tmp = new GoogleApiHttpRule.Data[](
-            self.rules.length + 1
-        );
+        GoogleApiHttpRule.Data[] memory tmp =
+            new GoogleApiHttpRule.Data[](self.rules.length + 1);
         for (uint256 i = 0; i < self.rules.length; i++) {
             tmp[i] = self.rules[i];
         }
@@ -401,7 +360,7 @@ library GoogleApiHttpRule {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -411,7 +370,7 @@ library GoogleApiHttpRule {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -429,19 +388,17 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[13] memory counters;
+        uint256[13] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_selector(pointer, bs, r);
@@ -463,17 +420,11 @@ library GoogleApiHttpRule {
                 pointer += _read_response_body(pointer, bs, r);
             } else if (fieldId == 11) {
                 pointer += _read_unpacked_repeated_additional_bindings(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
@@ -483,24 +434,16 @@ library GoogleApiHttpRule {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 11) {
                 pointer += _read_unpacked_repeated_additional_bindings(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -519,7 +462,7 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.selector = x;
         return sz;
@@ -536,7 +479,7 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.get = x;
         return sz;
@@ -553,7 +496,7 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.put = x;
         return sz;
@@ -570,7 +513,7 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.post = x;
         return sz;
@@ -587,7 +530,7 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.delete_ = x;
         return sz;
@@ -604,7 +547,7 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.patch = x;
         return sz;
@@ -621,11 +564,9 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleApiCustomHttpPattern.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleApiCustomHttpPattern(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleApiCustomHttpPattern.Data memory x, uint256 sz) =
+            _decode_GoogleApiCustomHttpPattern(p, bs);
         r.custom = x;
         return sz;
     }
@@ -641,7 +582,7 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.body = x;
         return sz;
@@ -658,7 +599,7 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.response_body = x;
         return sz;
@@ -676,21 +617,18 @@ library GoogleApiHttpRule {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[13] memory counters
-    ) internal pure returns (uint) {
+        uint256[13] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            GoogleApiHttpRule.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleApiHttpRule(p, bs);
+        (GoogleApiHttpRule.Data memory x, uint256 sz) =
+            _decode_GoogleApiHttpRule(p, bs);
         if (isNil(r)) {
             counters[11] += 1;
         } else {
-            r.additional_bindings[
-                r.additional_bindings.length - counters[11]
-            ] = x;
+            r.additional_bindings[r.additional_bindings.length - counters[11]] =
+                x;
             counters[11] -= 1;
         }
         return sz;
@@ -707,17 +645,13 @@ library GoogleApiHttpRule {
     function _decode_GoogleApiCustomHttpPattern(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleApiCustomHttpPattern.Data memory, uint) {
+    ) internal pure returns (GoogleApiCustomHttpPattern.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            GoogleApiCustomHttpPattern.Data memory r,
-
-        ) = GoogleApiCustomHttpPattern._decode(pointer, bs, sz);
+        (GoogleApiCustomHttpPattern.Data memory r,) =
+            GoogleApiCustomHttpPattern._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -731,18 +665,13 @@ library GoogleApiHttpRule {
     function _decode_GoogleApiHttpRule(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleApiHttpRule.Data memory, uint) {
+    ) internal pure returns (GoogleApiHttpRule.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleApiHttpRule.Data memory r, ) = GoogleApiHttpRule._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (GoogleApiHttpRule.Data memory r,) =
+            GoogleApiHttpRule._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -775,111 +704,73 @@ library GoogleApiHttpRule {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (bytes(r.selector).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.selector, pointer, bs);
         }
         if (bytes(r.get).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.get, pointer, bs);
         }
         if (bytes(r.put).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.put, pointer, bs);
         }
         if (bytes(r.post).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.post, pointer, bs);
         }
         if (bytes(r.delete_).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                5,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                5, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.delete_, pointer, bs);
         }
         if (bytes(r.patch).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                6,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                6, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.patch, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            8,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            8, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += GoogleApiCustomHttpPattern._encode_nested(
-            r.custom,
-            pointer,
-            bs
-        );
+        pointer +=
+            GoogleApiCustomHttpPattern._encode_nested(r.custom, pointer, bs);
 
         if (bytes(r.body).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                7,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                7, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.body, pointer, bs);
         }
         if (bytes(r.response_body).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                12,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                12, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.response_body,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.response_body, pointer, bs);
         }
         if (r.additional_bindings.length != 0) {
             for (i = 0; i < r.additional_bindings.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    11,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    11, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += GoogleApiHttpRule._encode_nested(
-                    r.additional_bindings[i],
-                    pointer,
-                    bs
+                    r.additional_bindings[i], pointer, bs
                 );
             }
         }
@@ -899,7 +790,7 @@ library GoogleApiHttpRule {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -924,7 +815,7 @@ library GoogleApiHttpRule {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.selector).length);
@@ -933,17 +824,15 @@ library GoogleApiHttpRule {
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.post).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.delete_).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.patch).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleApiCustomHttpPattern._estimate(r.custom)
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.body).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.response_body).length);
         for (i = 0; i < r.additional_bindings.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     GoogleApiHttpRule._estimate(r.additional_bindings[i])
                 );
         }
@@ -1027,9 +916,8 @@ library GoogleApiHttpRule {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        GoogleApiHttpRule.Data[] memory tmp = new GoogleApiHttpRule.Data[](
-            self.additional_bindings.length + 1
-        );
+        GoogleApiHttpRule.Data[] memory tmp =
+            new GoogleApiHttpRule.Data[](self.additional_bindings.length + 1);
         for (uint256 i = 0; i < self.additional_bindings.length; i++) {
             tmp[i] = self.additional_bindings[i];
         }
@@ -1077,7 +965,7 @@ library GoogleApiCustomHttpPattern {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1087,7 +975,7 @@ library GoogleApiCustomHttpPattern {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1105,7 +993,7 @@ library GoogleApiCustomHttpPattern {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1113,21 +1001,16 @@ library GoogleApiCustomHttpPattern {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_kind(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_path(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1146,7 +1029,7 @@ library GoogleApiCustomHttpPattern {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.kind = x;
         return sz;
@@ -1163,7 +1046,7 @@ library GoogleApiCustomHttpPattern {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.path = x;
         return sz;
@@ -1198,25 +1081,19 @@ library GoogleApiCustomHttpPattern {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.kind).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.kind, pointer, bs);
         }
         if (bytes(r.path).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.path, pointer, bs);
         }
@@ -1236,7 +1113,7 @@ library GoogleApiCustomHttpPattern {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1261,7 +1138,7 @@ library GoogleApiCustomHttpPattern {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.kind).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.path).length);

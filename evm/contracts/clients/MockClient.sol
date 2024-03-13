@@ -3,7 +3,11 @@ pragma solidity ^0.8.23;
 import "../core/02-client/ILightClient.sol";
 import "../core/02-client/IBCHeight.sol";
 import "../proto/ibc/core/client/v1/client.sol";
-import {IbcLightclientsMockV1ClientState as ClientState, IbcLightclientsMockV1ConsensusState as ConsensusState, IbcLightclientsMockV1Header as Header} from "../proto/MockClient.sol";
+import {
+    IbcLightclientsMockV1ClientState as ClientState,
+    IbcLightclientsMockV1ConsensusState as ConsensusState,
+    IbcLightclientsMockV1Header as Header
+} from "../proto/MockClient.sol";
 import {GoogleProtobufAny as Any} from "../proto/GoogleProtobufAny.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 
@@ -13,8 +17,7 @@ contract MockClient is ILightClient {
     using BytesLib for bytes;
     using IBCHeight for IbcCoreClientV1Height.Data;
 
-    string private constant HEADER_TYPE_URL =
-        "/ibc.lightclients.mock.v1.Header";
+    string private constant HEADER_TYPE_URL = "/ibc.lightclients.mock.v1.Header";
     string private constant CLIENT_STATE_TYPE_URL =
         "/ibc.lightclients.mock.v1.ClientState";
     string private constant CONSENSUS_STATE_TYPE_URL =
@@ -29,8 +32,8 @@ contract MockClient is ILightClient {
 
     address internal ibcHandler;
     mapping(string => ClientState.Data) internal clientStates;
-    mapping(string => mapping(uint128 => ConsensusState.Data))
-        internal consensusStates;
+    mapping(string => mapping(uint128 => ConsensusState.Data)) internal
+        consensusStates;
 
     constructor(address ibcHandler_) {
         ibcHandler = ibcHandler_;
@@ -65,16 +68,15 @@ contract MockClient is ILightClient {
             return (clientStateCommitment, update, false);
         }
         if (
-            clientState.latest_height.revision_number != 0 ||
-            clientState.latest_height.revision_height == 0 ||
-            consensusState.timestamp == 0
+            clientState.latest_height.revision_number != 0
+                || clientState.latest_height.revision_height == 0
+                || consensusState.timestamp == 0
         ) {
             return (clientStateCommitment, update, false);
         }
         clientStates[clientId] = clientState;
-        consensusStates[clientId][
-            clientState.latest_height.toUint128()
-        ] = consensusState;
+        consensusStates[clientId][clientState.latest_height.toUint128()] =
+            consensusState;
         return (
             keccak256(clientStateBytes),
             ConsensusStateUpdate({
@@ -92,18 +94,20 @@ contract MockClient is ILightClient {
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
     ) external view override returns (uint64, bool) {
-        ConsensusState.Data storage consensusState = consensusStates[clientId][
-            height.toUint128()
-        ];
+        ConsensusState.Data storage consensusState =
+            consensusStates[clientId][height.toUint128()];
         return (consensusState.timestamp, consensusState.timestamp != 0);
     }
 
     /**
      * @dev getLatestHeight returns the latest height of the client state corresponding to `clientId`.
      */
-    function getLatestHeight(
-        string calldata clientId
-    ) external view override returns (IbcCoreClientV1Height.Data memory, bool) {
+    function getLatestHeight(string calldata clientId)
+        external
+        view
+        override
+        returns (IbcCoreClientV1Height.Data memory, bool)
+    {
         ClientState.Data storage clientState = clientStates[clientId];
         return (
             clientState.latest_height,
@@ -144,9 +148,8 @@ contract MockClient is ILightClient {
         anyClientState.type_url = CLIENT_STATE_TYPE_URL;
         anyClientState.value = ClientState.encode(clientStates[clientId]);
 
-        ConsensusState.Data storage consensusState = consensusStates[clientId][
-            height.toUint128()
-        ];
+        ConsensusState.Data storage consensusState =
+            consensusStates[clientId][height.toUint128()];
         consensusState.timestamp = timestamp;
 
         anyConsensusState.type_url = CONSENSUS_STATE_TYPE_URL;
@@ -207,9 +210,11 @@ contract MockClient is ILightClient {
      * @dev getClientState returns the clientState corresponding to `clientId`.
      *      If it's not found, the function returns false.
      */
-    function getClientState(
-        string calldata clientId
-    ) external view returns (bytes memory clientStateBytes, bool) {
+    function getClientState(string calldata clientId)
+        external
+        view
+        returns (bytes memory clientStateBytes, bool)
+    {
         ClientState.Data storage clientState = clientStates[clientId];
         if (clientState.latest_height.revision_height == 0) {
             return (clientStateBytes, false);
@@ -220,7 +225,7 @@ contract MockClient is ILightClient {
                     type_url: CLIENT_STATE_TYPE_URL,
                     value: ClientState.encode(clientState)
                 })
-            ),
+                ),
             true
         );
     }
@@ -233,9 +238,8 @@ contract MockClient is ILightClient {
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
     ) external view returns (bytes memory consensusStateBytes, bool) {
-        ConsensusState.Data storage consensusState = consensusStates[clientId][
-            height.toUint128()
-        ];
+        ConsensusState.Data storage consensusState =
+            consensusStates[clientId][height.toUint128()];
         if (consensusState.timestamp == 0) {
             return (consensusStateBytes, false);
         }
@@ -245,16 +249,18 @@ contract MockClient is ILightClient {
                     type_url: CONSENSUS_STATE_TYPE_URL,
                     value: ConsensusState.encode(consensusState)
                 })
-            ),
+                ),
             true
         );
     }
 
     /* Internal functions */
 
-    function parseHeader(
-        bytes memory bz
-    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint64) {
+    function parseHeader(bytes memory bz)
+        internal
+        pure
+        returns (IbcCoreClientV1Height.Data memory, uint64)
+    {
         Any.Data memory any = Any.decode(bz);
         require(
             keccak256(abi.encodePacked(any.type_url)) == HEADER_TYPE_URL_HASH,
@@ -262,38 +268,37 @@ contract MockClient is ILightClient {
         );
         Header.Data memory header = Header.decode(any.value);
         require(
-            header.height.revision_number == 0 &&
-                header.height.revision_height != 0 &&
-                header.timestamp != 0,
+            header.height.revision_number == 0
+                && header.height.revision_height != 0 && header.timestamp != 0,
             "invalid header"
         );
         return (header.height, header.timestamp);
     }
 
-    function unmarshalClientState(
-        bytes calldata bz
-    ) internal pure returns (ClientState.Data memory clientState, bool ok) {
+    function unmarshalClientState(bytes calldata bz)
+        internal
+        pure
+        returns (ClientState.Data memory clientState, bool ok)
+    {
         Any.Data memory anyClientState = Any.decode(bz);
         if (
-            keccak256(abi.encodePacked(anyClientState.type_url)) !=
-            CLIENT_STATE_TYPE_URL_HASH
+            keccak256(abi.encodePacked(anyClientState.type_url))
+                != CLIENT_STATE_TYPE_URL_HASH
         ) {
             return (clientState, false);
         }
         return (ClientState.decode(anyClientState.value), true);
     }
 
-    function unmarshalConsensusState(
-        bytes calldata bz
-    )
+    function unmarshalConsensusState(bytes calldata bz)
         internal
         pure
         returns (ConsensusState.Data memory consensusState, bool ok)
     {
         Any.Data memory anyConsensusState = Any.decode(bz);
         if (
-            keccak256(abi.encodePacked(anyConsensusState.type_url)) !=
-            CONSENSUS_STATE_TYPE_URL_HASH
+            keccak256(abi.encodePacked(anyConsensusState.type_url))
+                != CONSENSUS_STATE_TYPE_URL_HASH
         ) {
             return (consensusState, false);
         }

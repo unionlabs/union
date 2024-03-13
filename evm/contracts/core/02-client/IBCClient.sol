@@ -44,9 +44,11 @@ contract IBCClient is IBCStore, IIBCClient {
     /**
      * @dev createClient creates a new client state and populates it with a given consensus state
      */
-    function createClient(
-        IBCMsgs.MsgCreateClient calldata msg_
-    ) external override returns (string memory clientId) {
+    function createClient(IBCMsgs.MsgCreateClient calldata msg_)
+        external
+        override
+        returns (string memory clientId)
+    {
         address clientImpl = clientRegistry[msg_.clientType];
         if (clientImpl == address(0)) {
             revert IBCClientLib.ErrClientTypeNotFound();
@@ -59,25 +61,20 @@ contract IBCClient is IBCStore, IIBCClient {
             ConsensusStateUpdate memory update,
             bool ok
         ) = ILightClient(clientImpl).createClient(
-                clientId,
-                msg_.clientStateBytes,
-                msg_.consensusStateBytes
-            );
+            clientId, msg_.clientStateBytes, msg_.consensusStateBytes
+        );
         if (!ok) {
             revert IBCClientLib.ErrFailedToCreateClient();
         }
 
         // update commitments
-        commitments[
-            keccak256(IBCCommitment.clientStatePath(clientId))
-        ] = clientStateCommitment;
-        commitments[
-            IBCCommitment.consensusStateCommitmentKey(
-                clientId,
-                update.height.revision_number,
-                update.height.revision_height
-            )
-        ] = update.consensusStateCommitment;
+        commitments[keccak256(IBCCommitment.clientStatePath(clientId))] =
+            clientStateCommitment;
+        commitments[IBCCommitment.consensusStateCommitmentKey(
+            clientId,
+            update.height.revision_number,
+            update.height.revision_height
+        )] = update.consensusStateCommitment;
 
         emit IBCClientLib.ClientCreated(clientId);
 
@@ -87,13 +84,13 @@ contract IBCClient is IBCStore, IIBCClient {
     /**
      * @dev updateClient updates the consensus state and the state root from a provided header
      */
-    function updateClient(
-        IBCMsgs.MsgUpdateClient calldata msg_
-    ) external override {
+    function updateClient(IBCMsgs.MsgUpdateClient calldata msg_)
+        external
+        override
+    {
         if (
-            commitments[
-                IBCCommitment.clientStateCommitmentKey(msg_.clientId)
-            ] == bytes32(0)
+            commitments[IBCCommitment.clientStateCommitmentKey(msg_.clientId)]
+                == bytes32(0)
         ) {
             revert IBCStoreLib.ErrClientNotFound();
         }
@@ -102,38 +99,33 @@ contract IBCClient is IBCStore, IIBCClient {
             ConsensusStateUpdate[] memory updates,
             bool ok
         ) = getClient(msg_.clientId).updateClient(
-                msg_.clientId,
-                msg_.clientMessage
-            );
+            msg_.clientId, msg_.clientMessage
+        );
         if (!ok) {
             revert IBCClientLib.ErrFailedToUpdateClient();
         }
 
         // update commitments
-        commitments[
-            keccak256(IBCCommitment.clientStatePath(msg_.clientId))
-        ] = clientStateCommitment;
+        commitments[keccak256(IBCCommitment.clientStatePath(msg_.clientId))] =
+            clientStateCommitment;
         for (uint256 i = 0; i < updates.length; i++) {
-            commitments[
-                IBCCommitment.consensusStateCommitmentKey(
-                    msg_.clientId,
-                    updates[i].height.revision_number,
-                    updates[i].height.revision_height
-                )
-            ] = updates[i].consensusStateCommitment;
+            commitments[IBCCommitment.consensusStateCommitmentKey(
+                msg_.clientId,
+                updates[i].height.revision_number,
+                updates[i].height.revision_height
+            )] = updates[i].consensusStateCommitment;
         }
 
         emit IBCClientLib.ClientUpdated(msg_.clientId);
     }
 
-    function generateClientIdentifier(
-        string calldata clientType
-    ) private returns (string memory) {
+    function generateClientIdentifier(string calldata clientType)
+        private
+        returns (string memory)
+    {
         string memory identifier = string(
             abi.encodePacked(
-                clientType,
-                "-",
-                Strings.toString(nextClientSequence)
+                clientType, "-", Strings.toString(nextClientSequence)
             )
         );
         nextClientSequence++;

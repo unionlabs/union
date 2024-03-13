@@ -26,14 +26,12 @@ contract DevnetIBCHandlerInit is IBCHost {
             connections[connectionId].versions.push(connection.versions[i]);
         }
         connections[connectionId].counterparty = connection.counterparty;
-        commitments[
-            keccak256(IBCCommitment.connectionPath(connectionId))
-        ] = keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection));
+        commitments[keccak256(IBCCommitment.connectionPath(connectionId))] =
+            keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection));
 
         channels[portId][channelId] = channel;
-        commitments[
-            keccak256(IBCCommitment.channelPath(portId, channelId))
-        ] = keccak256(IbcCoreChannelV1Channel.encode(channel));
+        commitments[keccak256(IBCCommitment.channelPath(portId, channelId))] =
+            keccak256(IbcCoreChannelV1Channel.encode(channel));
 
         IIBCModule module = lookupModuleByPort(portId);
         module.onChanOpenInit(
@@ -45,14 +43,10 @@ contract DevnetIBCHandlerInit is IBCHost {
             channel.version
         );
         module.onChanOpenAck(
-            portId,
-            channelId,
-            channel.counterparty.channel_id,
-            channel.version
+            portId, channelId, channel.counterparty.channel_id, channel.version
         );
         claimCapability(
-            channelCapabilityPath(portId, channelId),
-            address(module)
+            channelCapabilityPath(portId, channelId), address(module)
         );
     }
 }

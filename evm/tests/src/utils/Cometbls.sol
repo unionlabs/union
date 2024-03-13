@@ -2,17 +2,52 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
-import {IbcLightclientsMockV1ClientState as MockClientState, IbcLightclientsMockV1Header as MockHeader, IbcLightclientsMockV1ConsensusState as MockConsensusState, IbcCoreClientV1Height as ClientHeight} from "../../../contracts/proto/MockClient.sol";
-import {GoogleProtobufAny as Any} from "../../../contracts/proto/GoogleProtobufAny.sol";
-import {GoogleProtobufDuration as Duration, GoogleProtobufTimestamp as Timestamp} from "../../../contracts/proto/ProtoBufRuntime.sol";
-import {IbcCoreChannelV1Counterparty as ChannelCounterparty, IbcCoreChannelV1Channel as Channel, IbcCoreChannelV1GlobalEnums as ChannelEnums, IbcCoreChannelV1Counterparty as ChannelCounterparty} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
-import {IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1Version as ConnectionVersion, IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
-import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
-import {CometblsHelp, OptimizedConsensusState as CometblsConsensusState} from "../../../contracts/lib/CometblsHelp.sol";
-import {UnionIbcLightclientsCometblsV1ClientState as CometblsClientState, UnionIbcLightclientsCometblsV1Header as CometblsHeader, UnionIbcLightclientsCometblsV1Header as CometblsHeader} from "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
-import {IbcLightclientsWasmV1ClientState as WasmClientState} from "../../../contracts/proto/ibc/lightclients/wasm/v1/wasm.sol";
-import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeader, TendermintVersionConsensus} from "../../../contracts/proto/tendermint/types/types.sol";
-import {IbcLightclientsTendermintV1Fraction as Fraction} from "../../../contracts/proto/ibc/lightclients/tendermint/v1/tendermint.sol";
+import {
+    IbcLightclientsMockV1ClientState as MockClientState,
+    IbcLightclientsMockV1Header as MockHeader,
+    IbcLightclientsMockV1ConsensusState as MockConsensusState,
+    IbcCoreClientV1Height as ClientHeight
+} from "../../../contracts/proto/MockClient.sol";
+import {GoogleProtobufAny as Any} from
+    "../../../contracts/proto/GoogleProtobufAny.sol";
+import {
+    GoogleProtobufDuration as Duration,
+    GoogleProtobufTimestamp as Timestamp
+} from "../../../contracts/proto/ProtoBufRuntime.sol";
+import {
+    IbcCoreChannelV1Counterparty as ChannelCounterparty,
+    IbcCoreChannelV1Channel as Channel,
+    IbcCoreChannelV1GlobalEnums as ChannelEnums,
+    IbcCoreChannelV1Counterparty as ChannelCounterparty
+} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
+import {
+    IbcCoreConnectionV1Counterparty as ConnectionCounterparty,
+    IbcCoreConnectionV1Version as ConnectionVersion,
+    IbcCoreConnectionV1ConnectionEnd as ConnectionEnd,
+    IbcCoreConnectionV1GlobalEnums as ConnectionEnums
+} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
+import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
+    "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {
+    CometblsHelp,
+    OptimizedConsensusState as CometblsConsensusState
+} from "../../../contracts/lib/CometblsHelp.sol";
+import {
+    UnionIbcLightclientsCometblsV1ClientState as CometblsClientState,
+    UnionIbcLightclientsCometblsV1Header as CometblsHeader,
+    UnionIbcLightclientsCometblsV1Header as CometblsHeader
+} from
+    "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
+import {IbcLightclientsWasmV1ClientState as WasmClientState} from
+    "../../../contracts/proto/ibc/lightclients/wasm/v1/wasm.sol";
+import {
+    TendermintTypesCommit,
+    TendermintTypesHeader,
+    TendermintTypesSignedHeader,
+    TendermintVersionConsensus
+} from "../../../contracts/proto/tendermint/types/types.sol";
+import {IbcLightclientsTendermintV1Fraction as Fraction} from
+    "../../../contracts/proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 
 library Cometbls {
     using CometblsHelp for *;
@@ -37,22 +72,21 @@ library Cometbls {
         string memory chainId,
         uint64 latestHeight
     ) internal view returns (CometblsClientState.Data memory) {
-        return
-            CometblsClientState.Data({
-                chain_id: chainId,
-                // TODO: all this could be fuzzed
-                trusting_period: TRUSTING_PERIOD,
-                unbonding_period: 300,
-                max_clock_drift: MAX_CLOCK_DRIFT,
-                frozen_height: ClientHeight.Data({
-                    revision_number: 0,
-                    revision_height: 0
-                }),
-                latest_height: ClientHeight.Data({
-                    revision_number: 0,
-                    revision_height: latestHeight
-                })
-            });
+        return CometblsClientState.Data({
+            chain_id: chainId,
+            // TODO: all this could be fuzzed
+            trusting_period: TRUSTING_PERIOD,
+            unbonding_period: 300,
+            max_clock_drift: MAX_CLOCK_DRIFT,
+            frozen_height: ClientHeight.Data({
+                revision_number: 0,
+                revision_height: 0
+            }),
+            latest_height: ClientHeight.Data({
+                revision_number: 0,
+                revision_height: latestHeight
+            })
+        });
     }
 
     function createConsensusState(
@@ -60,12 +94,11 @@ library Cometbls {
         bytes32 nextValidatorsHash,
         uint64 timestamp
     ) internal view returns (CometblsConsensusState memory) {
-        return
-            CometblsConsensusState({
-                appHash: appHash,
-                nextValidatorsHash: nextValidatorsHash,
-                timestamp: timestamp
-            });
+        return CometblsConsensusState({
+            appHash: appHash,
+            nextValidatorsHash: nextValidatorsHash,
+            timestamp: timestamp
+        });
     }
 
     function createClient(
@@ -77,12 +110,10 @@ library Cometbls {
         uint64 timestamp
     ) internal view returns (IBCMsgs.MsgCreateClient memory m) {
         m.clientType = clientType;
-        m.clientStateBytes = createClientState(chainId, latestHeight)
-            .marshalEthABI();
+        m.clientStateBytes =
+            createClientState(chainId, latestHeight).marshalEthABI();
         m.consensusStateBytes = createConsensusState(
-            appHash,
-            nextValidatorsHash,
-            timestamp
+            appHash, nextValidatorsHash, timestamp
         ).marshalEthABI();
     }
 
@@ -93,15 +124,13 @@ library Cometbls {
         bytes memory zkp
     ) internal view returns (IBCMsgs.MsgUpdateClient memory m) {
         m.clientId = clientId;
-        m.clientMessage = CometblsHeader
-            .Data({
-                signed_header: signedHeader,
-                trusted_height: ClientHeight.Data({
-                    revision_number: 0,
-                    revision_height: trustedHeight
-                }),
-                zero_knowledge_proof: zkp
-            })
-            .marshalHeaderEthABI();
+        m.clientMessage = CometblsHeader.Data({
+            signed_header: signedHeader,
+            trusted_height: ClientHeight.Data({
+                revision_number: 0,
+                revision_height: trustedHeight
+            }),
+            zero_knowledge_proof: zkp
+        }).marshalHeaderEthABI();
     }
 }

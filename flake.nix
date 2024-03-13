@@ -500,6 +500,18 @@
                   enable = true;
                   file = "dictionary.txt";
                 };
+                forge = {
+                  enable = true;
+                  package = dbg (pkgs.stdenv.mkDerivation {
+                    name = "forge";
+                    src = pkgs.foundry-bin;
+                    installPhase = ''
+                      mkdir -p $out/bin
+                      cp -r $src/bin/forge $out/bin/forge
+                    '';
+                    meta.mainProgram = "forge";
+                  });
+                };
                 prettier = {
                   enable = false;
                   excludes = [ "./app/**/*" ];

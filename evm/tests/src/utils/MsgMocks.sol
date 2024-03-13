@@ -2,11 +2,28 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
-import {IbcLightclientsMockV1ClientState as MockClientState, IbcLightclientsMockV1Header as MockHeader, IbcLightclientsMockV1ConsensusState as MockConsensusState, IbcCoreClientV1Height as ClientHeight} from "../../../contracts/proto/MockClient.sol";
-import {GoogleProtobufAny as Any} from "../../../contracts/proto/GoogleProtobufAny.sol";
-import {IbcCoreChannelV1Counterparty as ChannelCounterparty, IbcCoreChannelV1Channel as Channel, IbcCoreChannelV1GlobalEnums as ChannelEnums, IbcCoreChannelV1Counterparty as ChannelCounterparty} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
-import {IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1Version as ConnectionVersion, IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
-import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {
+    IbcLightclientsMockV1ClientState as MockClientState,
+    IbcLightclientsMockV1Header as MockHeader,
+    IbcLightclientsMockV1ConsensusState as MockConsensusState,
+    IbcCoreClientV1Height as ClientHeight
+} from "../../../contracts/proto/MockClient.sol";
+import {GoogleProtobufAny as Any} from
+    "../../../contracts/proto/GoogleProtobufAny.sol";
+import {
+    IbcCoreChannelV1Counterparty as ChannelCounterparty,
+    IbcCoreChannelV1Channel as Channel,
+    IbcCoreChannelV1GlobalEnums as ChannelEnums,
+    IbcCoreChannelV1Counterparty as ChannelCounterparty
+} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
+import {
+    IbcCoreConnectionV1Counterparty as ConnectionCounterparty,
+    IbcCoreConnectionV1Version as ConnectionVersion,
+    IbcCoreConnectionV1ConnectionEnd as ConnectionEnd,
+    IbcCoreConnectionV1GlobalEnums as ConnectionEnums
+} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
+import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
+    "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
 
 library MsgMocks {
     //
@@ -54,9 +71,11 @@ library MsgMocks {
     //
 
     /// Builds a MsgConnectionOpenInit
-    function connectionOpenInit(
-        string memory clientId
-    ) internal view returns (IBCMsgs.MsgConnectionOpenInit memory m) {
+    function connectionOpenInit(string memory clientId)
+        internal
+        view
+        returns (IBCMsgs.MsgConnectionOpenInit memory m)
+    {
         m.clientId = clientId;
         m.counterparty.client_id = "counterparty-client-id";
         m.counterparty.connection_id = "counterparty-conn-id";
@@ -71,10 +90,8 @@ library MsgMocks {
         m.counterparty.client_id = "counterparty-client-id";
         m.counterparty.connection_id = "counterparty-conn-id";
         m.counterpartyVersions = new ConnectionVersion.Data[](1);
-        m.counterpartyVersions[0] = ConnectionVersion.Data({
-            identifier: "1",
-            features: new string[](2)
-        });
+        m.counterpartyVersions[0] =
+            ConnectionVersion.Data({identifier: "1", features: new string[](2)});
         m.counterpartyVersions[0].features[0] = "ORDER_ORDERED";
         m.counterpartyVersions[0].features[1] = "ORDER_UNORDERED";
 
@@ -109,10 +126,8 @@ library MsgMocks {
         uint64 proofHeight
     ) internal view returns (IBCMsgs.MsgConnectionOpenAck memory m) {
         m.connectionId = connId;
-        m.version = ConnectionVersion.Data({
-            identifier: "1",
-            features: new string[](2)
-        });
+        m.version =
+            ConnectionVersion.Data({identifier: "1", features: new string[](2)});
         m.version.features[0] = "ORDER_ORDERED";
         m.version.features[1] = "ORDER_UNORDERED";
         m.counterpartyConnectionID = "counterparty-conn-id";
@@ -164,10 +179,8 @@ library MsgMocks {
                 })
             })
         });
-        connection.versions[0] = ConnectionVersion.Data({
-            identifier: "1",
-            features: new string[](2)
-        });
+        connection.versions[0] =
+            ConnectionVersion.Data({identifier: "1", features: new string[](2)});
         connection.versions[0].features[0] = "ORDER_ORDERED";
         connection.versions[0].features[1] = "ORDER_UNORDERED";
 
@@ -233,10 +246,7 @@ library MsgMocks {
         m.channel = Channel.Data({
             state: ChannelEnums.State.STATE_TRYOPEN,
             ordering: ChannelEnums.Order.ORDER_UNORDERED,
-            counterparty: ChannelCounterparty.Data({
-                port_id: portId,
-                channel_id: ""
-            }),
+            counterparty: ChannelCounterparty.Data({port_id: portId, channel_id: ""}),
             connection_hops: new string[](1),
             version: m.counterpartyVersion
         });
@@ -246,10 +256,7 @@ library MsgMocks {
         Channel.Data memory expectedChannel = Channel.Data({
             state: ChannelEnums.State.STATE_INIT,
             ordering: ChannelEnums.Order.ORDER_UNORDERED,
-            counterparty: ChannelCounterparty.Data({
-                port_id: portId,
-                channel_id: ""
-            }),
+            counterparty: ChannelCounterparty.Data({port_id: portId, channel_id: ""}),
             connection_hops: new string[](1),
             version: m.counterpartyVersion
         });
@@ -370,18 +377,20 @@ library MsgMocks {
     }
 }
 
-function wrapAnyMockHeader(
-    MockHeader.Data memory header
-) pure returns (bytes memory) {
+function wrapAnyMockHeader(MockHeader.Data memory header)
+    pure
+    returns (bytes memory)
+{
     Any.Data memory anyHeader;
     anyHeader.type_url = "/ibc.lightclients.mock.v1.Header";
     anyHeader.value = MockHeader.encode(header);
     return Any.encode(anyHeader);
 }
 
-function wrapAnyMockClientState(
-    MockClientState.Data memory clientState
-) pure returns (bytes memory) {
+function wrapAnyMockClientState(MockClientState.Data memory clientState)
+    pure
+    returns (bytes memory)
+{
     Any.Data memory anyClientState;
     anyClientState.type_url = "/ibc.lightclients.mock.v1.ClientState";
     anyClientState.value = MockClientState.encode(clientState);

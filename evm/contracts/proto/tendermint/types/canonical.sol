@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../ProtoBufRuntime.sol";
 import "../../GoogleProtobufAny.sol";
 import "./types.sol";
@@ -18,7 +19,7 @@ library TendermintTypesCanonicalBlockID {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -28,7 +29,7 @@ library TendermintTypesCanonicalBlockID {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -46,7 +47,7 @@ library TendermintTypesCanonicalBlockID {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -54,21 +55,16 @@ library TendermintTypesCanonicalBlockID {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_hash(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_part_set_header(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -87,7 +83,7 @@ library TendermintTypesCanonicalBlockID {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.hash = x;
         return sz;
@@ -104,11 +100,9 @@ library TendermintTypesCanonicalBlockID {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            TendermintTypesCanonicalPartSetHeader.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintTypesCanonicalPartSetHeader(p, bs);
+    ) internal pure returns (uint256) {
+        (TendermintTypesCanonicalPartSetHeader.Data memory x, uint256 sz) =
+            _decode_TendermintTypesCanonicalPartSetHeader(p, bs);
         r.part_set_header = x;
         return sz;
     }
@@ -127,18 +121,14 @@ library TendermintTypesCanonicalBlockID {
     )
         internal
         pure
-        returns (TendermintTypesCanonicalPartSetHeader.Data memory, uint)
+        returns (TendermintTypesCanonicalPartSetHeader.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            TendermintTypesCanonicalPartSetHeader.Data memory r,
-
-        ) = TendermintTypesCanonicalPartSetHeader._decode(pointer, bs, sz);
+        (TendermintTypesCanonicalPartSetHeader.Data memory r,) =
+            TendermintTypesCanonicalPartSetHeader._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -171,30 +161,22 @@ library TendermintTypesCanonicalBlockID {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.hash.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.hash, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += TendermintTypesCanonicalPartSetHeader._encode_nested(
-            r.part_set_header,
-            pointer,
-            bs
+            r.part_set_header, pointer, bs
         );
 
         return pointer - offset;
@@ -213,7 +195,7 @@ library TendermintTypesCanonicalBlockID {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -238,15 +220,12 @@ library TendermintTypesCanonicalBlockID {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.hash.length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
-                TendermintTypesCanonicalPartSetHeader._estimate(
-                    r.part_set_header
-                )
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
+                TendermintTypesCanonicalPartSetHeader._estimate(r.part_set_header)
             );
         return e;
     }
@@ -270,8 +249,7 @@ library TendermintTypesCanonicalBlockID {
     function store(Data memory input, Data storage output) internal {
         output.hash = input.hash;
         TendermintTypesCanonicalPartSetHeader.store(
-            input.part_set_header,
-            output.part_set_header
+            input.part_set_header, output.part_set_header
         );
     }
 
@@ -315,7 +293,7 @@ library TendermintTypesCanonicalPartSetHeader {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -325,7 +303,7 @@ library TendermintTypesCanonicalPartSetHeader {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -343,7 +321,7 @@ library TendermintTypesCanonicalPartSetHeader {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -351,21 +329,16 @@ library TendermintTypesCanonicalPartSetHeader {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_total(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_hash(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -384,7 +357,7 @@ library TendermintTypesCanonicalPartSetHeader {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint32 x, uint256 sz) = ProtoBufRuntime._decode_uint32(p, bs);
         r.total = x;
         return sz;
@@ -401,7 +374,7 @@ library TendermintTypesCanonicalPartSetHeader {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.hash = x;
         return sz;
@@ -436,25 +409,19 @@ library TendermintTypesCanonicalPartSetHeader {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.total != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint32(r.total, pointer, bs);
         }
         if (r.hash.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.hash, pointer, bs);
         }
@@ -474,7 +441,7 @@ library TendermintTypesCanonicalPartSetHeader {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -499,7 +466,7 @@ library TendermintTypesCanonicalPartSetHeader {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint32(r.total);
         e += 1 + ProtoBufRuntime._sz_lendelim(r.hash.length);
@@ -576,7 +543,7 @@ library TendermintTypesCanonicalProposal {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -586,7 +553,7 @@ library TendermintTypesCanonicalProposal {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -604,7 +571,7 @@ library TendermintTypesCanonicalProposal {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -612,10 +579,8 @@ library TendermintTypesCanonicalProposal {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_type(pointer, bs, r);
@@ -632,11 +597,8 @@ library TendermintTypesCanonicalProposal {
             } else if (fieldId == 7) {
                 pointer += _read_chain_id(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -655,10 +617,10 @@ library TendermintTypesCanonicalProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 tmp, uint256 sz) = ProtoBufRuntime._decode_enum(p, bs);
-        TendermintTypesTypesGlobalEnums.SignedMsgType x = TendermintTypesTypesGlobalEnums
-                .decode_SignedMsgType(tmp);
+        TendermintTypesTypesGlobalEnums.SignedMsgType x =
+            TendermintTypesTypesGlobalEnums.decode_SignedMsgType(tmp);
         r.type_ = x;
         return sz;
     }
@@ -674,7 +636,7 @@ library TendermintTypesCanonicalProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_sfixed64(p, bs);
         r.height = x;
         return sz;
@@ -691,7 +653,7 @@ library TendermintTypesCanonicalProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_sfixed64(p, bs);
         r.round = x;
         return sz;
@@ -708,7 +670,7 @@ library TendermintTypesCanonicalProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
         r.pol_round = x;
         return sz;
@@ -725,11 +687,9 @@ library TendermintTypesCanonicalProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            TendermintTypesCanonicalBlockID.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintTypesCanonicalBlockID(p, bs);
+    ) internal pure returns (uint256) {
+        (TendermintTypesCanonicalBlockID.Data memory x, uint256 sz) =
+            _decode_TendermintTypesCanonicalBlockID(p, bs);
         r.block_id = x;
         return sz;
     }
@@ -745,11 +705,9 @@ library TendermintTypesCanonicalProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufTimestamp.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufTimestamp(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufTimestamp.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufTimestamp(p, bs);
         r.timestamp = x;
         return sz;
     }
@@ -765,7 +723,7 @@ library TendermintTypesCanonicalProposal {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.chain_id = x;
         return sz;
@@ -785,18 +743,14 @@ library TendermintTypesCanonicalProposal {
     )
         internal
         pure
-        returns (TendermintTypesCanonicalBlockID.Data memory, uint)
+        returns (TendermintTypesCanonicalBlockID.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            TendermintTypesCanonicalBlockID.Data memory r,
-
-        ) = TendermintTypesCanonicalBlockID._decode(pointer, bs, sz);
+        (TendermintTypesCanonicalBlockID.Data memory r,) =
+            TendermintTypesCanonicalBlockID._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -810,15 +764,13 @@ library TendermintTypesCanonicalProposal {
     function _decode_GoogleProtobufTimestamp(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufTimestamp.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufTimestamp.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufTimestamp.Data memory r, ) = GoogleProtobufTimestamp
-            ._decode(pointer, bs, sz);
+        (GoogleProtobufTimestamp.Data memory r,) =
+            GoogleProtobufTimestamp._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -851,79 +803,53 @@ library TendermintTypesCanonicalProposal {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
-        if (uint(r.type_) != 0) {
+        if (uint256(r.type_) != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            int32 _enum_type = TendermintTypesTypesGlobalEnums
-                .encode_SignedMsgType(r.type_);
+            int32 _enum_type =
+                TendermintTypesTypesGlobalEnums.encode_SignedMsgType(r.type_);
             pointer += ProtoBufRuntime._encode_enum(_enum_type, pointer, bs);
         }
         if (r.height != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Fixed64,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Fixed64, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_sfixed64(r.height, pointer, bs);
         }
         if (r.round != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.Fixed64,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.Fixed64, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_sfixed64(r.round, pointer, bs);
         }
         if (r.pol_round != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_int64(r.pol_round, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            5,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            5, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += TendermintTypesCanonicalBlockID._encode_nested(
-            r.block_id,
-            pointer,
-            bs
+            r.block_id, pointer, bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
-            6,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            6, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += GoogleProtobufTimestamp._encode_nested(
-            r.timestamp,
-            pointer,
-            bs
-        );
+        pointer +=
+            GoogleProtobufTimestamp._encode_nested(r.timestamp, pointer, bs);
 
         if (bytes(r.chain_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                7,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                7, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.chain_id, pointer, bs);
         }
@@ -943,7 +869,7 @@ library TendermintTypesCanonicalProposal {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -968,24 +894,21 @@ library TendermintTypesCanonicalProposal {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_enum(
+        e += 1
+            + ProtoBufRuntime._sz_enum(
                 TendermintTypesTypesGlobalEnums.encode_SignedMsgType(r.type_)
             );
         e += 1 + 8;
         e += 1 + 8;
         e += 1 + ProtoBufRuntime._sz_int64(r.pol_round);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 TendermintTypesCanonicalBlockID._estimate(r.block_id)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufTimestamp._estimate(r.timestamp)
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.chain_id).length);
@@ -995,7 +918,7 @@ library TendermintTypesCanonicalProposal {
     // empty checker
 
     function _empty(Data memory r) internal pure returns (bool) {
-        if (uint(r.type_) != 0) {
+        if (uint256(r.type_) != 0) {
             return false;
         }
 
@@ -1077,7 +1000,7 @@ library TendermintTypesCanonicalVote {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1087,7 +1010,7 @@ library TendermintTypesCanonicalVote {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1105,7 +1028,7 @@ library TendermintTypesCanonicalVote {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1113,10 +1036,8 @@ library TendermintTypesCanonicalVote {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_type(pointer, bs, r);
@@ -1129,11 +1050,8 @@ library TendermintTypesCanonicalVote {
             } else if (fieldId == 6) {
                 pointer += _read_chain_id(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1152,10 +1070,10 @@ library TendermintTypesCanonicalVote {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 tmp, uint256 sz) = ProtoBufRuntime._decode_enum(p, bs);
-        TendermintTypesTypesGlobalEnums.SignedMsgType x = TendermintTypesTypesGlobalEnums
-                .decode_SignedMsgType(tmp);
+        TendermintTypesTypesGlobalEnums.SignedMsgType x =
+            TendermintTypesTypesGlobalEnums.decode_SignedMsgType(tmp);
         r.type_ = x;
         return sz;
     }
@@ -1171,7 +1089,7 @@ library TendermintTypesCanonicalVote {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_sfixed64(p, bs);
         r.height = x;
         return sz;
@@ -1188,7 +1106,7 @@ library TendermintTypesCanonicalVote {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_sfixed64(p, bs);
         r.round = x;
         return sz;
@@ -1205,11 +1123,9 @@ library TendermintTypesCanonicalVote {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            TendermintTypesCanonicalBlockID.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintTypesCanonicalBlockID(p, bs);
+    ) internal pure returns (uint256) {
+        (TendermintTypesCanonicalBlockID.Data memory x, uint256 sz) =
+            _decode_TendermintTypesCanonicalBlockID(p, bs);
         r.block_id = x;
         return sz;
     }
@@ -1225,7 +1141,7 @@ library TendermintTypesCanonicalVote {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.chain_id = x;
         return sz;
@@ -1245,18 +1161,14 @@ library TendermintTypesCanonicalVote {
     )
         internal
         pure
-        returns (TendermintTypesCanonicalBlockID.Data memory, uint)
+        returns (TendermintTypesCanonicalBlockID.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            TendermintTypesCanonicalBlockID.Data memory r,
-
-        ) = TendermintTypesCanonicalBlockID._decode(pointer, bs, sz);
+        (TendermintTypesCanonicalBlockID.Data memory r,) =
+            TendermintTypesCanonicalBlockID._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1289,58 +1201,41 @@ library TendermintTypesCanonicalVote {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
-        if (uint(r.type_) != 0) {
+        if (uint256(r.type_) != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            int32 _enum_type = TendermintTypesTypesGlobalEnums
-                .encode_SignedMsgType(r.type_);
+            int32 _enum_type =
+                TendermintTypesTypesGlobalEnums.encode_SignedMsgType(r.type_);
             pointer += ProtoBufRuntime._encode_enum(_enum_type, pointer, bs);
         }
         if (r.height != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Fixed64,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Fixed64, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_sfixed64(r.height, pointer, bs);
         }
         if (r.round != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.Fixed64,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.Fixed64, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_sfixed64(r.round, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            4,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += TendermintTypesCanonicalBlockID._encode_nested(
-            r.block_id,
-            pointer,
-            bs
+            r.block_id, pointer, bs
         );
 
         if (bytes(r.chain_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                6,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                6, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.chain_id, pointer, bs);
         }
@@ -1360,7 +1255,7 @@ library TendermintTypesCanonicalVote {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1385,18 +1280,16 @@ library TendermintTypesCanonicalVote {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_enum(
+        e += 1
+            + ProtoBufRuntime._sz_enum(
                 TendermintTypesTypesGlobalEnums.encode_SignedMsgType(r.type_)
             );
         e += 1 + 8;
         e += 1 + 8;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 TendermintTypesCanonicalBlockID._estimate(r.block_id)
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.chain_id).length);
@@ -1406,7 +1299,7 @@ library TendermintTypesCanonicalVote {
     // empty checker
 
     function _empty(Data memory r) internal pure returns (bool) {
-        if (uint(r.type_) != 0) {
+        if (uint256(r.type_) != 0) {
             return false;
         }
 

@@ -1,0 +1,15 @@
+[fmt]
+bracket_spacing              = false
+contract_new_lines           = false
+hex_underscore               = "remove"
+ignore                       = []
+int_types                    = "long"
+line_length                  = 80
+multiline_func_header        = "params_first"
+number_underscore            = "preserve"
+override_spacing             = false
+quote_style                  = "double"
+single_line_statement_blocks = "preserve"
+sort_imports                 = false
+tab_width                    = 4
+wrap_comments                = false

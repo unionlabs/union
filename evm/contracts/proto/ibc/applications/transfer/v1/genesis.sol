@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 import "./transfer.sol";
@@ -19,7 +20,7 @@ library IbcApplicationsTransferV1GenesisState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -29,7 +30,7 @@ library IbcApplicationsTransferV1GenesisState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -47,66 +48,49 @@ library IbcApplicationsTransferV1GenesisState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[4] memory counters;
+        uint256[4] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_port_id(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_denom_traces(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 3) {
                 pointer += _read_params(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
         if (counters[2] > 0) {
             require(r.denom_traces.length == 0);
-            r.denom_traces = new IbcApplicationsTransferV1DenomTrace.Data[](
-                counters[2]
-            );
+            r.denom_traces =
+                new IbcApplicationsTransferV1DenomTrace.Data[](counters[2]);
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_denom_traces(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -125,7 +109,7 @@ library IbcApplicationsTransferV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.port_id = x;
         return sz;
@@ -143,15 +127,13 @@ library IbcApplicationsTransferV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[4] memory counters
-    ) internal pure returns (uint) {
+        uint256[4] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcApplicationsTransferV1DenomTrace.Data memory x,
-            uint256 sz
-        ) = _decode_IbcApplicationsTransferV1DenomTrace(p, bs);
+        (IbcApplicationsTransferV1DenomTrace.Data memory x, uint256 sz) =
+            _decode_IbcApplicationsTransferV1DenomTrace(p, bs);
         if (isNil(r)) {
             counters[2] += 1;
         } else {
@@ -172,11 +154,9 @@ library IbcApplicationsTransferV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcApplicationsTransferV1Params.Data memory x,
-            uint256 sz
-        ) = _decode_IbcApplicationsTransferV1Params(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcApplicationsTransferV1Params.Data memory x, uint256 sz) =
+            _decode_IbcApplicationsTransferV1Params(p, bs);
         r.params = x;
         return sz;
     }
@@ -195,18 +175,14 @@ library IbcApplicationsTransferV1GenesisState {
     )
         internal
         pure
-        returns (IbcApplicationsTransferV1DenomTrace.Data memory, uint)
+        returns (IbcApplicationsTransferV1DenomTrace.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcApplicationsTransferV1DenomTrace.Data memory r,
-
-        ) = IbcApplicationsTransferV1DenomTrace._decode(pointer, bs, sz);
+        (IbcApplicationsTransferV1DenomTrace.Data memory r,) =
+            IbcApplicationsTransferV1DenomTrace._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -223,18 +199,14 @@ library IbcApplicationsTransferV1GenesisState {
     )
         internal
         pure
-        returns (IbcApplicationsTransferV1Params.Data memory, uint)
+        returns (IbcApplicationsTransferV1Params.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcApplicationsTransferV1Params.Data memory r,
-
-        ) = IbcApplicationsTransferV1Params._decode(pointer, bs, sz);
+        (IbcApplicationsTransferV1Params.Data memory r,) =
+            IbcApplicationsTransferV1Params._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -267,45 +239,32 @@ library IbcApplicationsTransferV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (bytes(r.port_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.port_id, pointer, bs);
         }
         if (r.denom_traces.length != 0) {
             for (i = 0; i < r.denom_traces.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    2,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcApplicationsTransferV1DenomTrace._encode_nested(
-                    r.denom_traces[i],
-                    pointer,
-                    bs
+                    r.denom_traces[i], pointer, bs
                 );
             }
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            3,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcApplicationsTransferV1Params._encode_nested(
-            r.params,
-            pointer,
-            bs
+            r.params, pointer, bs
         );
 
         return pointer - offset;
@@ -324,7 +283,7 @@ library IbcApplicationsTransferV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -349,22 +308,18 @@ library IbcApplicationsTransferV1GenesisState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port_id).length);
         for (i = 0; i < r.denom_traces.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
-                    IbcApplicationsTransferV1DenomTrace._estimate(
-                        r.denom_traces[i]
-                    )
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
+                    IbcApplicationsTransferV1DenomTrace._estimate(r.denom_traces[i])
                 );
         }
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcApplicationsTransferV1Params._estimate(r.params)
             );
         return e;
@@ -413,10 +368,8 @@ library IbcApplicationsTransferV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcApplicationsTransferV1DenomTrace.Data[]
-            memory tmp = new IbcApplicationsTransferV1DenomTrace.Data[](
-                self.denom_traces.length + 1
-            );
+        IbcApplicationsTransferV1DenomTrace.Data[] memory tmp = new IbcApplicationsTransferV1DenomTrace
+            .Data[](self.denom_traces.length + 1);
         for (uint256 i = 0; i < self.denom_traces.length; i++) {
             tmp[i] = self.denom_traces[i];
         }

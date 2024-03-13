@@ -151,63 +151,45 @@ contract Verifier is IZKVerifierV2 {
             // Add the proof commitment
             mstore(g, calldataload(proofCommitment))
             mstore(add(g, 0x20), calldataload(add(proofCommitment, 32)))
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40)
-            )
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
 
             mstore(g, PUB_0_X)
             mstore(add(g, 0x20), PUB_0_Y)
             s := calldataload(input)
             mstore(add(g, 0x40), s)
             success := and(success, lt(s, R))
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40)
-            )
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40)
-            )
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40))
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
             mstore(g, PUB_1_X)
             mstore(add(g, 0x20), PUB_1_Y)
             s := calldataload(add(input, 32))
             mstore(add(g, 0x40), s)
             success := and(success, lt(s, R))
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40)
-            )
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40)
-            )
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40))
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
             mstore(g, PUB_2_X)
             mstore(add(g, 0x20), PUB_2_Y)
             s := calldataload(add(input, 64))
             mstore(add(g, 0x40), s)
             success := and(success, lt(s, R))
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40)
-            )
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40)
-            )
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40))
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
             mstore(g, PUB_3_X)
             mstore(add(g, 0x20), PUB_3_Y)
             s := calldataload(add(input, 96))
             mstore(add(g, 0x40), s)
             success := and(success, lt(s, R))
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40)
-            )
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40)
-            )
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40))
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
             x := mload(f)
             y := mload(add(f, 0x20))
         }
@@ -228,10 +210,8 @@ contract Verifier is IZKVerifierV2 {
         uint256[2] calldata proofCommitmentPOK,
         uint256[4] calldata input
     ) public view returns (bool) {
-        (bool success, uint256 x, uint256 y) = publicInputMSM(
-            proofCommitment,
-            input
-        );
+        (bool success, uint256 x, uint256 y) =
+            publicInputMSM(proofCommitment, input);
         if (!success) {
             return false;
         }

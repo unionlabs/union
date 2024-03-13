@@ -37,18 +37,24 @@ library CometblsHelp {
     bytes constant HMAC_O =
         hex"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
 
-    function hmac_keccak(bytes memory message) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    HMAC_O,
-                    keccak256(abi.encodePacked(HMAC_I, message))
-                )
-            );
+    function hmac_keccak(bytes memory message)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(
+                HMAC_O, keccak256(abi.encodePacked(HMAC_I, message))
+            )
+        );
     }
 
     // Union whitepaper: (1) H_{hmac_r}
-    function hashToField(bytes memory message) internal pure returns (uint256) {
+    function hashToField(bytes memory message)
+        internal
+        pure
+        returns (uint256)
+    {
         return (uint256(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + 1;
     }
 
@@ -78,13 +84,9 @@ library CometblsHelp {
             commitmentHash
         ];
 
-        return
-            verifier.verifyProof(
-                proof,
-                proofCommitment,
-                proofCommitmentPOK,
-                inputs
-            );
+        return verifier.verifyProof(
+            proof, proofCommitment, proofCommitmentPOK, inputs
+        );
     }
 
     function isExpired(
@@ -92,19 +94,15 @@ library CometblsHelp {
         uint64 trustingPeriod,
         uint64 currentTime
     ) internal pure returns (bool) {
-        GoogleProtobufTimestamp.Data
-            memory expirationTime = GoogleProtobufTimestamp.Data({
-                secs: headerTime.secs + int64(trustingPeriod),
-                nanos: headerTime.nanos
-            });
-        return
-            gt(
-                GoogleProtobufTimestamp.Data({
-                    secs: int64(currentTime),
-                    nanos: 0
-                }),
-                expirationTime
-            );
+        GoogleProtobufTimestamp.Data memory expirationTime =
+        GoogleProtobufTimestamp.Data({
+            secs: headerTime.secs + int64(trustingPeriod),
+            nanos: headerTime.nanos
+        });
+        return gt(
+            GoogleProtobufTimestamp.Data({secs: int64(currentTime), nanos: 0}),
+            expirationTime
+        );
     }
 
     function gt(
@@ -120,47 +118,39 @@ library CometblsHelp {
         }
     }
 
-    function merkleRoot(
-        TendermintTypesHeader.Data memory h
-    ) internal pure returns (bytes32) {
-        return
-            MerkleTree.optimizedBlockRoot(
-                [
-                    MerkleTree.leafHash(
-                        TendermintVersionConsensus.encode(h.version)
-                    ),
-                    MerkleTree.leafHash(Encoder.cdcEncode(h.chain_id)),
-                    MerkleTree.leafHash(Encoder.cdcEncode(h.height)),
-                    MerkleTree.leafHash(GoogleProtobufTimestamp.encode(h.time)),
-                    MerkleTree.leafHash(
-                        TendermintTypesBlockID.encode(h.last_block_id)
-                    ),
-                    MerkleTree.leafHash(Encoder.cdcEncode(h.last_commit_hash)),
-                    MerkleTree.leafHash(Encoder.cdcEncode(h.data_hash)),
-                    MerkleTree.leafHash(Encoder.cdcEncode(h.validators_hash)),
-                    MerkleTree.leafHash(
-                        Encoder.cdcEncode(h.next_validators_hash)
-                    ),
-                    MerkleTree.leafHash(Encoder.cdcEncode(h.consensus_hash)),
-                    MerkleTree.leafHash(Encoder.cdcEncode(h.app_hash)),
-                    MerkleTree.leafHash(Encoder.cdcEncode(h.last_results_hash)),
-                    MerkleTree.leafHash(Encoder.cdcEncode(h.evidence_hash)),
-                    MerkleTree.leafHash(Encoder.cdcEncode(h.proposer_address))
-                ]
-            );
+    function merkleRoot(TendermintTypesHeader.Data memory h)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return MerkleTree.optimizedBlockRoot(
+            [
+                MerkleTree.leafHash(TendermintVersionConsensus.encode(h.version)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.chain_id)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.height)),
+                MerkleTree.leafHash(GoogleProtobufTimestamp.encode(h.time)),
+                MerkleTree.leafHash(TendermintTypesBlockID.encode(h.last_block_id)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.last_commit_hash)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.data_hash)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.validators_hash)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.next_validators_hash)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.consensus_hash)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.app_hash)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.last_results_hash)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.evidence_hash)),
+                MerkleTree.leafHash(Encoder.cdcEncode(h.proposer_address))
+            ]
+        );
     }
 
     function optimize(
         UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState
     ) internal pure returns (OptimizedConsensusState memory) {
-        return
-            OptimizedConsensusState({
-                timestamp: consensusState.timestamp,
-                appHash: consensusState.root.hash.toBytes32(0),
-                nextValidatorsHash: consensusState
-                    .next_validators_hash
-                    .toBytes32(0)
-            });
+        return OptimizedConsensusState({
+            timestamp: consensusState.timestamp,
+            appHash: consensusState.root.hash.toBytes32(0),
+            nextValidatorsHash: consensusState.next_validators_hash.toBytes32(0)
+        });
     }
 
     function canonicalize(
@@ -168,23 +158,21 @@ library CometblsHelp {
         string memory chainId,
         bytes32 expectedBlockHash
     ) internal pure returns (TendermintTypesCanonicalVote.Data memory) {
-        return
-            TendermintTypesCanonicalVote.Data({
-                type_: TendermintTypesTypesGlobalEnums
-                    .SignedMsgType
-                    .SIGNED_MSG_TYPE_PRECOMMIT,
-                height: commit.height,
-                round: commit.round,
-                block_id: TendermintTypesCanonicalBlockID.Data({
-                    hash: abi.encodePacked(expectedBlockHash),
-                    part_set_header: TendermintTypesCanonicalPartSetHeader
-                        .Data({
-                            total: commit.block_id.part_set_header.total,
-                            hash: commit.block_id.part_set_header.hash
-                        })
-                }),
-                chain_id: chainId
-            });
+        return TendermintTypesCanonicalVote.Data({
+            type_: TendermintTypesTypesGlobalEnums
+                .SignedMsgType
+                .SIGNED_MSG_TYPE_PRECOMMIT,
+            height: commit.height,
+            round: commit.round,
+            block_id: TendermintTypesCanonicalBlockID.Data({
+                hash: abi.encodePacked(expectedBlockHash),
+                part_set_header: TendermintTypesCanonicalPartSetHeader.Data({
+                    total: commit.block_id.part_set_header.total,
+                    hash: commit.block_id.part_set_header.hash
+                })
+            }),
+            chain_id: chainId
+        });
     }
 
     function marshalHeaderEthABI(
@@ -199,9 +187,7 @@ library CometblsHelp {
         return abi.encode(header);
     }
 
-    function unmarshalHeaderEthABI(
-        bytes memory bz
-    )
+    function unmarshalHeaderEthABI(bytes memory bz)
         internal
         pure
         returns (UnionIbcLightclientsCometblsV1Header.Data memory header)
@@ -215,9 +201,7 @@ library CometblsHelp {
         return abi.encode(clientState);
     }
 
-    function unmarshalClientStateEthABI(
-        bytes memory bz
-    )
+    function unmarshalClientStateEthABI(bytes memory bz)
         internal
         pure
         returns (UnionIbcLightclientsCometblsV1ClientState.Data memory)
@@ -225,15 +209,19 @@ library CometblsHelp {
         return abi.decode(bz, (UnionIbcLightclientsCometblsV1ClientState.Data));
     }
 
-    function marshalEthABI(
-        OptimizedConsensusState memory consensusState
-    ) internal pure returns (bytes memory) {
+    function marshalEthABI(OptimizedConsensusState memory consensusState)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encode(consensusState);
     }
 
-    function unmarshalConsensusStateEthABI(
-        bytes memory bz
-    ) internal pure returns (OptimizedConsensusState memory consensusState) {
+    function unmarshalConsensusStateEthABI(bytes memory bz)
+        internal
+        pure
+        returns (OptimizedConsensusState memory consensusState)
+    {
         return abi.decode(bz, (OptimizedConsensusState));
     }
 

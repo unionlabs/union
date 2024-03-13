@@ -3,16 +3,33 @@ pragma solidity ^0.8.23;
 import "solidity-bytes-utils/BytesLib.sol";
 
 import {IBCClientLib} from "../../../contracts/core/02-client/IBCClient.sol";
-import {ILightClient, ConsensusStateUpdate} from "../../../contracts/core/02-client/ILightClient.sol";
+import {
+    ILightClient,
+    ConsensusStateUpdate
+} from "../../../contracts/core/02-client/ILightClient.sol";
 import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
-import {CometblsClient, CometblsClientLib} from "../../../contracts/clients/CometblsClientV2.sol";
+import {
+    CometblsClient,
+    CometblsClientLib
+} from "../../../contracts/clients/CometblsClientV2.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
 import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
-import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
-import {IbcCoreClientV1Height} from "../../../contracts/proto/ibc/core/client/v1/client.sol";
-import {TendermintTypesSignedHeader} from "../../../contracts/proto/tendermint/types/canonical.sol";
-import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeader, TendermintVersionConsensus, TendermintTypesCommitSig, TendermintTypesBlockID, TendermintTypesPartSetHeader} from "../../../contracts/proto/tendermint/types/types.sol";
+import {IMembershipVerifier} from
+    "../../../contracts/core/IMembershipVerifier.sol";
+import {IbcCoreClientV1Height} from
+    "../../../contracts/proto/ibc/core/client/v1/client.sol";
+import {TendermintTypesSignedHeader} from
+    "../../../contracts/proto/tendermint/types/canonical.sol";
+import {
+    TendermintTypesCommit,
+    TendermintTypesHeader,
+    TendermintTypesSignedHeader,
+    TendermintVersionConsensus,
+    TendermintTypesCommitSig,
+    TendermintTypesBlockID,
+    TendermintTypesPartSetHeader
+} from "../../../contracts/proto/tendermint/types/types.sol";
 
 import "../TestPlus.sol";
 
@@ -93,16 +110,10 @@ contract IBCClientHandlerTests is TestPlus {
         membershipVerifier = new TestMembershipVerifier();
         verifier = new TestVerifier();
 
-        client = new CometblsClient(
-            address(handler),
-            verifier,
-            membershipVerifier
-        );
-        client2 = new CometblsClient(
-            address(handler),
-            verifier,
-            membershipVerifier
-        );
+        client =
+            new CometblsClient(address(handler), verifier, membershipVerifier);
+        client2 =
+            new CometblsClient(address(handler), verifier, membershipVerifier);
 
         vm.warp(1);
     }
@@ -115,7 +126,8 @@ contract IBCClientHandlerTests is TestPlus {
             TendermintTypesSignedHeader.Data memory signedHeader
         )
     {
-        zkp = hex"195562CC376E9265A7FD89A086855C100173B717B0DEA58AC9F50120E9CBDD7402D59ADAC8A274C5DDB199915B03B5CFB7A91032A71723876F946A7662135D4912EB1FAD1FCA5E88AD1D9097870391D1D477F4CD2A26F27DB3CFC8B511922C482F374A4821BEE34818589A052995CC5994CE787538207F1BA0D595890EB96D751D947274566F6338FC14BB1728C9E42F47F9D47A8A7F46CFA341D3EC71F0A8E80ECDAA9E38B4D6090989B165E536C4332BDF470E860D85001362EC7B369DE0092FD13C85FE2A16247E574B759B7B8EBFE8C7ED19CE7520A693BD09FD604CA54E2FA277AC176ACEC9626313DA7022E8B8DB599E1B02C25DA90AD508AA315DA67C0EAF8A0F41C4CDC897A4941F3BFA7D0E0C2BDD3030D5B0025FB4030A31C886F417B2509E9ECFEA86AA22F75402599E72C21623E9C32A499D7B14B6DBC3A1251E119244B7DC12B54A74FBC3B23E7954435491D89AFA7ABF6F07E1DADE0B28F0DA1978EC72A2C2C0F1FE8DEDA8DD8DDA7E82454618C3DFF1341C9901456F7E656A";
+        zkp =
+            hex"195562CC376E9265A7FD89A086855C100173B717B0DEA58AC9F50120E9CBDD7402D59ADAC8A274C5DDB199915B03B5CFB7A91032A71723876F946A7662135D4912EB1FAD1FCA5E88AD1D9097870391D1D477F4CD2A26F27DB3CFC8B511922C482F374A4821BEE34818589A052995CC5994CE787538207F1BA0D595890EB96D751D947274566F6338FC14BB1728C9E42F47F9D47A8A7F46CFA341D3EC71F0A8E80ECDAA9E38B4D6090989B165E536C4332BDF470E860D85001362EC7B369DE0092FD13C85FE2A16247E574B759B7B8EBFE8C7ED19CE7520A693BD09FD604CA54E2FA277AC176ACEC9626313DA7022E8B8DB599E1B02C25DA90AD508AA315DA67C0EAF8A0F41C4CDC897A4941F3BFA7D0E0C2BDD3030D5B0025FB4030A31C886F417B2509E9ECFEA86AA22F75402599E72C21623E9C32A499D7B14B6DBC3A1251E119244B7DC12B54A74FBC3B23E7954435491D89AFA7ABF6F07E1DADE0B28F0DA1978EC72A2C2C0F1FE8DEDA8DD8DDA7E82454618C3DFF1341C9901456F7E656A";
         TendermintTypesHeader.Data memory header = TendermintTypesHeader.Data({
             version: TendermintVersionConsensus.Data({block: 11, app: 0}),
             chain_id: "union-devnet-1",
@@ -261,14 +273,12 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         vm.assume(
-            0 < trustedHeight &&
-                trustedHeight < uint64(signedHeader.header.height)
+            0 < trustedHeight
+                && trustedHeight < uint64(signedHeader.header.height)
         );
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -284,11 +294,7 @@ contract IBCClientHandlerTests is TestPlus {
 
         verifier.pushValid();
         vm.expectRevert(CometblsClientLib.ErrUnauthorized.selector);
-        client.createClient(
-            "blabla",
-            m.clientStateBytes,
-            m.consensusStateBytes
-        );
+        client.createClient("blabla", m.clientStateBytes, m.consensusStateBytes);
     }
 
     function test_updateClient_onlyIBC(
@@ -299,14 +305,12 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         vm.assume(
-            0 < trustedHeight &&
-                trustedHeight < uint64(signedHeader.header.height)
+            0 < trustedHeight
+                && trustedHeight < uint64(signedHeader.header.height)
         );
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -322,12 +326,8 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory id = handler.createClient(m);
 
-        IBCMsgs.MsgUpdateClient memory m2 = Cometbls.updateClient(
-            id,
-            signedHeader,
-            trustedHeight,
-            zkp
-        );
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(id, signedHeader, trustedHeight, zkp);
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
@@ -344,14 +344,12 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         vm.assume(
-            0 < trustedHeight &&
-                trustedHeight < uint64(signedHeader.header.height)
+            0 < trustedHeight
+                && trustedHeight < uint64(signedHeader.header.height)
         );
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -367,12 +365,8 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory id = handler.createClient(m);
 
-        IBCMsgs.MsgUpdateClient memory m2 = Cometbls.updateClient(
-            id,
-            signedHeader,
-            trustedHeight,
-            zkp
-        );
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(id, signedHeader, trustedHeight, zkp);
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
@@ -387,25 +381,21 @@ contract IBCClientHandlerTests is TestPlus {
         assertEq(
             clientStateCommitment,
             keccak256(
-                Cometbls
-                    .createClientState(
-                        signedHeader.header.chain_id,
-                        uint64(signedHeader.header.height)
-                    )
-                    .marshalEthABI()
+                Cometbls.createClientState(
+                    signedHeader.header.chain_id,
+                    uint64(signedHeader.header.height)
+                ).marshalEthABI()
             )
         );
         assertEq(updates.length, 1);
         assertEq(
             updates[0].consensusStateCommitment,
             keccak256(
-                Cometbls
-                    .createConsensusState(
-                        signedHeader.header.app_hash.toBytes32(0),
-                        signedHeader.header.validators_hash.toBytes32(0),
-                        uint64(signedHeader.header.time.secs)
-                    )
-                    .marshalEthABI()
+                Cometbls.createConsensusState(
+                    signedHeader.header.app_hash.toBytes32(0),
+                    signedHeader.header.validators_hash.toBytes32(0),
+                    uint64(signedHeader.header.time.secs)
+                ).marshalEthABI()
             )
         );
         assertEq(
@@ -422,14 +412,12 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         vm.assume(
-            0 < trustedHeight &&
-                trustedHeight < uint64(signedHeader.header.height)
+            0 < trustedHeight
+                && trustedHeight < uint64(signedHeader.header.height)
         );
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -445,12 +433,8 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory id = handler.createClient(m);
 
-        IBCMsgs.MsgUpdateClient memory m2 = Cometbls.updateClient(
-            id,
-            signedHeader,
-            trustedHeight,
-            zkp
-        );
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(id, signedHeader, trustedHeight, zkp);
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
@@ -466,14 +450,12 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         vm.assume(
-            0 < trustedHeight &&
-                trustedHeight < uint64(signedHeader.header.height)
+            0 < trustedHeight
+                && trustedHeight < uint64(signedHeader.header.height)
         );
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -495,12 +477,8 @@ contract IBCClientHandlerTests is TestPlus {
         zkp[2] = 0xBA;
         zkp[3] = 0xBE;
 
-        IBCMsgs.MsgUpdateClient memory m2 = Cometbls.updateClient(
-            id,
-            signedHeader,
-            trustedHeight,
-            zkp
-        );
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(id, signedHeader, trustedHeight, zkp);
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
@@ -518,14 +496,12 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         vm.assume(
-            0 < trustedHeight &&
-                trustedHeight < uint64(signedHeader.header.height)
+            0 < trustedHeight
+                && trustedHeight < uint64(signedHeader.header.height)
         );
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -544,12 +520,8 @@ contract IBCClientHandlerTests is TestPlus {
         // Tamper the header such that the block root != commit, as if a relayer tampered the commit or the block.
         signedHeader.header.last_block_id.part_set_header.total = 0xC0DE;
 
-        IBCMsgs.MsgUpdateClient memory m2 = Cometbls.updateClient(
-            id,
-            signedHeader,
-            trustedHeight,
-            zkp
-        );
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(id, signedHeader, trustedHeight, zkp);
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
@@ -567,10 +539,8 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         vm.assume(trustedHeight > uint64(signedHeader.header.height));
 
@@ -587,12 +557,8 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory id = handler.createClient(m);
 
-        IBCMsgs.MsgUpdateClient memory m2 = Cometbls.updateClient(
-            id,
-            signedHeader,
-            trustedHeight,
-            zkp
-        );
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(id, signedHeader, trustedHeight, zkp);
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
@@ -608,14 +574,12 @@ contract IBCClientHandlerTests is TestPlus {
     ) public {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         vm.assume(
-            0 < trustedHeight &&
-                trustedHeight < uint64(signedHeader.header.height)
+            0 < trustedHeight
+                && trustedHeight < uint64(signedHeader.header.height)
         );
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -631,12 +595,8 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory id = handler.createClient(m);
 
-        IBCMsgs.MsgUpdateClient memory m2 = Cometbls.updateClient(
-            id,
-            signedHeader,
-            trustedHeight,
-            zkp
-        );
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(id, signedHeader, trustedHeight, zkp);
 
         // The block timestamp will be out of the trusting period window
         vm.warp(
@@ -648,10 +608,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_getTimestampAtHeight() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
         uint64 clockDrift = Cometbls.MAX_CLOCK_DRIFT - 1;
@@ -670,12 +628,8 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        IBCMsgs.MsgUpdateClient memory m2 = Cometbls.updateClient(
-            clientId,
-            signedHeader,
-            trustedHeight,
-            zkp
-        );
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(clientId, signedHeader, trustedHeight, zkp);
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
@@ -694,10 +648,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_getClientState() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -714,26 +666,22 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        (bytes memory clientStateBytes, bool ok) = client.getClientState(
-            clientId
-        );
+        (bytes memory clientStateBytes, bool ok) =
+            client.getClientState(clientId);
         assertTrue(ok);
         assertEq(clientStateBytes, m.clientStateBytes);
     }
 
     function test_getClientState_noClientState() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
         handler.registerClient(CLIENT_TYPE, client);
 
-        (bytes memory clientStateBytes, bool ok) = client.getClientState(
-            "blabla"
-        );
+        (bytes memory clientStateBytes, bool ok) =
+            client.getClientState("blabla");
         assertFalse(ok);
     }
 
@@ -745,14 +693,12 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         vm.assume(
-            0 < trustedHeight &&
-                trustedHeight < uint64(signedHeader.header.height)
+            0 < trustedHeight
+                && trustedHeight < uint64(signedHeader.header.height)
         );
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -768,18 +714,13 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        IBCMsgs.MsgUpdateClient memory m2 = Cometbls.updateClient(
-            clientId,
-            signedHeader,
-            trustedHeight,
-            zkp
-        );
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(clientId, signedHeader, trustedHeight, zkp);
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
-        (bytes memory clientStateBytes, bool ok) = client.getClientState(
-            clientId
-        );
+        (bytes memory clientStateBytes, bool ok) =
+            client.getClientState(clientId);
         assertTrue(ok);
         assertEq(clientStateBytes, m.clientStateBytes);
 
@@ -790,20 +731,15 @@ contract IBCClientHandlerTests is TestPlus {
         assertTrue(ok);
         assertEq(
             clientStateBytes,
-            Cometbls
-                .createClientState(
-                    signedHeader.header.chain_id,
-                    uint64(signedHeader.header.height)
-                )
-                .marshalEthABI()
+            Cometbls.createClientState(
+                signedHeader.header.chain_id, uint64(signedHeader.header.height)
+            ).marshalEthABI()
         );
     }
 
     function test_getConsensusState() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -830,21 +766,17 @@ contract IBCClientHandlerTests is TestPlus {
         assertTrue(ok);
         assertEq(
             consensusStateBytes,
-            Cometbls
-                .createConsensusState(
-                    ARBITRARY_INITIAL_APP_HASH,
-                    signedHeader.header.validators_hash.toBytes32(0),
-                    uint64(signedHeader.header.time.secs - 10)
-                )
-                .marshalEthABI()
+            Cometbls.createConsensusState(
+                ARBITRARY_INITIAL_APP_HASH,
+                signedHeader.header.validators_hash.toBytes32(0),
+                uint64(signedHeader.header.time.secs - 10)
+            ).marshalEthABI()
         );
     }
 
     function test_getConsensusState_noConsensus() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -868,14 +800,12 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(clockDrift < Cometbls.MAX_CLOCK_DRIFT);
         vm.assume(updateLatency < Cometbls.TRUSTING_PERIOD);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         vm.assume(
-            0 < trustedHeight &&
-                trustedHeight < uint64(signedHeader.header.height)
+            0 < trustedHeight
+                && trustedHeight < uint64(signedHeader.header.height)
         );
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -891,12 +821,8 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        IBCMsgs.MsgUpdateClient memory m2 = Cometbls.updateClient(
-            clientId,
-            signedHeader,
-            trustedHeight,
-            zkp
-        );
+        IBCMsgs.MsgUpdateClient memory m2 =
+            Cometbls.updateClient(clientId, signedHeader, trustedHeight, zkp);
 
         vm.warp(uint64(signedHeader.header.time.secs) + updateLatency);
 
@@ -922,21 +848,17 @@ contract IBCClientHandlerTests is TestPlus {
         assertTrue(ok);
         assertEq(
             consensusStateBytes,
-            Cometbls
-                .createConsensusState(
-                    signedHeader.header.app_hash.toBytes32(0),
-                    signedHeader.header.validators_hash.toBytes32(0),
-                    uint64(signedHeader.header.time.secs)
-                )
-                .marshalEthABI()
+            Cometbls.createConsensusState(
+                signedHeader.header.app_hash.toBytes32(0),
+                signedHeader.header.validators_hash.toBytes32(0),
+                uint64(signedHeader.header.time.secs)
+            ).marshalEthABI()
         );
     }
 
     function test_verifyMembership_noConsensus() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -972,10 +894,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_verifyMembership_ok() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1010,10 +930,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_verifyMembership_ko() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1053,10 +971,8 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodTime && delayPeriodTime < 360000);
         vm.assume(0 < delayTime && delayTime < delayPeriodTime);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1098,10 +1014,8 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodBlocks && delayPeriodBlocks < 1000000);
         vm.assume(0 < delayBlocks && delayBlocks < delayPeriodBlocks);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1141,10 +1055,8 @@ contract IBCClientHandlerTests is TestPlus {
     ) public {
         vm.assume(0 < delayPeriodTime && delayPeriodTime < 360000);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1185,10 +1097,8 @@ contract IBCClientHandlerTests is TestPlus {
     ) public {
         vm.assume(0 < delayPeriodBlocks && delayPeriodBlocks < 1000000);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1225,10 +1135,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_verifyNonMembership_ok() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1262,10 +1170,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_verifyNonMembership_ko() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1304,10 +1210,8 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodTime && delayPeriodTime < 360000);
         vm.assume(0 < delayTime && delayTime < delayPeriodTime);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1348,10 +1252,8 @@ contract IBCClientHandlerTests is TestPlus {
         vm.assume(0 < delayPeriodBlocks && delayPeriodBlocks < 1000000);
         vm.assume(0 < delayBlocks && delayBlocks < delayPeriodBlocks);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1390,10 +1292,8 @@ contract IBCClientHandlerTests is TestPlus {
     ) public {
         vm.assume(0 < delayPeriodTime && delayPeriodTime < 360000);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1433,10 +1333,8 @@ contract IBCClientHandlerTests is TestPlus {
     ) public {
         vm.assume(0 < delayPeriodBlocks && delayPeriodBlocks < 1000000);
 
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
 
@@ -1472,10 +1370,8 @@ contract IBCClientHandlerTests is TestPlus {
     }
 
     function test_getLatestHeight_noClientState() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
         uint64 clockDrift = Cometbls.MAX_CLOCK_DRIFT - 1;
@@ -1483,16 +1379,14 @@ contract IBCClientHandlerTests is TestPlus {
 
         handler.registerClient(CLIENT_TYPE, client);
 
-        (IbcCoreClientV1Height.Data memory latestHeight, bool ok) = client
-            .getLatestHeight("blabla");
+        (IbcCoreClientV1Height.Data memory latestHeight, bool ok) =
+            client.getLatestHeight("blabla");
         assertFalse(ok);
     }
 
     function test_getLatestHeight_ok() public {
-        (
-            bytes memory zkp,
-            TendermintTypesSignedHeader.Data memory signedHeader
-        ) = getValidTransition();
+        (bytes memory zkp, TendermintTypesSignedHeader.Data memory signedHeader)
+        = getValidTransition();
 
         uint64 trustedHeight = uint64(signedHeader.header.height) - 1;
         uint64 clockDrift = Cometbls.MAX_CLOCK_DRIFT - 1;
@@ -1511,8 +1405,8 @@ contract IBCClientHandlerTests is TestPlus {
 
         string memory clientId = handler.createClient(m);
 
-        (IbcCoreClientV1Height.Data memory latestHeight, bool ok) = client
-            .getLatestHeight(clientId);
+        (IbcCoreClientV1Height.Data memory latestHeight, bool ok) =
+            client.getLatestHeight(clientId);
 
         assertTrue(ok);
         assertEq(uint64(latestHeight.revision_height), trustedHeight);

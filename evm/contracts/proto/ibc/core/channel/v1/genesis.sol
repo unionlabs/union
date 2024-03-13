@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 
@@ -25,7 +26,7 @@ library IbcCoreChannelV1GenesisState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -35,7 +36,7 @@ library IbcCoreChannelV1GenesisState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -53,91 +54,63 @@ library IbcCoreChannelV1GenesisState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[9] memory counters;
+        uint256[9] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_channels(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_acknowledgements(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 3) {
                 pointer += _read_unpacked_repeated_commitments(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 4) {
                 pointer += _read_unpacked_repeated_receipts(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 5) {
                 pointer += _read_unpacked_repeated_send_sequences(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 6) {
                 pointer += _read_unpacked_repeated_recv_sequences(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 7) {
                 pointer += _read_unpacked_repeated_ack_sequences(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 8) {
                 pointer += _read_next_channel_sequence(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
         if (counters[1] > 0) {
             require(r.channels.length == 0);
-            r.channels = new IbcCoreChannelV1IdentifiedChannel.Data[](
-                counters[1]
-            );
+            r.channels =
+                new IbcCoreChannelV1IdentifiedChannel.Data[](counters[1]);
         }
         if (counters[2] > 0) {
             require(r.acknowledgements.length == 0);
-            r.acknowledgements = new IbcCoreChannelV1PacketState.Data[](
-                counters[2]
-            );
+            r.acknowledgements =
+                new IbcCoreChannelV1PacketState.Data[](counters[2]);
         }
         if (counters[3] > 0) {
             require(r.commitments.length == 0);
@@ -149,84 +122,53 @@ library IbcCoreChannelV1GenesisState {
         }
         if (counters[5] > 0) {
             require(r.send_sequences.length == 0);
-            r.send_sequences = new IbcCoreChannelV1PacketSequence.Data[](
-                counters[5]
-            );
+            r.send_sequences =
+                new IbcCoreChannelV1PacketSequence.Data[](counters[5]);
         }
         if (counters[6] > 0) {
             require(r.recv_sequences.length == 0);
-            r.recv_sequences = new IbcCoreChannelV1PacketSequence.Data[](
-                counters[6]
-            );
+            r.recv_sequences =
+                new IbcCoreChannelV1PacketSequence.Data[](counters[6]);
         }
         if (counters[7] > 0) {
             require(r.ack_sequences.length == 0);
-            r.ack_sequences = new IbcCoreChannelV1PacketSequence.Data[](
-                counters[7]
-            );
+            r.ack_sequences =
+                new IbcCoreChannelV1PacketSequence.Data[](counters[7]);
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
-                pointer += _read_unpacked_repeated_channels(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_channels(pointer, bs, r, counters);
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_acknowledgements(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else if (fieldId == 3) {
                 pointer += _read_unpacked_repeated_commitments(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else if (fieldId == 4) {
-                pointer += _read_unpacked_repeated_receipts(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_receipts(pointer, bs, r, counters);
             } else if (fieldId == 5) {
                 pointer += _read_unpacked_repeated_send_sequences(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else if (fieldId == 6) {
                 pointer += _read_unpacked_repeated_recv_sequences(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else if (fieldId == 7) {
                 pointer += _read_unpacked_repeated_ack_sequences(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -246,15 +188,13 @@ library IbcCoreChannelV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[9] memory counters
-    ) internal pure returns (uint) {
+        uint256[9] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreChannelV1IdentifiedChannel.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreChannelV1IdentifiedChannel(p, bs);
+        (IbcCoreChannelV1IdentifiedChannel.Data memory x, uint256 sz) =
+            _decode_IbcCoreChannelV1IdentifiedChannel(p, bs);
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -276,15 +216,13 @@ library IbcCoreChannelV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[9] memory counters
-    ) internal pure returns (uint) {
+        uint256[9] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreChannelV1PacketState.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreChannelV1PacketState(p, bs);
+        (IbcCoreChannelV1PacketState.Data memory x, uint256 sz) =
+            _decode_IbcCoreChannelV1PacketState(p, bs);
         if (isNil(r)) {
             counters[2] += 1;
         } else {
@@ -306,15 +244,13 @@ library IbcCoreChannelV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[9] memory counters
-    ) internal pure returns (uint) {
+        uint256[9] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreChannelV1PacketState.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreChannelV1PacketState(p, bs);
+        (IbcCoreChannelV1PacketState.Data memory x, uint256 sz) =
+            _decode_IbcCoreChannelV1PacketState(p, bs);
         if (isNil(r)) {
             counters[3] += 1;
         } else {
@@ -336,15 +272,13 @@ library IbcCoreChannelV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[9] memory counters
-    ) internal pure returns (uint) {
+        uint256[9] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreChannelV1PacketState.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreChannelV1PacketState(p, bs);
+        (IbcCoreChannelV1PacketState.Data memory x, uint256 sz) =
+            _decode_IbcCoreChannelV1PacketState(p, bs);
         if (isNil(r)) {
             counters[4] += 1;
         } else {
@@ -366,15 +300,13 @@ library IbcCoreChannelV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[9] memory counters
-    ) internal pure returns (uint) {
+        uint256[9] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreChannelV1PacketSequence.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreChannelV1PacketSequence(p, bs);
+        (IbcCoreChannelV1PacketSequence.Data memory x, uint256 sz) =
+            _decode_IbcCoreChannelV1PacketSequence(p, bs);
         if (isNil(r)) {
             counters[5] += 1;
         } else {
@@ -396,15 +328,13 @@ library IbcCoreChannelV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[9] memory counters
-    ) internal pure returns (uint) {
+        uint256[9] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreChannelV1PacketSequence.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreChannelV1PacketSequence(p, bs);
+        (IbcCoreChannelV1PacketSequence.Data memory x, uint256 sz) =
+            _decode_IbcCoreChannelV1PacketSequence(p, bs);
         if (isNil(r)) {
             counters[6] += 1;
         } else {
@@ -426,15 +356,13 @@ library IbcCoreChannelV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[9] memory counters
-    ) internal pure returns (uint) {
+        uint256[9] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreChannelV1PacketSequence.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreChannelV1PacketSequence(p, bs);
+        (IbcCoreChannelV1PacketSequence.Data memory x, uint256 sz) =
+            _decode_IbcCoreChannelV1PacketSequence(p, bs);
         if (isNil(r)) {
             counters[7] += 1;
         } else {
@@ -455,7 +383,7 @@ library IbcCoreChannelV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.next_channel_sequence = x;
         return sz;
@@ -475,18 +403,14 @@ library IbcCoreChannelV1GenesisState {
     )
         internal
         pure
-        returns (IbcCoreChannelV1IdentifiedChannel.Data memory, uint)
+        returns (IbcCoreChannelV1IdentifiedChannel.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcCoreChannelV1IdentifiedChannel.Data memory r,
-
-        ) = IbcCoreChannelV1IdentifiedChannel._decode(pointer, bs, sz);
+        (IbcCoreChannelV1IdentifiedChannel.Data memory r,) =
+            IbcCoreChannelV1IdentifiedChannel._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -500,17 +424,17 @@ library IbcCoreChannelV1GenesisState {
     function _decode_IbcCoreChannelV1PacketState(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreChannelV1PacketState.Data memory, uint) {
+    )
+        internal
+        pure
+        returns (IbcCoreChannelV1PacketState.Data memory, uint256)
+    {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcCoreChannelV1PacketState.Data memory r,
-
-        ) = IbcCoreChannelV1PacketState._decode(pointer, bs, sz);
+        (IbcCoreChannelV1PacketState.Data memory r,) =
+            IbcCoreChannelV1PacketState._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -524,17 +448,17 @@ library IbcCoreChannelV1GenesisState {
     function _decode_IbcCoreChannelV1PacketSequence(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreChannelV1PacketSequence.Data memory, uint) {
+    )
+        internal
+        pure
+        returns (IbcCoreChannelV1PacketSequence.Data memory, uint256)
+    {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcCoreChannelV1PacketSequence.Data memory r,
-
-        ) = IbcCoreChannelV1PacketSequence._decode(pointer, bs, sz);
+        (IbcCoreChannelV1PacketSequence.Data memory r,) =
+            IbcCoreChannelV1PacketSequence._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -567,126 +491,86 @@ library IbcCoreChannelV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.channels.length != 0) {
             for (i = 0; i < r.channels.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreChannelV1IdentifiedChannel._encode_nested(
-                    r.channels[i],
-                    pointer,
-                    bs
+                    r.channels[i], pointer, bs
                 );
             }
         }
         if (r.acknowledgements.length != 0) {
             for (i = 0; i < r.acknowledgements.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    2,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreChannelV1PacketState._encode_nested(
-                    r.acknowledgements[i],
-                    pointer,
-                    bs
+                    r.acknowledgements[i], pointer, bs
                 );
             }
         }
         if (r.commitments.length != 0) {
             for (i = 0; i < r.commitments.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    3,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreChannelV1PacketState._encode_nested(
-                    r.commitments[i],
-                    pointer,
-                    bs
+                    r.commitments[i], pointer, bs
                 );
             }
         }
         if (r.receipts.length != 0) {
             for (i = 0; i < r.receipts.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    4,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreChannelV1PacketState._encode_nested(
-                    r.receipts[i],
-                    pointer,
-                    bs
+                    r.receipts[i], pointer, bs
                 );
             }
         }
         if (r.send_sequences.length != 0) {
             for (i = 0; i < r.send_sequences.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    5,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    5, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreChannelV1PacketSequence._encode_nested(
-                    r.send_sequences[i],
-                    pointer,
-                    bs
+                    r.send_sequences[i], pointer, bs
                 );
             }
         }
         if (r.recv_sequences.length != 0) {
             for (i = 0; i < r.recv_sequences.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    6,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    6, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreChannelV1PacketSequence._encode_nested(
-                    r.recv_sequences[i],
-                    pointer,
-                    bs
+                    r.recv_sequences[i], pointer, bs
                 );
             }
         }
         if (r.ack_sequences.length != 0) {
             for (i = 0; i < r.ack_sequences.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    7,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    7, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreChannelV1PacketSequence._encode_nested(
-                    r.ack_sequences[i],
-                    pointer,
-                    bs
+                    r.ack_sequences[i], pointer, bs
                 );
             }
         }
         if (r.next_channel_sequence != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                8,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                8, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(
-                r.next_channel_sequence,
-                pointer,
-                bs
+                r.next_channel_sequence, pointer, bs
             );
         }
         return pointer - offset;
@@ -705,7 +589,7 @@ library IbcCoreChannelV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -730,59 +614,48 @@ library IbcCoreChannelV1GenesisState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.channels.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcCoreChannelV1IdentifiedChannel._estimate(r.channels[i])
                 );
         }
         for (i = 0; i < r.acknowledgements.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcCoreChannelV1PacketState._estimate(r.acknowledgements[i])
                 );
         }
         for (i = 0; i < r.commitments.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcCoreChannelV1PacketState._estimate(r.commitments[i])
                 );
         }
         for (i = 0; i < r.receipts.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcCoreChannelV1PacketState._estimate(r.receipts[i])
                 );
         }
         for (i = 0; i < r.send_sequences.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
-                    IbcCoreChannelV1PacketSequence._estimate(
-                        r.send_sequences[i]
-                    )
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
+                    IbcCoreChannelV1PacketSequence._estimate(r.send_sequences[i])
                 );
         }
         for (i = 0; i < r.recv_sequences.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
-                    IbcCoreChannelV1PacketSequence._estimate(
-                        r.recv_sequences[i]
-                    )
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
+                    IbcCoreChannelV1PacketSequence._estimate(r.recv_sequences[i])
                 );
         }
         for (i = 0; i < r.ack_sequences.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcCoreChannelV1PacketSequence._estimate(r.ack_sequences[i])
                 );
         }
@@ -879,10 +752,8 @@ library IbcCoreChannelV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreChannelV1IdentifiedChannel.Data[]
-            memory tmp = new IbcCoreChannelV1IdentifiedChannel.Data[](
-                self.channels.length + 1
-            );
+        IbcCoreChannelV1IdentifiedChannel.Data[] memory tmp = new IbcCoreChannelV1IdentifiedChannel
+            .Data[](self.channels.length + 1);
         for (uint256 i = 0; i < self.channels.length; i++) {
             tmp[i] = self.channels[i];
         }
@@ -903,10 +774,8 @@ library IbcCoreChannelV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreChannelV1PacketState.Data[]
-            memory tmp = new IbcCoreChannelV1PacketState.Data[](
-                self.acknowledgements.length + 1
-            );
+        IbcCoreChannelV1PacketState.Data[] memory tmp = new IbcCoreChannelV1PacketState
+            .Data[](self.acknowledgements.length + 1);
         for (uint256 i = 0; i < self.acknowledgements.length; i++) {
             tmp[i] = self.acknowledgements[i];
         }
@@ -927,10 +796,8 @@ library IbcCoreChannelV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreChannelV1PacketState.Data[]
-            memory tmp = new IbcCoreChannelV1PacketState.Data[](
-                self.commitments.length + 1
-            );
+        IbcCoreChannelV1PacketState.Data[] memory tmp =
+            new IbcCoreChannelV1PacketState.Data[](self.commitments.length + 1);
         for (uint256 i = 0; i < self.commitments.length; i++) {
             tmp[i] = self.commitments[i];
         }
@@ -951,10 +818,8 @@ library IbcCoreChannelV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreChannelV1PacketState.Data[]
-            memory tmp = new IbcCoreChannelV1PacketState.Data[](
-                self.receipts.length + 1
-            );
+        IbcCoreChannelV1PacketState.Data[] memory tmp =
+            new IbcCoreChannelV1PacketState.Data[](self.receipts.length + 1);
         for (uint256 i = 0; i < self.receipts.length; i++) {
             tmp[i] = self.receipts[i];
         }
@@ -975,10 +840,8 @@ library IbcCoreChannelV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreChannelV1PacketSequence.Data[]
-            memory tmp = new IbcCoreChannelV1PacketSequence.Data[](
-                self.send_sequences.length + 1
-            );
+        IbcCoreChannelV1PacketSequence.Data[] memory tmp = new IbcCoreChannelV1PacketSequence
+            .Data[](self.send_sequences.length + 1);
         for (uint256 i = 0; i < self.send_sequences.length; i++) {
             tmp[i] = self.send_sequences[i];
         }
@@ -999,10 +862,8 @@ library IbcCoreChannelV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreChannelV1PacketSequence.Data[]
-            memory tmp = new IbcCoreChannelV1PacketSequence.Data[](
-                self.recv_sequences.length + 1
-            );
+        IbcCoreChannelV1PacketSequence.Data[] memory tmp = new IbcCoreChannelV1PacketSequence
+            .Data[](self.recv_sequences.length + 1);
         for (uint256 i = 0; i < self.recv_sequences.length; i++) {
             tmp[i] = self.recv_sequences[i];
         }
@@ -1023,10 +884,8 @@ library IbcCoreChannelV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreChannelV1PacketSequence.Data[]
-            memory tmp = new IbcCoreChannelV1PacketSequence.Data[](
-                self.ack_sequences.length + 1
-            );
+        IbcCoreChannelV1PacketSequence.Data[] memory tmp = new IbcCoreChannelV1PacketSequence
+            .Data[](self.ack_sequences.length + 1);
         for (uint256 i = 0; i < self.ack_sequences.length; i++) {
             tmp[i] = self.ack_sequences[i];
         }
@@ -1075,7 +934,7 @@ library IbcCoreChannelV1PacketSequence {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1085,7 +944,7 @@ library IbcCoreChannelV1PacketSequence {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1103,7 +962,7 @@ library IbcCoreChannelV1PacketSequence {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1111,10 +970,8 @@ library IbcCoreChannelV1PacketSequence {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_port_id(pointer, bs, r);
@@ -1123,11 +980,8 @@ library IbcCoreChannelV1PacketSequence {
             } else if (fieldId == 3) {
                 pointer += _read_sequence(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1146,7 +1000,7 @@ library IbcCoreChannelV1PacketSequence {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.port_id = x;
         return sz;
@@ -1163,7 +1017,7 @@ library IbcCoreChannelV1PacketSequence {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.channel_id = x;
         return sz;
@@ -1180,7 +1034,7 @@ library IbcCoreChannelV1PacketSequence {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.sequence = x;
         return sz;
@@ -1215,38 +1069,25 @@ library IbcCoreChannelV1PacketSequence {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.port_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.port_id, pointer, bs);
         }
         if (bytes(r.channel_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.channel_id,
-                pointer,
-                bs
-            );
+            pointer += ProtoBufRuntime._encode_string(r.channel_id, pointer, bs);
         }
         if (r.sequence != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.sequence, pointer, bs);
         }
@@ -1266,7 +1107,7 @@ library IbcCoreChannelV1PacketSequence {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1291,7 +1132,7 @@ library IbcCoreChannelV1PacketSequence {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.channel_id).length);

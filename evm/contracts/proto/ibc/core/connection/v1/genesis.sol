@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 
@@ -21,7 +22,7 @@ library IbcCoreConnectionV1GenesisState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -31,7 +32,7 @@ library IbcCoreConnectionV1GenesisState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -49,87 +50,62 @@ library IbcCoreConnectionV1GenesisState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[5] memory counters;
+        uint256[5] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_connections(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_client_connection_paths(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 3) {
                 pointer += _read_next_connection_sequence(pointer, bs, r);
             } else if (fieldId == 4) {
                 pointer += _read_params(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
         if (counters[1] > 0) {
             require(r.connections.length == 0);
-            r.connections = new IbcCoreConnectionV1IdentifiedConnection.Data[](
-                counters[1]
-            );
+            r.connections =
+                new IbcCoreConnectionV1IdentifiedConnection.Data[](counters[1]);
         }
         if (counters[2] > 0) {
             require(r.client_connection_paths.length == 0);
-            r
-                .client_connection_paths = new IbcCoreConnectionV1ConnectionPaths.Data[](
-                counters[2]
-            );
+            r.client_connection_paths =
+                new IbcCoreConnectionV1ConnectionPaths.Data[](counters[2]);
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_connections(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_client_connection_paths(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -149,15 +125,13 @@ library IbcCoreConnectionV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[5] memory counters
-    ) internal pure returns (uint) {
+        uint256[5] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreConnectionV1IdentifiedConnection.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreConnectionV1IdentifiedConnection(p, bs);
+        (IbcCoreConnectionV1IdentifiedConnection.Data memory x, uint256 sz) =
+            _decode_IbcCoreConnectionV1IdentifiedConnection(p, bs);
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -179,21 +153,18 @@ library IbcCoreConnectionV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[5] memory counters
-    ) internal pure returns (uint) {
+        uint256[5] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreConnectionV1ConnectionPaths.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreConnectionV1ConnectionPaths(p, bs);
+        (IbcCoreConnectionV1ConnectionPaths.Data memory x, uint256 sz) =
+            _decode_IbcCoreConnectionV1ConnectionPaths(p, bs);
         if (isNil(r)) {
             counters[2] += 1;
         } else {
-            r.client_connection_paths[
-                r.client_connection_paths.length - counters[2]
-            ] = x;
+            r.client_connection_paths[r.client_connection_paths.length
+                - counters[2]] = x;
             counters[2] -= 1;
         }
         return sz;
@@ -210,7 +181,7 @@ library IbcCoreConnectionV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.next_connection_sequence = x;
         return sz;
@@ -227,11 +198,9 @@ library IbcCoreConnectionV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcCoreConnectionV1Params.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreConnectionV1Params(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcCoreConnectionV1Params.Data memory x, uint256 sz) =
+            _decode_IbcCoreConnectionV1Params(p, bs);
         r.params = x;
         return sz;
     }
@@ -250,18 +219,14 @@ library IbcCoreConnectionV1GenesisState {
     )
         internal
         pure
-        returns (IbcCoreConnectionV1IdentifiedConnection.Data memory, uint)
+        returns (IbcCoreConnectionV1IdentifiedConnection.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcCoreConnectionV1IdentifiedConnection.Data memory r,
-
-        ) = IbcCoreConnectionV1IdentifiedConnection._decode(pointer, bs, sz);
+        (IbcCoreConnectionV1IdentifiedConnection.Data memory r,) =
+            IbcCoreConnectionV1IdentifiedConnection._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -278,18 +243,14 @@ library IbcCoreConnectionV1GenesisState {
     )
         internal
         pure
-        returns (IbcCoreConnectionV1ConnectionPaths.Data memory, uint)
+        returns (IbcCoreConnectionV1ConnectionPaths.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcCoreConnectionV1ConnectionPaths.Data memory r,
-
-        ) = IbcCoreConnectionV1ConnectionPaths._decode(pointer, bs, sz);
+        (IbcCoreConnectionV1ConnectionPaths.Data memory r,) =
+            IbcCoreConnectionV1ConnectionPaths._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -303,15 +264,13 @@ library IbcCoreConnectionV1GenesisState {
     function _decode_IbcCoreConnectionV1Params(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreConnectionV1Params.Data memory, uint) {
+    ) internal pure returns (IbcCoreConnectionV1Params.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (IbcCoreConnectionV1Params.Data memory r, ) = IbcCoreConnectionV1Params
-            ._decode(pointer, bs, sz);
+        (IbcCoreConnectionV1Params.Data memory r,) =
+            IbcCoreConnectionV1Params._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -344,17 +303,14 @@ library IbcCoreConnectionV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.connections.length != 0) {
             for (i = 0; i < r.connections.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreConnectionV1IdentifiedConnection
                     ._encode_nested(r.connections[i], pointer, bs);
@@ -363,43 +319,27 @@ library IbcCoreConnectionV1GenesisState {
         if (r.client_connection_paths.length != 0) {
             for (i = 0; i < r.client_connection_paths.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    2,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreConnectionV1ConnectionPaths._encode_nested(
-                    r.client_connection_paths[i],
-                    pointer,
-                    bs
+                    r.client_connection_paths[i], pointer, bs
                 );
             }
         }
         if (r.next_connection_sequence != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(
-                r.next_connection_sequence,
-                pointer,
-                bs
+                r.next_connection_sequence, pointer, bs
             );
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            4,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcCoreConnectionV1Params._encode_nested(
-            r.params,
-            pointer,
-            bs
-        );
+        pointer +=
+            IbcCoreConnectionV1Params._encode_nested(r.params, pointer, bs);
 
         return pointer - offset;
     }
@@ -417,7 +357,7 @@ library IbcCoreConnectionV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -442,31 +382,28 @@ library IbcCoreConnectionV1GenesisState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.connections.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcCoreConnectionV1IdentifiedConnection._estimate(
                         r.connections[i]
                     )
                 );
         }
         for (i = 0; i < r.client_connection_paths.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcCoreConnectionV1ConnectionPaths._estimate(
                         r.client_connection_paths[i]
                     )
                 );
         }
         e += 1 + ProtoBufRuntime._sz_uint64(r.next_connection_sequence);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcCoreConnectionV1Params._estimate(r.params)
             );
         return e;
@@ -524,10 +461,8 @@ library IbcCoreConnectionV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreConnectionV1IdentifiedConnection.Data[]
-            memory tmp = new IbcCoreConnectionV1IdentifiedConnection.Data[](
-                self.connections.length + 1
-            );
+        IbcCoreConnectionV1IdentifiedConnection.Data[] memory tmp = new IbcCoreConnectionV1IdentifiedConnection
+            .Data[](self.connections.length + 1);
         for (uint256 i = 0; i < self.connections.length; i++) {
             tmp[i] = self.connections[i];
         }
@@ -548,10 +483,8 @@ library IbcCoreConnectionV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreConnectionV1ConnectionPaths.Data[]
-            memory tmp = new IbcCoreConnectionV1ConnectionPaths.Data[](
-                self.client_connection_paths.length + 1
-            );
+        IbcCoreConnectionV1ConnectionPaths.Data[] memory tmp = new IbcCoreConnectionV1ConnectionPaths
+            .Data[](self.client_connection_paths.length + 1);
         for (uint256 i = 0; i < self.client_connection_paths.length; i++) {
             tmp[i] = self.client_connection_paths[i];
         }

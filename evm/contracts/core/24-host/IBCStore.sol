@@ -18,13 +18,13 @@ abstract contract IBCStore {
     mapping(string => string) public clientTypes;
     mapping(string => address) public clientImpls;
     mapping(string => IbcCoreConnectionV1ConnectionEnd.Data) public connections;
-    mapping(string => mapping(string => IbcCoreChannelV1Channel.Data))
-        public channels;
+    mapping(string => mapping(string => IbcCoreChannelV1Channel.Data)) public
+        channels;
     mapping(string => mapping(string => uint64)) public nextSequenceSends;
     mapping(string => mapping(string => uint64)) public nextSequenceRecvs;
     mapping(string => mapping(string => uint64)) public nextSequenceAcks;
-    mapping(string => mapping(string => mapping(uint64 => uint8)))
-        public packetReceipts;
+    mapping(string => mapping(string => mapping(uint64 => uint8))) public
+        packetReceipts;
     mapping(string => address) public capabilities;
 
     // Sequences for identifier
@@ -35,9 +35,11 @@ abstract contract IBCStore {
     string public constant COMMITMENT_PREFIX = "ibc";
 
     // Storage accessors
-    function getClient(
-        string memory clientId
-    ) public view returns (ILightClient) {
+    function getClient(string memory clientId)
+        public
+        view
+        returns (ILightClient)
+    {
         address clientImpl = clientImpls[clientId];
         if (clientImpl == address(0)) {
             revert IBCStoreLib.ErrClientNotFound();

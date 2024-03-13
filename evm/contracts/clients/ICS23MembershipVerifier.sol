@@ -16,13 +16,12 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         bytes[] memory fullPath = new bytes[](2);
         fullPath[0] = prefix;
         fullPath[1] = path;
-        return
-            Ics23.verifyChainedMembership(
-                abi.decode(proof, (IbcCoreCommitmentV1MerkleProof.Data)),
-                root,
-                fullPath,
-                value
-            ) == Ics23.VerifyChainedMembershipError.None;
+        return Ics23.verifyChainedMembership(
+            abi.decode(proof, (IbcCoreCommitmentV1MerkleProof.Data)),
+            root,
+            fullPath,
+            value
+        ) == Ics23.VerifyChainedMembershipError.None;
     }
 
     function verifyNonMembership(
@@ -34,11 +33,10 @@ contract ICS23MembershipVerifier is IMembershipVerifier {
         bytes[] memory fullPath = new bytes[](2);
         fullPath[0] = prefix;
         fullPath[1] = path;
-        return
-            Ics23.verifyChainedNonMembership(
-                abi.decode(proof, (IbcCoreCommitmentV1MerkleProof.Data)),
-                root,
-                fullPath
-            ) == Ics23.VerifyChainedNonMembershipError.None;
+        return Ics23.verifyChainedNonMembership(
+            abi.decode(proof, (IbcCoreCommitmentV1MerkleProof.Data)),
+            root,
+            fullPath
+        ) == Ics23.VerifyChainedNonMembershipError.None;
     }
 }

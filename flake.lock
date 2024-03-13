@@ -532,11 +532,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1710285259,
-        "narHash": "sha256-xFnn6CX5foWGkSoN7YEXef+RiTQM9aLCQxK5paCqgn4=",
+        "lastModified": 1710297677,
+        "narHash": "sha256-KQnDIjeFDw3GErdWF6+YkmGdwc+whIAE6p8KjS2WMc4=",
         "owner": "unionlabs",
         "repo": "treefmt-nix",
-        "rev": "7fce61d753dcfadec782a2e3be4edd7d786a1582",
+        "rev": "da63ea9fdac70875c49e130d009caf3879f0a260",
         "type": "github"
       },
       "original": {

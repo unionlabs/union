@@ -2,11 +2,27 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
-import {IbcLightclientsMockV1ClientState, IbcLightclientsMockV1Header, IbcLightclientsMockV1ConsensusState, IbcCoreClientV1Height} from "../../../contracts/proto/MockClient.sol";
-import {GoogleProtobufAny as Any} from "../../../contracts/proto/GoogleProtobufAny.sol";
-import {IbcCoreChannelV1Counterparty, IbcCoreChannelV1Channel, IbcCoreChannelV1GlobalEnums} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
-import {IbcCoreConnectionV1Counterparty, IbcCoreConnectionV1Version, IbcCoreConnectionV1ConnectionEnd, IbcCoreConnectionV1GlobalEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
-import {IbcCoreCommitmentV1MerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {
+    IbcLightclientsMockV1ClientState,
+    IbcLightclientsMockV1Header,
+    IbcLightclientsMockV1ConsensusState,
+    IbcCoreClientV1Height
+} from "../../../contracts/proto/MockClient.sol";
+import {GoogleProtobufAny as Any} from
+    "../../../contracts/proto/GoogleProtobufAny.sol";
+import {
+    IbcCoreChannelV1Counterparty,
+    IbcCoreChannelV1Channel,
+    IbcCoreChannelV1GlobalEnums
+} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
+import {
+    IbcCoreConnectionV1Counterparty,
+    IbcCoreConnectionV1Version,
+    IbcCoreConnectionV1ConnectionEnd,
+    IbcCoreConnectionV1GlobalEnums
+} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
+import {IbcCoreCommitmentV1MerklePrefix} from
+    "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
 
 contract TestPlus is Test {
     function assertStrEq(string memory a, string memory b) internal pure {
@@ -25,9 +41,11 @@ contract TestPlus is Test {
 }
 
 library MsgMocks {
-    function connectionOpenInit(
-        string memory clientId
-    ) internal view returns (IBCMsgs.MsgConnectionOpenInit memory m) {
+    function connectionOpenInit(string memory clientId)
+        internal
+        view
+        returns (IBCMsgs.MsgConnectionOpenInit memory m)
+    {
         m.clientId = clientId;
         m.counterparty.client_id = "counterparty-client-id";
         m.counterparty.connection_id = "counterparty-conn-id";
@@ -59,27 +77,27 @@ library MsgMocks {
         });
         m.proofHeight.revision_height = proofHeight;
 
-        IbcCoreConnectionV1Counterparty.Data
-            memory expectedCounterparty = IbcCoreConnectionV1Counterparty.Data({
-                client_id: clientId,
-                connection_id: connId,
-                prefix: IbcCoreCommitmentV1MerklePrefix.Data({
-                    key_prefix: bytes(commitment_prefix())
-                })
-            });
+        IbcCoreConnectionV1Counterparty.Data memory expectedCounterparty =
+        IbcCoreConnectionV1Counterparty.Data({
+            client_id: clientId,
+            connection_id: connId,
+            prefix: IbcCoreCommitmentV1MerklePrefix.Data({
+                key_prefix: bytes(commitment_prefix())
+            })
+        });
 
-        IbcCoreConnectionV1ConnectionEnd.Data
-            memory expectedConnection = IbcCoreConnectionV1ConnectionEnd.Data({
-                client_id: "counterparty-client-id",
-                versions: new IbcCoreConnectionV1Version.Data[](1),
-                state: IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN,
-                delay_period: 0,
-                counterparty: expectedCounterparty
-            });
+        IbcCoreConnectionV1ConnectionEnd.Data memory expectedConnection =
+        IbcCoreConnectionV1ConnectionEnd.Data({
+            client_id: "counterparty-client-id",
+            versions: new IbcCoreConnectionV1Version.Data[](1),
+            state: IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN,
+            delay_period: 0,
+            counterparty: expectedCounterparty
+        });
         expectedConnection.versions[0] = m.version;
 
-        bytes memory encodedConnection = IbcCoreConnectionV1ConnectionEnd
-            .encode(expectedConnection);
+        bytes memory encodedConnection =
+            IbcCoreConnectionV1ConnectionEnd.encode(expectedConnection);
         bytes32 proof = sha256(encodedConnection);
         m.proofTry = abi.encodePacked(proof);
 
@@ -140,9 +158,7 @@ library MsgMocks {
 
         m.portId = portId;
         m.channel = IbcCoreChannelV1Channel.Data({
-            state: IbcCoreChannelV1GlobalEnums
-                .State
-                .STATE_UNINITIALIZED_UNSPECIFIED,
+            state: IbcCoreChannelV1GlobalEnums.State.STATE_UNINITIALIZED_UNSPECIFIED,
             ordering: IbcCoreChannelV1GlobalEnums.Order.ORDER_NONE_UNSPECIFIED,
             counterparty: counterparty,
             connection_hops: hops,
@@ -154,9 +170,11 @@ library MsgMocks {
         return "ibc";
     }
 
-    function wrapAnyMockHeader(
-        IbcLightclientsMockV1Header.Data memory header
-    ) private pure returns (bytes memory) {
+    function wrapAnyMockHeader(IbcLightclientsMockV1Header.Data memory header)
+        private
+        pure
+        returns (bytes memory)
+    {
         Any.Data memory anyHeader;
         anyHeader.type_url = "/ibc.lightclients.mock.v1.Header";
         anyHeader.value = IbcLightclientsMockV1Header.encode(header);
@@ -168,9 +186,8 @@ library MsgMocks {
     ) private pure returns (bytes memory) {
         Any.Data memory anyClientState;
         anyClientState.type_url = "/ibc.lightclients.mock.v1.ClientState";
-        anyClientState.value = IbcLightclientsMockV1ClientState.encode(
-            clientState
-        );
+        anyClientState.value =
+            IbcLightclientsMockV1ClientState.encode(clientState);
         return Any.encode(anyClientState);
     }
 
@@ -179,9 +196,8 @@ library MsgMocks {
     ) private pure returns (bytes memory) {
         Any.Data memory anyConsensusState;
         anyConsensusState.type_url = "/ibc.lightclients.mock.v1.ConsensusState";
-        anyConsensusState.value = IbcLightclientsMockV1ConsensusState.encode(
-            consensusState
-        );
+        anyConsensusState.value =
+            IbcLightclientsMockV1ConsensusState.encode(consensusState);
         return Any.encode(anyConsensusState);
     }
 }

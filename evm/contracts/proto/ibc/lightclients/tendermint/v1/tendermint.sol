@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 import "../../../../tendermint/types/validator.sol";
@@ -32,7 +33,7 @@ library IbcLightclientsTendermintV1ClientState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -42,7 +43,7 @@ library IbcLightclientsTendermintV1ClientState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -60,19 +61,17 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[12] memory counters;
+        uint256[12] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_chain_id(pointer, bs, r);
@@ -90,32 +89,19 @@ library IbcLightclientsTendermintV1ClientState {
                 pointer += _read_latest_height(pointer, bs, r);
             } else if (fieldId == 8) {
                 pointer += _read_unpacked_repeated_proof_specs(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 9) {
                 pointer += _read_unpacked_repeated_upgrade_path(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 10) {
                 pointer += _read_allow_update_after_expiry(pointer, bs, r);
             } else if (fieldId == 11) {
-                pointer += _read_allow_update_after_misbehaviour(
-                    pointer,
-                    bs,
-                    r
-                );
+                pointer += _read_allow_update_after_misbehaviour(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
@@ -129,31 +115,20 @@ library IbcLightclientsTendermintV1ClientState {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 8) {
                 pointer += _read_unpacked_repeated_proof_specs(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else if (fieldId == 9) {
                 pointer += _read_unpacked_repeated_upgrade_path(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -172,7 +147,7 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.chain_id = x;
         return sz;
@@ -189,11 +164,9 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcLightclientsTendermintV1Fraction.Data memory x,
-            uint256 sz
-        ) = _decode_IbcLightclientsTendermintV1Fraction(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcLightclientsTendermintV1Fraction.Data memory x, uint256 sz) =
+            _decode_IbcLightclientsTendermintV1Fraction(p, bs);
         r.trust_level = x;
         return sz;
     }
@@ -209,11 +182,9 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufDuration.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufDuration(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufDuration.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufDuration(p, bs);
         r.trusting_period = x;
         return sz;
     }
@@ -229,11 +200,9 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufDuration.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufDuration(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufDuration.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufDuration(p, bs);
         r.unbonding_period = x;
         return sz;
     }
@@ -249,11 +218,9 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufDuration.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufDuration(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufDuration.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufDuration(p, bs);
         r.max_clock_drift = x;
         return sz;
     }
@@ -269,11 +236,9 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcCoreClientV1Height.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1Height(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcCoreClientV1Height.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1Height(p, bs);
         r.frozen_height = x;
         return sz;
     }
@@ -289,11 +254,9 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcCoreClientV1Height.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1Height(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcCoreClientV1Height.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1Height(p, bs);
         r.latest_height = x;
         return sz;
     }
@@ -310,15 +273,13 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[12] memory counters
-    ) internal pure returns (uint) {
+        uint256[12] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            CosmosIcs23V1ProofSpec.Data memory x,
-            uint256 sz
-        ) = _decode_CosmosIcs23V1ProofSpec(p, bs);
+        (CosmosIcs23V1ProofSpec.Data memory x, uint256 sz) =
+            _decode_CosmosIcs23V1ProofSpec(p, bs);
         if (isNil(r)) {
             counters[8] += 1;
         } else {
@@ -340,8 +301,8 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[12] memory counters
-    ) internal pure returns (uint) {
+        uint256[12] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
@@ -366,7 +327,7 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bool x, uint256 sz) = ProtoBufRuntime._decode_bool(p, bs);
         r.allow_update_after_expiry = x;
         return sz;
@@ -383,7 +344,7 @@ library IbcLightclientsTendermintV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bool x, uint256 sz) = ProtoBufRuntime._decode_bool(p, bs);
         r.allow_update_after_misbehaviour = x;
         return sz;
@@ -403,18 +364,14 @@ library IbcLightclientsTendermintV1ClientState {
     )
         internal
         pure
-        returns (IbcLightclientsTendermintV1Fraction.Data memory, uint)
+        returns (IbcLightclientsTendermintV1Fraction.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcLightclientsTendermintV1Fraction.Data memory r,
-
-        ) = IbcLightclientsTendermintV1Fraction._decode(pointer, bs, sz);
+        (IbcLightclientsTendermintV1Fraction.Data memory r,) =
+            IbcLightclientsTendermintV1Fraction._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -428,15 +385,13 @@ library IbcLightclientsTendermintV1ClientState {
     function _decode_GoogleProtobufDuration(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufDuration.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufDuration.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufDuration.Data memory r, ) = GoogleProtobufDuration
-            ._decode(pointer, bs, sz);
+        (GoogleProtobufDuration.Data memory r,) =
+            GoogleProtobufDuration._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -450,18 +405,13 @@ library IbcLightclientsTendermintV1ClientState {
     function _decode_IbcCoreClientV1Height(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint) {
+    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (IbcCoreClientV1Height.Data memory r, ) = IbcCoreClientV1Height._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (IbcCoreClientV1Height.Data memory r,) =
+            IbcCoreClientV1Height._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -475,15 +425,13 @@ library IbcLightclientsTendermintV1ClientState {
     function _decode_CosmosIcs23V1ProofSpec(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (CosmosIcs23V1ProofSpec.Data memory, uint) {
+    ) internal pure returns (CosmosIcs23V1ProofSpec.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (CosmosIcs23V1ProofSpec.Data memory r, ) = CosmosIcs23V1ProofSpec
-            ._decode(pointer, bs, sz);
+        (CosmosIcs23V1ProofSpec.Data memory r,) =
+            CosmosIcs23V1ProofSpec._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -516,146 +464,91 @@ library IbcLightclientsTendermintV1ClientState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (bytes(r.chain_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.chain_id, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcLightclientsTendermintV1Fraction._encode_nested(
-            r.trust_level,
-            pointer,
-            bs
+            r.trust_level, pointer, bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
-            3,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += GoogleProtobufDuration._encode_nested(
-            r.trusting_period,
-            pointer,
-            bs
+            r.trusting_period, pointer, bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
-            4,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += GoogleProtobufDuration._encode_nested(
-            r.unbonding_period,
-            pointer,
-            bs
+            r.unbonding_period, pointer, bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
-            5,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            5, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += GoogleProtobufDuration._encode_nested(
-            r.max_clock_drift,
-            pointer,
-            bs
+            r.max_clock_drift, pointer, bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
-            6,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            6, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcCoreClientV1Height._encode_nested(
-            r.frozen_height,
-            pointer,
-            bs
-        );
+        pointer +=
+            IbcCoreClientV1Height._encode_nested(r.frozen_height, pointer, bs);
 
         pointer += ProtoBufRuntime._encode_key(
-            7,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            7, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcCoreClientV1Height._encode_nested(
-            r.latest_height,
-            pointer,
-            bs
-        );
+        pointer +=
+            IbcCoreClientV1Height._encode_nested(r.latest_height, pointer, bs);
 
         if (r.proof_specs.length != 0) {
             for (i = 0; i < r.proof_specs.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    8,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    8, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += CosmosIcs23V1ProofSpec._encode_nested(
-                    r.proof_specs[i],
-                    pointer,
-                    bs
+                    r.proof_specs[i], pointer, bs
                 );
             }
         }
         if (r.upgrade_path.length != 0) {
             for (i = 0; i < r.upgrade_path.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    9,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    9, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += ProtoBufRuntime._encode_string(
-                    r.upgrade_path[i],
-                    pointer,
-                    bs
+                    r.upgrade_path[i], pointer, bs
                 );
             }
         }
         if (r.allow_update_after_expiry != false) {
             pointer += ProtoBufRuntime._encode_key(
-                10,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                10, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bool(
-                r.allow_update_after_expiry,
-                pointer,
-                bs
+                r.allow_update_after_expiry, pointer, bs
             );
         }
         if (r.allow_update_after_misbehaviour != false) {
             pointer += ProtoBufRuntime._encode_key(
-                11,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                11, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bool(
-                r.allow_update_after_misbehaviour,
-                pointer,
-                bs
+                r.allow_update_after_misbehaviour, pointer, bs
             );
         }
         return pointer - offset;
@@ -674,7 +567,7 @@ library IbcLightclientsTendermintV1ClientState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -699,51 +592,43 @@ library IbcLightclientsTendermintV1ClientState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.chain_id).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcLightclientsTendermintV1Fraction._estimate(r.trust_level)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufDuration._estimate(r.trusting_period)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufDuration._estimate(r.unbonding_period)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufDuration._estimate(r.max_clock_drift)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcCoreClientV1Height._estimate(r.frozen_height)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcCoreClientV1Height._estimate(r.latest_height)
             );
         for (i = 0; i < r.proof_specs.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     CosmosIcs23V1ProofSpec._estimate(r.proof_specs[i])
                 );
         }
         for (i = 0; i < r.upgrade_path.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(bytes(r.upgrade_path[i]).length);
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(bytes(r.upgrade_path[i]).length);
         }
         e += 1 + 1;
         e += 1 + 1;
@@ -785,20 +670,16 @@ library IbcLightclientsTendermintV1ClientState {
     function store(Data memory input, Data storage output) internal {
         output.chain_id = input.chain_id;
         IbcLightclientsTendermintV1Fraction.store(
-            input.trust_level,
-            output.trust_level
+            input.trust_level, output.trust_level
         );
         GoogleProtobufDuration.store(
-            input.trusting_period,
-            output.trusting_period
+            input.trusting_period, output.trusting_period
         );
         GoogleProtobufDuration.store(
-            input.unbonding_period,
-            output.unbonding_period
+            input.unbonding_period, output.unbonding_period
         );
         GoogleProtobufDuration.store(
-            input.max_clock_drift,
-            output.max_clock_drift
+            input.max_clock_drift, output.max_clock_drift
         );
         IbcCoreClientV1Height.store(input.frozen_height, output.frozen_height);
         IbcCoreClientV1Height.store(input.latest_height, output.latest_height);
@@ -809,8 +690,8 @@ library IbcLightclientsTendermintV1ClientState {
 
         output.upgrade_path = input.upgrade_path;
         output.allow_update_after_expiry = input.allow_update_after_expiry;
-        output.allow_update_after_misbehaviour = input
-            .allow_update_after_misbehaviour;
+        output.allow_update_after_misbehaviour =
+            input.allow_update_after_misbehaviour;
     }
 
     //array helpers for ProofSpecs
@@ -826,10 +707,8 @@ library IbcLightclientsTendermintV1ClientState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        CosmosIcs23V1ProofSpec.Data[]
-            memory tmp = new CosmosIcs23V1ProofSpec.Data[](
-                self.proof_specs.length + 1
-            );
+        CosmosIcs23V1ProofSpec.Data[] memory tmp =
+            new CosmosIcs23V1ProofSpec.Data[](self.proof_specs.length + 1);
         for (uint256 i = 0; i < self.proof_specs.length; i++) {
             tmp[i] = self.proof_specs[i];
         }
@@ -899,7 +778,7 @@ library IbcLightclientsTendermintV1ConsensusState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -909,7 +788,7 @@ library IbcLightclientsTendermintV1ConsensusState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -927,7 +806,7 @@ library IbcLightclientsTendermintV1ConsensusState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -935,10 +814,8 @@ library IbcLightclientsTendermintV1ConsensusState {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_timestamp(pointer, bs, r);
@@ -947,11 +824,8 @@ library IbcLightclientsTendermintV1ConsensusState {
             } else if (fieldId == 3) {
                 pointer += _read_next_validators_hash(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -970,11 +844,9 @@ library IbcLightclientsTendermintV1ConsensusState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufTimestamp.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufTimestamp(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufTimestamp.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufTimestamp(p, bs);
         r.timestamp = x;
         return sz;
     }
@@ -990,11 +862,9 @@ library IbcLightclientsTendermintV1ConsensusState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcCoreCommitmentV1MerkleRoot.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreCommitmentV1MerkleRoot(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcCoreCommitmentV1MerkleRoot.Data memory x, uint256 sz) =
+            _decode_IbcCoreCommitmentV1MerkleRoot(p, bs);
         r.root = x;
         return sz;
     }
@@ -1010,7 +880,7 @@ library IbcLightclientsTendermintV1ConsensusState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.next_validators_hash = x;
         return sz;
@@ -1027,15 +897,13 @@ library IbcLightclientsTendermintV1ConsensusState {
     function _decode_GoogleProtobufTimestamp(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufTimestamp.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufTimestamp.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufTimestamp.Data memory r, ) = GoogleProtobufTimestamp
-            ._decode(pointer, bs, sz);
+        (GoogleProtobufTimestamp.Data memory r,) =
+            GoogleProtobufTimestamp._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1049,17 +917,17 @@ library IbcLightclientsTendermintV1ConsensusState {
     function _decode_IbcCoreCommitmentV1MerkleRoot(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreCommitmentV1MerkleRoot.Data memory, uint) {
+    )
+        internal
+        pure
+        returns (IbcCoreCommitmentV1MerkleRoot.Data memory, uint256)
+    {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcCoreCommitmentV1MerkleRoot.Data memory r,
-
-        ) = IbcCoreCommitmentV1MerkleRoot._decode(pointer, bs, sz);
+        (IbcCoreCommitmentV1MerkleRoot.Data memory r,) =
+            IbcCoreCommitmentV1MerkleRoot._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1092,45 +960,28 @@ library IbcLightclientsTendermintV1ConsensusState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += GoogleProtobufTimestamp._encode_nested(
-            r.timestamp,
-            pointer,
-            bs
-        );
+        pointer +=
+            GoogleProtobufTimestamp._encode_nested(r.timestamp, pointer, bs);
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcCoreCommitmentV1MerkleRoot._encode_nested(
-            r.root,
-            pointer,
-            bs
-        );
+        pointer +=
+            IbcCoreCommitmentV1MerkleRoot._encode_nested(r.root, pointer, bs);
 
         if (r.next_validators_hash.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(
-                r.next_validators_hash,
-                pointer,
-                bs
+                r.next_validators_hash, pointer, bs
             );
         }
         return pointer - offset;
@@ -1149,7 +1000,7 @@ library IbcLightclientsTendermintV1ConsensusState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1174,16 +1025,14 @@ library IbcLightclientsTendermintV1ConsensusState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufTimestamp._estimate(r.timestamp)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcCoreCommitmentV1MerkleRoot._estimate(r.root)
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(r.next_validators_hash.length);
@@ -1253,7 +1102,7 @@ library IbcLightclientsTendermintV1Misbehaviour {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1263,7 +1112,7 @@ library IbcLightclientsTendermintV1Misbehaviour {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1281,7 +1130,7 @@ library IbcLightclientsTendermintV1Misbehaviour {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1289,10 +1138,8 @@ library IbcLightclientsTendermintV1Misbehaviour {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_client_id(pointer, bs, r);
@@ -1301,11 +1148,8 @@ library IbcLightclientsTendermintV1Misbehaviour {
             } else if (fieldId == 3) {
                 pointer += _read_header_2(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1324,7 +1168,7 @@ library IbcLightclientsTendermintV1Misbehaviour {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.client_id = x;
         return sz;
@@ -1341,11 +1185,9 @@ library IbcLightclientsTendermintV1Misbehaviour {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcLightclientsTendermintV1Header.Data memory x,
-            uint256 sz
-        ) = _decode_IbcLightclientsTendermintV1Header(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcLightclientsTendermintV1Header.Data memory x, uint256 sz) =
+            _decode_IbcLightclientsTendermintV1Header(p, bs);
         r.header_1 = x;
         return sz;
     }
@@ -1361,11 +1203,9 @@ library IbcLightclientsTendermintV1Misbehaviour {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcLightclientsTendermintV1Header.Data memory x,
-            uint256 sz
-        ) = _decode_IbcLightclientsTendermintV1Header(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcLightclientsTendermintV1Header.Data memory x, uint256 sz) =
+            _decode_IbcLightclientsTendermintV1Header(p, bs);
         r.header_2 = x;
         return sz;
     }
@@ -1384,18 +1224,14 @@ library IbcLightclientsTendermintV1Misbehaviour {
     )
         internal
         pure
-        returns (IbcLightclientsTendermintV1Header.Data memory, uint)
+        returns (IbcLightclientsTendermintV1Header.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcLightclientsTendermintV1Header.Data memory r,
-
-        ) = IbcLightclientsTendermintV1Header._decode(pointer, bs, sz);
+        (IbcLightclientsTendermintV1Header.Data memory r,) =
+            IbcLightclientsTendermintV1Header._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1428,42 +1264,29 @@ library IbcLightclientsTendermintV1Misbehaviour {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.client_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.client_id, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcLightclientsTendermintV1Header._encode_nested(
-            r.header_1,
-            pointer,
-            bs
+            r.header_1, pointer, bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
-            3,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcLightclientsTendermintV1Header._encode_nested(
-            r.header_2,
-            pointer,
-            bs
+            r.header_2, pointer, bs
         );
 
         return pointer - offset;
@@ -1482,7 +1305,7 @@ library IbcLightclientsTendermintV1Misbehaviour {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1507,17 +1330,15 @@ library IbcLightclientsTendermintV1Misbehaviour {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.client_id).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcLightclientsTendermintV1Header._estimate(r.header_1)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcLightclientsTendermintV1Header._estimate(r.header_2)
             );
         return e;
@@ -1541,14 +1362,8 @@ library IbcLightclientsTendermintV1Misbehaviour {
      */
     function store(Data memory input, Data storage output) internal {
         output.client_id = input.client_id;
-        IbcLightclientsTendermintV1Header.store(
-            input.header_1,
-            output.header_1
-        );
-        IbcLightclientsTendermintV1Header.store(
-            input.header_2,
-            output.header_2
-        );
+        IbcLightclientsTendermintV1Header.store(input.header_1, output.header_1);
+        IbcLightclientsTendermintV1Header.store(input.header_2, output.header_2);
     }
 
     //utility functions
@@ -1593,7 +1408,7 @@ library IbcLightclientsTendermintV1Header {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1603,7 +1418,7 @@ library IbcLightclientsTendermintV1Header {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1621,7 +1436,7 @@ library IbcLightclientsTendermintV1Header {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1629,10 +1444,8 @@ library IbcLightclientsTendermintV1Header {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_signed_header(pointer, bs, r);
@@ -1643,11 +1456,8 @@ library IbcLightclientsTendermintV1Header {
             } else if (fieldId == 4) {
                 pointer += _read_trusted_validators(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1666,11 +1476,9 @@ library IbcLightclientsTendermintV1Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            TendermintTypesSignedHeader.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintTypesSignedHeader(p, bs);
+    ) internal pure returns (uint256) {
+        (TendermintTypesSignedHeader.Data memory x, uint256 sz) =
+            _decode_TendermintTypesSignedHeader(p, bs);
         r.signed_header = x;
         return sz;
     }
@@ -1686,11 +1494,9 @@ library IbcLightclientsTendermintV1Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            TendermintTypesValidatorSet.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintTypesValidatorSet(p, bs);
+    ) internal pure returns (uint256) {
+        (TendermintTypesValidatorSet.Data memory x, uint256 sz) =
+            _decode_TendermintTypesValidatorSet(p, bs);
         r.validator_set = x;
         return sz;
     }
@@ -1706,11 +1512,9 @@ library IbcLightclientsTendermintV1Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcCoreClientV1Height.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1Height(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcCoreClientV1Height.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1Height(p, bs);
         r.trusted_height = x;
         return sz;
     }
@@ -1726,11 +1530,9 @@ library IbcLightclientsTendermintV1Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            TendermintTypesValidatorSet.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintTypesValidatorSet(p, bs);
+    ) internal pure returns (uint256) {
+        (TendermintTypesValidatorSet.Data memory x, uint256 sz) =
+            _decode_TendermintTypesValidatorSet(p, bs);
         r.trusted_validators = x;
         return sz;
     }
@@ -1746,17 +1548,17 @@ library IbcLightclientsTendermintV1Header {
     function _decode_TendermintTypesSignedHeader(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (TendermintTypesSignedHeader.Data memory, uint) {
+    )
+        internal
+        pure
+        returns (TendermintTypesSignedHeader.Data memory, uint256)
+    {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            TendermintTypesSignedHeader.Data memory r,
-
-        ) = TendermintTypesSignedHeader._decode(pointer, bs, sz);
+        (TendermintTypesSignedHeader.Data memory r,) =
+            TendermintTypesSignedHeader._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1770,17 +1572,17 @@ library IbcLightclientsTendermintV1Header {
     function _decode_TendermintTypesValidatorSet(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (TendermintTypesValidatorSet.Data memory, uint) {
+    )
+        internal
+        pure
+        returns (TendermintTypesValidatorSet.Data memory, uint256)
+    {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            TendermintTypesValidatorSet.Data memory r,
-
-        ) = TendermintTypesValidatorSet._decode(pointer, bs, sz);
+        (TendermintTypesValidatorSet.Data memory r,) =
+            TendermintTypesValidatorSet._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1794,18 +1596,13 @@ library IbcLightclientsTendermintV1Header {
     function _decode_IbcCoreClientV1Height(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint) {
+    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (IbcCoreClientV1Height.Data memory r, ) = IbcCoreClientV1Height._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (IbcCoreClientV1Height.Data memory r,) =
+            IbcCoreClientV1Height._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1838,56 +1635,35 @@ library IbcLightclientsTendermintV1Header {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += TendermintTypesSignedHeader._encode_nested(
-            r.signed_header,
-            pointer,
-            bs
+            r.signed_header, pointer, bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += TendermintTypesValidatorSet._encode_nested(
-            r.validator_set,
-            pointer,
-            bs
+            r.validator_set, pointer, bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
-            3,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcCoreClientV1Height._encode_nested(
-            r.trusted_height,
-            pointer,
-            bs
-        );
+        pointer +=
+            IbcCoreClientV1Height._encode_nested(r.trusted_height, pointer, bs);
 
         pointer += ProtoBufRuntime._encode_key(
-            4,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += TendermintTypesValidatorSet._encode_nested(
-            r.trusted_validators,
-            pointer,
-            bs
+            r.trusted_validators, pointer, bs
         );
 
         return pointer - offset;
@@ -1906,7 +1682,7 @@ library IbcLightclientsTendermintV1Header {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1931,26 +1707,22 @@ library IbcLightclientsTendermintV1Header {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 TendermintTypesSignedHeader._estimate(r.signed_header)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 TendermintTypesValidatorSet._estimate(r.validator_set)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcCoreClientV1Height._estimate(r.trusted_height)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 TendermintTypesValidatorSet._estimate(r.trusted_validators)
             );
         return e;
@@ -1970,20 +1742,14 @@ library IbcLightclientsTendermintV1Header {
      */
     function store(Data memory input, Data storage output) internal {
         TendermintTypesSignedHeader.store(
-            input.signed_header,
-            output.signed_header
+            input.signed_header, output.signed_header
         );
         TendermintTypesValidatorSet.store(
-            input.validator_set,
-            output.validator_set
+            input.validator_set, output.validator_set
         );
-        IbcCoreClientV1Height.store(
-            input.trusted_height,
-            output.trusted_height
-        );
+        IbcCoreClientV1Height.store(input.trusted_height, output.trusted_height);
         TendermintTypesValidatorSet.store(
-            input.trusted_validators,
-            output.trusted_validators
+            input.trusted_validators, output.trusted_validators
         );
     }
 
@@ -2027,7 +1793,7 @@ library IbcLightclientsTendermintV1Fraction {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -2037,7 +1803,7 @@ library IbcLightclientsTendermintV1Fraction {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -2055,7 +1821,7 @@ library IbcLightclientsTendermintV1Fraction {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -2063,21 +1829,16 @@ library IbcLightclientsTendermintV1Fraction {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_numerator(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_denominator(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -2096,7 +1857,7 @@ library IbcLightclientsTendermintV1Fraction {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.numerator = x;
         return sz;
@@ -2113,7 +1874,7 @@ library IbcLightclientsTendermintV1Fraction {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.denominator = x;
         return sz;
@@ -2148,31 +1909,22 @@ library IbcLightclientsTendermintV1Fraction {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.numerator != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.numerator, pointer, bs);
         }
         if (r.denominator != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_uint64(
-                r.denominator,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_uint64(r.denominator, pointer, bs);
         }
         return pointer - offset;
     }
@@ -2190,7 +1942,7 @@ library IbcLightclientsTendermintV1Fraction {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -2215,7 +1967,7 @@ library IbcLightclientsTendermintV1Fraction {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint64(r.numerator);
         e += 1 + ProtoBufRuntime._sz_uint64(r.denominator);

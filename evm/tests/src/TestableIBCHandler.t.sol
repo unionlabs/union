@@ -9,12 +9,7 @@ contract TestableIBCHandler is OwnableIBCHandler {
         address ibcChannelHandshake,
         address ibcPacket
     )
-        OwnableIBCHandler(
-            ibcClient,
-            ibcConnection,
-            ibcChannelHandshake,
-            ibcPacket
-        )
+        OwnableIBCHandler(ibcClient, ibcConnection, ibcChannelHandshake, ibcPacket)
     {}
 
     function setConnection(
@@ -29,9 +24,8 @@ contract TestableIBCHandler is OwnableIBCHandler {
             connections[connectionId].versions.push(connection.versions[i]);
         }
         connections[connectionId].counterparty = connection.counterparty;
-        commitments[
-            keccak256(IBCCommitment.connectionPath(connectionId))
-        ] = keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection));
+        commitments[keccak256(IBCCommitment.connectionPath(connectionId))] =
+            keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection));
     }
 
     function setChannel(
@@ -40,9 +34,8 @@ contract TestableIBCHandler is OwnableIBCHandler {
         IbcCoreChannelV1Channel.Data memory channel
     ) external {
         channels[portId][channelId] = channel;
-        commitments[
-            keccak256(IBCCommitment.channelPath(portId, channelId))
-        ] = keccak256(IbcCoreChannelV1Channel.encode(channel));
+        commitments[keccak256(IBCCommitment.channelPath(portId, channelId))] =
+            keccak256(IbcCoreChannelV1Channel.encode(channel));
     }
 
     function setNextSequenceSend(
@@ -59,11 +52,9 @@ contract TestableIBCHandler is OwnableIBCHandler {
         uint64 sequence
     ) external {
         nextSequenceRecvs[portId][channelId] = sequence;
-        commitments[
-            keccak256(
-                IBCCommitment.nextSequenceRecvCommitmentPath(portId, channelId)
-            )
-        ] = keccak256(abi.encodePacked(sequence));
+        commitments[keccak256(
+            IBCCommitment.nextSequenceRecvCommitmentPath(portId, channelId)
+        )] = keccak256(abi.encodePacked(sequence));
     }
 
     function setNextSequenceAck(

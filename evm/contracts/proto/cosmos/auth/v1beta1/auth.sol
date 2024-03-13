@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../ProtoBufRuntime.sol";
 import "../../../GoogleProtobufAny.sol";
 import "../../../cosmos_proto/cosmos.sol";
@@ -20,7 +21,7 @@ library CosmosAuthV1beta1BaseAccount {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -30,7 +31,7 @@ library CosmosAuthV1beta1BaseAccount {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -48,7 +49,7 @@ library CosmosAuthV1beta1BaseAccount {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -56,10 +57,8 @@ library CosmosAuthV1beta1BaseAccount {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_address(pointer, bs, r);
@@ -70,11 +69,8 @@ library CosmosAuthV1beta1BaseAccount {
             } else if (fieldId == 4) {
                 pointer += _read_sequence(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -93,7 +89,7 @@ library CosmosAuthV1beta1BaseAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.address_ = x;
         return sz;
@@ -110,11 +106,9 @@ library CosmosAuthV1beta1BaseAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufAny.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufAny(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufAny.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufAny(p, bs);
         r.pub_key = x;
         return sz;
     }
@@ -130,7 +124,7 @@ library CosmosAuthV1beta1BaseAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.account_number = x;
         return sz;
@@ -147,7 +141,7 @@ library CosmosAuthV1beta1BaseAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.sequence = x;
         return sz;
@@ -164,18 +158,13 @@ library CosmosAuthV1beta1BaseAccount {
     function _decode_GoogleProtobufAny(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufAny.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufAny.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufAny.Data memory r, ) = GoogleProtobufAny._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (GoogleProtobufAny.Data memory r,) =
+            GoogleProtobufAny._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -208,47 +197,32 @@ library CosmosAuthV1beta1BaseAccount {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.address_).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.address_, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += GoogleProtobufAny._encode_nested(r.pub_key, pointer, bs);
 
         if (r.account_number != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_uint64(
-                r.account_number,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_uint64(r.account_number, pointer, bs);
         }
         if (r.sequence != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.sequence, pointer, bs);
         }
@@ -268,7 +242,7 @@ library CosmosAuthV1beta1BaseAccount {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -293,14 +267,11 @@ library CosmosAuthV1beta1BaseAccount {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.address_).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
-                GoogleProtobufAny._estimate(r.pub_key)
-            );
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(GoogleProtobufAny._estimate(r.pub_key));
         e += 1 + ProtoBufRuntime._sz_uint64(r.account_number);
         e += 1 + ProtoBufRuntime._sz_uint64(r.sequence);
         return e;
@@ -378,7 +349,7 @@ library CosmosAuthV1beta1ModuleAccount {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -388,7 +359,7 @@ library CosmosAuthV1beta1ModuleAccount {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -406,19 +377,17 @@ library CosmosAuthV1beta1ModuleAccount {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[4] memory counters;
+        uint256[4] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_base_account(pointer, bs, r);
@@ -426,17 +395,11 @@ library CosmosAuthV1beta1ModuleAccount {
                 pointer += _read_name(pointer, bs, r);
             } else if (fieldId == 3) {
                 pointer += _read_unpacked_repeated_permissions(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
@@ -446,24 +409,16 @@ library CosmosAuthV1beta1ModuleAccount {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 3) {
                 pointer += _read_unpacked_repeated_permissions(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -482,11 +437,9 @@ library CosmosAuthV1beta1ModuleAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            CosmosAuthV1beta1BaseAccount.Data memory x,
-            uint256 sz
-        ) = _decode_CosmosAuthV1beta1BaseAccount(p, bs);
+    ) internal pure returns (uint256) {
+        (CosmosAuthV1beta1BaseAccount.Data memory x, uint256 sz) =
+            _decode_CosmosAuthV1beta1BaseAccount(p, bs);
         r.base_account = x;
         return sz;
     }
@@ -502,7 +455,7 @@ library CosmosAuthV1beta1ModuleAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.name = x;
         return sz;
@@ -520,8 +473,8 @@ library CosmosAuthV1beta1ModuleAccount {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[4] memory counters
-    ) internal pure returns (uint) {
+        uint256[4] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
@@ -546,17 +499,17 @@ library CosmosAuthV1beta1ModuleAccount {
     function _decode_CosmosAuthV1beta1BaseAccount(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (CosmosAuthV1beta1BaseAccount.Data memory, uint) {
+    )
+        internal
+        pure
+        returns (CosmosAuthV1beta1BaseAccount.Data memory, uint256)
+    {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            CosmosAuthV1beta1BaseAccount.Data memory r,
-
-        ) = CosmosAuthV1beta1BaseAccount._decode(pointer, bs, sz);
+        (CosmosAuthV1beta1BaseAccount.Data memory r,) =
+            CosmosAuthV1beta1BaseAccount._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -589,44 +542,31 @@ library CosmosAuthV1beta1ModuleAccount {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += CosmosAuthV1beta1BaseAccount._encode_nested(
-            r.base_account,
-            pointer,
-            bs
+            r.base_account, pointer, bs
         );
 
         if (bytes(r.name).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.name, pointer, bs);
         }
         if (r.permissions.length != 0) {
             for (i = 0; i < r.permissions.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    3,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += ProtoBufRuntime._encode_string(
-                    r.permissions[i],
-                    pointer,
-                    bs
+                    r.permissions[i], pointer, bs
                 );
             }
         }
@@ -646,7 +586,7 @@ library CosmosAuthV1beta1ModuleAccount {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -671,19 +611,17 @@ library CosmosAuthV1beta1ModuleAccount {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 CosmosAuthV1beta1BaseAccount._estimate(r.base_account)
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.name).length);
         for (i = 0; i < r.permissions.length; i++) {
             e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(bytes(r.permissions[i]).length);
+                1 + ProtoBufRuntime._sz_lendelim(bytes(r.permissions[i]).length);
         }
         return e;
     }
@@ -710,8 +648,7 @@ library CosmosAuthV1beta1ModuleAccount {
      */
     function store(Data memory input, Data storage output) internal {
         CosmosAuthV1beta1BaseAccount.store(
-            input.base_account,
-            output.base_account
+            input.base_account, output.base_account
         );
         output.name = input.name;
         output.permissions = input.permissions;
@@ -778,7 +715,7 @@ library CosmosAuthV1beta1ModuleCredential {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -788,7 +725,7 @@ library CosmosAuthV1beta1ModuleCredential {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -806,35 +743,27 @@ library CosmosAuthV1beta1ModuleCredential {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[3] memory counters;
+        uint256[3] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_module_name(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_derivation_keys(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
@@ -844,24 +773,16 @@ library CosmosAuthV1beta1ModuleCredential {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_derivation_keys(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -880,7 +801,7 @@ library CosmosAuthV1beta1ModuleCredential {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.module_name = x;
         return sz;
@@ -898,8 +819,8 @@ library CosmosAuthV1beta1ModuleCredential {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[3] memory counters
-    ) internal pure returns (uint) {
+        uint256[3] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
@@ -942,35 +863,24 @@ library CosmosAuthV1beta1ModuleCredential {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (bytes(r.module_name).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.module_name,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.module_name, pointer, bs);
         }
         if (r.derivation_keys.length != 0) {
             for (i = 0; i < r.derivation_keys.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    2,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += ProtoBufRuntime._encode_bytes(
-                    r.derivation_keys[i],
-                    pointer,
-                    bs
+                    r.derivation_keys[i], pointer, bs
                 );
             }
         }
@@ -990,7 +900,7 @@ library CosmosAuthV1beta1ModuleCredential {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1015,7 +925,7 @@ library CosmosAuthV1beta1ModuleCredential {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.module_name).length);
@@ -1114,7 +1024,7 @@ library CosmosAuthV1beta1Params {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1124,7 +1034,7 @@ library CosmosAuthV1beta1Params {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1142,7 +1052,7 @@ library CosmosAuthV1beta1Params {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1150,10 +1060,8 @@ library CosmosAuthV1beta1Params {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_max_memo_characters(pointer, bs, r);
@@ -1166,11 +1074,8 @@ library CosmosAuthV1beta1Params {
             } else if (fieldId == 5) {
                 pointer += _read_sig_verify_cost_secp256k1(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1189,7 +1094,7 @@ library CosmosAuthV1beta1Params {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.max_memo_characters = x;
         return sz;
@@ -1206,7 +1111,7 @@ library CosmosAuthV1beta1Params {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.tx_sig_limit = x;
         return sz;
@@ -1223,7 +1128,7 @@ library CosmosAuthV1beta1Params {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.tx_size_cost_per_byte = x;
         return sz;
@@ -1240,7 +1145,7 @@ library CosmosAuthV1beta1Params {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.sig_verify_cost_ed25519 = x;
         return sz;
@@ -1257,7 +1162,7 @@ library CosmosAuthV1beta1Params {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.sig_verify_cost_secp256k1 = x;
         return sz;
@@ -1292,73 +1197,47 @@ library CosmosAuthV1beta1Params {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.max_memo_characters != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(
-                r.max_memo_characters,
-                pointer,
-                bs
+                r.max_memo_characters, pointer, bs
             );
         }
         if (r.tx_sig_limit != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_uint64(
-                r.tx_sig_limit,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_uint64(r.tx_sig_limit, pointer, bs);
         }
         if (r.tx_size_cost_per_byte != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(
-                r.tx_size_cost_per_byte,
-                pointer,
-                bs
+                r.tx_size_cost_per_byte, pointer, bs
             );
         }
         if (r.sig_verify_cost_ed25519 != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(
-                r.sig_verify_cost_ed25519,
-                pointer,
-                bs
+                r.sig_verify_cost_ed25519, pointer, bs
             );
         }
         if (r.sig_verify_cost_secp256k1 != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                5,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                5, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(
-                r.sig_verify_cost_secp256k1,
-                pointer,
-                bs
+                r.sig_verify_cost_secp256k1, pointer, bs
             );
         }
         return pointer - offset;
@@ -1377,7 +1256,7 @@ library CosmosAuthV1beta1Params {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1402,7 +1281,7 @@ library CosmosAuthV1beta1Params {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint64(r.max_memo_characters);
         e += 1 + ProtoBufRuntime._sz_uint64(r.tx_sig_limit);

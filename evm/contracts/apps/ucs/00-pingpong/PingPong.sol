@@ -21,24 +21,25 @@ library PingPongLib {
     event TimedOut();
     event Acknowledged();
 
-    function encode(
-        PingPongPacket memory packet
-    ) internal pure returns (bytes memory) {
+    function encode(PingPongPacket memory packet)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encode(packet.ping, packet.counterpartyTimeout);
     }
 
-    function decode(
-        bytes memory packet
-    ) internal pure returns (PingPongPacket memory) {
-        (bool ping, uint64 counterpartyTimeout) = abi.decode(
-            packet,
-            (bool, uint64)
-        );
-        return
-            PingPongPacket({
-                ping: ping,
-                counterpartyTimeout: counterpartyTimeout
-            });
+    function decode(bytes memory packet)
+        internal
+        pure
+        returns (PingPongPacket memory)
+    {
+        (bool ping, uint64 counterpartyTimeout) =
+            abi.decode(packet, (bool, uint64));
+        return PingPongPacket({
+            ping: ping,
+            counterpartyTimeout: counterpartyTimeout
+        });
     }
 }
 
@@ -76,10 +77,7 @@ contract PingPong is IBCAppBase {
             portId,
             channelId,
             // No height timeout
-            IbcCoreClientV1Height.Data({
-                revision_number: 0,
-                revision_height: 0
-            }),
+            IbcCoreClientV1Height.Data({revision_number: 0, revision_height: 0}),
             // Timestamp timeout
             localTimeout,
             // Raw protocol packet
@@ -90,7 +88,13 @@ contract PingPong is IBCAppBase {
     function onRecvPacket(
         IbcCoreChannelV1Packet.Data calldata packet,
         address relayer
-    ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
+    )
+        external
+        virtual
+        override
+        onlyIBC
+        returns (bytes memory acknowledgement)
+    {
         PingPongPacket memory pp = PingPongLib.decode(packet.data);
 
         emit PingPongLib.Ring(pp.ping);
@@ -118,8 +122,8 @@ contract PingPong is IBCAppBase {
             In our case, the acknowledgement will always be ACK_SUCCESS
         */
         if (
-            keccak256(acknowledgement) !=
-            keccak256(abi.encodePacked(PingPongLib.ACK_SUCCESS))
+            keccak256(acknowledgement)
+                != keccak256(abi.encodePacked(PingPongLib.ACK_SUCCESS))
         ) {
             revert PingPongLib.ErrInvalidAck();
         }

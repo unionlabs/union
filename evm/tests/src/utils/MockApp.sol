@@ -1,6 +1,10 @@
 pragma solidity ^0.8.23;
 
-import {IbcCoreChannelV1Packet as Packet, IbcCoreChannelV1GlobalEnums as ChannelEnums, IbcCoreChannelV1Counterparty as ChannelCounterparty} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
+import {
+    IbcCoreChannelV1Packet as Packet,
+    IbcCoreChannelV1GlobalEnums as ChannelEnums,
+    IbcCoreChannelV1Counterparty as ChannelCounterparty
+} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
 import {IIBCModule} from "../../../contracts/core/05-port/IIBCModule.sol";
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
 import {IBCHost} from "../../../contracts/core/24-host/IBCHost.sol";

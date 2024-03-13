@@ -16,7 +16,7 @@ library GoogleProtobufDuration {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -26,7 +26,7 @@ library GoogleProtobufDuration {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -44,19 +44,17 @@ library GoogleProtobufDuration {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[3] memory counters;
+        uint256[3] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_Seconds(pointer, bs, r, counters);
@@ -102,8 +100,8 @@ library GoogleProtobufDuration {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[3] memory counters
-    ) internal pure returns (uint) {
+        uint256[3] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
@@ -129,8 +127,8 @@ library GoogleProtobufDuration {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[3] memory counters
-    ) internal pure returns (uint) {
+        uint256[3] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
@@ -173,25 +171,19 @@ library GoogleProtobufDuration {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.Seconds != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_int64(r.Seconds, pointer, bs);
         }
         if (r.nanos != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_int32(r.nanos, pointer, bs);
         }
@@ -211,7 +203,7 @@ library GoogleProtobufDuration {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         //
         // First encoded `r` into a temporary array, and encode the actual size used.
         // Then copy the temporary array into `bs`.
@@ -236,7 +228,7 @@ library GoogleProtobufDuration {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_int64(r.Seconds);
         e += 1 + ProtoBufRuntime._sz_int32(r.nanos);
@@ -308,7 +300,7 @@ library GoogleProtobufTimestamp {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -318,7 +310,7 @@ library GoogleProtobufTimestamp {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -336,19 +328,17 @@ library GoogleProtobufTimestamp {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[3] memory counters;
+        uint256[3] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_secs(pointer, bs, r, counters);
@@ -394,8 +384,8 @@ library GoogleProtobufTimestamp {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[3] memory counters
-    ) internal pure returns (uint) {
+        uint256[3] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
@@ -421,8 +411,8 @@ library GoogleProtobufTimestamp {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[3] memory counters
-    ) internal pure returns (uint) {
+        uint256[3] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
@@ -465,25 +455,19 @@ library GoogleProtobufTimestamp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.secs != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_int64(r.secs, pointer, bs);
         }
         if (r.nanos != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_int64(r.nanos, pointer, bs);
         }
@@ -503,7 +487,7 @@ library GoogleProtobufTimestamp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -528,7 +512,7 @@ library GoogleProtobufTimestamp {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_int64(r.secs);
         e += 1 + ProtoBufRuntime._sz_int64(r.nanos);
@@ -600,6 +584,7 @@ library ProtoBufRuntime {
         Fixed32
     }
     // Constants for bytes calculation
+
     uint256 constant WORD_LENGTH = 32;
     uint256 constant HEADER_SIZE_LENGTH_IN_BYTES = 4;
     uint256 constant BYTE_SIZE = 8;
@@ -629,9 +614,8 @@ library ProtoBufRuntime {
         assembly {
             firstWord := mload(add(encoded, wordLength))
         }
-        firstWord =
-            (firstWord >> (BYTE_SIZE * HEADER_SIZE_LENGTH_IN_BYTES)) |
-            (length << (BYTE_SIZE * REMAINING_LENGTH));
+        firstWord = (firstWord >> (BYTE_SIZE * HEADER_SIZE_LENGTH_IN_BYTES))
+            | (length << (BYTE_SIZE * REMAINING_LENGTH));
 
         assembly {
             sstore(location.slot, firstWord)
@@ -657,9 +641,11 @@ library ProtoBufRuntime {
      * @param location The location of storage
      * @return The encoded bytes
      */
-    function decodeStorage(
-        bytes storage location
-    ) internal view returns (bytes memory) {
+    function decodeStorage(bytes storage location)
+        internal
+        view
+        returns (bytes memory)
+    {
         /**
          * This code is to decode the first four bytes as size,
          * and then decode the rest using the decoded size.
@@ -960,11 +946,7 @@ library ProtoBufRuntime {
         assembly {
             let b := 0x80
             p := add(bs, p)
-            for {
-
-            } eq(0x80, and(b, 0x80)) {
-
-            } {
+            for {} eq(0x80, and(b, 0x80)) {} {
                 if eq(lt(sub(p, bs), length), 0) {
                     mstore(
                         0,
@@ -980,11 +962,7 @@ library ProtoBufRuntime {
                 }
                 let tmp := mload(p)
                 let pos := 0
-                for {
-
-                } and(eq(0x80, and(b, 0x80)), lt(pos, 32)) {
-
-                } {
+                for {} and(eq(0x80, and(b, 0x80)), lt(pos, 32)) {} {
                     if eq(lt(sub(p, bs), length), 0) {
                         mstore(
                             0,
@@ -1053,11 +1031,7 @@ library ProtoBufRuntime {
             let i := 0
             p := add(bs, p)
             let tmp := mload(p)
-            for {
-
-            } lt(i, sz) {
-
-            } {
+            for {} lt(i, sz) {} {
                 x := or(x, shl(mul(8, i), byte(i, tmp)))
                 p := add(p, 0x01)
                 i := add(i, 1)
@@ -1204,11 +1178,7 @@ library ProtoBufRuntime {
         assembly {
             let bsptr := add(bs, p)
             let byt := and(x, 0x7f)
-            for {
-
-            } gt(shr(7, x), 0) {
-
-            } {
+            for {} gt(shr(7, x), 0) {} {
                 mstore8(bsptr, or(0x80, byt))
                 bsptr := add(bsptr, 1)
                 sz := add(sz, 1)
@@ -1258,11 +1228,7 @@ library ProtoBufRuntime {
         assembly {
             let bsptr := add(bs, add(p, sz))
             let xsptr := add(xs, 32)
-            for {
-
-            } lt(count, xsLength) {
-
-            } {
+            for {} lt(count, xsLength) {} {
                 mstore8(bsptr, byte(0, mload(xsptr)))
                 bsptr := add(bsptr, 1)
                 xsptr := add(xsptr, 1)
@@ -1346,7 +1312,9 @@ library ProtoBufRuntime {
     ) internal pure returns (uint256) {
         if (x) {
             return _encode_varint(1, p, bs);
-        } else return _encode_varint(0, p, bs);
+        } else {
+            return _encode_varint(0, p, bs);
+        }
     }
 
     /**
@@ -1428,11 +1396,7 @@ library ProtoBufRuntime {
         assembly {
             let bsptr := add(sz, add(bs, p))
             let count := sz
-            for {
-
-            } gt(count, 0) {
-
-            } {
+            for {} gt(count, 0) {} {
                 bsptr := sub(bsptr, 1)
                 mstore8(bsptr, byte(sub(32, count), x))
                 count := sub(count, 1)
@@ -1449,7 +1413,9 @@ library ProtoBufRuntime {
     function _encode_zigzag(int256 i) internal pure returns (uint256) {
         if (i >= 0) {
             return uint256(i) * 2;
-        } else return uint256(i * -2) - 1;
+        } else {
+            return uint256(i * -2) - 1;
+        }
     }
 
     // Estimators
@@ -1488,11 +1454,7 @@ library ProtoBufRuntime {
         uint256 count = 1;
         assembly {
             i := shr(7, i)
-            for {
-
-            } gt(i, 0) {
-
-            } {
+            for {} gt(i, 0) {} {
                 i := shr(7, i)
                 count := add(count, 1)
             }
@@ -1514,19 +1476,25 @@ library ProtoBufRuntime {
     function _sz_int32(int32 i) internal pure returns (uint256) {
         if (i < 0) {
             return 10;
-        } else return _sz_varint(uint32(i));
+        } else {
+            return _sz_varint(uint32(i));
+        }
     }
 
     function _sz_int64(int64 i) internal pure returns (uint256) {
         if (i < 0) {
             return 10;
-        } else return _sz_varint(uint64(i));
+        } else {
+            return _sz_varint(uint64(i));
+        }
     }
 
     function _sz_enum(int64 i) internal pure returns (uint256) {
         if (i < 0) {
             return 10;
-        } else return _sz_varint(uint64(i));
+        } else {
+            return _sz_varint(uint64(i));
+        }
     }
 
     /**
@@ -1543,61 +1511,73 @@ library ProtoBufRuntime {
     /**
      * `_estimate_packed_repeated_(uint32|uint64|int32|int64|sint32|sint64)`
      */
-    function _estimate_packed_repeated_uint32(
-        uint32[] memory a
-    ) internal pure returns (uint256) {
+    function _estimate_packed_repeated_uint32(uint32[] memory a)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 e = 0;
-        for (uint i = 0; i < a.length; i++) {
+        for (uint256 i = 0; i < a.length; i++) {
             e += _sz_uint32(a[i]);
         }
         return e;
     }
 
-    function _estimate_packed_repeated_uint64(
-        uint64[] memory a
-    ) internal pure returns (uint256) {
+    function _estimate_packed_repeated_uint64(uint64[] memory a)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 e = 0;
-        for (uint i = 0; i < a.length; i++) {
+        for (uint256 i = 0; i < a.length; i++) {
             e += _sz_uint64(a[i]);
         }
         return e;
     }
 
-    function _estimate_packed_repeated_int32(
-        int32[] memory a
-    ) internal pure returns (uint256) {
+    function _estimate_packed_repeated_int32(int32[] memory a)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 e = 0;
-        for (uint i = 0; i < a.length; i++) {
+        for (uint256 i = 0; i < a.length; i++) {
             e += _sz_int32(a[i]);
         }
         return e;
     }
 
-    function _estimate_packed_repeated_int64(
-        int64[] memory a
-    ) internal pure returns (uint256) {
+    function _estimate_packed_repeated_int64(int64[] memory a)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 e = 0;
-        for (uint i = 0; i < a.length; i++) {
+        for (uint256 i = 0; i < a.length; i++) {
             e += _sz_int64(a[i]);
         }
         return e;
     }
 
-    function _estimate_packed_repeated_sint32(
-        int32[] memory a
-    ) internal pure returns (uint256) {
+    function _estimate_packed_repeated_sint32(int32[] memory a)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 e = 0;
-        for (uint i = 0; i < a.length; i++) {
+        for (uint256 i = 0; i < a.length; i++) {
             e += _sz_sint32(a[i]);
         }
         return e;
     }
 
-    function _estimate_packed_repeated_sint64(
-        int64[] memory a
-    ) internal pure returns (uint256) {
+    function _estimate_packed_repeated_sint64(int64[] memory a)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 e = 0;
-        for (uint i = 0; i < a.length; i++) {
+        for (uint256 i = 0; i < a.length; i++) {
             e += _sz_sint64(a[i]);
         }
         return e;
@@ -3416,8 +3396,8 @@ library ProtoBufRuntime {
         uint256 base = 0xff;
         uint256 realSize = sz;
         while (
-            x & (base << (realSize * BYTE_SIZE - BYTE_SIZE)) == 0 &&
-            realSize > 0
+            x & (base << (realSize * BYTE_SIZE - BYTE_SIZE)) == 0
+                && realSize > 0
         ) {
             realSize -= 1;
         }
@@ -3440,8 +3420,8 @@ library ProtoBufRuntime {
         int256 base = 0xff;
         if (x >= 0) {
             uint256 tmp = _get_real_size(uint256(x), sz);
-            int256 remainder = (x & (base << (tmp * BYTE_SIZE - BYTE_SIZE))) >>
-                (tmp * BYTE_SIZE - BYTE_SIZE);
+            int256 remainder = (x & (base << (tmp * BYTE_SIZE - BYTE_SIZE)))
+                >> (tmp * BYTE_SIZE - BYTE_SIZE);
             if (remainder >= 128) {
                 tmp += 1;
             }
@@ -3450,16 +3430,15 @@ library ProtoBufRuntime {
 
         uint256 realSize = sz;
         while (
-            x & (base << (realSize * BYTE_SIZE - BYTE_SIZE)) ==
-            (base << (realSize * BYTE_SIZE - BYTE_SIZE)) &&
-            realSize > 0
+            x & (base << (realSize * BYTE_SIZE - BYTE_SIZE))
+                == (base << (realSize * BYTE_SIZE - BYTE_SIZE)) && realSize > 0
         ) {
             realSize -= 1;
         }
         {
-            int256 remainder = (x &
-                (base << (realSize * BYTE_SIZE - BYTE_SIZE))) >>
-                (realSize * BYTE_SIZE - BYTE_SIZE);
+            int256 remainder = (
+                x & (base << (realSize * BYTE_SIZE - BYTE_SIZE))
+            ) >> (realSize * BYTE_SIZE - BYTE_SIZE);
             if (remainder < 128) {
                 realSize += 1;
             }
@@ -3496,11 +3475,7 @@ library ProtoBufRuntime {
         assembly {
             let bsptr := add(bs, p)
             let count := actualSize
-            for {
-
-            } gt(count, 0) {
-
-            } {
+            for {} gt(count, 0) {} {
                 mstore8(bsptr, byte(sub(actualSize, count), x))
                 bsptr := add(bsptr, 1)
                 count := sub(count, 1)
@@ -3531,11 +3506,7 @@ library ProtoBufRuntime {
         assembly {
             let bsptr := add(bs, p)
             let count := realSize
-            for {
-
-            } gt(count, 0) {
-
-            } {
+            for {} gt(count, 0) {} {
                 mstore8(bsptr, byte(sub(32, count), x))
                 bsptr := add(bsptr, 1)
                 count := sub(count, 1)
@@ -3562,11 +3533,7 @@ library ProtoBufRuntime {
         assembly {
             let bsptr := add(bs, p)
             let count := realSize
-            for {
-
-            } gt(count, 0) {
-
-            } {
+            for {} gt(count, 0) {} {
                 mstore8(bsptr, byte(sub(32, count), x))
                 bsptr := add(bsptr, 1)
                 count := sub(count, 1)

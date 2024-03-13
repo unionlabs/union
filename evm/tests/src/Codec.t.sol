@@ -11,17 +11,14 @@ contract CodecTest is Test {
         bytes32 appHash,
         bytes32 nextValidatorsHash
     ) public {
-        OptimizedConsensusState
-            memory consensusState = OptimizedConsensusState({
-                timestamp: timestamp,
-                appHash: appHash,
-                nextValidatorsHash: nextValidatorsHash
-            });
+        OptimizedConsensusState memory consensusState = OptimizedConsensusState({
+            timestamp: timestamp,
+            appHash: appHash,
+            nextValidatorsHash: nextValidatorsHash
+        });
 
-        OptimizedConsensusState memory consensusState2 = abi.decode(
-            abi.encode(consensusState),
-            (OptimizedConsensusState)
-        );
+        OptimizedConsensusState memory consensusState2 =
+            abi.decode(abi.encode(consensusState), (OptimizedConsensusState));
 
         assertEq(consensusState.timestamp, consensusState2.timestamp);
         assertEq(consensusState.appHash, consensusState2.appHash);

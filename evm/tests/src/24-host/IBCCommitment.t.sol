@@ -21,8 +21,7 @@ contract IBCCommitmentTest is TestPlus {
 
     function test_connectionPath() public {
         assertStrEq(
-            IBCCommitment.connectionPath("conn-id"),
-            "connections/conn-id"
+            IBCCommitment.connectionPath("conn-id"), "connections/conn-id"
         );
     }
 
@@ -43,9 +42,7 @@ contract IBCCommitmentTest is TestPlus {
     function test_packetAcknowledgmentCommitmentPath() public {
         assertStrEq(
             IBCCommitment.packetAcknowledgementCommitmentPath(
-                "port-id",
-                "channel-id",
-                1337
+                "port-id", "channel-id", 1337
             ),
             "acks/ports/port-id/channels/channel-id/sequences/1337"
         );
@@ -54,9 +51,7 @@ contract IBCCommitmentTest is TestPlus {
     function test_packetReceiptCommitmentPath() public {
         assertStrEq(
             IBCCommitment.packetReceiptCommitmentPath(
-                "port-id",
-                "channel-id",
-                1337
+                "port-id", "channel-id", 1337
             ),
             "receipts/ports/port-id/channels/channel-id/sequences/1337"
         );
@@ -65,8 +60,7 @@ contract IBCCommitmentTest is TestPlus {
     function test_nextSequenceRecvCommitmentPath() public {
         assertStrEq(
             IBCCommitment.nextSequenceRecvCommitmentPath(
-                "port-id",
-                "channel-id"
+                "port-id", "channel-id"
             ),
             "nextSequenceRecv/ports/port-id/channels/channel-id"
         );
@@ -112,9 +106,7 @@ contract IBCCommitmentTest is TestPlus {
     function test_packetAcknowledgmentCommitmentKey() public {
         assertEq(
             IBCCommitment.packetAcknowledgementCommitmentKey(
-                "port-id",
-                "channel-id",
-                1337
+                "port-id", "channel-id", 1337
             ),
             keccak256("acks/ports/port-id/channels/channel-id/sequences/1337")
         );
@@ -122,10 +114,7 @@ contract IBCCommitmentTest is TestPlus {
 
     function test_nextSequenceRecvCommitmentKey() public {
         assertEq(
-            IBCCommitment.nextSequenceRecvCommitmentKey(
-                "port-id",
-                "channel-id"
-            ),
+            IBCCommitment.nextSequenceRecvCommitmentKey("port-id", "channel-id"),
             keccak256("nextSequenceRecv/ports/port-id/channels/channel-id")
         );
     }
