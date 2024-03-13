@@ -154,6 +154,13 @@ pub struct Misbehaviour {
     #[prost(message, optional, tag = "3")]
     pub update_2: ::core::option::Option<LightClientUpdate>,
 }
+impl ::prost::Name for Misbehaviour {
+    const NAME: &'static str = "Misbehaviour";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

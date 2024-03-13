@@ -175,10 +175,13 @@ impl IbcClient for EthereumLightClient {
     ) -> Result<(), Self::Error> {
         // There is no point to check for misbehaviour when the headers are not for the same height
         // TODO(aeryz): this will be `finalized_header` when we implement tracking justified header
+        let (slot_1, slot_2) = (
+            misbehaviour.update_1.attested_header.beacon.slot,
+            misbehaviour.update_2.attested_header.beacon.slot,
+        );
         ensure(
-            misbehaviour.update_1.attested_header.beacon.slot
-                == misbehaviour.update_2.attested_header.beacon.slot,
-            Error::MisbehaviourCannotExist,
+            slot_1 == slot_2,
+            Error::MisbehaviourCannotExist(slot_1, slot_2),
         )?;
 
         let trusted_sync_committee = misbehaviour.trusted_sync_committee;
@@ -354,7 +357,7 @@ impl IbcClient for EthereumLightClient {
         if misbehaviour.update_1.attested_header.beacon.slot
             == misbehaviour.update_2.attested_header.beacon.slot
         {
-            // TODO(aeryz): this is gonna be the finalized header when we implement justified
+            // TODO(aeryz): this will be the finalized header when we implement justified
             // This ensures that there are no conflicting justified/finalized headers at the same height
             if misbehaviour.update_1.attested_header != misbehaviour.update_2.attested_header {
                 return Ok(true);
