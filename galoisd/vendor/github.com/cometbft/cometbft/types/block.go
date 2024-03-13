@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
-	gogotypes "github.com/cosmos/gogoproto/types"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
@@ -440,36 +440,58 @@ func (h *Header) Hash() cmtbytes.HexBytes {
 	if h == nil || len(h.ValidatorsHash) == 0 {
 		return nil
 	}
-	hbz, err := h.Version.Marshal()
-	if err != nil {
-		return nil
+
+	padI64 := func(x int64) []byte {
+		var padded [32]byte
+		return big.NewInt(x).FillBytes(padded[:])
+	}
+	padU64 := func(x uint64) []byte {
+		var padded [32]byte
+		return big.NewInt(0).SetUint64(x).FillBytes(padded[:])
+	}
+	padU32 := func(x uint32) []byte {
+		var padded [32]byte
+		return big.NewInt(0).SetUint64(uint64(x)).FillBytes(padded[:])
+	}
+	padBytes := func(b []byte) []byte {
+		if len(b) > 31 {
+			panic("impossible: bytes must fit in F_r")
+		}
+		var padded [32]byte
+		return big.NewInt(0).SetBytes(b).FillBytes(padded[:])
+	}
+	uncons := func(b []byte) []byte {
+		if len(b) == 0 {
+			b = make([]byte, 32)
+		}
+		head, tail := []byte{b[0]}, b[1:]
+		return merkle.MimcHashFromByteSlices([][]byte{
+			padBytes(head),
+			padBytes(tail),
+		})
 	}
 
-	pbt, err := gogotypes.StdTimeMarshal(h.Time)
-	if err != nil {
-		return nil
-	}
-
-	pbbi := h.LastBlockID.ToProto()
-	bzbi, err := pbbi.Marshal()
-	if err != nil {
-		return nil
-	}
-	return merkle.HashFromByteSlices([][]byte{
-		hbz,
-		cdcEncode(h.ChainID),
-		cdcEncode(h.Height),
-		pbt,
-		bzbi,
-		cdcEncode(h.LastCommitHash),
-		cdcEncode(h.DataHash),
-		cdcEncode(h.ValidatorsHash),
-		cdcEncode(h.NextValidatorsHash),
-		cdcEncode(h.ConsensusHash),
-		cdcEncode(h.AppHash),
-		cdcEncode(h.LastResultsHash),
-		cdcEncode(h.EvidenceHash),
-		cdcEncode(h.ProposerAddress),
+	return merkle.MimcHashFromByteSlices([][]byte{
+		padU64(h.Version.Block),
+		padU64(h.Version.App),
+		padBytes([]byte(h.ChainID)),
+		padI64(h.Height),
+		padI64(h.Time.Unix()),
+		padU64(uint64(h.Time.Nanosecond())),
+		// MiMC hash already
+		h.LastBlockID.Hash,
+		padU32(h.LastBlockID.PartSetHeader.Total),
+		uncons(h.LastBlockID.PartSetHeader.Hash),
+		uncons(h.LastCommitHash),
+		uncons(h.DataHash),
+		// MiMC hashes already
+		h.ValidatorsHash,
+		h.NextValidatorsHash,
+		uncons(h.ConsensusHash),
+		uncons(h.AppHash),
+		uncons(h.LastResultsHash),
+		uncons(h.EvidenceHash),
+		uncons(h.ProposerAddress),
 	})
 }
 

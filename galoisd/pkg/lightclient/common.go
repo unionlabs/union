@@ -134,8 +134,8 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 				// currentVotingPower = currentVotingPower + if signed then power else 0
 				currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(signed, power, 0))
 				// Optionally aggregated public key if validator at index signed
-				aggregate(signed, publicKey)
-				leafHashes[i] = merkle.LeafHash([]frontend.Variable{leaf})
+				aggregate(actuallySigned, publicKey)
+				leafHashes[i] = lc.api.Select(cannotSign, 0, merkle.LeafHash([]frontend.Variable{leaf}))
 				return nil
 			}); err != nil {
 				return err

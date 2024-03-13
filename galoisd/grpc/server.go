@@ -193,6 +193,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 		}
 
 		message := cometbn254.HashToField(signedBytes)
+		_ = message
 
 		witness := lcgadget.Circuit{
 			DomainSeparationTag:      []byte(cometbn254.CometblsSigDST),
@@ -200,7 +201,6 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			UntrustedInput:           untrustedInput,
 			ExpectedTrustedValRoot:   trustedValidatorsRoot,
 			ExpectedUntrustedValRoot: untrustedValidatorsRoot,
-			Message:                  message,
 		}
 
 		privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
@@ -406,7 +406,6 @@ func (p *proverServer) Verify(ctx context.Context, req *grpc.VerifyRequest) (*gr
 		UntrustedInput:           dummyInput,
 		ExpectedTrustedValRoot:   req.TrustedValidatorSetRoot,
 		ExpectedUntrustedValRoot: req.UntrustedValidatorSetRoot,
-		Message:                  hashedMessage,
 	}
 
 	privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())

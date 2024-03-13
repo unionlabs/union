@@ -430,8 +430,8 @@ github.com/tunabay/go-bitarray v1.3.1 h1:5q38uagXhrdzT0LjKWBB5ILO56fptGrJG875017
 github.com/tunabay/go-bitarray v1.3.1/go.mod h1:k6MncM9mWklQRcVy5Xe9RYixeDd9b3H0xqtgiANJFF4=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
-github.com/unionlabs/cometbls v0.0.0-20240129161721-360766577f7d h1:IBkgfu1/NZJMvY1yH3fWrT8M7mfoPEh2/r4kkb2pu5E=
-github.com/unionlabs/cometbls v0.0.0-20240129161721-360766577f7d/go.mod h1:ZN5TH4WzX9x+hgcipytd0WghjGcCBy6M8YVgnHOCd/0=
+github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b h1:KLUmkf0vAzt+ZfwfuH03bf7+73rNB+iLV8ux/6S5rmg=
+github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b/go.mod h1:ZN5TH4WzX9x+hgcipytd0WghjGcCBy6M8YVgnHOCd/0=
 github.com/unionlabs/cosmos-sdk v0.0.0-20240206230727-9973b232e832 h1:Yzf3nF11ClR8geNwP+oe+ZJG489q4dYgQJlBL42ANiA=
 github.com/unionlabs/cosmos-sdk v0.0.0-20240206230727-9973b232e832/go.mod h1:iEaeKpRLz88bVPyU7Zk0WODyY05qHmR33vNsFaJ4lP8=
 github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6 h1:wRt6Yt29bWvwCSeRmRJ/Wm1sRev1GjJGXn4MzSrMbv4=

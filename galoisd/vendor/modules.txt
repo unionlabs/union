@@ -155,7 +155,7 @@ github.com/cockroachdb/redact/internal/rfmt/fmtsort
 # github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06
 ## explicit; go 1.19
 github.com/cockroachdb/tokenbucket
-# github.com/cometbft/cometbft v0.38.2 => github.com/unionlabs/cometbls v0.0.0-20240129161721-360766577f7d
+# github.com/cometbft/cometbft v0.38.2 => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
 ## explicit; go 1.21
 github.com/cometbft/cometbft/abci/types
 github.com/cometbft/cometbft/config
@@ -270,12 +270,18 @@ github.com/consensys/gnark/std/algebra/algopts
 github.com/consensys/gnark/std/algebra/emulated/fields_bn254
 github.com/consensys/gnark/std/algebra/emulated/sw_bn254
 github.com/consensys/gnark/std/algebra/emulated/sw_emulated
+github.com/consensys/gnark/std/hash
 github.com/consensys/gnark/std/hash/mimc
+github.com/consensys/gnark/std/hash/sha2
 github.com/consensys/gnark/std/internal/logderivarg
+github.com/consensys/gnark/std/internal/logderivprecomp
 github.com/consensys/gnark/std/math/bits
+github.com/consensys/gnark/std/math/bitslice
 github.com/consensys/gnark/std/math/emulated
 github.com/consensys/gnark/std/math/emulated/emparams
+github.com/consensys/gnark/std/math/uints
 github.com/consensys/gnark/std/multicommit
+github.com/consensys/gnark/std/permutation/sha2
 github.com/consensys/gnark/std/rangecheck
 github.com/consensys/gnark/std/utils/algo_utils
 github.com/consensys/gnark/test
@@ -870,8 +876,8 @@ rsc.io/tmplfunc/internal/parse
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240129161721-360766577f7d
-# github.com/consensys/gnark => github.com/consensys/gnark v0.9.2-0.20240115131420-34fdb0391653
+# github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
+# github.com/consensys/gnark => github.com/consensys/gnark v0.9.2-0.20240308163940-1ed22f78eac8
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6
 # github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240206230727-9973b232e832
 # github.com/cosmos/gogoproto => github.com/cosmos/gogoproto v1.4.11

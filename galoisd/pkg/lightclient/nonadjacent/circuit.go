@@ -1,7 +1,6 @@
 package nonadjacent
 
 import (
-	"galois/pkg/emulated"
 	"galois/pkg/lightclient"
 
 	"github.com/consensys/gnark/frontend"
@@ -28,18 +27,21 @@ type Circuit struct {
 	DomainSeparationTag      frontend.Variable
 	TrustedInput             TendermintNonAdjacentLightClientInput
 	UntrustedInput           TendermintNonAdjacentLightClientInput
-	ExpectedTrustedValRoot   frontend.Variable `gnark:",public"`
-	ExpectedUntrustedValRoot frontend.Variable `gnark:",public"`
-	Message                  frontend.Variable `gnark:",public"`
+	Vote                     lightclient.BlockVote
+	Header                   lightclient.BlockHeader
+	ExpectedTrustedValRoot   frontend.Variable
+	ExpectedUntrustedValRoot frontend.Variable
+	InputsHash               frontend.Variable `gnark:",public"`
 }
 
 // Union whitepaper: Algorithm 2. procedure Main
 func (circuit *Circuit) Define(api frontend.API) error {
-	emulatedAPI, err := g2.NewEmulatedAPI(api)
+	bhapi, err := lightclient.NewBlockHeaderAPI(api, circuit.Header, circuit.Vote)
 	if err != nil {
 		return err
 	}
-	hashedMessage, err := emulatedAPI.HashToG2(circuit.Message, circuit.DomainSeparationTag)
+	bhapi.VerifyInputs(circuit.InputsHash, circuit.ExpectedTrustedValRoot, circuit.ExpectedUntrustedValRoot)
+	hashedMessage, err := bhapi.HashToCurve(circuit.DomainSeparationTag)
 	if err != nil {
 		return err
 	}
@@ -61,5 +63,5 @@ func (circuit *Circuit) Define(api frontend.API) error {
 		NbOfSignature: circuit.UntrustedInput.NbOfSignature,
 		Bitmap:        circuit.UntrustedInput.Bitmap,
 	})
-	return lc.Verify(hashedMessage, circuit.ExpectedUntrustedValRoot, UntrustedRatioNum, UntrustedRatioDen)
+	return lc.Verify(hashedMessage, circuit.Header.ValidatorsHash, UntrustedRatioNum, UntrustedRatioDen)
 }
