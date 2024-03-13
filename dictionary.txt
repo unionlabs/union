@@ -953,6 +953,7 @@ xbonlulu
 xkaiserkarel
 xprv
 xqxp
+yamlfmt
 ypyp
 yqyp
 zellij

@@ -28,28 +28,28 @@ jobs:
     permissions:
       contents: read
     steps:
-    - uses: actions/checkout@v4
-      with:
-        lfs: true
-    - uses: nixbuild/nix-quick-install-action@v26
-      with:
-        nix_on_tmpfs: false
-        nix_conf: |
-          experimental-features = nix-command flakes
-          access-tokens = ${{ secrets.GITHUB_TOKEN }}
-    - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
-      with:
-        nixbuild_token: ${{secrets.nixbuild_token}}
-    - name: Build site
-      run: | 
-        touch build.json
-        nix build .#packages.x86_64-linux.app \
-          --print-build-logs \
-          --eval-store auto \
-          --store ssh-ng://eu.nixbuild.net \
-          --builders "" --max-jobs 2 \
-          --show-trace \
-          --json
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: nixbuild/nix-quick-install-action@v26
+        with:
+          nix_on_tmpfs: false
+          nix_conf: |
+            experimental-features = nix-command flakes
+            access-tokens = ${{ secrets.GITHUB_TOKEN }}
+      - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
+        with:
+          nixbuild_token: ${{secrets.nixbuild_token}}
+      - name: Build site
+        run: |
+          touch build.json
+          nix build .#packages.x86_64-linux.app \
+            --print-build-logs \
+            --eval-store auto \
+            --store ssh-ng://eu.nixbuild.net \
+            --builders "" --max-jobs 2 \
+            --show-trace \
+            --json
 
   deploy-preview:
     runs-on: ['ubuntu-latest']

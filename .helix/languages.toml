@@ -1,12 +1,12 @@
 [language-server.astro-ls]
+args    = ["@astrojs/language-server", "--stdio"]
 command = "npx"
-args = [ "@astrojs/language-server", "--stdio" ]
-config = { "typescript" = { "tsdk" = "./site/node_modules/typescript/lib"}, "environment" = "node" }
+config  = { "typescript" = { "tsdk" = "./site/node_modules/typescript/lib" }, "environment" = "node" }
 
 [[language]]
-name = "astro"
-scope = "source.astro"
-injection-regex = "astro"
-file-types = ["astro"]
-roots = ["package.json", "astro.config.ts"]
-language-servers = [ "astro-ls" ]
+file-types       = ["astro"]
+injection-regex  = "astro"
+language-servers = ["astro-ls"]
+name             = "astro"
+roots            = ["package.json", "astro.config.ts"]
+scope            = "source.astro"

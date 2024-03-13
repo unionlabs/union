@@ -3,11 +3,11 @@ name: Build
 on:
   push:
     branches:
-    - main
+      - main
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
-    - main
+      - main
 
 
 concurrency:
@@ -19,7 +19,7 @@ jobs:
     if: github.event.pull_request.draft == true
     runs-on: ubuntu-latest
     steps:
-    - run: exit 1
+      - run: exit 1
   packages:
     if: github.event.pull_request.draft == false
     uses: unionlabs/workflows/.github/workflows/build.yml@329b802dafe949a7a93b6e6a5bf5065c3a81ab30

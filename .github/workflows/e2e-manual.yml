@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:    
+  build:
     uses: ./.github/workflows/e2e.yml
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}

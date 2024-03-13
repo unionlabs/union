@@ -19,8 +19,8 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        package: [ uniond-release, galoisd, bundle-testnet-6 ]
-        system: [ aarch64-linux, x86_64-linux ]
+        package: [uniond-release, galoisd, bundle-testnet-6]
+        system: [aarch64-linux, x86_64-linux]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -43,8 +43,8 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        system: [ aarch64-linux, x86_64-linux ]
-        package: [ uniond-release, galoisd ]
+        system: [aarch64-linux, x86_64-linux]
+        package: [uniond-release, galoisd]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -83,11 +83,11 @@ jobs:
 
   docker-manifest:
     runs-on: ubuntu-latest
-    needs: [ dl-images ]
+    needs: [dl-images]
     permissions: write-all
     strategy:
       matrix:
-        package: [ uniond-release, galoisd, bundle-testnet-6 ]
+        package: [uniond-release, galoisd, bundle-testnet-6]
     services:
       registry:
         image: registry:2
@@ -194,7 +194,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    needs: [ docker-manifest, dl-bins ]
+    needs: [docker-manifest, dl-bins]
     permissions: write-all
     steps:
       - uses: actions/checkout@v4
