@@ -121,8 +121,7 @@ let menuItems = [
 
       <ul
         id="menu-items-list"
-        style="display: none"
-        class="absolute w-screen flex-col bg-black left-0 top-[62px] border-y border-[#1F1F1F] shadow-3xl divide-y divide-[#1F1F1F] p-0 m-0 font-normal list-none sm:align-middle"
+        class="absolute w-screen max-w-full flex-col bg-black left-0 top-[62px] border-y border-[#1F1F1F] shadow-3xl divide-y divide-[#1F1F1F] p-0 m-0 font-normal list-none sm:align-middle"
       >
         {
           menuItems.map(menuItem => (
@@ -190,8 +189,8 @@ let menuItems = [
     top: 0;
     left: 0;
     width: 100%;
-    height: 150%;
-    background: rgba(0, 0, 0, 0.7); /* Adjust color and opacity as needed */
+    height: 150vh;
+    background: rgba(0, 0, 0, 9); /* Adjust color and opacity as needed */
     visibility: hidden;
     opacity: 0;
     transition:
@@ -201,7 +200,7 @@ let menuItems = [
 
   .overlay.show {
     visibility: visible;
-    opacity: 1;
+    opacity: 0.75;
     transition: opacity 0.3s ease; /* No delay needed when showing */
   }
 </style>
