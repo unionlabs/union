@@ -11,6 +11,6 @@
   });
 </script>
 
-<div class="w-full aspect-h-1 aspect-w-1 bg-yellow-500">
-  <canvas class="bg-red-500" bind:this={canvas}></canvas>
+<div class="w-full aspect-h-1 aspect-w-1">
+  <canvas bind:this={canvas}></canvas>
 </div>
