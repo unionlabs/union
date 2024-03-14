@@ -1,5 +1,4 @@
-import { bytesToHex, type Address } from "viem"
-import { fromBech32, toBech32 } from "@cosmjs/encoding"
+import { toBech32 } from "@cosmjs/encoding"
 
 /**
  * Get union address from ethereum address

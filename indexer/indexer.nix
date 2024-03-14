@@ -4,15 +4,16 @@
       pkgsDeps = with pkgs; [ pkg-config ];
       nodeDeps = with unstablePkgs; [ nodejs_21 ];
       combinedDeps = pkgsDeps ++ nodeDeps;
+      packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
         indexer = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-LIG/5rwLcYvGDKdsUgsPYn4ElsOeVdYage9VJqLAkWU=";
+          npmDepsHash = "sha256-rG1hz40XqA9YH0Bk8sVc9uK7C8SHulLLFFzMDIuroc8=";
           src = ./.;
           sourceRoot = "indexer";
-          pname = "union-transfers-indexer";
-          version = "0.0.0";
+          pname = packageJSON.name;
+          version = packageJSON.version;
           nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
           dontNpmBuild = true;
