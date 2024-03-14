@@ -6,7 +6,7 @@ use hex::FromHexError;
 
 pub const HEX_ENCODING_PREFIX: &str = "0x";
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum FromHexStringError {
     Hex(FromHexError),
     MissingPrefix(String),

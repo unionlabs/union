@@ -178,6 +178,35 @@ impl U256 {
             if encoded.is_empty() { "0" } else { encoded }
         )
     }
+
+    pub fn from_big_endian_hex(s: impl AsRef<str>) -> Result<U256, TryFromHexError> {
+        if s.as_ref().is_empty() {
+            return Err(serde_utils::FromHexStringError::EmptyString.into());
+        }
+
+        s.as_ref()
+            .strip_prefix(serde_utils::HEX_ENCODING_PREFIX)
+            .ok_or_else(|| serde_utils::FromHexStringError::MissingPrefix(s.as_ref().to_owned()))
+            .map_err(Into::into)
+            .and_then(|maybe_hex| {
+                Ok(U256::try_from_big_endian(
+                    &if maybe_hex.len() % 2 == 1 {
+                        hex::decode(format!("0{maybe_hex}"))
+                    } else {
+                        hex::decode(maybe_hex)
+                    }
+                    .map_err(serde_utils::FromHexStringError::Hex)?,
+                )?)
+            })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum TryFromHexError {
+    #[error("error parsing hex")]
+    Hex(#[from] serde_utils::FromHexStringError),
+    #[error("error converting from bytes")]
+    FromBytes(#[from] InvalidLength),
 }
 
 pub mod u256_big_endian_hex {
@@ -197,26 +226,7 @@ pub mod u256_big_endian_hex {
         D: serde::Deserializer<'de>,
     {
         <&str>::deserialize(deserializer).and_then(|s| -> Result<U256, D::Error> {
-            if s.is_empty() {
-                return Err(de::Error::custom(
-                    serde_utils::FromHexStringError::EmptyString,
-                ));
-            }
-
-            match s.strip_prefix(serde_utils::HEX_ENCODING_PREFIX) {
-                Some(maybe_hex) => if maybe_hex.len() % 2 == 1 {
-                    hex::decode(format!("0{maybe_hex}"))
-                } else {
-                    hex::decode(maybe_hex)
-                }
-                .map(|x| U256::try_from_big_endian(&x).map_err(de::Error::custom))
-                .map_err(de::Error::custom)?,
-                None => Err(de::Error::custom(
-                    serde_utils::FromHexStringError::MissingPrefix(
-                        String::from_utf8_lossy(s.as_ref()).into_owned(),
-                    ),
-                )),
-            }
+            U256::from_big_endian_hex(s).map_err(de::Error::custom)
         })
     }
 }
