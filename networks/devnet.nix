@@ -131,12 +131,19 @@
         devnet-eth = {
           geth = import ./services/geth.nix {
             inherit pkgs;
+            inherit self';
             config = self'.packages.devnet-eth-config;
           };
-          lodestar = import ./services/lodestar.nix {
+          beacon-chain = import ./services/prysm.nix {
             inherit pkgs;
+            inherit self';
             config = self'.packages.devnet-eth-config;
-            validatorCount = devnetConfig.ethereum.beacon.validatorCount;
+          };
+
+          validator = import ./services/prysm-validator.nix {
+            inherit pkgs;
+            inherit self';
+            config = self'.packages.devnet-eth-config;
           };
         };
 
@@ -269,6 +276,7 @@
           { name = "dev-key0.prv"; path = "${./genesis/devnet-eth/dev-key0.prv}"; }
           { name = "dev-key1.prv"; path = "${./genesis/devnet-eth/dev-key1.prv}"; }
           { name = "dev-jwt.prv"; path = "${./genesis/devnet-eth/dev-jwt.prv}"; }
+          { name = "beacon-config.yml"; path = "${./genesis/devnet-eth/beacon-config.yml}"; }
         ];
       };
 

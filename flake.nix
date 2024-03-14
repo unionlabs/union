@@ -200,6 +200,7 @@
         ./tools/hasura-cli/hasura-cli.nix
         ./tools/todo-comment.nix
         ./tools/iaviewer/iaviewer.nix
+        ./tools/prysm.nix
         ./networks/e2e-setup.nix
         ./networks/devnet.nix
         ./networks/simulation/simd.nix
