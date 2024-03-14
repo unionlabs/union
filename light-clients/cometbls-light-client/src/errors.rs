@@ -75,8 +75,8 @@ pub enum Error {
     #[error(transparent)]
     InvalidHeader(#[from] InvalidHeaderError),
 
-    #[error("Invalid ZKP")]
-    InvalidZKP,
+    #[error("Invalid ZKP: {0:?}")]
+    InvalidZKP(cometbls_groth16_verifier::Error),
 
     #[error("Invalid sync committee")]
     InvalidSyncCommittee,

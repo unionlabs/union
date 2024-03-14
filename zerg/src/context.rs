@@ -22,7 +22,6 @@ use ethers::{
     middleware::SignerMiddleware,
     providers::Middleware,
     signers::{LocalWallet, Signer, Wallet},
-    types::U256,
     utils::secret_key_to_address,
 };
 use futures::StreamExt;
@@ -34,6 +33,7 @@ use ucs01_relay_api::types::Ucs01TransferPacket;
 use unionlabs::{
     cosmos::base::coin::Coin, cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     ethereum::config::Minimal, events::IbcEvent, google::protobuf::any::Any, traits::Chain,
+    uint::U256,
 };
 
 use crate::{
@@ -106,7 +106,7 @@ impl Context {
 
             tokio::spawn(async move {
                 if let Ok(res) = erc_contract
-                    .approve(ecr_contact_address.into(), U256::max_value())
+                    .approve(ecr_contact_address.into(), U256::MAX.into())
                     .send()
                     .await
                 {

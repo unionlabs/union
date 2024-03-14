@@ -5,6 +5,9 @@ name                   = "tendermint-verifier"
 repository.workspace   = true
 version                = "0.1.0"
 
+[lints]
+workspace = true
+
 [package.metadata.crane]
 test-include = ["lib/tendermint-verifier/src/test/"]
 

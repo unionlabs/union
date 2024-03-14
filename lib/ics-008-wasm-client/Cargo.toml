@@ -6,6 +6,9 @@ name    = "ics008-wasm-client"
 publish = false
 version = "0.1.0"
 
+[lints]
+workspace = true
+
 [dependencies]
 cosmwasm-std             = { workspace = true }
 frame-support-procedural = { workspace = true }

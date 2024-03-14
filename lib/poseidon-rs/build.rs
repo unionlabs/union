@@ -1,3 +1,7 @@
+#![allow(clippy::disallowed_types)]
+// to avoid bringing in the entire unionlabs crate as a dependency of this build script
+// TODO: benchmark to see if it makes a difference
+
 use std::{env, fs, path::Path};
 
 use primitive_types::U256;

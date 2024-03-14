@@ -6,6 +6,9 @@ name         = "ethereum-light-client"
 publish      = false
 version      = "0.1.0"
 
+[lints]
+workspace = true
+
 [package.metadata.crane]
 test-include = ["light-clients/ethereum-light-client/src/test"]
 

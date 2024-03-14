@@ -3,6 +3,9 @@ edition = { workspace = true }
 name    = "pg-queue"
 version = "0.1.0"
 
+[lints]
+workspace = true
+
 [package.metadata.crane]
 include = ["lib/pg-queue/.sqlx", "lib/pg-queue/migrations"]
 

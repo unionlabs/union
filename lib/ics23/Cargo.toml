@@ -3,7 +3,8 @@ edition = "2021"
 name    = "ics23"
 version = "0.1.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lints]
+workspace = true
 
 [dependencies]
 prost       = { workspace = true, features = ["std"] }

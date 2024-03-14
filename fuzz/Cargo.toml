@@ -5,6 +5,9 @@ publish  = false
 resolver = "2"
 version  = "0.0.0"
 
+[lints]
+workspace = true
+
 [package.metadata]
 cargo-fuzz = true
 

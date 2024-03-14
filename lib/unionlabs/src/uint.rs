@@ -1,7 +1,12 @@
-use core::{fmt::Display, str::FromStr};
+#![allow(clippy::disallowed_types)] // need to access the inner type to wrap it
+
+use core::{
+    fmt::Display,
+    ops::{Add, Div, Rem},
+    str::FromStr,
+};
 
 use custom_debug_derive::Debug;
-use rlp::Encodable;
 use serde::{Deserialize, Serialize};
 use serde_utils::HEX_ENCODING_PREFIX;
 use tree_hash::TreeHash;
@@ -26,13 +31,6 @@ use crate::{
     ssz::Encode,
     ssz::Decode,
 )]
-#[cfg_attr(
-    feature = "ethabi",
-    derive(
-        ethers_contract_derive::EthAbiType,
-        ethers_contract_derive::EthAbiCodec
-    )
-)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[ssz(struct_behaviour = "transparent")]
 #[repr(transparent)]
@@ -41,6 +39,50 @@ pub struct U256(
     #[debug(with = "::serde_utils::fmt::display")]
     pub primitive_types::U256,
 );
+
+#[cfg(feature = "ethabi")]
+mod ethabi {
+    use ethers::core::abi::{
+        AbiArrayType, AbiDecode, AbiEncode, AbiError, AbiType, InvalidOutputType, ParamType, Token,
+        Tokenizable, TokenizableItem,
+    };
+
+    use crate::uint::U256;
+
+    impl AbiType for U256 {
+        fn param_type() -> ParamType {
+            <primitive_types::U256 as AbiType>::param_type()
+        }
+    }
+
+    impl AbiArrayType for U256 {}
+    impl Tokenizable for U256 {
+        fn from_token(token: Token) -> Result<Self, InvalidOutputType> {
+            <primitive_types::U256 as Tokenizable>::from_token(token).map(Self)
+        }
+        fn into_token(self) -> Token {
+            <primitive_types::U256 as Tokenizable>::into_token(self.0)
+        }
+    }
+
+    impl TokenizableItem for U256 {}
+
+    impl AbiDecode for U256 {
+        fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, AbiError> {
+            <primitive_types::U256 as AbiDecode>::decode(bytes).map(Self)
+        }
+    }
+
+    impl AbiEncode for U256 {
+        fn encode(self) -> Vec<u8> {
+            <primitive_types::U256 as AbiEncode>::encode(self.0)
+        }
+    }
+}
+
+impl U256 {
+    pub const MAX: Self = Self::from_limbs([u64::MAX; 4]);
+}
 
 impl From<u64> for U256 {
     fn from(value: u64) -> Self {
@@ -63,6 +105,12 @@ impl TryFrom<U256> for u64 {
 impl From<primitive_types::U256> for U256 {
     fn from(value: primitive_types::U256) -> Self {
         Self(value)
+    }
+}
+
+impl From<U256> for primitive_types::U256 {
+    fn from(value: U256) -> Self {
+        value.0
     }
 }
 
@@ -109,6 +157,11 @@ impl U256 {
     #[must_use]
     pub fn from_big_endian(bz: [u8; 32]) -> Self {
         Self(primitive_types::U256::from_big_endian(&bz))
+    }
+
+    #[must_use]
+    pub const fn from_limbs(limbs: [u64; 4]) -> Self {
+        Self(primitive_types::U256(limbs))
     }
 
     #[must_use]
@@ -239,9 +292,39 @@ impl Display for U256 {
     }
 }
 
-impl Encodable for U256 {
+impl rlp::Encodable for U256 {
     fn rlp_append(&self, s: &mut rlp::RlpStream) {
         s.encoder().encode_value(&self.to_packed_big_endian());
+    }
+}
+
+impl rlp::Decodable for U256 {
+    fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
+        <primitive_types::U256 as rlp::Decodable>::decode(rlp).map(Self)
+    }
+}
+
+impl Rem for U256 {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        Self(self.0 % rhs.0)
+    }
+}
+
+impl Add for U256 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
+
+impl Div for U256 {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Self(self.0 / rhs.0)
     }
 }
 

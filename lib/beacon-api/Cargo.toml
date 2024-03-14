@@ -3,6 +3,9 @@ edition = "2021"
 name    = "beacon-api"
 version = "0.1.0"
 
+[lints]
+workspace = true
+
 [dependencies]
 hex         = { workspace = true, features = ["alloc"] }
 reqwest     = { workspace = true, features = ["rustls-tls", "json"] }

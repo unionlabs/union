@@ -5,6 +5,9 @@ license = "Apache-2.0"
 name    = "zktrie"
 version = "0.1.0"
 
+[lints]
+workspace = true
+
 [dependencies]
 hex         = { workspace = true }
 lazy_static = { workspace = true }

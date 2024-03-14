@@ -6,8 +6,8 @@ publish      = false
 repository   = { workspace = true }
 version      = "0.1.0"
 
-[package.metadata.crane]
-include = []
+[lints]
+workspace = true
 
 [dependencies]
 block-message.workspace = true

@@ -7,12 +7,11 @@ use contracts::{
     erc20,
     ucs01_relay::{LocalToken, UCS01Relay},
 };
-use ethers::{
-    middleware::SignerMiddleware,
-    signers::Signer,
-    types::{Address, U256},
+use ethers::{middleware::SignerMiddleware, signers::Signer, types::Address};
+use unionlabs::{
+    ethereum::config::{ChainSpec, Mainnet, Minimal},
+    uint::U256,
 };
-use unionlabs::ethereum::config::{ChainSpec, Mainnet, Minimal};
 
 use crate::cli::{AppArgs, Config};
 
@@ -206,7 +205,7 @@ async fn handle_transfer<C: ChainSpec>(
     println!("Balance is: {}", balance);
 
     erc_contract
-        .approve(relay_address, U256::max_value() / 2)
+        .approve(relay_address, (U256::MAX / U256::from(2)).into())
         .send()
         .await
         .unwrap()
