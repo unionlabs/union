@@ -5,7 +5,7 @@
     "clientKind": "git"
   },
   "organizeImports": {
-    "enabled": false,
+    "enabled": true,
     "include": [
       "./**/*.ts",
       "./**/*.js",
