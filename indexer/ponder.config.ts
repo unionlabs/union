@@ -1,6 +1,6 @@
 import { ucs01relayAbi } from "./src/abi"
 import { createConfig } from "@ponder/core"
-import { Transport, erc20Abi, fallback, http, webSocket } from "viem"
+import { erc20Abi, fallback, http, webSocket } from "viem"
 
 const UCS01_EVM_ADDRESS = process.env.UCS01_EVM_ADDRESS
 const UNO_ERC20_ADDRESS = process.env.UNO_ERC20_ADDRESS
