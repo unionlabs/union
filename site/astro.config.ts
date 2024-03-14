@@ -29,7 +29,7 @@ export default defineConfig({
       tagline: "Connecting blockchains trustlessly",
       description:
         "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks.",
-      favicon: "/favicon.ico",
+      favicon: "/favicon.svg",
       lastUpdated: true,
       social: {
         github: "https://github.com/unionlabs",
