@@ -6,3 +6,5 @@
 
 # format FE files with biome instead of prettier
 31561995a391dfb9de39ae0143cac7d6b680f1ab
+# format solidity files with forge
+64f5487ff2eaa61aed1dc8921d7fb58b7b9add4f

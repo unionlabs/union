@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 import "./client.sol";
@@ -22,7 +23,7 @@ library IbcCoreClientV1GenesisState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -32,7 +33,7 @@ library IbcCoreClientV1GenesisState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -50,40 +51,29 @@ library IbcCoreClientV1GenesisState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[7] memory counters;
+        uint256[7] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_clients(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_clients_consensus(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 3) {
                 pointer += _read_unpacked_repeated_clients_metadata(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 4) {
                 pointer += _read_params(pointer, bs, r);
@@ -92,68 +82,45 @@ library IbcCoreClientV1GenesisState {
             } else if (fieldId == 6) {
                 pointer += _read_next_client_sequence(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
         if (counters[1] > 0) {
             require(r.clients.length == 0);
-            r.clients = new IbcCoreClientV1IdentifiedClientState.Data[](
-                counters[1]
-            );
+            r.clients =
+                new IbcCoreClientV1IdentifiedClientState.Data[](counters[1]);
         }
         if (counters[2] > 0) {
             require(r.clients_consensus.length == 0);
-            r
-                .clients_consensus = new IbcCoreClientV1ClientConsensusStates.Data[](
-                counters[2]
-            );
+            r.clients_consensus =
+                new IbcCoreClientV1ClientConsensusStates.Data[](counters[2]);
         }
         if (counters[3] > 0) {
             require(r.clients_metadata.length == 0);
-            r
-                .clients_metadata = new IbcCoreClientV1IdentifiedGenesisMetadata.Data[](
-                counters[3]
-            );
+            r.clients_metadata =
+                new IbcCoreClientV1IdentifiedGenesisMetadata.Data[](counters[3]);
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
-                pointer += _read_unpacked_repeated_clients(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_clients(pointer, bs, r, counters);
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_clients_consensus(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else if (fieldId == 3) {
                 pointer += _read_unpacked_repeated_clients_metadata(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -173,15 +140,13 @@ library IbcCoreClientV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[7] memory counters
-    ) internal pure returns (uint) {
+        uint256[7] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreClientV1IdentifiedClientState.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1IdentifiedClientState(p, bs);
+        (IbcCoreClientV1IdentifiedClientState.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1IdentifiedClientState(p, bs);
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -203,15 +168,13 @@ library IbcCoreClientV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[7] memory counters
-    ) internal pure returns (uint) {
+        uint256[7] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreClientV1ClientConsensusStates.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1ClientConsensusStates(p, bs);
+        (IbcCoreClientV1ClientConsensusStates.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1ClientConsensusStates(p, bs);
         if (isNil(r)) {
             counters[2] += 1;
         } else {
@@ -233,15 +196,13 @@ library IbcCoreClientV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[7] memory counters
-    ) internal pure returns (uint) {
+        uint256[7] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreClientV1IdentifiedGenesisMetadata.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1IdentifiedGenesisMetadata(p, bs);
+        (IbcCoreClientV1IdentifiedGenesisMetadata.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1IdentifiedGenesisMetadata(p, bs);
         if (isNil(r)) {
             counters[3] += 1;
         } else {
@@ -262,11 +223,9 @@ library IbcCoreClientV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcCoreClientV1Params.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1Params(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcCoreClientV1Params.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1Params(p, bs);
         r.params = x;
         return sz;
     }
@@ -282,7 +241,7 @@ library IbcCoreClientV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bool x, uint256 sz) = ProtoBufRuntime._decode_bool(p, bs);
         r.create_localhost = x;
         return sz;
@@ -299,7 +258,7 @@ library IbcCoreClientV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.next_client_sequence = x;
         return sz;
@@ -319,18 +278,14 @@ library IbcCoreClientV1GenesisState {
     )
         internal
         pure
-        returns (IbcCoreClientV1IdentifiedClientState.Data memory, uint)
+        returns (IbcCoreClientV1IdentifiedClientState.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcCoreClientV1IdentifiedClientState.Data memory r,
-
-        ) = IbcCoreClientV1IdentifiedClientState._decode(pointer, bs, sz);
+        (IbcCoreClientV1IdentifiedClientState.Data memory r,) =
+            IbcCoreClientV1IdentifiedClientState._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -347,18 +302,14 @@ library IbcCoreClientV1GenesisState {
     )
         internal
         pure
-        returns (IbcCoreClientV1ClientConsensusStates.Data memory, uint)
+        returns (IbcCoreClientV1ClientConsensusStates.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcCoreClientV1ClientConsensusStates.Data memory r,
-
-        ) = IbcCoreClientV1ClientConsensusStates._decode(pointer, bs, sz);
+        (IbcCoreClientV1ClientConsensusStates.Data memory r,) =
+            IbcCoreClientV1ClientConsensusStates._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -375,18 +326,14 @@ library IbcCoreClientV1GenesisState {
     )
         internal
         pure
-        returns (IbcCoreClientV1IdentifiedGenesisMetadata.Data memory, uint)
+        returns (IbcCoreClientV1IdentifiedGenesisMetadata.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcCoreClientV1IdentifiedGenesisMetadata.Data memory r,
-
-        ) = IbcCoreClientV1IdentifiedGenesisMetadata._decode(pointer, bs, sz);
+        (IbcCoreClientV1IdentifiedGenesisMetadata.Data memory r,) =
+            IbcCoreClientV1IdentifiedGenesisMetadata._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -400,18 +347,13 @@ library IbcCoreClientV1GenesisState {
     function _decode_IbcCoreClientV1Params(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreClientV1Params.Data memory, uint) {
+    ) internal pure returns (IbcCoreClientV1Params.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (IbcCoreClientV1Params.Data memory r, ) = IbcCoreClientV1Params._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (IbcCoreClientV1Params.Data memory r,) =
+            IbcCoreClientV1Params._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -444,47 +386,34 @@ library IbcCoreClientV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.clients.length != 0) {
             for (i = 0; i < r.clients.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreClientV1IdentifiedClientState._encode_nested(
-                    r.clients[i],
-                    pointer,
-                    bs
+                    r.clients[i], pointer, bs
                 );
             }
         }
         if (r.clients_consensus.length != 0) {
             for (i = 0; i < r.clients_consensus.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    2,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreClientV1ClientConsensusStates._encode_nested(
-                    r.clients_consensus[i],
-                    pointer,
-                    bs
+                    r.clients_consensus[i], pointer, bs
                 );
             }
         }
         if (r.clients_metadata.length != 0) {
             for (i = 0; i < r.clients_metadata.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    3,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreClientV1IdentifiedGenesisMetadata
                     ._encode_nested(r.clients_metadata[i], pointer, bs);
@@ -492,37 +421,23 @@ library IbcCoreClientV1GenesisState {
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            4,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcCoreClientV1Params._encode_nested(r.params, pointer, bs);
 
         if (r.create_localhost != false) {
             pointer += ProtoBufRuntime._encode_key(
-                5,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                5, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_bool(
-                r.create_localhost,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_bool(r.create_localhost, pointer, bs);
         }
         if (r.next_client_sequence != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                6,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                6, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(
-                r.next_client_sequence,
-                pointer,
-                bs
+                r.next_client_sequence, pointer, bs
             );
         }
         return pointer - offset;
@@ -541,7 +456,7 @@ library IbcCoreClientV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -566,37 +481,33 @@ library IbcCoreClientV1GenesisState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.clients.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcCoreClientV1IdentifiedClientState._estimate(r.clients[i])
                 );
         }
         for (i = 0; i < r.clients_consensus.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcCoreClientV1ClientConsensusStates._estimate(
                         r.clients_consensus[i]
                     )
                 );
         }
         for (i = 0; i < r.clients_metadata.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcCoreClientV1IdentifiedGenesisMetadata._estimate(
                         r.clients_metadata[i]
                     )
                 );
         }
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcCoreClientV1Params._estimate(r.params)
             );
         e += 1 + 1;
@@ -667,10 +578,8 @@ library IbcCoreClientV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreClientV1IdentifiedClientState.Data[]
-            memory tmp = new IbcCoreClientV1IdentifiedClientState.Data[](
-                self.clients.length + 1
-            );
+        IbcCoreClientV1IdentifiedClientState.Data[] memory tmp = new IbcCoreClientV1IdentifiedClientState
+            .Data[](self.clients.length + 1);
         for (uint256 i = 0; i < self.clients.length; i++) {
             tmp[i] = self.clients[i];
         }
@@ -691,10 +600,8 @@ library IbcCoreClientV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreClientV1ClientConsensusStates.Data[]
-            memory tmp = new IbcCoreClientV1ClientConsensusStates.Data[](
-                self.clients_consensus.length + 1
-            );
+        IbcCoreClientV1ClientConsensusStates.Data[] memory tmp = new IbcCoreClientV1ClientConsensusStates
+            .Data[](self.clients_consensus.length + 1);
         for (uint256 i = 0; i < self.clients_consensus.length; i++) {
             tmp[i] = self.clients_consensus[i];
         }
@@ -715,10 +622,8 @@ library IbcCoreClientV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreClientV1IdentifiedGenesisMetadata.Data[]
-            memory tmp = new IbcCoreClientV1IdentifiedGenesisMetadata.Data[](
-                self.clients_metadata.length + 1
-            );
+        IbcCoreClientV1IdentifiedGenesisMetadata.Data[] memory tmp = new IbcCoreClientV1IdentifiedGenesisMetadata
+            .Data[](self.clients_metadata.length + 1);
         for (uint256 i = 0; i < self.clients_metadata.length; i++) {
             tmp[i] = self.clients_metadata[i];
         }
@@ -766,7 +671,7 @@ library IbcCoreClientV1GenesisMetadata {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -776,7 +681,7 @@ library IbcCoreClientV1GenesisMetadata {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -794,7 +699,7 @@ library IbcCoreClientV1GenesisMetadata {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -802,21 +707,16 @@ library IbcCoreClientV1GenesisMetadata {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_key(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_value(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -835,7 +735,7 @@ library IbcCoreClientV1GenesisMetadata {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.key = x;
         return sz;
@@ -852,7 +752,7 @@ library IbcCoreClientV1GenesisMetadata {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.value = x;
         return sz;
@@ -887,25 +787,19 @@ library IbcCoreClientV1GenesisMetadata {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.key.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.key, pointer, bs);
         }
         if (r.value.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.value, pointer, bs);
         }
@@ -925,7 +819,7 @@ library IbcCoreClientV1GenesisMetadata {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -950,7 +844,7 @@ library IbcCoreClientV1GenesisMetadata {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.key.length);
         e += 1 + ProtoBufRuntime._sz_lendelim(r.value.length);
@@ -1022,7 +916,7 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1032,7 +926,7 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1050,64 +944,47 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[3] memory counters;
+        uint256[3] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_client_id(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_client_metadata(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
         if (counters[2] > 0) {
             require(r.client_metadata.length == 0);
-            r.client_metadata = new IbcCoreClientV1GenesisMetadata.Data[](
-                counters[2]
-            );
+            r.client_metadata =
+                new IbcCoreClientV1GenesisMetadata.Data[](counters[2]);
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_client_metadata(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1126,7 +1003,7 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.client_id = x;
         return sz;
@@ -1144,15 +1021,13 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[3] memory counters
-    ) internal pure returns (uint) {
+        uint256[3] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcCoreClientV1GenesisMetadata.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1GenesisMetadata(p, bs);
+        (IbcCoreClientV1GenesisMetadata.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1GenesisMetadata(p, bs);
         if (isNil(r)) {
             counters[2] += 1;
         } else {
@@ -1173,17 +1048,17 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
     function _decode_IbcCoreClientV1GenesisMetadata(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreClientV1GenesisMetadata.Data memory, uint) {
+    )
+        internal
+        pure
+        returns (IbcCoreClientV1GenesisMetadata.Data memory, uint256)
+    {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcCoreClientV1GenesisMetadata.Data memory r,
-
-        ) = IbcCoreClientV1GenesisMetadata._decode(pointer, bs, sz);
+        (IbcCoreClientV1GenesisMetadata.Data memory r,) =
+            IbcCoreClientV1GenesisMetadata._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1216,31 +1091,23 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (bytes(r.client_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.client_id, pointer, bs);
         }
         if (r.client_metadata.length != 0) {
             for (i = 0; i < r.client_metadata.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    2,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcCoreClientV1GenesisMetadata._encode_nested(
-                    r.client_metadata[i],
-                    pointer,
-                    bs
+                    r.client_metadata[i], pointer, bs
                 );
             }
         }
@@ -1260,7 +1127,7 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1285,17 +1152,14 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.client_id).length);
         for (i = 0; i < r.client_metadata.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
-                    IbcCoreClientV1GenesisMetadata._estimate(
-                        r.client_metadata[i]
-                    )
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
+                    IbcCoreClientV1GenesisMetadata._estimate(r.client_metadata[i])
                 );
         }
         return e;
@@ -1342,10 +1206,8 @@ library IbcCoreClientV1IdentifiedGenesisMetadata {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcCoreClientV1GenesisMetadata.Data[]
-            memory tmp = new IbcCoreClientV1GenesisMetadata.Data[](
-                self.client_metadata.length + 1
-            );
+        IbcCoreClientV1GenesisMetadata.Data[] memory tmp = new IbcCoreClientV1GenesisMetadata
+            .Data[](self.client_metadata.length + 1);
         for (uint256 i = 0; i < self.client_metadata.length; i++) {
             tmp[i] = self.client_metadata[i];
         }

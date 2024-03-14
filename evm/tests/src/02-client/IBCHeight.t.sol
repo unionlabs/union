@@ -3,25 +3,32 @@ pragma solidity ^0.8.23;
 import "forge-std/Test.sol";
 
 import {IBCHeight} from "../../../contracts/core/02-client/IBCHeight.sol";
-import {IbcCoreClientV1Height} from "../../../contracts/proto/ibc/core/client/v1/client.sol";
+import {IbcCoreClientV1Height} from
+    "../../../contracts/proto/ibc/core/client/v1/client.sol";
 
 // Required to have coverage counted.
 contract IBCHeightProxy {
-    function toUint128(
-        IbcCoreClientV1Height.Data memory self
-    ) public pure returns (uint128) {
+    function toUint128(IbcCoreClientV1Height.Data memory self)
+        public
+        pure
+        returns (uint128)
+    {
         return IBCHeight.toUint128(self);
     }
 
-    function fromUint128(
-        uint128 composite
-    ) public pure returns (IbcCoreClientV1Height.Data memory) {
+    function fromUint128(uint128 composite)
+        public
+        pure
+        returns (IbcCoreClientV1Height.Data memory)
+    {
         return IBCHeight.fromUint128(composite);
     }
 
-    function isZero(
-        IbcCoreClientV1Height.Data memory self
-    ) public pure returns (bool) {
+    function isZero(IbcCoreClientV1Height.Data memory self)
+        public
+        pure
+        returns (bool)
+    {
         return IBCHeight.isZero(self);
     }
 
@@ -76,9 +83,7 @@ contract IBCHeightTests is Test {
             revision_number: revisionNumber,
             revision_height: revisionHeight
         });
-        assertTrue(
-            proxy.eq(height, proxy.fromUint128(proxy.toUint128(height)))
-        );
+        assertTrue(proxy.eq(height, proxy.fromUint128(proxy.toUint128(height))));
     }
 
     function test_isZero() public {

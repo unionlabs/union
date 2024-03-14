@@ -14,21 +14,26 @@ abstract contract IBCConnectionHandler is IIBCConnectionHandshake {
         ibcConnection = _ibcConnection;
     }
 
-    function connectionOpenInit(
-        IBCMsgs.MsgConnectionOpenInit calldata msg_
-    ) external override returns (string memory) {
+    function connectionOpenInit(IBCMsgs.MsgConnectionOpenInit calldata msg_)
+        external
+        override
+        returns (string memory)
+    {
         passthrough(ibcConnection);
     }
 
-    function connectionOpenTry(
-        IBCMsgs.MsgConnectionOpenTry calldata msg_
-    ) external override returns (string memory) {
+    function connectionOpenTry(IBCMsgs.MsgConnectionOpenTry calldata msg_)
+        external
+        override
+        returns (string memory)
+    {
         passthrough(ibcConnection);
     }
 
-    function connectionOpenAck(
-        IBCMsgs.MsgConnectionOpenAck calldata msg_
-    ) external override {
+    function connectionOpenAck(IBCMsgs.MsgConnectionOpenAck calldata msg_)
+        external
+        override
+    {
         passthrough(ibcConnection);
     }
 

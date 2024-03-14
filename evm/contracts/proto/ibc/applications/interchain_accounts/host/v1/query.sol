@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../../ProtoBufRuntime.sol";
 import "../../../../../GoogleProtobufAny.sol";
 
@@ -18,7 +19,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsRequest {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -28,7 +29,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsRequest {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -46,7 +47,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsRequest {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -54,10 +55,8 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsRequest {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
         }
         return (r, sz);
@@ -94,7 +93,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
@@ -114,7 +113,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -138,7 +137,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsRequest {
      * @dev The estimator for a struct
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory /* r */) internal pure returns (uint) {
+    function _estimate(Data memory /* r */ ) internal pure returns (uint256) {
         uint256 e;
         return e;
     }
@@ -196,7 +195,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -206,7 +205,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -224,7 +223,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -232,19 +231,14 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsResponse {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_params(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -263,7 +257,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsResponse {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (
             IbcApplicationsInterchain_accountsHostV1Params.Data memory x,
             uint256 sz
@@ -288,23 +282,15 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsResponse {
         pure
         returns (
             IbcApplicationsInterchain_accountsHostV1Params.Data memory,
-            uint
+            uint256
         )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcApplicationsInterchain_accountsHostV1Params.Data memory r,
-
-        ) = IbcApplicationsInterchain_accountsHostV1Params._decode(
-                pointer,
-                bs,
-                sz
-            );
+        (IbcApplicationsInterchain_accountsHostV1Params.Data memory r,) =
+        IbcApplicationsInterchain_accountsHostV1Params._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -337,18 +323,16 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcApplicationsInterchain_accountsHostV1Params
-            ._encode_nested(r.params, pointer, bs);
+        pointer += IbcApplicationsInterchain_accountsHostV1Params._encode_nested(
+            r.params, pointer, bs
+        );
 
         return pointer - offset;
     }
@@ -366,7 +350,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -391,14 +375,11 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsResponse {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
-                IbcApplicationsInterchain_accountsHostV1Params._estimate(
-                    r.params
-                )
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
+                IbcApplicationsInterchain_accountsHostV1Params._estimate(r.params)
             );
         return e;
     }
@@ -417,8 +398,7 @@ library IbcApplicationsInterchain_accountsHostV1QueryParamsResponse {
      */
     function store(Data memory input, Data storage output) internal {
         IbcApplicationsInterchain_accountsHostV1Params.store(
-            input.params,
-            output.params
+            input.params, output.params
         );
     }
 

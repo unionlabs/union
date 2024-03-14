@@ -9,7 +9,10 @@ import "../../contracts/proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 import "../../contracts/proto/tendermint/types/types.sol";
 import "../../contracts/proto/tendermint/types/validator.sol";
 import "../../contracts/proto/tendermint/types/canonical.sol";
-import {CometblsHelp, OptimizedConsensusState} from "../../contracts/lib/CometblsHelp.sol";
+import {
+    CometblsHelp,
+    OptimizedConsensusState
+} from "../../contracts/lib/CometblsHelp.sol";
 import {IZKVerifierV2} from "../../contracts/core/IZKVerifierV2.sol";
 import {Verifier} from "../../contracts/clients/Verifier.sol";
 
@@ -21,14 +24,13 @@ contract CometblsHelpProxy {
         bytes memory message,
         bytes memory zkp
     ) public returns (bool) {
-        return
-            CometblsHelp.verifyZKP(
-                verifier,
-                trustedValidatorsHash,
-                untrustedValidatorsHash,
-                message,
-                zkp
-            );
+        return CometblsHelp.verifyZKP(
+            verifier,
+            trustedValidatorsHash,
+            untrustedValidatorsHash,
+            message,
+            zkp
+        );
     }
 
     function optimize(
@@ -74,18 +76,16 @@ contract CometblsHelpTests is Test {
         bytes32 appHash,
         bytes32 validatorsHash
     ) public {
-        UnionIbcLightclientsCometblsV1ConsensusState.Data
-            memory consensusState = UnionIbcLightclientsCometblsV1ConsensusState
-                .Data({
-                    timestamp: timestamp,
-                    root: IbcCoreCommitmentV1MerkleRoot.Data({
-                        hash: abi.encodePacked(appHash)
-                    }),
-                    next_validators_hash: abi.encodePacked(validatorsHash)
-                });
-        OptimizedConsensusState memory optimizedConsensusState = proxy.optimize(
-            consensusState
-        );
+        UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState =
+        UnionIbcLightclientsCometblsV1ConsensusState.Data({
+            timestamp: timestamp,
+            root: IbcCoreCommitmentV1MerkleRoot.Data({
+                hash: abi.encodePacked(appHash)
+            }),
+            next_validators_hash: abi.encodePacked(validatorsHash)
+        });
+        OptimizedConsensusState memory optimizedConsensusState =
+            proxy.optimize(consensusState);
         assertEq(consensusState.timestamp, optimizedConsensusState.timestamp);
         assertEq(
             consensusState.root.hash,

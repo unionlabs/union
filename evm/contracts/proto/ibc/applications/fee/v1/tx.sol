@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 
@@ -22,7 +23,7 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -32,7 +33,7 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -50,7 +51,7 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -58,10 +59,8 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_port_id(pointer, bs, r);
@@ -72,11 +71,8 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
             } else if (fieldId == 4) {
                 pointer += _read_payee(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -95,7 +91,7 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.port_id = x;
         return sz;
@@ -112,7 +108,7 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.channel_id = x;
         return sz;
@@ -129,7 +125,7 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.relayer = x;
         return sz;
@@ -146,7 +142,7 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.payee = x;
         return sz;
@@ -181,47 +177,31 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.port_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.port_id, pointer, bs);
         }
         if (bytes(r.channel_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.channel_id,
-                pointer,
-                bs
-            );
+            pointer += ProtoBufRuntime._encode_string(r.channel_id, pointer, bs);
         }
         if (bytes(r.relayer).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.relayer, pointer, bs);
         }
         if (bytes(r.payee).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.payee, pointer, bs);
         }
@@ -241,7 +221,7 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -266,7 +246,7 @@ library IbcApplicationsFeeV1MsgRegisterPayee {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.channel_id).length);
@@ -349,7 +329,7 @@ library IbcApplicationsFeeV1MsgRegisterPayeeResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -359,7 +339,7 @@ library IbcApplicationsFeeV1MsgRegisterPayeeResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -377,7 +357,7 @@ library IbcApplicationsFeeV1MsgRegisterPayeeResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -385,10 +365,8 @@ library IbcApplicationsFeeV1MsgRegisterPayeeResponse {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
         }
         return (r, sz);
@@ -425,7 +403,7 @@ library IbcApplicationsFeeV1MsgRegisterPayeeResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
@@ -445,7 +423,7 @@ library IbcApplicationsFeeV1MsgRegisterPayeeResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -469,7 +447,7 @@ library IbcApplicationsFeeV1MsgRegisterPayeeResponse {
      * @dev The estimator for a struct
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory /* r */) internal pure returns (uint) {
+    function _estimate(Data memory /* r */ ) internal pure returns (uint256) {
         uint256 e;
         return e;
     }
@@ -530,7 +508,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -540,7 +518,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -558,7 +536,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -566,10 +544,8 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_port_id(pointer, bs, r);
@@ -580,11 +556,8 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
             } else if (fieldId == 4) {
                 pointer += _read_counterparty_payee(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -603,7 +576,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.port_id = x;
         return sz;
@@ -620,7 +593,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.channel_id = x;
         return sz;
@@ -637,7 +610,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.relayer = x;
         return sz;
@@ -654,7 +627,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.counterparty_payee = x;
         return sz;
@@ -689,52 +662,34 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.port_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.port_id, pointer, bs);
         }
         if (bytes(r.channel_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.channel_id,
-                pointer,
-                bs
-            );
+            pointer += ProtoBufRuntime._encode_string(r.channel_id, pointer, bs);
         }
         if (bytes(r.relayer).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.relayer, pointer, bs);
         }
         if (bytes(r.counterparty_payee).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(
-                r.counterparty_payee,
-                pointer,
-                bs
+                r.counterparty_payee, pointer, bs
             );
         }
         return pointer - offset;
@@ -753,7 +708,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -778,14 +733,13 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayee {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.channel_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.relayer).length);
         e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(bytes(r.counterparty_payee).length);
+            1 + ProtoBufRuntime._sz_lendelim(bytes(r.counterparty_payee).length);
         return e;
     }
 
@@ -863,7 +817,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayeeResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -873,7 +827,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayeeResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -891,7 +845,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayeeResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -899,10 +853,8 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayeeResponse {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
         }
         return (r, sz);
@@ -939,7 +891,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayeeResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
@@ -959,7 +911,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayeeResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -983,7 +935,7 @@ library IbcApplicationsFeeV1MsgRegisterCounterpartyPayeeResponse {
      * @dev The estimator for a struct
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory /* r */) internal pure returns (uint) {
+    function _estimate(Data memory /* r */ ) internal pure returns (uint256) {
         uint256 e;
         return e;
     }
@@ -1045,7 +997,7 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1055,7 +1007,7 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1073,19 +1025,17 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[6] memory counters;
+        uint256[6] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_fee(pointer, bs, r);
@@ -1097,17 +1047,11 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
                 pointer += _read_signer(pointer, bs, r);
             } else if (fieldId == 5) {
                 pointer += _read_unpacked_repeated_relayers(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
@@ -1117,24 +1061,15 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 5) {
-                pointer += _read_unpacked_repeated_relayers(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_relayers(pointer, bs, r, counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1153,11 +1088,9 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcApplicationsFeeV1Fee.Data memory x,
-            uint256 sz
-        ) = _decode_IbcApplicationsFeeV1Fee(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcApplicationsFeeV1Fee.Data memory x, uint256 sz) =
+            _decode_IbcApplicationsFeeV1Fee(p, bs);
         r.fee = x;
         return sz;
     }
@@ -1173,7 +1106,7 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.source_port_id = x;
         return sz;
@@ -1190,7 +1123,7 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.source_channel_id = x;
         return sz;
@@ -1207,7 +1140,7 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.signer = x;
         return sz;
@@ -1225,8 +1158,8 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[6] memory counters
-    ) internal pure returns (uint) {
+        uint256[6] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
@@ -1251,15 +1184,13 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
     function _decode_IbcApplicationsFeeV1Fee(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcApplicationsFeeV1Fee.Data memory, uint) {
+    ) internal pure returns (IbcApplicationsFeeV1Fee.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (IbcApplicationsFeeV1Fee.Data memory r, ) = IbcApplicationsFeeV1Fee
-            ._decode(pointer, bs, sz);
+        (IbcApplicationsFeeV1Fee.Data memory r,) =
+            IbcApplicationsFeeV1Fee._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1292,67 +1223,43 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcApplicationsFeeV1Fee._encode_nested(r.fee, pointer, bs);
 
         if (bytes(r.source_port_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.source_port_id,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.source_port_id, pointer, bs);
         }
         if (bytes(r.source_channel_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.source_channel_id,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.source_channel_id, pointer, bs);
         }
         if (bytes(r.signer).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.signer, pointer, bs);
         }
         if (r.relayers.length != 0) {
             for (i = 0; i < r.relayers.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    5,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    5, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
-                pointer += ProtoBufRuntime._encode_string(
-                    r.relayers[i],
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._encode_string(r.relayers[i], pointer, bs);
             }
         }
         return pointer - offset;
@@ -1371,7 +1278,7 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1396,18 +1303,13 @@ library IbcApplicationsFeeV1MsgPayPacketFee {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
-                IbcApplicationsFeeV1Fee._estimate(r.fee)
-            );
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(IbcApplicationsFeeV1Fee._estimate(r.fee));
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.source_port_id).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(bytes(r.source_channel_id).length);
+        e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.source_channel_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.signer).length);
         for (i = 0; i < r.relayers.length; i++) {
             e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.relayers[i]).length);
@@ -1508,7 +1410,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1518,7 +1420,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1536,7 +1438,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1544,10 +1446,8 @@ library IbcApplicationsFeeV1MsgPayPacketFeeResponse {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
         }
         return (r, sz);
@@ -1584,7 +1484,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
@@ -1604,7 +1504,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1628,7 +1528,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeResponse {
      * @dev The estimator for a struct
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory /* r */) internal pure returns (uint) {
+    function _estimate(Data memory /* r */ ) internal pure returns (uint256) {
         uint256 e;
         return e;
     }
@@ -1687,7 +1587,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1697,7 +1597,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1715,7 +1615,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1723,21 +1623,16 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_packet_id(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_packet_fee(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1756,11 +1651,9 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcCoreChannelV1PacketId.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreChannelV1PacketId(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcCoreChannelV1PacketId.Data memory x, uint256 sz) =
+            _decode_IbcCoreChannelV1PacketId(p, bs);
         r.packet_id = x;
         return sz;
     }
@@ -1776,11 +1669,9 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcApplicationsFeeV1PacketFee.Data memory x,
-            uint256 sz
-        ) = _decode_IbcApplicationsFeeV1PacketFee(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcApplicationsFeeV1PacketFee.Data memory x, uint256 sz) =
+            _decode_IbcApplicationsFeeV1PacketFee(p, bs);
         r.packet_fee = x;
         return sz;
     }
@@ -1796,15 +1687,13 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
     function _decode_IbcCoreChannelV1PacketId(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreChannelV1PacketId.Data memory, uint) {
+    ) internal pure returns (IbcCoreChannelV1PacketId.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (IbcCoreChannelV1PacketId.Data memory r, ) = IbcCoreChannelV1PacketId
-            ._decode(pointer, bs, sz);
+        (IbcCoreChannelV1PacketId.Data memory r,) =
+            IbcCoreChannelV1PacketId._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1818,17 +1707,17 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
     function _decode_IbcApplicationsFeeV1PacketFee(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcApplicationsFeeV1PacketFee.Data memory, uint) {
+    )
+        internal
+        pure
+        returns (IbcApplicationsFeeV1PacketFee.Data memory, uint256)
+    {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcApplicationsFeeV1PacketFee.Data memory r,
-
-        ) = IbcApplicationsFeeV1PacketFee._decode(pointer, bs, sz);
+        (IbcApplicationsFeeV1PacketFee.Data memory r,) =
+            IbcApplicationsFeeV1PacketFee._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1861,32 +1750,21 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcCoreChannelV1PacketId._encode_nested(
-            r.packet_id,
-            pointer,
-            bs
-        );
+        pointer +=
+            IbcCoreChannelV1PacketId._encode_nested(r.packet_id, pointer, bs);
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcApplicationsFeeV1PacketFee._encode_nested(
-            r.packet_fee,
-            pointer,
-            bs
+            r.packet_fee, pointer, bs
         );
 
         return pointer - offset;
@@ -1905,7 +1783,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1930,16 +1808,14 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcCoreChannelV1PacketId._estimate(r.packet_id)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcApplicationsFeeV1PacketFee._estimate(r.packet_fee)
             );
         return e;
@@ -1959,10 +1835,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsync {
      */
     function store(Data memory input, Data storage output) internal {
         IbcCoreChannelV1PacketId.store(input.packet_id, output.packet_id);
-        IbcApplicationsFeeV1PacketFee.store(
-            input.packet_fee,
-            output.packet_fee
-        );
+        IbcApplicationsFeeV1PacketFee.store(input.packet_fee, output.packet_fee);
     }
 
     //utility functions
@@ -2004,7 +1877,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsyncResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -2014,7 +1887,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsyncResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -2032,7 +1905,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsyncResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -2040,10 +1913,8 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsyncResponse {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
         }
         return (r, sz);
@@ -2080,7 +1951,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsyncResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
@@ -2100,7 +1971,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsyncResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -2124,7 +1995,7 @@ library IbcApplicationsFeeV1MsgPayPacketFeeAsyncResponse {
      * @dev The estimator for a struct
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory /* r */) internal pure returns (uint) {
+    function _estimate(Data memory /* r */ ) internal pure returns (uint256) {
         uint256 e;
         return e;
     }

@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 
@@ -18,7 +19,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -28,7 +29,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -46,7 +47,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -54,10 +55,8 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_type(pointer, bs, r);
@@ -66,11 +65,8 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
             } else if (fieldId == 3) {
                 pointer += _read_memo(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -89,10 +85,10 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 tmp, uint256 sz) = ProtoBufRuntime._decode_enum(p, bs);
-        IbcApplicationsInterchainAccountsV1PacketGlobalEnums.Type x = IbcApplicationsInterchainAccountsV1PacketGlobalEnums
-                .decode_Type(tmp);
+        IbcApplicationsInterchainAccountsV1PacketGlobalEnums.Type x =
+        IbcApplicationsInterchainAccountsV1PacketGlobalEnums.decode_Type(tmp);
         r.type_ = x;
         return sz;
     }
@@ -108,7 +104,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.data = x;
         return sz;
@@ -125,7 +121,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.memo = x;
         return sz;
@@ -160,36 +156,29 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
-        if (uint(r.type_) != 0) {
+        if (uint256(r.type_) != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            int32 _enum_type = IbcApplicationsInterchainAccountsV1PacketGlobalEnums
-                    .encode_Type(r.type_);
+            int32 _enum_type =
+            IbcApplicationsInterchainAccountsV1PacketGlobalEnums.encode_Type(
+                r.type_
+            );
             pointer += ProtoBufRuntime._encode_enum(_enum_type, pointer, bs);
         }
         if (r.data.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.data, pointer, bs);
         }
         if (bytes(r.memo).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.memo, pointer, bs);
         }
@@ -209,7 +198,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -234,13 +223,13 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_enum(
-                IbcApplicationsInterchainAccountsV1PacketGlobalEnums
-                    .encode_Type(r.type_)
+        e += 1
+            + ProtoBufRuntime._sz_enum(
+                IbcApplicationsInterchainAccountsV1PacketGlobalEnums.encode_Type(
+                    r.type_
+                )
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(r.data.length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.memo).length);
@@ -250,7 +239,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccountPacketData {
     // empty checker
 
     function _empty(Data memory r) internal pure returns (bool) {
-        if (uint(r.type_) != 0) {
+        if (uint256(r.type_) != 0) {
             return false;
         }
 
@@ -316,7 +305,7 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -326,7 +315,7 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -344,33 +333,25 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[2] memory counters;
+        uint256[2] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_messages(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
@@ -380,24 +361,15 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
-                pointer += _read_unpacked_repeated_messages(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_messages(pointer, bs, r, counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -417,15 +389,13 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[2] memory counters
-    ) internal pure returns (uint) {
+        uint256[2] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            GoogleProtobufAny.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufAny(p, bs);
+        (GoogleProtobufAny.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufAny(p, bs);
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -446,18 +416,13 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
     function _decode_GoogleProtobufAny(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufAny.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufAny.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufAny.Data memory r, ) = GoogleProtobufAny._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (GoogleProtobufAny.Data memory r,) =
+            GoogleProtobufAny._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -490,23 +455,17 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.messages.length != 0) {
             for (i = 0; i < r.messages.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
-                pointer += GoogleProtobufAny._encode_nested(
-                    r.messages[i],
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    GoogleProtobufAny._encode_nested(r.messages[i], pointer, bs);
             }
         }
         return pointer - offset;
@@ -525,7 +484,7 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -550,13 +509,12 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.messages.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     GoogleProtobufAny._estimate(r.messages[i])
                 );
         }
@@ -598,9 +556,8 @@ library IbcApplicationsInterchain_accountsV1CosmosTx {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        GoogleProtobufAny.Data[] memory tmp = new GoogleProtobufAny.Data[](
-            self.messages.length + 1
-        );
+        GoogleProtobufAny.Data[] memory tmp =
+            new GoogleProtobufAny.Data[](self.messages.length + 1);
         for (uint256 i = 0; i < self.messages.length; i++) {
             tmp[i] = self.messages[i];
         }
@@ -669,11 +626,13 @@ library IbcApplicationsInterchainAccountsV1PacketGlobalEnums {
      * @dev The estimator for an packed enum array
      * @return The number of bytes encoded
      */
-    function estimate_packed_repeated_Type(
-        Type[] memory a
-    ) internal pure returns (uint256) {
+    function estimate_packed_repeated_Type(Type[] memory a)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 e = 0;
-        for (uint i = 0; i < a.length; i++) {
+        for (uint256 i = 0; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_Type(a[i]));
         }
         return e;

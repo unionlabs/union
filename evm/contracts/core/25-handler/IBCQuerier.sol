@@ -7,9 +7,11 @@ import "../05-port/ModuleManager.sol";
 import "../24-host/IBCCommitment.sol";
 
 abstract contract IBCQuerier is IBCStore {
-    function getClientState(
-        string calldata clientId
-    ) external view returns (bytes memory, bool) {
+    function getClientState(string calldata clientId)
+        external
+        view
+        returns (bytes memory, bool)
+    {
         return getClient(clientId).getClientState(clientId);
     }
 
@@ -20,20 +22,17 @@ abstract contract IBCQuerier is IBCStore {
         return getClient(clientId).getConsensusState(clientId, height);
     }
 
-    function getConnection(
-        string calldata connectionId
-    )
+    function getConnection(string calldata connectionId)
         external
         view
         returns (IbcCoreConnectionV1ConnectionEnd.Data memory, bool)
     {
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
-            connectionId
-        ];
+        IbcCoreConnectionV1ConnectionEnd.Data storage connection =
+            connections[connectionId];
         return (
             connection,
-            connection.state !=
-                IbcCoreConnectionV1GlobalEnums
+            connection.state
+                != IbcCoreConnectionV1GlobalEnums
                     .State
                     .STATE_UNINITIALIZED_UNSPECIFIED
         );
@@ -43,15 +42,12 @@ abstract contract IBCQuerier is IBCStore {
         string calldata portId,
         string calldata channelId
     ) external view returns (IbcCoreChannelV1Channel.Data memory, bool) {
-        IbcCoreChannelV1Channel.Data storage channel = channels[portId][
-            channelId
-        ];
+        IbcCoreChannelV1Channel.Data storage channel =
+            channels[portId][channelId];
         return (
             channel,
-            channel.state !=
-                IbcCoreChannelV1GlobalEnums
-                    .State
-                    .STATE_UNINITIALIZED_UNSPECIFIED
+            channel.state
+                != IbcCoreChannelV1GlobalEnums.State.STATE_UNINITIALIZED_UNSPECIFIED
         );
     }
 
@@ -60,11 +56,9 @@ abstract contract IBCQuerier is IBCStore {
         string calldata channelId,
         uint64 sequence
     ) external view returns (bytes32, bool) {
-        bytes32 commitment = commitments[
-            keccak256(
-                IBCCommitment.packetCommitmentPath(portId, channelId, sequence)
-            )
-        ];
+        bytes32 commitment = commitments[keccak256(
+            IBCCommitment.packetCommitmentPath(portId, channelId, sequence)
+        )];
         return (commitment, commitment != bytes32(0));
     }
 
@@ -73,15 +67,11 @@ abstract contract IBCQuerier is IBCStore {
         string calldata channelId,
         uint64 sequence
     ) external view returns (bytes32, bool) {
-        bytes32 commitment = commitments[
-            keccak256(
-                IBCCommitment.packetAcknowledgementCommitmentPath(
-                    portId,
-                    channelId,
-                    sequence
-                )
+        bytes32 commitment = commitments[keccak256(
+            IBCCommitment.packetAcknowledgementCommitmentPath(
+                portId, channelId, sequence
             )
-        ];
+        )];
         return (commitment, commitment != bytes32(0));
     }
 

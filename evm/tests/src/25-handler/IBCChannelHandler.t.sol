@@ -3,17 +3,36 @@ pragma solidity ^0.8.23;
 import "solidity-bytes-utils/BytesLib.sol";
 import "solady/utils/LibString.sol";
 
-import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
+import {IMembershipVerifier} from
+    "../../../contracts/core/IMembershipVerifier.sol";
 import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
-import {IBCChannelLib} from "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
+import {IBCChannelLib} from
+    "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
-import {IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
-import {IbcCoreChannelV1Channel as Channel, IbcCoreChannelV1GlobalEnums as ChannelEnums} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
-import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
-import {TendermintTypesSignedHeader} from "../../../contracts/proto/tendermint/types/canonical.sol";
-import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeader, TendermintVersionConsensus, TendermintTypesCommitSig, TendermintTypesBlockID, TendermintTypesPartSetHeader} from "../../../contracts/proto/tendermint/types/types.sol";
+import {
+    IbcCoreConnectionV1ConnectionEnd as ConnectionEnd,
+    IbcCoreConnectionV1Counterparty as ConnectionCounterparty,
+    IbcCoreConnectionV1GlobalEnums as ConnectionEnums
+} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
+import {
+    IbcCoreChannelV1Channel as Channel,
+    IbcCoreChannelV1GlobalEnums as ChannelEnums
+} from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
+import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
+    "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {TendermintTypesSignedHeader} from
+    "../../../contracts/proto/tendermint/types/canonical.sol";
+import {
+    TendermintTypesCommit,
+    TendermintTypesHeader,
+    TendermintTypesSignedHeader,
+    TendermintVersionConsensus,
+    TendermintTypesCommitSig,
+    TendermintTypesBlockID,
+    TendermintTypesPartSetHeader
+} from "../../../contracts/proto/tendermint/types/types.sol";
 
 import "../TestPlus.sol";
 
@@ -109,11 +128,8 @@ contract IBCChannelHandlerTest is TestPlus {
         handler = new IBCHandler_Testable();
         membershipVerifier = new TestMembershipVerifier();
         verifier = new TestVerifier();
-        client = new CometblsClient(
-            address(handler),
-            verifier,
-            membershipVerifier
-        );
+        client =
+            new CometblsClient(address(handler), verifier, membershipVerifier);
         handler.registerClient(CLIENT_TYPE, client);
         app = new MockApp();
         portId = address(app).toHexString();
@@ -146,37 +162,39 @@ contract IBCChannelHandlerTest is TestPlus {
             evidence_hash: hex"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
             proposer_address: hex"4CE57693C82B50F830731DAB14FA759327762456"
         });
-        return
-            TendermintTypesSignedHeader.Data({
-                header: header,
-                // NOTE: validators are signing the block root which is computed
-                // from the above TendermintTypesHeader field. Relayers can tamper
-                // the commit but the client ensure that the block_id.hash matches
-                // hash(header). Signatures are not required as the ZKP is a proof
-                // that the validators signed the correct hash.
-                commit: TendermintTypesCommit.Data({
-                    height: header.height,
-                    round: 0,
-                    block_id: TendermintTypesBlockID.Data({
-                        hash: hex"90548CD1E2BA8603261FE6400ADFD97EA48150CBD5B24B9828B2542BAB9E27EC",
-                        part_set_header: TendermintTypesPartSetHeader.Data({
-                            total: 1,
-                            hash: hex"153E8B1F5B189A140FE5DA85DAB72FBD4A1DFA7E69C6FE5CE1FD66F0CCB5F6A1"
-                        })
-                    }),
-                    signatures: new TendermintTypesCommitSig.Data[](0)
-                })
-            });
+        return TendermintTypesSignedHeader.Data({
+            header: header,
+            // NOTE: validators are signing the block root which is computed
+            // from the above TendermintTypesHeader field. Relayers can tamper
+            // the commit but the client ensure that the block_id.hash matches
+            // hash(header). Signatures are not required as the ZKP is a proof
+            // that the validators signed the correct hash.
+            commit: TendermintTypesCommit.Data({
+                height: header.height,
+                round: 0,
+                block_id: TendermintTypesBlockID.Data({
+                    hash: hex"90548CD1E2BA8603261FE6400ADFD97EA48150CBD5B24B9828B2542BAB9E27EC",
+                    part_set_header: TendermintTypesPartSetHeader.Data({
+                        total: 1,
+                        hash: hex"153E8B1F5B189A140FE5DA85DAB72FBD4A1DFA7E69C6FE5CE1FD66F0CCB5F6A1"
+                    })
+                }),
+                signatures: new TendermintTypesCommitSig.Data[](0)
+            })
+        });
     }
 
     function assumeValidProofHeight(uint64 proofHeight) internal {
         vm.assume(
-            0 < proofHeight &&
-                proofHeight < uint64(getValidHeader().header.height)
+            0 < proofHeight
+                && proofHeight < uint64(getValidHeader().header.height)
         );
     }
 
-    function createClient(uint64 proofHeight) internal returns (string memory) {
+    function createClient(uint64 proofHeight)
+        internal
+        returns (string memory)
+    {
         assumeValidProofHeight(proofHeight);
         TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
         IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
@@ -193,10 +211,8 @@ contract IBCChannelHandlerTest is TestPlus {
     function test_handshake_init_ack_ok(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connId,
-            portId
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit(connId, portId);
         vm.expectEmit(false, false, false, false);
         emit ChannelOpenInit("", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
@@ -206,11 +222,8 @@ contract IBCChannelHandlerTest is TestPlus {
             address(app)
         );
 
-        IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(
-            portId,
-            channelId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenAck memory msg_ack =
+            MsgMocks.channelOpenAck(portId, channelId, proofHeight);
         membershipVerifier.pushValid();
         handler.channelOpenAck(msg_ack);
     }
@@ -218,10 +231,8 @@ contract IBCChannelHandlerTest is TestPlus {
     function test_handshake_init_ack_invalidProof(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connId,
-            portId
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit(connId, portId);
         vm.expectEmit(false, false, false, false);
         emit ChannelOpenInit("", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
@@ -231,11 +242,8 @@ contract IBCChannelHandlerTest is TestPlus {
             address(app)
         );
 
-        IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(
-            portId,
-            channelId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenAck memory msg_ack =
+            MsgMocks.channelOpenAck(portId, channelId, proofHeight);
         vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
         handler.channelOpenAck(msg_ack);
     }
@@ -243,10 +251,8 @@ contract IBCChannelHandlerTest is TestPlus {
     function test_handshake_init_noHop(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connId,
-            portId
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit(connId, portId);
         msg_init.channel.connection_hops = new string[](0);
         vm.expectRevert(IBCChannelLib.ErrConnNotSingleHop.selector);
         handler.channelOpenInit(msg_init);
@@ -258,21 +264,19 @@ contract IBCChannelHandlerTest is TestPlus {
     ) public {
         vm.assume(proofHeight > 0);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            "invalid-connection",
-            portId
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit("invalid-connection", portId);
         vm.expectRevert(IBCChannelLib.ErrInvalidConnectionState.selector);
         handler.channelOpenInit(msg_init);
     }
 
-    function test_handshake_init_unsupportedFeature(uint64 proofHeight) public {
+    function test_handshake_init_unsupportedFeature(uint64 proofHeight)
+        public
+    {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connId,
-            portId
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit(connId, portId);
         msg_init.channel.ordering = ChannelEnums.Order.ORDER_NONE_UNSPECIFIED;
         vm.expectRevert(IBCChannelLib.ErrUnsupportedFeature.selector);
         handler.channelOpenInit(msg_init);
@@ -282,24 +286,20 @@ contract IBCChannelHandlerTest is TestPlus {
         vm.assume(proofHeight > 0);
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connId,
-            portId
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit(connId, portId);
         msg_init.channel.state = ChannelEnums.State.STATE_OPEN;
         vm.expectRevert(IBCChannelLib.ErrInvalidChannelState.selector);
         handler.channelOpenInit(msg_init);
     }
 
-    function test_handshake_init_nonEmptyCounterpartyChannel(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_init_nonEmptyCounterpartyChannel(uint64 proofHeight)
+        public
+    {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connId,
-            portId
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit(connId, portId);
         msg_init.channel.counterparty.channel_id = "invalid";
         vm.expectRevert(IBCChannelLib.ErrCounterpartyChannelNotEmpty.selector);
         handler.channelOpenInit(msg_init);
@@ -308,10 +308,8 @@ contract IBCChannelHandlerTest is TestPlus {
     function test_handshake_init_ack_close_init_ok(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connId,
-            portId
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit(connId, portId);
         vm.expectEmit(false, false, false, false);
         emit ChannelOpenInit("", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
@@ -321,28 +319,23 @@ contract IBCChannelHandlerTest is TestPlus {
             address(app)
         );
 
-        IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(
-            portId,
-            channelId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenAck memory msg_ack =
+            MsgMocks.channelOpenAck(portId, channelId, proofHeight);
         membershipVerifier.pushValid();
         handler.channelOpenAck(msg_ack);
 
-        IBCMsgs.MsgChannelCloseInit memory msg_close = MsgMocks
-            .channelCloseInit(portId, channelId);
+        IBCMsgs.MsgChannelCloseInit memory msg_close =
+            MsgMocks.channelCloseInit(portId, channelId);
         handler.channelCloseInit(msg_close);
     }
 
-    function test_handshake_init_ack_close_confirm_ok(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_init_ack_close_confirm_ok(uint64 proofHeight)
+        public
+    {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connId,
-            portId
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit(connId, portId);
         vm.expectEmit(false, false, false, false);
         emit ChannelOpenInit("", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
@@ -352,16 +345,13 @@ contract IBCChannelHandlerTest is TestPlus {
             address(app)
         );
 
-        IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(
-            portId,
-            channelId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenAck memory msg_ack =
+            MsgMocks.channelOpenAck(portId, channelId, proofHeight);
         membershipVerifier.pushValid();
         handler.channelOpenAck(msg_ack);
 
-        IBCMsgs.MsgChannelCloseConfirm memory msg_close = MsgMocks
-            .channelCloseConfirm(portId, channelId, proofHeight);
+        IBCMsgs.MsgChannelCloseConfirm memory msg_close =
+            MsgMocks.channelCloseConfirm(portId, channelId, proofHeight);
         membershipVerifier.pushValid();
         handler.channelCloseConfirm(msg_close);
     }
@@ -371,10 +361,8 @@ contract IBCChannelHandlerTest is TestPlus {
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
-            connId,
-            portId
-        );
+        IBCMsgs.MsgChannelOpenInit memory msg_init =
+            MsgMocks.channelOpenInit(connId, portId);
         vm.expectEmit(false, false, false, false);
         emit ChannelOpenInit("", "", "", "");
         string memory channelId = handler.channelOpenInit(msg_init);
@@ -384,16 +372,13 @@ contract IBCChannelHandlerTest is TestPlus {
             address(app)
         );
 
-        IBCMsgs.MsgChannelOpenAck memory msg_ack = MsgMocks.channelOpenAck(
-            portId,
-            channelId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenAck memory msg_ack =
+            MsgMocks.channelOpenAck(portId, channelId, proofHeight);
         membershipVerifier.pushValid();
         handler.channelOpenAck(msg_ack);
 
-        IBCMsgs.MsgChannelCloseConfirm memory msg_close = MsgMocks
-            .channelCloseConfirm(portId, channelId, proofHeight);
+        IBCMsgs.MsgChannelCloseConfirm memory msg_close =
+            MsgMocks.channelCloseConfirm(portId, channelId, proofHeight);
         vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
         handler.channelCloseConfirm(msg_close);
     }
@@ -401,11 +386,8 @@ contract IBCChannelHandlerTest is TestPlus {
     function test_handshake_try_confirm_ok(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
-            connId,
-            portId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenTry memory msg_try =
+            MsgMocks.channelOpenTry(connId, portId, proofHeight);
         membershipVerifier.pushValid();
         vm.expectEmit(false, false, false, false);
         emit ChannelOpenTry("", "", "", "", "");
@@ -416,22 +398,19 @@ contract IBCChannelHandlerTest is TestPlus {
             address(app)
         );
 
-        IBCMsgs.MsgChannelOpenConfirm memory msg_confirm = MsgMocks
-            .channelOpenConfirm(portId, channelId, proofHeight);
+        IBCMsgs.MsgChannelOpenConfirm memory msg_confirm =
+            MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);
         membershipVerifier.pushValid();
         handler.channelOpenConfirm(msg_confirm);
     }
 
-    function test_handshake_try_confirm_invalidProof(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_try_confirm_invalidProof(uint64 proofHeight)
+        public
+    {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
-            connId,
-            portId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenTry memory msg_try =
+            MsgMocks.channelOpenTry(connId, portId, proofHeight);
         membershipVerifier.pushValid();
         vm.expectEmit(false, false, false, false);
         emit ChannelOpenTry("", "", "", "", "");
@@ -442,8 +421,8 @@ contract IBCChannelHandlerTest is TestPlus {
             address(app)
         );
 
-        IBCMsgs.MsgChannelOpenConfirm memory msg_confirm = MsgMocks
-            .channelOpenConfirm(portId, channelId, proofHeight);
+        IBCMsgs.MsgChannelOpenConfirm memory msg_confirm =
+            MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);
         vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
         handler.channelOpenConfirm(msg_confirm);
     }
@@ -451,11 +430,8 @@ contract IBCChannelHandlerTest is TestPlus {
     function test_handshake_try_invalidProof(uint64 proofHeight) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
-            connId,
-            portId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenTry memory msg_try =
+            MsgMocks.channelOpenTry(connId, portId, proofHeight);
         vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
         handler.channelOpenTry(msg_try);
     }
@@ -466,11 +442,8 @@ contract IBCChannelHandlerTest is TestPlus {
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
-            connId,
-            portId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenTry memory msg_try =
+            MsgMocks.channelOpenTry(connId, portId, proofHeight);
         msg_try.channel.state = ChannelEnums.State.STATE_INIT;
 
         membershipVerifier.pushValid();
@@ -478,16 +451,13 @@ contract IBCChannelHandlerTest is TestPlus {
         handler.channelOpenTry(msg_try);
     }
 
-    function test_handshake_try_confirm_close_init_ok(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_try_confirm_close_init_ok(uint64 proofHeight)
+        public
+    {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
-            connId,
-            portId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenTry memory msg_try =
+            MsgMocks.channelOpenTry(connId, portId, proofHeight);
         membershipVerifier.pushValid();
         vm.expectEmit(false, false, false, false);
         emit ChannelOpenTry("", "", "", "", "");
@@ -498,26 +468,23 @@ contract IBCChannelHandlerTest is TestPlus {
             address(app)
         );
 
-        IBCMsgs.MsgChannelOpenConfirm memory msg_confirm = MsgMocks
-            .channelOpenConfirm(portId, channelId, proofHeight);
+        IBCMsgs.MsgChannelOpenConfirm memory msg_confirm =
+            MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);
         membershipVerifier.pushValid();
         handler.channelOpenConfirm(msg_confirm);
 
-        IBCMsgs.MsgChannelCloseInit memory msg_close = MsgMocks
-            .channelCloseInit(portId, channelId);
+        IBCMsgs.MsgChannelCloseInit memory msg_close =
+            MsgMocks.channelCloseInit(portId, channelId);
         handler.channelCloseInit(msg_close);
     }
 
-    function test_handshake_try_confirm_close_confirm_ok(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_try_confirm_close_confirm_ok(uint64 proofHeight)
+        public
+    {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
-            connId,
-            portId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenTry memory msg_try =
+            MsgMocks.channelOpenTry(connId, portId, proofHeight);
 
         membershipVerifier.pushValid();
         vm.expectEmit(false, false, false, false);
@@ -529,13 +496,13 @@ contract IBCChannelHandlerTest is TestPlus {
             address(app)
         );
 
-        IBCMsgs.MsgChannelOpenConfirm memory msg_confirm = MsgMocks
-            .channelOpenConfirm(portId, channelId, proofHeight);
+        IBCMsgs.MsgChannelOpenConfirm memory msg_confirm =
+            MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);
         membershipVerifier.pushValid();
         handler.channelOpenConfirm(msg_confirm);
 
-        IBCMsgs.MsgChannelCloseConfirm memory msg_close = MsgMocks
-            .channelCloseConfirm(portId, channelId, proofHeight);
+        IBCMsgs.MsgChannelCloseConfirm memory msg_close =
+            MsgMocks.channelCloseConfirm(portId, channelId, proofHeight);
         membershipVerifier.pushValid();
         handler.channelCloseConfirm(msg_close);
     }
@@ -545,11 +512,8 @@ contract IBCChannelHandlerTest is TestPlus {
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
-            connId,
-            portId,
-            proofHeight
-        );
+        IBCMsgs.MsgChannelOpenTry memory msg_try =
+            MsgMocks.channelOpenTry(connId, portId, proofHeight);
 
         membershipVerifier.pushValid();
         vm.expectEmit(false, false, false, false);
@@ -561,26 +525,27 @@ contract IBCChannelHandlerTest is TestPlus {
             address(app)
         );
 
-        IBCMsgs.MsgChannelOpenConfirm memory msg_confirm = MsgMocks
-            .channelOpenConfirm(portId, channelId, proofHeight);
+        IBCMsgs.MsgChannelOpenConfirm memory msg_confirm =
+            MsgMocks.channelOpenConfirm(portId, channelId, proofHeight);
         membershipVerifier.pushValid();
         handler.channelOpenConfirm(msg_confirm);
 
-        IBCMsgs.MsgChannelCloseConfirm memory msg_close = MsgMocks
-            .channelCloseConfirm(portId, channelId, proofHeight);
+        IBCMsgs.MsgChannelCloseConfirm memory msg_close =
+            MsgMocks.channelCloseConfirm(portId, channelId, proofHeight);
         vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
         handler.channelCloseConfirm(msg_close);
     }
 
-    function setupConnection(
-        uint64 proofHeight
-    ) internal returns (string memory, string memory) {
+    function setupConnection(uint64 proofHeight)
+        internal
+        returns (string memory, string memory)
+    {
         string memory clientId = createClient(proofHeight);
-        IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
-            .connectionOpenInit(clientId);
+        IBCMsgs.MsgConnectionOpenInit memory msg_init =
+            MsgMocks.connectionOpenInit(clientId);
         string memory connId = handler.connectionOpenInit(msg_init);
-        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
-            .connectionOpenAck(clientId, connId, proofHeight);
+        IBCMsgs.MsgConnectionOpenAck memory msg_ack =
+            MsgMocks.connectionOpenAck(clientId, connId, proofHeight);
         membershipVerifier.pushValid();
         membershipVerifier.pushValid();
         handler.connectionOpenAck(msg_ack);

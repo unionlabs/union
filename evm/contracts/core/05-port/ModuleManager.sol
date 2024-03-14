@@ -17,9 +17,12 @@ abstract contract ModuleManager is IBCStore, Context {
     /**
      * @dev lookupModuleByPort will return the IBCModule along with the capability associated with a given portID
      */
-    function lookupModuleByPort(
-        string memory portId
-    ) internal view virtual returns (IIBCModule) {
+    function lookupModuleByPort(string memory portId)
+        internal
+        view
+        virtual
+        returns (IIBCModule)
+    {
         return IIBCModule(Hex.hexToAddress(portId));
     }
 
@@ -61,9 +64,11 @@ abstract contract ModuleManager is IBCStore, Context {
      * @dev authenticateCapability attempts to authenticate a given name from a caller.
      * It allows for a caller to check that a capability does in fact correspond to a particular name.
      */
-    function authenticateCapability(
-        string memory name
-    ) internal view returns (bool) {
+    function authenticateCapability(string memory name)
+        internal
+        view
+        returns (bool)
+    {
         return _msgSender() == capabilities[name];
     }
 

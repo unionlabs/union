@@ -467,64 +467,58 @@
             '';
           };
 
-          treefmt =
-            let
-              prettier-solidity = pkgs.buildNpmPackage {
-                name = "prettier-plugin-solidity";
-                version = "1.1.3";
-                nativeBuildInputs = [ pkgs.pkg-config pkgs.python3 ];
-                src = pkgs.fetchFromGitHub {
-                  owner = "prettier-solidity";
-                  repo = "prettier-plugin-solidity";
-                  rev = "0f0b31bd1d76626cad4ce576d89088ef23ad87f3";
-                  hash = "sha256-zodOB5hARb7Jrb6d4gqmBKEFKUg0ZNZKbTN7H4vJk2w=";
-                };
-                npmInstallFlags = "--include=dev";
-                npmDepsHash =
-                  "sha256-Hzc4j9icNxTJNNaZ3PrmLKcUVR26nu4KqLireP4WmZM=";
+          treefmt = {
+            projectRootFile = "flake.nix";
+            programs = {
+              nixpkgs-fmt.enable = true;
+              gofmt = {
+                enable = true;
+                package = goPkgs.go;
               };
-            in
-            {
-              projectRootFile = "flake.nix";
-              programs = {
-                nixpkgs-fmt.enable = true;
-                gofmt = {
-                  enable = true;
-                  package = goPkgs.go;
-                };
-                rustfmt = {
-                  enable = true;
-                  package = rust.toolchains.dev;
-                };
-                sort = {
-                  enable = true;
-                  file = "dictionary.txt";
-                };
-                prettier = {
-                  enable = false;
-                  excludes = [ "./app/**/*" ];
-                  includes = [
-                    "*.md"
-                    "*.mdx"
-                    "*.yaml"
-                    "*.yml"
-                    "*.sol"
-                  ];
-                  settings = {
-                    pluginSearchDirs = [ "${prettier-solidity}/lib" ];
-                  };
-                };
-                taplo = { enable = true; };
-                biome = {
-                  enable = true;
-                  package = biome;
-                  config-path = ./biome.json;
-                };
+              rustfmt = {
+                enable = true;
+                package = rust.toolchains.dev;
               };
-              settings = {
-                global.excludes = [ "**/vendor/**" ];
+              sort = {
+                enable = true;
+                file = "dictionary.txt";
+              };
+              forge = {
+                enable = true;
+                package = dbg (pkgs.stdenv.mkDerivation {
+                  name = "forge";
+                  buildInputs = [ pkgs.makeWrapper ];
+                  src = pkgs.foundry-bin;
+                  installPhase = ''
+                    mkdir -p $out/bin
+                    cp -r $src/bin/forge $out/bin/forge
+                    wrapProgram $out/bin/forge \
+                      --set FOUNDRY_CONFIG "${./foundry.toml}"
+                  '';
+                  meta.mainProgram = "forge";
+                });
+              };
+              prettier = {
+                enable = false;
+                excludes = [ "./app/**/*" ];
+                includes = [
+                  "*.md"
+                  "*.mdx"
+                  "*.yaml"
+                  "*.yml"
+                ];
+              };
+              taplo = { enable = true; };
+              biome = {
+                enable = true;
+                package = biome;
+                config-path = ./biome.json;
               };
             };
+            settings = {
+              global.excludes = [ "**/vendor/**" ];
+            };
+          };
         };
     };
 

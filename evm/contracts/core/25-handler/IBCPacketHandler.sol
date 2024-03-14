@@ -27,7 +27,10 @@ abstract contract IBCPacketHandler is IIBCPacket, Context, ModuleManager {
         passthrough(ibcPacket);
     }
 
-    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external override {
+    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_)
+        external
+        override
+    {
         passthrough(ibcPacket);
     }
 
@@ -40,15 +43,17 @@ abstract contract IBCPacketHandler is IIBCPacket, Context, ModuleManager {
         passthrough(ibcPacket);
     }
 
-    function acknowledgePacket(
-        IBCMsgs.MsgPacketAcknowledgement calldata msg_
-    ) external override {
+    function acknowledgePacket(IBCMsgs.MsgPacketAcknowledgement calldata msg_)
+        external
+        override
+    {
         passthrough(ibcPacket);
     }
 
-    function timeoutPacket(
-        IBCMsgs.MsgPacketTimeout calldata msg_
-    ) external override {
+    function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_)
+        external
+        override
+    {
         passthrough(ibcPacket);
     }
 }

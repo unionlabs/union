@@ -5,15 +5,19 @@ import {MerkleTree} from "../../contracts/lib/MerkleTree.sol";
 
 // Required to have coverage counted.
 contract MerkleProxy is Test {
-    function hashFromByteSlices(
-        bytes[] memory data
-    ) public pure returns (bytes32) {
+    function hashFromByteSlices(bytes[] memory data)
+        public
+        pure
+        returns (bytes32)
+    {
         return MerkleTree.hashFromByteSlices(data);
     }
 
-    function optimizedBlockRoot(
-        bytes32[14] memory data
-    ) public pure returns (bytes32) {
+    function optimizedBlockRoot(bytes32[14] memory data)
+        public
+        pure
+        returns (bytes32)
+    {
         return MerkleTree.optimizedBlockRoot(data);
     }
 }
@@ -41,25 +45,24 @@ contract MerkleTreeTests is Test {
         bytes memory m,
         bytes memory n
     ) public view returns (bytes32) {
-        return
-            proxy.optimizedBlockRoot(
-                [
-                    MerkleTree.leafHash(a),
-                    MerkleTree.leafHash(b),
-                    MerkleTree.leafHash(c),
-                    MerkleTree.leafHash(d),
-                    MerkleTree.leafHash(e),
-                    MerkleTree.leafHash(f),
-                    MerkleTree.leafHash(g),
-                    MerkleTree.leafHash(h),
-                    MerkleTree.leafHash(i),
-                    MerkleTree.leafHash(j),
-                    MerkleTree.leafHash(k),
-                    MerkleTree.leafHash(l),
-                    MerkleTree.leafHash(m),
-                    MerkleTree.leafHash(n)
-                ]
-            );
+        return proxy.optimizedBlockRoot(
+            [
+                MerkleTree.leafHash(a),
+                MerkleTree.leafHash(b),
+                MerkleTree.leafHash(c),
+                MerkleTree.leafHash(d),
+                MerkleTree.leafHash(e),
+                MerkleTree.leafHash(f),
+                MerkleTree.leafHash(g),
+                MerkleTree.leafHash(h),
+                MerkleTree.leafHash(i),
+                MerkleTree.leafHash(j),
+                MerkleTree.leafHash(k),
+                MerkleTree.leafHash(l),
+                MerkleTree.leafHash(m),
+                MerkleTree.leafHash(n)
+            ]
+        );
     }
 
     function getNonOptimizedRoot(
@@ -112,38 +115,10 @@ contract MerkleTreeTests is Test {
         bytes memory m,
         bytes memory n
     ) public {
-        bytes32 optimizedRoot = getOptimizedRoot(
-            a,
-            b,
-            c,
-            d,
-            e,
-            f,
-            g,
-            h,
-            i,
-            j,
-            k,
-            l,
-            m,
-            n
-        );
-        bytes32 root = getNonOptimizedRoot(
-            a,
-            b,
-            c,
-            d,
-            e,
-            f,
-            g,
-            h,
-            i,
-            j,
-            k,
-            l,
-            m,
-            n
-        );
+        bytes32 optimizedRoot =
+            getOptimizedRoot(a, b, c, d, e, f, g, h, i, j, k, l, m, n);
+        bytes32 root =
+            getNonOptimizedRoot(a, b, c, d, e, f, g, h, i, j, k, l, m, n);
         assertEq(optimizedRoot, root);
     }
 }

@@ -2,17 +2,33 @@ pragma solidity ^0.8.23;
 
 import "solidity-bytes-utils/BytesLib.sol";
 
-import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
+import {IMembershipVerifier} from
+    "../../../contracts/core/IMembershipVerifier.sol";
 import {IZKVerifierV2} from "../../../contracts/core/IZKVerifierV2.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
-import {IBCConnectionLib} from "../../../contracts/core/03-connection/IBCConnection.sol";
+import {IBCConnectionLib} from
+    "../../../contracts/core/03-connection/IBCConnection.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
-import {IbcCoreConnectionV1ConnectionEnd as ConnectionEnd, IbcCoreConnectionV1Counterparty as ConnectionCounterparty, IbcCoreConnectionV1GlobalEnums as ConnectionEnums} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
+import {
+    IbcCoreConnectionV1ConnectionEnd as ConnectionEnd,
+    IbcCoreConnectionV1Counterparty as ConnectionCounterparty,
+    IbcCoreConnectionV1GlobalEnums as ConnectionEnums
+} from "../../../contracts/proto/ibc/core/connection/v1/connection.sol";
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
-import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
-import {TendermintTypesSignedHeader} from "../../../contracts/proto/tendermint/types/canonical.sol";
-import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeader, TendermintVersionConsensus, TendermintTypesCommitSig, TendermintTypesBlockID, TendermintTypesPartSetHeader} from "../../../contracts/proto/tendermint/types/types.sol";
+import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
+    "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {TendermintTypesSignedHeader} from
+    "../../../contracts/proto/tendermint/types/canonical.sol";
+import {
+    TendermintTypesCommit,
+    TendermintTypesHeader,
+    TendermintTypesSignedHeader,
+    TendermintVersionConsensus,
+    TendermintTypesCommitSig,
+    TendermintTypesBlockID,
+    TendermintTypesPartSetHeader
+} from "../../../contracts/proto/tendermint/types/types.sol";
 
 import "../TestPlus.sol";
 
@@ -83,11 +99,8 @@ contract IBCConnectionHandlerTests is TestPlus {
         handler = new IBCHandler_Testable();
         membershipVerifier = new TestMembershipVerifier();
         verifier = new TestVerifier();
-        client = new CometblsClient(
-            address(handler),
-            verifier,
-            membershipVerifier
-        );
+        client =
+            new CometblsClient(address(handler), verifier, membershipVerifier);
         handler.registerClient(CLIENT_TYPE, client);
     }
 
@@ -118,37 +131,39 @@ contract IBCConnectionHandlerTests is TestPlus {
             evidence_hash: hex"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
             proposer_address: hex"4CE57693C82B50F830731DAB14FA759327762456"
         });
-        return
-            TendermintTypesSignedHeader.Data({
-                header: header,
-                // NOTE: validators are signing the block root which is computed
-                // from the above TendermintTypesHeader field. Relayers can tamper
-                // the commit but the client ensure that the block_id.hash matches
-                // hash(header). Signatures are not required as the ZKP is a proof
-                // that the validators signed the correct hash.
-                commit: TendermintTypesCommit.Data({
-                    height: header.height,
-                    round: 0,
-                    block_id: TendermintTypesBlockID.Data({
-                        hash: hex"90548CD1E2BA8603261FE6400ADFD97EA48150CBD5B24B9828B2542BAB9E27EC",
-                        part_set_header: TendermintTypesPartSetHeader.Data({
-                            total: 1,
-                            hash: hex"153E8B1F5B189A140FE5DA85DAB72FBD4A1DFA7E69C6FE5CE1FD66F0CCB5F6A1"
-                        })
-                    }),
-                    signatures: new TendermintTypesCommitSig.Data[](0)
-                })
-            });
+        return TendermintTypesSignedHeader.Data({
+            header: header,
+            // NOTE: validators are signing the block root which is computed
+            // from the above TendermintTypesHeader field. Relayers can tamper
+            // the commit but the client ensure that the block_id.hash matches
+            // hash(header). Signatures are not required as the ZKP is a proof
+            // that the validators signed the correct hash.
+            commit: TendermintTypesCommit.Data({
+                height: header.height,
+                round: 0,
+                block_id: TendermintTypesBlockID.Data({
+                    hash: hex"90548CD1E2BA8603261FE6400ADFD97EA48150CBD5B24B9828B2542BAB9E27EC",
+                    part_set_header: TendermintTypesPartSetHeader.Data({
+                        total: 1,
+                        hash: hex"153E8B1F5B189A140FE5DA85DAB72FBD4A1DFA7E69C6FE5CE1FD66F0CCB5F6A1"
+                    })
+                }),
+                signatures: new TendermintTypesCommitSig.Data[](0)
+            })
+        });
     }
 
     function assumeValidProofHeight(uint64 proofHeight) internal {
         vm.assume(
-            0 < proofHeight &&
-                proofHeight < uint64(getValidHeader().header.height)
+            0 < proofHeight
+                && proofHeight < uint64(getValidHeader().header.height)
         );
     }
 
-    function createClient(uint64 proofHeight) internal returns (string memory) {
+    function createClient(uint64 proofHeight)
+        internal
+        returns (string memory)
+    {
         assumeValidProofHeight(proofHeight);
         TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
         IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
@@ -212,14 +227,12 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_init_ack_ok(uint64 proofHeight) public {
         string memory clientId = createClient(proofHeight);
 
-        IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
-            .connectionOpenInit(clientId);
+        IBCMsgs.MsgConnectionOpenInit memory msg_init =
+            MsgMocks.connectionOpenInit(clientId);
         preInitOk();
         string memory connId = handler.connectionOpenInit(msg_init);
 
-        (ConnectionEnd.Data memory connection, ) = handler.getConnection(
-            connId
-        );
+        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period,
@@ -243,16 +256,16 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
-            .connectionOpenAck(clientId, connId, proofHeight);
+        IBCMsgs.MsgConnectionOpenAck memory msg_ack =
+            MsgMocks.connectionOpenAck(clientId, connId, proofHeight);
         preAckValidProofs();
         handler.connectionOpenAck(msg_ack);
 
-        ConnectionCounterparty.Data memory expectedCounterparty = msg_init
-            .counterparty;
+        ConnectionCounterparty.Data memory expectedCounterparty =
+            msg_init.counterparty;
         expectedCounterparty.connection_id = msg_ack.counterpartyConnectionID;
 
-        (connection, ) = handler.getConnection(connId);
+        (connection,) = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period,
@@ -280,26 +293,24 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_ack_noInit(uint64 proofHeight) public {
         string memory clientId = createClient(proofHeight);
 
-        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
-            .connectionOpenAck(clientId, "", proofHeight);
+        IBCMsgs.MsgConnectionOpenAck memory msg_ack =
+            MsgMocks.connectionOpenAck(clientId, "", proofHeight);
         preAckValidProofs();
         vm.expectRevert(IBCConnectionLib.ErrInvalidConnectionState.selector);
         handler.connectionOpenAck(msg_ack);
     }
 
-    function test_handshake_init_ack_unsupportedVersion(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_init_ack_unsupportedVersion(uint64 proofHeight)
+        public
+    {
         string memory clientId = createClient(proofHeight);
 
-        IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
-            .connectionOpenInit(clientId);
+        IBCMsgs.MsgConnectionOpenInit memory msg_init =
+            MsgMocks.connectionOpenInit(clientId);
         preInitOk();
         string memory connId = handler.connectionOpenInit(msg_init);
 
-        (ConnectionEnd.Data memory connection, ) = handler.getConnection(
-            connId
-        );
+        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period,
@@ -323,8 +334,8 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
-            .connectionOpenAck(clientId, connId, proofHeight);
+        IBCMsgs.MsgConnectionOpenAck memory msg_ack =
+            MsgMocks.connectionOpenAck(clientId, connId, proofHeight);
         msg_ack.version.identifier = "2";
         preAckValidProofs();
         vm.expectRevert(IBCConnectionLib.ErrUnsupportedVersion.selector);
@@ -336,14 +347,12 @@ contract IBCConnectionHandlerTests is TestPlus {
     ) public {
         string memory clientId = createClient(proofHeight);
 
-        IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
-            .connectionOpenInit(clientId);
+        IBCMsgs.MsgConnectionOpenInit memory msg_init =
+            MsgMocks.connectionOpenInit(clientId);
         preInitOk();
         string memory connId = handler.connectionOpenInit(msg_init);
 
-        (ConnectionEnd.Data memory connection, ) = handler.getConnection(
-            connId
-        );
+        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period,
@@ -367,25 +376,23 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
-            .connectionOpenAck(clientId, connId, proofHeight);
+        IBCMsgs.MsgConnectionOpenAck memory msg_ack =
+            MsgMocks.connectionOpenAck(clientId, connId, proofHeight);
         preAckInvalidConnectionStateProof();
         handler.connectionOpenAck(msg_ack);
     }
 
-    function test_handshake_init_ack_invalidClientStateProof(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_init_ack_invalidClientStateProof(uint64 proofHeight)
+        public
+    {
         string memory clientId = createClient(proofHeight);
 
-        IBCMsgs.MsgConnectionOpenInit memory msg_init = MsgMocks
-            .connectionOpenInit(clientId);
+        IBCMsgs.MsgConnectionOpenInit memory msg_init =
+            MsgMocks.connectionOpenInit(clientId);
         preInitOk();
         string memory connId = handler.connectionOpenInit(msg_init);
 
-        (ConnectionEnd.Data memory connection, ) = handler.getConnection(
-            connId
-        );
+        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
             connection.delay_period,
@@ -409,8 +416,8 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        IBCMsgs.MsgConnectionOpenAck memory msg_ack = MsgMocks
-            .connectionOpenAck(clientId, connId, proofHeight);
+        IBCMsgs.MsgConnectionOpenAck memory msg_ack =
+            MsgMocks.connectionOpenAck(clientId, connId, proofHeight);
         preAckInvalidClientStateProof();
         handler.connectionOpenAck(msg_ack);
     }
@@ -418,19 +425,15 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_try_confirm_ok(uint64 proofHeight) public {
         string memory clientId = createClient(proofHeight);
 
-        IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
-            .connectionOpenTry(clientId, proofHeight);
+        IBCMsgs.MsgConnectionOpenTry memory msg_try =
+            MsgMocks.connectionOpenTry(clientId, proofHeight);
         preTryValidProofs();
         string memory connId = handler.connectionOpenTry(msg_try);
 
-        (ConnectionEnd.Data memory connection, ) = handler.getConnection(
-            connId
-        );
+        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
-            connection.delay_period,
-            msg_try.delayPeriod,
-            "delayPeriod mismatch"
+            connection.delay_period, msg_try.delayPeriod, "delayPeriod mismatch"
         );
         assertEq(
             connection.counterparty.encode(),
@@ -449,17 +452,15 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
-            .connectionOpenConfirm(clientId, connId, proofHeight);
+        IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm =
+            MsgMocks.connectionOpenConfirm(clientId, connId, proofHeight);
         preConfirmValidProofs();
         handler.connectionOpenConfirm(msg_confirm);
 
-        (connection, ) = handler.getConnection(connId);
+        (connection,) = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
-            connection.delay_period,
-            msg_try.delayPeriod,
-            "delayPeriod mismatch"
+            connection.delay_period, msg_try.delayPeriod, "delayPeriod mismatch"
         );
         assertEq(
             connection.counterparty.encode(),
@@ -482,17 +483,17 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_try_unsupportedVersion(uint64 proofHeight) public {
         string memory clientId = createClient(proofHeight);
 
-        IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
-            .connectionOpenTry(clientId, proofHeight);
+        IBCMsgs.MsgConnectionOpenTry memory msg_try =
+            MsgMocks.connectionOpenTry(clientId, proofHeight);
         msg_try.counterpartyVersions[0].identifier = "4";
         preTryValidProofs();
         vm.expectRevert(IBCConnectionLib.ErrUnsupportedVersion.selector);
         handler.connectionOpenTry(msg_try);
     }
 
-    function test_handshake_try_invalidConnectionStateProof(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_try_invalidConnectionStateProof(uint64 proofHeight)
+        public
+    {
         TendermintTypesSignedHeader.Data memory signedHeader = getValidHeader();
         vm.assume(
             0 < proofHeight && proofHeight < uint64(signedHeader.header.height)
@@ -508,19 +509,19 @@ contract IBCConnectionHandlerTests is TestPlus {
         );
         string memory clientId = handler.createClient(m);
 
-        IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
-            .connectionOpenTry(clientId, proofHeight);
+        IBCMsgs.MsgConnectionOpenTry memory msg_try =
+            MsgMocks.connectionOpenTry(clientId, proofHeight);
         preTryInvalidConnectionStateProof();
         handler.connectionOpenTry(msg_try);
     }
 
-    function test_handshake_try_invalidClientStateProof(
-        uint64 proofHeight
-    ) public {
+    function test_handshake_try_invalidClientStateProof(uint64 proofHeight)
+        public
+    {
         string memory clientId = createClient(proofHeight);
 
-        IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
-            .connectionOpenTry(clientId, proofHeight);
+        IBCMsgs.MsgConnectionOpenTry memory msg_try =
+            MsgMocks.connectionOpenTry(clientId, proofHeight);
         preTryInvalidClientStateProof();
         handler.connectionOpenTry(msg_try);
     }
@@ -530,19 +531,15 @@ contract IBCConnectionHandlerTests is TestPlus {
     ) public {
         string memory clientId = createClient(proofHeight);
 
-        IBCMsgs.MsgConnectionOpenTry memory msg_try = MsgMocks
-            .connectionOpenTry(clientId, proofHeight);
+        IBCMsgs.MsgConnectionOpenTry memory msg_try =
+            MsgMocks.connectionOpenTry(clientId, proofHeight);
         preTryValidProofs();
         string memory connId = handler.connectionOpenTry(msg_try);
 
-        (ConnectionEnd.Data memory connection, ) = handler.getConnection(
-            connId
-        );
+        (ConnectionEnd.Data memory connection,) = handler.getConnection(connId);
         assertEq(connection.client_id, clientId, "clientId mismatch");
         assertEq(
-            connection.delay_period,
-            msg_try.delayPeriod,
-            "delayPeriod mismatch"
+            connection.delay_period, msg_try.delayPeriod, "delayPeriod mismatch"
         );
         assertEq(
             connection.counterparty.encode(),
@@ -561,8 +558,8 @@ contract IBCConnectionHandlerTests is TestPlus {
             keccak256(IbcCoreConnectionV1ConnectionEnd.encode(connection))
         );
 
-        IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
-            .connectionOpenConfirm(clientId, connId, proofHeight);
+        IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm =
+            MsgMocks.connectionOpenConfirm(clientId, connId, proofHeight);
         preConfirmInvalidConnectionState();
         handler.connectionOpenConfirm(msg_confirm);
     }
@@ -570,17 +567,16 @@ contract IBCConnectionHandlerTests is TestPlus {
     function test_handshake_confirm_notTryOpen(uint64 proofHeight) public {
         string memory clientId = createClient(proofHeight);
 
-        IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm = MsgMocks
-            .connectionOpenConfirm(clientId, "", proofHeight);
+        IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm =
+            MsgMocks.connectionOpenConfirm(clientId, "", proofHeight);
         preConfirmValidProofs();
         vm.expectRevert(IBCConnectionLib.ErrInvalidConnectionState.selector);
         handler.connectionOpenConfirm(msg_confirm);
     }
 
     function test_handshake_init_uniqueId() public {
-        IBCMsgs.MsgConnectionOpenInit memory m = MsgMocks.connectionOpenInit(
-            "client-1"
-        );
+        IBCMsgs.MsgConnectionOpenInit memory m =
+            MsgMocks.connectionOpenInit("client-1");
         string memory id = handler.connectionOpenInit(m);
         string memory id2 = handler.connectionOpenInit(m);
         assertStrNotEq(id, id2);

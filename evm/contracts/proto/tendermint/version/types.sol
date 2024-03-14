@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
+
 import "../../ProtoBufRuntime.sol";
 import "../../GoogleProtobufAny.sol";
 
@@ -18,7 +19,7 @@ library TendermintVersionApp {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -28,7 +29,7 @@ library TendermintVersionApp {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -46,7 +47,7 @@ library TendermintVersionApp {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -54,21 +55,16 @@ library TendermintVersionApp {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_protocol(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_software(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -87,7 +83,7 @@ library TendermintVersionApp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.protocol = x;
         return sz;
@@ -104,7 +100,7 @@ library TendermintVersionApp {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.software = x;
         return sz;
@@ -139,25 +135,19 @@ library TendermintVersionApp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.protocol != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.protocol, pointer, bs);
         }
         if (bytes(r.software).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.software, pointer, bs);
         }
@@ -177,7 +167,7 @@ library TendermintVersionApp {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -202,7 +192,7 @@ library TendermintVersionApp {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint64(r.protocol);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.software).length);
@@ -274,7 +264,7 @@ library TendermintVersionConsensus {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -284,7 +274,7 @@ library TendermintVersionConsensus {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -302,7 +292,7 @@ library TendermintVersionConsensus {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -310,21 +300,16 @@ library TendermintVersionConsensus {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_block(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_app(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -343,7 +328,7 @@ library TendermintVersionConsensus {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.block = x;
         return sz;
@@ -360,7 +345,7 @@ library TendermintVersionConsensus {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.app = x;
         return sz;
@@ -395,25 +380,19 @@ library TendermintVersionConsensus {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.block != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.block, pointer, bs);
         }
         if (r.app != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.app, pointer, bs);
         }
@@ -433,7 +412,7 @@ library TendermintVersionConsensus {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -458,7 +437,7 @@ library TendermintVersionConsensus {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_uint64(r.block);
         e += 1 + ProtoBufRuntime._sz_uint64(r.app);

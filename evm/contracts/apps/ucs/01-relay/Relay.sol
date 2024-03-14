@@ -97,9 +97,11 @@ library RelayLib {
         uint256 amount
     );
 
-    function isValidVersion(
-        string memory version
-    ) internal pure returns (bool) {
+    function isValidVersion(string memory version)
+        internal
+        pure
+        returns (bool)
+    {
         return version.eq(VERSION);
     }
 
@@ -108,9 +110,8 @@ library RelayLib {
         string memory channelId,
         string memory denom
     ) internal pure returns (bool) {
-        return
-            bytes(denom).length > 0 &&
-            denom.startsWith(makeDenomPrefix(portId, channelId));
+        return bytes(denom).length > 0
+            && denom.startsWith(makeDenomPrefix(portId, channelId));
     }
 
     function makeDenomPrefix(
@@ -138,22 +139,22 @@ library RelayLib {
 }
 
 library RelayPacketLib {
-    function encode(
-        RelayPacket memory packet
-    ) internal pure returns (bytes memory) {
+    function encode(RelayPacket memory packet)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encode(packet.sender, packet.receiver, packet.tokens);
     }
 
-    function decode(
-        bytes memory packet
-    ) internal pure returns (RelayPacket memory) {
-        (
-            bytes memory sender,
-            bytes memory receiver,
-            Token[] memory tokens
-        ) = abi.decode(packet, (bytes, bytes, Token[]));
-        return
-            RelayPacket({sender: sender, receiver: receiver, tokens: tokens});
+    function decode(bytes memory packet)
+        internal
+        pure
+        returns (RelayPacket memory)
+    {
+        (bytes memory sender, bytes memory receiver, Token[] memory tokens) =
+            abi.decode(packet, (bytes, bytes, Token[]));
+        return RelayPacket({sender: sender, receiver: receiver, tokens: tokens});
     }
 }
 
@@ -165,18 +166,18 @@ contract UCS01Relay is IBCAppBase, IRelay {
     IBCHandler private immutable ibcHandler;
 
     // A mapping from remote denom to local ERC20 wrapper.
-    mapping(string => mapping(string => mapping(string => address)))
-        private denomToAddress;
+    mapping(string => mapping(string => mapping(string => address))) private
+        denomToAddress;
     // A mapping from a local ERC20 wrapper to the remote denom.
     // Required to determine whether an ERC20 token is originating from a remote chain.
-    mapping(string => mapping(string => mapping(address => string)))
-        private addressToDenom;
+    mapping(string => mapping(string => mapping(address => string))) private
+        addressToDenom;
     // A mapping from local port/channel to it's counterparty.
     // This is required to remap denoms.
     mapping(string => mapping(string => IbcCoreChannelV1Counterparty.Data))
         private counterpartyEndpoints;
-    mapping(string => mapping(string => mapping(address => uint256)))
-        private outstanding;
+    mapping(string => mapping(string => mapping(address => uint256))) private
+        outstanding;
 
     constructor(IBCHandler _ibcHandler) {
         ibcHandler = _ibcHandler;
@@ -259,22 +260,15 @@ contract UCS01Relay is IBCAppBase, IRelay {
             localToken.amount
         );
         // If the token is originating from the counterparty channel, we must have saved it's denom.
-        addressDenom = addressToDenom[sourcePort][sourceChannel][
-            localToken.denom
-        ];
+        addressDenom =
+            addressToDenom[sourcePort][sourceChannel][localToken.denom];
         if (bytes(addressDenom).length != 0) {
             // Token originating from the remote chain, burn the amount.
-            IERC20Denom(localToken.denom).burn(
-                address(this),
-                localToken.amount
-            );
+            IERC20Denom(localToken.denom).burn(address(this), localToken.amount);
         } else {
             // Token originating from the local chain, increase outstanding and escrow the amount.
             increaseOutstanding(
-                sourcePort,
-                sourceChannel,
-                localToken.denom,
-                localToken.amount
+                sourcePort, sourceChannel, localToken.denom, localToken.amount
             );
             addressDenom = localToken.denom.toHexString();
         }
@@ -288,10 +282,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
         uint64 counterpartyTimeoutRevisionNumber,
         uint64 counterpartyTimeoutRevisionHeight
     ) external override {
-        IbcCoreChannelV1Counterparty.Data
-            memory counterparty = counterpartyEndpoints[sourcePort][
-                sourceChannel
-            ];
+        IbcCoreChannelV1Counterparty.Data memory counterparty =
+            counterpartyEndpoints[sourcePort][sourceChannel];
         Token[] memory normalizedTokens = new Token[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
             LocalToken calldata localToken = tokens[i];
@@ -320,9 +312,9 @@ contract UCS01Relay is IBCAppBase, IRelay {
         });
         IbcCoreClientV1Height.Data memory timeoutHeight = IbcCoreClientV1Height
             .Data({
-                revision_number: counterpartyTimeoutRevisionNumber,
-                revision_height: counterpartyTimeoutRevisionHeight
-            });
+            revision_number: counterpartyTimeoutRevisionNumber,
+            revision_height: counterpartyTimeoutRevisionHeight
+        });
         ibcHandler.sendPacket(
             sourcePort,
             sourceChannel,
@@ -343,9 +335,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
         address userToRefund = RelayLib.bytesToAddress(packet.sender);
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
-            address denomAddress = denomToAddress[portId][channelId][
-                token.denom
-            ];
+            address denomAddress =
+                denomToAddress[portId][channelId][token.denom];
             if (denomAddress != address(0)) {
                 // The token was originating from the remote chain, we burnt it.
                 // Refund means minting in this case.
@@ -357,19 +348,12 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 // It's an ERC20 string 0x prefixed hex address
                 denomAddress = Hex.hexToAddress(token.denom);
                 decreaseOutstanding(
-                    portId,
-                    channelId,
-                    denomAddress,
-                    token.amount
+                    portId, channelId, denomAddress, token.amount
                 );
                 IERC20(denomAddress).transfer(userToRefund, token.amount);
             }
             emit RelayLib.Refunded(
-                userToRefund,
-                receiver,
-                token.denom,
-                denomAddress,
-                token.amount
+                userToRefund, receiver, token.denom, denomAddress, token.amount
             );
         }
     }
@@ -383,16 +367,14 @@ contract UCS01Relay is IBCAppBase, IRelay {
         }
         RelayPacket memory packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = RelayLib.makeDenomPrefix(
-            ibcPacket.destination_port,
-            ibcPacket.destination_channel
+            ibcPacket.destination_port, ibcPacket.destination_channel
         );
         for (uint256 i = 0; i < packet.tokens.length; i++) {
             Token memory token = packet.tokens[i];
             strings.slice memory denomSlice = token.denom.toSlice();
             // This will trim the denom IFF it is prefixed
-            strings.slice memory trimedDenom = denomSlice.beyond(
-                prefix.toSlice()
-            );
+            strings.slice memory trimedDenom =
+                denomSlice.beyond(prefix.toSlice());
             address receiver = RelayLib.bytesToAddress(packet.receiver);
             address denomAddress;
             string memory denom;
@@ -415,21 +397,16 @@ contract UCS01Relay is IBCAppBase, IRelay {
                 // In this branch the token was originating from the
                 // counterparty chain. We need to mint the amount.
                 denom = RelayLib.makeForeignDenom(
-                    ibcPacket.source_port,
-                    ibcPacket.source_channel,
-                    token.denom
+                    ibcPacket.source_port, ibcPacket.source_channel, token.denom
                 );
-                denomAddress = denomToAddress[ibcPacket.destination_port][
-                    ibcPacket.destination_channel
-                ][denom];
+                denomAddress = denomToAddress[ibcPacket.destination_port][ibcPacket
+                    .destination_channel][denom];
                 if (denomAddress == address(0)) {
                     denomAddress = address(new ERC20Denom(denom));
-                    denomToAddress[ibcPacket.destination_port][
-                        ibcPacket.destination_channel
-                    ][denom] = denomAddress;
-                    addressToDenom[ibcPacket.destination_port][
-                        ibcPacket.destination_channel
-                    ][denomAddress] = denom;
+                    denomToAddress[ibcPacket.destination_port][ibcPacket
+                        .destination_channel][denom] = denomAddress;
+                    addressToDenom[ibcPacket.destination_port][ibcPacket
+                        .destination_channel][denomAddress] = denom;
                     emit RelayLib.DenomCreated(denom, denomAddress);
                 }
                 IERC20Denom(denomAddress).mint(receiver, token.amount);
@@ -447,13 +424,16 @@ contract UCS01Relay is IBCAppBase, IRelay {
     function onRecvPacket(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address relayer
-    ) external override(IBCAppBase, IIBCModule) onlyIBC returns (bytes memory) {
+    )
+        external
+        override(IBCAppBase, IIBCModule)
+        onlyIBC
+        returns (bytes memory)
+    {
         // TODO: maybe consider threading _res in the failure ack
         (bool success, bytes memory _res) = address(this).call(
             abi.encodeWithSelector(
-                this.onRecvPacketProcessing.selector,
-                ibcPacket,
-                relayer
+                this.onRecvPacketProcessing.selector, ibcPacket, relayer
             )
         );
         // We make sure not to revert to allow the failure ack to be sent back,
@@ -471,9 +451,11 @@ contract UCS01Relay is IBCAppBase, IRelay {
         address _relayer
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         if (
-            acknowledgement.length != RelayLib.ACK_LENGTH ||
-            (acknowledgement[0] != RelayLib.ACK_FAILURE &&
-                acknowledgement[0] != RelayLib.ACK_SUCCESS)
+            acknowledgement.length != RelayLib.ACK_LENGTH
+                || (
+                    acknowledgement[0] != RelayLib.ACK_FAILURE
+                        && acknowledgement[0] != RelayLib.ACK_SUCCESS
+                )
         ) {
             revert RelayLib.ErrInvalidAcknowledgement();
         }
@@ -481,9 +463,7 @@ contract UCS01Relay is IBCAppBase, IRelay {
         // Counterparty failed to execute the transfer, we refund.
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
-                ibcPacket.source_port,
-                ibcPacket.source_channel,
-                packet
+                ibcPacket.source_port, ibcPacket.source_channel, packet
             );
         }
     }
@@ -547,8 +527,8 @@ contract UCS01Relay is IBCAppBase, IRelay {
             revert RelayLib.ErrInvalidCounterpartyProtocolVersion();
         }
         // Counterparty channel was empty.
-        counterpartyEndpoints[portId][channelId]
-            .channel_id = counterpartyChannelId;
+        counterpartyEndpoints[portId][channelId].channel_id =
+            counterpartyChannelId;
     }
 
     function onChanOpenConfirm(

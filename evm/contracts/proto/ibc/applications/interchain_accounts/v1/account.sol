@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 import "../../../../cosmos_proto/cosmos.sol";
@@ -20,7 +21,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -30,7 +31,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -48,7 +49,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -56,21 +57,16 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_base_account(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_account_owner(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -89,11 +85,9 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            CosmosAuthV1beta1BaseAccount.Data memory x,
-            uint256 sz
-        ) = _decode_CosmosAuthV1beta1BaseAccount(p, bs);
+    ) internal pure returns (uint256) {
+        (CosmosAuthV1beta1BaseAccount.Data memory x, uint256 sz) =
+            _decode_CosmosAuthV1beta1BaseAccount(p, bs);
         r.base_account = x;
         return sz;
     }
@@ -109,7 +103,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.account_owner = x;
         return sz;
@@ -126,17 +120,17 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
     function _decode_CosmosAuthV1beta1BaseAccount(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (CosmosAuthV1beta1BaseAccount.Data memory, uint) {
+    )
+        internal
+        pure
+        returns (CosmosAuthV1beta1BaseAccount.Data memory, uint256)
+    {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            CosmosAuthV1beta1BaseAccount.Data memory r,
-
-        ) = CosmosAuthV1beta1BaseAccount._decode(pointer, bs, sz);
+        (CosmosAuthV1beta1BaseAccount.Data memory r,) =
+            CosmosAuthV1beta1BaseAccount._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -169,34 +163,23 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += CosmosAuthV1beta1BaseAccount._encode_nested(
-            r.base_account,
-            pointer,
-            bs
+            r.base_account, pointer, bs
         );
 
         if (bytes(r.account_owner).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.account_owner,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.account_owner, pointer, bs);
         }
         return pointer - offset;
     }
@@ -214,7 +197,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -239,11 +222,10 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 CosmosAuthV1beta1BaseAccount._estimate(r.base_account)
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.account_owner).length);
@@ -268,8 +250,7 @@ library IbcApplicationsInterchain_accountsV1InterchainAccount {
      */
     function store(Data memory input, Data storage output) internal {
         CosmosAuthV1beta1BaseAccount.store(
-            input.base_account,
-            output.base_account
+            input.base_account, output.base_account
         );
         output.account_owner = input.account_owner;
     }

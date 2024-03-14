@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 
@@ -16,7 +17,7 @@ library IbcLightclientsWasmV1GenesisState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -26,7 +27,7 @@ library IbcLightclientsWasmV1GenesisState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -44,62 +45,44 @@ library IbcLightclientsWasmV1GenesisState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[2] memory counters;
+        uint256[2] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_contracts(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
         if (counters[1] > 0) {
             require(r.contracts.length == 0);
-            r.contracts = new IbcLightclientsWasmV1GenesisContract.Data[](
-                counters[1]
-            );
+            r.contracts =
+                new IbcLightclientsWasmV1GenesisContract.Data[](counters[1]);
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
-                pointer += _read_unpacked_repeated_contracts(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_contracts(pointer, bs, r, counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -119,15 +102,13 @@ library IbcLightclientsWasmV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[2] memory counters
-    ) internal pure returns (uint) {
+        uint256[2] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcLightclientsWasmV1GenesisContract.Data memory x,
-            uint256 sz
-        ) = _decode_IbcLightclientsWasmV1GenesisContract(p, bs);
+        (IbcLightclientsWasmV1GenesisContract.Data memory x, uint256 sz) =
+            _decode_IbcLightclientsWasmV1GenesisContract(p, bs);
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -151,18 +132,14 @@ library IbcLightclientsWasmV1GenesisState {
     )
         internal
         pure
-        returns (IbcLightclientsWasmV1GenesisContract.Data memory, uint)
+        returns (IbcLightclientsWasmV1GenesisContract.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcLightclientsWasmV1GenesisContract.Data memory r,
-
-        ) = IbcLightclientsWasmV1GenesisContract._decode(pointer, bs, sz);
+        (IbcLightclientsWasmV1GenesisContract.Data memory r,) =
+            IbcLightclientsWasmV1GenesisContract._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -195,22 +172,17 @@ library IbcLightclientsWasmV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.contracts.length != 0) {
             for (i = 0; i < r.contracts.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcLightclientsWasmV1GenesisContract._encode_nested(
-                    r.contracts[i],
-                    pointer,
-                    bs
+                    r.contracts[i], pointer, bs
                 );
             }
         }
@@ -230,7 +202,7 @@ library IbcLightclientsWasmV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -255,16 +227,13 @@ library IbcLightclientsWasmV1GenesisState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.contracts.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
-                    IbcLightclientsWasmV1GenesisContract._estimate(
-                        r.contracts[i]
-                    )
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
+                    IbcLightclientsWasmV1GenesisContract._estimate(r.contracts[i])
                 );
         }
         return e;
@@ -305,10 +274,8 @@ library IbcLightclientsWasmV1GenesisState {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcLightclientsWasmV1GenesisContract.Data[]
-            memory tmp = new IbcLightclientsWasmV1GenesisContract.Data[](
-                self.contracts.length + 1
-            );
+        IbcLightclientsWasmV1GenesisContract.Data[] memory tmp = new IbcLightclientsWasmV1GenesisContract
+            .Data[](self.contracts.length + 1);
         for (uint256 i = 0; i < self.contracts.length; i++) {
             tmp[i] = self.contracts[i];
         }
@@ -356,7 +323,7 @@ library IbcLightclientsWasmV1GenesisContract {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -366,7 +333,7 @@ library IbcLightclientsWasmV1GenesisContract {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -384,7 +351,7 @@ library IbcLightclientsWasmV1GenesisContract {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -392,21 +359,16 @@ library IbcLightclientsWasmV1GenesisContract {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_code_id_key(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_contract_code(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -425,7 +387,7 @@ library IbcLightclientsWasmV1GenesisContract {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.code_id_key = x;
         return sz;
@@ -442,7 +404,7 @@ library IbcLightclientsWasmV1GenesisContract {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.contract_code = x;
         return sz;
@@ -477,35 +439,22 @@ library IbcLightclientsWasmV1GenesisContract {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.code_id_key.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_bytes(
-                r.code_id_key,
-                pointer,
-                bs
-            );
+            pointer += ProtoBufRuntime._encode_bytes(r.code_id_key, pointer, bs);
         }
         if (r.contract_code.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_bytes(
-                r.contract_code,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_bytes(r.contract_code, pointer, bs);
         }
         return pointer - offset;
     }
@@ -523,7 +472,7 @@ library IbcLightclientsWasmV1GenesisContract {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -548,7 +497,7 @@ library IbcLightclientsWasmV1GenesisContract {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.code_id_key.length);
         e += 1 + ProtoBufRuntime._sz_lendelim(r.contract_code.length);

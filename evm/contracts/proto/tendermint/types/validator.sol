@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
+
 import "../../ProtoBufRuntime.sol";
 import "../../GoogleProtobufAny.sol";
 import "../crypto/keys.sol";
@@ -20,7 +21,7 @@ library TendermintTypesValidatorSet {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -30,7 +31,7 @@ library TendermintTypesValidatorSet {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -48,37 +49,29 @@ library TendermintTypesValidatorSet {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[4] memory counters;
+        uint256[4] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_validators(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 2) {
                 pointer += _read_proposer(pointer, bs, r);
             } else if (fieldId == 3) {
                 pointer += _read_total_voting_power(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
@@ -88,24 +81,15 @@ library TendermintTypesValidatorSet {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
-                pointer += _read_unpacked_repeated_validators(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_validators(pointer, bs, r, counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -125,15 +109,13 @@ library TendermintTypesValidatorSet {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[4] memory counters
-    ) internal pure returns (uint) {
+        uint256[4] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            TendermintTypesValidator.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintTypesValidator(p, bs);
+        (TendermintTypesValidator.Data memory x, uint256 sz) =
+            _decode_TendermintTypesValidator(p, bs);
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -154,11 +136,9 @@ library TendermintTypesValidatorSet {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            TendermintTypesValidator.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintTypesValidator(p, bs);
+    ) internal pure returns (uint256) {
+        (TendermintTypesValidator.Data memory x, uint256 sz) =
+            _decode_TendermintTypesValidator(p, bs);
         r.proposer = x;
         return sz;
     }
@@ -174,7 +154,7 @@ library TendermintTypesValidatorSet {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
         r.total_voting_power = x;
         return sz;
@@ -191,15 +171,13 @@ library TendermintTypesValidatorSet {
     function _decode_TendermintTypesValidator(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (TendermintTypesValidator.Data memory, uint) {
+    ) internal pure returns (TendermintTypesValidator.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (TendermintTypesValidator.Data memory r, ) = TendermintTypesValidator
-            ._decode(pointer, bs, sz);
+        (TendermintTypesValidator.Data memory r,) =
+            TendermintTypesValidator._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -232,50 +210,33 @@ library TendermintTypesValidatorSet {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.validators.length != 0) {
             for (i = 0; i < r.validators.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += TendermintTypesValidator._encode_nested(
-                    r.validators[i],
-                    pointer,
-                    bs
+                    r.validators[i], pointer, bs
                 );
             }
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += TendermintTypesValidator._encode_nested(
-            r.proposer,
-            pointer,
-            bs
-        );
+        pointer +=
+            TendermintTypesValidator._encode_nested(r.proposer, pointer, bs);
 
         if (r.total_voting_power != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_int64(
-                r.total_voting_power,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_int64(r.total_voting_power, pointer, bs);
         }
         return pointer - offset;
     }
@@ -293,7 +254,7 @@ library TendermintTypesValidatorSet {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -318,19 +279,17 @@ library TendermintTypesValidatorSet {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.validators.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     TendermintTypesValidator._estimate(r.validators[i])
                 );
         }
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 TendermintTypesValidator._estimate(r.proposer)
             );
         e += 1 + ProtoBufRuntime._sz_int64(r.total_voting_power);
@@ -379,10 +338,8 @@ library TendermintTypesValidatorSet {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        TendermintTypesValidator.Data[]
-            memory tmp = new TendermintTypesValidator.Data[](
-                self.validators.length + 1
-            );
+        TendermintTypesValidator.Data[] memory tmp =
+            new TendermintTypesValidator.Data[](self.validators.length + 1);
         for (uint256 i = 0; i < self.validators.length; i++) {
             tmp[i] = self.validators[i];
         }
@@ -432,7 +389,7 @@ library TendermintTypesValidator {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -442,7 +399,7 @@ library TendermintTypesValidator {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -460,7 +417,7 @@ library TendermintTypesValidator {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -468,10 +425,8 @@ library TendermintTypesValidator {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_address(pointer, bs, r);
@@ -482,11 +437,8 @@ library TendermintTypesValidator {
             } else if (fieldId == 4) {
                 pointer += _read_proposer_priority(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -505,7 +457,7 @@ library TendermintTypesValidator {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.addr = x;
         return sz;
@@ -522,11 +474,9 @@ library TendermintTypesValidator {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            TendermintCryptoPublicKey.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintCryptoPublicKey(p, bs);
+    ) internal pure returns (uint256) {
+        (TendermintCryptoPublicKey.Data memory x, uint256 sz) =
+            _decode_TendermintCryptoPublicKey(p, bs);
         r.pub_key = x;
         return sz;
     }
@@ -542,7 +492,7 @@ library TendermintTypesValidator {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
         r.voting_power = x;
         return sz;
@@ -559,7 +509,7 @@ library TendermintTypesValidator {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
         r.proposer_priority = x;
         return sz;
@@ -576,15 +526,13 @@ library TendermintTypesValidator {
     function _decode_TendermintCryptoPublicKey(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (TendermintCryptoPublicKey.Data memory, uint) {
+    ) internal pure returns (TendermintCryptoPublicKey.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (TendermintCryptoPublicKey.Data memory r, ) = TendermintCryptoPublicKey
-            ._decode(pointer, bs, sz);
+        (TendermintCryptoPublicKey.Data memory r,) =
+            TendermintCryptoPublicKey._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -617,57 +565,36 @@ library TendermintTypesValidator {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.addr.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.addr, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += TendermintCryptoPublicKey._encode_nested(
-            r.pub_key,
-            pointer,
-            bs
-        );
+        pointer +=
+            TendermintCryptoPublicKey._encode_nested(r.pub_key, pointer, bs);
 
         if (r.voting_power != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_int64(
-                r.voting_power,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_int64(r.voting_power, pointer, bs);
         }
         if (r.proposer_priority != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_int64(
-                r.proposer_priority,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_int64(r.proposer_priority, pointer, bs);
         }
         return pointer - offset;
     }
@@ -685,7 +612,7 @@ library TendermintTypesValidator {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -710,12 +637,11 @@ library TendermintTypesValidator {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.addr.length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 TendermintCryptoPublicKey._estimate(r.pub_key)
             );
         e += 1 + ProtoBufRuntime._sz_int64(r.voting_power);
@@ -794,7 +720,7 @@ library TendermintTypesSimpleValidator {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -804,7 +730,7 @@ library TendermintTypesSimpleValidator {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -822,7 +748,7 @@ library TendermintTypesSimpleValidator {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -830,21 +756,16 @@ library TendermintTypesSimpleValidator {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_pub_key(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_voting_power(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -863,11 +784,9 @@ library TendermintTypesSimpleValidator {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            TendermintCryptoPublicKey.Data memory x,
-            uint256 sz
-        ) = _decode_TendermintCryptoPublicKey(p, bs);
+    ) internal pure returns (uint256) {
+        (TendermintCryptoPublicKey.Data memory x, uint256 sz) =
+            _decode_TendermintCryptoPublicKey(p, bs);
         r.pub_key = x;
         return sz;
     }
@@ -883,7 +802,7 @@ library TendermintTypesSimpleValidator {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
         r.voting_power = x;
         return sz;
@@ -900,15 +819,13 @@ library TendermintTypesSimpleValidator {
     function _decode_TendermintCryptoPublicKey(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (TendermintCryptoPublicKey.Data memory, uint) {
+    ) internal pure returns (TendermintCryptoPublicKey.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (TendermintCryptoPublicKey.Data memory r, ) = TendermintCryptoPublicKey
-            ._decode(pointer, bs, sz);
+        (TendermintCryptoPublicKey.Data memory r,) =
+            TendermintCryptoPublicKey._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -941,34 +858,22 @@ library TendermintTypesSimpleValidator {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += TendermintCryptoPublicKey._encode_nested(
-            r.pub_key,
-            pointer,
-            bs
-        );
+        pointer +=
+            TendermintCryptoPublicKey._encode_nested(r.pub_key, pointer, bs);
 
         if (r.voting_power != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_int64(
-                r.voting_power,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_int64(r.voting_power, pointer, bs);
         }
         return pointer - offset;
     }
@@ -986,7 +891,7 @@ library TendermintTypesSimpleValidator {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1011,11 +916,10 @@ library TendermintTypesSimpleValidator {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 TendermintCryptoPublicKey._estimate(r.pub_key)
             );
         e += 1 + ProtoBufRuntime._sz_int64(r.voting_power);

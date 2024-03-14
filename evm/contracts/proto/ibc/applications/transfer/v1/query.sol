@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 
@@ -19,7 +20,7 @@ library IbcApplicationsTransferV1QueryDenomTraceRequest {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -29,7 +30,7 @@ library IbcApplicationsTransferV1QueryDenomTraceRequest {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -47,7 +48,7 @@ library IbcApplicationsTransferV1QueryDenomTraceRequest {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -55,19 +56,14 @@ library IbcApplicationsTransferV1QueryDenomTraceRequest {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_hash(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -86,7 +82,7 @@ library IbcApplicationsTransferV1QueryDenomTraceRequest {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.hash = x;
         return sz;
@@ -121,16 +117,13 @@ library IbcApplicationsTransferV1QueryDenomTraceRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.hash).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.hash, pointer, bs);
         }
@@ -150,7 +143,7 @@ library IbcApplicationsTransferV1QueryDenomTraceRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -175,7 +168,7 @@ library IbcApplicationsTransferV1QueryDenomTraceRequest {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.hash).length);
         return e;
@@ -240,7 +233,7 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -250,7 +243,7 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -268,7 +261,7 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -276,19 +269,14 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_denom_trace(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -307,11 +295,9 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcApplicationsTransferV1DenomTrace.Data memory x,
-            uint256 sz
-        ) = _decode_IbcApplicationsTransferV1DenomTrace(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcApplicationsTransferV1DenomTrace.Data memory x, uint256 sz) =
+            _decode_IbcApplicationsTransferV1DenomTrace(p, bs);
         r.denom_trace = x;
         return sz;
     }
@@ -330,18 +316,14 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
     )
         internal
         pure
-        returns (IbcApplicationsTransferV1DenomTrace.Data memory, uint)
+        returns (IbcApplicationsTransferV1DenomTrace.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcApplicationsTransferV1DenomTrace.Data memory r,
-
-        ) = IbcApplicationsTransferV1DenomTrace._decode(pointer, bs, sz);
+        (IbcApplicationsTransferV1DenomTrace.Data memory r,) =
+            IbcApplicationsTransferV1DenomTrace._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -374,20 +356,15 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcApplicationsTransferV1DenomTrace._encode_nested(
-            r.denom_trace,
-            pointer,
-            bs
+            r.denom_trace, pointer, bs
         );
 
         return pointer - offset;
@@ -406,7 +383,7 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -431,11 +408,10 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcApplicationsTransferV1DenomTrace._estimate(r.denom_trace)
             );
         return e;
@@ -455,8 +431,7 @@ library IbcApplicationsTransferV1QueryDenomTraceResponse {
      */
     function store(Data memory input, Data storage output) internal {
         IbcApplicationsTransferV1DenomTrace.store(
-            input.denom_trace,
-            output.denom_trace
+            input.denom_trace, output.denom_trace
         );
     }
 
@@ -499,7 +474,7 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -509,7 +484,7 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -527,7 +502,7 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -535,19 +510,14 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_pagination(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -566,11 +536,9 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            CosmosBaseQueryV1beta1PageRequest.Data memory x,
-            uint256 sz
-        ) = _decode_CosmosBaseQueryV1beta1PageRequest(p, bs);
+    ) internal pure returns (uint256) {
+        (CosmosBaseQueryV1beta1PageRequest.Data memory x, uint256 sz) =
+            _decode_CosmosBaseQueryV1beta1PageRequest(p, bs);
         r.pagination = x;
         return sz;
     }
@@ -589,18 +557,14 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
     )
         internal
         pure
-        returns (CosmosBaseQueryV1beta1PageRequest.Data memory, uint)
+        returns (CosmosBaseQueryV1beta1PageRequest.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            CosmosBaseQueryV1beta1PageRequest.Data memory r,
-
-        ) = CosmosBaseQueryV1beta1PageRequest._decode(pointer, bs, sz);
+        (CosmosBaseQueryV1beta1PageRequest.Data memory r,) =
+            CosmosBaseQueryV1beta1PageRequest._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -633,20 +597,15 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += CosmosBaseQueryV1beta1PageRequest._encode_nested(
-            r.pagination,
-            pointer,
-            bs
+            r.pagination, pointer, bs
         );
 
         return pointer - offset;
@@ -665,7 +624,7 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -690,11 +649,10 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 CosmosBaseQueryV1beta1PageRequest._estimate(r.pagination)
             );
         return e;
@@ -714,8 +672,7 @@ library IbcApplicationsTransferV1QueryDenomTracesRequest {
      */
     function store(Data memory input, Data storage output) internal {
         CosmosBaseQueryV1beta1PageRequest.store(
-            input.pagination,
-            output.pagination
+            input.pagination, output.pagination
         );
     }
 
@@ -759,7 +716,7 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -769,7 +726,7 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -787,64 +744,47 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[3] memory counters;
+        uint256[3] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_denom_traces(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 2) {
                 pointer += _read_pagination(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
         if (counters[1] > 0) {
             require(r.denom_traces.length == 0);
-            r.denom_traces = new IbcApplicationsTransferV1DenomTrace.Data[](
-                counters[1]
-            );
+            r.denom_traces =
+                new IbcApplicationsTransferV1DenomTrace.Data[](counters[1]);
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_denom_traces(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -864,15 +804,13 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[3] memory counters
-    ) internal pure returns (uint) {
+        uint256[3] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
-        (
-            IbcApplicationsTransferV1DenomTrace.Data memory x,
-            uint256 sz
-        ) = _decode_IbcApplicationsTransferV1DenomTrace(p, bs);
+        (IbcApplicationsTransferV1DenomTrace.Data memory x, uint256 sz) =
+            _decode_IbcApplicationsTransferV1DenomTrace(p, bs);
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -893,11 +831,9 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            CosmosBaseQueryV1beta1PageResponse.Data memory x,
-            uint256 sz
-        ) = _decode_CosmosBaseQueryV1beta1PageResponse(p, bs);
+    ) internal pure returns (uint256) {
+        (CosmosBaseQueryV1beta1PageResponse.Data memory x, uint256 sz) =
+            _decode_CosmosBaseQueryV1beta1PageResponse(p, bs);
         r.pagination = x;
         return sz;
     }
@@ -916,18 +852,14 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
     )
         internal
         pure
-        returns (IbcApplicationsTransferV1DenomTrace.Data memory, uint)
+        returns (IbcApplicationsTransferV1DenomTrace.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcApplicationsTransferV1DenomTrace.Data memory r,
-
-        ) = IbcApplicationsTransferV1DenomTrace._decode(pointer, bs, sz);
+        (IbcApplicationsTransferV1DenomTrace.Data memory r,) =
+            IbcApplicationsTransferV1DenomTrace._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -944,18 +876,14 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
     )
         internal
         pure
-        returns (CosmosBaseQueryV1beta1PageResponse.Data memory, uint)
+        returns (CosmosBaseQueryV1beta1PageResponse.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            CosmosBaseQueryV1beta1PageResponse.Data memory r,
-
-        ) = CosmosBaseQueryV1beta1PageResponse._decode(pointer, bs, sz);
+        (CosmosBaseQueryV1beta1PageResponse.Data memory r,) =
+            CosmosBaseQueryV1beta1PageResponse._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -988,36 +916,26 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.denom_traces.length != 0) {
             for (i = 0; i < r.denom_traces.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
                 pointer += IbcApplicationsTransferV1DenomTrace._encode_nested(
-                    r.denom_traces[i],
-                    pointer,
-                    bs
+                    r.denom_traces[i], pointer, bs
                 );
             }
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += CosmosBaseQueryV1beta1PageResponse._encode_nested(
-            r.pagination,
-            pointer,
-            bs
+            r.pagination, pointer, bs
         );
 
         return pointer - offset;
@@ -1036,7 +954,7 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1061,21 +979,17 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.denom_traces.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
-                    IbcApplicationsTransferV1DenomTrace._estimate(
-                        r.denom_traces[i]
-                    )
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
+                    IbcApplicationsTransferV1DenomTrace._estimate(r.denom_traces[i])
                 );
         }
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 CosmosBaseQueryV1beta1PageResponse._estimate(r.pagination)
             );
         return e;
@@ -1103,8 +1017,7 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
         }
 
         CosmosBaseQueryV1beta1PageResponse.store(
-            input.pagination,
-            output.pagination
+            input.pagination, output.pagination
         );
     }
 
@@ -1121,10 +1034,8 @@ library IbcApplicationsTransferV1QueryDenomTracesResponse {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcApplicationsTransferV1DenomTrace.Data[]
-            memory tmp = new IbcApplicationsTransferV1DenomTrace.Data[](
-                self.denom_traces.length + 1
-            );
+        IbcApplicationsTransferV1DenomTrace.Data[] memory tmp = new IbcApplicationsTransferV1DenomTrace
+            .Data[](self.denom_traces.length + 1);
         for (uint256 i = 0; i < self.denom_traces.length; i++) {
             tmp[i] = self.denom_traces[i];
         }
@@ -1171,7 +1082,7 @@ library IbcApplicationsTransferV1QueryParamsRequest {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1181,7 +1092,7 @@ library IbcApplicationsTransferV1QueryParamsRequest {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1199,7 +1110,7 @@ library IbcApplicationsTransferV1QueryParamsRequest {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1207,10 +1118,8 @@ library IbcApplicationsTransferV1QueryParamsRequest {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
         }
         return (r, sz);
@@ -1247,7 +1156,7 @@ library IbcApplicationsTransferV1QueryParamsRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
@@ -1267,7 +1176,7 @@ library IbcApplicationsTransferV1QueryParamsRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1291,7 +1200,7 @@ library IbcApplicationsTransferV1QueryParamsRequest {
      * @dev The estimator for a struct
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory /* r */) internal pure returns (uint) {
+    function _estimate(Data memory /* r */ ) internal pure returns (uint256) {
         uint256 e;
         return e;
     }
@@ -1349,7 +1258,7 @@ library IbcApplicationsTransferV1QueryParamsResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1359,7 +1268,7 @@ library IbcApplicationsTransferV1QueryParamsResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1377,7 +1286,7 @@ library IbcApplicationsTransferV1QueryParamsResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1385,19 +1294,14 @@ library IbcApplicationsTransferV1QueryParamsResponse {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_params(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1416,11 +1320,9 @@ library IbcApplicationsTransferV1QueryParamsResponse {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcApplicationsTransferV1Params.Data memory x,
-            uint256 sz
-        ) = _decode_IbcApplicationsTransferV1Params(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcApplicationsTransferV1Params.Data memory x, uint256 sz) =
+            _decode_IbcApplicationsTransferV1Params(p, bs);
         r.params = x;
         return sz;
     }
@@ -1439,18 +1341,14 @@ library IbcApplicationsTransferV1QueryParamsResponse {
     )
         internal
         pure
-        returns (IbcApplicationsTransferV1Params.Data memory, uint)
+        returns (IbcApplicationsTransferV1Params.Data memory, uint256)
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcApplicationsTransferV1Params.Data memory r,
-
-        ) = IbcApplicationsTransferV1Params._decode(pointer, bs, sz);
+        (IbcApplicationsTransferV1Params.Data memory r,) =
+            IbcApplicationsTransferV1Params._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1483,20 +1381,15 @@ library IbcApplicationsTransferV1QueryParamsResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcApplicationsTransferV1Params._encode_nested(
-            r.params,
-            pointer,
-            bs
+            r.params, pointer, bs
         );
 
         return pointer - offset;
@@ -1515,7 +1408,7 @@ library IbcApplicationsTransferV1QueryParamsResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1540,11 +1433,10 @@ library IbcApplicationsTransferV1QueryParamsResponse {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcApplicationsTransferV1Params._estimate(r.params)
             );
         return e;
@@ -1605,7 +1497,7 @@ library IbcApplicationsTransferV1QueryDenomHashRequest {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1615,7 +1507,7 @@ library IbcApplicationsTransferV1QueryDenomHashRequest {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1633,7 +1525,7 @@ library IbcApplicationsTransferV1QueryDenomHashRequest {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1641,19 +1533,14 @@ library IbcApplicationsTransferV1QueryDenomHashRequest {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_trace(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1672,7 +1559,7 @@ library IbcApplicationsTransferV1QueryDenomHashRequest {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.trace = x;
         return sz;
@@ -1707,16 +1594,13 @@ library IbcApplicationsTransferV1QueryDenomHashRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.trace).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.trace, pointer, bs);
         }
@@ -1736,7 +1620,7 @@ library IbcApplicationsTransferV1QueryDenomHashRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1761,7 +1645,7 @@ library IbcApplicationsTransferV1QueryDenomHashRequest {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.trace).length);
         return e;
@@ -1826,7 +1710,7 @@ library IbcApplicationsTransferV1QueryDenomHashResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1836,7 +1720,7 @@ library IbcApplicationsTransferV1QueryDenomHashResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1854,7 +1738,7 @@ library IbcApplicationsTransferV1QueryDenomHashResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1862,19 +1746,14 @@ library IbcApplicationsTransferV1QueryDenomHashResponse {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_hash(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1893,7 +1772,7 @@ library IbcApplicationsTransferV1QueryDenomHashResponse {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.hash = x;
         return sz;
@@ -1928,16 +1807,13 @@ library IbcApplicationsTransferV1QueryDenomHashResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.hash).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.hash, pointer, bs);
         }
@@ -1957,7 +1833,7 @@ library IbcApplicationsTransferV1QueryDenomHashResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1982,7 +1858,7 @@ library IbcApplicationsTransferV1QueryDenomHashResponse {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.hash).length);
         return e;
@@ -2048,7 +1924,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressRequest {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -2058,7 +1934,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressRequest {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -2076,7 +1952,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressRequest {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -2084,21 +1960,16 @@ library IbcApplicationsTransferV1QueryEscrowAddressRequest {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_port_id(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_channel_id(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -2117,7 +1988,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressRequest {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.port_id = x;
         return sz;
@@ -2134,7 +2005,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressRequest {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.channel_id = x;
         return sz;
@@ -2169,31 +2040,21 @@ library IbcApplicationsTransferV1QueryEscrowAddressRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.port_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.port_id, pointer, bs);
         }
         if (bytes(r.channel_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.channel_id,
-                pointer,
-                bs
-            );
+            pointer += ProtoBufRuntime._encode_string(r.channel_id, pointer, bs);
         }
         return pointer - offset;
     }
@@ -2211,7 +2072,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressRequest {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -2236,7 +2097,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressRequest {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.channel_id).length);
@@ -2307,7 +2168,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressResponse {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -2317,7 +2178,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressResponse {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -2335,7 +2196,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressResponse {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -2343,19 +2204,14 @@ library IbcApplicationsTransferV1QueryEscrowAddressResponse {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_escrow_address(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -2374,7 +2230,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressResponse {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.escrow_address = x;
         return sz;
@@ -2409,22 +2265,16 @@ library IbcApplicationsTransferV1QueryEscrowAddressResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.escrow_address).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.escrow_address,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.escrow_address, pointer, bs);
         }
         return pointer - offset;
     }
@@ -2442,7 +2292,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressResponse {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -2467,7 +2317,7 @@ library IbcApplicationsTransferV1QueryEscrowAddressResponse {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.escrow_address).length);
         return e;

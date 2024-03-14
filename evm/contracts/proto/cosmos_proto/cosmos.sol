@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
+
 import "../ProtoBufRuntime.sol";
 import "../GoogleProtobufAny.sol";
 
@@ -18,7 +19,7 @@ library Cosmos_protoInterfaceDescriptor {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -28,7 +29,7 @@ library Cosmos_protoInterfaceDescriptor {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -46,7 +47,7 @@ library Cosmos_protoInterfaceDescriptor {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -54,21 +55,16 @@ library Cosmos_protoInterfaceDescriptor {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_name(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_description(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -87,7 +83,7 @@ library Cosmos_protoInterfaceDescriptor {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.name = x;
         return sz;
@@ -104,7 +100,7 @@ library Cosmos_protoInterfaceDescriptor {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.description = x;
         return sz;
@@ -139,31 +135,22 @@ library Cosmos_protoInterfaceDescriptor {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.name).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.name, pointer, bs);
         }
         if (bytes(r.description).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.description,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.description, pointer, bs);
         }
         return pointer - offset;
     }
@@ -181,7 +168,7 @@ library Cosmos_protoInterfaceDescriptor {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -206,7 +193,7 @@ library Cosmos_protoInterfaceDescriptor {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.name).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.description).length);
@@ -279,7 +266,7 @@ library Cosmos_protoScalarDescriptor {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -289,7 +276,7 @@ library Cosmos_protoScalarDescriptor {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -307,19 +294,17 @@ library Cosmos_protoScalarDescriptor {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[4] memory counters;
+        uint256[4] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_name(pointer, bs, r);
@@ -330,49 +315,33 @@ library Cosmos_protoScalarDescriptor {
                     pointer += _read_packed_repeated_field_type(pointer, bs, r);
                 } else {
                     pointer += _read_unpacked_repeated_field_type(
-                        pointer,
-                        bs,
-                        nil(),
-                        counters
+                        pointer, bs, nil(), counters
                     );
                 }
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
         if (counters[3] > 0) {
             require(r.field_type.length == 0);
-            r.field_type = new CosmosProtoCosmosProtoGlobalEnums.ScalarType[](
-                counters[3]
-            );
+            r.field_type =
+                new CosmosProtoCosmosProtoGlobalEnums.ScalarType[](counters[3]);
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (
                 fieldId == 3 && wireType != ProtoBufRuntime.WireType.LengthDelim
             ) {
-                pointer += _read_unpacked_repeated_field_type(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_field_type(pointer, bs, r, counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -391,7 +360,7 @@ library Cosmos_protoScalarDescriptor {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.name = x;
         return sz;
@@ -408,7 +377,7 @@ library Cosmos_protoScalarDescriptor {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.description = x;
         return sz;
@@ -426,14 +395,14 @@ library Cosmos_protoScalarDescriptor {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[4] memory counters
-    ) internal pure returns (uint) {
+        uint256[4] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
         (int64 tmp, uint256 sz) = ProtoBufRuntime._decode_enum(p, bs);
-        CosmosProtoCosmosProtoGlobalEnums.ScalarType x = CosmosProtoCosmosProtoGlobalEnums
-                .decode_ScalarType(tmp);
+        CosmosProtoCosmosProtoGlobalEnums.ScalarType x =
+            CosmosProtoCosmosProtoGlobalEnums.decode_ScalarType(tmp);
         if (isNil(r)) {
             counters[3] += 1;
         } else {
@@ -454,21 +423,16 @@ library Cosmos_protoScalarDescriptor {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint256 len, uint256 size) = ProtoBufRuntime._decode_varint(p, bs);
         p += size;
-        uint256 count = ProtoBufRuntime._count_packed_repeated_varint(
-            p,
-            len,
-            bs
-        );
-        r.field_type = new CosmosProtoCosmosProtoGlobalEnums.ScalarType[](
-            count
-        );
+        uint256 count =
+            ProtoBufRuntime._count_packed_repeated_varint(p, len, bs);
+        r.field_type = new CosmosProtoCosmosProtoGlobalEnums.ScalarType[](count);
         for (uint256 i = 0; i < count; i++) {
             (int64 tmp, uint256 sz) = ProtoBufRuntime._decode_enum(p, bs);
-            CosmosProtoCosmosProtoGlobalEnums.ScalarType x = CosmosProtoCosmosProtoGlobalEnums
-                    .decode_ScalarType(tmp);
+            CosmosProtoCosmosProtoGlobalEnums.ScalarType x =
+                CosmosProtoCosmosProtoGlobalEnums.decode_ScalarType(tmp);
             p += sz;
             r.field_type[i] = x;
         }
@@ -504,38 +468,26 @@ library Cosmos_protoScalarDescriptor {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (bytes(r.name).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.name, pointer, bs);
         }
         if (bytes(r.description).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.description,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.description, pointer, bs);
         }
         if (r.field_type.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_varint(
                 CosmosProtoCosmosProtoGlobalEnums
@@ -546,11 +498,8 @@ library Cosmos_protoScalarDescriptor {
             for (i = 0; i < r.field_type.length; i++) {
                 int32 _enum_field_type = CosmosProtoCosmosProtoGlobalEnums
                     .encode_ScalarType(r.field_type[i]);
-                pointer += ProtoBufRuntime._encode_enum(
-                    _enum_field_type,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._encode_enum(_enum_field_type, pointer, bs);
             }
         }
         return pointer - offset;
@@ -569,7 +518,7 @@ library Cosmos_protoScalarDescriptor {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -594,14 +543,13 @@ library Cosmos_protoScalarDescriptor {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.name).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.description).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 CosmosProtoCosmosProtoGlobalEnums
                     .estimate_packed_repeated_ScalarType(r.field_type)
             );
@@ -651,10 +599,8 @@ library Cosmos_protoScalarDescriptor {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        CosmosProtoCosmosProtoGlobalEnums.ScalarType[]
-            memory tmp = new CosmosProtoCosmosProtoGlobalEnums.ScalarType[](
-                self.field_type.length + 1
-            );
+        CosmosProtoCosmosProtoGlobalEnums.ScalarType[] memory tmp = new CosmosProtoCosmosProtoGlobalEnums
+            .ScalarType[](self.field_type.length + 1);
         for (uint256 i = 0; i < self.field_type.length; i++) {
             tmp[i] = self.field_type[i];
         }
@@ -732,11 +678,13 @@ library CosmosProtoCosmosProtoGlobalEnums {
      * @dev The estimator for an packed enum array
      * @return The number of bytes encoded
      */
-    function estimate_packed_repeated_ScalarType(
-        ScalarType[] memory a
-    ) internal pure returns (uint256) {
+    function estimate_packed_repeated_ScalarType(ScalarType[] memory a)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 e = 0;
-        for (uint i = 0; i < a.length; i++) {
+        for (uint256 i = 0; i < a.length; i++) {
             e += ProtoBufRuntime._sz_enum(encode_ScalarType(a[i]));
         }
         return e;

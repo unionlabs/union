@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../ProtoBufRuntime.sol";
 import "../../../../GoogleProtobufAny.sol";
 import "../../../core/client/v1/client.sol";
@@ -19,7 +20,7 @@ library IbcLightclientsWasmV1ClientState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -29,7 +30,7 @@ library IbcLightclientsWasmV1ClientState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -47,7 +48,7 @@ library IbcLightclientsWasmV1ClientState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -55,10 +56,8 @@ library IbcLightclientsWasmV1ClientState {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_data(pointer, bs, r);
@@ -67,11 +66,8 @@ library IbcLightclientsWasmV1ClientState {
             } else if (fieldId == 3) {
                 pointer += _read_latest_height(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -90,7 +86,7 @@ library IbcLightclientsWasmV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.data = x;
         return sz;
@@ -107,7 +103,7 @@ library IbcLightclientsWasmV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.code_id = x;
         return sz;
@@ -124,11 +120,9 @@ library IbcLightclientsWasmV1ClientState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcCoreClientV1Height.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1Height(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcCoreClientV1Height.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1Height(p, bs);
         r.latest_height = x;
         return sz;
     }
@@ -144,18 +138,13 @@ library IbcLightclientsWasmV1ClientState {
     function _decode_IbcCoreClientV1Height(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint) {
+    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (IbcCoreClientV1Height.Data memory r, ) = IbcCoreClientV1Height._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (IbcCoreClientV1Height.Data memory r,) =
+            IbcCoreClientV1Height._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -188,40 +177,28 @@ library IbcLightclientsWasmV1ClientState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.data.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.data, pointer, bs);
         }
         if (r.code_id.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.code_id, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            3,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcCoreClientV1Height._encode_nested(
-            r.latest_height,
-            pointer,
-            bs
-        );
+        pointer +=
+            IbcCoreClientV1Height._encode_nested(r.latest_height, pointer, bs);
 
         return pointer - offset;
     }
@@ -239,7 +216,7 @@ library IbcLightclientsWasmV1ClientState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -264,13 +241,12 @@ library IbcLightclientsWasmV1ClientState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.data.length);
         e += 1 + ProtoBufRuntime._sz_lendelim(r.code_id.length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcCoreClientV1Height._estimate(r.latest_height)
             );
         return e;
@@ -342,7 +318,7 @@ library IbcLightclientsWasmV1ConsensusState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -352,7 +328,7 @@ library IbcLightclientsWasmV1ConsensusState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -370,7 +346,7 @@ library IbcLightclientsWasmV1ConsensusState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -378,21 +354,16 @@ library IbcLightclientsWasmV1ConsensusState {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_data(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_timestamp(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -411,7 +382,7 @@ library IbcLightclientsWasmV1ConsensusState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.data = x;
         return sz;
@@ -428,7 +399,7 @@ library IbcLightclientsWasmV1ConsensusState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (uint64 x, uint256 sz) = ProtoBufRuntime._decode_uint64(p, bs);
         r.timestamp = x;
         return sz;
@@ -463,25 +434,19 @@ library IbcLightclientsWasmV1ConsensusState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.data.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.data, pointer, bs);
         }
         if (r.timestamp != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_uint64(r.timestamp, pointer, bs);
         }
@@ -501,7 +466,7 @@ library IbcLightclientsWasmV1ConsensusState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -526,7 +491,7 @@ library IbcLightclientsWasmV1ConsensusState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.data.length);
         e += 1 + ProtoBufRuntime._sz_uint64(r.timestamp);
@@ -598,7 +563,7 @@ library IbcLightclientsWasmV1Header {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -608,7 +573,7 @@ library IbcLightclientsWasmV1Header {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -626,7 +591,7 @@ library IbcLightclientsWasmV1Header {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -634,21 +599,16 @@ library IbcLightclientsWasmV1Header {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_data(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_height(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -667,7 +627,7 @@ library IbcLightclientsWasmV1Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.data = x;
         return sz;
@@ -684,11 +644,9 @@ library IbcLightclientsWasmV1Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            IbcCoreClientV1Height.Data memory x,
-            uint256 sz
-        ) = _decode_IbcCoreClientV1Height(p, bs);
+    ) internal pure returns (uint256) {
+        (IbcCoreClientV1Height.Data memory x, uint256 sz) =
+            _decode_IbcCoreClientV1Height(p, bs);
         r.height = x;
         return sz;
     }
@@ -704,18 +662,13 @@ library IbcLightclientsWasmV1Header {
     function _decode_IbcCoreClientV1Height(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint) {
+    ) internal pure returns (IbcCoreClientV1Height.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (IbcCoreClientV1Height.Data memory r, ) = IbcCoreClientV1Height._decode(
-            pointer,
-            bs,
-            sz
-        );
+        (IbcCoreClientV1Height.Data memory r,) =
+            IbcCoreClientV1Height._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -748,25 +701,19 @@ library IbcLightclientsWasmV1Header {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.data.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.data, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcCoreClientV1Height._encode_nested(r.height, pointer, bs);
 
@@ -786,7 +733,7 @@ library IbcLightclientsWasmV1Header {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -811,12 +758,11 @@ library IbcLightclientsWasmV1Header {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.data.length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcCoreClientV1Height._estimate(r.height)
             );
         return e;
@@ -882,7 +828,7 @@ library IbcLightclientsWasmV1Misbehaviour {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -892,7 +838,7 @@ library IbcLightclientsWasmV1Misbehaviour {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -910,7 +856,7 @@ library IbcLightclientsWasmV1Misbehaviour {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -918,19 +864,14 @@ library IbcLightclientsWasmV1Misbehaviour {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_data(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -949,7 +890,7 @@ library IbcLightclientsWasmV1Misbehaviour {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.data = x;
         return sz;
@@ -984,16 +925,13 @@ library IbcLightclientsWasmV1Misbehaviour {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.data.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.data, pointer, bs);
         }
@@ -1013,7 +951,7 @@ library IbcLightclientsWasmV1Misbehaviour {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1038,7 +976,7 @@ library IbcLightclientsWasmV1Misbehaviour {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(r.data.length);
         return e;

@@ -4,9 +4,11 @@ library MerkleTree {
     uint8 constant LEAF_PREFIX = 0x00;
     uint8 constant INNER_PREFIX = 0x01;
 
-    function hashFromByteSlices(
-        bytes[] memory data
-    ) internal pure returns (bytes32) {
+    function hashFromByteSlices(bytes[] memory data)
+        internal
+        pure
+        returns (bytes32)
+    {
         return merkleRootHash(data, 0, data.length);
     }
 
@@ -41,11 +43,11 @@ library MerkleTree {
      * TODO: This function can be optimized with bit shifting approach:
      * https://www.baeldung.com/java-largest-power-of-2-less-than-number
      */
-    function getSplitPoint(uint256 input) internal pure returns (uint) {
+    function getSplitPoint(uint256 input) internal pure returns (uint256) {
         require(input > 1, "MerkleTree: invalid input");
 
-        uint result = 1;
-        for (uint i = input - 1; i > 1; i--) {
+        uint256 result = 1;
+        for (uint256 i = input - 1; i > 1; i--) {
             if ((i & (i - 1)) == 0) {
                 result = i;
                 break;
@@ -60,24 +62,26 @@ library MerkleTree {
      */
     function merkleRootHash(
         bytes[] memory data,
-        uint start,
-        uint total
+        uint256 start,
+        uint256 total
     ) internal pure returns (bytes32) {
         if (total == 0) {
             return emptyHash();
         } else if (total == 1) {
             return leafHash(data[start]);
         } else {
-            uint k = getSplitPoint(total);
+            uint256 k = getSplitPoint(total);
             bytes32 left = merkleRootHash(data, start, k); // validators[:k]
             bytes32 right = merkleRootHash(data, start + k, total - k); // validators[k:]
             return innerHash(left, right);
         }
     }
 
-    function optimizedBlockRoot(
-        bytes32[14] memory data
-    ) internal pure returns (bytes32) {
+    function optimizedBlockRoot(bytes32[14] memory data)
+        internal
+        pure
+        returns (bytes32)
+    {
         bytes32 x0 = innerHash(data[0], data[1]);
         bytes32 x1 = innerHash(data[2], data[3]);
         bytes32 x2 = innerHash(data[4], data[5]);

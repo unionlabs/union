@@ -27,8 +27,7 @@ library IBCPacketLib {
         bytes acknowledgement
     );
     event AcknowledgePacket(
-        IbcCoreChannelV1Packet.Data packet,
-        bytes acknowledgement
+        IbcCoreChannelV1Packet.Data packet, bytes acknowledgement
     );
     event TimeoutPacket(IbcCoreChannelV1Packet.Data packet);
 
@@ -85,17 +84,15 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             revert IBCPacketLib.ErrUnauthorized();
         }
 
-        IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
-            sourcePort,
-            sourceChannel
-        );
+        IbcCoreChannelV1Channel.Data storage channel =
+            ensureChannelState(sourcePort, sourceChannel);
 
-        string memory clientId = connections[channel.connection_hops[0]]
-            .client_id;
+        string memory clientId =
+            connections[channel.connection_hops[0]].client_id;
         ILightClient client = getClient(clientId);
 
-        (IbcCoreClientV1Height.Data memory latestHeight, bool found) = client
-            .getLatestHeight(clientId);
+        (IbcCoreClientV1Height.Data memory latestHeight, bool found) =
+            client.getLatestHeight(clientId);
         if (!found) {
             revert IBCPacketLib.ErrLatestHeightNotFound();
         }
@@ -104,10 +101,8 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         }
 
         uint64 latestTimestamp;
-        (latestTimestamp, found) = client.getTimestampAtHeight(
-            clientId,
-            latestHeight
-        );
+        (latestTimestamp, found) =
+            client.getTimestampAtHeight(clientId, latestHeight);
         if (!found) {
             revert IBCPacketLib.ErrLatestTimestampNotFound();
         }
@@ -117,13 +112,9 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
 
         uint64 packetSequence = nextSequenceSends[sourcePort][sourceChannel];
         nextSequenceSends[sourcePort][sourceChannel] = packetSequence + 1;
-        commitments[
-            IBCCommitment.packetCommitmentKey(
-                sourcePort,
-                sourceChannel,
-                packetSequence
-            )
-        ] = keccak256(
+        commitments[IBCCommitment.packetCommitmentKey(
+            sourcePort, sourceChannel, packetSequence
+        )] = keccak256(
             abi.encodePacked(
                 sha256(
                     abi.encodePacked(
@@ -152,43 +143,43 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
      * @dev recvPacket is called by a module in order to receive & process an IBC packet
      * sent on the corresponding channel end on the counterparty chain.
      */
-    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external override {
+    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_)
+        external
+        override
+    {
         IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
-            msg_.packet.destination_port,
-            msg_.packet.destination_channel
+            msg_.packet.destination_port, msg_.packet.destination_channel
         );
 
         if (
-            hashString(msg_.packet.source_port) !=
-            hashString(channel.counterparty.port_id)
+            hashString(msg_.packet.source_port)
+                != hashString(channel.counterparty.port_id)
         ) {
             revert IBCPacketLib.ErrSourceAndCounterpartyPortMismatch();
         }
         if (
-            hashString(msg_.packet.source_channel) !=
-            hashString(channel.counterparty.channel_id)
+            hashString(msg_.packet.source_channel)
+                != hashString(channel.counterparty.channel_id)
         ) {
             revert IBCPacketLib.ErrSourceAndCounterpartyChannelMismatch();
         }
 
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
-            channel.connection_hops[0]
-        ];
-        if (
-            connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN
-        ) {
+        IbcCoreConnectionV1ConnectionEnd.Data storage connection =
+            connections[channel.connection_hops[0]];
+        if (connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN)
+        {
             revert IBCPacketLib.ErrInvalidConnectionState();
         }
 
         if (
-            msg_.packet.timeout_height.revision_height != 0 &&
-            (block.number >= msg_.packet.timeout_height.revision_height)
+            msg_.packet.timeout_height.revision_height != 0
+                && (block.number >= msg_.packet.timeout_height.revision_height)
         ) {
             revert IBCPacketLib.ErrHeightTimeout();
         }
         if (
-            msg_.packet.timeout_timestamp != 0 &&
-            (block.timestamp >= msg_.packet.timeout_timestamp)
+            msg_.packet.timeout_timestamp != 0
+                && (block.timestamp >= msg_.packet.timeout_timestamp)
         ) {
             revert IBCPacketLib.ErrTimestampTimeout();
         }
@@ -219,44 +210,41 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         }
 
         if (
-            channel.ordering ==
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED
+            channel.ordering
+                == IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED
         ) {
             if (
-                packetReceipts[msg_.packet.destination_port][
-                    msg_.packet.destination_channel
-                ][msg_.packet.sequence] != 0
+                packetReceipts[msg_.packet.destination_port][msg_
+                    .packet
+                    .destination_channel][msg_.packet.sequence] != 0
             ) {
                 revert IBCPacketLib.ErrPacketAlreadyReceived();
             }
-            packetReceipts[msg_.packet.destination_port][
-                msg_.packet.destination_channel
-            ][msg_.packet.sequence] = 1;
+            packetReceipts[msg_.packet.destination_port][msg_
+                .packet
+                .destination_channel][msg_.packet.sequence] = 1;
         } else if (
             channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED
         ) {
             if (
-                nextSequenceRecvs[msg_.packet.destination_port][
-                    msg_.packet.destination_channel
-                ] != msg_.packet.sequence
+                nextSequenceRecvs[msg_.packet.destination_port][msg_
+                    .packet
+                    .destination_channel] != msg_.packet.sequence
             ) {
                 revert IBCPacketLib.ErrPacketSequenceNextSequenceMismatch();
             }
-            nextSequenceRecvs[msg_.packet.destination_port][
-                msg_.packet.destination_channel
-            ]++;
+            nextSequenceRecvs[msg_.packet.destination_port][msg_
+                .packet
+                .destination_channel]++;
         } else {
             revert IBCPacketLib.ErrUnknownChannelOrdering();
         }
 
         IIBCModule module = lookupModuleByChannel(
-            msg_.packet.destination_port,
-            msg_.packet.destination_channel
+            msg_.packet.destination_port, msg_.packet.destination_channel
         );
-        bytes memory acknowledgement = module.onRecvPacket(
-            msg_.packet,
-            _msgSender()
-        );
+        bytes memory acknowledgement =
+            module.onRecvPacket(msg_.packet, _msgSender());
         if (acknowledgement.length > 0) {
             _writeAcknowledgement(
                 msg_.packet.destination_port,
@@ -278,30 +266,22 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             revert IBCPacketLib.ErrAcknowledgementIsEmpty();
         }
 
-        IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
-            destinationPort,
-            destinationChannel
-        );
+        IbcCoreChannelV1Channel.Data storage channel =
+            ensureChannelState(destinationPort, destinationChannel);
 
         bytes32 ackCommitmentKey = IBCCommitment
             .packetAcknowledgementCommitmentKey(
-                destinationPort,
-                destinationChannel,
-                sequence
-            );
+            destinationPort, destinationChannel, sequence
+        );
         bytes32 ackCommitment = commitments[ackCommitmentKey];
         if (ackCommitment != bytes32(0)) {
             revert IBCPacketLib.ErrAcknowledgementAlreadyExists();
         }
-        commitments[ackCommitmentKey] = keccak256(
-            abi.encodePacked(sha256(acknowledgement))
-        );
+        commitments[ackCommitmentKey] =
+            keccak256(abi.encodePacked(sha256(acknowledgement)));
 
         emit IBCPacketLib.WriteAcknowledgement(
-            destinationPort,
-            destinationChannel,
-            sequence,
-            acknowledgement
+            destinationPort, destinationChannel, sequence, acknowledgement
         );
     }
 
@@ -323,10 +303,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             revert IBCPacketLib.ErrUnauthorized();
         }
         _writeAcknowledgement(
-            destinationPort,
-            destinationChannel,
-            sequence,
-            acknowledgement
+            destinationPort, destinationChannel, sequence, acknowledgement
         );
     }
 
@@ -338,33 +315,31 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
      * which is no longer necessary since the packet has been received and acted upon.
      * It will also increment NextSequenceAck in case of ORDERED channels.
      */
-    function acknowledgePacket(
-        IBCMsgs.MsgPacketAcknowledgement calldata msg_
-    ) external override {
+    function acknowledgePacket(IBCMsgs.MsgPacketAcknowledgement calldata msg_)
+        external
+        override
+    {
         IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
-            msg_.packet.source_port,
-            msg_.packet.source_channel
+            msg_.packet.source_port, msg_.packet.source_channel
         );
 
         if (
-            hashString(msg_.packet.destination_port) !=
-            hashString(channel.counterparty.port_id)
+            hashString(msg_.packet.destination_port)
+                != hashString(channel.counterparty.port_id)
         ) {
             revert IBCPacketLib.ErrDestinationAndCounterpartyPortMismatch();
         }
         if (
-            hashString(msg_.packet.destination_channel) !=
-            hashString(channel.counterparty.channel_id)
+            hashString(msg_.packet.destination_channel)
+                != hashString(channel.counterparty.channel_id)
         ) {
             revert IBCPacketLib.ErrDestinationAndCounterpartyChannelMismatch();
         }
 
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
-            channel.connection_hops[0]
-        ];
-        if (
-            connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN
-        ) {
+        IbcCoreConnectionV1ConnectionEnd.Data storage connection =
+            connections[channel.connection_hops[0]];
+        if (connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN)
+        {
             revert IBCPacketLib.ErrInvalidConnectionState();
         }
 
@@ -378,19 +353,19 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             revert IBCPacketLib.ErrPacketCommitmentNotFound();
         }
         if (
-            packetCommitment !=
-            keccak256(
-                abi.encodePacked(
-                    sha256(
-                        abi.encodePacked(
-                            msg_.packet.timeout_timestamp,
-                            msg_.packet.timeout_height.revision_number,
-                            msg_.packet.timeout_height.revision_height,
-                            sha256(msg_.packet.data)
+            packetCommitment
+                != keccak256(
+                    abi.encodePacked(
+                        sha256(
+                            abi.encodePacked(
+                                msg_.packet.timeout_timestamp,
+                                msg_.packet.timeout_height.revision_number,
+                                msg_.packet.timeout_height.revision_height,
+                                sha256(msg_.packet.data)
+                            )
                         )
                     )
                 )
-            )
         ) {
             revert IBCPacketLib.ErrInvalidPacketCommitment();
         }
@@ -411,33 +386,27 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             revert IBCPacketLib.ErrInvalidProof();
         }
 
-        if (
-            channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED
-        ) {
+        if (channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED)
+        {
             if (
-                msg_.packet.sequence !=
-                nextSequenceAcks[msg_.packet.source_port][
-                    msg_.packet.source_channel
-                ]
+                msg_.packet.sequence
+                    != nextSequenceAcks[msg_.packet.source_port][msg_
+                        .packet
+                        .source_channel]
             ) {
                 revert IBCPacketLib.ErrPacketSequenceNextSequenceMismatch();
             }
-            nextSequenceAcks[msg_.packet.source_port][
-                msg_.packet.source_channel
-            ]++;
+            nextSequenceAcks[msg_.packet.source_port][msg_.packet.source_channel]++;
         }
 
         delete commitments[packetCommitmentKey];
 
         IIBCModule module = lookupModuleByChannel(
-            msg_.packet.source_port,
-            msg_.packet.source_channel
+            msg_.packet.source_port, msg_.packet.source_channel
         );
 
         module.onAcknowledgementPacket(
-            msg_.packet,
-            msg_.acknowledgement,
-            _msgSender()
+            msg_.packet, msg_.acknowledgement, _msgSender()
         );
 
         emit IBCPacketLib.AcknowledgePacket(msg_.packet, msg_.acknowledgement);
@@ -447,33 +416,31 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         return keccak256(abi.encodePacked(s));
     }
 
-    function timeoutPacket(
-        IBCMsgs.MsgPacketTimeout calldata msg_
-    ) external override {
+    function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_)
+        external
+        override
+    {
         IbcCoreChannelV1Channel.Data storage channel = ensureChannelState(
-            msg_.packet.source_port,
-            msg_.packet.source_channel
+            msg_.packet.source_port, msg_.packet.source_channel
         );
 
         if (
-            hashString(msg_.packet.destination_port) !=
-            hashString(channel.counterparty.port_id)
+            hashString(msg_.packet.destination_port)
+                != hashString(channel.counterparty.port_id)
         ) {
             revert IBCPacketLib.ErrDestinationAndCounterpartyPortMismatch();
         }
         if (
-            hashString(msg_.packet.destination_channel) !=
-            hashString(channel.counterparty.channel_id)
+            hashString(msg_.packet.destination_channel)
+                != hashString(channel.counterparty.channel_id)
         ) {
             revert IBCPacketLib.ErrDestinationAndCounterpartyChannelMismatch();
         }
 
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
-            channel.connection_hops[0]
-        ];
-        if (
-            connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN
-        ) {
+        IbcCoreConnectionV1ConnectionEnd.Data storage connection =
+            connections[channel.connection_hops[0]];
+        if (connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN)
+        {
             revert IBCPacketLib.ErrInvalidConnectionState();
         }
 
@@ -488,58 +455,57 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         }
 
         if (
-            packetCommitment !=
-            keccak256(
-                abi.encodePacked(
-                    sha256(
-                        abi.encodePacked(
-                            msg_.packet.timeout_timestamp,
-                            msg_.packet.timeout_height.revision_number,
-                            msg_.packet.timeout_height.revision_height,
-                            sha256(msg_.packet.data)
+            packetCommitment
+                != keccak256(
+                    abi.encodePacked(
+                        sha256(
+                            abi.encodePacked(
+                                msg_.packet.timeout_timestamp,
+                                msg_.packet.timeout_height.revision_number,
+                                msg_.packet.timeout_height.revision_height,
+                                sha256(msg_.packet.data)
+                            )
                         )
                     )
                 )
-            )
         ) {
             revert IBCPacketLib.ErrInvalidPacketCommitment();
         }
 
         ILightClient client = getClient(connection.client_id);
-        (uint64 proofTimestamp, bool found) = client.getTimestampAtHeight(
-            connection.client_id,
-            msg_.proofHeight
-        );
+        (uint64 proofTimestamp, bool found) =
+            client.getTimestampAtHeight(connection.client_id, msg_.proofHeight);
         if (!found) {
             revert IBCPacketLib.ErrLatestTimestampNotFound();
         }
 
         if (
-            msg_.packet.timeout_timestamp == 0 &&
-            msg_.packet.timeout_height.isZero()
+            msg_.packet.timeout_timestamp == 0
+                && msg_.packet.timeout_height.isZero()
         ) {
             revert IBCPacketLib.ErrPacketWithoutTimeout();
         }
         if (
-            msg_.packet.timeout_timestamp > 0 &&
-            msg_.packet.timeout_timestamp >= proofTimestamp
+            msg_.packet.timeout_timestamp > 0
+                && msg_.packet.timeout_timestamp >= proofTimestamp
         ) {
             revert IBCPacketLib.ErrTimeoutTimestampNotReached();
         }
         if (
-            !msg_.packet.timeout_height.isZero() &&
-            msg_.packet.timeout_height.gte(msg_.proofHeight)
+            !msg_.packet.timeout_height.isZero()
+                && msg_.packet.timeout_height.gte(msg_.proofHeight)
         ) {
             revert IBCPacketLib.ErrTimeoutHeightNotReached();
         }
 
-        bool isOrdered = channel.ordering ==
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED;
-        bool isUnordered = channel.ordering ==
-            IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED;
+        bool isOrdered =
+            channel.ordering == IbcCoreChannelV1GlobalEnums.Order.ORDER_ORDERED;
+        bool isUnordered = channel.ordering
+            == IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED;
         if (isOrdered) {
             if (msg_.nextSequenceRecv <= msg_.packet.sequence) {
-                revert IBCPacketLib
+                revert
+                    IBCPacketLib
                     .ErrNextSequenceMustBeGreaterThanTimeoutSequence();
             }
             if (
@@ -579,8 +545,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         delete commitments[packetCommitmentKey];
 
         IIBCModule module = lookupModuleByChannel(
-            msg_.packet.source_port,
-            msg_.packet.source_channel
+            msg_.packet.source_port, msg_.packet.source_channel
         );
         module.onTimeoutPacket(msg_.packet, _msgSender());
 
@@ -594,17 +559,16 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         bytes memory path,
         bytes memory commitment
     ) private returns (bool) {
-        return
-            getClient(connection.client_id).verifyMembership(
-                connection.client_id,
-                height,
-                connection.delay_period,
-                0,
-                proof,
-                connection.counterparty.prefix.key_prefix,
-                path,
-                commitment
-            );
+        return getClient(connection.client_id).verifyMembership(
+            connection.client_id,
+            height,
+            connection.delay_period,
+            0,
+            proof,
+            connection.counterparty.prefix.key_prefix,
+            path,
+            commitment
+        );
     }
 
     function verifyAbsentCommitment(
@@ -613,25 +577,23 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         bytes calldata proof,
         bytes memory path
     ) private returns (bool) {
-        return
-            getClient(connection.client_id).verifyNonMembership(
-                connection.client_id,
-                height,
-                connection.delay_period,
-                0,
-                proof,
-                connection.counterparty.prefix.key_prefix,
-                path
-            );
+        return getClient(connection.client_id).verifyNonMembership(
+            connection.client_id,
+            height,
+            connection.delay_period,
+            0,
+            proof,
+            connection.counterparty.prefix.key_prefix,
+            path
+        );
     }
 
     function ensureChannelState(
         string calldata portId,
         string calldata channelId
     ) internal returns (IbcCoreChannelV1Channel.Data storage) {
-        IbcCoreChannelV1Channel.Data storage channel = channels[portId][
-            channelId
-        ];
+        IbcCoreChannelV1Channel.Data storage channel =
+            channels[portId][channelId];
         if (channel.state != IbcCoreChannelV1GlobalEnums.State.STATE_OPEN) {
             revert IBCPacketLib.ErrInvalidChannelState();
         }

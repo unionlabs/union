@@ -38,12 +38,12 @@ contract CometblsClient is ILightClient {
     using CometblsHelp for bytes;
     using CometblsHelp for IZKVerifierV2;
 
-    mapping(string => UnionIbcLightclientsCometblsV1ClientState.Data)
-        private clientStates;
-    mapping(string => mapping(uint128 => OptimizedConsensusState))
-        private consensusStates;
-    mapping(string => mapping(uint128 => ProcessedMoment))
-        private processedMoments;
+    mapping(string => UnionIbcLightclientsCometblsV1ClientState.Data) private
+        clientStates;
+    mapping(string => mapping(uint128 => OptimizedConsensusState)) private
+        consensusStates;
+    mapping(string => mapping(uint128 => ProcessedMoment)) private
+        processedMoments;
 
     address private ibcHandler;
     IZKVerifierV2 private zkVerifier;
@@ -73,28 +73,25 @@ contract CometblsClient is ILightClient {
             bool ok
         )
     {
-        UnionIbcLightclientsCometblsV1ClientState.Data
-            memory clientState = clientStateBytes.unmarshalClientStateEthABI();
-        OptimizedConsensusState memory consensusState = consensusStateBytes
-            .unmarshalConsensusStateEthABI();
+        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState =
+            clientStateBytes.unmarshalClientStateEthABI();
+        OptimizedConsensusState memory consensusState =
+            consensusStateBytes.unmarshalConsensusStateEthABI();
         if (
-            clientState.latest_height.revision_height == 0 ||
-            consensusState.timestamp == 0
+            clientState.latest_height.revision_height == 0
+                || consensusState.timestamp == 0
         ) {
             return (clientStateCommitment, update, false);
         }
         clientStates[clientId] = clientState;
         uint128 latestHeight = clientState.latest_height.toUint128();
         consensusStates[clientId][latestHeight] = consensusState;
-        processedMoments[clientId][latestHeight] = ProcessedMoment({
-            timestamp: block.timestamp,
-            height: block.number
-        });
+        processedMoments[clientId][latestHeight] =
+            ProcessedMoment({timestamp: block.timestamp, height: block.number});
         return (
             clientState.marshalToCommitmentEthABI(),
             ConsensusStateUpdate({
-                consensusStateCommitment: consensusState
-                    .marshalToCommitmentEthABI(),
+                consensusStateCommitment: consensusState.marshalToCommitmentEthABI(),
                 height: clientState.latest_height
             }),
             true
@@ -110,18 +107,16 @@ contract CometblsClient is ILightClient {
             revert CometblsClientLib.ErrTrustedConsensusStateNotFound();
         }
 
-        uint64 untrustedHeightNumber = uint64(
-            header.signed_header.commit.height
-        );
+        uint64 untrustedHeightNumber =
+            uint64(header.signed_header.commit.height);
         uint64 trustedHeightNumber = header.trusted_height.revision_height;
         if (untrustedHeightNumber <= trustedHeightNumber) {
             revert CometblsClientLib.ErrUntrustedHeightLTETrustedHeight();
         }
 
         uint64 trustedTimestamp = consensusState.timestamp;
-        uint64 untrustedTimestamp = uint64(
-            header.signed_header.header.time.secs
-        );
+        uint64 untrustedTimestamp =
+            uint64(header.signed_header.header.time.secs);
         if (untrustedTimestamp <= trustedTimestamp) {
             revert CometblsClientLib.ErrUntrustedTimestampLTETrustedTimestamp();
         }
@@ -136,8 +131,8 @@ contract CometblsClient is ILightClient {
             revert CometblsClientLib.ErrHeaderExpired();
         }
 
-        uint64 maxClockDrift = uint64(block.timestamp) +
-            clientState.max_clock_drift;
+        uint64 maxClockDrift =
+            uint64(block.timestamp) + clientState.max_clock_drift;
         if (untrustedTimestamp >= maxClockDrift) {
             revert CometblsClientLib.ErrMaxClockDriftExceeded();
         }
@@ -153,18 +148,15 @@ contract CometblsClient is ILightClient {
         if (adjacent) {
             untrustedValidatorsHash = trustedValidatorsHash;
         } else {
-            untrustedValidatorsHash = header
-                .signed_header
-                .header
-                .validators_hash
-                .toBytes32(0);
+            untrustedValidatorsHash =
+                header.signed_header.header.validators_hash.toBytes32(0);
         }
 
         bytes32 expectedBlockHash = header.signed_header.header.merkleRoot();
 
         if (
-            header.signed_header.commit.block_id.hash.toBytes32(0) !=
-            expectedBlockHash
+            header.signed_header.commit.block_id.hash.toBytes32(0)
+                != expectedBlockHash
         ) {
             revert CometblsClientLib.ErrPrecomputedRootAndBlockRootMismatch();
         }
@@ -173,9 +165,8 @@ contract CometblsClient is ILightClient {
             .signed_header
             .commit
             .canonicalize(clientState.chain_id, expectedBlockHash);
-        bytes memory signedVote = Encoder.encodeDelim(
-            TendermintTypesCanonicalVote.encode(vote)
-        );
+        bytes memory signedVote =
+            Encoder.encodeDelim(TendermintTypesCanonicalVote.encode(vote));
 
         bool ok = zkVerifier.verifyZKP(
             trustedValidatorsHash,
@@ -187,11 +178,8 @@ contract CometblsClient is ILightClient {
             revert CometblsClientLib.ErrInvalidZKP();
         }
 
-        return (
-            untrustedHeightNumber,
-            untrustedTimestamp,
-            untrustedValidatorsHash
-        );
+        return
+            (untrustedHeightNumber, untrustedTimestamp, untrustedValidatorsHash);
     }
 
     function updateClient(
@@ -203,13 +191,12 @@ contract CometblsClient is ILightClient {
         onlyIBC
         returns (bytes32, ConsensusStateUpdate[] memory, bool)
     {
-        UnionIbcLightclientsCometblsV1Header.Data
-            memory header = clientMessageBytes.unmarshalHeaderEthABI();
-        UnionIbcLightclientsCometblsV1ClientState.Data
-            storage clientState = clientStates[clientId];
-        OptimizedConsensusState storage consensusState = consensusStates[
-            clientId
-        ][header.trusted_height.toUint128()];
+        UnionIbcLightclientsCometblsV1Header.Data memory header =
+            clientMessageBytes.unmarshalHeaderEthABI();
+        UnionIbcLightclientsCometblsV1ClientState.Data storage clientState =
+            clientStates[clientId];
+        OptimizedConsensusState storage consensusState =
+            consensusStates[clientId][header.trusted_height.toUint128()];
 
         (
             uint64 untrustedHeightNumber,
@@ -222,33 +209,28 @@ contract CometblsClient is ILightClient {
             clientState.latest_height.revision_height = untrustedHeightNumber;
         }
 
-        IbcCoreClientV1Height.Data
-            memory untrustedHeight = IbcCoreClientV1Height.Data({
-                revision_number: header.trusted_height.revision_number,
-                revision_height: untrustedHeightNumber
-            });
+        IbcCoreClientV1Height.Data memory untrustedHeight =
+        IbcCoreClientV1Height.Data({
+            revision_number: header.trusted_height.revision_number,
+            revision_height: untrustedHeightNumber
+        });
 
         uint128 untrustedHeightIndex = untrustedHeight.toUint128();
 
         consensusState = consensusStates[clientId][untrustedHeightIndex];
         consensusState.timestamp = untrustedTimestamp;
-        consensusState.appHash = header.signed_header.header.app_hash.toBytes32(
-            0
-        );
-        consensusState.nextValidatorsHash = header
-            .signed_header
-            .header
-            .next_validators_hash
-            .toBytes32(0);
+        consensusState.appHash =
+            header.signed_header.header.app_hash.toBytes32(0);
+        consensusState.nextValidatorsHash =
+            header.signed_header.header.next_validators_hash.toBytes32(0);
 
-        processedMoments[clientId][untrustedHeightIndex].timestamp = block
-            .timestamp;
+        processedMoments[clientId][untrustedHeightIndex].timestamp =
+            block.timestamp;
         processedMoments[clientId][untrustedHeightIndex].height = block.number;
 
         ConsensusStateUpdate[] memory updates = new ConsensusStateUpdate[](1);
         updates[0] = ConsensusStateUpdate({
-            consensusStateCommitment: consensusState
-                .marshalToCommitmentEthABI(),
+            consensusStateCommitment: consensusState.marshalToCommitmentEthABI(),
             height: untrustedHeight
         });
 
@@ -266,19 +248,11 @@ contract CometblsClient is ILightClient {
         bytes calldata value
     ) external returns (bool) {
         bytes memory appHash = validateDelayPeriod(
-            clientId,
-            height,
-            delayPeriodTime,
-            delayPeriodBlocks
+            clientId, height, delayPeriodTime, delayPeriodBlocks
         );
-        return
-            membershipVerifier.verifyMembership(
-                appHash,
-                proof,
-                prefix,
-                path,
-                value
-            );
+        return membershipVerifier.verifyMembership(
+            appHash, proof, prefix, path, value
+        );
     }
 
     function verifyNonMembership(
@@ -291,18 +265,10 @@ contract CometblsClient is ILightClient {
         bytes calldata path
     ) external returns (bool) {
         bytes memory appHash = validateDelayPeriod(
-            clientId,
-            height,
-            delayPeriodTime,
-            delayPeriodBlocks
+            clientId, height, delayPeriodTime, delayPeriodBlocks
         );
         return
-            membershipVerifier.verifyNonMembership(
-                appHash,
-                proof,
-                prefix,
-                path
-            );
+            membershipVerifier.verifyNonMembership(appHash, proof, prefix, path);
     }
 
     function validateDelayPeriod(
@@ -311,15 +277,13 @@ contract CometblsClient is ILightClient {
         uint64 delayPeriodTime,
         uint64 delayPeriodBlocks
     ) internal view returns (bytes memory) {
-        OptimizedConsensusState storage consensusState = consensusStates[
-            clientId
-        ][height.toUint128()];
+        OptimizedConsensusState storage consensusState =
+            consensusStates[clientId][height.toUint128()];
         if (consensusState.timestamp == 0) {
             revert CometblsClientLib.ErrTrustedConsensusStateNotFound();
         }
-        ProcessedMoment storage moment = processedMoments[clientId][
-            height.toUint128()
-        ];
+        ProcessedMoment storage moment =
+            processedMoments[clientId][height.toUint128()];
         uint64 currentTime = uint64(block.timestamp);
         uint64 validTime = uint64(moment.timestamp) + delayPeriodTime;
         if (delayPeriodTime != 0 && currentTime < validTime) {
@@ -333,11 +297,13 @@ contract CometblsClient is ILightClient {
         return abi.encodePacked(consensusState.appHash);
     }
 
-    function getClientState(
-        string calldata clientId
-    ) external view returns (bytes memory, bool) {
-        UnionIbcLightclientsCometblsV1ClientState.Data
-            memory clientState = clientStates[clientId];
+    function getClientState(string calldata clientId)
+        external
+        view
+        returns (bytes memory, bool)
+    {
+        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState =
+            clientStates[clientId];
         if (clientState.latest_height.revision_height == 0) {
             return (bytes(""), false);
         }
@@ -348,9 +314,8 @@ contract CometblsClient is ILightClient {
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
     ) external view returns (bytes memory, bool) {
-        OptimizedConsensusState memory consensusState = consensusStates[
-            clientId
-        ][height.toUint128()];
+        OptimizedConsensusState memory consensusState =
+            consensusStates[clientId][height.toUint128()];
         if (consensusState.timestamp == 0) {
             return (bytes(""), false);
         }
@@ -361,17 +326,19 @@ contract CometblsClient is ILightClient {
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
     ) external view override returns (uint64, bool) {
-        OptimizedConsensusState memory consensusState = consensusStates[
-            clientId
-        ][height.toUint128()];
+        OptimizedConsensusState memory consensusState =
+            consensusStates[clientId][height.toUint128()];
         return (consensusState.timestamp, consensusState.timestamp > 0);
     }
 
-    function getLatestHeight(
-        string calldata clientId
-    ) external view override returns (IbcCoreClientV1Height.Data memory, bool) {
-        UnionIbcLightclientsCometblsV1ClientState.Data
-            memory clientState = clientStates[clientId];
+    function getLatestHeight(string calldata clientId)
+        external
+        view
+        override
+        returns (IbcCoreClientV1Height.Data memory, bool)
+    {
+        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState =
+            clientStates[clientId];
         if (clientState.latest_height.revision_height == 0) {
             return (
                 IbcCoreClientV1Height.Data({

@@ -35,16 +35,19 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
      * @dev connectionOpenInit initialises a connection attempt on chain A. The generated connection identifier
      * is returned.
      */
-    function connectionOpenInit(
-        IBCMsgs.MsgConnectionOpenInit calldata msg_
-    ) external override returns (string memory) {
+    function connectionOpenInit(IBCMsgs.MsgConnectionOpenInit calldata msg_)
+        external
+        override
+        returns (string memory)
+    {
         string memory connectionId = generateConnectionIdentifier();
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
-            connectionId
-        ];
+        IbcCoreConnectionV1ConnectionEnd.Data storage connection =
+            connections[connectionId];
         if (
-            connection.state !=
-            IbcCoreConnectionV1GlobalEnums.State.STATE_UNINITIALIZED_UNSPECIFIED
+            connection.state
+                != IbcCoreConnectionV1GlobalEnums
+                    .State
+                    .STATE_UNINITIALIZED_UNSPECIFIED
         ) {
             revert IBCConnectionLib.ErrConnectionAlreadyExists();
         }
@@ -64,9 +67,11 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
      * @dev connectionOpenTry relays notice of a connection attempt on chain A to chain B (this
      * code is executed on chain B).
      */
-    function connectionOpenTry(
-        IBCMsgs.MsgConnectionOpenTry calldata msg_
-    ) external override returns (string memory) {
+    function connectionOpenTry(IBCMsgs.MsgConnectionOpenTry calldata msg_)
+        external
+        override
+        returns (string memory)
+    {
         if (!validateSelfClient(msg_.clientStateBytes)) {
             revert IBCConnectionLib.ErrValidateSelfClient();
         }
@@ -78,12 +83,13 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         }
 
         string memory connectionId = generateConnectionIdentifier();
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
-            connectionId
-        ];
+        IbcCoreConnectionV1ConnectionEnd.Data storage connection =
+            connections[connectionId];
         if (
-            connection.state !=
-            IbcCoreConnectionV1GlobalEnums.State.STATE_UNINITIALIZED_UNSPECIFIED
+            connection.state
+                != IbcCoreConnectionV1GlobalEnums
+                    .State
+                    .STATE_UNINITIALIZED_UNSPECIFIED
         ) {
             revert IBCConnectionLib.ErrConnectionAlreadyExists();
         }
@@ -93,20 +99,20 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         connection.delay_period = msg_.delayPeriod;
         connection.counterparty = msg_.counterparty;
 
-        IbcCoreConnectionV1ConnectionEnd.Data
-            memory expectedConnection = IbcCoreConnectionV1ConnectionEnd.Data({
-                client_id: msg_.counterparty.client_id,
-                versions: msg_.counterpartyVersions,
-                state: IbcCoreConnectionV1GlobalEnums.State.STATE_INIT,
-                delay_period: msg_.delayPeriod,
-                counterparty: IbcCoreConnectionV1Counterparty.Data({
-                    client_id: msg_.clientId,
-                    connection_id: "",
-                    prefix: IbcCoreCommitmentV1MerklePrefix.Data({
-                        key_prefix: bytes(COMMITMENT_PREFIX)
-                    })
+        IbcCoreConnectionV1ConnectionEnd.Data memory expectedConnection =
+        IbcCoreConnectionV1ConnectionEnd.Data({
+            client_id: msg_.counterparty.client_id,
+            versions: msg_.counterpartyVersions,
+            state: IbcCoreConnectionV1GlobalEnums.State.STATE_INIT,
+            delay_period: msg_.delayPeriod,
+            counterparty: IbcCoreConnectionV1Counterparty.Data({
+                client_id: msg_.clientId,
+                connection_id: "",
+                prefix: IbcCoreCommitmentV1MerklePrefix.Data({
+                    key_prefix: bytes(COMMITMENT_PREFIX)
                 })
-            });
+            })
+        });
 
         if (
             !verifyConnectionState(
@@ -123,9 +129,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             !verifyClientState(
                 connection,
                 msg_.proofHeight,
-                IBCCommitment.clientStatePath(
-                    connection.counterparty.client_id
-                ),
+                IBCCommitment.clientStatePath(connection.counterparty.client_id),
                 msg_.proofClient,
                 msg_.clientStateBytes
             )
@@ -144,15 +148,14 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
      * @dev connectionOpenAck relays acceptance of a connection open attempt from chain B back
      * to chain A (this code is executed on chain A).
      */
-    function connectionOpenAck(
-        IBCMsgs.MsgConnectionOpenAck calldata msg_
-    ) external override {
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
-            msg_.connectionId
-        ];
-        if (
-            connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_INIT
-        ) {
+    function connectionOpenAck(IBCMsgs.MsgConnectionOpenAck calldata msg_)
+        external
+        override
+    {
+        IbcCoreConnectionV1ConnectionEnd.Data storage connection =
+            connections[msg_.connectionId];
+        if (connection.state != IbcCoreConnectionV1GlobalEnums.State.STATE_INIT)
+        {
             revert IBCConnectionLib.ErrInvalidConnectionState();
         }
 
@@ -163,23 +166,23 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             revert IBCConnectionLib.ErrValidateSelfClient();
         }
 
-        IbcCoreConnectionV1Counterparty.Data
-            memory expectedCounterparty = IbcCoreConnectionV1Counterparty.Data({
-                client_id: connection.client_id,
-                connection_id: msg_.connectionId,
-                prefix: IbcCoreCommitmentV1MerklePrefix.Data({
-                    key_prefix: bytes(COMMITMENT_PREFIX)
-                })
-            });
+        IbcCoreConnectionV1Counterparty.Data memory expectedCounterparty =
+        IbcCoreConnectionV1Counterparty.Data({
+            client_id: connection.client_id,
+            connection_id: msg_.connectionId,
+            prefix: IbcCoreCommitmentV1MerklePrefix.Data({
+                key_prefix: bytes(COMMITMENT_PREFIX)
+            })
+        });
 
-        IbcCoreConnectionV1ConnectionEnd.Data
-            memory expectedConnection = IbcCoreConnectionV1ConnectionEnd.Data({
-                client_id: connection.counterparty.client_id,
-                versions: makeVersionArray(msg_.version),
-                state: IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN,
-                delay_period: connection.delay_period,
-                counterparty: expectedCounterparty
-            });
+        IbcCoreConnectionV1ConnectionEnd.Data memory expectedConnection =
+        IbcCoreConnectionV1ConnectionEnd.Data({
+            client_id: connection.counterparty.client_id,
+            versions: makeVersionArray(msg_.version),
+            state: IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN,
+            delay_period: connection.delay_period,
+            counterparty: expectedCounterparty
+        });
 
         if (
             !verifyConnectionState(
@@ -196,9 +199,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
             !verifyClientState(
                 connection,
                 msg_.proofHeight,
-                IBCCommitment.clientStatePath(
-                    connection.counterparty.client_id
-                ),
+                IBCCommitment.clientStatePath(connection.counterparty.client_id),
                 msg_.proofClient,
                 msg_.clientStateBytes
             )
@@ -221,33 +222,32 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     function connectionOpenConfirm(
         IBCMsgs.MsgConnectionOpenConfirm calldata msg_
     ) external override {
-        IbcCoreConnectionV1ConnectionEnd.Data storage connection = connections[
-            msg_.connectionId
-        ];
+        IbcCoreConnectionV1ConnectionEnd.Data storage connection =
+            connections[msg_.connectionId];
         if (
-            connection.state !=
-            IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN
+            connection.state
+                != IbcCoreConnectionV1GlobalEnums.State.STATE_TRYOPEN
         ) {
             revert IBCConnectionLib.ErrInvalidConnectionState();
         }
 
-        IbcCoreConnectionV1Counterparty.Data
-            memory expectedCounterparty = IbcCoreConnectionV1Counterparty.Data({
-                client_id: connection.client_id,
-                connection_id: msg_.connectionId,
-                prefix: IbcCoreCommitmentV1MerklePrefix.Data({
-                    key_prefix: bytes(COMMITMENT_PREFIX)
-                })
-            });
+        IbcCoreConnectionV1Counterparty.Data memory expectedCounterparty =
+        IbcCoreConnectionV1Counterparty.Data({
+            client_id: connection.client_id,
+            connection_id: msg_.connectionId,
+            prefix: IbcCoreCommitmentV1MerklePrefix.Data({
+                key_prefix: bytes(COMMITMENT_PREFIX)
+            })
+        });
 
-        IbcCoreConnectionV1ConnectionEnd.Data
-            memory expectedConnection = IbcCoreConnectionV1ConnectionEnd.Data({
-                client_id: connection.counterparty.client_id,
-                versions: connection.versions,
-                state: IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN,
-                delay_period: connection.delay_period,
-                counterparty: expectedCounterparty
-            });
+        IbcCoreConnectionV1ConnectionEnd.Data memory expectedConnection =
+        IbcCoreConnectionV1ConnectionEnd.Data({
+            client_id: connection.counterparty.client_id,
+            versions: connection.versions,
+            state: IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN,
+            delay_period: connection.delay_period,
+            counterparty: expectedCounterparty
+        });
 
         if (
             !verifyConnectionState(
@@ -268,9 +268,8 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     }
 
     function updateConnectionCommitment(string memory connectionId) private {
-        commitments[
-            IBCCommitment.connectionCommitmentKey(connectionId)
-        ] = keccak256(
+        commitments[IBCCommitment.connectionCommitmentKey(connectionId)] =
+        keccak256(
             IbcCoreConnectionV1ConnectionEnd.encode(connections[connectionId])
         );
     }
@@ -284,17 +283,16 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         bytes memory proof,
         bytes memory clientStateBytes
     ) private returns (bool) {
-        return
-            getClient(connection.client_id).verifyMembership(
-                connection.client_id,
-                height,
-                0,
-                0,
-                proof,
-                connection.counterparty.prefix.key_prefix,
-                path,
-                clientStateBytes
-            );
+        return getClient(connection.client_id).verifyMembership(
+            connection.client_id,
+            height,
+            0,
+            0,
+            proof,
+            connection.counterparty.prefix.key_prefix,
+            path,
+            clientStateBytes
+        );
     }
 
     function verifyConnectionState(
@@ -304,17 +302,16 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         string memory connectionId,
         IbcCoreConnectionV1ConnectionEnd.Data memory counterpartyConnection
     ) private returns (bool) {
-        return
-            getClient(connection.client_id).verifyMembership(
-                connection.client_id,
-                height,
-                0,
-                0,
-                proof,
-                connection.counterparty.prefix.key_prefix,
-                IBCCommitment.connectionPath(connectionId),
-                IbcCoreConnectionV1ConnectionEnd.encode(counterpartyConnection)
-            );
+        return getClient(connection.client_id).verifyMembership(
+            connection.client_id,
+            height,
+            0,
+            0,
+            proof,
+            connection.counterparty.prefix.key_prefix,
+            IBCCommitment.connectionPath(connectionId),
+            IbcCoreConnectionV1ConnectionEnd.encode(counterpartyConnection)
+        );
     }
 
     /* Internal functions */
@@ -322,8 +319,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
     function generateConnectionIdentifier() private returns (string memory) {
         string memory identifier = string(
             abi.encodePacked(
-                "connection-",
-                Strings.toString(nextConnectionSequence)
+                "connection-", Strings.toString(nextConnectionSequence)
             )
         );
         nextConnectionSequence++;
@@ -335,9 +331,12 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
      *
      * NOTE: Developers can override this function to support an arbitrary EVM chain.
      */
-    function validateSelfClient(
-        bytes memory
-    ) internal view virtual returns (bool) {
+    function validateSelfClient(bytes memory)
+        internal
+        view
+        virtual
+        returns (bool)
+    {
         return true;
     }
 
@@ -350,8 +349,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         IbcCoreConnectionV1Version.Data[] storage versions
     ) internal {
         require(
-            versions.length == 0,
-            "setSupportedVersions: versions must be empty"
+            versions.length == 0, "setSupportedVersions: versions must be empty"
         );
         versions.push(
             IbcCoreConnectionV1Version.Data({
@@ -364,14 +362,16 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         version.features[1] = "ORDER_UNORDERED";
     }
 
-    function isSupportedVersion(
-        IbcCoreConnectionV1Version.Data memory version
-    ) internal pure returns (bool) {
-        IbcCoreConnectionV1Version.Data
-            memory expectedVersion = IbcCoreConnectionV1Version.Data({
-                identifier: "1",
-                features: new string[](2)
-            });
+    function isSupportedVersion(IbcCoreConnectionV1Version.Data memory version)
+        internal
+        pure
+        returns (bool)
+    {
+        IbcCoreConnectionV1Version.Data memory expectedVersion =
+        IbcCoreConnectionV1Version.Data({
+            identifier: "1",
+            features: new string[](2)
+        });
         expectedVersion.features[0] = "ORDER_ORDERED";
         expectedVersion.features[1] = "ORDER_UNORDERED";
         return isEqualVersion(version, expectedVersion);
@@ -381,14 +381,15 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
         IbcCoreConnectionV1Version.Data memory a,
         IbcCoreConnectionV1Version.Data memory b
     ) internal pure returns (bool) {
-        return
-            keccak256(IbcCoreConnectionV1Version.encode(a)) ==
-            keccak256(IbcCoreConnectionV1Version.encode(b));
+        return keccak256(IbcCoreConnectionV1Version.encode(a))
+            == keccak256(IbcCoreConnectionV1Version.encode(b));
     }
 
-    function makeVersionArray(
-        IbcCoreConnectionV1Version.Data memory version
-    ) internal pure returns (IbcCoreConnectionV1Version.Data[] memory ret) {
+    function makeVersionArray(IbcCoreConnectionV1Version.Data memory version)
+        internal
+        pure
+        returns (IbcCoreConnectionV1Version.Data[] memory ret)
+    {
         ret = new IbcCoreConnectionV1Version.Data[](1);
         ret[0] = version;
     }

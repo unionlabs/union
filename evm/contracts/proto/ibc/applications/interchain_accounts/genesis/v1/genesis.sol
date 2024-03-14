@@ -1,4 +1,5 @@
 pragma solidity ^0.8.23;
+
 import "../../../../../ProtoBufRuntime.sol";
 import "../../../../../GoogleProtobufAny.sol";
 
@@ -8,8 +9,10 @@ import "../../host/v1/host.sol";
 library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
     //struct definition
     struct Data {
-        IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState.Data controller_genesis_state;
-        IbcApplicationsInterchain_accountsGenesisV1HostGenesisState.Data host_genesis_state;
+        IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState.Data
+            controller_genesis_state;
+        IbcApplicationsInterchain_accountsGenesisV1HostGenesisState.Data
+            host_genesis_state;
     }
 
     // Decoder section
@@ -20,7 +23,7 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -30,7 +33,7 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -48,7 +51,7 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -56,21 +59,16 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_controller_genesis_state(pointer, bs, r);
             } else if (fieldId == 2) {
                 pointer += _read_host_genesis_state(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -89,15 +87,15 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (
-            IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState.Data
-                memory x,
+            IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState
+                .Data memory x,
             uint256 sz
-        ) = _decode_IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState(
-                p,
-                bs
-            );
+        ) =
+        _decode_IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState(
+            p, bs
+        );
         r.controller_genesis_state = x;
         return sz;
     }
@@ -113,15 +111,14 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (
             IbcApplicationsInterchain_accountsGenesisV1HostGenesisState.Data
                 memory x,
             uint256 sz
         ) = _decode_IbcApplicationsInterchain_accountsGenesisV1HostGenesisState(
-                p,
-                bs
-            );
+            p, bs
+        );
         r.host_genesis_state = x;
         return sz;
     }
@@ -143,21 +140,18 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
         returns (
             IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState.Data
                 memory,
-            uint
+            uint256
         )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
         (
-            IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState.Data
-                memory r,
-
+            IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState
+                .Data memory r,
         ) = IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState
-                ._decode(pointer, bs, sz);
+            ._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -175,26 +169,20 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
         internal
         pure
         returns (
-            IbcApplicationsInterchain_accountsGenesisV1HostGenesisState.Data
-                memory,
-            uint
+            IbcApplicationsInterchain_accountsGenesisV1HostGenesisState.Data memory,
+            uint256
         )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
         (
             IbcApplicationsInterchain_accountsGenesisV1HostGenesisState.Data
                 memory r,
-
         ) = IbcApplicationsInterchain_accountsGenesisV1HostGenesisState._decode(
-                pointer,
-                bs,
-                sz
-            );
+            pointer, bs, sz
+        );
         return (r, sz + bytesRead);
     }
 
@@ -227,24 +215,19 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         pointer += ProtoBufRuntime._encode_key(
-            1,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState
+        pointer +=
+        IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState
             ._encode_nested(r.controller_genesis_state, pointer, bs);
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcApplicationsInterchain_accountsGenesisV1HostGenesisState
             ._encode_nested(r.host_genesis_state, pointer, bs);
@@ -265,7 +248,7 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -290,17 +273,15 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState
                     ._estimate(r.controller_genesis_state)
             );
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcApplicationsInterchain_accountsGenesisV1HostGenesisState
                     ._estimate(r.host_genesis_state)
             );
@@ -321,12 +302,10 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
      */
     function store(Data memory input, Data storage output) internal {
         IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState.store(
-            input.controller_genesis_state,
-            output.controller_genesis_state
+            input.controller_genesis_state, output.controller_genesis_state
         );
         IbcApplicationsInterchain_accountsGenesisV1HostGenesisState.store(
-            input.host_genesis_state,
-            output.host_genesis_state
+            input.host_genesis_state, output.host_genesis_state
         );
     }
 
@@ -358,8 +337,10 @@ library IbcApplicationsInterchain_accountsGenesisV1GenesisState {
 library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
     //struct definition
     struct Data {
-        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[] active_channels;
-        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data[] interchain_accounts;
+        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[]
+            active_channels;
+        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+            .Data[] interchain_accounts;
         string[] ports;
         IbcApplicationsInterchain_accountsControllerV1Params.Data params;
     }
@@ -372,7 +353,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -382,7 +363,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -400,65 +381,46 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[5] memory counters;
+        uint256[5] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_active_channels(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_interchain_accounts(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 3) {
-                pointer += _read_unpacked_repeated_ports(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_ports(pointer, bs, nil(), counters);
             } else if (fieldId == 4) {
                 pointer += _read_params(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
         if (counters[1] > 0) {
             require(r.active_channels.length == 0);
-            r
-                .active_channels = new IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[](
-                counters[1]
-            );
+            r.active_channels = new IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
+                .Data[](counters[1]);
         }
         if (counters[2] > 0) {
             require(r.interchain_accounts.length == 0);
-            r
-                .interchain_accounts = new IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data[](
-                counters[2]
-            );
+            r.interchain_accounts = new IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+                .Data[](counters[2]);
         }
         if (counters[3] > 0) {
             require(r.ports.length == 0);
@@ -466,38 +428,23 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_active_channels(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_interchain_accounts(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else if (fieldId == 3) {
-                pointer += _read_unpacked_repeated_ports(
-                    pointer,
-                    bs,
-                    r,
-                    counters
-                );
+                pointer +=
+                    _read_unpacked_repeated_ports(pointer, bs, r, counters);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -517,19 +464,18 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[5] memory counters
-    ) internal pure returns (uint) {
+        uint256[5] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
         (
-            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data
-                memory x,
+            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data memory
+                x,
             uint256 sz
         ) = _decode_IbcApplicationsInterchain_accountsGenesisV1ActiveChannel(
-                p,
-                bs
-            );
+            p, bs
+        );
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -551,25 +497,24 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[5] memory counters
-    ) internal pure returns (uint) {
+        uint256[5] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
         (
-            IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data
-                memory x,
+            IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+                .Data memory x,
             uint256 sz
-        ) = _decode_IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount(
-                p,
-                bs
-            );
+        ) =
+        _decode_IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount(
+            p, bs
+        );
         if (isNil(r)) {
             counters[2] += 1;
         } else {
-            r.interchain_accounts[
-                r.interchain_accounts.length - counters[2]
-            ] = x;
+            r.interchain_accounts[r.interchain_accounts.length - counters[2]] =
+                x;
             counters[2] -= 1;
         }
         return sz;
@@ -587,8 +532,8 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[5] memory counters
-    ) internal pure returns (uint) {
+        uint256[5] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
@@ -613,7 +558,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (
             IbcApplicationsInterchain_accountsControllerV1Params.Data memory x,
             uint256 sz
@@ -637,26 +582,20 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         internal
         pure
         returns (
-            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data
-                memory,
-            uint
+            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data memory,
+            uint256
         )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
         (
-            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data
-                memory r,
-
+            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data memory
+                r,
         ) = IbcApplicationsInterchain_accountsGenesisV1ActiveChannel._decode(
-                pointer,
-                bs,
-                sz
-            );
+            pointer, bs, sz
+        );
         return (r, sz + bytesRead);
     }
 
@@ -676,21 +615,19 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         returns (
             IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data
                 memory,
-            uint
+            uint256
         )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
         (
-            IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data
-                memory r,
-
-        ) = IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
-                ._decode(pointer, bs, sz);
+            IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+                .Data memory r,
+        ) =
+        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+            ._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -709,23 +646,17 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         pure
         returns (
             IbcApplicationsInterchain_accountsControllerV1Params.Data memory,
-            uint
+            uint256
         )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcApplicationsInterchain_accountsControllerV1Params.Data memory r,
-
-        ) = IbcApplicationsInterchain_accountsControllerV1Params._decode(
-                pointer,
-                bs,
-                sz
-            );
+        (IbcApplicationsInterchain_accountsControllerV1Params.Data memory r,) =
+        IbcApplicationsInterchain_accountsControllerV1Params._decode(
+            pointer, bs, sz
+        );
         return (r, sz + bytesRead);
     }
 
@@ -758,55 +689,42 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.active_channels.length != 0) {
             for (i = 0; i < r.active_channels.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
-                pointer += IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
+                pointer +=
+                IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
                     ._encode_nested(r.active_channels[i], pointer, bs);
             }
         }
         if (r.interchain_accounts.length != 0) {
             for (i = 0; i < r.interchain_accounts.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    2,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
-                pointer += IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+                pointer +=
+                IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
                     ._encode_nested(r.interchain_accounts[i], pointer, bs);
             }
         }
         if (r.ports.length != 0) {
             for (i = 0; i < r.ports.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    3,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
-                pointer += ProtoBufRuntime._encode_string(
-                    r.ports[i],
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._encode_string(r.ports[i], pointer, bs);
             }
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            4,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += IbcApplicationsInterchain_accountsControllerV1Params
             ._encode_nested(r.params, pointer, bs);
@@ -827,7 +745,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -852,21 +770,19 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.active_channels.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
                         ._estimate(r.active_channels[i])
                 );
         }
         for (i = 0; i < r.interchain_accounts.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
                         ._estimate(r.interchain_accounts[i])
                 );
@@ -874,9 +790,8 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
         for (i = 0; i < r.ports.length; i++) {
             e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.ports[i]).length);
         }
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 IbcApplicationsInterchain_accountsControllerV1Params._estimate(
                     r.params
                 )
@@ -919,8 +834,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
 
         output.ports = input.ports;
         IbcApplicationsInterchain_accountsControllerV1Params.store(
-            input.params,
-            output.params
+            input.params, output.params
         );
     }
 
@@ -932,16 +846,15 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
      */
     function addActiveChannels(
         Data memory self,
-        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data
-            memory value
+        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data memory
+            value
     ) internal pure {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[]
-            memory tmp = new IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[](
-                self.active_channels.length + 1
-            );
+        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[] memory
+            tmp = new IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
+                .Data[](self.active_channels.length + 1);
         for (uint256 i = 0; i < self.active_channels.length; i++) {
             tmp[i] = self.active_channels[i];
         }
@@ -957,16 +870,15 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
      */
     function addInterchainAccounts(
         Data memory self,
-        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data
-            memory value
+        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+            .Data memory value
     ) internal pure {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data[]
-            memory tmp = new IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data[](
-                self.interchain_accounts.length + 1
-            );
+        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+            .Data[] memory tmp = new IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+                .Data[](self.interchain_accounts.length + 1);
         for (uint256 i = 0; i < self.interchain_accounts.length; i++) {
             tmp[i] = self.interchain_accounts[i];
         }
@@ -1020,8 +932,10 @@ library IbcApplicationsInterchain_accountsGenesisV1ControllerGenesisState {
 library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
     //struct definition
     struct Data {
-        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[] active_channels;
-        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data[] interchain_accounts;
+        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[]
+            active_channels;
+        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+            .Data[] interchain_accounts;
         string port;
         IbcApplicationsInterchain_accountsHostV1Params.Data params;
     }
@@ -1034,7 +948,7 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1044,7 +958,7 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1062,88 +976,62 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
-        uint[5] memory counters;
+        uint256[5] memory counters;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
         uint256 bytesRead;
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_active_channels(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_interchain_accounts(
-                    pointer,
-                    bs,
-                    nil(),
-                    counters
+                    pointer, bs, nil(), counters
                 );
             } else if (fieldId == 3) {
                 pointer += _read_port(pointer, bs, r);
             } else if (fieldId == 4) {
                 pointer += _read_params(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         pointer = offset;
         if (counters[1] > 0) {
             require(r.active_channels.length == 0);
-            r
-                .active_channels = new IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[](
-                counters[1]
-            );
+            r.active_channels = new IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
+                .Data[](counters[1]);
         }
         if (counters[2] > 0) {
             require(r.interchain_accounts.length == 0);
-            r
-                .interchain_accounts = new IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data[](
-                counters[2]
-            );
+            r.interchain_accounts = new IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+                .Data[](counters[2]);
         }
 
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_unpacked_repeated_active_channels(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else if (fieldId == 2) {
                 pointer += _read_unpacked_repeated_interchain_accounts(
-                    pointer,
-                    bs,
-                    r,
-                    counters
+                    pointer, bs, r, counters
                 );
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1163,19 +1051,18 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[5] memory counters
-    ) internal pure returns (uint) {
+        uint256[5] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
         (
-            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data
-                memory x,
+            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data memory
+                x,
             uint256 sz
         ) = _decode_IbcApplicationsInterchain_accountsGenesisV1ActiveChannel(
-                p,
-                bs
-            );
+            p, bs
+        );
         if (isNil(r)) {
             counters[1] += 1;
         } else {
@@ -1197,25 +1084,24 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r,
-        uint[5] memory counters
-    ) internal pure returns (uint) {
+        uint256[5] memory counters
+    ) internal pure returns (uint256) {
         /**
          * if `r` is NULL, then only counting the number of fields.
          */
         (
-            IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data
-                memory x,
+            IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+                .Data memory x,
             uint256 sz
-        ) = _decode_IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount(
-                p,
-                bs
-            );
+        ) =
+        _decode_IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount(
+            p, bs
+        );
         if (isNil(r)) {
             counters[2] += 1;
         } else {
-            r.interchain_accounts[
-                r.interchain_accounts.length - counters[2]
-            ] = x;
+            r.interchain_accounts[r.interchain_accounts.length - counters[2]] =
+                x;
             counters[2] -= 1;
         }
         return sz;
@@ -1232,7 +1118,7 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.port = x;
         return sz;
@@ -1249,7 +1135,7 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (
             IbcApplicationsInterchain_accountsHostV1Params.Data memory x,
             uint256 sz
@@ -1273,26 +1159,20 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         internal
         pure
         returns (
-            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data
-                memory,
-            uint
+            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data memory,
+            uint256
         )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
         (
-            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data
-                memory r,
-
+            IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data memory
+                r,
         ) = IbcApplicationsInterchain_accountsGenesisV1ActiveChannel._decode(
-                pointer,
-                bs,
-                sz
-            );
+            pointer, bs, sz
+        );
         return (r, sz + bytesRead);
     }
 
@@ -1312,21 +1192,19 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         returns (
             IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data
                 memory,
-            uint
+            uint256
         )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
         (
-            IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data
-                memory r,
-
-        ) = IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
-                ._decode(pointer, bs, sz);
+            IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+                .Data memory r,
+        ) =
+        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+            ._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1345,23 +1223,15 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         pure
         returns (
             IbcApplicationsInterchain_accountsHostV1Params.Data memory,
-            uint
+            uint256
         )
     {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            IbcApplicationsInterchain_accountsHostV1Params.Data memory r,
-
-        ) = IbcApplicationsInterchain_accountsHostV1Params._decode(
-                pointer,
-                bs,
-                sz
-            );
+        (IbcApplicationsInterchain_accountsHostV1Params.Data memory r,) =
+        IbcApplicationsInterchain_accountsHostV1Params._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1394,52 +1264,43 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
         uint256 i;
         if (r.active_channels.length != 0) {
             for (i = 0; i < r.active_channels.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    1,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
-                pointer += IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
+                pointer +=
+                IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
                     ._encode_nested(r.active_channels[i], pointer, bs);
             }
         }
         if (r.interchain_accounts.length != 0) {
             for (i = 0; i < r.interchain_accounts.length; i++) {
                 pointer += ProtoBufRuntime._encode_key(
-                    2,
-                    ProtoBufRuntime.WireType.LengthDelim,
-                    pointer,
-                    bs
+                    2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
                 );
-                pointer += IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+                pointer +=
+                IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
                     ._encode_nested(r.interchain_accounts[i], pointer, bs);
             }
         }
         if (bytes(r.port).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.port, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            4,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
-        pointer += IbcApplicationsInterchain_accountsHostV1Params
-            ._encode_nested(r.params, pointer, bs);
+        pointer += IbcApplicationsInterchain_accountsHostV1Params._encode_nested(
+            r.params, pointer, bs
+        );
 
         return pointer - offset;
     }
@@ -1457,7 +1318,7 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1482,32 +1343,27 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         uint256 i;
         for (i = 0; i < r.active_channels.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
                         ._estimate(r.active_channels[i])
                 );
         }
         for (i = 0; i < r.interchain_accounts.length; i++) {
-            e +=
-                1 +
-                ProtoBufRuntime._sz_lendelim(
+            e += 1
+                + ProtoBufRuntime._sz_lendelim(
                     IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
                         ._estimate(r.interchain_accounts[i])
                 );
         }
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port).length);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
-                IbcApplicationsInterchain_accountsHostV1Params._estimate(
-                    r.params
-                )
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
+                IbcApplicationsInterchain_accountsHostV1Params._estimate(r.params)
             );
         return e;
     }
@@ -1547,8 +1403,7 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
 
         output.port = input.port;
         IbcApplicationsInterchain_accountsHostV1Params.store(
-            input.params,
-            output.params
+            input.params, output.params
         );
     }
 
@@ -1560,16 +1415,15 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
      */
     function addActiveChannels(
         Data memory self,
-        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data
-            memory value
+        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data memory
+            value
     ) internal pure {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[]
-            memory tmp = new IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[](
-                self.active_channels.length + 1
-            );
+        IbcApplicationsInterchain_accountsGenesisV1ActiveChannel.Data[] memory
+            tmp = new IbcApplicationsInterchain_accountsGenesisV1ActiveChannel
+                .Data[](self.active_channels.length + 1);
         for (uint256 i = 0; i < self.active_channels.length; i++) {
             tmp[i] = self.active_channels[i];
         }
@@ -1585,16 +1439,15 @@ library IbcApplicationsInterchain_accountsGenesisV1HostGenesisState {
      */
     function addInterchainAccounts(
         Data memory self,
-        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data
-            memory value
+        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+            .Data memory value
     ) internal pure {
         /**
          * First resize the array. Then add the new element to the end.
          */
-        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data[]
-            memory tmp = new IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount.Data[](
-                self.interchain_accounts.length + 1
-            );
+        IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+            .Data[] memory tmp = new IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount
+                .Data[](self.interchain_accounts.length + 1);
         for (uint256 i = 0; i < self.interchain_accounts.length; i++) {
             tmp[i] = self.interchain_accounts[i];
         }
@@ -1644,7 +1497,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1654,7 +1507,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1672,7 +1525,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1680,10 +1533,8 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_connection_id(pointer, bs, r);
@@ -1694,11 +1545,8 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
             } else if (fieldId == 4) {
                 pointer += _read_is_middleware_enabled(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1717,7 +1565,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.connection_id = x;
         return sz;
@@ -1734,7 +1582,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.port_id = x;
         return sz;
@@ -1751,7 +1599,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.channel_id = x;
         return sz;
@@ -1768,7 +1616,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bool x, uint256 sz) = ProtoBufRuntime._decode_bool(p, bs);
         r.is_middleware_enabled = x;
         return sz;
@@ -1803,56 +1651,35 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.connection_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.connection_id,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.connection_id, pointer, bs);
         }
         if (bytes(r.port_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.port_id, pointer, bs);
         }
         if (bytes(r.channel_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.channel_id,
-                pointer,
-                bs
-            );
+            pointer += ProtoBufRuntime._encode_string(r.channel_id, pointer, bs);
         }
         if (r.is_middleware_enabled != false) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bool(
-                r.is_middleware_enabled,
-                pointer,
-                bs
+                r.is_middleware_enabled, pointer, bs
             );
         }
         return pointer - offset;
@@ -1871,7 +1698,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1896,7 +1723,7 @@ library IbcApplicationsInterchain_accountsGenesisV1ActiveChannel {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.connection_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port_id).length);
@@ -1981,7 +1808,7 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1991,7 +1818,7 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -2009,7 +1836,7 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -2017,10 +1844,8 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_connection_id(pointer, bs, r);
@@ -2029,11 +1854,8 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
             } else if (fieldId == 3) {
                 pointer += _read_account_address(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -2052,7 +1874,7 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.connection_id = x;
         return sz;
@@ -2069,7 +1891,7 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.port_id = x;
         return sz;
@@ -2086,7 +1908,7 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (string memory x, uint256 sz) = ProtoBufRuntime._decode_string(p, bs);
         r.account_address = x;
         return sz;
@@ -2121,44 +1943,29 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (bytes(r.connection_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.connection_id,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.connection_id, pointer, bs);
         }
         if (bytes(r.port_id).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                2,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_string(r.port_id, pointer, bs);
         }
         if (bytes(r.account_address).length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_string(
-                r.account_address,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_string(r.account_address, pointer, bs);
         }
         return pointer - offset;
     }
@@ -2176,7 +1983,7 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -2201,7 +2008,7 @@ library IbcApplicationsInterchain_accountsGenesisV1RegisteredInterchainAccount {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.connection_id).length);
         e += 1 + ProtoBufRuntime._sz_lendelim(bytes(r.port_id).length);

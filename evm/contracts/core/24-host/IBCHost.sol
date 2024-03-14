@@ -16,12 +16,8 @@ function passthrough(address impl) {
         returndatacopy(0, 0, returndatasize())
         // return any return value or error back to the caller
         switch result
-        case 0 {
-            revert(0, returndatasize())
-        }
-        default {
-            return(0, returndatasize())
-        }
+        case 0 { revert(0, returndatasize()) }
+        default { return(0, returndatasize()) }
     }
 }
 
