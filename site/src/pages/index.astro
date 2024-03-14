@@ -24,14 +24,14 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
   <main class="flex flex-col flex-1 items-center px-4">
     <div class="w-full flex flex-col max-w-6xl p-px bg-black">
       <section
-        class="self-center flex flex-col md:grid md:grid-cols-2 max-w-3xl items-center gap-2 md:gap-6 grid-effect-bg antialiased bg-black -mx-4 md:mx-0 mb-16 md:mb-0"
+        class="self-center flex flex-col md:grid md:grid-cols-2 max-w-6xl items-center gap-2 md:gap-6 grid-effect-bg antialiased bg-black -mx-4 md:mx-0 mb-16 md:mb-24"
       >
-        <div class="md:order-last w-full max-w-[500px]">
+        <div class="md:order-last w-full max-w-[600px]">
           <Cube client:only />
         </div>
-        <div class=" bg-gradient-to-t from-black flex flex-col items-center text-center drop-shadow-2xl -mt-48 md:mt-0 px-4">
+        <div class="bg-gradient-to-t from-black flex flex-col items-center  text-center drop-shadow-2xl -mt-48 md:mt-0 px-4">
           <div
-            class="text-3xl text-white font-bold mt-24 md:mt-0"
+            class="text-3xl md:text-5xl text-white font-bold mt-24 md:mt-0"
           >
             The Sovereign<br />Interoperability Layer
           </div>
@@ -66,6 +66,9 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
           >
             Interoperability for the <span class="text-accent">Modular Stack</span>
           </h2>
+        </div>
+        <div class="w-full min-w-full h-full min-h-full">
+          <ConnectedVisual client:load />
         </div>
       </section>
 
