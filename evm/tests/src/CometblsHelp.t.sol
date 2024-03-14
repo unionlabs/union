@@ -45,6 +45,25 @@ contract CometblsHelpTests is Test {
         proxy = new CometblsHelpProxy();
     }
 
+    function test_verifyZKP_ok_2() public {
+        uint256 hashedMessage = CometblsHelp.hashToField(
+            hex"650802117c0000000000000022480a20ed341d012b198b8c6962209f30ac4a07c06d53ab258865aade613dcd5800aec5122408011220b1c27e9a68de8ddbc981319dea0ad31aa3e41f6759bd7200581eff9d1373ca9f320e756e696f6e2d6465766e65742d31"
+        );
+        uint256 trustedValidators = 0x2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d;
+        uint256 untrustedValidators = 0x2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d;
+        bytes
+            memory zkp = hex"07942610e1aeb229308405cd7fc0305f31129bb6d7a3f39b0b18ac0adc09e5301d05c7dfb6b1c21aeeae94928b7ddbf59c04454454b785bc430b8d825dc1a52f0444e6bddff7896fce6625c4fef776be5ef1dc9e539db05241b201e83e1ed2d02942b8a7c777ed5806508ab66547cfcff01f0a0aeffa773f32dfb9bf76c07e700c21088d0ed1f4aea52b7962ac5ffa2748d4b021bcafa5bcec2e1748130e64691dea0ac767b1fd72750c517f49da19aaa4e5e70591f9bdc1d177850275e2f1a90712c5ed8902568d20e34b2f3e224c3bcbefa57917efe64104d19767a419524f1eb315c1291e1eeaaf765a3f3c2f0ddd908b49cd2e5e776dc9b063fa62777dfc2a59e984c4b0a21d8afb790d9d06cb7d0cbef6b573eaa48398a8d0b731f3362c2f385771a9bce77c5e6cd66c074d36b6cb71cfe97c65dd75bcad2a9d91f899ee15256a75d3065bee14962a6b10b05b72ba616034803a76c8487fd9285f502c011eae9d47767324ea7d90ee9b4e8d9dbcad3cdc1759d3566e2351bd1176d3cd28";
+        assertTrue(
+            proxy.verifyZKP(
+                new Verifier(),
+                bytes32(trustedValidators),
+                bytes32(untrustedValidators),
+                hex"650802117c0000000000000022480a20ed341d012b198b8c6962209f30ac4a07c06d53ab258865aade613dcd5800aec5122408011220b1c27e9a68de8ddbc981319dea0ad31aa3e41f6759bd7200581eff9d1373ca9f320e756e696f6e2d6465766e65742d31",
+                zkp
+            )
+        );
+    }
+
     function test_verifyZKP_ok() public {
         assertTrue(
             proxy.verifyZKP(
