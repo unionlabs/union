@@ -11,7 +11,7 @@ let blogEntries = await getCollection("blog", ({ data }) =>
 blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
 ---
 
-<Layout>
+<Layout title='Union Blog'>
   <main
     class="flex items-center text-xl md:text-2xl mt-2 sm:mt-12 justify-center pt-6 sm:pt-0 mx-4"
   >

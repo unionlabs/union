@@ -6,7 +6,7 @@ import { SEO } from "astro-seo"
 import { Head } from "astro-capo"
 import { AstroFont } from "astro-font"
 
-const COMMIT_SHA = import.meta.env.CF_PAGES_COMMIT_SHA
+const BASE_URL = import.meta.env.PROD ? import.meta.env.SITE : ""
 
 interface Props {
   url?: string
@@ -25,7 +25,7 @@ const {
   loadFonts = true
 } = Astro.props
 
-const OPEN_GRAPH_IMAGE = `${import.meta.env.SITE}${image}`
+const OPEN_GRAPH_IMAGE = `${BASE_URL}/${image.slice(1)}`
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 ---
 
@@ -61,22 +61,21 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
       }}
       extend={{
         link: [
-          { rel: 'icon', href: '/favicon.ico' },
-          { rel: 'canonical', href: Astro.url.href },
-          { rel: 'sitemap', href: '/sitemap-index.xml' },
           {
             rel: 'alternate',
             type: 'application/rss+xml',
             title: 'Union',
             href: `${Astro.site}rss.xml`,
           },
+          { rel: 'canonical', href: Astro.url.href },
+          { rel: 'sitemap', href: '/sitemap-index.xml' },
+          { rel: 'icon', href: `${BASE_URL}/favicon.svg`, type: 'image/svg+xml' },
         ],
         meta: [
-          { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
+          { name: 'twitter:url', content: url },
           { name: 'robots', content: 'index, follow' },
           { name: 'twitter:domain', content: 'union.build' },
-          { name: 'twitter:url', content: url },
-          { name: 'commit-sha', content: COMMIT_SHA },
+          { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
         ],
       }}
     />
