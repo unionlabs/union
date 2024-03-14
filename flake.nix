@@ -20,7 +20,7 @@
     };
     treefmt-nix = {
       url = "github:unionlabs/treefmt-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     foundry = {
       url = "github:shazow/foundry.nix/monthly";
@@ -296,6 +296,25 @@
                       });
                     };
                     keygen = self'.packages.keygen;
+                    # this pr (https://github.com/numtide/treefmt/pull/250) was merged one day after v0.6.1 was cut, so in order to use the --hidden flag we need to build latest
+                    # expression taken from here https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/treefmt/default.nix
+                    treefmt = dbg (super.rustPlatform.buildRustPackage rec {
+                      pname = "treefmt";
+                      version = "955ae4f3570c4523258c2e1044066f1702339e03";
+
+                      src = super.fetchFromGitHub {
+                        owner = "numtide";
+                        repo = "treefmt";
+                        rev = version;
+                        hash = "sha256-6rfItzuZvorphsIn8z4GRZjb00VSZgQWHLWma3wJ7hg=";
+                      };
+
+                      cargoSha256 = "sha256-VXyBoMDFPJBc19uU3P2jOBTb6x5bLXKycdwsHUql09g=";
+
+                      meta = {
+                        mainProgram = "treefmt";
+                      };
+                    });
                     solc =
                       let
                         jsoncppVersion = "1.9.3";
@@ -415,10 +434,7 @@
 
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
-            buildInputs = [
-              rust.toolchains.dev
-              biome
-            ] ++ (with pkgs; [
+            buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
               cargo-fuzz
               cargo-llvm-cov
               bacon
@@ -468,6 +484,7 @@
           };
 
           treefmt = {
+            package = pkgs.treefmt;
             projectRootFile = "flake.nix";
             programs = {
               nixpkgs-fmt.enable = true;
@@ -485,7 +502,7 @@
               };
               forge = {
                 enable = true;
-                package = dbg (pkgs.stdenv.mkDerivation {
+                package = pkgs.stdenv.mkDerivation {
                   name = "forge";
                   buildInputs = [ pkgs.makeWrapper ];
                   src = pkgs.foundry-bin;
@@ -496,7 +513,7 @@
                       --set FOUNDRY_CONFIG "${./foundry.toml}"
                   '';
                   meta.mainProgram = "forge";
-                });
+                };
               };
               prettier = {
                 enable = false;
@@ -504,8 +521,6 @@
                 includes = [
                   "*.md"
                   "*.mdx"
-                  "*.yaml"
-                  "*.yml"
                 ];
               };
               taplo = { enable = true; };
@@ -514,9 +529,19 @@
                 package = biome;
                 config-path = ./biome.json;
               };
+              yamlfmt = {
+                enable = true;
+                package = unstablePkgs.yamlfmt;
+                config = {
+                  retain_line_breaks = true;
+                };
+              };
             };
             settings = {
-              global.excludes = [ "**/vendor/**" ];
+              global = {
+                hidden = true;
+                excludes = [ ".git/**" "**/vendor/**" "**/.sqlx/**" "uniond/docs/static/**" ];
+              };
             };
           };
         };

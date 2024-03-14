@@ -528,15 +528,15 @@
     "treefmt-nix": {
       "inputs": {
         "nixpkgs": [
-          "nixpkgs"
+          "nixpkgs-unstable"
         ]
       },
       "locked": {
-        "lastModified": 1710297677,
-        "narHash": "sha256-KQnDIjeFDw3GErdWF6+YkmGdwc+whIAE6p8KjS2WMc4=",
+        "lastModified": 1710436395,
+        "narHash": "sha256-+hxio/UwxVzfTOfrCUoFEKLK8kYqQa52V/UL1mqMpNM=",
         "owner": "unionlabs",
         "repo": "treefmt-nix",
-        "rev": "da63ea9fdac70875c49e130d009caf3879f0a260",
+        "rev": "0ae706d8cde9c937f0b40d47462d84052f6f2d2f",
         "type": "github"
       },
       "original": {
