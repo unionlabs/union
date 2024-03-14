@@ -25,6 +25,7 @@ const {
   loadFonts = true
 } = Astro.props
 
+const OPEN_GRAPH_IMAGE = `${import.meta.env.SITE}${image}`
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 ---
 
@@ -39,7 +40,7 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
         basic: {
           url,
           title,
-          image,
+          image: OPEN_GRAPH_IMAGE,
           type: 'website',
         },
         optional: {
@@ -47,11 +48,11 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           siteName: 'Union',
           description,
         },
-        image: { url: image, alt: 'Union Logo' },
+        image: { url: OPEN_GRAPH_IMAGE, alt: 'Union Logo' },
       }}
       twitter={{
         title,
-        image,
+        image: OPEN_GRAPH_IMAGE,
         site: '@union_build',
         description,
         imageAlt: 'Union Logo',
@@ -63,15 +64,18 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           { rel: 'icon', href: '/favicon.ico' },
           { rel: 'canonical', href: Astro.url.href },
           { rel: 'sitemap', href: '/sitemap-index.xml' },
-          { rel: 'alternate', type: 'application/rss+xml', title: 'Union', href: `${Astro.site}rss.xml` }
+          {
+            rel: 'alternate',
+            type: 'application/rss+xml',
+            title: 'Union',
+            href: `${Astro.site}rss.xml`,
+          },
         ],
         meta: [
           { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
           { name: 'robots', content: 'index, follow' },
           { name: 'twitter:domain', content: 'union.build' },
           { name: 'twitter:url', content: url },
-          { name: 'twitter:title', content: title },
-          { name: 'twitter:description', content: description },
           { name: 'commit-sha', content: COMMIT_SHA },
         ],
       }}
