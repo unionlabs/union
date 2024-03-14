@@ -515,27 +515,6 @@
                   meta.mainProgram = "forge";
                 };
               };
-              prettier = {
-                enable = false;
-                excludes = [ "./app/**/*" ];
-                includes = [
-                  "*.md"
-                  "*.mdx"
-                ];
-              };
-              taplo = { enable = true; };
-              biome = {
-                enable = true;
-                package = biome;
-                config-path = ./biome.json;
-              };
-              yamlfmt = {
-                enable = true;
-                package = unstablePkgs.yamlfmt;
-                config = {
-                  retain_line_breaks = true;
-                };
-              };
             };
             settings = {
               global = {

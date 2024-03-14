@@ -3,41 +3,49 @@ args    = ["@astrojs/language-server", "--stdio"]
 command = "npx"
 config  = { "typescript" = { "tsdk" = "./site/node_modules/typescript/lib" }, "environment" = "node" }
 
+[language-server.biome]
+args    = ["lsp-proxy"]
+command = "biome"
+
 [[language]]
 file-types       = ["astro"]
 injection-regex  = "astro"
-language-servers = ["astro-ls"]
+language-servers = [{ name = "astro-ls", except-features = ["format"] }, "biome"]
 name             = "astro"
-roots            = ["package.json", "astro.config.ts"]
 scope            = "source.astro"
+# not yet released
+# block-comment-tokens = { start = "<!--", end = "-->" }
+roots = ["package.json", "astro.config.ts"]
+
+[[language]]
+auto-format      = true
+language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
+name             = "javascript"
+
+[[language]]
+auto-format      = true
+language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
+name             = "typescript"
+
+[[language]]
+auto-format      = true
+language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
+name             = "tsx"
+
+[[language]]
+auto-format      = true
+language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
+name             = "jsx"
+
+[[language]]
+language-servers = [{ name = "vscode-json-language-server", except-features = ["format"] }, "biome"]
+name             = "json"
+
+[[language]]
+auto-format      = true
+language-servers = [{ name = "svelteserver", except-features = ["format"] }, "biome"]
+name             = "svelte"
 
 [[grammar]]
-name = "astro"
+name   = "astro"
 source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "947e93089e60c66e681eba22283f4037841451e7" }
-
-[langauge-server.biome]
-biome = { command = "biome", args = ["lsp-proxy"] }
-
-[[language]]
-name = "javascript"
-language-servers = [ { name = "typescript-language-server", except-features = [ "format" ] }, "biome" ]
-auto-format = true
-
-[[language]]
-name = "typescript"
-language-servers = [ { name = "typescript-language-server", except-features = [ "format" ] }, "biome" ]
-auto-format = true
-
-[[language]]
-name = "tsx"
-auto-format = true
-language-servers = [ { name = "typescript-language-server", except-features = [ "format" ] }, "biome" ]
-
-[[language]]
-name = "jsx"
-auto-format = true
-language-servers = [ { name = "typescript-language-server", except-features = [ "format" ] }, "biome" ]
-
-[[language]]
-name = "json"
-language-servers = [ { name = "vscode-json-language-server", except-features = [ "format" ] }, "biome" ]

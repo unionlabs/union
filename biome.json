@@ -7,16 +7,16 @@
   "organizeImports": {
     "enabled": true,
     "include": [
-      "./**/*.ts",
-      "./**/*.js",
-      "./**/*.cjs",
-      "./**/*.jsx",
-      "./**/*.tsx",
-      "./**/*.d.ts",
-      "./**/*.json",
-      "./**/*.jsonc",
-      "./**/*.astro",
-      "./**/*.svelte"
+      "*.ts",
+      "*.js",
+      "*.cjs",
+      "*.jsx",
+      "*.tsx",
+      "*.d.ts",
+      "*.json",
+      "*.jsonc",
+      "*.astro",
+      "*.svelte"
     ],
     "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules"]
   },
@@ -34,16 +34,16 @@
   },
   "files": {
     "include": [
-      "./**/*.ts",
-      "./**/*.js",
-      "./**/*.cjs",
-      "./**/*.jsx",
-      "./**/*.tsx",
-      "./**/*.d.ts",
-      "./**/*.json",
-      "./**/*.jsonc",
-      "./**/*.astro",
-      "./**/*.svelte"
+      "*.ts",
+      "*.js",
+      "*.cjs",
+      "*.jsx",
+      "*.tsx",
+      "*.d.ts",
+      "*.json",
+      "*.jsonc",
+      "*.astro",
+      "*.svelte"
     ],
     "ignoreUnknown": true,
     "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules"]
@@ -65,16 +65,16 @@
     "formatWithErrors": true,
     "attributePosition": "auto",
     "include": [
-      "./**/*.ts",
-      "./**/*.js",
-      "./**/*.cjs",
-      "./**/*.jsx",
-      "./**/*.tsx",
-      "./**/*.d.ts",
-      "./**/*.json",
-      "./**/*.jsonc",
-      "./**/*.astro",
-      "./**/*.svelte"
+      "*.ts",
+      "*.js",
+      "*.cjs",
+      "*.jsx",
+      "*.tsx",
+      "*.d.ts",
+      "*.json",
+      "*.jsonc",
+      "*.astro",
+      "*.svelte"
     ],
     "ignore": [
       "_",
@@ -147,16 +147,16 @@
     },
     "enabled": true,
     "include": [
-      "./**/*.ts",
-      "./**/*.js",
-      "./**/*.cjs",
-      "./**/*.jsx",
-      "./**/*.tsx",
-      "./**/*.d.ts",
-      "./**/*.json",
-      "./**/*.jsonc",
-      "./**/*.astro",
-      "./**/*.svelte"
+      "*.ts",
+      "*.js",
+      "*.cjs",
+      "*.jsx",
+      "*.tsx",
+      "*.d.ts",
+      "*.json",
+      "*.jsonc",
+      "*.astro",
+      "*.svelte"
     ],
     "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules"]
   },

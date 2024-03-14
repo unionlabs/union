@@ -32,13 +32,13 @@ onMount(() => {
   <div data-graph="apple" class="bg-transparent flex meter h-2 w-full">
     <span class="flex" style={`width:${width}%;`}>
       <span
-        class={`rounded-full flex ${primary ? 'bg-accent' : 'bg-gray-500'}` +
-          (isVisible ? ' progress' : '')}
+        class={`rounded-full flex ${primary ? "bg-accent" : "bg-gray-500"}` +
+          (isVisible ? " progress" : "")}
       >
       </span>
     </span>
   </div>
-  <div class={` ${primary ? 'text-white' : 'text-gray-400'}`}>
+  <div class={` ${primary ? "text-white" : "text-gray-400"}`}>
     {label}
   </div>
 </div>

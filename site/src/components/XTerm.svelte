@@ -110,7 +110,7 @@ onMount(() => {
   >
     {#each logLines as { network, action, logLine }}
       <div class="p-0 break-words">
-        <span class={network == 'union' ? 'text-accent' : 'text-yellow-300'}>
+        <span class={network == "union" ? "text-accent" : "text-yellow-300"}>
           [{network}]
         </span>
         <span>{action}</span>
