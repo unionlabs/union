@@ -3,7 +3,7 @@ import { onMount } from "svelte"
 
 // The percentage width of the bar. number from 0-100.
 export let width: number
-export const primary = false
+export let primary = false
 export let label: string
 
 let observer: null | IntersectionObserver = null

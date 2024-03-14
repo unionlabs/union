@@ -23,7 +23,6 @@
   "css": {
     "formatter": {
       "enabled": true,
-
       "indentWidth": 2,
       "lineWidth": 100,
       "quoteStyle": "single",
@@ -103,7 +102,9 @@
         "noUnusedTemplateLiteral": "off",
         "useConsistentArrayType": {
           "level": "warn",
-          "options": { "syntax": "generic" }
+          "options": {
+            "syntax": "generic"
+          }
         }
       },
       "a11y": {
@@ -117,7 +118,8 @@
         "noReExportAll": "off",
         "noNodejsModules": "off",
         "noUselessTernary": "off",
-        "useImportRestrictions": "off"
+        "useImportRestrictions": "off",
+        "noUndeclaredDependencies": "off"
       },
       "performance": {
         "all": true,
