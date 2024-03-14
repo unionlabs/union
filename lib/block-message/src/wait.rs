@@ -34,7 +34,7 @@ where
                     "chain_height: {chain_height}, height: {height}",
                 );
 
-                tracing::info!("latest height is {chain_height}, waiting for {height}");
+                tracing::debug!("latest height is {chain_height}, waiting for {height}");
 
                 if chain_height.revision_height() >= height.revision_height() {
                     data(Identified::<C, _>::new(

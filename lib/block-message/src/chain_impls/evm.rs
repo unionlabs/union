@@ -337,7 +337,7 @@ where
                             IBCPacketEvents::WriteAcknowledgementFilter(raw_event),
                         ) => {
                             // TODO: Build write ack
-                            println!("{raw_event:?}");
+                            tracing::info!("write acknowledgement: {raw_event:?}");
                             QueueMsg::Noop
                         }
                         IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(_)) => {
