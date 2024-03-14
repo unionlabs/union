@@ -22,7 +22,6 @@ pub use typenum;
 use crate::{
     ibc::core::client::height::{HeightFromStrError, IsHeight},
     id::Bounded,
-    uint::U256,
     validated::Validated,
 };
 
@@ -264,7 +263,7 @@ where
 {
     fn encode(self) -> Vec<u8> {
         // Prefixed by the offset at which the 'dynamic' tuple is starting
-        ethers_core::abi::AbiEncode::encode(U256::from(32))
+        ethers_core::abi::AbiEncode::encode(crate::uint::U256::from(32))
             .into_iter()
             .chain(self.0.encode())
             .collect::<Vec<_>>()
