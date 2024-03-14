@@ -1,13 +1,10 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     cosmos::crypto::{AnyPubKey, TryFromAnyPubKeyError},
     errors::MissingField,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 #[model(proto(raw(protos::cosmos::auth::v1beta1::BaseAccount), into, from))]
 pub struct BaseAccount {
     // REVIEW: is this a bech32 address?

@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     bounded::BoundedUsize,
@@ -10,9 +9,6 @@ use crate::{
     errors::{required, MissingField},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::cosmos::ics23::v1::ProofSpec), into, from))]
 pub struct ProofSpec {
     pub leaf_spec: LeafOp,

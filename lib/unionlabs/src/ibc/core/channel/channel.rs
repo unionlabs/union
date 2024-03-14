@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ethabi")]
 use crate::ibc::core::channel::counterparty::TryFromEthAbiChannelCounterpartyError;
@@ -14,9 +13,6 @@ use crate::{
     validated::{Validate, ValidateT},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(
     proto(raw(protos::ibc::core::channel::v1::Channel), into, from),
     ethabi(raw(contracts::ibc_handler::IbcCoreChannelV1ChannelData), into, from)

@@ -75,13 +75,13 @@ async fn main() -> ExitCode {
 
 #[derive(Debug, thiserror::Error)]
 pub enum VoyagerError {
-    #[error("unable to read the config file at {}", path.to_string_lossy())]
+    #[error("unable to read the config file at `{}`", path.to_string_lossy())]
     ConfigFileNotFound {
         path: OsString,
         #[source]
         source: std::io::Error,
     },
-    #[error("unable to parse the config file at {}", path.to_string_lossy())]
+    #[error("unable to parse the config file at `{}`", path.to_string_lossy())]
     ConfigFileParse {
         path: OsString,
         #[source]

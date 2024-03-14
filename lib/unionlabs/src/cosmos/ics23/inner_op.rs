@@ -1,11 +1,7 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{cosmos::ics23::hash_op::HashOp, errors::UnknownEnumVariant};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::cosmos::ics23::v1::InnerOp), into, from))]
 pub struct InnerOp {
     pub hash: HashOp,

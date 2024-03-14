@@ -1,6 +1,5 @@
 use macros::model;
 
-#[derive(Debug, Clone, PartialEq)]
 #[model(proto(raw(protos::tendermint::abci::EventAttribute), into, from))]
 pub struct EventAttribute {
     pub key: String,

@@ -1,24 +1,19 @@
-use custom_debug_derive::Debug;
 use macros::model;
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 // REVIEW: Are these fields fixed size?
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::union::galois::api::v2::ZeroKnowledgeProof), into, from))]
 pub struct ZeroKnowledgeProof {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(with = "::serde_utils::fmt::hex")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub content: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(with = "::serde_utils::fmt::hex")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub compressed_content: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(with = "::serde_utils::fmt::hex")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub evm_proof: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(with = "::serde_utils::fmt::hex")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub public_inputs: Vec<u8>,
 }
 

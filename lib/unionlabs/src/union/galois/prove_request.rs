@@ -1,14 +1,10 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     cometbls::types::canonical_vote::CanonicalVote,
     union::galois::validator_set_commit::ValidatorSetCommit,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::union::galois::api::v2::ProveRequest), from))]
 pub struct ProveRequest {
     pub vote: CanonicalVote,

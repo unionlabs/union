@@ -1,13 +1,10 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
 
 use crate::{errors::InvalidLength, hash::H256};
 
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[derive(Encode, Decode, TreeHash)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader),
     into,

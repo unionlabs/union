@@ -1,6 +1,5 @@
 use custom_debug_derive::Debug;
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ethabi")]
 use crate::tendermint::types::signed_header::TryFromEthAbiSignedHeaderError;
@@ -10,9 +9,6 @@ use crate::{
     tendermint::types::signed_header::{SignedHeader, TryFromSignedHeaderError},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(
     proto(
         raw(protos::union::ibc::lightclients::cometbls::v1::Header),
@@ -29,7 +25,7 @@ pub struct Header {
     pub signed_header: SignedHeader,
     pub trusted_height: Height,
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(with = "::serde_utils::fmt::hex")]
+    #[debug("{}", ::serde_utils::to_hex(&zero_knowledge_proof))]
     pub zero_knowledge_proof: Vec<u8>,
 }
 

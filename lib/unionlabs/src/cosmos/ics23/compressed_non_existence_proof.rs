@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     cosmos::ics23::compressed_existence_proof::{
@@ -8,9 +7,6 @@ use crate::{
     errors::MissingField,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(
     raw(protos::cosmos::ics23::v1::CompressedNonExistenceProof),
     into,

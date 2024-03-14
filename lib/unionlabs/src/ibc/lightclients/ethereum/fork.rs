@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 
 use crate::{errors::InvalidLength, ethereum::Version};
@@ -11,9 +10,8 @@ use crate::{errors::InvalidLength, ethereum::Version};
         ethers_contract_derive::EthAbiCodec
     )
 )]
-#[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+// REVIEW: Are these derives used?
+#[derive(Encode, Decode)]
 #[model(proto(raw(protos::union::ibc::lightclients::ethereum::v1::Fork), into, from))]
 pub struct Fork {
     pub version: Version,

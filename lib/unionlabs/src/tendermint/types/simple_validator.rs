@@ -1,11 +1,7 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::tendermint::crypto::public_key::PublicKey;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::tendermint::types::SimpleValidator), from))]
 pub struct SimpleValidator {
     pub pub_key: PublicKey,

@@ -2,7 +2,6 @@ use macros::model;
 use prost::Message;
 use protos::google::protobuf::{BytesValue, Int64Value, StringValue};
 use rs_merkle::{algorithms::Sha256, Hasher};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     bounded::{BoundedI64, BoundedIntError},
@@ -20,10 +19,7 @@ use crate::{
     tendermint::types::block_id::TryFromEthAbiBlockIdError,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 // REVIEW: Are all hashes here hex_upper_unprefixed?
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::tendermint::types::Header), into, from))]
 pub struct Header {
     /// basic block info

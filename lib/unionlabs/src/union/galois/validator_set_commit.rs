@@ -1,21 +1,16 @@
 use bitvec::prelude::Msb0;
-use custom_debug_derive::Debug;
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::tendermint::types::simple_validator::SimpleValidator;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::union::galois::api::v2::ValidatorSetCommit), from))]
 pub struct ValidatorSetCommit {
     pub validators: Vec<SimpleValidator>,
     // REVIEW: Is this arbitrary bytes or strongly typed? (i.e. H512)
     #[serde(with = "::serde_utils::hex_string_list")]
-    #[debug(with = "::serde_utils::fmt::hex_list")]
+    #[debug(wrap = ::serde_utils::fmt::DebugListAsHex)]
     pub signatures: Vec<Vec<u8>>,
-    #[debug(with = "::serde_utils::fmt::bits::<Msb0>")]
+    #[debug(wrap = ::serde_utils::fmt::DebugBits::<_, _, Msb0>::new)]
     pub bitmap: Vec<u8>,
 }
 

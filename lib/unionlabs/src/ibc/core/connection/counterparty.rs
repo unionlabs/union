@@ -1,7 +1,6 @@
 use core::str::FromStr;
 
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
@@ -10,22 +9,17 @@ use crate::{
     traits::Id,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    deny_unknown_fields,
-    bound(
-        serialize = "
-            ClientId: Id,
-            ConnectionId: Id,
-        ",
-        deserialize = "
-            ClientId: Id,
-            ConnectionId: Id,
-        ",
-    )
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::ibc::core::connection::v1::Counterparty), into, from))]
+#[serde(bound(
+    serialize = "
+        ClientId: Id,
+        ConnectionId: Id,
+    ",
+    deserialize = "
+        ClientId: Id,
+        ConnectionId: Id,
+    ",
+))]
 pub struct Counterparty<ClientId: Id, ConnectionId: Id = id::ConnectionId> {
     pub client_id: ClientId,
     pub connection_id: ConnectionId,

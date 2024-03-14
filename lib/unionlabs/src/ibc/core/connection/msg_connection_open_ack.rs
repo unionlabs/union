@@ -1,16 +1,10 @@
-use core::fmt::Debug;
-
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     ibc::core::{client::height::Height, connection::version::Version},
     id::ConnectionId,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenAck)))]
 pub struct MsgConnectionOpenAck<ClientState, ProofTry, ProofClient, ProofConsensus> {
     pub connection_id: ConnectionId,

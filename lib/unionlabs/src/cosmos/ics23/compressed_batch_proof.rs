@@ -1,14 +1,10 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::cosmos::ics23::{
     compressed_batch_entry::{CompressedBatchEntry, TryFromCompressedBatchEntryProofError},
     inner_op::{InnerOp, TryFromInnerOpError},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::cosmos::ics23::v1::CompressedBatchProof), into, from))]
 pub struct CompressedBatchProof {
     pub entries: Vec<CompressedBatchEntry>,

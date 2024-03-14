@@ -1,7 +1,6 @@
 use core::str::FromStr;
 
 use macros::model;
-use serde::{Deserialize, Serialize};
 use uint::FromDecStrErr;
 
 use crate::{
@@ -17,9 +16,6 @@ use crate::{
     uint::U256,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::ClientState),
     into,

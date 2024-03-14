@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
@@ -8,9 +7,6 @@ use crate::{
     ibc::core::commitment::merkle_root::{MerkleRoot, TryFromMerkleRootError},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(
     raw(protos::ibc::lightclients::tendermint::v1::ConsensusState),
     into,

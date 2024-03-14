@@ -2,7 +2,6 @@ use core::str::FromStr;
 
 use frame_support_procedural::DebugNoBound;
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ethabi")]
 use crate::ibc::core::connection::counterparty::TryFromEthAbiConnectionCounterpartyError;
@@ -17,24 +16,19 @@ use crate::{
     traits::Id,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    bound(
-        serialize = "
-            ClientId: Id,
-            CounterpartyClientId: Id,
-            CounterpartyConnectionId: Id,
-        ",
-        deserialize = "
-            ClientId: Id,
-            CounterpartyClientId: Id,
-            CounterpartyConnectionId: Id,
-        ",
-    ),
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::ibc::core::connection::v1::ConnectionEnd), into, from))]
+#[serde(bound(
+    serialize = "
+        ClientId: Id,
+        CounterpartyClientId: Id,
+        CounterpartyConnectionId: Id,
+    ",
+    deserialize = "
+        ClientId: Id,
+        CounterpartyClientId: Id,
+        CounterpartyConnectionId: Id,
+    ",
+))]
 pub struct ConnectionEnd<
     ClientId: Id,
     CounterpartyClientId: Id,

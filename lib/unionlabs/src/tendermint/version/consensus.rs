@@ -1,9 +1,6 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[derive(Default)]
 #[model(proto(raw(protos::tendermint::version::Consensus), into, from))]
 pub struct Consensus {
     #[serde(with = "::serde_utils::string")]

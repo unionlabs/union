@@ -1,11 +1,8 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, hash::H256};
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[derive(Default)]
 #[model(proto(raw(protos::tendermint::types::PartSetHeader), into, from))]
 pub struct PartSetHeader {
     pub total: u32,

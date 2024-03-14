@@ -2,7 +2,6 @@ use macros::model;
 
 use crate::tendermint::abci::event_attribute::EventAttribute;
 
-#[derive(Debug, Clone, PartialEq)]
 #[model(proto(raw(protos::tendermint::abci::Event), into, from))]
 pub struct Event {
     pub ty: String,

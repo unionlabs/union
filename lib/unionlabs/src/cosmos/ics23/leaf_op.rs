@@ -1,16 +1,12 @@
 use alloc::borrow::Cow;
 
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     cosmos::ics23::{hash_op::HashOp, length_op::LengthOp},
     errors::UnknownEnumVariant,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::cosmos::ics23::v1::LeafOp), into, from))]
 pub struct LeafOp {
     pub hash: HashOp,

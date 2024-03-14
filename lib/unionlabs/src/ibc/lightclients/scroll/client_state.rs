@@ -1,14 +1,10 @@
 use core::{fmt::Debug, str::FromStr};
 
 use macros::model;
-use serde::{Deserialize, Serialize};
 use uint::FromDecStrErr;
 
 use crate::{errors::InvalidLength, hash::H160, ibc::core::client::height::Height, uint::U256};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(
     raw(protos::union::ibc::lightclients::scroll::v1::ClientState),
     into,

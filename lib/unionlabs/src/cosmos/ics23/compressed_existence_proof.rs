@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     bounded::{BoundedI32, BoundedIntError},
@@ -7,9 +6,6 @@ use crate::{
     errors::{required, MissingField},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::cosmos::ics23::v1::CompressedExistenceProof), into, from))]
 pub struct CompressedExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]

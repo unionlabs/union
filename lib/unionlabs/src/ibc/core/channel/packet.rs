@@ -1,7 +1,6 @@
 use core::num::{NonZeroU64, TryFromIntError};
 
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
@@ -10,9 +9,6 @@ use crate::{
     validated::{Validate, ValidateT},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::ibc::core::channel::v1::Packet), into, from))]
 pub struct Packet {
     pub sequence: NonZeroU64,

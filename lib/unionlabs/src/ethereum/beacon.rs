@@ -1,3 +1,4 @@
+use macros::model;
 use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use ssz_types::{FixedVector, VariableList};
@@ -88,8 +89,9 @@ impl<
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#beaconblockbody>
-#[derive(Clone, Debug, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[derive(Encode, Decode, TreeHash)]
+#[model]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct BeaconBlockBody<
     C: MAX_PROPOSER_SLASHINGS
         + MAX_VALIDATORS_PER_COMMITTEE

@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ethabi")]
 use crate::tendermint::types::part_set_header::TryFromEthAbiPartSetHeaderError;
@@ -9,9 +8,7 @@ use crate::{
     tendermint::types::part_set_header::{PartSetHeader, TryFromPartSetHeaderError},
 };
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[derive(Default)]
 #[model(proto(raw(protos::tendermint::types::BlockId), into, from))]
 pub struct BlockId {
     pub hash: H256,

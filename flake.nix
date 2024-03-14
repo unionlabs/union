@@ -478,6 +478,8 @@
             ASTRO_TELEMETRY_DISABLED = 1;
             PONDER_TELEMETRY_DISABLED = true;
 
+            ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
+
             shellHook = ''
               alias voy-send-msg='curl localhost:65534/msg -H "content-type: application/json" -d'
             '';

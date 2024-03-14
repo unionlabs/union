@@ -1,7 +1,6 @@
 use core::fmt::Debug;
 
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     encoding::Decode, errors::InvalidLength, google::protobuf::any::Any, TryFromProtoBytesError,
@@ -14,13 +13,6 @@ pub mod multisig;
 pub mod secp256k1;
 pub mod secp256r1;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
 #[model(proto(raw(protos::google::protobuf::Any), into, from))]
 pub enum AnyPubKey {
     Bn254(bn254::PubKey),

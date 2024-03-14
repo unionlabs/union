@@ -1,12 +1,8 @@
 use custom_debug_derive::Debug;
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, hash::H256};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(
     raw(protos::union::ibc::lightclients::scroll::v1::ScrollFinalizedProof),
     into,
@@ -16,7 +12,7 @@ pub struct ScrollFinalizedProof {
     pub batch_index: u64,
     pub finalized_state_root: H256,
     #[serde(with = "::serde_utils::hex_string_list")]
-    #[debug(with = "::serde_utils::fmt::hex_list")]
+    #[debug(wrap = ::serde_utils::fmt::DebugListAsHex)]
     pub proof: Vec<Vec<u8>>,
 }
 

@@ -26,17 +26,23 @@ use queue_msg::{
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    encoding::{DecodeAs, EthAbi}, ethereum::config::ChainSpec, events::{
+    encoding::{DecodeAs, EthAbi},
+    ethereum::config::ChainSpec,
+    events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
         CreateClient, IbcEvent, RecvPacket, SendPacket, UpdateClient,
-    }, hash::H256, ibc::{
+    },
+    hash::H256,
+    ibc::{
         core::{
             channel::channel::Channel, client::height::Height,
             connection::connection_end::ConnectionEnd,
         },
         lightclients::cometbls,
-    }, proof::{ChannelEndPath, ConnectionPath}, traits::{Chain, ChainIdOf, ClientIdOf, HeightOf}
+    },
+    proof::{ChannelEndPath, ConnectionPath},
+    traits::{Chain, ChainIdOf, ClientIdOf, HeightOf},
 };
 
 use crate::{
@@ -244,11 +250,10 @@ where
 
                             dbg!(hex::encode(&client_state));
 
-                            let client_state =
-                                cometbls::client_state::ClientState::decode_as::<EthAbi>(
-                                    &client_state,
-                                )
-                                .unwrap();
+                            let client_state = cometbls::client_state::ClientState::decode_as::<
+                                EthAbi,
+                            >(&client_state)
+                            .unwrap();
 
                             data(Identified::<Evm<C>, _>::new(
                                 c.chain_id(),
@@ -287,11 +292,10 @@ where
 
                             dbg!(hex::encode(&client_state));
 
-                            let client_state =
-                                cometbls::client_state::ClientState::decode_as::<EthAbi>(
-                                    &client_state,
-                                )
-                                .unwrap();
+                            let client_state = cometbls::client_state::ClientState::decode_as::<
+                                EthAbi,
+                            >(&client_state)
+                            .unwrap();
 
                             data(Identified::<Evm<C>, _>::new(
                                 c.chain_id(),

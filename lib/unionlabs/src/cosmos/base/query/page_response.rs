@@ -1,7 +1,6 @@
-use serde::{Deserialize, Serialize};
+use macros::model;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[model(proto(raw(protos::cosmos::base::query::v1beta1::PageResponse), into))]
 pub struct PageResponse {
     /// next_key is the key to be passed to PageRequest.key to
     /// query the next page most efficiently. It will be empty if

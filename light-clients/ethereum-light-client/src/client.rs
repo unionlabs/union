@@ -268,7 +268,10 @@ impl IbcClient for EthereumLightClient {
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
     ) -> Result<bool, Self::Error> {
-        let height = Height::new(0, header.consensus_update.attested_header.beacon.slot);
+        let height = Height {
+            revision_number: 0,
+            revision_height: header.consensus_update.attested_header.beacon.slot,
+        };
 
         if let Some(consensus_state) =
             read_consensus_state::<Self::CustomQuery, Self::ConsensusState>(deps, &height)?

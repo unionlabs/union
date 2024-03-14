@@ -1,8 +1,17 @@
+use std::convert;
+
 use proc_macro::{Delimiter, Group, Punct, Spacing, TokenStream, TokenTree};
-use quote::quote;
+use proc_macro2::{Literal, Span};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
-    parse::Parse, parse_quote, punctuated::Punctuated, spanned::Spanned, Generics, Ident, Item,
-    ItemEnum, ItemStruct, MacroDelimiter, Meta, MetaList, Path, Token, WhereClause,
+    fold::Fold,
+    parse::{discouraged::Speculative, Parse, ParseStream},
+    parse_macro_input, parse_quote,
+    punctuated::Punctuated,
+    spanned::Spanned,
+    Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, Generics, Ident, Item, ItemEnum,
+    ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Variant, WhereClause,
+    WherePredicate,
 };
 
 #[proc_macro_attribute]
@@ -20,6 +29,375 @@ pub fn apply(meta: TokenStream, ts: TokenStream) -> TokenStream {
     ]
     .into_iter()
     .collect()
+}
+
+#[proc_macro_derive(Debug, attributes(debug))]
+pub fn debug(ts: TokenStream) -> TokenStream {
+    let di = parse_macro_input!(ts as DeriveInput);
+
+    derive_debug(di)
+        // .inspect(|x| println!("{x}"))
+        .map_err(|e| e.into_compile_error())
+        .unwrap_or_else(convert::identity)
+        .into()
+}
+
+fn derive_debug(
+    DeriveInput {
+        attrs,
+        ident,
+        generics,
+        data,
+        ..
+    }: DeriveInput,
+) -> Result<proc_macro2::TokenStream, syn::Error> {
+    let container_attrs = parse_debug_meta(attrs.iter())?;
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let bounds = mk_where_clause(&data)?;
+
+    let mut where_clause = where_clause.cloned().unwrap_or_else(|| WhereClause {
+        where_token: parse_quote!(where),
+        predicates: Default::default(),
+    });
+    where_clause.predicates.extend(bounds);
+
+    let mk_binding_pat = |idx, ident: &Option<Ident>| {
+        ident.as_ref().map_or_else(
+            || Literal::usize_unsuffixed(idx).into_token_stream(),
+            |i| i.to_token_stream(),
+        )
+    };
+
+    let mk_self_pat = |fields: &Fields| {
+        fields
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, Field { ident, attrs, .. })| {
+                let pat_ident = mk_binding_pat(idx, ident);
+
+                parse_debug_meta(attrs)
+                    .map(|meta| {
+                        let binding = format_ident!("__binding_{idx}");
+
+                        match meta {
+                            Some(DebugMeta::Skip(_)) => None,
+                            Some(_) | None => Some(quote! {
+                                #pat_ident: #binding,
+                            }),
+                        }
+                    })
+                    .transpose()
+            })
+            .collect::<Result<proc_macro2::TokenStream, _>>()
+            .map(|bindings| {
+                quote! {
+                    { #bindings .. }
+                }
+            })
+    };
+
+    let mk_field_debugs = |(idx, Field { ident, attrs, .. }): (usize, &Field)| {
+        parse_debug_meta(attrs)
+            .and_then(|meta| {
+                let binding = format_ident!("__binding_{idx}");
+
+                if let Some(meta) = &meta {
+                    if container_attrs.is_some() {
+                        return Err(syn::Error::new(
+                            meta.span(),
+                            "container and field `#[debug(...)]` attributes cannot be combined"
+                        ))
+                    }
+                }
+
+                let expr = match &meta {
+                    Some(DebugMeta::Format(lit, exprs)) => {
+                        let exprs = exprs.iter().map(|expr| {
+                            ReplacePath {
+                                from: ident.clone().unwrap_or_else(|| format_ident!("_{idx}")),
+                                to: binding.clone(),
+                            }
+                            .fold_expr(expr.clone())
+                        });
+
+                        quote! {{
+                            // yes, write to a string and then display the string
+                            // fight me, it's debug
+                            struct DebugAsDisplay<T>(T);
+                            impl<T: ::core::fmt::Display> ::core::fmt::Debug for DebugAsDisplay<T> {
+                                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                                    f.write_fmt(format_args!("{0}", self.0))
+                                }
+                            }
+
+                            DebugAsDisplay(format!(#lit, #(#exprs)*))
+                        }}
+                    }
+                    Some(DebugMeta::Wrap(path)) => {
+                        quote! { (#path)(#binding) }
+                    }
+                    Some(DebugMeta::Skip(_)) => {
+                        quote! {}
+                    }
+                    None => {
+                        quote! { #binding }
+                    }
+                };
+
+                Ok(match meta {
+                    Some(DebugMeta::Skip(_)) => None,
+                    Some(_) | None => Some(match ident {
+                        Some(ident) => {
+                            quote! {
+                                debug_builder.field(stringify!(#ident), &#expr);
+                            }
+                        }
+                        None => quote! {
+                            debug_builder.field(&#expr);
+                        },
+                    }),
+                })
+            })
+            .transpose()
+    };
+
+    let mk_builder = |ident: &Ident, fields: &Fields| match fields {
+        Fields::Unit | Fields::Named(_) => quote! { f.debug_struct(stringify!(#ident)); },
+        Fields::Unnamed(_) => quote! { f.debug_tuple(stringify!(#ident)); },
+    };
+
+    let body = match (data, container_attrs.as_ref()) {
+        (_, Some(DebugMeta::Skip(skip))) => Err(syn::Error::new(
+            skip.span(),
+            "`skip` is only valid as a field attribute",
+        )),
+        (Data::Struct(s), None) => {
+            let field_debugs = s
+                .fields
+                .iter()
+                .enumerate()
+                .filter_map(mk_field_debugs)
+                .collect::<Result<Vec<_>, _>>()?;
+
+            let builder = mk_builder(&ident, &s.fields);
+
+            let pat = mk_self_pat(&s.fields)?;
+
+            Ok(quote! {
+                let Self #pat = self;
+
+                let mut debug_builder = #builder
+                #(#field_debugs)*
+                debug_builder.finish()
+            })
+        }
+        (Data::Enum(e), None) => {
+            let variant_debugs = e
+                .variants
+                .iter()
+                .map(
+                    |Variant {
+                         attrs,
+                         ident,
+                         fields,
+                         ..
+                     }| {
+                        parse_debug_meta(attrs)
+                            .and_then(|m| {
+                                m.map_or_else(
+                                    || Ok(()),
+                                    |m| {
+                                        Err(syn::Error::new(
+                                            m.span(),
+                                            // arbitrary limitation bc we don't need it right now and i'm lazy
+                                            "`#[debug(...)]` cannot be used on variants",
+                                        ))
+                                    },
+                                )
+                            })
+                            .and_then(|()| -> Result<_, _> {
+                                let field_debugs = fields
+                                    .iter()
+                                    .enumerate()
+                                    .filter_map(mk_field_debugs)
+                                    .collect::<Result<Vec<_>, _>>()?;
+
+                                let builder = mk_builder(ident, fields);
+
+                                let pat = mk_self_pat(fields)?;
+
+                                Ok(quote! {
+                                    Self::#ident #pat => {
+                                        let mut debug_builder = #builder
+                                        #(#field_debugs)*
+                                        debug_builder.finish()
+                                    }
+                                })
+                            })
+                    },
+                )
+                .collect::<Result<Vec<_>, _>>()?;
+
+            Ok(quote! {
+                match self {
+                    #(#variant_debugs)*
+                }
+            })
+        }
+        (Data::Struct(_) | Data::Enum(_), Some(DebugMeta::Format(lit, exprs))) => Ok(quote! {
+            write!(f, #lit, #(#exprs)*)
+        }),
+        (Data::Struct(_) | Data::Enum(_), Some(DebugMeta::Wrap(path))) => Ok(quote! {
+            ::core::fmt::Debug::fmt((#path)(self), f)
+        }),
+        (Data::Union(_), _) => panic!(),
+    }?;
+
+    Ok(quote! {
+        impl #impl_generics ::core::fmt::Debug for #ident #ty_generics #where_clause {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                #body
+            }
+        }
+    })
+}
+
+struct ReplacePath {
+    from: Ident,
+    to: Ident,
+}
+
+impl Fold for ReplacePath {
+    fn fold_expr_path(&mut self, i: ExprPath) -> ExprPath {
+        ExprPath {
+            attrs: i
+                .attrs
+                .into_iter()
+                .map(|it| self.fold_attribute(it))
+                .collect(),
+            qself: i.qself.map(|q| self.fold_qself(q)),
+            path: if i.path.is_ident(&self.from) {
+                Path::from(self.to.clone())
+            } else {
+                i.path
+            },
+        }
+    }
+}
+
+fn parse_debug_meta<'a>(
+    attrs: impl IntoIterator<Item = &'a Attribute>,
+) -> Result<Option<DebugMeta>, syn::Error> {
+    attrs
+        .into_iter()
+        .filter(|attr| attr.path().is_ident("debug"))
+        .map(DebugMeta::try_from_attribute)
+        .try_fold(None, |curr, acc| {
+            let acc = acc?;
+
+            match (curr, acc) {
+                (None, acc) => Ok(acc),
+                (new @ Some(_), None) => Ok(new),
+                (Some(new), Some(_)) => Err(syn::Error::new(
+                    new.span(),
+                    "only one `#[debug(...)]` attribute is allowed",
+                )),
+            }
+        })
+}
+
+fn mk_where_clause(data: &Data) -> Result<Vec<WherePredicate>, syn::Error> {
+    let f = |Field { ty, attrs, .. }: &Field| {
+        parse_debug_meta(attrs.iter())
+            .map(|m| m.is_none().then(|| parse_quote!(#ty: ::core::fmt::Debug)))
+            .transpose()
+    };
+
+    match data {
+        Data::Struct(s) => s.fields.iter().filter_map(f).collect(),
+        Data::Enum(e) => e
+            .variants
+            .iter()
+            .flat_map(|v| &v.fields)
+            .filter_map(f)
+            .collect(),
+        Data::Union(_) => panic!(),
+    }
+}
+
+#[derive(core::fmt::Debug)]
+enum DebugMeta {
+    Skip(Span),
+    Format(LitStr, Vec<Expr>),
+    Wrap(Path),
+}
+
+impl DebugMeta {
+    fn span(&self) -> Span {
+        match self {
+            DebugMeta::Skip(span) => span.span(),
+            DebugMeta::Format(lit, _exprs) => lit.span(),
+            DebugMeta::Wrap(path) => path.span(),
+        }
+    }
+}
+
+impl DebugMeta {
+    fn try_from_attribute(attr: &Attribute) -> syn::Result<Option<Self>> {
+        syn::custom_keyword!(skip);
+        syn::custom_keyword!(wrap);
+
+        let mut debug_meta = None;
+
+        attr.parse_args_with(|input: ParseStream| {
+            if let Some(kw) = input.parse::<Option<skip>>()? {
+                if debug_meta.is_some() {
+                    return Err(syn::Error::new_spanned(
+                        attr,
+                        "duplicate #[error(transparent)] attribute",
+                    ));
+                }
+                debug_meta = Some(DebugMeta::Skip(kw.span));
+                return Ok(());
+            }
+
+            if let Some(_kw) = input.parse::<Option<wrap>>()? {
+                if debug_meta.is_some() {
+                    return Err(syn::Error::new_spanned(
+                        attr,
+                        "duplicate #[error(transparent)] attribute",
+                    ));
+                }
+
+                let _eq = input.parse::<Token![=]>()?;
+
+                debug_meta = Some(DebugMeta::Wrap(input.parse()?));
+                return Ok(());
+            }
+
+            let fmt: LitStr = input.parse()?;
+
+            let ahead = input.fork();
+            ahead.parse::<Option<Token![,]>>()?;
+            let args = if ahead.is_empty() {
+                input.advance_to(&ahead);
+                Punctuated::default()
+            } else {
+                input.advance_to(&ahead);
+                Punctuated::<Expr, Token![,]>::parse_terminated(input)?
+            };
+
+            let prev = debug_meta.replace(DebugMeta::Format(fmt, args.into_iter().collect()));
+
+            assert!(prev.is_none());
+
+            Ok(())
+        })?;
+
+        Ok(debug_meta)
+    }
 }
 
 fn mk_proto(
@@ -154,47 +532,125 @@ fn mk_ethabi(
 
 #[proc_macro_attribute]
 pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
-    let input = ts.clone();
+    let input = proc_macro2::TokenStream::from(ts.clone());
 
     let item = syn::parse_macro_input!(ts as Item);
-    let Model { proto, ethabi } = syn::parse_macro_input!(meta as Model);
+    let Model {
+        proto,
+        ethabi,
+        no_serde,
+    } = syn::parse_macro_input!(meta as Model);
 
-    let output = match item {
+    let output = match &item {
         Item::Enum(ItemEnum {
             ident, generics, ..
         })
         | Item::Struct(ItemStruct {
             ident, generics, ..
         }) => {
-            let proto = proto.map(|from_raw| mk_proto(from_raw, &ident, &generics));
-            let ethabi = ethabi.map(|from_raw| mk_ethabi(from_raw, &ident, &generics));
+            let proto = proto.map(|from_raw| mk_proto(from_raw, ident, generics));
+            let ethabi = ethabi.map(|from_raw| mk_ethabi(from_raw, ident, generics));
 
             quote! { #proto #ethabi }
         }
         _ => panic!(),
     };
 
-    input
-        .into_iter()
-        .chain::<proc_macro::TokenStream>(output.into())
-        .collect()
+    let attributes = match item {
+        Item::Enum(ItemEnum {
+            variants, attrs, ..
+        }) => {
+            let debug_derive_crate: Path = variants
+                .iter()
+                .flat_map(|v| &v.fields)
+                .flat_map(|f| &f.attrs)
+                .chain(&attrs)
+                .any(|a| a.path().is_ident("debug"))
+                .then_some(parse_quote!(::macros))
+                .unwrap_or(parse_quote!(::core::fmt));
+
+            let serde = (!no_serde).then(|| {
+                quote! {
+                    #[derive(::serde::Serialize, ::serde::Deserialize)]
+                    #[serde(
+                        deny_unknown_fields,
+                        tag = "@type",
+                        content = "@value",
+                        rename_all = "snake_case"
+                    )]
+                }
+            });
+
+            quote! {
+                #[derive(
+                    #debug_derive_crate::Debug,
+                    ::core::clone::Clone,
+                    ::core::cmp::PartialEq,
+                )]
+                #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+                #serde
+            }
+        }
+        Item::Struct(ItemStruct { fields, attrs, .. }) => {
+            let debug_derive_crate: Path = fields
+                .iter()
+                .flat_map(|f| &f.attrs)
+                .chain(&attrs)
+                .any(|a| a.path().is_ident("debug"))
+                .then_some(parse_quote!(::macros))
+                .unwrap_or(parse_quote!(::core::fmt));
+
+            let serde = (!no_serde).then(|| {
+                quote! {
+                    #[derive(::serde::Serialize, ::serde::Deserialize)]
+                    #[serde(
+                        deny_unknown_fields,
+                        rename_all = "snake_case"
+                    )]
+                }
+            });
+
+            quote! {
+                #[derive(
+                    #debug_derive_crate::Debug,
+                    ::core::clone::Clone,
+                    ::core::cmp::PartialEq,
+                )]
+                #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+                #serde
+            }
+        }
+        _ => panic!(),
+    };
+
+    quote! {
+        #attributes
+        #input
+
+        #output
+    }
+    .into()
 }
 
 struct Model {
     proto: Option<FromRawAttrs>,
     ethabi: Option<FromRawAttrs>,
+    no_serde: bool,
 }
 
 impl Parse for Model {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        const INVALID_ATTR_MSG: &str =
+            "invalid attribute, valid attributes are `no_serde`, `proto(...)` and `ethabi(...)`";
+
         let meta = <Punctuated<Meta, Token![,]>>::parse_terminated(input)?;
 
         let mut proto = None;
         let mut ethabi = None;
+        let mut no_serde = false;
 
         for meta in meta {
             match meta {
-                // Meta::Path(path) => {}
                 Meta::List(MetaList {
                     path,
                     delimiter: MacroDelimiter::Paren(_),
@@ -220,21 +676,30 @@ impl Parse for Model {
                             ethabi = Some(syn::parse2(tokens)?);
                         }
                     }
-                    _ => return Err(syn::Error::new_spanned(
-                        path,
-                        "invalid attribute, valid attributes are `proto(...)` and `ethabi(...)`",
-                    )),
+                    _ => return Err(syn::Error::new_spanned(path, INVALID_ATTR_MSG)),
                 },
-                _ => {
-                    return Err(syn::Error::new_spanned(
-                        meta,
-                        "invalid attribute, valid attributes are `proto(...)` and `ethabi(...)`",
-                    ))
-                }
+                Meta::Path(path) => match &*path.require_ident()?.to_string() {
+                    "no_serde" => {
+                        if no_serde {
+                            return Err(syn::Error::new_spanned(
+                                path,
+                                "duplicate `no_serde` attribute",
+                            ));
+                        } else {
+                            no_serde = true;
+                        }
+                    }
+                    _ => return Err(syn::Error::new_spanned(path, INVALID_ATTR_MSG)),
+                },
+                _ => return Err(syn::Error::new_spanned(meta, INVALID_ATTR_MSG)),
             }
         }
 
-        Ok(Model { proto, ethabi })
+        Ok(Model {
+            proto,
+            ethabi,
+            no_serde,
+        })
     }
 }
 

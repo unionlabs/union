@@ -19,12 +19,13 @@ pub const TIMESTAMP_SECONDS_MIN: i64 = -62_135_596_800;
 
 const NANOS_MAX: i32 = NANOS_PER_SECOND - 1;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(
     proto(raw(protos::google::protobuf::Timestamp), into, from),
-    ethabi(raw(contracts::glue::GoogleProtobufTimestampData), into, from)
+    ethabi(raw(contracts::glue::GoogleProtobufTimestampData), into, from),
+    no_serde
 )]
+#[debug("Timestamp({})", self)]
+#[derive(Eq, Copy)]
 pub struct Timestamp {
     /// As per the proto docs: "Must be from 0001-01-01T00:00:00Z to
     /// 9999-12-31T23:59:59Z inclusive."

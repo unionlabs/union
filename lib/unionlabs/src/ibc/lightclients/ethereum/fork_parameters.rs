@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 
 use crate::{
@@ -15,9 +14,7 @@ use crate::{
         ethers_contract_derive::EthAbiCodec
     )
 )]
-#[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[derive(Encode, Decode)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::ForkParameters),
     into,

@@ -1,11 +1,8 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::cosmos::base::coin::Coin;
 
 /// `MsgExecuteContract` submits the given message data to a smart contract
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 #[model(proto(raw(protos::cosmwasm::wasm::v1::MsgExecuteContract), into, from))]
 pub struct MsgExecuteContract {
     /// Sender is the that actor that signed the messages

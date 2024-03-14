@@ -1,8 +1,5 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerklePath), into, from))]
 pub struct MerklePath {
     pub key_path: Vec<String>,

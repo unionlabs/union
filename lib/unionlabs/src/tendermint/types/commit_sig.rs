@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ethabi")]
 use crate::google::protobuf::timestamp::TryFromEthAbiTimestampError;
@@ -10,14 +9,6 @@ use crate::{
     tendermint::types::block_id_flag::BlockIdFlag,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::tendermint::types::CommitSig), into, from))]
 pub enum CommitSig {
     Absent,

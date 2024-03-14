@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-
 use crate::{
     errors::{ExpectedLength, InvalidLength},
     hash::H256,
@@ -20,9 +18,6 @@ use crate::{
 (total 160 bytes)
  */
 // https://github.com/scroll-tech/zktrie/blob/a12f2f262ad3e82301e39ecdf9bfe235befc7074/docs/zktrie.md
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Account {
     pub code_size: u64,
     pub nonce: u64,

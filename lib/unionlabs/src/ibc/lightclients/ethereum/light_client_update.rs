@@ -2,8 +2,6 @@ use core::fmt::Debug;
 
 use frame_support_procedural::DebugNoBound;
 use macros::model;
-use serde::{Deserialize, Serialize};
-use ssz::{Decode, Encode};
 
 use crate::{
     errors::{InvalidLength, MissingField},
@@ -23,14 +21,12 @@ use crate::{
 pub type NextSyncCommitteeBranch = [H256; floorlog2(NEXT_SYNC_COMMITTEE_INDEX)];
 pub type FinalityBranch = [H256; floorlog2(FINALIZED_ROOT_INDEX)];
 
-#[derive(Debug, Clone, PartialEq, Encode, Decode, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate),
     into,
     from
 ))]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct LightClientUpdate<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     /// Header attested to by the sync committee
     pub attested_header: LightClientHeader<C>,

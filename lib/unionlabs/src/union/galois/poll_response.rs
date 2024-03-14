@@ -6,13 +6,6 @@ use crate::{
     union::galois::prove_response::{ProveResponse, TryFromProveResponseError},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
 #[model(proto(raw(protos::union::galois::api::v2::PollResponse), into, from))]
 pub enum PollResponse {
     Pending,

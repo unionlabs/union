@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     cosmos::staking::commission_rates::CommissionRates,
@@ -7,8 +6,6 @@ use crate::{
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 #[model(proto(raw(protos::cosmos::staking::v1beta1::Commission), into, from))]
 pub struct Commission {
     /// commission_rates defines the initial commission rates to be used for creating a validator.

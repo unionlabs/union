@@ -1,6 +1,5 @@
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use frame_support_procedural::DebugNoBound;
 use macros::model;
-use serde::{Deserialize, Serialize};
 use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
 
@@ -17,19 +16,11 @@ use crate::{
 ///
 /// Note that the verifier uses one of them based on whether the signature slot
 /// is equal to the current slot or current slot + 1
-#[derive(
-    CloneNoBound, DebugNoBound, PartialEqNoBound, Encode, Decode, TreeHash, Serialize, Deserialize,
-)]
+#[model]
+#[derive(Encode, Decode, TreeHash)]
 #[ssz(enum_behaviour = "union")]
 #[tree_hash(enum_behaviour = "union")]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    bound(serialize = "", deserialize = ""),
-    deny_unknown_fields,
-    rename_all = "snake_case"
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub enum ActiveSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     Current(SyncCommittee<C>),
     Next(SyncCommittee<C>),
@@ -55,16 +46,13 @@ impl<C: SYNC_COMMITTEE_SIZE> ActiveSyncCommittee<C> {
     }
 }
 
-#[derive(
-    CloneNoBound, DebugNoBound, PartialEqNoBound, Encode, Decode, TreeHash, Serialize, Deserialize,
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[derive(Encode, Decode, TreeHash)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee),
     into,
     from
 ))]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct TrustedSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     pub trusted_height: Height,
     pub sync_committee: ActiveSyncCommittee<C>,

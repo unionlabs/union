@@ -6,20 +6,11 @@ use core::{
 
 use macros::model;
 use serde::{Deserialize, Serialize};
-use ssz::{Decode, Encode};
 use tree_hash::TreeHash;
 
-#[cfg_attr(
-    feature = "ethabi",
-    derive(
-        ethers_contract_derive::EthAbiType,
-        ethers_contract_derive::EthAbiCodec
-    )
-)]
-#[derive(Clone, Copy, PartialEq, Encode, Decode, TreeHash, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(deny_unknown_fields)]
+#[derive(ssz::Encode, ssz::Decode, TreeHash, Default, Copy)]
 #[model(proto(raw(protos::ibc::core::client::v1::Height), into, from))]
+#[debug("Height({self})")]
 pub struct Height {
     // REVIEW: Why default?
     #[serde(default)]
@@ -27,14 +18,9 @@ pub struct Height {
     pub revision_height: u64,
 }
 
-impl Debug for Height {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Height({self})")
-    }
-}
-
 impl Height {
     #[must_use]
+    #[deprecated]
     pub fn new(revision_number: u64, revision_height: u64) -> Self {
         Height {
             revision_number,
@@ -209,6 +195,31 @@ mod tests {
             revision_number: 0,
             revision_height: 0,
         });
+    }
+
+    #[test]
+    fn debug() {
+        assert_eq!(
+            format!(
+                "{:?}",
+                Height {
+                    revision_number: 1,
+                    revision_height: 1,
+                }
+            ),
+            "Height(1-1)"
+        );
+
+        assert_eq!(
+            format!(
+                "{:?}",
+                Height {
+                    revision_number: 1,
+                    revision_height: 1,
+                }
+            ),
+            "Height(1-1)"
+        );
     }
 
     #[test]

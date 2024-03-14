@@ -1,13 +1,9 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::cosmos::ics23::commitment_proof::{CommitmentProof, TryFromCommitmentProofError};
 // #[cfg(feature = "ethabi")]
 // use crate::InlineFields;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(
     proto(raw(protos::ibc::core::commitment::v1::MerkleProof), into, from),
     ethabi(raw(crate::InlineFields<contracts::glue::IbcCoreCommitmentV1MerkleProofData>), from)

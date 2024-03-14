@@ -1,11 +1,7 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{bls::BlsPublicKey, errors::InvalidLength, hash::H256};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::ConsensusState),
     into,

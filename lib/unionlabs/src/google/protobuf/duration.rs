@@ -45,21 +45,15 @@ type PositiveNanos = BoundedI32<0, DURATION_MAX_NANOS>;
 ///   of one second or more, a non-zero value for the `nanos` field must be
 ///   of the same sign as the `seconds` field. Must be from -999,999,999
 ///   to +999,999,999 inclusive.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[model(proto(raw(protos::google::protobuf::Duration), into, from))]
+#[model(proto(raw(protos::google::protobuf::Duration), into, from), no_serde)]
+#[derive(PartialOrd, Ord, Eq, Copy)]
 pub struct Duration(
+    #[debug("{}", _0)]
     BoundedI128<
         { (DURATION_MIN_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MIN_NANOS as i128 },
         { (DURATION_MAX_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MAX_NANOS as i128 },
     >,
 );
-
-impl Debug for Duration {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("Duration({self})"))
-    }
-}
 
 impl Neg for Duration {
     type Output = Self;

@@ -1,8 +1,5 @@
-use core::fmt::Debug;
-
 use frame_support_procedural::DebugNoBound;
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     encoding::{Decode, DecodeErrorOf, Encode, Proto},
@@ -11,9 +8,6 @@ use crate::{
     ibc::core::client::height::Height,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::ibc::lightclients::wasm::v1::ClientState), into, from))]
 pub struct ClientState<Data> {
     pub data: Data,

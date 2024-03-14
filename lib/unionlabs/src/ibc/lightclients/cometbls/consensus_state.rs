@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 // #[cfg(feature = "ethabi")]
 // use crate::InlineFields;
@@ -9,9 +8,6 @@ use crate::{
     ibc::core::commitment::merkle_root::{MerkleRoot, TryFromMerkleRootError},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(
     proto(
         raw(protos::union::ibc::lightclients::cometbls::v1::ConsensusState),

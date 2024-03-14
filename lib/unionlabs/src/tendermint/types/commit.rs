@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ethabi")]
 use crate::tendermint::types::{
@@ -14,9 +13,6 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(raw(protos::tendermint::types::Commit), into, from))]
 pub struct Commit {
     pub height: BoundedI64<0, { i64::MAX }>,

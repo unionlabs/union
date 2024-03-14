@@ -1,11 +1,7 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::ibc::lightclients::ethereum::proof::{Proof, TryFromProofError};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::StorageProof),
     into,
