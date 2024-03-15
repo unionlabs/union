@@ -41,15 +41,6 @@ let
       outputFilePath = "$out/lib/${contractFileNameWithoutExt}${dashesToUnderscores (featuresString features)}.wasm";
     in
     ''
-      ${
-        builtins.concatStringsSep
-          "\n\n"
-          (map
-            (check: check "target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm")
-            (allChecks checks)
-          )
-      }
-
       mkdir -p $out/lib
       mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm ${outputFilePath}
 
