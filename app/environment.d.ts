@@ -3,6 +3,7 @@ interface EnvironmentVariables {
   readonly PORT: string
   readonly VERSION: string // from package.json#version
   readonly COMMIT_SHA: string
+  readonly HASURA_ADMIN_SECRET: string
   readonly VITE_UNION_RPC_URL: string
   readonly VITE_UNION_REST_URL: string
   readonly VITE_UNION_GRAPHQL_URL: string

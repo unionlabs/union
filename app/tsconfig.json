@@ -19,10 +19,7 @@
         "template": "gql",
         "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
         "schema": {
-          "url": "https://graphql.union.build/v1/graphql",
-          "headers": {
-            "x-hasura-admin-secret": ""
-          }
+          "url": "https://introspect.unionlabs.workers.dev"
         }
       }
     ]
