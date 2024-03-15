@@ -15,7 +15,7 @@ interface EnvironmentVariables {
   readonly VITE_UCS01_SEPOLIA_SOURCE_CHANNEL: string
 }
 // Node.js environment variables types
-declare module NodeJS {
+declare namespace NodeJS {
   interface ProcessEnv extends EnvironmentVariables {}
 }
 // Vite environment variables types

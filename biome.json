@@ -18,7 +18,7 @@
       "*.astro",
       "*.svelte"
     ],
-    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules"]
+    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules", "generated"]
   },
   "css": {
     "formatter": {
@@ -46,7 +46,7 @@
       "*.svelte"
     ],
     "ignoreUnknown": true,
-    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules"]
+    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules", "generated"]
   },
   "json": {
     "parser": {
@@ -84,7 +84,8 @@
       "result",
       ".svelte-kit",
       "node_modules",
-      "unionvisor/src/testdata/"
+      "unionvisor/src/testdata/",
+      "generated"
     ]
   },
   "linter": {
@@ -100,11 +101,10 @@
         "useShorthandArrayType": "off",
         "useSelfClosingElements": "off",
         "noUnusedTemplateLiteral": "off",
+        "useNodejsImportProtocol": "off",
         "useConsistentArrayType": {
           "level": "warn",
-          "options": {
-            "syntax": "generic"
-          }
+          "options": { "syntax": "generic" }
         }
       },
       "a11y": {
@@ -158,7 +158,7 @@
       "*.astro",
       "*.svelte"
     ],
-    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules"]
+    "ignore": ["_", "out", "dist", "build", "result", ".svelte-kit", "node_modules", "generated"]
   },
   "javascript": {
     "globals": ["NodeJS", "Astro"],

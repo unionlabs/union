@@ -12,7 +12,15 @@
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["@cloudflare/workers-types", "typed-query-selector/strict"]
+    "types": ["@cloudflare/workers-types", "typed-query-selector/strict"],
+    "plugins": [ 
+      { 
+        "name": "@0no-co/graphqlsp",
+        "schema": "./src/generated/schema.graphql",
+        "template": "gql",
+        "tadaOutputLocation": "./src/generated/graphql-env.d.ts"
+      } 
+    ],
   },
   "include": ["./src"],
   "exclude": ["./src/lib/components/ui"],
