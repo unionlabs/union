@@ -9,6 +9,7 @@ import ConnectedVisual from '#/components/ConnectedVisual.svelte'
 import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
 import Cube from '#/components/Cube.svelte'
+import VoyagerModel from '#/components/models/VoyagerModel.svelte'
 
 const publishedBlogPosts = await getCollection("blog", ({ slug, data }) => {
   if (data.hidden) return false
@@ -24,14 +25,14 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
   <main class="flex flex-col flex-1 items-center px-4">
     <div class="w-full flex flex-col max-w-6xl p-px bg-black">
       <section
-        class="self-center flex flex-col md:grid md:grid-cols-2 max-w-6xl items-center gap-2 md:gap-6 grid-effect-bg antialiased bg-black -mx-4 md:mx-0 mb-16 md:mb-24"
+        class="self-center flex flex-col md:grid md:grid-cols-2 max-w-6xl items-center gap-2 md:gap-0 grid-effect-bg antialiased bg-black -mx-4 md:mx-0 mb-16"
       >
         <div class="md:order-last w-full max-w-[600px]">
           <Cube client:only />
         </div>
         <div class="bg-gradient-to-t from-black flex flex-col items-center  text-center drop-shadow-2xl -mt-48 md:mt-0 px-4">
           <div
-            class="text-3xl md:text-5xl text-white font-bold mt-24 md:mt-0"
+            class="text-3xl md:text-4xl lg:text-5xl text-white font-bold mt-24 md:mt-0"
           >
             The Sovereign<br />Interoperability Layer
           </div>
@@ -40,7 +41,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
             enable anyone to transfer assets and data.
           </div>
           <div class="mt-4">
-            <a class="font-bold text-accent  px-4 font-jetbrains py-2 rounded-sm font-semibold bg-black" href="/docs">
+            <a class="font-bold text-accent px-4 font-jetbrains py-2 rounded-sm font-semibold bg-black" href="/docs">
               Start Building -&gt;
             </a>
           </div>
@@ -48,26 +49,23 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
 
 
       </section>
-
-      <section class="bg-black text-white flex flex-col items-center mb-px">
+      <section class="bg-black mb-px items-center justify-center max-w-4xl w-full self-center">
         <div
-          class="p-4 sm:p-8 md:p-16 text-xl md:text-2xl font-normal text-gray-400 text-center"
+          class="p-4 top-0 font-normal z-10"
         >
-          <span class="text-white">Trustless, decentralized, and permissionless</span> interoperability
+          <h2
+            class="text-white font-bold"
+          >
+            Interoperability for the Modular Stack</span>
+          </h2>
+          <div class="mt-2 text-lg sm:text-xl font-normal text-gray-400">
+          Trustless, decentralized, and permissionless interoperability
           is now possible. Union is the only protocol that provides all three, using state-of-the-art
           <span class="text-white">Zero-Knowledge cryptography</span>.
+          </dvi>
         </div>
-      </section>
-
-      <section class="bg-black mb-px relative items-center justify-center">
-        <div class="absolute flex flex-col items-center w-full">
-          <h2
-            class="text-gray-400 text-base min-[400px]:text-xl min-[400px]:pt-4 md:text-3xl lg:text-4xl lg:px-6 lg:pt-12 font-normal md:pt-5 sm:text-3xl xs:pt-3 text-center"
-          >
-            Interoperability for the <span class="text-accent">Modular Stack</span>
-          </h2>
         </div>
-        <div class="w-full min-w-full h-full min-h-full">
+        <div class="w-full min-w-full h-full min-h-full z-10">
           <ConnectedVisual client:load />
         </div>
       </section>
@@ -167,6 +165,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
             >
           </div>
           <div class="p-8">
+            <VoyagerModel/>
             <h3 class="mb-1 text-2xl">Voyager</h3>
             <p class="text-gray-200">
               Stateless relaying for a cross-chain future. Voyager is our in-house relayer, allowing
