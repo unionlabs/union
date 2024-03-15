@@ -10,7 +10,8 @@
             --datadir /validatordata \
             --accept-terms-of-use \
             --interop-num-validators 64 \
-            --chain-config-file ${config}/beacon-config.yml
+            --chain-config-file ${config}/beacon-config.yml \
+            --beacon-rpc-provider beacon-chain:4000
         '';        
       };
   in

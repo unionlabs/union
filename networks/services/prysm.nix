@@ -15,15 +15,17 @@
             --num-validators 64 \
             --chain-config-file /${config}/beacon-config.yml \
             --geth-genesis-json-in /${config}/genesis.json \
-            --geth-genesis-json-out /beaconchain/genesis.json \
-            --output-ssz /beaconchain/genesis.ssz \
+            --geth-genesis-json-out "$DATADIR/genesis.json" \
+            --output-ssz "$DATADIR/genesis.ssz" \
+            --genesis-time 1710464327 \
             --config-name minimal
 
           ${prysm}/bin/beacon-chain \
-            --datadir /beaconchain \
+            --datadir "$DATADIR" \
             --min-sync-peers 0 \
-            --genesis-state /beaconchain/genesis.ssz \
-            --bootstrap-node= --interop-eth1data-votes \
+            --genesis-state "$DATADIR/genesis.ssz" \
+            --bootstrap-node= \
+            --interop-eth1data-votes \
             --chain-config-file ${config}/beacon-config.yml \
             --contract-deployment-block 0 \
             --chain-id 32382 \
@@ -32,7 +34,10 @@
             --suggested-fee-recipient 0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD \
             --minimum-peers-per-subnet 0 \
             --enable-debug-rpc-endpoints \
-            --execution-endpoint http://localhost:8551
+            --execution-endpoint http://geth:8551 \
+            --grpc-gateway-host 0.0.0.0 \
+            --rpc-host 0.0.0.0
+            # --enable-lightclient
         '';
       };
   in

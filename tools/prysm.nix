@@ -7,21 +7,24 @@
   {
     packages.prysm = goPkgs.buildGo121Module rec {
       inherit CGO_CFLAGS;
-     inherit CGO_LDFLAGS;
+      inherit CGO_LDFLAGS;
 
       pname = "prysm";
-      version = "5.0.0";
-
-      src = pkgs.fetchFromGitHub {
-        owner = "prysmaticlabs";
-        repo = pname;
-        rev = "v${version}";
-        hash = "sha256-QSfTDjdsd6XSYDjhDL+p/0cYlXysVHqlzVMF2KMyd/Y=";
+      version = "5.0.1";
+      src = builtins.fetchGit {
+        url = "https://github.com/unionlabs/prysm";
+        rev = "7ca368a432a453a434c9428b6587c95f169f74b5";
       };
 
-      vendorHash = "sha256-5ToSVJ7ToDhRq3AT6I6G8FE8GqZRPCMyTogTQG4HDBY=";
 
-      # nativeBuildInputs = [ pkgs.musl ];
+      # src = pkgs.fetchFromGitHub {
+      #   owner = "unionlabs";
+      #   repo = pname;
+      #   rev = "";
+      #   hash = "sha256-QSfTDjdsd6XSYDjhDL+p/0cYlXysVHqlzVMF2Kaaa/a=";
+      # };
+
+      vendorHash = "sha256-5ToSVJ7ToDhRq3AT6I6G8FE8GqZRPCMyTogTQG4HDBY=";
 
       buildInputs = [pkgs.libelf];
 
@@ -33,6 +36,8 @@
       ];
 
       doCheck = false;
+
+      tags = "minimal develop noMainnetGenesis";
 
       ldflags = [
         # "-s"
