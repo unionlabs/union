@@ -185,7 +185,7 @@ where {
                     <Self::Misbehaviour as Decode<Self::Encoding>>::decode(&client_message.0)
                 {
                     to_json_binary(
-                        &Self::verify_misbehaviour(deps, misbehaviour)
+                        &Self::verify_misbehaviour(deps, env, misbehaviour)
                             .map_err(IbcClientError::ClientSpecific)?,
                     )
                 } else {
@@ -241,6 +241,7 @@ where {
 
     fn verify_misbehaviour(
         deps: Deps<Self::CustomQuery>,
+        env: Env,
         misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error>;
 

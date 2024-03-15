@@ -8,7 +8,10 @@ use ics008_wasm_client::{
     IbcClient, Status, StorageState, ZERO_HEIGHT,
 };
 use ics23::ibc_api::SDK_SPECS;
-use tendermint_verifier::types::SignatureVerifier;
+use tendermint_verifier::{
+    types::SignatureVerifier,
+    verify::{verify_commit_light, verify_commit_light_trusting},
+};
 use unionlabs::{
     bounded::BoundedI64,
     encoding::{DecodeAs, Proto},
@@ -24,6 +27,7 @@ use unionlabs::{
         },
         lightclients::tendermint::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
+            misbehaviour::Misbehaviour,
         },
     },
     tendermint::types::{commit::Commit, signed_header::SignedHeader},
@@ -51,8 +55,7 @@ impl IbcClient for TendermintLightClient {
 
     type Header = Header;
 
-    // TODO(aeryz): Change this to appropriate misbehavior type when it is implemented
-    type Misbehaviour = Header;
+    type Misbehaviour = Misbehaviour;
 
     type ClientState = ClientState;
 
@@ -163,10 +166,67 @@ impl IbcClient for TendermintLightClient {
     }
 
     fn verify_misbehaviour(
-        _deps: Deps<Self::CustomQuery>,
-        _misbehaviour: Self::Misbehaviour,
+        deps: Deps<Self::CustomQuery>,
+        env: Env,
+        misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
-        Err(Error::Unimplemented)
+        ensure(
+            misbehaviour.header_1.trusted_height.revision_number != 0,
+            Error::MisbehaviourZeroHeight,
+        )?;
+
+        ensure(
+            misbehaviour.header_2.trusted_height.revision_number != 0,
+            Error::MisbehaviourZeroHeight,
+        )?;
+
+        ensure(
+            height_from_header(&misbehaviour.header_1)
+                >= height_from_header(&misbehaviour.header_2),
+            Error::InvalidHeaderOrdering,
+        )?;
+
+        // TODO(aeryz): do we need to do a sanity check on headers or is it done when doing verification?
+
+        validate_commit_light(deps, &misbehaviour.header_1)?;
+        validate_commit_light(deps, &misbehaviour.header_2)?;
+
+        let client_state: WasmClientState = read_client_state(deps)?;
+        let consensus_state_1: WasmConsensusState =
+            read_consensus_state::<_, ConsensusState>(deps, &misbehaviour.header_1.trusted_height)?
+                .ok_or(Error::ConsensusStateNotFound(
+                    misbehaviour.header_1.trusted_height,
+                ))?;
+
+        let consensus_state_2: WasmConsensusState =
+            read_consensus_state::<_, ConsensusState>(deps, &misbehaviour.header_1.trusted_height)?
+                .ok_or(Error::ConsensusStateNotFound(
+                    misbehaviour.header_1.trusted_height,
+                ))?;
+
+        let timestamp: Timestamp = env
+            .block
+            .time
+            .try_into()
+            .map_err(|_| Error::InvalidHostTimestamp(env.block.time))?;
+
+        check_misbehaviour_header(
+            deps,
+            &client_state.data,
+            &consensus_state_1.data,
+            &misbehaviour.header_1,
+            timestamp,
+        )?;
+
+        check_misbehaviour_header(
+            deps,
+            &client_state.data,
+            &consensus_state_2.data,
+            &misbehaviour.header_2,
+            timestamp,
+        )?;
+
+        Ok(())
     }
 
     fn update_state(
@@ -270,9 +330,22 @@ impl IbcClient for TendermintLightClient {
 
     fn check_for_misbehaviour_on_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
-        _misbehaviour: Self::Misbehaviour,
+        misbehaviour: Self::Misbehaviour,
     ) -> Result<bool, Self::Error> {
-        Err(Error::Unimplemented)
+        if height_from_header(&misbehaviour.header_1) == height_from_header(&misbehaviour.header_2)
+        {
+            if misbehaviour.header_1.signed_header.commit.block_id.hash
+                != misbehaviour.header_2.signed_header.commit.block_id.hash
+            {
+                return Ok(true);
+            }
+        } else if misbehaviour.header_1.signed_header.header.time
+            > misbehaviour.header_2.signed_header.header.time
+        {
+            return Ok(true);
+        }
+
+        Ok(false)
     }
 
     fn verify_upgrade_and_update_state(
@@ -395,6 +468,51 @@ impl IbcClient for TendermintLightClient {
             .try_into()
             .map_err(|_| Error::NegativeTimestamp(timestamp))
     }
+}
+
+fn validate_commit_light(deps: Deps, header: &Header) -> Result<(), Error> {
+    verify_commit_light(
+        &header.validator_set,
+        &header.signed_header.header.chain_id,
+        &header.signed_header.commit.block_id,
+        header.signed_header.commit.height.inner(),
+        &header.signed_header.commit,
+        &SignatureVerifier::new(Ed25519Verifier::new(deps)),
+    )?;
+
+    Ok(())
+}
+
+fn check_misbehaviour_header(
+    deps: Deps,
+    client_state: &ClientState,
+    consensus_state: &ConsensusState,
+    header: &Header,
+    current_timestamp: Timestamp,
+) -> Result<(), Error> {
+    check_trusted_header(header, &consensus_state.next_validators_hash)?;
+
+    if current_timestamp
+        >= consensus_state
+            .timestamp
+            .checked_add(client_state.trusting_period)
+            .ok_or(Error::DurationAdditionOverflow)?
+    {
+        return Err(Error::TrustingPeriodExpired);
+    }
+
+    // TODO(aeryz): original implementation checks if the chain id is in the correct format
+    // if not, it sets the revision number. Check why this is being done.
+
+    verify_commit_light_trusting(
+        &client_state.chain_id,
+        &header.trusted_validators,
+        &header.signed_header.commit,
+        client_state.trust_level,
+        &SignatureVerifier::new(Ed25519Verifier::new(deps)),
+    )?;
+
+    Ok(())
 }
 
 fn migrate_check_allowed_fields(

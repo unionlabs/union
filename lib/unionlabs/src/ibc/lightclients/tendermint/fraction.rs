@@ -3,7 +3,7 @@ use core::num::NonZeroU64;
 use macros::proto;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[proto(raw = protos::ibc::lightclients::tendermint::v1::Fraction, into, from)]

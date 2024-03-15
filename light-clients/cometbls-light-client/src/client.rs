@@ -196,6 +196,7 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
 
     fn verify_misbehaviour(
         _deps: Deps<Self::CustomQuery>,
+        _env: Env,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<(), Self::Error> {
         Err(Error::Unimplemented)

@@ -164,6 +164,21 @@ pub enum Error {
 
     #[error("forbidden fields have been changed during state migration")]
     MigrateFieldsChanged,
+
+    #[error("misbehaviour detected in header1")]
+    MisbehaviourInHeader1,
+
+    #[error("misbehaviour detected in header2")]
+    MisbehaviourInHeader2,
+
+    #[error("trusting period is expired")]
+    TrustingPeriodExpired,
+
+    #[error("header1 height is less than header2 height")]
+    InvalidHeaderOrdering,
+
+    #[error("misbehaviour header cannot have zero revision number")]
+    MisbehaviourZeroHeight,
 }
 
 impl Error {
