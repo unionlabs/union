@@ -14,6 +14,7 @@ use crate::{
 ))]
 pub struct CompressedNonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub key: Vec<u8>,
     pub left: Option<CompressedExistenceProof>,
     pub right: Option<CompressedExistenceProof>,

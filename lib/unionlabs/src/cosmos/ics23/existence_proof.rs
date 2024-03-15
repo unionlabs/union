@@ -11,8 +11,10 @@ use crate::{
 #[model(proto(raw(protos::cosmos::ics23::v1::ExistenceProof), into, from))]
 pub struct ExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub key: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub value: Vec<u8>,
     pub leaf: LeafOp,
     pub path: Vec<InnerOp>,

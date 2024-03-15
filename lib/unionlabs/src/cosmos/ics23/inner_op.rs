@@ -6,8 +6,10 @@ use crate::{cosmos::ics23::hash_op::HashOp, errors::UnknownEnumVariant};
 pub struct InnerOp {
     pub hash: HashOp,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub prefix: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub suffix: Vec<u8>,
 }
 

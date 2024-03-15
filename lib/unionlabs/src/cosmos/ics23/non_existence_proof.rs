@@ -8,6 +8,7 @@ use crate::{
 #[model(proto(raw(protos::cosmos::ics23::v1::NonExistenceProof), into, from))]
 pub struct NonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub key: Vec<u8>,
     pub left: Option<ExistenceProof>,
     pub right: Option<ExistenceProof>,
