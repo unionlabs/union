@@ -549,7 +549,7 @@ where
                 let location = keccak256(
                     keccak256(path.as_bytes())
                         .into_iter()
-                        .chain(ethers::types::U256::from(0).encode())
+                        .chain(AbiEncode::encode(U256::from(0)))
                         .collect::<Vec<_>>(),
                 );
 

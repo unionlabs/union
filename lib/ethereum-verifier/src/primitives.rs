@@ -1,6 +1,5 @@
-use primitive_types::U256;
 use rlp::RlpDecodable;
-use unionlabs::hash::H256;
+use unionlabs::{hash::H256, uint::U256};
 
 pub const GENESIS_SLOT: u64 = 0;
 pub const GENESIS_EPOCH: u64 = 0;
@@ -12,7 +11,6 @@ pub const ETH1_ADDRESS_WITHDRAWAL_PREFIX: u8 = 0x01;
 #[derive(Debug, Clone, RlpDecodable)]
 pub struct Account {
     pub nonce: u64,
-    // TODO: use `unionlabs::ethereum::U256` here
     pub balance: U256,
     pub storage_root: H256,
     pub code_hash: H256,

@@ -1,4 +1,7 @@
-#![allow(clippy::too_many_arguments)]
+#![allow(
+    clippy::too_many_arguments, // fork
+    clippy::disallowed_types // fork
+)]
 
 use ethereum_types::U256;
 use ff::{Field, PrimeFieldDecodingError, PrimeFieldRepr};

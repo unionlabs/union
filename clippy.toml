@@ -1,0 +1,1 @@
+disallowed-types = [{ path = "primitive_types::U256", reason = "use unionlabs::uint::U256" }]

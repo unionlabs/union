@@ -6,6 +6,9 @@ publish      = false
 repository   = { workspace = true }
 version      = "0.1.0"
 
+[lints]
+workspace = true
+
 [dependencies]
 clap      = { workspace = true, features = ["derive", "help"] }
 unionlabs = { workspace = true }

@@ -159,9 +159,9 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         let trusted_validators_hash = consensus_state.data.next_validators_hash;
 
         let untrusted_validators_hash = if untrusted_height_number == trusted_height_number + 1 {
-            &trusted_validators_hash
+            trusted_validators_hash.clone()
         } else {
-            &header.signed_header.header.validators_hash
+            header.signed_header.header.validators_hash.clone()
         };
 
         let expected_block_hash = header
@@ -185,16 +185,13 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
         )
         .encode_length_delimited_to_vec();
 
-        if !T::verify_zkp(
-            &trusted_validators_hash.0,
-            &untrusted_validators_hash.0,
+        T::verify_zkp(
+            trusted_validators_hash,
+            untrusted_validators_hash,
             &signed_vote,
             &header.zero_knowledge_proof,
-        ) {
-            return Err(Error::InvalidZKP);
-        }
-
-        Ok(())
+        )
+        .map_err(Error::InvalidZKP)
     }
 
     fn verify_misbehaviour(
@@ -496,7 +493,7 @@ fn height_from_header(header: &Header) -> Height {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, str::FromStr};
+    use std::fs;
 
     use cosmwasm_std::{
         testing::{mock_dependencies, MockApi, MockQuerier, MockStorage},
@@ -717,33 +714,32 @@ mod tests {
                 height: 124.try_into().unwrap(),
                 round: 0.try_into().unwrap(),
                 block_id: BlockId {
-                    hash: H256::from_str(
-                        "0xed341d012b198b8c6962209f30ac4a07c06d53ab258865aade613dcd5800aec5",
-                    )
-                    .unwrap(),
+                    hash: H256(hex!(
+                        "ed341d012b198b8c6962209f30ac4a07c06d53ab258865aade613dcd5800aec5"
+                    )),
                     part_set_header: PartSetHeader {
                         total: 1,
-                        hash: H256::from_str(
-                            "0xb1c27e9a68de8ddbc981319dea0ad31aa3e41f6759bd7200581eff9d1373ca9f",
-                        )
-                        .unwrap(),
+                        hash: H256(hex!(
+                            "b1c27e9a68de8ddbc981319dea0ad31aa3e41f6759bd7200581eff9d1373ca9f"
+                        )),
                     },
                 },
                 signatures: Default::default(),
             },
             "union-devnet-1".into(),
-            H256::from_str("0xed341d012b198b8c6962209f30ac4a07c06d53ab258865aade613dcd5800aec5")
-                .unwrap(),
+            H256(hex!(
+                "ed341d012b198b8c6962209f30ac4a07c06d53ab258865aade613dcd5800aec5"
+            )),
         )
         .encode_length_delimited_to_vec();
         assert_eq!(
             <() as ZKPVerifier>::verify_zkp(
-                &hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d"),
-                &hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d"),
+                H256(hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d")),
+                H256(hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d")),
                 &signed_vote,
                 &hex!("07942610e1aeb229308405cd7fc0305f31129bb6d7a3f39b0b18ac0adc09e5301d05c7dfb6b1c21aeeae94928b7ddbf59c04454454b785bc430b8d825dc1a52f0444e6bddff7896fce6625c4fef776be5ef1dc9e539db05241b201e83e1ed2d02942b8a7c777ed5806508ab66547cfcff01f0a0aeffa773f32dfb9bf76c07e700c21088d0ed1f4aea52b7962ac5ffa2748d4b021bcafa5bcec2e1748130e64691dea0ac767b1fd72750c517f49da19aaa4e5e70591f9bdc1d177850275e2f1a90712c5ed8902568d20e34b2f3e224c3bcbefa57917efe64104d19767a419524f1eb315c1291e1eeaaf765a3f3c2f0ddd908b49cd2e5e776dc9b063fa62777dfc2a59e984c4b0a21d8afb790d9d06cb7d0cbef6b573eaa48398a8d0b731f3362c2f385771a9bce77c5e6cd66c074d36b6cb71cfe97c65dd75bcad2a9d91f899ee15256a75d3065bee14962a6b10b05b72ba616034803a76c8487fd9285f502c011eae9d47767324ea7d90ee9b4e8d9dbcad3cdc1759d3566e2351bd1176d3cd28")
             ),
-            true
+            Ok(())
         );
     }
 }

@@ -5,6 +5,9 @@ name     = "unionlabs"
 resolver = "2"
 version  = "0.1.0"
 
+[lints]
+workspace = true
+
 [dependencies]
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 bip32                    = { workspace = true, features = ["secp256k1"] }
@@ -29,7 +32,7 @@ k256                     = { version = "0.13.1", default-features = false, featu
 macros.workspace         = true
 milagro_bls              = { workspace = true }
 paste                    = { version = "1.0" }
-primitive-types          = { workspace = true, features = ["serde_no_std"] }
+primitive-types          = { workspace = true, features = ["serde_no_std", "impl-rlp"] }
 prost                    = { workspace = true, features = ["std"] }
 protos                   = { workspace = true, features = ["proto_full", "serde"] }
 ripemd                   = { workspace = true }

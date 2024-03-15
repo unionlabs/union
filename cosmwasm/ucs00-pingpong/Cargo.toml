@@ -6,6 +6,9 @@ name         = "ucs00-pingpong"
 repository   = "https://github.com/unionlabs/union"
 version      = "1.0.0"
 
+[lints]
+workspace = true
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 

@@ -7,6 +7,9 @@ publish      = false
 repository   = { workspace = true }
 version      = "1.0.1"
 
+[lints]
+workspace = true
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 

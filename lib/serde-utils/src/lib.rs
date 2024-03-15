@@ -6,7 +6,7 @@ use hex::FromHexError;
 
 pub const HEX_ENCODING_PREFIX: &str = "0x";
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum FromHexStringError {
     Hex(FromHexError),
     MissingPrefix(String),
@@ -368,6 +368,8 @@ pub mod string_opt {
 }
 
 pub mod u256_from_dec_str {
+    #![allow(clippy::disallowed_types)] // need to access the inner type to do ser/de
+
     use primitive_types::U256;
     use serde::de::Deserialize;
 

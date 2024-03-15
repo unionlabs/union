@@ -3,6 +3,9 @@ edition = "2021"
 name    = "ethereum-verifier"
 version = "0.1.0"
 
+[lints]
+workspace = true
+
 [package.metadata.crane]
 test-include = ["lib/ethereum-verifier/src/test/"]
 

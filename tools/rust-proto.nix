@@ -11,10 +11,10 @@
         };
       };
 
-      cargo_toml = { name }: pkgs.runCommand "${name}-cargo_toml"
-        { }
-        ''
-          cargotoml='${builtins.toJSON {
+      cargo_toml =
+        { name }:
+        let
+          toml = {
             package = {
               name = name;
               version = "0.0.0";
@@ -22,9 +22,9 @@
             };
             lib = { doctest = false; };
             dependencies = {
-              prost = { workspace = true; features = ["prost-derive"]; };
-              ethers = { workspace = true; optional = true; features = ["rustls"]; };
-              serde = { workspace = true; features = ["derive"]; optional = true; };
+              prost = { workspace = true; features = [ "prost-derive" ]; };
+              ethers = { workspace = true; optional = true; features = [ "rustls" ]; };
+              serde = { workspace = true; features = [ "derive" ]; optional = true; };
               tonic = { workspace = true; features = [ "codegen" "prost" "gzip" "transport" ]; optional = true; };
               schemars = { workspace = true; optional = true; };
               serde-utils = { workspace = true; };
@@ -34,14 +34,20 @@
               std = [ "prost/std" "serde/std" ];
               eth-abi = [ "ethers" "std" ];
               client = [ "tonic" ];
-              json-schema = ["schemars"];
+              json-schema = [ "schemars" ];
               # nix attrsets don't preserve order, use this to replace with the insertion point (see command below)
               PROTOC_INSERTION_POINT = 1;
             };
-          }}'
-          echo "cargo toml: $cargotoml"
-          echo "$cargotoml" | ${pkgs.lib.meta.getExe pkgs.yj} -jt | sed 's/^PROTOC_INSERTION_POINT = 1$/## @@protoc_insertion_point(features)/' > $out
-        '';
+            lints = { workspace = true; };
+          };
+        in
+        pkgs.runCommand "${name}-cargo_toml"
+          { }
+          ''
+            cargotoml='${builtins.toJSON toml}'
+            echo "cargo toml: $cargotoml"
+            echo "$cargotoml" | ${pkgs.lib.meta.getExe pkgs.yj} -jt | sed 's/^PROTOC_INSERTION_POINT = 1$/## @@protoc_insertion_point(features)/' > $out
+          '';
 
       all-protos-to-build = rec {
         wasmd = rec {

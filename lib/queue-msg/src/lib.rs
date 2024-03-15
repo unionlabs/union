@@ -233,7 +233,7 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
         store: &'a T::Store,
         depth: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Option<QueueMsg<T>>, BoxDynError>> + Send + 'a>> {
-        tracing::info!(
+        tracing::debug!(
             depth,
             %self,
             "handling message",

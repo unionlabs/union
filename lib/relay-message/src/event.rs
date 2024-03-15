@@ -38,8 +38,6 @@ impl HandleEvent<RelayerMsgTypes> for AnyLightClientIdentified<AnyEvent> {
         self,
         store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
     ) -> QueueMsg<RelayerMsgTypes> {
-        dbg!(&self);
-
         let event = self;
 
         any_lc! {
@@ -58,14 +56,15 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
         match self {
             Event::Ibc(ibc_event) => match ibc_event.event {
                 unionlabs::events::IbcEvent::CreateClient(e) => {
-                    println!("client created: {e:#?}");
+                    tracing::info!("client created: {e:?}");
 
                     QueueMsg::Noop
                 }
                 unionlabs::events::IbcEvent::UpdateClient(e) => {
-                    println!(
-                        "client updated: {:#?} to {:#?}",
-                        e.client_id, e.consensus_heights
+                    tracing::info!(
+                        "client updated: {:?} to {:?}",
+                        e.client_id,
+                        e.consensus_heights
                     );
 
                     QueueMsg::Noop
@@ -136,7 +135,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     ),
                 ),
                 unionlabs::events::IbcEvent::ConnectionOpenConfirm(confirm) => {
-                    println!("connection opened: {confirm:#?}");
+                    tracing::info!("connection opened: {confirm:?}");
 
                     QueueMsg::Noop
                 }
@@ -243,7 +242,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     ),
                 ),
                 unionlabs::events::IbcEvent::ChannelOpenConfirm(confirm) => {
-                    println!("channel opened: {confirm:#?}");
+                    tracing::info!("channel opened: {confirm:?}");
 
                     QueueMsg::Noop
                 }
