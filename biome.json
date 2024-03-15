@@ -82,10 +82,10 @@
       "dist",
       "build",
       "result",
+      "generated",
       ".svelte-kit",
       "node_modules",
-      "unionvisor/src/testdata/",
-      "generated"
+      "unionvisor/src/testdata"
     ]
   },
   "linter": {
@@ -183,7 +183,7 @@
   },
   "overrides": [
     {
-      "include": ["./**/*.astro"],
+      "include": ["*.astro"],
       "linter": {
         "rules": {
           "correctness": {
@@ -197,7 +197,7 @@
       }
     },
     {
-      "include": ["./**/*.svelte"],
+      "include": ["*.svelte"],
       "linter": {
         "rules": {
           "correctness": {
@@ -212,7 +212,7 @@
       }
     },
     {
-      "include": ["scripts/**/*.ts", "scripts/**/*.js", "scripts/**/*.cjs"],
+      "include": ["scripts", "*config*"],
       "linter": {
         "rules": {
           "nursery": {

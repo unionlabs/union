@@ -26,6 +26,10 @@ export type introspection = {
         "name": "Address"
       },
       {
+        "kind": "SCALAR",
+        "name": "Boolean"
+      },
+      {
         "kind": "INPUT_OBJECT",
         "name": "Boolean_comparison_exp",
         "inputFields": [
@@ -114,10 +118,6 @@ export type introspection = {
             }
           }
         ]
-      },
-      {
-        "kind": "SCALAR",
-        "name": "Boolean"
       },
       {
         "kind": "OBJECT",
@@ -212,7 +212,11 @@ export type introspection = {
       },
       {
         "kind": "SCALAR",
-        "name": "String"
+        "name": "Float"
+      },
+      {
+        "kind": "SCALAR",
+        "name": "Int"
       },
       {
         "kind": "INPUT_OBJECT",
@@ -306,10 +310,6 @@ export type introspection = {
       },
       {
         "kind": "SCALAR",
-        "name": "Int"
-      },
-      {
-        "kind": "SCALAR",
         "name": "Long"
       },
       {
@@ -336,6 +336,10 @@ export type introspection = {
             }
           }
         ]
+      },
+      {
+        "kind": "SCALAR",
+        "name": "String"
       },
       {
         "kind": "INPUT_OBJECT",
@@ -19321,10 +19325,6 @@ export type introspection = {
           }
         ],
         "interfaces": []
-      },
-      {
-        "kind": "SCALAR",
-        "name": "Float"
       },
       {
         "kind": "INPUT_OBJECT",

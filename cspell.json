@@ -43,6 +43,7 @@
     "package-lock.json",
     "file-tree-icons.ts",
     "moonlight-ii.json",
+    "app/src/generated",
     "lib/pg-queue/migrations"
   ]
 }

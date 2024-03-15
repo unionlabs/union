@@ -13,14 +13,19 @@
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
     "types": ["@cloudflare/workers-types", "typed-query-selector/strict"],
-    "plugins": [ 
-      { 
+    "plugins": [
+      {
         "name": "@0no-co/graphqlsp",
-        "schema": "./src/generated/schema.graphql",
         "template": "gql",
-        "tadaOutputLocation": "./src/generated/graphql-env.d.ts"
-      } 
-    ],
+        "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
+        "schema": {
+          "url": "https://graphql.union.build/v1/graphql",
+          "headers": {
+            "x-hasura-admin-secret": ""
+          }
+        }
+      }
+    ]
   },
   "include": ["./src"],
   "exclude": ["./src/lib/components/ui"],
