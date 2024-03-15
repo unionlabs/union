@@ -1,4 +1,3 @@
-use custom_debug_derive::Debug;
 use macros::model;
 use ssz_types::{fixed_vector, variable_list, FixedVector, VariableList};
 use tree_hash::TreeHash;

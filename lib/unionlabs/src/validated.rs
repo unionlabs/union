@@ -1,10 +1,9 @@
 use core::{fmt::Display, marker::PhantomData, ops::Deref, str::FromStr};
 
-use custom_debug_derive::Debug;
 use either::Either;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(::macros::Debug, Serialize, Deserialize)]
 #[serde(
     bound(serialize = "T: Serialize", deserialize = "T: for<'d> Deserialize<'d>"),
     transparent

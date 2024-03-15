@@ -1,4 +1,3 @@
-use custom_debug_derive::Debug;
 use macros::model;
 
 use crate::{errors::InvalidLength, uint::U256};

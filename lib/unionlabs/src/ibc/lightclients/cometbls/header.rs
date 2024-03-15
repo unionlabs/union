@@ -1,4 +1,3 @@
-use custom_debug_derive::Debug;
 use macros::model;
 
 #[cfg(feature = "ethabi")]

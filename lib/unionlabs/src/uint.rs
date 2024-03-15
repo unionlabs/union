@@ -6,7 +6,6 @@ use core::{
     str::FromStr,
 };
 
-use custom_debug_derive::Debug;
 use serde::{Deserialize, Serialize};
 use serde_utils::HEX_ENCODING_PREFIX;
 use tree_hash::TreeHash;
@@ -18,7 +17,7 @@ use crate::{
 
 /// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
 #[derive(
-    Debug,
+    ::macros::Debug,
     Clone,
     Copy,
     Hash,
@@ -36,7 +35,7 @@ use crate::{
 #[repr(transparent)]
 pub struct U256(
     #[serde(with = "::serde_utils::u256_from_dec_str")]
-    #[debug(with = "::serde_utils::fmt::display")]
+    #[debug("{}", _0)]
     pub primitive_types::U256,
 );
 
