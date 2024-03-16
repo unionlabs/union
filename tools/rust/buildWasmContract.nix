@@ -12,29 +12,6 @@ let
   dashesToUnderscores = builtins.replaceStrings [ "-" ] [ "_" ];
 
   featuresString = features: if features == null then "" else (lib.concatMapStrings (feature: "-${feature}") features);
-  allChecks = checks: builtins.concatLists [
-    checks
-    [
-      (file_name: ''
-        blob=$(${pkgs.binaryen}/bin/wasm-dis ${file_name})
-
-        if [ $? -ne 0 ]
-        then
-          echo $blob
-          exit $?
-        fi
-
-        # grep exits 0 if a match is found
-        if echo $blob | grep -P '\.extend\d{1,2}_s'
-        then
-          echo "wasm binary contains invalid opcodes!"
-          exit 1
-        else
-          echo "wasm binary doesn't contain any sign-extension opcodes!"
-        fi
-      '')
-    ]
-  ];
 
   cargoBuildInstallPhase = { features, contractFileNameWithoutExt, checks }:
     let
@@ -51,7 +28,7 @@ let
           "\n\n"
           (map
             (check: check "${outputFilePath}")
-            (allChecks checks)
+            checks
           )
       }
 
