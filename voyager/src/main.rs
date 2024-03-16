@@ -12,7 +12,9 @@ use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCo
 
 use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm};
 use clap::Parser;
-use sqlx::PgPool;
+use futures::TryStreamExt;
+use queue_msg::QueueMsg;
+use sqlx::{query_as, PgPool};
 use tikv_jemallocator::Jemalloc;
 use tracing_subscriber::EnvFilter;
 use unionlabs::ethereum::config::{Mainnet, Minimal, PresetBaseKind};
@@ -23,9 +25,10 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     chain::AnyChain,
     cli::{any_state_proof_to_json, AppArgs, Command, QueryCmd},
-    config::{ChainConfigType, Config, EvmChainConfig, GetChainError},
+    config::{ChainConfigType, Config, EvmChainConfig, GetChainError, VoyagerConfig},
     queue::{
         chains_from_config, AnyQueueConfig, PgQueueConfig, RunError, Voyager, VoyagerInitError,
+        VoyagerMessageTypes,
     },
 };
 
@@ -262,6 +265,33 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                     println!("{json}");
                 }
             }
+        }
+        Command::Msg(cli::MsgCmd::History { id, max_depth }) => {
+            let db = match voyager_config.voyager.queue {
+                AnyQueueConfig::PgQueue(cfg) => cfg.into_pg_pool().await.unwrap(),
+                _ => panic!("no database set in config"),
+            };
+
+            type Item = sqlx::types::Json<QueueMsg<VoyagerMessageTypes>>;
+
+            #[derive(Debug, serde::Serialize)]
+            struct Record {
+                id: i64,
+                parent: Option<i64>,
+                item: Item,
+            }
+
+            let results = query_as!(
+                Record,
+                r#"SELECT id as "id!", parent, item as "item!: Item" from get_list($1, $2) ORDER BY id ASC"#,
+                id.inner(),
+                max_depth.inner()
+            )
+            .fetch_all(&db)
+            .await
+            .unwrap();
+
+            println!("{}", serde_json::to_string_pretty(&results).unwrap());
         }
     }
 

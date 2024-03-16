@@ -338,7 +338,13 @@ where
     derive(arbitrary::Arbitrary),
     arbitrary(bound = "C: CosmosSdkChainSealed")
 )]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
+)]
 pub enum CosmosSdkData<C: CosmosSdkChainSealed> {
     #[display(fmt = "ClientType")]
     ClientType(ClientType<C>),
@@ -377,7 +383,13 @@ pub struct ClientType<C: CosmosSdkChainSealed> {
     derive(arbitrary::Arbitrary),
     arbitrary(bound = "C: CosmosSdkChainSealed")
 )]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
+)]
 pub enum CosmosSdkFetch<C: CosmosSdkChainSealed> {
     #[display(fmt = "FetchBlocks({}..{})", "_0.from_height", "_0.to_height")]
     FetchBlocks(FetchBlocks<C>),
@@ -425,7 +437,13 @@ pub struct ClientTypeFromClientId<C: CosmosSdkChain> {
     derive(arbitrary::Arbitrary),
     arbitrary(bound = "C: CosmosSdkChain")
 )]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
+)]
 pub enum CosmosSdkAggregate<C: CosmosSdkChain> {
     #[display(fmt = "AggregateEventWithClientType")]
     AggregateEventWithClientType(AggregateEventWithClientType<C>),

@@ -139,16 +139,19 @@ macro_rules! bounded_int {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("expected a value between {min}..={max}, found {found}")]
 pub struct BoundedIntError<T> {
     min: T,
     max: T,
     found: T,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum BoundedIntParseError<T> {
+    #[error(transparent)]
     Parse(core::num::ParseIntError),
+    #[error(transparent)]
     Value(BoundedIntError<T>),
 }
 

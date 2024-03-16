@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id as \"id!\", parent, item as \"item!: Item\" from get_list($1, $2) ORDER BY id ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "parent",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "item!: Item",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "b2a9ed4f2c337682b8ca1e8eed3db9e993796d98e7b401ce360962319d340743"
+}
