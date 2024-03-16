@@ -8,9 +8,9 @@ use crate::{
 
 #[model(proto(raw(protos::cosmos::staking::v1beta1::Commission), into, from))]
 pub struct Commission {
-    /// commission_rates defines the initial commission rates to be used for creating a validator.
+    /// `commission_rates` defines the initial commission rates to be used for creating a validator.
     pub commission_rates: CommissionRates,
-    /// update_time is the last time the commission rate was changed.
+    /// `update_time` is the last time the commission rate was changed.
     pub update_time: Timestamp,
 }
 

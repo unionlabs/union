@@ -1,4 +1,4 @@
-use core::{self, fmt::Display};
+use core::fmt::Display;
 
 use bip32::{
     secp256k1::{ecdsa, ecdsa::Signature, schnorr::signature::Signer},
@@ -58,7 +58,6 @@ impl Display for CosmosSigner {
 
 #[cfg(test)]
 mod tests {
-    use bip32::PrivateKey;
     use hex_literal::hex;
 
     use super::*;

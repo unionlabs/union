@@ -179,10 +179,10 @@ pub fn validate_merkle_branch<'a>(
 }
 
 #[cfg(test)]
+#[allow(clippy::redundant_clone)]
 mod tests {
-    #![allow(clippy::redundant_clone)]
 
-    use unionlabs::ethereum::config::{Minimal, SECONDS_PER_SLOT, SEPOLIA};
+    use unionlabs::ethereum::config::{Minimal, SEPOLIA};
 
     use super::*;
 

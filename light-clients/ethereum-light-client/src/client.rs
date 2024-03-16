@@ -549,13 +549,13 @@ mod test {
         eth_aggregate_public_keys_unchecked, fast_aggregate_verify_unchecked,
     };
     use ics008_wasm_client::storage_utils::{
-        consensus_db_key, read_subject_consensus_state, save_client_state, HOST_CLIENT_STATE_KEY,
+        consensus_db_key, read_subject_consensus_state, HOST_CLIENT_STATE_KEY,
         SUBJECT_CLIENT_STORE_PREFIX, SUBSTITUTE_CLIENT_STORE_PREFIX,
     };
     use serde::Deserialize;
     use unionlabs::{
         bls::BlsPublicKey,
-        encoding::{Encode, EncodeAs},
+        encoding::Encode,
         ethereum::config::Mainnet,
         ibc::{core::connection::connection_end::ConnectionEnd, lightclients::ethereum},
         id::ClientId,
