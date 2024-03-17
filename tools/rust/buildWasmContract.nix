@@ -61,7 +61,7 @@ let
       # TODO: check that the size isn't over the max size allowed to be uploaded?
     '';
   cargoBuildExtraArgs = features: "--no-default-features --lib ${if features != null then lib.concatStringsSep " " ([ "--features" ] ++ features) else ""}";
-  rustflags = "-C target-feature=-sign-ext -C link-arg=-s -C target-cpu=mvp -C opt-level=z -C passes=adce,loop-deletion";
+  rustflags = "-C link-arg=-s -C target-cpu=mvp -C opt-level=z -C passes=adce,loop-deletion";
 in
 {
   buildWasmContract =

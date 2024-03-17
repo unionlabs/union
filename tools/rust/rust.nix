@@ -2,7 +2,7 @@
   perSystem = { pkgs, system, dbg, ensureAtRepositoryRoot, mkCi, ... }:
     let
       nightlyVersion = "2024-03-14";
-      channel = "nightly-${nightlyVersion}";
+      defaultChannel = "nightly-${nightlyVersion}";
 
       # # hopefully if we ever use wasi this issue will be resolved: https://github.com/NixOS/nixpkgs/pull/146274
       # targetPlatformTarget = pkgs.rust.toRustTarget pkgs.targetPlatform;
@@ -44,6 +44,7 @@
       mkToolchain =
         { target ? null
         , components ? [ ]
+        , channel ? defaultChannel
         ,
         }:
         pkgs.rust-bin.fromRustupToolchain {
@@ -61,15 +62,21 @@
             components;
         };
 
-      mkBuildStdToolchain = { target ? null }:
+      mkBuildStdToolchain =
+        { target ? null
+        , channel ? defaultChannel
+        }:
         mkToolchain {
           inherit target;
           components = with availableComponents; [ rustc cargo rust-src ];
         };
 
-      mkNightly = { target ? null }:
+      mkNightly =
+        { target ? null
+        , channel ? defaultChannel
+        }:
         mkToolchain {
-          inherit target;
+          inherit target channel;
           components = with availableComponents; [ rustc cargo rust-std clippy ];
         };
     in

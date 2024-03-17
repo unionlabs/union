@@ -10,7 +10,10 @@
         else if system == "x86_64-darwin" then "x86_64-apple-darwin"
         else throwBadSystem;
 
-      rustToolchain = rust.mkNightly { target = CARGO_BUILD_TARGET; };
+      rustToolchain = rust.mkNightly {
+        channel = "nightly-2024-01-27";
+        target = CARGO_BUILD_TARGET;
+      };
 
       mkLibwasmvm =
         wasmvm:
@@ -36,7 +39,7 @@
               mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib
             '';
           } else throwBadSystem);
-          craneLib = crane.lib.overrideToolchain (rust.mkNightly { target = CARGO_BUILD_TARGET; });
+          craneLib = crane.lib.overrideToolchain rustToolchain;
         in
         craneLib.buildPackage (attrs // {
           cargoArtifacts = craneLib.buildDepsOnly attrs;

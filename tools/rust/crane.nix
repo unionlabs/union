@@ -2,8 +2,9 @@
 { inputs, ... }: {
   perSystem = { self', pkgs, rust, system, lib, dbg, inputs', mkCi, ... }:
     let
-      # crane = builtins.trace (pkgs.lib.generators.toPretty { } inputs.crane ) inputs.crane;
       inherit (inputs) crane;
+
+      inherit (lib) flatten unique;
 
       craneLib = crane.lib.${system}.overrideToolchain rust.toolchains.nightly;
 
@@ -16,11 +17,32 @@
         )
         checks;
 
+      # get the crane metadata out of the Cargo.toml
+      #
+      # [package.metadata.crane]
+      # include      = ["path1", "path2"]
+      # test-include = ["path3", "path4"]
+      getCraneMetadata = toml:
+        assert builtins.isAttrs toml;
+        lib.attrsets.attrByPath [ "package" "metadata" "crane" ] { } toml;
+
+      getExtraIncludes = memberCargoTomls: attr: unique (flatten (map (toml: (getCraneMetadata toml).${attr} or [ ]) (builtins.attrValues memberCargoTomls)));
+
+      # apparently nix doesn't cache calls to builtins.readFile (which importTOML calls internally), so we cache the cargo tomls here
+      # this saves ~2-3 minutes in evaluation time
+      readMemberCargoTomls = members: builtins.listToAttrs (map
+        (dep: lib.attrsets.nameValuePair dep (lib.trivial.importTOML "${root}/${dep}/Cargo.toml"))
+        members
+      );
+
+
       # root of the repository
       root = builtins.path { name = "root"; path = ../../.; };
 
       # read the Cargo.toml from the given crate directory into a nix value.
-      crateCargoToml = dir: assert builtins.isString dir; lib.trivial.importTOML ../../${dir}/Cargo.toml;
+      crateCargoToml = dir:
+        assert builtins.isString dir;
+        lib.trivial.importTOML ../../${dir}/Cargo.toml;
 
       # For use in source filtering; ensures that a directory and all of it's contents are included
       # in the new filtered source.
@@ -59,8 +81,7 @@
             let
               path' = removeRootStorePath path;
             in
-            # first filter down to just the cargo source, and any additional files as specified by
-              # additional[Test]SrcFilter
+            # first filter down to just the cargo source, and any additional files as specified by srcFilter
             ((craneLib.filterCargoSources path type)
               || (srcFilter path' type));
         };
@@ -97,13 +118,16 @@
           # extra environment variables to pass to the derivation.
         , extraEnv ? { }
         }:
-        let
-          cratePname = "${crateInfo.pname}${pnameSuffix}";
-
-          cargoBuildRustToolchain' = lib.throwIf
-            ((buildStdTarget != null) && (cargoBuildRustToolchain != null))
-            "cannot set both buildStdTarget and cargoBuildRustToolchain"
+          assert lib.assertMsg
             (
+              (buildStdTarget != null -> cargoBuildRustToolchain == null)
+              && (cargoBuildRustToolchain != null -> buildStdTarget == null)
+            )
+            "cannot set both buildStdTarget (${toString buildStdTarget}) and cargoBuildRustToolchain (${toString cargoBuildRustToolchain})";
+          let
+            cratePname = "${crateInfo.pname}${pnameSuffix}";
+
+            cargoBuildRustToolchain' =
               if (cargoBuildRustToolchain == null)
               then
                 (
@@ -111,225 +135,218 @@
                   then rust.toolchains.nightly
                   else rust.mkBuildStdToolchain { target = buildStdTarget; }
                 )
-              else cargoBuildRustToolchain
-            );
+              else cargoBuildRustToolchain;
 
-          cargoBuild = craneLib.overrideToolchain cargoBuildRustToolchain';
+            cargoBuild = craneLib.overrideToolchain cargoBuildRustToolchain';
 
-          # gets all the local (i.e. path) dependencies for a crate, recursively.
-          #
-          # note that to make this easier, we define all local dependencies as workspace dependencies.
-          getWorkspaceDeps = dir:
-            # TODO(benluelo): use lib.pipe
-            lib.unique
-              (lib.flatten (lib.mapAttrsToList
-                (name: value:
-                  let
-                    path = workspaceCargoToml.workspace.dependencies.${name}.path;
-                  in
-                  (getWorkspaceDeps path) ++ [ path ])
-                (lib.filterAttrs
-                  (dependency: value:
-                    # dep is a workspace dependency...
-                    value ? workspace
-                    && value.workspace
-                    # ...and that workspace dependency is a path dependency
-                    && workspaceCargoToml.workspace.dependencies.${dependency} ? path
-                    && (builtins.typeOf workspaceCargoToml.workspace.dependencies.${dependency}.path) == "string")
-                  (crateCargoToml dir).dependencies
-                ))) ++ [ dir ];
+            # gets all the local (i.e. path) dependencies for a crate, recursively.
+            #
+            # note that to make this easier, we define all local dependencies as workspace dependencies.
+            getWorkspaceDeps = dir:
+              # TODO(benluelo): use lib.pipe
+              unique
+                (flatten (lib.mapAttrsToList
+                  (name: value:
+                    let
+                      path = workspaceCargoToml.workspace.dependencies.${name}.path;
+                    in
+                    (getWorkspaceDeps path) ++ [ path ])
+                  (lib.filterAttrs
+                    (dependency: value:
+                      # dep is a workspace dependency...
+                      (value.workspace or false)
+                      # ...and that workspace dependency is a path dependency
+                      && (builtins.hasAttr "path" workspaceCargoToml.workspace.dependencies.${dependency}))
+                    (crateCargoToml dir).dependencies
+                  ))) ++ [ dir ];
 
-          workspaceDepsForCrate = getWorkspaceDeps (lib.throwIfNot
-            (builtins.isString crateDirFromRoot)
-            "expected crateDirFromRoot to be a string, but it was a ${builtins.typeOf crateDirFromRoot}: ${crateDirFromRoot}"
-            crateDirFromRoot);
+            workspaceDepsForCrate =
+              assert lib.assertMsg
+                (builtins.isString crateDirFromRoot)
+                "expected crateDirFromRoot to be a string, but it was a ${builtins.typeOf crateDirFromRoot}: ${crateDirFromRoot}";
+              (dbg (getWorkspaceDeps crateDirFromRoot));
 
-          # apparently nix doesn't cache calls to builtins.readFile (which importTOML calls internally), so we cache the cargo tomls here
-          # this saves ~2-3 minutes in evaluation time
-          workspaceDepsForCrateCargoTomls = builtins.listToAttrs (map (dep: lib.attrsets.nameValuePair dep (lib.trivial.importTOML "${root}/${dep}/Cargo.toml")) workspaceDepsForCrate);
-          extraIncludePathsForCrate = dbg (lib.unique (lib.flatten (builtins.map (toml: pkgs.lib.attrsets.attrByPath [ "package" "metadata" "crane" "include" ] [ ] toml) (builtins.attrValues workspaceDepsForCrateCargoTomls))));
-          extraTestIncludePathsForCrate = dbg (lib.unique (lib.flatten (builtins.map (toml: pkgs.lib.attrsets.attrByPath [ "package" "metadata" "crane" "test-include" ] [ ] toml) (builtins.attrValues workspaceDepsForCrateCargoTomls))));
+            workspaceDepsForCrateCargoTomls = readMemberCargoTomls workspaceDepsForCrate;
 
-          crateSrc =
-            let
-              isIncluded = path': builtins.elem path'
-                (
-                  lib.unique
-                    (lib.flatten
-                      (map
-                        (dep: map
-                          (includedPath: "${dep}/${includedPath}")
-                          (pkgs.lib.attrsets.attrByPath
-                            [ "package" "include" ]
-                            [ ]
-                            (workspaceDepsForCrateCargoTomls.${dep})
+            extraIncludePathsForCrate = getExtraIncludes workspaceDepsForCrateCargoTomls "include";
+            extraTestIncludePathsForCrate = getExtraIncludes workspaceDepsForCrateCargoTomls "test-include";
+
+            crateSrc =
+              let
+                isIncluded = path': builtins.elem path'
+                  (
+                    unique
+                      (flatten
+                        (map
+                          (dep: map
+                            (includedPath: "${dep}/${includedPath}")
+                            (lib.attrsets.attrByPath
+                              [ "package" "include" ]
+                              [ ]
+                              (workspaceDepsForCrateCargoTomls.${dep})
+                            )
                           )
-                        )
-                        workspaceDepsForCrate)
-                    )
-                );
-              additionalSrcFilter = path': type: (builtins.any (include: pkgs.lib.hasPrefix include path') extraIncludePathsForCrate);
-              additionalTestSrcFilter = path': type: (builtins.any (include: pkgs.lib.hasPrefix include path') extraTestIncludePathsForCrate);
-            in
-            mkCleanSrc {
-              name = cratePname;
-              srcFilter = path': type: ((additionalSrcFilter path' type)
-                # TODO: only include this filter for tests; maybe by adding to preConfigureHooks?
-                || (additionalTestSrcFilter path' type)
-                || (isIncluded path')
-              )
-              && (
-                path' == "Cargo.toml"
-                  || path' == "Cargo.lock"
-                  || (
-                  builtins.any
-                    (depPath: ensureDirectoryIncluded {
-                      inherit path';
-                      pathToInclude = depPath;
-                    })
-                    workspaceDepsForCrate
-                )
-                  # Yes, this does need to be filtered twice - once in the original filter so it's included
-                  # in the cargo sources, and once again so it's included when filtering down to workspace
-                  # dependencies
-                  || (additionalSrcFilter path' type)
-                  # TODO: Only include this filter for tests; maybe by adding to preConfigureHooks?
-                  || (additionalTestSrcFilter path' type)
+                          workspaceDepsForCrate)
+                      )
+                  );
+                additionalSrcFilter = path': (builtins.any (include: lib.hasPrefix include path') extraIncludePathsForCrate);
+                additionalTestSrcFilter = path': (builtins.any (include: lib.hasPrefix include path') extraTestIncludePathsForCrate);
+              in
+              mkCleanSrc {
+                name = cratePname;
+                srcFilter = path': type: ((additionalSrcFilter path')
+                  # TODO: only include this filter for tests; maybe by adding to preConfigureHooks?
+                  || (additionalTestSrcFilter path')
                   || (isIncluded path')
+                )
+                && (
+                  path' == "Cargo.toml"
+                    || path' == "Cargo.lock"
+                    || (
+                    builtins.any
+                      (depPath: ensureDirectoryIncluded {
+                        inherit path';
+                        pathToInclude = depPath;
+                      })
+                      workspaceDepsForCrate
+                  )
+                    # Yes, this does need to be filtered twice - once in the original filter so it's included
+                    # in the cargo sources, and once again so it's included when filtering down to workspace
+                    # dependencies
+                    || (additionalSrcFilter path')
+                    # TODO: Only include this filter for tests; maybe by adding to preConfigureHooks?
+                    || (additionalTestSrcFilter path')
+                    || (isIncluded path')
+                );
+              };
+
+            # patch the workspace Cargo.toml to only contain the local dependencies required to build this crate.
+            patchedWorkspaceToml =
+              let
+                patchedCargoToml = (pkgs.formats.toml { }).generate
+                  "Cargo.toml"
+                  (lib.recursiveUpdate workspaceCargoToml {
+                    workspace.members = workspaceDepsForCrate;
+                  });
+              in
+              # REVIEW: This can maybe be a runCommand?
+                # I'm not touching it though
+              pkgs.stdenv.mkDerivation {
+                name = "${cratePname}-patched-workspace-cargo-toml";
+                src = crateSrc;
+                buildPhase = ''
+                  cp -r . $out
+                  cp ${patchedCargoToml} $out/Cargo.toml
+                '';
+              };
+
+            crateInfo =
+              let
+                toml = crateCargoToml crateDirFromRoot;
+              in
+              {
+                pname = toml.package.name;
+                version = toml.package.version;
+              };
+
+            packageFilterArg = "-p ${crateInfo.pname}";
+
+            crateAttrs = extraEnv // {
+              inherit (crateInfo) pname version;
+
+              src = patchedWorkspaceToml;
+
+              dummySrc = craneLib.mkDummySrc patchedWorkspaceToml;
+
+              # defaults to "--all-targets" otherwise, which breaks some stuff
+              cargoCheckExtraArgs = "";
+
+              cargoExtraArgs = packageFilterArg;
+
+              buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
+                lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
               );
+
+              cargoVendorDir = craneLib.vendorMultipleCargoDeps {
+                inherit (craneLib.findCargoFiles crateSrc) cargoConfigs;
+                cargoLockList = [
+                  workspaceCargoLockPath
+                ] ++ (lib.optionals (buildStdTarget != null) ([
+                  ./rust-std-Cargo.lock
+                ]));
+              };
+
+              doCheck = cargoBuildCheckPhase != null;
+              PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             };
 
-          # patch the workspace Cargo.toml to only contain the local dependencies required to build this crate.
-          patchedWorkspaceToml =
-            let
-              patchedCargoToml = (pkgs.formats.toml { }).generate
-                "Cargo.toml"
-                (lib.recursiveUpdate workspaceCargoToml {
-                  workspace.members = workspaceDepsForCrate;
-                });
-            in
-            # REVIEW: This can maybe be a runCommand?
-              # I'm not touching it though
-            pkgs.stdenv.mkDerivation {
-              name = "${cratePname}-patched-workspace-cargo-toml";
-              src = crateSrc;
-              buildPhase = ''
-                cp -r . $out
-                cp ${patchedCargoToml} $out/Cargo.toml
-              '';
-            };
+            artifacts = craneLib.buildDepsOnly crateAttrs;
 
-          crateInfo =
-            let
-              toml = crateCargoToml crateDirFromRoot;
-            in
-            {
-              pname = toml.package.name;
-              version = toml.package.version;
-            };
-
-          packageFilterArg = "-p ${crateInfo.pname}";
-
-          crateAttrs = extraEnv // {
-            inherit (crateInfo) pname version;
-
-            # dontUnpack = true;
-
-            src = patchedWorkspaceToml;
-
-            dummySrc = craneLib.mkDummySrc patchedWorkspaceToml;
-
-            # defaults to "--all-targets" otherwise, which breaks some stuff
-            cargoCheckExtraArgs = "";
-
-            # cargoBuildCommand = "${extraEnvStr} cargo build";
-            cargoExtraArgs = packageFilterArg;
-
-            buildInputs = [ pkgs.pkg-config pkgs.openssl ] ++ (
-              lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
-            );
-
-            cargoVendorDir = craneLib.vendorMultipleCargoDeps {
-              inherit (craneLib.findCargoFiles crateSrc) cargoConfigs;
-              cargoLockList = [
-                workspaceCargoLockPath
-              ] ++ (lib.optionals (buildStdTarget != null) ([
-                ./rust-std-Cargo.lock
-              ]));
-            };
-
-            doCheck = cargoBuildCheckPhase != null;
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-          };
-
-          artifacts = craneLib.buildDepsOnly crateAttrs;
-
-          cargoNextestAttrs =
-            builtins.addErrorContext
-              "while evaluating `cargoNextestArgs` for crate `${cratePname}`"
-              (
-                let
-                  crateAttrsWithArtifactsNextest = crateAttrs // {
-                    doNotLinkInheritedArtifacts = true;
-                    cargoArtifacts = artifacts;
-                    buildPhaseCargoCommand = "cargo nextest run ${packageFilterArg}";
-                  };
-                  sharedAttrs = builtins.intersectAttrs crateAttrsWithArtifactsNextest cargoTestExtraAttrs;
-                in
-                lib.throwIfNot
-                  (sharedAttrs == { })
-                  "${
+            cargoNextestAttrs =
+              builtins.addErrorContext
+                "while evaluating `cargoNextestArgs` for crate `${cratePname}`"
+                (
+                  let
+                    crateAttrsWithArtifactsNextest = crateAttrs // {
+                      doNotLinkInheritedArtifacts = true;
+                      cargoArtifacts = artifacts;
+                      buildPhaseCargoCommand = "cargo nextest run ${packageFilterArg}";
+                    };
+                    sharedAttrs = builtins.intersectAttrs crateAttrsWithArtifactsNextest cargoTestExtraAttrs;
+                  in
+                  lib.throwIfNot
+                    (sharedAttrs == { })
+                    "${
                     builtins.concatStringsSep
                     "\n"
-                    (builtins.map
+                    (map
                       (attrName: "cargoTestExtraAttrs is overwriting attribute `${attrName}`")
                       (builtins.attrNames sharedAttrs))
                   }\n\nNOTE: if more configuration is needed, update `crane.buildWorkspaceMember`"
-                  (crateAttrsWithArtifactsNextest // cargoTestExtraAttrs)
-              );
+                    (crateAttrsWithArtifactsNextest // cargoTestExtraAttrs)
+                );
 
-        in
-        {
-          packages.${cratePname} = cargoBuild.buildPackage (
-            crateAttrs // {
-              inherit pnameSuffix;
-              # TODO: -j1
-              cargoExtraArgs = "${packageFilterArg} ${cargoBuildExtraArgs}" + (pkgs.lib.optionalString
-                (buildStdTarget != null)
-                # the leading space is important here!
-                " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget} -j1");
-              RUSTFLAGS = rustflags;
-            } // (pkgs.lib.optionalAttrs (cargoBuildInstallPhase != null) ({
-              installPhaseCommand = cargoBuildInstallPhase;
-            })) // (pkgs.lib.optionalAttrs (cargoBuildCheckPhase != null) ({
-              checkPhase = cargoBuildCheckPhase;
-            })) // (
-              if (buildStdTarget == null)
-              # if we're not building std, then use the same artifacts as clippy & tests
-              then { cargoArtifacts = artifacts; }
-              else { }
-            )
-          );
+          in
+          {
+            packages.${cratePname} = cargoBuild.buildPackage (
+              crateAttrs // {
+                inherit pnameSuffix;
+                cargoExtraArgs = "-j1 ${packageFilterArg} ${cargoBuildExtraArgs}" + (lib.optionalString
+                  (buildStdTarget != null)
+                  # the leading space is important here!
+                  " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}");
+                RUSTFLAGS = rustflags;
+              } // (lib.optionalAttrs (cargoBuildInstallPhase != null) ({
+                installPhaseCommand = cargoBuildInstallPhase;
+              })) // (lib.optionalAttrs (cargoBuildCheckPhase != null) ({
+                checkPhase = cargoBuildCheckPhase;
+              })) // (
+                if (buildStdTarget == null)
+                # if we're not building std, then use the same artifacts as clippy & tests
+                then { cargoArtifacts = artifacts; }
+                else { }
+              )
+            );
 
-          checks = mkChecks "${cratePname}" {
-            clippy = mkCi (system == "x86_64-linux") (craneLib.cargoClippy (crateAttrs // {
-              cargoArtifacts = artifacts;
-              cargoClippyExtraArgs = " -- --deny warnings ${cargoClippyExtraArgs}";
-            }));
-            tests = mkCi (system == "x86_64-linux") (craneLib.cargoNextest cargoNextestAttrs);
+            checks = mkChecks "${cratePname}" {
+              clippy = mkCi (system == "x86_64-linux") (craneLib.cargoClippy (crateAttrs // {
+                cargoArtifacts = artifacts;
+                cargoClippyExtraArgs = " -- --deny warnings ${cargoClippyExtraArgs}";
+              }));
+              tests = mkCi (system == "x86_64-linux") (craneLib.cargoNextest cargoNextestAttrs);
+            };
           };
-        };
 
       allCargoTomls = builtins.listToAttrs (map (dep: lib.attrsets.nameValuePair dep (lib.trivial.importTOML "${root}/${dep}/Cargo.toml")) workspaceCargoToml.workspace.members);
 
       cargoWorkspaceSrc =
         let
-          allIncludes = lib.unique
-            (lib.flatten
+          allIncludes = unique
+            (flatten
               (map
                 (dep: map
                   (includedPath: "${dep}/${includedPath}")
-                  (pkgs.lib.attrsets.attrByPath
+                  (lib.attrsets.attrByPath
                     [ "package" "include" ]
                     [ ]
                     (allCargoTomls.${dep})
@@ -337,44 +354,16 @@
                 )
                 workspaceCargoToml.workspace.members)
             );
-          isIncluded = path': builtins.elem path'
-            (
-              allIncludes
-            );
+
+          allCraneIncludes =
+            unique ((getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "include") ++
+              (getExtraIncludes (readMemberCargoTomls workspaceCargoToml.workspace.members) "test-include"));
         in
         mkCleanSrc {
           name = "cargo-workspace-src";
           srcFilter =
             with { inherit (lib) hasPrefix; };
-            path: _type: (hasPrefix "hubble/src/graphql/" path || hasPrefix ".sqlx" path) ||
-              (hasPrefix "unionvisor/src/testdata/" path) ||
-              (hasPrefix ".sqlx" path) ||
-              (hasPrefix "lib/pg-queue/.sqlx" path) ||
-              (hasPrefix "hubble/src/graphql" path) ||
-              (hasPrefix "lib/poseidon-rs/constants.json" path) ||
-              ((hasPrefix "lib/ethereum-verifier/src/test" path)
-                && (lib.strings.hasSuffix ".json" path)) ||
-              (ensureDirectoryIncluded {
-                path' = path;
-                pathToInclude = "light-clients/ethereum-light-client/src/test";
-              }) ||
-              (isIncluded path) ||
-              (ensureDirectoryIncluded {
-                path' = path;
-                pathToInclude = "light-clients/cometbls-light-client/src/test";
-              }) ||
-              (ensureDirectoryIncluded {
-                path' = path;
-                pathToInclude = "light-clients/tendermint-light-client/src/test";
-              }) ||
-              (ensureDirectoryIncluded {
-                path' = path;
-                pathToInclude = "lib/tendermint-verifier/src/test";
-              }) ||
-              (ensureDirectoryIncluded {
-                path' = path;
-                pathToInclude = "lib/scroll-verifier/tests";
-              });
+            path: _type: builtins.any (x: x) (map (include: hasPrefix include path) (dbg (allCraneIncludes ++ allIncludes)));
         };
     in
     {
@@ -395,7 +384,7 @@
         craneLib.cargoLlvmCov {
           pname = "workspace-cargo-llvm-cov";
           version = "0.0.0";
-          cargoLlvmCovExtraArgs = pkgs.lib.concatStringsSep " " [
+          cargoLlvmCovExtraArgs = lib.concatStringsSep " " [
             "--workspace"
             "--html"
             "--output-dir=$out"
