@@ -1,12 +1,8 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::tendermint::crypto::public_key::PublicKey;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::SimpleValidator, from)]
+#[model(proto(raw(protos::tendermint::types::SimpleValidator), from))]
 pub struct SimpleValidator {
     pub pub_key: PublicKey,
     // REVIEW: is this bounded the same way as Validator?

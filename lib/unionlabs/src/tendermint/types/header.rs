@@ -1,8 +1,7 @@
-use macros::proto;
+use macros::model;
 use prost::Message;
 use protos::google::protobuf::{BytesValue, Int64Value, StringValue};
 use rs_merkle::{algorithms::Sha256, Hasher};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     bounded::{BoundedI64, BoundedIntError},
@@ -14,12 +13,14 @@ use crate::{
         version::consensus::Consensus,
     },
 };
+#[cfg(feature = "ethabi")]
+use crate::{
+    google::protobuf::timestamp::TryFromEthAbiTimestampError,
+    tendermint::types::block_id::TryFromEthAbiBlockIdError,
+};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 // REVIEW: Are all hashes here hex_upper_unprefixed?
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::Header, into, from)]
+#[model(proto(raw(protos::tendermint::types::Header), into, from))]
 pub struct Header {
     /// basic block info
     pub version: Consensus,
@@ -269,11 +270,6 @@ impl TryFrom<protos::tendermint::types::Header> for Header {
 }
 
 #[cfg(feature = "ethabi")]
-impl crate::EthAbi for Header {
-    type EthAbi = contracts::glue::TendermintTypesHeaderData;
-}
-
-#[cfg(feature = "ethabi")]
 impl From<Header> for contracts::glue::TendermintTypesHeaderData {
     fn from(value: Header) -> Self {
         Self {
@@ -296,11 +292,11 @@ impl From<Header> for contracts::glue::TendermintTypesHeaderData {
 }
 
 #[cfg(feature = "ethabi")]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromEthAbiHeaderError {
-    LastBlockId(crate::TryFromEthAbiErrorOf<BlockId>),
+    LastBlockId(TryFromEthAbiBlockIdError),
     Height(BoundedIntError<i64>),
-    Timestamp(crate::TryFromEthAbiErrorOf<Timestamp>),
+    Timestamp(TryFromEthAbiTimestampError),
     LastCommitHash(InvalidLength),
     DataHash(InvalidLength),
     ValidatorsHash(InvalidLength),

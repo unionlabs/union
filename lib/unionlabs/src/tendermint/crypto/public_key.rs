@@ -1,28 +1,23 @@
-use custom_debug_derive::Debug;
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::errors::{required, MissingField};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 // TODO: These are fixed sizes, not arbitrary bytes
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::crypto::PublicKey, into, from)]
+#[model(proto(raw(protos::tendermint::crypto::PublicKey), into, from))]
 pub enum PublicKey {
     Ed25519(
         #[serde(with = "::serde_utils::hex_string")]
-        #[debug(with = "::serde_utils::fmt::hex")]
+        #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         Vec<u8>,
     ),
     Secp256k1(
         #[serde(with = "::serde_utils::hex_string")]
-        #[debug(with = "::serde_utils::fmt::hex")]
+        #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         Vec<u8>,
     ),
     Bn254(
         #[serde(with = "::serde_utils::hex_string")]
-        #[debug(with = "::serde_utils::fmt::hex")]
+        #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         Vec<u8>,
     ),
 }

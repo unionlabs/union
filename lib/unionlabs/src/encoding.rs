@@ -1,8 +1,5 @@
 use core::fmt::Debug;
 
-#[cfg(feature = "ethabi")]
-use crate::{IntoEthAbi, TryFromEthAbi, TryFromEthAbiBytesError, TryFromEthAbiErrorOf};
-
 pub trait Encoding {}
 
 pub enum EthAbi {}
@@ -22,25 +19,6 @@ pub trait Decode<Enc: Encoding>: Sized {
 }
 
 pub type DecodeErrorOf<Enc, T> = <T as Decode<Enc>>::Error;
-
-#[cfg(feature = "ethabi")]
-impl<T: IntoEthAbi> Encode<EthAbi> for T {
-    fn encode(self) -> Vec<u8> {
-        self.into_eth_abi_bytes()
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl<T: TryFromEthAbi> Decode<EthAbi> for T
-where
-    TryFromEthAbiBytesError<TryFromEthAbiErrorOf<T>>: Debug,
-{
-    type Error = TryFromEthAbiBytesError<TryFromEthAbiErrorOf<T>>;
-
-    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-        T::try_from_eth_abi_bytes(bytes)
-    }
-}
 
 pub trait EncodeAs {
     fn encode_as<Enc: Encoding>(self) -> Vec<u8>

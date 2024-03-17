@@ -1,20 +1,15 @@
-use custom_debug_derive::Debug;
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{errors::InvalidLength, uint::U256};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::Proof, into, from)]
+#[model(proto(raw(protos::union::ibc::lightclients::ethereum::v1::Proof), into, from))]
 pub struct Proof {
     #[serde(with = "crate::uint::u256_big_endian_hex")]
     pub key: U256,
     #[serde(with = "crate::uint::u256_big_endian_hex")]
     pub value: U256,
     #[serde(with = "::serde_utils::hex_string_list")]
-    #[debug(with = "::serde_utils::fmt::hex_list")]
+    #[debug(wrap = ::serde_utils::fmt::DebugListAsHex)]
     pub proof: Vec<Vec<u8>>,
 }
 

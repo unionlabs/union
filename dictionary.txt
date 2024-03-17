@@ -681,6 +681,7 @@ pxplusqx
 pxqx
 pxrx
 qemq
+qself
 qxpx
 qxrx
 qypy
@@ -896,6 +897,7 @@ unprefixed
 unsetting
 unshifted
 unstorage
+unsuffixed
 unvalidated
 unwithdrawn
 upgradability

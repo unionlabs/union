@@ -1,12 +1,8 @@
 use core::num::NonZeroU64;
 
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::lightclients::tendermint::v1::Fraction, into, from)]
+#[model(proto(raw(protos::ibc::lightclients::tendermint::v1::Fraction), into, from))]
 pub struct Fraction {
     pub numerator: u64,
     pub denominator: NonZeroU64,

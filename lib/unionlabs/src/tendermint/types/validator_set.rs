@@ -1,15 +1,11 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     errors::{required, MissingField},
     tendermint::types::validator::{TryFromValidatorError, Validator},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::ValidatorSet, into, from)]
+#[model(proto(raw(protos::tendermint::types::ValidatorSet), into, from))]
 pub struct ValidatorSet {
     pub validators: Vec<Validator>,
     pub proposer: Validator,

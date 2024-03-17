@@ -1,14 +1,17 @@
 use core::str::FromStr;
 
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::id::PortId;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::channel::v1::Counterparty, into, from)]
+#[model(
+    proto(raw(protos::ibc::core::channel::v1::Counterparty), into, from),
+    ethabi(
+        raw(contracts::ibc_handler::IbcCoreChannelV1CounterpartyData),
+        into,
+        from
+    )
+)]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: String,
@@ -27,8 +30,6 @@ impl From<Counterparty> for protos::ibc::core::channel::v1::Counterparty {
 pub enum TryFromChannelCounterpartyError {
     #[error("error parsing port id")]
     PortId(#[source] <PortId as FromStr>::Err),
-    // #[error("error parsing channel id")]
-    // ChannelId(#[source] <ChannelId as FromStr>::Err),
 }
 
 impl TryFrom<protos::ibc::core::channel::v1::Counterparty> for Counterparty {
@@ -60,13 +61,11 @@ impl From<Counterparty> for contracts::ibc_handler::IbcCoreChannelV1Counterparty
 pub enum TryFromEthAbiChannelCounterpartyError {
     #[error("error parsing port id")]
     PortId(#[source] <PortId as FromStr>::Err),
-    // #[error("error parsing channel id")]
-    // ChannelId(#[source] <ChannelId as FromStr>::Err),
 }
 
 #[cfg(feature = "ethabi")]
 impl TryFrom<contracts::ibc_handler::IbcCoreChannelV1CounterpartyData> for Counterparty {
-    type Error = TryFromChannelCounterpartyError;
+    type Error = TryFromEthAbiChannelCounterpartyError;
 
     fn try_from(
         value: contracts::ibc_handler::IbcCoreChannelV1CounterpartyData,
@@ -75,13 +74,8 @@ impl TryFrom<contracts::ibc_handler::IbcCoreChannelV1CounterpartyData> for Count
             port_id: value
                 .port_id
                 .parse()
-                .map_err(TryFromChannelCounterpartyError::PortId)?,
+                .map_err(TryFromEthAbiChannelCounterpartyError::PortId)?,
             channel_id: value.channel_id,
         })
     }
-}
-
-#[cfg(feature = "ethabi")]
-impl crate::EthAbi for Counterparty {
-    type EthAbi = contracts::ibc_handler::IbcCoreChannelV1CounterpartyData;
 }

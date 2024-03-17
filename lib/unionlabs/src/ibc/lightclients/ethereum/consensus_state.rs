@@ -1,12 +1,12 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{bls::BlsPublicKey, errors::InvalidLength, hash::H256};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::ConsensusState, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::ConsensusState),
+    into,
+    from
+))]
 pub struct ConsensusState {
     // REVIEW: Remove this field as this height is what is used to query the consensus state?
     pub slot: u64,

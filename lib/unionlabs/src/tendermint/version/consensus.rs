@@ -1,10 +1,7 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
-#[derive(Debug, Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::version::Consensus, into, from)]
+#[derive(Default)]
+#[model(proto(raw(protos::tendermint::version::Consensus), into, from))]
 pub struct Consensus {
     #[serde(with = "::serde_utils::string")]
     pub block: u64,
@@ -49,9 +46,4 @@ impl From<Consensus> for contracts::glue::TendermintVersionConsensusData {
             app: value.app,
         }
     }
-}
-
-#[cfg(feature = "ethabi")]
-impl crate::EthAbi for Consensus {
-    type EthAbi = contracts::glue::TendermintVersionConsensusData;
 }

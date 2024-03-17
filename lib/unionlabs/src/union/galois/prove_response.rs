@@ -1,5 +1,4 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
@@ -7,10 +6,7 @@ use crate::{
     union::galois::zero_knowledge_proof::ZeroKnowledgeProof,
 };
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::galois::api::v2::ProveResponse, into, from)]
+#[model(proto(raw(protos::union::galois::api::v2::ProveResponse), into, from))]
 pub struct ProveResponse {
     pub proof: ZeroKnowledgeProof,
     pub trusted_validator_set_root: H256,

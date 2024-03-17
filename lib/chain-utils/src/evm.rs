@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64, ops::Div, str::FromStr, sync::Arc};
+use std::{fmt::Debug, marker::PhantomData, num::NonZeroU64, ops::Div, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
@@ -35,14 +35,10 @@ use unionlabs::{
     ethereum::config::ChainSpec,
     hash::{H160, H256},
     ibc::{
-        core::{
-            channel::channel::Channel,
-            client::height::{Height, IsHeight},
-            connection::connection_end::ConnectionEnd,
-        },
+        core::client::height::{Height, IsHeight},
         lightclients::{ethereum, tendermint::fraction::Fraction},
     },
-    id::{ChannelId, ClientId, ConnectionId, PortId},
+    id::{ChannelId, ClientId, PortId},
     option_unwrap, promote,
     proof::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
@@ -50,7 +46,6 @@ use unionlabs::{
     },
     traits::{Chain, ClientState, ClientStateOf, ConsensusStateOf, FromStrExact},
     uint::U256,
-    EmptyString, TryFromEthAbiErrorOf,
 };
 
 use crate::{private_key::PrivateKey, Pool};
@@ -75,7 +70,6 @@ pub struct Config {
     pub ibc_handler_address: H160,
 
     /// The signer that will be used to submit transactions by voyager.
-    #[serde(default)]
     pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
 
     /// The RPC endpoint for the execution chain.
@@ -527,36 +521,6 @@ impl<C: ChainSpec> Evm<C> {
 
 pub type EvmClientId = ClientId;
 
-// TODO: Don't use debug here, instead impl Error for all error types
-#[derive(Debug, thiserror::Error)]
-pub enum EvmEventSourceError {
-    #[error(transparent)]
-    Contract(#[from] ContractError<Provider<Ws>>),
-    #[error("channel `{channel_id}/{port_id}` not found")]
-    ChannelNotFound { port_id: String, channel_id: String },
-    #[error("{0:?}")]
-    ChannelConversion(TryFromEthAbiErrorOf<Channel>),
-    #[error("channel `{connection_id}` not found")]
-    ConnectionNotFound { connection_id: String },
-    #[error("{0:?}")]
-    ConnectionConversion(TryFromEthAbiErrorOf<ConnectionEnd<EvmClientId, String>>),
-    // this is a mess, should be cleaned up
-    #[error("{0:?}")]
-    ConnectionOpenInitConnectionConversion(
-        TryFromEthAbiErrorOf<ConnectionEnd<EvmClientId, String, EmptyString>>,
-    ),
-    #[error(transparent)]
-    ClientIdParse(<ClientId as FromStr>::Err),
-    #[error(transparent)]
-    ConnectionIdParse(<ConnectionId as FromStr>::Err),
-    #[error(transparent)]
-    ChannelIdParse(<ChannelId as FromStr>::Err),
-    #[error(transparent)]
-    PortIdParse(<PortId as FromStr>::Err),
-    #[error(transparent)]
-    EthAbi(#[from] ethers::core::abi::Error),
-}
-
 /// Many contract calls return some form of [`(bool, T)`] as a way to emulate nullable/[`Option`].
 /// This trait allows for easy conversion from the aforementioned tuple to an [`Option`].
 pub trait TupleToOption {
@@ -785,8 +749,6 @@ where
     ClientStateOf<Tr>: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
     Tr::SelfClientState: Decode<EthAbi>,
     Tr::SelfClientState: Decode<EthAbi>,
-    Tr::SelfClientState: unionlabs::EthAbi,
-    <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
     type EthCall = GetClientStateCall;
 
@@ -806,8 +768,6 @@ impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr>
 where
     ConsensusStateOf<Tr>: Decode<EthAbi>,
     Tr::SelfClientState: Decode<EthAbi>,
-    Tr::SelfClientState: unionlabs::EthAbi,
-    <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
     type EthCall = GetConsensusStateCall;
 

@@ -1,35 +1,33 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 use ssz_types::BitVector;
 use tree_hash::TreeHash;
 
 use crate::{bls::BlsSignature, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 
-#[derive(Clone, PartialEq, Deserialize, Serialize, ssz::Encode, ssz::Decode, TreeHash)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::SyncAggregate, into, from)]
+#[derive(ssz::Encode, ssz::Decode, TreeHash)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::SyncAggregate),
+    into,
+    from
+))]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct SyncAggregate<C: SYNC_COMMITTEE_SIZE> {
     // TODO: Change debug print for this type in ssz_types
+    #[debug("BitVector({})", sync_committee_bits.iter().map(|b| if b { '1' } else { '0' }).collect::<String>())]
     pub sync_committee_bits: BitVector<C::SYNC_COMMITTEE_SIZE>,
     pub sync_committee_signature: BlsSignature,
 }
 
-impl<C: SYNC_COMMITTEE_SIZE + core::fmt::Debug> core::fmt::Debug for SyncAggregate<C> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("SyncAggregate")
-            .field(
-                "sync_committee_bits",
-                &self
-                    .sync_committee_bits
-                    .iter()
-                    .map(|b| if b { '1' } else { '0' })
-                    .collect::<String>(),
-            )
-            .field("sync_committee_signature", &self.sync_committee_signature)
-            .finish()
-    }
-}
+// pub fn bit_vector_debug<N: Unsigned + Clone>(
+//     bv: &BitVector<N>,
+//     f: &mut fmt::Formatter,
+// ) -> fmt::Result {
+//     for b in bv.iter() {
+//         write!(f, "BitVector({})", if b { '1' } else { '0' })?;
+//     }
+
+//     Ok(())
+// }
 
 impl<C: SYNC_COMMITTEE_SIZE> From<SyncAggregate<C>>
     for protos::union::ibc::lightclients::ethereum::v1::SyncAggregate

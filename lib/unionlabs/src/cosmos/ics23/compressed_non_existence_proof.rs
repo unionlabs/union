@@ -1,5 +1,4 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     cosmos::ics23::compressed_existence_proof::{
@@ -8,12 +7,14 @@ use crate::{
     errors::MissingField,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::CompressedNonExistenceProof, into, from)]
+#[model(proto(
+    raw(protos::cosmos::ics23::v1::CompressedNonExistenceProof),
+    into,
+    from
+))]
 pub struct CompressedNonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub key: Vec<u8>,
     pub left: Option<CompressedExistenceProof>,
     pub right: Option<CompressedExistenceProof>,

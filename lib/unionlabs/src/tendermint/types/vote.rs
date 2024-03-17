@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 
 use crate::{
     bounded::{BoundedI32, BoundedI64},
@@ -7,7 +7,7 @@ use crate::{
     tendermint::types::{block_id::BlockId, signed_msg_type::SignedMsgType},
 };
 
-#[proto(raw = protos::tendermint::types::Vote, from)]
+#[model(proto(raw(protos::tendermint::types::Vote), from))]
 pub struct Vote {
     pub ty: SignedMsgType,
     pub height: BoundedI64<0, { i64::MAX }>,

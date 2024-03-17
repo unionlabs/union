@@ -1,9 +1,10 @@
 use core::str::FromStr;
 
 use frame_support_procedural::DebugNoBound;
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
+#[cfg(feature = "ethabi")]
+use crate::ibc::core::connection::counterparty::TryFromEthAbiConnectionCounterpartyError;
 use crate::{
     errors::{required, MissingField, UnknownEnumVariant},
     ibc::core::connection::{
@@ -15,24 +16,19 @@ use crate::{
     traits::Id,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    bound(
-        serialize = "
-            ClientId: Id,
-            CounterpartyClientId: Id,
-            CounterpartyConnectionId: Id,
-        ",
-        deserialize = "
-            ClientId: Id,
-            CounterpartyClientId: Id,
-            CounterpartyConnectionId: Id,
-        ",
-    ),
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::connection::v1::ConnectionEnd, into, from)]
+#[model(proto(raw(protos::ibc::core::connection::v1::ConnectionEnd), into, from))]
+#[serde(bound(
+    serialize = "
+        ClientId: Id,
+        CounterpartyClientId: Id,
+        CounterpartyConnectionId: Id,
+    ",
+    deserialize = "
+        ClientId: Id,
+        CounterpartyClientId: Id,
+        CounterpartyConnectionId: Id,
+    ",
+))]
 pub struct ConnectionEnd<
     ClientId: Id,
     CounterpartyClientId: Id,
@@ -118,7 +114,7 @@ pub enum TryFromEthAbiConnectionEndError<
     Version(UnknownEnumVariant<String>),
     State(UnknownEnumVariant<u8>),
     Counterparty(
-        crate::TryFromEthAbiErrorOf<Counterparty<CounterpartyClientId, CounterpartyConnectionId>>,
+        TryFromEthAbiConnectionCounterpartyError<CounterpartyClientId, CounterpartyConnectionId>,
     ),
 }
 
@@ -173,11 +169,4 @@ impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
             delay_period: val.delay_period,
         }
     }
-}
-
-#[cfg(feature = "ethabi")]
-impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id> crate::EthAbi
-    for ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>
-{
-    type EthAbi = contracts::ibc_handler::IbcCoreConnectionV1ConnectionEndData;
 }

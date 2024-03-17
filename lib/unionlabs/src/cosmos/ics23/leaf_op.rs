@@ -1,23 +1,20 @@
 use alloc::borrow::Cow;
 
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     cosmos::ics23::{hash_op::HashOp, length_op::LengthOp},
     errors::UnknownEnumVariant,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::LeafOp, into, from)]
+#[model(proto(raw(protos::cosmos::ics23::v1::LeafOp), into, from))]
 pub struct LeafOp {
     pub hash: HashOp,
     pub prehash_key: HashOp,
     pub prehash_value: HashOp,
     pub length: LengthOp,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     #[cfg_attr(feature = "arbitrary", arbitrary(with = crate::arbitrary_cow_static))]
     pub prefix: Cow<'static, [u8]>,
 }

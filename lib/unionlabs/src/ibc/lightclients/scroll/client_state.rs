@@ -1,15 +1,15 @@
 use core::{fmt::Debug, str::FromStr};
 
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 use uint::FromDecStrErr;
 
 use crate::{errors::InvalidLength, hash::H160, ibc::core::client::height::Height, uint::U256};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::scroll::v1::ClientState, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::scroll::v1::ClientState),
+    into,
+    from
+))]
 pub struct ClientState {
     pub l1_client_id: String,
     pub chain_id: U256,

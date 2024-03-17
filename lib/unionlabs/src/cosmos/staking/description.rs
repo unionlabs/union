@@ -1,9 +1,6 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[proto(raw = protos::cosmos::staking::v1beta1::Description, into, from)]
+#[model(proto(raw(protos::cosmos::staking::v1beta1::Description), into, from))]
 pub struct Description {
     /// moniker defines a human-readable name for the validator.
     pub moniker: String,

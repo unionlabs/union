@@ -430,39 +430,50 @@ pub mod bitvec_string {
 
 pub mod fmt {
     use core::fmt::Display;
-    use std::fmt::Write;
+    use std::{fmt::Write, marker::PhantomData};
 
-    use bitvec::{order::BitOrder, view::AsBits};
+    use bitvec::{order::BitOrder, store::BitStore, view::AsBits};
 
     use crate::to_hex;
 
-    pub fn hex<T: AsRef<[u8]>>(data: &T, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}", to_hex(data))
+    pub struct DebugAsHex<T>(pub T);
+    impl<T: AsRef<[u8]>> core::fmt::Debug for DebugAsHex<T> {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            write!(f, "{}", to_hex(&self.0))
+        }
     }
 
-    #[allow(clippy::ptr_arg)] // signature required by custom_debug_derive
-    pub fn hex_list<T: AsRef<[u8]>>(
-        data: &Vec<T>,
-        f: &mut core::fmt::Formatter,
-    ) -> core::fmt::Result {
-        struct DebugAsHex<T>(T);
+    pub struct DebugListAsHex<I>(pub I);
+    impl<I> core::fmt::Debug for DebugListAsHex<I>
+    where
+        I: IntoIterator + Copy,
+        I::Item: AsRef<[u8]>,
+    {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            f.debug_list()
+                .entries(self.0.into_iter().map(DebugAsHex::<I::Item>))
+                .finish()
+        }
+    }
 
-        impl<T: AsRef<[u8]>> core::fmt::Debug for DebugAsHex<T> {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{}", to_hex(&self.0))
+    pub struct DebugBits<A: AsBits<B>, B: BitStore, O: BitOrder>(
+        pub A,
+        PhantomData<fn() -> (B, O)>,
+    );
+    impl<A: AsBits<B>, B: BitStore, O: BitOrder> DebugBits<A, B, O> {
+        pub fn new(a: A) -> Self {
+            Self(a, PhantomData)
+        }
+    }
+    impl<A: AsBits<B>, B: BitStore, O: BitOrder> core::fmt::Debug for DebugBits<A, B, O> {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            for bit in self.0.as_bits::<O>().iter().by_refs() {
+                // REVIEW: Is string literal or char more efficient?
+                f.write_char(if *bit { '1' } else { '0' })?
             }
+
+            Ok(())
         }
-
-        f.debug_list().entries(data.iter().map(DebugAsHex)).finish()
-    }
-
-    pub fn bits<B: BitOrder>(bitmap: &Vec<u8>, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        for bit in bitmap.as_bits::<B>().iter().by_refs() {
-            // REVIEW: Is string literal or char more efficient?
-            f.write_char(if *bit { '1' } else { '0' })?
-        }
-
-        Ok(())
     }
 
     pub fn display<T: Display>(t: &T, f: &mut std::fmt::Formatter) -> std::fmt::Result {

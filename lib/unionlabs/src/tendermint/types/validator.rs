@@ -1,5 +1,4 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     bounded::{BoundedI64, BoundedIntError},
@@ -8,10 +7,7 @@ use crate::{
     tendermint::crypto::public_key::{PublicKey, TryFromPublicKeyError},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::Validator, into, from)]
+#[model(proto(raw(protos::tendermint::types::Validator), into, from))]
 pub struct Validator {
     #[serde(with = "::serde_utils::hex_upper_unprefixed")]
     pub address: H160,

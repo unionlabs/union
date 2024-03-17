@@ -1,5 +1,4 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     errors::{required, MissingField},
@@ -11,10 +10,12 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::Header, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::Header),
+    into,
+    from
+))]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct Header<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub trusted_sync_committee: TrustedSyncCommittee<C>,
     pub consensus_update: LightClientUpdate<C>,

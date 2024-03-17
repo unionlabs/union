@@ -1,6 +1,7 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
+#[cfg(feature = "ethabi")]
+use crate::google::protobuf::timestamp::TryFromEthAbiTimestampError;
 use crate::{
     errors::{required, InvalidLength, MissingField, UnknownEnumVariant},
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
@@ -8,15 +9,7 @@ use crate::{
     tendermint::types::block_id_flag::BlockIdFlag,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::CommitSig, into, from)]
+#[model(proto(raw(protos::tendermint::types::CommitSig), into, from))]
 pub enum CommitSig {
     Absent,
     Commit {
@@ -65,16 +58,11 @@ impl From<CommitSig> for protos::tendermint::types::CommitSig {
 }
 
 #[cfg(feature = "ethabi")]
-impl crate::EthAbi for CommitSig {
-    type EthAbi = contracts::glue::TendermintTypesCommitSigData;
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromEthAbiCommitSigError {
     BlockIdFlag(UnknownEnumVariant<u8>),
     ValidatorAddress(crate::errors::InvalidLength),
-    Timestamp(crate::TryFromEthAbiErrorOf<Timestamp>),
+    Timestamp(TryFromEthAbiTimestampError),
     Signature(InvalidLength),
     UnknownBlockIdFlag,
     AbsentWithValidatorAddress,

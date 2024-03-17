@@ -1,5 +1,4 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     cosmos::ics23::{
@@ -9,15 +8,7 @@ use crate::{
     errors::{required, MissingField},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::BatchEntry, into, from)]
+#[model(proto(raw(protos::cosmos::ics23::v1::BatchEntry), into, from))]
 pub enum BatchEntry {
     Exist(ExistenceProof),
     Nonexist(NonExistenceProof),

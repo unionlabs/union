@@ -26,6 +26,7 @@ use queue_msg::{
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
+    encoding::{DecodeAs, EthAbi},
     ethereum::config::ChainSpec,
     events::{
         AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
@@ -42,7 +43,6 @@ use unionlabs::{
     },
     proof::{ChannelEndPath, ConnectionPath},
     traits::{Chain, ChainIdOf, ClientIdOf, HeightOf},
-    TryFromEthAbi,
 };
 
 use crate::{
@@ -250,11 +250,10 @@ where
 
                             dbg!(hex::encode(&client_state));
 
-                            let client_state =
-                                cometbls::client_state::ClientState::try_from_eth_abi_bytes(
-                                    &client_state,
-                                )
-                                .unwrap();
+                            let client_state = cometbls::client_state::ClientState::decode_as::<
+                                EthAbi,
+                            >(&client_state)
+                            .unwrap();
 
                             data(Identified::<Evm<C>, _>::new(
                                 c.chain_id(),
@@ -293,11 +292,10 @@ where
 
                             dbg!(hex::encode(&client_state));
 
-                            let client_state =
-                                cometbls::client_state::ClientState::try_from_eth_abi_bytes(
-                                    &client_state,
-                                )
-                                .unwrap();
+                            let client_state = cometbls::client_state::ClientState::decode_as::<
+                                EthAbi,
+                            >(&client_state)
+                            .unwrap();
 
                             data(Identified::<Evm<C>, _>::new(
                                 c.chain_id(),

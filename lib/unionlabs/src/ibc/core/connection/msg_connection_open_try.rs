@@ -1,6 +1,4 @@
-use core::fmt::Debug;
-
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -11,30 +9,25 @@ use crate::{
     traits::Id,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    bound(
-        serialize = "
-            ClientId: Serialize,
-            CounterpartyClientId: Serialize,
-            ClientState: Serialize,
-            ProofInit: Serialize,
-            ProofClient: Serialize,
-            ProofConsensus: Serialize,
-        ",
-        deserialize = "
-            ClientId: for<'d> Deserialize<'d>,
-            CounterpartyClientId: for<'d> Deserialize<'d>,
-            ClientState: for<'d> Deserialize<'d>,
-            ProofInit: for<'d> Deserialize<'d>,
-            ProofClient: for<'d> Deserialize<'d>,
-            ProofConsensus: for<'d> Deserialize<'d>,
-        ",
-    ),
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::connection::v1::MsgConnectionOpenTry)]
+#[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenTry)))]
+#[serde(bound(
+    serialize = "
+        ClientId: Serialize,
+        CounterpartyClientId: Serialize,
+        ClientState: Serialize,
+        ProofInit: Serialize,
+        ProofClient: Serialize,
+        ProofConsensus: Serialize,
+    ",
+    deserialize = "
+        ClientId: for<'d> Deserialize<'d>,
+        CounterpartyClientId: for<'d> Deserialize<'d>,
+        ClientState: for<'d> Deserialize<'d>,
+        ProofInit: for<'d> Deserialize<'d>,
+        ProofClient: for<'d> Deserialize<'d>,
+        ProofConsensus: for<'d> Deserialize<'d>,
+    ",
+))]
 pub struct MsgConnectionOpenTry<
     ClientState,
     ClientId: Id,

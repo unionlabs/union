@@ -1,6 +1,7 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
+#[cfg(feature = "ethabi")]
+use crate::ibc::core::channel::counterparty::TryFromEthAbiChannelCounterpartyError;
 use crate::{
     errors::{required, MissingField, UnknownEnumVariant},
     ibc::core::channel::{
@@ -12,10 +13,10 @@ use crate::{
     validated::{Validate, ValidateT},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::channel::v1::Channel, into, from)]
+#[model(
+    proto(raw(protos::ibc::core::channel::v1::Channel), into, from),
+    ethabi(raw(contracts::ibc_handler::IbcCoreChannelV1ChannelData), into, from)
+)]
 pub struct Channel {
     pub state: State,
     pub ordering: Order,
@@ -93,7 +94,7 @@ impl From<Channel> for contracts::ibc_handler::IbcCoreChannelV1ChannelData {
 pub enum TryFromEthAbiChannelError {
     State(UnknownEnumVariant<u8>),
     Ordering(UnknownEnumVariant<u8>),
-    Counterparty(crate::TryFromEthAbiErrorOf<Counterparty>),
+    Counterparty(TryFromEthAbiChannelCounterpartyError),
     ConnectionHops(<ConnectionIdValidator as Validate<String>>::Error),
 }
 
@@ -126,9 +127,4 @@ impl TryFrom<contracts::ibc_handler::IbcCoreChannelV1ChannelData> for Channel {
             version: value.version,
         })
     }
-}
-
-#[cfg(feature = "ethabi")]
-impl crate::EthAbi for Channel {
-    type EthAbi = contracts::ibc_handler::IbcCoreChannelV1ChannelData;
 }

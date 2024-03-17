@@ -1,5 +1,4 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     bounded::{BoundedI32, BoundedIntError},
@@ -7,14 +6,13 @@ use crate::{
     errors::{required, MissingField},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::CompressedExistenceProof, into, from)]
+#[model(proto(raw(protos::cosmos::ics23::v1::CompressedExistenceProof), into, from))]
 pub struct CompressedExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub key: Vec<u8>,
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub value: Vec<u8>,
     pub leaf: LeafOp,
     // these are indexes into an array, hence non-negative

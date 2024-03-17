@@ -1,18 +1,17 @@
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 use ssz::{Decode, Encode};
 use ssz_types::{fixed_vector, FixedVector};
 use tree_hash::TreeHash;
 
 use crate::{bls::BlsPublicKey, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 
-#[derive(
-    CloneNoBound, DebugNoBound, PartialEqNoBound, Encode, Decode, TreeHash, Serialize, Deserialize,
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::SyncCommittee, into, from)]
+#[derive(Encode, Decode, TreeHash)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::SyncCommittee),
+    into,
+    from
+))]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct SyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     #[serde(with = "::serde_utils::hex_string_list")]
     pub pubkeys: FixedVector<BlsPublicKey, C::SYNC_COMMITTEE_SIZE>,

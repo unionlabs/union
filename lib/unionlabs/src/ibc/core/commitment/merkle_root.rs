@@ -1,7 +1,6 @@
 #[cfg(feature = "ethabi")]
 use contracts::glue::IbcCoreCommitmentV1MerkleRootData;
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{errors::InvalidLength, hash::H256};
 
@@ -12,10 +11,7 @@ use crate::{errors::InvalidLength, hash::H256};
 //         ethers_contract_derive::EthAbiCodec
 //     )
 // )]
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::commitment::v1::MerkleRoot, into, from)]
+#[model(proto(raw(protos::ibc::core::commitment::v1::MerkleRoot), into, from))]
 pub struct MerkleRoot {
     pub hash: H256,
 }

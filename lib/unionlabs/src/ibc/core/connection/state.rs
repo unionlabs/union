@@ -1,7 +1,7 @@
 use crate::macros::wrapper_enum;
 
 wrapper_enum! {
-    #[proto(protos::ibc::core::connection::v1::State)]
+    #[model(proto(protos::ibc::core::connection::v1::State))]
     pub enum State {
         /// Default State
         UninitializedUnspecified = 0,

@@ -189,67 +189,11 @@ pub mod test_utils {
 }
 
 #[cfg(feature = "ethabi")]
-pub trait EthAbi {
-    type EthAbi: ethers_core::abi::AbiEncode + ethers_core::abi::AbiDecode;
-}
-
-#[cfg(feature = "ethabi")]
-pub trait IntoEthAbi: EthAbi + Into<Self::EthAbi> {
-    fn into_eth_abi(self) -> Self::EthAbi {
-        self.into()
-    }
-
-    fn into_eth_abi_bytes(self) -> Vec<u8> {
-        ethers_core::abi::AbiEncode::encode(self.into())
-    }
-}
-
-#[cfg(feature = "ethabi")]
-pub trait FromEthAbi: EthAbi + From<Self::EthAbi> {
-    fn from_eth_abi(proto: Self::EthAbi) -> Self {
-        proto.into()
-    }
-
-    fn from_eth_abi_bytes(bytes: &[u8]) -> Result<Self, ethers_core::abi::AbiError> {
-        <Self::EthAbi as ethers_core::abi::AbiDecode>::decode(bytes).map(Into::into)
-    }
-}
-
-#[cfg(feature = "ethabi")]
 #[derive(Debug)]
 pub enum TryFromEthAbiBytesError<E> {
     TryFromEthAbi(E),
     Decode(ethers_core::abi::AbiError),
 }
-
-#[cfg(feature = "ethabi")]
-pub type TryFromEthAbiErrorOf<T> = <T as TryFrom<<T as EthAbi>::EthAbi>>::Error;
-
-#[cfg(feature = "ethabi")]
-pub trait TryFromEthAbi: EthAbi + TryFrom<Self::EthAbi> {
-    fn try_from_eth_abi(proto: Self::EthAbi) -> Result<Self, TryFromEthAbiErrorOf<Self>> {
-        proto.try_into()
-    }
-
-    fn try_from_eth_abi_bytes(
-        bytes: &[u8],
-    ) -> Result<Self, TryFromEthAbiBytesError<TryFromEthAbiErrorOf<Self>>> {
-        <Self::EthAbi as ethers_core::abi::AbiDecode>::decode(bytes)
-            .map_err(TryFromEthAbiBytesError::Decode)
-            .and_then(|proto| {
-                proto
-                    .try_into()
-                    .map_err(TryFromEthAbiBytesError::TryFromEthAbi)
-            })
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl<T> IntoEthAbi for T where T: EthAbi + Into<T::EthAbi> {}
-#[cfg(feature = "ethabi")]
-impl<T> FromEthAbi for T where T: EthAbi + From<T::EthAbi> {}
-#[cfg(feature = "ethabi")]
-impl<T> TryFromEthAbi for T where T: EthAbi + TryFrom<T::EthAbi> {}
 
 /// Due to the broken eth abi rust library, some structures with dynamically
 /// sized types are incorrectly encoded (missing a dynamic tuple wrapper)
@@ -460,6 +404,7 @@ pub trait ByteArrayExt<const N: usize> {
     /// Slice into an array at `FROM..(FROM + LEN)`, returning an array of length `LEN`. This will fail to compile if the equivalent slicing would panic at runtime.
     ///
     /// ```compile_fail
+    /// # use unionlabs::ByteArrayExt;
     /// let arr = [1, 2, 3, 4, 5];
     ///
     /// // attempt to read `arr[4..(4 + 2)]`
@@ -467,6 +412,7 @@ pub trait ByteArrayExt<const N: usize> {
     /// ```
     ///
     /// ```rust
+    /// # use unionlabs::ByteArrayExt;
     /// # let arr = [1, 2, 3, 4, 5];
     /// // checked at compile time!
     /// assert_eq!(arr.array_slice::<0, 2>(), [1, 2]);
@@ -491,4 +437,272 @@ fn array_slice() {
     assert_eq!(arr.array_slice::<4, 1>(), [5]);
     assert_eq!(arr.array_slice::<0, 0>(), [0; 0]);
     assert_eq!(arr.array_slice::<5, 0>(), [0; 0]);
+}
+
+#[cfg(test)]
+mod debug {
+    fn debug<T: core::fmt::Debug>(t: T) -> String {
+        format!("{t:?}")
+    }
+
+    mod structs {
+        use core::marker::PhantomData;
+
+        use super::debug;
+
+        #[test]
+        fn empty() {
+            #[derive(::macros::Debug)]
+            struct T;
+
+            assert_eq!(debug(T), "T");
+        }
+
+        #[test]
+        fn field_named_nested() {
+            #[derive(::macros::Debug)]
+            struct T {
+                #[debug("{}", serde_utils::to_hex(&field.field))]
+                field: Inner,
+            }
+
+            struct Inner {
+                field: Vec<u8>,
+            }
+
+            assert_eq!(
+                debug(T {
+                    field: Inner {
+                        field: vec![1, 2, 3]
+                    }
+                }),
+                "T { field: 0x010203 }"
+            );
+        }
+
+        #[test]
+        fn field_named() {
+            #[derive(::macros::Debug)]
+            struct T {
+                #[debug("{}", serde_utils::to_hex(&field))]
+                field: Vec<u8>,
+            }
+
+            assert_eq!(
+                debug(T {
+                    field: vec![1, 2, 3]
+                }),
+                "T { field: 0x010203 }"
+            );
+        }
+
+        #[test]
+        fn field_named_skip() {
+            #[derive(::macros::Debug)]
+            struct T {
+                #[debug("{}", serde_utils::to_hex(&field))]
+                field: Vec<u8>,
+                #[debug(skip)]
+                skip: PhantomData<()>,
+            }
+
+            assert_eq!(
+                debug(T {
+                    field: vec![1, 2, 3],
+                    skip: PhantomData,
+                }),
+                "T { field: 0x010203 }"
+            );
+        }
+
+        #[test]
+        fn field_named_skip_generics() {
+            #[derive(::macros::Debug)]
+            struct T<U> {
+                #[debug("{}", serde_utils::to_hex(&field))]
+                field: Vec<u8>,
+                #[debug(skip)]
+                skip: PhantomData<U>,
+            }
+
+            assert_eq!(
+                debug(T::<u8> {
+                    field: vec![1, 2, 3],
+                    skip: PhantomData,
+                }),
+                "T { field: 0x010203 }"
+            );
+        }
+
+        #[test]
+        fn field_named_generics() {
+            #[derive(::macros::Debug)]
+            struct T<U> {
+                #[debug("{}", serde_utils::to_hex(&field))]
+                field: Vec<u8>,
+                skip: Vec<U>,
+            }
+
+            assert_eq!(
+                debug(T::<u8> {
+                    field: vec![1, 2, 3],
+                    skip: vec![1],
+                }),
+                "T { field: 0x010203, skip: [1] }"
+            );
+        }
+
+        #[test]
+        fn field_named_container() {
+            #[derive(::macros::Debug)]
+            #[debug("{}", serde_utils::to_hex(&self.field))]
+            struct T {
+                field: Vec<u8>,
+            }
+
+            assert_eq!(
+                debug(T {
+                    field: vec![1, 2, 3]
+                }),
+                "0x010203"
+            );
+        }
+
+        #[test]
+        fn field_unnamed() {
+            #[derive(::macros::Debug)]
+            struct T(#[debug("{}", serde_utils::to_hex(&_0))] Vec<u8>);
+
+            assert_eq!(debug(T(vec![1, 2, 3])), "T(0x010203)");
+        }
+
+        #[test]
+        fn field_unnamed_container() {
+            #[derive(::macros::Debug)]
+            #[debug("{}", serde_utils::to_hex(&self.0))]
+            struct T(Vec<u8>);
+
+            assert_eq!(debug(T(vec![1, 2, 3])), "0x010203");
+        }
+
+        #[test]
+        fn tuple_empty_container() {
+            #[derive(::macros::Debug)]
+            #[debug("container")]
+            struct T();
+
+            assert_eq!(debug(T()), "container");
+        }
+
+        #[test]
+        fn tuple_empty() {
+            #[derive(::macros::Debug)]
+            struct T();
+
+            assert_eq!(debug(T()), "T");
+        }
+
+        #[test]
+        fn named_empty_container() {
+            #[derive(::macros::Debug)]
+            #[debug("container")]
+            struct T {}
+
+            assert_eq!(debug(T {}), "container");
+        }
+
+        #[test]
+        fn empty_container() {
+            #[derive(::macros::Debug)]
+            #[debug("container")]
+            struct T;
+
+            assert_eq!(debug(T), "container");
+        }
+    }
+
+    mod enums {
+        use super::debug;
+
+        #[test]
+        fn empty() {
+            #[derive(::macros::Debug)]
+            enum E {
+                T,
+            }
+
+            assert_eq!(debug(E::T), "T");
+        }
+
+        #[test]
+        fn field_named() {
+            #[derive(::macros::Debug)]
+            enum E {
+                T {
+                    #[debug("{}", serde_utils::to_hex(&field))]
+                    field: Vec<u8>,
+                },
+            }
+
+            assert_eq!(
+                debug(E::T {
+                    field: vec![1, 2, 3]
+                }),
+                "T { field: 0x010203 }"
+            );
+        }
+
+        #[test]
+        fn field_unnamed() {
+            #[derive(::macros::Debug)]
+            enum E {
+                T(#[debug("{}", serde_utils::to_hex(&_0))] Vec<u8>),
+            }
+
+            assert_eq!(debug(E::T(vec![1, 2, 3])), "T(0x010203)");
+        }
+
+        #[test]
+        fn tuple_empty_container() {
+            #[derive(::macros::Debug)]
+            #[debug("container")]
+            enum E {
+                T(),
+            }
+
+            assert_eq!(debug(E::T()), "container");
+        }
+
+        #[test]
+        fn tuple_empty() {
+            #[derive(::macros::Debug)]
+            enum E {
+                T(),
+            }
+
+            assert_eq!(debug(E::T()), "T");
+        }
+
+        #[test]
+        fn named_empty_container() {
+            #[derive(::macros::Debug)]
+            #[debug("container")]
+            enum E {
+                T {},
+            }
+
+            assert_eq!(debug(E::T {}), "container");
+        }
+
+        #[test]
+        fn empty_container() {
+            #[derive(::macros::Debug)]
+            #[debug("container")]
+            enum E {
+                T,
+            }
+
+            assert_eq!(debug(E::T), "container");
+        }
+    }
 }

@@ -1,7 +1,6 @@
 use core::str::FromStr;
 
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     errors::{required, MissingField},
@@ -10,22 +9,17 @@ use crate::{
     traits::Id,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    deny_unknown_fields,
-    bound(
-        serialize = "
-            ClientId: Id,
-            ConnectionId: Id,
-        ",
-        deserialize = "
-            ClientId: Id,
-            ConnectionId: Id,
-        ",
-    )
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::connection::v1::Counterparty, into, from)]
+#[model(proto(raw(protos::ibc::core::connection::v1::Counterparty), into, from))]
+#[serde(bound(
+    serialize = "
+        ClientId: Id,
+        ConnectionId: Id,
+    ",
+    deserialize = "
+        ClientId: Id,
+        ConnectionId: Id,
+    ",
+))]
 pub struct Counterparty<ClientId: Id, ConnectionId: Id = id::ConnectionId> {
     pub client_id: ClientId,
     pub connection_id: ConnectionId,
@@ -115,9 +109,4 @@ impl<ClientId: Id, ConnectionId: Id>
             prefix: value.prefix.into(),
         })
     }
-}
-
-#[cfg(feature = "ethabi")]
-impl<ClientId: Id, ConnectionId: Id> crate::EthAbi for Counterparty<ClientId, ConnectionId> {
-    type EthAbi = contracts::ibc_handler::IbcCoreConnectionV1CounterpartyData;
 }

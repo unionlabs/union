@@ -1,14 +1,11 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::cosmos::{
     base::query::page_response::PageResponse,
     staking::validator::{TryFromValidatorError, Validator},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[proto(raw = protos::cosmos::staking::v1beta1::QueryValidatorsResponse, into)]
+#[model(proto(raw(protos::cosmos::staking::v1beta1::QueryValidatorsResponse), into))]
 pub struct QueryValidatorsResponse {
     pub validators: Vec<Validator>,
     pub pagination: Option<PageResponse>,

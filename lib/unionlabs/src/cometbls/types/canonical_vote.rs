@@ -1,15 +1,11 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     bounded::BoundedI64,
     tendermint::types::{canonical_block_id::CanonicalBlockId, signed_msg_type::SignedMsgType},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::tendermint::types::CanonicalVote, from)]
+#[model(proto(raw(protos::tendermint::types::CanonicalVote), from))]
 pub struct CanonicalVote {
     /// type alias for byte
     pub ty: SignedMsgType,

@@ -1,7 +1,7 @@
 use core::{cmp::Ordering, fmt::Display, num::TryFromIntError, ops::Neg, str::FromStr};
 
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
-use macros::proto;
+use macros::model;
 use serde::{
     de::{self, Unexpected},
     Deserialize, Serialize,
@@ -19,9 +19,13 @@ pub const TIMESTAMP_SECONDS_MIN: i64 = -62_135_596_800;
 
 const NANOS_MAX: i32 = NANOS_PER_SECOND - 1;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::google::protobuf::Timestamp, into, from)]
+#[model(
+    proto(raw(protos::google::protobuf::Timestamp), into, from),
+    ethabi(raw(contracts::glue::GoogleProtobufTimestampData), into, from),
+    no_serde
+)]
+#[debug("Timestamp({})", self)]
+#[derive(Eq, Copy)]
 pub struct Timestamp {
     /// As per the proto docs: "Must be from 0001-01-01T00:00:00Z to
     /// 9999-12-31T23:59:59Z inclusive."
@@ -289,7 +293,7 @@ impl From<Timestamp> for contracts::glue::GoogleProtobufTimestampData {
 }
 
 #[cfg(feature = "ethabi")]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TryFromEthAbiTimestampError {
     Seconds(BoundedIntError<i64>),
     Nanos(BoundedIntError<i32>),
@@ -312,11 +316,6 @@ impl TryFrom<contracts::glue::GoogleProtobufTimestampData> for Timestamp {
                 .map_err(TryFromEthAbiTimestampError::Nanos)?,
         })
     }
-}
-
-#[cfg(feature = "ethabi")]
-impl crate::EthAbi for Timestamp {
-    type EthAbi = contracts::glue::GoogleProtobufTimestampData;
 }
 
 #[cfg(test)]

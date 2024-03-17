@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -6,16 +6,11 @@ use crate::{
     id::{ChannelId, PortId},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    bound(
-        serialize = "ProofTry: Serialize",
-        deserialize = "ProofTry: for<'d> Deserialize<'d>",
-    ),
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::channel::v1::MsgChannelOpenAck)]
+#[model(proto(raw(protos::ibc::core::channel::v1::MsgChannelOpenAck)))]
+#[serde(bound(
+    serialize = "ProofTry: Serialize",
+    deserialize = "ProofTry: for<'d> Deserialize<'d>",
+))]
 pub struct MsgChannelOpenAck<ProofTry, ProofHeight: IsHeight> {
     pub port_id: PortId,
     pub channel_id: ChannelId,

@@ -1,15 +1,15 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     errors::{required, MissingField},
     ibc::lightclients::ethereum::account_proof::{AccountProof, TryFromAccountProofError},
 };
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::AccountUpdate, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::AccountUpdate),
+    into,
+    from
+))]
 pub struct AccountUpdate {
     pub account_proof: AccountProof,
 }

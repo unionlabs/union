@@ -1,7 +1,6 @@
 use core::num::TryFromIntError;
 
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     cosmos::{
@@ -16,9 +15,7 @@ use crate::{
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[proto(raw = protos::cosmos::staking::v1beta1::Validator, into, from)]
+#[model(proto(raw(protos::cosmos::staking::v1beta1::Validator), into, from))]
 pub struct Validator {
     /// operator_address defines the address of the validator's operator; bech encoded in JSON.
     pub operator_address: String,

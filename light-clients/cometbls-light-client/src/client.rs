@@ -211,11 +211,10 @@ impl<T: ZKPVerifier> IbcClient for CometblsLightClient<T> {
             read_consensus_state(deps.as_ref(), &header.trusted_height)?
                 .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
 
-        let untrusted_height = Height::new(
-            header.trusted_height.revision_number,
-            // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
-            header.signed_header.commit.height.inner() as u64,
-        );
+        let untrusted_height = Height {
+            revision_number: header.trusted_height.revision_number,
+            revision_height: header.signed_header.commit.height.inner() as u64,
+        };
 
         if untrusted_height > client_state.latest_height {
             client_state.latest_height = untrusted_height;

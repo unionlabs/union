@@ -1,4 +1,4 @@
-use macros::proto;
+use macros::model;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -7,22 +7,17 @@ use crate::{
     EmptyString,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    bound(
-        serialize = "
-            ClientId: Serialize,
-            CounterpartyClientId: Serialize,
-        ",
-        deserialize = "
-            ClientId: for<'d> Deserialize<'d>,
-            CounterpartyClientId: for<'d> Deserialize<'d>,
-        ",
-    ),
-    deny_unknown_fields
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::core::connection::v1::MsgConnectionOpenInit)]
+#[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenInit)))]
+#[serde(bound(
+    serialize = "
+        ClientId: Serialize,
+        CounterpartyClientId: Serialize,
+    ",
+    deserialize = "
+        ClientId: for<'d> Deserialize<'d>,
+        CounterpartyClientId: for<'d> Deserialize<'d>,
+    ",
+))]
 pub struct MsgConnectionOpenInit<ClientId: Id, CounterpartyClientId: Id> {
     pub client_id: ClientId,
     pub counterparty: Counterparty<CounterpartyClientId, EmptyString>,

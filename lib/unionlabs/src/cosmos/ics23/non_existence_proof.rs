@@ -1,17 +1,14 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     cosmos::ics23::existence_proof::{ExistenceProof, TryFromExistenceProofError},
     errors::MissingField,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::cosmos::ics23::v1::NonExistenceProof, into, from)]
+#[model(proto(raw(protos::cosmos::ics23::v1::NonExistenceProof), into, from))]
 pub struct NonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub key: Vec<u8>,
     pub left: Option<ExistenceProof>,
     pub right: Option<ExistenceProof>,

@@ -1,5 +1,4 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
@@ -8,10 +7,11 @@ use crate::{
     ibc::core::commitment::merkle_root::{MerkleRoot, TryFromMerkleRootError},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::ibc::lightclients::tendermint::v1::ConsensusState, into, from)]
+#[model(proto(
+    raw(protos::ibc::lightclients::tendermint::v1::ConsensusState),
+    into,
+    from
+))]
 pub struct ConsensusState {
     pub timestamp: Timestamp,
     pub root: MerkleRoot,

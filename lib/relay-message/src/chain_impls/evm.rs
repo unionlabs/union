@@ -25,7 +25,7 @@ use queue_msg::{
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
-    encoding::{Decode, Encode, EthAbi},
+    encoding::{Decode, Encode, EncodeAs, EthAbi},
     ethereum::{
         beacon::{GenesisData, LightClientBootstrap, LightClientFinalityUpdate},
         config::ChainSpec,
@@ -47,7 +47,7 @@ use unionlabs::{
     proof::{ClientStatePath, Path},
     traits::{Chain, ClientIdOf, ClientState, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
     uint::U256,
-    IntoEthAbi, MaybeRecoverableError,
+    MaybeRecoverableError,
 };
 
 use crate::{
@@ -86,9 +86,9 @@ impl<C: ChainSpec> ChainExt for Evm<C> {
 
 impl<C: ChainSpec, Tr: ChainExt> DoMsg<Self, Tr> for Evm<C>
 where
-    ConsensusStateOf<Tr>: IntoEthAbi,
-    ClientStateOf<Tr>: IntoEthAbi,
-    HeaderOf<Tr>: IntoEthAbi,
+    ConsensusStateOf<Tr>: Encode<EthAbi>,
+    ClientStateOf<Tr>: Encode<EthAbi>,
+    HeaderOf<Tr>: Encode<EthAbi>,
 
     ClientStateOf<Evm<C>>: Encode<Tr::IbcStateEncoding>,
     Tr::StoredClientState<Evm<C>>: Encode<Tr::IbcStateEncoding>,
@@ -254,12 +254,12 @@ where
                                 client_state_bytes: data
                                     .msg
                                     .client_state
-                                    .into_eth_abi_bytes()
+                                    .encode_as::<EthAbi>()
                                     .into(),
                                 consensus_state_bytes: data
                                     .msg
                                     .consensus_state
-                                    .into_eth_abi_bytes()
+                                    .encode_as::<EthAbi>()
                                     .into(),
                             },
                         },
@@ -270,14 +270,22 @@ where
                     UpdateClientCall {
                         msg: ibc_handler::MsgUpdateClient {
                             client_id: data.client_id.to_string(),
-                            client_message: data.client_message.clone().into_eth_abi_bytes().into(),
+                            client_message: data
+                                .client_message
+                                .clone()
+                                .encode_as::<EthAbi>()
+                                .into(),
                         },
                     },
                 ),
             };
 
+            tracing::debug!(?msg, "submitting evm tx");
+
             match msg.estimate_gas().await {
                 Ok(estimated_gas) => {
+                    tracing::debug!(%estimated_gas, "gas estimation");
+
                     // TODO: config
                     let msg = msg.gas(estimated_gas + (estimated_gas / 10));
                     let result = msg.send().await;
@@ -289,6 +297,7 @@ where
                             Ok(())
                         }
                         Err(ContractError::Revert(revert)) => {
+                            tracing::error!(?revert, "evm transaction failed");
                             let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(
                                 revert.clone(),
                             )
@@ -302,6 +311,7 @@ where
                     }
                 }
                 Err(ContractError::Revert(revert)) => {
+                    tracing::error!(?revert, "evm transaction failed");
                     let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(revert.clone())
                         .map_err(|_| TxSubmitError::InvalidRevert(revert.clone()))?;
                     tracing::error!(?revert, ?err, "evm estimation failed");
@@ -339,9 +349,6 @@ where
     Tr::SelfClientState: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
 
     Tr::SelfClientState: Encode<EthAbi>,
-    Tr::SelfClientState: unionlabs::EthAbi,
-    Tr::SelfClientState: TryFrom<<Tr::SelfClientState as unionlabs::EthAbi>::EthAbi>,
-    <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
     fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> QueueMsg<RelayerMsgTypes> {
         fetch(id::<Self, Tr, _>(
@@ -397,8 +404,7 @@ where
     Tr::SelfClientState: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
     Tr::SelfConsensusState: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
 
-    Tr::SelfClientState: unionlabs::EthAbi,
-    <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
+    Tr::SelfClientState: Encode<EthAbi>,
 {
     async fn do_fetch(c: &Evm<C>, msg: Self) -> QueueMsg<RelayerMsgTypes> {
         let msg: EvmFetchMsg<C, Tr> = msg;
@@ -923,8 +929,7 @@ where
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Evm<C>, Tr>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
 
-    Tr::SelfClientState: unionlabs::EthAbi,
-    <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
+    Tr::SelfClientState: Encode<EthAbi>,
 {
     fn do_aggregate(
         Identified {
@@ -1024,7 +1029,7 @@ impl MaybeRecoverableError for TxSubmitError {
     }
 }
 
-fn mk_function_call<Call: EthCall>(
+pub fn mk_function_call<Call: EthCall>(
     ibc_handler: IBCHandler<EvmSignerMiddleware>,
     data: Call,
 ) -> ethers::contract::FunctionCall<Arc<EvmSignerMiddleware>, EvmSignerMiddleware, ()> {
@@ -1235,8 +1240,6 @@ where
     Identified<Evm<C>, Tr, LightClientUpdates<C, Tr>>: TryFrom<AnyLightClientIdentified<AnyData>>,
 
     Tr::SelfClientState: Encode<EthAbi>,
-    Tr::SelfClientState: unionlabs::EthAbi,
-    <Tr::SelfClientState as unionlabs::EthAbi>::EthAbi: From<Tr::SelfClientState>,
 {
     type AggregatedData = HList![Identified<Evm<C>, Tr, LightClientUpdates<C, Tr>>];
 
