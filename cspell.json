@@ -42,6 +42,7 @@
     "bun.lockb",
     "package-lock.json",
     "file-tree-icons.ts",
-    "moonlight-ii.json"
+    "moonlight-ii.json",
+    "lib/pg-queue/migrations"
   ]
 }

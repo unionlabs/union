@@ -50,7 +50,7 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
 
         let row = query!(
             "INSERT INTO queue (item) VALUES ($1) RETURNING id",
-            Json(item) as _
+            Json(item) as _,
         )
         .fetch_one(tx.as_mut())
         .await?;
@@ -138,11 +138,12 @@ impl<T: DeserializeOwned + Serialize + Unpin + Send + Sync> Queue<T> {
                     Ok(new_msgs) => {
                         for new_msg in new_msgs {
                             let new_row = query!(
-                                "INSERT INTO queue (item)
-                                VALUES ($1::JSONB)
+                                "INSERT INTO queue (item, parent)
+                                VALUES ($1::JSONB, $2)
                                 RETURNING id",
                                 serde_json::to_value(new_msg)
-                                    .expect("queue message should have infallible serialization")
+                                    .expect("queue message should have infallible serialization"),
+                                row.id,
                             )
                             .fetch_one(tx.as_mut())
                             .await?;

@@ -1,14 +1,8 @@
-use std::{ffi::OsString, marker::PhantomData, str::FromStr, sync::Arc};
+use std::{ffi::OsString, marker::PhantomData, sync::Arc};
 
 use chain_utils::Chains;
-use clap::{
-    error::{ContextKind, ContextValue},
-    Args, Parser, Subcommand,
-};
-use ethers::{
-    signers::LocalWallet,
-    types::{Address, H256},
-};
+use clap::{Parser, Subcommand};
+use ethers::types::Address;
 use frunk::{hlist_pat, HList};
 use queue_msg::{aggregation::UseAggregate, run_to_completion, InMemoryQueue};
 use relay_message::{
@@ -16,14 +10,15 @@ use relay_message::{
     use_aggregate::IsAggregateData,
     ChainExt, DoFetchProof, DoFetchState, Identified, RelayerMsgTypes,
 };
-use reqwest::Url;
 use unionlabs::{
+    bounded::{BoundedI32, BoundedI64},
     ibc::core::client::height::Height,
     id::ClientId,
     proof::{
         self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath,
     },
+    result_unwrap,
     traits::HeightOf,
     QueryHeight,
 };
@@ -60,6 +55,8 @@ pub enum Command {
     RunMigrations,
     PrintConfig,
     Relay,
+    #[command(subcommand)]
+    Msg(MsgCmd),
     #[command(subcommand)]
     Setup(SetupCmd),
     Query {
@@ -269,6 +266,15 @@ where
 }
 
 #[derive(Debug, Subcommand)]
+pub enum MsgCmd {
+    History {
+        id: BoundedI64<1, { i64::MAX }>,
+        #[arg(long, default_value_t = result_unwrap!(BoundedI32::<1, { i32::MAX }>::new(10)))]
+        max_depth: BoundedI32<1, { i32::MAX }>,
+    },
+}
+
+#[derive(Debug, Subcommand)]
 pub enum SetupCmd {
     Transfer {
         #[arg(long)]
@@ -320,125 +326,4 @@ pub enum SubmitPacketCmd {
         #[arg(long)]
         source_channel: String,
     },
-}
-
-#[derive(Debug, Parser)]
-pub struct RelayCmd {
-    #[arg(long)]
-    pub between: Vec<Between>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Between(pub String, pub String);
-
-impl FromStr for Between {
-    type Err = clap::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.split_once(':')
-            .map(|(a, b)| Self(a.to_string(), b.to_string()))
-            .ok_or_else(|| {
-                let mut error = clap::Error::new(clap::error::ErrorKind::ValueValidation);
-
-                error.insert(
-                    ContextKind::InvalidValue,
-                    ContextValue::String(s.to_string()),
-                );
-
-                error.insert(
-                    ContextKind::Usage,
-                    ContextValue::String("<chain id>:<chain id>".to_string()),
-                );
-
-                error
-            })
-    }
-}
-
-#[derive(Debug, Parser)]
-pub struct TransferArgs {
-    #[arg(long)]
-    pub from: String,
-    #[arg(long)]
-    pub to: String,
-    #[arg(long)]
-    pub denom: String,
-    #[arg(long)]
-    pub amount: u64,
-    #[arg(long)]
-    pub receiver: String,
-    #[arg(long)]
-    pub source_port: String,
-    #[arg(long)]
-    pub source_channel: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConnectionEndInfo {
-    pub client_id: String,
-    pub connection_id: String,
-}
-
-impl FromStr for ConnectionEndInfo {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (client_id, connection_id) = s
-            .split_once('/')
-            .ok_or("invalid: expected chain_name/client_id")?;
-
-        if connection_id.contains('/') {
-            Err("too many segments".to_string())
-        } else {
-            Ok(Self {
-                client_id: client_id.to_string(),
-                connection_id: connection_id.to_string(),
-            })
-        }
-    }
-}
-
-#[derive(Debug, Parser)]
-pub struct ClientArgs {
-    #[command(flatten)]
-    pub cometbls: CometblsClientArgs,
-    #[command(flatten)]
-    pub ethereum: EthereumClientArgs,
-}
-
-#[derive(Debug, Args)]
-pub struct CometblsClientArgs {
-    /// OwnableIBCHandler => address
-    #[arg(long)]
-    pub ibc_handler_address: Address,
-    /// CometblsClient => address
-    #[arg(long)]
-    pub cometbls_client_address: Address,
-    /// ICS20TransferBank => address
-    #[arg(long)]
-    pub ics20_transfer_address: Address,
-    /// ICS20Bank => address
-    #[arg(long)]
-    pub ics20_bank_address: Address,
-
-    #[arg(long)]
-    pub wallet: LocalWallet,
-
-    #[arg(long)]
-    pub eth_rpc_api: Url,
-
-    #[arg(long)]
-    pub eth_beacon_rpc_api: String,
-}
-
-#[derive(Debug, Args)]
-pub struct EthereumClientArgs {
-    #[arg(long = "code-id")]
-    pub wasm_code_id: H256,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum CreateClientArgs {
-    Cometbls { ibc_handler_address: Address },
-    Ethereum { wasm_code_id: H256 },
 }

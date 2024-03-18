@@ -558,7 +558,13 @@ where
     derive(arbitrary::Arbitrary),
     arbitrary(bound = "C: ChainSpec")
 )]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
+)]
 pub enum EvmFetch<C: ChainSpec> {
     #[display(fmt = "FetchEvents")]
     FetchEvents(FetchEvents<C>),
@@ -968,7 +974,13 @@ where
     derive(arbitrary::Arbitrary),
     arbitrary(bound = "C: ChainSpec")
 )]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
+)]
 pub enum EvmData<C: ChainSpec> {
     #[display(fmt = "Channel")]
     Channel(ChannelData),

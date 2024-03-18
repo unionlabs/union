@@ -25,7 +25,7 @@ use queue_msg::{
 use relay_message::{ChainExt, RelayerMsgTypes};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use sqlx::postgres::PgPoolOptions;
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::task::JoinSet;
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
@@ -153,25 +153,25 @@ pub struct PgQueueConfig {
     pub max_lifetime: Option<Duration>,
 }
 
+impl PgQueueConfig {
+    pub async fn into_pg_pool(self) -> sqlx::Result<PgPool> {
+        PgPoolOptions::new()
+            .max_connections(self.max_connections.unwrap_or(10))
+            .min_connections(self.min_connections.unwrap_or(0))
+            .idle_timeout(self.idle_timeout)
+            .max_lifetime(self.max_lifetime)
+            .connect(&self.database_url)
+            .await
+    }
+}
+
 impl<T: QueueMsgTypes> Queue<T> for PgQueue<T> {
     type Error = sqlx::Error;
 
     type Config = PgQueueConfig;
 
     fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
-        async move {
-            Ok(Self(
-                pg_queue::Queue::new(),
-                // 10 is the default
-                PgPoolOptions::new()
-                    .max_connections(cfg.max_connections.unwrap_or(10))
-                    .min_connections(cfg.min_connections.unwrap_or(0))
-                    .idle_timeout(cfg.idle_timeout)
-                    .max_lifetime(cfg.max_lifetime)
-                    .connect(&cfg.database_url)
-                    .await?,
-            ))
-        }
+        async move { Ok(Self(pg_queue::Queue::new(), cfg.into_pg_pool().await?)) }
     }
 
     fn enqueue(
