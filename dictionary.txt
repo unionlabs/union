@@ -707,7 +707,6 @@ repellendus
 repr
 reqwest
 restaking
-rewardses
 rgba
 ripemd
 rlib
