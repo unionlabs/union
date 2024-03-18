@@ -117,9 +117,9 @@ func (b *BlockHeaderAPI) unpackHash(x *UnconsHash) []uints.U8 {
 	return hash
 }
 
-func (b *BlockHeaderAPI) VerifyInputs(expectedHash frontend.Variable, trustedValRoot frontend.Variable, untrustedValRoot frontend.Variable) error {
+func (b *BlockHeaderAPI) VerifyInputs(expectedHash frontend.Variable, trustedValRoot frontend.Variable) error {
 	expectedHashBytes := b.unpack(expectedHash)
-	hash, err := b.InputsHash(trustedValRoot, untrustedValRoot)
+	hash, err := b.InputsHash(trustedValRoot)
 	if err != nil {
 		return err
 	}
@@ -130,38 +130,21 @@ func (b *BlockHeaderAPI) VerifyInputs(expectedHash frontend.Variable, trustedVal
 	return nil
 }
 
-func (b *BlockHeaderAPI) InputsHash(trustedValRoot frontend.Variable, untrustedValRoot frontend.Variable) ([]uints.U8, error) {
+func (b *BlockHeaderAPI) InputsHash(trustedValRoot frontend.Variable) ([]uints.U8, error) {
 	h, err := sha2.New(b.api)
 	if err != nil {
 		return nil, err
 	}
-
 	// Header
-	h.Write(b.unpack(b.header.VersionBlock))
-	h.Write(b.unpack(b.header.VersionApp))
 	h.Write(b.unpack(b.header.ChainID))
 	h.Write(b.unpack(b.header.Height))
 	h.Write(b.unpack(b.header.TimeSecs))
 	h.Write(b.unpack(b.header.TimeNanos))
-	h.Write(b.unpack(b.header.LastBlockHash))
-	h.Write(b.unpack(b.header.LastBlockPartSetHeaderTotal))
-	h.Write(b.unpackHash(&b.header.LastBlockPartSetHeaderHash))
-	h.Write(b.unpackHash(&b.header.LastCommitHash))
-	h.Write(b.unpackHash(&b.header.DataHash))
 	h.Write(b.unpack(b.header.ValidatorsHash))
 	h.Write(b.unpack(b.header.NextValidatorsHash))
-	h.Write(b.unpackHash(&b.header.ConsensusHash))
 	h.Write(b.unpackHash(&b.header.AppHash))
-	h.Write(b.unpackHash(&b.header.LastResultsHash))
-	h.Write(b.unpackHash(&b.header.EvidenceHash))
-	h.Write(b.unpackHash(&b.header.ProposerAddress))
-
 	// Private extra inputs
 	h.Write(b.unpack(trustedValRoot))
-	h.Write(b.unpack(untrustedValRoot))
-
-	b.api.AssertIsEqual(untrustedValRoot, b.header.ValidatorsHash)
-
 	return h.Sum(), nil
 }
 
@@ -208,7 +191,6 @@ func (b *BlockHeaderAPI) VoteSignBytes() (frontend.Variable, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new mimc: %w", err)
 	}
-
 	// Vote structure
 	h.Write(int64(types.PrecommitType))
 	h.Write(b.header.Height)
@@ -218,7 +200,6 @@ func (b *BlockHeaderAPI) VoteSignBytes() (frontend.Variable, error) {
 	h.Write(b.vote.BlockPartSetHeaderHash.Head)
 	h.Write(b.vote.BlockPartSetHeaderHash.Tail)
 	h.Write(b.header.ChainID)
-
 	return h.Sum(), nil
 }
 
@@ -227,11 +208,9 @@ func (b *BlockHeaderAPI) HashToCurve(domainSeparationTag frontend.Variable) (*ga
 	if err != nil {
 		return nil, err
 	}
-
 	emulatedAPI, err := g2.NewEmulatedAPI(b.api)
 	if err != nil {
 		return nil, err
 	}
-
 	return emulatedAPI.HashToG2(voteSignBytes, domainSeparationTag)
 }

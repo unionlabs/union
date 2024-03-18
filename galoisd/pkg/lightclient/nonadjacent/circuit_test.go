@@ -133,10 +133,6 @@ func inputsHash(h *comettypes.Header) []byte {
 		big.NewInt(x).FillBytes(padded[:])
 		buff = append(buff, padded[:]...)
 	}
-	writeU64 := func(x uint64) {
-		big.NewInt(0).SetUint64(x).FillBytes(padded[:])
-		buff = append(buff, padded[:]...)
-	}
 	writeMiMCHash := func(b []byte) {
 		big.NewInt(0).SetBytes(b).FillBytes(padded[:])
 		buff = append(buff, padded[:]...)
@@ -144,25 +140,13 @@ func inputsHash(h *comettypes.Header) []byte {
 	writeHash := func(b []byte) {
 		buff = append(buff, b...)
 	}
-	writeU64(h.Version.Block)
-	writeU64(h.Version.App)
 	writeMiMCHash([]byte(h.ChainID))
 	writeI64(h.Height)
 	writeI64(h.Time.Unix())
 	writeI64(int64(h.Time.Nanosecond()))
-	writeMiMCHash(h.LastBlockID.Hash)
-	writeU64(uint64(h.LastBlockID.PartSetHeader.Total))
-	writeHash(h.LastBlockID.PartSetHeader.Hash)
-	writeHash(h.LastCommitHash)
-	writeHash(h.DataHash)
 	writeMiMCHash(h.ValidatorsHash)
 	writeMiMCHash(h.NextValidatorsHash)
-	writeHash(h.ConsensusHash)
 	writeHash(h.AppHash)
-	writeHash(h.LastResultsHash)
-	writeHash(h.EvidenceHash)
-	writeHash(h.ProposerAddress)
-	writeMiMCHash(h.ValidatorsHash)
 	writeMiMCHash(h.ValidatorsHash)
 	hash := sha256.Sum256(buff)
 	return hash[1:]
@@ -425,14 +409,13 @@ func FuzzNonadjacent(f *testing.F) {
 		}
 
 		circuit := Circuit{
-			DomainSeparationTag:      []byte(cometbn254.CometblsSigDST),
-			TrustedInput:             trustedInput,
-			UntrustedInput:           untrustedInput,
-			ExpectedTrustedValRoot:   trustedValidatorsRoot,
-			ExpectedUntrustedValRoot: untrustedValidatorsRoot,
-			Vote:                     *vote,
-			Header:                   *header,
-			InputsHash:               inputsHash(cometblsHeader),
+			DomainSeparationTag: []byte(cometbn254.CometblsSigDST),
+			TrustedInput:        trustedInput,
+			TrustedValRoot:      trustedValidatorsRoot,
+			UntrustedInput:      untrustedInput,
+			Vote:                *vote,
+			Header:              *header,
+			InputsHash:          inputsHash(cometblsHeader),
 		}
 
 		err = test.IsSolved(
