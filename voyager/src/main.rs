@@ -12,7 +12,6 @@ use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCo
 
 use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm};
 use clap::Parser;
-use futures::TryStreamExt;
 use queue_msg::QueueMsg;
 use sqlx::{query_as, PgPool};
 use tikv_jemallocator::Jemalloc;
@@ -25,7 +24,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     chain::AnyChain,
     cli::{any_state_proof_to_json, AppArgs, Command, QueryCmd},
-    config::{ChainConfigType, Config, EvmChainConfig, GetChainError, VoyagerConfig},
+    config::{ChainConfigType, Config, EvmChainConfig, GetChainError},
     queue::{
         chains_from_config, AnyQueueConfig, PgQueueConfig, RunError, Voyager, VoyagerInitError,
         VoyagerMessageTypes,
