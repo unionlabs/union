@@ -6,7 +6,7 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    fetch, msg, msg_struct, wait, HandleAggregate, QueueMsg, QueueMsgTypes,
+    fetch, msg, msg_struct, wait, HandleAggregate, QueueError, QueueMsg, QueueMsgTypes,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -103,11 +103,11 @@ impl HandleAggregate<RelayerMsgTypes> for AnyLightClientIdentified<AnyAggregate>
     fn handle(
         self,
         data: VecDeque<<RelayerMsgTypes as QueueMsgTypes>::Data>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
         let aggregate = self;
 
         any_lc! {
-            |aggregate| aggregate.handle(data)
+            |aggregate| Ok(aggregate.handle(data))
         }
     }
 }

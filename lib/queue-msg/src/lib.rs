@@ -232,7 +232,7 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
         self,
         store: &'a T::Store,
         depth: usize,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<QueueMsg<T>>, BoxDynError>> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Option<QueueMsg<T>>, QueueError>> + Send + 'a>> {
         tracing::debug!(
             depth,
             %self,
@@ -241,15 +241,11 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
 
         let fut = async move {
             match self {
-                QueueMsg::Event(event) => Ok(Some(event.handle(store))),
-                QueueMsg::Data(data) => Ok(Some(data.handle(store))),
-                QueueMsg::Fetch(fetch) => Ok(Some(fetch.handle(store).await)),
-                QueueMsg::Msg(msg) => {
-                    msg.handle(store).await?;
-
-                    Ok(None)
-                }
-                QueueMsg::Wait(wait) => Ok(Some(wait.handle(store).await)),
+                QueueMsg::Event(event) => event.handle(store).map(Some),
+                QueueMsg::Data(data) => data.handle(store).map(Some),
+                QueueMsg::Fetch(fetch) => fetch.handle(store).await.map(Some),
+                QueueMsg::Msg(msg) => msg.handle(store).await.map(Some),
+                QueueMsg::Wait(wait) => wait.handle(store).await.map(Some),
 
                 QueueMsg::DeferUntil {
                     point: DeferPoint::Relative,
@@ -352,7 +348,7 @@ impl<T: QueueMsgTypes> QueueMsg<T> {
                         Ok(Some(aggregate(queue, data, receiver)))
                     } else {
                         // queue is empty, handle msg
-                        Ok(Some(receiver.handle(data)))
+                        receiver.handle(data).map(Some)
                     }
                 }
                 QueueMsg::Repeat { times: 0, .. } => Ok(None),
@@ -501,38 +497,38 @@ fn flatten() {
     }
 
     impl HandleMsg<EmptyMsgTypes> for Unit {
-        async fn handle(self, _: &()) -> Result<(), BoxDynError> {
-            Ok(())
+        async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
         }
     }
 
     impl HandleEvent<EmptyMsgTypes> for Unit {
-        fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
-            QueueMsg::Noop
+        fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
         }
     }
 
     impl HandleData<EmptyMsgTypes> for Unit {
-        fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
-            QueueMsg::Noop
+        fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
         }
     }
 
     impl HandleFetch<EmptyMsgTypes> for Unit {
-        async fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
-            QueueMsg::Noop
+        async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
         }
     }
 
     impl HandleWait<EmptyMsgTypes> for Unit {
-        async fn handle(self, _: &()) -> QueueMsg<EmptyMsgTypes> {
-            QueueMsg::Noop
+        async fn handle(self, _: &()) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
         }
     }
 
     impl HandleAggregate<EmptyMsgTypes> for Unit {
-        fn handle(self, _: VecDeque<Unit>) -> QueueMsg<EmptyMsgTypes> {
-            QueueMsg::Noop
+        fn handle(self, _: VecDeque<Unit>) -> Result<QueueMsg<EmptyMsgTypes>, QueueError> {
+            Ok(QueueMsg::Noop)
         }
     }
 
@@ -578,50 +574,87 @@ fn flatten() {
     assert_eq!(flatten_conc(msg), data(Unit));
 }
 
+#[derive(Debug)]
+pub enum QueueError {
+    Fatal(BoxDynError),
+    Retry(BoxDynError),
+}
+
+impl std::fmt::Display for QueueError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Fatal(_) => {
+                write!(f, "fatal error while handling message")
+            }
+            Self::Retry(_) => {
+                write!(f, "error while handling message")
+            }
+        }
+    }
+}
+
+impl std::error::Error for QueueError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Fatal(fatal) => Some(&**fatal as &(dyn Error + 'static)),
+            Self::Retry(retry) => Some(&**retry as &(dyn Error + 'static)),
+        }
+    }
+}
+
 pub trait HandleFetch<T: QueueMsgTypes> {
-    fn handle(self, store: &T::Store) -> impl Future<Output = QueueMsg<T>> + Send;
+    fn handle(
+        self,
+        store: &T::Store,
+    ) -> impl Future<Output = Result<QueueMsg<T>, QueueError>> + Send;
 }
 
 pub trait HandleData<T: QueueMsgTypes> {
-    fn handle(self, store: &T::Store) -> QueueMsg<T>;
+    fn handle(self, store: &T::Store) -> Result<QueueMsg<T>, QueueError>;
 }
 
 pub trait HandleWait<T: QueueMsgTypes> {
-    fn handle(self, store: &T::Store) -> impl Future<Output = QueueMsg<T>> + Send;
+    fn handle(
+        self,
+        store: &T::Store,
+    ) -> impl Future<Output = Result<QueueMsg<T>, QueueError>> + Send;
 }
 
 pub trait HandleEvent<T: QueueMsgTypes> {
-    fn handle(self, store: &T::Store) -> QueueMsg<T>;
+    fn handle(self, store: &T::Store) -> Result<QueueMsg<T>, QueueError>;
 }
 
 pub trait HandleMsg<T: QueueMsgTypes> {
-    fn handle(self, store: &T::Store) -> impl Future<Output = Result<(), BoxDynError>> + Send;
+    fn handle(
+        self,
+        store: &T::Store,
+    ) -> impl Future<Output = Result<QueueMsg<T>, QueueError>> + Send;
 }
 
 pub trait HandleAggregate<T: QueueMsgTypes> {
-    fn handle(self, data: VecDeque<T::Data>) -> QueueMsg<T>;
+    fn handle(self, data: VecDeque<T::Data>) -> Result<QueueMsg<T>, QueueError>;
 }
 
 impl<T: QueueMsgTypes> HandleFetch<T> for Never {
-    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> QueueMsg<T> {
+    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
         match self {}
     }
 }
 
 impl<T: QueueMsgTypes> HandleWait<T> for Never {
-    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> QueueMsg<T> {
+    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
         match self {}
     }
 }
 
 impl<T: QueueMsgTypes> HandleEvent<T> for Never {
-    fn handle(self, _: &<T as QueueMsgTypes>::Store) -> QueueMsg<T> {
+    fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
         match self {}
     }
 }
 
 impl<T: QueueMsgTypes> HandleMsg<T> for Never {
-    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<(), BoxDynError> {
+    async fn handle(self, _: &<T as QueueMsgTypes>::Store) -> Result<QueueMsg<T>, QueueError> {
         match self {}
     }
 }
@@ -664,10 +697,15 @@ impl<T: QueueMsgTypes> Reactor<T> {
 
                 let data = q
                     .process::<_, _, Vec<T::Data>>(move |msg| async move {
-                        match msg.handle(&*s, 0).await.unwrap() {
-                            Some(QueueMsg::Data(d)) => (vec![d], Ok(vec![])),
-                            Some(QueueMsg::Concurrent(msgs)) => (vec![], Ok(msgs.into())),
-                            msg => (vec![], Ok(msg.into_iter().collect())),
+                        match msg.handle(&*s, 0).await {
+                            Ok(Some(QueueMsg::Data(d))) => (vec![d], Ok(vec![])),
+                            Ok(Some(QueueMsg::Concurrent(msgs))) => (vec![], Ok(msgs.into())),
+                            Ok(msg) => (vec![], Ok(msg.into_iter().collect())),
+                            Err(QueueError::Fatal(fatal)) => {
+                                tracing::error!(error = %fatal.to_string(), "unrecoverable error");
+                                (vec![], Err(fatal.to_string()))
+                            }
+                            Err(QueueError::Retry(retry)) => panic!("{retry:?}"),
                         }
                     })
                     .await;
@@ -761,7 +799,7 @@ impl<T: QueueMsgTypes> Queue<T> for InMemoryQueue<T> {
         &mut self,
         item: QueueMsg<T>,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + '_ {
-        tracing::warn!(%item, "enqueueing new item");
+        tracing::info!(%item, "enqueueing new item");
         self.0.lock().expect("mutex is poisoned").push_back(item);
         futures::future::ok(())
     }

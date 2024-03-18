@@ -7,7 +7,7 @@ use std::{
 use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
-use queue_msg::{data, fetch, msg_struct, HandleFetch, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, fetch, msg_struct, HandleFetch, QueueError, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
@@ -18,7 +18,7 @@ use unionlabs::{
 };
 
 use crate::{
-    any_enum,
+    any_enum, any_lc,
     data::{AnyData, Data, PacketAcknowledgement, SelfClientState, SelfConsensusState},
     id, identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
     DoFetchUpdateHeaders, RelayerMsgTypes,
@@ -48,11 +48,16 @@ impl HandleFetch<RelayerMsgTypes> for AnyLightClientIdentified<AnyFetch> {
     async fn handle(
         self,
         store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
         let fetch = self;
 
-        crate::any_lc! {
-            |fetch| fetch.t.handle(store.get_chain(&fetch.chain_id)).await
+        any_lc! {
+            |fetch| {
+                Ok(store
+                    .with_chain(&fetch.chain_id, move |c| async move { fetch.t.handle(c).await })
+                    .map_err(|e| QueueError::Fatal(Box::new(e)))?
+                    .await)
+            }
         }
     }
 }

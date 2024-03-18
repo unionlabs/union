@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use macros::apply;
-use queue_msg::{data, msg_struct, HandleData, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, msg_struct, HandleData, QueueError, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     proof::{
@@ -45,8 +45,11 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
 
 // Passthrough since we don't want to handle any top-level data, just bubble it up to the top level.
 impl HandleData<RelayerMsgTypes> for AnyLightClientIdentified<AnyData> {
-    fn handle(self, _: &<RelayerMsgTypes as QueueMsgTypes>::Store) -> QueueMsg<RelayerMsgTypes> {
-        data(self)
+    fn handle(
+        self,
+        _: &<RelayerMsgTypes as QueueMsgTypes>::Store,
+    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
+        Ok(data(self))
     }
 }
 

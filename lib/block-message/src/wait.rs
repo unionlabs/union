@@ -2,12 +2,12 @@ use std::fmt::Display;
 
 use chain_utils::{Chains, GetChain};
 use macros::apply;
-use queue_msg::{data, defer, msg_struct, now, seq, wait, HandleWait, QueueMsg};
+use queue_msg::{data, defer, msg_struct, now, seq, wait, HandleWait, QueueError, QueueMsg};
 use serde::{Deserialize, Serialize};
 use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
 
 use crate::{
-    any_enum,
+    any_chain, any_enum,
     data::{AnyData, Data, LatestHeight},
     AnyChainIdentified, BlockPollingTypes, ChainExt, Identified,
 };
@@ -23,7 +23,7 @@ where
     AnyChainIdentified<AnyWait>: From<Identified<C, Wait<C>>>,
     AnyChainIdentified<AnyData>: From<Identified<C, Data<C>>>,
 {
-    async fn handle(self, c: &C) -> QueueMsg<BlockPollingTypes> {
+    async fn handle(self, c: C) -> QueueMsg<BlockPollingTypes> {
         match self {
             Wait::Height(WaitForHeight { height }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
@@ -65,13 +65,16 @@ impl<C: ChainExt> Display for Wait<C> {
 }
 
 impl HandleWait<BlockPollingTypes> for AnyChainIdentified<AnyWait> {
-    async fn handle(self, c: &Chains) -> QueueMsg<BlockPollingTypes> {
-        match self {
-            AnyChainIdentified::Cosmos(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
-            AnyChainIdentified::Union(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
-            AnyChainIdentified::EthMainnet(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
-            AnyChainIdentified::EthMinimal(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
-            AnyChainIdentified::Scroll(w) => w.t.handle(&c.get_chain(&w.chain_id)).await,
+    async fn handle(self, store: &Chains) -> Result<QueueMsg<BlockPollingTypes>, QueueError> {
+        let wait = self;
+
+        any_chain! {
+            |wait| {
+                Ok(store
+                    .with_chain(&wait.chain_id, move |c| async move { wait.t.handle(c).await })
+                    .map_err(|e| QueueError::Fatal(Box::new(e)))?
+                    .await)
+            }
         }
     }
 }

@@ -1,12 +1,10 @@
-#![feature(trait_alias)]
+#![feature(trait_alias, min_exhaustive_patterns)]
 // #![warn(clippy::pedantic)]
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives
     clippy::manual_async_fn,
     clippy::module_name_repetitions,
-    clippy::large_enum_variant
 )]
-// #![deny(clippy::unwrap_used)]
 
 use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCode, sync::Arc};
 

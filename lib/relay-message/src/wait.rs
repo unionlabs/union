@@ -1,8 +1,10 @@
 use std::{fmt::Display, marker::PhantomData};
 
-use chain_utils::GetChain;
+use chain_utils::{ChainNotFoundError, GetChain};
 use macros::apply;
-use queue_msg::{defer, fetch, msg_struct, now, seq, wait, HandleWait, QueueMsg, QueueMsgTypes};
+use queue_msg::{
+    defer, fetch, msg_struct, now, seq, wait, HandleWait, QueueError, QueueMsg, QueueMsgTypes,
+};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     ibc::core::client::height::IsHeight,
@@ -11,7 +13,7 @@ use unionlabs::{
 };
 
 use crate::{
-    any_enum,
+    any_enum, any_lc,
     fetch::{AnyFetch, Fetch, FetchState},
     id, identified, AnyLightClientIdentified, ChainExt, DoFetchState, RelayerMsgTypes,
 };
@@ -28,11 +30,16 @@ impl HandleWait<RelayerMsgTypes> for AnyLightClientIdentified<AnyWait> {
     async fn handle(
         self,
         store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
         let wait = self;
 
-        crate::any_lc! {
-            |wait| wait.t.handle(store.get_chain(&wait.chain_id)).await
+        any_lc! {
+            |wait| {
+                Ok(store
+                    .with_chain(&wait.chain_id, move |c| async move { wait.t.handle(&c).await })
+                    .map_err(|e: ChainNotFoundError<Hc>| QueueError::Fatal(Box::new(e)))?
+                    .await)
+            }
         }
     }
 }
@@ -44,7 +51,7 @@ where
     Hc: ChainExt + DoFetchState<Hc, Tr>,
     Tr: ChainExt,
 {
-    pub async fn handle(self, c: Hc) -> QueueMsg<RelayerMsgTypes> {
+    pub async fn handle(self, c: &Hc) -> QueueMsg<RelayerMsgTypes> {
         match self {
             Wait::Block(WaitForBlock { height, __marker }) => {
                 let chain_height = c.query_latest_height().await.unwrap();
@@ -100,7 +107,7 @@ where
                 let latest_height = c.query_latest_height_as_destination().await.unwrap();
 
                 let trusted_client_state =
-                    Hc::query_client_state(&c, client_id.clone(), latest_height).await;
+                    Hc::query_client_state(c, client_id.clone(), latest_height).await;
 
                 if trusted_client_state.height().revision_height() >= height.revision_height() {
                     tracing::debug!(

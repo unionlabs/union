@@ -1,11 +1,10 @@
 use std::{fmt::Display, marker::PhantomData};
 
-use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, GetChain};
+use chain_utils::GetChain;
 use macros::apply;
-use queue_msg::{msg_struct, BoxDynError, HandleMsg, QueueMsgTypes};
+use queue_msg::{msg_struct, HandleMsg, QueueError, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    ethereum::config::{Mainnet, Minimal},
     ibc::core::{
         channel::{
             msg_acknowledgement::MsgAcknowledgement, msg_channel_open_ack::MsgChannelOpenAck,
@@ -25,7 +24,7 @@ use unionlabs::{
     traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
 };
 
-use crate::{any_enum, AnyLightClientIdentified, ChainExt, DoMsg, RelayerMsgTypes, Wasm};
+use crate::{any_enum, any_lc, AnyLightClientIdentified, ChainExt, DoMsg, RelayerMsgTypes};
 
 #[apply(any_enum)]
 #[any = AnyMsg]
@@ -51,41 +50,29 @@ impl HandleMsg<RelayerMsgTypes> for AnyLightClientIdentified<AnyMsg> {
     async fn handle(
         self,
         store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> Result<(), BoxDynError> {
-        match self {
-            AnyLightClientIdentified::EvmMainnetOnUnion(msg) => {
-                GetChain::<Wasm<Union>>::get_chain(store, &msg.chain_id)
-                    .msg(msg.t)
-                    .await?;
-            }
-            AnyLightClientIdentified::EvmMinimalOnUnion(msg) => {
-                GetChain::<Wasm<Union>>::get_chain(store, &msg.chain_id)
-                    .msg(msg.t)
-                    .await?;
-            }
-            AnyLightClientIdentified::UnionOnEvmMainnet(msg) => {
-                GetChain::<Evm<Mainnet>>::get_chain(store, &msg.chain_id)
-                    .msg(msg.t)
-                    .await?;
-            }
-            AnyLightClientIdentified::UnionOnEvmMinimal(msg) => {
-                GetChain::<Evm<Minimal>>::get_chain(store, &msg.chain_id)
-                    .msg(msg.t)
-                    .await?;
-            }
-            AnyLightClientIdentified::CosmosOnUnion(msg) => {
-                GetChain::<Union>::get_chain(store, &msg.chain_id)
-                    .msg(msg.t)
-                    .await?;
-            }
-            AnyLightClientIdentified::UnionOnCosmos(msg) => {
-                GetChain::<Wasm<Cosmos>>::get_chain(store, &msg.chain_id)
-                    .msg(msg.t)
-                    .await?;
+    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
+        let msg = self;
+
+        any_lc! {
+            |msg| {
+                store
+                    .with_chain(&msg.chain_id, move |c| async move { msg.t.handle(&c).await })
+                    .map_err(|e| QueueError::Fatal(Box::new(e)))?
+                    .await
+                    .map_err(|e: <Hc as ChainExt>::MsgError| QueueError::Retry(Box::new(e)))
+                    .map(|()| QueueMsg::Noop)
             }
         }
+    }
+}
 
-        Ok(())
+impl<Hc, Tr> Msg<Hc, Tr>
+where
+    Hc: ChainExt + DoMsg<Hc, Tr>,
+    Tr: ChainExt,
+{
+    pub async fn handle(self, c: &Hc) -> Result<(), Hc::MsgError> {
+        <Hc as DoMsg<Hc, Tr>>::msg(c, self).await
     }
 }
 

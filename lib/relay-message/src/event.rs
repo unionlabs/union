@@ -3,7 +3,7 @@ use std::{fmt::Display, marker::PhantomData};
 use chain_utils::GetChain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
-use queue_msg::{aggregate, fetch, wait, HandleEvent, QueueMsg, QueueMsgTypes};
+use queue_msg::{aggregate, fetch, wait, HandleEvent, QueueError, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
@@ -37,11 +37,15 @@ impl HandleEvent<RelayerMsgTypes> for AnyLightClientIdentified<AnyEvent> {
     fn handle(
         self,
         store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<RelayerMsgTypes> {
-        let event = self;
+    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
+        let wait = self;
 
         any_lc! {
-            |event| event.t.handle(store.get_chain(&event.chain_id))
+            |wait| {
+                store
+                    .with_chain(&wait.chain_id, move |c| wait.t.handle(c))
+                    .map_err(|e| QueueError::Fatal(Box::new(e)))
+            }
         }
     }
 }

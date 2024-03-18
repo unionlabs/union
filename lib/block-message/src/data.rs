@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use macros::apply;
-use queue_msg::{data, msg_struct, HandleData, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, msg_struct, HandleData, QueueError, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{events::IbcEvent, hash::H256, ClientType};
 
@@ -22,8 +22,8 @@ impl HandleData<BlockPollingTypes> for AnyChainIdentified<AnyData> {
     fn handle(
         self,
         _store: &<BlockPollingTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<BlockPollingTypes> {
-        data(self)
+    ) -> Result<QueueMsg<BlockPollingTypes>, QueueError> {
+        Ok(data(self))
     }
 }
 

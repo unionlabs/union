@@ -1,13 +1,13 @@
 // #![warn(clippy::pedantic)]
 #![feature(trait_alias)]
 
-use std::{collections::HashMap, fmt::Debug, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use crossbeam_queue::ArrayQueue;
 use futures::Future;
 use unionlabs::{
     ethereum::config::{Mainnet, Minimal},
-    traits::{Chain, ChainIdOf},
+    traits::{Chain, ChainIdOf, FromStrExact},
 };
 
 use crate::{cosmos::Cosmos, evm::Evm, scroll::Scroll, union::Union, wasm::Wasm};
@@ -75,57 +75,85 @@ impl<T: Clone> Pool<T> {
 }
 
 pub trait GetChain<C: Chain> {
-    fn get_chain(&self, chain_id: &ChainIdOf<C>) -> C;
+    fn get_chain(&self, chain_id: &ChainIdOf<C>) -> Option<C>;
+
+    fn with_chain<'a, T, F>(
+        &'a self,
+        chain_id: &'a ChainIdOf<C>,
+        f: F,
+    ) -> Result<T, ChainNotFoundError<C>>
+    where
+        T: 'static,
+        F: FnOnce(C) -> T + 'a,
+    {
+        match self.get_chain(chain_id) {
+            Some(chain) => Ok(f(chain)),
+            None => {
+                tracing::warn!(%chain_id, chain_type = %<C as Chain>::ChainType::EXPECTING, "chain not found");
+                Err(ChainNotFoundError {
+                    chain_id: chain_id.clone(),
+                })
+            }
+        }
+    }
 }
+
+#[derive(Debug, thiserror::Error)]
+#[error("chain {} not found (type: {})", chain_id, <C as Chain>::ChainType::EXPECTING)]
+pub struct ChainNotFoundError<C: Chain> {
+    chain_id: ChainIdOf<C>,
+}
+
+type ChainMap<C> = HashMap<ChainIdOf<C>, C>;
 
 #[derive(Debug, Clone, Default)]
 pub struct Chains {
     // TODO: Use some sort of typemap here instead of individual fields
-    pub evm_minimal: HashMap<ChainIdOf<Evm<Minimal>>, Evm<Minimal>>,
-    pub evm_mainnet: HashMap<ChainIdOf<Evm<Mainnet>>, Evm<Mainnet>>,
-    pub union: HashMap<ChainIdOf<Union>, Union>,
-    pub cosmos: HashMap<ChainIdOf<Cosmos>, Cosmos>,
-    pub scroll: HashMap<ChainIdOf<Scroll>, Scroll>,
+    pub evm_minimal: ChainMap<Evm<Minimal>>,
+    pub evm_mainnet: ChainMap<Evm<Mainnet>>,
+    pub union: ChainMap<Union>,
+    pub cosmos: ChainMap<Cosmos>,
+    pub scroll: ChainMap<Scroll>,
 }
 
 impl GetChain<Union> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Union>) -> Union {
-        self.union.get(chain_id).unwrap().clone()
+    fn get_chain(&self, chain_id: &ChainIdOf<Union>) -> Option<Union> {
+        self.union.get(chain_id).cloned()
     }
 }
 
 impl GetChain<Cosmos> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Cosmos>) -> Cosmos {
-        self.cosmos.get(chain_id).unwrap().clone()
+    fn get_chain(&self, chain_id: &ChainIdOf<Cosmos>) -> Option<Cosmos> {
+        self.cosmos.get(chain_id).cloned()
     }
 }
 
 impl GetChain<Scroll> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Scroll>) -> Scroll {
-        self.scroll.get(chain_id).unwrap().clone()
+    fn get_chain(&self, chain_id: &ChainIdOf<Scroll>) -> Option<Scroll> {
+        self.scroll.get(chain_id).cloned()
     }
 }
 
 impl GetChain<Wasm<Union>> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Union>>) -> Wasm<Union> {
-        Wasm(self.union.get(chain_id).unwrap().clone())
+    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Union>>) -> Option<Wasm<Union>> {
+        self.union.get(chain_id).cloned().map(Wasm)
     }
 }
 
 impl GetChain<Wasm<Cosmos>> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Cosmos>>) -> Wasm<Cosmos> {
-        Wasm(self.cosmos.get(chain_id).unwrap().clone())
+    fn get_chain(&self, chain_id: &ChainIdOf<Wasm<Cosmos>>) -> Option<Wasm<Cosmos>> {
+        self.cosmos.get(chain_id).cloned().map(Wasm)
     }
 }
 
 impl GetChain<Evm<Minimal>> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Minimal>>) -> Evm<Minimal> {
-        self.evm_minimal.get(chain_id).unwrap().clone()
+    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Minimal>>) -> Option<Evm<Minimal>> {
+        self.evm_minimal.get(chain_id).cloned()
     }
 }
 
 impl GetChain<Evm<Mainnet>> for Chains {
-    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Mainnet>>) -> Evm<Mainnet> {
-        self.evm_mainnet.get(chain_id).unwrap().clone()
+    fn get_chain(&self, chain_id: &ChainIdOf<Evm<Mainnet>>) -> Option<Evm<Mainnet>> {
+        self.evm_mainnet.get(chain_id).cloned()
     }
 }
