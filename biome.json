@@ -5,7 +5,7 @@
     "clientKind": "git"
   },
   "organizeImports": {
-    "enabled": true,
+    "enabled": false,
     "include": [
       "*.ts",
       "*.js",
@@ -101,6 +101,7 @@
         "useShorthandArrayType": "off",
         "useSelfClosingElements": "off",
         "noUnusedTemplateLiteral": "off",
+        "useFilenamingConvention": "off",
         "useNodejsImportProtocol": "off",
         "useConsistentArrayType": {
           "level": "warn",
@@ -114,6 +115,7 @@
       },
       "nursery": {
         "all": true,
+        "noConsole": "off",
         "noBarrelFile": "off",
         "noReExportAll": "off",
         "noNodejsModules": "off",
@@ -134,6 +136,7 @@
         "all": true,
         "noConsoleLog": "off",
         "noExplicitAny": "off",
+        "noCatchAssign": "off",
         "noEmptyInterface": "off"
       },
       "complexity": {
@@ -201,12 +204,17 @@
       "linter": {
         "rules": {
           "correctness": {
-            "noUnusedImports": "off"
+            "noUnusedLabels": "off",
+            "noUnusedImports": "off",
+            "useHookAtTopLevel": "off"
           },
           "style": {
             "useConst": "off",
             "useImportType": "off",
             "useFilenamingConvention": "off"
+          },
+          "suspicious": {
+            "noConfusingLabels": "off"
           }
         }
       }

@@ -118,7 +118,7 @@ export async function getDenomAddress(): Promise<Address> {
     UNO.NATIVE_DENOM
   ]
 
-  return readContract(config, {
+  return await readContract(config, {
     abi: ucs01relayAbi,
     address: getAddress(CONTRACT.SEPOLIA.ADDRESS),
     functionName: "getDenomAddress",

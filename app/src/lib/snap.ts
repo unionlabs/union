@@ -86,7 +86,7 @@ export async function suggestSnapChain() {
 }
 
 export const snapOfflineSigner = writable<CosmjsOfflineSigner | null>(null)
-export async function initializeSnapOfflineSigner() {
+export function initializeSnapOfflineSigner() {
   if (!get(snapConnected)) return
   if (!get(snapChainInitialized)) return
 

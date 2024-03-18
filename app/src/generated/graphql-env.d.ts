@@ -9483,6 +9483,142 @@ export type introspection = {
                 }
               }
             ]
+          },
+          {
+            "name": "v0_withdraw_rewardses",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_withdraw_rewardses",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_withdraw_rewardses_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_withdraw_rewardses_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_withdraw_rewardses_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_withdraw_rewardses_aggregate",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "v0_withdraw_rewardses_aggregate",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_withdraw_rewardses_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_withdraw_rewardses_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_withdraw_rewardses_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
           }
         ],
         "interfaces": []
@@ -18888,6 +19024,194 @@ export type introspection = {
                 "type": {
                   "kind": "INPUT_OBJECT",
                   "name": "v0_withdraw_commissions_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_withdraw_rewardses",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_withdraw_rewardses",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_withdraw_rewardses_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_withdraw_rewardses_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_withdraw_rewardses_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_withdraw_rewardses_aggregate",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "v0_withdraw_rewardses_aggregate",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_withdraw_rewardses_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_withdraw_rewardses_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_withdraw_rewardses_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_withdraw_rewardses_stream",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_withdraw_rewardses",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "batch_size",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                }
+              },
+              {
+                "name": "cursor",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_withdraw_rewardses_stream_cursor_input",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_withdraw_rewardses_bool_exp",
                   "ofType": null
                 }
               }
@@ -59253,6 +59577,748 @@ export type introspection = {
       {
         "kind": "OBJECT",
         "name": "v0_withdraw_commissions_variance_fields",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "bigint",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "delegator",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "validator",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_aggregate",
+        "fields": [
+          {
+            "name": "aggregate",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_aggregate_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "nodes",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_withdraw_rewardses",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_aggregate_fields",
+        "fields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_avg_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "columns",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_withdraw_rewardses_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "distinct",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_max_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_min_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_stddev_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_stddev_pop_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_stddev_samp_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_sum_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_var_pop_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_var_samp_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_withdraw_rewardses_variance_fields",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_avg_fields",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_withdraw_rewardses_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_withdraw_rewardses_bool_exp",
+                  "ofType": null
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_withdraw_rewardses_bool_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_withdraw_rewardses_bool_exp",
+                  "ofType": null
+                }
+              }
+            }
+          },
+          {
+            "name": "amount",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "bigint_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "delegator",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "validator",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_max_fields",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "bigint",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "delegator",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "validator",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_min_fields",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "bigint",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "delegator",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "validator",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_withdraw_rewardses_order_by",
+        "inputFields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "delegator",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "validator",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "ENUM",
+        "name": "v0_withdraw_rewardses_select_column",
+        "enumValues": [
+          {
+            "name": "amount"
+          },
+          {
+            "name": "delegator"
+          },
+          {
+            "name": "denom"
+          },
+          {
+            "name": "msg_index"
+          },
+          {
+            "name": "validator"
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_stddev_fields",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_stddev_pop_fields",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_stddev_samp_fields",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_withdraw_rewardses_stream_cursor_input",
+        "inputFields": [
+          {
+            "name": "initial_value",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "v0_withdraw_rewardses_stream_cursor_value_input",
+                "ofType": null
+              }
+            }
+          },
+          {
+            "name": "ordering",
+            "type": {
+              "kind": "ENUM",
+              "name": "cursor_ordering",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_withdraw_rewardses_stream_cursor_value_input",
+        "inputFields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "bigint",
+              "ofType": null
+            }
+          },
+          {
+            "name": "delegator",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            }
+          },
+          {
+            "name": "validator",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_sum_fields",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "bigint",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_var_pop_fields",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_var_samp_fields",
+        "fields": [
+          {
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_withdraw_rewardses_variance_fields",
         "fields": [
           {
             "name": "amount",

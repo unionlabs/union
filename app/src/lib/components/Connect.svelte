@@ -14,7 +14,7 @@ async function connectWallet(type: ConnectorType) {
     const connection = await connect(type, sepolia.id)
     if (!connection) throw new Error(`No matching connector found: ${type}`)
   } catch (error) {
-    var _error = error instanceof Error ? error.message : error
+    const _error = error instanceof Error ? error.message : error
     console.error(_error)
     error = _error
   }

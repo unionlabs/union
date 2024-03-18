@@ -452,6 +452,7 @@
               yq
             ] ++ (with unstablePkgs; [
               bun # for running TypeScript files on the fly
+              biome
               nodejs_21
               nodePackages.graphqurl
               nodePackages.svelte-language-server
@@ -501,6 +502,19 @@
               sort = {
                 enable = true;
                 file = "dictionary.txt";
+              };
+              taplo = { enable = true; };
+              biome = {
+                enable = true;
+                package = biome;
+                config-path = ./biome.json;
+              };
+              yamlfmt = {
+                enable = true;
+                package = unstablePkgs.yamlfmt;
+                config = {
+                  retain_line_breaks = true;
+                };
               };
               forge = {
                 enable = true;

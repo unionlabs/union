@@ -19,7 +19,10 @@
         "template": "gql",
         "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
         "schema": {
-          "url": "https://introspect.unionlabs.workers.dev"
+          "url": "https://introspect.unionlabs.workers.dev",
+          "headers": {
+            "X-For": "introspection"
+          }
         }
       }
     ]

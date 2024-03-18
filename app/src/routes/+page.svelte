@@ -86,7 +86,7 @@ $: sepoliaEthBalance = createQuery<string>({
   refetchInterval: pollingIntervalMS * 1.5
 })
 
-$: userTransfersQuery = createQuery<TransferEvent[]>({
+$: userTransfersQuery = createQuery<Array<TransferEvent>>({
   queryKey: ["user-transfers", $wallet.address],
   queryFn: async () => {
     if (!$wallet.address) return []
