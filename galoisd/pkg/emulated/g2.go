@@ -140,6 +140,8 @@ func (e *EmulatedAPI) g2Sgn0Circuit(z *fields_bn254.E2) frontend.Variable {
 // Union whitepaper: (2) svdw
 //
 // https://datatracker.ietf.org/doc/html/rfc9380#straightline-svdw
+//
+// WARNING: this function is partial, the legendre hint only check the root branch. If you are going to reuse this function, make sure you are aware of this edge case.
 func (e *EmulatedAPI) MapToCurve(u *fields_bn254.E2) *gadget.G2Affine {
 	// NOTE: up to the caller to call legendre if the root is not guarantee to exist
 	sqrt := func(x *fields_bn254.E2) *fields_bn254.E2 {
@@ -469,6 +471,8 @@ func (e *EmulatedAPI) ClearCofactor(Q *gadget.G2Affine) *gadget.G2Affine {
 // Union whitepaper: (1), (2) M ◦ H_{mimc^4}
 //
 // https://datatracker.ietf.org/doc/html/rfc9380#name-encoding-byte-strings-to-el
+
+// WARNING: this function calls a partial MapToCurve, read it's documentation before using it.
 func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable) (*gadget.G2Affine, error) {
 	u, err := e.HashToField(message, dst)
 	if err != nil {
@@ -488,7 +492,11 @@ func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable)
 // Union whitepaper: (1), (2) M ◦ H_{mimc^4}
 //
 // https://datatracker.ietf.org/doc/html/rfc9380#name-hash_to_field-implementatio
-// NOTE: /!\ Tailored for 4 field elements (actually scalar field because of the underlying MiMC hash function).
+///
+// WARNING: /!\ Tailored for 4 field elements (actually scalar field because of the underlying MiMC hash function).
+// WARNING: this functions uses a 256bit block MiMC (which is in fact only 254bit), use it at your own risk.
+// WARNING: we only support 254bit messages (usually MiMC hash) and domain separation tag (usually MiMC hash).
+//
 func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variable) ([]*emulated.Element[emulated.BN254Fp], error) {
 	pseudoRandomBits, err := e.ExpandMsgXmd(message, dst)
 	if err != nil {
@@ -509,6 +517,10 @@ func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variab
 
 // /!\ IMPORTANT /!\ : This is not a general implementation as the input/output length are fixed.
 // It is a tailor-made for BN254G2_XMD:MiMC-256_SVDW hash_to_curve implementation.
+//
+// WARNING: this functions uses a 256bit block MiMC (which is in fact only 254bit), use it at your own risk.
+// WARNING: we only support 254bit messages (usually MiMC hash) and domain separation tag (usually MiMC hash).
+//
 // https://datatracker.ietf.org/doc/html/rfc9380#name-expand_message_xmd
 // https://datatracker.ietf.org/doc/html/rfc9380#name-utility-functions (I2OSP/O2ISP)
 // https://eprint.iacr.org/2016/492.pdf
