@@ -35,8 +35,7 @@ pub struct ClientState {
     pub latest_slot: u64,
     // even though it would be better to have option, ethabicodec don't handle it as zero struct...
     pub frozen_height: Height,
-    // TODO: Rename this to `ibc_commitment_slot`?
-    pub counterparty_commitment_slot: U256,
+    pub ibc_commitment_slot: U256,
     /// the ibc contract on the counterparty chain that contains the ICS23 commitments
     pub ibc_contract_address: H160,
 }
@@ -56,7 +55,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: Some(value.frozen_height.into()),
-            counterparty_commitment_slot: value.counterparty_commitment_slot.to_big_endian().into(),
+            ibc_commitment_slot: value.ibc_commitment_slot.to_big_endian().into(),
             ibc_contract_address: value.ibc_contract_address.into(),
         }
     }
@@ -68,7 +67,7 @@ pub enum TryFromClientStateError {
     ChainId(FromDecStrErr),
     ForkParameters(TryFromForkParametersError),
     GenesisValidatorsRoot(InvalidLength),
-    CounterpartyCommitmentSlot(InvalidLength),
+    IbcCommitmentSlot(InvalidLength),
     TrustLevel(TryFromFractionError),
     IbcContractAddress(InvalidLength),
 }
@@ -99,10 +98,8 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
             trusting_period: value.trusting_period,
             latest_slot: value.latest_slot,
             frozen_height: value.frozen_height.unwrap_or_default().into(),
-            counterparty_commitment_slot: U256::try_from_big_endian(
-                &value.counterparty_commitment_slot,
-            )
-            .map_err(TryFromClientStateError::CounterpartyCommitmentSlot)?,
+            ibc_commitment_slot: U256::try_from_big_endian(&value.ibc_commitment_slot)
+                .map_err(TryFromClientStateError::IbcCommitmentSlot)?,
             ibc_contract_address: value
                 .ibc_contract_address
                 .try_into()

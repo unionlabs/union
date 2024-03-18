@@ -88,7 +88,7 @@ pub struct ClientState {
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     #[prost(bytes = "vec", tag = "13")]
-    pub counterparty_commitment_slot: ::prost::alloc::vec::Vec<u8>,
+    pub ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "14")]
     pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
 }
@@ -138,6 +138,24 @@ pub struct Header {
 }
 impl ::prost::Name for Header {
     const NAME: &'static str = "Header";
+    const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)
+    }
+}
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Misbehaviour {
+    #[prost(message, optional, tag = "1")]
+    pub trusted_sync_committee: ::core::option::Option<TrustedSyncCommittee>,
+    #[prost(message, optional, tag = "2")]
+    pub update_1: ::core::option::Option<LightClientUpdate>,
+    #[prost(message, optional, tag = "3")]
+    pub update_2: ::core::option::Option<LightClientUpdate>,
+}
+impl ::prost::Name for Misbehaviour {
+    const NAME: &'static str = "Misbehaviour";
     const PACKAGE: &'static str = "union.ibc.lightclients.ethereum.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("union.ibc.lightclients.ethereum.v1.{}", Self::NAME)

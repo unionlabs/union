@@ -287,7 +287,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
                 revision_number: 0,
                 revision_height: 0,
             },
-            counterparty_commitment_slot: U256::from(0),
+            ibc_commitment_slot: U256::from(0),
             ibc_contract_address: self.readonly_ibc_handler.address().into(),
         }
     }

@@ -50,9 +50,19 @@ pub trait BlsVerify {
 /// Verifies if the light client `update` is valid.
 ///
 /// * `update`: The light client update we want to verify.
-/// * `current_slot`: The slot number at when the light client update is created.
+/// * `current_slot`: The slot number computed based on the current timestamp.
 /// * `genesis_validators_root`: The latest `genesis_validators_root` that is saved by the light client.
 /// * `bls_verifier`: BLS verification implementation.
+///
+/// ## Important Notes
+/// * This verification does not assume that the updated header is greater (in terms of height) than the
+/// light client state. When the updated header is in the next signature period, the light client uses
+/// the next sync committee to verify the signature, then it saves the next sync committee as the current
+/// sync committee. However, it's not mandatory for light clients to expect the next sync committee to be given
+/// during these updates. So if it's not given, the light client still can validate updates until the next signature
+/// period arrives. In a situation like this, the update can be any header within the same signature period. And
+/// this function only allows a non-existent next sync committee to be set in that case. It doesn't allow a sync committee
+/// to be changed or removed.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update)
 pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
@@ -72,8 +82,9 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         ),
     )?;
 
-    // Verify update does not skip a sync committee period
     is_valid_light_client_header(ctx.fork_parameters(), &update.attested_header)?;
+
+    // Verify update does not skip a sync committee period
     let update_attested_slot = update.attested_header.beacon.slot;
     let update_finalized_slot = update.finalized_header.beacon.slot;
 
@@ -89,6 +100,12 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         Error::InvalidSlots,
     )?;
 
+    // Let's say N is the signature period of the header we store, we can only do updates with
+    // the following settings:
+    // 1. stored_period = N, signature_period = N:
+    //     - the light client must have the `current_sync_committee` and use it to verify the new header.
+    // 2. stored_period = N, signature_period = N + 1:
+    //     - the light client must have the `next_sync_committee` and use it to verify the new header.
     let stored_period =
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(ctx.finalized_slot());
     let signature_period =
@@ -116,6 +133,11 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     let update_attested_period =
         compute_sync_committee_period_at_slot::<Ctx::ChainSpec>(update_attested_slot);
 
+    // There are two options to do a light client update:
+    // 1. We are updating the header with a newer one.
+    // 2. We haven't set the next sync committee yet and we can use any attested header within the same
+    // signature period to set the next sync committee. This means that the stored header could be larger.
+    // The light client implementation needs to take care of it.
     ensure(
         update_attested_slot > ctx.finalized_slot()
             || (update_attested_period == stored_period
@@ -130,6 +152,7 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     is_valid_light_client_header(ctx.fork_parameters(), &update.finalized_header)?;
     let finalized_root = update.finalized_header.beacon.tree_hash_root();
 
+    // This confirms that the `finalized_header` is really finalized.
     validate_merkle_branch(
         &finalized_root.into(),
         &update.finality_branch,
@@ -138,20 +161,21 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
         &update.attested_header.beacon.state_root,
     )?;
 
-    // Verify that the `next_sync_committee`, if present, actually is the next sync committee saved in the
-    // state of the `attested_header` if the store period is equal to the attested period
-    if let (Some(next_sync_committee), Some(current_next_sync_committee)) =
+    // Verify that if the update contains the next sync committee, and the signature periods do match,
+    // next sync committees match too.
+    if let (Some(next_sync_committee), Some(stored_next_sync_committee)) =
         (&update.next_sync_committee, ctx.next_sync_committee())
     {
         if update_attested_period == stored_period {
             ensure(
-                next_sync_committee == current_next_sync_committee,
+                next_sync_committee == stored_next_sync_committee,
                 Error::NextSyncCommitteeMismatch {
-                    expected: current_next_sync_committee.aggregate_pubkey.clone(),
+                    expected: stored_next_sync_committee.aggregate_pubkey.clone(),
                     got: next_sync_committee.aggregate_pubkey.clone(),
                 },
             )?;
         }
+        // This validates the given next sync committee against the attested header's state root.
         validate_merkle_branch(
             &next_sync_committee.tree_hash_root().into(),
             &update.next_sync_committee_branch.unwrap_or_default(),
@@ -170,6 +194,8 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
             .ok_or(Error::ExpectedNextSyncCommittee)?
     };
 
+    // It's not mandatory for all of the members of the sync committee to participate. So we are extracting the
+    // public keys of the ones who participated.
     let participant_pubkeys = update
         .sync_aggregate
         .sync_committee_bits

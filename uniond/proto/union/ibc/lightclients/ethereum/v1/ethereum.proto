@@ -39,7 +39,7 @@ message ClientState {
   uint64 trusting_period = 10;
   uint64 latest_slot = 11;
   .ibc.core.client.v1.Height frozen_height = 12;
-  bytes counterparty_commitment_slot = 13;
+  bytes ibc_commitment_slot = 13;
   bytes ibc_contract_address = 14;
 }
 
@@ -59,6 +59,12 @@ message Header {
   TrustedSyncCommittee trusted_sync_committee = 1;
   LightClientUpdate consensus_update = 2;
   AccountUpdate account_update = 3;
+}
+
+message Misbehaviour {
+  TrustedSyncCommittee trusted_sync_committee = 1;
+  LightClientUpdate update_1 = 2;
+  LightClientUpdate update_2 = 3;
 }
 
 message TrustedSyncCommittee {
