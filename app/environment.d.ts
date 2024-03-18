@@ -3,6 +3,7 @@ interface EnvironmentVariables {
   readonly PORT: string
   readonly VERSION: string // from package.json#version
   readonly COMMIT_SHA: string
+  readonly HASURA_ADMIN_SECRET: string
   readonly VITE_UNION_RPC_URL: string
   readonly VITE_UNION_REST_URL: string
   readonly VITE_UNION_GRAPHQL_URL: string
@@ -15,7 +16,7 @@ interface EnvironmentVariables {
   readonly VITE_UCS01_SEPOLIA_SOURCE_CHANNEL: string
 }
 // Node.js environment variables types
-declare module NodeJS {
+declare namespace NodeJS {
   interface ProcessEnv extends EnvironmentVariables {}
 }
 // Vite environment variables types

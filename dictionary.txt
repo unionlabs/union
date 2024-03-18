@@ -120,6 +120,7 @@ Subdemom
 Sublist
 Subo
 TRYOPEN
+Tada
 Tempdirs
 Tendermint
 Testcase
@@ -413,6 +414,7 @@ govclient
 govkeeper
 govtypes
 govv
+graphqlsp
 graphqurl
 groomlake
 groth
@@ -806,6 +808,7 @@ svrcmd
 symlinker
 syncmode
 tablist
+tada
 tailwindcss
 tanstack
 taplo
