@@ -47,8 +47,8 @@ type PositiveNanos = BoundedI32<0, DURATION_MAX_NANOS>;
 ///   to +999,999,999 inclusive.
 #[model(proto(raw(protos::google::protobuf::Duration), into, from), no_serde)]
 #[derive(PartialOrd, Ord, Eq, Copy)]
+#[debug("Duration({})", self)]
 pub struct Duration(
-    #[debug("{}", _0)]
     BoundedI128<
         { (DURATION_MIN_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MIN_NANOS as i128 },
         { (DURATION_MAX_SECONDS as i128 * NANOS_PER_SECOND as i128) + DURATION_MAX_NANOS as i128 },

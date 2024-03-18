@@ -698,7 +698,16 @@ impl<T: QueueMsgTypes> Reactor<T> {
                 let data = q
                     .process::<_, _, Vec<T::Data>>(move |msg| async move {
                         match msg.handle(&*s, 0).await {
-                            Ok(Some(QueueMsg::Data(d))) => (vec![d], Ok(vec![])),
+                            Ok(Some(QueueMsg::Data(d))) => {
+                                let data_output = d.clone().handle(&s).unwrap();
+
+                                // run to a fixed point
+                                if data_output != data(d.clone()) {
+                                    (vec![], Ok(vec![data_output]))
+                                } else {
+                                    (vec![d], Ok(vec![]))
+                                }
+                            }
                             Ok(Some(QueueMsg::Concurrent(msgs))) => (vec![], Ok(msgs.into())),
                             Ok(msg) => (vec![], Ok(msg.into_iter().collect())),
                             Err(QueueError::Fatal(fatal)) => {

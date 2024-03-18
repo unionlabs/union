@@ -111,7 +111,7 @@ impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
                 }
             };
 
-            tracing::debug!("queued");
+            tracing::trace!("queued");
 
             Ok(())
         }
@@ -134,7 +134,7 @@ impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
                 AnyQueue::PgQueue(queue) => queue.process(f).await.map_err(AnyQueueError::PgQueue),
             };
 
-            tracing::debug!("processed");
+            tracing::trace!("processed");
 
             res
         }

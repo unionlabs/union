@@ -749,7 +749,6 @@ where
         Hc::fetch_update_headers(
             hc,
             FetchUpdateHeaders {
-                client_id: update_info.client_id,
                 counterparty_chain_id: update_info.counterparty_chain_id,
                 counterparty_client_id: update_info.counterparty_client_id,
                 update_from: update_info.update_from,

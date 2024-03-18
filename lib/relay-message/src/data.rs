@@ -23,6 +23,8 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
     SelfClientState(SelfClientState<Hc, Tr>),
     SelfConsensusState(SelfConsensusState<Hc, Tr>),
 
+    LatestHeight(LatestHeight<Hc, Tr>),
+
     PacketAcknowledgement(PacketAcknowledgement<Hc, Tr>),
 
     ClientStateProof(IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>),
@@ -58,6 +60,7 @@ impl<Hc: ChainExt, Tr: ChainExt> std::fmt::Display for Data<Hc, Tr> {
         match self {
             Data::SelfClientState(_) => write!(f, "SelfClientState"),
             Data::SelfConsensusState(_) => write!(f, "SelfConsensusState"),
+            Data::LatestHeight(LatestHeight { height, .. }) => write!(f, "LatestHeight({height})"),
             Data::PacketAcknowledgement(_) => write!(f, "PacketAcknowledgement"),
             Data::ClientStateProof(_) => write!(f, "ClientStateProof"),
             Data::ClientConsensusStateProof(_) => write!(f, "ClientConsensusStateProof"),
@@ -86,6 +89,12 @@ pub struct SelfClientState<Hc: ChainExt, Tr: ChainExt> {
 #[cover(Tr)]
 pub struct SelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
     pub self_consensus_state: ConsensusStateOf<Hc>,
+}
+
+#[apply(msg_struct)]
+#[cover(Tr)]
+pub struct LatestHeight<Hc: ChainExt, Tr: ChainExt> {
+    pub height: HeightOf<Hc>,
 }
 
 #[apply(msg_struct)]

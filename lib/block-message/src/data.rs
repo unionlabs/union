@@ -44,6 +44,7 @@ pub struct ChainSpecificData<C: ChainExt>(pub C::Data);
 pub struct ChainEvent<C: ChainExt> {
     pub client_type: ClientType,
     pub tx_hash: H256,
+    // the 'provable height' of the event
     pub height: C::Height,
     pub event: IbcEvent<C::ClientId, C::ClientType, String>,
 }

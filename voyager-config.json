@@ -55,7 +55,7 @@
     },
     "union-devnet": {
       "chain_type": "union",
-      "enabled": false,
+      "enabled": true,
       "signers": [
         {
           "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
@@ -122,7 +122,7 @@
     }
   },
   "voyager": {
-    "num_workers": 200,
+    "num_workers": 20,
     "queue": {
       "type": "pg-queue",
       "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",

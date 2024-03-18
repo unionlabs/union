@@ -503,7 +503,7 @@ mod tests {
                     eth_chain_id,
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("cometbls-0"),
-                        counterparty_client_id: parse!("08-wasm-0"),
+                        __marker: PhantomData,
                     },
                 )),
                 defer_relative(10),
@@ -520,7 +520,7 @@ mod tests {
                     union_chain_id.clone(),
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("08-wasm-0"),
-                        counterparty_client_id: parse!("cometbls-0"),
+                        __marker: PhantomData,
                     },
                 )),
                 defer_relative(10),
@@ -537,7 +537,7 @@ mod tests {
                     cosmos_chain_id.clone(),
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("08-wasm-0"),
-                        counterparty_client_id: parse!("07-tendermint-0"),
+                        __marker: PhantomData,
                     },
                 )),
                 defer_relative(10),
@@ -554,7 +554,7 @@ mod tests {
                     union_chain_id.clone(),
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("07-tendermint-0"),
-                        counterparty_client_id: parse!("08-wasm-0"),
+                        __marker: PhantomData,
                     },
                 )),
                 defer_relative(10),
