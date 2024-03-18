@@ -1,12 +1,12 @@
 use macros::model;
 
-use super::{
-    light_client_update::{LightClientUpdate, TryFromLightClientUpdateError},
-    trusted_sync_committee::{TrustedSyncCommittee, TryFromTrustedSyncCommitteeError},
-};
 use crate::{
     errors::{required, MissingField},
     ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
+    ibc::lightclients::ethereum::{
+        light_client_update::{LightClientUpdate, TryFromLightClientUpdateError},
+        trusted_sync_committee::{TrustedSyncCommittee, TryFromTrustedSyncCommitteeError},
+    },
 };
 
 // trait alias would be nice
