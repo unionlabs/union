@@ -326,19 +326,11 @@ impl IbcClient for EthereumLightClient {
             read_consensus_state::<Self::CustomQuery, Self::ConsensusState>(deps, &height)?
         {
             // New header is given with the same height but the storage roots don't match.
-            ensure(
-                consensus_state.data.storage_root
-                    == header.account_update.account_proof.storage_root,
-                Error::StorageRootMismatch {
-                    expected: consensus_state.data.storage_root,
-                    found: header.account_update.account_proof.storage_root,
-                },
-            )?;
-
-            ensure(
-                consensus_state.data.slot == header.consensus_update.attested_header.beacon.slot,
-                Error::SlotCannotBeModified,
-            )?;
+            if consensus_state.data.storage_root != header.account_update.account_proof.storage_root
+                || consensus_state.data.slot != header.consensus_update.attested_header.beacon.slot
+            {
+                return Ok(true);
+            }
 
             // NOTE(aeryz): we don't check the timestamp here since it is calculated based on the
             // thn slot and we already check the slot.
