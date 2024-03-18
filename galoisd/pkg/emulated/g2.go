@@ -492,11 +492,10 @@ func (e *EmulatedAPI) HashToG2(message frontend.Variable, dst frontend.Variable)
 // Union whitepaper: (1), (2) M ◦ H_{mimc^4}
 //
 // https://datatracker.ietf.org/doc/html/rfc9380#name-hash_to_field-implementatio
-///
+// /
 // WARNING: /!\ Tailored for 4 field elements (actually scalar field because of the underlying MiMC hash function).
 // WARNING: this functions uses a 256bit block MiMC (which is in fact only 254bit), use it at your own risk.
 // WARNING: we only support 254bit messages (usually MiMC hash) and domain separation tag (usually MiMC hash).
-//
 func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variable) ([]*emulated.Element[emulated.BN254Fp], error) {
 	pseudoRandomBits, err := e.ExpandMsgXmd(message, dst)
 	if err != nil {

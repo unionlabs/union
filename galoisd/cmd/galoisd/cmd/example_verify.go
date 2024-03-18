@@ -2,22 +2,22 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/hex"
+	"crypto/rand"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	provergrpc "galois/grpc/api/v2"
+	provergrpc "galois/grpc/api/v3"
 	"log"
 	"math/big"
+	"strconv"
+	"time"
 
 	"cosmossdk.io/math"
-	cometbft_bn254 "github.com/cometbft/cometbft/crypto/bn254"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/libs/protoio"
-	"github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/consensys/gnark-crypto/ecc/bn254"
+	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cobra"
 )
@@ -27,285 +27,147 @@ import (
 func ExampleVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Short: "Simulation of a client submitting a proof creation and proof verify requests",
-		Use:   "example-verify [uri]",
-		Args:  cobra.ExactArgs(1),
+		Use:   "example-verify [uri] [nb_of_validators]",
+		Args:  cobra.ExactArgs(2),
 		RunE: MakeCobra(func(ctx context.Context, client provergrpc.UnionProverAPIClient, cmd *cobra.Command, args []string) error {
-			// TODO: refactor: this code (prove call) is duplicated from `prove.go`
-			decodeB64 := func(s string) []byte {
-				bz, err := base64.StdEncoding.DecodeString(s)
-				if err != nil {
-					log.Fatal(err)
-				}
-				return bz
+			nbOfValidators, err := strconv.Atoi(args[1])
+			if err != nil {
+				return err
 			}
 
 			// Nb of tokens for each val in devnet
-			tokens, success := new(big.Int).SetString("1000000000000000000000", 10)
-			if !success {
-				return fmt.Errorf("impossible; qed;")
-			}
-
-			toValidator := func(pubKey []byte) *types.SimpleValidator {
+			toValidator := func(pubKey []byte) (*tmtypes.SimpleValidator, error) {
 				protoPK, err := ce.PubKeyToProto(cometbn254.PubKey(pubKey))
 				if err != nil {
-					log.Fatal(err)
+					return &tmtypes.SimpleValidator{}, err
 				}
-				return &types.SimpleValidator{
+				power, err := rand.Int(rand.Reader, big.NewInt(9223372036854775807/8))
+				if err != nil {
+					return &tmtypes.SimpleValidator{}, err
+				}
+				return &tmtypes.SimpleValidator{
 					PubKey:      &protoPK,
-					VotingPower: sdk.TokensToConsensusPower(math.NewIntFromBigInt(tokens), sdk.DefaultPowerReduction),
-				}
+					VotingPower: sdk.TokensToConsensusPower(math.NewInt(power.Int64()), sdk.DefaultPowerReduction),
+				}, nil
 			}
 
-			// cSpell:disable
-			/*
-				"header": {
-				      "version": {
-				        "block": "11"
-				      },
-				      "chain_id": "union-devnet-1",
-				      "height": "19",
-				      "time": "2023-05-27T11:04:51.760274613Z",
-				      "last_block_id": {
-				        "hash": "C7CC6E2C14DEFEEEC193236649A9D139CDEC8709671920BB043B46AD242479FE",
-				        "parts": {
-				          "total": 1,
-				          "hash": "6D346BF05A513257388252AC865BCFC08ED9F3CB913E4A9CF92371729C9E40FA"
-				        }
-				      },
-				      "last_commit_hash": "5FDC2A4F647BA4AE0C30C286BBC7D05924D5FB15C2C5CA28EABA72FADB62A874",
-				      "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
-				      "validators_hash": "941928B62E046F0ABA7730F63BA8C3A1E274D04A4D7E389566AB8F12F99EBE55",
-				      "next_validators_hash": "941928B62E046F0ABA7730F63BA8C3A1E274D04A4D7E389566AB8F12F99EBE55",
-				      "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
-				      "app_hash": "E02A5AA10A7FAEB3B464BA04824DD582F766C0395C1D4699F4378D29CCBF6E01",
-				      "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
-				      "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
-				      "proposer_address": "B64923E4C2514F5061B6CE83412B7969CF75FBCE"
+			privKeys := make([]cometbn254.PrivKey, nbOfValidators)
+			validators := make([]*tmtypes.SimpleValidator, nbOfValidators)
+			totalPower := int64(0)
+			for i := 0; i < len(validators); i++ {
+				privKeys[i] = cometbn254.GenPrivKey()
+				val, err := toValidator(privKeys[i].PubKey().Bytes())
+				if err != nil {
+					return err
 				}
+				totalPower += val.VotingPower
+				validators[i] = val
+			}
 
-				"last_commit": {
-				      "height": "19",
-				      "round": 0,
-				      "block_id": {
-				        "hash": "F8579B3A521F8F704B991FFB8CA9040124A2F7BF5FFB9A013AEA9E223370AC5F",
-				        "parts": {
-				          "total": 1,
-				          "hash": "ABE49229F06DC8E1F1BC3B564A6F06BEB5098B05F61971BF39297EAE4B1616AA"
-				        }
-				      },
-				      "signatures": [
-				        {
-				          "block_id_flag": 2,
-				          "validator_address": "3F2D3D0325AFEA6B8893378D635D566385207978",
-				          "timestamp": "2023-05-27T11:04:57.354337747Z",
-				          "signature": "0eliDuI/J2J6TpPN4oM7dy57qjWAYG5Pyea/Peor/+4Fn1OSK0d/jv+E0nM+ZmccwyT/MWRuZZ8SrNZj+dIWJA=="
-				        },
-				        {
-				          "block_id_flag": 2,
-				          "validator_address": "647F28094C47745FFF28A03A97BC618D7EDE8CCB",
-				          "timestamp": "2023-05-27T11:04:57.360753529Z",
-				          "signature": "5F0LHP8lXyeHrNJhBA1cuzeCP21O0oEkvYu0e/dhHs0u6+YFPdhViB6ZbmZM11nycIAcJ33+kmlsqA/j1dugoQ=="
-				        },
-				        {
-				          "block_id_flag": 2,
-				          "validator_address": "B64923E4C2514F5061B6CE83412B7969CF75FBCE",
-				          "timestamp": "2023-05-27T11:04:57.540781878Z",
-				          "signature": "rH79tXDFY5xdlWMH5LTOgo2maGE66onP+WdbZS7DAs0ocbGahCII8gGd0aRlbuiYAXLDINrBil/qAxathWwBeg=="
-				        },
-				        {
-				          "block_id_flag": 2,
-				          "validator_address": "CCE6E5E42E299FA04AD73A609A882E2EA636811E",
-				          "timestamp": "2023-05-27T11:04:57.438702389Z",
-				          "signature": "wXh774QmqRjg6Ang3VW1Bi6Z+fUyIrbCatBiArnfhaICoiIKz0IGUog+LyVtZBYpRw1TK0XoQxvUMQybzONp5g=="
-				        }
-				      ]
-				}
-
-
-				"validators": [
-				  {
-				    "commission": {
-				      "commission_rates": {
-				        "max_change_rate": "0.010000000000000000",
-				        "max_rate": "0.200000000000000000",
-				        "rate": "0.100000000000000000"
-				      },
-				      "update_time": "2023-05-27T11:02:45.024436207Z"
-				    },
-				    "consensus_pubkey": {
-				      "@type": "/cosmos.crypto.bn254.PubKey",
-				      "key": "nxXVWFdwRqF8c4UPuZyhnD4hr7h1wHEQjbibSqjys3Y="
-				    },
-				    "delegator_shares": "1000000000000000000000.000000000000000000",
-				    "description": {
-				      "details": "",
-				      "identity": "",
-				      "moniker": "validator-3",
-				      "security_contact": "",
-				      "website": ""
-				    },
-				    "jailed": false,
-				    "min_self_delegation": "1",
-				    "operator_address": "unionvaloper1sw27dhxh32dz4klrllygy24g7tlse7latavr30",
-				    "status": "BOND_STATUS_BONDED",
-				    "tokens": "1000000000000000000000",
-				    "unbonding_height": "0",
-				    "unbonding_ids": [],
-				    "unbonding_on_hold_ref_count": "0",
-				    "unbonding_time": "1970-01-01T00:00:00Z"
-				  },
-				  {
-				    "commission": {
-				      "commission_rates": {
-				        "max_change_rate": "0.010000000000000000",
-				        "max_rate": "0.200000000000000000",
-				        "rate": "0.100000000000000000"
-				      },
-				      "update_time": "2023-05-27T11:02:45.024436207Z"
-				    },
-				    "consensus_pubkey": {
-				      "@type": "/cosmos.crypto.bn254.PubKey",
-				      "key": "hqEVgoEMKkfBb2ASJ6XYc+foI6nV940grE6vIBJMFgY="
-				    },
-				    "delegator_shares": "1000000000000000000000.000000000000000000",
-				    "description": {
-				      "details": "",
-				      "identity": "",
-				      "moniker": "validator-1",
-				      "security_contact": "",
-				      "website": ""
-				    },
-				    "jailed": false,
-				    "min_self_delegation": "1",
-				    "operator_address": "unionvaloper1s36k93gu7x58zns0g4mrep8qgnr5fm4jrqddkv",
-				    "status": "BOND_STATUS_BONDED",
-				    "tokens": "1000000000000000000000",
-				    "unbonding_height": "0",
-				    "unbonding_ids": [],
-				    "unbonding_on_hold_ref_count": "0",
-				    "unbonding_time": "1970-01-01T00:00:00Z"
-				  },
-				  {
-				    "commission": {
-				      "commission_rates": {
-				        "max_change_rate": "0.010000000000000000",
-				        "max_rate": "0.200000000000000000",
-				        "rate": "0.100000000000000000"
-				      },
-				      "update_time": "2023-05-27T11:02:45.024436207Z"
-				    },
-				    "consensus_pubkey": {
-				      "@type": "/cosmos.crypto.bn254.PubKey",
-				      "key": "l3xZBkj/4LfOxEKLGDhHXvdz5xd+jjgE+q/hniC9RW0="
-				    },
-				    "delegator_shares": "1000000000000000000000.000000000000000000",
-				    "description": {
-				      "details": "",
-				      "identity": "",
-				      "moniker": "validator-2",
-				      "security_contact": "",
-				      "website": ""
-				    },
-				    "jailed": false,
-				    "min_self_delegation": "1",
-				    "operator_address": "unionvaloper1ndm3ljzqwvc60uvxwkhczgrczc4jv2ll9etcn6",
-				    "status": "BOND_STATUS_BONDED",
-				    "tokens": "1000000000000000000000",
-				    "unbonding_height": "0",
-				    "unbonding_ids": [],
-				    "unbonding_on_hold_ref_count": "0",
-				    "unbonding_time": "1970-01-01T00:00:00Z"
-				  },
-				  {
-				    "commission": {
-				      "commission_rates": {
-				        "max_change_rate": "0.010000000000000000",
-				        "max_rate": "0.200000000000000000",
-				        "rate": "0.100000000000000000"
-				      },
-				      "update_time": "2023-05-27T11:02:45.024436207Z"
-				    },
-				    "consensus_pubkey": {
-				      "@type": "/cosmos.crypto.bn254.PubKey",
-				      "key": "wI7T2nJFcFebw1jjemnMvtj1ARTY7qknDseziEE5DpU="
-				    },
-				    "delegator_shares": "1000000000000000000000.000000000000000000",
-				    "description": {
-				      "details": "",
-				      "identity": "",
-				      "moniker": "validator-0",
-				      "security_contact": "",
-				      "website": ""
-				    },
-				    "jailed": false,
-				    "min_self_delegation": "1",
-				    "operator_address": "unionvaloper14fldwd959h7glh2e3k45veuqfszvgm693pv868",
-				    "status": "BOND_STATUS_BONDED",
-				    "tokens": "1000000000000000000000",
-				    "unbonding_height": "0",
-				    "unbonding_ids": [],
-				    "unbonding_on_hold_ref_count": "0",
-				    "unbonding_time": "1970-01-01T00:00:00Z"
-				  }
-				]
-			*/
-			// cSpell:enable
-
-			blockHash, err := hex.DecodeString("F8579B3A521F8F704B991FFB8CA9040124A2F7BF5FFB9A013AEA9E223370AC5F")
+			validatorsHash, err := marshalValidators(validators)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
-			partSetHeaderHash, err := hex.DecodeString("ABE49229F06DC8E1F1BC3B564A6F06BEB5098B05F61971BF39297EAE4B1616AA")
-			if err != nil {
-				log.Fatal(err)
+			randomHash := func() []byte {
+				value := make([]byte, 32)
+				_, err = rand.Read(value)
+				if err != nil {
+					panic(err)
+				}
+				return value
 			}
 
-			vote := types.CanonicalVote{
-				Type:   types.PrecommitType,
-				Height: 19,
-				Round:  0,
-				BlockID: &types.CanonicalBlockID{
-					Hash: blockHash,
-					PartSetHeader: types.CanonicalPartSetHeader{
+			randomMiMCHash := func() []byte {
+				value := randomHash()
+				value[0] = 0
+				return value
+			}
+
+			chainID := "union-devnet-1337"
+
+			header := &types.Header{
+				Version: version.Consensus{
+					Block: 11,
+					App:   0,
+				},
+				ChainID: chainID,
+				Height:  0xCAFEBABE,
+				Time:    time.Now().UTC(),
+				LastBlockID: types.BlockID{
+					Hash: randomMiMCHash(),
+					PartSetHeader: types.PartSetHeader{
 						Total: 1,
-						Hash:  partSetHeaderHash,
+						Hash:  randomHash(),
 					},
 				},
-				ChainID: "union-devnet-1",
+				LastCommitHash:     randomHash(),
+				DataHash:           randomHash(),
+				ValidatorsHash:     validatorsHash,
+				NextValidatorsHash: validatorsHash,
+				ConsensusHash:      randomHash(),
+				AppHash:            randomHash(),
+				LastResultsHash:    randomHash(),
+				EvidenceHash:       randomHash(),
+				ProposerAddress:    randomHash(),
 			}
 
-			validators := []*types.SimpleValidator{
-				toValidator(decodeB64("wI7T2nJFcFebw1jjemnMvtj1ARTY7qknDseziEE5DpU=")), // cspell:disable-line
-				toValidator(decodeB64("hqEVgoEMKkfBb2ASJ6XYc+foI6nV940grE6vIBJMFgY=")), // cspell:disable-line
-				toValidator(decodeB64("l3xZBkj/4LfOxEKLGDhHXvdz5xd+jjgE+q/hniC9RW0=")), // cspell:disable-line
-				toValidator(decodeB64("nxXVWFdwRqF8c4UPuZyhnD4hr7h1wHEQjbibSqjys3Y=")), // cspell:disable-line
+			vote := &tmtypes.Vote{
+				Type:   tmtypes.PrecommitType,
+				Height: 0xCAFEBABE,
+				Round:  0xC0DE,
+				BlockID: tmtypes.BlockID{
+					Hash: header.Hash(),
+					PartSetHeader: tmtypes.PartSetHeader{
+						Total: 1,
+						Hash:  randomHash(),
+					},
+				},
+			}
+
+			signedBytes := types.VoteSignBytes(chainID, vote)
+			if err != nil {
+				return err
+			}
+
+			var signatures [][]byte
+			var bitmap big.Int
+			votingPower := 0
+
+			for true {
+				if votingPower >= int(totalPower)/3*2 {
+					break
+				}
+				index, err := rand.Int(rand.Reader, big.NewInt(int64(nbOfValidators)))
+				if err != nil {
+					return err
+				}
+				i := index.Int64()
+				if bitmap.Bit(int(i)) == 0 {
+					votingPower += int(validators[i].VotingPower)
+					bitmap.SetBit(&bitmap, int(i), 1)
+					sig, err := privKeys[i].Sign(signedBytes)
+					if err != nil {
+						return err
+					}
+					signatures = append(signatures, sig)
+				}
 			}
 
 			trustedValidators := validators
 			untrustedValidators := validators
 
-			signatures := [][]byte{
-				decodeB64("0eliDuI/J2J6TpPN4oM7dy57qjWAYG5Pyea/Peor/+4Fn1OSK0d/jv+E0nM+ZmccwyT/MWRuZZ8SrNZj+dIWJA=="), // cspell:disable-line
-				decodeB64("5F0LHP8lXyeHrNJhBA1cuzeCP21O0oEkvYu0e/dhHs0u6+YFPdhViB6ZbmZM11nycIAcJ33+kmlsqA/j1dugoQ=="), // cspell:disable-line
-				decodeB64("rH79tXDFY5xdlWMH5LTOgo2maGE66onP+WdbZS7DAs0ocbGahCII8gGd0aRlbuiYAXLDINrBil/qAxathWwBeg=="), // cspell:disable-line
-				decodeB64("wXh774QmqRjg6Ang3VW1Bi6Z+fUyIrbCatBiArnfhaICoiIKz0IGUog+LyVtZBYpRw1TK0XoQxvUMQybzONp5g=="), // cspell:disable-line
-			}
-
 			trustedSignatures := signatures
 			untrustedSignatures := signatures
-
-			var bitmap big.Int
-			bitmap.SetBit(&bitmap, 0, 1)
-			bitmap.SetBit(&bitmap, 1, 1)
-			bitmap.SetBit(&bitmap, 2, 1)
-			bitmap.SetBit(&bitmap, 3, 1)
 
 			trustedBitmap := bitmap
 			untrustedBitmap := bitmap
 
-			request := provergrpc.ProveRequest{
-				Vote: &vote,
+			canonicalVote := types.CanonicalizeVote(chainID, vote)
+
+			proveRes, err := client.Prove(ctx, &provergrpc.ProveRequest{
+				Vote:            &canonicalVote,
+				UntrustedHeader: header.ToProto(),
 				TrustedCommit: &provergrpc.ValidatorSetCommit{
 					Validators: trustedValidators,
 					Signatures: trustedSignatures,
@@ -316,73 +178,52 @@ func ExampleVerifyCmd() *cobra.Command {
 					Signatures: untrustedSignatures,
 					Bitmap:     untrustedBitmap.Bytes(),
 				},
-			}
-
-			proveRes, err := client.Prove(ctx, &request)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			resJson, err := json.MarshalIndent(&proveRes, "", "    ")
+			})
 			if err != nil {
 				return err
 			}
-			log.Println(string(resJson))
-			log.Printf("%X\n", proveRes.Proof.Content)
-			log.Printf("%X\n", proveRes.Proof.EvmProof)
 
-			trustedValidatorBytes := make([][]byte, len(trustedValidators))
-			for i, val := range trustedValidators {
-				var public bn254.G1Affine
-				_, err := public.SetBytes(val.GetPubKey().GetBn254())
-				if err != nil {
-					log.Fatal(err)
-				}
-				leaf, err := cometbn254.NewMerkleLeaf(public, val.VotingPower)
-				if err != nil {
-					log.Fatal(err)
-				}
-				trustedValidatorBytes[i], err = leaf.Hash()
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-
-			untrustedValidatorBytes := make([][]byte, len(untrustedValidators))
-			for i, val := range untrustedValidators {
-				var public bn254.G1Affine
-				_, err := public.SetBytes(val.GetPubKey().GetBn254())
-				if err != nil {
-					log.Fatal(err)
-				}
-				leaf, err := cometbn254.NewMerkleLeaf(public, val.VotingPower)
-				if err != nil {
-					log.Fatal(err)
-				}
-				untrustedValidatorBytes[i], err = leaf.Hash()
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-
-			trustedValidatorSetRoot := merkle.MimcHashFromByteSlices(trustedValidatorBytes)
-			untrustedValidatorSetRoot := merkle.MimcHashFromByteSlices(untrustedValidatorBytes)
-
-			log.Printf("%X\n", trustedValidatorSetRoot)
-			log.Printf("%X\n", untrustedValidatorSetRoot)
-
-			signedBytes, err := protoio.MarshalDelimited(&vote)
+			headerJSON, err := json.Marshal(header)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
-			hm := cometbft_bn254.HashToField(signedBytes)
+			fmt.Printf("Header: %s\n", headerJSON)
+			fmt.Printf("Vote: %X\n", signedBytes)
+			fmt.Printf("Gnark Proof: %X\n", proveRes.Proof.Content)
+			fmt.Printf("Public inputs: %X\n", proveRes.Proof.PublicInputs)
+			fmt.Printf("Trusted root: %X\n", proveRes.TrustedValidatorSetRoot)
+			fmt.Printf("EVM compatible ZKP: %X\n", proveRes.Proof.EvmProof)
+
+			inputsHash := func(h *types.Header) []byte {
+				buff := []byte{}
+				var padded [32]byte
+				writeI64 := func(x int64) {
+					big.NewInt(x).FillBytes(padded[:])
+					buff = append(buff, padded[:]...)
+				}
+				writeMiMCHash := func(b []byte) {
+					big.NewInt(0).SetBytes(b).FillBytes(padded[:])
+					buff = append(buff, padded[:]...)
+				}
+				writeHash := func(b []byte) {
+					buff = append(buff, b...)
+				}
+				writeMiMCHash([]byte(h.ChainID))
+				writeI64(h.Height)
+				writeI64(h.Time.Unix())
+				writeI64(int64(h.Time.Nanosecond()))
+				writeMiMCHash(h.ValidatorsHash)
+				writeMiMCHash(h.NextValidatorsHash)
+				writeHash(h.AppHash)
+				writeMiMCHash(h.ValidatorsHash)
+				hash := sha256.Sum256(buff)
+				return hash[1:]
+			}
 
 			verifyRes, err := client.Verify(ctx, &provergrpc.VerifyRequest{
-				Proof:                     proveRes.Proof,
-				TrustedValidatorSetRoot:   trustedValidatorSetRoot,
-				UntrustedValidatorSetRoot: untrustedValidatorSetRoot,
-				HashedMessage:             &provergrpc.FrElement{Value: hm.Marshal()},
+				Proof:      proveRes.Proof,
+				InputsHash: inputsHash(header),
 			})
 
 			if err != nil {

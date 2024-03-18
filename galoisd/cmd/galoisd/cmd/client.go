@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"crypto/tls"
-	provergrpc "galois/grpc/api/v2"
+	provergrpc "galois/grpc/api/v3"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

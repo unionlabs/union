@@ -2,7 +2,7 @@ package cmd
 
 import (
 	provergrpc "galois/grpc"
-	provergrpcapi "galois/grpc/api/v2"
+	provergrpcapi "galois/grpc/api/v3"
 	"log"
 	"net"
 	"time"
