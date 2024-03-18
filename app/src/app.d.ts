@@ -25,4 +25,4 @@ type EthereumRequestMethod =
   | "wallet_invokeSnap"
   | "wallet_watchAsset"
 
-export {}
+export type {}

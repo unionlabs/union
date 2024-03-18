@@ -51,5 +51,5 @@ name   = "astro"
 source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "947e93089e60c66e681eba22283f4037841451e7" }
 
 [[grammar]]
-name = "sql"
+name   = "sql"
 source = { git = "https://github.com/DerekStride/tree-sitter-sql", rev = "da2d1eff425b146d3c8cab7be8dfa98b11d896dc" }

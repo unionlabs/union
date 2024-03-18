@@ -43,7 +43,7 @@ export async function fetchUserTransfers({
   address
 }: {
   address: string
-}): Promise<TransferEvent[]> {
+}): Promise<Array<TransferEvent>> {
   const response = await fetcher<{
     data: {
       transferEvents: { items: Array<TransferEvent> }
