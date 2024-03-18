@@ -147,7 +147,7 @@ mod tests {
     use alloc::borrow::Cow;
 
     use super::*;
-    use crate::validated::{ValidateT, Validated};
+    use crate::validated::ValidateT;
 
     fn ics024(
         s: Cow<'_, str>,

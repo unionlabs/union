@@ -528,10 +528,7 @@ mod tests {
     use std::{fs, num::NonZeroU64};
 
     use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-    use unionlabs::{
-        ibc::lightclients::tendermint::header::Header, option_unwrap, promote,
-        tendermint::crypto::public_key::PublicKey,
-    };
+    use unionlabs::{ibc::lightclients::tendermint::header::Header, option_unwrap, promote};
 
     use super::*;
 

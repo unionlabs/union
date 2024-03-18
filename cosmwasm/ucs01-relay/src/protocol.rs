@@ -63,7 +63,7 @@ where
 {
     CHANNEL_STATE.update(
         deps.storage,
-        (channel_id, &denom),
+        (channel_id, denom),
         |state| -> Result<_, ContractError> {
             let new_outstanding = f(state.as_ref().map(|x| x.outstanding))?;
             let mut state = state.unwrap_or_default();

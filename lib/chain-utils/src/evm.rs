@@ -30,7 +30,6 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use serde::{Deserialize, Serialize};
 use typenum::Unsigned;
 use unionlabs::{
-    self,
     encoding::{Decode, EthAbi},
     ethereum::config::ChainSpec,
     hash::{H160, H256},

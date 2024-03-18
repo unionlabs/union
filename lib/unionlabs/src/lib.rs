@@ -381,7 +381,7 @@ where
 }
 
 pub mod never {
-    use core::{self, fmt::Display};
+    use core::fmt::Display;
 
     use serde::{Deserialize, Serialize};
 

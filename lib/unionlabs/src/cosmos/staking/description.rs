@@ -4,11 +4,11 @@ use macros::model;
 pub struct Description {
     /// moniker defines a human-readable name for the validator.
     pub moniker: String,
-    /// identity defines an optional identity signature (ex. UPort or Keybase).
+    /// identity defines an optional identity signature (ex. `UPort` or `Keybase`).
     pub identity: String,
     /// website defines an optional website link.
     pub website: String,
-    /// security_contact defines an optional email for security contact.
+    /// `security_contact` defines an optional email for security contact.
     pub security_contact: String,
     /// details define other optional details.
     pub details: String,

@@ -185,7 +185,7 @@ pub struct DepositData {
     pub withdrawal_credentials: [u8; 32],
     #[serde(with = "::serde_utils::string")]
     pub amount: u64,
-    /// Signing over DepositMessage
+    /// Signing over `DepositMessage`
     pub signature: BlsSignature,
 }
 

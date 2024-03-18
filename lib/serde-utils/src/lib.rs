@@ -1,5 +1,14 @@
+#![no_std]
+#![feature(error_in_core)]
+
 extern crate alloc;
 
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use core::fmt::Debug;
 
 use hex::FromHexError;
@@ -15,8 +24,8 @@ pub enum FromHexStringError {
     TryFromBytes(String),
 }
 
-impl std::error::Error for FromHexStringError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl core::error::Error for FromHexStringError {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
             FromHexStringError::Hex(hex) => Some(hex),
             FromHexStringError::EmptyString => None,
@@ -27,7 +36,7 @@ impl std::error::Error for FromHexStringError {
 }
 
 impl core::fmt::Display for FromHexStringError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             FromHexStringError::Hex(e) => write!(f, "{e}"),
             FromHexStringError::EmptyString => write!(f, "cannot parse empty string as hex"),
@@ -80,8 +89,8 @@ where
 }
 
 pub mod base64 {
-    use alloc::{string::String, vec::Vec};
-    use std::fmt::Debug;
+    use alloc::{format, string::String, vec::Vec};
+    use core::fmt::Debug;
 
     use base64::prelude::*;
     use serde::{de, Deserialize, Deserializer};
@@ -161,7 +170,8 @@ pub mod base64_opt {
 // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=8b514073821e558a5ce862f64361492e
 // will optimize this later
 pub mod fixed_size_array {
-    use std::{convert::TryInto, marker::PhantomData};
+    use alloc::{format, vec::Vec};
+    use core::marker::PhantomData;
 
     use serde::{
         de::{SeqAccess, Visitor},
@@ -188,7 +198,7 @@ pub mod fixed_size_array {
     {
         type Value = [T; N];
 
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
             formatter.write_str(&format!("an array of length {}", N))
         }
 
@@ -222,7 +232,8 @@ pub mod fixed_size_array {
 }
 
 pub mod hex_string {
-    use std::fmt::Debug;
+    use alloc::{string::String, vec::Vec};
+    use core::fmt::Debug;
 
     use serde::{de, Deserialize};
 
@@ -246,7 +257,8 @@ pub mod hex_string {
 }
 
 pub mod hex_upper_unprefixed {
-    use std::fmt::Debug;
+    use alloc::{format, string::String, vec::Vec};
+    use core::fmt::Debug;
 
     use serde::{de, Deserialize};
 
@@ -275,8 +287,8 @@ pub mod hex_upper_unprefixed {
 }
 
 pub mod hex_string_list {
-    use alloc::{string::String, vec::Vec};
-    use std::fmt::Debug;
+    use alloc::{format, string::String, vec::Vec};
+    use core::fmt::Debug;
 
     use serde::{de, Deserialize, Deserializer, Serializer};
 
@@ -309,7 +321,8 @@ pub mod hex_string_list {
 }
 
 pub mod string {
-    use std::{fmt, str::FromStr};
+    use alloc::string::String;
+    use core::{fmt, str::FromStr};
 
     use serde::de::Deserialize;
 
@@ -336,7 +349,8 @@ pub mod string {
 }
 
 pub mod string_opt {
-    use std::{fmt, str::FromStr};
+    use alloc::string::String;
+    use core::{fmt, str::FromStr};
 
     use serde::de::Deserialize;
 
@@ -370,6 +384,8 @@ pub mod string_opt {
 pub mod u256_from_dec_str {
     #![allow(clippy::disallowed_types)] // need to access the inner type to do ser/de
 
+    use alloc::string::String;
+
     use primitive_types::U256;
     use serde::de::Deserialize;
 
@@ -392,6 +408,8 @@ pub mod u256_from_dec_str {
 }
 
 pub mod bitvec_string {
+    use alloc::string::String;
+
     use bitvec::vec::BitVec;
     use serde::de::{self, Deserialize};
 
@@ -429,8 +447,7 @@ pub mod bitvec_string {
 }
 
 pub mod fmt {
-    use core::fmt::Display;
-    use std::{fmt::Write, marker::PhantomData};
+    use core::{fmt::Write, marker::PhantomData};
 
     use bitvec::{order::BitOrder, store::BitStore, view::AsBits};
 
@@ -475,18 +492,6 @@ pub mod fmt {
             Ok(())
         }
     }
-
-    pub fn display<T: Display>(t: &T, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        struct DebugAsDisplay<T>(T);
-
-        impl<T: Display> core::fmt::Debug for DebugAsDisplay<T> {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                write!(f, "{}", self.0)
-            }
-        }
-
-        write!(f, "{t}")
-    }
 }
 
 #[cfg(test)]
@@ -495,6 +500,9 @@ mod tests {
 
     #[test]
     fn hex() {
-        parse_hex::<Vec<u8>>(to_hex([])).unwrap();
+        let string = to_hex([]);
+        assert_eq!(string, "0x0");
+        let bz = parse_hex::<alloc::vec::Vec<u8>>(string).unwrap();
+        assert_eq!(bz, []);
     }
 }

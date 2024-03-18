@@ -135,18 +135,15 @@ impl Display for Timestamp {
 
 impl From<Timestamp> for DateTime<Utc> {
     fn from(value: Timestamp) -> Self {
-        DateTime::<Utc>::from_naive_utc_and_offset(
-            NaiveDateTime::from_timestamp_opt(
-                value.seconds.inner(),
-                value
-                    .nanos
-                    .inner()
-                    .try_into()
-                    .expect("nanos bounds are within the bounds of u32; qed;"),
-            )
-            .expect("values are within bounds; qed;"),
-            Utc,
+        DateTime::from_timestamp(
+            value.seconds.inner(),
+            value
+                .nanos
+                .inner()
+                .try_into()
+                .expect("nanos bounds are within the bounds of u32; qed;"),
         )
+        .expect("values are within bounds; qed;")
     }
 }
 
@@ -167,7 +164,7 @@ impl<Tz: TimeZone> TryFrom<DateTime<Tz>> for Timestamp {
         if nanos >= NANOS_PER_SECOND {
             nanos -= NANOS_PER_SECOND;
 
-            debug_assert!(NaiveDateTime::MAX.timestamp() < i64::MAX);
+            debug_assert!(NaiveDateTime::MAX.and_utc().timestamp() < i64::MAX);
 
             // REVIEW: is this expected behaviour for leap seconds? The proto docs
             // mention [smear](https://developers.google.com/time/smear) but I'm

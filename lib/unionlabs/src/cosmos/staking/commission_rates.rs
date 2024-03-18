@@ -4,9 +4,9 @@ use macros::model;
 pub struct CommissionRates {
     /// rate is the commission rate charged to delegators, as a fraction.
     pub rate: String,
-    /// max_rate defines the maximum commission rate which validator can ever charge, as a fraction.
+    /// `max_rate` defines the maximum commission rate which validator can ever charge, as a fraction.
     pub max_rate: String,
-    /// max_change_rate defines the maximum daily increase of the validator commission, as a fraction.
+    /// `max_change_rate` defines the maximum daily increase of the validator commission, as a fraction.
     pub max_change_rate: String,
 }
 

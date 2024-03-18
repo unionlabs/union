@@ -22,13 +22,13 @@ impl PostgresDatastore {
 }
 
 impl Datastore for PostgresDatastore {
-    fn do_post<Q: GraphQLQuery>(
+    fn do_post<Q>(
         &self,
         v: Q::Variables,
     ) -> impl Future<Output = color_eyre::Result<Response<Q::ResponseData>>> + '_
     where
+        Q: GraphQLQuery + SqlxQuery,
         <Q as GraphQLQuery>::Variables: 'static,
-        Q: SqlxQuery,
     {
         async {
             let mut tx = self.pool.begin().await?;

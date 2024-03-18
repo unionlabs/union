@@ -5,7 +5,7 @@ extern crate alloc;
 use core::marker::PhantomData;
 use std::fmt::Debug;
 
-use ark_ff::{vec, vec::Vec, BigInt};
+use ark_ff::{vec, BigInt};
 use byteorder::{BigEndian, ByteOrder};
 use hex_literal::hex;
 use sha3::Digest;

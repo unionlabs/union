@@ -32,11 +32,11 @@ impl<C: SYNC_COMMITTEE_SIZE> From<SyncCommittee<C>>
 
 #[derive(Debug)]
 pub enum TryFromSyncCommitteeError {
-    /// PubKey had an invalid length
+    /// One of the `pubkeys` had an invalid length
     PubKey(InvalidLength),
-    /// Invalid amount of pubkeys
+    /// Invalid amount of `pubkeys`
     PubKeys(fixed_vector::TryFromVecError),
-    /// AggregatePubKey had an invalid length
+    /// The `aggregate_pubkey` had an invalid length
     AggregatePubKey(InvalidLength),
 }
 

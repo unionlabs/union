@@ -268,111 +268,45 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
     Ok(())
 }
 
-// commented out for now as this is useful in debugging but not to be run in CI
-// #[cfg(test)]
-// mod tests {
-//     use serde::{Deserialize, Serialize};
-
-//     use crate::{chain::union::EthereumMinimal, msg::msg::MsgUpdateClientData};
-
-//     #[test]
-//     fn update_csv() {
-//         #[derive(Debug, Serialize, Deserialize)]
-//         struct Record {
-//             data: String,
-//             id: u64,
-//         }
-
-//         for record in csv::ReaderBuilder::new()
-//             .from_path("/tmp/out.csv")
-//             .unwrap()
-//             .into_deserialize::<Record>()
-//         {
-//             let record = record.unwrap();
-//             let json =
-//                 serde_json::from_str::<MsgUpdateClientData<EthereumMinimal>>(&record.data).unwrap();
-
-//             let update_from = json.update_from;
-
-//             let msg = json.msg.client_message.data;
-
-//             println!(
-//                 "id: {}\nupdate_from: {}\nattested beacon slot: {}\nattested execution block number: {}\nfinalized beacon slot: {}\nfinalized execution block number: {}\nnext_sync_committee: {}\n",
-//                 record.id,
-//                 update_from,
-//                 msg.consensus_update.attested_header.beacon.slot,
-//                 msg.consensus_update.attested_header.execution.block_number,
-//                 msg.consensus_update.finalized_header.beacon.slot,
-//                 msg.consensus_update.finalized_header.execution.block_number,
-//                 msg.consensus_update.next_sync_committee.is_some(),
-//             );
-//         }
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
-    #![allow(unused_imports)]
+    use std::marker::PhantomData;
 
-    use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, sync::Arc};
-
-    use bip32::{secp256k1::ecdsa, PrivateKey};
     use block_message::BlockPollingTypes;
     use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm};
-    use contracts::ibc_handler::{CreateClientCall, IBCHandler};
-    use ethers::{
-        middleware::{NonceManagerMiddleware, SignerMiddleware},
-        providers::{Provider, Ws},
-        signers::LocalWallet,
-        utils::secret_key_to_address,
-    };
     use hex_literal::hex;
     use queue_msg::{
         aggregate, defer_relative, event, fetch, msg, repeat, seq, QueueMsg, QueueMsgTypes,
     };
     use relay_message::{
-        aggregate::{Aggregate, AggregateCreateClient, AnyAggregate},
+        aggregate::AggregateCreateClient,
         chain_impls::{
             cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
-            evm::{mk_function_call, EvmConfig},
+            evm::EvmConfig,
             union::UnionFetch,
         },
-        data::Data,
-        event::{Event, IbcEvent},
-        fetch::{
-            AnyFetch, Fetch, FetchSelfClientState, FetchSelfConsensusState, FetchState,
-            LightClientSpecificFetch,
-        },
-        msg::{
-            AnyMsg, Msg, MsgChannelOpenInitData, MsgConnectionOpenInitData,
-            MsgConnectionOpenTryData,
-        },
-        AnyLightClientIdentified, Identified, RelayerMsgTypes, WasmConfig,
+        event::IbcEvent,
+        fetch::{FetchSelfClientState, FetchSelfConsensusState, LightClientSpecificFetch},
+        msg::{MsgChannelOpenInitData, MsgConnectionOpenInitData},
+        RelayerMsgTypes, WasmConfig,
     };
-    use serde::{de::DeserializeOwned, Serialize};
-    use serde_json::json;
     use unionlabs::{
-        encoding::{Encode, EncodeAs, EthAbi},
         ethereum::config::Minimal,
-        events::{ConnectionOpenAck, ConnectionOpenTry},
+        events::ConnectionOpenTry,
         hash::{H160, H256},
         ibc::core::{
             channel::{
                 self, channel::Channel, msg_channel_open_init::MsgChannelOpenInit, order::Order,
             },
             commitment::merkle_prefix::MerklePrefix,
-            connection::{
-                self, msg_connection_open_init::MsgConnectionOpenInit,
-                msg_connection_open_try::MsgConnectionOpenTry, version::Version,
-            },
+            connection::{self, msg_connection_open_init::MsgConnectionOpenInit, version::Version},
         },
-        proof::{self, ConnectionPath},
+        proof,
         uint::U256,
-        validated::ValidateT,
-        EmptyString, QueryHeight, DELAY_PERIOD,
+        QueryHeight, DELAY_PERIOD,
     };
 
-    use crate::queue::{FromQueueMsg, VoyagerMessageTypes, VoyagerMsg};
+    use crate::queue::{FromQueueMsg, VoyagerMessageTypes};
 
     macro_rules! parse {
         ($expr:expr) => {
