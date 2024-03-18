@@ -53,7 +53,7 @@ impl ConsensusStateMetadata {
 /// **Note**: The caller should note that if there is no other (lexicographically) previous consensus
 /// state metadata in the storage, this could try to parse a random item and return an error. Hence,
 /// on such occasion, there is no guarantee of whether the caller will get `Ok(None)` or `Err`.
-pub fn get_or_prev_consensus_state_meta(
+pub fn get_current_or_prev_consensus_state_meta(
     deps: Deps,
     height: Height,
 ) -> Result<Option<(Height, ConsensusStateMetadata)>, StorageError> {
@@ -79,7 +79,7 @@ pub fn get_or_prev_consensus_state_meta(
 /// **Note**: The caller should note that if there is no other (lexicographically) next consensus
 /// state metadata in the storage, this could try to parse a random item and return an error. Hence,
 /// on such occasion, there is no guarantee of whether the caller will get `Ok(None)` or `Err`.
-pub fn get_or_next_consensus_state_meta(
+pub fn get_current_or_next_consensus_state_meta(
     deps: Deps,
     height: Height,
 ) -> Result<Option<(Height, ConsensusStateMetadata)>, StorageError> {
