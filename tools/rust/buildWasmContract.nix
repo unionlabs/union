@@ -8,12 +8,29 @@
 }:
 let
   CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+  DEFAULT_MAX_SIZE = 800 * 1024;
 
   dashesToUnderscores = builtins.replaceStrings [ "-" ] [ "_" ];
 
   featuresString = features: if features == null then "" else (lib.concatMapStrings (feature: "-${feature}") features);
+  allChecks = checks: maxSize: builtins.concatLists [
+    checks
+    [
+      (file_name: ''
+        file_size=$(stat -c %s "${file_name}")
+        max_size_str="${toString maxSize}"
 
-  cargoBuildInstallPhase = { features, contractFileNameWithoutExt, checks }:
+        if [ "$file_size" -gt "$max_size_str" ]; then
+          echo "Error: File size: $file_size exceeds $max_size_str bytes"
+          exit 1
+        else
+          echo "File size: $file_size bytes"
+        fi
+      '')
+    ]
+  ];
+
+  cargoBuildInstallPhase = { features, contractFileNameWithoutExt, checks, maxSize }:
     let
       outputFilePath = "$out/lib/${contractFileNameWithoutExt}${dashesToUnderscores (featuresString features)}.wasm";
     in
@@ -28,7 +45,7 @@ let
           "\n\n"
           (map
             (check: check "${outputFilePath}")
-            checks
+            (allChecks checks maxSize)
           )
       }
 
@@ -44,6 +61,8 @@ in
     , features ? null
       # list of fns taking the file path as an argument and producing arbitrary shell script
     , checks ? [ ]
+      # maximum size of the wasm output
+    , maxSize ? DEFAULT_MAX_SIZE
     }:
     let
       contractFileNameWithoutExt =
@@ -66,7 +85,7 @@ in
 
             sha256sum target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm  
           '';
-          cargoBuildInstallPhase = cargoBuildInstallPhase { inherit features contractFileNameWithoutExt checks; };
+          cargoBuildInstallPhase = cargoBuildInstallPhase { inherit features contractFileNameWithoutExt checks maxSize; };
         };
     in
     {

@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { crane, lib, dbg, pkgs, writeShellApplicationWithArgs, ensure-wasm-client-type, ensure-wasm-client-size, mkCi, ... }:
+  perSystem = { crane, lib, dbg, pkgs, writeShellApplicationWithArgs, ensure-wasm-client-type, mkCi, ... }:
     let
       mkEthLc = chain-spec: crane.buildWasmContract {
         crateDirFromRoot = "light-clients/ethereum-light-client";
@@ -9,12 +9,6 @@
             ${ensure-wasm-client-type {
               inherit file_path;
               type = "Ethereum${chain-spec}";
-            }}
-          '')
-          (file_path: ''
-            ${ensure-wasm-client-size {
-              inherit file_path;
-              max_size = 800 * 1024;
             }}
           '')
         ];
