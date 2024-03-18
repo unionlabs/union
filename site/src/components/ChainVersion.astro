@@ -9,7 +9,7 @@ interface Props {
 const chainId = (Astro.props.chainId || `${Object.keys(versions).at(-1)}`) as keyof typeof versions
 const genesis = Astro.props.genesis
 
-const version = versions[chainId].at(genesis ? 0 : -1)
+const version = versions[chainId].binary
 ---
 
 {version}
