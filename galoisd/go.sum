@@ -81,8 +81,8 @@ github.com/cometbft/cometbft-db v0.9.1 h1:MIhVX5ja5bXNHF8EYrThkG9F7r9kSfv8BX4LWa
 github.com/cometbft/cometbft-db v0.9.1/go.mod h1:iliyWaoV0mRwBJoizElCwwRA9Tf7jZJOURcRZF9m60U=
 github.com/consensys/bavard v0.1.13 h1:oLhMLOFGTLdlda/kma4VOJazblc7IM5y5QPd2A/YjhQ=
 github.com/consensys/bavard v0.1.13/go.mod h1:9ItSMtA/dXMAiL7BG6bqW2m3NdSEObYWoH223nGHukI=
-github.com/consensys/gnark v0.9.2-0.20240115131420-34fdb0391653 h1:1tg87ITSxBcz7Tu0WrHqhk/AsRKS5SyMWlK+Xf410SQ=
-github.com/consensys/gnark v0.9.2-0.20240115131420-34fdb0391653/go.mod h1:SaKNPzmiAesFEofbldonRPNM2CANKpa460lR9JD73sc=
+github.com/consensys/gnark v0.9.2-0.20240312175655-ce0186ef32c1 h1:HQLV1mfE1lGAbJqHqv0rpPZyWv9ieoBvHZ6lJWfXDTQ=
+github.com/consensys/gnark v0.9.2-0.20240312175655-ce0186ef32c1/go.mod h1:0dnRvl8EDbPsSZsIg8xOP1Au8cf43xOlT7/BhwMV98g=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/go-etcd v2.0.0+incompatible/go.mod h1:Jez6KQU2B/sWsbdaef3ED8NzMklzPG4d5KIOhIy30Tk=
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=

@@ -26,7 +26,6 @@ import (
 	"github.com/rs/zerolog"
 	"math"
 	"math/big"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,7 +47,8 @@ type solver struct {
 	mHintsFunctions map[csolver.HintID]csolver.Hint
 
 	// used to out api.Println
-	logger zerolog.Logger
+	logger  zerolog.Logger
+	nbTasks int
 
 	a, b, c fr.Vector // R1CS solver will compute the a,b,c matrices
 
@@ -96,6 +96,7 @@ func newSolver(cs *system, witness fr.Vector, opts ...csolver.Option) (*solver, 
 		solved:          make([]bool, nbWires),
 		mHintsFunctions: hintFunctions,
 		logger:          opt.Logger,
+		nbTasks:         opt.NbTasks,
 		q:               cs.Field(),
 	}
 
@@ -429,13 +430,13 @@ func (solver *solver) run() error {
 	// then we check that the constraint is valid
 	// if a[i] * b[i] != c[i]; it means the constraint is not satisfied
 	var wg sync.WaitGroup
-	chTasks := make(chan []int, runtime.NumCPU())
-	chError := make(chan error, runtime.NumCPU())
+	chTasks := make(chan []int, solver.nbTasks)
+	chError := make(chan error, solver.nbTasks)
 
 	// start a worker pool
 	// each worker wait on chTasks
 	// a task is a slice of constraint indexes to be solved
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for i := 0; i < solver.nbTasks; i++ {
 		go func() {
 			var scratch scratch
 			for t := range chTasks {
@@ -465,7 +466,7 @@ func (solver *solver) run() error {
 		// max CPU to use
 		maxCPU := float64(len(level)) / minWorkPerCPU
 
-		if maxCPU <= 1.0 {
+		if maxCPU <= 1.0 || solver.nbTasks == 1 {
 			// we do it sequentially
 			for _, i := range level {
 				if err := solver.processInstruction(solver.Instructions[i], &scratch); err != nil {
@@ -477,7 +478,7 @@ func (solver *solver) run() error {
 
 		// number of tasks for this level is set to number of CPU
 		// but if we don't have enough work for all our CPU, it can be lower.
-		nbTasks := runtime.NumCPU()
+		nbTasks := solver.nbTasks
 		maxTasks := int(math.Ceil(maxCPU))
 		if nbTasks > maxTasks {
 			nbTasks = maxTasks

@@ -26,7 +26,7 @@ func RegisterHint(hintFns ...Hint) {
 		name := GetHintName(hintFn)
 		if _, ok := registry[key]; ok {
 			log := logger.Logger()
-			log.Warn().Str("name", name).Msg("function registered multiple times")
+			log.Debug().Str("name", name).Msg("function registered multiple times")
 			return
 		}
 		registry[key] = hintFn

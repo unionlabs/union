@@ -252,7 +252,6 @@ func newInstance(ctx context.Context, spr *cs.SparseR1CS, pk *ProvingKey, fullWi
 		chRestoreLRO:           make(chan struct{}, 1),
 	}
 	s.initBSB22Commitments()
-	s.setupGKRHints()
 	s.x = make([]*iop.Polynomial, id_Qci+2*len(s.commitmentInfo))
 
 	// init fft domains
@@ -333,15 +332,6 @@ func (s *instance) bsb22Hint(_ *big.Int, ins, outs []*big.Int) error {
 	res.BigInt(outs[0])
 
 	return nil
-}
-
-func (s *instance) setupGKRHints() {
-	if s.spr.GkrInfo.Is() {
-		var gkrData cs.GkrSolvingData
-		s.opt.SolverOpts = append(s.opt.SolverOpts,
-			solver.OverrideHint(s.spr.GkrInfo.SolveHintID, cs.GkrSolveHint(s.spr.GkrInfo, &gkrData)),
-			solver.OverrideHint(s.spr.GkrInfo.ProveHintID, cs.GkrProveHint(s.spr.GkrInfo.HashName, &gkrData)))
-	}
 }
 
 // solveConstraints computes the evaluation of the polynomials L, R, O

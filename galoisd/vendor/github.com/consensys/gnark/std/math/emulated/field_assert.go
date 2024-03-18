@@ -2,92 +2,9 @@ package emulated
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/consensys/gnark/frontend"
 )
-
-// assertLimbsEqualitySlow is the main routine in the package. It asserts that the
-// two slices of limbs represent the same integer value. This is also the most
-// costly operation in the package as it does bit decomposition of the limbs.
-func (f *Field[T]) assertLimbsEqualitySlow(api frontend.API, l, r []frontend.Variable, nbBits, nbCarryBits uint) {
-
-	nbLimbs := max(len(l), len(r))
-	maxValue := new(big.Int).Lsh(big.NewInt(1), nbBits+nbCarryBits)
-	maxValueShift := new(big.Int).Lsh(big.NewInt(1), nbCarryBits)
-
-	var carry frontend.Variable = 0
-	for i := 0; i < nbLimbs; i++ {
-		diff := api.Add(maxValue, carry)
-		if i < len(l) {
-			diff = api.Add(diff, l[i])
-		}
-		if i < len(r) {
-			diff = api.Sub(diff, r[i])
-		}
-		if i > 0 {
-			diff = api.Sub(diff, maxValueShift)
-		}
-
-		// carry is stored in the highest bits of diff[nbBits:nbBits+nbCarryBits+1]
-		// we know that diff[:nbBits] are 0 bits, but still need to constrain them.
-		// to do both; we do a "clean" right shift and only need to boolean constrain the carry part
-		carry = f.rsh(diff, int(nbBits), int(nbBits+nbCarryBits+1))
-	}
-	api.AssertIsEqual(carry, maxValueShift)
-}
-
-func (f *Field[T]) rsh(v frontend.Variable, startDigit, endDigit int) frontend.Variable {
-	// if v is a constant, work with the big int value.
-	if c, ok := f.api.Compiler().ConstantValue(v); ok {
-		bits := make([]frontend.Variable, endDigit-startDigit)
-		for i := 0; i < len(bits); i++ {
-			bits[i] = c.Bit(i + startDigit)
-		}
-		return bits
-	}
-	shifted, err := f.api.Compiler().NewHint(RightShift, 1, startDigit, v)
-	if err != nil {
-		panic(fmt.Sprintf("right shift: %v", err))
-	}
-	f.checker.Check(shifted[0], endDigit-startDigit)
-	shift := new(big.Int).Lsh(big.NewInt(1), uint(startDigit))
-	composed := f.api.Mul(shifted[0], shift)
-	f.api.AssertIsEqual(composed, v)
-	return shifted[0]
-}
-
-// AssertLimbsEquality asserts that the limbs represent a same integer value.
-// This method does not ensure that the values are equal modulo the field order.
-// For strict equality, use AssertIsEqual.
-func (f *Field[T]) AssertLimbsEquality(a, b *Element[T]) {
-	f.enforceWidthConditional(a)
-	f.enforceWidthConditional(b)
-	ba, aConst := f.constantValue(a)
-	bb, bConst := f.constantValue(b)
-	if aConst && bConst {
-		ba.Mod(ba, f.fParams.Modulus())
-		bb.Mod(bb, f.fParams.Modulus())
-		if ba.Cmp(bb) != 0 {
-			panic(fmt.Errorf("constant values are different: %s != %s", ba.String(), bb.String()))
-		}
-		return
-	}
-
-	// first, we check if we can compact a and b; they could be using 8 limbs of 32bits
-	// but with our snark field, we could express them in 2 limbs of 128bits, which would make bit decomposition
-	// and limbs equality in-circuit (way) cheaper
-	ca, cb, bitsPerLimb := f.compact(a, b)
-
-	// slow path -- the overflows are different. Need to compare with carries.
-	// TODO: we previously assumed that one side was "larger" than the other
-	// side, but I think this assumption is not valid anymore
-	if a.overflow > b.overflow {
-		f.assertLimbsEqualitySlow(f.api, ca, cb, bitsPerLimb, a.overflow)
-	} else {
-		f.assertLimbsEqualitySlow(f.api, cb, ca, bitsPerLimb, b.overflow)
-	}
-}
 
 // enforceWidth enforces the width of the limbs. When modWidth is true, then the
 // limbs are asserted to be the width of the modulus (highest limb may be less
@@ -128,20 +45,8 @@ func (f *Field[T]) AssertIsEqual(a, b *Element[T]) {
 		return
 	}
 
-	diff := f.subNoReduce(b, a)
-
-	// we compute k such that diff / p == k
-	// so essentially, we say "I know an element k such that k*p == diff"
-	// hence, diff == 0 mod p
-	p := f.Modulus()
-	k, err := f.computeQuoHint(diff)
-	if err != nil {
-		panic(fmt.Sprintf("hint error: %v", err))
-	}
-
-	kp := f.reduceAndOp(f.mul, f.mulPreCond, k, p)
-
-	f.AssertLimbsEquality(diff, kp)
+	diff := f.Sub(b, a)
+	f.checkZero(diff)
 }
 
 // AssertIsLessOrEqual ensures that e is less or equal than a. For proper
@@ -196,11 +101,31 @@ func (f *Field[T]) AssertIsInRange(a *Element[T]) {
 func (f *Field[T]) IsZero(a *Element[T]) frontend.Variable {
 	ca := f.Reduce(a)
 	f.AssertIsInRange(ca)
-	res := f.api.IsZero(ca.Limbs[0])
-	for i := 1; i < len(ca.Limbs); i++ {
-		res = f.api.Mul(res, f.api.IsZero(ca.Limbs[i]))
+	// we use two approaches for checking if the element is exactly zero. The
+	// first approach is to check that every limb individually is zero. The
+	// second approach is to check if the sum of all limbs is zero. Usually, we
+	// cannot use this approach as we could have false positive due to overflow
+	// in the native field. However, as the widths of the limbs are restricted,
+	// then we can ensure in most cases that no overflows happen.
+
+	// as ca is already reduced, then every limb overflow is already 0. Only
+	// every addition adds a bit to the overflow
+	totalOverflow := len(ca.Limbs) - 1
+	if totalOverflow < int(f.maxOverflow()) {
+		// the sums of limbs would overflow the native field. Use the first
+		// approach instead.
+		res := f.api.IsZero(ca.Limbs[0])
+		for i := 1; i < len(ca.Limbs); i++ {
+			res = f.api.Mul(res, f.api.IsZero(ca.Limbs[i]))
+		}
+		return res
 	}
-	return res
+	// default case, limbs sum does not overflow the native field
+	limbSum := ca.Limbs[0]
+	for i := 1; i < len(ca.Limbs); i++ {
+		limbSum = f.api.Add(limbSum, ca.Limbs[i])
+	}
+	return f.api.IsZero(limbSum)
 }
 
 // // Cmp returns:

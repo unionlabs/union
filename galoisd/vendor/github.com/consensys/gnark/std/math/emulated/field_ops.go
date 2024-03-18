@@ -3,8 +3,10 @@ package emulated
 import (
 	"errors"
 	"fmt"
+	"math/bits"
 
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/selector"
 )
 
 // Div computes a/b and returns it. It uses [DivHint] as a hint function.
@@ -131,6 +133,37 @@ func (f *Field[T]) add(a, b *Element[T], nextOverflow uint) *Element[T] {
 	return f.newInternalElement(limbs, nextOverflow)
 }
 
+func (f *Field[T]) Sum(inputs ...*Element[T]) *Element[T] {
+	if len(inputs) == 0 {
+		return f.Zero()
+	}
+	if len(inputs) == 1 {
+		return inputs[0]
+	}
+	overflow := uint(0)
+	nbLimbs := 0
+	for i := range inputs {
+		f.enforceWidthConditional(inputs[i])
+		if inputs[i].overflow > overflow {
+			overflow = inputs[i].overflow
+		}
+		if len(inputs[i].Limbs) > nbLimbs {
+			nbLimbs = len(inputs[i].Limbs)
+		}
+	}
+	addOverflow := bits.Len(uint(len(inputs)))
+	limbs := make([]frontend.Variable, nbLimbs)
+	for i := range limbs {
+		limbs[i] = 0
+	}
+	for i := range inputs {
+		for j := range inputs[i].Limbs {
+			limbs[j] = f.api.Add(limbs[j], inputs[i].Limbs[j])
+		}
+	}
+	return f.newInternalElement(limbs, overflow+uint(addOverflow))
+}
+
 // Reduce reduces a modulo the field order and returns it.
 func (f *Field[T]) Reduce(a *Element[T]) *Element[T] {
 	f.enforceWidthConditional(a)
@@ -150,17 +183,6 @@ func (f *Field[T]) Reduce(a *Element[T]) *Element[T] {
 // Element. Doesn't mutate inputs.
 func (f *Field[T]) Sub(a, b *Element[T]) *Element[T] {
 	return f.reduceAndOp(f.sub, f.subPreCond, a, b)
-}
-
-// subReduce returns a-b and returns it. Contrary to [Field[T].Sub] method this
-// method does not reduce the inputs if the result would overflow. This method
-// is currently only used as a subroutine in [Field[T].Reduce] method to avoid
-// infinite recursion when we are working exactly on the overflow limits.
-func (f *Field[T]) subNoReduce(a, b *Element[T]) *Element[T] {
-	nextOverflow, _ := f.subPreCond(a, b)
-	// we ignore error as it only indicates if we should reduce or not. But we
-	// are in non-reducing version of sub.
-	return f.sub(a, b, nextOverflow)
 }
 
 func (f *Field[T]) subPreCond(a, b *Element[T]) (nextOverflow uint, err error) {
@@ -262,6 +284,55 @@ func (f *Field[T]) Lookup2(b0, b1 frontend.Variable, a, b, c, d *Element[T]) *El
 	dNormLimbs := normalize(d.Limbs)
 	for i := range a.Limbs {
 		e.Limbs[i] = f.api.Lookup2(b0, b1, aNormLimbs[i], bNormLimbs[i], cNormLimbs[i], dNormLimbs[i])
+	}
+	return e
+}
+
+// Mux selects element inputs[sel] and returns it. The number of the limbs and
+// overflow in the result is the maximum of the inputs'. If the inputs are very
+// unbalanced, then reduce the inputs before calling the method. It is most
+// efficient for power of two lengths of the inputs, but works for any
+// number of inputs.
+func (f *Field[T]) Mux(sel frontend.Variable, inputs ...*Element[T]) *Element[T] {
+	if len(inputs) == 0 {
+		return nil
+	}
+	nbInputs := len(inputs)
+	overflow := uint(0)
+	nbLimbs := 0
+	for i := range inputs {
+		f.enforceWidthConditional(inputs[i])
+		if inputs[i].overflow > overflow {
+			overflow = inputs[i].overflow
+		}
+		if len(inputs[i].Limbs) > nbLimbs {
+			nbLimbs = len(inputs[i].Limbs)
+		}
+	}
+	normalize := func(limbs []frontend.Variable) []frontend.Variable {
+		if len(limbs) < nbLimbs {
+			tail := make([]frontend.Variable, nbLimbs-len(limbs))
+			for i := range tail {
+				tail[i] = 0
+			}
+			return append(limbs, tail...)
+		}
+		return limbs
+	}
+	normLimbs := make([][]frontend.Variable, nbInputs)
+	for i := range inputs {
+		normLimbs[i] = normalize(inputs[i].Limbs)
+	}
+	normLimbsTransposed := make([][]frontend.Variable, nbLimbs)
+	for i := range normLimbsTransposed {
+		normLimbsTransposed[i] = make([]frontend.Variable, nbInputs)
+		for j := range normLimbsTransposed[i] {
+			normLimbsTransposed[i][j] = normLimbs[j][i]
+		}
+	}
+	e := f.newInternalElement(make([]frontend.Variable, nbLimbs), overflow)
+	for i := range inputs[0].Limbs {
+		e.Limbs[i] = selector.Mux(f.api, sel, normLimbsTransposed[i]...)
 	}
 	return e
 }

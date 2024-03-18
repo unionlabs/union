@@ -30,14 +30,16 @@ type Field[T FieldParams] struct {
 	maxOfOnce sync.Once
 
 	// constants for often used elements n, 0 and 1. Allocated only once
-	nConstOnce     sync.Once
-	nConst         *Element[T]
-	nprevConstOnce sync.Once
-	nprevConst     *Element[T]
-	zeroConstOnce  sync.Once
-	zeroConst      *Element[T]
-	oneConstOnce   sync.Once
-	oneConst       *Element[T]
+	nConstOnce        sync.Once
+	nConst            *Element[T]
+	nprevConstOnce    sync.Once
+	nprevConst        *Element[T]
+	zeroConstOnce     sync.Once
+	zeroConst         *Element[T]
+	oneConstOnce      sync.Once
+	oneConst          *Element[T]
+	shortOneConstOnce sync.Once
+	shortOneConst     *Element[T]
 
 	log zerolog.Logger
 
@@ -146,6 +148,14 @@ func (f *Field[T]) One() *Element[T] {
 	return f.oneConst
 }
 
+// shortOne returns one as a constant stored in a single limb.
+func (f *Field[T]) shortOne() *Element[T] {
+	f.shortOneConstOnce.Do(func() {
+		f.shortOneConst = f.newInternalElement([]frontend.Variable{1}, 0)
+	})
+	return f.shortOneConst
+}
+
 // Modulus returns the modulus of the emulated ring as a constant.
 func (f *Field[T]) Modulus() *Element[T] {
 	f.nConstOnce.Do(func() {
@@ -246,51 +256,6 @@ func (f *Field[T]) constantValue(v *Element[T]) (*big.Int, bool) {
 		return nil, false
 	}
 	return res, true
-}
-
-// compact returns parameters which allow for most optimal regrouping of
-// limbs. In regrouping the limbs, we encode multiple existing limbs as a linear
-// combination in a single new limb.
-// compact returns a and b minimal (in number of limbs) representation that fits in the snark field
-func (f *Field[T]) compact(a, b *Element[T]) (ac, bc []frontend.Variable, bitsPerLimb uint) {
-	// omit width reduction as is done in the calling method already
-	maxOverflow := max(a.overflow, b.overflow)
-	// subtract one bit as can not potentially use all bits of Fr and one bit as
-	// grouping may overflow
-	maxNbBits := uint(f.api.Compiler().FieldBitLen()) - 2 - maxOverflow
-	groupSize := maxNbBits / f.fParams.BitsPerLimb()
-	if groupSize == 0 {
-		// no space for compact
-		return a.Limbs, b.Limbs, f.fParams.BitsPerLimb()
-	}
-
-	bitsPerLimb = f.fParams.BitsPerLimb() * groupSize
-
-	ac = f.compactLimbs(a, groupSize, bitsPerLimb)
-	bc = f.compactLimbs(b, groupSize, bitsPerLimb)
-	return
-}
-
-// compactLimbs perform the regrouping of limbs between old and new parameters.
-func (f *Field[T]) compactLimbs(e *Element[T], groupSize, bitsPerLimb uint) []frontend.Variable {
-	if f.fParams.BitsPerLimb() == bitsPerLimb {
-		return e.Limbs
-	}
-	nbLimbs := (uint(len(e.Limbs)) + groupSize - 1) / groupSize
-	r := make([]frontend.Variable, nbLimbs)
-	coeffs := make([]*big.Int, groupSize)
-	one := big.NewInt(1)
-	for i := range coeffs {
-		coeffs[i] = new(big.Int)
-		coeffs[i].Lsh(one, f.fParams.BitsPerLimb()*uint(i))
-	}
-	for i := uint(0); i < nbLimbs; i++ {
-		r[i] = uint(0)
-		for j := uint(0); j < groupSize && i*groupSize+j < uint(len(e.Limbs)); j++ {
-			r[i] = f.api.Add(r[i], f.api.Mul(coeffs[j], e.Limbs[i*groupSize+j]))
-		}
-	}
-	return r
 }
 
 // maxOverflow returns the maximal possible overflow for the element. If the
