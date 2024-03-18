@@ -1,5 +1,4 @@
-use macros::proto;
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use super::{
     light_client_update::{LightClientUpdate, TryFromLightClientUpdateError},
@@ -11,10 +10,12 @@ use crate::{
 };
 
 // trait alias would be nice
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[proto(raw = protos::union::ibc::lightclients::ethereum::v1::Misbehaviour, into, from)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::Misbehaviour),
+    into,
+    from
+))]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct Misbehaviour<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub trusted_sync_committee: TrustedSyncCommittee<C>,
     pub update_1: LightClientUpdate<C>,
