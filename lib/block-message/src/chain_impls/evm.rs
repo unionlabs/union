@@ -22,7 +22,7 @@ use futures::StreamExt;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, fetch, seq, QueueMsg,
+    conc, data, fetch, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -114,238 +114,244 @@ where
                     .await;
                 let to_block = c.execution_height(event_height).await;
 
-                seq(futures::stream::iter(
-                    c.provider
-                        .get_logs(
-                            &Filter::new()
-                                .address(c.readonly_ibc_handler.address())
-                                .from_block(from_block)
-                                // NOTE: This -1 is very important, else events will be double fetched
-                                .to_block(to_block - 1),
-                        )
-                        .await
-                        .unwrap()
-                        .into_iter(),
+                // REVIEW: Surely transactions and events can be fetched in parallel?
+                conc(
+                    futures::stream::iter(
+                        c.provider
+                            .get_logs(
+                                &Filter::new()
+                                    .address(c.readonly_ibc_handler.address())
+                                    .from_block(from_block)
+                                    // NOTE: This -1 is very important, else events will be double fetched
+                                    .to_block(to_block - 1),
+                            )
+                            .await
+                            .unwrap(),
+                    )
+                    .then(|log| async {
+                        let tx_hash = log
+                            .transaction_hash
+                            .expect("log should have transaction_hash")
+                            .into();
+
+                        tracing::debug!(?log, "raw log");
+
+                        let event = IBCHandlerEvents::decode_log(&log.into())
+                            .expect("failed to decode ibc handler event");
+
+                        match event {
+                            IBCHandlerEvents::PacketEvent(
+                                IBCPacketEvents::AcknowledgePacketFilter(raw_event),
+                            ) => with_channel::<C, _>(
+                                c.chain_id(),
+                                raw_event.packet.source_port.clone(),
+                                raw_event.packet.source_channel.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::ChannelEvent(
+                                IBCChannelHandshakeEvents::ChannelCloseConfirmFilter(_),
+                            )
+                            | IBCHandlerEvents::ChannelEvent(
+                                IBCChannelHandshakeEvents::ChannelCloseInitFilter(_),
+                            ) => todo!(),
+                            IBCHandlerEvents::ChannelEvent(
+                                IBCChannelHandshakeEvents::ChannelOpenAckFilter(raw_event),
+                            ) => with_channel(
+                                c.chain_id(),
+                                raw_event.port_id.clone(),
+                                raw_event.channel_id.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::ChannelEvent(
+                                IBCChannelHandshakeEvents::ChannelOpenConfirmFilter(raw_event),
+                            ) => with_channel(
+                                c.chain_id(),
+                                raw_event.port_id.clone(),
+                                raw_event.channel_id.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::ChannelEvent(
+                                IBCChannelHandshakeEvents::ChannelOpenInitFilter(raw_event),
+                            ) => with_channel(
+                                c.chain_id(),
+                                raw_event.port_id.clone(),
+                                raw_event.channel_id.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::ChannelEvent(
+                                IBCChannelHandshakeEvents::ChannelOpenTryFilter(raw_event),
+                            ) => with_channel(
+                                c.chain_id(),
+                                raw_event.port_id.clone(),
+                                raw_event.channel_id.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::ConnectionEvent(
+                                IBCConnectionEvents::ConnectionOpenAckFilter(raw_event),
+                            ) => with_connection(
+                                c.chain_id(),
+                                raw_event.connection_id.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::ConnectionEvent(
+                                IBCConnectionEvents::ConnectionOpenConfirmFilter(raw_event),
+                            ) => with_connection(
+                                c.chain_id(),
+                                raw_event.connection_id.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::ConnectionEvent(
+                                IBCConnectionEvents::ConnectionOpenInitFilter(raw_event),
+                            ) => with_connection(
+                                c.chain_id(),
+                                raw_event.connection_id.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::ConnectionEvent(
+                                IBCConnectionEvents::ConnectionOpenTryFilter(raw_event),
+                            ) => with_connection(
+                                c.chain_id(),
+                                raw_event.connection_id.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::ClientEvent(
+                                IBCClientEvents::ClientCreatedFilter(ClientCreatedFilter(
+                                    client_id,
+                                )),
+                            ) => {
+                                let client_type = c
+                                    .readonly_ibc_handler
+                                    .client_types(client_id.clone())
+                                    .await
+                                    .unwrap();
+
+                                let (client_state, success) = c
+                                    .readonly_ibc_handler
+                                    .get_client_state(client_id.clone())
+                                    .await
+                                    .unwrap();
+
+                                assert!(success);
+
+                                let client_state =
+                                    cometbls::client_state::ClientState::decode_as::<EthAbi>(
+                                        &client_state,
+                                    )
+                                    .unwrap();
+
+                                data(Identified::<Evm<C>, _>::new(
+                                    c.chain_id(),
+                                    ChainEvent {
+                                        client_type: unionlabs::ClientType::Cometbls,
+                                        tx_hash,
+                                        height: event_height,
+                                        event: IbcEvent::CreateClient(CreateClient {
+                                            client_id: client_id.parse().unwrap(),
+                                            client_type,
+                                            consensus_height: client_state.latest_height,
+                                        }),
+                                    },
+                                ))
+                            }
+                            IBCHandlerEvents::ClientEvent(
+                                IBCClientEvents::ClientRegisteredFilter(_),
+                            ) => QueueMsg::Noop,
+                            IBCHandlerEvents::ClientEvent(
+                                IBCClientEvents::ClientUpdatedFilter(ClientUpdatedFilter(
+                                    client_id,
+                                )),
+                            ) => {
+                                let client_type = c
+                                    .readonly_ibc_handler
+                                    .client_types(client_id.clone())
+                                    .await
+                                    .unwrap();
+
+                                let (client_state, success) = c
+                                    .readonly_ibc_handler
+                                    .get_client_state(client_id.clone())
+                                    .block(c.execution_height(event_height).await)
+                                    .await
+                                    .unwrap();
+
+                                assert!(success);
+
+                                let client_state =
+                                    cometbls::client_state::ClientState::decode_as::<EthAbi>(
+                                        &client_state,
+                                    )
+                                    .unwrap();
+
+                                data(Identified::<Evm<C>, _>::new(
+                                    c.chain_id(),
+                                    ChainEvent {
+                                        client_type: unionlabs::ClientType::Cometbls,
+                                        tx_hash,
+                                        height: event_height,
+                                        event: IbcEvent::UpdateClient(UpdateClient {
+                                            client_id: client_id.parse().unwrap(),
+                                            client_type,
+                                            consensus_heights: vec![client_state.latest_height],
+                                        }),
+                                    },
+                                ))
+                            }
+                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::RecvPacketFilter(
+                                raw_event,
+                            )) => with_channel(
+                                c.chain_id(),
+                                raw_event.packet.destination_port.clone(),
+                                raw_event.packet.destination_channel.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::PacketEvent(IBCPacketEvents::SendPacketFilter(
+                                raw_event,
+                            )) => with_channel(
+                                c.chain_id(),
+                                raw_event.source_port.clone(),
+                                raw_event.source_channel.clone(),
+                                event_height,
+                                tx_hash,
+                                raw_event,
+                            ),
+                            IBCHandlerEvents::PacketEvent(
+                                IBCPacketEvents::WriteAcknowledgementFilter(raw_event),
+                            ) => {
+                                // TODO: Build write ack
+                                tracing::info!("write acknowledgement: {raw_event:?}");
+                                QueueMsg::Noop
+                            }
+                            IBCHandlerEvents::PacketEvent(
+                                IBCPacketEvents::TimeoutPacketFilter(_),
+                            ) => {
+                                todo!()
+                            }
+                            IBCHandlerEvents::OwnableEvent(_) => QueueMsg::Noop,
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .await,
                 )
-                .then(|log| async {
-                    let tx_hash = log
-                        .transaction_hash
-                        .expect("log should have transaction_hash")
-                        .into();
-
-                    tracing::debug!(?log, "raw log");
-
-                    let event = IBCHandlerEvents::decode_log(&log.into())
-                        .expect("failed to decode ibc handler event");
-
-                    match event {
-                        IBCHandlerEvents::PacketEvent(
-                            IBCPacketEvents::AcknowledgePacketFilter(raw_event),
-                        ) => with_channel::<C, _>(
-                            c.chain_id(),
-                            raw_event.packet.source_port.clone(),
-                            raw_event.packet.source_channel.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::ChannelEvent(
-                            IBCChannelHandshakeEvents::ChannelCloseConfirmFilter(_),
-                        )
-                        | IBCHandlerEvents::ChannelEvent(
-                            IBCChannelHandshakeEvents::ChannelCloseInitFilter(_),
-                        ) => todo!(),
-                        IBCHandlerEvents::ChannelEvent(
-                            IBCChannelHandshakeEvents::ChannelOpenAckFilter(raw_event),
-                        ) => with_channel(
-                            c.chain_id(),
-                            raw_event.port_id.clone(),
-                            raw_event.channel_id.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::ChannelEvent(
-                            IBCChannelHandshakeEvents::ChannelOpenConfirmFilter(raw_event),
-                        ) => with_channel(
-                            c.chain_id(),
-                            raw_event.port_id.clone(),
-                            raw_event.channel_id.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::ChannelEvent(
-                            IBCChannelHandshakeEvents::ChannelOpenInitFilter(raw_event),
-                        ) => with_channel(
-                            c.chain_id(),
-                            raw_event.port_id.clone(),
-                            raw_event.channel_id.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::ChannelEvent(
-                            IBCChannelHandshakeEvents::ChannelOpenTryFilter(raw_event),
-                        ) => with_channel(
-                            c.chain_id(),
-                            raw_event.port_id.clone(),
-                            raw_event.channel_id.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::ConnectionEvent(
-                            IBCConnectionEvents::ConnectionOpenAckFilter(raw_event),
-                        ) => with_connection(
-                            c.chain_id(),
-                            raw_event.connection_id.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::ConnectionEvent(
-                            IBCConnectionEvents::ConnectionOpenConfirmFilter(raw_event),
-                        ) => with_connection(
-                            c.chain_id(),
-                            raw_event.connection_id.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::ConnectionEvent(
-                            IBCConnectionEvents::ConnectionOpenInitFilter(raw_event),
-                        ) => with_connection(
-                            c.chain_id(),
-                            raw_event.connection_id.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::ConnectionEvent(
-                            IBCConnectionEvents::ConnectionOpenTryFilter(raw_event),
-                        ) => with_connection(
-                            c.chain_id(),
-                            raw_event.connection_id.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientCreatedFilter(
-                            ClientCreatedFilter(client_id),
-                        )) => {
-                            let client_type = c
-                                .readonly_ibc_handler
-                                .client_types(client_id.clone())
-                                .await
-                                .unwrap();
-
-                            let (client_state, success) = c
-                                .readonly_ibc_handler
-                                .get_client_state(client_id.clone())
-                                .await
-                                .unwrap();
-
-                            assert!(success);
-
-                            dbg!(hex::encode(&client_state));
-
-                            let client_state = cometbls::client_state::ClientState::decode_as::<
-                                EthAbi,
-                            >(&client_state)
-                            .unwrap();
-
-                            data(Identified::<Evm<C>, _>::new(
-                                c.chain_id(),
-                                ChainEvent {
-                                    client_type: unionlabs::ClientType::Cometbls,
-                                    tx_hash,
-                                    height: event_height,
-                                    event: IbcEvent::CreateClient(CreateClient {
-                                        client_id: client_id.parse().unwrap(),
-                                        client_type,
-                                        consensus_height: client_state.latest_height,
-                                    }),
-                                },
-                            ))
-                        }
-                        IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(
-                            _,
-                        )) => QueueMsg::Noop,
-                        IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(
-                            ClientUpdatedFilter(client_id),
-                        )) => {
-                            let client_type = c
-                                .readonly_ibc_handler
-                                .client_types(client_id.clone())
-                                .await
-                                .unwrap();
-
-                            let (client_state, success) = c
-                                .readonly_ibc_handler
-                                .get_client_state(client_id.clone())
-                                .block(c.execution_height(event_height).await)
-                                .await
-                                .unwrap();
-
-                            assert!(success);
-
-                            dbg!(hex::encode(&client_state));
-
-                            let client_state = cometbls::client_state::ClientState::decode_as::<
-                                EthAbi,
-                            >(&client_state)
-                            .unwrap();
-
-                            data(Identified::<Evm<C>, _>::new(
-                                c.chain_id(),
-                                ChainEvent {
-                                    client_type: unionlabs::ClientType::Cometbls,
-                                    tx_hash,
-                                    height: event_height,
-                                    event: IbcEvent::UpdateClient(UpdateClient {
-                                        client_id: client_id.parse().unwrap(),
-                                        client_type,
-                                        consensus_heights: vec![client_state.latest_height],
-                                    }),
-                                },
-                            ))
-                        }
-                        IBCHandlerEvents::PacketEvent(IBCPacketEvents::RecvPacketFilter(
-                            raw_event,
-                        )) => with_channel(
-                            c.chain_id(),
-                            raw_event.packet.destination_port.clone(),
-                            raw_event.packet.destination_channel.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::PacketEvent(IBCPacketEvents::SendPacketFilter(
-                            raw_event,
-                        )) => with_channel(
-                            c.chain_id(),
-                            raw_event.source_port.clone(),
-                            raw_event.source_channel.clone(),
-                            event_height,
-                            tx_hash,
-                            raw_event,
-                        ),
-                        IBCHandlerEvents::PacketEvent(
-                            IBCPacketEvents::WriteAcknowledgementFilter(raw_event),
-                        ) => {
-                            // TODO: Build write ack
-                            tracing::info!("write acknowledgement: {raw_event:?}");
-                            QueueMsg::Noop
-                        }
-                        IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(_)) => {
-                            todo!()
-                        }
-                        IBCHandlerEvents::OwnableEvent(_) => QueueMsg::Noop,
-                    }
-                })
-                .collect::<Vec<_>>()
-                .await)
             }
             EvmFetch::FetchBeaconBlockRange(FetchBeaconBlockRange { from_slot, to_slot }) => {
                 assert!(from_slot < to_slot);
@@ -382,7 +388,7 @@ where
                                 panic!("error fetching beacon block for slot {slot}: {err}")
                             }
                             Ok(_) => {
-                                return seq([
+                                return conc([
                                     fetch(id(
                                         c.chain_id(),
                                         ChainSpecificFetch::<Evm<C>>(EvmFetch::from(
@@ -401,7 +407,7 @@ where
                                             },
                                         )),
                                     )),
-                                ])
+                                ]);
                             }
                         }
                     }

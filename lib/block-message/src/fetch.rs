@@ -4,7 +4,7 @@ use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
 use queue_msg::{
-    aggregate, fetch, msg_struct, seq, wait, HandleFetch, QueueError, QueueMsg, QueueMsgTypes,
+    aggregate, conc, fetch, msg_struct, wait, HandleFetch, QueueError, QueueMsg, QueueMsgTypes,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::IsHeight;
@@ -82,7 +82,7 @@ where
                     },
                 ),
             ),
-            Fetch::FetchBlockRange(range) => seq([
+            Fetch::FetchBlockRange(range) => conc([
                 C::fetch_block_range(&c, range.clone()),
                 fetch(Identified::<C, _>::new(
                     c.chain_id(),

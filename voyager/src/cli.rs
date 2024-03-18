@@ -56,7 +56,7 @@ pub enum Command {
     PrintConfig,
     Relay,
     #[command(subcommand)]
-    Msg(MsgCmd),
+    Queue(QueueCmd),
     #[command(subcommand)]
     Setup(SetupCmd),
     Query {
@@ -265,12 +265,22 @@ where
     }
 }
 
+type PgId = BoundedI64<1, { i64::MAX }>;
+type Pg64 = BoundedI64<0, { i64::MAX }>;
+type Pg32 = BoundedI32<1, { i32::MAX }>;
+
 #[derive(Debug, Subcommand)]
-pub enum MsgCmd {
+pub enum QueueCmd {
     History {
-        id: BoundedI64<1, { i64::MAX }>,
-        #[arg(long, default_value_t = result_unwrap!(BoundedI32::<1, { i32::MAX }>::new(10)))]
-        max_depth: BoundedI32<1, { i32::MAX }>,
+        id: PgId,
+        #[arg(long, default_value_t = result_unwrap!(Pg32::new(10)))]
+        max_depth: Pg32,
+    },
+    Failed {
+        #[arg(long, default_value_t = result_unwrap!(Pg64::new(1)))]
+        page: Pg64,
+        #[arg(long, default_value_t = result_unwrap!(Pg64::new(1)))]
+        per_page: Pg64,
     },
 }
 

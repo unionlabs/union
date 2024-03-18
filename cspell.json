@@ -44,6 +44,7 @@
     "file-tree-icons.ts",
     "moonlight-ii.json",
     "app/src/generated",
-    "lib/pg-queue/migrations"
+    "lib/pg-queue/migrations",
+    "uniond/docs/static/openapi.yml"
   ]
 }

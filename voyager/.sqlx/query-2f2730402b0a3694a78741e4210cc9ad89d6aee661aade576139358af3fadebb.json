@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id as \"id!\", parent, item as \"item!: Item\" from get_list($1, $2) ORDER BY id ASC",
+  "query": "SELECT id as \"id!\", parent, item as \"item!: Item\" FROM get_list($1, $2) ORDER BY id ASC",
   "describe": {
     "columns": [
       {
@@ -31,5 +31,5 @@
       null
     ]
   },
-  "hash": "b2a9ed4f2c337682b8ca1e8eed3db9e993796d98e7b401ce360962319d340743"
+  "hash": "2f2730402b0a3694a78741e4210cc9ad89d6aee661aade576139358af3fadebb"
 }

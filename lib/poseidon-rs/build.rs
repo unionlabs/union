@@ -71,12 +71,15 @@ pub fn load_constants() -> Constants {
         }
         m.push(mi);
     }
-    dbg!(Constants {
+
+    Constants {
         c,
         m,
         n_rounds_f: 8,
-        n_rounds_p: vec![56, 57, 56, 60, 60, 63, 64, 63, 60, 66, 60, 65, 70, 60, 64, 68,],
-    })
+        n_rounds_p: vec![
+            56, 57, 56, 60, 60, 63, 64, 63, 60, 66, 60, 65, 70, 60, 64, 68,
+        ],
+    }
 }
 
 #[derive(Debug)]

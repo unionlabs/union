@@ -3,7 +3,9 @@ use std::{fmt::Display, marker::PhantomData};
 use chain_utils::GetChain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
-use queue_msg::{aggregate, fetch, wait, HandleEvent, QueueError, QueueMsg, QueueMsgTypes};
+use queue_msg::{
+    aggregate, fetch, msg_struct, wait, HandleEvent, QueueError, QueueMsg, QueueMsgTypes,
+};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
@@ -95,16 +97,14 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         [],
                         id(
                             hc.chain_id(),
-                            AggregateMsgAfterUpdate::ConnectionOpenTry(
-                                AggregateConnectionOpenTry {
-                                    event_height: ibc_event.height,
-                                    event: init,
-                                },
-                            ),
+                            AggregateMsgAfterUpdate::from(AggregateConnectionOpenTry {
+                                event_height: ibc_event.height,
+                                event: init,
+                            }),
                         ),
                     ),
                 ]),
-                unionlabs::events::IbcEvent::ConnectionOpenTry(try_) => seq([aggregate(
+                unionlabs::events::IbcEvent::ConnectionOpenTry(try_) => aggregate(
                     [mk_aggregate_wait_for_update(
                         hc.chain_id(),
                         try_.client_id.clone(),
@@ -114,12 +114,12 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateMsgAfterUpdate::ConnectionOpenAck(AggregateConnectionOpenAck {
+                        AggregateMsgAfterUpdate::from(AggregateConnectionOpenAck {
                             event_height: ibc_event.height,
                             event: try_,
                         }),
                     ),
-                )]),
+                ),
                 unionlabs::events::IbcEvent::ConnectionOpenAck(ack) => aggregate(
                     [mk_aggregate_wait_for_update(
                         hc.chain_id(),
@@ -130,12 +130,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateMsgAfterUpdate::ConnectionOpenConfirm(
-                            AggregateConnectionOpenConfirm {
-                                event_height: ibc_event.height,
-                                event: ack,
-                            },
-                        ),
+                        AggregateMsgAfterUpdate::from(AggregateConnectionOpenConfirm {
+                            event_height: ibc_event.height,
+                            event: ack,
+                        }),
                     ),
                 ),
                 unionlabs::events::IbcEvent::ConnectionOpenConfirm(confirm) => {
@@ -193,12 +191,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         [],
                         id(
                             hc.chain_id(),
-                            Aggregate::ConnectionFetchFromChannelEnd(
-                                AggregateConnectionFetchFromChannelEnd {
-                                    at: ibc_event.height,
-                                    __marker: PhantomData,
-                                },
-                            ),
+                            AggregateConnectionFetchFromChannelEnd {
+                                at: ibc_event.height,
+                                __marker: PhantomData,
+                            },
                         ),
                     )],
                     [],
@@ -346,13 +342,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Event<Hc, Tr> {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
     pub tx_hash: H256,
     pub height: HeightOf<Hc>,

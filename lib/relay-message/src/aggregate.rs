@@ -425,7 +425,9 @@ pub struct AggregateCreateClient<Hc: ChainExt, Tr: ChainExt> {
 pub struct LightClientSpecificAggregate<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
 
 /// Messages that will be re-queued after an update.
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
+)]
 #[serde(
     tag = "@type",
     content = "@value",

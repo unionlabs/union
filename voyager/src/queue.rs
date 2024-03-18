@@ -296,9 +296,7 @@ impl Voyager {
                 reactor
                     .run(q)
                     .for_each(|x| async {
-                        let msg = x.unwrap();
-
-                        dbg!(msg);
+                        let _msg = x.unwrap();
                     })
                     .await;
                 Ok(())

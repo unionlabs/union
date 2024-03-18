@@ -3,6 +3,7 @@
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives
     clippy::manual_async_fn,
+    clippy::large_enum_variant,
     clippy::module_name_repetitions,
 )]
 
@@ -263,7 +264,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 }
             }
         }
-        Command::Msg(cli::MsgCmd::History { id, max_depth }) => {
+        Command::Queue(cli_msg) => {
             let db = match voyager_config.voyager.queue {
                 AnyQueueConfig::PgQueue(cfg) => cfg.into_pg_pool().await.unwrap(),
                 _ => panic!("no database set in config"),
@@ -271,24 +272,48 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
             type Item = sqlx::types::Json<QueueMsg<VoyagerMessageTypes>>;
 
-            #[derive(Debug, serde::Serialize)]
-            struct Record {
-                id: i64,
-                parent: Option<i64>,
-                item: Item,
+            match cli_msg {
+                cli::QueueCmd::History { id, max_depth } => {
+                    #[derive(Debug, serde::Serialize)]
+                    struct Record {
+                        id: i64,
+                        parent: Option<i64>,
+                        item: Item,
+                    }
+
+                    let results = query_as!(
+                        Record,
+                        r#"SELECT id as "id!", parent, item as "item!: Item" FROM get_list($1, $2) ORDER BY id ASC"#,
+                        id.inner(),
+                        max_depth.inner()
+                    )
+                    .fetch_all(&db)
+                    .await
+                    .unwrap();
+
+                    println!("{}", serde_json::to_string_pretty(&results).unwrap());
+                }
+                cli::QueueCmd::Failed { page, per_page } => {
+                    #[derive(Debug, serde::Serialize)]
+                    struct Record {
+                        id: i64,
+                        message: String,
+                        item: Item,
+                    }
+
+                    let results = query_as!(
+                        Record,
+                        r#"SELECT id, item as "item: Item", message as "message!" FROM queue WHERE status = 'failed' ORDER BY id ASC LIMIT $1 OFFSET $2"#,
+                        per_page.inner(),
+                        ((page.inner() - 1) * per_page.inner()),
+                    )
+                    .fetch_all(&db)
+                    .await
+                    .unwrap();
+
+                    println!("{}", serde_json::to_string_pretty(&results).unwrap());
+                }
             }
-
-            let results = query_as!(
-                Record,
-                r#"SELECT id as "id!", parent, item as "item!: Item" from get_list($1, $2) ORDER BY id ASC"#,
-                id.inner(),
-                max_depth.inner()
-            )
-            .fetch_all(&db)
-            .await
-            .unwrap();
-
-            println!("{}", serde_json::to_string_pretty(&results).unwrap());
         }
     }
 

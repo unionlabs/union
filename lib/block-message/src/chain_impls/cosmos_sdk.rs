@@ -9,7 +9,7 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, data, fetch, msg_struct, seq, QueueMsg,
+    conc, data, fetch, msg_struct, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::Client;
@@ -303,7 +303,7 @@ where
                     // is exclusive on `to`, so fetch the `from` block and "discard" the `to` block
                     // the assumption is that another message with `to..N` will be queued, which then following
                     // this logic will fetch `to`.
-                    seq([fetch(id(
+                    conc([fetch(id(
                         c.chain_id(),
                         ChainSpecificFetch::<C>(
                             FetchTransactions {

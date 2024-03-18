@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, item as \"item: Item\", message as \"message!\" FROM queue WHERE status = 'failed' ORDER BY id ASC LIMIT $1 OFFSET $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "item: Item",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 2,
+        "name": "message!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "0e6f590fe34bd460a78022f5a6262a5877885f0503fc4614d3e14cbef7c131c0"
+}
