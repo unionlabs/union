@@ -5706,6 +5706,278 @@ export type introspection = {
             ]
           },
           {
+            "name": "v0_eth_logs",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_eth_logs",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_eth_logs_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_eth_logs_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_logs_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_eth_logs_aggregate",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "v0_eth_logs_aggregate",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_eth_logs_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_eth_logs_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_logs_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_eth_transactions",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_eth_transactions",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_eth_transactions_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_eth_transactions_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_transactions_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_eth_transactions_aggregate",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "v0_eth_transactions_aggregate",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_eth_transactions_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_eth_transactions_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_transactions_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
             "name": "v0_events",
             "type": {
               "kind": "NON_NULL",
@@ -13841,6 +14113,382 @@ export type introspection = {
                 "type": {
                   "kind": "INPUT_OBJECT",
                   "name": "v0_edit_validators_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_eth_logs",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_eth_logs",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_eth_logs_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_eth_logs_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_logs_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_eth_logs_aggregate",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "v0_eth_logs_aggregate",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_eth_logs_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_eth_logs_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_logs_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_eth_logs_stream",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_eth_logs",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "batch_size",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                }
+              },
+              {
+                "name": "cursor",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_eth_logs_stream_cursor_input",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_logs_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_eth_transactions",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_eth_transactions",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_eth_transactions_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_eth_transactions_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_transactions_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_eth_transactions_aggregate",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "v0_eth_transactions_aggregate",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_eth_transactions_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_eth_transactions_order_by",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_transactions_bool_exp",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "v0_eth_transactions_stream",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_eth_transactions",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "batch_size",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                }
+              },
+              {
+                "name": "cursor",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_eth_transactions_stream_cursor_input",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_transactions_bool_exp",
                   "ofType": null
                 }
               }
@@ -36836,6 +37484,2570 @@ export type introspection = {
           },
           {
             "name": "msg_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs",
+        "fields": [
+          {
+            "name": "address",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "log",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb",
+              "ofType": null
+            },
+            "args": [
+              {
+                "name": "path",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "log_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "removed",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "topics",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb",
+              "ofType": null
+            },
+            "args": [
+              {
+                "name": "path",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_aggregate",
+        "fields": [
+          {
+            "name": "aggregate",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_aggregate_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "nodes",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_eth_logs",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_aggregate_fields",
+        "fields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_avg_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "columns",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_eth_logs_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "distinct",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_max_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_min_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_stddev_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_stddev_pop_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_stddev_samp_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_sum_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_var_pop_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_var_samp_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_logs_variance_fields",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_avg_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_eth_logs_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_logs_bool_exp",
+                  "ofType": null
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_eth_logs_bool_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_logs_bool_exp",
+                  "ofType": null
+                }
+              }
+            }
+          },
+          {
+            "name": "address",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "log",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "jsonb_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "log_index",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "removed",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "topics",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "jsonb_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_max_fields",
+        "fields": [
+          {
+            "name": "address",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "log_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_min_fields",
+        "fields": [
+          {
+            "name": "address",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "log_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_eth_logs_order_by",
+        "inputFields": [
+          {
+            "name": "address",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "log",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "log_index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "removed",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "topics",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "ENUM",
+        "name": "v0_eth_logs_select_column",
+        "enumValues": [
+          {
+            "name": "address"
+          },
+          {
+            "name": "block_hash"
+          },
+          {
+            "name": "chain_id"
+          },
+          {
+            "name": "data"
+          },
+          {
+            "name": "hash"
+          },
+          {
+            "name": "height"
+          },
+          {
+            "name": "index"
+          },
+          {
+            "name": "log"
+          },
+          {
+            "name": "log_index"
+          },
+          {
+            "name": "removed"
+          },
+          {
+            "name": "topics"
+          },
+          {
+            "name": "transaction_hash"
+          },
+          {
+            "name": "transaction_index"
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_stddev_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_stddev_pop_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_stddev_samp_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_eth_logs_stream_cursor_input",
+        "inputFields": [
+          {
+            "name": "initial_value",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "v0_eth_logs_stream_cursor_value_input",
+                "ofType": null
+              }
+            }
+          },
+          {
+            "name": "ordering",
+            "type": {
+              "kind": "ENUM",
+              "name": "cursor_ordering",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_eth_logs_stream_cursor_value_input",
+        "inputFields": [
+          {
+            "name": "address",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            }
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            }
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "log",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb",
+              "ofType": null
+            }
+          },
+          {
+            "name": "log_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "removed",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            }
+          },
+          {
+            "name": "topics",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_sum_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_var_pop_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_var_samp_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_logs_variance_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions",
+        "fields": [
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "block_number",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "contract_address",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "cumulative_gas_used",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "events",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb",
+              "ofType": null
+            },
+            "args": [
+              {
+                "name": "path",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "from",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "gas_used",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "logs",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb",
+              "ofType": null
+            },
+            "args": [
+              {
+                "name": "path",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "logs_bloom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "to",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_aggregate",
+        "fields": [
+          {
+            "name": "aggregate",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_aggregate_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "nodes",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_eth_transactions",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_aggregate_fields",
+        "fields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_avg_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "args": [
+              {
+                "name": "columns",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_eth_transactions_select_column",
+                      "ofType": null
+                    }
+                  }
+                }
+              },
+              {
+                "name": "distinct",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              }
+            ]
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_max_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_min_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_stddev_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_stddev_pop_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_stddev_samp_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_sum_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_var_pop_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_var_samp_fields",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v0_eth_transactions_variance_fields",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_avg_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_eth_transactions_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_transactions_bool_exp",
+                  "ofType": null
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_eth_transactions_bool_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_eth_transactions_bool_exp",
+                  "ofType": null
+                }
+              }
+            }
+          },
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "block_number",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "contract_address",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "cumulative_gas_used",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "events",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "jsonb_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "from",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "gas_used",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "logs",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "jsonb_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "logs_bloom",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "to",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_max_fields",
+        "fields": [
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "block_number",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "contract_address",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "cumulative_gas_used",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "from",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "gas_used",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "logs_bloom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "to",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_min_fields",
+        "fields": [
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "block_number",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "contract_address",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "cumulative_gas_used",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "from",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "gas_used",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "logs_bloom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "to",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_eth_transactions_order_by",
+        "inputFields": [
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "block_number",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "contract_address",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "cumulative_gas_used",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "events",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "from",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "gas_used",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "logs",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "logs_bloom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "to",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "ENUM",
+        "name": "v0_eth_transactions_select_column",
+        "enumValues": [
+          {
+            "name": "block_hash"
+          },
+          {
+            "name": "block_number"
+          },
+          {
+            "name": "chain_id"
+          },
+          {
+            "name": "contract_address"
+          },
+          {
+            "name": "cumulative_gas_used"
+          },
+          {
+            "name": "events"
+          },
+          {
+            "name": "from"
+          },
+          {
+            "name": "gas_used"
+          },
+          {
+            "name": "hash"
+          },
+          {
+            "name": "height"
+          },
+          {
+            "name": "index"
+          },
+          {
+            "name": "logs"
+          },
+          {
+            "name": "logs_bloom"
+          },
+          {
+            "name": "status"
+          },
+          {
+            "name": "to"
+          },
+          {
+            "name": "transaction_hash"
+          },
+          {
+            "name": "transaction_index"
+          },
+          {
+            "name": "type"
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_stddev_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_stddev_pop_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_stddev_samp_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_eth_transactions_stream_cursor_input",
+        "inputFields": [
+          {
+            "name": "initial_value",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "v0_eth_transactions_stream_cursor_value_input",
+                "ofType": null
+              }
+            }
+          },
+          {
+            "name": "ordering",
+            "type": {
+              "kind": "ENUM",
+              "name": "cursor_ordering",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v0_eth_transactions_stream_cursor_value_input",
+        "inputFields": [
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "block_number",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            }
+          },
+          {
+            "name": "contract_address",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "cumulative_gas_used",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "events",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb",
+              "ofType": null
+            }
+          },
+          {
+            "name": "from",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "gas_used",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            }
+          },
+          {
+            "name": "index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "logs",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb",
+              "ofType": null
+            }
+          },
+          {
+            "name": "logs_bloom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "to",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "transaction_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_sum_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_var_pop_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_var_samp_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v0_eth_transactions_variance_fields",
+        "fields": [
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
+            },
+            "args": []
+          },
+          {
+            "name": "height",
             "type": {
               "kind": "SCALAR",
               "name": "Float",
