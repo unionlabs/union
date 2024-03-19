@@ -1,6 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Binary, Coin, HexBinary, IbcEndpoint, StdError, Uint128, Uint256};
 use ethabi::{ParamType, Token};
+use serde::{Deserialize, Serialize};
 
 pub type GenericAck = Result<Binary, String>;
 
@@ -380,6 +381,16 @@ impl<'a> From<(&'a str, &IbcEndpoint)> for DenomOrigin<'a> {
             None => DenomOrigin::Remote { denom },
         }
     }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+struct ForwardMemo {
+    receiver: String,
+    port: String,
+    channel: String,
+    timeout: Option<String>,
+    retries: Option<u32>,
+    next: Option<Box<ForwardMemo>>,
 }
 
 #[cfg(test)]

@@ -7549,6 +7549,8 @@ dependencies = [
  "cosmwasm-std 2.0.3",
  "ethabi",
  "serde-utils",
+ "serde",
+ "serde-json-wasm 1.0.1",
  "thiserror",
  "token-factory-api",
 ]

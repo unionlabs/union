@@ -13,3 +13,5 @@ ethabi            = { workspace = true }
 serde-utils       = { workspace = true }
 thiserror         = { workspace = true }
 token-factory-api = { workspace = true }
+serde = { workspace = true }
+serde-json-wasm = { workspace = true }
