@@ -19,6 +19,7 @@ crate-type = ["cdylib", "rlib"]
 bytes                     = { workspace = true }
 cometbls-groth16-verifier = { workspace = true }
 cosmwasm-std              = { workspace = true, features = ["abort", "iterator"] }
+dlmalloc                  = { workspace = true, features = ["global"] }
 hex                       = { workspace = true }
 prost                     = { workspace = true }
 protos                    = { workspace = true, features = ["proto_full", "std"] }

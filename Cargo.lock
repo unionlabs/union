@@ -994,6 +994,7 @@ dependencies = [
  "bytes",
  "cometbls-groth16-verifier",
  "cosmwasm-std",
+ "dlmalloc",
  "hex",
  "hex-literal",
  "ics008-wasm-client",
@@ -1608,6 +1609,15 @@ dependencies = [
  "libc",
  "redox_users",
  "winapi",
+]
+
+[[package]]
+name = "dlmalloc"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "203540e710bfadb90e5e29930baf5d10270cec1f43ab34f46f78b147b2de715a"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -3093,6 +3103,7 @@ name = "ics008-wasm-client"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-std",
+ "dlmalloc",
  "frame-support-procedural",
  "prost",
  "protos",
@@ -6594,6 +6605,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
+ "dlmalloc",
  "ethabi",
  "serde",
  "serde_json",
@@ -6609,6 +6621,7 @@ dependencies = [
  "cw-controllers",
  "cw-storage-plus",
  "cw2",
+ "dlmalloc",
  "ethabi",
  "hex",
  "schemars",
