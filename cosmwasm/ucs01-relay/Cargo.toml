@@ -22,6 +22,7 @@ cosmwasm-std      = { workspace = true, features = ["stargate", "ibc3", "cosmwas
 cw-controllers    = { version = "1.1" }
 cw-storage-plus   = { workspace = true }
 cw2               = { version = "1.1" }
+dlmalloc          = { workspace = true, features = ["global"] }
 ethabi            = { workspace = true }
 hex               = { workspace = true }
 schemars          = { workspace = true }

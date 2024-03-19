@@ -5,6 +5,9 @@ mod state;
 use cosmwasm_std::StdError;
 use thiserror::Error;
 
+#[global_allocator]
+static ALLOC: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
+
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("{0}")]

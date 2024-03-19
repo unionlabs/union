@@ -328,6 +328,7 @@ dirchange
 displaydoc
 distrkeeper
 distrtypes
+dlmalloc
 docgen
 doctest
 doloribus

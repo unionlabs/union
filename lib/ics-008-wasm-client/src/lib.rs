@@ -2,12 +2,17 @@ mod ibc_client;
 mod msg;
 pub mod storage_utils;
 
+#[doc(hidden)]
+pub use dlmalloc::GlobalDlmalloc;
 pub use ibc_client::*;
 pub use msg::*;
 
 #[macro_export]
 macro_rules! define_cosmwasm_light_client_contract {
-    ( $light_client:ident, $client_type:ident ) => {
+    ($light_client:ident, $client_type:ident) => {
+        #[global_allocator]
+        static ALLOC: $crate::GlobalDlmalloc = $crate::GlobalDlmalloc;
+
         #[entry_point]
         pub fn sudo(
             deps: cosmwasm_std::DepsMut<

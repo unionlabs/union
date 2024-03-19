@@ -19,6 +19,7 @@ library = []
 cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true, features = ["stargate"] }
 cw-storage-plus = { workspace = true }
+dlmalloc        = { workspace = true, features = ["global"] }
 ethabi          = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }
 thiserror       = { workspace = true }
