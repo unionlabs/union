@@ -1,0 +1,23 @@
+---
+title: "Unjail a Validator"
+sidebar:
+  order: 8
+---
+
+For whatever reason your validator becomes jailed while partaking in the Union network, you can unjail your validator with a simple command.
+
+## The Unjail command
+
+Once your validator is unbonded and jailed, you can use the unjail command to rejoin the active set.
+
+The unjail command is transaction command from the slashing module and can be submitted like this:
+
+```sh
+uniond tx slashing unjail --from $KEY_NAME
+```
+
+## Epoch Staking & Validator Set Updates
+
+Union uses [Epoch Staking](/docs/architecture/cometbls/#epoch-based-validator-rotation) to perform validator set updates. This means that the validator set is only updated once per epoch. 
+
+If you successfully unjail your validator during the middle of an epoch, you will still need to wait until after the end of the current epoch for your validator to rejoin the active set.

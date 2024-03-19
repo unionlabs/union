@@ -105,3 +105,9 @@ If your keys are stored on a machine other than your node, you can pass the `--n
 If your own node isn't set up to accept RPC request, you can send them to another node via the `--node` option. See our [Public Endpoints](/docs/joining-testnet/public-endpoints/) page for more information.
 
 :::
+
+## Epoch Staking & Validator Set Updates
+
+Union uses [Epoch Staking](/docs/architecture/cometbls/#epoch-based-validator-rotation) to perform validator set updates. This means that the validator set is only updated once per epoch. 
+
+If you successfully create your validator during the middle of an epoch, you will still need to wait until after the end of the current epoch for your validator to join the active set.
