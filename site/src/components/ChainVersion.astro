@@ -3,13 +3,11 @@ import versions from "../../../versions/versions.json" with { type: "json" }
 
 interface Props {
   chainId?: string
-  genesis?: boolean
 }
 
 const chainId = (Astro.props.chainId || `${Object.keys(versions).at(-1)}`) as keyof typeof versions
-const genesis = Astro.props.genesis
 
-const version = versions[chainId].binary
+const version = versions[chainId].current
 ---
 
 {version}

@@ -1,18 +1,18 @@
 {
   "union-testnet-4": {
     "versions": ["v0.14.0", "v0.15.0", "v0.16.0", "v0.17.0"],
-    "binary": "v0.17.0"
+    "current": "v0.17.0"
   },
   "union-testnet-5": {
     "versions": ["v0.18.0"],
-    "binary": "v0.18.0"
+    "current": "v0.18.0"
   },
   "union-testnet-6": {
     "versions": ["v0.19.0"],
-    "binary": "v0.19.0"
+    "current": "v0.19.0"
   },
   "union-testnet-7": {
     "versions": ["v0.20.0"],
-    "binary": "v0.20.0"
+    "current": "v0.20.0"
   }
 }
