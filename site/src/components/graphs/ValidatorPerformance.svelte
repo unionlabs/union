@@ -2,7 +2,7 @@
 import "#/styles/index.css"
 import { init } from "echarts"
 import { onMount } from "svelte"
-import tw from "~tailwind.config"
+import tw from "tailwind.config"
 
 const constraintsLineColor = `${tw.theme.extend.colors.accent[900]}`
 const ramLineColor = `${tw.theme.extend.colors.accent[500]}`

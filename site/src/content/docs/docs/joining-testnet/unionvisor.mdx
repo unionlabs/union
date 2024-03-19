@@ -19,7 +19,7 @@ Alternatively, you can run the following command:
 docker pull ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION
 ```
 
-_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" genesis={false} />_
+_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" />_
 
 ## Running Unionvisor
 
@@ -81,7 +81,7 @@ After the above command is done running, you should have a `.unionvisor` folder 
   - data
     - priv_validator_state.json
 - versions
-  - <Version chainId="union-testnet-6" genesis={false} />- uniond
+  - <Version chainId="union-testnet-6" />- uniond
 
 </FileTree>
 
@@ -115,7 +115,7 @@ For example, in `zsh`, you can add the following alias to your `.zshrc`:
 alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION --log-level off call --'
 ```
 
-_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" genesis={false} />_
+_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" />_
 
 :::note
 
