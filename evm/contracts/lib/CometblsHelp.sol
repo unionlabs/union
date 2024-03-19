@@ -7,6 +7,7 @@ import "../proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 import "../proto/tendermint/types/types.sol";
 import "../proto/tendermint/types/validator.sol";
 import "../proto/tendermint/types/canonical.sol";
+import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import "./Encoder.sol";
 import "./MerkleTree.sol";
 import "../core/IZKVerifierV2.sol";
@@ -37,16 +38,11 @@ library CometblsHelp {
     bytes constant HMAC_O =
         hex"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
 
-    function hmac_keccak(bytes memory message)
-        internal
-        pure
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encodePacked(
-                HMAC_O, keccak256(abi.encodePacked(HMAC_I, message))
-            )
-        );
+    function hmac_keccak(bytes memory message) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(HMAC_O, keccak256(HMAC_I.concat(message)))
+            );
     }
 
     // Union whitepaper: (1) H_{hmac_r}
@@ -60,10 +56,10 @@ library CometblsHelp {
 
     function verifyZKP(
         IZKVerifierV2 verifier,
+        bytes memory zkp,
+        string memory chainId,
         bytes32 trustedValidatorsHash,
-        bytes32 untrustedValidatorsHash,
-        bytes memory message,
-        bytes memory zkp
+        UnionIbcLightclientsCometblsV1LightHeader.Data memory header
     ) internal returns (bool) {
         (
             uint256[8] memory proof,
@@ -73,20 +69,37 @@ library CometblsHelp {
 
         uint256 commitmentHash = hashToField(abi.encodePacked(proofCommitment));
 
-        uint256 hashedMessage = hashToField(message);
+        uint256 l = bytes(chainId).length;
+        bytes memory paddedChainId = new bytes(32 - l).concat(bytes(chainId));
 
-        uint256[4] memory inputs = [
-            uint256(trustedValidatorsHash),
-            uint256(untrustedValidatorsHash),
-            hashedMessage,
+        // Drop the most significant byte to fit in F_r
+        bytes32 inputsHash = sha256(
+            abi.encodePacked(
+                bytes32(paddedChainId),
+                bytes32(uint256(int256(header.height))),
+                bytes32(uint256(int256(header.time.secs))),
+                bytes32(uint256(int256(header.time.nanos))),
+                bytes32(header.validators_hash),
+                bytes32(header.next_validators_hash),
+                bytes32(header.app_hash),
+                trustedValidatorsHash
+            )
+        ) & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+
+        uint256[2] memory publicInputs = [
+            uint256(inputsHash),
             // Gnark commitment API extend internal inputs with the following commitment hash and proof commitment
             // See https://github.com/ConsenSys/gnark/issues/652
             commitmentHash
         ];
 
-        return verifier.verifyProof(
-            proof, proofCommitment, proofCommitmentPOK, inputs
-        );
+        return
+            verifier.verifyProof(
+                proof,
+                proofCommitment,
+                proofCommitmentPOK,
+                publicInputs
+            );
     }
 
     function isExpired(

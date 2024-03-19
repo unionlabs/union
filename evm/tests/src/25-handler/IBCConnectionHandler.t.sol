@@ -37,7 +37,7 @@ contract TestVerifier is IZKVerifierV2 {
         uint256[8] memory proof,
         uint256[2] memory proofCommitment,
         uint256[2] calldata proofCommitmentPOK,
-        uint256[4] calldata input
+        uint256[2] calldata input
     ) external returns (bool) {
         return true;
     }

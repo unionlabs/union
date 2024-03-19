@@ -4,6 +4,7 @@ package union.ibc.lightclients.cometbls.v1;
 
 option go_package = "union/app/ibc/cometbls/02-client/keeper";
 
+import "google/protobuf/timestamp.proto";
 import "tendermint/types/types.proto";
 import "ibc/core/client/v1/client.proto";
 import "ibc/core/commitment/v1/commitment.proto";
@@ -43,8 +44,16 @@ message Misbehaviour {
   Header header_2  = 2;
 }
 
+message LightHeader {
+  int64 height = 1;
+  google.protobuf.Timestamp time = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes validators_hash = 3;
+  bytes next_validators_hash = 4;
+  bytes app_hash = 5;
+}
+
 message Header {
-  .tendermint.types.SignedHeader    signed_header                = 1;
-  .ibc.core.client.v1.Height        trusted_height               = 2;
-  bytes                             zero_knowledge_proof         = 3;
+  LightHeader signed_header = 1;
+  .ibc.core.client.v1.Height trusted_height = 2;
+  bytes zero_knowledge_proof = 3;
 }
