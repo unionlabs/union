@@ -15,10 +15,20 @@ import {
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
 import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
-import {IMembershipVerifier} from "../../../contracts/core/IMembershipVerifier.sol";
-import {IbcCoreClientV1Height} from "../../../contracts/proto/ibc/core/client/v1/client.sol";
-import {TendermintTypesCommit, TendermintTypesSignedHeader, TendermintVersionConsensus, TendermintTypesCommitSig, TendermintTypesBlockID, TendermintTypesPartSetHeader} from "../../../contracts/proto/tendermint/types/types.sol";
-import "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
+import {IMembershipVerifier} from
+    "../../../contracts/core/IMembershipVerifier.sol";
+import {IbcCoreClientV1Height} from
+    "../../../contracts/proto/ibc/core/client/v1/client.sol";
+import {
+    TendermintTypesCommit,
+    TendermintTypesSignedHeader,
+    TendermintVersionConsensus,
+    TendermintTypesCommitSig,
+    TendermintTypesBlockID,
+    TendermintTypesPartSetHeader
+} from "../../../contracts/proto/tendermint/types/types.sol";
+import
+    "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 
 import "../TestPlus.sol";
 
@@ -115,7 +125,8 @@ contract IBCClientHandlerTests is TestPlus {
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         )
     {
-        zkp = hex"195562CC376E9265A7FD89A086855C100173B717B0DEA58AC9F50120E9CBDD7402D59ADAC8A274C5DDB199915B03B5CFB7A91032A71723876F946A7662135D4912EB1FAD1FCA5E88AD1D9097870391D1D477F4CD2A26F27DB3CFC8B511922C482F374A4821BEE34818589A052995CC5994CE787538207F1BA0D595890EB96D751D947274566F6338FC14BB1728C9E42F47F9D47A8A7F46CFA341D3EC71F0A8E80ECDAA9E38B4D6090989B165E536C4332BDF470E860D85001362EC7B369DE0092FD13C85FE2A16247E574B759B7B8EBFE8C7ED19CE7520A693BD09FD604CA54E2FA277AC176ACEC9626313DA7022E8B8DB599E1B02C25DA90AD508AA315DA67C0EAF8A0F41C4CDC897A4941F3BFA7D0E0C2BDD3030D5B0025FB4030A31C886F417B2509E9ECFEA86AA22F75402599E72C21623E9C32A499D7B14B6DBC3A1251E119244B7DC12B54A74FBC3B23E7954435491D89AFA7ABF6F07E1DADE0B28F0DA1978EC72A2C2C0F1FE8DEDA8DD8DDA7E82454618C3DFF1341C9901456F7E656A";
+        zkp =
+            hex"195562CC376E9265A7FD89A086855C100173B717B0DEA58AC9F50120E9CBDD7402D59ADAC8A274C5DDB199915B03B5CFB7A91032A71723876F946A7662135D4912EB1FAD1FCA5E88AD1D9097870391D1D477F4CD2A26F27DB3CFC8B511922C482F374A4821BEE34818589A052995CC5994CE787538207F1BA0D595890EB96D751D947274566F6338FC14BB1728C9E42F47F9D47A8A7F46CFA341D3EC71F0A8E80ECDAA9E38B4D6090989B165E536C4332BDF470E860D85001362EC7B369DE0092FD13C85FE2A16247E574B759B7B8EBFE8C7ED19CE7520A693BD09FD604CA54E2FA277AC176ACEC9626313DA7022E8B8DB599E1B02C25DA90AD508AA315DA67C0EAF8A0F41C4CDC897A4941F3BFA7D0E0C2BDD3030D5B0025FB4030A31C886F417B2509E9ECFEA86AA22F75402599E72C21623E9C32A499D7B14B6DBC3A1251E119244B7DC12B54A74FBC3B23E7954435491D89AFA7ABF6F07E1DADE0B28F0DA1978EC72A2C2C0F1FE8DEDA8DD8DDA7E82454618C3DFF1341C9901456F7E656A";
         signedHeader = UnionIbcLightclientsCometblsV1LightHeader.Data({
             height: 139,
             time: Timestamp.Data({secs: 1691496777, nanos: 793918988}),
@@ -337,31 +348,23 @@ contract IBCClientHandlerTests is TestPlus {
         assertEq(
             clientStateCommitment,
             keccak256(
-                Cometbls
-                    .createClientState(
-                        "union-devnet-10",
-                        uint64(signedHeader.height)
-                    )
-                    .marshalEthABI()
+                Cometbls.createClientState(
+                    "union-devnet-10", uint64(signedHeader.height)
+                ).marshalEthABI()
             )
         );
         assertEq(updates.length, 1);
         assertEq(
             updates[0].consensusStateCommitment,
             keccak256(
-                Cometbls
-                    .createConsensusState(
-                        signedHeader.app_hash.toBytes32(0),
-                        signedHeader.validators_hash.toBytes32(0),
-                        uint64(signedHeader.time.secs)
-                    )
-                    .marshalEthABI()
+                Cometbls.createConsensusState(
+                    signedHeader.app_hash.toBytes32(0),
+                    signedHeader.validators_hash.toBytes32(0),
+                    uint64(signedHeader.time.secs)
+                ).marshalEthABI()
             )
         );
-        assertEq(
-            updates[0].height.revision_height,
-            uint64(signedHeader.height)
-        );
+        assertEq(updates[0].height.revision_height, uint64(signedHeader.height));
     }
 
     function test_updateClient_validZKP(
@@ -616,7 +619,6 @@ contract IBCClientHandlerTests is TestPlus {
             bytes memory zkp,
             UnionIbcLightclientsCometblsV1LightHeader.Data memory signedHeader
         ) = getValidTransition();
->>>>>>> 56d4f5292 (feat(evm): upgrade cometbls client and tests)
 
         uint64 trustedHeight = uint64(signedHeader.height) - 1;
 
@@ -701,12 +703,9 @@ contract IBCClientHandlerTests is TestPlus {
         assertTrue(ok);
         assertEq(
             clientStateBytes,
-            Cometbls
-                .createClientState(
-                    "union-devnet-10",
-                    uint64(signedHeader.height)
-                )
-                .marshalEthABI()
+            Cometbls.createClientState(
+                "union-devnet-10", uint64(signedHeader.height)
+            ).marshalEthABI()
         );
     }
 
@@ -741,13 +740,11 @@ contract IBCClientHandlerTests is TestPlus {
         assertTrue(ok);
         assertEq(
             consensusStateBytes,
-            Cometbls
-                .createConsensusState(
-                    ARBITRARY_INITIAL_APP_HASH,
-                    signedHeader.validators_hash.toBytes32(0),
-                    uint64(signedHeader.time.secs - 10)
-                )
-                .marshalEthABI()
+            Cometbls.createConsensusState(
+                ARBITRARY_INITIAL_APP_HASH,
+                signedHeader.validators_hash.toBytes32(0),
+                uint64(signedHeader.time.secs - 10)
+            ).marshalEthABI()
         );
     }
 
@@ -828,13 +825,11 @@ contract IBCClientHandlerTests is TestPlus {
         assertTrue(ok);
         assertEq(
             consensusStateBytes,
-            Cometbls
-                .createConsensusState(
-                    signedHeader.app_hash.toBytes32(0),
-                    signedHeader.validators_hash.toBytes32(0),
-                    uint64(signedHeader.time.secs)
-                )
-                .marshalEthABI()
+            Cometbls.createConsensusState(
+                signedHeader.app_hash.toBytes32(0),
+                signedHeader.validators_hash.toBytes32(0),
+                uint64(signedHeader.time.secs)
+            ).marshalEthABI()
         );
     }
 

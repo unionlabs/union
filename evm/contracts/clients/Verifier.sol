@@ -160,14 +160,10 @@ contract Verifier is IZKVerifierV2 {
             s := calldataload(add(input, 32))
             mstore(add(g, 0x40), s)
             success := and(success, lt(s, R))
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40)
-            )
-            success := and(
-                success,
-                staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40)
-            )
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_MUL, g, 0x60, g, 0x40))
+            success :=
+                and(success, staticcall(gas(), PRECOMPILE_ADD, f, 0x80, f, 0x40))
             x := mload(f)
             y := mload(add(f, 0x20))
         }

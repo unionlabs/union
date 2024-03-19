@@ -149,8 +149,8 @@ contract CometblsClient is ILightClient {
         bool adjacent = untrustedHeightNumber == trustedHeightNumber + 1;
         if (adjacent) {
             if (
-                keccak256(header.signed_header.validators_hash) !=
-                keccak256(abi.encodePacked(trustedValidatorsHash))
+                keccak256(header.signed_header.validators_hash)
+                    != keccak256(abi.encodePacked(trustedValidatorsHash))
             ) {
                 revert CometblsClientLib.ErrInvalidUntrustedValidatorsHash();
             }
@@ -208,14 +208,11 @@ contract CometblsClient is ILightClient {
         consensusState = consensusStates[clientId][untrustedHeightIndex];
         consensusState.timestamp = untrustedTimestamp;
         consensusState.appHash = header.signed_header.app_hash.toBytes32(0);
-        consensusState.nextValidatorsHash = header
-            .signed_header
-            .next_validators_hash
-            .toBytes32(0);
+        consensusState.nextValidatorsHash =
+            header.signed_header.next_validators_hash.toBytes32(0);
 
-        ProcessedMoment storage processed = processedMoments[clientId][
-            untrustedHeightIndex
-        ];
+        ProcessedMoment storage processed =
+            processedMoments[clientId][untrustedHeightIndex];
         processed.timestamp = block.timestamp;
         processed.height = block.number;
 

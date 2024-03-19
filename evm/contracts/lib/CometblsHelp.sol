@@ -38,11 +38,14 @@ library CometblsHelp {
     bytes constant HMAC_O =
         hex"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
 
-    function hmac_keccak(bytes memory message) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(HMAC_O, keccak256(HMAC_I.concat(message)))
-            );
+    function hmac_keccak(bytes memory message)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(HMAC_O, keccak256(HMAC_I.concat(message)))
+        );
     }
 
     // Union whitepaper: (1) H_{hmac_r}
@@ -93,13 +96,9 @@ library CometblsHelp {
             commitmentHash
         ];
 
-        return
-            verifier.verifyProof(
-                proof,
-                proofCommitment,
-                proofCommitmentPOK,
-                publicInputs
-            );
+        return verifier.verifyProof(
+            proof, proofCommitment, proofCommitmentPOK, publicInputs
+        );
     }
 
     function isExpired(

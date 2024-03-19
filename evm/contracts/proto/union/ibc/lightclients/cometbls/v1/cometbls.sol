@@ -1004,7 +1004,7 @@ library UnionIbcLightclientsCometblsV1LightHeader {
      * @return The decoded struct
      */
     function decode(bytes memory bs) internal pure returns (Data memory) {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         return x;
     }
 
@@ -1014,7 +1014,7 @@ library UnionIbcLightclientsCometblsV1LightHeader {
      * @param bs The bytes array to be decoded
      */
     function decode(Data storage self, bytes memory bs) internal {
-        (Data memory x, ) = _decode(32, bs, bs.length);
+        (Data memory x,) = _decode(32, bs, bs.length);
         store(x, self);
     }
 
@@ -1032,7 +1032,7 @@ library UnionIbcLightclientsCometblsV1LightHeader {
         uint256 p,
         bytes memory bs,
         uint256 sz
-    ) internal pure returns (Data memory, uint) {
+    ) internal pure returns (Data memory, uint256) {
         Data memory r;
         uint256 fieldId;
         ProtoBufRuntime.WireType wireType;
@@ -1040,10 +1040,8 @@ library UnionIbcLightclientsCometblsV1LightHeader {
         uint256 offset = p;
         uint256 pointer = p;
         while (pointer < offset + sz) {
-            (fieldId, wireType, bytesRead) = ProtoBufRuntime._decode_key(
-                pointer,
-                bs
-            );
+            (fieldId, wireType, bytesRead) =
+                ProtoBufRuntime._decode_key(pointer, bs);
             pointer += bytesRead;
             if (fieldId == 1) {
                 pointer += _read_height(pointer, bs, r);
@@ -1056,11 +1054,8 @@ library UnionIbcLightclientsCometblsV1LightHeader {
             } else if (fieldId == 5) {
                 pointer += _read_app_hash(pointer, bs, r);
             } else {
-                pointer += ProtoBufRuntime._skip_field_decode(
-                    wireType,
-                    pointer,
-                    bs
-                );
+                pointer +=
+                    ProtoBufRuntime._skip_field_decode(wireType, pointer, bs);
             }
         }
         return (r, sz);
@@ -1079,7 +1074,7 @@ library UnionIbcLightclientsCometblsV1LightHeader {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (int64 x, uint256 sz) = ProtoBufRuntime._decode_int64(p, bs);
         r.height = x;
         return sz;
@@ -1096,11 +1091,9 @@ library UnionIbcLightclientsCometblsV1LightHeader {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            GoogleProtobufTimestamp.Data memory x,
-            uint256 sz
-        ) = _decode_GoogleProtobufTimestamp(p, bs);
+    ) internal pure returns (uint256) {
+        (GoogleProtobufTimestamp.Data memory x, uint256 sz) =
+            _decode_GoogleProtobufTimestamp(p, bs);
         r.time = x;
         return sz;
     }
@@ -1116,7 +1109,7 @@ library UnionIbcLightclientsCometblsV1LightHeader {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.validators_hash = x;
         return sz;
@@ -1133,7 +1126,7 @@ library UnionIbcLightclientsCometblsV1LightHeader {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.next_validators_hash = x;
         return sz;
@@ -1150,7 +1143,7 @@ library UnionIbcLightclientsCometblsV1LightHeader {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         (bytes memory x, uint256 sz) = ProtoBufRuntime._decode_bytes(p, bs);
         r.app_hash = x;
         return sz;
@@ -1167,15 +1160,13 @@ library UnionIbcLightclientsCometblsV1LightHeader {
     function _decode_GoogleProtobufTimestamp(
         uint256 p,
         bytes memory bs
-    ) internal pure returns (GoogleProtobufTimestamp.Data memory, uint) {
+    ) internal pure returns (GoogleProtobufTimestamp.Data memory, uint256) {
         uint256 pointer = p;
-        (uint256 sz, uint256 bytesRead) = ProtoBufRuntime._decode_varint(
-            pointer,
-            bs
-        );
+        (uint256 sz, uint256 bytesRead) =
+            ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (GoogleProtobufTimestamp.Data memory r, ) = GoogleProtobufTimestamp
-            ._decode(pointer, bs, sz);
+        (GoogleProtobufTimestamp.Data memory r,) =
+            GoogleProtobufTimestamp._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1208,60 +1199,40 @@ library UnionIbcLightclientsCometblsV1LightHeader {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         uint256 offset = p;
         uint256 pointer = p;
 
         if (r.height != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                1,
-                ProtoBufRuntime.WireType.Varint,
-                pointer,
-                bs
+                1, ProtoBufRuntime.WireType.Varint, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_int64(r.height, pointer, bs);
         }
 
         pointer += ProtoBufRuntime._encode_key(
-            2,
-            ProtoBufRuntime.WireType.LengthDelim,
-            pointer,
-            bs
+            2, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += GoogleProtobufTimestamp._encode_nested(r.time, pointer, bs);
 
         if (r.validators_hash.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                3,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                3, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
-            pointer += ProtoBufRuntime._encode_bytes(
-                r.validators_hash,
-                pointer,
-                bs
-            );
+            pointer +=
+                ProtoBufRuntime._encode_bytes(r.validators_hash, pointer, bs);
         }
         if (r.next_validators_hash.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                4,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                4, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(
-                r.next_validators_hash,
-                pointer,
-                bs
+                r.next_validators_hash, pointer, bs
             );
         }
         if (r.app_hash.length != 0) {
             pointer += ProtoBufRuntime._encode_key(
-                5,
-                ProtoBufRuntime.WireType.LengthDelim,
-                pointer,
-                bs
+                5, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
             );
             pointer += ProtoBufRuntime._encode_bytes(r.app_hash, pointer, bs);
         }
@@ -1281,7 +1252,7 @@ library UnionIbcLightclientsCometblsV1LightHeader {
         Data memory r,
         uint256 p,
         bytes memory bs
-    ) internal pure returns (uint) {
+    ) internal pure returns (uint256) {
         /**
          * First encoded `r` into a temporary array, and encode the actual size used.
          * Then copy the temporary array into `bs`.
@@ -1306,12 +1277,11 @@ library UnionIbcLightclientsCometblsV1LightHeader {
      * @param r The struct to be encoded
      * @return The number of bytes encoded in estimation
      */
-    function _estimate(Data memory r) internal pure returns (uint) {
+    function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
         e += 1 + ProtoBufRuntime._sz_int64(r.height);
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
                 GoogleProtobufTimestamp._estimate(r.time)
             );
         e += 1 + ProtoBufRuntime._sz_lendelim(r.validators_hash.length);
@@ -1463,11 +1433,9 @@ library UnionIbcLightclientsCometblsV1Header {
         uint256 p,
         bytes memory bs,
         Data memory r
-    ) internal pure returns (uint) {
-        (
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory x,
-            uint256 sz
-        ) = _decode_UnionIbcLightclientsCometblsV1LightHeader(p, bs);
+    ) internal pure returns (uint256) {
+        (UnionIbcLightclientsCometblsV1LightHeader.Data memory x, uint256 sz) =
+            _decode_UnionIbcLightclientsCometblsV1LightHeader(p, bs);
         r.signed_header = x;
         return sz;
     }
@@ -1521,16 +1489,14 @@ library UnionIbcLightclientsCometblsV1Header {
     )
         internal
         pure
-        returns (UnionIbcLightclientsCometblsV1LightHeader.Data memory, uint)
+        returns (UnionIbcLightclientsCometblsV1LightHeader.Data memory, uint256)
     {
         uint256 pointer = p;
         (uint256 sz, uint256 bytesRead) =
             ProtoBufRuntime._decode_varint(pointer, bs);
         pointer += bytesRead;
-        (
-            UnionIbcLightclientsCometblsV1LightHeader.Data memory r,
-
-        ) = UnionIbcLightclientsCometblsV1LightHeader._decode(pointer, bs, sz);
+        (UnionIbcLightclientsCometblsV1LightHeader.Data memory r,) =
+            UnionIbcLightclientsCometblsV1LightHeader._decode(pointer, bs, sz);
         return (r, sz + bytesRead);
     }
 
@@ -1591,9 +1557,7 @@ library UnionIbcLightclientsCometblsV1Header {
             1, ProtoBufRuntime.WireType.LengthDelim, pointer, bs
         );
         pointer += UnionIbcLightclientsCometblsV1LightHeader._encode_nested(
-            r.signed_header,
-            pointer,
-            bs
+            r.signed_header, pointer, bs
         );
 
         pointer += ProtoBufRuntime._encode_key(
@@ -1653,12 +1617,9 @@ library UnionIbcLightclientsCometblsV1Header {
      */
     function _estimate(Data memory r) internal pure returns (uint256) {
         uint256 e;
-        e +=
-            1 +
-            ProtoBufRuntime._sz_lendelim(
-                UnionIbcLightclientsCometblsV1LightHeader._estimate(
-                    r.signed_header
-                )
+        e += 1
+            + ProtoBufRuntime._sz_lendelim(
+                UnionIbcLightclientsCometblsV1LightHeader._estimate(r.signed_header)
             );
         e += 1
             + ProtoBufRuntime._sz_lendelim(
@@ -1686,13 +1647,9 @@ library UnionIbcLightclientsCometblsV1Header {
      */
     function store(Data memory input, Data storage output) internal {
         UnionIbcLightclientsCometblsV1LightHeader.store(
-            input.signed_header,
-            output.signed_header
+            input.signed_header, output.signed_header
         );
-        IbcCoreClientV1Height.store(
-            input.trusted_height,
-            output.trusted_height
-        );
+        IbcCoreClientV1Height.store(input.trusted_height, output.trusted_height);
         IbcCoreClientV1Height.store(input.trusted_height, output.trusted_height);
         output.zero_knowledge_proof = input.zero_knowledge_proof;
     }

@@ -31,11 +31,23 @@ import {IbcCoreChannelV1Packet} from
     "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
-import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
-import {IbcCoreClientV1Height} from "../../../contracts/proto/ibc/core/client/v1/client.sol";
-import {TendermintTypesSignedHeader} from "../../../contracts/proto/tendermint/types/canonical.sol";
-import {TendermintTypesCommit, TendermintTypesHeader, TendermintTypesSignedHeader, TendermintVersionConsensus, TendermintTypesCommitSig, TendermintTypesBlockID, TendermintTypesPartSetHeader} from "../../../contracts/proto/tendermint/types/types.sol";
-import "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
+import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
+    "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
+import {IbcCoreClientV1Height} from
+    "../../../contracts/proto/ibc/core/client/v1/client.sol";
+import {TendermintTypesSignedHeader} from
+    "../../../contracts/proto/tendermint/types/canonical.sol";
+import {
+    TendermintTypesCommit,
+    TendermintTypesHeader,
+    TendermintTypesSignedHeader,
+    TendermintVersionConsensus,
+    TendermintTypesCommitSig,
+    TendermintTypesBlockID,
+    TendermintTypesPartSetHeader
+} from "../../../contracts/proto/tendermint/types/types.sol";
+import
+    "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 
 import "../TestPlus.sol";
 
@@ -196,14 +208,13 @@ contract IBCPacketHandlerTest is TestPlus {
         pure
         returns (UnionIbcLightclientsCometblsV1LightHeader.Data memory)
     {
-        return
-            UnionIbcLightclientsCometblsV1LightHeader.Data({
-                height: int64(height),
-                time: Timestamp.Data({secs: int64(timestamp), nanos: 0}),
-                validators_hash: hex"F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60",
-                next_validators_hash: hex"F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60",
-                app_hash: hex"983EF85676937CEC783601B5B50865733A72C3DF88E4CC0B3F11C108C9688459"
-            });
+        return UnionIbcLightclientsCometblsV1LightHeader.Data({
+            height: int64(height),
+            time: Timestamp.Data({secs: int64(timestamp), nanos: 0}),
+            validators_hash: hex"F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60",
+            next_validators_hash: hex"F09E25471B41514B2F8B08B5F4C9093C5D6ED134E107FF491CED2374B947DF60",
+            app_hash: hex"983EF85676937CEC783601B5B50865733A72C3DF88E4CC0B3F11C108C9688459"
+        });
     }
 
     function test_sendPacket_ok(

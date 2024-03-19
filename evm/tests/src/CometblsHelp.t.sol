@@ -24,14 +24,9 @@ contract CometblsHelpProxy {
         bytes32 trustedValidatorsHash,
         UnionIbcLightclientsCometblsV1LightHeader.Data memory header
     ) public returns (bool) {
-        return
-            CometblsHelp.verifyZKP(
-                verifier,
-                zkp,
-                chainId,
-                trustedValidatorsHash,
-                header
-            );
+        return CometblsHelp.verifyZKP(
+            verifier, zkp, chainId, trustedValidatorsHash, header
+        );
     }
 
     function optimize(
