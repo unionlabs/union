@@ -18,6 +18,4 @@ uniond tx slashing unjail --from $KEY_NAME
 
 ## Epoch Staking & Validator Set Updates
 
-Union uses [Epoch Staking](/docs/architecture/cometbls/#epoch-based-validator-rotation) to perform validator set updates. This means that the validator set is only updated once per epoch. 
-
-If you successfully unjail your validator during the middle of an epoch, you will still need to wait until after the end of the current epoch for your validator to rejoin the active set.
+Just like [creating your validator](/docs/joining-testnet/creating-validators/#epoch-staking--validator-set-updates), once you've unjailed your validator, they'll rejoin the active set at the end of the current epoch.
