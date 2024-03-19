@@ -20,7 +20,7 @@ use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt};
 use queue_msg::{
     event, HandleAggregate, HandleData, HandleEvent, HandleFetch, HandleMsg, HandleWait,
-    InMemoryQueue, Queue, QueueMsg, QueueMsgTypes, Reactor,
+    InMemoryQueue, Queue, QueueError, QueueMsg, QueueMsgTypes, Reactor,
 };
 use relay_message::{ChainExt, RelayerMsgTypes};
 use reqwest::StatusCode;
@@ -111,7 +111,7 @@ impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
                 }
             };
 
-            tracing::debug!("queued");
+            tracing::trace!("queued");
 
             Ok(())
         }
@@ -134,7 +134,7 @@ impl<T: QueueMsgTypes> Queue<T> for AnyQueue<T> {
                 AnyQueue::PgQueue(queue) => queue.process(f).await.map_err(AnyQueueError::PgQueue),
             };
 
-            tracing::debug!("processed");
+            tracing::trace!("processed");
 
             res
         }
@@ -296,9 +296,7 @@ impl Voyager {
                 reactor
                     .run(q)
                     .for_each(|x| async {
-                        let msg = x.unwrap();
-
-                        dbg!(msg);
+                        let _msg = x.unwrap();
                     })
                     .await;
                 Ok(())
@@ -711,10 +709,8 @@ impl FromQueueMsg<RelayerMsgTypes> for VoyagerMessageTypes {
 impl FromQueueMsg<BlockPollingTypes> for VoyagerMessageTypes {
     fn from_queue_msg(value: QueueMsg<BlockPollingTypes>) -> QueueMsg<Self> {
         match value {
-            QueueMsg::Event(event) => QueueMsg::Event(VoyagerEvent::Block(event)),
             QueueMsg::Data(data) => QueueMsg::Data(VoyagerData::Block(data)),
             QueueMsg::Fetch(fetch) => QueueMsg::Fetch(VoyagerFetch::Block(fetch)),
-            QueueMsg::Msg(msg) => QueueMsg::Msg(VoyagerMsg::Block(msg)),
             QueueMsg::Wait(wait) => QueueMsg::Wait(VoyagerWait::Block(wait)),
             QueueMsg::DeferUntil { point, seconds } => QueueMsg::DeferUntil { point, seconds },
             QueueMsg::Repeat { times, msg } => QueueMsg::Repeat {
@@ -775,19 +771,14 @@ impl HandleEvent<VoyagerMessageTypes> for VoyagerEvent {
     fn handle(
         self,
         store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<VoyagerMessageTypes> {
-        match self {
-            Self::Block(event) => {
-                <VoyagerMessageTypes as FromQueueMsg<BlockPollingTypes>>::from_queue_msg(
-                    HandleEvent::handle(event, store),
-                )
-            }
+    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
+        Ok(match self {
             Self::Relay(event) => {
                 <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
-                    HandleEvent::handle(event, store),
+                    HandleEvent::handle(event, store)?,
                 )
             }
-        }
+        })
     }
 }
 
@@ -803,9 +794,9 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
     fn handle(
         self,
         store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<VoyagerMessageTypes> {
-        match self {
-            Self::Block(data) => match data.handle(store) {
+    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
+        Ok(match self {
+            Self::Block(data) => match data.handle(store)? {
                 QueueMsg::Data(block_message::AnyChainIdentified::Cosmos(
                     block_message::Identified {
                         chain_id,
@@ -924,10 +915,10 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
             },
             Self::Relay(data) => {
                 <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
-                    data.handle(store),
+                    data.handle(store)?,
                 )
             }
-        }
+        })
     }
 }
 
@@ -943,19 +934,19 @@ impl HandleFetch<VoyagerMessageTypes> for VoyagerFetch {
     async fn handle(
         self,
         store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<VoyagerMessageTypes> {
-        match self {
+    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
+        Ok(match self {
             Self::Block(fetch) => {
                 <VoyagerMessageTypes as FromQueueMsg<BlockPollingTypes>>::from_queue_msg(
-                    fetch.handle(store).await,
+                    fetch.handle(store).await?,
                 )
             }
             Self::Relay(fetch) => {
                 <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
-                    fetch.handle(store).await,
+                    fetch.handle(store).await?,
                 )
             }
-        }
+        })
     }
 }
 
@@ -971,11 +962,14 @@ impl HandleMsg<VoyagerMessageTypes> for VoyagerMsg {
     async fn handle(
         self,
         store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
-    ) -> Result<(), BoxDynError> {
-        match self {
-            Self::Block(msg) => HandleMsg::<BlockPollingTypes>::handle(msg, store).await,
-            Self::Relay(msg) => HandleMsg::handle(msg, store).await,
-        }
+    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
+        Ok(match self {
+            Self::Relay(msg) => {
+                <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
+                    msg.handle(store).await?,
+                )
+            }
+        })
     }
 }
 
@@ -991,19 +985,19 @@ impl HandleWait<VoyagerMessageTypes> for VoyagerWait {
     async fn handle(
         self,
         store: &<VoyagerMessageTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<VoyagerMessageTypes> {
-        match self {
+    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
+        Ok(match self {
             Self::Block(msg) => {
                 <VoyagerMessageTypes as FromQueueMsg<BlockPollingTypes>>::from_queue_msg(
-                    HandleWait::<BlockPollingTypes>::handle(msg, store).await,
+                    HandleWait::<BlockPollingTypes>::handle(msg, store).await?,
                 )
             }
             Self::Relay(msg) => {
                 <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
-                    HandleWait::<RelayerMsgTypes>::handle(msg, store).await,
+                    HandleWait::<RelayerMsgTypes>::handle(msg, store).await?,
                 )
             }
-        }
+        })
     }
 }
 
@@ -1019,8 +1013,8 @@ impl HandleAggregate<VoyagerMessageTypes> for VoyagerAggregate {
     fn handle(
         self,
         data: VecDeque<<VoyagerMessageTypes as QueueMsgTypes>::Data>,
-    ) -> QueueMsg<VoyagerMessageTypes> {
-        match self {
+    ) -> Result<QueueMsg<VoyagerMessageTypes>, QueueError> {
+        Ok(match self {
             Self::Block(aggregate) => VoyagerMessageTypes::from_queue_msg(
                 aggregate.handle(
                     data.into_iter()
@@ -1029,7 +1023,7 @@ impl HandleAggregate<VoyagerMessageTypes> for VoyagerAggregate {
                             VoyagerData::Relay(_) => panic!(),
                         })
                         .collect(),
-                ),
+                )?,
             ),
             Self::Relay(aggregate) => VoyagerMessageTypes::from_queue_msg(
                 aggregate.handle(
@@ -1039,8 +1033,8 @@ impl HandleAggregate<VoyagerMessageTypes> for VoyagerAggregate {
                             VoyagerData::Relay(d) => d,
                         })
                         .collect(),
-                ),
+                )?,
             ),
-        }
+        })
     }
 }

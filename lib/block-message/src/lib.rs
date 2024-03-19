@@ -234,3 +234,16 @@ pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
         _: VecDeque<AnyChainIdentified<AnyData>>,
     ) -> QueueMsg<BlockPollingTypes>;
 }
+
+macro_rules! any_chain {
+    (|$msg:ident| $expr:expr) => {
+        match $msg {
+            AnyChainIdentified::EthMainnet($msg) => $expr,
+            AnyChainIdentified::EthMinimal($msg) => $expr,
+            AnyChainIdentified::Union($msg) => $expr,
+            AnyChainIdentified::Cosmos($msg) => $expr,
+            AnyChainIdentified::Scroll($msg) => $expr,
+        }
+    };
+}
+pub(crate) use any_chain;

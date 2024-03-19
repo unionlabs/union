@@ -7,7 +7,7 @@ use std::{
 use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
-use queue_msg::{data, fetch, msg_struct, HandleFetch, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, fetch, msg_struct, HandleFetch, QueueError, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
@@ -18,8 +18,10 @@ use unionlabs::{
 };
 
 use crate::{
-    any_enum,
-    data::{AnyData, Data, PacketAcknowledgement, SelfClientState, SelfConsensusState},
+    any_enum, any_lc,
+    data::{
+        AnyData, Data, LatestHeight, PacketAcknowledgement, SelfClientState, SelfConsensusState,
+    },
     id, identified, AnyLightClientIdentified, ChainExt, DoFetchProof, DoFetchState,
     DoFetchUpdateHeaders, RelayerMsgTypes,
 };
@@ -30,6 +32,8 @@ use crate::{
 pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
     State(FetchState<Hc, Tr>),
     Proof(FetchProof<Hc, Tr>),
+
+    LatestHeight(FetchLatestHeight<Hc, Tr>),
 
     LatestClientState(FetchLatestClientState<Hc, Tr>),
 
@@ -48,11 +52,16 @@ impl HandleFetch<RelayerMsgTypes> for AnyLightClientIdentified<AnyFetch> {
     async fn handle(
         self,
         store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
         let fetch = self;
 
-        crate::any_lc! {
-            |fetch| fetch.t.handle(store.get_chain(&fetch.chain_id)).await
+        any_lc! {
+            |fetch| {
+                Ok(store
+                    .with_chain(&fetch.chain_id, move |c| async move { fetch.t.handle(c).await })
+                    .map_err(|e| QueueError::Fatal(Box::new(e)))?
+                    .await)
+            }
         }
     }
 }
@@ -75,6 +84,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Fetch<Hc, Tr> {
         match self {
             Fetch::State(fetch) => write!(f, "State({})", path_display(&fetch.path)),
             Fetch::Proof(fetch) => write!(f, "Proof({})", path_display(&fetch.path)),
+            Fetch::LatestHeight(_) => write!(f, "LatestHeight"),
             Fetch::LatestClientState(_) => write!(f, "LatestClientState"),
             Fetch::SelfClientState(_) => write!(f, "SelfClientState"),
             Fetch::SelfConsensusState(_) => write!(f, "SelfConsensusState"),
@@ -125,13 +135,16 @@ pub struct FetchPacketAcknowledgement<Hc: ChainExt, Tr: ChainExt> {
 
 #[apply(msg_struct)]
 pub struct FetchUpdateHeaders<Hc: ChainExt, Tr: ChainExt> {
-    pub client_id: ClientIdOf<Hc>,
     pub counterparty_chain_id: ChainIdOf<Tr>,
     // id of the counterparty client that will be updated with the fetched headers
     pub counterparty_client_id: ClientIdOf<Tr>,
     pub update_from: HeightOf<Hc>,
     pub update_to: HeightOf<Hc>,
 }
+
+#[apply(msg_struct)]
+#[cover(Hc, Tr)]
+pub struct FetchLatestHeight<Hc: ChainExt, Tr: ChainExt> {}
 
 #[apply(msg_struct)]
 pub struct LightClientSpecificFetch<Hc: ChainExt, Tr: ChainExt>(pub Hc::Fetch<Tr>);
@@ -148,6 +161,13 @@ where
         match self {
             Fetch::Proof(msg) => Hc::proof(&c, msg.at, msg.path),
             Fetch::State(msg) => Hc::state(&c, msg.at, msg.path),
+            Fetch::LatestHeight(FetchLatestHeight { __marker: _ }) => data(id(
+                c.chain_id(),
+                LatestHeight {
+                    height: c.query_latest_height().await.unwrap(),
+                    __marker: PhantomData,
+                },
+            )),
             Fetch::SelfClientState(FetchSelfClientState {
                 at: height,
                 __marker: _,

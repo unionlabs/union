@@ -37,7 +37,7 @@ Furthermore, because BLS signatures can be aggregated, we can employ [Distribute
 ## MiMC Hashing
 
 SHA-256 is used across Tendermint for storage proofs and more.
-The security of SHA-256 over alternatives like BLAKE is questionable; the main downside is the high cost within Zero-Knowledge circuits to prove the hashing. [MiMC](https://eprint.iacr.org/2016/492.pdf) is an alternative that provides excellent security and significantly decreases the number of constraints in Galois. CometBLS V3 introduced these MiMC hases, bringing [significant performance enhancements](https://unionlabs.github.io/galois-benchmark/).
+The security of SHA-256 over alternatives like BLAKE is questionable; the main downside is the high cost within Zero-Knowledge circuits to prove the hashing. [MiMC](https://eprint.iacr.org/2016/492.pdf) is an alternative that provides excellent security and significantly decreases the number of constraints in Galois. CometBLS V3 introduced these MiMC hashes, bringing [significant performance enhancements](https://unionlabs.github.io/galois-benchmark/).
 
 ## Epoch-based Validator Rotation
 

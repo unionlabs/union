@@ -6,7 +6,7 @@ use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    fetch, msg, msg_struct, wait, HandleAggregate, QueueMsg, QueueMsgTypes,
+    fetch, msg, msg_struct, wait, HandleAggregate, QueueError, QueueMsg, QueueMsgTypes,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -42,12 +42,12 @@ use unionlabs::{
 use crate::{
     any_enum, any_lc,
     data::{
-        AnyData, Data, IbcProof, IbcState, PacketAcknowledgement, SelfClientState,
+        AnyData, Data, IbcProof, IbcState, LatestHeight, PacketAcknowledgement, SelfClientState,
         SelfConsensusState,
     },
     fetch::{
-        AnyFetch, Fetch, FetchLatestClientState, FetchPacketAcknowledgement, FetchProof,
-        FetchState, FetchUpdateHeaders,
+        AnyFetch, Fetch, FetchLatestClientState, FetchLatestHeight, FetchPacketAcknowledgement,
+        FetchProof, FetchState, FetchUpdateHeaders,
     },
     id, identified,
     msg::{
@@ -77,19 +77,17 @@ pub enum Aggregate<Hc: ChainExt, Tr: ChainExt> {
 
     ConnectionFetchFromChannelEnd(AggregateConnectionFetchFromChannelEnd<Hc, Tr>),
 
-    // Aggregate that fetches the connection info from the channel
-    ChannelHandshakeUpdateClient(AggregateChannelHandshakeUpdateClient<Hc, Tr>),
+    /// Aggregate that fetches the connection info from the channel, requeueing [`Self::AggregateMsgAfterUpdate`]
+    ChannelHandshakeMsgAfterUpdate(AggregateChannelHandshakeMsgAfterUpdate<Hc, Tr>),
 
-    PacketUpdateClient(AggregatePacketUpdateClient<Hc, Tr>),
+    PacketUpdateClient(AggregatePacketMsgAfterUpdate<Hc, Tr>),
 
     WaitForTrustedHeight(AggregateWaitForTrustedHeight<Hc, Tr>),
 
     FetchCounterpartyStateproof(AggregateFetchCounterpartyStateProof<Hc, Tr>),
 
-    UpdateClientFromClientId(AggregateUpdateClientFromClientId<Hc, Tr>),
-
     UpdateClient(AggregateUpdateClient<Hc, Tr>),
-    UpdateClientWithCounterpartyChainIdData(AggregateUpdateClientWithCounterpartyChainId<Hc, Tr>),
+    UpdateClientFromHeight(AggregateUpdateClientFromHeight<Hc, Tr>),
 
     CreateClient(AggregateCreateClient<Hc, Tr>),
 
@@ -103,11 +101,11 @@ impl HandleAggregate<RelayerMsgTypes> for AnyLightClientIdentified<AnyAggregate>
     fn handle(
         self,
         data: VecDeque<<RelayerMsgTypes as QueueMsgTypes>::Data>,
-    ) -> QueueMsg<RelayerMsgTypes> {
+    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
         let aggregate = self;
 
         any_lc! {
-            |aggregate| aggregate.handle(data)
+            |aggregate| Ok(aggregate.handle(data))
         }
     }
 }
@@ -118,9 +116,21 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
         data: VecDeque<AnyLightClientIdentified<AnyData>>,
     ) -> QueueMsg<RelayerMsgTypes>
     where
+        identified!(SelfClientState<Tr, Hc>): IsAggregateData,
+        identified!(SelfConsensusState<Tr, Hc>): IsAggregateData,
+
+        identified!(LatestHeight<Tr, Hc>): IsAggregateData,
+
+        identified!(PacketAcknowledgement<Hc, Tr>): IsAggregateData,
+
+        // state
         Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
         Identified<Tr, Hc, IbcState<ClientStatePath<Tr::ClientId>, Tr, Hc>>: IsAggregateData,
+        Identified<Hc, Tr, IbcState<ChannelEndPath, Hc, Tr>>: IsAggregateData,
+        Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
+        Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
 
+        // proof
         Identified<Hc, Tr, IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
 
         Identified<Hc, Tr, IbcProof<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>>:
@@ -129,15 +139,6 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
         Identified<Hc, Tr, IbcProof<ChannelEndPath, Hc, Tr>>: IsAggregateData,
         Identified<Hc, Tr, IbcProof<CommitmentPath, Hc, Tr>>: IsAggregateData,
         Identified<Hc, Tr, IbcProof<AcknowledgementPath, Hc, Tr>>: IsAggregateData,
-
-        identified!(SelfClientState<Tr, Hc>): IsAggregateData,
-        identified!(SelfConsensusState<Tr, Hc>): IsAggregateData,
-
-        identified!(PacketAcknowledgement<Hc, Tr>): IsAggregateData,
-
-        Identified<Hc, Tr, IbcState<ChannelEndPath, Hc, Tr>>: IsAggregateData,
-        Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
-        Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
 
         Identified<Hc, Tr, Hc::Aggregate<Tr>>: DoAggregate,
 
@@ -151,6 +152,7 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
         AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Hc>)>,
 
         AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
+
         AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
     {
         let chain_id = self.chain_id;
@@ -162,14 +164,11 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
             Aggregate::ChannelOpenTry(try_) => do_aggregate(id(chain_id, try_), data),
             Aggregate::ChannelOpenAck(ack) => do_aggregate(id(chain_id, ack), data),
             Aggregate::ChannelOpenConfirm(confirm) => do_aggregate(id(chain_id, confirm), data),
-            Aggregate::UpdateClientFromClientId(update_client) => {
-                do_aggregate(id(chain_id, update_client), data)
-            }
             Aggregate::UpdateClient(update_client) => {
                 do_aggregate(id(chain_id, update_client), data)
             }
-            Aggregate::UpdateClientWithCounterpartyChainIdData(aggregate) => {
-                do_aggregate(id(chain_id, aggregate), data)
+            Aggregate::UpdateClientFromHeight(update_client) => {
+                do_aggregate(id(chain_id, update_client), data)
             }
             Aggregate::CreateClient(create_client) => {
                 do_aggregate(id(chain_id, create_client), data)
@@ -186,7 +185,7 @@ impl<Hc: ChainExt, Tr: ChainExt> identified!(Aggregate<Hc, Tr>) {
             Aggregate::ConnectionFetchFromChannelEnd(aggregate) => {
                 do_aggregate(id(chain_id, aggregate), data)
             }
-            Aggregate::ChannelHandshakeUpdateClient(channel_handshake_update_client) => {
+            Aggregate::ChannelHandshakeMsgAfterUpdate(channel_handshake_update_client) => {
                 do_aggregate(id(chain_id, channel_handshake_update_client), data)
             }
             Aggregate::PacketUpdateClient(packet_update_client) => {
@@ -214,7 +213,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Aggregate<Hc, Tr> {
             Aggregate::ConnectionFetchFromChannelEnd(_) => {
                 write!(f, "ConnectionFetchFromChannelEnd")
             }
-            Aggregate::ChannelHandshakeUpdateClient(_) => {
+            Aggregate::ChannelHandshakeMsgAfterUpdate(_) => {
                 write!(f, "ChannelHandshakeUpdateClient")
             }
             Aggregate::PacketUpdateClient(msg) => {
@@ -231,11 +230,8 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Aggregate<Hc, Tr> {
             Aggregate::FetchCounterpartyStateproof(_) => {
                 write!(f, "FetchCounterpartyStateproof")
             }
-            Aggregate::UpdateClientFromClientId(_) => write!(f, "UpdateClientFromClientId"),
             Aggregate::UpdateClient(_) => write!(f, "UpdateClient"),
-            Aggregate::UpdateClientWithCounterpartyChainIdData(_) => {
-                write!(f, "UpdateClientWithCounterpartyChainIdData")
-            }
+            Aggregate::UpdateClientFromHeight(_) => write!(f, "UpdateClientFromHeight"),
             Aggregate::CreateClient(_) => write!(f, "CreateClient"),
             Aggregate::AggregateMsgAfterUpdate(msg) => {
                 write!(f, "AggregateMsgAfterUpdate::")?;
@@ -327,7 +323,7 @@ pub struct AggregateConnectionFetchFromChannelEnd<Hc: ChainExt, Tr: ChainExt> {
 
 #[apply(msg_struct)]
 #[cover(Tr)]
-pub struct AggregateChannelHandshakeUpdateClient<Hc: ChainExt, Tr: ChainExt> {
+pub struct AggregateChannelHandshakeMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
     // Will be threaded through to the update msg
     pub update_to: HeightOf<Hc>,
     pub event_height: HeightOf<Hc>,
@@ -351,7 +347,7 @@ pub enum ChannelHandshakeEvent {
 
 #[apply(msg_struct)]
 #[cover(Tr)]
-pub struct AggregatePacketUpdateClient<Hc: ChainExt, Tr: ChainExt> {
+pub struct AggregatePacketMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
     // Will be threaded through to the update msg
     pub update_to: HeightOf<Hc>,
     pub event_height: HeightOf<Hc>,
@@ -380,16 +376,15 @@ pub struct AggregateFetchCounterpartyStateProof<Hc: ChainExt, Tr: ChainExt> {
 }
 
 #[apply(msg_struct)]
-pub struct AggregateUpdateClientFromClientId<Hc: ChainExt, Tr: ChainExt> {
+#[cover(Tr)]
+pub struct AggregateUpdateClient<Hc: ChainExt, Tr: ChainExt> {
     pub client_id: ClientIdOf<Hc>,
-    pub counterparty_client_id: ClientIdOf<Tr>,
 }
 
 #[apply(msg_struct)]
-pub struct AggregateUpdateClient<Hc: ChainExt, Tr: ChainExt> {
-    pub update_to: HeightOf<Hc>,
+pub struct AggregateUpdateClientFromHeight<Hc: ChainExt, Tr: ChainExt> {
+    pub from_height: HeightOf<Tr>,
     pub client_id: ClientIdOf<Hc>,
-    pub counterparty_client_id: ClientIdOf<Tr>,
 }
 
 #[apply(msg_struct)]
@@ -397,22 +392,6 @@ pub struct AggregateWaitForTrustedHeight<Hc: ChainExt, Tr: ChainExt> {
     pub wait_for: HeightOf<Hc>,
     pub client_id: ClientIdOf<Hc>,
     pub counterparty_client_id: ClientIdOf<Tr>,
-}
-
-#[apply(msg_struct)]
-pub struct AggregateUpdateClientWithCounterpartyChainId<Hc: ChainExt, Tr: ChainExt> {
-    pub update_to: HeightOf<Hc>,
-    pub client_id: ClientIdOf<Hc>,
-    pub counterparty_client_id: ClientIdOf<Tr>,
-    pub counterparty_chain_id: ChainIdOf<Tr>,
-}
-
-#[apply(msg_struct)]
-pub struct AggregateMsgUpdateClient<Hc: ChainExt, Tr: ChainExt> {
-    pub update_to: HeightOf<Hc>,
-    pub client_id: ClientIdOf<Hc>,
-    pub counterparty_client_id: ClientIdOf<Tr>,
-    pub counterparty_chain_id: ChainIdOf<Tr>,
 }
 
 #[apply(msg_struct)]
@@ -425,7 +404,9 @@ pub struct AggregateCreateClient<Hc: ChainExt, Tr: ChainExt> {
 pub struct LightClientSpecificAggregate<Hc: ChainExt, Tr: ChainExt>(pub Hc::Aggregate<Tr>);
 
 /// Messages that will be re-queued after an update.
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
+#[derive(
+    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, enumorph::Enumorph,
+)]
 #[serde(
     tag = "@type",
     content = "@value",
@@ -451,7 +432,7 @@ pub enum AggregateMsgAfterUpdate<Hc: ChainExt, Tr: ChainExt> {
     AckPacket(AggregateAckPacket<Hc, Tr>),
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateChannelHandshakeUpdateClient<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateChannelHandshakeMsgAfterUpdate<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -463,7 +444,7 @@ where
         Identified {
             chain_id: this_chain_id,
             t:
-                AggregateChannelHandshakeUpdateClient {
+                AggregateChannelHandshakeMsgAfterUpdate {
                     update_to,
                     channel_handshake_event,
                     event_height,
@@ -485,21 +466,21 @@ where
 
         let event_msg = match channel_handshake_event {
             ChannelHandshakeEvent::Init(init) => {
-                AggregateMsgAfterUpdate::ChannelOpenTry(AggregateChannelOpenTry {
+                AggregateMsgAfterUpdate::from(AggregateChannelOpenTry {
                     event_height,
                     event: init,
                     __marker: PhantomData,
                 })
             }
             ChannelHandshakeEvent::Try(try_) => {
-                AggregateMsgAfterUpdate::ChannelOpenAck(AggregateChannelOpenAck {
+                AggregateMsgAfterUpdate::from(AggregateChannelOpenAck {
                     event_height,
                     event: try_,
                     __marker: PhantomData,
                 })
             }
             ChannelHandshakeEvent::Ack(ack) => {
-                AggregateMsgAfterUpdate::ChannelOpenConfirm(AggregateChannelOpenConfirm {
+                AggregateMsgAfterUpdate::from(AggregateChannelOpenConfirm {
                     event_height,
                     event: ack,
                     __marker: PhantomData,
@@ -552,7 +533,7 @@ where
     )
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregatePacketUpdateClient<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregatePacketMsgAfterUpdate<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
@@ -564,7 +545,7 @@ where
         Identified {
             chain_id: this_chain_id,
             t:
-                AggregatePacketUpdateClient {
+                AggregatePacketMsgAfterUpdate {
                     update_to,
                     event_height,
                     tx_hash,
@@ -668,83 +649,25 @@ where
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateUpdateClientFromClientId<Hc, Tr>)
-where
-    Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
-{
-    type AggregatedData =
-        HList![Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>];
-
-    fn aggregate(
-        Identified {
-            chain_id: this_chain_id,
-            t:
-                AggregateUpdateClientFromClientId {
-                    client_id,
-                    counterparty_client_id,
-                },
-            __marker: _,
-        }: Self,
-        hlist_pat![Identified {
-            chain_id: self_chain_id,
-            t: IbcState {
-                path: ClientStatePath {
-                    client_id: trusted_client_state_client_id
-                },
-                height: trusted_client_state_fetched_at_height,
-                state: trusted_client_state
-            },
-            __marker: _,
-        }]: Self::AggregatedData,
-    ) -> QueueMsg<RelayerMsgTypes> {
-        assert_eq!(this_chain_id, self_chain_id);
-        assert_eq!(trusted_client_state_client_id, client_id);
-
-        let counterparty_chain_id = trusted_client_state.chain_id();
-
-        aggregate(
-            [fetch(id(
-                counterparty_chain_id.clone(),
-                FetchLatestClientState::<Tr, Hc> {
-                    path: ClientStatePath {
-                        client_id: counterparty_client_id.clone(),
-                    },
-                    __marker: PhantomData,
-                },
-            ))],
-            [],
-            id(
-                this_chain_id,
-                AggregateUpdateClientWithCounterpartyChainId {
-                    update_to: trusted_client_state_fetched_at_height,
-                    client_id,
-                    counterparty_client_id,
-                    counterparty_chain_id,
-                },
-            ),
-        )
-    }
-}
-
 impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateUpdateClient<Hc, Tr>)
 where
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
+    identified!(LatestHeight<Tr, Hc>): IsAggregateData,
     AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
-    type AggregatedData =
-        HList![Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>];
+    type AggregatedData = HList![
+        // identified!(LatestHeight<Tr, Hc>),
+        Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>
+    ];
 
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
             t:
                 AggregateUpdateClient {
-                    update_to,
-                    client_id: update_client_id,
-                    counterparty_client_id: update_counterparty_client_id,
+                    client_id,
+                    __marker: _,
                 },
             __marker: _,
         }: Self,
@@ -760,85 +683,65 @@ where
             __marker: _,
         }]: Self::AggregatedData,
     ) -> QueueMsg<RelayerMsgTypes> {
-        assert_eq!(this_chain_id, self_chain_id);
-        assert_eq!(update_client_id, trusted_client_state_client_id);
-
         let counterparty_chain_id: ChainIdOf<Tr> = trusted_client_state.chain_id();
 
+        assert_eq!(trusted_client_state_client_id, client_id);
+        assert_eq!(this_chain_id, self_chain_id);
+
         aggregate(
-            [fetch(id::<Tr, Hc, _>(
-                counterparty_chain_id.clone(),
-                FetchLatestClientState {
-                    path: ClientStatePath {
-                        client_id: update_counterparty_client_id.clone(),
-                    },
+            [fetch(id(
+                counterparty_chain_id,
+                FetchLatestHeight {
                     __marker: PhantomData,
                 },
             ))],
             [],
             id(
                 this_chain_id,
-                AggregateUpdateClientWithCounterpartyChainId {
-                    update_to,
-                    client_id: update_client_id,
-                    counterparty_client_id: update_counterparty_client_id,
-                    counterparty_chain_id,
+                AggregateUpdateClientFromHeight {
+                    from_height: trusted_client_state.height(),
+                    client_id,
                 },
             ),
         )
     }
 }
 
-impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateUpdateClientWithCounterpartyChainId<Hc, Tr>)
+impl<Hc: ChainExt, Tr: ChainExt> UseAggregate<RelayerMsgTypes> for identified!(AggregateUpdateClientFromHeight<Hc, Tr>)
 where
-    Identified<Tr, Hc, IbcState<ClientStatePath<Tr::ClientId>, Tr, Hc>>: IsAggregateData,
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Hc, Tr>)>,
+    Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
+    identified!(LatestHeight<Tr, Hc>): IsAggregateData,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Tr, Hc>)>,
     AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Hc, Tr>)>,
 {
-    type AggregatedData =
-        HList![Identified<Tr, Hc, IbcState<ClientStatePath<Tr::ClientId>, Tr, Hc>>];
+    type AggregatedData = HList![identified!(LatestHeight<Tr, Hc>),];
 
     fn aggregate(
         Identified {
             chain_id: this_chain_id,
             t:
-                AggregateUpdateClientWithCounterpartyChainId {
-                    update_to,
-                    client_id: update_client_id,
-                    counterparty_client_id: update_counterparty_client_id,
-                    counterparty_chain_id: update_counterparty_chain_id,
+                AggregateUpdateClientFromHeight {
+                    client_id,
+                    from_height,
                 },
             __marker: _,
         }: Self,
         hlist_pat![Identified {
             chain_id: counterparty_chain_id,
-            t: IbcState {
-                path: ClientStatePath {
-                    client_id: trusted_client_state_client_id
-                },
-                height: _trusted_client_state_fetched_at_height,
-                state: trusted_client_state
+            t: LatestHeight {
+                height: counterparty_latest_height,
+                __marker
             },
             __marker: _,
-        }]: Self::AggregatedData,
+        },]: Self::AggregatedData,
     ) -> QueueMsg<RelayerMsgTypes> {
-        let self_chain_id: ChainIdOf<Hc> = trusted_client_state.chain_id();
-
-        assert_eq!(this_chain_id, self_chain_id);
-        assert_eq!(
-            trusted_client_state_client_id,
-            update_counterparty_client_id
-        );
-        assert_eq!(counterparty_chain_id, update_counterparty_chain_id);
-
-        fetch(id::<Hc, Tr, _>(
-            this_chain_id,
+        fetch(id::<Tr, Hc, _>(
+            counterparty_chain_id,
             FetchUpdateHeaders {
-                client_id: update_client_id,
-                counterparty_client_id: update_counterparty_client_id,
-                counterparty_chain_id,
-                update_from: trusted_client_state.height(),
-                update_to,
+                counterparty_client_id: client_id,
+                counterparty_chain_id: this_chain_id,
+                update_from: from_height,
+                update_to: counterparty_latest_height,
             },
         ))
     }

@@ -1,12 +1,11 @@
-#![feature(trait_alias)]
+#![feature(trait_alias, min_exhaustive_patterns)]
 // #![warn(clippy::pedantic)]
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives
     clippy::manual_async_fn,
+    clippy::large_enum_variant,
     clippy::module_name_repetitions,
-    clippy::large_enum_variant
 )]
-// #![deny(clippy::unwrap_used)]
 
 use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCode, sync::Arc};
 
@@ -265,7 +264,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 }
             }
         }
-        Command::Msg(cli::MsgCmd::History { id, max_depth }) => {
+        Command::Queue(cli_msg) => {
             let db = match voyager_config.voyager.queue {
                 AnyQueueConfig::PgQueue(cfg) => cfg.into_pg_pool().await.unwrap(),
                 _ => panic!("no database set in config"),
@@ -273,24 +272,48 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
             type Item = sqlx::types::Json<QueueMsg<VoyagerMessageTypes>>;
 
-            #[derive(Debug, serde::Serialize)]
-            struct Record {
-                id: i64,
-                parent: Option<i64>,
-                item: Item,
+            match cli_msg {
+                cli::QueueCmd::History { id, max_depth } => {
+                    #[derive(Debug, serde::Serialize)]
+                    struct Record {
+                        id: i64,
+                        parent: Option<i64>,
+                        item: Item,
+                    }
+
+                    let results = query_as!(
+                        Record,
+                        r#"SELECT id as "id!", parent, item as "item!: Item" FROM get_list($1, $2) ORDER BY id ASC"#,
+                        id.inner(),
+                        max_depth.inner()
+                    )
+                    .fetch_all(&db)
+                    .await
+                    .unwrap();
+
+                    println!("{}", serde_json::to_string_pretty(&results).unwrap());
+                }
+                cli::QueueCmd::Failed { page, per_page } => {
+                    #[derive(Debug, serde::Serialize)]
+                    struct Record {
+                        id: i64,
+                        message: String,
+                        item: Item,
+                    }
+
+                    let results = query_as!(
+                        Record,
+                        r#"SELECT id, item as "item: Item", message as "message!" FROM queue WHERE status = 'failed' ORDER BY id ASC LIMIT $1 OFFSET $2"#,
+                        per_page.inner(),
+                        ((page.inner() - 1) * per_page.inner()),
+                    )
+                    .fetch_all(&db)
+                    .await
+                    .unwrap();
+
+                    println!("{}", serde_json::to_string_pretty(&results).unwrap());
+                }
             }
-
-            let results = query_as!(
-                Record,
-                r#"SELECT id as "id!", parent, item as "item!: Item" from get_list($1, $2) ORDER BY id ASC"#,
-                id.inner(),
-                max_depth.inner()
-            )
-            .fetch_all(&db)
-            .await
-            .unwrap();
-
-            println!("{}", serde_json::to_string_pretty(&results).unwrap());
         }
     }
 
@@ -480,7 +503,7 @@ mod tests {
                     eth_chain_id,
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("cometbls-0"),
-                        counterparty_client_id: parse!("08-wasm-0"),
+                        __marker: PhantomData,
                     },
                 )),
                 defer_relative(10),
@@ -497,7 +520,7 @@ mod tests {
                     union_chain_id.clone(),
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("08-wasm-0"),
-                        counterparty_client_id: parse!("cometbls-0"),
+                        __marker: PhantomData,
                     },
                 )),
                 defer_relative(10),
@@ -514,7 +537,7 @@ mod tests {
                     cosmos_chain_id.clone(),
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("08-wasm-0"),
-                        counterparty_client_id: parse!("07-tendermint-0"),
+                        __marker: PhantomData,
                     },
                 )),
                 defer_relative(10),
@@ -531,7 +554,7 @@ mod tests {
                     union_chain_id.clone(),
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("07-tendermint-0"),
-                        counterparty_client_id: parse!("08-wasm-0"),
+                        __marker: PhantomData,
                     },
                 )),
                 defer_relative(10),

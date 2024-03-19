@@ -749,7 +749,6 @@ where
         Hc::fetch_update_headers(
             hc,
             FetchUpdateHeaders {
-                client_id: update_info.client_id,
                 counterparty_chain_id: update_info.counterparty_chain_id,
                 counterparty_client_id: update_info.counterparty_client_id,
                 update_from: update_info.update_from,
@@ -786,12 +785,54 @@ impl<Hc: Chain, Tr: Chain, S> Inner<Hc, Tr, S> {
 macro_rules! any_lc {
     (|$msg:ident| $expr:expr) => {
         match $msg {
-            AnyLightClientIdentified::EvmMainnetOnUnion($msg) => $expr,
-            AnyLightClientIdentified::UnionOnEvmMainnet($msg) => $expr,
-            AnyLightClientIdentified::EvmMinimalOnUnion($msg) => $expr,
-            AnyLightClientIdentified::UnionOnEvmMinimal($msg) => $expr,
-            AnyLightClientIdentified::CosmosOnUnion($msg) => $expr,
-            AnyLightClientIdentified::UnionOnCosmos($msg) => $expr,
+            AnyLightClientIdentified::EvmMainnetOnUnion($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::wasm::Wasm<chain_utils::union::Union>;
+                #[allow(dead_code)]
+                type Tr = chain_utils::evm::Evm<unionlabs::ethereum::config::Mainnet>;
+
+                $expr
+            }
+            AnyLightClientIdentified::UnionOnEvmMainnet($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::evm::Evm<unionlabs::ethereum::config::Mainnet>;
+                #[allow(dead_code)]
+                type Tr = chain_utils::wasm::Wasm<chain_utils::union::Union>;
+
+                $expr
+            }
+            AnyLightClientIdentified::EvmMinimalOnUnion($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::wasm::Wasm<chain_utils::union::Union>;
+                #[allow(dead_code)]
+                type Tr = chain_utils::evm::Evm<unionlabs::ethereum::config::Minimal>;
+
+                $expr
+            }
+            AnyLightClientIdentified::UnionOnEvmMinimal($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::evm::Evm<unionlabs::ethereum::config::Minimal>;
+                #[allow(dead_code)]
+                type Tr = chain_utils::wasm::Wasm<chain_utils::union::Union>;
+
+                $expr
+            }
+            AnyLightClientIdentified::CosmosOnUnion($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::union::Union;
+                #[allow(dead_code)]
+                type Tr = chain_utils::wasm::Wasm<chain_utils::cosmos::Cosmos>;
+
+                $expr
+            }
+            AnyLightClientIdentified::UnionOnCosmos($msg) => {
+                #[allow(dead_code)]
+                type Hc = chain_utils::wasm::Wasm<chain_utils::cosmos::Cosmos>;
+                #[allow(dead_code)]
+                type Tr = chain_utils::union::Union;
+
+                $expr
+            }
         }
     };
 }

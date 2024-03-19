@@ -4,13 +4,13 @@ use frunk::{hlist_pat, HList};
 use macros::apply;
 use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
-    fetch, msg_struct, HandleAggregate, QueueMsg, QueueMsgTypes,
+    fetch, msg_struct, HandleAggregate, QueueError, QueueMsg, QueueMsgTypes,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::IsHeight;
 
 use crate::{
-    any_enum,
+    any_chain, any_enum,
     data::{AnyData, LatestHeight},
     fetch::{AnyFetch, Fetch, FetchBlockRange},
     id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
@@ -39,13 +39,11 @@ impl HandleAggregate<BlockPollingTypes> for AnyChainIdentified<AnyAggregate> {
     fn handle(
         self,
         data: VecDeque<<BlockPollingTypes as QueueMsgTypes>::Data>,
-    ) -> queue_msg::QueueMsg<BlockPollingTypes> {
-        match self {
-            AnyChainIdentified::Cosmos(aggregate) => aggregate.handle(data),
-            AnyChainIdentified::Union(aggregate) => aggregate.handle(data),
-            AnyChainIdentified::EthMainnet(aggregate) => aggregate.handle(data),
-            AnyChainIdentified::EthMinimal(aggregate) => aggregate.handle(data),
-            AnyChainIdentified::Scroll(aggregate) => aggregate.handle(data),
+    ) -> Result<QueueMsg<BlockPollingTypes>, QueueError> {
+        let aggregate = self;
+
+        any_chain! {
+            |aggregate| Ok(aggregate.handle(data))
         }
     }
 }

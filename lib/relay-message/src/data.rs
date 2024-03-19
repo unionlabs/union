@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use macros::apply;
-use queue_msg::{data, msg_struct, HandleData, QueueMsg, QueueMsgTypes};
+use queue_msg::{data, msg_struct, HandleData, QueueError, QueueMsg, QueueMsgTypes};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     proof::{
@@ -22,6 +22,8 @@ use crate::{
 pub enum Data<Hc: ChainExt, Tr: ChainExt> {
     SelfClientState(SelfClientState<Hc, Tr>),
     SelfConsensusState(SelfConsensusState<Hc, Tr>),
+
+    LatestHeight(LatestHeight<Hc, Tr>),
 
     PacketAcknowledgement(PacketAcknowledgement<Hc, Tr>),
 
@@ -45,8 +47,11 @@ pub enum Data<Hc: ChainExt, Tr: ChainExt> {
 
 // Passthrough since we don't want to handle any top-level data, just bubble it up to the top level.
 impl HandleData<RelayerMsgTypes> for AnyLightClientIdentified<AnyData> {
-    fn handle(self, _: &<RelayerMsgTypes as QueueMsgTypes>::Store) -> QueueMsg<RelayerMsgTypes> {
-        data(self)
+    fn handle(
+        self,
+        _: &<RelayerMsgTypes as QueueMsgTypes>::Store,
+    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
+        Ok(data(self))
     }
 }
 
@@ -55,6 +60,7 @@ impl<Hc: ChainExt, Tr: ChainExt> std::fmt::Display for Data<Hc, Tr> {
         match self {
             Data::SelfClientState(_) => write!(f, "SelfClientState"),
             Data::SelfConsensusState(_) => write!(f, "SelfConsensusState"),
+            Data::LatestHeight(LatestHeight { height, .. }) => write!(f, "LatestHeight({height})"),
             Data::PacketAcknowledgement(_) => write!(f, "PacketAcknowledgement"),
             Data::ClientStateProof(_) => write!(f, "ClientStateProof"),
             Data::ClientConsensusStateProof(_) => write!(f, "ClientConsensusStateProof"),
@@ -83,6 +89,12 @@ pub struct SelfClientState<Hc: ChainExt, Tr: ChainExt> {
 #[cover(Tr)]
 pub struct SelfConsensusState<Hc: ChainExt, Tr: ChainExt> {
     pub self_consensus_state: ConsensusStateOf<Hc>,
+}
+
+#[apply(msg_struct)]
+#[cover(Tr)]
+pub struct LatestHeight<Hc: ChainExt, Tr: ChainExt> {
+    pub height: HeightOf<Hc>,
 }
 
 #[apply(msg_struct)]

@@ -3,13 +3,15 @@ use std::fmt::{Debug, Display};
 use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
-use queue_msg::{aggregate, fetch, msg_struct, seq, wait, HandleFetch, QueueMsg, QueueMsgTypes};
+use queue_msg::{
+    aggregate, conc, fetch, msg_struct, wait, HandleFetch, QueueError, QueueMsg, QueueMsgTypes,
+};
 use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::IsHeight;
 
 use crate::{
     aggregate::{Aggregate, AggregateFetchBlockRange, AnyAggregate},
-    any_enum,
+    any_chain, any_enum,
     wait::{AnyWait, Wait, WaitForHeight},
     AnyChainIdentified, BlockPollingTypes, ChainExt, Identified,
 };
@@ -40,22 +42,15 @@ impl HandleFetch<BlockPollingTypes> for AnyChainIdentified<AnyFetch> {
     async fn handle(
         self,
         store: &<BlockPollingTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<BlockPollingTypes> {
-        match self {
-            AnyChainIdentified::Cosmos(fetch) => {
-                fetch.t.handle(store.get_chain(&fetch.chain_id)).await
-            }
-            AnyChainIdentified::Union(fetch) => {
-                fetch.t.handle(store.get_chain(&fetch.chain_id)).await
-            }
-            AnyChainIdentified::EthMainnet(fetch) => {
-                fetch.t.handle(store.get_chain(&fetch.chain_id)).await
-            }
-            AnyChainIdentified::EthMinimal(fetch) => {
-                fetch.t.handle(store.get_chain(&fetch.chain_id)).await
-            }
-            AnyChainIdentified::Scroll(fetch) => {
-                fetch.t.handle(store.get_chain(&fetch.chain_id)).await
+    ) -> Result<QueueMsg<BlockPollingTypes>, QueueError> {
+        let fetch = self;
+
+        any_chain! {
+            |fetch| {
+                Ok(store
+                    .with_chain(&fetch.chain_id, move |c| fetch.t.handle(c))
+                    .map_err(|e| QueueError::Fatal(Box::new(e)))?
+                    .await)
             }
         }
     }
@@ -87,7 +82,7 @@ where
                     },
                 ),
             ),
-            Fetch::FetchBlockRange(range) => seq([
+            Fetch::FetchBlockRange(range) => conc([
                 C::fetch_block_range(&c, range.clone()),
                 fetch(Identified::<C, _>::new(
                     c.chain_id(),

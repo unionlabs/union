@@ -3,7 +3,9 @@ use std::{fmt::Display, marker::PhantomData};
 use chain_utils::GetChain;
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use macros::apply;
-use queue_msg::{aggregate, fetch, wait, HandleEvent, QueueMsg, QueueMsgTypes};
+use queue_msg::{
+    aggregate, fetch, msg_struct, wait, HandleEvent, QueueError, QueueMsg, QueueMsgTypes,
+};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
@@ -13,11 +15,11 @@ use unionlabs::{
 
 use crate::{
     aggregate::{
-        mk_aggregate_wait_for_update, Aggregate, AggregateChannelHandshakeUpdateClient,
+        mk_aggregate_wait_for_update, Aggregate, AggregateChannelHandshakeMsgAfterUpdate,
         AggregateConnectionFetchFromChannelEnd, AggregateConnectionOpenAck,
         AggregateConnectionOpenConfirm, AggregateConnectionOpenTry, AggregateMsgAfterUpdate,
-        AggregatePacketUpdateClient, AggregateUpdateClientFromClientId, AnyAggregate,
-        ChannelHandshakeEvent, PacketEvent,
+        AggregatePacketMsgAfterUpdate, AggregateUpdateClient, AnyAggregate, ChannelHandshakeEvent,
+        PacketEvent,
     },
     any_enum, any_lc,
     fetch::{AnyFetch, Fetch, FetchLatestClientState, FetchState},
@@ -37,11 +39,15 @@ impl HandleEvent<RelayerMsgTypes> for AnyLightClientIdentified<AnyEvent> {
     fn handle(
         self,
         store: &<RelayerMsgTypes as QueueMsgTypes>::Store,
-    ) -> QueueMsg<RelayerMsgTypes> {
-        let event = self;
+    ) -> Result<QueueMsg<RelayerMsgTypes>, QueueError> {
+        let wait = self;
 
         any_lc! {
-            |event| event.t.handle(store.get_chain(&event.chain_id))
+            |wait| {
+                store
+                    .with_chain(&wait.chain_id, move |c| wait.t.handle(c))
+                    .map_err(|e| QueueError::Fatal(Box::new(e)))
+            }
         }
     }
 }
@@ -62,7 +68,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                 }
                 unionlabs::events::IbcEvent::UpdateClient(e) => {
                     tracing::info!(
-                        "client updated: {:?} to {:?}",
+                        "client updated: {} to {:?}",
                         e.client_id,
                         e.consensus_heights
                     );
@@ -91,16 +97,14 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         [],
                         id(
                             hc.chain_id(),
-                            AggregateMsgAfterUpdate::ConnectionOpenTry(
-                                AggregateConnectionOpenTry {
-                                    event_height: ibc_event.height,
-                                    event: init,
-                                },
-                            ),
+                            AggregateMsgAfterUpdate::from(AggregateConnectionOpenTry {
+                                event_height: ibc_event.height,
+                                event: init,
+                            }),
                         ),
                     ),
                 ]),
-                unionlabs::events::IbcEvent::ConnectionOpenTry(try_) => seq([aggregate(
+                unionlabs::events::IbcEvent::ConnectionOpenTry(try_) => aggregate(
                     [mk_aggregate_wait_for_update(
                         hc.chain_id(),
                         try_.client_id.clone(),
@@ -110,12 +114,12 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateMsgAfterUpdate::ConnectionOpenAck(AggregateConnectionOpenAck {
+                        AggregateMsgAfterUpdate::from(AggregateConnectionOpenAck {
                             event_height: ibc_event.height,
                             event: try_,
                         }),
                     ),
-                )]),
+                ),
                 unionlabs::events::IbcEvent::ConnectionOpenAck(ack) => aggregate(
                     [mk_aggregate_wait_for_update(
                         hc.chain_id(),
@@ -126,12 +130,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateMsgAfterUpdate::ConnectionOpenConfirm(
-                            AggregateConnectionOpenConfirm {
-                                event_height: ibc_event.height,
-                                event: ack,
-                            },
-                        ),
+                        AggregateMsgAfterUpdate::from(AggregateConnectionOpenConfirm {
+                            event_height: ibc_event.height,
+                            event: ack,
+                        }),
                     ),
                 ),
                 unionlabs::events::IbcEvent::ConnectionOpenConfirm(confirm) => {
@@ -165,7 +167,8 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateChannelHandshakeUpdateClient {
+                        AggregateChannelHandshakeMsgAfterUpdate {
+                            // REVIEW: Remove this field and just use `event_height`?
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             channel_handshake_event: ChannelHandshakeEvent::Init(init),
@@ -189,18 +192,16 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                         [],
                         id(
                             hc.chain_id(),
-                            Aggregate::ConnectionFetchFromChannelEnd(
-                                AggregateConnectionFetchFromChannelEnd {
-                                    at: ibc_event.height,
-                                    __marker: PhantomData,
-                                },
-                            ),
+                            AggregateConnectionFetchFromChannelEnd {
+                                at: ibc_event.height,
+                                __marker: PhantomData,
+                            },
                         ),
                     )],
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateChannelHandshakeUpdateClient {
+                        AggregateChannelHandshakeMsgAfterUpdate {
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             channel_handshake_event: ChannelHandshakeEvent::Try(try_),
@@ -233,7 +234,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateChannelHandshakeUpdateClient {
+                        AggregateChannelHandshakeMsgAfterUpdate {
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             channel_handshake_event: ChannelHandshakeEvent::Ack(ack),
@@ -260,7 +261,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregatePacketUpdateClient {
+                        AggregatePacketMsgAfterUpdate {
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             tx_hash: ibc_event.tx_hash,
@@ -283,7 +284,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregatePacketUpdateClient {
+                        AggregatePacketMsgAfterUpdate {
                             update_to: ibc_event.height,
                             event_height: ibc_event.height,
                             tx_hash: ibc_event.tx_hash,
@@ -308,9 +309,9 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
             Event::Command(command) => match command {
                 Command::UpdateClient {
                     client_id,
-                    counterparty_client_id,
+                    __marker: _,
                 } => aggregate(
-                    [fetch(crate::id::<Hc, Tr, _>(
+                    [fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
                         FetchLatestClientState {
                             path: ClientStatePath {
@@ -322,9 +323,9 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
                     [],
                     id(
                         hc.chain_id(),
-                        AggregateUpdateClientFromClientId {
+                        AggregateUpdateClient {
                             client_id,
-                            counterparty_client_id,
+                            __marker: PhantomData,
                         },
                     ),
                 ),
@@ -342,13 +343,7 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for Event<Hc, Tr> {
     }
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
-)]
+#[apply(msg_struct)]
 pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
     pub tx_hash: H256,
     pub height: HeightOf<Hc>,
@@ -377,10 +372,10 @@ impl<Hc: ChainExt, Tr: ChainExt> Display for IbcEvent<Hc, Tr> {
     arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
 )]
 pub enum Command<Hc: ChainExt, Tr: ChainExt> {
-    #[display(fmt = "UpdateClient({client_id}, {counterparty_client_id})")]
+    #[display(fmt = "UpdateClient({client_id})")]
     UpdateClient {
         client_id: ClientIdOf<Hc>,
-        // TODO: This should only take a counterparty chain id, since light clients track chains, not each other, and it should be possible to update a client without it having a counterparty.
-        counterparty_client_id: ClientIdOf<Tr>,
+        #[serde(skip)]
+        __marker: PhantomData<fn() -> Tr>,
     },
 }
