@@ -37,7 +37,6 @@
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.6.0",
-    "@biomejs/biome": "^1.6.1",
     "@cloudflare/workers-types": "^4.20240314.0",
     "@cosmjs/amino": "0.32.3",
     "@melt-ui/pp": "^0.3.0",
