@@ -4,6 +4,9 @@ sidebar:
   order: 5
 ---
 
+import { Code } from "@astrojs/starlight/components"
+import { chainVersion } from '#/lib/constants/versions.ts'
+
 After successfully running your node with `uniond`, you can refer to this guide to aid you in configuring your node.
 
 This is not a complete guide to all node configuration options, this is intended to help ensure that your node is fully operational.
@@ -118,9 +121,11 @@ Located in the `p2p` TOML table under the "P2P Configuration Options" section.
 
 Seed nodes help orchestrate initial connections to the network. For union-testnet-6, the seed nodes are:
 
-```toml
-seeds = "b37de4c50e26f7cde4c7b6ce06046a6693ffef2c@union.testnet.6.seed.poisonphang.com:26656"
-```
+<Code
+  lang='toml'
+  code={`seeds = "${chainVersion({ chainId: 'union-testnet-6' }).seeds}"`} 
+/>
+
 
 ### Seed Mode
 

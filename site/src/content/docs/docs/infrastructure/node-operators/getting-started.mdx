@@ -4,9 +4,11 @@ sidebar:
   order: 1
 ---
 
-import Version from "#/components/ChainVersion.astro";
-import DownloadFile from "#/components/DownloadFile.astro";
-import { Tabs, TabItem } from "@astrojs/starlight/components";
+import { dedent } from "ts-dedent"
+import DownloadFile from "#/components/DownloadFile.astro"
+import FunctionResult from '#/components/FunctionResult.astro'
+import { Tabs, TabItem, Code } from "@astrojs/starlight/components"
+import { chainVersion, getSeedsParts } from '#/lib/constants/versions.ts'
 
 This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](/docs/infrastructure/node-operators/nixos/) and the [Kubernetes](/docs/infrastructure/node-operators/kubernetes/) guide for more production-ready deployments.
 
@@ -35,14 +37,14 @@ Double-check the version and architecture in the link before downloading.
     ```sh frame='none'
     curl --output uniond --location https://github.com/unionlabs/union/releases/download/$UNIOND_VERSION/uniond-release-x86_64-linux
     ```
-    *Where `UNIOND_VERSION` is <Version chainId="union-testnet-6" />*
+    *Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />*
 
   </TabItem>
   <TabItem label='aarch64-linux'>
     ```sh frame='none'
     curl --output uniond --location https://github.com/unionlabs/union/releases/download/$UNIOND_VERSION/uniond-release-aarch64-linux
     ```
-    *Where `UNIOND_VERSION` is <Version chainId="union-testnet-6" />*
+    *Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />*
 
   </TabItem>
 </Tabs>
@@ -67,7 +69,7 @@ We also provide containers in our [package registry](https://github.com/orgs/uni
 docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 ```
 
-_Where `UNIOND_VERSION` is <Version chainId="union-testnet-6" />_
+_Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />_
 
 When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](/docs/infrastructure/node-operators/docker-compose/) section is more suited for docker users.
 
@@ -83,12 +85,16 @@ We'll need to set up a few configuration files and obtain the <DownloadFile file
 
 First, set some environment variables, which are used throughout initialization.
 
-```sh frame="none"
-export CHAIN_ID=union-testnet-6
-export MONIKER="Unionized Goblin"
-export KEY_NAME=alice
-export GENESIS_URL="union.testnet.6.seed.poisonphang.com:26657/genesis"
-```
+<Code
+  lang='bash'
+  code={dedent(`
+    export CHAIN_ID=union-testnet-6
+    export MONIKER="Unionized Goblin"
+    export KEY_NAME=alice
+    export GENESIS_URL="${getSeedsParts('union-testnet-6').address}:26657/genesis"
+  `)}
+/>
+
 
 Then we'll have `uniond` initialize our data and configuration directories. By default, `/User/{USER}/.uniond` is used.
 
@@ -102,9 +108,11 @@ Next, edit `~/.union/config/config.toml`. We'll set the seeds to ensure your nod
 
 For `union-testnet-6` replace `seeds = ""` with:
 
-```toml
-seeds = "b37de4c50e26f7cde4c7b6ce06046a6693ffef2c@union.testnet.6.seed.poisonphang.com:26656"
-```
+<Code
+  lang='toml'
+  code={`seeds = "${chainVersion({ chainId: 'union-testnet-6' }).seeds}"`} 
+/>
+
 
 ### Genesis Configuration
 
