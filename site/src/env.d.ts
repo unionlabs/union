@@ -1,6 +1,11 @@
 /// <reference types="astro/client" />
 /// <reference path="../.astro/types.d.ts" />
 
+declare module "*.splinecode" {
+  const content: string;
+  export default content;
+}
+
 interface EventTarget {
   value?: string
 }
