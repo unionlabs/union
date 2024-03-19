@@ -32,6 +32,23 @@ func (c *MerkleRoot) Define(api frontend.API) error {
 	return nil
 }
 
+func TestEmptyMerkleRoot(t *testing.T) {
+	leaves := [MaxLeaves]frontend.Variable{}
+	for i := 0; i < MaxLeaves; i++ {
+		leaves[i] = 0xCAFEBABE
+	}
+	err := test.IsSolved(
+		&MerkleRoot{},
+		&MerkleRoot{
+			Root:       merkle.MimcHashFromByteSlices([][]byte{}),
+			LeavesData: leaves,
+			NbOfLeaves: 0,
+		},
+		ecc.BN254.ScalarField(),
+	)
+	assert.NoError(t, err)
+}
+
 func TestMerkleRoot(t *testing.T) {
 	t.Parallel()
 	for i := 1; i < MaxLeaves; i++ {

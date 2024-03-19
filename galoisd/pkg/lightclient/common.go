@@ -69,9 +69,11 @@ func Repack(api frontend.API, unpacked []frontend.Variable, sizeOfInput int, siz
 func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedValRoot frontend.Variable, powerNumerator frontend.Variable, powerDenominator frontend.Variable) error {
 	lc.api.AssertIsLessOrEqual(lc.input.NbOfVal, MaxVal)
 	lc.api.AssertIsLessOrEqual(lc.input.NbOfSignature, lc.input.NbOfVal)
+	// Ensure that at least one validator/signature are provided
+	lc.api.AssertIsLessOrEqual(1, lc.input.NbOfSignature)
 
-	// Note that the maximum bitmap size is currently 252, we would need to
-	// split it into multiple public inputs if we wanted to push this limit
+	// Note that because the scalar field modulus is 253 bits wide, the maximum bitmap size is 252
+	// We would need to split the bitmap into multiple public inputs if we wanted to push this limit
 	bitmap := lc.api.ToBinary(lc.input.Bitmap, MaxVal)
 
 	// Facility to iterate over the validators in the lc, this function will
@@ -79,7 +81,8 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 	//
 	// This function will reconstruct each validator from the secret inputs by:
 	// - re-composing the public key from its shifted/msb values
-	forEachVal := func(f func(i int, signed frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error) error {
+	forEachVal := func(f func(i int, signed frontend.Variable, cannotSign frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error) error {
+		bitmapMask := lc.input.NbOfVal
 		for i, signed := range bitmap {
 			validator := lc.input.Validators[i]
 			h, err := mimc.NewMiMC(lc.api)
@@ -107,9 +110,13 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 			rebuiltPublicKey.X.Limbs = unshiftedX
 			rebuiltPublicKey.Y.Limbs = unshiftedY
 
-			if err = f(i, signed, &rebuiltPublicKey, validator.Power, leaf); err != nil {
+			cannotSign := lc.api.IsZero(bitmapMask)
+
+			if err = f(i, signed, cannotSign, &rebuiltPublicKey, validator.Power, leaf); err != nil {
 				return err
 			}
+
+			bitmapMask = lc.api.Select(cannotSign, cannotSign, lc.api.Sub(bitmapMask, 1))
 		}
 		return nil
 	}
@@ -128,11 +135,12 @@ func (lc *TendermintLightClientAPI) Verify(message *gadget.G2Affine, expectedVal
 
 	aggregatedPublicKey, nbOfKeys, err := bls.WithAggregation(
 		func(aggregate func(selector frontend.Variable, publicKey *sw_emulated.AffinePoint[emulated.BN254Fp])) error {
-			if err := forEachVal(func(i int, signed frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error {
+			if err := forEachVal(func(i int, signed frontend.Variable, cannotSign frontend.Variable, publicKey *gadget.G1Affine, power frontend.Variable, leaf frontend.Variable) error {
+				actuallySigned := lc.api.Select(cannotSign, 0, signed)
 				// totalVotingPower = totalVotingPower + power
-				totalVotingPower = lc.api.Add(totalVotingPower, power)
+				totalVotingPower = lc.api.Add(totalVotingPower, lc.api.Select(cannotSign, 0, power))
 				// currentVotingPower = currentVotingPower + if signed then power else 0
-				currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(signed, power, 0))
+				currentVotingPower = lc.api.Add(currentVotingPower, lc.api.Select(actuallySigned, power, 0))
 				// Optionally aggregated public key if validator at index signed
 				aggregate(actuallySigned, publicKey)
 				leafHashes[i] = lc.api.Select(cannotSign, 0, merkle.LeafHash([]frontend.Variable{leaf}))

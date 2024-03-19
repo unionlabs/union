@@ -50,6 +50,7 @@ func (m *MerkleTreeAPI) InnerHash(left frontend.Variable, right frontend.Variabl
 //
 // Compute merkle root in place at leafHashes[0]
 func (m *MerkleTreeAPI) RootHash(leafHashes []frontend.Variable, size frontend.Variable) frontend.Variable {
+	initialSize := size
 	maxLeaves := len(leafHashes)
 	for i := 0; i < int(math.Ceil(math.Log2(float64(maxLeaves)))); i++ {
 		r := size
@@ -66,5 +67,10 @@ func (m *MerkleTreeAPI) RootHash(leafHashes []frontend.Variable, size frontend.V
 			w += 1
 		}
 	}
-	return leafHashes[0]
+	mimc, err := mimc.NewMiMC(m.api)
+	if err != nil {
+		panic(err)
+	}
+	emptyHash := mimc.Sum()
+	return m.api.Select(m.api.IsZero(initialSize), emptyHash, leafHashes[0])
 }
