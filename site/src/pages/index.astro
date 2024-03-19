@@ -10,7 +10,8 @@ import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
 import Cube from '#/components/Cube.svelte'
 import VoyagerModel from '#/components/models/VoyagerModel.svelte'
-import MicroGaloisModel from '#/components/models/MicroGaloisModel.svelte'
+import ProductSection from '#/components/ProductSection.astro'
+import microGaloisModel from "#/spline/micro-galois.splinecode";
 
 const publishedBlogPosts = await getCollection("blog", ({ slug, data }) => {
   if (data.hidden) return false
@@ -118,7 +119,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
             <p>
               <span class="text-white">Union</span> is the only interoperability layer that solves the
               <span class="text-white">sovereign bridging trilemma.</span>
-            </p>
+            </p>microGaloisModel
             <p>
               <span class="text-accent">Trustless</span>: Union implements proper <span
                 class="text-white">consensus-verification</span
@@ -141,44 +142,9 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
         <div
           class="grid grid-rows-3 grid-cols-1 sm:grid-cols-3 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]"
         >
-          <div class="p-8">
-            <MicroGaloisModel client:only />
-            <h3 class="mb-1 text-2xl">Galois</h3>
-            <p class="text-gray-200">
-              Decentralized proving for everyone. Galois, a key component of Union's ZK efforts,
-              ensures proof verification with lightning-fast execution, cost-efficient operation,
-              and decentralized infrastructure.
-            </p>
-            <a
-              class="underline uppercase block mt-2 text-accent font-semibold"
-              href="/docs/architecture/galois">Read more {'->'}</a
-            >
-          </div>
-          <div class="p-8">
-            <h3 class="mb-1 text-2xl">CometBLS</h3>
-            <p class="text-gray-200">
-              ZK-aligned consensus engine. CometBLS is an enhancement upon Tendermint which utilizes
-              BLS signatures for efficient ZK proving, and thereby ensuring secure bridging and
-              consensus verification.
-            </p>
-            <a
-              class="underline uppercase block mt-2 text-accent font-semibold"
-              href="/docs/architecture/cometbls">Read more {'->'}</a
-            >
-          </div>
-          <div class="p-8">
-            <VoyagerModel client:only />
-            <h3 class="mb-1 text-2xl">Voyager</h3>
-            <p class="text-gray-200">
-              Stateless relaying for a cross-chain future. Voyager is our in-house relayer, allowing
-              us to support new networks without waiting for up-stream support, by seamlessly
-              integrating with Galois.
-            </p>
-            <a
-              class="underline uppercase block mt-2 text-accent font-semibold"
-              href="/docs/architecture/voyager">Read more {'->'}</a
-            >
-          </div>
+          <ProductSection name="Galois" description="Decentralized proving for everyone. Galois, a key component of Union's ZK efforts, ensures proof verification with lightning-fast execution, cost-efficient operation, and decentralized infrastructure." link="/docs/architecture/galois" model={microGaloisModel}/>
+          <ProductSection name="CometBLS" description="ZK-aligned consensus engine. CometBLS is an enhancement upon Tendermint which utilizes BLS signatures for efficient ZK proving, and thereby ensuring secure bridging and consensus verification." link="/docs/architecture/cometbls" model={microGaloisModel}/>
+          <ProductSection name="Voyager" description="Stateless relaying for a cross-chain future. Voyager is our in-house relayer, allowing us to support new networks without waiting for up-stream support, by seamlessly integrating with Galois." link="/docs/architecture/voyager" model={microGaloisModel}/>
         </div>
       </section>
 

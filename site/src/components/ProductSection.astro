@@ -1,0 +1,15 @@
+---
+import Spline from '#/components/Spline.svelte';
+const { name, description, link, model } = Astro.props;
+---
+<div>
+  <Spline {model} client:only />
+  <div class="p-4">
+  <h3 class="mb-1 text-2xl">{name}</h3>
+  <p class="text-gray-200">{description}</p>
+  <a
+    class="underline uppercase block mt-2 text-accent font-semibold"
+    href={link}>Read more {'->'}</a
+  >
+  </div>
+</div>
