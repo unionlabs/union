@@ -10,6 +10,7 @@ import PerformanceGraph from '#/components/graphs/ValidatorPerformance.svelte'
 import AppleGraphContainer from '#/components/graphs/AppleGraphContainer.svelte'
 import Cube from '#/components/Cube.svelte'
 import VoyagerModel from '#/components/models/VoyagerModel.svelte'
+import MicroGaloisModel from '#/components/models/MicroGaloisModel.svelte'
 
 const publishedBlogPosts = await getCollection("blog", ({ slug, data }) => {
   if (data.hidden) return false
@@ -141,6 +142,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
           class="grid grid-rows-3 grid-cols-1 sm:grid-cols-3 sm:grid-rows-1 divide-y sm:divide-x sm:divide-y-0 divide-solid divide-[#1f1f1f]"
         >
           <div class="p-8">
+            <MicroGaloisModel client:only />
             <h3 class="mb-1 text-2xl">Galois</h3>
             <p class="text-gray-200">
               Decentralized proving for everyone. Galois, a key component of Union's ZK efforts,
@@ -165,7 +167,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
             >
           </div>
           <div class="p-8">
-            <VoyagerModel/>
+            <VoyagerModel client:only />
             <h3 class="mb-1 text-2xl">Voyager</h3>
             <p class="text-gray-200">
               Stateless relaying for a cross-chain future. Voyager is our in-house relayer, allowing
