@@ -4,7 +4,6 @@ Accs
 Acknowledgemets
 Acks
 Axelar
-bech
 Beriker
 Bitvector
 Boneh
@@ -384,6 +383,8 @@ gotools
 govclient
 govkeeper
 govtypes
+govv1
+govv1beta1
 graphqlsp
 graphqurl
 groomlake
@@ -667,8 +668,6 @@ regclass
 regen
 rehype
 rekt
-govv1
-govv1beta1
 repellendus
 repr
 reqwest
