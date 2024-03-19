@@ -28,3 +28,14 @@ export async function sleep(ms: number): Promise<void> {
 
 export const generateRandomInteger = (min: number, max: number) =>
   Math.floor(Math.random() * (max - min + 1)) + min
+
+export function debouncer(
+  handler: (...args: Array<any>) => void,
+  delay = 500
+): (...args: Array<any>) => void {
+  let id: number
+  return (...args: Array<any>) => {
+    window.clearTimeout(id)
+    id = window.setTimeout(handler, delay, ...args)
+  }
+}

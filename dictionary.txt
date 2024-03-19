@@ -314,6 +314,7 @@ dataconnector
 datadir
 datagram
 datetime
+debouncer
 delegators
 dels
 denoms
@@ -379,6 +380,7 @@ floorlog
 fmtlib
 foldl
 fontsource
+formkit
 founderheads
 frunk
 fubar
@@ -805,6 +807,7 @@ substituters
 substores
 sumbitter
 supermajority
+svooltip
 svrcmd
 symlinker
 syncmode
