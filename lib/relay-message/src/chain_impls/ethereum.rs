@@ -2,7 +2,8 @@ use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync
 
 use beacon_api::errors::{InternalServerError, NotFoundError};
 use chain_utils::ethereum::{
-    Ethereum, EthereumSignerMiddleware, IbcHandlerErrors, ETHEREUM_REVISION_NUMBER,
+    Ethereum, EthereumChain, EthereumSignerMiddleware, IbcHandlerErrors, IbcHandlerExt,
+    ETHEREUM_REVISION_NUMBER,
 };
 use contracts::ibc_handler::{
     self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall, ChannelOpenInitCall,
@@ -368,7 +369,12 @@ where
         client_id: Self::ClientId,
         height: Self::Height,
     ) -> Tr::SelfClientState {
-        hc.ibc_state_read::<_, Tr>(height, ClientStatePath { client_id })
+        hc.ibc_handler()
+            .ibc_state_read::<_, Ethereum<C>, Tr>(
+                hc.execution_height_of_beacon_slot(height.revision_height)
+                    .await,
+                ClientStatePath { client_id },
+            )
             .await
             .unwrap()
     }
@@ -406,12 +412,17 @@ where
 
     Tr::SelfClientState: Encode<EthAbi>,
 {
-    async fn do_fetch(c: &Ethereum<C>, msg: Self) -> QueueMsg<RelayerMsgTypes> {
+    async fn do_fetch(ethereum: &Ethereum<C>, msg: Self) -> QueueMsg<RelayerMsgTypes> {
         let msg: EthereumFetchMsg<C, Tr> = msg;
         let msg = match msg {
             EthereumFetchMsg::FetchFinalityUpdate(FetchFinalityUpdate {}) => {
                 Data::specific(FinalityUpdate {
-                    finality_update: c.beacon_api_client.finality_update().await.unwrap().data,
+                    finality_update: ethereum
+                        .beacon_api_client
+                        .finality_update()
+                        .await
+                        .unwrap()
+                        .data,
                     __marker: PhantomData,
                 })
             }
@@ -419,7 +430,7 @@ where
                 trusted_period,
                 target_period,
             }) => Data::specific(LightClientUpdates {
-                light_client_updates: c
+                light_client_updates: ethereum
                     .beacon_api_client
                     .light_client_updates(trusted_period + 1, target_period - trusted_period)
                     .await
@@ -432,7 +443,7 @@ where
             }),
             EthereumFetchMsg::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
                 Data::specific(LightClientUpdate {
-                    update: c
+                    update: ethereum
                         .beacon_api_client
                         .light_client_updates(period, 1)
                         .await
@@ -461,7 +472,7 @@ where
                 tracing::info!("fetching bootstrap at {}", floored_slot);
 
                 let bootstrap = loop {
-                    let header_response = c
+                    let header_response = ethereum
                         .beacon_api_client
                         .header(beacon_api::client::BlockId::Slot(
                             floored_slot - amount_of_slots_back,
@@ -482,7 +493,7 @@ where
                         Err(err) => panic!("{err}"),
                     };
 
-                    let bootstrap_response = c
+                    let bootstrap_response = ethereum
                         .beacon_api_client
                         .bootstrap(header.data.root.clone())
                         .await;
@@ -510,17 +521,16 @@ where
                 })
             }
             EthereumFetchMsg::FetchAccountUpdate(FetchAccountUpdate { slot }) => {
-                let execution_height = c
-                    .execution_height(Height {
-                        revision_number: ETHEREUM_REVISION_NUMBER,
-                        revision_height: slot,
-                    })
-                    .await;
+                let execution_height = ethereum
+                    .beacon_api_client
+                    .execution_height(beacon_api::client::BlockId::Slot(slot))
+                    .await
+                    .unwrap();
 
-                let account_update = c
+                let account_update = ethereum
                     .provider
                     .get_proof(
-                        c.readonly_ibc_handler.address(),
+                        ethers::types::H160::from(ethereum.ibc_handler_address.clone()),
                         vec![],
                         // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
                         Some(execution_height.into()),
@@ -544,147 +554,180 @@ where
                 })
             }
             EthereumFetchMsg::FetchBeaconGenesis(_) => Data::specific(BeaconGenesisData {
-                genesis: c.beacon_api_client.genesis().await.unwrap().data,
+                genesis: ethereum.beacon_api_client.genesis().await.unwrap().data,
                 __marker: PhantomData,
             }),
             EthereumFetchMsg::FetchGetProof(get_proof) => {
-                let execution_height = c.execution_height(get_proof.height).await;
-
-                let path = get_proof.path.to_string();
-
-                let location = keccak256(
-                    keccak256(path.as_bytes())
-                        .into_iter()
-                        .chain(AbiEncode::encode(U256::from(0)))
-                        .collect::<Vec<_>>(),
-                );
-
-                let proof = c
-                    .provider
-                    .get_proof(
-                        c.readonly_ibc_handler.address(),
-                        vec![location.into()],
-                        Some(execution_height.into()),
-                    )
-                    .await
-                    .unwrap();
-
-                tracing::info!(?proof);
-
-                let proof = match <[_; 1]>::try_from(proof.storage_proof) {
-                    Ok([proof]) => proof,
-                    Err(invalid) => {
-                        panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
-                    }
-                };
-
-                let proof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
-                    proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
-                        key: U256::from_big_endian(proof.key.to_fixed_bytes()),
-                        value: proof.value.into(),
-                        proof: proof
-                            .proof
-                            .into_iter()
-                            .map(|bytes| bytes.to_vec())
-                            .collect(),
-                    }]
-                    .to_vec(),
-                };
-
-                match get_proof.path {
-                    Path::ClientStatePath(path) => Data::from(IbcProof::<_, Ethereum<C>, Tr> {
-                        proof,
-                        height: get_proof.height,
-                        path,
-                        __marker: PhantomData,
-                    }),
-                    Path::ClientConsensusStatePath(path) => {
-                        Data::from(IbcProof::<_, Ethereum<C>, Tr> {
-                            proof,
-                            height: get_proof.height,
-                            path,
-                            __marker: PhantomData,
-                        })
-                    }
-                    Path::ConnectionPath(path) => Data::from(IbcProof::<_, Ethereum<C>, Tr> {
-                        proof,
-                        height: get_proof.height,
-                        path,
-                        __marker: PhantomData,
-                    }),
-                    Path::ChannelEndPath(path) => Data::from(IbcProof::<_, Ethereum<C>, Tr> {
-                        proof,
-                        height: get_proof.height,
-                        path,
-                        __marker: PhantomData,
-                    }),
-                    Path::CommitmentPath(path) => Data::from(IbcProof::<_, Ethereum<C>, Tr> {
-                        proof,
-                        height: get_proof.height,
-                        path,
-                        __marker: PhantomData,
-                    }),
-                    Path::AcknowledgementPath(path) => Data::from(IbcProof::<_, Ethereum<C>, Tr> {
-                        proof,
-                        height: get_proof.height,
-                        path,
-                        __marker: PhantomData,
-                    }),
-                }
+                fetch_get_proof(ethereum, get_proof).await
             }
-            EthereumFetchMsg::FetchIbcState(get_storage_at) => match get_storage_at.path {
-                Path::ClientStatePath(path) => Data::from(IbcState {
-                    state: c
-                        .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                        .await
-                        .unwrap(),
-                    height: get_storage_at.height,
-                    path,
-                }),
-                Path::ClientConsensusStatePath(path) => Data::from(IbcState {
-                    state: c
-                        .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                        .await
-                        .unwrap(),
-                    height: get_storage_at.height,
-                    path,
-                }),
-                Path::ConnectionPath(path) => Data::from(IbcState {
-                    state: c
-                        .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                        .await
-                        .unwrap(),
-                    height: get_storage_at.height,
-                    path,
-                }),
-                Path::ChannelEndPath(path) => Data::from(IbcState {
-                    state: c
-                        .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                        .await
-                        .unwrap(),
-                    height: get_storage_at.height,
-                    path,
-                }),
-                Path::CommitmentPath(path) => Data::from(IbcState {
-                    state: c
-                        .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                        .await
-                        .unwrap(),
-                    height: get_storage_at.height,
-                    path,
-                }),
-                Path::AcknowledgementPath(path) => Data::from(IbcState {
-                    state: c
-                        .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
-                        .await
-                        .unwrap(),
-                    height: get_storage_at.height,
-                    path,
-                }),
-            },
+            EthereumFetchMsg::FetchIbcState(ibc_state) => {
+                fetch_ibc_state(ethereum, ibc_state).await
+            }
         };
 
-        data(id::<Ethereum<C>, Tr, _>(c.chain_id, msg))
+        data(id::<Ethereum<C>, Tr, _>(ethereum.chain_id, msg))
+    }
+}
+
+async fn fetch_get_proof<Hc, Tr>(c: &Hc, get_proof: GetProof<Hc, Tr>) -> Data<Hc, Tr>
+where
+    Hc: ChainExt + EthereumChain,
+    Tr: ChainExt,
+{
+    let path = get_proof.path.to_string();
+
+    let location = keccak256(
+        keccak256(path.as_bytes())
+            .into_iter()
+            .chain(AbiEncode::encode(U256::from(0)))
+            .collect::<Vec<_>>(),
+    );
+
+    let execution_height = c
+        .execution_height_of_beacon_slot(get_proof.height.revision_height())
+        .await;
+
+    let proof = c
+        .provider()
+        .get_proof(
+            ethers::types::H160::from(c.ibc_handler_address()),
+            vec![location.into()],
+            Some(execution_height.into()),
+        )
+        .await
+        .unwrap();
+
+    tracing::info!(?proof);
+
+    let proof = match <[_; 1]>::try_from(proof.storage_proof) {
+        Ok([proof]) => proof,
+        Err(invalid) => {
+            panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
+        }
+    };
+
+    let proof = unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof {
+        proofs: [unionlabs::ibc::lightclients::ethereum::proof::Proof {
+            key: U256::from_big_endian(proof.key.to_fixed_bytes()),
+            value: proof.value.into(),
+            proof: proof
+                .proof
+                .into_iter()
+                .map(|bytes| bytes.to_vec())
+                .collect(),
+        }]
+        .to_vec(),
+    };
+
+    match get_proof.path {
+        Path::ClientStatePath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+        Path::ClientConsensusStatePath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+        Path::ConnectionPath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+        Path::ChannelEndPath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+        Path::CommitmentPath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+        Path::AcknowledgementPath(path) => Data::from(IbcProof::<_, Hc, Tr> {
+            proof,
+            height: get_proof.height,
+            path,
+            __marker: PhantomData,
+        }),
+    }
+}
+
+async fn fetch_ibc_state<Hc, Tr>(
+    c: &Hc,
+    FetchIbcState { path, height }: FetchIbcState<Hc, Tr>,
+) -> Data<Hc, Tr>
+where
+    Hc: ChainExt + EthereumChain,
+    Tr: ChainExt,
+    Hc::StoredClientState<Tr>: Decode<Hc::IbcStateEncoding>,
+    Hc::StoredConsensusState<Tr>: Decode<Hc::IbcStateEncoding>,
+{
+    let execution_height = c
+        .execution_height_of_beacon_slot(height.revision_height())
+        .await;
+
+    match path {
+        Path::ClientStatePath(path) => Data::from(IbcState {
+            state: c
+                .ibc_handler()
+                .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                .await
+                .unwrap(),
+            height,
+            path,
+        }),
+        Path::ClientConsensusStatePath(path) => Data::from(IbcState {
+            state: c
+                .ibc_handler()
+                .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                .await
+                .unwrap(),
+            height,
+            path,
+        }),
+        Path::ConnectionPath(path) => Data::from(IbcState {
+            state: c
+                .ibc_handler()
+                .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                .await
+                .unwrap(),
+            height,
+            path,
+        }),
+        Path::ChannelEndPath(path) => Data::from(IbcState {
+            state: c
+                .ibc_handler()
+                .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                .await
+                .unwrap(),
+            height,
+            path,
+        }),
+        Path::CommitmentPath(path) => Data::from(IbcState {
+            state: c
+                .ibc_handler()
+                .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                .await
+                .unwrap(),
+            height,
+            path,
+        }),
+        Path::AcknowledgementPath(path) => Data::from(IbcState {
+            state: c
+                .ibc_handler()
+                .ibc_state_read::<_, Hc, Tr>(execution_height, path.clone())
+                .await
+                .unwrap(),
+            height,
+            path,
+        }),
     }
 }
 
@@ -802,9 +845,9 @@ pub enum EthereumFetchMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "BeaconGenesis")]
     FetchBeaconGenesis(FetchBeaconGenesis),
     #[display(fmt = "GetProof::{}", "_0.path")]
-    FetchGetProof(GetProof<C, Tr>),
+    FetchGetProof(GetProof<Ethereum<C>, Tr>),
     #[display(fmt = "IbcState::{}", "_0.path")]
-    FetchIbcState(FetchIbcState<C, Tr>),
+    FetchIbcState(FetchIbcState<Ethereum<C>, Tr>),
 }
 
 #[derive(
@@ -1019,16 +1062,18 @@ pub fn mk_function_call<Call: EthCall>(
         .expect("method selector is generated; qed;")
 }
 
+pub trait EthereumChainExt = ChainExt + EthereumChain;
+
 #[apply(msg_struct)]
-pub struct GetProof<C: ChainSpec, Tr: ChainExt> {
-    pub path: Path<ClientIdOf<Ethereum<C>>, HeightOf<Tr>>,
-    pub height: HeightOf<Ethereum<C>>,
+pub struct GetProof<Hc: EthereumChainExt, Tr: ChainExt> {
+    pub path: Path<ClientIdOf<Hc>, HeightOf<Tr>>,
+    pub height: HeightOf<Hc>,
 }
 
 #[apply(msg_struct)]
-pub struct FetchIbcState<C: ChainSpec, Tr: ChainExt> {
-    pub path: Path<ClientIdOf<Ethereum<C>>, HeightOf<Tr>>,
-    pub height: HeightOf<Ethereum<C>>,
+pub struct FetchIbcState<Hc: EthereumChainExt, Tr: ChainExt> {
+    pub path: Path<ClientIdOf<Hc>, HeightOf<Tr>>,
+    pub height: HeightOf<Hc>,
 }
 
 impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Ethereum<C>, Tr, CreateUpdateData<C, Tr>>

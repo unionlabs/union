@@ -77,7 +77,7 @@ impl Context {
         let chain_id = ethereum.chain_id().0.as_u64();
         let ucs01_relay = ucs01relay::UCS01Relay::new(
             zerg_config.ethereum_contract.clone(),
-            ethereum.provider.clone().into(),
+            ethereum.provider.clone(),
         );
         tracing::debug!("Created usc01 relay.");
         let denom = format!(

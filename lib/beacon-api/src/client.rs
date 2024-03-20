@@ -95,6 +95,22 @@ impl<C: ChainSpec> BeaconApiClient<C> {
         .await
     }
 
+    /// Convenience method to fetch the execution height of a beacon height.
+    pub async fn execution_height(&self, block_id: BlockId) -> Result<u64> {
+        let height = self
+            .block(block_id.clone())
+            .await?
+            .data
+            .message
+            .body
+            .execution_payload
+            .block_number;
+
+        tracing::debug!("beacon height {block_id} is execution height {height}");
+
+        Ok(height)
+    }
+
     // pub async fn get_light_client_updates_simple<
     //     const SYNC_COMMITTEE_SIZE: usize,
     //     const BYTES_PER_LOGS_BLOOM: usize,
@@ -190,7 +206,7 @@ pub struct BeaconBlockExtra {
     pub version: EthConsensusVersion,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BlockId {
     Head,
     Genesis,

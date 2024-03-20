@@ -1,13 +1,14 @@
 use std::{num::NonZeroU64, sync::Arc};
 
 use bip32::secp256k1::ecdsa;
-use contracts::{devnet_ownable_ibc_handler::DevnetOwnableIBCHandler, ibc_handler::IBCHandler};
+use contracts::ibc_handler::IBCHandler;
 use ethers::{
     middleware::{NonceManagerMiddleware, SignerMiddleware},
     providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
     signers::LocalWallet,
     utils::secret_key_to_address,
 };
+use futures::FutureExt;
 use scroll_api::ScrollClient;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -15,12 +16,14 @@ use unionlabs::{
     hash::{H160, H256},
     ibc::{core::client::height::Height, lightclients::scroll},
     id::{ChannelId, PortId},
-    traits::{Chain, ClientState, FromStrExact, HeightOf},
+    traits::{Chain, ClientState, FromStrExact},
     uint::U256,
 };
 
 use crate::{
-    ethereum::{self, Ethereum, EthereumInitError, EthereumSignerMiddleware},
+    ethereum::{
+        self, Ethereum, EthereumChain, EthereumInitError, EthereumSignerMiddleware, Readonly,
+    },
     private_key::PrivateKey,
     Pool,
 };
@@ -32,14 +35,14 @@ pub struct Scroll {
     pub chain_id: U256,
 
     // The provider on scroll chain.
-    pub provider: Provider<Ws>,
+    pub provider: Arc<Provider<Ws>>,
 
     pub ibc_handlers: Pool<IBCHandler<EthereumSignerMiddleware>>,
 
-    // The IBCHandler contract deployed on scroll chain.
-    pub readonly_ibc_handler: DevnetOwnableIBCHandler<Provider<Ws>>,
+    /// The address of the `IBCHandler` smart contract deployed on scroll.
+    pub ibc_handler_address: H160,
     pub scroll_api_client: ScrollClient,
-    pub l1: Ethereum<Mainnet>,
+    pub l1: Ethereum<Mainnet, Readonly>,
 
     pub rollup_contract_address: H160,
     pub rollup_finalized_state_roots_slot: U256,
@@ -62,8 +65,24 @@ pub struct Config {
     pub rollup_finalized_state_roots_slot: U256,
     pub rollup_last_finalized_batch_index_slot: U256,
     pub l1_client_id: String,
-    pub l1: ethereum::Config,
+    pub l1: ethereum::Config<Readonly>,
     pub scroll_api: String,
+}
+
+impl EthereumChain for Scroll {
+    async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
+        self.batch_index_of_beacon_slot(slot)
+            .then(|bi| self.scroll_height_of_batch_index(bi))
+            .await
+    }
+
+    fn provider(&self) -> Arc<Provider<Ws>> {
+        self.provider.clone()
+    }
+
+    fn ibc_handler_address(&self) -> H160 {
+        self.ibc_handler_address.clone()
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -103,11 +122,8 @@ impl Scroll {
         Ok(Self {
             chain_id: U256(chain_id),
             ibc_handlers: Pool::new(ibc_handlers),
-            readonly_ibc_handler: DevnetOwnableIBCHandler::new(
-                config.ibc_handler_address.clone(),
-                provider.clone().into(),
-            ),
-            provider,
+            ibc_handler_address: config.ibc_handler_address.clone(),
+            provider: Arc::new(provider),
             scroll_api_client: ScrollClient::new(config.scroll_api),
             l1: Ethereum::new(config.l1).await?,
             rollup_contract_address: config.rollup_contract_address,
@@ -117,8 +133,13 @@ impl Scroll {
         })
     }
 
-    pub async fn batch_index_of_beacon_height(&self, height: HeightOf<Self>) -> u64 {
-        let execution_height = self.l1.execution_height(height).await;
+    pub async fn batch_index_of_beacon_slot(&self, slot: u64) -> u64 {
+        let execution_height = self
+            .l1
+            .beacon_api_client
+            .execution_height(beacon_api::client::BlockId::Slot(slot))
+            .await
+            .unwrap();
 
         let storage = self
             .l1
@@ -206,14 +227,16 @@ impl Chain for Scroll {
         scroll::client_state::ClientState {
             l1_client_id: self.l1_client_id.clone(),
             chain_id: self.chain_id(),
-            latest_batch_index: self.batch_index_of_beacon_height(height).await,
+            latest_batch_index: self
+                .batch_index_of_beacon_slot(height.revision_height)
+                .await,
             frozen_height: Height {
                 revision_number: 0,
                 revision_height: 0,
             },
             rollup_contract_address: self.rollup_contract_address.clone(),
             rollup_finalized_state_roots_slot: self.rollup_finalized_state_roots_slot,
-            ibc_contract_address: self.l1.readonly_ibc_handler.address().into(),
+            ibc_contract_address: self.l1.ibc_handler_address.clone(),
             ibc_commitment_slot: U256::from(0),
         }
     }
@@ -227,7 +250,9 @@ impl Chain for Scroll {
             .unwrap()
             .data;
 
-        let batch_index = self.batch_index_of_beacon_height(height).await;
+        let batch_index = self
+            .batch_index_of_beacon_slot(height.revision_height)
+            .await;
         let scroll_height = self.scroll_height_of_batch_index(batch_index).await;
 
         let storage_root = self
