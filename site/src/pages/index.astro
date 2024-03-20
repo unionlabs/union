@@ -27,11 +27,12 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
 ---
 
 <Layout>
-  <main class="flex flex-col flex-1 items-center px-4">
-    <div class="w-full flex flex-col max-w-6xl p-px bg-black">
+  <main class="flex flex-col flex-1 items-center">
+    <div class="w-full flex flex-col p-px bg-black">
       <section
-        class="self-center flex flex-col md:grid md:grid-cols-2 max-w-6xl items-center gap-2 md:gap-0 grid-effect-bg antialiased bg-black -mx-4 md:mx-0 mb-16"
+        class="flex flex-col py-16 bg-gradient-to-b from-black to-gray-950"
       >
+        <div class="max-w-8xl self-center flex flex-col md:grid md:grid-cols-2 max-w-6xl items-center gap-2 md:gap-0 antialiased -mx-4 md:mx-0 ">
         <div class="md:order-last w-full max-w-[600px]">
           <Spline model={cube} client:only />
         </div>
@@ -51,8 +52,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
             </a>
           </div>
         </div>
-
-
+        </div>
       </section>
       <section class="bg-black mb-px items-center justify-center max-w-4xl w-full self-center">
         <div
