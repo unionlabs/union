@@ -162,6 +162,7 @@ contract IBCClientHandlerTests is TestPlus {
         bytes32 rootHash,
         bytes32 nextValidatorsHash
     ) public {
+        vm.assume(bytes(chainId).length < 32);
         vm.assume(revisionHeight > 0);
 
         handler.registerClient(CLIENT_TYPE, client);
@@ -188,6 +189,27 @@ contract IBCClientHandlerTests is TestPlus {
             ),
             keccak256(m.consensusStateBytes)
         );
+    }
+
+    function test_createClient_chainIdExceedScalarField(
+        string memory chainId,
+        bytes32 rootHash,
+        bytes32 nextValidatorsHash
+    ) public {
+        vm.assume(bytes(chainId).length > 31);
+
+        handler.registerClient(CLIENT_TYPE, client);
+        IBCMsgs.MsgCreateClient memory m = Cometbls.createClient(
+            CLIENT_TYPE,
+            chainId,
+            0,
+            rootHash,
+            nextValidatorsHash,
+            uint64(vm.getBlockTimestamp())
+        );
+
+        vm.expectRevert(IBCClientLib.ErrFailedToCreateClient.selector);
+        handler.createClient(m);
     }
 
     function test_createClient_zeroHeight(
