@@ -2,17 +2,13 @@ syntax = "proto3";
 
 package union.ibc.lightclients.cometbls.v1;
 
-option go_package = "union/app/ibc/cometbls/02-client/keeper";
-
 import "google/protobuf/timestamp.proto";
-import "tendermint/types/types.proto";
 import "ibc/core/client/v1/client.proto";
 import "ibc/core/commitment/v1/commitment.proto";
 import "gogoproto/gogo.proto";
 
 message ClientState {
   option (gogoproto.goproto_getters) = false;
-
   string chain_id = 1;
   // duration of the period since the LastestTimestamp during which the
   // submitted headers are valid for upgrade
@@ -29,19 +25,19 @@ message ClientState {
 
 message ConsensusState {
   option (gogoproto.goproto_getters) = false;
-
   // timestamp that corresponds to the block height in which the ConsensusState
   // was stored.
   uint64 timestamp = 1;
   // commitment root (i.e app hash)
-  .ibc.core.commitment.v1.MerkleRoot root = 2
-        [(gogoproto.nullable) = false];
+  .ibc.core.commitment.v1.MerkleRoot app_hash = 2 [(gogoproto.nullable) = false];
   bytes next_validators_hash = 3;
 }
 
 message Misbehaviour {
-  Header header_1  = 1;
-  Header header_2  = 2;
+  LightHeader header_1  = 1;
+  LightHeader header_2  = 2;
+  bytes header_1_zkp = 3;
+  bytes header_2_zkp = 4;
 }
 
 message LightHeader {

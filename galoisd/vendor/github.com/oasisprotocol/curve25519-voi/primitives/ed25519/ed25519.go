@@ -142,6 +142,13 @@ type Options struct {
 	// Warning: If this is set, signatures will be non-deterministic.
 	AddedRandomness bool
 
+	// SelfVerify will cause the signing process to verify the signature
+	// after signing, to improve resilience against certain fault attacks.
+	//
+	// Warning: If this is set, signing will be significantly more
+	// expensive.
+	SelfVerify bool
+
 	// Verify allows specifying verification behavior for compatibility
 	// with other Ed25519 implementations.  If left unspecified, the
 	// VerifyOptionsDefault will be used, which should be acceptable
@@ -358,9 +365,10 @@ func (priv PrivateKey) Seed() []byte {
 // Warning: This routine will panic if opts is nil.
 func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOpts) (signature []byte, err error) {
 	var (
-		context   []byte
-		f         dom2Flag = fPure
-		addedRand bool
+		context    []byte
+		f          dom2Flag = fPure
+		addedRand  bool
+		selfVerify bool
 	)
 	if o, ok := opts.(*Options); ok {
 		f, context, err = o.verify()
@@ -372,6 +380,8 @@ func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOp
 		if rand == nil {
 			rand = cryptorand.Reader
 		}
+
+		selfVerify = o.SelfVerify
 	}
 
 	// Now that the Options specific validation is done, see if the caller
@@ -460,6 +470,13 @@ func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOp
 	copy(RS[:32], rCompressed[:])
 	if err = S.ToBytes(RS[32:]); err != nil {
 		return nil, fmt.Errorf("ed25519: failed to serialize S scalar: %w", err)
+	}
+
+	// If opts.SelfVerify is set, verify the newly created signature.
+	if selfVerify {
+		if !VerifyWithOptions(PublicKey(priv[32:]), message, RS[:], opts.(*Options)) {
+			return nil, fmt.Errorf("ed25519: failed to self-verify signature")
+		}
 	}
 
 	return RS[:], nil

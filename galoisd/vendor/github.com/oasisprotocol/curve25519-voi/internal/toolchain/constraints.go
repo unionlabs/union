@@ -42,8 +42,10 @@ var (
 	//  * 1.13 - arm64, ppcle, ppc64
 	//  * 1.14 - s390x
 	//
-	// Last updated: Go 1.18 (src/cmd/compile/internal/ssagen/ssa.go)
-	_ = __SOFTWARE_REQUIRES_GO_VERSION_1_17__
+	//  * riscv64 became fast during 1.19, not shipped yet
+	//
+	// Last updated: Go 1.19 (src/cmd/compile/internal/ssagen/ssa.go)
+	_ = __SOFTWARE_REQUIRES_GO_VERSION_1_18__
 
 	// gccgo doesn't support Go's assembly dialect, and I don't want to
 	// have to special case that with more build constraints either.

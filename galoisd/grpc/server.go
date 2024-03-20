@@ -22,7 +22,6 @@ import (
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bn254"
@@ -188,14 +187,6 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			Bitmap:        new(big.Int).SetBytes(req.UntrustedCommit.Bitmap),
 		}
 
-		signedBytes, err := protoio.MarshalDelimited(req.Vote)
-		if err != nil {
-			return nil, fmt.Errorf("Could not marshal the vote %s", err)
-		}
-
-		message := cometbn254.HashToField(signedBytes)
-		_ = message
-
 		uncons := func(b []byte) lightclient.UnconsHash {
 			return lightclient.UnconsHash{
 				Head: b[0],
@@ -203,7 +194,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			}
 		}
 
-		getInputsHash := func(h *types.Header) []byte {
+		getInputsHash := func(chainID string, h *types.Header) []byte {
 			buff := []byte{}
 			var padded [32]byte
 			writeI64 := func(x int64) {
@@ -217,7 +208,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			writeHash := func(b []byte) {
 				buff = append(buff, b...)
 			}
-			writeMiMCHash([]byte(h.ChainID))
+			writeMiMCHash([]byte(chainID))
 			writeI64(h.Height)
 			writeI64(h.Time.Unix())
 			writeI64(int64(h.Time.Nanosecond()))
@@ -229,7 +220,7 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 			return hash[1:]
 		}
 
-		inputsHash := getInputsHash(req.UntrustedHeader)
+		inputsHash := getInputsHash(req.Vote.ChainID, req.UntrustedHeader)
 
 		log.Printf("Inputs hash: %X\n", inputsHash)
 
