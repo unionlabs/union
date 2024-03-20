@@ -2,7 +2,7 @@
 import Spline from '#/components/Spline.svelte';
 const { name, description, link, model } = Astro.props;
 ---
-<div class="rounded border border-[#1f1f1f] bg-neutral-950 shadow-lg">
+<div class="from-black bg-gradient-to-b to-neutral-950 rounded border border-[#1f1f1f] shadow-lg">
   <Spline {model} client:only />
   <div class="p-4">
   <h3 class="mb-1 text-2xl">{name}</h3>

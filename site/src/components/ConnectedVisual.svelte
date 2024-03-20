@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import tw from "~tailwind.config";
+  import tw from "tailwind.config";
   import skip from "#/assets/partners/skip.svelte?raw";
   import noble from "#/assets/partners/noble.svelte?raw";
   import quasar from "#/assets/partners/quasar.svelte?raw";
