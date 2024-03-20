@@ -1116,7 +1116,7 @@ pub mod stake_authorization {
         #[prost(string, repeated, tag = "1")]
         pub address: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     }
-    impl ::prost::Name for Validators {
+    impl ::prost::Name for ValidatorsVec {
         const NAME: &'static str = "Validators";
         const PACKAGE: &'static str = "cosmos.staking.v1beta1";
         fn full_name() -> ::prost::alloc::string::String {
