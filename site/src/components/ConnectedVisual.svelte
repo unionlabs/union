@@ -1,12 +1,12 @@
 <script lang="ts">
 import { onMount } from "svelte"
 import tw from "~tailwind.config"
-import skip from "#/assets/partners/skip.svelte?raw"
-import noble from "#/assets/partners/noble.svelte?raw"
-import quasar from "#/assets/partners/quasar.svelte?raw"
-import celestia from "#/assets/partners/celestia.svelte?raw"
-import ethereum from "#/assets/partners/ethereum.svelte?raw"
-import movement from "#/assets/partners/movement.svelte?raw"
+import skip from "#/assets/partners/skip.svg?raw"
+import noble from "#/assets/partners/noble.svg?raw"
+import quasar from "#/assets/partners/quasar.svg?raw"
+import celestia from "#/assets/partners/celestia.svg?raw"
+import ethereum from "#/assets/partners/ethereum.svg?raw"
+import movement from "#/assets/partners/movement.svg?raw"
 import union from "#/assets/union-logo/union-logo-transparent.svg?raw"
 
 /* Define our media query and media query object */
@@ -97,20 +97,12 @@ const connectionData = conns.map(({ from, to, delay }) => {
   const dy = toY - fromY
 
   const totalDistance = Math.abs(dx) + Math.abs(dy)
-
-  // console.log(dx, dy, totalDistance)
-
   const duration = totalDistance * SECONDS_PER_CELL
-
   const totalTime = duration + delay
-
-  // console.log('dx', dx, 'dy', dy, 'duration', duration, 'totalTime', totalTime)
 
   // time (clamped between [0, 1]) for the h and v components
   const hTime = (Math.abs(dx) * SECONDS_PER_CELL) / totalTime
   const vTime = (Math.abs(dy) * SECONDS_PER_CELL) / totalTime
-
-  // console.log('hTime', hTime, 'vTime', vTime)
 
   // clamp between [0, (duration / totalTime)]
   const radiusKeyTimes = [0, 0.1, 0.4, 0.5, 1]
@@ -139,8 +131,6 @@ const connectionData = conns.map(({ from, to, delay }) => {
     delay
   }
 })
-
-const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
 </script>
 
 <svg
