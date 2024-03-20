@@ -54,6 +54,9 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
         </div>
         </div>
       </section>
+
+<!--
+
       <section class="bg-black mb-px items-center justify-center max-w-4xl w-full self-center">
         <div
           class="p-4 top-0 font-normal z-10"
@@ -141,9 +144,22 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse()
         </div>
       </section>
 
-      <section class="bg-black mb-px">
+      !-->
+
+      <section class="self-center bg-black mb-px flex flex-col items-center justify-centermax-w-6xl text-center">
+          <h2
+            class="text-white font-bold text-4xl mt-16"
+          >
+            Interoperability for the Modular Stack</span>
+          </h2>
+          <div class="mt-2 text-lg sm:text-xl font-normal text-gray-400 max-w-xl mb-16">
+            Trustless, decentralized, and permissionless interoperability
+            is now possible. Union is the only protocol that provides all three, using state-of-the-art
+            <span class="text-white">Zero-Knowledge cryptography</span>.
+          </div>
+
         <div
-          class="grid grid-rows-3 grid-cols-1 sm:grid-cols-3 sm:grid-rows-1 divide-solid divide-[#1f1f1f] gap-8"
+          class="grid grid-rows-3 grid-cols-1 sm:grid-cols-3 sm:grid-rows-1 gap-8 max-w-6xl px-4"
         >
           <ProductSection name="Galois" description="Decentralized proving for everyone. Galois, a key component of Union's ZK efforts, ensures proof verification with lightning-fast execution, cost-efficient operation, and decentralized infrastructure." link="/docs/architecture/galois" model={microGaloisModel}/>
           <ProductSection name="CometBLS" description="ZK-aligned consensus engine. CometBLS is an enhancement upon Tendermint which utilizes BLS signatures for efficient ZK proving, and thereby ensuring secure bridging and consensus verification." link="/docs/architecture/cometbls" model={microCometblsModel}/>
