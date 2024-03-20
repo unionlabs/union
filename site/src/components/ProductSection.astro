@@ -5,8 +5,8 @@ const { name, description, link, model } = Astro.props;
 <div class="from-black bg-gradient-to-b to-neutral-950 rounded border border-[#1f1f1f] shadow-lg">
   <Spline {model} client:only />
   <div class="p-4">
-  <h3 class="mb-1 text-2xl">{name}</h3>
-  <p class="text-gray-200">{description}</p>
+  <h3 class="mb-1 text-3xl">{name}</h3>
+  <p class="text-gray-400">{description}</p>
   <a
     class="underline uppercase block mt-2 text-accent font-semibold"
     href={link}>Read more {'->'}</a
