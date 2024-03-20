@@ -4,8 +4,10 @@ sidebar:
   order: 2
 ---
 
-import Version from "#/components/ChainVersion.astro";
-import { FileTree } from "@astrojs/starlight/components";
+import { dedent } from "ts-dedent"
+import { chainVersion } from '#/lib/constants/versions.ts'
+import FunctionResult from '#/components/FunctionResult.astro'
+import { Code, FileTree } from "@astrojs/starlight/components";
 
 Unionvisor is a utility for managing `uniond` deployments. It manages running, upgrading, and interacting with the node.
 
@@ -19,7 +21,7 @@ Alternatively, you can run the following command:
 docker pull ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION
 ```
 
-_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" genesis={false} />_
+_Where `UNIONVISOR_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />_
 
 ## Running Unionvisor
 
@@ -45,16 +47,18 @@ Now, using the `unionvisor` image and the folder we just created, we can initial
 
 To do this, we'll be using Docker volumes.
 
-```sh frame="none"
-docker run \
-  --volume ~/.unionvisor:/.unionvisor \
-  --volume /tmp:/tmp \
-  -it ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION \
-  init --moniker $MONIKER \
-  --network union-testnet-6 \
-  --seeds "b37de4c50e26f7cde4c7b6ce06046a6693ffef2c@union.testnet.6.seed.poisonphang.com:26656"
-```
-
+<Code
+  lang='sh'
+  code={dedent(`
+    docker run \\
+      --volume ~/.unionvisor:/.unionvisor \\
+      --volume /tmp:/tmp \\
+      -it ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION \\
+      init --moniker $MONIKER \\
+      --network union-testnet-6 \\
+      --seeds "${chainVersion({chainId: 'union-testnet-6'}).seeds}"
+  `)}
+/>
 _Where `MONIKER` is the preferred moniker you'd like to use on this node._
 
 :::note
@@ -81,7 +85,7 @@ After the above command is done running, you should have a `.unionvisor` folder 
   - data
     - priv_validator_state.json
 - versions
-  - <Version chainId="union-testnet-6" genesis={false} />- uniond
+  - <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />- uniond
 
 </FileTree>
 
@@ -115,7 +119,7 @@ For example, in `zsh`, you can add the following alias to your `.zshrc`:
 alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-6:$UNIONVISOR_VERSION --log-level off call --'
 ```
 
-_Where `UNIONVISOR_VERSION` is <Version chainId="union-testnet-6" genesis={false} />_
+_Where `UNIONVISOR_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-6'}).current} />_
 
 :::note
 

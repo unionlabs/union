@@ -4,54 +4,67 @@ sidebar:
   order: 5
 ---
 
+import endpoints from "#/assets/endpoints.json";
 import { Card, CardGrid } from "@astrojs/starlight/components";
 
 These endpoints may be helpful while joining the network and ensuring the correctness of your node.
 
 <Card title="gRPC">
   <ul>
-    <li>https://grpc.testnet.bonlulu.uno</li>
-    <li>https://union-testnet-grpc.polkachu.com:24690</li>
-    <li>https://grpc-testnet-union.nodeist.net</li>
-    <li>https://grpc-t.union.nodestake.org:443</li>
-    <li>https://services.staketab.org:9450</li>
+    {endpoints.grpc.map(endpoint => (
+      <li>
+        <a href={endpoint} target="_blank" rel="noopener noreferrer">
+          {endpoint}
+        </a>
+      </li>
+    ))}
   </ul>
 </Card>
 
 <Card title="RPC">
   <ul>
-    <li>https://rpc.testnet.bonlulu.uno</li>
-    <li>https://union-testnet-rpc.polkachu.com</li>
-    <li>https://rpc-testnet-union.nodeist.net</li>
-    <li>https://rpc-t.union.nodestake.org</li>
-    <li>https://union-testnet-rpc.staketab.org</li>
+    {endpoints.rpc.map(endpoint => (
+      <li>
+        <a href={endpoint} target="_blank" rel="noopener noreferrer">
+          {endpoint}
+        </a>
+      </li>
+    ))}
   </ul>
 </Card>
 
 <Card title="REST API">
   <ul>
-    <li>https://api.testnet.bonlulu.uno</li>
-    <li>https://union-testnet-api.polkachu.com</li>
-    <li>https://api-testnet-union.nodeist.net</li>
-    <li>https://api-t.union.nodestake.org</li>
-    <li>https://union-testnet-rest.staketab.org</li>
+    {endpoints.rest.map(endpoint => (
+      <li>
+        <a href={endpoint} target="_blank" rel="noopener noreferrer">
+          {endpoint}
+        </a>
+      </li>
+    ))}
   </ul>
 </Card>
 
 <Card title="State Sync">
   <ul>
-    <li>https://polkachu.com/testnets/union/state_sync</li>
-    <li>https://nodeist.net/union</li>
-    <li>https://nodestake.org/union</li>
-    <li>https://services.staketab.org/docs/union-testnet/state-sync</li>
+    {endpoints["state-sync"].map(endpoint => (
+      <li>
+        <a href={endpoint} target="_blank" rel="noopener noreferrer">
+          {endpoint}
+        </a>
+      </li>
+    ))}
   </ul>
 </Card>
 
 <Card title="Explorer">
   <ul>
-    <li>https://testnet.bonlulu.uno/union</li>
-    <li>https://testnet.union.explorers.guru</li>
-    <li>https://test.explorer.ist/union</li>
-    <li>https://explorer.nodestake.org/union-testnet</li>
+    {endpoints.explorers.map(endpoint => (
+      <li>
+        <a href={endpoint} target="_blank" rel="noopener noreferrer">
+          {endpoint}
+        </a>
+      </li>
+    ))}
   </ul>
 </Card>
