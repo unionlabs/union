@@ -12,5 +12,5 @@
 </script>
 
 <div class="w-full aspect-h-1 aspect-w-1 overflow-hidden rounded-t">
-  <canvas class="overflow-hidden" bind:this={canvas}></canvas>
+  <canvas class="overflow-hidden size-auto" bind:this={canvas}></canvas>
 </div>

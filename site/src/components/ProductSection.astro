@@ -2,14 +2,16 @@
 import Spline from '#/components/Spline.svelte';
 const { name, description, link, model } = Astro.props;
 ---
-<div class="from-black bg-gradient-to-b to-neutral-950 rounded border border-[#1f1f1f] shadow-lg">
-  <Spline {model} client:only />
-  <div class="p-4">
-  <h3 class="mb-1 text-3xl">{name}</h3>
-  <p class="text-gray-400">{description}</p>
-  <a
-    class="underline uppercase block mt-2 text-accent font-semibold"
-    href={link}>Read more {'->'}</a
-  >
+<div class="flex flex-col text-left from-black bg-gradient-to-b to-neutral-950 rounded border border-[#1f1f1f] shadow-lg">
+  <div class="-mt-16 -mb-4">
+    <Spline {model} client:only />
+  </div>
+  <div class="flex flex-col flex-1 overflow-hidden">
+    <h3 class="mb-1 text-3xl px-4">{name}</h3>
+    <p class="text-gray-400 flex-1 px-4">{description}</p>
+    <a
+      class="block bg-neutral-900 p-4 uppercase block mt-2 text-white font-semibold"
+      href={link}>Read more {'->'}</a
+    >
   </div>
 </div>
