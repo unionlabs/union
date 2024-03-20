@@ -22,7 +22,7 @@ classDiagram
     }
 
     Chain <|.. Cosmos
-    Chain <|.. Evm
+    Chain <|.. Ethereum
 ```
 
 ## Handshake
@@ -31,40 +31,40 @@ classDiagram
 sequenceDiagram
     participant Cosmos
     participant Voyager
-    participant Evm
+    participant Ethereum
 
     par Create WASM Client
         Voyager->>+Cosmos: create_client
         Cosmos-->>-Voyager: client_id
     and Create IBC Handler Instance
-        Voyager->>+Evm: create_client
-        Evm-->>-Voyager: client_id
+        Voyager->>+Ethereum: create_client
+        Ethereum-->>-Voyager: client_id
     end
 
-		note over Cosmos, Evm: connection handshake
+		note over Cosmos, Ethereum: connection handshake
 
-    Voyager->>+Evm: MsgConnectionOpenInit
-    Evm-->>-Voyager: connection_id
+    Voyager->>+Ethereum: MsgConnectionOpenInit
+    Ethereum-->>-Voyager: connection_id
 
     Voyager->>+Cosmos: MsgConnectionOpenTry
     Cosmos-->>-Voyager: <<success>>
 
-    Voyager->>+Evm: MsgConnectionOpenAck
-    Evm-->>-Voyager: <<success>>
+    Voyager->>+Ethereum: MsgConnectionOpenAck
+    Ethereum-->>-Voyager: <<success>>
 
     Voyager->>+Cosmos: MsgConnectionOpenConfirm
     Cosmos-->>-Voyager: <<success>>
 
-		note over Cosmos, Evm: channel handshake
+		note over Cosmos, Ethereum: channel handshake
 
-    Voyager->>+Evm: MsgChannelOpenInit
-    Evm-->>-Voyager: channel_id
+    Voyager->>+Ethereum: MsgChannelOpenInit
+    Ethereum-->>-Voyager: channel_id
 
     Voyager->>+Cosmos: MsgChannelOpenTry
     Cosmos-->>-Voyager: <<success>>
 
-    Voyager->>+Evm: MsgChannelOpenAck
-    Evm-->>-Voyager: <<success>>
+    Voyager->>+Ethereum: MsgChannelOpenAck
+    Ethereum-->>-Voyager: <<success>>
 
     Voyager->>+Cosmos: MsgChannelOpenConfirm
     Cosmos-->>-Voyager: <<success>>

@@ -11,7 +11,7 @@ use std::{
 use chain_utils::{
     cosmos::Cosmos,
     cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
-    evm::Evm,
+    ethereum::Ethereum,
     union::Union,
     wasm::Wasm,
     Chains,
@@ -260,19 +260,27 @@ pub type InnerOf<T, Hc, Tr> = <T as AnyLightClient>::Inner<Hc, Tr>;
 )]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyLightClientIdentified<T: AnyLightClient> {
-    // The 08-wasm client tracking the state of Evm<Mainnet>.
-    #[display(fmt = "EvmMainnetOnUnion({}, {})", "_0.chain_id", "_0.t")]
-    EvmMainnetOnUnion(Identified<Wasm<Union>, Evm<Mainnet>, InnerOf<T, Wasm<Union>, Evm<Mainnet>>>),
-    // The solidity client on Evm<Mainnet> tracking the state of Wasm<Union>.
-    #[display(fmt = "UnionOnEvmMainnet({}, {})", "_0.chain_id", "_0.t")]
-    UnionOnEvmMainnet(Identified<Evm<Mainnet>, Wasm<Union>, InnerOf<T, Evm<Mainnet>, Wasm<Union>>>),
+    // The 08-wasm client tracking the state of Ethereum<Mainnet>.
+    #[display(fmt = "EthereumMainnetOnUnion({}, {})", "_0.chain_id", "_0.t")]
+    EthereumMainnetOnUnion(
+        Identified<Wasm<Union>, Ethereum<Mainnet>, InnerOf<T, Wasm<Union>, Ethereum<Mainnet>>>,
+    ),
+    // The solidity client on Ethereum<Mainnet> tracking the state of Wasm<Union>.
+    #[display(fmt = "UnionOnEthereumMainnet({}, {})", "_0.chain_id", "_0.t")]
+    UnionOnEthereumMainnet(
+        Identified<Ethereum<Mainnet>, Wasm<Union>, InnerOf<T, Ethereum<Mainnet>, Wasm<Union>>>,
+    ),
 
-    // The 08-wasm client tracking the state of Evm<Minimal>.
-    #[display(fmt = "EvmMinimalOnUnion({}, {})", "_0.chain_id", "_0.t")]
-    EvmMinimalOnUnion(Identified<Wasm<Union>, Evm<Minimal>, InnerOf<T, Wasm<Union>, Evm<Minimal>>>),
-    // The solidity client on Evm<Minimal> tracking the state of Wasm<Union>.
-    #[display(fmt = "UnionOnEvmMinimal({}, {})", "_0.chain_id", "_0.t")]
-    UnionOnEvmMinimal(Identified<Evm<Minimal>, Wasm<Union>, InnerOf<T, Evm<Minimal>, Wasm<Union>>>),
+    // The 08-wasm client tracking the state of Ethereum<Minimal>.
+    #[display(fmt = "EthereumMinimalOnUnion({}, {})", "_0.chain_id", "_0.t")]
+    EthereumMinimalOnUnion(
+        Identified<Wasm<Union>, Ethereum<Minimal>, InnerOf<T, Wasm<Union>, Ethereum<Minimal>>>,
+    ),
+    // The solidity client on Ethereum<Minimal> tracking the state of Wasm<Union>.
+    #[display(fmt = "UnionOnEthereumMinimal({}, {})", "_0.chain_id", "_0.t")]
+    UnionOnEthereumMinimal(
+        Identified<Ethereum<Minimal>, Wasm<Union>, InnerOf<T, Ethereum<Minimal>, Wasm<Union>>>,
+    ),
 
     #[display(fmt = "CosmosOnUnion({}, {})", "_0.chain_id", "_0.t")]
     CosmosOnUnion(Identified<Union, Wasm<Cosmos>, InnerOf<T, Union, Wasm<Cosmos>>>),
@@ -284,33 +292,33 @@ pub enum AnyLightClientIdentified<T: AnyLightClient> {
 #[serde(bound(serialize = "", deserialize = ""), untagged, deny_unknown_fields)]
 #[allow(clippy::large_enum_variant)]
 enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
-    EvmMainnetOnUnion(
+    EthereumMainnetOnUnion(
         Inner<
             Wasm<Union>,
-            Evm<Mainnet>,
-            Identified<Wasm<Union>, Evm<Mainnet>, InnerOf<T, Wasm<Union>, Evm<Mainnet>>>,
+            Ethereum<Mainnet>,
+            Identified<Wasm<Union>, Ethereum<Mainnet>, InnerOf<T, Wasm<Union>, Ethereum<Mainnet>>>,
         >,
     ),
-    UnionOnEvmMainnet(
+    UnionOnEthereumMainnet(
         Inner<
-            Evm<Mainnet>,
+            Ethereum<Mainnet>,
             Wasm<Union>,
-            Identified<Evm<Mainnet>, Wasm<Union>, InnerOf<T, Evm<Mainnet>, Wasm<Union>>>,
+            Identified<Ethereum<Mainnet>, Wasm<Union>, InnerOf<T, Ethereum<Mainnet>, Wasm<Union>>>,
         >,
     ),
 
-    EvmMinimalOnUnion(
+    EthereumMinimalOnUnion(
         Inner<
             Wasm<Union>,
-            Evm<Minimal>,
-            Identified<Wasm<Union>, Evm<Minimal>, InnerOf<T, Wasm<Union>, Evm<Minimal>>>,
+            Ethereum<Minimal>,
+            Identified<Wasm<Union>, Ethereum<Minimal>, InnerOf<T, Wasm<Union>, Ethereum<Minimal>>>,
         >,
     ),
-    UnionOnEvmMinimal(
+    UnionOnEthereumMinimal(
         Inner<
-            Evm<Minimal>,
+            Ethereum<Minimal>,
             Wasm<Union>,
-            Identified<Evm<Minimal>, Wasm<Union>, InnerOf<T, Evm<Minimal>, Wasm<Union>>>,
+            Identified<Ethereum<Minimal>, Wasm<Union>, InnerOf<T, Ethereum<Minimal>, Wasm<Union>>>,
         >,
     ),
 
@@ -333,17 +341,17 @@ enum AnyLightClientIdentifiedSerde<T: AnyLightClient> {
 impl<T: AnyLightClient> From<AnyLightClientIdentified<T>> for AnyLightClientIdentifiedSerde<T> {
     fn from(value: AnyLightClientIdentified<T>) -> Self {
         match value {
-            AnyLightClientIdentified::EvmMainnetOnUnion(t) => {
-                Self::EvmMainnetOnUnion(Inner::new(t))
+            AnyLightClientIdentified::EthereumMainnetOnUnion(t) => {
+                Self::EthereumMainnetOnUnion(Inner::new(t))
             }
-            AnyLightClientIdentified::UnionOnEvmMainnet(t) => {
-                Self::UnionOnEvmMainnet(Inner::new(t))
+            AnyLightClientIdentified::UnionOnEthereumMainnet(t) => {
+                Self::UnionOnEthereumMainnet(Inner::new(t))
             }
-            AnyLightClientIdentified::EvmMinimalOnUnion(t) => {
-                Self::EvmMinimalOnUnion(Inner::new(t))
+            AnyLightClientIdentified::EthereumMinimalOnUnion(t) => {
+                Self::EthereumMinimalOnUnion(Inner::new(t))
             }
-            AnyLightClientIdentified::UnionOnEvmMinimal(t) => {
-                Self::UnionOnEvmMinimal(Inner::new(t))
+            AnyLightClientIdentified::UnionOnEthereumMinimal(t) => {
+                Self::UnionOnEthereumMinimal(Inner::new(t))
             }
             AnyLightClientIdentified::CosmosOnUnion(t) => Self::CosmosOnUnion(Inner::new(t)),
             AnyLightClientIdentified::UnionOnCosmos(t) => Self::UnionOnCosmos(Inner::new(t)),
@@ -354,10 +362,18 @@ impl<T: AnyLightClient> From<AnyLightClientIdentified<T>> for AnyLightClientIden
 impl<T: AnyLightClient> From<AnyLightClientIdentifiedSerde<T>> for AnyLightClientIdentified<T> {
     fn from(value: AnyLightClientIdentifiedSerde<T>) -> Self {
         match value {
-            AnyLightClientIdentifiedSerde::EvmMainnetOnUnion(t) => Self::EvmMainnetOnUnion(t.inner),
-            AnyLightClientIdentifiedSerde::UnionOnEvmMainnet(t) => Self::UnionOnEvmMainnet(t.inner),
-            AnyLightClientIdentifiedSerde::EvmMinimalOnUnion(t) => Self::EvmMinimalOnUnion(t.inner),
-            AnyLightClientIdentifiedSerde::UnionOnEvmMinimal(t) => Self::UnionOnEvmMinimal(t.inner),
+            AnyLightClientIdentifiedSerde::EthereumMainnetOnUnion(t) => {
+                Self::EthereumMainnetOnUnion(t.inner)
+            }
+            AnyLightClientIdentifiedSerde::UnionOnEthereumMainnet(t) => {
+                Self::UnionOnEthereumMainnet(t.inner)
+            }
+            AnyLightClientIdentifiedSerde::EthereumMinimalOnUnion(t) => {
+                Self::EthereumMinimalOnUnion(t.inner)
+            }
+            AnyLightClientIdentifiedSerde::UnionOnEthereumMinimal(t) => {
+                Self::UnionOnEthereumMinimal(t.inner)
+            }
             AnyLightClientIdentifiedSerde::CosmosOnUnion(t) => Self::CosmosOnUnion(t.inner),
             AnyLightClientIdentifiedSerde::UnionOnCosmos(t) => Self::UnionOnCosmos(t.inner),
         }
@@ -794,33 +810,33 @@ impl<Hc: Chain, Tr: Chain, S> Inner<Hc, Tr, S> {
 macro_rules! any_lc {
     (|$msg:ident| $expr:expr) => {
         match $msg {
-            AnyLightClientIdentified::EvmMainnetOnUnion($msg) => {
+            AnyLightClientIdentified::EthereumMainnetOnUnion($msg) => {
                 #[allow(dead_code)]
                 type Hc = chain_utils::wasm::Wasm<chain_utils::union::Union>;
                 #[allow(dead_code)]
-                type Tr = chain_utils::evm::Evm<unionlabs::ethereum::config::Mainnet>;
+                type Tr = chain_utils::ethereum::Ethereum<unionlabs::ethereum::config::Mainnet>;
 
                 $expr
             }
-            AnyLightClientIdentified::UnionOnEvmMainnet($msg) => {
+            AnyLightClientIdentified::UnionOnEthereumMainnet($msg) => {
                 #[allow(dead_code)]
-                type Hc = chain_utils::evm::Evm<unionlabs::ethereum::config::Mainnet>;
+                type Hc = chain_utils::ethereum::Ethereum<unionlabs::ethereum::config::Mainnet>;
                 #[allow(dead_code)]
                 type Tr = chain_utils::wasm::Wasm<chain_utils::union::Union>;
 
                 $expr
             }
-            AnyLightClientIdentified::EvmMinimalOnUnion($msg) => {
+            AnyLightClientIdentified::EthereumMinimalOnUnion($msg) => {
                 #[allow(dead_code)]
                 type Hc = chain_utils::wasm::Wasm<chain_utils::union::Union>;
                 #[allow(dead_code)]
-                type Tr = chain_utils::evm::Evm<unionlabs::ethereum::config::Minimal>;
+                type Tr = chain_utils::ethereum::Ethereum<unionlabs::ethereum::config::Minimal>;
 
                 $expr
             }
-            AnyLightClientIdentified::UnionOnEvmMinimal($msg) => {
+            AnyLightClientIdentified::UnionOnEthereumMinimal($msg) => {
                 #[allow(dead_code)]
-                type Hc = chain_utils::evm::Evm<unionlabs::ethereum::config::Minimal>;
+                type Hc = chain_utils::ethereum::Ethereum<unionlabs::ethereum::config::Minimal>;
                 #[allow(dead_code)]
                 type Tr = chain_utils::wasm::Wasm<chain_utils::union::Union>;
 

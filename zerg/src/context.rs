@@ -48,11 +48,11 @@ pub struct Context {
     pub is_rush: bool,
     pub writer: Arc<Mutex<File>>,
     pub union: chain_utils::union::Union,
-    pub evm: chain_utils::evm::Evm<Minimal>,
-    pub evm_accounts: HashMap<String, Wallet<SigningKey>>,
+    pub ethereum: chain_utils::ethereum::Ethereum<Minimal>,
+    pub ethereum_accounts: HashMap<String, Wallet<SigningKey>>,
     pub denom_address: Address,
     pub union_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
-    pub evm_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
+    pub ethereum_txs: Arc<Mutex<HashMap<u64, uuid::Uuid>>>,
 }
 
 impl Context {
@@ -67,17 +67,17 @@ impl Context {
             .await
             .unwrap();
         tracing::debug!("Created Union instance.");
-        let evm = chain_utils::evm::Evm::new(zerg_config.clone().evm)
+        let ethereum = chain_utils::ethereum::Ethereum::new(zerg_config.clone().ethereum)
             .await
             .unwrap();
-        tracing::debug!("Created Evm instance.");
+        tracing::debug!("Created Ethereum instance.");
 
-        let mut evm_accounts = HashMap::new();
+        let mut ethereum_accounts = HashMap::new();
 
-        let chain_id = evm.chain_id().0.as_u64();
+        let chain_id = ethereum.chain_id().0.as_u64();
         let ucs01_relay = ucs01relay::UCS01Relay::new(
-            zerg_config.evm_contract.clone(),
-            evm.provider.clone().into(),
+            zerg_config.ethereum_contract.clone(),
+            ethereum.provider.clone().into(),
         );
         tracing::debug!("Created usc01 relay.");
         let denom = format!(
@@ -91,18 +91,20 @@ impl Context {
             .unwrap();
         tracing::debug!("Fetched denom address.");
 
-        for signer in zerg_config.clone().evm.signers.into_iter() {
+        for signer in zerg_config.clone().ethereum.signers.into_iter() {
             let signing_key: ecdsa::SigningKey = signer.value();
             let address = secret_key_to_address(&signing_key);
             let wallet = LocalWallet::new_with_signer(signing_key, address, chain_id);
-            evm_accounts.insert(format!("{:?}", address), wallet.clone());
+            ethereum_accounts.insert(format!("{:?}", address), wallet.clone());
 
-            let signer_middleware =
-                Arc::new(SignerMiddleware::new(evm.provider.clone(), wallet.clone()));
+            let signer_middleware = Arc::new(SignerMiddleware::new(
+                ethereum.provider.clone(),
+                wallet.clone(),
+            ));
 
             let erc_contract = erc20::ERC20::new(denom_address, signer_middleware.clone());
 
-            let ecr_contact_address = zerg_config.evm_contract.clone();
+            let ecr_contact_address = zerg_config.ethereum_contract.clone();
 
             tokio::spawn(async move {
                 if let Ok(res) = erc_contract
@@ -122,11 +124,11 @@ impl Context {
             is_rush,
             writer: Arc::new(Mutex::new(writer)),
             union,
-            evm,
-            evm_accounts,
+            ethereum,
+            ethereum_accounts,
             denom_address,
             union_txs: Arc::new(Mutex::new(HashMap::new())),
-            evm_txs: Arc::new(Mutex::new(HashMap::new())),
+            ethereum_txs: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -154,7 +156,7 @@ impl Context {
             }
             previous_height = height;
 
-            for pk in self.zerg_config.clone().evm.signers.iter() {
+            for pk in self.zerg_config.clone().ethereum.signers.iter() {
                 let signing_key: ecdsa::SigningKey = pk.clone().value();
                 let address = secret_key_to_address(&signing_key);
                 let receiver = format!("{:?}", address);
@@ -245,21 +247,23 @@ impl Context {
         let transfer =
             Ucs01TransferPacket::try_from(cosmwasm_std::Binary(e.packet_data_hex.clone())).unwrap();
 
-        let wallet =
-            if let Some(wallet) = self.evm_accounts.get(&format!("{:?}", transfer.receiver())) {
-                wallet
-            } else {
-                tracing::debug!("Evm: Recv Packet not from zerg.");
-                return;
-            };
+        let wallet = if let Some(wallet) = self
+            .ethereum_accounts
+            .get(&format!("{:?}", transfer.receiver()))
+        {
+            wallet
+        } else {
+            tracing::debug!("Ethereum: Recv Packet not from zerg.");
+            return;
+        };
 
         let signer_middleware = Arc::new(SignerMiddleware::new(
-            self.evm.provider.clone(),
+            self.ethereum.provider.clone(),
             wallet.clone(),
         ));
 
         let ucs01_relay = ucs01relay::UCS01Relay::new(
-            self.zerg_config.evm_contract.clone(),
+            self.zerg_config.ethereum_contract.clone(),
             signer_middleware.clone(),
         );
 
@@ -268,7 +272,13 @@ impl Context {
             let mut height = previous_height;
 
             while height == previous_height {
-                height = self.evm.provider.get_block_number().await.unwrap().as_u64();
+                height = self
+                    .ethereum
+                    .provider
+                    .get_block_number()
+                    .await
+                    .unwrap()
+                    .as_u64();
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
             previous_height = height;
@@ -306,11 +316,11 @@ impl Context {
                         })
                         .unwrap();
 
-                    let mut evm_txs = self.evm_txs.lock().await;
-                    evm_txs.insert(send.sequence, uuid);
+                    let mut ethereum_txs = self.ethereum_txs.lock().await;
+                    ethereum_txs.insert(send.sequence, uuid);
 
                     self.append_record(Event::create_send_event(
-                        self.evm.chain_id().to_string(),
+                        self.ethereum.chain_id().to_string(),
                         uuid,
                         wallet.address().to_string(),
                         Some(timestamp),
@@ -338,7 +348,7 @@ impl Context {
             union: [(self.union.chain_id(), self.union.clone())]
                 .into_iter()
                 .collect(),
-            evm_minimal: [(self.evm.chain_id(), self.evm.clone())]
+            ethereum_minimal: [(self.ethereum.chain_id(), self.ethereum.clone())]
                 .into_iter()
                 .collect(),
             ..Default::default()
@@ -357,8 +367,8 @@ impl Context {
                         }
                         IbcEvent::RecvPacket(e) => {
                             tracing::info!("Union: RecvPacket observed!");
-                            let evm_txs = self.evm_txs.lock().await;
-                            let uuid = match evm_txs.get(&e.packet_sequence.get()) {
+                            let ethereum_txs = self.ethereum_txs.lock().await;
+                            let uuid = match ethereum_txs.get(&e.packet_sequence.get()) {
                                 Some(uuid) => uuid.to_owned(),
                                 None => {
                                     tracing::warn!(
@@ -382,10 +392,10 @@ impl Context {
                         t: Data::IbcEvent(event),
                     })) => {
                         let block = self
-                            .evm
+                            .ethereum
                             .provider
                             .get_block(
-                                self.evm
+                                self.ethereum
                                     .provider
                                     .get_transaction(event.tx_hash.0)
                                     .await
@@ -401,16 +411,16 @@ impl Context {
 
                         match event.event {
                             IbcEvent::SendPacket(_e) => {
-                                tracing::info!("Evm: SendPacket observed!");
+                                tracing::info!("Ethereum: SendPacket observed!");
                             }
                             IbcEvent::RecvPacket(e) => {
-                                tracing::info!("Evm: RecvPacket observed!");
+                                tracing::info!("Ethereum: RecvPacket observed!");
                                 let union_txs = self.union_txs.lock().await;
                                 let uuid = match union_txs.get(&e.packet_sequence.get()) {
                                     Some(uuid) => uuid.to_owned(),
                                     None => {
                                         tracing::warn!(
-                                            "Evm: no matching uuid for packet sequence: {}.",
+                                            "Ethereum: no matching uuid for packet sequence: {}.",
                                             e.packet_sequence
                                         );
                                         uuid::Uuid::new_v4()
@@ -429,7 +439,7 @@ impl Context {
                                 }
                             }
                             _ => {
-                                tracing::debug!("Evm: Untracked event observed: {:?}", event)
+                                tracing::debug!("Ethereum: Untracked event observed: {:?}", event)
                             }
                         }
                     }

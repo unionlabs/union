@@ -1,5 +1,5 @@
 {
-  "evm": {
+  "ethereum": {
     "preset_base": "minimal",
     "ibc_handler_address": "0xeda338e4dc46038493b885327842fd3e301cab39",
     "signer": {

@@ -5,10 +5,10 @@ use unionlabs::hash::H160;
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub union: chain_utils::union::Config,
-    pub evm: chain_utils::evm::Config,
+    pub ethereum: chain_utils::ethereum::Config,
     // TODO: bech32 encoded address
     pub union_contract: String,
-    pub evm_contract: H160,
+    pub ethereum_contract: H160,
     pub channel: String,
     pub port: String,
     pub rush_blocks: u64,
