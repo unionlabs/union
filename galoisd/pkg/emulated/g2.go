@@ -517,8 +517,8 @@ func (e *EmulatedAPI) HashToField(message frontend.Variable, dst frontend.Variab
 // /!\ IMPORTANT /!\ : This is not a general implementation as the input/output length are fixed.
 // It is a tailor-made for BN254G2_XMD:MiMC-256_SVDW hash_to_curve implementation.
 //
-// WARNING: this functions uses a 256bit block MiMC (which is in fact only 254bit), use it at your own risk.
-// WARNING: we only support 254bit messages (usually MiMC hash) and domain separation tag (usually MiMC hash).
+// WARNING: this functions uses a 256bit block MiMC (effectively 254bit with modulus happening), use it at your own risk.
+// WARNING: we only support ~254bit messages and domain separation tag (both bn254 F_r elements).
 //
 // https://datatracker.ietf.org/doc/html/rfc9380#name-expand_message_xmd
 // https://datatracker.ietf.org/doc/html/rfc9380#name-utility-functions (I2OSP/O2ISP)
