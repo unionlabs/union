@@ -69,10 +69,31 @@ impl ::prost::Name for Misbehaviour {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LightHeader {
+    #[prost(int64, tag = "1")]
+    pub height: i64,
+    #[prost(message, optional, tag = "2")]
+    pub time:
+        ::core::option::Option<super::super::super::super::super::google::protobuf::Timestamp>,
+    #[prost(bytes = "vec", tag = "3")]
+    pub validators_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "4")]
+    pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "5")]
+    pub app_hash: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for LightHeader {
+    const NAME: &'static str = "LightHeader";
+    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
     #[prost(message, optional, tag = "1")]
-    pub signed_header:
-        ::core::option::Option<super::super::super::super::super::tendermint::types::SignedHeader>,
+    pub signed_header: ::core::option::Option<LightHeader>,
     #[prost(message, optional, tag = "2")]
     pub trusted_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,

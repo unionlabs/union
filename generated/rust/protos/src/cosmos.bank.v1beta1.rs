@@ -1,28 +1,4 @@
 // @generated
-/// SendAuthorization allows the grantee to spend up to spend_limit coins from
-/// the granter's account.
-///
-/// Since: cosmos-sdk 0.43
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SendAuthorization {
-    #[prost(message, repeated, tag = "1")]
-    pub spend_limit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-    /// allow_list specifies an optional list of addresses to whom the grantee can send tokens on behalf of the
-    /// granter. If omitted, any recipient is allowed.
-    ///
-    /// Since: cosmos-sdk 0.47
-    #[prost(string, repeated, tag = "2")]
-    pub allow_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
-impl ::prost::Name for SendAuthorization {
-    const NAME: &'static str = "SendAuthorization";
-    const PACKAGE: &'static str = "cosmos.bank.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.bank.v1beta1.{}", Self::NAME)
-    }
-}
 /// Params defines the parameters for the bank module.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -711,6 +687,30 @@ pub struct QuerySendEnabledResponse {
 }
 impl ::prost::Name for QuerySendEnabledResponse {
     const NAME: &'static str = "QuerySendEnabledResponse";
+    const PACKAGE: &'static str = "cosmos.bank.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.bank.v1beta1.{}", Self::NAME)
+    }
+}
+/// SendAuthorization allows the grantee to spend up to spend_limit coins from
+/// the granter's account.
+///
+/// Since: cosmos-sdk 0.43
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SendAuthorization {
+    #[prost(message, repeated, tag = "1")]
+    pub spend_limit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+    /// allow_list specifies an optional list of addresses to whom the grantee can send tokens on behalf of the
+    /// granter. If omitted, any recipient is allowed.
+    ///
+    /// Since: cosmos-sdk 0.47
+    #[prost(string, repeated, tag = "2")]
+    pub allow_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for SendAuthorization {
+    const NAME: &'static str = "SendAuthorization";
     const PACKAGE: &'static str = "cosmos.bank.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.bank.v1beta1.{}", Self::NAME)

@@ -833,6 +833,12 @@ pub mod union {
                 include!("union.galois.api.v2.rs");
                 // @@protoc_insertion_point(union.galois.api.v2)
             }
+            #[cfg(feature = "union+galois+api+v3")]
+            // @@protoc_insertion_point(attribute:union.galois.api.v3)
+            pub mod v3 {
+                include!("union.galois.api.v3.rs");
+                // @@protoc_insertion_point(union.galois.api.v3)
+            }
         }
     }
     pub mod ibc {
