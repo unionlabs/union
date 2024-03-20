@@ -40,7 +40,7 @@ macro_rules! try_from_relayer_msg {
 
                                             match t {
                                                 crate::Data::LightClientSpecific(
-                                                    LightClientSpecificData($d Enum::$d Variant(
+                                                    crate::data::LightClientSpecificData($d Enum::$d Variant(
                                                     t,
                                                 ))) => Ok(crate::id(chain_id, t)),
                                                 _ => Err(queue_msg::QueueMsg::Data(Into::<AnyLightClientIdentified<AnyData>>::into(crate::id(chain_id, t))))
@@ -59,7 +59,7 @@ macro_rules! try_from_relayer_msg {
                                 fn from(Identified { chain_id, t, __marker: _ }: Identified<$d Chain, Tr, $d Ty>) -> crate::AnyLightClientIdentified<crate::data::AnyData> {
                                     crate::AnyLightClientIdentified::from(crate::id(
                                         chain_id,
-                                        Data::LightClientSpecific(LightClientSpecificData($d Enum::$d Variant(
+                                        Data::LightClientSpecific(crate::data::LightClientSpecificData($d Enum::$d Variant(
                                             t,
                                         ))),
                                     ))
@@ -80,7 +80,7 @@ macro_rules! try_from_relayer_msg {
                                     } = value.try_into()?;
 
                                     match t {
-                                        Data::LightClientSpecific(LightClientSpecificData($d Enum::$d Variant(
+                                        Data::LightClientSpecific(crate::data::LightClientSpecificData($d Enum::$d Variant(
                                             t,
                                         ))) => Ok(crate::id(chain_id, t)),
                                         _ => Err(Into::<AnyLightClientIdentified<AnyData>>::into(crate::id(chain_id, t)))

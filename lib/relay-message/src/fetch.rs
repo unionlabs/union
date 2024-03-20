@@ -8,7 +8,6 @@ use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
 use queue_msg::{data, fetch, msg_struct, HandleFetch, QueueError, QueueMsg, QueueMsgTypes};
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     hash::H256,
     id::{ChannelId, PortId},
@@ -29,6 +28,7 @@ use crate::{
 #[apply(any_enum)]
 /// Fetch some data that will likely be used in a [`QueueMsg::Aggregate`].
 #[any = AnyFetch]
+#[specific = LightClientSpecificFetch]
 pub enum Fetch<Hc: ChainExt, Tr: ChainExt> {
     State(FetchState<Hc, Tr>),
     Proof(FetchProof<Hc, Tr>),

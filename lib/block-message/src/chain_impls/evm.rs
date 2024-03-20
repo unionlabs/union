@@ -19,10 +19,11 @@ use ethers::{contract::EthLogDecode, providers::Middleware, types::Filter};
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use futures::StreamExt;
+use macros::apply;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    conc, data, fetch, QueueMsg,
+    conc, data, fetch, msg_struct, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -46,9 +47,9 @@ use unionlabs::{
 };
 
 use crate::{
-    aggregate::{Aggregate, AnyAggregate, ChainSpecificAggregate},
-    data::{AnyData, ChainEvent, ChainSpecificData, Data},
-    fetch::{AnyFetch, ChainSpecificFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
+    aggregate::{Aggregate, AnyAggregate},
+    data::{AnyData, ChainEvent, Data},
+    fetch::{AnyFetch, DoFetch, DoFetchBlockRange, Fetch, FetchBlockRange},
     id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
@@ -60,7 +61,7 @@ impl<C: ChainSpec> ChainExt for Evm<C> {
 
 impl<C: ChainSpec> DoFetchBlockRange<Evm<C>> for Evm<C>
 where
-    AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, ChainSpecificFetch<Evm<C>>>>,
+    AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
 {
     fn fetch_block_range(
         c: &Evm<C>,
@@ -68,13 +69,10 @@ where
     ) -> QueueMsg<BlockPollingTypes> {
         fetch(id(
             c.chain_id(),
-            ChainSpecificFetch::<Evm<C>>(
-                FetchEvents {
-                    from_height: range.from_height,
-                    to_height: range.to_height,
-                }
-                .into(),
-            ),
+            Fetch::<Evm<C>>::specific(FetchEvents {
+                from_height: range.from_height,
+                to_height: range.to_height,
+            }),
         ))
     }
 }
@@ -92,13 +90,10 @@ where
                 to_height,
             }) => fetch(id(
                 c.chain_id(),
-                ChainSpecificFetch::<Evm<C>>(
-                    FetchBeaconBlockRange {
-                        from_slot: from_height.revision_height,
-                        to_slot: to_height.revision_height,
-                    }
-                    .into(),
-                ),
+                Fetch::<Evm<C>>::specific(FetchBeaconBlockRange {
+                    from_slot: from_height.revision_height,
+                    to_slot: to_height.revision_height,
+                }),
             )),
             EvmFetch::FetchGetLogs(FetchGetLogs { from_slot, to_slot }) => {
                 let event_height = Height {
@@ -257,9 +252,9 @@ where
                                     )
                                     .unwrap();
 
-                                data(Identified::<Evm<C>, _>::new(
+                                data(id(
                                     c.chain_id(),
-                                    ChainEvent {
+                                    ChainEvent::<Evm<C>> {
                                         client_type: unionlabs::ClientType::Cometbls,
                                         tx_hash,
                                         height: event_height,
@@ -300,9 +295,9 @@ where
                                     )
                                     .unwrap();
 
-                                data(Identified::<Evm<C>, _>::new(
+                                data(id(
                                     c.chain_id(),
-                                    ChainEvent {
+                                    ChainEvent::<Evm<C>> {
                                         client_type: unionlabs::ClientType::Cometbls,
                                         tx_hash,
                                         height: event_height,
@@ -359,10 +354,7 @@ where
                 if to_slot - from_slot == 1 {
                     fetch(id(
                         c.chain_id(),
-                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(FetchGetLogs {
-                            from_slot,
-                            to_slot,
-                        })),
+                        Fetch::<Evm<C>>::specific(FetchGetLogs { from_slot, to_slot }),
                     ))
                 } else {
                     // attempt to shrink from..to
@@ -391,21 +383,17 @@ where
                                 return conc([
                                     fetch(id(
                                         c.chain_id(),
-                                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(
-                                            FetchGetLogs {
-                                                from_slot,
-                                                to_slot: slot,
-                                            },
-                                        )),
+                                        Fetch::<Evm<C>>::specific(FetchGetLogs {
+                                            from_slot,
+                                            to_slot: slot,
+                                        }),
                                     )),
                                     fetch(id(
                                         c.chain_id(),
-                                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(
-                                            FetchBeaconBlockRange {
-                                                from_slot: slot,
-                                                to_slot,
-                                            },
-                                        )),
+                                        Fetch::<Evm<C>>::specific(FetchBeaconBlockRange {
+                                            from_slot: slot,
+                                            to_slot,
+                                        }),
                                     )),
                                 ]);
                             }
@@ -415,51 +403,42 @@ where
                     // if the range is not shrinkable (i.e. all blocks between `from` and `to` are missing, but `from` and `to` both exist), fetch logs between `from` and `to`
                     fetch(id(
                         c.chain_id(),
-                        ChainSpecificFetch::<Evm<C>>(EvmFetch::from(FetchGetLogs {
-                            from_slot,
-                            to_slot,
-                        })),
+                        Fetch::<Evm<C>>::specific(FetchGetLogs { from_slot, to_slot }),
                     ))
                 }
             }
             EvmFetch::FetchChannel(FetchChannel { height, path }) => data(id(
                 c.chain_id(),
-                ChainSpecificData::<Evm<C>>(
-                    ChannelData(
-                        c.ibc_state_read_at_execution_height(
-                            GetChannelCall {
-                                port_id: path.port_id.to_string(),
-                                channel_id: path.channel_id.to_string(),
-                            },
-                            c.execution_height(height).await,
-                        )
-                        .await
-                        .unwrap()
-                        .unwrap()
-                        .try_into()
-                        .unwrap(),
+                Data::<Evm<C>>::specific(ChannelData(
+                    c.ibc_state_read_at_execution_height(
+                        GetChannelCall {
+                            port_id: path.port_id.to_string(),
+                            channel_id: path.channel_id.to_string(),
+                        },
+                        c.execution_height(height).await,
                     )
-                    .into(),
-                ),
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
+                )),
             )),
             EvmFetch::FetchConnection(FetchConnection { height, path }) => data(id(
                 c.chain_id(),
-                ChainSpecificData::<Evm<C>>(
-                    ConnectionData(
-                        c.ibc_state_read_at_execution_height(
-                            GetConnectionCall {
-                                connection_id: path.connection_id.to_string(),
-                            },
-                            c.execution_height(height).await,
-                        )
-                        .await
-                        .unwrap()
-                        .unwrap()
-                        .try_into()
-                        .unwrap(),
+                Data::<Evm<C>>::specific(ConnectionData(
+                    c.ibc_state_read_at_execution_height(
+                        GetConnectionCall {
+                            connection_id: path.connection_id.to_string(),
+                        },
+                        c.execution_height(height).await,
                     )
-                    .into(),
-                ),
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
+                )),
             )),
         }
     }
@@ -474,7 +453,7 @@ fn with_channel<C: ChainSpec, T>(
     raw_event: T,
 ) -> QueueMsg<BlockPollingTypes>
 where
-    EventInfo<T>: Into<AggregateWithChannel>,
+    AggregateWithChannel: From<EventInfo<T>>,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Evm<C>, Aggregate<Evm<C>>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
@@ -482,28 +461,22 @@ where
     aggregate(
         [fetch(id(
             chain_id,
-            ChainSpecificFetch::<Evm<C>>(
-                FetchChannel {
-                    height: event_height,
-                    path: ChannelEndPath {
-                        port_id: port_id.parse().unwrap(),
-                        channel_id: channel_id.parse().unwrap(),
-                    },
-                }
-                .into(),
-            ),
+            Fetch::<Evm<C>>::specific(FetchChannel {
+                height: event_height,
+                path: ChannelEndPath {
+                    port_id: port_id.parse().unwrap(),
+                    channel_id: channel_id.parse().unwrap(),
+                },
+            }),
         ))],
         [],
-        Identified::<Evm<C>, _>::new(
+        id(
             chain_id,
-            ChainSpecificAggregate(EvmAggregate::AggregateWithChannel(
-                EventInfo {
-                    height: event_height,
-                    tx_hash,
-                    raw_event,
-                }
-                .into(),
-            )),
+            Aggregate::<Evm<C>>::specific(AggregateWithChannel::from(EventInfo {
+                height: event_height,
+                tx_hash,
+                raw_event,
+            })),
         ),
     )
 }
@@ -517,7 +490,7 @@ fn with_connection<C, T>(
 ) -> QueueMsg<BlockPollingTypes>
 where
     C: ChainSpec,
-    EventInfo<T>: Into<AggregateWithConnection>,
+    AggregateWithConnection: From<EventInfo<T>>,
 
     AnyChainIdentified<AnyAggregate>: From<Identified<Evm<C>, Aggregate<Evm<C>>>>,
     AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
@@ -525,27 +498,21 @@ where
     aggregate(
         [fetch(id(
             chain_id,
-            ChainSpecificFetch::<Evm<C>>(
-                FetchConnection {
-                    height: event_height,
-                    path: ConnectionPath {
-                        connection_id: connection_id.parse().unwrap(),
-                    },
-                }
-                .into(),
-            ),
+            Fetch::<Evm<C>>::specific(FetchConnection {
+                height: event_height,
+                path: ConnectionPath {
+                    connection_id: connection_id.parse().unwrap(),
+                },
+            }),
         ))],
         [],
-        Identified::<Evm<C>, _>::new(
+        id(
             chain_id,
-            ChainSpecificAggregate(EvmAggregate::AggregateWithConnection(
-                EventInfo {
-                    height: event_height,
-                    tx_hash,
-                    raw_event,
-                }
-                .into(),
-            )),
+            Aggregate::<Evm<C>>::specific(AggregateWithConnection::from(EventInfo {
+                height: event_height,
+                tx_hash,
+                raw_event,
+            })),
         ),
     )
 }
@@ -585,29 +552,19 @@ pub enum EvmFetch<C: ChainSpec> {
     FetchConnection(FetchConnection),
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(
-    feature = "arbitrary",
-    derive(arbitrary::Arbitrary),
-    arbitrary(bound = "C: ChainSpec")
-)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct FetchEvents<C: ChainSpec> {
     pub from_height: HeightOf<Evm<C>>,
     pub to_height: HeightOf<Evm<C>>,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct FetchGetLogs {
     pub from_slot: u64,
     pub to_slot: u64,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(deny_unknown_fields)]
+#[apply(msg_struct)]
 /// NOTE: This isn't just fetching one block because sometimes beacon slots are missed. We need to be able to fetch a range of slots to account for this.
 /// The range is `[from_slot..to_slot)`, so to fetch a single block `N`, the range would be `N..N+1`.
 pub struct FetchBeaconBlockRange {
@@ -615,24 +572,26 @@ pub struct FetchBeaconBlockRange {
     pub to_slot: u64,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct FetchChannel {
     pub height: Height,
     pub path: ChannelEndPath,
 }
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct FetchConnection {
     pub height: Height,
     pub path: ConnectionPath,
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound,
+    CloneNoBound,
+    PartialEqNoBound,
+    Serialize,
+    Deserialize,
+    derive_more::Display,
+    Enumorph,
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(
@@ -662,10 +621,10 @@ where
     ) -> QueueMsg<BlockPollingTypes> {
         match t {
             EvmAggregate::AggregateWithChannel(msg) => {
-                do_aggregate(Identified::<Evm<C>, _>::new(chain_id, msg), data)
+                do_aggregate(id::<Evm<C>, _>(chain_id, msg), data)
             }
             EvmAggregate::AggregateWithConnection(msg) => {
-                do_aggregate(Identified::<Evm<C>, _>::new(chain_id, msg), data)
+                do_aggregate(id::<Evm<C>, _>(chain_id, msg), data)
             }
         }
     }
@@ -867,7 +826,7 @@ where
             },
         };
 
-        data(Identified::<Evm<C>, _>::new(chain_id, event))
+        data(id::<Evm<C>, _>(chain_id, event))
     }
 }
 
@@ -962,7 +921,7 @@ where
             },
         };
 
-        data(Identified::<Evm<C>, _>::new(chain_id, event))
+        data(id::<Evm<C>, _>(chain_id, event))
     }
 }
 
@@ -1005,9 +964,7 @@ const _: () = {
     }
 };
 
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[serde(deny_unknown_fields)]
+#[apply(msg_struct)]
 pub struct ChannelData(pub Channel);
 
 #[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize)]

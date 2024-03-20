@@ -2,13 +2,13 @@ use std::fmt::Display;
 
 use macros::apply;
 use queue_msg::{data, msg_struct, HandleData, QueueError, QueueMsg, QueueMsgTypes};
-use serde::{Deserialize, Serialize};
 use unionlabs::{events::IbcEvent, hash::H256, ClientType};
 
 use crate::{any_enum, AnyChainIdentified, BlockPollingTypes, ChainExt};
 
 #[apply(any_enum)]
 #[any = AnyData]
+#[specific = ChainSpecificData]
 pub enum Data<C: ChainExt> {
     IbcEvent(ChainEvent<C>),
     LatestHeight(LatestHeight<C>),

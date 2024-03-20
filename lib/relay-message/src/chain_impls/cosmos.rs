@@ -12,48 +12,39 @@ use protos::ibc::core::connection::v1::MsgConnectionOpenInit;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
-    data, fetch, msg, msg_struct, wait, QueueMsg,
+    fetch, msg, msg_struct, wait, QueueMsg,
 };
 use serde::{Deserialize, Serialize};
-use tendermint_rpc::Client;
 use unionlabs::{
-    bounded::BoundedI64,
     encoding::{Decode, Encode, Proto},
-    google::protobuf::{
-        any::{mk_any, Any},
-        timestamp::Timestamp,
-    },
-    hash::{H160, H256},
+    google::protobuf::any::{mk_any, Any},
+    hash::H160,
     ibc::{
         core::{
-            client::{
-                height::{Height, IsHeight},
-                msg_update_client::MsgUpdateClient,
-            },
+            client::{height::IsHeight, msg_update_client::MsgUpdateClient},
             commitment::merkle_proof::MerkleProof,
         },
         lightclients::tendermint,
     },
     proof::ClientStatePath,
-    tendermint::{
-        crypto::public_key::PublicKey,
-        types::{
-            block_id::BlockId, commit::Commit, commit_sig::CommitSig,
-            part_set_header::PartSetHeader, signed_header::SignedHeader, validator::Validator,
-        },
-    },
+    tendermint::types::validator::Validator,
     traits::{Chain, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
     TypeUrl,
 };
 
 use crate::{
-    aggregate::{Aggregate, AnyAggregate, LightClientSpecificAggregate},
+    aggregate::{Aggregate, AnyAggregate},
     chain_impls::cosmos_sdk::{
-        fetch::{AbciQueryType, FetchAbciQuery},
+        data::{TrustedCommit, TrustedValidators, UntrustedCommit, UntrustedValidators},
+        fetch::{
+            fetch_trusted_commit, fetch_trusted_validators, fetch_untrusted_commit,
+            fetch_untrusted_validators, AbciQueryType, FetchAbciQuery, FetchTrustedCommit,
+            FetchTrustedValidators, FetchUntrustedCommit, FetchUntrustedValidators,
+        },
         fetch_abci_query,
     },
-    data::{AnyData, Data, IbcState, LightClientSpecificData},
-    fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders, LightClientSpecificFetch},
+    data::{AnyData, Data, IbcState},
+    fetch::{AnyFetch, DoFetch, Fetch, FetchUpdateHeaders},
     id, identified,
     msg::{
         AnyMsg, Msg, MsgConnectionOpenAckData, MsgConnectionOpenInitData, MsgConnectionOpenTryData,
@@ -67,7 +58,7 @@ use crate::{
 };
 
 impl ChainExt for Cosmos {
-    type Data<Tr: ChainExt> = CosmosDataMsg<Tr>;
+    type Data<Tr: ChainExt> = CosmosDataMsg<Self, Tr>;
     type Fetch<Tr: ChainExt> = CosmosFetch<Cosmos, Tr>;
     type Aggregate<Tr: ChainExt> = CosmosAggregateMsg<Cosmos, Tr>;
 
@@ -77,7 +68,7 @@ impl ChainExt for Cosmos {
 }
 
 impl ChainExt for Wasm<Cosmos> {
-    type Data<Tr: ChainExt> = CosmosDataMsg<Tr>;
+    type Data<Tr: ChainExt> = CosmosDataMsg<Self, Tr>;
     type Fetch<Tr: ChainExt> = CosmosFetch<Wasm<Cosmos>, Tr>;
     type Aggregate<Tr: ChainExt> = CosmosAggregateMsg<Wasm<Cosmos>, Tr>;
 
@@ -270,11 +261,11 @@ where
             )),
             fetch(id::<Hc, Tr, _>(
                 hc.chain_id(),
-                LightClientSpecificFetch(CosmosFetch::AbciQuery(FetchAbciQuery {
+                Fetch::specific(FetchAbciQuery {
                     path,
                     height: at,
                     ty: AbciQueryType::State,
-                })),
+                }),
             )),
         ])
     }
@@ -319,12 +310,11 @@ where
             )),
             fetch(id::<Hc, Tr, _>(
                 hc.chain_id(),
-                LightClientSpecificFetch(CosmosFetch::AbciQuery(FetchAbciQuery::<Hc, Tr> {
+                Fetch::specific(FetchAbciQuery::<Hc, Tr> {
                     path,
                     height: at,
                     ty: AbciQueryType::Proof,
-                }))
-                .into(),
+                }),
             )),
         ])
     }
@@ -356,47 +346,37 @@ where
                 [
                     fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
-                        LightClientSpecificFetch(CosmosFetch::FetchTrustedCommit(
-                            FetchTrustedCommit {
-                                height: Into::<Height>::into(update_info.update_from).increment(),
-                            },
-                        ))
-                        .into(),
+                        Fetch::specific(FetchTrustedCommit {
+                            height: update_info.update_from.increment(),
+                            __marker: PhantomData,
+                        }),
                     )),
                     fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
-                        LightClientSpecificFetch(CosmosFetch::FetchUntrustedCommit(
-                            FetchUntrustedCommit {
-                                height: update_info.update_to.into(),
-                            },
-                        ))
-                        .into(),
+                        Fetch::specific(FetchUntrustedCommit {
+                            height: update_info.update_to,
+                            __marker: PhantomData,
+                        }),
                     )),
                     fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
-                        LightClientSpecificFetch(CosmosFetch::FetchTrustedValidators(
-                            FetchTrustedValidators {
-                                height: Into::<Height>::into(update_info.update_from).increment(),
-                            },
-                        ))
-                        .into(),
+                        Fetch::specific(FetchTrustedValidators {
+                            height: update_info.update_from.increment(),
+                            __marker: PhantomData,
+                        }),
                     )),
                     fetch(id::<Hc, Tr, _>(
                         hc.chain_id(),
-                        LightClientSpecificFetch(CosmosFetch::FetchUntrustedValidators(
-                            FetchUntrustedValidators {
-                                height: update_info.update_to.into(),
-                            },
-                        ))
-                        .into(),
+                        Fetch::specific(FetchUntrustedValidators {
+                            height: update_info.update_to,
+                            __marker: PhantomData,
+                        }),
                     )),
                 ],
                 [],
                 id(
                     hc.chain_id(),
-                    LightClientSpecificAggregate(CosmosAggregateMsg::AggregateHeader(
-                        AggregateHeader { req: update_info },
-                    )),
+                    Aggregate::specific(AggregateHeader { req: update_info }),
                 ),
             ),
         ])
@@ -404,7 +384,13 @@ where
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound,
+    CloneNoBound,
+    PartialEqNoBound,
+    Serialize,
+    Deserialize,
+    derive_more::Display,
+    enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -418,47 +404,25 @@ where
     derive(arbitrary::Arbitrary),
     arbitrary(bound = "Tr: ChainExt")
 )]
-pub enum CosmosDataMsg<Tr: ChainExt> {
-    #[display(fmt = "FetchUntrustedCommit")]
-    TrustedCommit(TrustedCommit<Tr>),
+pub enum CosmosDataMsg<Hc: ChainExt, Tr: ChainExt> {
+    #[display(fmt = "TrustedCommit")]
+    TrustedCommit(TrustedCommit<Hc, Tr>),
     #[display(fmt = "UntrustedCommit")]
-    UntrustedCommit(UntrustedCommit<Tr>),
+    UntrustedCommit(UntrustedCommit<Hc, Tr>),
     #[display(fmt = "TrustedValidators")]
-    TrustedValidators(TrustedValidators<Tr>),
+    TrustedValidators(TrustedValidators<Hc, Tr>),
     #[display(fmt = "UntrustedValidators")]
-    UntrustedValidators(UntrustedValidators<Tr>),
-}
-
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct UntrustedCommit<Tr: ChainExt> {
-    pub height: Height,
-    pub signed_header: SignedHeader,
-}
-
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct TrustedCommit<Tr: ChainExt> {
-    pub height: Height,
-    pub signed_header: SignedHeader,
-}
-
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct TrustedValidators<Tr: ChainExt> {
-    pub height: Height,
-    pub validators: Vec<Validator>,
-}
-
-#[apply(msg_struct)]
-#[cover(Tr)]
-pub struct UntrustedValidators<Tr: ChainExt> {
-    pub height: Height,
-    pub validators: Vec<Validator>,
+    UntrustedValidators(UntrustedValidators<Hc, Tr>),
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound,
+    CloneNoBound,
+    PartialEqNoBound,
+    Serialize,
+    Deserialize,
+    derive_more::Display,
+    enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -473,25 +437,24 @@ pub struct UntrustedValidators<Tr: ChainExt> {
     arbitrary(bound = "Hc: ChainExt, Tr: ChainExt")
 )]
 pub enum CosmosFetch<Hc: ChainExt, Tr: ChainExt> {
+    #[display(fmt = "FetchTrustedCommit")]
+    FetchTrustedCommit(FetchTrustedCommit<Hc, Tr>),
     #[display(fmt = "FetchUntrustedCommit")]
-    FetchTrustedCommit(FetchTrustedCommit),
-    #[display(fmt = "FetchUntrustedCommit")]
-    FetchUntrustedCommit(FetchUntrustedCommit),
+    FetchUntrustedCommit(FetchUntrustedCommit<Hc, Tr>),
     #[display(fmt = "FetchTrustedValidators")]
-    FetchTrustedValidators(FetchTrustedValidators),
+    FetchTrustedValidators(FetchTrustedValidators<Hc, Tr>),
     #[display(fmt = "FetchUntrustedValidators")]
-    FetchUntrustedValidators(FetchUntrustedValidators),
+    FetchUntrustedValidators(FetchUntrustedValidators<Hc, Tr>),
     #[display(fmt = "FetchAbciQuery")]
     AbciQuery(FetchAbciQuery<Hc, Tr>),
 }
 
 impl<Hc, Tr> DoFetch<Hc> for CosmosFetch<Hc, Tr>
 where
-    Hc: Wraps<Cosmos>
-        + CosmosSdkChain
+    Hc: CosmosSdkChain
         + ChainExt<
             StateProof = MerkleProof,
-            Data<Tr> = CosmosDataMsg<Tr>,
+            Data<Tr> = CosmosDataMsg<Hc, Tr>,
             Fetch<Tr> = CosmosFetch<Hc, Tr>,
         >,
     Tr: ChainExt,
@@ -507,233 +470,37 @@ where
 {
     async fn do_fetch(hc: &Hc, msg: Self) -> QueueMsg<RelayerMsgTypes> {
         match msg {
-            CosmosFetch::FetchTrustedCommit(FetchTrustedCommit { height }) => {
-                let commit = hc
-                    .tm_client()
-                    .commit(
-                        TryInto::<::tendermint::block::Height>::try_into(height.revision_height)
-                            .unwrap(),
-                    )
-                    .await
-                    .unwrap();
-
-                let signed_header = tendermint_commit_to_signed_header(commit);
-
-                let msg = CosmosDataMsg::TrustedCommit(TrustedCommit {
-                    height,
-                    // REVIEW: Ensure `commit.canonical`?
-                    signed_header,
-                    __marker: PhantomData,
-                });
-
-                data(id::<Hc, Tr, _>(hc.chain_id(), LightClientSpecificData(msg)))
-            }
-            CosmosFetch::FetchUntrustedCommit(FetchUntrustedCommit { height }) => {
-                let commit = hc
-                    .tm_client()
-                    .commit(
-                        TryInto::<::tendermint::block::Height>::try_into(height.revision_height)
-                            .unwrap(),
-                    )
-                    .await
-                    .unwrap();
-
-                let signed_header = tendermint_commit_to_signed_header(commit);
-
-                let msg = CosmosDataMsg::UntrustedCommit(UntrustedCommit {
-                    height,
-                    // REVIEW: Ensure `commit.canonical`?
-                    signed_header,
-                    __marker: PhantomData,
-                });
-
-                data(id::<Hc, Tr, _>(hc.chain_id(), LightClientSpecificData(msg)))
-            }
-            CosmosFetch::FetchTrustedValidators(FetchTrustedValidators { height }) => {
-                let validators = hc
-                    .tm_client()
-                    .validators(
-                        TryInto::<::tendermint::block::Height>::try_into(height.revision_height)
-                            .unwrap(),
-                        tendermint_rpc::Paging::All,
-                    )
-                    .await
-                    .unwrap()
-                    .validators
-                    .into_iter()
-                    .map(tendermint_validator_info_to_validator)
-                    .collect();
-
-                let msg = CosmosDataMsg::TrustedValidators(TrustedValidators {
-                    height,
-                    validators,
-                    __marker: PhantomData,
-                });
-
-                data(id::<Hc, Tr, _>(hc.chain_id(), LightClientSpecificData(msg)))
-            }
-            CosmosFetch::FetchUntrustedValidators(FetchUntrustedValidators { height }) => {
-                let validators = hc
-                    .tm_client()
-                    .validators(
-                        TryInto::<::tendermint::block::Height>::try_into(height.revision_height)
-                            .unwrap(),
-                        tendermint_rpc::Paging::All,
-                    )
-                    .await
-                    .unwrap()
-                    .validators
-                    .into_iter()
-                    .map(tendermint_validator_info_to_validator)
-                    .collect();
-
-                let msg = CosmosDataMsg::UntrustedValidators(UntrustedValidators {
-                    height,
-                    validators,
-                    __marker: PhantomData,
-                });
-
-                data(id::<Hc, Tr, _>(hc.chain_id(), LightClientSpecificData(msg)))
-            }
-            CosmosFetch::AbciQuery(FetchAbciQuery { path, height, ty }) => {
+            Self::FetchTrustedCommit(FetchTrustedCommit {
+                height,
+                __marker: _,
+            }) => fetch_trusted_commit(hc, height).await,
+            Self::FetchUntrustedCommit(FetchUntrustedCommit {
+                height,
+                __marker: _,
+            }) => fetch_untrusted_commit(hc, height).await,
+            Self::FetchTrustedValidators(FetchTrustedValidators {
+                height,
+                __marker: _,
+            }) => fetch_trusted_validators(hc, height).await,
+            Self::FetchUntrustedValidators(FetchUntrustedValidators {
+                height,
+                __marker: _,
+            }) => fetch_untrusted_validators(hc, height).await,
+            Self::AbciQuery(FetchAbciQuery { path, height, ty }) => {
                 fetch_abci_query::<Hc, Tr>(hc, path, height, ty).await
             }
         }
     }
 }
 
-fn tendermint_commit_to_signed_header(
-    commit: tendermint_rpc::endpoint::commit::Response,
-) -> SignedHeader {
-    let header_timestamp =
-        tendermint_proto::google::protobuf::Timestamp::from(commit.signed_header.header.time);
-
-    SignedHeader {
-        header: unionlabs::tendermint::types::header::Header {
-            version: unionlabs::tendermint::version::consensus::Consensus {
-                block: commit.signed_header.header.version.block,
-                app: commit.signed_header.header.version.app,
-            },
-            chain_id: commit.signed_header.header.chain_id.into(),
-            height: tendermint_height_to_bounded_i64(commit.signed_header.header.height),
-            time: Timestamp {
-                seconds: header_timestamp.seconds.try_into().unwrap(),
-                nanos: header_timestamp.nanos.try_into().unwrap(),
-            },
-            last_block_id: BlockId {
-                hash: tendermint_hash_to_h256(
-                    commit.signed_header.header.last_block_id.unwrap().hash,
-                ),
-                part_set_header: PartSetHeader {
-                    total: commit
-                        .signed_header
-                        .header
-                        .last_block_id
-                        .unwrap()
-                        .part_set_header
-                        .total,
-                    hash: tendermint_hash_to_h256(
-                        commit
-                            .signed_header
-                            .header
-                            .last_block_id
-                            .unwrap()
-                            .part_set_header
-                            .hash,
-                    ),
-                },
-            },
-            last_commit_hash: tendermint_hash_to_h256(
-                commit.signed_header.header.last_commit_hash.unwrap(),
-            ),
-            data_hash: tendermint_hash_to_h256(commit.signed_header.header.data_hash.unwrap()),
-            validators_hash: tendermint_hash_to_h256(commit.signed_header.header.validators_hash),
-            next_validators_hash: tendermint_hash_to_h256(
-                commit.signed_header.header.next_validators_hash,
-            ),
-            consensus_hash: tendermint_hash_to_h256(commit.signed_header.header.consensus_hash),
-            app_hash: commit
-                .signed_header
-                .header
-                .app_hash
-                .as_bytes()
-                .try_into()
-                .unwrap(),
-            last_results_hash: tendermint_hash_to_h256(
-                commit.signed_header.header.last_results_hash.unwrap(),
-            ),
-            evidence_hash: tendermint_hash_to_h256(
-                commit.signed_header.header.evidence_hash.unwrap(),
-            ),
-            proposer_address: commit
-                .signed_header
-                .header
-                .proposer_address
-                .as_bytes()
-                .try_into()
-                .expect("value is a [u8; 20] internally, this should not fail; qed;"),
-        },
-        commit: Commit {
-            height: tendermint_height_to_bounded_i64(commit.signed_header.commit.height),
-            round: i32::from(commit.signed_header.commit.round)
-                .try_into()
-                .unwrap(),
-            block_id: BlockId {
-                hash: tendermint_hash_to_h256(commit.signed_header.commit.block_id.hash),
-                part_set_header: PartSetHeader {
-                    total: commit.signed_header.commit.block_id.part_set_header.total,
-                    hash: tendermint_hash_to_h256(
-                        commit.signed_header.commit.block_id.part_set_header.hash,
-                    ),
-                },
-            },
-            signatures: commit
-                .signed_header
-                .commit
-                .signatures
-                .into_iter()
-                .map(|sig| match sig {
-                    ::tendermint::block::CommitSig::BlockIdFlagAbsent => CommitSig::Absent,
-                    ::tendermint::block::CommitSig::BlockIdFlagCommit {
-                        validator_address,
-                        timestamp,
-                        signature,
-                    } => CommitSig::Commit {
-                        validator_address: Vec::from(validator_address).try_into().unwrap(),
-                        timestamp: {
-                            let ts = tendermint_proto::google::protobuf::Timestamp::from(timestamp);
-
-                            Timestamp {
-                                seconds: ts.seconds.try_into().unwrap(),
-                                nanos: ts.nanos.try_into().unwrap(),
-                            }
-                        },
-                        signature: signature.unwrap().into_bytes().try_into().unwrap(),
-                    },
-                    ::tendermint::block::CommitSig::BlockIdFlagNil {
-                        validator_address,
-                        timestamp,
-                        signature,
-                    } => CommitSig::Nil {
-                        validator_address: Vec::from(validator_address).try_into().unwrap(),
-                        timestamp: {
-                            let ts = tendermint_proto::google::protobuf::Timestamp::from(timestamp);
-
-                            Timestamp {
-                                seconds: ts.seconds.try_into().unwrap(),
-                                nanos: ts.nanos.try_into().unwrap(),
-                            }
-                        },
-                        signature: signature.unwrap().into_bytes().try_into().unwrap(),
-                    },
-                })
-                .collect(),
-        },
-    }
-}
-
 #[derive(
-    DebugNoBound, CloneNoBound, PartialEqNoBound, Serialize, Deserialize, derive_more::Display,
+    DebugNoBound,
+    CloneNoBound,
+    PartialEqNoBound,
+    Serialize,
+    Deserialize,
+    derive_more::Display,
+    enumorph::Enumorph,
 )]
 #[serde(
     bound(serialize = "", deserialize = ""),
@@ -757,10 +524,10 @@ where
     Tr: ChainExt,
     Hc: ChainExt,
 
-    Identified<Hc, Tr, TrustedCommit<Tr>>: IsAggregateData,
-    Identified<Hc, Tr, UntrustedCommit<Tr>>: IsAggregateData,
-    Identified<Hc, Tr, TrustedValidators<Tr>>: IsAggregateData,
-    Identified<Hc, Tr, UntrustedValidators<Tr>>: IsAggregateData,
+    identified!(TrustedCommit<Hc, Tr>): IsAggregateData,
+    identified!(UntrustedCommit<Hc, Tr>): IsAggregateData,
+    identified!(TrustedValidators<Hc, Tr>): IsAggregateData,
+    identified!(UntrustedValidators<Hc, Tr>): IsAggregateData,
 
     Identified<Hc, Tr, AggregateHeader<Hc, Tr>>: UseAggregate<RelayerMsgTypes>,
 
@@ -787,10 +554,10 @@ const _: () = {
         chain = Cosmos,
         generics = (Tr: ChainExt),
         msgs = CosmosDataMsg(
-            TrustedCommit(TrustedCommit<Tr>),
-            UntrustedCommit(UntrustedCommit<Tr>),
-            TrustedValidators(TrustedValidators<Tr>),
-            UntrustedValidators(UntrustedValidators<Tr>),
+            TrustedCommit(TrustedCommit<Cosmos, Tr>),
+            UntrustedCommit(UntrustedCommit<Cosmos, Tr>),
+            TrustedValidators(TrustedValidators<Cosmos, Tr>),
+            UntrustedValidators(UntrustedValidators<Cosmos, Tr>),
         ),
     }
 };
@@ -800,50 +567,17 @@ const _: () = {
         chain = Wasm<Cosmos>,
         generics = (Tr: ChainExt),
         msgs = CosmosDataMsg(
-            TrustedCommit(TrustedCommit<Tr>),
-            UntrustedCommit(UntrustedCommit<Tr>),
-            TrustedValidators(TrustedValidators<Tr>),
-            UntrustedValidators(UntrustedValidators<Tr>),
+            TrustedCommit(TrustedCommit<Wasm<Cosmos>, Tr>),
+            UntrustedCommit(UntrustedCommit<Wasm<Cosmos>, Tr>),
+            TrustedValidators(TrustedValidators<Wasm<Cosmos>, Tr>),
+            UntrustedValidators(UntrustedValidators<Wasm<Cosmos>, Tr>),
         ),
     }
 };
 
 #[apply(msg_struct)]
-pub struct FetchTrustedCommit {
-    pub height: Height,
-}
-
-#[apply(msg_struct)]
-pub struct FetchUntrustedCommit {
-    pub height: Height,
-}
-
-#[apply(msg_struct)]
-pub struct FetchTrustedValidators {
-    pub height: Height,
-}
-
-#[apply(msg_struct)]
-pub struct FetchUntrustedValidators {
-    pub height: Height,
-}
-
-#[apply(msg_struct)]
 pub struct AggregateHeader<Hc: ChainExt, Tr: ChainExt> {
     pub req: FetchUpdateHeaders<Hc, Tr>,
-}
-
-fn tendermint_hash_to_h256(hash: ::tendermint::Hash) -> H256 {
-    match hash {
-        ::tendermint::Hash::Sha256(hash) => hash.into(),
-        ::tendermint::Hash::None => panic!("empty hash???"),
-    }
-}
-
-fn tendermint_height_to_bounded_i64(
-    height: ::tendermint::block::Height,
-) -> BoundedI64<0, { i64::MAX }> {
-    i64::from(height).try_into().unwrap()
 }
 
 impl<Hc, Tr> UseAggregate<RelayerMsgTypes> for Identified<Hc, Tr, AggregateHeader<Hc, Tr>>
@@ -851,18 +585,18 @@ where
     Hc: ChainExt<Header = <Cosmos as Chain>::Header>,
     Tr: ChainExt,
 
-    Identified<Hc, Tr, TrustedCommit<Tr>>: IsAggregateData,
-    Identified<Hc, Tr, UntrustedCommit<Tr>>: IsAggregateData,
-    Identified<Hc, Tr, TrustedValidators<Tr>>: IsAggregateData,
-    Identified<Hc, Tr, UntrustedValidators<Tr>>: IsAggregateData,
+    identified!(TrustedCommit<Hc, Tr>): IsAggregateData,
+    identified!(UntrustedCommit<Hc, Tr>): IsAggregateData,
+    identified!(TrustedValidators<Hc, Tr>): IsAggregateData,
+    identified!(UntrustedValidators<Hc, Tr>): IsAggregateData,
 
     AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Hc>)>,
 {
     type AggregatedData = HList![
-        Identified<Hc, Tr, TrustedCommit<Tr>>,
-        Identified<Hc, Tr, UntrustedCommit<Tr>>,
-        Identified<Hc, Tr, TrustedValidators<Tr>>,
-        Identified<Hc, Tr, UntrustedValidators<Tr>>,
+        identified!(TrustedCommit<Hc, Tr>),
+        identified!(UntrustedCommit<Hc, Tr>),
+        identified!(TrustedValidators<Hc, Tr>),
+        identified!(UntrustedValidators<Hc, Tr>),
     ];
 
     fn aggregate(
@@ -956,22 +690,5 @@ fn mk_valset(
         validators,
         proposer,
         total_voting_power,
-    }
-}
-
-fn tendermint_validator_info_to_validator(val: ::tendermint::validator::Info) -> Validator {
-    Validator {
-        address: val
-            .address
-            .as_bytes()
-            .try_into()
-            .expect("value is 20 bytes internally; should not fail; qed"),
-        pub_key: match val.pub_key {
-            ::tendermint::PublicKey::Ed25519(key) => PublicKey::Ed25519(key.as_bytes().into()),
-            ::tendermint::PublicKey::Bn254(key) => PublicKey::Bn254(key.to_vec()),
-            _ => todo!(),
-        },
-        voting_power: BoundedI64::new(val.power.value().try_into().unwrap()).unwrap(),
-        proposer_priority: val.proposer_priority.value(),
     }
 }

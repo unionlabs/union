@@ -3,7 +3,6 @@ use std::fmt::Display;
 use chain_utils::{Chains, GetChain};
 use macros::apply;
 use queue_msg::{data, defer, msg_struct, now, seq, wait, HandleWait, QueueError, QueueMsg};
-use serde::{Deserialize, Serialize};
 use unionlabs::{ibc::core::client::height::IsHeight, traits::HeightOf};
 
 use crate::{

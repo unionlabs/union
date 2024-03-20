@@ -41,7 +41,7 @@ macro_rules! try_from_block_poll_msg {
 
                                             match t {
                                                 crate::data::Data::ChainSpecific(
-                                                    ChainSpecificData($d Enum::$d Variant(
+                                                    crate::data::ChainSpecificData($d Enum::$d Variant(
                                                     t,
                                                 ))) => Ok(Identified::new(chain_id, t)),
                                                 _ => Err(QueueMsg::Data(Into::<AnyChainIdentified<AnyData>>::into(Identified::<$d Chain, _>::new(chain_id, t))))
@@ -61,7 +61,7 @@ macro_rules! try_from_block_poll_msg {
                                 fn from(Identified { chain_id, t, }: Identified<$d Chain, $d Ty>) -> crate::AnyChainIdentified<crate::data::AnyData> {
                                     crate::AnyChainIdentified::<crate::data::AnyData>::from(Identified::<$d Chain, _>::new(
                                         chain_id,
-                                        Data::ChainSpecific(ChainSpecificData($d Enum::$d Variant(
+                                        Data::ChainSpecific(crate::data::ChainSpecificData($d Enum::$d Variant(
                                             t,
                                         ))),
                                     ))
@@ -82,7 +82,7 @@ macro_rules! try_from_block_poll_msg {
                                     } = value.try_into()?;
 
                                     match t {
-                                        Data::ChainSpecific(ChainSpecificData($d Enum::$d Variant(
+                                        Data::ChainSpecific(crate::data::ChainSpecificData($d Enum::$d Variant(
                                             t,
                                         ))) => Ok(Identified::new(chain_id, t)),
                                         _ => Err(Into::<AnyChainIdentified<AnyData>>::into(Identified::new(chain_id, t)))

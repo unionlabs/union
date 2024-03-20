@@ -6,7 +6,6 @@ use macros::apply;
 use queue_msg::{
     aggregate, conc, fetch, msg_struct, wait, HandleFetch, QueueError, QueueMsg, QueueMsgTypes,
 };
-use serde::{Deserialize, Serialize};
 use unionlabs::ibc::core::client::height::IsHeight;
 
 use crate::{
@@ -18,6 +17,7 @@ use crate::{
 
 #[apply(any_enum)]
 #[any = AnyFetch]
+#[specific = ChainSpecificFetch]
 pub enum Fetch<C: ChainExt> {
     FetchBlock(FetchBlock<C>),
     FetchBlockRange(FetchBlockRange<C>),

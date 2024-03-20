@@ -1,8 +1,5 @@
-use std::marker::PhantomData;
-
 use macros::apply;
 use queue_msg::{data, msg_struct, HandleData, QueueError, QueueMsg, QueueMsgTypes};
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     proof::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
@@ -19,6 +16,7 @@ use crate::{
 #[apply(any_enum)]
 /// Data that will likely be used in a [`QueueMsg::Aggregate`].
 #[any = AnyData]
+#[specific = LightClientSpecificData]
 pub enum Data<Hc: ChainExt, Tr: ChainExt> {
     SelfClientState(SelfClientState<Hc, Tr>),
     SelfConsensusState(SelfConsensusState<Hc, Tr>),
