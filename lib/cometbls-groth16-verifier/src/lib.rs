@@ -9,7 +9,9 @@ use ark_ff::{vec, BigInt};
 use byteorder::{BigEndian, ByteOrder};
 use hex_literal::hex;
 use sha3::Digest;
-use unionlabs::{ibc::lightclients::cometbls::light_header::LightHeader, uint::U256, ByteArrayExt};
+use unionlabs::{
+    hash::H256, ibc::lightclients::cometbls::light_header::LightHeader, uint::U256, ByteArrayExt,
+};
 
 pub const NB_PUBLIC_INPUTS: usize = 2;
 
@@ -292,7 +294,7 @@ pub enum Error {
 
 pub fn verify_zkp(
     chain_id: &str,
-    trusted_validators_hash: U256,
+    trusted_validators_hash: H256,
     header: &LightHeader,
     zkp: impl Into<Vec<u8>>,
 ) -> Result<(), Error> {
@@ -311,7 +313,7 @@ pub fn verify_zkp(
 fn verify_generic_zkp_2(
     vk: VerifyingKey,
     chain_id: &str,
-    trusted_validators_hash: U256,
+    trusted_validators_hash: H256,
     header: &LightHeader,
     g: substrate_bn::AffineG2,
     g_root_sigma_neg: substrate_bn::AffineG2,
@@ -348,7 +350,7 @@ fn verify_generic_zkp_2(
             .chain_update(header.validators_hash)
             .chain_update(header.next_validators_hash)
             .chain_update(header.app_hash)
-            .chain_update(trusted_validators_hash.to_big_endian())
+            .chain_update(trusted_validators_hash)
             .finalize(),
     );
     // drop the most significant byte to fit in bn254 F_r
@@ -402,7 +404,7 @@ mod tests {
         assert_eq!(
             verify_zkp(
                 "union-devnet-1337",
-                U256::from_big_endian(hex!("1B7EA0F1B3E574F8D50A12827CCEA43CFF858C2716AE05370CC40AE8EC521FD8")),
+                hex!("1B7EA0F1B3E574F8D50A12827CCEA43CFF858C2716AE05370CC40AE8EC521FD8").into(),
                 &LightHeader {
                     height: 3405691582.try_into().unwrap(),
                     time: Timestamp {
@@ -424,7 +426,7 @@ mod tests {
         assert_eq!(
             verify_zkp(
                 "union-devnet-1337",
-                U256::from_big_endian(hex!("1B7EA0F1B3E574F8D50A12827CCEA43CFF858C2716AE05370CC40AE8EC521FD8")),
+                hex!("1B7EA0F1B3E574F8D50A12827CCEA43CFF858C2716AE05370CC40AE8EC521FD8").into(),
                 &LightHeader {
                     height: 3405691583.try_into().unwrap(),
                     time: Timestamp {
