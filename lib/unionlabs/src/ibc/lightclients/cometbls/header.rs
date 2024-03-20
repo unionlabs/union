@@ -1,11 +1,13 @@
 use macros::model;
 
 #[cfg(feature = "ethabi")]
-use crate::tendermint::types::signed_header::TryFromEthAbiSignedHeaderError;
+use crate::ibc::lightclients::cometbls::light_header::TryFromEthAbiLightHeaderError;
 use crate::{
     errors::{required, MissingField},
-    ibc::core::client::height::Height,
-    tendermint::types::signed_header::{SignedHeader, TryFromSignedHeaderError},
+    ibc::{
+        core::client::height::Height,
+        lightclients::cometbls::light_header::{LightHeader, TryFromLightHeaderError},
+    },
 };
 
 #[model(
@@ -21,7 +23,7 @@ use crate::{
     )
 )]
 pub struct Header {
-    pub signed_header: SignedHeader,
+    pub signed_header: LightHeader,
     pub trusted_height: Height,
     #[serde(with = "::serde_utils::hex_string")]
     #[debug("{}", ::serde_utils::to_hex(&zero_knowledge_proof))]
@@ -54,13 +56,7 @@ impl From<Header>
 #[derive(Debug, Clone, PartialEq)]
 pub enum TryFromHeaderError {
     MissingField(MissingField),
-    SignedHeader(TryFromSignedHeaderError),
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum TryFromEthAbiHeaderError {
-    SignedHeader(TryFromEthAbiSignedHeaderError),
+    SignedHeader(TryFromLightHeaderError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header {
@@ -77,6 +73,12 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header 
             zero_knowledge_proof: value.zero_knowledge_proof,
         })
     }
+}
+
+#[cfg(feature = "ethabi")]
+#[derive(Debug, Clone, PartialEq)]
+pub enum TryFromEthAbiHeaderError {
+    SignedHeader(TryFromEthAbiLightHeaderError),
 }
 
 #[cfg(feature = "ethabi")]
