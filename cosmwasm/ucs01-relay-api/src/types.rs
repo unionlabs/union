@@ -384,7 +384,12 @@ impl<'a> From<(&'a str, &IbcEndpoint)> for DenomOrigin<'a> {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-struct ForwardMemo {
+pub struct ForwardMemo {
+    forward: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct PacketForward {
     receiver: String,
     port: String,
     channel: String,
