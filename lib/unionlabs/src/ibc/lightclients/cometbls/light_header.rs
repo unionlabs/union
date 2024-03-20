@@ -16,7 +16,7 @@ use crate::{
         from
     ),
     ethabi(
-        raw(crate::InlineFields<contracts::glue::UnionIbcLightclientsCometblsV1LightHeaderData>),
+        raw(contracts::glue::UnionIbcLightclientsCometblsV1LightHeaderData),
         into,
         from
     )
@@ -116,26 +116,26 @@ impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1LightHeaderData> for
             height: value
                 .height
                 .try_into()
-                .map_err(TryFromEthAbiHeaderError::Height)?,
+                .map_err(TryFromEthAbiLightHeaderError::Height)?,
             time: value
                 .time
                 .try_into()
-                .map_err(TryFromEthAbiHeaderError::Timestamp)?,
+                .map_err(TryFromEthAbiLightHeaderError::Timestamp)?,
             validators_hash: value
                 .validators_hash
                 .to_vec()
                 .try_into()
-                .map_err(TryFromEthAbiHeaderError::ValidatorsHash)?,
+                .map_err(TryFromEthAbiLightHeaderError::ValidatorsHash)?,
             next_validators_hash: value
                 .next_validators_hash
                 .to_vec()
                 .try_into()
-                .map_err(TryFromEthAbiHeaderError::NextValidatorsHash)?,
+                .map_err(TryFromEthAbiLightHeaderError::NextValidatorsHash)?,
             app_hash: value
                 .app_hash
                 .to_vec()
                 .try_into()
-                .map_err(TryFromEthAbiHeaderError::AppHash)?,
+                .map_err(TryFromEthAbiLightHeaderError::AppHash)?,
         })
     }
 }
