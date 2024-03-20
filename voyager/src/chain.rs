@@ -1,6 +1,6 @@
 use chain_utils::{
     cosmos::{Cosmos, CosmosInitError},
-    evm::{Evm, EvmInitError},
+    ethereum::{Ethereum, EthereumInitError},
     scroll::{Scroll, ScrollInitError},
     union::{Union, UnionInitError},
 };
@@ -11,8 +11,8 @@ use crate::config::ChainConfigType;
 pub enum AnyChain {
     Union(Union),
     Cosmos(Cosmos),
-    EvmMainnet(Evm<Mainnet>),
-    EvmMinimal(Evm<Minimal>),
+    EthereumMainnet(Ethereum<Mainnet>),
+    EthereumMinimal(Ethereum<Minimal>),
     Scroll(Scroll),
 }
 
@@ -23,7 +23,7 @@ pub enum AnyChainTryFromConfigError {
     #[error("error initializing a cosmos chain")]
     Cosmos(#[from] CosmosInitError),
     #[error("error initializing an ethereum chain")]
-    Evm(#[from] EvmInitError),
+    Ethereum(#[from] EthereumInitError),
     #[error("error initializing a scroll chain")]
     Scroll(#[from] ScrollInitError),
 }
@@ -35,16 +35,20 @@ impl AnyChain {
         Ok(match config {
             ChainConfigType::Union(union) => Self::Union(Union::new(union).await?),
             ChainConfigType::Cosmos(cosmos) => Self::Cosmos(Cosmos::new(cosmos).await?),
-            ChainConfigType::Evm(evm) => {
-                let config = chain_utils::evm::Config {
-                    ibc_handler_address: evm.ibc_handler_address,
-                    signers: evm.signers,
-                    eth_rpc_api: evm.eth_rpc_api,
-                    eth_beacon_rpc_api: evm.eth_beacon_rpc_api,
+            ChainConfigType::Ethereum(ethereum) => {
+                let config = chain_utils::ethereum::Config {
+                    ibc_handler_address: ethereum.ibc_handler_address,
+                    signers: ethereum.signers,
+                    eth_rpc_api: ethereum.eth_rpc_api,
+                    eth_beacon_rpc_api: ethereum.eth_beacon_rpc_api,
                 };
-                match evm.preset_base {
-                    PresetBaseKind::Minimal => Self::EvmMinimal(Evm::<Minimal>::new(config).await?),
-                    PresetBaseKind::Mainnet => Self::EvmMainnet(Evm::<Mainnet>::new(config).await?),
+                match ethereum.preset_base {
+                    PresetBaseKind::Minimal => {
+                        Self::EthereumMinimal(Ethereum::<Minimal>::new(config).await?)
+                    }
+                    PresetBaseKind::Mainnet => {
+                        Self::EthereumMainnet(Ethereum::<Mainnet>::new(config).await?)
+                    }
                 }
             }
             ChainConfigType::Scroll(scroll) => Self::Scroll(Scroll::new(scroll).await?),

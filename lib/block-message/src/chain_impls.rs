@@ -111,7 +111,7 @@ macro_rules! try_from_block_poll_msg {
 }
 
 pub mod cosmos;
-pub mod evm;
+pub mod ethereum;
 pub mod scroll;
 pub mod union;
 

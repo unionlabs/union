@@ -1,7 +1,9 @@
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
 use beacon_api::errors::{InternalServerError, NotFoundError};
-use chain_utils::evm::{Evm, EvmSignerMiddleware, IbcHandlerErrors, EVM_REVISION_NUMBER};
+use chain_utils::ethereum::{
+    Ethereum, EthereumSignerMiddleware, IbcHandlerErrors, ETHEREUM_REVISION_NUMBER,
+};
 use contracts::ibc_handler::{
     self, AcknowledgePacketCall, ChannelOpenAckCall, ChannelOpenConfirmCall, ChannelOpenInitCall,
     ChannelOpenTryCall, ConnectionOpenAckCall, ConnectionOpenConfirmCall, ConnectionOpenInitCall,
@@ -69,29 +71,29 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-pub struct EvmConfig {
+pub struct EthereumConfig {
     pub client_type: String,
     pub client_address: H160,
 }
 
-impl<C: ChainSpec> ChainExt for Evm<C> {
-    type Data<Tr: ChainExt> = EvmDataMsg<C, Tr>;
-    type Fetch<Tr: ChainExt> = EvmFetchMsg<C, Tr>;
-    type Aggregate<Tr: ChainExt> = EvmAggregateMsg<C, Tr>;
+impl<C: ChainSpec> ChainExt for Ethereum<C> {
+    type Data<Tr: ChainExt> = EthereumDataMsg<C, Tr>;
+    type Fetch<Tr: ChainExt> = EthereumFetchMsg<C, Tr>;
+    type Aggregate<Tr: ChainExt> = EthereumAggregateMsg<C, Tr>;
 
     type MsgError = TxSubmitError;
 
-    type Config = EvmConfig;
+    type Config = EthereumConfig;
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoMsg<Self, Tr> for Evm<C>
+impl<C: ChainSpec, Tr: ChainExt> DoMsg<Self, Tr> for Ethereum<C>
 where
     ConsensusStateOf<Tr>: Encode<EthAbi>,
     ClientStateOf<Tr>: Encode<EthAbi>,
     HeaderOf<Tr>: Encode<EthAbi>,
 
-    ClientStateOf<Evm<C>>: Encode<Tr::IbcStateEncoding>,
-    Tr::StoredClientState<Evm<C>>: Encode<Tr::IbcStateEncoding>,
+    ClientStateOf<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
+    Tr::StoredClientState<Ethereum<C>>: Encode<Tr::IbcStateEncoding>,
     Tr::StateProof: Encode<EthAbi>,
 {
     async fn msg(&self, msg: Msg<Self, Tr>) -> Result<(), Self::MsgError> {
@@ -327,11 +329,15 @@ where
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetchProof<Self, Tr> for Evm<C>
+impl<C: ChainSpec, Tr: ChainExt> DoFetchProof<Self, Tr> for Ethereum<C>
 where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
 {
-    fn proof(c: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn proof(
+        c: &Self,
+        at: HeightOf<Self>,
+        path: PathOf<Ethereum<C>, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         fetch(id::<Self, Tr, _>(
             c.chain_id(),
             Fetch::specific(GetProof { path, height: at }),
@@ -339,14 +345,18 @@ where
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetchState<Self, Tr> for Evm<C>
+impl<C: ChainSpec, Tr: ChainExt> DoFetchState<Self, Tr> for Ethereum<C>
 where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    Tr::SelfClientState: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    Tr::SelfClientState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
 
     Tr::SelfClientState: Encode<EthAbi>,
 {
-    fn state(hc: &Self, at: HeightOf<Self>, path: PathOf<Evm<C>, Tr>) -> QueueMsg<RelayerMsgTypes> {
+    fn state(
+        hc: &Self,
+        at: HeightOf<Self>,
+        path: PathOf<Ethereum<C>, Tr>,
+    ) -> QueueMsg<RelayerMsgTypes> {
         fetch(id::<Self, Tr, _>(
             hc.chain_id(),
             Fetch::specific(FetchIbcState { path, height: at }),
@@ -364,17 +374,17 @@ where
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetchUpdateHeaders<Self, Tr> for Evm<C>
+impl<C: ChainSpec, Tr: ChainExt> DoFetchUpdateHeaders<Self, Tr> for Ethereum<C>
 where
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 {
     fn fetch_update_headers(
         c: &Self,
         update_info: FetchUpdateHeaders<Self, Tr>,
     ) -> QueueMsg<RelayerMsgTypes> {
         aggregate(
-            [fetch(id::<Evm<C>, Tr, _>(
+            [fetch(id::<Ethereum<C>, Tr, _>(
                 c.chain_id,
                 Fetch::specific(FetchFinalityUpdate {}),
             ))],
@@ -387,25 +397,25 @@ where
     }
 }
 
-impl<C: ChainSpec, Tr: ChainExt> DoFetch<Evm<C>> for EvmFetchMsg<C, Tr>
+impl<C: ChainSpec, Tr: ChainExt> DoFetch<Ethereum<C>> for EthereumFetchMsg<C, Tr>
 where
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
 
-    Tr::SelfClientState: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
-    Tr::SelfConsensusState: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
+    Tr::SelfClientState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
+    Tr::SelfConsensusState: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
 
     Tr::SelfClientState: Encode<EthAbi>,
 {
-    async fn do_fetch(c: &Evm<C>, msg: Self) -> QueueMsg<RelayerMsgTypes> {
-        let msg: EvmFetchMsg<C, Tr> = msg;
+    async fn do_fetch(c: &Ethereum<C>, msg: Self) -> QueueMsg<RelayerMsgTypes> {
+        let msg: EthereumFetchMsg<C, Tr> = msg;
         let msg = match msg {
-            EvmFetchMsg::FetchFinalityUpdate(FetchFinalityUpdate {}) => {
+            EthereumFetchMsg::FetchFinalityUpdate(FetchFinalityUpdate {}) => {
                 Data::specific(FinalityUpdate {
                     finality_update: c.beacon_api_client.finality_update().await.unwrap().data,
                     __marker: PhantomData,
                 })
             }
-            EvmFetchMsg::FetchLightClientUpdates(FetchLightClientUpdates {
+            EthereumFetchMsg::FetchLightClientUpdates(FetchLightClientUpdates {
                 trusted_period,
                 target_period,
             }) => Data::specific(LightClientUpdates {
@@ -420,7 +430,7 @@ where
                     .collect(),
                 __marker: PhantomData,
             }),
-            EvmFetchMsg::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
+            EthereumFetchMsg::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
                 Data::specific(LightClientUpdate {
                     update: c
                         .beacon_api_client
@@ -436,7 +446,7 @@ where
                     __marker: PhantomData,
                 })
             }
-            EvmFetchMsg::FetchBootstrap(FetchBootstrap { slot }) => {
+            EthereumFetchMsg::FetchBootstrap(FetchBootstrap { slot }) => {
                 // NOTE(benluelo): While this is technically two actions, I consider it to be one
                 // action - if the beacon chain doesn't have the header, it won't have the bootstrap
                 // either. It would be nice if the beacon chain exposed "fetch bootstrap by slot"
@@ -499,10 +509,10 @@ where
                     __marker: PhantomData,
                 })
             }
-            EvmFetchMsg::FetchAccountUpdate(FetchAccountUpdate { slot }) => {
+            EthereumFetchMsg::FetchAccountUpdate(FetchAccountUpdate { slot }) => {
                 let execution_height = c
                     .execution_height(Height {
-                        revision_number: EVM_REVISION_NUMBER,
+                        revision_number: ETHEREUM_REVISION_NUMBER,
                         revision_height: slot,
                     })
                     .await;
@@ -533,11 +543,11 @@ where
                     __marker: PhantomData,
                 })
             }
-            EvmFetchMsg::FetchBeaconGenesis(_) => Data::specific(BeaconGenesisData {
+            EthereumFetchMsg::FetchBeaconGenesis(_) => Data::specific(BeaconGenesisData {
                 genesis: c.beacon_api_client.genesis().await.unwrap().data,
                 __marker: PhantomData,
             }),
-            EvmFetchMsg::FetchGetProof(get_proof) => {
+            EthereumFetchMsg::FetchGetProof(get_proof) => {
                 let execution_height = c.execution_height(get_proof.height).await;
 
                 let path = get_proof.path.to_string();
@@ -582,37 +592,39 @@ where
                 };
 
                 match get_proof.path {
-                    Path::ClientStatePath(path) => Data::from(IbcProof::<_, Evm<C>, Tr> {
+                    Path::ClientStatePath(path) => Data::from(IbcProof::<_, Ethereum<C>, Tr> {
                         proof,
                         height: get_proof.height,
                         path,
                         __marker: PhantomData,
                     }),
-                    Path::ClientConsensusStatePath(path) => Data::from(IbcProof::<_, Evm<C>, Tr> {
+                    Path::ClientConsensusStatePath(path) => {
+                        Data::from(IbcProof::<_, Ethereum<C>, Tr> {
+                            proof,
+                            height: get_proof.height,
+                            path,
+                            __marker: PhantomData,
+                        })
+                    }
+                    Path::ConnectionPath(path) => Data::from(IbcProof::<_, Ethereum<C>, Tr> {
                         proof,
                         height: get_proof.height,
                         path,
                         __marker: PhantomData,
                     }),
-                    Path::ConnectionPath(path) => Data::from(IbcProof::<_, Evm<C>, Tr> {
+                    Path::ChannelEndPath(path) => Data::from(IbcProof::<_, Ethereum<C>, Tr> {
                         proof,
                         height: get_proof.height,
                         path,
                         __marker: PhantomData,
                     }),
-                    Path::ChannelEndPath(path) => Data::from(IbcProof::<_, Evm<C>, Tr> {
+                    Path::CommitmentPath(path) => Data::from(IbcProof::<_, Ethereum<C>, Tr> {
                         proof,
                         height: get_proof.height,
                         path,
                         __marker: PhantomData,
                     }),
-                    Path::CommitmentPath(path) => Data::from(IbcProof::<_, Evm<C>, Tr> {
-                        proof,
-                        height: get_proof.height,
-                        path,
-                        __marker: PhantomData,
-                    }),
-                    Path::AcknowledgementPath(path) => Data::from(IbcProof::<_, Evm<C>, Tr> {
+                    Path::AcknowledgementPath(path) => Data::from(IbcProof::<_, Ethereum<C>, Tr> {
                         proof,
                         height: get_proof.height,
                         path,
@@ -620,7 +632,7 @@ where
                     }),
                 }
             }
-            EvmFetchMsg::FetchIbcState(get_storage_at) => match get_storage_at.path {
+            EthereumFetchMsg::FetchIbcState(get_storage_at) => match get_storage_at.path {
                 Path::ClientStatePath(path) => Data::from(IbcState {
                     state: c
                         .ibc_state_read::<_, Tr>(get_storage_at.height, path.clone())
@@ -672,13 +684,13 @@ where
             },
         };
 
-        data(id::<Evm<C>, Tr, _>(c.chain_id, msg))
+        data(id::<Ethereum<C>, Tr, _>(c.chain_id, msg))
     }
 }
 
 #[apply(msg_struct)]
 pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
-    pub req: FetchUpdateHeaders<Evm<C>, Tr>,
+    pub req: FetchUpdateHeaders<Ethereum<C>, Tr>,
     pub currently_trusted_slot: u64,
     pub light_client_update: light_client_update::LightClientUpdate<C>,
     pub is_next: bool,
@@ -686,12 +698,12 @@ pub struct CreateUpdateData<C: ChainSpec, Tr: ChainExt> {
 
 #[apply(msg_struct)]
 pub struct MakeCreateUpdatesData<C: ChainSpec, Tr: ChainExt> {
-    pub req: FetchUpdateHeaders<Evm<C>, Tr>,
+    pub req: FetchUpdateHeaders<Ethereum<C>, Tr>,
 }
 
 #[apply(msg_struct)]
 pub struct MakeCreateUpdatesFromLightClientUpdatesData<C: ChainSpec, Tr: ChainExt> {
-    pub req: FetchUpdateHeaders<Evm<C>, Tr>,
+    pub req: FetchUpdateHeaders<Ethereum<C>, Tr>,
     pub trusted_height: Height,
     pub finality_update: LightClientFinalityUpdate<C>,
 }
@@ -744,9 +756,9 @@ pub struct BeaconGenesisData<C: ChainSpec, Tr: ChainExt> {
 }
 
 try_from_relayer_msg! {
-    chain = Evm<C>,
+    chain = Ethereum<C>,
     generics = (C: ChainSpec, Tr: ChainExt),
-    msgs = EvmDataMsg(
+    msgs = EthereumDataMsg(
         FinalityUpdate(FinalityUpdate<C, Tr>),
         LightClientUpdates(LightClientUpdates<C, Tr>),
         LightClientUpdate(LightClientUpdate<C, Tr>),
@@ -776,7 +788,7 @@ try_from_relayer_msg! {
     derive(arbitrary::Arbitrary),
     arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
 )]
-pub enum EvmFetchMsg<C: ChainSpec, Tr: ChainExt> {
+pub enum EthereumFetchMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "FinalityUpdate")]
     FetchFinalityUpdate(FetchFinalityUpdate),
     #[display(fmt = "LightClientUpdates")]
@@ -816,7 +828,7 @@ pub enum EvmFetchMsg<C: ChainSpec, Tr: ChainExt> {
     arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
 )]
 #[allow(clippy::large_enum_variant)]
-pub enum EvmDataMsg<C: ChainSpec, Tr: ChainExt> {
+pub enum EthereumDataMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "FinalityUpdate")]
     FinalityUpdate(FinalityUpdate<C, Tr>),
     #[display(fmt = "LightClientUpdates")]
@@ -852,7 +864,7 @@ pub enum EvmDataMsg<C: ChainSpec, Tr: ChainExt> {
     arbitrary(bound = "C: ChainSpec, Tr: ChainExt")
 )]
 #[allow(clippy::large_enum_variant)]
-pub enum EvmAggregateMsg<C: ChainSpec, Tr: ChainExt> {
+pub enum EthereumAggregateMsg<C: ChainSpec, Tr: ChainExt> {
     #[display(fmt = "CreateUpdate")]
     CreateUpdate(CreateUpdateData<C, Tr>),
     #[display(fmt = "MakeCreateUpdates")]
@@ -879,24 +891,24 @@ pub struct LightClientUpdate<C: ChainSpec, Tr: ChainExt> {
     pub update: light_client_update::LightClientUpdate<C>,
 }
 
-impl<C, Tr> DoAggregate for Identified<Evm<C>, Tr, EvmAggregateMsg<C, Tr>>
+impl<C, Tr> DoAggregate for Identified<Ethereum<C>, Tr, EthereumAggregateMsg<C, Tr>>
 where
     C: ChainSpec,
     Tr: ChainExt,
 
-    Identified<Evm<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, BootstrapData<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, BootstrapData<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Evm<C>>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Evm<C>>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
 
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 
     Tr::SelfClientState: Encode<EthAbi>,
 {
@@ -909,11 +921,13 @@ where
         aggregated_data: VecDeque<AnyLightClientIdentified<AnyData>>,
     ) -> QueueMsg<RelayerMsgTypes> {
         match data {
-            EvmAggregateMsg::CreateUpdate(msg) => do_aggregate(id(chain_id, msg), aggregated_data),
-            EvmAggregateMsg::MakeCreateUpdates(msg) => {
+            EthereumAggregateMsg::CreateUpdate(msg) => {
                 do_aggregate(id(chain_id, msg), aggregated_data)
             }
-            EvmAggregateMsg::MakeCreateUpdatesFromLightClientUpdates(msg) => {
+            EthereumAggregateMsg::MakeCreateUpdates(msg) => {
+                do_aggregate(id(chain_id, msg), aggregated_data)
+            }
+            EthereumAggregateMsg::MakeCreateUpdatesFromLightClientUpdates(msg) => {
                 do_aggregate(id(chain_id, msg), aggregated_data)
             }
         }
@@ -921,8 +935,8 @@ where
 }
 
 fn make_create_update<C, Tr>(
-    req: FetchUpdateHeaders<Evm<C>, Tr>,
-    chain_id: <<Evm<C> as Chain>::SelfClientState as ClientState>::ChainId,
+    req: FetchUpdateHeaders<Ethereum<C>, Tr>,
+    chain_id: <<Ethereum<C> as Chain>::SelfClientState as ClientState>::ChainId,
     currently_trusted_slot: u64,
     light_client_update: light_client_update::LightClientUpdate<C>,
     is_next: bool,
@@ -930,8 +944,8 @@ fn make_create_update<C, Tr>(
 where
     C: ChainSpec,
     Tr: ChainExt,
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 {
     // When we fetch the update at this height, the `next_sync_committee` will
     // be the current sync committee of the period that we want to update to.
@@ -943,19 +957,19 @@ where
 
     aggregate(
         [
-            fetch(id::<Evm<C>, Tr, _>(
+            fetch(id::<Ethereum<C>, Tr, _>(
                 chain_id,
                 Fetch::specific(FetchLightClientUpdate {
                     period: previous_period,
                 }),
             )),
-            fetch(id::<Evm<C>, Tr, _>(
+            fetch(id::<Ethereum<C>, Tr, _>(
                 chain_id,
                 Fetch::specific(FetchAccountUpdate {
                     slot: light_client_update.attested_header.beacon.slot,
                 }),
             )),
-            fetch(id::<Evm<C>, Tr, _>(
+            fetch(id::<Ethereum<C>, Tr, _>(
                 chain_id,
                 Fetch::specific(FetchBeaconGenesis {}),
             )),
@@ -980,7 +994,7 @@ fn sync_committee_period<H: Into<u64>, C: ChainSpec>(height: H) -> u64 {
 #[derive(Debug, thiserror::Error)]
 pub enum TxSubmitError {
     #[error(transparent)]
-    Contract(#[from] ContractError<EvmSignerMiddleware>),
+    Contract(#[from] ContractError<EthereumSignerMiddleware>),
     #[error(transparent)]
     Provider(#[from] ProviderError),
     #[error("no tx receipt from tx")]
@@ -997,9 +1011,9 @@ impl MaybeRecoverableError for TxSubmitError {
 }
 
 pub fn mk_function_call<Call: EthCall>(
-    ibc_handler: IBCHandler<EvmSignerMiddleware>,
+    ibc_handler: IBCHandler<EthereumSignerMiddleware>,
     data: Call,
-) -> ethers::contract::FunctionCall<Arc<EvmSignerMiddleware>, EvmSignerMiddleware, ()> {
+) -> ethers::contract::FunctionCall<Arc<EthereumSignerMiddleware>, EthereumSignerMiddleware, ()> {
     ibc_handler
         .method_hash(<Call as EthCall>::selector(), data)
         .expect("method selector is generated; qed;")
@@ -1007,32 +1021,32 @@ pub fn mk_function_call<Call: EthCall>(
 
 #[apply(msg_struct)]
 pub struct GetProof<C: ChainSpec, Tr: ChainExt> {
-    pub path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
-    pub height: HeightOf<Evm<C>>,
+    pub path: Path<ClientIdOf<Ethereum<C>>, HeightOf<Tr>>,
+    pub height: HeightOf<Ethereum<C>>,
 }
 
 #[apply(msg_struct)]
 pub struct FetchIbcState<C: ChainSpec, Tr: ChainExt> {
-    pub path: Path<ClientIdOf<Evm<C>>, HeightOf<Tr>>,
-    pub height: HeightOf<Evm<C>>,
+    pub path: Path<ClientIdOf<Ethereum<C>>, HeightOf<Tr>>,
+    pub height: HeightOf<Ethereum<C>>,
 }
 
-impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Evm<C>, Tr, CreateUpdateData<C, Tr>>
+impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Ethereum<C>, Tr, CreateUpdateData<C, Tr>>
 where
     C: ChainSpec,
     Tr: ChainExt,
 
-    Identified<Evm<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
-    Identified<Evm<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, AccountUpdateData<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, LightClientUpdate<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, BeaconGenesisData<C, Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Evm<C>>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Evm<C>>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
 {
     type AggregatedData = HList![
-        Identified<Evm<C>, Tr, LightClientUpdate<C, Tr>>,
-        Identified<Evm<C>, Tr, AccountUpdateData<C, Tr>>,
-        Identified<Evm<C>, Tr, BeaconGenesisData<C, Tr>>
+        Identified<Ethereum<C>, Tr, LightClientUpdate<C, Tr>>,
+        Identified<Ethereum<C>, Tr, AccountUpdateData<C, Tr>>,
+        Identified<Ethereum<C>, Tr, BeaconGenesisData<C, Tr>>
     ];
 
     fn aggregate(
@@ -1087,7 +1101,7 @@ where
             consensus_update: light_client_update,
             trusted_sync_committee: TrustedSyncCommittee {
                 trusted_height: Height {
-                    revision_number: EVM_REVISION_NUMBER,
+                    revision_number: ETHEREUM_REVISION_NUMBER,
                     revision_height: currently_trusted_slot,
                 },
                 sync_committee: if is_next {
@@ -1110,7 +1124,7 @@ where
                     __marker: PhantomData,
                 },
             )),
-            msg(id::<Tr, Evm<C>, _>(
+            msg(id::<Tr, Ethereum<C>, _>(
                 req.counterparty_chain_id,
                 MsgUpdateClientData(MsgUpdateClient {
                     client_id: req.counterparty_client_id,
@@ -1121,18 +1135,19 @@ where
     }
 }
 
-impl<C, Tr> UseAggregate<RelayerMsgTypes> for Identified<Evm<C>, Tr, MakeCreateUpdatesData<C, Tr>>
+impl<C, Tr> UseAggregate<RelayerMsgTypes>
+    for Identified<Ethereum<C>, Tr, MakeCreateUpdatesData<C, Tr>>
 where
     C: ChainSpec,
 
     Tr: ChainExt,
 
-    Identified<Evm<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, FinalityUpdate<C, Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 {
-    type AggregatedData = HList![Identified<Evm<C>, Tr, FinalityUpdate<C, Tr>>];
+    type AggregatedData = HList![Identified<Ethereum<C>, Tr, FinalityUpdate<C, Tr>>];
 
     fn aggregate(
         Identified {
@@ -1164,7 +1179,7 @@ where
         // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
         // updates until we reach the `target_period - 1`.
         aggregate(
-            [fetch(id::<Evm<C>, Tr, _>(
+            [fetch(id::<Ethereum<C>, Tr, _>(
                 chain_id,
                 Fetch::specific(FetchLightClientUpdates {
                     trusted_period,
@@ -1185,24 +1200,25 @@ where
 }
 
 impl<C, Tr> UseAggregate<RelayerMsgTypes>
-    for Identified<Evm<C>, Tr, MakeCreateUpdatesFromLightClientUpdatesData<C, Tr>>
+    for Identified<Ethereum<C>, Tr, MakeCreateUpdatesFromLightClientUpdatesData<C, Tr>>
 where
     C: ChainSpec,
     Tr: ChainExt,
 
-    Identified<Evm<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
+    Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>: IsAggregateData,
 
-    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Evm<C>>)>,
-    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Evm<C>>)>,
-    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyData>: From<identified!(Data<Evm<C>, Tr>)>,
-    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Evm<C>, Tr>)>,
+    AnyLightClientIdentified<AnyMsg>: From<identified!(Msg<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyWait>: From<identified!(Wait<Tr, Ethereum<C>>)>,
+    AnyLightClientIdentified<AnyFetch>: From<identified!(Fetch<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyData>: From<identified!(Data<Ethereum<C>, Tr>)>,
+    AnyLightClientIdentified<AnyAggregate>: From<identified!(Aggregate<Ethereum<C>, Tr>)>,
 
-    Identified<Evm<C>, Tr, LightClientUpdates<C, Tr>>: TryFrom<AnyLightClientIdentified<AnyData>>,
+    Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>:
+        TryFrom<AnyLightClientIdentified<AnyData>>,
 
     Tr::SelfClientState: Encode<EthAbi>,
 {
-    type AggregatedData = HList![Identified<Evm<C>, Tr, LightClientUpdates<C, Tr>>];
+    type AggregatedData = HList![Identified<Ethereum<C>, Tr, LightClientUpdates<C, Tr>>];
 
     fn aggregate(
         Identified {

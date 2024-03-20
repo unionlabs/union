@@ -181,7 +181,7 @@ impl ClientState for ethereum::client_state::ClientState {
 
     fn height(&self) -> Self::Height {
         Height {
-            // TODO: Make EVM_REVISION_NUMBER a constant in this crate
+            // TODO: Make ETHEREUM_REVISION_NUMBER a constant in this crate
             revision_number: 0,
             revision_height: self.latest_slot,
         }
@@ -198,7 +198,7 @@ impl ClientState for scroll::client_state::ClientState {
 
     fn height(&self) -> Self::Height {
         Height {
-            // TODO: Make EVM_REVISION_NUMBER a constant in this crate
+            // TODO: Make ETHEREUM_REVISION_NUMBER a constant in this crate
             revision_number: 0,
             revision_height: self.latest_batch_index,
         }

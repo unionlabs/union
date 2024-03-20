@@ -15,7 +15,7 @@ use axum::{
     Json,
 };
 use block_message::BlockPollingTypes;
-use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm, Chains};
+use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, union::Union, wasm::Wasm, Chains};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{channel::mpsc::UnboundedSender, Future, SinkExt, StreamExt};
 use queue_msg::{
@@ -333,8 +333,8 @@ pub async fn chains_from_config(
 ) -> Result<Chains, AnyChainTryFromConfigError> {
     let mut union = HashMap::new();
     let mut cosmos = HashMap::new();
-    let mut evm_minimal = HashMap::new();
-    let mut evm_mainnet = HashMap::new();
+    let mut ethereum_minimal = HashMap::new();
+    let mut ethereum_mainnet = HashMap::new();
     let mut scroll = HashMap::new();
 
     fn insert_into_chain_map<C: Chain>(
@@ -366,11 +366,11 @@ pub async fn chains_from_config(
             AnyChain::Cosmos(c) => {
                 insert_into_chain_map(&mut cosmos, c);
             }
-            AnyChain::EvmMainnet(c) => {
-                insert_into_chain_map(&mut evm_mainnet, c);
+            AnyChain::EthereumMainnet(c) => {
+                insert_into_chain_map(&mut ethereum_mainnet, c);
             }
-            AnyChain::EvmMinimal(c) => {
-                insert_into_chain_map(&mut evm_minimal, c);
+            AnyChain::EthereumMinimal(c) => {
+                insert_into_chain_map(&mut ethereum_minimal, c);
             }
             AnyChain::Scroll(c) => {
                 insert_into_chain_map(&mut scroll, c);
@@ -380,8 +380,8 @@ pub async fn chains_from_config(
 
     Ok(Chains {
         scroll,
-        evm_minimal,
-        evm_mainnet,
+        ethereum_minimal,
+        ethereum_mainnet,
         union,
         cosmos,
     })
@@ -827,24 +827,24 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
                     match ibc_event.client_type {
                         unionlabs::ClientType::Wasm(unionlabs::WasmClientType::EthereumMinimal) => {
-                            event(relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
+                            event(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Union, Evm<Minimal>>(
+                                    event: chain_event_to_lc_event::<Union, Ethereum<Minimal>>(
                                         ibc_event.event,
                                     ),
                                 },
                             ))
                         }
                         unionlabs::ClientType::Wasm(unionlabs::WasmClientType::EthereumMainnet) => {
-                            event(relay_message::id::<Wasm<Union>, Evm<Mainnet>, _>(
+                            event(relay_message::id::<Wasm<Union>, Ethereum<Mainnet>, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Union, Evm<Mainnet>>(
+                                    event: chain_event_to_lc_event::<Union, Ethereum<Mainnet>>(
                                         ibc_event.event,
                                     ),
                                 },
@@ -873,12 +873,12 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
                     match ibc_event.client_type {
                         unionlabs::ClientType::Cometbls => {
-                            event(relay_message::id::<Evm<Mainnet>, Wasm<Union>, _>(
+                            event(relay_message::id::<Ethereum<Mainnet>, Wasm<Union>, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Evm<Mainnet>, Wasm<Union>>(
+                                    event: chain_event_to_lc_event::<Ethereum<Mainnet>, Wasm<Union>>(
                                         ibc_event.event,
                                     ),
                                 },
@@ -895,12 +895,12 @@ impl HandleData<VoyagerMessageTypes> for VoyagerData {
                 )) => <VoyagerMessageTypes as FromQueueMsg<RelayerMsgTypes>>::from_queue_msg(
                     match ibc_event.client_type {
                         unionlabs::ClientType::Cometbls => {
-                            event(relay_message::id::<Evm<Minimal>, Wasm<Union>, _>(
+                            event(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
                                 chain_id,
                                 relay_message::event::IbcEvent {
                                     tx_hash: ibc_event.tx_hash,
                                     height: ibc_event.height,
-                                    event: chain_event_to_lc_event::<Evm<Minimal>, Wasm<Union>>(
+                                    event: chain_event_to_lc_event::<Ethereum<Minimal>, Wasm<Union>>(
                                         ibc_event.event,
                                     ),
                                 },

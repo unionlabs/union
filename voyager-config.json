@@ -14,8 +14,8 @@
       "rollup_finalized_state_roots_slot": "158",
       "rollup_last_finalized_batch_index_slot": "156",
       "l1_client_id": "cometbls-1",
-      "evm": {
-        "chain_type": "evm",
+      "l1": {
+        "chain_type": "ethereum",
         "preset_base": "mainnet",
         "ibc_handler_address": "0xbd3f2BCD8f7FbB11B3Ae4fe83451A9A1bF3B1Dc0",
         "signers": [
@@ -30,7 +30,7 @@
     },
     "ethereum-devnet": {
       "enabled": false,
-      "chain_type": "evm",
+      "chain_type": "ethereum",
       "preset_base": "minimal",
       "ibc_handler_address": "0xEDa338E4dC46038493b885327842fD3E301CaB39",
       "signers": [

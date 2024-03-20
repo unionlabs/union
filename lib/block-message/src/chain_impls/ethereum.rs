@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, fmt::Debug};
 
-use chain_utils::evm::{Evm, IBCHandlerEvents, EVM_REVISION_NUMBER};
+use chain_utils::ethereum::{Ethereum, IBCHandlerEvents, ETHEREUM_REVISION_NUMBER};
 use contracts::{
     ibc_channel_handshake::{
         ChannelOpenAckFilter, ChannelOpenConfirmFilter, ChannelOpenInitFilter,
@@ -53,23 +53,23 @@ use crate::{
     id, AnyChainIdentified, BlockPollingTypes, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
-impl<C: ChainSpec> ChainExt for Evm<C> {
-    type Data = EvmData<C>;
-    type Fetch = EvmFetch<C>;
-    type Aggregate = EvmAggregate;
+impl<C: ChainSpec> ChainExt for Ethereum<C> {
+    type Data = EthereumData<C>;
+    type Fetch = EthereumFetch<C>;
+    type Aggregate = EthereumAggregate;
 }
 
-impl<C: ChainSpec> DoFetchBlockRange<Evm<C>> for Evm<C>
+impl<C: ChainSpec> DoFetchBlockRange<Ethereum<C>> for Ethereum<C>
 where
-    AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
+    AnyChainIdentified<AnyFetch>: From<Identified<Ethereum<C>, Fetch<Ethereum<C>>>>,
 {
     fn fetch_block_range(
-        c: &Evm<C>,
-        range: FetchBlockRange<Evm<C>>,
+        c: &Ethereum<C>,
+        range: FetchBlockRange<Ethereum<C>>,
     ) -> QueueMsg<BlockPollingTypes> {
         fetch(id(
             c.chain_id(),
-            Fetch::<Evm<C>>::specific(FetchEvents {
+            Fetch::<Ethereum<C>>::specific(FetchEvents {
                 from_height: range.from_height,
                 to_height: range.to_height,
             }),
@@ -77,33 +77,33 @@ where
     }
 }
 
-impl<C: ChainSpec> DoFetch<Evm<C>> for EvmFetch<C>
+impl<C: ChainSpec> DoFetch<Ethereum<C>> for EthereumFetch<C>
 where
-    AnyChainIdentified<AnyData>: From<Identified<Evm<C>, Data<Evm<C>>>>,
-    AnyChainIdentified<AnyAggregate>: From<Identified<Evm<C>, Aggregate<Evm<C>>>>,
-    AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
+    AnyChainIdentified<AnyData>: From<Identified<Ethereum<C>, Data<Ethereum<C>>>>,
+    AnyChainIdentified<AnyAggregate>: From<Identified<Ethereum<C>, Aggregate<Ethereum<C>>>>,
+    AnyChainIdentified<AnyFetch>: From<Identified<Ethereum<C>, Fetch<Ethereum<C>>>>,
 {
-    async fn do_fetch(c: &Evm<C>, msg: Self) -> QueueMsg<BlockPollingTypes> {
+    async fn do_fetch(c: &Ethereum<C>, msg: Self) -> QueueMsg<BlockPollingTypes> {
         match msg {
-            EvmFetch::FetchEvents(FetchEvents {
+            EthereumFetch::FetchEvents(FetchEvents {
                 from_height,
                 to_height,
             }) => fetch(id(
                 c.chain_id(),
-                Fetch::<Evm<C>>::specific(FetchBeaconBlockRange {
+                Fetch::<Ethereum<C>>::specific(FetchBeaconBlockRange {
                     from_slot: from_height.revision_height,
                     to_slot: to_height.revision_height,
                 }),
             )),
-            EvmFetch::FetchGetLogs(FetchGetLogs { from_slot, to_slot }) => {
+            EthereumFetch::FetchGetLogs(FetchGetLogs { from_slot, to_slot }) => {
                 let event_height = Height {
-                    revision_number: EVM_REVISION_NUMBER,
+                    revision_number: ETHEREUM_REVISION_NUMBER,
                     revision_height: to_slot,
                 };
 
                 let from_block = c
                     .execution_height(Height {
-                        revision_number: EVM_REVISION_NUMBER,
+                        revision_number: ETHEREUM_REVISION_NUMBER,
                         revision_height: from_slot,
                     })
                     .await;
@@ -254,7 +254,7 @@ where
 
                                 data(id(
                                     c.chain_id(),
-                                    ChainEvent::<Evm<C>> {
+                                    ChainEvent::<Ethereum<C>> {
                                         client_type: unionlabs::ClientType::Cometbls,
                                         tx_hash,
                                         height: event_height,
@@ -297,7 +297,7 @@ where
 
                                 data(id(
                                     c.chain_id(),
-                                    ChainEvent::<Evm<C>> {
+                                    ChainEvent::<Ethereum<C>> {
                                         client_type: unionlabs::ClientType::Cometbls,
                                         tx_hash,
                                         height: event_height,
@@ -348,13 +348,13 @@ where
                     .await,
                 )
             }
-            EvmFetch::FetchBeaconBlockRange(FetchBeaconBlockRange { from_slot, to_slot }) => {
+            EthereumFetch::FetchBeaconBlockRange(FetchBeaconBlockRange { from_slot, to_slot }) => {
                 assert!(from_slot < to_slot);
 
                 if to_slot - from_slot == 1 {
                     fetch(id(
                         c.chain_id(),
-                        Fetch::<Evm<C>>::specific(FetchGetLogs { from_slot, to_slot }),
+                        Fetch::<Ethereum<C>>::specific(FetchGetLogs { from_slot, to_slot }),
                     ))
                 } else {
                     // attempt to shrink from..to
@@ -383,14 +383,14 @@ where
                                 return conc([
                                     fetch(id(
                                         c.chain_id(),
-                                        Fetch::<Evm<C>>::specific(FetchGetLogs {
+                                        Fetch::<Ethereum<C>>::specific(FetchGetLogs {
                                             from_slot,
                                             to_slot: slot,
                                         }),
                                     )),
                                     fetch(id(
                                         c.chain_id(),
-                                        Fetch::<Evm<C>>::specific(FetchBeaconBlockRange {
+                                        Fetch::<Ethereum<C>>::specific(FetchBeaconBlockRange {
                                             from_slot: slot,
                                             to_slot,
                                         }),
@@ -403,13 +403,13 @@ where
                     // if the range is not shrinkable (i.e. all blocks between `from` and `to` are missing, but `from` and `to` both exist), fetch logs between `from` and `to`
                     fetch(id(
                         c.chain_id(),
-                        Fetch::<Evm<C>>::specific(FetchGetLogs { from_slot, to_slot }),
+                        Fetch::<Ethereum<C>>::specific(FetchGetLogs { from_slot, to_slot }),
                     ))
                 }
             }
-            EvmFetch::FetchChannel(FetchChannel { height, path }) => data(id(
+            EthereumFetch::FetchChannel(FetchChannel { height, path }) => data(id(
                 c.chain_id(),
-                Data::<Evm<C>>::specific(ChannelData(
+                Data::<Ethereum<C>>::specific(ChannelData(
                     c.ibc_state_read_at_execution_height(
                         GetChannelCall {
                             port_id: path.port_id.to_string(),
@@ -424,9 +424,9 @@ where
                     .unwrap(),
                 )),
             )),
-            EvmFetch::FetchConnection(FetchConnection { height, path }) => data(id(
+            EthereumFetch::FetchConnection(FetchConnection { height, path }) => data(id(
                 c.chain_id(),
-                Data::<Evm<C>>::specific(ConnectionData(
+                Data::<Ethereum<C>>::specific(ConnectionData(
                     c.ibc_state_read_at_execution_height(
                         GetConnectionCall {
                             connection_id: path.connection_id.to_string(),
@@ -445,23 +445,23 @@ where
 }
 
 fn with_channel<C: ChainSpec, T>(
-    chain_id: ChainIdOf<Evm<C>>,
+    chain_id: ChainIdOf<Ethereum<C>>,
     port_id: String,
     channel_id: String,
-    event_height: HeightOf<Evm<C>>,
+    event_height: HeightOf<Ethereum<C>>,
     tx_hash: H256,
     raw_event: T,
 ) -> QueueMsg<BlockPollingTypes>
 where
     AggregateWithChannel: From<EventInfo<T>>,
 
-    AnyChainIdentified<AnyAggregate>: From<Identified<Evm<C>, Aggregate<Evm<C>>>>,
-    AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
+    AnyChainIdentified<AnyAggregate>: From<Identified<Ethereum<C>, Aggregate<Ethereum<C>>>>,
+    AnyChainIdentified<AnyFetch>: From<Identified<Ethereum<C>, Fetch<Ethereum<C>>>>,
 {
     aggregate(
         [fetch(id(
             chain_id,
-            Fetch::<Evm<C>>::specific(FetchChannel {
+            Fetch::<Ethereum<C>>::specific(FetchChannel {
                 height: event_height,
                 path: ChannelEndPath {
                     port_id: port_id.parse().unwrap(),
@@ -472,7 +472,7 @@ where
         [],
         id(
             chain_id,
-            Aggregate::<Evm<C>>::specific(AggregateWithChannel::from(EventInfo {
+            Aggregate::<Ethereum<C>>::specific(AggregateWithChannel::from(EventInfo {
                 height: event_height,
                 tx_hash,
                 raw_event,
@@ -482,9 +482,9 @@ where
 }
 
 fn with_connection<C, T>(
-    chain_id: ChainIdOf<Evm<C>>,
+    chain_id: ChainIdOf<Ethereum<C>>,
     connection_id: String,
-    event_height: HeightOf<Evm<C>>,
+    event_height: HeightOf<Ethereum<C>>,
     tx_hash: H256,
     raw_event: T,
 ) -> QueueMsg<BlockPollingTypes>
@@ -492,13 +492,13 @@ where
     C: ChainSpec,
     AggregateWithConnection: From<EventInfo<T>>,
 
-    AnyChainIdentified<AnyAggregate>: From<Identified<Evm<C>, Aggregate<Evm<C>>>>,
-    AnyChainIdentified<AnyFetch>: From<Identified<Evm<C>, Fetch<Evm<C>>>>,
+    AnyChainIdentified<AnyAggregate>: From<Identified<Ethereum<C>, Aggregate<Ethereum<C>>>>,
+    AnyChainIdentified<AnyFetch>: From<Identified<Ethereum<C>, Fetch<Ethereum<C>>>>,
 {
     aggregate(
         [fetch(id(
             chain_id,
-            Fetch::<Evm<C>>::specific(FetchConnection {
+            Fetch::<Ethereum<C>>::specific(FetchConnection {
                 height: event_height,
                 path: ConnectionPath {
                     connection_id: connection_id.parse().unwrap(),
@@ -508,7 +508,7 @@ where
         [],
         id(
             chain_id,
-            Aggregate::<Evm<C>>::specific(AggregateWithConnection::from(EventInfo {
+            Aggregate::<Ethereum<C>>::specific(AggregateWithConnection::from(EventInfo {
                 height: event_height,
                 tx_hash,
                 raw_event,
@@ -538,7 +538,7 @@ where
     bound(serialize = "", deserialize = ""),
     deny_unknown_fields
 )]
-pub enum EvmFetch<C: ChainSpec> {
+pub enum EthereumFetch<C: ChainSpec> {
     #[display(fmt = "FetchEvents")]
     FetchEvents(FetchEvents<C>),
     #[display(fmt = "FetchGetLogs")]
@@ -554,8 +554,8 @@ pub enum EvmFetch<C: ChainSpec> {
 
 #[apply(msg_struct)]
 pub struct FetchEvents<C: ChainSpec> {
-    pub from_height: HeightOf<Evm<C>>,
-    pub to_height: HeightOf<Evm<C>>,
+    pub from_height: HeightOf<Ethereum<C>>,
+    pub to_height: HeightOf<Ethereum<C>>,
 }
 
 #[apply(msg_struct)]
@@ -601,30 +601,30 @@ pub struct FetchConnection {
     bound(serialize = "", deserialize = ""),
     deny_unknown_fields
 )]
-pub enum EvmAggregate {
+pub enum EthereumAggregate {
     #[display(fmt = "AggregateWithChannel")]
     AggregateWithChannel(AggregateWithChannel),
     #[display(fmt = "AggregateWithChannel")]
     AggregateWithConnection(AggregateWithConnection),
 }
 
-impl<C: ChainSpec> DoAggregate for Identified<Evm<C>, EvmAggregate>
+impl<C: ChainSpec> DoAggregate for Identified<Ethereum<C>, EthereumAggregate>
 where
-    AnyChainIdentified<AnyData>: From<Identified<Evm<C>, ChainEvent<Evm<C>>>>,
+    AnyChainIdentified<AnyData>: From<Identified<Ethereum<C>, ChainEvent<Ethereum<C>>>>,
 
-    Identified<Evm<C>, ChannelData>: IsAggregateData,
-    Identified<Evm<C>, ConnectionData<C>>: IsAggregateData,
+    Identified<Ethereum<C>, ChannelData>: IsAggregateData,
+    Identified<Ethereum<C>, ConnectionData<C>>: IsAggregateData,
 {
     fn do_aggregate(
         Identified { chain_id, t }: Self,
         data: VecDeque<AnyChainIdentified<AnyData>>,
     ) -> QueueMsg<BlockPollingTypes> {
         match t {
-            EvmAggregate::AggregateWithChannel(msg) => {
-                do_aggregate(id::<Evm<C>, _>(chain_id, msg), data)
+            EthereumAggregate::AggregateWithChannel(msg) => {
+                do_aggregate(id::<Ethereum<C>, _>(chain_id, msg), data)
             }
-            EvmAggregate::AggregateWithConnection(msg) => {
-                do_aggregate(id::<Evm<C>, _>(chain_id, msg), data)
+            EthereumAggregate::AggregateWithConnection(msg) => {
+                do_aggregate(id::<Ethereum<C>, _>(chain_id, msg), data)
             }
         }
     }
@@ -674,13 +674,13 @@ pub struct EventInfo<T> {
     raw_event: T,
 }
 
-impl<C: ChainSpec> UseAggregate<BlockPollingTypes> for Identified<Evm<C>, AggregateWithChannel>
+impl<C: ChainSpec> UseAggregate<BlockPollingTypes> for Identified<Ethereum<C>, AggregateWithChannel>
 where
-    Identified<Evm<C>, ChannelData>: IsAggregateData,
+    Identified<Ethereum<C>, ChannelData>: IsAggregateData,
 
-    AnyChainIdentified<AnyData>: From<Identified<Evm<C>, ChainEvent<Evm<C>>>>,
+    AnyChainIdentified<AnyData>: From<Identified<Ethereum<C>, ChainEvent<Ethereum<C>>>>,
 {
-    type AggregatedData = HList![Identified<Evm<C>, ChannelData>];
+    type AggregatedData = HList![Identified<Ethereum<C>, ChannelData>];
 
     fn aggregate(
         Identified { t: msg, chain_id }: Self,
@@ -826,17 +826,18 @@ where
             },
         };
 
-        data(id::<Evm<C>, _>(chain_id, event))
+        data(id::<Ethereum<C>, _>(chain_id, event))
     }
 }
 
-impl<C: ChainSpec> UseAggregate<BlockPollingTypes> for Identified<Evm<C>, AggregateWithConnection>
+impl<C: ChainSpec> UseAggregate<BlockPollingTypes>
+    for Identified<Ethereum<C>, AggregateWithConnection>
 where
-    Identified<Evm<C>, ConnectionData<C>>: IsAggregateData,
+    Identified<Ethereum<C>, ConnectionData<C>>: IsAggregateData,
 
-    AnyChainIdentified<AnyData>: From<Identified<Evm<C>, ChainEvent<Evm<C>>>>,
+    AnyChainIdentified<AnyData>: From<Identified<Ethereum<C>, ChainEvent<Ethereum<C>>>>,
 {
-    type AggregatedData = HList![Identified<Evm<C>, ConnectionData<C>>];
+    type AggregatedData = HList![Identified<Ethereum<C>, ConnectionData<C>>];
 
     fn aggregate(
         Identified { t: msg, chain_id }: Self,
@@ -921,7 +922,7 @@ where
             },
         };
 
-        data(id::<Evm<C>, _>(chain_id, event))
+        data(id::<Ethereum<C>, _>(chain_id, event))
     }
 }
 
@@ -946,7 +947,7 @@ where
     bound(serialize = "", deserialize = ""),
     deny_unknown_fields
 )]
-pub enum EvmData<C: ChainSpec> {
+pub enum EthereumData<C: ChainSpec> {
     #[display(fmt = "Channel")]
     Channel(ChannelData),
     #[display(fmt = "Connection")]
@@ -955,9 +956,9 @@ pub enum EvmData<C: ChainSpec> {
 
 const _: () = {
     try_from_block_poll_msg! {
-        chain = Evm<C>,
+        chain = Ethereum<C>,
         generics = (C: ChainSpec),
-        msgs = EvmData(
+        msgs = EthereumData(
             Channel(ChannelData),
             Connection(ConnectionData<C>),
         ),
@@ -975,4 +976,4 @@ pub struct ChannelData(pub Channel);
 )]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 // REVIEW: Use something other than string here?
-pub struct ConnectionData<C: ChainSpec>(pub ConnectionEnd<ClientIdOf<Evm<C>>, String, String>);
+pub struct ConnectionData<C: ChainSpec>(pub ConnectionEnd<ClientIdOf<Ethereum<C>>, String, String>);

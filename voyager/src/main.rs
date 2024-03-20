@@ -9,7 +9,7 @@
 
 use std::{error::Error, ffi::OsString, fs::read_to_string, iter, process::ExitCode, sync::Arc};
 
-use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm};
+use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, union::Union, wasm::Wasm};
 use clap::Parser;
 use queue_msg::QueueMsg;
 use sqlx::{query_as, PgPool};
@@ -23,7 +23,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     chain::AnyChain,
     cli::{any_state_proof_to_json, AppArgs, Command, QueryCmd},
-    config::{ChainConfigType, Config, EvmChainConfig, GetChainError},
+    config::{ChainConfigType, Config, EthereumChainConfig, GetChainError},
     queue::{
         chains_from_config, AnyQueueConfig, PgQueueConfig, RunError, Voyager, VoyagerInitError,
         VoyagerMessageTypes,
@@ -165,9 +165,9 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 let chain = voyager_config.get_chain(&on).await?;
 
                 match chain {
-                    AnyChain::EvmMinimal(evm) => {
-                        chain_utils::evm::setup_initial_channel(
-                            &evm,
+                    AnyChain::EthereumMinimal(ethereum) => {
+                        chain_utils::ethereum::setup_initial_channel(
+                            &ethereum,
                             module_address.into(),
                             channel_id,
                             port_id,
@@ -205,12 +205,12 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                         }
                         (
                             AnyChain::Union(union),
-                            ChainConfigType::Evm(EvmChainConfig {
+                            ChainConfigType::Ethereum(EthereumChainConfig {
                                 preset_base: PresetBaseKind::Mainnet,
                                 ..
                             }),
                         ) => {
-                            any_state_proof_to_json::<Wasm<Union>, Evm<Mainnet>>(
+                            any_state_proof_to_json::<Wasm<Union>, Ethereum<Mainnet>>(
                                 chains,
                                 path,
                                 Wasm(union),
@@ -220,12 +220,12 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                         }
                         (
                             AnyChain::Union(union),
-                            ChainConfigType::Evm(EvmChainConfig {
+                            ChainConfigType::Ethereum(EthereumChainConfig {
                                 preset_base: PresetBaseKind::Minimal,
                                 ..
                             }),
                         ) => {
-                            any_state_proof_to_json::<Wasm<Union>, Evm<Minimal>>(
+                            any_state_proof_to_json::<Wasm<Union>, Ethereum<Minimal>>(
                                 chains,
                                 path,
                                 Wasm(union),
@@ -243,16 +243,16 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                             )
                             .await
                         }
-                        (AnyChain::EvmMainnet(evm), ChainConfigType::Union(_)) => {
-                            any_state_proof_to_json::<Evm<Mainnet>, Wasm<Union>>(
-                                chains, path, evm, at,
+                        (AnyChain::EthereumMainnet(ethereum), ChainConfigType::Union(_)) => {
+                            any_state_proof_to_json::<Ethereum<Mainnet>, Wasm<Union>>(
+                                chains, path, ethereum, at,
                             )
                             .await
                         }
 
-                        (AnyChain::EvmMinimal(evm), ChainConfigType::Union(_)) => {
-                            any_state_proof_to_json::<Evm<Minimal>, Wasm<Union>>(
-                                chains, path, evm, at,
+                        (AnyChain::EthereumMinimal(ethereum), ChainConfigType::Union(_)) => {
+                            any_state_proof_to_json::<Ethereum<Minimal>, Wasm<Union>>(
+                                chains, path, ethereum, at,
                             )
                             .await
                         }
@@ -325,7 +325,7 @@ mod tests {
     use std::marker::PhantomData;
 
     use block_message::BlockPollingTypes;
-    use chain_utils::{cosmos::Cosmos, evm::Evm, union::Union, wasm::Wasm};
+    use chain_utils::{cosmos::Cosmos, ethereum::Ethereum, union::Union, wasm::Wasm};
     use hex_literal::hex;
     use queue_msg::{
         aggregate, defer_relative, event, fetch, msg, repeat, seq, QueueMsg, QueueMsgTypes,
@@ -334,7 +334,7 @@ mod tests {
         aggregate::AggregateCreateClient,
         chain_impls::{
             cosmos_sdk::fetch::{AbciQueryType, FetchAbciQuery},
-            evm::EvmConfig,
+            ethereum::EthereumConfig,
         },
         event::IbcEvent,
         fetch::{FetchSelfClientState, FetchSelfConsensusState},
@@ -374,7 +374,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Union - Eth (Sending to Union) Connection Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
+        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
             union_chain_id.clone(),
             MsgConnectionOpenInitData(MsgConnectionOpenInit {
                 client_id: parse!("08-wasm-0"),
@@ -396,21 +396,23 @@ mod tests {
         println!("---------------------------------------");
         println!("Fetch Client State: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(fetch(relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
-            union_chain_id.clone(),
-            relay_message::fetch::Fetch::specific(FetchAbciQuery {
-                path: proof::Path::ClientStatePath(proof::ClientStatePath {
-                    client_id: parse!("client-id"),
+        print_json::<RelayerMsgTypes>(fetch(
+            relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
+                union_chain_id.clone(),
+                relay_message::fetch::Fetch::specific(FetchAbciQuery {
+                    path: proof::Path::ClientStatePath(proof::ClientStatePath {
+                        client_id: parse!("client-id"),
+                    }),
+                    height: parse!("123-456"),
+                    ty: AbciQueryType::State,
                 }),
-                height: parse!("123-456"),
-                ty: AbciQueryType::State,
-            }),
-        )));
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Union) Channel Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
+        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
             union_chain_id.clone(),
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
@@ -433,7 +435,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Eth - Union (Starting on Union) Channel Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Evm<Minimal>, Wasm<Union>, _>(
+        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
             eth_chain_id,
             MsgChannelOpenInitData {
                 msg: MsgChannelOpenInit {
@@ -456,7 +458,7 @@ mod tests {
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Eth) Connection Open: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Evm<Minimal>, Wasm<Union>, _>(
+        print_json::<RelayerMsgTypes>(msg(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
             eth_chain_id,
             MsgConnectionOpenInitData(MsgConnectionOpenInit {
                 client_id: parse!("cometbls-0"),
@@ -478,19 +480,21 @@ mod tests {
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Eth) Connection Try: ");
         println!("---------------------------------------");
-        print_json::<RelayerMsgTypes>(event(relay_message::id::<Evm<Minimal>, Wasm<Union>, _>(
-            eth_chain_id,
-            IbcEvent {
-                tx_hash: H256([0; 32]),
-                height: parse!("0-2941"),
-                event: unionlabs::events::IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
-                    connection_id: parse!("connection-0"),
-                    client_id: parse!("cometbls-0"),
-                    counterparty_client_id: parse!("08-wasm-1"),
-                    counterparty_connection_id: parse!("connection-14"),
-                }),
-            },
-        )));
+        print_json::<RelayerMsgTypes>(event(
+            relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
+                eth_chain_id,
+                IbcEvent {
+                    tx_hash: H256([0; 32]),
+                    height: parse!("0-2941"),
+                    event: unionlabs::events::IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
+                        connection_id: parse!("connection-0"),
+                        client_id: parse!("cometbls-0"),
+                        counterparty_client_id: parse!("08-wasm-1"),
+                        counterparty_connection_id: parse!("connection-14"),
+                    }),
+                },
+            ),
+        ));
 
         println!("---------------------------------------");
         println!("Eth - Union (Sending to Eth) Update Client: ");
@@ -498,7 +502,7 @@ mod tests {
         print_json::<RelayerMsgTypes>(repeat(
             u64::MAX,
             seq([
-                event(relay_message::id::<Evm<Minimal>, Wasm<Union>, _>(
+                event(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
                     eth_chain_id,
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("cometbls-0"),
@@ -515,7 +519,7 @@ mod tests {
         print_json::<RelayerMsgTypes>(repeat(
             u64::MAX,
             seq([
-                event(relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
+                event(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
                     union_chain_id.clone(),
                     relay_message::event::Command::UpdateClient {
                         client_id: parse!("08-wasm-0"),
@@ -566,14 +570,14 @@ mod tests {
         print_json::<RelayerMsgTypes>(seq([
             aggregate(
                 [
-                    fetch(relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
+                    fetch(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
                         union_chain_id.clone(),
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
                     )),
-                    fetch(relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
+                    fetch(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
                         union_chain_id.clone(),
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
@@ -582,10 +586,10 @@ mod tests {
                     )),
                 ],
                 [],
-                relay_message::id::<Evm<Minimal>, Wasm<Union>, _>(
+                relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
                     eth_chain_id,
                     AggregateCreateClient {
-                        config: EvmConfig {
+                        config: EthereumConfig {
                             client_type: "cometbls".to_string(),
                             client_address: H160(hex!("83428c7db9815f482a39a1715684dcf755021997")),
                         },
@@ -595,14 +599,14 @@ mod tests {
             ),
             aggregate(
                 [
-                    fetch(relay_message::id::<Evm<Minimal>, Wasm<Union>, _>(
+                    fetch(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
                         eth_chain_id,
                         FetchSelfClientState {
                             at: QueryHeight::Latest,
                             __marker: PhantomData,
                         },
                     )),
-                    fetch(relay_message::id::<Evm<Minimal>, Wasm<Union>, _>(
+                    fetch(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
                         eth_chain_id,
                         FetchSelfConsensusState {
                             at: QueryHeight::Latest,
@@ -611,7 +615,7 @@ mod tests {
                     )),
                 ],
                 [],
-                relay_message::id::<Wasm<Union>, Evm<Minimal>, _>(
+                relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
                     union_chain_id.clone(),
                     AggregateCreateClient {
                         config: WasmConfig {

@@ -49,16 +49,16 @@ use unionlabs::{
 
 use crate::{private_key::PrivateKey, Pool};
 
-pub type EvmSignerMiddleware =
+pub type EthereumSignerMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
 
 // TODO(benluelo): Generic over middleware?
 #[derive(DebugNoBound, CloneNoBound)]
-pub struct Evm<C: ChainSpec> {
+pub struct Ethereum<C: ChainSpec> {
     pub chain_id: U256,
 
     pub readonly_ibc_handler: DevnetOwnableIBCHandler<Provider<Ws>>,
-    pub ibc_handlers: Pool<IBCHandler<EvmSignerMiddleware>>,
+    pub ibc_handlers: Pool<IBCHandler<EthereumSignerMiddleware>>,
     pub provider: Provider<Ws>,
     pub beacon_api_client: BeaconApiClient<C>,
 }
@@ -78,11 +78,11 @@ pub struct Config {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct EvmChainType<C: ChainSpec>(PhantomData<fn() -> C>);
+pub struct EthereumChainType<C: ChainSpec>(PhantomData<fn() -> C>);
 
-pub const EVM_REVISION_NUMBER: u64 = 0;
+pub const ETHEREUM_REVISION_NUMBER: u64 = 0;
 
-impl<C: ChainSpec> FromStrExact for EvmChainType<C> {
+impl<C: ChainSpec> FromStrExact for EthereumChainType<C> {
     const EXPECTING: &'static str = {
         const PREFIX: [u8; 4] = *b"eth-";
 
@@ -176,8 +176,8 @@ impl AbiDecode for IbcHandlerErrors {
     }
 }
 
-impl<C: ChainSpec> Chain for Evm<C> {
-    type ChainType = EvmChainType<C>;
+impl<C: ChainSpec> Chain for Ethereum<C> {
+    type ChainType = EthereumChainType<C>;
 
     type SelfClientState = ethereum::client_state::ClientState;
     type SelfConsensusState = ethereum::consensus_state::ConsensusState;
@@ -189,7 +189,7 @@ impl<C: ChainSpec> Chain for Evm<C> {
 
     type Height = Height;
 
-    type ClientId = EvmClientId;
+    type ClientId = EthereumClientId;
 
     type IbcStateEncoding = EthAbi;
 
@@ -378,15 +378,15 @@ impl<C: ChainSpec> Chain for Evm<C> {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum EvmInitError {
+pub enum EthereumInitError {
     #[error("unable to connect to websocket")]
     Ws(#[from] WsClientError),
     #[error("provider error")]
     Provider(#[from] ProviderError),
 }
 
-impl<C: ChainSpec> Evm<C> {
-    pub async fn new(config: Config) -> Result<Self, EvmInitError> {
+impl<C: ChainSpec> Ethereum<C> {
+    pub async fn new(config: Config) -> Result<Self, EthereumInitError> {
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
 
         let chain_id = provider.get_chainid().await?;
@@ -439,7 +439,7 @@ impl<C: ChainSpec> Evm<C> {
 //     }
 // }
 
-impl<C: ChainSpec> Evm<C> {
+impl<C: ChainSpec> Ethereum<C> {
     // TODO: Change to take a beacon slot instead of a height
     pub async fn execution_height(&self, beacon_height: Height) -> u64 {
         let response = self
@@ -518,7 +518,7 @@ impl<C: ChainSpec> Evm<C> {
     }
 }
 
-pub type EvmClientId = ClientId;
+pub type EthereumClientId = ClientId;
 
 /// Many contract calls return some form of [`(bool, T)`] as a way to emulate nullable/[`Option`].
 /// This trait allows for easy conversion from the aforementioned tuple to an [`Option`].
@@ -730,7 +730,7 @@ pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> 
 //     }
 // }
 
-pub trait EthereumStateRead<C, Tr>: IbcPath<Evm<C>, Tr>
+pub trait EthereumStateRead<C, Tr>: IbcPath<Ethereum<C>, Tr>
 where
     Tr: Chain,
     C: ChainSpec,
@@ -743,9 +743,9 @@ where
 }
 
 impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr>
-    for ClientStatePath<<Evm<C> as Chain>::ClientId>
+    for ClientStatePath<<Ethereum<C> as Chain>::ClientId>
 where
-    ClientStateOf<Tr>: Decode<<Evm<C> as Chain>::IbcStateEncoding>,
+    ClientStateOf<Tr>: Decode<<Ethereum<C> as Chain>::IbcStateEncoding>,
     Tr::SelfClientState: Decode<EthAbi>,
     Tr::SelfClientState: Decode<EthAbi>,
 {
@@ -763,7 +763,7 @@ where
 }
 
 impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr>
-    for ClientConsensusStatePath<<Evm<C> as Chain>::ClientId, <Tr as Chain>::Height>
+    for ClientConsensusStatePath<<Ethereum<C> as Chain>::ClientId, <Tr as Chain>::Height>
 where
     ConsensusStateOf<Tr>: Decode<EthAbi>,
     Tr::SelfClientState: Decode<EthAbi>,
@@ -846,7 +846,7 @@ impl<C: ChainSpec, Tr: Chain> EthereumStateRead<C, Tr> for AcknowledgementPath {
 
 #[allow(unused_variables)]
 pub async fn setup_initial_channel<C: ChainSpec>(
-    this: &Evm<C>,
+    this: &Ethereum<C>,
     module_address: H160,
     channel_id: String,
     port_id: String,
@@ -907,11 +907,11 @@ pub async fn setup_initial_channel<C: ChainSpec>(
 #[test]
 fn eth_chain_type() {
     assert_eq!(
-        <<Evm<unionlabs::ethereum::config::Mainnet> as Chain>::ChainType as FromStrExact>::EXPECTING,
+        <<Ethereum<unionlabs::ethereum::config::Mainnet> as Chain>::ChainType as FromStrExact>::EXPECTING,
         "eth-mainnet",
     );
     assert_eq!(
-        <<Evm<unionlabs::ethereum::config::Minimal> as Chain>::ChainType as FromStrExact>::EXPECTING,
+        <<Ethereum<unionlabs::ethereum::config::Minimal> as Chain>::ChainType as FromStrExact>::EXPECTING,
         "eth-minimal",
     );
 }

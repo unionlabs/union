@@ -48,7 +48,7 @@ pub enum GetChainError {
 pub enum ChainConfigType {
     Union(union::Config),
     Cosmos(cosmos::Config),
-    Evm(EvmChainConfig),
+    Ethereum(EthereumChainConfig),
     Scroll(scroll::Config),
 }
 
@@ -61,7 +61,7 @@ pub struct ChainConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EvmChainConfig {
+pub struct EthereumChainConfig {
     pub preset_base: PresetBaseKind,
 
     /// The address of the `IBCHandler` smart contract.

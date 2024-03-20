@@ -39,11 +39,11 @@ pub enum Command {
 #[derive(Debug, Subcommand)]
 pub enum TxCmd {
     #[command(subcommand)]
-    Evm(EvmTx),
+    Ethereum(EthereumTx),
 }
 
 #[derive(Debug, Subcommand)]
-pub enum EvmTx {
+pub enum EthereumTx {
     Transfer {
         #[arg(long)]
         relay_address: H160,
@@ -67,13 +67,13 @@ pub enum EvmTx {
 #[derive(Debug, Subcommand)]
 pub enum QueryCmd {
     #[command(subcommand)]
-    Evm(EvmQuery),
+    Ethereum(EthereumQuery),
     #[command(subcommand)]
     Union(UnionQuery),
 }
 
 #[derive(Debug, Subcommand)]
-pub enum EvmQuery {
+pub enum EthereumQuery {
     // TODO(aeryz): Check if native denoms present in the `denomToAddress` mapping.
     Ucs01Balance {
         #[arg(long)]
@@ -106,19 +106,19 @@ pub enum UnionQuery {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct Config {
-    pub evm: EvmChainConfig,
+    pub ethereum: EthereumChainConfig,
     pub union: UnionChainConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "preset_base")]
-pub enum EvmChainConfig {
-    Mainnet(EvmChainConfigFields),
-    Minimal(EvmChainConfigFields),
+pub enum EthereumChainConfig {
+    Mainnet(EthereumChainConfigFields),
+    Minimal(EthereumChainConfigFields),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EvmChainConfigFields {
+pub struct EthereumChainConfigFields {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
@@ -142,15 +142,15 @@ pub struct UnionChainConfig {
 }
 
 #[derive(Debug, Clone)]
-pub struct Evm<C: ChainSpec> {
+pub struct Ethereum<C: ChainSpec> {
     pub chain_id: U256,
     pub wallet: LocalWallet,
     pub provider: Provider<Ws>,
     pub beacon_api_client: BeaconApiClient<C>,
 }
 
-impl<C: ChainSpec> Evm<C> {
-    pub async fn new(config: EvmChainConfigFields) -> Result<Self, ()> {
+impl<C: ChainSpec> Ethereum<C> {
+    pub async fn new(config: EthereumChainConfigFields) -> Result<Self, ()> {
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await.unwrap());
 
         let chain_id = provider.get_chainid().await.unwrap();

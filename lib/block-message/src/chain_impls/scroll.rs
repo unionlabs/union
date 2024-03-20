@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, fmt::Debug};
 
 use chain_utils::{
-    evm::IBCHandlerEvents,
+    ethereum::IBCHandlerEvents,
     scroll::{Scroll, SCROLL_REVISION_NUMBER},
 };
 use contracts::{
@@ -49,7 +49,7 @@ use unionlabs::{
 
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
-    chain_impls::evm::{
+    chain_impls::ethereum::{
         FetchBeaconBlockRange, FetchChannel, FetchConnection, FetchEvents, FetchGetLogs,
     },
     data::{AnyData, ChainEvent, Data},
@@ -381,7 +381,7 @@ where
                     for slot in (from_slot + 1)..to_slot {
                         tracing::info!("querying slot {slot}");
                         match c
-                            .evm
+                            .l1
                             .beacon_api_client
                             .block(beacon_api::client::BlockId::Slot(slot))
                             .await

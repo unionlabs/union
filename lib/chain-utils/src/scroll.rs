@@ -20,7 +20,7 @@ use unionlabs::{
 };
 
 use crate::{
-    evm::{self, Evm, EvmInitError, EvmSignerMiddleware},
+    ethereum::{self, Ethereum, EthereumInitError, EthereumSignerMiddleware},
     private_key::PrivateKey,
     Pool,
 };
@@ -34,12 +34,12 @@ pub struct Scroll {
     // The provider on scroll chain.
     pub provider: Provider<Ws>,
 
-    pub ibc_handlers: Pool<IBCHandler<EvmSignerMiddleware>>,
+    pub ibc_handlers: Pool<IBCHandler<EthereumSignerMiddleware>>,
 
     // The IBCHandler contract deployed on scroll chain.
     pub readonly_ibc_handler: DevnetOwnableIBCHandler<Provider<Ws>>,
     pub scroll_api_client: ScrollClient,
-    pub evm: Evm<Mainnet>,
+    pub l1: Ethereum<Mainnet>,
 
     pub rollup_contract_address: H160,
     pub rollup_finalized_state_roots_slot: U256,
@@ -62,14 +62,14 @@ pub struct Config {
     pub rollup_finalized_state_roots_slot: U256,
     pub rollup_last_finalized_batch_index_slot: U256,
     pub l1_client_id: String,
-    pub evm: evm::Config,
+    pub l1: ethereum::Config,
     pub scroll_api: String,
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum ScrollInitError {
     #[error("unable to initialize L1")]
-    Evm(#[from] EvmInitError),
+    Ethereum(#[from] EthereumInitError),
     #[error("unable to connect to websocket")]
     Ws(#[from] WsClientError),
     #[error("provider error")]
@@ -109,7 +109,7 @@ impl Scroll {
             ),
             provider,
             scroll_api_client: ScrollClient::new(config.scroll_api),
-            evm: Evm::new(config.evm).await?,
+            l1: Ethereum::new(config.l1).await?,
             rollup_contract_address: config.rollup_contract_address,
             rollup_finalized_state_roots_slot: config.rollup_finalized_state_roots_slot,
             rollup_last_finalized_batch_index_slot: config.rollup_last_finalized_batch_index_slot,
@@ -118,10 +118,10 @@ impl Scroll {
     }
 
     pub async fn batch_index_of_beacon_height(&self, height: HeightOf<Self>) -> u64 {
-        let execution_height = self.evm.execution_height(height).await;
+        let execution_height = self.l1.execution_height(height).await;
 
         let storage = self
-            .evm
+            .l1
             .provider
             .get_storage_at(
                 ethers::types::H160(self.rollup_contract_address.0),
@@ -167,39 +167,39 @@ impl Chain for Scroll {
     type SelfClientState = scroll::client_state::ClientState;
     type SelfConsensusState = scroll::consensus_state::ConsensusState;
 
-    type StoredClientState<Tr: Chain> = <Evm<Mainnet> as Chain>::StoredClientState<Tr>;
-    type StoredConsensusState<Tr: Chain> = <Evm<Mainnet> as Chain>::StoredConsensusState<Tr>;
+    type StoredClientState<Tr: Chain> = <Ethereum<Mainnet> as Chain>::StoredClientState<Tr>;
+    type StoredConsensusState<Tr: Chain> = <Ethereum<Mainnet> as Chain>::StoredConsensusState<Tr>;
 
     type Header = scroll::header::Header;
 
-    type Height = <Evm<Mainnet> as Chain>::Height;
+    type Height = <Ethereum<Mainnet> as Chain>::Height;
 
-    type ClientId = <Evm<Mainnet> as Chain>::ClientId;
+    type ClientId = <Ethereum<Mainnet> as Chain>::ClientId;
 
-    type IbcStateEncoding = <Evm<Mainnet> as Chain>::IbcStateEncoding;
+    type IbcStateEncoding = <Ethereum<Mainnet> as Chain>::IbcStateEncoding;
 
-    type StateProof = <Evm<Mainnet> as Chain>::StateProof;
+    type StateProof = <Ethereum<Mainnet> as Chain>::StateProof;
 
     type ClientType = String;
 
-    type Error = <Evm<Mainnet> as Chain>::Error;
+    type Error = <Ethereum<Mainnet> as Chain>::Error;
 
     fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
         self.chain_id
     }
 
     async fn query_latest_height(&self) -> Result<Self::Height, Self::Error> {
-        self.evm.query_latest_height().await
+        self.l1.query_latest_height().await
     }
 
     async fn query_latest_height_as_destination(&self) -> Result<Self::Height, Self::Error> {
-        self.evm.query_latest_height_as_destination().await
+        self.l1.query_latest_height_as_destination().await
     }
 
     fn query_latest_timestamp(
         &self,
     ) -> impl futures::prelude::Future<Output = Result<i64, Self::Error>> + '_ {
-        self.evm.query_latest_timestamp()
+        self.l1.query_latest_timestamp()
     }
 
     async fn self_client_state(&self, height: Self::Height) -> Self::SelfClientState {
@@ -213,14 +213,14 @@ impl Chain for Scroll {
             },
             rollup_contract_address: self.rollup_contract_address.clone(),
             rollup_finalized_state_roots_slot: self.rollup_finalized_state_roots_slot,
-            ibc_contract_address: self.evm.readonly_ibc_handler.address().into(),
+            ibc_contract_address: self.l1.readonly_ibc_handler.address().into(),
             ibc_commitment_slot: U256::from(0),
         }
     }
 
     async fn self_consensus_state(&self, height: Self::Height) -> Self::SelfConsensusState {
         let trusted_header = self
-            .evm
+            .l1
             .beacon_api_client
             .header(beacon_api::client::BlockId::Slot(height.revision_height))
             .await
@@ -246,7 +246,7 @@ impl Chain for Scroll {
             batch_index,
             ibc_storage_root: storage_root.into(),
             timestamp: self
-                .evm
+                .l1
                 .beacon_api_client
                 .bootstrap(trusted_header.root)
                 .await
